@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36518.9
@@ -14,28 +14,28 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Elementos de la solución",
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
-		ARCHITECTURE.md = ARCHITECTURE.md
-		CORE_REQUIREMENTS.md = CORE_REQUIREMENTS.md
-		ENGINE_DESIGN_DOCUMENT.md = ENGINE_DESIGN_DOCUMENT.md
-		OVERVIEW.md = OVERVIEW.md
-		ROADMAP.md = ROADMAP.md
-		VERSIONING.md = VERSIONING.md
+		docs\\ARCHITECTURE.md = docs\\ARCHITECTURE.md
+		docs\\CORE_REQUIREMENTS.md = docs\\CORE_REQUIREMENTS.md
+		docs\\ENGINE_DESIGN_DOCUMENT.md = docs\\ENGINE_DESIGN_DOCUMENT.md
+		docs\\OVERVIEW.md = docs\\OVERVIEW.md
+		docs\\ROADMAP.md = docs\\ROADMAP.md
+		docs\\VERSIONING.md = docs\\VERSIONING.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{5E7FC2DB-21A5-4196-B1D7-20A1E16A585C}"
 	ProjectSection(SolutionItems) = preProject
-		copilot-instructions.md = copilot-instructions.md
+		.github\\copilot-instructions.md = .github\\copilot-instructions.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MODULES", "MODULES", "{B3372A9D-F2F5-44FC-8C6E-655CCF82778E}"
 	ProjectSection(SolutionItems) = preProject
-		AUDIO_BACKEND.md = AUDIO_BACKEND.md
-		ECS.md = ECS.md
-		GRAPHICS_BACKEND.md = GRAPHICS_BACKEND.md
-		INPUT_BACKEND.md = INPUT_BACKEND.md
-		PHYSICS.md = PHYSICS.md
-		RESOURCES.md = RESOURCES.md
-		SCENES.md = SCENES.md
+		docs\\MODULES\\AUDIO_BACKEND.md = docs\\MODULES\\AUDIO_BACKEND.md
+		docs\\MODULES\\ECS.md = docs\\MODULES\\ECS.md
+		docs\\MODULES\\GRAPHICS_BACKEND.md = docs\\MODULES\\GRAPHICS_BACKEND.md
+		docs\\MODULES\\INPUT_BACKEND.md = docs\\MODULES\\INPUT_BACKEND.md
+		docs\\MODULES\\PHYSICS.md = docs\\MODULES\\PHYSICS.md
+		docs\\MODULES\\RESOURCES.md = docs\\MODULES\\RESOURCES.md
+		docs\\MODULES\\SCENES.md = docs\\MODULES\\SCENES.md
 	EndProjectSection
 EndProject
 Global
@@ -49,3 +49,4 @@ Global
 		SolutionGuid = {A7993585-5D62-434C-B3E2-A4E55FC55A8C}
 	EndGlobalSection
 EndGlobal
+
