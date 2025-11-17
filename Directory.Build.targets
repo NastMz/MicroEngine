@@ -1,0 +1,5 @@
+<Project>
+  <ItemGroup>
+    <!-- Common analyzers for all projects -->
+  </ItemGroup>
+</Project>
