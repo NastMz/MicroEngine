@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-alpha] - 2025-11-17
+
+### Added
+
+-   **Input System**: Backend-agnostic input abstraction with `IInputBackend` interface
+-   **Input Enums**: `Key` (keyboard), `MouseButton`, `GamepadButton`, `GamepadAxis` enumerations
+-   **Graphics System**: Backend-agnostic rendering abstraction with `IRenderBackend` interface
+-   **Color Struct**: RGBA color representation with common predefined colors (White, Black, Red, Green, Blue, etc.)
+-   **Raylib Backend**: Complete implementation of input and graphics backends using Raylib-cs v7.0.2
+-   **Visual Demo**: Interactive demo showcasing ECS + rendering with player control (WASD/arrows),
+    bouncing enemies, and real-time UI (FPS, entity count)
+-   **Input Tests**: Unit tests for Key, MouseButton, GamepadButton, GamepadAxis enums
+-   **Graphics Tests**: Unit tests for Color struct (equality, hash code, string representation)
+
+### Technical Details
+
+-   `IRenderBackend`: Window management, frame control, 2D primitives (rectangle, circle, line, text), FPS control
+-   `IInputBackend`: Keyboard state (down/pressed/released), mouse position/delta/buttons, gamepad support
+-   `RaylibRenderBackend`: Raylib implementation with window lifecycle, 60 FPS target, delta time tracking
+-   `RaylibInputBackend`: Raylib implementation with full keyboard/mouse/gamepad input handling
+-   Visual demo: 7 entities (1 player, 5 enemies, 1 UI), 4 systems (Movement, PlayerInput, BoundsCheck, Render)
+-   Proper rendering flow: update systems in `OnFixedUpdate`, render in `OnRender` (between `BeginFrame`/`EndFrame`)
+-   Zero compilation warnings (full XML documentation compliance)
+
 ## [0.2.0-alpha] - 2025-11-17
 
 ### Added

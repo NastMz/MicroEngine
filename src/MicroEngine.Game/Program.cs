@@ -1,4 +1,4 @@
-﻿using MicroEngine.Core.Engine;
+﻿using MicroEngine.Backend.Raylib;
 using MicroEngine.Core.Logging;
 using MicroEngine.Game.Scenes;
 
@@ -8,53 +8,50 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
-        // Create logger with Debug level to see ECS systems
-        var logger = new ConsoleLogger(LogLevel.Debug);
-        logger.Info("Game", "MicroEngine Demo Starting...");
+        // Create logger with Info level
+        var logger = new ConsoleLogger(LogLevel.Info);
+        logger.Info("Game", "MicroEngine Visual Demo Starting...");
 
-        // Create engine configuration
-        var config = new EngineConfiguration
-        {
-            TargetFPS = 60,
-            FixedTimeStep = 1f / 60f,
-            WindowTitle = "MicroEngine Demo",
-            WindowWidth = 1280,
-            WindowHeight = 720
-        };
+        // Create Raylib backends
+        var renderBackend = new RaylibRenderBackend();
+        var inputBackend = new RaylibInputBackend();
+
+        // Initialize window
+        renderBackend.Initialize(1280, 720, "MicroEngine Visual Demo");
+        renderBackend.SetTargetFPS(60);
 
         try
         {
-            // Create and initialize engine
-            var engine = new GameEngine(config, logger);
-            engine.Initialize();
+            // Create visual demo scene
+            var visualScene = new VisualDemoScene(logger, renderBackend, inputBackend);
+            visualScene.OnLoad();
 
-            // Create and load ECS demo scene
-            var demoScene = new EcsDemoScene(logger);
-            engine.SceneManager.RegisterScene(demoScene);
-            engine.SceneManager.LoadScene("ECS Demo");
+            logger.Info("Game", "Visual Demo running... Press ESC to exit");
 
-            logger.Info("Game", "Engine running... (will run for 5 seconds)");
-
-            // Set up auto-exit after 5 seconds
-            var exitTimer = new System.Timers.Timer(5000);
-            exitTimer.Elapsed += (sender, e) =>
+            // Main loop
+            while (!renderBackend.ShouldClose)
             {
-                engine.ShouldExit = true;
-                exitTimer.Stop();
-            };
-            exitTimer.Start();
+                var deltaTime = renderBackend.GetDeltaTime();
 
-            // Run the engine (this blocks until ShouldExit becomes true)
-            engine.Run();
+                // Update scene (ECS systems update here via World.Update in OnFixedUpdate)
+                visualScene.OnFixedUpdate(deltaTime);
 
-            engine.Shutdown();
+                // Render frame
+                renderBackend.BeginFrame();
+                visualScene.OnRender();
+                renderBackend.EndFrame();
+            }
 
-            logger.Info("Game", "Engine shut down successfully");
+            visualScene.OnUnload();
+            logger.Info("Game", "Visual Demo shut down successfully");
         }
         catch (Exception ex)
         {
             logger.Fatal("Game", "Fatal error occurred", ex);
-            return;
+        }
+        finally
+        {
+            renderBackend.Shutdown();
         }
 
         logger.Info("Game", "Goodbye!");
