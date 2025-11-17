@@ -2,23 +2,18 @@
   <PropertyGroup>
     <!-- Enable nullable reference types -->
     <Nullable>enable</Nullable>
-    
     <!-- Treat warnings as errors in Release builds -->
     <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
-    
     <!-- Enable analyzer warnings -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    
     <!-- Code coverage -->
     <GenerateDocumentationFile Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">true</GenerateDocumentationFile>
-    
     <!-- Deterministic builds -->
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
-  
   <PropertyGroup>
     <!-- Common project metadata -->
     <Authors>Kevin Martínez</Authors>
@@ -28,4 +23,10 @@
     <RepositoryUrl>https://github.com/NastMz/MicroEngine</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Condition="!Exists('packages.config')">
+      <PrivateAssets>all</PrivateAssets>
+      <Version>3.9.50</Version>
+    </PackageReference>
+  </ItemGroup>
 </Project>
