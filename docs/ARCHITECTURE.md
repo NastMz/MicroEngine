@@ -1,9 +1,9 @@
-# MicroEngine � Architecture Overview
+# MicroEngine — Architecture Overview
 
 **Version:** 1.0  
 **Status:** Reference  
-**Author:** Kevin Mart�nez  
-**Last Updated:** 2024  
+**Author:** Kevin Martínez  
+**Last Updated:** November 2025
 
 ---
 
@@ -14,9 +14,10 @@ MicroEngine uses a clean, layered, dimension-agnostic architecture designed for 
 This document describes how the engine is structured internally and how all its subsystems interact.
 
 **Related Documents:**
-- ?? [Core Requirements](CORE_REQUIREMENTS.md) � Mandatory technical rules
-- ?? [Engine Design Document](ENGINE_DESIGN_DOCUMENT.md) � Vision and goals
-- ?? [Roadmap](ROADMAP.md) � Development timeline
+
+- 📘 [Core Requirements](CORE_REQUIREMENTS.md) — Mandatory technical rules
+- 📘 [Engine Design Document](ENGINE_DESIGN_DOCUMENT.md) — Vision and goals
+- 📘 [Roadmap](ROADMAP.md) — Development timeline
 
 ---
 
@@ -48,6 +49,7 @@ MicroEngine follows these core principles:
 The engine does not assume 2D or 3D.
 
 **Key design decisions:**
+
 - Current modules are 2D-focused
 - All systems are built to support 3D extensions in the future without redesign
 - APIs use generic types (`Vector3` even if Z is unused in 2D)
@@ -61,32 +63,34 @@ Prevents architectural rewrites when adding 3D support in version 2.x.
 
 The engine is divided into three distinct layers:
 
-1. **Engine Core** � Platform-independent logic, ECS, scenes, update loop
-2. **Backends** � Concrete implementations for rendering, input, audio
-3. **Game Layer** � User code, assets, gameplay
+1. **Engine Core** — Platform-independent logic, ECS, scenes, update loop
+2. **Backends** — Concrete implementations for rendering, input, audio
+3. **Game Layer** — User code, assets, gameplay
 
 **Layer isolation rules:**
-- ? Upper layers can depend on lower layers
-- ? Lower layers cannot depend on upper layers
-- ? Backends implement interfaces defined by core
-- ? Core never imports backend-specific code
+
+- ✓ Upper layers can depend on lower layers
+- ✓ Lower layers cannot depend on upper layers
+- ✓ Backends implement interfaces defined by core
+- ✓ Core never imports backend-specific code
 
 ### **1.3 Separation of Concerns**
 
 Each subsystem has one clear responsibility:
 
-| Subsystem | Responsibility |
-|-----------|----------------|
-| **Render** | Drawing primitives, textures, geometry |
-| **Input** | User interaction (keyboard, mouse, gamepad) |
-| **Audio** | Sound effects and music playback |
-| **ECS** | Entity-component-system framework |
-| **Scene Manager** | Game state transitions |
-| **Resource Manager** | Asset lifetime and caching |
-| **Engine Loop** | Update timing and fixed timestep |
-| **Physics** | Collision detection and spatial queries |
+| Subsystem            | Responsibility                              |
+| -------------------- | ------------------------------------------- |
+| **Render**           | Drawing primitives, textures, geometry      |
+| **Input**            | User interaction (keyboard, mouse, gamepad) |
+| **Audio**            | Sound effects and music playback            |
+| **ECS**              | Entity-component-system framework           |
+| **Scene Manager**    | Game state transitions                      |
+| **Resource Manager** | Asset lifetime and caching                  |
+| **Engine Loop**      | Update timing and fixed timestep            |
+| **Physics**          | Collision detection and spatial queries     |
 
 **Benefits:**
+
 - Easy to understand
 - Simple to test in isolation
 - Replaceable subsystems
@@ -97,12 +101,14 @@ Each subsystem has one clear responsibility:
 The engine core **never** imports rendering libraries (Raylib, OpenGL, SDL, etc.).
 
 **Implementation:**
+
 - Core defines abstract interfaces (`IRenderBackend`, `IInputBackend`, `IAudioBackend`)
 - Backends implement these interfaces
 - Game selects backend at startup
 - Backend can be swapped without changing engine code
 
 **Example:**
+
 ```csharp
 // Engine Core (no dependency on Raylib)
 public interface IRenderBackend
@@ -129,11 +135,12 @@ var engine = new GameEngine(backend);
 Logic uses a fixed timestep; rendering is decoupled.
 
 **Guarantees:**
-- ? Same inputs produce same outputs
-- ? Gameplay is frame-rate independent
-- ? Physics simulation is consistent
-- ? Enables replay systems
-- ? Supports network deterministic lockstep
+
+- ✓ Same inputs produce same outputs
+- ✓ Gameplay is frame-rate independent
+- ✓ Physics simulation is consistent
+- ✓ Enables replay systems
+- ✓ Supports network deterministic lockstep
 
 **Implementation:**
 See [Section 6: Update & Render Cycle](#6-update--render-cycle)
@@ -142,48 +149,49 @@ See [Section 6: Update & Render Cycle](#6-update--render-cycle)
 
 # 2. High-Level Layer Diagram
 
-```
-??????????????????????????????????????????????????????????
-?                    Game Layer                          ?
-?  (Scenes, entities, gameplay logic, assets)            ?
-?                                                        ?
-?  Examples:                                             ?
-?  - MainMenuScene, GameplayScene                        ?
-?  - Player, Enemy entities                              ?
-?  - Game-specific components and systems                ?
-??????????????????????????????????????????????????????????
-         ?                           ?
-         ? depends on                ? selects backend
-         ?                           ?
-??????????????????????????????????????????????????????????
-?              Engine Backends Layer                     ?
-?  Render, Input, Audio implementations                  ?
-?                                                        ?
-?  Concrete implementations:                             ?
-?  - MicroEngine.Backend.Raylib                          ?
-?  - MicroEngine.Backend.OpenGL                          ?
-?  - MicroEngine.Backend.SDL                             ?
-?  - MicroEngine.Backend.Null (for testing)              ?
-??????????????????????????????????????????????????????????
-                        ?
-                        ? implements interfaces
-                        ?
-??????????????????????????????????????????????????????????
-?                  Engine Core                           ?
-?  ECS � Scenes � Time � Resources � Physics             ?
-?                                                        ?
-?  Defines interfaces:                                   ?
-?  - IRenderBackend                                      ?
-?  - IInputBackend                                       ?
-?  - IAudioBackend                                       ?
-?  - IWindowBackend                                      ?
-??????????????????????????????????????????????????????????
+```text
+┌────────────────────────────────────────────────────┐
+│                    Game Layer                      │
+│  (Scenes, entities, gameplay logic, assets)        │
+│                                                    │
+│  Examples:                                         │
+│  - MainMenuScene, GameplayScene                    │
+│  - Player, Enemy entities                          │
+│  - Game-specific components and systems            │
+└────────────────────────────────────────────────────┘
+         ↓                           ↓
+         ↓ depends on                ↓ selects backend
+         ↓                           ↓
+┌────────────────────────────────────────────────────┐
+│              Engine Backends Layer                 │
+│  Render, Input, Audio implementations              │
+│                                                    │
+│  Concrete implementations:                         │
+│  - MicroEngine.Backend.Raylib                      │
+│  - MicroEngine.Backend.OpenGL                      │
+│  - MicroEngine.Backend.SDL                         │
+│  - MicroEngine.Backend.Null (for testing)          │
+└────────────────────────────────────────────────────┘
+                        ↓
+                        ↓ implements interfaces
+                        ↓
+┌────────────────────────────────────────────────────┐
+│                  Engine Core                       │
+│  ECS → Scenes → Time → Resources → Physics         │
+│                                                    │
+│  Defines interfaces:                               │
+│  - IRenderBackend                                  │
+│  - IInputBackend                                   │
+│  - IAudioBackend                                   │
+│  - IWindowBackend                                  │
+└────────────────────────────────────────────────────┘
 ```
 
 **Dependency flow:**
-```
-Game ? Engine Core ? Backends (implements interfaces)
-Game ? Backends (selects concrete implementation)
+
+```text
+Game → Engine Core ← Backends (implements interfaces)
+Game → Backends (selects concrete implementation)
 ```
 
 ---
@@ -194,72 +202,72 @@ The **MicroEngine.Core** project contains all platform-independent logic.
 
 ## **3.1 Core Module Structure**
 
-```
+```text
 MicroEngine.Core/
-?
-??? Loop/
-?   ??? GameLoop.cs              ? Main update loop
-?   ??? FixedTimestep.cs         ? Timestep accumulator
-?   ??? Time.cs                  ? Time utilities
-?
-??? Scenes/
-?   ??? Scene.cs                 ? Base scene class
-?   ??? SceneManager.cs          ? Scene lifecycle
-?   ??? SceneTransition.cs       ? Transition helpers
-?
-??? ECS/
-?   ??? Entity.cs                ? Entity identifier
-?   ??? Component.cs             ? Base component
-?   ??? System.cs                ? Base system
-?   ??? World.cs                 ? ECS world manager
-?   ??? Query.cs                 ? Entity queries
-?
-??? Resources/
-?   ??? ResourceManager.cs       ? Asset loading/unloading
-?   ??? Handles/
-?   ?   ??? TextureHandle.cs
-?   ?   ??? SoundHandle.cs
-?   ?   ??? MusicHandle.cs
-?   ??? Loaders/
-?       ??? IResourceLoader.cs
-?       ??? ResourceValidator.cs
-?
-??? Physics/
-?   ??? Collider.cs              ? Base collider
-?   ??? AABB.cs                  ? 2D axis-aligned box
-?   ??? CollisionSystem.cs       ? Collision detection
-?   ??? SpatialHash.cs           ? Spatial partitioning
-?
-??? Input/
-?   ??? IInputBackend.cs         ? Input interface
-?   ??? InputManager.cs          ? Input state tracking
-?   ??? KeyCode.cs               ? Key definitions
-?
-??? Audio/
-?   ??? IAudioBackend.cs         ? Audio interface
-?   ??? AudioManager.cs          ? Audio system wrapper
-?
-??? Graphics/
-?   ??? IRenderBackend.cs        ? Render interface
-?   ??? IWindowBackend.cs        ? Window interface
-?   ??? Renderer.cs              ? High-level render API
-?   ??? Camera.cs                ? Camera abstraction
-?   ??? Color.cs                 ? Color utilities
-?   ??? Primitives/
-?       ??? Rectangle.cs
-?       ??? Circle.cs
-?
-??? Math/
-?   ??? Vector2.cs               ? 2D vector
-?   ??? Vector3.cs               ? 3D vector (future-ready)
-?   ??? Matrix3x2.cs             ? 2D transformations
-?   ??? Matrix4x4.cs             ? 3D transformations (future)
-?   ??? MathHelper.cs            ? Utility functions
-?
-??? Utilities/
-    ??? Logger.cs                ? Logging system
-    ??? Profiler.cs              ? Performance profiling
-    ??? EventBus.cs              ? Event system
+│
+├── Loop/
+│   ├── GameLoop.cs              → Main update loop
+│   ├── FixedTimestep.cs         → Timestep accumulator
+│   └── Time.cs                  → Time utilities
+│
+├── Scenes/
+│   ├── Scene.cs                 → Base scene class
+│   ├── SceneManager.cs          → Scene lifecycle
+│   └── SceneTransition.cs       → Transition helpers
+│
+├── ECS/
+│   ├── Entity.cs                → Entity identifier
+│   ├── Component.cs             → Base component
+│   ├── System.cs                → Base system
+│   ├── World.cs                 → ECS world manager
+│   └── Query.cs                 → Entity queries
+│
+├── Resources/
+│   ├── ResourceManager.cs       → Asset loading/unloading
+│   ├── Handles/
+│   │   ├── TextureHandle.cs
+│   │   ├── SoundHandle.cs
+│   │   └── MusicHandle.cs
+│   └── Loaders/
+│       ├── IResourceLoader.cs
+│       └── ResourceValidator.cs
+│
+├── Physics/
+│   ├── Collider.cs              → Base collider
+│   ├── AABB.cs                  → 2D axis-aligned box
+│   ├── CollisionSystem.cs       → Collision detection
+│   └── SpatialHash.cs           → Spatial partitioning
+│
+├── Input/
+│   ├── IInputBackend.cs         → Input interface
+│   ├── InputManager.cs          → Input state tracking
+│   └── KeyCode.cs               → Key definitions
+│
+├── Audio/
+│   ├── IAudioBackend.cs         → Audio interface
+│   └── AudioManager.cs          → Audio system wrapper
+│
+├── Graphics/
+│   ├── IRenderBackend.cs        → Render interface
+│   ├── IWindowBackend.cs        → Window interface
+│   ├── Renderer.cs              → High-level render API
+│   ├── Camera.cs                → Camera abstraction
+│   ├── Color.cs                 → Color utilities
+│   └── Primitives/
+│       ├── Rectangle.cs
+│       └── Circle.cs
+│
+├── Math/
+│   ├── Vector2.cs               → 2D vector
+│   ├── Vector3.cs               → 3D vector (future-ready)
+│   ├── Matrix3x2.cs             → 2D transformations
+│   ├── Matrix4x4.cs             → 3D transformations (future)
+│   └── MathHelper.cs            → Utility functions
+│
+└── Utilities/
+    ├── Logger.cs                → Logging system
+    ├── Profiler.cs              → Performance profiling
+    └── EventBus.cs              → Event system
 ```
 
 ---
@@ -269,6 +277,7 @@ MicroEngine.Core/
 ### **3.2.1 Loop Module**
 
 **Responsibilities:**
+
 - Manages fixed timestep logic
 - Handles variable-rate rendering
 - Accumulates delta time
@@ -276,26 +285,27 @@ MicroEngine.Core/
 - Provides profiling hooks
 
 **Key classes:**
+
 ```csharp
 public class GameLoop
 {
     private const double FixedTimeStep = 1.0 / 60.0;
     private double _accumulator = 0.0;
-    
+
     public void Run()
     {
         while (_running)
         {
             double frameTime = GetFrameTime();
             _accumulator += frameTime;
-            
+
             // Fixed update
             while (_accumulator >= FixedTimeStep)
             {
                 Update(FixedTimeStep);
                 _accumulator -= FixedTimeStep;
             }
-            
+
             // Variable render
             double interpolation = _accumulator / FixedTimeStep;
             Render(interpolation);
@@ -307,23 +317,27 @@ public class GameLoop
 ### **3.2.2 Scene System**
 
 **A scene encapsulates:**
+
 - World state (entities, components)
 - ECS systems specific to that scene
 - Initialization and cleanup logic
 - Independent update/draw cycles
 
 **Scene lifecycle:**
-```
-Create ? OnEnter ? Update/Draw loop ? OnExit ? Dispose
+
+```text
+Create → OnEnter → Update/Draw loop → OnExit → Dispose
 ```
 
 **SceneManager responsibilities:**
+
 - Ensures clean transitions without state leakage
 - Validates new scene before switching
 - Handles scene stack (for overlays)
 - Manages async scene loading
 
 **Example:**
+
 ```csharp
 public abstract class Scene
 {
@@ -337,12 +351,12 @@ public class SceneManager
 {
     private Scene? _currentScene;
     private Scene? _nextScene;
-    
+
     public void TransitionTo(Scene newScene)
     {
         _nextScene = newScene;
     }
-    
+
     private void PerformTransition()
     {
         _currentScene?.OnExit();
@@ -358,17 +372,20 @@ public class SceneManager
 A simple but robust ECS implementation:
 
 **Design philosophy:**
+
 - **Entity**: Lightweight identifier (just an ID)
 - **Component**: Pure data containers (no logic)
 - **System**: Logic applied to entities with specific components
 
 **Benefits:**
+
 - Clear separation of data and logic
 - Easy to reason about
 - Deterministic execution order
 - Simple debugging
 
 **Example:**
+
 ```csharp
 // Component (data only)
 public struct TransformComponent
@@ -387,7 +404,7 @@ public class MovementSystem : ISystem
         {
             ref var transform = ref entity.Get<TransformComponent>();
             ref var velocity = ref entity.Get<VelocityComponent>();
-            
+
             transform.Position += velocity.Value * deltaTime;
         }
     }
@@ -397,18 +414,20 @@ public class MovementSystem : ISystem
 ### **3.2.4 Resource Manager**
 
 **Handles asset lifetimes using:**
-- **Handles** � Opaque references to resources
-- **Validation** � Check resource integrity before use
-- **Atomic loading** � All-or-nothing resource creation
-- **Reference counting** � Optional automatic cleanup
+
+- **Handles** — Opaque references to resources
+- **Validation** — Check resource integrity before use
+- **Atomic loading** — All-or-nothing resource creation
+- **Reference counting** — Optional automatic cleanup
 
 **Resource handle pattern:**
+
 ```csharp
 public struct TextureHandle
 {
     internal uint Id { get; }
     internal int Version { get; }
-    
+
     public bool IsValid => Version >= 0;
 }
 
@@ -416,7 +435,7 @@ public class ResourceManager
 {
     private Dictionary<uint, TextureData> _textures = new();
     private uint _nextId = 1;
-    
+
     public TextureHandle LoadTexture(string path)
     {
         // Validate, load, register
@@ -425,7 +444,7 @@ public class ResourceManager
         _textures[id] = data;
         return new TextureHandle { Id = id, Version = 0 };
     }
-    
+
     public void Unload(TextureHandle handle)
     {
         if (_textures.Remove(handle.Id))
@@ -439,23 +458,26 @@ public class ResourceManager
 ### **3.2.5 Physics Module**
 
 **Current implementation:**
+
 - 2D collision detection (AABB, circles)
 - Simple spatial queries
 - Overlap tests
 - Ray casting
 
 **Future-ready design:**
+
 - Module is structured so a 3D physics backend can be added later
 - Abstraction allows swapping physics engines
 - Deterministic for networking support
 
 **Example:**
+
 ```csharp
 public struct AABB
 {
     public Vector2 Min;
     public Vector2 Max;
-    
+
     public bool Overlaps(AABB other)
     {
         return Min.X < other.Max.X && Max.X > other.Min.X &&
@@ -469,6 +491,7 @@ public struct AABB
 The core defines abstract interfaces that backends must implement:
 
 **Rendering:**
+
 ```csharp
 public interface IRenderBackend
 {
@@ -478,7 +501,7 @@ public interface IRenderBackend
     void DrawRectangle(Rectangle rect, Color color);
     void DrawText(string text, Vector2 position, FontHandle font, Color color);
     void EndFrame();
-    
+
     // Texture management
     TextureHandle CreateTexture(int width, int height, byte[] data);
     void DeleteTexture(TextureHandle handle);
@@ -486,32 +509,35 @@ public interface IRenderBackend
 ```
 
 **Input:**
+
 ```csharp
 public interface IInputBackend
 {
     bool GetKeyDown(KeyCode key);
     bool GetKeyUp(KeyCode key);
     bool GetKeyHeld(KeyCode key);
-    
+
     Vector2 GetMousePosition();
     bool GetMouseButtonDown(MouseButton button);
 }
 ```
 
 **Audio:**
+
 ```csharp
 public interface IAudioBackend
 {
     void PlaySound(SoundHandle sound, float volume = 1.0f);
     void PlayMusic(MusicHandle music, bool loop = true);
     void StopMusic();
-    
+
     SoundHandle LoadSound(string path);
     MusicHandle LoadMusic(string path);
 }
 ```
 
 **Window:**
+
 ```csharp
 public interface IWindowBackend
 {
@@ -540,6 +566,7 @@ MicroEngine.Backend.Null/      (headless for testing)
 ## **4.1 Backend Responsibilities**
 
 Each backend implements:
+
 - ? Rendering (window management, drawing)
 - ? Input handling (keyboard, mouse, gamepad)
 - ? Audio playback (sounds, music)
@@ -548,32 +575,33 @@ Each backend implements:
 ## **4.2 Backend Requirements**
 
 Backends must:
-- ? Remain isolated from engine core internals
-- ? Be changeable at compile time or runtime
-- ? Never modify engine logic
-- ? Fail gracefully with clear errors
-- ? Validate resources before creating handles
-- ? Pass conformance test suite
+
+- ✓ Remain isolated from engine core internals
+- ✓ Be changeable at compile time or runtime
+- ✓ Never modify engine logic
+- ✓ Fail gracefully with clear errors
+- ✓ Validate resources before creating handles
+- ✓ Pass conformance test suite
 
 ## **4.3 Example Backend Structure**
 
-```
+```text
 MicroEngine.Backend.Raylib/
-?
-??? Rendering/
-?   ??? RaylibRenderBackend.cs   ? Implements IRenderBackend
-?   ??? TextureManager.cs         ? Handle to Raylib texture mapping
-?   ??? WindowManager.cs          ? Window creation and events
-?
-??? Input/
-?   ??? RaylibInputBackend.cs    ? Implements IInputBackend
-?   ??? InputMapper.cs            ? Map engine keys to Raylib keys
-?
-??? Audio/
-?   ??? RaylibAudioBackend.cs    ? Implements IAudioBackend
-?   ??? AudioCache.cs             ? Sound/music caching
-?
-??? RaylibBackendFactory.cs      ? Creates all backend instances
+│
+├── Rendering/
+│   ├── RaylibRenderBackend.cs   → Implements IRenderBackend
+│   ├── TextureManager.cs         → Handle to Raylib texture mapping
+│   └── WindowManager.cs          → Window creation and events
+│
+├── Input/
+│   ├── RaylibInputBackend.cs    → Implements IInputBackend
+│   └── InputMapper.cs            → Map engine keys to Raylib keys
+│
+├── Audio/
+│   ├── RaylibAudioBackend.cs    → Implements IAudioBackend
+│   └── AudioCache.cs             → Sound/music caching
+│
+└── RaylibBackendFactory.cs      → Creates all backend instances
 ```
 
 ## **4.4 Backend Factory Pattern**
@@ -600,16 +628,18 @@ var engine = new GameEngine(
 ## **4.5 Backend Isolation Rules**
 
 **Allowed:**
-- ? Backend can use third-party libraries (Raylib, SDL, OpenGL)
-- ? Backend can cache internal state
-- ? Backend can optimize rendering
-- ? Backend can provide extensions via optional interfaces
+
+- ✓ Backend can use third-party libraries (Raylib, SDL, OpenGL)
+- ✓ Backend can cache internal state
+- ✓ Backend can optimize rendering
+- ✓ Backend can provide extensions via optional interfaces
 
 **Forbidden:**
-- ? Backend cannot modify engine state
-- ? Backend cannot access core internals
-- ? Backend cannot change engine behavior
-- ? Backend cannot bypass validation
+
+- ✗ Backend cannot modify engine state
+- ✗ Backend cannot access core internals
+- ✗ Backend cannot change engine behavior
+- ✗ Backend cannot bypass validation
 
 ---
 
@@ -619,42 +649,42 @@ The game layer is any project that uses MicroEngine.
 
 ## **5.1 Typical Game Structure**
 
-```
+```text
 MyGame/
-?
-??? Scenes/
-?   ??? MainMenuScene.cs         ? Menu UI
-?   ??? GameplayScene.cs         ? Main game loop
-?   ??? PauseMenuScene.cs        ? Pause overlay
-?   ??? GameOverScene.cs         ? End screen
-?
-??? Entities/
-?   ??? Player.cs                ? Player entity factory
-?   ??? Enemy.cs                 ? Enemy types
-?   ??? Projectile.cs            ? Bullets, etc.
-?
-??? Components/
-?   ??? HealthComponent.cs       ? HP system
-?   ??? DamageComponent.cs       ? Damage on collision
-?   ??? AIComponent.cs           ? AI behavior data
-?
-??? Systems/
-?   ??? PlayerControlSystem.cs  ? Handle player input
-?   ??? AISystem.cs              ? Enemy AI logic
-?   ??? CombatSystem.cs          ? Damage calculation
-?   ??? RenderSystem.cs          ? Drawing entities
-?
-??? Assets/
-?   ??? sprites/
-?   ?   ??? player.png
-?   ?   ??? enemy.png
-?   ??? audio/
-?   ?   ??? shoot.wav
-?   ?   ??? music.ogg
-?   ??? data/
-?       ??? levels.json
-?
-??? Program.cs                   ? Entry point
+│
+├── Scenes/
+│   ├── MainMenuScene.cs         → Menu UI
+│   ├── GameplayScene.cs         → Main game loop
+│   ├── PauseMenuScene.cs        → Pause overlay
+│   └── GameOverScene.cs         → End screen
+│
+├── Entities/
+│   ├── Player.cs                → Player entity factory
+│   ├── Enemy.cs                 → Enemy types
+│   └── Projectile.cs            → Bullets, etc.
+│
+├── Components/
+│   ├── HealthComponent.cs       → HP system
+│   ├── DamageComponent.cs       → Damage on collision
+│   └── AIComponent.cs           → AI behavior data
+│
+├── Systems/
+│   ├── PlayerControlSystem.cs  → Handle player input
+│   ├── AISystem.cs              → Enemy AI logic
+│   ├── CombatSystem.cs          → Damage calculation
+│   └── RenderSystem.cs          → Drawing entities
+│
+├── Assets/
+│   ├── sprites/
+│   │   ├── player.png
+│   │   └── enemy.png
+│   ├── audio/
+│   │   ├── shoot.wav
+│   │   └── music.ogg
+│   └── data/
+│       └── levels.json
+│
+└── Program.cs                   → Entry point
 ```
 
 ## **5.2 Game Layer Responsibilities**
@@ -662,12 +692,14 @@ MyGame/
 The game layer is responsible for:
 
 1. **Backend Selection**
+
    ```csharp
    var backend = new RaylibBackendFactory();
    var engine = new GameEngine(backend);
    ```
 
 2. **Scene Registration**
+
    ```csharp
    engine.SceneManager.Register("menu", new MainMenuScene());
    engine.SceneManager.Register("game", new GameplayScene());
@@ -675,12 +707,14 @@ The game layer is responsible for:
    ```
 
 3. **Asset Management**
+
    ```csharp
    var player = resources.LoadTexture("sprites/player.png");
    var music = resources.LoadMusic("audio/theme.ogg");
    ```
 
 4. **Component Definition**
+
    ```csharp
    public struct PlayerComponent
    {
@@ -709,7 +743,7 @@ public class Program
     {
         // Create backend
         var backendFactory = new RaylibBackendFactory();
-        
+
         // Create engine
         var engine = new GameEngine(
             backendFactory.CreateRenderBackend(),
@@ -717,15 +751,15 @@ public class Program
             backendFactory.CreateAudioBackend(),
             backendFactory.CreateWindowBackend()
         );
-        
+
         // Configure
         engine.Window.Create("My Game", 800, 600);
-        
+
         // Register scenes
         engine.SceneManager.Register("menu", new MainMenuScene());
         engine.SceneManager.Register("game", new GameplayScene());
         engine.SceneManager.SetActive("menu");
-        
+
         // Run
         engine.Run();
     }
@@ -743,13 +777,15 @@ MicroEngine uses the **"Fix Your Timestep"** pattern for deterministic gameplay.
 **Runs at constant frequency (default: 60 updates/s)**
 
 **Executed during update:**
-- ? ECS systems update
-- ? Physics simulation
-- ? Input processing
-- ? Scene logic
-- ? Audio updates
+
+- ✓ ECS systems update
+- ✓ Physics simulation
+- ✓ Input processing
+- ✓ Scene logic
+- ✓ Audio updates
 
 **Characteristics:**
+
 - Fixed delta time (always 0.01666s for 60 Hz)
 - Frame-rate independent
 - Deterministic
@@ -760,12 +796,14 @@ MicroEngine uses the **"Fix Your Timestep"** pattern for deterministic gameplay.
 **Runs as fast as the backend allows (uncapped or V-synced)**
 
 **Executed during render:**
-- ? Draws current scene
-- ? Interpolates between states for smoothness
-- ? UI rendering
-- ? Debug overlays
+
+- ✓ Draws current scene
+- ✓ Interpolates between states for smoothness
+- ✓ UI rendering
+- ✓ Debug overlays
 
 **Characteristics:**
+
 - Variable delta time
 - Never modifies game state
 - May skip frames if update falls behind
@@ -773,16 +811,16 @@ MicroEngine uses the **"Fix Your Timestep"** pattern for deterministic gameplay.
 
 ## **6.3 Timing Diagram**
 
-```
-Time ?????????????????????????????????????????????????
+```text
+Time ──────────────────────────→
 
-Frame 1: ???? Update ???? Render ??
-Frame 2: ???? Update ???? Update ???? Render ????
-Frame 3: ???? Update ???? Render ??
-Frame 4: ???? Update ???? Render ?? Render ??
-         ?              ?
-         ?              ?? Extra render (high FPS)
-         ?? Accumulator reached 2x fixed timestep
+Frame 1: ┌──┐ Update ┌──┐ Render ──
+Frame 2: ┌──┐ Update ┌──┐ Update ┌──┐ Render ────
+Frame 3: ┌──┐ Update ┌──┐ Render ──
+Frame 4: ┌──┐ Update ┌──┐ Render ── Render ──
+         ↑              ↑
+         ↑              ↑─ Extra render (high FPS)
+         ↑─ Accumulator reached 2x fixed timestep
 ```
 
 ## **6.4 Implementation**
@@ -792,29 +830,29 @@ public class GameLoop
 {
     private const double FixedTimeStep = 1.0 / 60.0;  // 60 Hz
     private const double MaxAccumulator = 0.25;        // Spiral of death prevention
-    
+
     private double _accumulator = 0.0;
     private double _currentTime;
     private double _newTime;
-    
+
     public void Run()
     {
         _currentTime = GetTime();
-        
+
         while (!ShouldQuit())
         {
             // Measure frame time
             _newTime = GetTime();
             double frameTime = _newTime - _currentTime;
             _currentTime = _newTime;
-            
+
             // Accumulate time
             _accumulator += frameTime;
-            
+
             // Prevent spiral of death
             if (_accumulator > MaxAccumulator)
                 _accumulator = MaxAccumulator;
-            
+
             // Fixed update (may run multiple times or not at all)
             while (_accumulator >= FixedTimeStep)
             {
@@ -822,7 +860,7 @@ public class GameLoop
                 UpdateSystems(FixedTimeStep);
                 _accumulator -= FixedTimeStep;
             }
-            
+
             // Variable render (always runs once per frame)
             double interpolation = _accumulator / FixedTimeStep;
             RenderScene(interpolation);
@@ -851,53 +889,58 @@ public void Render(double alpha)
 ## **7.1 Resource Loading Pipeline**
 
 **All loading is:**
-1. **Validated** � Check format, size, corruption
-2. **Atomic** � All-or-nothing (no partial loads)
-3. **Explicit** � No silent failures
+
+1. **Validated** — Check format, size, corruption
+2. **Atomic** — All-or-nothing (no partial loads)
+3. **Explicit** — No silent failures
 
 **Loading flow:**
-```
-Request ? Validate Path ? Load Raw Data ? Validate Format ? 
-Create Backend Resource ? Register Handle ? Return Handle
+
+```text
+Request → Validate Path → Load Raw Data → Validate Format →
+Create Backend Resource → Register Handle → Return Handle
 ```
 
 ## **7.2 Handle System**
 
 The core **never stores raw backend data**; instead, it uses handles:
 
-| Resource Type | Handle Type | Backend Mapping |
-|---------------|-------------|-----------------|
-| Textures | `TextureHandle` | GPU texture ID |
-| Audio | `SoundHandle` | Audio buffer ID |
-| Music | `MusicHandle` | Stream handle |
-| Fonts | `FontHandle` | Font atlas |
-| Meshes (future) | `MeshHandle` | Vertex buffer ID |
+| Resource Type   | Handle Type     | Backend Mapping  |
+| --------------- | --------------- | ---------------- |
+| Textures        | `TextureHandle` | GPU texture ID   |
+| Audio           | `SoundHandle`   | Audio buffer ID  |
+| Music           | `MusicHandle`   | Stream handle    |
+| Fonts           | `FontHandle`    | Font atlas       |
+| Meshes (future) | `MeshHandle`    | Vertex buffer ID |
 
 **Handle structure:**
+
 ```csharp
 public struct TextureHandle
 {
     internal uint Id { get; }
     internal int Version { get; }
-    
+
     public bool IsValid => Version >= 0;
 }
 ```
 
 **Benefits:**
-- ? Opaque references (no direct memory access)
-- ? Detect use-after-free (version check)
-- ? Enable hot-reloading
-- ? Backend-independent
-- ? Type-safe
+
+- ✓ Opaque references (no direct memory access)
+- ✓ Detect use-after-free (version check)
+- ✓ Enable hot-reloading
+- ✓ Backend-independent
+- ✓ Type-safe
 
 ## **7.3 Resource Lifecycle**
 
-```
-Load ? Validate ? Use ? Unload ? Invalidate Handle
+```text
+Load → Validate → Use → Unload → Invalidate Handle
 ```
 
 **Example:**
+
 ```csharp
 // Load
 TextureHandle player = resources.LoadTexture("player.png");
@@ -915,20 +958,20 @@ if (!player.IsValid)
 
 ## **7.4 Asset Organization**
 
-```
+```text
 Assets/
-??? textures/
-?   ??? sprites/
-?   ??? ui/
-?   ??? backgrounds/
-??? audio/
-?   ??? sfx/
-?   ??? music/
-??? fonts/
-??? data/
-?   ??? levels/
-?   ??? config/
-??? shaders/  (future)
+├── textures/
+│   ├── sprites/
+│   ├── ui/
+│   └── backgrounds/
+├── audio/
+│   ├── sfx/
+│   └── music/
+├── fonts/
+├── data/
+│   ├── levels/
+│   └── config/
+└── shaders/  (future)
 ```
 
 ---
@@ -938,6 +981,7 @@ Assets/
 ## **8.1 System Communication Patterns**
 
 ### **8.1.1 Direct Communication (ECS)**
+
 ```csharp
 // Systems operate on shared components
 public class DamageSystem : ISystem
@@ -948,7 +992,7 @@ public class DamageSystem : ISystem
         {
             ref var health = ref entity.Get<HealthComponent>();
             var damage = entity.Get<DamageComponent>();
-            
+
             health.Value -= damage.Amount;
         }
     }
@@ -956,17 +1000,18 @@ public class DamageSystem : ISystem
 ```
 
 ### **8.1.2 Event-Based Communication**
+
 ```csharp
 // Decoupled communication via events
 public class EventBus
 {
     private Dictionary<Type, List<Delegate>> _handlers = new();
-    
+
     public void Subscribe<T>(Action<T> handler)
     {
         // Register handler
     }
-    
+
     public void Publish<T>(T evt)
     {
         // Invoke all handlers
@@ -974,7 +1019,7 @@ public class EventBus
 }
 
 // Usage
-eventBus.Subscribe<PlayerDiedEvent>(evt => 
+eventBus.Subscribe<PlayerDiedEvent>(evt =>
 {
     sceneManager.TransitionTo(new GameOverScene());
 });
@@ -983,17 +1028,18 @@ eventBus.Publish(new PlayerDiedEvent { Player = playerEntity });
 ```
 
 ### **8.1.3 Message Queue (Threading)**
+
 ```csharp
 // Cross-thread communication
 public class MessageQueue
 {
     private ConcurrentQueue<IMessage> _queue = new();
-    
+
     public void Enqueue(IMessage message)
     {
         _queue.Enqueue(message);
     }
-    
+
     public void ProcessAll()
     {
         while (_queue.TryDequeue(out var message))
@@ -1006,28 +1052,28 @@ public class MessageQueue
 
 ## **8.2 Data Flow Diagram**
 
-```
-???????????????
-?   Input     ?
-?  Backend    ?
-???????????????
-       ? Raw input events
-       ?
-???????????????
-? Input       ?
-? Manager     ?
-???????????????
-       ? Processed input state
-       ?
-???????????????      ????????????????
-? ECS Systems ???????? Components   ?
-???????????????      ????????????????
-       ? Render data
-       ?
-???????????????      ????????????????
-?  Renderer   ????????   Render     ?
-?             ?      ?   Backend    ?
-???????????????      ????????????????
+```text
+┌─────────────┐
+│   Input     │
+│  Backend    │
+└─────────────┘
+       ↓ Raw input events
+       ↓
+┌─────────────┐
+│ Input       │
+│ Manager     │
+└─────────────┘
+       ↓ Processed input state
+       ↓
+┌─────────────┐      ┌──────────────┐
+│ ECS Systems │◄─────│ Components   │
+└─────────────┘      └──────────────┘
+       ↓ Render data
+       ↓
+┌─────────────┐      ┌──────────────┐
+│  Renderer   │─────►│   Render     │
+│             │      │   Backend    │
+└─────────────┘      └──────────────┘
 ```
 
 ---
@@ -1036,17 +1082,17 @@ public class MessageQueue
 
 ## **9.1 Dependency Graph**
 
-```
+```text
 Game Layer
-    ??? depends on ? MicroEngine.Core
-    ??? depends on ? MicroEngine.Backend.* (selected backend)
+    ├── depends on → MicroEngine.Core
+    └── depends on → MicroEngine.Backend.* (selected backend)
 
 MicroEngine.Backend.Raylib
-    ??? depends on ? MicroEngine.Core (interfaces only)
-    ??? depends on ? Raylib-cs (third-party)
+    ├── depends on → MicroEngine.Core (interfaces only)
+    └── depends on → Raylib-cs (third-party)
 
 MicroEngine.Core
-    ??? depends on ? .NET Standard 2.1 (no external dependencies)
+    └── depends on → .NET Standard 2.1 (no external dependencies)
 ```
 
 ## **9.2 Dependency Injection**
@@ -1065,7 +1111,7 @@ public class RaylibRenderer : IRenderer { }
 public class GameplayScene
 {
     private readonly IRenderer _renderer;
-    
+
     public GameplayScene(IRenderer renderer)
     {
         _renderer = renderer;
@@ -1080,6 +1126,7 @@ var scene = new GameplayScene(renderer);
 ## **9.3 Package References**
 
 **MicroEngine.Core.csproj:**
+
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
@@ -1090,6 +1137,7 @@ var scene = new GameplayScene(renderer);
 ```
 
 **MicroEngine.Backend.Raylib.csproj:**
+
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
@@ -1111,6 +1159,7 @@ MicroEngine is designed for long-term growth through well-defined extension poin
 ## **10.1 Current Extension Points**
 
 ### **Custom Backends**
+
 ```csharp
 // Create your own backend
 public class MyCustomBackend : IRenderBackend
@@ -1120,6 +1169,7 @@ public class MyCustomBackend : IRenderBackend
 ```
 
 ### **Custom Components**
+
 ```csharp
 // Add game-specific components
 public struct WeaponComponent
@@ -1130,6 +1180,7 @@ public struct WeaponComponent
 ```
 
 ### **Custom Systems**
+
 ```csharp
 // Add game-specific systems
 public class WeaponSystem : ISystem
@@ -1142,6 +1193,7 @@ public class WeaponSystem : ISystem
 ```
 
 ### **Custom Resource Loaders**
+
 ```csharp
 // Add custom resource types
 public class LevelLoader : IResourceLoader<LevelData>
@@ -1156,6 +1208,7 @@ public class LevelLoader : IResourceLoader<LevelData>
 ## **10.2 Future Extension Points**
 
 ### **3D Support**
+
 - 3D transforms (`Matrix4x4`)
 - 3D cameras (perspective projection)
 - Mesh rendering
@@ -1163,6 +1216,7 @@ public class LevelLoader : IResourceLoader<LevelData>
 - Shader/material system
 
 ### **Advanced Features**
+
 - Particle systems
 - Animation systems
 - UI framework
@@ -1194,16 +1248,18 @@ engine.RegisterPlugin(new ProfilingPlugin());
 MicroEngine uses a **fail-fast** approach with explicit errors.
 
 ### **Exception Hierarchy**
+
 ```csharp
 public class MicroEngineException : Exception { }
-    ??? ResourceLoadException
-    ??? SceneTransitionException
-    ??? BackendException
-    ??? InvalidStateException
-    ??? ComponentNotFoundException
+    ├── ResourceLoadException
+    ├── SceneTransitionException
+    ├── BackendException
+    ├── InvalidStateException
+    └── ComponentNotFoundException
 ```
 
 ### **Error Boundaries**
+
 ```csharp
 public class GameLoop
 {
@@ -1233,11 +1289,11 @@ public class GameLoop
 
 ## **11.2 Validation Points**
 
-1. **API Boundaries** � Validate all public method inputs
-2. **Resource Loading** � Validate file format and integrity
-3. **Scene Transitions** � Validate new scene before switching
-4. **Handle Access** � Validate handle is still valid
-5. **Backend Calls** � Validate parameters before passing to backend
+1. **API Boundaries** — Validate all public method inputs
+2. **Resource Loading** — Validate file format and integrity
+3. **Scene Transitions** — Validate new scene before switching
+4. **Handle Access** — Validate handle is still valid
+5. **Backend Calls** — Validate parameters before passing to backend
 
 ## **11.3 Error Recovery**
 
@@ -1265,21 +1321,21 @@ public TextureHandle LoadTextureOrDefault(string path, TextureHandle fallback)
 
 MicroEngine follows a **single-threaded core** model:
 
-1. **Main thread** � All engine logic (update, render, ECS)
-2. **Worker threads** � Async operations (loading, heavy computation)
-3. **Backend threads** � Platform-specific (audio, rendering)
+1. **Main thread** — All engine logic (update, render, ECS)
+2. **Worker threads** — Async operations (loading, heavy computation)
+3. **Backend threads** — Platform-specific (audio, rendering)
 
 ## **12.2 Thread Safety Boundaries**
 
-| Component | Thread Safety |
-|-----------|---------------|
-| Game Loop | Main thread only |
-| ECS (World, Entities, Components) | Main thread only |
-| Scene Manager | Main thread only |
-| Resource Loading | Can be async (worker thread) |
-| Event Bus | Thread-safe |
-| Logger | Thread-safe |
-| Message Queue | Thread-safe |
+| Component                         | Thread Safety                |
+| --------------------------------- | ---------------------------- |
+| Game Loop                         | Main thread only             |
+| ECS (World, Entities, Components) | Main thread only             |
+| Scene Manager                     | Main thread only             |
+| Resource Loading                  | Can be async (worker thread) |
+| Event Bus                         | Thread-safe                  |
+| Logger                            | Thread-safe                  |
+| Message Queue                     | Thread-safe                  |
 
 ## **12.3 Async Resource Loading**
 
@@ -1288,9 +1344,9 @@ public async Task<TextureHandle> LoadTextureAsync(string path)
 {
     // Load on worker thread
     var data = await Task.Run(() => LoadFileData(path));
-    
+
     // Create texture on main thread (backend call)
-    return await MainThread.InvokeAsync(() => 
+    return await MainThread.InvokeAsync(() =>
         CreateTextureFromData(data)
     );
 }
@@ -1330,11 +1386,13 @@ void ProcessMessages()
 MicroEngine primarily uses **managed memory** (C# GC):
 
 **Benefits:**
+
 - ? Automatic cleanup
 - ? Memory safety
 - ? Simplicity
 
 **Trade-offs:**
+
 - ? GC pauses (mitigated by object pooling)
 - ? Less control (acceptable for target performance)
 
@@ -1346,12 +1404,12 @@ For frequently allocated objects:
 public class ObjectPool<T> where T : new()
 {
     private Stack<T> _pool = new();
-    
+
     public T Rent()
     {
         return _pool.Count > 0 ? _pool.Pop() : new T();
     }
-    
+
     public void Return(T obj)
     {
         _pool.Push(obj);
@@ -1370,7 +1428,7 @@ _projectilePool.Return(projectile);
 public class ResourceManager : IDisposable
 {
     private Dictionary<TextureHandle, TextureData> _textures = new();
-    
+
     public void Dispose()
     {
         foreach (var texture in _textures.Values)
@@ -1389,7 +1447,7 @@ public class MemoryBudget
 {
     public long TextureMemoryLimit { get; set; } = 256 * 1024 * 1024; // 256 MB
     public long AudioMemoryLimit { get; set; } = 64 * 1024 * 1024;    // 64 MB
-    
+
     public void ValidateAllocation(long size)
     {
         if (CurrentUsage + size > Limit)
@@ -1406,34 +1464,35 @@ MicroEngine's architecture is designed with the following characteristics:
 
 ## **14.1 Core Strengths**
 
-? **Modular** � Each subsystem is independent and replaceable  
-? **Deterministic** � Fixed timestep ensures consistent behavior  
-? **Backend-Agnostic** � Core never depends on specific libraries  
-? **Dimension-Agnostic** � Ready for 3D without redesign  
-? **Educational** � Clear, readable, well-documented code  
-? **Extensible** � Well-defined extension points  
-? **Testable** � Isolated components, dependency injection  
+- ✓ **Modular** — Each subsystem is independent and replaceable
+- ✓ **Deterministic** — Fixed timestep ensures consistent behavior
+- ✓ **Backend-Agnostic** — Core never depends on specific libraries
+- ✓ **Dimension-Agnostic** — Ready for 3D without redesign
+- ✓ **Educational** — Clear, readable, well-documented code
+- ✓ **Extensible** — Well-defined extension points
+- ✓ **Testable** — Isolated components, dependency injection
 
 ## **14.2 Design Philosophy**
 
-1. **Simplicity over Complexity** � Prefer clear code over clever code
-2. **Explicit over Implicit** � Make behavior obvious
-3. **Safety over Performance** � Correct first, fast second
-4. **Future-Proof** � Design for extensibility
+1. **Simplicity over Complexity** — Prefer clear code over clever code
+2. **Explicit over Implicit** — Make behavior obvious
+3. **Safety over Performance** — Correct first, fast second
+4. **Future-Proof** — Design for extensibility
 
 ## **14.3 Architectural Guarantees**
 
 The architecture ensures:
 
-- ? Engine can be tested without backends
-- ? Backends can be swapped without changing engine code
-- ? Games can be built without touching engine internals
-- ? Adding 3D support requires no architectural changes
-- ? All subsystems can be understood independently
+- ✓ Engine can be tested without backends
+- ✓ Backends can be swapped without changing engine code
+- ✓ Games can be built without touching engine internals
+- ✓ Adding 3D support requires no architectural changes
+- ✓ All subsystems can be understood independently
 
 ## **14.4 When to Use MicroEngine**
 
 **Good fit for:**
+
 - 2D games (today)
 - Learning game engine architecture
 - Prototyping and experimentation
@@ -1441,6 +1500,7 @@ The architecture ensures:
 - Future 3D games (when support is added)
 
 **Not ideal for:**
+
 - AAA 3D games (not the target)
 - Projects requiring maximum performance
 - Existing games built on other engines
@@ -1449,9 +1509,9 @@ The architecture ensures:
 
 ## Related Documents
 
-- ?? [Core Requirements](CORE_REQUIREMENTS.md) � Mandatory technical rules
-- ?? [Engine Design Document](ENGINE_DESIGN_DOCUMENT.md) � Vision and goals
-- ?? [Roadmap](ROADMAP.md) � Development timeline
+- 📘 [Core Requirements](CORE_REQUIREMENTS.md) — Mandatory technical rules
+- 📘 [Engine Design Document](ENGINE_DESIGN_DOCUMENT.md) — Vision and goals
+- 📘 [Roadmap](ROADMAP.md) — Development timeline
 
 ---
 
