@@ -8,8 +8,8 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
-        // Create logger
-        var logger = new ConsoleLogger(LogLevel.Info);
+        // Create logger with Debug level to see ECS systems
+        var logger = new ConsoleLogger(LogLevel.Debug);
         logger.Info("Game", "MicroEngine Demo Starting...");
 
         // Create engine configuration
@@ -28,15 +28,15 @@ internal static class Program
             var engine = new GameEngine(config, logger);
             engine.Initialize();
 
-            // Create and register demo scene
-            var demoScene = new DemoScene(logger);
+            // Create and load ECS demo scene
+            var demoScene = new EcsDemoScene(logger);
             engine.SceneManager.RegisterScene(demoScene);
-            engine.SceneManager.LoadScene("DemoScene");
+            engine.SceneManager.LoadScene("ECS Demo");
 
-            logger.Info("Game", "Engine running... (will run for 3 seconds)");
+            logger.Info("Game", "Engine running... (will run for 5 seconds)");
 
-            // Set up auto-exit after 3 seconds
-            var exitTimer = new System.Timers.Timer(3000);
+            // Set up auto-exit after 5 seconds
+            var exitTimer = new System.Timers.Timer(5000);
             exitTimer.Elapsed += (sender, e) =>
             {
                 engine.ShouldExit = true;

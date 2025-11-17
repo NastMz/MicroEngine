@@ -1,3 +1,5 @@
+using MicroEngine.Core.ECS;
+
 namespace MicroEngine.Core.Scenes;
 
 /// <summary>
@@ -15,6 +17,11 @@ public abstract class Scene : IScene
     public bool IsActive => _isActive;
 
     /// <summary>
+    /// Gets the ECS world for this scene.
+    /// </summary>
+    protected World World { get; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="Scene"/> class.
     /// </summary>
     /// <param name="name">The scene name.</param>
@@ -22,6 +29,7 @@ public abstract class Scene : IScene
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         _isActive = false;
+        World = new World();
     }
 
     /// <inheritdoc/>
@@ -33,6 +41,7 @@ public abstract class Scene : IScene
     /// <inheritdoc/>
     public virtual void OnFixedUpdate(float fixedDeltaTime)
     {
+        World.Update(fixedDeltaTime);
     }
 
     /// <inheritdoc/>

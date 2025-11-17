@@ -7,7 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0-alpha] - 2025-01-XX
+## [0.2.0-alpha] - 2025-11-17
+
+### Added
+
+-   **ECS Module**: Complete Entity-Component-System implementation with World, Entity, Component,
+    and System abstractions
+-   **Entity Management**: Lightweight entity struct with ID and version for use-after-free
+    detection
+-   **Component Storage**: Efficient ComponentArray with cache-friendly data layout
+-   **System Processing**: ISystem interface for update logic with automatic lifecycle management
+-   **ECS Integration**: Scene base class now includes World instance with automatic system updates
+-   **ECS Testing**: 27 new unit tests for Entity, World, components, and system processing
+-   **ECS Demo**: Interactive demo with 9 entities, 4 component types, and 2 systems
+    (MovementSystem, LifetimeSystem)
+
+### Technical Details
+
+-   World manages entities, components, and systems centrally
+-   Deferred entity destruction (end-of-frame)
+-   Query system for entities by component type
+-   Optional entity naming for debugging
+-   Public component fields (ECS standard pattern)
+
+## [0.1.0-alpha] - 2025-11-17
 
 ### Added
 
@@ -34,5 +57,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Dimension-agnostic design
 -   Backend-independent implementation
 
-[Unreleased]: https://github.com/NastMz/MicroEngine/compare/v0.1.0-alpha...HEAD
+[Unreleased]: https://github.com/NastMz/MicroEngine/compare/v0.2.0-alpha...HEAD
+[0.2.0-alpha]: https://github.com/NastMz/MicroEngine/compare/v0.1.0-alpha...v0.2.0-alpha
 [0.1.0-alpha]: https://github.com/NastMz/MicroEngine/releases/tag/v0.1.0-alpha
