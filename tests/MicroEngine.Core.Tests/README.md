@@ -6,12 +6,12 @@ Unit tests for the engine core.
 
 Tests organized by module:
 
-- `/Core` - Engine loop and scene tests
-- `/ECS` - ECS system tests
-- `/Math` - Math primitives tests
-- `/Physics` - Physics tests
+-   `/Core` - Engine loop and scene tests
+-   `/ECS` - ECS system tests
+-   `/Math` - Math primitives tests
+-   `/Physics` - Physics tests
 
 ## Framework
 
-- xUnit
-- FluentAssertions (when added)
+-   xUnit
+-   FluentAssertions (when added)
