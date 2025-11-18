@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.7-alpha] - 2025-11-18
+
+### Added
+
+-   **Collision Layer System**: Complete physics layer filtering for selective collision detection
+-   **CollisionLayer Struct**: Immutable layer representation with ID (0-31) and name
+-   **CollisionMatrix Class**: 32x32 bit matrix for configurable layer-to-layer collision rules
+-   **PhysicsLayers**: Pre-defined layers (Default, Player, Enemy, Environment, Projectile,
+    Trigger, UI, Particle)
+-   **Layer Masking**: Bit-based layer masks for efficient collision filtering
+-   **Collision Layer Tests**: 19 comprehensive unit tests (6 CollisionLayer + 7 CollisionMatrix
+    -   6 PhysicsLayers)
+
+### Changed
+
+-   **Code Standards Compliance**: All constants refactored to ALL_UPPER naming convention per
+    .editorconfig requirements (MINIMUM_LAYER_ID, MAXIMUM_LAYER_ID, TOTAL_LAYER_COUNT, etc.)
+
+### Technical Details
+
+-   **CollisionLayer**:
+    -   Readonly struct with Id (0-31) and Name properties
+    -   `GetMask()` returns bit mask (1 << Id) for layer
+    -   Equality comparison based on layer ID
+    -   Validation: throws ArgumentException for invalid IDs
+-   **CollisionMatrix**:
+    -   32x32 uint array for collision rules (1024 bits total)
+    -   `SetCollision(layer1, layer2, bool)` configures layer pairs
+    -   `CanCollide(layer1, layer2)` queries collision permission
+    -   `CanCollide(mask1, mask2)` supports multi-layer masks
+    -   `IgnoreLayerCollision(id1, id2)` helper for disabling collisions
+    -   `EnableLayerCollision(id1, id2)` helper for enabling collisions
+    -   `Clear()` resets to default (all collisions enabled)
+    -   Symmetric collision rules (if A collides with B, B collides with A)
+-   **PhysicsLayers**:
+    -   8 pre-defined layers for common game scenarios
+    -   Layer 0: Default (general-purpose objects)
+    -   Layer 1: Player (player-controlled entities)
+    -   Layer 2: Enemy (AI-controlled enemies)
+    -   Layer 3: Environment (static world geometry)
+    -   Layer 4: Projectile (bullets, missiles)
+    -   Layer 5: Trigger (trigger zones, collectibles)
+    -   Layer 6: UI (UI elements with physics)
+    -   Layer 7: Particle (particle effects)
+-   **Integration**:
+    -   ColliderComponent already has `LayerMask` property (int)
+    -   Ready for physics system integration
+    -   Supports up to 32 simultaneous layers per entity
+-   **Test Coverage**: 19 tests covering construction, validation, equality, bit masking,
+    collision matrix operations, and pre-defined layers
+
+### Notes
+
+-   Collision layer system designed for flexible, performant collision filtering
+-   Bit-based implementation allows efficient multi-layer collision checks
+-   Symmetric collision rules ensure consistent behavior
+-   Pre-defined layers cover 90% of common game scenarios
+-   Custom layers (8-31) available for game-specific needs
+
 ## [0.4.6-alpha] - 2025-11-18
 
 ### Added
