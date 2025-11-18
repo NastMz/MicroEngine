@@ -69,4 +69,66 @@ public interface ISceneCache
     /// <param name="scene">The cached scene if found; otherwise, null.</param>
     /// <returns>True if the scene was found in cache; otherwise, false.</returns>
     bool TryGet<T>(string sceneKey, out T? scene) where T : class, IScene;
+
+    /// <summary>
+    /// Asynchronously preloads a scene into the cache in the background.
+    /// Useful for loading scenes while the user is in another scene.
+    /// </summary>
+    /// <typeparam name="T">The type of scene to preload.</typeparam>
+    /// <param name="sceneKey">Unique key identifying the scene.</param>
+    /// <param name="factory">Factory function to create the scene.</param>
+    /// <param name="cancellationToken">Token to cancel the preload operation.</param>
+    /// <returns>A task that completes when the scene is preloaded.</returns>
+    Task PreloadAsync<T>(string sceneKey, Func<T> factory, CancellationToken cancellationToken = default) where T : IScene;
+
+    /// <summary>
+    /// Asynchronously preloads multiple scenes into the cache in parallel.
+    /// </summary>
+    /// <param name="preloadRequests">Collection of scene keys and factories to preload.</param>
+    /// <param name="cancellationToken">Token to cancel all preload operations.</param>
+    /// <returns>A task that completes when all scenes are preloaded.</returns>
+    Task PreloadMultipleAsync(IEnumerable<(string sceneKey, Func<IScene> factory)> preloadRequests, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks if a scene is currently being preloaded in the background.
+    /// </summary>
+    /// <param name="sceneKey">Unique key identifying the scene.</param>
+    /// <returns>True if the scene is currently being preloaded; otherwise, false.</returns>
+    bool IsPreloading(string sceneKey);
+
+    /// <summary>
+    /// Event raised when a scene completes preloading.
+    /// </summary>
+    event EventHandler<ScenePreloadedEventArgs>? ScenePreloaded;
+}
+
+/// <summary>
+/// Event arguments for scene preload completion.
+/// </summary>
+public sealed class ScenePreloadedEventArgs : EventArgs
+{
+    /// <summary>
+    /// Gets the key of the scene that was preloaded.
+    /// </summary>
+    public string SceneKey { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the preload was successful.
+    /// </summary>
+    public bool Success { get; }
+
+    /// <summary>
+    /// Gets the exception that occurred during preloading, if any.
+    /// </summary>
+    public Exception? Exception { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ScenePreloadedEventArgs"/> class.
+    /// </summary>
+    public ScenePreloadedEventArgs(string sceneKey, bool success, Exception? exception = null)
+    {
+        SceneKey = sceneKey;
+        Success = success;
+        Exception = exception;
+    }
 }

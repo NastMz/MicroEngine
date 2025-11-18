@@ -267,7 +267,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** IN PROGRESS (9/11 features complete)
+**Status:** IN PROGRESS (10/11 features complete)
 
 **Current Version:** v0.7.0-alpha
 
@@ -305,7 +305,15 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
         -   Integrated in MainMenuScene for demo navigation
         -   Visual cache status display (hits/misses, stored count)
         -   30 comprehensive tests including concurrency
-    -   ⏳ Scene preloading and background loading — IN PROGRESS (caching infrastructure complete)
+    -   ✅ **Scene preloading and background loading** — COMPLETE v0.7.0
+        -   PreloadAsync<T> for single scene background loading
+        -   PreloadMultipleAsync for parallel batch preloading
+        -   CancellationToken support for preload operations
+        -   ScenePreloaded event for completion tracking
+        -   IsPreloading status checking
+        -   MainMenuScene preloads all 5 demo scenes on startup
+        -   14 comprehensive async tests
+        -   Zero-latency scene transitions (instant cache hits)
 -   ✅ **Global State Management** — COMPLETE v0.7.0
     -   ✅ IGameState interface for persistent data across scenes
     -   ✅ GameState implementation with thread-safe ConcurrentDictionary

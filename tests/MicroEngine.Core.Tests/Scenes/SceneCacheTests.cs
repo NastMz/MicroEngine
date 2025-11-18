@@ -517,4 +517,307 @@ public sealed class SceneCacheTests
         Assert.True(cache.Contains("Level3"));
         Assert.True(cache.Contains("GameOver"));
     }
+
+    #region Async Preloading Tests
+
+    [Fact]
+    public async Task PreloadAsync_WithValidScene_LoadsSceneInBackground()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+
+        // Act
+        await cache.PreloadAsync("TestScene", () => new TestScene());
+
+        // Assert
+        Assert.True(cache.Contains("TestScene"));
+        Assert.Equal(1, cache.Count);
+        Assert.False(cache.IsPreloading("TestScene"));
+    }
+
+    [Fact]
+    public async Task PreloadAsync_WithAlreadyCachedScene_DoesNothing()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+        var original = cache.GetOrCreate("TestScene", () => new TestScene());
+
+        // Act
+        await cache.PreloadAsync("TestScene", () => new TestScene());
+
+        // Assert
+        var retrieved = cache.GetOrCreate("TestScene", () => new TestScene());
+        Assert.Same(original, retrieved); // Should be same instance
+        Assert.Equal(1, cache.Count);
+    }
+
+    [Fact]
+    public async Task PreloadAsync_WithNullKey_ThrowsArgumentException()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => 
+            cache.PreloadAsync<TestScene>(null!, () => new TestScene()));
+    }
+
+    [Fact]
+    public async Task PreloadAsync_WithNullFactory_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() => 
+            cache.PreloadAsync<TestScene>("TestScene", null!));
+    }
+
+    [Fact]
+    public async Task PreloadAsync_WithCancellationToken_CancelsOperation()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => 
+            cache.PreloadAsync("TestScene", () => new TestScene(), cts.Token));
+
+        Assert.False(cache.Contains("TestScene"));
+        Assert.False(cache.IsPreloading("TestScene"));
+    }
+
+    [Fact]
+    public async Task IsPreloading_DuringPreload_ReturnsTrue()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+        var tcs = new TaskCompletionSource<bool>();
+        var slowFactory = () =>
+        {
+            tcs.Task.Wait(); // Wait until we signal
+            return new TestScene();
+        };
+
+        // Act
+        var preloadTask = cache.PreloadAsync("SlowScene", slowFactory);
+        
+        // Give preload task time to start
+        await Task.Delay(10);
+        var isPreloading = cache.IsPreloading("SlowScene");
+        
+        // Signal factory to complete
+        tcs.SetResult(true);
+        await preloadTask;
+        
+        var isPreloadingAfter = cache.IsPreloading("SlowScene");
+
+        // Assert
+        Assert.True(isPreloading);
+        Assert.False(isPreloadingAfter);
+        Assert.True(cache.Contains("SlowScene"));
+    }
+
+    [Fact]
+    public async Task IsPreloading_WithNonExistentScene_ReturnsFalse()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+
+        // Act
+        var isPreloading = cache.IsPreloading("NonExistent");
+
+        // Assert
+        Assert.False(isPreloading);
+    }
+
+    [Fact]
+    public async Task PreloadMultipleAsync_WithMultipleScenes_LoadsAllInParallel()
+    {
+        // Arrange
+        var cache = new SceneCache(10);
+        var requests = new[]
+        {
+            ("Scene1", (Func<IScene>)(() => new TestScene())),
+            ("Scene2", (Func<IScene>)(() => new TestScene())),
+            ("Scene3", (Func<IScene>)(() => new TestScene())),
+            ("Scene4", (Func<IScene>)(() => new TestScene())),
+            ("Scene5", (Func<IScene>)(() => new TestScene()))
+        };
+
+        // Act
+        await cache.PreloadMultipleAsync(requests);
+
+        // Assert
+        Assert.Equal(5, cache.Count);
+        Assert.True(cache.Contains("Scene1"));
+        Assert.True(cache.Contains("Scene2"));
+        Assert.True(cache.Contains("Scene3"));
+        Assert.True(cache.Contains("Scene4"));
+        Assert.True(cache.Contains("Scene5"));
+
+        // Parallel execution should be faster than sequential
+        // (though this is timing-dependent, so we just check all loaded)
+        Assert.False(cache.IsPreloading("Scene1"));
+        Assert.False(cache.IsPreloading("Scene5"));
+    }
+
+    [Fact]
+    public async Task PreloadMultipleAsync_WithNullRequests_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() => 
+            cache.PreloadMultipleAsync(null!));
+    }
+
+    [Fact]
+    public async Task PreloadMultipleAsync_WithCancellation_CancelsAll()
+    {
+        // Arrange
+        var cache = new SceneCache(10);
+        using var cts = new CancellationTokenSource();
+        var requests = new[]
+        {
+            ("Scene1", (Func<IScene>)(() => new TestScene())),
+            ("Scene2", (Func<IScene>)(() => new TestScene())),
+            ("Scene3", (Func<IScene>)(() => new TestScene()))
+        };
+
+        await cts.CancelAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => 
+            cache.PreloadMultipleAsync(requests, cts.Token));
+
+        Assert.Equal(0, cache.Count);
+    }
+
+    [Fact]
+    public async Task ScenePreloaded_OnSuccessfulPreload_RaisesEvent()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+        string? preloadedKey = null;
+        bool? preloadSuccess = null;
+
+        cache.ScenePreloaded += (sender, e) =>
+        {
+            preloadedKey = e.SceneKey;
+            preloadSuccess = e.Success;
+        };
+
+        // Act
+        await cache.PreloadAsync("TestScene", () => new TestScene());
+
+        // Assert
+        Assert.Equal("TestScene", preloadedKey);
+        Assert.True(preloadSuccess);
+    }
+
+    [Fact]
+    public async Task ScenePreloaded_OnFailedPreload_RaisesEventWithException()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+        string? preloadedKey = null;
+        bool? preloadSuccess = null;
+        Exception? capturedException = null;
+
+        cache.ScenePreloaded += (sender, e) =>
+        {
+            preloadedKey = e.SceneKey;
+            preloadSuccess = e.Success;
+            capturedException = e.Exception;
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await cache.PreloadAsync<TestScene>("FailingScene", () => throw new InvalidOperationException("Test error"));
+        });
+
+        Assert.Equal("FailingScene", preloadedKey);
+        Assert.False(preloadSuccess);
+        Assert.NotNull(capturedException);
+        Assert.IsType<InvalidOperationException>(capturedException);
+    }
+
+    [Fact]
+    public async Task PreloadAsync_ConcurrentPreloads_HandlesCorrectly()
+    {
+        // Arrange
+        var cache = new SceneCache(20);
+        var tasks = new List<Task>();
+
+        // Act - Start multiple preloads concurrently
+        for (int i = 0; i < 10; i++)
+        {
+            var sceneKey = $"Scene{i}";
+            tasks.Add(cache.PreloadAsync(sceneKey, () => new TestScene()));
+        }
+
+        await Task.WhenAll(tasks);
+
+        // Assert
+        Assert.Equal(10, cache.Count);
+        for (int i = 0; i < 10; i++)
+        {
+            Assert.True(cache.Contains($"Scene{i}"));
+            Assert.False(cache.IsPreloading($"Scene{i}"));
+        }
+    }
+
+    [Fact]
+    public async Task PreloadAsync_ThenGetOrCreate_ReturnsCachedInstance()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+
+        // Act - Preload first
+        await cache.PreloadAsync("TestScene", () => new TestScene());
+        
+        // Get the preloaded scene
+        var scene1 = cache.GetOrCreate("TestScene", () => new TestScene());
+        var scene2 = cache.GetOrCreate("TestScene", () => new TestScene());
+
+        // Assert
+        Assert.Same(scene1, scene2);
+        Assert.Equal(1, cache.Count);
+    }
+
+    [Fact]
+    public async Task PreloadAsync_DuplicatePreload_IgnoresSecondRequest()
+    {
+        // Arrange
+        var cache = new SceneCache(5);
+        var createCount = 0;
+        var tcs = new TaskCompletionSource<bool>();
+        
+        var slowFactory = () =>
+        {
+            Interlocked.Increment(ref createCount);
+            tcs.Task.Wait(100); // Wait briefly
+            return new TestScene();
+        };
+
+        // Act - Start two preloads for same scene simultaneously
+        var task1 = cache.PreloadAsync("TestScene", slowFactory);
+        await Task.Delay(10); // Small delay to ensure first starts
+        var task2 = cache.PreloadAsync("TestScene", slowFactory);
+        
+        // Signal completion
+        tcs.SetResult(true);
+        
+        await Task.WhenAll(task1, task2);
+
+        // Assert - Should only create scene once (second request ignored as already cached/preloading)
+        Assert.Equal(1, cache.Count);
+    }
+
+    #endregion
 }

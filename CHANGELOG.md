@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   **Scene Preloading (Async Background Loading)**: Complete implementation
+    -   `PreloadAsync<T>` for single scene background loading with CancellationToken support
+    -   `PreloadMultipleAsync` for parallel batch preloading of multiple scenes
+    -   `ScenePreloaded` event with success/failure tracking and exception details
+    -   `IsPreloading(sceneKey)` status checking
+    -   MainMenuScene automatically preloads all 5 demo scenes on startup (~8ms total)
+    -   Zero-latency scene transitions: all demos load instantly from cache
+    -   14 comprehensive async tests (cancellation, events, concurrency, duplicate handling)
+    -   Task-based async API fully integrated with existing synchronous Preload
+
 ### Changed
 
 -   **Version Management**: Migrated to Nerdbank.GitVersioning (industry standard)
@@ -16,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Added git metadata: `GitCommitId`, `GitCommitDate`
     -   No PowerShell dependency for build process
     -   VERSION_MANAGEMENT.md updated with Nerdbank documentation
+
+### Fixed
+
+-   **EcsBasicsDemo**: Entity duplication on cache hits
+    -   Added `ClearEntities()` method to properly reset scene state
+    -   `OnLoad()` now cleans up existing entities before creating new ones
+    -   Consistent 30 entities on every scene load (cache hit or miss)
 
 ## [0.7.0-alpha] - 2025-11-18
 

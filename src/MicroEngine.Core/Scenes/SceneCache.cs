@@ -9,8 +9,12 @@ namespace MicroEngine.Core.Scenes;
 public sealed class SceneCache : ISceneCache
 {
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
+    private readonly ConcurrentDictionary<string, Task> _preloadTasks = new();
     private readonly int _maxCacheSize;
     private readonly object _lock = new();
+
+    /// <inheritdoc />
+    public event EventHandler<ScenePreloadedEventArgs>? ScenePreloaded;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SceneCache"/> class.
@@ -220,6 +224,93 @@ public sealed class SceneCache : ISceneCache
         {
             entry.Scene.OnUnload();
         }
+    }
+
+    /// <inheritdoc />
+    public async Task PreloadAsync<T>(string sceneKey, Func<T> factory, CancellationToken cancellationToken = default) where T : IScene
+    {
+        if (string.IsNullOrWhiteSpace(sceneKey))
+        {
+            throw new ArgumentException("Scene key cannot be null or whitespace.", nameof(sceneKey));
+        }
+
+        if (factory == null)
+        {
+            throw new ArgumentNullException(nameof(factory));
+        }
+
+        // Check if already cached or preloading
+        if (Contains(sceneKey) || IsPreloading(sceneKey))
+        {
+            return;
+        }
+
+        var preloadTask = Task.Run(() =>
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Preload using synchronous Preload method
+                Preload(sceneKey, factory);
+
+                // Raise success event
+                OnScenePreloaded(sceneKey, true, null);
+            }
+            catch (OperationCanceledException)
+            {
+                // Remove from preload tracking if cancelled
+                _preloadTasks.TryRemove(sceneKey, out _);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Raise failure event
+                OnScenePreloaded(sceneKey, false, ex);
+                throw;
+            }
+            finally
+            {
+                // Remove from preload tracking when complete
+                _preloadTasks.TryRemove(sceneKey, out _);
+            }
+        }, cancellationToken);
+
+        // Track preload task
+        _preloadTasks[sceneKey] = preloadTask;
+
+        await preloadTask.ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task PreloadMultipleAsync(IEnumerable<(string sceneKey, Func<IScene> factory)> preloadRequests, CancellationToken cancellationToken = default)
+    {
+        if (preloadRequests == null)
+        {
+            throw new ArgumentNullException(nameof(preloadRequests));
+        }
+
+        var tasks = preloadRequests
+            .Select(request => PreloadAsync(request.sceneKey, request.factory, cancellationToken))
+            .ToList();
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public bool IsPreloading(string sceneKey)
+    {
+        if (string.IsNullOrWhiteSpace(sceneKey))
+        {
+            return false;
+        }
+
+        return _preloadTasks.TryGetValue(sceneKey, out var task) && !task.IsCompleted;
+    }
+
+    private void OnScenePreloaded(string sceneKey, bool success, Exception? exception)
+    {
+        ScenePreloaded?.Invoke(this, new ScenePreloadedEventArgs(sceneKey, success, exception));
     }
 
     /// <summary>

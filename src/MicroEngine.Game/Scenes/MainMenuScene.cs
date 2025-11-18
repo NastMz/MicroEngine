@@ -31,6 +31,9 @@ public sealed class MainMenuScene : Scene
 
     private string _currentTransition = "Fade";
     private string _lastCacheInfo = "Cache: No activity yet";
+    private int _preloadedScenes;
+    private bool _isPreloading;
+    private CancellationTokenSource? _preloadCancellation;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainMenuScene"/> class.
@@ -60,6 +63,78 @@ public sealed class MainMenuScene : Scene
         _renderBackend = context.RenderBackend;
         _logger = context.Logger;
         _logger.Info("MainMenu", "Main menu loaded");
+
+        // Subscribe to preload events
+        _sceneCache.ScenePreloaded += OnScenePreloaded;
+
+        // Start background preloading of demo scenes
+        _ = PreloadDemoScenesAsync();
+    }
+
+    /// <inheritdoc/>
+    public override void OnUnload()
+    {
+        // Unsubscribe from events
+        _sceneCache.ScenePreloaded -= OnScenePreloaded;
+
+        // Cancel any ongoing preloads
+        _preloadCancellation?.Cancel();
+        _preloadCancellation?.Dispose();
+        _preloadCancellation = null;
+
+        _logger.Info("MainMenu", "Main menu unloaded");
+        
+        base.OnUnload();
+    }
+
+    private async Task PreloadDemoScenesAsync()
+    {
+        _preloadCancellation = new CancellationTokenSource();
+        _isPreloading = true;
+        _preloadedScenes = 0;
+
+        try
+        {
+            _logger.Info("MainMenu", "Starting background preload of demo scenes...");
+
+            var preloadRequests = new[]
+            {
+                ("EcsBasicsDemo", (Func<IScene>)(() => new EcsBasicsDemo())),
+                ("GraphicsDemo", (Func<IScene>)(() => new GraphicsDemo())),
+                ("PhysicsDemo", (Func<IScene>)(() => new PhysicsDemo())),
+                ("InputDemo", (Func<IScene>)(() => new InputDemo())),
+                ("TilemapDemo", (Func<IScene>)(() => new TilemapDemo()))
+            };
+
+            await _sceneCache.PreloadMultipleAsync(preloadRequests, _preloadCancellation.Token);
+
+            _logger.Info("MainMenu", $"Background preload completed: {_preloadedScenes} scenes ready");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.Info("MainMenu", "Scene preloading cancelled");
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("MainMenu", $"Error during scene preloading: {ex.Message}");
+        }
+        finally
+        {
+            _isPreloading = false;
+        }
+    }
+
+    private void OnScenePreloaded(object? sender, ScenePreloadedEventArgs e)
+    {
+        if (e.Success)
+        {
+            _preloadedScenes++;
+            _logger.Debug("MainMenu", $"Preloaded: {e.SceneKey} ({_preloadedScenes}/5)");
+        }
+        else
+        {
+            _logger.Warn("MainMenu", $"Failed to preload {e.SceneKey}: {e.Exception?.Message}");
+        }
     }
 
     /// <inheritdoc/>
@@ -143,7 +218,9 @@ public sealed class MainMenuScene : Scene
         _renderBackend.DrawText(_lastCacheInfo, new Vector2(cacheX, cacheY), 11, new Color(255, 200, 100, 255));
         
         cacheY += 18;
-        _renderBackend.DrawText($"Stored: {_sceneCache.Count}/{_sceneCache.MaxCacheSize}", new Vector2(cacheX, cacheY), 11, new Color(150, 150, 150, 255));
+        var statusColor = _isPreloading ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
+        var statusText = _isPreloading ? $"Preloading... {_preloadedScenes}/5" : $"Stored: {_sceneCache.Count}/{_sceneCache.MaxCacheSize}";
+        _renderBackend.DrawText(statusText, new Vector2(cacheX, cacheY), 11, statusColor);
         
         if (_sceneCache.Count > 0)
         {
@@ -195,12 +272,6 @@ public sealed class MainMenuScene : Scene
         transitionY += 25;
         var zoomColor = _currentTransition == "Zoom" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
         _renderBackend.DrawText($"[F9] Zoom {(_currentTransition == "Zoom" ? "✓" : "")}", new Vector2(MENU_X + 20, transitionY), 14, zoomColor);
-    }
-
-    /// <inheritdoc/>
-    public override void OnUnload()
-    {
-        _logger.Info("MainMenu", "Main menu unloaded");
     }
 
     private void LoadDemo<T>(SceneParameters? parameters = null) where T : Scene, new()
