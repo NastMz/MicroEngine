@@ -1,52 +1,55 @@
 ﻿using MicroEngine.Backend.Raylib;
 using MicroEngine.Core.Logging;
+using MicroEngine.Core.Scenes;
 using MicroEngine.Game.Scenes;
+using MicroEngine.Game.Scenes.Demos;
 
 namespace MicroEngine.Game;
 
 internal static class Program
 {
+    public static string? RequestedScene { get; set; }
+
     private static void Main(string[] args)
     {
-        // Create logger with Info level
         var logger = new ConsoleLogger(LogLevel.Info);
-        logger.Info("Game", "MicroEngine Component Helpers Demo Starting...");
+        logger.Info("Game", "MicroEngine Demo Showcase Starting...");
 
-        // Create Raylib backends
         var renderBackend = new RaylibRenderBackend();
         var inputBackend = new RaylibInputBackend();
 
-        // Initialize backends
-        renderBackend.Initialize(800, 600, "MicroEngine - Component Helpers Demo");
+        renderBackend.Initialize(800, 600, "MicroEngine - Demo Showcase");
         renderBackend.SetTargetFPS(60);
 
         try
         {
-            // Create component helpers demo scene
-            var demo = new ComponentHelpersDemoScene(inputBackend, renderBackend, logger);
-            demo.OnLoad();
+            Scene currentScene = new MainMenuScene(inputBackend, renderBackend, logger);
+            currentScene.OnLoad();
 
-            logger.Info("Game", "Component Helpers Demo running... Press ESC to exit");
+            logger.Info("Game", "Main menu running... Press 1-5 to select demo, ESC to exit");
 
-            // Main loop
             while (!renderBackend.ShouldClose)
             {
                 var deltaTime = renderBackend.GetDeltaTime();
 
-                // Update input
                 inputBackend.Update();
+                currentScene.OnUpdate(deltaTime);
 
-                // Update scene
-                demo.OnUpdate(deltaTime);
+                if (RequestedScene != null)
+                {
+                    currentScene.OnUnload();
+                    currentScene = CreateScene(RequestedScene, inputBackend, renderBackend, logger);
+                    currentScene.OnLoad();
+                    RequestedScene = null;
+                }
 
-                // Render frame
                 renderBackend.BeginFrame();
-                demo.OnRender();
+                currentScene.OnRender();
                 renderBackend.EndFrame();
             }
 
-            demo.OnUnload();
-            logger.Info("Game", "Component Helpers Demo shut down successfully");
+            currentScene.OnUnload();
+            logger.Info("Game", "Demo showcase shut down successfully");
         }
         catch (Exception ex)
         {
@@ -59,7 +62,22 @@ internal static class Program
 
         logger.Info("Game", "Goodbye!");
     }
+
+    private static Scene CreateScene(string sceneName, object inputBackend, object renderBackend, ILogger logger)
+    {
+        return sceneName switch
+        {
+            "MainMenu" => new MainMenuScene((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
+            "EcsBasics" => new EcsBasicsDemo((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
+            "Graphics" => new GraphicsDemo((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
+            "Physics" => new PhysicsDemo((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
+            "Input" => new InputDemo((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
+            "Tilemap" => new TilemapDemo((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
+            _ => new MainMenuScene((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger)
+        };
+    }
 }
+
 
 
 

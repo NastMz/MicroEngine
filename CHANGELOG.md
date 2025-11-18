@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.9-alpha] - 2025-11-18
+
+### Changed
+
+-   **Demo Refactoring**: Complete restructure of demo scenes for better organization
+-   **Unified Entry Point**: Single `MainMenuScene` for navigating all demos
+-   **Scene Navigation**: Menu-based demo selection (press 1-5) with ESC to return
+-   **Modern Patterns**: EcsBasicsDemo showcases EntityBuilder and EntityFactory
+-   **Clean Architecture**: Organized demos in `Scenes/Demos/` directory
+
+### Removed
+
+-   **Obsolete Demos**: Deleted 8 legacy demo scenes with outdated code patterns
+    -   `CameraDemoScene`, `ComponentHelpersDemoScene`, `DemoScene`, `EcsDemoScene`
+    -   `InputMapDemoScene`, `ResourceDemoScene`, `SpriteBatchDemoScene`, `VisualDemoScene`
+-   **Manual Entity Creation**: Replaced 42 manual `AddComponent` calls with builders
+
+### Added
+
+-   **MainMenuScene**: Central navigation hub with clean menu UI
+-   **EcsBasicsDemo**: Live demonstration of EntityBuilder and EntityFactory patterns
+-   **Demo Placeholders**: Graphics, Physics, Input, and Tilemap demos (awaiting assets)
+-   **Scene Switching**: Basic scene management via `Program.RequestedScene` property
+
+### Technical Details
+
+-   **Navigation**: Keyboard-based (1-5 for demos, ESC for menu/exit)
+-   **EcsBasicsDemo**: Shows 15 entities created with Phase 3 patterns
+    -   1 Player (EntityBuilder), 4 Enemies (EntityFactory), 6 Collectibles (EntityFactory)
+    -   4 Obstacles (EntityBuilder)
+-   **Placeholder Demos**: Ready for asset integration (sprites, tilesets)
+-   **Code Reduction**: ~800 LOC legacy code replaced with ~600 LOC modern code
+-   **Maintainability**: Centralized demo structure simplifies future updates
+
+### Developer Experience
+
+-   **Single Command**: `dotnet run` launches unified demo showcase
+-   **Easy Navigation**: No need to modify `Program.cs` to switch demos
+-   **Extensibility**: Adding new demos only requires scene creation + menu entry
+
 ## [0.4.8-alpha] - 2025-11-18
 
 ### Added

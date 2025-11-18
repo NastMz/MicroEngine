@@ -270,6 +270,12 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 ### Features
 
+-   **SceneManager system** (proper scene lifecycle management)
+    -   Scene stack for back navigation (replace temporary `Program.RequestedScene`)
+    -   Scene transitions with effects (fade in/out, slide)
+    -   Scene caching and lazy loading
+    -   Scene parameter passing (data transfer between scenes)
+    -   Scene preloading and background loading
 -   ECS optimizations (query caching, archetype optimization)
 -   Memory profiling tools (allocation tracking)
 -   Stable public API surface (breaking changes frozen)
@@ -316,7 +322,29 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 ### Features
 
+-   **Asset management system**
+    -   Asset browser and discovery system
+    -   Asset validation and metadata generation
+    -   Asset organization conventions and folder structure
+    -   Asset dependency tracking
+    -   Recommended asset packs integration (Kenney.nl, OpenGameArt)
+    -   Asset licensing guide and compliance tools
 -   Asset importer CLI (automated asset conversion)
+-   **Scene template system**
+    -   Base scene classes with common functionality (`BaseDemoScene`, `BaseGameScene`)
+    -   Scene templates for common patterns (menu, gameplay, loading)
+    -   Scene bootstrapping helpers and factory methods
+-   **Scene serialization/deserialization**
+    -   Scene file format (JSON/YAML)
+    -   Scene loading and saving system
+    -   Entity prefab system for reusable templates
+    -   Scene validation and error reporting
+-   **In-game developer console**
+    -   Console overlay with command parsing
+    -   Runtime variable inspection and modification
+    -   Command history and autocomplete
+    -   Custom command registration API
+    -   Debug command library (spawn entities, toggle systems, etc.)
 -   Project templates (boilerplate generators)
 -   Visual debugging tools (entity visualizer, physics debug renderer)
 -   Input recorder/playback for testing
@@ -342,11 +370,18 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 ### Deliverables
 
--   **v1.2.0** — "Better Tools"
+-   **v1.1.0** — "Scene Management & Templates"
+-   **v1.2.0** — "Asset Management & Developer Tools"
+-   **v1.3.0** — "Scene Serialization & Content Pipeline"
 -   **v1.5.0** — "Full Ecosystem Maturity"
 
 ### Acceptance Criteria
 
+-   ✅ SceneManager handles scene transitions smoothly (replaces temporary solution)
+-   ✅ Scene templates reduce boilerplate by 50%+
+-   ✅ Asset management system validates and organizes assets automatically
+-   ✅ Developer console allows runtime debugging without recompilation
+-   ✅ Scene serialization supports save/load without data loss
 -   ✅ Project templates generate working projects
 -   ✅ Asset pipeline supports common formats
 -   ✅ Scripting layer is sandboxed and safe
@@ -425,10 +460,13 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.1.0   | Engine skeleton                      | TBD         | ✅ Complete    |
 | v0.2.0   | Playable core (ECS, scenes)          | TBD         | ✅ Complete    |
 | v0.3.0   | Raylib backend + rendered demo       | TBD         | ✅ Complete    |
-| v0.4.0   | Developer comfort update             | TBD         | 🚧 In Progress |
+| v0.4.9   | Developer comfort update             | Nov 2025    | ✅ Complete    |
 | v0.5.x   | Stabilization & polish               | TBD         | Planned        |
 | v1.0.0   | Stable public API                    | TBD         | Planned        |
-| v1.1–1.5 | Ecosystem expansion                  | TBD         | Future         |
+| v1.1.0   | Scene management & templates         | TBD         | Planned        |
+| v1.2.0   | Asset management & developer tools   | TBD         | Planned        |
+| v1.3.0   | Scene serialization & pipeline       | TBD         | Planned        |
+| v1.5.0   | Full ecosystem maturity              | TBD         | Future         |
 | v2.0.0   | 3D architecture foundation           | TBD         | Future         |
 | v3.x+    | Editors, advanced tools, new domains | TBD         | Exploratory    |
 
@@ -561,6 +599,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                   |
 | ------- | ----------------- | -------------- | ------------------------------------------------------------------------- |
+| 1.5     | November 18, 2025 | Kevin Martínez | Added missing features: SceneManager (Phase 4), Asset Management, Scene Templates, Developer Console, Scene Serialization (Phase 5) |
 | 1.4     | November 18, 2025 | Kevin Martínez | Phase 3 COMPLETE: Tilemap Support (v0.4.8), all 9/9 features implemented  |
 | 1.3     | November 18, 2025 | Kevin Martínez | Phase 3 status: 8/9 features (88%), Entity Inspector deferred to Phase 5+ |
 | 1.2     | November 18, 2025 | Kevin Martínez | Added Collision Layer System (v0.4.7), updated Phase 3 progress           |
