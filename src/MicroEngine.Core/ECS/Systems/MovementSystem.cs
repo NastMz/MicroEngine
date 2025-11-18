@@ -34,15 +34,9 @@ public sealed class MovementSystem : ISystem
             return;
         }
 
-        var transform = world.GetComponent<TransformComponent>(entity);
+        ref var transform = ref world.GetComponent<TransformComponent>(entity);
         
-        world.AddComponent(entity, new TransformComponent
-        {
-            Position = new Vector2(transform.Position.X + offset.X, transform.Position.Y + offset.Y),
-            Rotation = transform.Rotation,
-            Scale = transform.Scale,
-            Origin = transform.Origin
-        });
+        transform.Position = new Vector2(transform.Position.X + offset.X, transform.Position.Y + offset.Y);
     }
 
     /// <summary>
@@ -58,15 +52,9 @@ public sealed class MovementSystem : ISystem
             return;
         }
 
-        var transform = world.GetComponent<TransformComponent>(entity);
+        ref var transform = ref world.GetComponent<TransformComponent>(entity);
         
-        world.AddComponent(entity, new TransformComponent
-        {
-            Position = transform.Position,
-            Rotation = transform.Rotation + angle,
-            Scale = transform.Scale,
-            Origin = transform.Origin
-        });
+        transform.Rotation = transform.Rotation + angle;
     }
 
     /// <summary>
@@ -82,15 +70,9 @@ public sealed class MovementSystem : ISystem
             return;
         }
 
-        var transform = world.GetComponent<TransformComponent>(entity);
+        ref var transform = ref world.GetComponent<TransformComponent>(entity);
         
-        world.AddComponent(entity, new TransformComponent
-        {
-            Position = transform.Position,
-            Rotation = transform.Rotation,
-            Scale = new Vector2(transform.Scale.X * factor.X, transform.Scale.Y * factor.Y),
-            Origin = transform.Origin
-        });
+        transform.Scale = new Vector2(transform.Scale.X * factor.X, transform.Scale.Y * factor.Y);
     }
 
     /// <summary>

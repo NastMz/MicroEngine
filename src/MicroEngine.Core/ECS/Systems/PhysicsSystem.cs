@@ -50,8 +50,8 @@ public sealed class PhysicsSystem : ISystem
                 continue;
             }
 
-            var rigidBody = world.GetComponent<RigidBodyComponent>(entity);
-            var transform = world.GetComponent<TransformComponent>(entity);
+            ref var rigidBody = ref world.GetComponent<RigidBodyComponent>(entity);
+            ref var transform = ref world.GetComponent<TransformComponent>(entity);
 
             // Skip kinematic bodies
             if (rigidBody.IsKinematic)
@@ -64,8 +64,8 @@ public sealed class PhysicsSystem : ISystem
             if (rigidBody.UseGravity && rigidBody.GravityScale > 0)
             {
                 acceleration = new Vector2(
-                    acceleration.X + Gravity.X * rigidBody.GravityScale * deltaTime,
-                    acceleration.Y + Gravity.Y * rigidBody.GravityScale * deltaTime
+                    acceleration.X + Gravity.X * rigidBody.GravityScale,
+                    acceleration.Y + Gravity.Y * rigidBody.GravityScale
                 );
             }
 
@@ -89,25 +89,11 @@ public sealed class PhysicsSystem : ISystem
                 transform.Position.Y + velocity.Y * deltaTime
             );
 
-            // Update components
-            world.AddComponent(entity, new RigidBodyComponent
-            {
-                Velocity = velocity,
-                Acceleration = Vector2.Zero, // Reset acceleration after applying
-                Mass = rigidBody.Mass,
-                Drag = rigidBody.Drag,
-                GravityScale = rigidBody.GravityScale,
-                IsKinematic = rigidBody.IsKinematic,
-                UseGravity = rigidBody.UseGravity
-            });
-
-            world.AddComponent(entity, new TransformComponent
-            {
-                Position = newPosition,
-                Rotation = transform.Rotation,
-                Scale = transform.Scale,
-                Origin = transform.Origin
-            });
+            // Update components by reference
+            rigidBody.Velocity = velocity;
+            rigidBody.Acceleration = Vector2.Zero; // Reset acceleration after applying
+            
+            transform.Position = newPosition;
         }
     }
 
@@ -125,7 +111,7 @@ public sealed class PhysicsSystem : ISystem
             return;
         }
 
-        var rigidBody = world.GetComponent<RigidBodyComponent>(entity);
+        ref var rigidBody = ref world.GetComponent<RigidBodyComponent>(entity);
         
         if (rigidBody.IsKinematic || rigidBody.Mass <= 0f)
         {
@@ -134,18 +120,9 @@ public sealed class PhysicsSystem : ISystem
 
         var acceleration = new Vector2(force.X / rigidBody.Mass, force.Y / rigidBody.Mass);
         
-        world.AddComponent(entity, new RigidBodyComponent
-        {
-            Velocity = rigidBody.Velocity,
-            Acceleration = new Vector2(
-                rigidBody.Acceleration.X + acceleration.X,
-                rigidBody.Acceleration.Y + acceleration.Y),
-            Mass = rigidBody.Mass,
-            Drag = rigidBody.Drag,
-            GravityScale = rigidBody.GravityScale,
-            IsKinematic = rigidBody.IsKinematic,
-            UseGravity = rigidBody.UseGravity
-        });
+        rigidBody.Acceleration = new Vector2(
+            rigidBody.Acceleration.X + acceleration.X,
+            rigidBody.Acceleration.Y + acceleration.Y);
     }
 
     /// <summary>
@@ -161,25 +138,16 @@ public sealed class PhysicsSystem : ISystem
             return;
         }
 
-        var rigidBody = world.GetComponent<RigidBodyComponent>(entity);
+        ref var rigidBody = ref world.GetComponent<RigidBodyComponent>(entity);
         
         if (rigidBody.IsKinematic)
         {
             return;
         }
 
-        world.AddComponent(entity, new RigidBodyComponent
-        {
-            Velocity = new Vector2(
-                rigidBody.Velocity.X + impulse.X,
-                rigidBody.Velocity.Y + impulse.Y),
-            Acceleration = rigidBody.Acceleration,
-            Mass = rigidBody.Mass,
-            Drag = rigidBody.Drag,
-            GravityScale = rigidBody.GravityScale,
-            IsKinematic = rigidBody.IsKinematic,
-            UseGravity = rigidBody.UseGravity
-        });
+        rigidBody.Velocity = new Vector2(
+            rigidBody.Velocity.X + impulse.X,
+            rigidBody.Velocity.Y + impulse.Y);
     }
 
     /// <summary>
@@ -194,17 +162,9 @@ public sealed class PhysicsSystem : ISystem
             return;
         }
 
-        var rigidBody = world.GetComponent<RigidBodyComponent>(entity);
+        ref var rigidBody = ref world.GetComponent<RigidBodyComponent>(entity);
 
-        world.AddComponent(entity, new RigidBodyComponent
-        {
-            Velocity = Vector2.Zero,
-            Acceleration = Vector2.Zero,
-            Mass = rigidBody.Mass,
-            Drag = rigidBody.Drag,
-            GravityScale = rigidBody.GravityScale,
-            IsKinematic = rigidBody.IsKinematic,
-            UseGravity = rigidBody.UseGravity
-        });
+        rigidBody.Velocity = Vector2.Zero;
+        rigidBody.Acceleration = Vector2.Zero;
     }
 }

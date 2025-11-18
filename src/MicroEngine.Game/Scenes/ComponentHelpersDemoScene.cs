@@ -20,7 +20,7 @@ namespace MicroEngine.Game.Scenes;
 public sealed class ComponentHelpersDemoScene : Scene
 {
     private const string SCENE_NAME = "ComponentHelpersDemo";
-    private const float JUMP_FORCE = -450f;
+    private const float JUMP_FORCE = -800f;
     private const float MOVE_SPEED = 200f;
 
     private readonly IInputBackend _inputBackend;
@@ -42,6 +42,7 @@ public sealed class ComponentHelpersDemoScene : Scene
     // Game state
     private int _score;
     private bool _showCollisionEffect;
+    private bool _isGrounded;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ComponentHelpersDemoScene"/> class.
@@ -93,7 +94,7 @@ public sealed class ComponentHelpersDemoScene : Scene
             Velocity = Vector2.Zero,
             Acceleration = Vector2.Zero,
             Mass = 1f,
-            Drag = 0f,
+            Drag = 5f,
             GravityScale = 1f,
             IsKinematic = false,
             UseGravity = true
@@ -225,27 +226,15 @@ public sealed class ComponentHelpersDemoScene : Scene
 
     private void HandleInput()
     {
-        // Jump: apply impulse using PhysicsSystem
-        if (_inputBackend.IsKeyPressed(Key.Space))
+        // Jump: apply impulse using PhysicsSystem (only if grounded)
+        if (_inputBackend.IsKeyPressed(Key.Space) && _isGrounded)
         {
-            var playerTransform = _world.GetComponent<TransformComponent>(_player);
-            
-            // Check if on ground using CollisionSystem
-            var groundTransform = _world.GetComponent<TransformComponent>(_ground);
-            var playerCollider = _world.GetComponent<ColliderComponent>(_player);
-            var groundCollider = _world.GetComponent<ColliderComponent>(_ground);
-            
-            bool onGround = _collisionSystem.CheckOverlap(
-                playerCollider, playerTransform.Position,
-                groundCollider, groundTransform.Position);
-
-            if (onGround)
-            {
-                _physicsSystem.ApplyImpulse(_world, _player, new Vector2(0f, JUMP_FORCE));
-            }
+            _physicsSystem.ApplyImpulse(_world, _player, new Vector2(0f, JUMP_FORCE));
         }
 
-        // Move left/right: apply force using PhysicsSystem
+        // Move left/right: set horizontal velocity directly
+        ref var rigidBody = ref _world.GetComponent<RigidBodyComponent>(_player);
+        
         float horizontalInput = 0f;
         if (_inputBackend.IsKeyDown(Key.Left) || _inputBackend.IsKeyDown(Key.A))
         {
@@ -256,51 +245,50 @@ public sealed class ComponentHelpersDemoScene : Scene
             horizontalInput = 1f;
         }
 
-        if (horizontalInput != 0f)
-        {
-            _physicsSystem.ApplyForce(_world, _player, new Vector2(horizontalInput * MOVE_SPEED, 0f));
-        }
+        // Set horizontal velocity directly (preserve vertical velocity)
+        rigidBody.Velocity = new Vector2(horizontalInput * MOVE_SPEED, rigidBody.Velocity.Y);
     }
 
     private void CheckCollisions()
     {
-        var playerTransform = _world.GetComponent<TransformComponent>(_player);
+        // Get CURRENT positions after physics update
+        ref var playerTransform = ref _world.GetComponent<TransformComponent>(_player);
         var playerCollider = _world.GetComponent<ColliderComponent>(_player);
 
         // Check ground collision
         var groundTransform = _world.GetComponent<TransformComponent>(_ground);
         var groundCollider = _world.GetComponent<ColliderComponent>(_ground);
         
-        if (_collisionSystem.CheckOverlap(playerCollider, playerTransform.Position, 
-                                           groundCollider, groundTransform.Position))
+        // Get bounds for debugging
+        var playerBounds = _collisionSystem.GetBounds(playerCollider, playerTransform.Position);
+        var groundBounds = _collisionSystem.GetBounds(groundCollider, groundTransform.Position);
+        
+        // Check if player bottom is at or below ground top (with some tolerance)
+        float playerBottom = playerBounds.Y + playerBounds.Height;
+        float groundTop = groundBounds.Y;
+        
+        // Horizontal overlap check
+        bool horizontalOverlap = playerBounds.X < groundBounds.X + groundBounds.Width &&
+                                 playerBounds.X + playerBounds.Width > groundBounds.X;
+        
+        // Vertical collision check - player is on or penetrating ground
+        bool verticalCollision = playerBottom >= groundTop && playerTransform.Position.Y < groundTransform.Position.Y + 50;
+        
+        bool touchingGround = horizontalOverlap && verticalCollision;
+        _isGrounded = touchingGround;
+        
+        if (touchingGround)
         {
-            // Stop vertical velocity on ground contact
-            var rigidBody = _world.GetComponent<RigidBodyComponent>(_player);
-            if (rigidBody.Velocity.Y > 0)
-            {
-                _world.AddComponent(_player, new RigidBodyComponent
-                {
-                    Velocity = new Vector2(rigidBody.Velocity.X, 0f),
-                    Acceleration = rigidBody.Acceleration,
-                    Mass = rigidBody.Mass,
-                    Drag = rigidBody.Drag,
-                    GravityScale = rigidBody.GravityScale,
-                    IsKinematic = rigidBody.IsKinematic,
-                    UseGravity = rigidBody.UseGravity
-                });
-
-                // Position correction
-                var bounds = _collisionSystem.GetBounds(playerCollider, playerTransform.Position);
-                var groundBounds = _collisionSystem.GetBounds(groundCollider, groundTransform.Position);
-                
-                _world.AddComponent(_player, new TransformComponent
-                {
-                    Position = new Vector2(playerTransform.Position.X, groundBounds.Y - bounds.Height / 2),
-                    Rotation = playerTransform.Rotation,
-                    Scale = playerTransform.Scale,
-                    Origin = playerTransform.Origin
-                });
-            }
+            ref var rigidBody = ref _world.GetComponent<RigidBodyComponent>(_player);
+            
+            // Stop vertical movement
+            rigidBody.Velocity = new Vector2(rigidBody.Velocity.X, 0f);
+            rigidBody.Acceleration = new Vector2(rigidBody.Acceleration.X, 0f);
+            
+            // Position player on top of ground
+            playerTransform.Position = new Vector2(
+                playerTransform.Position.X, 
+                groundTop - playerCollider.Size.Y / 2);
         }
 
         // Check obstacle collisions
@@ -327,6 +315,8 @@ public sealed class ComponentHelpersDemoScene : Scene
             {
                 _score++;
                 _world.RemoveComponent<ColliderComponent>(_collectible);
+                ref var collectSprite = ref _world.GetComponent<SpriteComponent>(_collectible);
+                collectSprite.Visible = false;
                 _logger.Info(SCENE_NAME, $"Collectible gathered! Score: {_score}");
             }
         }
@@ -337,32 +327,36 @@ public sealed class ComponentHelpersDemoScene : Scene
     {
         base.OnRender();
 
+        // Clear screen
+        _renderBackend.Clear(Color.Black);
+
         // Render ground
-        RenderEntity(_ground, new Vector2(800f, 50f));
+        RenderEntity(_ground);
 
         // Render obstacles
         foreach (var obstacle in _obstacles)
         {
-            RenderEntity(obstacle, new Vector2(50f, 70f));
+            RenderEntity(obstacle);
         }
 
-        // Render collectible
-        if (_world.HasComponent<SpriteComponent>(_collectible))
+        // Render collectible (only if it still has collider)
+        if (_world.HasComponent<ColliderComponent>(_collectible))
         {
-            RenderEntity(_collectible, new Vector2(32f, 32f));
+            RenderEntity(_collectible);
         }
 
         // Render player (with collision effect)
-        var playerSprite = _world.GetComponent<SpriteComponent>(_player);
-        var effectTint = _showCollisionEffect ? Color.Red : playerSprite.Tint;
+        ref var playerSprite = ref _world.GetComponent<SpriteComponent>(_player);
+        var originalTint = playerSprite.Tint;
         
-        var tempSprite = playerSprite;
-        tempSprite.Tint = effectTint;
-        _world.AddComponent(_player, tempSprite);
+        if (_showCollisionEffect)
+        {
+            playerSprite.Tint = Color.Red;
+        }
         
-        RenderEntity(_player, new Vector2(32f, 32f));
+        RenderEntity(_player);
         
-        _world.AddComponent(_player, playerSprite); // Restore
+        playerSprite.Tint = originalTint; // Restore
 
         // Render UI
         _renderBackend.DrawText($"Score: {_score}", new Vector2(10f, 10f), 20, Color.White);
@@ -373,16 +367,23 @@ public sealed class ComponentHelpersDemoScene : Scene
                                  new Vector2(10f, 110f), 14, new Color(200, 200, 200, 255));
     }
 
-    private void RenderEntity(Entity entity, Vector2 size)
+    private void RenderEntity(Entity entity)
     {
         var transform = _world.GetComponent<TransformComponent>(entity);
         var sprite = _world.GetComponent<SpriteComponent>(entity);
+        var collider = _world.GetComponent<ColliderComponent>(entity);
 
         if (!sprite.Visible)
         {
             return;
         }
 
+        // Use collider size for rendering
+        // For circles, Size.X is the radius, so we need diameter for rendering
+        var size = collider.Shape == ColliderShape.Circle 
+            ? new Vector2(collider.Size.X * 2, collider.Size.X * 2) 
+            : collider.Size;
+        
         _renderBackend.DrawRectangle(
             new Vector2(transform.Position.X - size.X / 2, transform.Position.Y - size.Y / 2),
             size,
