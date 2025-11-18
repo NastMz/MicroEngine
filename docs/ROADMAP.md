@@ -1,6 +1,6 @@
 # MicroEngine — Development Roadmap
 
-**Version:** 1.6  
+**Version:** 1.7  
 **Status:** Reference  
 **Author:** Kevin Martínez  
 **Last Updated:** November 2025
@@ -267,21 +267,22 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** IN PROGRESS (1/11 features complete)
+**Status:** IN PROGRESS (4/11 features complete)
 
-**Current Version:** v0.4.9-alpha
+**Current Version:** v0.6.0-alpha
 
 ### Features
 
--   ✅ **SceneManager system** (basic implementation complete - v0.4.9)
+-   ✅ **SceneManager system** — COMPLETE v0.6.0
     -   ✅ Scene stack for back navigation (Push/Pop/Replace)
     -   ✅ Proper scene lifecycle management (OnLoad/OnUnload)
     -   ✅ Deferred transition processing (prevents mid-update corruption)
--   ✅ **SceneManager system** (basic implementation complete - v0.4.9)
-    -   ✅ Scene stack for back navigation (Push/Pop/Replace)
-    -   ✅ Proper scene lifecycle management (OnLoad/OnUnload)
-    -   ✅ Deferred transition processing (prevents mid-update corruption)
-    -   ✅ Scene transitions with effects (fade in/out) — COMPLETE v0.5.0
+    -   ✅ Scene transitions with effects (fade in/out) — v0.5.0
+    -   ✅ **Dependency injection architecture** — v0.6.0
+        -   SceneContext service container (5 core services)
+        -   No circular dependencies (removed SceneManager from SceneContext)
+        -   Scene navigation methods (PushScene/PopScene/ReplaceScene)
+        -   Hollywood Principle pattern (SetSceneManager internal injection)
     -   ⏳ Additional transition effects (slide, wipe, zoom) — PLANNED v0.5.x
     -   ⏳ Scene caching and lazy loading — PLANNED
     -   ⏳ Scene parameter passing (data transfer between scenes) — PLANNED
@@ -484,6 +485,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.4.9  | Developer comfort update             | Nov 2025    | ✅ Complete |
 | v0.5.0  | Texture filtering & mipmaps          | Nov 2025    | ✅ Complete |
 | v0.5.1  | MSAA support                         | Nov 2025    | ✅ Complete |
+| v0.6.0  | Architecture refinement (DI)         | Nov 2025    | ✅ Complete |
 | v0.5.x  | Stabilization & polish               | TBD         | In Progress |
 | v1.0.0  | Stable public API                    | TBD         | Planned     |
 | v1.1.0  | Scene management & templates         | TBD         | Planned     |
@@ -622,6 +624,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                             |
 | ------- | ----------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 1.7     | November 18, 2025 | Kevin Martínez | Architecture refinement (v0.6.0): Eliminated circular dependency, SceneContext DI pattern, Scene navigation methods                 |
 | 1.6     | November 18, 2025 | Kevin Martínez | Phase 4 Graphics: MSAA support (v0.5.1), texture filtering & mipmaps (v0.5.0), ECS query caching, fade transitions                  |
 | 1.5     | November 18, 2025 | Kevin Martínez | Added missing features: SceneManager (Phase 4), Asset Management, Scene Templates, Developer Console, Scene Serialization (Phase 5) |
 | 1.4     | November 18, 2025 | Kevin Martínez | Phase 3 COMPLETE: Tilemap Support (v0.4.8), all 9/9 features implemented                                                            |
