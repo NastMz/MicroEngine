@@ -10,7 +10,7 @@ namespace MicroEngine.Core.Graphics;
 public class SpriteBatch : ISpriteBatch
 {
     private readonly List<SpriteBatchItem> _items;
-    private readonly IRenderBackend _renderBackend;
+    private readonly IRenderBackend2D _renderBackend;
     private bool _begun;
     private SpriteSortMode _sortMode;
 
@@ -25,7 +25,7 @@ public class SpriteBatch : ISpriteBatch
     /// </summary>
     /// <param name="renderBackend">Render backend for drawing.</param>
     /// <param name="initialCapacity">Initial capacity for sprite queue.</param>
-    public SpriteBatch(IRenderBackend renderBackend, int initialCapacity = 256)
+    public SpriteBatch(IRenderBackend2D renderBackend, int initialCapacity = 256)
     {
         _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
         _items = new List<SpriteBatchItem>(initialCapacity);

@@ -18,7 +18,7 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class EcsBasicsDemo : Scene
 {
     private readonly IInputBackend _inputBackend;
-    private readonly IRenderBackend _renderBackend;
+    private readonly IRenderBackend2D _renderBackend;
     private readonly ILogger _logger;
     private readonly MovementSystem _movementSystem;
 

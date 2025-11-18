@@ -3,10 +3,15 @@ using MicroEngine.Core.Math;
 namespace MicroEngine.Core.Graphics;
 
 /// <summary>
-/// Backend-agnostic rendering interface.
-/// Provides unified API for 2D and future 3D rendering.
+/// Backend-agnostic 2D rendering interface.
+/// Provides unified API for 2D rendering operations across different backends.
 /// </summary>
-public interface IRenderBackend
+/// <remarks>
+/// This interface focuses solely on 2D rendering capabilities.
+/// Future 3D support will be provided through IRenderBackend3D or a more abstract pipeline.
+/// The backend is responsible only for drawing; timing is managed by ITimeService.
+/// </remarks>
+public interface IRenderBackend2D
 {
     #region Window Management
 
@@ -140,25 +145,6 @@ public interface IRenderBackend
     /// Subsequent draw calls will use screen-space coordinates.
     /// </summary>
     void EndCamera2D();
-
-    #endregion
-
-    #region FPS and Debug
-
-    /// <summary>
-    /// Gets the current frames per second.
-    /// </summary>
-    int GetFPS();
-
-    /// <summary>
-    /// Gets the time delta between frames in seconds.
-    /// </summary>
-    float GetDeltaTime();
-
-    /// <summary>
-    /// Sets the target FPS for the rendering backend.
-    /// </summary>
-    void SetTargetFPS(int fps);
 
     #endregion
 

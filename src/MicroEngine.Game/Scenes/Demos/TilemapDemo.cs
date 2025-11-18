@@ -13,7 +13,7 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class TilemapDemo : Scene
 {
     private readonly IInputBackend _inputBackend;
-    private readonly IRenderBackend _renderBackend;
+    private readonly IRenderBackend2D _renderBackend;
     private readonly ILogger _logger;
 
     /// <summary>

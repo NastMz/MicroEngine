@@ -11,13 +11,15 @@ internal static class Program
 {
     private static SceneManager? _sceneManager;
     private static Core.Input.IInputBackend? _inputBackend;
-    private static Core.Graphics.IRenderBackend? _renderBackend;
+    private static Core.Graphics.IRenderBackend2D? _renderBackend;
+    private static Core.Time.ITimeService? _timeService;
     private static ILogger? _logger;
     private static ResourceCache<ITexture>? _textureCache;
 
     public static SceneManager SceneManager => _sceneManager ?? throw new InvalidOperationException("SceneManager not initialized");
     public static Core.Input.IInputBackend InputBackend => _inputBackend ?? throw new InvalidOperationException("InputBackend not initialized");
-    public static Core.Graphics.IRenderBackend RenderBackend => _renderBackend ?? throw new InvalidOperationException("RenderBackend not initialized");
+    public static Core.Graphics.IRenderBackend2D RenderBackend => _renderBackend ?? throw new InvalidOperationException("RenderBackend not initialized");
+    public static Core.Time.ITimeService TimeService => _timeService ?? throw new InvalidOperationException("TimeService not initialized");
     public static ILogger Logger => _logger ?? throw new InvalidOperationException("Logger not initialized");
     public static ResourceCache<ITexture> TextureCache => _textureCache ?? throw new InvalidOperationException("TextureCache not initialized");
 
@@ -28,6 +30,7 @@ internal static class Program
 
         _renderBackend = new RaylibRenderBackend();
         _inputBackend = new RaylibInputBackend();
+        _timeService = new Core.Time.TimeService(targetFPS: 60);
 
         // Configure MSAA before window initialization
         _renderBackend.AntiAliasing = Core.Graphics.AntiAliasingMode.MSAA4X;
@@ -37,7 +40,6 @@ internal static class Program
         _textureCache = new ResourceCache<ITexture>(textureLoader, _logger);
 
         _renderBackend.Initialize(800, 600, "MicroEngine - Demo Showcase v0.4.9");
-        _renderBackend.SetTargetFPS(60);
 
         try
         {
@@ -55,7 +57,8 @@ internal static class Program
 
             while (!_renderBackend.ShouldClose)
             {
-                var deltaTime = _renderBackend.GetDeltaTime();
+                _timeService.Update();
+                var deltaTime = _timeService.DeltaTime;
 
                 _inputBackend.Update();
                 _sceneManager.Update(deltaTime);

@@ -9,7 +9,7 @@ namespace MicroEngine.Core.Scenes;
 /// </summary>
 public sealed class FadeTransition : ISceneTransitionEffect
 {
-    private readonly IRenderBackend _renderBackend;
+    private readonly IRenderBackend2D _renderBackend;
     private readonly float _duration;
     private readonly Color _fadeColor;
 
@@ -29,7 +29,7 @@ public sealed class FadeTransition : ISceneTransitionEffect
     /// <param name="renderBackend">Render backend for drawing the fade overlay.</param>
     /// <param name="duration">Duration of the fade effect in seconds.</param>
     /// <param name="fadeColor">Color to fade to (default: black).</param>
-    public FadeTransition(IRenderBackend renderBackend, float duration = 0.3f, Color? fadeColor = null)
+    public FadeTransition(IRenderBackend2D renderBackend, float duration = 0.3f, Color? fadeColor = null)
     {
         _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
         _duration = duration > 0 ? duration : throw new ArgumentOutOfRangeException(nameof(duration), "Duration must be positive");

@@ -7,10 +7,11 @@ using Color = MicroEngine.Core.Graphics.Color;
 namespace MicroEngine.Backend.Raylib;
 
 /// <summary>
-/// Raylib implementation of the render backend.
+/// Raylib implementation of the 2D render backend.
 /// Provides 2D rendering capabilities using Raylib-cs.
+/// Timing is managed externally by ITimeService.
 /// </summary>
-public class RaylibRenderBackend : IRenderBackend
+public class RaylibRenderBackend : IRenderBackend2D
 {
     private bool _isInitialized;
     private AntiAliasingMode _antiAliasing = AntiAliasingMode.None;
@@ -232,28 +233,6 @@ public class RaylibRenderBackend : IRenderBackend
     public void EndCamera2D()
     {
         Raylib_cs.Raylib.EndMode2D();
-    }
-
-    #endregion
-
-    #region FPS and Debug
-
-    /// <inheritdoc/>
-    public int GetFPS()
-    {
-        return Raylib_cs.Raylib.GetFPS();
-    }
-
-    /// <inheritdoc/>
-    public float GetDeltaTime()
-    {
-        return Raylib_cs.Raylib.GetFrameTime();
-    }
-
-    /// <inheritdoc/>
-    public void SetTargetFPS(int fps)
-    {
-        Raylib_cs.Raylib.SetTargetFPS(fps);
     }
 
     #endregion

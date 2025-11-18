@@ -14,7 +14,7 @@ namespace MicroEngine.Game.Scenes;
 public sealed class MainMenuScene : Scene
 {
     private readonly IInputBackend _inputBackend;
-    private readonly IRenderBackend _renderBackend;
+    private readonly IRenderBackend2D _renderBackend;
     private readonly ILogger _logger;
 
     private const string ENGINE_VERSION = "v0.4.9-alpha";

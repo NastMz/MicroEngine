@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0-alpha] - 2025-11-18
+
+### Added
+
+-   **ITimeService Interface**: Platform-agnostic time management abstraction
+    -   `DeltaTime` property (time since last frame in seconds)
+    -   `CurrentFPS` property (actual frames per second)
+    -   `TargetFPS` property (desired frame rate)
+    -   `TotalTime` property (elapsed time since engine start)
+    -   `Update()` method (calculates delta time and manages frame rate)
+    -   `Reset()` method (resets timing state)
+-   **TimeService Implementation**: High-precision timing using .NET Stopwatch
+    -   Uses `Stopwatch` for microsecond-accurate frame timing
+    -   Frame rate limiting with configurable target FPS
+    -   Automatic FPS calculation (updates every second)
+    -   Delta time clamping (max 100ms to prevent spiral of death)
+    -   Thread-safe read operations
+-   **Program.TimeService**: Static property for global time access from scenes
+
+### Changed
+
+-   **IRenderBackend → IRenderBackend2D**: Renamed to clarify 2D-only scope
+    -   Updated all implementations (RaylibRenderBackend, MockRenderBackend)
+    -   Updated all usages across 17 files (scenes, utilities, tests)
+    -   Documentation now explicit about 2D rendering focus
+    -   Future 3D support will use separate IRenderBackend3D interface
+-   **Timing Moved Out of Render Backend**: Clean separation of concerns
+    -   Removed `GetFPS()`, `GetDeltaTime()`, `SetTargetFPS()` from IRenderBackend2D
+    -   RaylibRenderBackend no longer manages frame timing
+    -   Engine core controls time flow, not individual backends
+-   **Main Loop Refactored**: Uses TimeService instead of backend timing
+    -   `Program.cs` creates TimeService with target 60 FPS
+    -   `TimeService.Update()` called at loop start
+    -   Delta time from `TimeService.DeltaTime` instead of backend
+    -   Cleaner architecture: backend only draws, doesn't manage time
+
+### Removed
+
+-   **Timing Methods from IRenderBackend2D**:
+    -   `int GetFPS()` → Use `ITimeService.CurrentFPS`
+    -   `float GetDeltaTime()` → Use `ITimeService.DeltaTime`
+    -   `void SetTargetFPS(int fps)` → Use `ITimeService.TargetFPS` property
+-   **Backend FPS Management**: RaylibRenderBackend no longer calls `SetTargetFPS`
+
+### Technical Details
+
+-   **ITimeService.cs**: 73 lines, comprehensive documentation
+-   **TimeService.cs**: 127 lines, high-precision Stopwatch-based implementation
+-   **IRenderBackend2D**: Renamed from IRenderBackend, 22 methods (3 removed)
+-   **Architecture**: Time management decoupled from rendering
+-   **Performance**: Stopwatch provides microsecond-accurate timing
+-   **Frame Rate Limiting**: Smart sleep with high-precision timing
+-   **Delta Time Clamping**: Prevents huge time steps on lag spikes
+
+### Testing
+
+-   **794 tests passing**: All existing tests updated and passing
+-   **Manual testing**: Application runs correctly with TimeService
+-   **MSAA verified**: Still working (configured at startup)
+-   **Texture filtering verified**: F1-F4 controls working correctly
+-   **Scene transitions verified**: Smooth navigation between demos
+
+### Architecture Improvements
+
+-   **Cleaner Separation**: Backend focuses solely on rendering
+-   **Platform Independence**: Time management uses .NET Stopwatch, not backend-specific APIs
+-   **Testability**: TimeService can be mocked/stubbed easily
+-   **Scalability**: Future backends (Vulkan, DirectX) won't need timing code
+-   **Explicit Intent**: IRenderBackend2D name makes 2D scope clear
+-   **Future-Ready**: Room for IRenderBackend3D without naming confusion
+
+### Migration Notes
+
+For code using the old timing methods:
+
+```csharp
+// Old (v0.5.1 and earlier)
+var fps = renderBackend.GetFPS();
+var deltaTime = renderBackend.GetDeltaTime();
+renderBackend.SetTargetFPS(60);
+
+// New (v0.6.0+)
+var fps = timeService.CurrentFPS;
+var deltaTime = timeService.DeltaTime;
+timeService.TargetFPS = 60;
+```
+
+Access TimeService via `Program.TimeService` in scenes.
+
 ## [0.5.1-alpha] - 2025-11-18
 
 ### Added

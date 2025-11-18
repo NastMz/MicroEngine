@@ -6,7 +6,7 @@ namespace MicroEngine.Core.Tests.Scenes;
 
 public class FadeTransitionTests
 {
-    private class MockRenderBackend : IRenderBackend
+    private class MockRenderBackend : IRenderBackend2D
     {
         public int DrawRectangleCallCount { get; private set; }
         public Color LastDrawColor { get; private set; }
@@ -22,9 +22,6 @@ public class FadeTransitionTests
         public void BeginFrame() { }
         public void EndFrame() { }
         public void Clear(Color color) { }
-        public void SetTargetFPS(int fps) { }
-        public float GetDeltaTime() => 0.016f;
-        public int GetFPS() => 60;
 
         public void DrawRectangle(Vector2 position, Vector2 size, Color color)
         {
