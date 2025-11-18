@@ -10,40 +10,42 @@ internal static class Program
     {
         // Create logger with Info level
         var logger = new ConsoleLogger(LogLevel.Info);
-        logger.Info("Game", "MicroEngine Visual Demo Starting...");
+        logger.Info("Game", "MicroEngine Resource Demo Starting...");
 
         // Create Raylib backends
         var renderBackend = new RaylibRenderBackend();
         var inputBackend = new RaylibInputBackend();
+        var audioBackend = new RaylibAudioBackend();
 
-        // Initialize window
-        renderBackend.Initialize(1280, 720, "MicroEngine Visual Demo");
+        // Initialize backends
+        renderBackend.Initialize(1280, 720, "MicroEngine Resource Demo");
         renderBackend.SetTargetFPS(60);
+        audioBackend.Initialize();
 
         try
         {
-            // Create visual demo scene
-            var visualScene = new VisualDemoScene(logger, renderBackend, inputBackend);
-            visualScene.OnLoad();
+            // Create resource demo scene
+            var resourceDemo = new ResourceDemoScene(logger, renderBackend, inputBackend, audioBackend);
+            resourceDemo.OnLoad();
 
-            logger.Info("Game", "Visual Demo running... Press ESC to exit");
+            logger.Info("Game", "Resource Demo running... Press ESC to exit");
 
             // Main loop
             while (!renderBackend.ShouldClose)
             {
                 var deltaTime = renderBackend.GetDeltaTime();
 
-                // Update scene (ECS systems update here via World.Update in OnFixedUpdate)
-                visualScene.OnFixedUpdate(deltaTime);
+                // Update scene
+                resourceDemo.OnFixedUpdate(deltaTime);
 
                 // Render frame
                 renderBackend.BeginFrame();
-                visualScene.OnRender();
+                resourceDemo.OnRender();
                 renderBackend.EndFrame();
             }
 
-            visualScene.OnUnload();
-            logger.Info("Game", "Visual Demo shut down successfully");
+            resourceDemo.OnUnload();
+            logger.Info("Game", "Resource Demo shut down successfully");
         }
         catch (Exception ex)
         {
@@ -51,6 +53,7 @@ internal static class Program
         }
         finally
         {
+            audioBackend.Shutdown();
             renderBackend.Shutdown();
         }
 

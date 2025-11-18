@@ -107,7 +107,7 @@ public class RaylibRenderBackend : IRenderBackend
     public void DrawRectangleLines(Vector2 position, Vector2 size, Color color, float thickness = 1f)
     {
         Raylib_cs.Raylib.DrawRectangleLinesEx(
-            new Rectangle(position.X, position.Y, size.X, size.Y),
+            new Raylib_cs.Rectangle(position.X, position.Y, size.X, size.Y),
             thickness,
             ToRaylibColor(color)
         );
@@ -137,9 +137,66 @@ public class RaylibRenderBackend : IRenderBackend
     }
 
     /// <inheritdoc/>
+    public void DrawTexture(Core.Resources.ITexture texture, Vector2 position, Color tint)
+    {
+        if (texture is not Resources.RaylibTexture raylibTexture)
+        {
+            throw new ArgumentException("Texture must be a RaylibTexture", nameof(texture));
+        }
+
+        Raylib_cs.Raylib.DrawTextureV(
+            raylibTexture.NativeTexture,
+            new System.Numerics.Vector2(position.X, position.Y),
+            ToRaylibColor(tint)
+        );
+    }
+
+    /// <inheritdoc/>
+    public void DrawTexturePro(
+        Core.Resources.ITexture texture,
+        Core.Math.Rectangle sourceRect,
+        Core.Math.Rectangle destRect,
+        Vector2 origin,
+        float rotation,
+        Color tint)
+    {
+        if (texture is not Resources.RaylibTexture raylibTexture)
+        {
+            throw new ArgumentException("Texture must be a RaylibTexture", nameof(texture));
+        }
+
+        Raylib_cs.Raylib.DrawTexturePro(
+            raylibTexture.NativeTexture,
+            new Raylib_cs.Rectangle(sourceRect.X, sourceRect.Y, sourceRect.Width, sourceRect.Height),
+            new Raylib_cs.Rectangle(destRect.X, destRect.Y, destRect.Width, destRect.Height),
+            new System.Numerics.Vector2(origin.X, origin.Y),
+            rotation,
+            ToRaylibColor(tint)
+        );
+    }
+
+    /// <inheritdoc/>
     public void DrawText(string text, Vector2 position, int fontSize, Color color)
     {
         Raylib_cs.Raylib.DrawText(text, (int)position.X, (int)position.Y, fontSize, ToRaylibColor(color));
+    }
+
+    /// <inheritdoc/>
+    public void DrawTextEx(Core.Resources.IFont font, string text, Vector2 position, float fontSize, float spacing, Color color)
+    {
+        if (font is not Resources.RaylibFont raylibFont)
+        {
+            throw new ArgumentException("Font must be a RaylibFont", nameof(font));
+        }
+
+        Raylib_cs.Raylib.DrawTextEx(
+            raylibFont.NativeFont,
+            text,
+            new System.Numerics.Vector2(position.X, position.Y),
+            fontSize,
+            spacing,
+            ToRaylibColor(color)
+        );
     }
 
     #endregion

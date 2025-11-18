@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-alpha] - 2025-11-17
+
+### Added
+
+-   **Resource System**: Generic resource management with reference counting (`ResourceCache<T>`)
+-   **Resource Interfaces**: `IResource`, `ITexture`, `IFont`, `IAudioClip` for type-safe resource handling
+-   **Resource Loaders**: `IResourceLoader<T>` interface for backend-specific loading
+-   **Raylib Resource Loaders**: Complete implementations for textures (PNG/JPG/BMP/TGA/GIF), fonts (TTF/OTF),
+    and audio (WAV/OGG/MP3/FLAC)
+-   **Sprite Rendering**: `DrawTexture` and `DrawTexturePro` methods in `IRenderBackend` for texture/sprite
+    rendering with rotation, scaling, and tinting
+-   **Custom Font Rendering**: `DrawTextEx` method for rendering text with custom fonts
+-   **Audio Backend**: `IAudioBackend` interface for sound effects and streaming music playback
+-   **Raylib Audio Backend**: Complete implementation with volume control, pause/resume, and streaming support
+-   **Math Rectangle**: New `Rectangle` struct with collision detection (`Contains`, `Intersects`)
+
+### Technical Details
+
+-   `ResourceCache<T>`: Reference-counted cache with automatic unloading when ref count reaches zero
+-   Resource path normalization for cross-platform compatibility
+-   Memory tracking: `SizeInBytes` property for all resources
+-   Audio streaming: Separate code paths for sound effects (loaded) vs music (streamed)
+-   Texture formats: Support for common image formats with RGBA32 internal format
+-   Font loading: TrueType/OpenType fonts with customizable size and spacing
+-   Resource disposal: Proper cleanup with `IDisposable` pattern
+-   Error handling: File not found and invalid data exceptions with clear messages
+
 ## [0.3.0-alpha] - 2025-11-17
 
 ### Added
