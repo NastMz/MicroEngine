@@ -1,5 +1,6 @@
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Scenes;
+using MicroEngine.Core.State;
 using MicroEngine.Core.Time;
 using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Input;
@@ -67,13 +68,17 @@ public class SceneManagerTests
         // Tests don't actually load textures, so this is safe
         var mockTextureLoader = new Mock<IResourceLoader<ITexture>>();
         var textureCache = new ResourceCache<ITexture>(mockTextureLoader.Object, logger);
+        
+        // Create real GameState for tests
+        var gameState = new GameState();
 
         return new SceneContext(
             mockRenderBackend.Object,
             mockInputBackend.Object,
             mockTimeService.Object,
             logger,
-            textureCache
+            textureCache,
+            gameState
         );
     }
 

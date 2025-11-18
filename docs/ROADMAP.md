@@ -1,6 +1,6 @@
 # MicroEngine — Development Roadmap
 
-**Version:** 1.9  
+**Version:** 2.0  
 **Status:** Reference  
 **Author:** Kevin Martínez  
 **Last Updated:** November 2025
@@ -267,9 +267,9 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** IN PROGRESS (6/11 features complete)
+**Status:** IN PROGRESS (7/11 features complete)
 
-**Current Version:** v0.6.0-alpha
+**Current Version:** v0.7.0-alpha
 
 ### Features
 
@@ -292,12 +292,27 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
         -   Backward compatible with existing parameter-less code
         -   Demo: InputDemo receives parameters from MainMenu
     -   ✅ **Dependency injection architecture** — v0.6.0
-        -   SceneContext service container (5 core services)
+        -   SceneContext service container (6 core services)
         -   No circular dependencies (removed SceneManager from SceneContext)
         -   Scene navigation methods (PushScene/PopScene/ReplaceScene)
         -   Hollywood Principle pattern (SetSceneManager internal injection)
     -   ⏳ Scene caching and lazy loading — PLANNED
     -   ⏳ Scene preloading and background loading — PLANNED
+-   ✅ **Global State Management** — COMPLETE v0.7.0
+    -   ✅ IGameState interface for persistent data across scenes
+    -   ✅ GameState implementation with thread-safe ConcurrentDictionary
+    -   ✅ Type-safe API: `Get<T>`, `TryGet<T>`, `Set<T>`, Contains, Remove, Clear, GetKeys
+    -   ✅ Integrated into SceneContext as optional service
+    -   ✅ Use cases: player progress, settings, high scores, session data
+    -   ✅ 21 comprehensive tests
+-   ✅ **State Machine Framework** — COMPLETE v0.7.0
+    -   ✅ Generic `StateMachine<TState, TTrigger>` for finite state machines
+    -   ✅ Guarded transitions with PermitIf
+    -   ✅ Entry and exit actions for state lifecycle management
+    -   ✅ Fluent configuration API
+    -   ✅ Fire, FireStrict, CanFire, Reset operations
+    -   ✅ Use cases: AI behaviors, UI flows, game states, player controllers
+    -   ✅ 23 comprehensive tests
 -   ✅ **Graphics rendering improvements** — COMPLETE v0.5.0
     -   ✅ **Texture filtering** (Point, Bilinear, Trilinear, Anisotropic16X)
     -   ✅ Configurable texture filter modes via ITexture.Filter property
@@ -310,15 +325,15 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 -   ✅ **ECS optimizations** — COMPLETE v0.5.0
     -   ✅ Query caching (CachedQuery class with automatic invalidation)
     -   ⏳ Archetype optimization — PLANNED v0.5.x
--   Memory profiling tools (allocation tracking)
--   Stable public API surface (breaking changes frozen)
--   Comprehensive documentation of all public APIs
--   Improved physics accuracy (continuous collision detection)
--   Determinism audit across all modules
--   Savegame system (versioned, backward-compatible)
--   Structured error codes & exception hierarchy
--   Telemetry infrastructure (OpenTelemetry-compatible)
--   Performance benchmarking suite
+-   ⏳ Memory profiling tools (allocation tracking) — PLANNED
+-   ⏳ Stable public API surface (breaking changes frozen) — PLANNED v1.0
+-   ⏳ Comprehensive documentation of all public APIs — PLANNED v1.0
+-   ⏳ Improved physics accuracy (continuous collision detection) — PLANNED
+-   ⏳ Determinism audit across all modules — PLANNED
+-   ⏳ Savegame system (versioned, backward-compatible) — PLANNED
+-   ⏳ Structured error codes & exception hierarchy — PLANNED
+-   ⏳ Telemetry infrastructure (OpenTelemetry-compatible) — PLANNED
+-   ⏳ Performance benchmarking suite — PLANNED
 
 ### Testing Requirements
 
@@ -497,6 +512,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.5.0  | Texture filtering & mipmaps                 | Nov 2025    | ✅ Complete |
 | v0.5.1  | MSAA support                                | Nov 2025    | ✅ Complete |
 | v0.6.0  | Architecture refinement + Scene transitions | Nov 2025    | ✅ Complete |
+| v0.7.0  | Global State + State Machine Framework      | Nov 2025    | ✅ Complete |
 | v0.5.x  | Stabilization & polish                      | TBD         | In Progress |
 | v1.0.0  | Stable public API                           | TBD         | Planned     |
 | v1.1.0  | Scene management & templates                | TBD         | Planned     |
@@ -635,6 +651,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.0     | November 18, 2025 | Kevin Martínez | Phase 4 Global State + StateMachine: IGameState/GameState for persistent data, StateMachine framework, 1010 tests passing (v0.7.0)             |
 | 1.9     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Parameters: Type-safe parameter passing, SceneParameters builder, 916 tests passing (v0.6.0)                                     |
 | 1.8     | November 18, 2025 | Kevin Martínez | Phase 4 Transitions: Additional scene transition effects (Slide, Wipe, Zoom), SetTransition() runtime changes, transition selector UI (v0.6.0) |
 | 1.7     | November 18, 2025 | Kevin Martínez | Architecture refinement (v0.6.0): Eliminated circular dependency, SceneContext DI pattern, Scene navigation methods                            |

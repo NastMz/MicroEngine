@@ -283,6 +283,8 @@ The goal is to produce **clear, modular, maintainable, scalable, secure, and obs
 -   Always prioritize security in every aspect of the code.
 -   After completing the code, review if is needed to update the version, changelog or roadmap files.
     -   The roadmap must be updated in the sections: version, phase, Summary of Milestones and Revision History.
+    -   The changelog must include a new entry with the version, date, author, and a summary of changes.
+    -   The version must be updated in the project file (`version.json`) according to semantic versioning principles.
 
 ---
 

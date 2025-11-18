@@ -3,6 +3,7 @@ using MicroEngine.Backend.Raylib.Resources;
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Resources;
 using MicroEngine.Core.Scenes;
+using MicroEngine.Core.State;
 using MicroEngine.Game.Scenes;
 
 namespace MicroEngine.Game;
@@ -45,13 +46,17 @@ internal static class Program
             // Create SceneManager first (it will receive context after creation)
             _sceneManager = new SceneManager(fadeTransition);
             
+            // Create global game state for persistent data
+            var gameState = new GameState();
+            
             // Create scene context with all engine services (no SceneManager to avoid circular dependency)
             var sceneContext = new SceneContext(
                 _renderBackend,
                 _inputBackend,
                 _timeService,
                 _logger,
-                _textureCache
+                _textureCache,
+                gameState
             );
 
             // Initialize SceneManager with context

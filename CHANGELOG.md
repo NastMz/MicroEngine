@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0-alpha] - 2025-11-18
+
+### Added
+
+-   **Global State Management**: IGameState and GameState for persistent data across scenes
+    -   Thread-safe implementation using ConcurrentDictionary
+    -   Type-safe API: `Get<T>`, `TryGet<T>`, `Set<T>`, `Contains`, `Remove`, `Clear`, `GetKeys`
+    -   Integrated into SceneContext as 6th core service
+    -   Use cases: player progress, settings, high scores, session data
+    -   21 comprehensive unit tests
+-   **State Machine Framework**: Generic `StateMachine<TState, TTrigger>` for finite state machines
+    -   Fluent configuration API via `Configure(state)` method
+    -   Guarded transitions with `PermitIf(trigger, targetState, guard)`
+    -   Entry and exit actions for state lifecycle management
+    -   Operations: `Fire`, `FireStrict`, `CanFire`, `Reset`
+    -   Use cases: AI behaviors, UI flows, game states, player controllers
+    -   23 comprehensive unit tests
+
+### Changed
+
+-   **SceneContext**: Breaking change - constructor now requires 6 parameters (was 5)
+    -   Added `IGameState GameState` property and constructor parameter
+    -   All creation sites updated (Program.cs, SceneManagerTests.cs)
+
+### Infrastructure
+
+-   **Total Tests**: 1010 passing (was 916 in v0.6.0)
+    -   GameState: 21 tests
+    -   StateMachine: 23 tests
+    -   Previous features: 966 tests
+
 ## [0.6.0-alpha] - 2025-11-18
 
 ### Added

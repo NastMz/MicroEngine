@@ -2,6 +2,7 @@ using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Resources;
+using MicroEngine.Core.State;
 using MicroEngine.Core.Time;
 
 namespace MicroEngine.Core.Scenes;
@@ -43,6 +44,11 @@ public sealed class SceneContext
     public ResourceCache<ITexture> TextureCache { get; }
 
     /// <summary>
+    /// Gets the global game state for persistent data across scenes.
+    /// </summary>
+    public IGameState GameState { get; }
+
+    /// <summary>
     /// Initializes a new instance of the SceneContext with all required services.
     /// </summary>
     /// <param name="renderBackend">The 2D rendering backend.</param>
@@ -50,18 +56,21 @@ public sealed class SceneContext
     /// <param name="timeService">The time service.</param>
     /// <param name="logger">The logger.</param>
     /// <param name="textureCache">The texture resource cache.</param>
+    /// <param name="gameState">The global game state.</param>
     /// <exception cref="ArgumentNullException">Thrown if any parameter is null.</exception>
     public SceneContext(
         IRenderBackend2D renderBackend,
         IInputBackend inputBackend,
         ITimeService timeService,
         ILogger logger,
-        ResourceCache<ITexture> textureCache)
+        ResourceCache<ITexture> textureCache,
+        IGameState gameState)
     {
         RenderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
         InputBackend = inputBackend ?? throw new ArgumentNullException(nameof(inputBackend));
         TimeService = timeService ?? throw new ArgumentNullException(nameof(timeService));
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         TextureCache = textureCache ?? throw new ArgumentNullException(nameof(textureCache));
+        GameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
     }
 }
