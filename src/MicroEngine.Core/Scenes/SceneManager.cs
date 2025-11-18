@@ -12,8 +12,11 @@ public sealed class SceneManager
 
     private readonly Stack<Scene> _sceneStack = new();
     private readonly ILogger _logger;
+    private readonly ISceneTransitionEffect? _transitionEffect;
+
     private Scene? _pendingScene;
     private SceneTransition _pendingTransition;
+    private TransitionState _transitionState;
 
     /// <summary>
     /// Gets the currently active scene.
@@ -26,12 +29,20 @@ public sealed class SceneManager
     public int SceneCount => _sceneStack.Count;
 
     /// <summary>
+    /// Gets a value indicating whether a transition is currently in progress.
+    /// </summary>
+    public bool IsTransitioning => _transitionState != TransitionState.None;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="SceneManager"/> class.
     /// </summary>
     /// <param name="logger">Logger for scene transitions.</param>
-    public SceneManager(ILogger logger)
+    /// <param name="transitionEffect">Optional transition effect (e.g., fade). If null, no transitions are used.</param>
+    public SceneManager(ILogger logger, ISceneTransitionEffect? transitionEffect = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _transitionEffect = transitionEffect;
+        _transitionState = TransitionState.None;
     }
 
     /// <summary>
@@ -94,11 +105,59 @@ public sealed class SceneManager
     /// </summary>
     private void ProcessPendingTransitions()
     {
+        // Handle transition states
+        if (_transitionState == TransitionState.FadingOut && _transitionEffect != null)
+        {
+            if (_transitionEffect.IsComplete)
+            {
+                // Fade out complete, perform actual scene change
+                ExecuteSceneChange();
+                
+                // Start fade in
+                if (_transitionEffect != null)
+                {
+                    _transitionEffect.Start(fadeOut: false);
+                    _transitionState = TransitionState.FadingIn;
+                }
+                else
+                {
+                    _transitionState = TransitionState.None;
+                }
+            }
+            return;
+        }
+
+        if (_transitionState == TransitionState.FadingIn && _transitionEffect != null)
+        {
+            if (_transitionEffect.IsComplete)
+            {
+                _transitionState = TransitionState.None;
+            }
+            return;
+        }
+
+        // Start new transition if requested
         if (_pendingTransition == SceneTransition.None)
         {
             return;
         }
 
+        // Start fade out if transition effect is enabled
+        if (_transitionEffect != null)
+        {
+            _transitionEffect.Start(fadeOut: true);
+            _transitionState = TransitionState.FadingOut;
+        }
+        else
+        {
+            // No transition effect, execute immediately
+            ExecuteSceneChange();
+            _pendingTransition = SceneTransition.None;
+        }
+    }
+
+    private void ExecuteSceneChange()
+    {
         switch (_pendingTransition)
         {
             case SceneTransition.Push:
@@ -193,7 +252,18 @@ public sealed class SceneManager
     public void Update(float deltaTime)
     {
         ProcessPendingTransitions();
-        CurrentScene?.OnUpdate(deltaTime);
+        
+        // Update transition effect if active
+        if (_transitionState != TransitionState.None && _transitionEffect != null)
+        {
+            _transitionEffect.Update(deltaTime);
+        }
+        
+        // Only update current scene when not transitioning (or fade in is happening)
+        if (_transitionState == TransitionState.None || _transitionState == TransitionState.FadingIn)
+        {
+            CurrentScene?.OnUpdate(deltaTime);
+        }
     }
 
     /// <summary>
@@ -202,6 +272,12 @@ public sealed class SceneManager
     public void Render()
     {
         CurrentScene?.OnRender();
+        
+        // Render transition overlay on top
+        if (_transitionState != TransitionState.None && _transitionEffect != null)
+        {
+            _transitionEffect.Render();
+        }
     }
 
     /// <summary>
@@ -230,5 +306,12 @@ public sealed class SceneManager
         Push,
         Pop,
         Replace
+    }
+
+    private enum TransitionState
+    {
+        None,
+        FadingOut,
+        FadingIn
     }
 }

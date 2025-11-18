@@ -30,7 +30,10 @@ internal static class Program
 
         try
         {
-            _sceneManager = new SceneManager(_logger);
+            // Create fade transition effect
+            var fadeTransition = new FadeTransition(_renderBackend, duration: 0.25f);
+            
+            _sceneManager = new SceneManager(_logger, fadeTransition);
             _sceneManager.Initialize();
 
             // Load initial scene (MainMenu)
