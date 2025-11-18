@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.8-alpha] - 2025-11-18
+
+### Added
+
+-   **Tilemap Support**: Complete grid-based tilemap system for 2D games
+-   **Tilemap Class**: Grid storage for tile-based worlds with efficient rendering
+-   **TilemapRenderer**: Culling-optimized renderer for visible tiles only
+-   **Tilemap Tests**: 18 comprehensive unit tests (13 Tilemap + 5 TilemapRenderer)
+
+### Technical Details
+
+-   **Tilemap**:
+    -   Grid storage (width × height) with configurable tile size
+    -   `SetTile(x, y, tileId)` and `GetTile(x, y)` for tile manipulation
+    -   `WorldToTile(position)` converts world coordinates to grid coordinates
+    -   `TileToWorld(x, y)` converts grid coordinates to world position
+    -   `Fill(x, y, width, height, tileId)` for bulk tile operations
+    -   `Clear()` resets all tiles to empty (ID 0)
+    -   `IsEmpty(x, y)` checks for empty tiles
+    -   `TotalTileCount` property for grid size
+    -   Validation: throws exceptions for out-of-bounds access
+-   **TilemapRenderer**:
+    -   Integrates with SpriteAtlas for tile textures
+    -   `GetVisibleBounds(camera, screenWidth, screenHeight)` calculates visible tiles
+    -   `Render(spriteBatch, camera, screenWidth, screenHeight)` draws only visible tiles
+    -   `SetTileOffset(x, y)` for parallax scrolling or fine-tuning
+    -   Automatic culling skips off-screen tiles
+    -   Tile ID 0 reserved for empty (not rendered)
+    -   Tile naming convention: `tile_{id}` in SpriteAtlas
+-   **Test Coverage**: 18 tests covering construction, validation, coordinate conversion,
+    tile manipulation, rendering setup, and culling bounds
+
+### Integration
+
+-   Works with existing SpriteAtlas and SpriteBatch systems
+-   Camera2D integration for viewport culling
+-   Ready for tilemap-based games (platformers, RPGs, puzzle games)
+
 ## [0.4.7-alpha] - 2025-11-18
 
 ### Added

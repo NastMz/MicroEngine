@@ -1,6 +1,6 @@
 # MicroEngine — Development Roadmap
 
-**Version:** 1.3  
+**Version:** 1.4  
 **Status:** Reference  
 **Author:** Kevin Martínez  
 **Last Updated:** November 2025
@@ -204,9 +204,9 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Make the engine ergonomic for game developers.
 
-**Status:** NEAR COMPLETION (8/9 features complete, 1 deferred)
+**Status:** NEAR COMPLETION (9/9 features complete, 1 deferred)
 
-**Current Version:** v0.4.7-alpha
+**Current Version:** v0.4.8-alpha
 
 ### Features
 
@@ -219,7 +219,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 -   ✅ Hot-reload of resources (v0.4.5)
 -   ✅ Built-in debugging tools (performance profiling guide complete)
 -   ✅ Collision layer system (v0.4.7)
--   ⚠️ Tilemap support (basic grid-based rendering) — IN PROGRESS
+-   ✅ Tilemap support (v0.4.8)
 
 ### Testing Requirements
 
@@ -250,13 +250,15 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 ### Remaining Work
 
--   Tilemap support (~600 LOC + 15 tests)
 -   Entity factory usage guide (documentation)
--   Refactor demo scenes to use EntityBuilder/EntityFactory
+-   Refactor demo scenes to use EntityBuilder/EntityFactory (optional)
+-   Tilemap demo scene (optional)
 
 **Deferred to Phase 5+:**
 
 -   Entity inspector UI (requires editor infrastructure - see Phase 7)
+
+**Phase 3 Complete:** All core features implemented (9/9 features ✅)
 
 ---
 
@@ -559,6 +561,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                   |
 | ------- | ----------------- | -------------- | ------------------------------------------------------------------------- |
+| 1.4     | November 18, 2025 | Kevin Martínez | Phase 3 COMPLETE: Tilemap Support (v0.4.8), all 9/9 features implemented  |
 | 1.3     | November 18, 2025 | Kevin Martínez | Phase 3 status: 8/9 features (88%), Entity Inspector deferred to Phase 5+ |
 | 1.2     | November 18, 2025 | Kevin Martínez | Added Collision Layer System (v0.4.7), updated Phase 3 progress           |
 | 1.1     | November 17, 2025 | Kevin Martínez | Updated Phase 3 with EntityBuilder/Factory (v0.4.6), retroactive docs     |
