@@ -10,23 +10,23 @@ internal static class Program
     {
         // Create logger with Info level
         var logger = new ConsoleLogger(LogLevel.Info);
-        logger.Info("Game", "MicroEngine Input Mapping Demo Starting...");
+        logger.Info("Game", "MicroEngine Component Helpers Demo Starting...");
 
         // Create Raylib backends
         var renderBackend = new RaylibRenderBackend();
         var inputBackend = new RaylibInputBackend();
 
         // Initialize backends
-        renderBackend.Initialize(1280, 720, "MicroEngine - Input Mapping Demo");
+        renderBackend.Initialize(800, 600, "MicroEngine - Component Helpers Demo");
         renderBackend.SetTargetFPS(60);
 
         try
         {
-            // Create input map demo scene
-            var demo = new InputMapDemoScene(inputBackend, renderBackend, logger);
+            // Create component helpers demo scene
+            var demo = new ComponentHelpersDemoScene(inputBackend, renderBackend, logger);
             demo.OnLoad();
 
-            logger.Info("Game", "Sprite Batch Demo running... Press ESC to exit");
+            logger.Info("Game", "Component Helpers Demo running... Press ESC to exit");
 
             // Main loop
             while (!renderBackend.ShouldClose)
@@ -46,7 +46,7 @@ internal static class Program
             }
 
             demo.OnUnload();
-            logger.Info("Game", "Input Mapping Demo shut down successfully");
+            logger.Info("Game", "Component Helpers Demo shut down successfully");
         }
         catch (Exception ex)
         {

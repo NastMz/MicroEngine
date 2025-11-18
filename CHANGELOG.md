@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4-alpha] - 2025-11-18
+
+### Added
+
+-   **Component Helpers**: Reusable game object components for common functionality
+-   **TransformComponent**: Spatial transformation with position, rotation, scale, and origin
+-   **SpriteComponent**: 2D sprite rendering with texture atlas support, tint, visibility, layer, and flip options
+-   **RigidBodyComponent**: 2D physics simulation with velocity, acceleration, mass, drag, gravity scale
+-   **ColliderComponent**: Collision detection with Circle, Rectangle, and Point shapes
+-   **AnimatorComponent**: Frame-based sprite animation with clips, speed, looping, and sprite integration
+-   **Component Helpers Tests**: 43 unit tests for transform, rigidbody, and collider components
+-   **ComponentHelpersDemoScene**: Interactive demo showcasing physics, collision, and component composition
+
+### Technical Details
+
+-   **Modular Design**: Components can be used independently or composed together
+-   **TransformComponent**: `Translate()`, `Rotate()`, `ScaleBy()`, `GetForward()`, `GetRight()` helpers
+-   **SpriteComponent**: `SetSpriteFromAtlas()`, `GetSourceRectangle()`, `GetSize()` for atlas integration
+-   **RigidBodyComponent**: `ApplyForce()` (F=ma), `ApplyImpulse()` (instant velocity change), `Stop()` helper
+-   **ColliderComponent**: `CreateCircle()`, `CreateRectangle()`, `CreatePoint()` factory methods
+-   **ColliderComponent**: `Overlaps()`, `ContainsPoint()`, `GetBounds()` for collision queries
+-   **ColliderComponent**: Layer masking, trigger support, offset positioning
+-   **AnimatorComponent**: `Play()`, `Stop()`, `Pause()`, `Resume()` with restart control
+-   **AnimatorComponent**: `AnimationClip` with frame duration, looping, FPS conversion
+-   **Physics Integration**: Gravity, jumping, ground collision, screen bounds in demo
+-   **Class-Based Components**: Designed for manual composition (not struct-based ECS)
+-   **Full XML Documentation**: All public APIs documented
+-   **Demo Features**: Player movement, physics, obstacle collisions, collectibles, score
+
+### Notes
+
+-   Component Helpers are designed for manual composition, not for use with the struct-based ECS system
+-   Future work may include struct-based component variants for ECS integration
+-   Components follow the Single Responsibility Principle for maximum reusability
+
 ## [0.4.3-alpha] - 2025-11-18
 
 ### Added

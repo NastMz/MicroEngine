@@ -30,6 +30,12 @@ public sealed class InputMapDemoScene : Scene
     private int _score;
     private bool _showHelp = true;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InputMapDemoScene"/> class.
+    /// </summary>
+    /// <param name="inputBackend">The input backend.</param>
+    /// <param name="renderBackend">The render backend.</param>
+    /// <param name="logger">The logger.</param>
     public InputMapDemoScene(
         IInputBackend inputBackend,
         IRenderBackend renderBackend,
