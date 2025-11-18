@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2-alpha] - 2025-11-18
+
+### Added
+
+-   **Sprite Batching System**: Deferred rendering with automatic batching for optimal performance
+-   **Sprite Atlas System**: Texture atlas management with named regions and grid-based frame generation
+-   **Sprite Region**: `SpriteRegion` struct for defining rectangular regions within texture atlases with normalized pivot points
+-   **Sprite Batch Item**: `SpriteBatchItem` struct for storing all rendering parameters in deferred batching
+-   **Sprite Sort Modes**: Five sorting strategies - `Deferred` (no sort), `Texture` (minimize texture switches), `BackToFront` (alpha blending), `FrontToBack` (depth optimization), `Immediate` (no batching)
+-   **ISpriteBatch Interface**: Unified interface for sprite batch operations (`Begin`, `Draw`, `DrawRegion`, `End`, `Flush`)
+-   **SpriteBatch Implementation**: Core batch renderer with automatic sorting, texture grouping, and minimal draw calls
+-   **SpriteAtlas Dictionary**: Region management with `AddRegion`, `GetRegion`, `TryGetRegion`, `HasRegion`, `RemoveRegion`, `Clear`
+-   **Grid Generation**: `CreateGrid` static method for automatic spritesheet splitting with spacing and margin support
+-   **Sprite Batching Demo**: Performance demo with 1000 animated sprites showcasing batching benefits
+-   **Sprite Batching Tests**: 30 comprehensive unit tests covering `SpriteRegion`, `SpriteBatchItem`, and `SpriteAtlas`
+
+### Technical Details
+
+-   **Deferred Rendering**: Sprites queued in `List<SpriteBatchItem>` and rendered on `End()` or `Flush()`
+-   **Sort Algorithms**: Texture ID grouping, layer depth sorting (ascending/descending), immediate rendering
+-   **Pivot Points**: Normalized (0-1) pivot coordinates for sprite rotation and scaling
+-   **Layer Depth**: Clamped 0-1 range (0 = back, 1 = front) for depth-based sorting
+-   **Atlas Grid**: Automatic frame calculation with configurable frame size, spacing between frames, and margin from edges
+-   **Performance**: Batch 1000 sprites at 60 FPS with minimal draw calls (texture-grouped rendering)
+-   **Demo Controls**: B (toggle batching ON/OFF), S (cycle sort modes), R (respawn sprites), ESC (exit)
+-   **Test Coverage**: Region equality, atlas CRUD operations, grid frame generation, batch item validation
+-   **Zero Compilation Errors**: Full XML documentation and style compliance (14 minor braces warnings in demo)
+
 ## [0.4.1-alpha] - 2025-11-18
 
 ### Added

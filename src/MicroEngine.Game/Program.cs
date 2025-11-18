@@ -10,23 +10,23 @@ internal static class Program
     {
         // Create logger with Info level
         var logger = new ConsoleLogger(LogLevel.Info);
-        logger.Info("Game", "MicroEngine Camera Demo Starting...");
+        logger.Info("Game", "MicroEngine Sprite Batch Demo Starting...");
 
         // Create Raylib backends
         var renderBackend = new RaylibRenderBackend();
         var inputBackend = new RaylibInputBackend();
 
         // Initialize backends
-        renderBackend.Initialize(1280, 720, "MicroEngine Camera Demo");
+        renderBackend.Initialize(1280, 720, "MicroEngine Sprite Batch Demo");
         renderBackend.SetTargetFPS(60);
 
         try
         {
-            // Create camera demo scene
-            var cameraDemo = new CameraDemoScene(logger, inputBackend, renderBackend);
-            cameraDemo.OnLoad();
+            // Create sprite batch demo scene
+            var demo = new SpriteBatchDemoScene(logger, inputBackend, renderBackend);
+            demo.OnLoad();
 
-            logger.Info("Game", "Camera Demo running... Press ESC to exit");
+            logger.Info("Game", "Sprite Batch Demo running... Press ESC to exit");
 
             // Main loop
             while (!renderBackend.ShouldClose)
@@ -37,16 +37,16 @@ internal static class Program
                 inputBackend.Update();
 
                 // Update scene
-                cameraDemo.OnUpdate(deltaTime);
+                demo.OnUpdate(deltaTime);
 
                 // Render frame
                 renderBackend.BeginFrame();
-                cameraDemo.OnRender();
+                demo.OnRender();
                 renderBackend.EndFrame();
             }
 
-            cameraDemo.OnUnload();
-            logger.Info("Game", "Camera Demo shut down successfully");
+            demo.OnUnload();
+            logger.Info("Game", "Sprite Batch Demo shut down successfully");
         }
         catch (Exception ex)
         {
