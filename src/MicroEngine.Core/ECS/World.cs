@@ -9,6 +9,7 @@ public sealed class World
     private readonly Dictionary<Type, IComponentArray> _componentArrays = new();
     private readonly List<ISystem> _systems = new();
     private readonly Queue<Entity> _entitiesToDestroy = new();
+    private readonly HashSet<Entity> _entitiesPendingDestruction = new();
     private readonly Dictionary<Entity, string?> _entityNames = new();
 
     private uint _nextEntityId = 1;
@@ -56,6 +57,7 @@ public sealed class World
         }
 
         _entitiesToDestroy.Enqueue(entity);
+        _entitiesPendingDestruction.Add(entity);
     }
 
     /// <summary>
@@ -63,7 +65,7 @@ public sealed class World
     /// </summary>
     public bool IsEntityValid(Entity entity)
     {
-        return _activeEntities.Contains(entity);
+        return _activeEntities.Contains(entity) && !_entitiesPendingDestruction.Contains(entity);
     }
 
     /// <summary>
@@ -242,6 +244,7 @@ public sealed class World
             }
 
             _activeEntities.Remove(entity);
+            _entitiesPendingDestruction.Remove(entity);
             _entityNames.Remove(entity);
 
             _entityVersions[entity.Id] = entity.Version + 1;
