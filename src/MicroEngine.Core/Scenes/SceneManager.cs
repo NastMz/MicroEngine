@@ -11,7 +11,7 @@ public sealed class SceneManager
     private const string LOG_CATEGORY = "SceneManager";
 
     private readonly Stack<Scene> _sceneStack = new();
-    private readonly ISceneTransitionEffect? _transitionEffect;
+    private ISceneTransitionEffect? _transitionEffect;
     private SceneContext _sceneContext = null!;
     private ILogger _logger = null!;
 
@@ -53,6 +53,17 @@ public sealed class SceneManager
         _sceneContext = context ?? throw new ArgumentNullException(nameof(context));
         _logger = context.Logger;
         _logger.Info(LOG_CATEGORY, "Scene manager initialized");
+    }
+
+    /// <summary>
+    /// Changes the transition effect used for scene changes.
+    /// </summary>
+    /// <param name="transitionEffect">The new transition effect to use. Can be null to disable transitions.</param>
+    public void SetTransition(ISceneTransitionEffect? transitionEffect)
+    {
+        _transitionEffect = transitionEffect;
+        _transitionEffect?.Reset();
+        _logger?.Info(LOG_CATEGORY, $"Transition effect changed to: {transitionEffect?.GetType().Name ?? "None"}");
     }
 
     /// <summary>

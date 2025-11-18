@@ -36,8 +36,11 @@ internal static class Program
 
         try
         {
-            // Create fade transition effect
+            // Create all transition effects
             var fadeTransition = new FadeTransition(_renderBackend, duration: 0.25f);
+            var slideTransition = new SlideTransition(_renderBackend, SlideDirection.Left, duration: 0.5f);
+            var wipeTransition = new WipeTransition(_renderBackend, WipeDirection.LeftToRight, duration: 0.4f);
+            var zoomTransition = new ZoomTransition(_renderBackend, ZoomMode.ZoomOut, duration: 0.5f);
             
             // Create SceneManager first (it will receive context after creation)
             _sceneManager = new SceneManager(fadeTransition);
@@ -54,8 +57,14 @@ internal static class Program
             // Initialize SceneManager with context
             _sceneManager.Initialize(sceneContext);
 
-            // Load initial scene (MainMenu)
-            var mainMenu = new MainMenuScene();
+            // Load initial scene (MainMenu) with access to SceneManager and transitions
+            var mainMenu = new MainMenuScene(
+                _sceneManager,
+                fadeTransition,
+                slideTransition,
+                wipeTransition,
+                zoomTransition
+            );
             _sceneManager.ReplaceScene(mainMenu);
 
             _logger.Info("Game", "Main menu running... Press 1-5 to select demo, ESC to exit");

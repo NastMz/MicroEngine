@@ -10,24 +10,42 @@ namespace MicroEngine.Game.Scenes;
 
 /// <summary>
 /// Main menu scene that provides navigation to all demo scenes.
+/// Supports multiple transition effects for scene changes.
 /// </summary>
 public sealed class MainMenuScene : Scene
 {
     private IInputBackend _inputBackend = null!;
     private IRenderBackend2D _renderBackend = null!;
     private ILogger _logger = null!;
+    private readonly SceneManager _sceneManager;
+    private readonly FadeTransition _fadeTransition;
+    private readonly SlideTransition _slideTransition;
+    private readonly WipeTransition _wipeTransition;
+    private readonly ZoomTransition _zoomTransition;
 
-    private const string ENGINE_VERSION = "v0.4.9-alpha";
+    private const string ENGINE_VERSION = "v0.6.0-alpha";
     private const int MENU_X = 250;
-    private const int MENU_Y = 150;
-    private const int LINE_HEIGHT = 30;
+    private const int MENU_Y = 80;
+    private const int LINE_HEIGHT = 28;
+
+    private string _currentTransition = "Fade";
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainMenuScene"/> class.
     /// </summary>
-    public MainMenuScene()
+    public MainMenuScene(
+        SceneManager sceneManager,
+        FadeTransition fadeTransition,
+        SlideTransition slideTransition,
+        WipeTransition wipeTransition,
+        ZoomTransition zoomTransition)
         : base("MainMenu")
     {
+        _sceneManager = sceneManager;
+        _fadeTransition = fadeTransition;
+        _slideTransition = slideTransition;
+        _wipeTransition = wipeTransition;
+        _zoomTransition = zoomTransition;
     }
 
     /// <inheritdoc/>
@@ -43,6 +61,7 @@ public sealed class MainMenuScene : Scene
     /// <inheritdoc/>
     public override void OnUpdate(float deltaTime)
     {
+        // Demo selection
         if (_inputBackend.IsKeyPressed(Key.One))
         {
             LoadDemo<EcsBasicsDemo>();
@@ -62,6 +81,32 @@ public sealed class MainMenuScene : Scene
         else if (_inputBackend.IsKeyPressed(Key.Five))
         {
             LoadDemo<TilemapDemo>();
+        }
+
+        // Transition effect selection
+        if (_inputBackend.IsKeyPressed(Key.F6))
+        {
+            _currentTransition = "Fade";
+            _sceneManager.SetTransition(_fadeTransition);
+            _logger.Info("MainMenu", "Transition changed to: Fade");
+        }
+        else if (_inputBackend.IsKeyPressed(Key.F7))
+        {
+            _currentTransition = "Slide";
+            _sceneManager.SetTransition(_slideTransition);
+            _logger.Info("MainMenu", "Transition changed to: Slide");
+        }
+        else if (_inputBackend.IsKeyPressed(Key.F8))
+        {
+            _currentTransition = "Wipe";
+            _sceneManager.SetTransition(_wipeTransition);
+            _logger.Info("MainMenu", "Transition changed to: Wipe");
+        }
+        else if (_inputBackend.IsKeyPressed(Key.F9))
+        {
+            _currentTransition = "Zoom";
+            _sceneManager.SetTransition(_zoomTransition);
+            _logger.Info("MainMenu", "Transition changed to: Zoom");
         }
     }
 
@@ -102,6 +147,26 @@ public sealed class MainMenuScene : Scene
 
         var bottomSeparatorPos = new Vector2(MENU_X - 50, optionY + 40);
         _renderBackend.DrawText("═══════════════════════════════════════", bottomSeparatorPos, 16, new Color(100, 100, 100, 255));
+
+        // Transition effect selection
+        var transitionY = optionY + 80;
+        _renderBackend.DrawText("Scene Transitions:", new Vector2(MENU_X, transitionY), 18, new Color(200, 200, 200, 255));
+
+        transitionY += LINE_HEIGHT + 5;
+        var fadeColor = _currentTransition == "Fade" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
+        _renderBackend.DrawText($"[F6] Fade {(_currentTransition == "Fade" ? "✓" : "")}", new Vector2(MENU_X + 20, transitionY), 14, fadeColor);
+
+        transitionY += 25;
+        var slideColor = _currentTransition == "Slide" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
+        _renderBackend.DrawText($"[F7] Slide {(_currentTransition == "Slide" ? "✓" : "")}", new Vector2(MENU_X + 20, transitionY), 14, slideColor);
+
+        transitionY += 25;
+        var wipeColor = _currentTransition == "Wipe" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
+        _renderBackend.DrawText($"[F8] Wipe {(_currentTransition == "Wipe" ? "✓" : "")}", new Vector2(MENU_X + 20, transitionY), 14, wipeColor);
+
+        transitionY += 25;
+        var zoomColor = _currentTransition == "Zoom" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
+        _renderBackend.DrawText($"[F9] Zoom {(_currentTransition == "Zoom" ? "✓" : "")}", new Vector2(MENU_X + 20, transitionY), 14, zoomColor);
     }
 
     /// <inheritdoc/>
@@ -114,5 +179,6 @@ public sealed class MainMenuScene : Scene
     {
         var demo = new T();
         PushScene(demo);
+        _logger.Info("MainMenu", $"Loading {typeof(T).Name} with {_currentTransition} transition");
     }
 }
