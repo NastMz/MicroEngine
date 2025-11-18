@@ -7,6 +7,127 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6-alpha] - 2025-11-18
+
+### Added
+
+-   **EntityBuilder**: Fluent API for declarative entity creation with method chaining
+-   **EntityFactory**: Pre-configured archetypes for common game entities (Player, Platform,
+    Obstacle, Collectible, Projectile, Enemy, Particle)
+-   **Entity Creation Helpers**: Streamlined entity creation reducing boilerplate by ~70%
+-   **EntityBuilder Tests**: 11 comprehensive unit tests for fluent API and component composition
+-   **EntityFactory Tests**: 8 unit tests validating archetype creation and default configurations
+
+### Technical Details
+
+-   **EntityBuilder Fluent API**: `WithName()`, `WithTransform()`, `WithSprite()`,
+    `WithRigidBody()`, `WithBoxCollider()`, `WithCircleCollider()`, `Build()`
+-   **Method Chaining**: All builder methods return `EntityBuilder` for seamless composition
+-   **Transform Overloads**: Position-only and full transform (position, rotation, scale) variants
+-   **Named Entities**: `WithName()` support via entity recreation with identity preservation
+-   **Physics Defaults**: Sensible defaults for mass (1.0), drag (0), gravity (enabled)
+-   **Collider Factories**: Box and circle colliders with optional trigger mode
+-   **EntityFactory Archetypes**:
+    -   `CreatePlayer()`: 32x32 sprite, physics enabled, box collider
+    -   `CreatePlatform()`: Static platform with configurable size
+    -   `CreateObstacle()`: Static obstacle (50x70 default)
+    -   `CreateCollectible()`: Trigger-based collectible with circle collider (radius 16)
+    -   `CreateProjectile()`: Small moving entity (8x8) with initial velocity
+    -   `CreateEnemy()`: 32x32 entity with physics and AI-ready setup
+    -   `CreateParticle()`: Tiny entity (0.5x scale) with physics and custom velocity
+-   **Code Reduction**: ComponentHelpersDemoScene can reduce from ~100 LOC to ~25 LOC using helpers
+-   **Test Coverage**: 19 total tests (11 builder + 8 factory) with 100% pass rate
+-   **Zero Compilation Errors**: Full XML documentation compliance
+-   **TDD Methodology**: Tests written before implementation (RED→GREEN→REFACTOR)
+
+### Notes
+
+-   EntityBuilder and EntityFactory designed for ergonomic game development workflows
+-   Helpers eliminate repetitive `CreateEntity()` + `AddComponent()` patterns
+-   Archetypes provide consistent defaults while remaining fully customizable
+-   Future work: Add more archetypes (NPC, Weapon, PowerUp, etc.) and builder methods for
+    additional components
+
+## [0.4.5-alpha] - 2025-11-18
+
+### Added
+
+-   **Event System**: Complete event-driven architecture with EventBus for decoupled communication
+-   **EventBus**: Thread-safe publish/subscribe system with queued and immediate dispatch modes
+-   **Game Events**: Pre-defined events for entity lifecycle (Created, Destroyed, ComponentAdded,
+    ComponentRemoved)
+-   **Collision Events**: CollisionEnterEvent and CollisionExitEvent with entity and contact info
+-   **IEvent Interface**: Base event contract with Timestamp and IsHandled properties
+-   **Event Queue**: Deferred event processing with `PublishDeferred()` and `ProcessEvents()`
+-   **Event Subscriptions**: Type-safe `Subscribe<T>()` and `Unsubscribe<T>()` with delegate
+    management
+-   **Resource Hot-Reload**: File system monitoring with automatic resource reloading on changes
+-   **FileSystemResourceWatcher**: Cross-platform file watching using FileSystemWatcher
+-   **HotReloadableResourceCache**: Resource cache with automatic reload on file modifications
+-   **IResourceWatcher**: Interface for resource file monitoring with change event notifications
+-   **Resource Change Events**: Modified, Deleted, and Renamed event types for resource tracking
+-   **Resource Metadata**: Comprehensive metadata system for resources (file size, modified date,
+    custom data)
+-   **ResourceMetadata Class**: Encapsulates resource metadata with custom key-value storage
+-   **Resource Validation**: Pre-load validation system for file existence, format, and security
+-   **ResourceValidator**: Validates resource files before loading (file exists, readable, size
+    limits)
+-   **ResourceValidationResult**: Validation result with success/failure status and error messages
+-   **Performance Profiling Guide**: Complete documentation for profiling engine performance
+    (PERFORMANCE_PROFILING.md)
+
+### Technical Details
+
+-   **EventBus Features**:
+    -   Thread-safe with lock-based synchronization
+    -   Immediate dispatch via `Publish<T>()` for real-time events
+    -   Deferred dispatch via `PublishDeferred<T>()` for frame-end processing
+    -   `ProcessEvents()` processes all queued events in order
+    -   `Clear()` empties event queue and removes all subscriptions
+    -   `GetSubscriberCount<T>()` queries subscription counts per event type
+    -   Full exception handling with detailed error messages
+-   **Game Events**:
+    -   `EntityCreatedEvent` with entity ID
+    -   `EntityDestroyedEvent` with entity ID
+    -   `ComponentAddedEvent` with entity ID and component type name
+    -   `ComponentRemovedEvent` with entity ID and component type name
+    -   `CollisionEnterEvent` with both entity IDs and contact point
+    -   `CollisionExitEvent` with both entity IDs
+-   **Resource Hot-Reload**:
+    -   `Watch(string path)` monitors individual files or directories
+    -   `Unwatch(string path)` stops monitoring specific paths
+    -   `ResourceChanged` event with change type (Modified, Deleted, Renamed)
+    -   Debouncing to avoid duplicate change events
+    -   Automatic cleanup on disposal
+    -   `HotReloadableResourceCache.EnableAutoReload` toggle for runtime control
+-   **Resource Metadata**:
+    -   `FilePath`, `FileSize`, `LastModified` standard properties
+    -   `SetCustomData<T>()` and `GetCustomData<T>()` for extensibility
+    -   Immutable metadata snapshots for thread safety
+-   **Resource Validation**:
+    -   File existence checks before loading
+    -   Readable file validation (access permissions)
+    -   File size limits (configurable, default 100MB for textures)
+    -   Format validation via file extension
+    -   `IsValid` boolean and `ErrorMessage` for diagnostic feedback
+-   **Test Coverage**:
+    -   EventBus: 15 tests (subscribe, publish, queue, unsubscribe, thread safety)
+    -   FileSystemResourceWatcher: 10 tests (watch, unwatch, change detection, disposal)
+    -   HotReloadableResourceCache: 12 tests (load, reload, failure scenarios, memory leaks)
+    -   ResourceMetadata: 8 tests (construction, custom data, immutability)
+    -   ResourceValidator: 9 tests (validation rules, error messages, edge cases)
+-   **Documentation**:
+    -   PERFORMANCE_PROFILING.md with 333 lines covering profiling strategies, tools, and
+        benchmarks
+
+### Notes
+
+-   EventBus designed for decoupled, event-driven game architecture
+-   Hot-reload system enables live asset editing without engine restart (development only)
+-   Resource validation prevents loading corrupted or malicious files
+-   Metadata system extensible for custom resource attributes (compression, format version, etc.)
+-   All systems follow thread-safe patterns for potential multi-threaded usage
+
 ## [0.4.4-alpha] - 2025-11-18
 
 ### Added
