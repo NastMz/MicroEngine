@@ -418,17 +418,17 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 ## Summary of Milestones
 
-| Version  | Milestone                            | Target Date | Status      |
-| -------- | ------------------------------------ | ----------- | ----------- |
-| v0.1.0   | Engine skeleton                      | TBD         | In Progress |
-| v0.2.0   | Playable core (ECS, scenes)          | TBD         | Planned     |
-| v0.3.0   | Raylib backend + rendered demo       | TBD         | Planned     |
-| v0.4.0   | Developer comfort update             | TBD         | Planned     |
-| v0.5.x   | Stabilization & polish               | TBD         | Planned     |
-| v1.0.0   | Stable public API                    | TBD         | Planned     |
-| v1.1–1.5 | Ecosystem expansion                  | TBD         | Future      |
-| v2.0.0   | 3D architecture foundation           | TBD         | Future      |
-| v3.x+    | Editors, advanced tools, new domains | TBD         | Exploratory |
+| Version  | Milestone                            | Target Date | Status         |
+| -------- | ------------------------------------ | ----------- | -------------- |
+| v0.1.0   | Engine skeleton                      | TBD         | ✅ Complete    |
+| v0.2.0   | Playable core (ECS, scenes)          | TBD         | ✅ Complete    |
+| v0.3.0   | Raylib backend + rendered demo       | TBD         | ✅ Complete    |
+| v0.4.0   | Developer comfort update             | TBD         | 🚧 In Progress |
+| v0.5.x   | Stabilization & polish               | TBD         | Planned        |
+| v1.0.0   | Stable public API                    | TBD         | Planned        |
+| v1.1–1.5 | Ecosystem expansion                  | TBD         | Future         |
+| v2.0.0   | 3D architecture foundation           | TBD         | Future         |
+| v3.x+    | Editors, advanced tools, new domains | TBD         | Exploratory    |
 
 ---
 
@@ -557,6 +557,9 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 ## Revision History
 
-| Version | Date          | Author         | Changes                                            |
-| ------- | ------------- | -------------- | -------------------------------------------------- |
-| 1.0     | November 2025 | Kevin Martínez | Initial comprehensive roadmap with detailed phases |
+| Version | Date              | Author         | Changes                                                                   |
+| ------- | ----------------- | -------------- | ------------------------------------------------------------------------- |
+| 1.3     | November 18, 2025 | Kevin Martínez | Phase 3 status: 8/9 features (88%), Entity Inspector deferred to Phase 5+ |
+| 1.2     | November 18, 2025 | Kevin Martínez | Added Collision Layer System (v0.4.7), updated Phase 3 progress           |
+| 1.1     | November 17, 2025 | Kevin Martínez | Updated Phase 3 with EntityBuilder/Factory (v0.4.6), retroactive docs     |
+| 1.0     | November 2025     | Kevin Martínez | Initial comprehensive roadmap with detailed phases                        |
