@@ -1,6 +1,6 @@
 # MicroEngine — Development Roadmap
 
-**Version:** 1.7  
+**Version:** 1.8  
 **Status:** Reference  
 **Author:** Kevin Martínez  
 **Last Updated:** November 2025
@@ -267,7 +267,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** IN PROGRESS (4/11 features complete)
+**Status:** IN PROGRESS (5/11 features complete)
 
 **Current Version:** v0.6.0-alpha
 
@@ -278,12 +278,17 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
     -   ✅ Proper scene lifecycle management (OnLoad/OnUnload)
     -   ✅ Deferred transition processing (prevents mid-update corruption)
     -   ✅ Scene transitions with effects (fade in/out) — v0.5.0
+    -   ✅ **Additional transition effects** (slide, wipe, zoom) — COMPLETE v0.6.0
+        -   SlideTransition: 4 directions (Left, Right, Up, Down)
+        -   WipeTransition: 6 modes (LeftToRight, RightToLeft, TopToBottom, BottomToTop, CenterOut, EdgeIn)
+        -   ZoomTransition: 2 modes (ZoomIn, ZoomOut) with vignette effect
+        -   SceneManager.SetTransition() for runtime transition changes
+        -   MainMenuScene transition selector (F6-F9)
     -   ✅ **Dependency injection architecture** — v0.6.0
         -   SceneContext service container (5 core services)
         -   No circular dependencies (removed SceneManager from SceneContext)
         -   Scene navigation methods (PushScene/PopScene/ReplaceScene)
         -   Hollywood Principle pattern (SetSceneManager internal injection)
-    -   ⏳ Additional transition effects (slide, wipe, zoom) — PLANNED v0.5.x
     -   ⏳ Scene caching and lazy loading — PLANNED
     -   ⏳ Scene parameter passing (data transfer between scenes) — PLANNED
     -   ⏳ Scene preloading and background loading — PLANNED
@@ -477,23 +482,23 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 ## Summary of Milestones
 
-| Version | Milestone                            | Target Date | Status      |
-| ------- | ------------------------------------ | ----------- | ----------- |
-| v0.1.0  | Engine skeleton                      | TBD         | ✅ Complete |
-| v0.2.0  | Playable core (ECS, scenes)          | TBD         | ✅ Complete |
-| v0.3.0  | Raylib backend + rendered demo       | TBD         | ✅ Complete |
-| v0.4.9  | Developer comfort update             | Nov 2025    | ✅ Complete |
-| v0.5.0  | Texture filtering & mipmaps          | Nov 2025    | ✅ Complete |
-| v0.5.1  | MSAA support                         | Nov 2025    | ✅ Complete |
-| v0.6.0  | Architecture refinement (DI)         | Nov 2025    | ✅ Complete |
-| v0.5.x  | Stabilization & polish               | TBD         | In Progress |
-| v1.0.0  | Stable public API                    | TBD         | Planned     |
-| v1.1.0  | Scene management & templates         | TBD         | Planned     |
-| v1.2.0  | Asset management & developer tools   | TBD         | Planned     |
-| v1.3.0  | Scene serialization & pipeline       | TBD         | Planned     |
-| v1.5.0  | Full ecosystem maturity              | TBD         | Future      |
-| v2.0.0  | 3D architecture foundation           | TBD         | Future      |
-| v3.x+   | Editors, advanced tools, new domains | TBD         | Exploratory |
+| Version | Milestone                                   | Target Date | Status      |
+| ------- | ------------------------------------------- | ----------- | ----------- |
+| v0.1.0  | Engine skeleton                             | TBD         | ✅ Complete |
+| v0.2.0  | Playable core (ECS, scenes)                 | TBD         | ✅ Complete |
+| v0.3.0  | Raylib backend + rendered demo              | TBD         | ✅ Complete |
+| v0.4.9  | Developer comfort update                    | Nov 2025    | ✅ Complete |
+| v0.5.0  | Texture filtering & mipmaps                 | Nov 2025    | ✅ Complete |
+| v0.5.1  | MSAA support                                | Nov 2025    | ✅ Complete |
+| v0.6.0  | Architecture refinement + Scene transitions | Nov 2025    | ✅ Complete |
+| v0.5.x  | Stabilization & polish                      | TBD         | In Progress |
+| v1.0.0  | Stable public API                           | TBD         | Planned     |
+| v1.1.0  | Scene management & templates                | TBD         | Planned     |
+| v1.2.0  | Asset management & developer tools          | TBD         | Planned     |
+| v1.3.0  | Scene serialization & pipeline              | TBD         | Planned     |
+| v1.5.0  | Full ecosystem maturity                     | TBD         | Future      |
+| v2.0.0  | 3D architecture foundation                  | TBD         | Future      |
+| v3.x+   | Editors, advanced tools, new domains        | TBD         | Exploratory |
 
 ---
 
@@ -622,14 +627,15 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 ## Revision History
 
-| Version | Date              | Author         | Changes                                                                                                                             |
-| ------- | ----------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 1.7     | November 18, 2025 | Kevin Martínez | Architecture refinement (v0.6.0): Eliminated circular dependency, SceneContext DI pattern, Scene navigation methods                 |
-| 1.6     | November 18, 2025 | Kevin Martínez | Phase 4 Graphics: MSAA support (v0.5.1), texture filtering & mipmaps (v0.5.0), ECS query caching, fade transitions                  |
-| 1.5     | November 18, 2025 | Kevin Martínez | Added missing features: SceneManager (Phase 4), Asset Management, Scene Templates, Developer Console, Scene Serialization (Phase 5) |
-| 1.4     | November 18, 2025 | Kevin Martínez | Phase 3 COMPLETE: Tilemap Support (v0.4.8), all 9/9 features implemented                                                            |
-| 1.5     | November 18, 2025 | Kevin Martínez | Phase 4 STARTED: SceneManager stack-based system (v0.4.9), demo refactoring, interactive EcsBasicsDemo                              |
-| 1.3     | November 18, 2025 | Kevin Martínez | Phase 3 status: 8/9 features (88%), Entity Inspector deferred to Phase 5+                                                           |
-| 1.2     | November 18, 2025 | Kevin Martínez | Added Collision Layer System (v0.4.7), updated Phase 3 progress                                                                     |
-| 1.1     | November 17, 2025 | Kevin Martínez | Updated Phase 3 with EntityBuilder/Factory (v0.4.6), retroactive docs                                                               |
-| 1.0     | November 2025     | Kevin Martínez | Initial comprehensive roadmap with detailed phases                                                                                  |
+| Version | Date              | Author         | Changes                                                                                                                                        |
+| ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.8     | November 18, 2025 | Kevin Martínez | Phase 4 Transitions: Additional scene transition effects (Slide, Wipe, Zoom), SetTransition() runtime changes, transition selector UI (v0.6.0) |
+| 1.7     | November 18, 2025 | Kevin Martínez | Architecture refinement (v0.6.0): Eliminated circular dependency, SceneContext DI pattern, Scene navigation methods                            |
+| 1.6     | November 18, 2025 | Kevin Martínez | Phase 4 Graphics: MSAA support (v0.5.1), texture filtering & mipmaps (v0.5.0), ECS query caching, fade transitions                             |
+| 1.5     | November 18, 2025 | Kevin Martínez | Added missing features: SceneManager (Phase 4), Asset Management, Scene Templates, Developer Console, Scene Serialization (Phase 5)            |
+| 1.4     | November 18, 2025 | Kevin Martínez | Phase 3 COMPLETE: Tilemap Support (v0.4.8), all 9/9 features implemented                                                                       |
+| 1.5     | November 18, 2025 | Kevin Martínez | Phase 4 STARTED: SceneManager stack-based system (v0.4.9), demo refactoring, interactive EcsBasicsDemo                                         |
+| 1.3     | November 18, 2025 | Kevin Martínez | Phase 3 status: 8/9 features (88%), Entity Inspector deferred to Phase 5+                                                                      |
+| 1.2     | November 18, 2025 | Kevin Martínez | Added Collision Layer System (v0.4.7), updated Phase 3 progress                                                                                |
+| 1.1     | November 17, 2025 | Kevin Martínez | Updated Phase 3 with EntityBuilder/Factory (v0.4.6), retroactive docs                                                                          |
+| 1.0     | November 2025     | Kevin Martínez | Initial comprehensive roadmap with detailed phases                                                                                             |

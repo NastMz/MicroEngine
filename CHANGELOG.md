@@ -34,6 +34,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   GenerateMipmaps() now re-applies current filter after generation
     -   Prevents filter reset during mipmap generation
     -   User-friendly: F3/F4 work immediately without manual mipmap generation
+-   **Scene Transition Effects**: Multiple transition effects for scene changes
+    -   **SlideTransition**: Slides scene in 4 directions (Left, Right, Up, Down)
+    -   **WipeTransition**: 6 wipe modes (LeftToRight, RightToLeft, TopToBottom, BottomToTop, CenterOut, EdgeIn)
+    -   **ZoomTransition**: 2 zoom modes (ZoomIn, ZoomOut) with vignette effect
+    -   All transitions implement ISceneTransitionEffect interface
+    -   Configurable duration, direction/mode, and colors
+    -   MainMenuScene now includes F6-F9 selector for transition effects
+-   **SceneManager.SetTransition()**: Runtime transition effect changes
+    -   Allows changing transition effect dynamically during gameplay
+    -   Resets transition state when changed
+    -   Logs transition changes for debugging
+    -   Enables user-selectable transition preferences
 -   **ITimeService Interface**: Platform-agnostic time management abstraction
     -   `DeltaTime` property (time since last frame in seconds)
     -   `CurrentFPS` property (actual frames per second)
@@ -127,6 +139,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **SceneContext.cs**: 60 lines, 5 service properties + constructor validation (reduced from 6)
 -   **Scene.cs**: 120 lines, added navigation methods and SceneManager injection
 -   **RaylibTexture.cs**: 165 lines, P/Invoke for OpenGL anisotropic filtering
+-   **SlideTransition.cs**: 145 lines, 4 directional slide modes, 10 tests
+-   **WipeTransition.cs**: 196 lines, 6 wipe modes including circular effects, 11 tests
+-   **ZoomTransition.cs**: 172 lines, 2 zoom modes with vignette, 10 tests
+-   **SceneManager.cs**: Two-phase init pattern + SetTransition() for runtime changes
 -   **ITimeService.cs**: 73 lines, comprehensive documentation
 -   **TimeService.cs**: 127 lines, high-precision Stopwatch-based implementation
 -   **SceneManager.cs**: Two-phase init pattern (Constructor + Initialize)
@@ -139,13 +155,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Testing
 
--   **794 tests passing**: All tests updated with mock SceneContext
+-   **868 tests passing**: All tests updated with mock SceneContext (37 new transition tests)
 -   **SceneManagerTests**: Now creates real ResourceCache with mocked IResourceLoader
+-   **SlideTransitionTests**: 10 tests covering all 4 directions and lifecycle
+-   **WipeTransitionTests**: 11 tests covering all 6 modes including EdgeIn
+-   **ZoomTransitionTests**: 10 tests covering both zoom modes and vignette rendering
 -   **Manual testing**: Application runs correctly with dependency injection
 -   **MSAA verified**: Still working (configured at startup)
 -   **Texture filtering verified**: All filters (Point, Bilinear, Trilinear, Anisotropic) working correctly
 -   **Anisotropic filtering verified**: Visual difference clear at different zoom levels
--   **Scene transitions verified**: Smooth navigation between demos
+-   **Scene transitions verified**: Smooth navigation between demos with all 4 transition effects
+-   **Transition selector verified**: F6-F9 keys change transition effect in real-time
 -   **Mipmap generation verified**: Auto-generation working for Trilinear and Anisotropic filters
 
 ### Architecture Improvements
