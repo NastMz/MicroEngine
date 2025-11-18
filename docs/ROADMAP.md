@@ -104,7 +104,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 -   ✅ Resource management system (`IResource`, `ResourceId`, `ResourceCache<T>`, `IResourceLoader<T>`)
 -   ✅ Resource types defined (`ITexture`, `IFont`, `IAudioClip`)
 -   ✅ Audio backend interface (`IAudioBackend`)
--   ⚠️ Event system for component communication - **PENDING**
+-   ✅ Event system for component communication (`EventBus`, 16 tests)
 
 ### Testing Requirements
 
@@ -113,7 +113,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 -   ✅ ECS system benchmarks (1000+ entities tested)
 -   ✅ Physics collision tests (ground, obstacles, triggers)
 -   ✅ Resource system unit tests (ResourceCache, ResourceId)
--   ⚠️ Performance profiling - **NEEDS IMPROVEMENT**
+-   ✅ Performance profiling (PERFORMANCE_PROFILING.md guide with frame timing, memory tracking, optimization techniques)
 
 ### Documentation
 
