@@ -1,6 +1,6 @@
 # MicroEngine — Development Roadmap
 
-**Version:** 1.0  
+**Version:** 1.3  
 **Status:** Reference  
 **Author:** Kevin Martínez  
 **Last Updated:** November 2025
