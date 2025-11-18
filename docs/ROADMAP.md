@@ -204,9 +204,9 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Make the engine ergonomic for game developers.
 
-**Status:** IN PROGRESS (7/10 features complete)
+**Status:** NEAR COMPLETION (8/9 features complete, 1 deferred)
 
-**Current Version:** v0.4.6-alpha
+**Current Version:** v0.4.7-alpha
 
 ### Features
 
@@ -217,9 +217,9 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 -   ✅ Event system with EventBus (v0.4.5)
 -   ✅ Asset pipeline improvements (metadata, validation) (v0.4.5)
 -   ✅ Hot-reload of resources (v0.4.5)
--   ⚠️ Built-in debugging tools (performance profiling guide complete, entity inspector pending)
--   ⚠️ Collision layer system (LayerMask property exists, configuration system pending)
--   ⚠️ Tilemap support (basic grid-based rendering) — NOT STARTED
+-   ✅ Built-in debugging tools (performance profiling guide complete)
+-   ✅ Collision layer system (v0.4.7)
+-   ⚠️ Tilemap support (basic grid-based rendering) — IN PROGRESS
 
 ### Testing Requirements
 
@@ -250,11 +250,13 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 ### Remaining Work
 
--   Entity inspector UI (~300 LOC + 10 tests)
--   Collision layer configuration system (~250 LOC + 12 tests)
 -   Tilemap support (~600 LOC + 15 tests)
 -   Entity factory usage guide (documentation)
 -   Refactor demo scenes to use EntityBuilder/EntityFactory
+
+**Deferred to Phase 5+:**
+
+-   Entity inspector UI (requires editor infrastructure - see Phase 7)
 
 ---
 
@@ -391,11 +393,18 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Status:** Exploratory
 
-### Possible Future Expansions
+### Phase 5 — Editor & Tooling Infrastructure
 
+**Prerequisites:** Requires dedicated editor project (`MicroEngine.Editor`) with UI framework integration.
+
+-   **Entity Inspector** (runtime entity debugging - **deferred from Phase 3**)
+    -   Visual entity browser with component inspection
+    -   Runtime value editing for debugging
+    -   Hierarchy view for entity relationships
+    -   Performance overlay with real-time metrics
+    -   Requires: ImGui.NET or Avalonia UI integration
 -   Node-based visual editor (graph-based scene editing)
 -   Integrated engine IDE (full development environment)
--   Entity inspector (runtime entity debugging)
 -   In-editor hot-reload (edit code while running)
 -   Behavior tree editor (AI scripting tool)
 -   Network module for multiplayer games (client/server architecture)
