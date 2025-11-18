@@ -204,9 +204,9 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Make the engine ergonomic for game developers.
 
-**Status:** NEAR COMPLETION (9/9 features complete, 1 deferred)
+**Status:** ✅ COMPLETE (9/9 features, 1 deferred)
 
-**Current Version:** v0.4.8-alpha
+**Current Version:** v0.4.9-alpha
 
 ### Features
 
@@ -220,6 +220,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 -   ✅ Built-in debugging tools (performance profiling guide complete)
 -   ✅ Collision layer system (v0.4.7)
 -   ✅ Tilemap support (v0.4.8)
+-   ✅ Demo refactoring & SceneManager basic (v0.4.9)
 
 ### Testing Requirements
 
@@ -266,16 +267,20 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** Planned
+**Status:** IN PROGRESS (1/11 features complete)
+
+**Current Version:** v0.4.9-alpha
 
 ### Features
 
--   **SceneManager system** (proper scene lifecycle management)
-    -   Scene stack for back navigation (replace temporary `Program.RequestedScene`)
-    -   Scene transitions with effects (fade in/out, slide)
-    -   Scene caching and lazy loading
-    -   Scene parameter passing (data transfer between scenes)
-    -   Scene preloading and background loading
+-   ✅ **SceneManager system** (basic implementation complete - v0.4.9)
+    -   ✅ Scene stack for back navigation (Push/Pop/Replace)
+    -   ✅ Proper scene lifecycle management (OnLoad/OnUnload)
+    -   ✅ Deferred transition processing (prevents mid-update corruption)
+    -   ⏳ Scene transitions with effects (fade in/out, slide) — PLANNED v0.5.0
+    -   ⏳ Scene caching and lazy loading — PLANNED
+    -   ⏳ Scene parameter passing (data transfer between scenes) — PLANNED
+    -   ⏳ Scene preloading and background loading — PLANNED
 -   ECS optimizations (query caching, archetype optimization)
 -   Memory profiling tools (allocation tracking)
 -   Stable public API surface (breaking changes frozen)
@@ -601,6 +606,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 | ------- | ----------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | 1.5     | November 18, 2025 | Kevin Martínez | Added missing features: SceneManager (Phase 4), Asset Management, Scene Templates, Developer Console, Scene Serialization (Phase 5) |
 | 1.4     | November 18, 2025 | Kevin Martínez | Phase 3 COMPLETE: Tilemap Support (v0.4.8), all 9/9 features implemented                                                            |
+| 1.5     | November 18, 2025 | Kevin Martínez | Phase 4 STARTED: SceneManager stack-based system (v0.4.9), demo refactoring, interactive EcsBasicsDemo                              |
 | 1.3     | November 18, 2025 | Kevin Martínez | Phase 3 status: 8/9 features (88%), Entity Inspector deferred to Phase 5+                                                           |
 | 1.2     | November 18, 2025 | Kevin Martínez | Added Collision Layer System (v0.4.7), updated Phase 3 progress                                                                     |
 | 1.1     | November 17, 2025 | Kevin Martínez | Updated Phase 3 with EntityBuilder/Factory (v0.4.6), retroactive docs                                                               |

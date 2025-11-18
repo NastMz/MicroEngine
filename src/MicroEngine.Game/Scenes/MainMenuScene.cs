@@ -4,6 +4,7 @@ using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Math;
 using MicroEngine.Core.Scenes;
+using MicroEngine.Game.Scenes.Demos;
 
 namespace MicroEngine.Game.Scenes;
 
@@ -16,7 +17,7 @@ public sealed class MainMenuScene : Scene
     private readonly IRenderBackend _renderBackend;
     private readonly ILogger _logger;
 
-    private const string ENGINE_VERSION = "v0.4.8-alpha";
+    private const string ENGINE_VERSION = "v0.4.9-alpha";
     private const int MENU_X = 250;
     private const int MENU_Y = 150;
     private const int LINE_HEIGHT = 30;
@@ -24,12 +25,12 @@ public sealed class MainMenuScene : Scene
     /// <summary>
     /// Initializes a new instance of the <see cref="MainMenuScene"/> class.
     /// </summary>
-    public MainMenuScene(IInputBackend inputBackend, IRenderBackend renderBackend, ILogger logger)
+    public MainMenuScene()
         : base("MainMenu")
     {
-        _inputBackend = inputBackend ?? throw new ArgumentNullException(nameof(inputBackend));
-        _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _inputBackend = Program.InputBackend;
+        _renderBackend = Program.RenderBackend;
+        _logger = Program.Logger;
     }
 
     /// <inheritdoc/>
@@ -43,23 +44,23 @@ public sealed class MainMenuScene : Scene
     {
         if (_inputBackend.IsKeyPressed(Key.One))
         {
-            LoadDemo("EcsBasics");
+            LoadDemo<EcsBasicsDemo>();
         }
         else if (_inputBackend.IsKeyPressed(Key.Two))
         {
-            LoadDemo("Graphics");
+            LoadDemo<GraphicsDemo>();
         }
         else if (_inputBackend.IsKeyPressed(Key.Three))
         {
-            LoadDemo("Physics");
+            LoadDemo<PhysicsDemo>();
         }
         else if (_inputBackend.IsKeyPressed(Key.Four))
         {
-            LoadDemo("Input");
+            LoadDemo<InputDemo>();
         }
         else if (_inputBackend.IsKeyPressed(Key.Five))
         {
-            LoadDemo("Tilemap");
+            LoadDemo<TilemapDemo>();
         }
     }
 
@@ -96,7 +97,7 @@ public sealed class MainMenuScene : Scene
         _renderBackend.DrawText("[5] Tilemap System", new Vector2(MENU_X + 20, optionY), 16, new Color(100, 200, 255, 255));
 
         optionY += LINE_HEIGHT + 10;
-        _renderBackend.DrawText("[ESC] Exit", new Vector2(MENU_X + 20, optionY), 16, new Color(255, 100, 100, 255));
+        _renderBackend.DrawText("[X] Exit (close window)", new Vector2(MENU_X + 20, optionY), 16, new Color(255, 100, 100, 255));
 
         var bottomSeparatorPos = new Vector2(MENU_X - 50, optionY + 40);
         _renderBackend.DrawText("═══════════════════════════════════════", bottomSeparatorPos, 16, new Color(100, 100, 100, 255));
@@ -108,8 +109,9 @@ public sealed class MainMenuScene : Scene
         _logger.Info("MainMenu", "Main menu unloaded");
     }
 
-    private static void LoadDemo(string demoName)
+    private void LoadDemo<T>() where T : Scene, new()
     {
-        Program.RequestedScene = demoName;
+        var demo = new T();
+        Program.SceneManager.PushScene(demo);
     }
 }

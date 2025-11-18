@@ -2,79 +2,68 @@
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Scenes;
 using MicroEngine.Game.Scenes;
-using MicroEngine.Game.Scenes.Demos;
 
 namespace MicroEngine.Game;
 
 internal static class Program
 {
-    public static string? RequestedScene { get; set; }
+    private static SceneManager? _sceneManager;
+    private static Core.Input.IInputBackend? _inputBackend;
+    private static Core.Graphics.IRenderBackend? _renderBackend;
+    private static ILogger? _logger;
+
+    public static SceneManager SceneManager => _sceneManager ?? throw new InvalidOperationException("SceneManager not initialized");
+    public static Core.Input.IInputBackend InputBackend => _inputBackend ?? throw new InvalidOperationException("InputBackend not initialized");
+    public static Core.Graphics.IRenderBackend RenderBackend => _renderBackend ?? throw new InvalidOperationException("RenderBackend not initialized");
+    public static ILogger Logger => _logger ?? throw new InvalidOperationException("Logger not initialized");
 
     private static void Main(string[] args)
     {
-        var logger = new ConsoleLogger(LogLevel.Info);
-        logger.Info("Game", "MicroEngine Demo Showcase Starting...");
+        _logger = new ConsoleLogger(LogLevel.Info);
+        _logger.Info("Game", "MicroEngine Demo Showcase Starting...");
 
-        var renderBackend = new RaylibRenderBackend();
-        var inputBackend = new RaylibInputBackend();
+        _renderBackend = new RaylibRenderBackend();
+        _inputBackend = new RaylibInputBackend();
 
-        renderBackend.Initialize(800, 600, "MicroEngine - Demo Showcase");
-        renderBackend.SetTargetFPS(60);
+        _renderBackend.Initialize(800, 600, "MicroEngine - Demo Showcase v0.4.9");
+        _renderBackend.SetTargetFPS(60);
 
         try
         {
-            Scene currentScene = new MainMenuScene(inputBackend, renderBackend, logger);
-            currentScene.OnLoad();
+            _sceneManager = new SceneManager(_logger);
+            _sceneManager.Initialize();
 
-            logger.Info("Game", "Main menu running... Press 1-5 to select demo, ESC to exit");
+            // Load initial scene (MainMenu)
+            var mainMenu = new MainMenuScene();
+            _sceneManager.ReplaceScene(mainMenu);
 
-            while (!renderBackend.ShouldClose)
+            _logger.Info("Game", "Main menu running... Press 1-5 to select demo, ESC to exit");
+
+            while (!_renderBackend.ShouldClose)
             {
-                var deltaTime = renderBackend.GetDeltaTime();
+                var deltaTime = _renderBackend.GetDeltaTime();
 
-                inputBackend.Update();
-                currentScene.OnUpdate(deltaTime);
+                _inputBackend.Update();
+                _sceneManager.Update(deltaTime);
 
-                if (RequestedScene != null)
-                {
-                    currentScene.OnUnload();
-                    currentScene = CreateScene(RequestedScene, inputBackend, renderBackend, logger);
-                    currentScene.OnLoad();
-                    RequestedScene = null;
-                }
-
-                renderBackend.BeginFrame();
-                currentScene.OnRender();
-                renderBackend.EndFrame();
+                _renderBackend.BeginFrame();
+                _sceneManager.Render();
+                _renderBackend.EndFrame();
             }
 
-            currentScene.OnUnload();
-            logger.Info("Game", "Demo showcase shut down successfully");
+            _sceneManager.Shutdown();
+            _logger.Info("Game", "Demo showcase shut down successfully");
         }
         catch (Exception ex)
         {
-            logger.Fatal("Game", "Fatal error occurred", ex);
+            _logger.Fatal("Game", "Fatal error occurred", ex);
         }
         finally
         {
-            renderBackend.Shutdown();
+            _renderBackend.Shutdown();
         }
 
-        logger.Info("Game", "Goodbye!");
-    }
-
-    private static Scene CreateScene(string sceneName, object inputBackend, object renderBackend, ILogger logger)
-    {
-        return sceneName switch
-        {
-            "MainMenu" => new MainMenuScene((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
-            "EcsBasics" => new EcsBasicsDemo((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
-            "Graphics" => new GraphicsDemo((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
-            "Physics" => new PhysicsDemo((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
-            "Input" => new InputDemo((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
-            "Tilemap" => new TilemapDemo((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger),
-            _ => new MainMenuScene((Core.Input.IInputBackend)inputBackend, (Core.Graphics.IRenderBackend)renderBackend, logger)
-        };
+        _logger.Info("Game", "Goodbye!");
     }
 }
 

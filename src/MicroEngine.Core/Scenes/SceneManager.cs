@@ -3,193 +3,232 @@ using MicroEngine.Core.Logging;
 namespace MicroEngine.Core.Scenes;
 
 /// <summary>
-/// Manages scene lifecycle, transitions, and updates.
+/// Manages scene lifecycle and navigation using a stack-based approach.
+/// Supports pushing, popping, and replacing scenes with automatic lifecycle management.
 /// </summary>
 public sealed class SceneManager
 {
     private const string LOG_CATEGORY = "SceneManager";
 
+    private readonly Stack<Scene> _sceneStack = new();
     private readonly ILogger _logger;
-    private readonly Dictionary<string, IScene> _scenes;
-    private IScene? _currentScene;
-    private IScene? _nextScene;
-    private bool _isTransitioning;
+    private Scene? _pendingScene;
+    private SceneTransition _pendingTransition;
 
     /// <summary>
     /// Gets the currently active scene.
     /// </summary>
-    public IScene? CurrentScene => _currentScene;
+    public Scene? CurrentScene => _sceneStack.Count > 0 ? _sceneStack.Peek() : null;
 
     /// <summary>
-    /// Gets whether a scene transition is in progress.
+    /// Gets the number of scenes in the stack.
     /// </summary>
-    public bool IsTransitioning => _isTransitioning;
+    public int SceneCount => _sceneStack.Count;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SceneManager"/> class.
     /// </summary>
-    /// <param name="logger">Logger instance.</param>
+    /// <param name="logger">Logger for scene transitions.</param>
     public SceneManager(ILogger logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _scenes = new Dictionary<string, IScene>();
-        _currentScene = null;
-        _nextScene = null;
-        _isTransitioning = false;
     }
 
     /// <summary>
     /// Initializes the scene manager.
     /// </summary>
-    internal void Initialize()
+    public void Initialize()
     {
         _logger.Info(LOG_CATEGORY, "Scene manager initialized");
     }
 
     /// <summary>
-    /// Registers a scene with the manager.
+    /// Pushes a new scene onto the stack, pausing the current scene.
+    /// The new scene becomes active and will receive updates.
     /// </summary>
-    /// <param name="scene">The scene to register.</param>
-    /// <exception cref="ArgumentNullException">Thrown when scene is null.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when a scene with the same name already exists.</exception>
-    public void RegisterScene(IScene scene)
+    /// <param name="scene">The scene to push.</param>
+    public void PushScene(Scene scene)
     {
         if (scene == null)
         {
             throw new ArgumentNullException(nameof(scene));
         }
 
-        if (_scenes.ContainsKey(scene.Name))
-        {
-            throw new InvalidOperationException($"Scene '{scene.Name}' is already registered");
-        }
-
-        _scenes.Add(scene.Name, scene);
-        _logger.Info(LOG_CATEGORY, $"Registered scene: {scene.Name}");
+        _pendingScene = scene;
+        _pendingTransition = SceneTransition.Push;
     }
 
     /// <summary>
-    /// Unregisters a scene from the manager.
+    /// Pops the current scene from the stack, returning to the previous scene.
+    /// If only one scene remains, does nothing.
     /// </summary>
-    /// <param name="sceneName">The name of the scene to unregister.</param>
-    /// <returns>True if the scene was unregistered, false otherwise.</returns>
-    public bool UnregisterScene(string sceneName)
+    public void PopScene()
     {
-        if (string.IsNullOrWhiteSpace(sceneName))
+        if (_sceneStack.Count <= 1)
         {
-            return false;
+            _logger.Warn(LOG_CATEGORY, "Cannot pop last scene from stack");
+            return;
         }
 
-        if (_currentScene?.Name == sceneName)
-        {
-            _logger.Warn(LOG_CATEGORY, $"Cannot unregister active scene: {sceneName}");
-            return false;
-        }
-
-        if (_scenes.Remove(sceneName))
-        {
-            _logger.Info(LOG_CATEGORY, $"Unregistered scene: {sceneName}");
-            return true;
-        }
-
-        return false;
+        _pendingTransition = SceneTransition.Pop;
     }
 
     /// <summary>
-    /// Loads and activates a scene by name.
+    /// Replaces the current scene with a new scene without affecting the stack.
+    /// Useful for transitions between scenes of the same "level" (e.g., menu to menu).
     /// </summary>
-    /// <param name="sceneName">The name of the scene to load.</param>
-    /// <exception cref="ArgumentException">Thrown when scene name is invalid.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when scene is not registered or transition is in progress.</exception>
-    public void LoadScene(string sceneName)
+    /// <param name="scene">The scene to replace with.</param>
+    public void ReplaceScene(Scene scene)
     {
-        if (string.IsNullOrWhiteSpace(sceneName))
+        if (scene == null)
         {
-            throw new ArgumentException("Scene name cannot be null or empty", nameof(sceneName));
+            throw new ArgumentNullException(nameof(scene));
         }
 
-        if (_isTransitioning)
-        {
-            throw new InvalidOperationException("Cannot load scene while a transition is in progress");
-        }
-
-        if (!_scenes.TryGetValue(sceneName, out IScene? scene))
-        {
-            throw new InvalidOperationException($"Scene '{sceneName}' is not registered");
-        }
-
-        _logger.Info(LOG_CATEGORY, $"Loading scene: {sceneName}");
-        _nextScene = scene;
-        _isTransitioning = true;
+        _pendingScene = scene;
+        _pendingTransition = SceneTransition.Replace;
     }
 
     /// <summary>
-    /// Performs the scene transition if one is pending.
+    /// Processes any pending scene transitions.
     /// </summary>
-    private void ProcessTransition()
+    private void ProcessPendingTransitions()
     {
-        if (!_isTransitioning || _nextScene == null)
+        if (_pendingTransition == SceneTransition.None)
+        {
+            return;
+        }
+
+        switch (_pendingTransition)
+        {
+            case SceneTransition.Push:
+                ProcessPushTransition();
+                break;
+
+            case SceneTransition.Pop:
+                ProcessPopTransition();
+                break;
+
+            case SceneTransition.Replace:
+                ProcessReplaceTransition();
+                break;
+        }
+
+        _pendingTransition = SceneTransition.None;
+    }
+
+    private void ProcessPushTransition()
+    {
+        if (_pendingScene == null)
+        {
+            return;
+        }
+
+        _logger.Info(LOG_CATEGORY, $"Pushing scene: {_pendingScene.Name}");
+
+        // Current scene remains in stack but won't receive updates
+        _sceneStack.Push(_pendingScene);
+        _pendingScene.OnLoad();
+
+        _pendingScene = null;
+    }
+
+    private void ProcessPopTransition()
+    {
+        if (_sceneStack.Count == 0)
+        {
+            return;
+        }
+
+        var currentScene = _sceneStack.Pop();
+        _logger.Info(LOG_CATEGORY, $"Popping scene: {currentScene.Name}");
+        currentScene.OnUnload();
+
+        // Resume previous scene (if any)
+        if (_sceneStack.Count > 0)
+        {
+            _logger.Info(LOG_CATEGORY, $"Resuming scene: {CurrentScene!.Name}");
+        }
+    }
+
+    private void ProcessReplaceTransition()
+    {
+        if (_pendingScene == null)
         {
             return;
         }
 
         // Unload current scene
-        if (_currentScene != null)
+        if (_sceneStack.Count > 0)
         {
-            _logger.Info(LOG_CATEGORY, $"Unloading scene: {_currentScene.Name}");
-            _currentScene.OnUnload();
+            var oldScene = _sceneStack.Pop();
+            _logger.Info(LOG_CATEGORY, $"Replacing scene: {oldScene.Name} → {_pendingScene.Name}");
+            oldScene.OnUnload();
+        }
+        else
+        {
+            _logger.Info(LOG_CATEGORY, $"Loading initial scene: {_pendingScene.Name}");
         }
 
-        // Load new scene
-        _currentScene = _nextScene;
-        _nextScene = null;
+        // Push new scene
+        _sceneStack.Push(_pendingScene);
+        _pendingScene.OnLoad();
 
-        _logger.Info(LOG_CATEGORY, $"Activating scene: {_currentScene.Name}");
-        _currentScene.OnLoad();
-
-        _isTransitioning = false;
+        _pendingScene = null;
     }
 
     /// <summary>
     /// Updates scenes with fixed timestep.
     /// </summary>
     /// <param name="fixedDeltaTime">The fixed delta time.</param>
-    internal void FixedUpdate(float fixedDeltaTime)
+    public void FixedUpdate(float fixedDeltaTime)
     {
-        ProcessTransition();
-        _currentScene?.OnFixedUpdate(fixedDeltaTime);
+        CurrentScene?.OnFixedUpdate(fixedDeltaTime);
     }
 
     /// <summary>
     /// Updates scenes with variable timestep.
     /// </summary>
     /// <param name="deltaTime">The frame delta time.</param>
-    internal void Update(float deltaTime)
+    public void Update(float deltaTime)
     {
-        _currentScene?.OnUpdate(deltaTime);
+        ProcessPendingTransitions();
+        CurrentScene?.OnUpdate(deltaTime);
     }
 
     /// <summary>
     /// Renders the current scene.
     /// </summary>
-    internal void Render()
+    public void Render()
     {
-        _currentScene?.OnRender();
+        CurrentScene?.OnRender();
     }
 
     /// <summary>
     /// Shuts down the scene manager and unloads all scenes.
     /// </summary>
-    internal void Shutdown()
+    public void Shutdown()
     {
-        if (_currentScene != null)
+        _logger.Info(LOG_CATEGORY, $"Clearing {_sceneStack.Count} scene(s) from stack");
+
+        while (_sceneStack.Count > 0)
         {
-            _logger.Info(LOG_CATEGORY, $"Unloading current scene: {_currentScene.Name}");
-            _currentScene.OnUnload();
-            _currentScene = null;
+            var scene = _sceneStack.Pop();
+            _logger.Info(LOG_CATEGORY, $"Unloading scene: {scene.Name}");
+            scene.OnUnload();
         }
 
-        _scenes.Clear();
+        _pendingScene = null;
+        _pendingTransition = SceneTransition.None;
+
         _logger.Info(LOG_CATEGORY, "Scene manager shut down");
+    }
+
+    private enum SceneTransition
+    {
+        None,
+        Push,
+        Pop,
+        Replace
     }
 }

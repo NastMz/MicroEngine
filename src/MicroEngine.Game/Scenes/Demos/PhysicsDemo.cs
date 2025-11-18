@@ -19,12 +19,12 @@ public sealed class PhysicsDemo : Scene
     /// <summary>
     /// Initializes a new instance of the <see cref="PhysicsDemo"/> class.
     /// </summary>
-    public PhysicsDemo(IInputBackend inputBackend, IRenderBackend renderBackend, ILogger logger)
+    public PhysicsDemo()
         : base("PhysicsDemo")
     {
-        _inputBackend = inputBackend ?? throw new ArgumentNullException(nameof(inputBackend));
-        _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _inputBackend = Program.InputBackend;
+        _renderBackend = Program.RenderBackend;
+        _logger = Program.Logger;
     }
 
     /// <inheritdoc/>
@@ -41,7 +41,7 @@ public sealed class PhysicsDemo : Scene
 
         if (_inputBackend.IsKeyPressed(Key.Escape))
         {
-            Program.RequestedScene = "MainMenu";
+            Program.SceneManager.PopScene();
         }
     }
 

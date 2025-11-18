@@ -9,13 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.9-alpha] - 2025-11-18
 
+### Added
+
+-   **SceneManager Stack-Based System**: Complete scene lifecycle management (Phase 4 start)
+    -   `PushScene(scene)`: Push new scene onto stack
+    -   `PopScene()`: Return to previous scene (guards against popping last scene)
+    -   `ReplaceScene(scene)`: Swap current scene with new one
+    -   Scene stack with `CurrentScene` and `SceneCount` properties
+    -   Deferred transition processing (prevents mid-update state corruption)
+    -   Automatic scene lifecycle (`OnLoad`/`OnUnload`) management
+    -   Clean shutdown (unloads all scenes in stack)
+-   **MainMenuScene**: Central navigation hub with clean menu UI
+-   **Interactive EcsBasicsDemo**: Playable demonstration of EntityBuilder/EntityFactory
+    -   Player movement (WASD/Arrows, 200px/s with diagonal normalization)
+    -   Enemy AI (horizontal patrol, 50px/s with edge detection)
+    -   Collectible animations (sine wave bounce effect)
+    -   Collection system (30px proximity detection, 6/6 tracking)
+    -   Visual feedback (labels, trail effect, instant destruction feedback)
+    -   Reset functionality (R key) with proper cleanup
+-   **Demo Placeholders**: Graphics, Physics, Input, and Tilemap demos (awaiting assets)
+-   **ESC Key Control**: Application-controlled ESC behavior (disabled Raylib default)
+
 ### Changed
 
 -   **Demo Refactoring**: Complete restructure of demo scenes for better organization
--   **Unified Entry Point**: Single `MainMenuScene` for navigating all demos
--   **Scene Navigation**: Menu-based demo selection (press 1-5) with ESC to return
--   **Modern Patterns**: EcsBasicsDemo showcases EntityBuilder and EntityFactory
--   **Clean Architecture**: Organized demos in `Scenes/Demos/` directory
+-   **Scene Navigation**: Stack-based navigation with Push/Pop (ESC returns to previous scene)
+-   **Program.cs**: Static backend properties for scene access to Input/Render/Logger
+-   **All Scenes**: Refactored to parameterless constructors using `Program` statics
+-   **Entity Destruction**: Immediate visual feedback via `_entitiesPendingDestruction` tracking
+-   **World.IsEntityValid()**: Filters destroyed entities from queries and rendering
 
 ### Removed
 
@@ -23,29 +45,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   `CameraDemoScene`, `ComponentHelpersDemoScene`, `DemoScene`, `EcsDemoScene`
     -   `InputMapDemoScene`, `ResourceDemoScene`, `SpriteBatchDemoScene`, `VisualDemoScene`
 -   **Manual Entity Creation**: Replaced 42 manual `AddComponent` calls with builders
+-   **Program.RequestedScene**: Temporary solution replaced by SceneManager stack
 
-### Added
+### Fixed
 
--   **MainMenuScene**: Central navigation hub with clean menu UI
--   **EcsBasicsDemo**: Live demonstration of EntityBuilder and EntityFactory patterns
--   **Demo Placeholders**: Graphics, Physics, Input, and Tilemap demos (awaiting assets)
--   **Scene Switching**: Basic scene management via `Program.RequestedScene` property
+-   **Black Screen on Launch**: ProcessPendingTransitions moved to Update() (from FixedUpdate)
+-   **ESC Closes Window**: SetExitKey(KeyboardKey.Null) in RaylibRenderBackend
+-   **Reset Duplication**: World.Update(0f) forces cleanup before creating new entities
+-   **Collectibles Not Disappearing**: IsEntityValid() now checks pending destruction
+
+### Testing
+
+-   **14 New SceneManager Tests**: Complete coverage of stack-based API
+    -   Stack operations (Push/Pop/Replace with multiple scenes)
+    -   Lifecycle management (OnLoad/OnUnload call verification)
+    -   Edge cases (pop last scene, empty stack, null arguments)
+    -   Transition processing and rendering delegation
+    -   Shutdown cleanup (all scenes unloaded)
+-   **Test Results**: 350/352 passing (2 skipped FileSystemWatcher tests)
 
 ### Technical Details
 
--   **Navigation**: Keyboard-based (1-5 for demos, ESC for menu/exit)
--   **EcsBasicsDemo**: Shows 15 entities created with Phase 3 patterns
-    -   1 Player (EntityBuilder), 4 Enemies (EntityFactory), 6 Collectibles (EntityFactory)
-    -   4 Obstacles (EntityBuilder)
--   **Placeholder Demos**: Ready for asset integration (sprites, tilesets)
--   **Code Reduction**: ~800 LOC legacy code replaced with ~600 LOC modern code
--   **Maintainability**: Centralized demo structure simplifies future updates
+-   **SceneManager Architecture**: 235 lines, stack-based with deferred transitions
+-   **EcsBasicsDemo**: 413 lines, fully interactive with 15 entities
+    -   1 Player (blue 16px), 4 Enemies (red 14px), 6 Collectibles (yellow 8px), 4 Obstacles (gray 25px)
+-   **Navigation**: Keyboard-based (1-5 for demos, ESC returns to menu/previous scene)
+-   **Code Quality**: All tests passing, no build warnings (except 3 IDE suggestions)
+-   **Phase 4 Progress**: SceneManager basic complete (transitions deferred to v0.5.0)
 
 ### Developer Experience
 
 -   **Single Command**: `dotnet run` launches unified demo showcase
--   **Easy Navigation**: No need to modify `Program.cs` to switch demos
--   **Extensibility**: Adding new demos only requires scene creation + menu entry
+-   **Smooth Navigation**: Push/Pop scene stack with clean lifecycle management
+-   **Extensibility**: Adding demos only requires scene creation + menu entry
+-   **Debugging**: ESC key controlled by application (no unexpected window close)
 
 ## [0.4.8-alpha] - 2025-11-18
 

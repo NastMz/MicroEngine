@@ -4,7 +4,7 @@ using MicroEngine.Core.Scenes;
 namespace MicroEngine.Core.Tests.Scenes;
 
 /// <summary>
-/// Unit tests for <see cref="SceneManager"/>.
+/// Unit tests for stack-based <see cref="SceneManager"/>.
 /// </summary>
 public class SceneManagerTests
 {
@@ -12,7 +12,6 @@ public class SceneManagerTests
     {
         public int LoadCallCount { get; private set; }
         public int UnloadCallCount { get; private set; }
-        public int FixedUpdateCallCount { get; private set; }
         public int UpdateCallCount { get; private set; }
         public int RenderCallCount { get; private set; }
 
@@ -30,11 +29,6 @@ public class SceneManagerTests
         {
             base.OnUnload();
             UnloadCallCount++;
-        }
-
-        public override void OnFixedUpdate(float fixedDeltaTime)
-        {
-            FixedUpdateCallCount++;
         }
 
         public override void OnUpdate(float deltaTime)
@@ -55,158 +49,203 @@ public class SceneManagerTests
     }
 
     [Fact]
-    public void Constructor_InitializesCorrectly()
+    public void Constructor_InitializesWithEmptyStack()
     {
         var logger = new ConsoleLogger();
         var manager = new SceneManager(logger);
 
         Assert.NotNull(manager);
         Assert.Null(manager.CurrentScene);
-        Assert.False(manager.IsTransitioning);
+        Assert.Equal(0, manager.SceneCount);
     }
 
     [Fact]
-    public void RegisterScene_AddsSceneSuccessfully()
+    public void PushScene_ThrowsWhenSceneIsNull()
     {
         var manager = CreateSceneManager();
-        var scene = new TestScene("TestScene");
+        manager.Initialize();
 
-        manager.RegisterScene(scene);
-
-        // Scene is registered but not loaded
-        Assert.Null(manager.CurrentScene);
+        Assert.Throws<ArgumentNullException>(() => manager.PushScene(null!));
     }
 
     [Fact]
-    public void RegisterScene_ThrowsWhenSceneIsNull()
-    {
-        var manager = CreateSceneManager();
-
-        Assert.Throws<ArgumentNullException>(() => manager.RegisterScene(null!));
-    }
-
-    [Fact]
-    public void RegisterScene_ThrowsWhenDuplicateSceneName()
-    {
-        var manager = CreateSceneManager();
-        var scene1 = new TestScene("TestScene");
-        var scene2 = new TestScene("TestScene");
-
-        manager.RegisterScene(scene1);
-
-        Assert.Throws<InvalidOperationException>(() => manager.RegisterScene(scene2));
-    }
-
-    [Fact]
-    public void LoadScene_ActivatesScene()
+    public void PushScene_AddsToStackAndCallsOnLoad()
     {
         var manager = CreateSceneManager();
         manager.Initialize();
 
         var scene = new TestScene("TestScene");
-        manager.RegisterScene(scene);
+        manager.PushScene(scene);
 
-        manager.LoadScene("TestScene");
+        // Transition is pending, process it
+        manager.Update(0.016f);
 
-        // Transition is pending
-        Assert.True(manager.IsTransitioning);
-
-        // Process transition
-        manager.FixedUpdate(0.016f);
-
-        Assert.False(manager.IsTransitioning);
         Assert.Equal(scene, manager.CurrentScene);
+        Assert.Equal(1, manager.SceneCount);
         Assert.Equal(1, scene.LoadCallCount);
         Assert.True(scene.IsActive);
     }
 
     [Fact]
-    public void LoadScene_ThrowsWhenSceneNotRegistered()
-    {
-        var manager = CreateSceneManager();
-        manager.Initialize();
-
-        Assert.Throws<InvalidOperationException>(() => manager.LoadScene("NonExistent"));
-    }
-
-    [Fact]
-    public void LoadScene_ThrowsWhenTransitionInProgress()
+    public void PushScene_MultipleScenesStackCorrectly()
     {
         var manager = CreateSceneManager();
         manager.Initialize();
 
         var scene1 = new TestScene("Scene1");
         var scene2 = new TestScene("Scene2");
+        var scene3 = new TestScene("Scene3");
 
-        manager.RegisterScene(scene1);
-        manager.RegisterScene(scene2);
+        manager.PushScene(scene1);
+        manager.Update(0.016f);
 
-        manager.LoadScene("Scene1");
+        manager.PushScene(scene2);
+        manager.Update(0.016f);
 
-        Assert.Throws<InvalidOperationException>(() => manager.LoadScene("Scene2"));
-    }
+        manager.PushScene(scene3);
+        manager.Update(0.016f);
 
-    [Fact]
-    public void SceneTransition_UnloadsPreviousScene()
-    {
-        var manager = CreateSceneManager();
-        manager.Initialize();
-
-        var scene1 = new TestScene("Scene1");
-        var scene2 = new TestScene("Scene2");
-
-        manager.RegisterScene(scene1);
-        manager.RegisterScene(scene2);
-
-        // Load first scene
-        manager.LoadScene("Scene1");
-        manager.FixedUpdate(0.016f);
-
+        Assert.Equal(scene3, manager.CurrentScene);
+        Assert.Equal(3, manager.SceneCount);
         Assert.Equal(1, scene1.LoadCallCount);
-        Assert.True(scene1.IsActive);
-
-        // Load second scene
-        manager.LoadScene("Scene2");
-        manager.FixedUpdate(0.016f);
-
-        Assert.Equal(1, scene1.UnloadCallCount);
-        Assert.False(scene1.IsActive);
         Assert.Equal(1, scene2.LoadCallCount);
-        Assert.True(scene2.IsActive);
+        Assert.Equal(1, scene3.LoadCallCount);
+    }
+
+    [Fact]
+    public void PopScene_RemovesFromStackAndCallsOnUnload()
+    {
+        var manager = CreateSceneManager();
+        manager.Initialize();
+
+        var scene1 = new TestScene("Scene1");
+        var scene2 = new TestScene("Scene2");
+
+        manager.PushScene(scene1);
+        manager.Update(0.016f);
+
+        manager.PushScene(scene2);
+        manager.Update(0.016f);
+
+        Assert.Equal(2, manager.SceneCount);
         Assert.Equal(scene2, manager.CurrentScene);
+
+        manager.PopScene();
+        manager.Update(0.016f);
+
+        Assert.Equal(1, manager.SceneCount);
+        Assert.Equal(scene1, manager.CurrentScene);
+        Assert.Equal(1, scene2.UnloadCallCount);
+        Assert.False(scene2.IsActive);
     }
 
     [Fact]
-    public void FixedUpdate_CallsSceneFixedUpdate()
+    public void PopScene_DoesNothingWhenOneSceneRemains()
     {
         var manager = CreateSceneManager();
         manager.Initialize();
 
         var scene = new TestScene("TestScene");
-        manager.RegisterScene(scene);
-        manager.LoadScene("TestScene");
+        manager.PushScene(scene);
+        manager.Update(0.016f);
 
-        manager.FixedUpdate(0.016f);
-        manager.FixedUpdate(0.016f);
+        Assert.Equal(1, manager.SceneCount);
 
-        Assert.Equal(2, scene.FixedUpdateCallCount);
+        manager.PopScene();
+        manager.Update(0.016f);
+
+        // Should still have the scene (cannot pop last scene)
+        Assert.Equal(1, manager.SceneCount);
+        Assert.Equal(scene, manager.CurrentScene);
+        Assert.Equal(0, scene.UnloadCallCount);
     }
 
     [Fact]
-    public void Update_CallsSceneUpdate()
+    public void PopScene_DoesNothingWhenStackIsEmpty()
+    {
+        var manager = CreateSceneManager();
+        manager.Initialize();
+
+        Assert.Equal(0, manager.SceneCount);
+
+        manager.PopScene();
+        manager.Update(0.016f);
+
+        Assert.Equal(0, manager.SceneCount);
+        Assert.Null(manager.CurrentScene);
+    }
+
+    [Fact]
+    public void ReplaceScene_ThrowsWhenSceneIsNull()
+    {
+        var manager = CreateSceneManager();
+        manager.Initialize();
+
+        Assert.Throws<ArgumentNullException>(() => manager.ReplaceScene(null!));
+    }
+
+    [Fact]
+    public void ReplaceScene_SwapsTopSceneWithOnLoadUnload()
+    {
+        var manager = CreateSceneManager();
+        manager.Initialize();
+
+        var scene1 = new TestScene("Scene1");
+        var scene2 = new TestScene("Scene2");
+
+        manager.PushScene(scene1);
+        manager.Update(0.016f);
+
+        Assert.Equal(1, manager.SceneCount);
+        Assert.Equal(scene1, manager.CurrentScene);
+
+        manager.ReplaceScene(scene2);
+        manager.Update(0.016f);
+
+        Assert.Equal(1, manager.SceneCount);
+        Assert.Equal(scene2, manager.CurrentScene);
+        Assert.Equal(1, scene1.UnloadCallCount);
+        Assert.Equal(1, scene2.LoadCallCount);
+        Assert.False(scene1.IsActive);
+        Assert.True(scene2.IsActive);
+    }
+
+    [Fact]
+    public void ReplaceScene_WorksOnEmptyStack()
     {
         var manager = CreateSceneManager();
         manager.Initialize();
 
         var scene = new TestScene("TestScene");
-        manager.RegisterScene(scene);
-        manager.LoadScene("TestScene");
 
-        manager.FixedUpdate(0.016f);
+        manager.ReplaceScene(scene);
+        manager.Update(0.016f);
+
+        Assert.Equal(1, manager.SceneCount);
+        Assert.Equal(scene, manager.CurrentScene);
+        Assert.Equal(1, scene.LoadCallCount);
+    }
+
+    [Fact]
+    public void Update_ProcessesPendingTransitionsAndCallsSceneUpdate()
+    {
+        var manager = CreateSceneManager();
+        manager.Initialize();
+
+        var scene = new TestScene("TestScene");
+        manager.PushScene(scene);
+
+        // First Update processes the pending push transition
+        manager.Update(0.016f);
+
+        Assert.Equal(1, scene.LoadCallCount);
+        Assert.Equal(1, scene.UpdateCallCount);
+
+        // Subsequent Updates just call scene update
         manager.Update(0.016f);
         manager.Update(0.016f);
 
-        Assert.Equal(2, scene.UpdateCallCount);
+        Assert.Equal(3, scene.UpdateCallCount);
     }
 
     [Fact]
@@ -216,10 +255,9 @@ public class SceneManagerTests
         manager.Initialize();
 
         var scene = new TestScene("TestScene");
-        manager.RegisterScene(scene);
-        manager.LoadScene("TestScene");
+        manager.PushScene(scene);
+        manager.Update(0.016f);
 
-        manager.FixedUpdate(0.016f);
         manager.Render();
         manager.Render();
 
@@ -227,49 +265,54 @@ public class SceneManagerTests
     }
 
     [Fact]
-    public void UnregisterScene_RemovesScene()
+    public void Shutdown_UnloadsAllScenesInStack()
     {
         var manager = CreateSceneManager();
         manager.Initialize();
 
-        var scene = new TestScene("TestScene");
-        manager.RegisterScene(scene);
+        var scene1 = new TestScene("Scene1");
+        var scene2 = new TestScene("Scene2");
+        var scene3 = new TestScene("Scene3");
 
-        bool result = manager.UnregisterScene("TestScene");
+        manager.PushScene(scene1);
+        manager.Update(0.016f);
 
-        Assert.True(result);
-    }
+        manager.PushScene(scene2);
+        manager.Update(0.016f);
 
-    [Fact]
-    public void UnregisterScene_ReturnsFalseForActiveScene()
-    {
-        var manager = CreateSceneManager();
-        manager.Initialize();
+        manager.PushScene(scene3);
+        manager.Update(0.016f);
 
-        var scene = new TestScene("TestScene");
-        manager.RegisterScene(scene);
-        manager.LoadScene("TestScene");
-        manager.FixedUpdate(0.016f);
-
-        bool result = manager.UnregisterScene("TestScene");
-
-        Assert.False(result);
-    }
-
-    [Fact]
-    public void Shutdown_UnloadsCurrentScene()
-    {
-        var manager = CreateSceneManager();
-        manager.Initialize();
-
-        var scene = new TestScene("TestScene");
-        manager.RegisterScene(scene);
-        manager.LoadScene("TestScene");
-        manager.FixedUpdate(0.016f);
+        Assert.Equal(3, manager.SceneCount);
 
         manager.Shutdown();
 
-        Assert.Equal(1, scene.UnloadCallCount);
+        Assert.Equal(1, scene1.UnloadCallCount);
+        Assert.Equal(1, scene2.UnloadCallCount);
+        Assert.Equal(1, scene3.UnloadCallCount);
         Assert.Null(manager.CurrentScene);
+        Assert.Equal(0, manager.SceneCount);
+    }
+
+    [Fact]
+    public void PendingTransitions_OnlyLastIsProcessed()
+    {
+        var manager = CreateSceneManager();
+        manager.Initialize();
+
+        var scene1 = new TestScene("Scene1");
+        var scene2 = new TestScene("Scene2");
+
+        // Queue multiple transitions before processing
+        manager.PushScene(scene1);
+        manager.PushScene(scene2);
+
+        // Only last pending transition is processed (Push scene2)
+        manager.Update(0.016f);
+
+        Assert.Equal(scene2, manager.CurrentScene);
+        Assert.Equal(1, manager.SceneCount);
+        Assert.Equal(0, scene1.LoadCallCount); // scene1 never loaded
+        Assert.Equal(1, scene2.LoadCallCount);
     }
 }

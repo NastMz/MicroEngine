@@ -43,12 +43,12 @@ public sealed class EcsBasicsDemo : Scene
     /// <summary>
     /// Initializes a new instance of the <see cref="EcsBasicsDemo"/> class.
     /// </summary>
-    public EcsBasicsDemo(IInputBackend inputBackend, IRenderBackend renderBackend, ILogger logger)
+    public EcsBasicsDemo()
         : base(SCENE_NAME)
     {
-        _inputBackend = inputBackend ?? throw new ArgumentNullException(nameof(inputBackend));
-        _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _inputBackend = Program.InputBackend;
+        _renderBackend = Program.RenderBackend;
+        _logger = Program.Logger;
         _movementSystem = new MovementSystem();
     }
 
@@ -72,7 +72,7 @@ public sealed class EcsBasicsDemo : Scene
 
         if (_inputBackend.IsKeyPressed(Key.Escape))
         {
-            Program.RequestedScene = "MainMenu";
+            Program.SceneManager.PopScene();
         }
         else if (_inputBackend.IsKeyPressed(Key.R))
         {

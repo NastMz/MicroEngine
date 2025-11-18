@@ -50,6 +50,10 @@ public class RaylibRenderBackend : IRenderBackend
         }
 
         Raylib_cs.Raylib.InitWindow(width, height, title);
+        
+        // Disable ESC key to close window - let the game handle it
+        Raylib_cs.Raylib.SetExitKey(KeyboardKey.Null);
+        
         _isInitialized = true;
     }
 
