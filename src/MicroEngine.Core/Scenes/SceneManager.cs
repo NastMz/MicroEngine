@@ -16,6 +16,7 @@ public sealed class SceneManager
     private ILogger _logger = null!;
 
     private Scene? _pendingScene;
+    private SceneParameters? _pendingParameters;
     private SceneTransition _pendingTransition;
     private TransitionState _transitionState;
 
@@ -79,6 +80,25 @@ public sealed class SceneManager
         }
 
         _pendingScene = scene;
+        _pendingParameters = null;
+        _pendingTransition = SceneTransition.Push;
+    }
+
+    /// <summary>
+    /// Pushes a new scene onto the stack with parameters.
+    /// The new scene becomes active and will receive updates and parameters.
+    /// </summary>
+    /// <param name="scene">The scene to push.</param>
+    /// <param name="parameters">Parameters to pass to the new scene.</param>
+    public void PushScene(Scene scene, SceneParameters parameters)
+    {
+        if (scene == null)
+        {
+            throw new ArgumentNullException(nameof(scene));
+        }
+
+        _pendingScene = scene;
+        _pendingParameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
         _pendingTransition = SceneTransition.Push;
     }
 
@@ -110,6 +130,24 @@ public sealed class SceneManager
         }
 
         _pendingScene = scene;
+        _pendingParameters = null;
+        _pendingTransition = SceneTransition.Replace;
+    }
+
+    /// <summary>
+    /// Replaces the current scene with a new scene with parameters.
+    /// </summary>
+    /// <param name="scene">The scene to replace with.</param>
+    /// <param name="parameters">Parameters to pass to the new scene.</param>
+    public void ReplaceScene(Scene scene, SceneParameters parameters)
+    {
+        if (scene == null)
+        {
+            throw new ArgumentNullException(nameof(scene));
+        }
+
+        _pendingScene = scene;
+        _pendingParameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
         _pendingTransition = SceneTransition.Replace;
     }
 
@@ -201,7 +239,17 @@ public sealed class SceneManager
         // Current scene remains in stack but won't receive updates
         _sceneStack.Push(_pendingScene);
         _pendingScene.SetSceneManager(this);
-        _pendingScene.OnLoad(_sceneContext);
+        
+        // Call appropriate OnLoad overload based on whether parameters were provided
+        if (_pendingParameters != null)
+        {
+            _pendingScene.OnLoad(_sceneContext, _pendingParameters);
+            _pendingParameters = null;
+        }
+        else
+        {
+            _pendingScene.OnLoad(_sceneContext);
+        }
 
         _pendingScene = null;
     }
@@ -246,7 +294,17 @@ public sealed class SceneManager
         // Push new scene
         _sceneStack.Push(_pendingScene);
         _pendingScene.SetSceneManager(this);
-        _pendingScene.OnLoad(_sceneContext);
+        
+        // Call appropriate OnLoad overload based on whether parameters were provided
+        if (_pendingParameters != null)
+        {
+            _pendingScene.OnLoad(_sceneContext, _pendingParameters);
+            _pendingParameters = null;
+        }
+        else
+        {
+            _pendingScene.OnLoad(_sceneContext);
+        }
 
         _pendingScene = null;
     }

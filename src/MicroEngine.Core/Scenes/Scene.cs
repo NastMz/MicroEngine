@@ -64,6 +64,22 @@ public abstract class Scene : IScene
     }
 
     /// <summary>
+    /// Pushes a new scene onto the scene stack with parameters.
+    /// </summary>
+    /// <param name="scene">The scene to push.</param>
+    /// <param name="parameters">Parameters to pass to the new scene.</param>
+    /// <exception cref="InvalidOperationException">Thrown if scene manager is not initialized.</exception>
+    protected void PushScene(Scene scene, SceneParameters parameters)
+    {
+        if (_sceneManager == null)
+        {
+            throw new InvalidOperationException("Scene manager not initialized. This scene has not been loaded yet.");
+        }
+        
+        _sceneManager.PushScene(scene, parameters);
+    }
+
+    /// <summary>
     /// Pops the current scene from the scene stack.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown if scene manager is not initialized.</exception>
@@ -92,11 +108,35 @@ public abstract class Scene : IScene
         _sceneManager.ReplaceScene(scene);
     }
 
+    /// <summary>
+    /// Replaces the current scene with a new one with parameters.
+    /// </summary>
+    /// <param name="scene">The scene to replace with.</param>
+    /// <param name="parameters">Parameters to pass to the new scene.</param>
+    /// <exception cref="InvalidOperationException">Thrown if scene manager is not initialized.</exception>
+    protected void ReplaceScene(Scene scene, SceneParameters parameters)
+    {
+        if (_sceneManager == null)
+        {
+            throw new InvalidOperationException("Scene manager not initialized. This scene has not been loaded yet.");
+        }
+        
+        _sceneManager.ReplaceScene(scene, parameters);
+    }
+
     /// <inheritdoc/>
     public virtual void OnLoad(SceneContext context)
     {
         Context = context ?? throw new ArgumentNullException(nameof(context));
         _isActive = true;
+    }
+
+    /// <inheritdoc/>
+    public virtual void OnLoad(SceneContext context, SceneParameters parameters)
+    {
+        // Default implementation ignores parameters for backward compatibility
+        // Derived classes can override to receive parameters
+        OnLoad(context);
     }
 
     /// <inheritdoc/>

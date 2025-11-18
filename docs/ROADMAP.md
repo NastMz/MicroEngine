@@ -1,6 +1,6 @@
 # MicroEngine — Development Roadmap
 
-**Version:** 1.8  
+**Version:** 1.9  
 **Status:** Reference  
 **Author:** Kevin Martínez  
 **Last Updated:** November 2025
@@ -267,7 +267,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** IN PROGRESS (5/11 features complete)
+**Status:** IN PROGRESS (6/11 features complete)
 
 **Current Version:** v0.6.0-alpha
 
@@ -284,13 +284,19 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
         -   ZoomTransition: 2 modes (ZoomIn, ZoomOut) with vignette effect
         -   SceneManager.SetTransition() for runtime transition changes
         -   MainMenuScene transition selector (F6-F9)
+    -   ✅ **Scene parameter passing** (data transfer between scenes) — COMPLETE v0.6.0
+        -   SceneParameters: Immutable, type-safe builder pattern
+        -   Get<T>/TryGet<T>/Contains for safe parameter retrieval
+        -   PushScene(scene, parameters) and ReplaceScene(scene, parameters) overloads
+        -   OnLoad(context, parameters) overload in Scene base class
+        -   Backward compatible with existing parameter-less code
+        -   Demo: InputDemo receives parameters from MainMenu
     -   ✅ **Dependency injection architecture** — v0.6.0
         -   SceneContext service container (5 core services)
         -   No circular dependencies (removed SceneManager from SceneContext)
         -   Scene navigation methods (PushScene/PopScene/ReplaceScene)
         -   Hollywood Principle pattern (SetSceneManager internal injection)
     -   ⏳ Scene caching and lazy loading — PLANNED
-    -   ⏳ Scene parameter passing (data transfer between scenes) — PLANNED
     -   ⏳ Scene preloading and background loading — PLANNED
 -   ✅ **Graphics rendering improvements** — COMPLETE v0.5.0
     -   ✅ **Texture filtering** (Point, Bilinear, Trilinear, Anisotropic16X)
@@ -629,6 +635,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.9     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Parameters: Type-safe parameter passing, SceneParameters builder, 916 tests passing (v0.6.0)                                     |
 | 1.8     | November 18, 2025 | Kevin Martínez | Phase 4 Transitions: Additional scene transition effects (Slide, Wipe, Zoom), SetTransition() runtime changes, transition selector UI (v0.6.0) |
 | 1.7     | November 18, 2025 | Kevin Martínez | Architecture refinement (v0.6.0): Eliminated circular dependency, SceneContext DI pattern, Scene navigation methods                            |
 | 1.6     | November 18, 2025 | Kevin Martínez | Phase 4 Graphics: MSAA support (v0.5.1), texture filtering & mipmaps (v0.5.0), ECS query caching, fade transitions                             |

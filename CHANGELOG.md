@@ -46,6 +46,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Resets transition state when changed
     -   Logs transition changes for debugging
     -   Enables user-selectable transition preferences
+-   **Scene Parameter Passing**: Type-safe data transfer between scenes
+    -   **SceneParameters** class: Immutable, fluent builder pattern for parameter construction
+    -   `Get<T>(key)`: Type-safe parameter retrieval with compile-time checking
+    -   `TryGet<T>(key, out value)`: Safe retrieval without exceptions
+    -   `Contains(key)`: Check parameter existence
+    -   **Scene.OnLoad(context, parameters)**: Overload receives optional parameters
+    -   **SceneManager overloads**: `PushScene(scene, parameters)` and `ReplaceScene(scene, parameters)`
+    -   **Backward compatible**: Existing code without parameters continues to work
+    -   **Demo**: InputDemo showcases parameter reception from MainMenu
 -   **ITimeService Interface**: Platform-agnostic time management abstraction
     -   `DeltaTime` property (time since last frame in seconds)
     -   `CurrentFPS` property (actual frames per second)
@@ -137,15 +146,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Details
 
 -   **SceneContext.cs**: 60 lines, 5 service properties + constructor validation (reduced from 6)
--   **Scene.cs**: 120 lines, added navigation methods and SceneManager injection
+-   **Scene.cs**: 165 lines, navigation methods + SceneManager injection + parameter overloads
+-   **SceneParameters.cs**: 156 lines, immutable builder pattern, type-safe parameter storage
 -   **RaylibTexture.cs**: 165 lines, P/Invoke for OpenGL anisotropic filtering
 -   **SlideTransition.cs**: 145 lines, 4 directional slide modes, 10 tests
 -   **WipeTransition.cs**: 196 lines, 6 wipe modes including circular effects, 11 tests
 -   **ZoomTransition.cs**: 172 lines, 2 zoom modes with vignette, 10 tests
--   **SceneManager.cs**: Two-phase init pattern + SetTransition() for runtime changes
+-   **SceneManager.cs**: Two-phase init + SetTransition() + parameter overloads (PushScene/ReplaceScene)
 -   **ITimeService.cs**: 73 lines, comprehensive documentation
 -   **TimeService.cs**: 127 lines, high-precision Stopwatch-based implementation
--   **SceneManager.cs**: Two-phase init pattern (Constructor + Initialize)
 -   **IRenderBackend2D**: Renamed from IRenderBackend, 22 methods (3 removed)
 -   **Architecture**: Time management decoupled from rendering, dependency injection throughout
 -   **Performance**: Stopwatch provides microsecond-accurate timing
@@ -155,8 +164,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Testing
 
--   **868 tests passing**: All tests updated with mock SceneContext (37 new transition tests)
--   **SceneManagerTests**: Now creates real ResourceCache with mocked IResourceLoader
+-   **916 tests passing**: All tests updated with mock SceneContext (77 new tests total)
+-   **SceneParametersTests**: 20 tests covering builder pattern, type safety, and immutability
+-   **SceneManagerTests**: 6 new tests for parameter passing in Push/Replace scenarios
 -   **SlideTransitionTests**: 10 tests covering all 4 directions and lifecycle
 -   **WipeTransitionTests**: 11 tests covering all 6 modes including EdgeIn
 -   **ZoomTransitionTests**: 10 tests covering both zoom modes and vignette rendering
@@ -166,6 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **Anisotropic filtering verified**: Visual difference clear at different zoom levels
 -   **Scene transitions verified**: Smooth navigation between demos with all 4 transition effects
 -   **Transition selector verified**: F6-F9 keys change transition effect in real-time
+-   **Parameter passing verified**: InputDemo receives and displays parameters from MainMenu
 -   **Mipmap generation verified**: Auto-generation working for Trilinear and Anisotropic filters
 
 ### Architecture Improvements

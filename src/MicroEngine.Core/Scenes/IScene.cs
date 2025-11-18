@@ -31,6 +31,17 @@ public interface IScene
     void OnLoad(SceneContext context);
 
     /// <summary>
+    /// Called when the scene is loaded and initialized with parameters.
+    /// </summary>
+    /// <param name="context">The scene context providing access to engine services.</param>
+    /// <param name="parameters">Optional parameters passed from the previous scene.</param>
+    /// <remarks>
+    /// Override this method if your scene needs to receive data from other scenes.
+    /// The default implementation calls OnLoad(context) for backward compatibility.
+    /// </remarks>
+    void OnLoad(SceneContext context, SceneParameters parameters);
+
+    /// <summary>
     /// Called for fixed timestep updates (physics, deterministic logic).
     /// </summary>
     /// <param name="fixedDeltaTime">The fixed delta time.</param>

@@ -16,6 +16,8 @@ public class SceneManagerTests
     private sealed class TestScene : Scene
     {
         public int LoadCallCount { get; private set; }
+        public int LoadWithParametersCallCount { get; private set; }
+        public SceneParameters? ReceivedParameters { get; private set; }
         public int UnloadCallCount { get; private set; }
         public int UpdateCallCount { get; private set; }
         public int RenderCallCount { get; private set; }
@@ -28,6 +30,13 @@ public class SceneManagerTests
         {
             base.OnLoad(context);
             LoadCallCount++;
+        }
+
+        public override void OnLoad(SceneContext context, SceneParameters parameters)
+        {
+            base.OnLoad(context, parameters);
+            LoadWithParametersCallCount++;
+            ReceivedParameters = parameters;
         }
 
         public override void OnUnload()
@@ -330,5 +339,95 @@ public class SceneManagerTests
         Assert.Equal(1, manager.SceneCount);
         Assert.Equal(0, scene1.LoadCallCount); // scene1 never loaded
         Assert.Equal(1, scene2.LoadCallCount);
+    }
+
+    [Fact]
+    public void PushScene_WithParameters_CallsOnLoadWithParameters()
+    {
+        // Arrange
+        var manager = CreateSceneManager();
+        var scene = new TestScene("Scene1");
+        var parameters = SceneParameters.Create()
+            .Add("level", 5)
+            .Add("score", 1000)
+            .Build();
+
+        // Act
+        manager.PushScene(scene, parameters);
+        manager.Update(0.016f);
+
+        // Assert
+        Assert.Equal(scene, manager.CurrentScene);
+        Assert.Equal(1, scene.LoadWithParametersCallCount);
+        Assert.Equal(1, scene.LoadCallCount); // Base OnLoad also called
+        Assert.NotNull(scene.ReceivedParameters);
+        Assert.Equal(5, scene.ReceivedParameters.Get<int>("level"));
+        Assert.Equal(1000, scene.ReceivedParameters.Get<int>("score"));
+    }
+
+    [Fact]
+    public void PushScene_WithNullParameters_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var manager = CreateSceneManager();
+        var scene = new TestScene("Scene1");
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => manager.PushScene(scene, null!));
+    }
+
+    [Fact]
+    public void ReplaceScene_WithParameters_CallsOnLoadWithParameters()
+    {
+        // Arrange
+        var manager = CreateSceneManager();
+        var scene1 = new TestScene("Scene1");
+        var scene2 = new TestScene("Scene2");
+        var parameters = SceneParameters.Create()
+            .Add("difficulty", "Hard")
+            .Build();
+
+        // Act
+        manager.ReplaceScene(scene1);
+        manager.Update(0.016f);
+        
+        manager.ReplaceScene(scene2, parameters);
+        manager.Update(0.016f);
+
+        // Assert
+        Assert.Equal(scene2, manager.CurrentScene);
+        Assert.Equal(1, scene2.LoadWithParametersCallCount);
+        Assert.NotNull(scene2.ReceivedParameters);
+        Assert.Equal("Hard", scene2.ReceivedParameters.Get<string>("difficulty"));
+        Assert.Equal(1, scene1.UnloadCallCount);
+    }
+
+    [Fact]
+    public void ReplaceScene_WithNullParameters_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var manager = CreateSceneManager();
+        var scene = new TestScene("Scene1");
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => manager.ReplaceScene(scene, null!));
+    }
+
+    [Fact]
+    public void PushScene_WithoutParameters_DoesNotCallParameterizedOnLoad()
+    {
+        // Arrange
+        var manager = CreateSceneManager();
+        var scene = new TestScene("Scene1");
+
+        // Act
+        manager.PushScene(scene);
+        manager.Update(0.016f);
+
+        // Assert
+        Assert.Equal(scene, manager.CurrentScene);
+        Assert.Equal(1, scene.LoadCallCount);
+        Assert.Equal(0, scene.LoadWithParametersCallCount);
+        Assert.Null(scene.ReceivedParameters);
     }
 }

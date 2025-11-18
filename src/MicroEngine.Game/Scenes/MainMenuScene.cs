@@ -76,7 +76,15 @@ public sealed class MainMenuScene : Scene
         }
         else if (_inputBackend.IsKeyPressed(Key.Four))
         {
-            LoadDemo<InputDemo>();
+            // Demonstrate scene parameter passing
+            var parameters = SceneParameters.Create()
+                .Add("fromMenu", true)
+                .Add("welcomeMessage", "Welcome from Main Menu!")
+                .Build();
+            
+            var demo = new InputDemo();
+            PushScene(demo, parameters);
+            _logger.Info("MainMenu", $"Loading {nameof(InputDemo)} with {_currentTransition} transition and parameters");
         }
         else if (_inputBackend.IsKeyPressed(Key.Five))
         {
