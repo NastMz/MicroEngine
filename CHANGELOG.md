@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   **Scene Caching System**: ISceneCache and SceneCache for scene reuse and lazy loading
+    -   Reduces memory allocation overhead by caching scene instances
+    -   LRU (Least Recently Used) eviction policy with configurable max cache size
+    -   Thread-safe implementation using ConcurrentDictionary and locks
+    -   Methods: `GetOrCreate<T>`, `Preload<T>`, `TryGet<T>`, `Contains`, `Remove`, `Clear`, `GetCachedKeys`
+    -   Automatic OnUnload() calls on evicted scenes
+    -   Use cases: level caching, menu caching, background preloading
+    -   30 comprehensive unit tests including concurrency tests
+
 ## [0.7.0-alpha] - 2025-11-18
 
 ### Added
@@ -30,13 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **SceneContext**: Breaking change - constructor now requires 6 parameters (was 5)
     -   Added `IGameState GameState` property and constructor parameter
     -   All creation sites updated (Program.cs, SceneManagerTests.cs)
-
-### Infrastructure
-
--   **Total Tests**: 1010 passing (was 916 in v0.6.0)
-    -   GameState: 21 tests
-    -   StateMachine: 23 tests
-    -   Previous features: 966 tests
 
 ## [0.6.0-alpha] - 2025-11-18
 

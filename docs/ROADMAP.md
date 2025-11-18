@@ -1,9 +1,9 @@
 # MicroEngine — Development Roadmap
 
-**Version:** 2.0  
+**Version:** 2.1  
 **Status:** Reference  
 **Author:** Kevin Martínez  
-**Last Updated:** November 2025
+**Last Updated:** December 2024
 
 ---
 
@@ -267,7 +267,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** IN PROGRESS (7/11 features complete)
+**Status:** IN PROGRESS (8/11 features complete)
 
 **Current Version:** v0.7.0-alpha
 
@@ -296,8 +296,14 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
         -   No circular dependencies (removed SceneManager from SceneContext)
         -   Scene navigation methods (PushScene/PopScene/ReplaceScene)
         -   Hollywood Principle pattern (SetSceneManager internal injection)
-    -   ⏳ Scene caching and lazy loading — PLANNED
-    -   ⏳ Scene preloading and background loading — PLANNED
+    -   ✅ **Scene caching and lazy loading** — COMPLETE (Unreleased)
+        -   ISceneCache interface with GetOrCreate, Preload, TryGet operations
+        -   SceneCache implementation with LRU eviction policy
+        -   Thread-safe ConcurrentDictionary backing
+        -   Configurable cache size (default 10 scenes)
+        -   Automatic OnUnload() calls on evicted scenes
+        -   30 comprehensive tests including concurrency
+    -   ⏳ Scene preloading and background loading — IN PROGRESS (caching infrastructure complete)
 -   ✅ **Global State Management** — COMPLETE v0.7.0
     -   ✅ IGameState interface for persistent data across scenes
     -   ✅ GameState implementation with thread-safe ConcurrentDictionary
@@ -651,8 +657,9 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2.0     | November 18, 2025 | Kevin Martínez | Phase 4 Global State + StateMachine: IGameState/GameState for persistent data, StateMachine framework, 1010 tests passing (v0.7.0)             |
-| 1.9     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Parameters: Type-safe parameter passing, SceneParameters builder, 916 tests passing (v0.6.0)                                     |
+| 2.1     | December 2024     | Kevin Martínez | Phase 4 Scene Caching: ISceneCache/SceneCache with LRU eviction, thread-safe operations, 30 comprehensive tests (Unreleased)                   |
+| 2.0     | November 18, 2025 | Kevin Martínez | Phase 4 Global State + StateMachine: IGameState/GameState for persistent data, StateMachine framework (v0.7.0)                                 |
+| 1.9     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Parameters: Type-safe parameter passing, SceneParameters builder (v0.6.0)                                                        |
 | 1.8     | November 18, 2025 | Kevin Martínez | Phase 4 Transitions: Additional scene transition effects (Slide, Wipe, Zoom), SetTransition() runtime changes, transition selector UI (v0.6.0) |
 | 1.7     | November 18, 2025 | Kevin Martínez | Architecture refinement (v0.6.0): Eliminated circular dependency, SceneContext DI pattern, Scene navigation methods                            |
 | 1.6     | November 18, 2025 | Kevin Martínez | Phase 4 Graphics: MSAA support (v0.5.1), texture filtering & mipmaps (v0.5.0), ECS query caching, fade transitions                             |
