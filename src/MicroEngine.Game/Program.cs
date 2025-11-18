@@ -1,5 +1,7 @@
 ﻿using MicroEngine.Backend.Raylib;
+using MicroEngine.Backend.Raylib.Resources;
 using MicroEngine.Core.Logging;
+using MicroEngine.Core.Resources;
 using MicroEngine.Core.Scenes;
 using MicroEngine.Game.Scenes;
 
@@ -11,11 +13,13 @@ internal static class Program
     private static Core.Input.IInputBackend? _inputBackend;
     private static Core.Graphics.IRenderBackend? _renderBackend;
     private static ILogger? _logger;
+    private static ResourceCache<ITexture>? _textureCache;
 
     public static SceneManager SceneManager => _sceneManager ?? throw new InvalidOperationException("SceneManager not initialized");
     public static Core.Input.IInputBackend InputBackend => _inputBackend ?? throw new InvalidOperationException("InputBackend not initialized");
     public static Core.Graphics.IRenderBackend RenderBackend => _renderBackend ?? throw new InvalidOperationException("RenderBackend not initialized");
     public static ILogger Logger => _logger ?? throw new InvalidOperationException("Logger not initialized");
+    public static ResourceCache<ITexture> TextureCache => _textureCache ?? throw new InvalidOperationException("TextureCache not initialized");
 
     private static void Main(string[] args)
     {
@@ -24,6 +28,10 @@ internal static class Program
 
         _renderBackend = new RaylibRenderBackend();
         _inputBackend = new RaylibInputBackend();
+
+        // Initialize texture resource cache
+        var textureLoader = new RaylibTextureLoader();
+        _textureCache = new ResourceCache<ITexture>(textureLoader, _logger);
 
         _renderBackend.Initialize(800, 600, "MicroEngine - Demo Showcase v0.4.9");
         _renderBackend.SetTargetFPS(60);
