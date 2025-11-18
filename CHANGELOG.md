@@ -7,21 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Changed
 
--   **Scene Caching System**: ISceneCache and SceneCache for scene reuse and lazy loading
-    -   Reduces memory allocation overhead by caching scene instances
-    -   LRU (Least Recently Used) eviction policy with configurable max cache size
-    -   Thread-safe implementation using ConcurrentDictionary and locks
-    -   Methods: `GetOrCreate<T>`, `Preload<T>`, `TryGet<T>`, `Contains`, `Remove`, `Clear`, `GetCachedKeys`
-    -   Automatic OnUnload() calls on evicted scenes
-    -   Use cases: level caching, menu caching, background preloading
-    -   30 comprehensive unit tests including concurrency tests
+_No unreleased changes at this time._
 
 ## [0.7.0-alpha] - 2025-11-18
 
 ### Added
 
+-   **Scene Caching System**: ISceneCache and SceneCache for scene reuse and lazy loading
+    -   Reduces memory allocation overhead by caching scene instances
+    -   LRU (Least Recently Used) eviction policy with configurable max cache size (default 10)
+    -   Thread-safe implementation using ConcurrentDictionary and locks
+    -   Methods: `GetOrCreate<T>`, `Preload<T>`, `TryGet<T>`, `Contains`, `Remove`, `Clear`, `GetCachedKeys`
+    -   Automatic OnUnload() calls on evicted scenes
+    -   Integrated in MainMenuScene for demo navigation (max 5 scenes)
+    -   Visual cache status display showing hits/misses and stored count
+    -   Use cases: level caching, menu caching, background preloading
+    -   30 comprehensive unit tests including concurrency tests
 -   **Global State Management**: IGameState and GameState for persistent data across scenes
     -   Thread-safe implementation using ConcurrentDictionary
     -   Type-safe API: `Get<T>`, `TryGet<T>`, `Set<T>`, `Contains`, `Remove`, `Clear`, `GetKeys`
@@ -35,12 +38,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Operations: `Fire`, `FireStrict`, `CanFire`, `Reset`
     -   Use cases: AI behaviors, UI flows, game states, player controllers
     -   23 comprehensive unit tests
+-   **GameEngine Refactoring**: Full integration with current architecture
+    -   GameEngine now accepts IRenderBackend2D and IInputBackend in constructor
+    -   Initialize(SceneContext) method for proper service injection
+    -   Fixed timestep accumulator (60 Hz / 16.67ms) for deterministic physics
+    -   Variable render rate (uncapped or V-sync) as per engine design
+    -   Spiral of death prevention (max 5 fixed updates per frame)
+    -   Separation of concerns: FixedUpdate (physics), Update (logic), Render
+    -   Program.cs migrated from manual loop to GameEngine.Run()
+    -   Frame-rate independent gameplay guaranteed
 
 ### Changed
 
 -   **SceneContext**: Breaking change - constructor now requires 6 parameters (was 5)
     -   Added `IGameState GameState` property and constructor parameter
     -   All creation sites updated (Program.cs, SceneManagerTests.cs)
+-   **Program.cs**: Simplified to use GameEngine instead of manual game loop
+    -   Removed manual while loop with input/update/render calls
+    -   GameEngine.Run() now handles entire game loop lifecycle
+    -   Rendering now uncapped (was artificially limited to 60 FPS)
+    -   Fixed timestep properly implemented for future physics integration
 
 ## [0.6.0-alpha] - 2025-11-18
 

@@ -267,7 +267,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** IN PROGRESS (8/11 features complete)
+**Status:** IN PROGRESS (9/11 features complete)
 
 **Current Version:** v0.7.0-alpha
 
@@ -296,12 +296,14 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
         -   No circular dependencies (removed SceneManager from SceneContext)
         -   Scene navigation methods (PushScene/PopScene/ReplaceScene)
         -   Hollywood Principle pattern (SetSceneManager internal injection)
-    -   ✅ **Scene caching and lazy loading** — COMPLETE (Unreleased)
+    -   ✅ **Scene caching and lazy loading** — COMPLETE v0.7.0
         -   ISceneCache interface with GetOrCreate, Preload, TryGet operations
         -   SceneCache implementation with LRU eviction policy
         -   Thread-safe ConcurrentDictionary backing
         -   Configurable cache size (default 10 scenes)
         -   Automatic OnUnload() calls on evicted scenes
+        -   Integrated in MainMenuScene for demo navigation
+        -   Visual cache status display (hits/misses, stored count)
         -   30 comprehensive tests including concurrency
     -   ⏳ Scene preloading and background loading — IN PROGRESS (caching infrastructure complete)
 -   ✅ **Global State Management** — COMPLETE v0.7.0
@@ -319,6 +321,15 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
     -   ✅ Fire, FireStrict, CanFire, Reset operations
     -   ✅ Use cases: AI behaviors, UI flows, game states, player controllers
     -   ✅ 23 comprehensive tests
+-   ✅ **GameEngine Integration** — COMPLETE v0.7.0
+    -   ✅ Refactored GameEngine to accept IRenderBackend2D and IInputBackend
+    -   ✅ SceneContext initialization support
+    -   ✅ Fixed timestep accumulator (60 Hz) for deterministic physics
+    -   ✅ Variable render rate (uncapped or V-sync)
+    -   ✅ Spiral of death prevention (max 5 fixed updates per frame)
+    -   ✅ Input/Update/Render separation in ProcessFrame
+    -   ✅ Program.cs migrated from manual loop to GameEngine.Run()
+    -   ✅ Frame-rate independent gameplay guaranteed
 -   ✅ **Graphics rendering improvements** — COMPLETE v0.5.0
     -   ✅ **Texture filtering** (Point, Bilinear, Trilinear, Anisotropic16X)
     -   ✅ Configurable texture filter modes via ITexture.Filter property
@@ -518,7 +529,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.5.0  | Texture filtering & mipmaps                 | Nov 2025    | ✅ Complete |
 | v0.5.1  | MSAA support                                | Nov 2025    | ✅ Complete |
 | v0.6.0  | Architecture refinement + Scene transitions | Nov 2025    | ✅ Complete |
-| v0.7.0  | Global State + State Machine Framework      | Nov 2025    | ✅ Complete |
+| v0.7.0  | State Management + Caching + GameEngine     | Nov 2025    | ✅ Complete |
 | v0.5.x  | Stabilization & polish                      | TBD         | In Progress |
 | v1.0.0  | Stable public API                           | TBD         | Planned     |
 | v1.1.0  | Scene management & templates                | TBD         | Planned     |
@@ -657,7 +668,8 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2.1     | December 2024     | Kevin Martínez | Phase 4 Scene Caching: ISceneCache/SceneCache with LRU eviction, thread-safe operations, 30 comprehensive tests (Unreleased)                   |
+| 2.2     | November 18, 2025 | Kevin Martínez | GameEngine refactoring: Full integration with backends, fixed timestep (60Hz), Program.cs migration, frame-rate independence (v0.7.0)          |
+| 2.1     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Caching: ISceneCache/SceneCache with LRU eviction, MainMenuScene integration, visual status display (v0.7.0)                     |
 | 2.0     | November 18, 2025 | Kevin Martínez | Phase 4 Global State + StateMachine: IGameState/GameState for persistent data, StateMachine framework (v0.7.0)                                 |
 | 1.9     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Parameters: Type-safe parameter passing, SceneParameters builder (v0.6.0)                                                        |
 | 1.8     | November 18, 2025 | Kevin Martínez | Phase 4 Transitions: Additional scene transition effects (Slide, Wipe, Zoom), SetTransition() runtime changes, transition selector UI (v0.6.0) |
