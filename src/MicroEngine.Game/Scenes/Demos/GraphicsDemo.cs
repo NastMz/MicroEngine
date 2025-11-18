@@ -81,7 +81,7 @@ public sealed class GraphicsDemo : Scene
         // Exit
         if (_inputBackend.IsKeyPressed(Key.Escape))
         {
-            Context.SceneManager.PopScene();
+            PopScene();
             return;
         }
 

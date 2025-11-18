@@ -41,7 +41,7 @@ public sealed class TilemapDemo : Scene
 
         if (_inputBackend.IsKeyPressed(Key.Escape))
         {
-            Context.SceneManager.PopScene();
+            PopScene();
         }
     }
 

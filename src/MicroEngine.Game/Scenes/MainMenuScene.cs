@@ -113,6 +113,6 @@ public sealed class MainMenuScene : Scene
     private void LoadDemo<T>() where T : Scene, new()
     {
         var demo = new T();
-        Context.SceneManager.PushScene(demo);
+        PushScene(demo);
     }
 }

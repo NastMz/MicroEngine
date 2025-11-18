@@ -9,6 +9,7 @@ namespace MicroEngine.Core.Scenes;
 public abstract class Scene : IScene
 {
     private bool _isActive;
+    private SceneManager? _sceneManager;
 
     /// <inheritdoc/>
     public string Name { get; }
@@ -36,6 +37,59 @@ public abstract class Scene : IScene
         Name = name ?? throw new ArgumentNullException(nameof(name));
         _isActive = false;
         World = new World();
+    }
+
+    /// <summary>
+    /// Internal method to set the scene manager reference.
+    /// Called by SceneManager during scene loading.
+    /// </summary>
+    internal void SetSceneManager(SceneManager sceneManager)
+    {
+        _sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
+    }
+
+    /// <summary>
+    /// Pushes a new scene onto the scene stack.
+    /// </summary>
+    /// <param name="scene">The scene to push.</param>
+    /// <exception cref="InvalidOperationException">Thrown if scene manager is not initialized.</exception>
+    protected void PushScene(Scene scene)
+    {
+        if (_sceneManager == null)
+        {
+            throw new InvalidOperationException("Scene manager not initialized. This scene has not been loaded yet.");
+        }
+        
+        _sceneManager.PushScene(scene);
+    }
+
+    /// <summary>
+    /// Pops the current scene from the scene stack.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown if scene manager is not initialized.</exception>
+    protected void PopScene()
+    {
+        if (_sceneManager == null)
+        {
+            throw new InvalidOperationException("Scene manager not initialized. This scene has not been loaded yet.");
+        }
+        
+        _sceneManager.PopScene();
+    }
+
+    /// <summary>
+    /// Replaces the current scene with a new one.
+    /// </summary>
+    /// <param name="scene">The scene to replace with.</param>
+    /// <exception cref="InvalidOperationException">Thrown if scene manager is not initialized.</exception>
+    protected void ReplaceScene(Scene scene)
+    {
+        if (_sceneManager == null)
+        {
+            throw new InvalidOperationException("Scene manager not initialized. This scene has not been loaded yet.");
+        }
+        
+        _sceneManager.ReplaceScene(scene);
     }
 
     /// <inheritdoc/>

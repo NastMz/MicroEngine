@@ -72,7 +72,7 @@ public sealed class EcsBasicsDemo : Scene
 
         if (_inputBackend.IsKeyPressed(Key.Escape))
         {
-            Context.SceneManager.PopScene();
+            PopScene();
         }
         else if (_inputBackend.IsKeyPressed(Key.R))
         {

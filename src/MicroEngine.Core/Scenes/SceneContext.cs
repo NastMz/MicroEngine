@@ -43,11 +43,6 @@ public sealed class SceneContext
     public ResourceCache<ITexture> TextureCache { get; }
 
     /// <summary>
-    /// Gets the scene manager for scene navigation.
-    /// </summary>
-    public SceneManager SceneManager { get; }
-
-    /// <summary>
     /// Initializes a new instance of the SceneContext with all required services.
     /// </summary>
     /// <param name="renderBackend">The 2D rendering backend.</param>
@@ -55,21 +50,18 @@ public sealed class SceneContext
     /// <param name="timeService">The time service.</param>
     /// <param name="logger">The logger.</param>
     /// <param name="textureCache">The texture resource cache.</param>
-    /// <param name="sceneManager">The scene manager for navigation.</param>
     /// <exception cref="ArgumentNullException">Thrown if any parameter is null.</exception>
     public SceneContext(
         IRenderBackend2D renderBackend,
         IInputBackend inputBackend,
         ITimeService timeService,
         ILogger logger,
-        ResourceCache<ITexture> textureCache,
-        SceneManager sceneManager)
+        ResourceCache<ITexture> textureCache)
     {
         RenderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
         InputBackend = inputBackend ?? throw new ArgumentNullException(nameof(inputBackend));
         TimeService = timeService ?? throw new ArgumentNullException(nameof(timeService));
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         TextureCache = textureCache ?? throw new ArgumentNullException(nameof(textureCache));
-        SceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
     }
 }

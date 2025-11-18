@@ -42,14 +42,13 @@ internal static class Program
             // Create SceneManager first (it will receive context after creation)
             _sceneManager = new SceneManager(fadeTransition);
             
-            // Create scene context with all engine services including SceneManager
+            // Create scene context with all engine services (no SceneManager to avoid circular dependency)
             var sceneContext = new SceneContext(
                 _renderBackend,
                 _inputBackend,
                 _timeService,
                 _logger,
-                _textureCache,
-                _sceneManager
+                _textureCache
             );
 
             // Initialize SceneManager with context

@@ -189,6 +189,7 @@ public sealed class SceneManager
 
         // Current scene remains in stack but won't receive updates
         _sceneStack.Push(_pendingScene);
+        _pendingScene.SetSceneManager(this);
         _pendingScene.OnLoad(_sceneContext);
 
         _pendingScene = null;
@@ -233,6 +234,7 @@ public sealed class SceneManager
 
         // Push new scene
         _sceneStack.Push(_pendingScene);
+        _pendingScene.SetSceneManager(this);
         _pendingScene.OnLoad(_sceneContext);
 
         _pendingScene = null;

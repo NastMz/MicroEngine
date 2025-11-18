@@ -47,7 +47,7 @@ public class SceneManagerTests
         }
     }
 
-    private static SceneContext CreateMockSceneContext(SceneManager sceneManager)
+    private static SceneContext CreateMockSceneContext()
     {
         var mockRenderBackend = new Mock<IRenderBackend2D>();
         var mockInputBackend = new Mock<IInputBackend>();
@@ -64,15 +64,14 @@ public class SceneManagerTests
             mockInputBackend.Object,
             mockTimeService.Object,
             logger,
-            textureCache,
-            sceneManager
+            textureCache
         );
     }
 
     private static SceneManager CreateSceneManager()
     {
         var manager = new SceneManager(transitionEffect: null);
-        var context = CreateMockSceneContext(manager);
+        var context = CreateMockSceneContext();
         manager.Initialize(context);
         return manager;
     }
@@ -81,7 +80,7 @@ public class SceneManagerTests
     public void Constructor_InitializesWithEmptyStack()
     {
         var manager = new SceneManager(transitionEffect: null);
-        var context = CreateMockSceneContext(manager);
+        var context = CreateMockSceneContext();
         manager.Initialize(context);
 
         Assert.NotNull(manager);

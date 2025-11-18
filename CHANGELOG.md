@@ -12,10 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 -   **SceneContext Class**: Dependency injection container for engine services
-    -   Contains all 6 core services: RenderBackend, InputBackend, TimeService, Logger, TextureCache, SceneManager
+    -   Contains 5 core services: RenderBackend, InputBackend, TimeService, Logger, TextureCache
     -   Constructor validates all parameters are non-null
     -   Explicit dependency declaration replaces static service locator pattern
     -   Enables proper unit testing with mock contexts
+    -   **No circular dependency** - SceneManager is NOT part of SceneContext
+-   **Scene Navigation Methods**: Protected methods in Scene base class
+    -   `PushScene(Scene)`: Push a new scene onto the stack
+    -   `PopScene()`: Pop the current scene from the stack
+    -   `ReplaceScene(Scene)`: Replace the current scene with a new one
+    -   Scenes delegate to SceneManager internally via `SetSceneManager()`
+    -   Clean API: scenes don't need direct access to SceneManager
 -   **ITimeService Interface**: Platform-agnostic time management abstraction
     -   `DeltaTime` property (time since last frame in seconds)
     -   `CurrentFPS` property (actual frames per second)
@@ -77,6 +84,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   No more `Program.InputBackend`, `Program.RenderBackend`, `Program.SceneManager`, etc.
     -   All dependencies now explicit via SceneContext
     -   Improves testability and follows dependency inversion principle
+-   **SceneManager from SceneContext**: Eliminated circular dependency
+    -   SceneManager is NO LONGER part of SceneContext
+    -   Scenes use `PushScene()`, `PopScene()`, `ReplaceScene()` methods instead
+    -   Cleaner architecture: scenes don't directly access SceneManager
 -   **Timing Methods from IRenderBackend2D**:
     -   `int GetFPS()` → Use `ITimeService.CurrentFPS`
     -   `float GetDeltaTime()` → Use `ITimeService.DeltaTime`
@@ -137,7 +148,7 @@ public class MyScene : Scene
     }
 }
 
-// New (v0.6.0+) - Dependency injection
+// New (v0.6.0+) - Dependency injection with Scene navigation methods
 public class MyScene : Scene
 {
     private IInputBackend _inputBackend = null!;
@@ -148,7 +159,7 @@ public class MyScene : Scene
     {
         base.OnLoad(context); // Sets Context property
         _inputBackend = context.InputBackend; // Explicit injection
-        Context.SceneManager.PushScene(new OtherScene()); // Via context
+        PushScene(new OtherScene()); // Use protected Scene method (NO circular dependency)
     }
 }
 ```
@@ -166,6 +177,8 @@ var fps = Context.TimeService.CurrentFPS;
 var deltaTime = Context.TimeService.DeltaTime;
 Context.TimeService.TargetFPS = 60;
 ```
+
+**Important**: SceneManager is NOT part of SceneContext (no circular dependency). Use `PushScene()`, `PopScene()`, and `ReplaceScene()` methods from the Scene base class.
 
 ## [0.5.1-alpha] - 2025-11-18
 
