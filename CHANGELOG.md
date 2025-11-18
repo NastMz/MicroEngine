@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2-alpha] - 2025-11-18
+
+### Added
+
+-   **Archetype-Based ECS Optimization** (simple implementation, no reflection/dynamic)
+    -   `ArchetypeId`: Component composition hash for archetype identification
+    -   `Archetype`: Groups entities with identical component sets using existing `IComponentArray`
+    -   `ArchetypeManager`: Manages archetype lifecycle and entity-archetype mapping
+    -   `AddBoxed(Entity, object)` method in `IComponentArray` for type-safe boxed component storage
+    -   Query optimization: `CachedQuery.Refresh()` iterates matching archetypes instead of all entities
+    -   Automatic archetype updates when components are added/removed
+    -   14 comprehensive archetype tests (composition, queries, lifecycle)
+    -   Expected 3-10x performance improvement for queries on large entity counts
+    -   Zero overhead for existing code: transparent integration with `World` and `CachedQuery`
+
+## [0.7.1-alpha] - 2025-11-18
+
 ### Added
 
 -   **Scene Preloading (Async Background Loading)**: Complete implementation

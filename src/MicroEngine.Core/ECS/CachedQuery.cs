@@ -55,18 +55,21 @@ public sealed class CachedQuery
     {
         _cachedEntities.Clear();
 
-        // Get all entities from first component type
         if (_componentTypes.Length == 0)
         {
             _isDirty = false;
             return;
         }
 
-        var allEntities = _world.GetAllEntities();
+        // Use archetype-based query for better performance
+        var requiredTypes = new HashSet<Type>(_componentTypes);
+        var archetypeManager = _world.GetArchetypeManager();
+        var matchingArchetypes = archetypeManager.GetMatchingArchetypes(requiredTypes);
 
-        // Filter entities that have all required components
-        var matchingEntities = allEntities.Where(EntityHasAllComponents);
-        _cachedEntities.AddRange(matchingEntities);
+        foreach (var archetype in matchingArchetypes)
+        {
+            _cachedEntities.AddRange(archetype.Entities);
+        }
 
         _isDirty = false;
     }
@@ -75,9 +78,4 @@ public sealed class CachedQuery
     /// Returns the number of entities matching this query.
     /// </summary>
     public int Count => Entities.Count;
-
-    private bool EntityHasAllComponents(Entity entity)
-    {
-        return _componentTypes.All(type => _world.HasComponentOfType(entity, type));
-    }
 }

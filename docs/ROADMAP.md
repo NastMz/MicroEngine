@@ -347,9 +347,18 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
         -   IRenderBackend.AntiAliasing property (None/MSAA4X)
         -   RaylibRenderBackend implementation with ConfigFlags.Msaa4xHint
         -   Note: Must be configured before Initialize() due to Raylib limitations
--   ✅ **ECS optimizations** — COMPLETE v0.5.0
-    -   ✅ Query caching (CachedQuery class with automatic invalidation)
-    -   ⏳ Archetype optimization — PLANNED v0.5.x
+-   ✅ **ECS optimizations** — COMPLETE v0.7.2
+    -   ✅ Query caching (CachedQuery class with automatic invalidation) — COMPLETE v0.5.0
+    -   ✅ **Archetype optimization** — COMPLETE v0.7.2
+        -   ✅ ArchetypeId: Component composition hashing for archetype identification
+        -   ✅ Archetype: Groups entities with identical component sets (reuses IComponentArray)
+        -   ✅ ArchetypeManager: Entity-archetype mapping and lifecycle management
+        -   ✅ AddBoxed method in IComponentArray for type-safe boxed component storage
+        -   ✅ Query optimization: CachedQuery iterates matching archetypes (not all entities)
+        -   ✅ Automatic archetype updates on component add/remove
+        -   ✅ 14 comprehensive archetype tests (composition, queries, lifecycle)
+        -   ✅ Simple implementation: No reflection, no dynamic types, ~30 minutes work
+        -   ✅ Expected 3-10x performance improvement for large entity counts
 -   ⏳ Memory profiling tools (allocation tracking) — PLANNED
 -   ⏳ Stable public API surface (breaking changes frozen) — PLANNED v1.0
 -   ⏳ Comprehensive documentation of all public APIs — PLANNED v1.0
@@ -676,11 +685,13 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2.3     | November 18, 2025 | Kevin Martínez | Version management: Migrated to Nerdbank.GitVersioning, removed PowerShell scripts, added git metadata support (v0.7.0)                        |
-| 2.2     | November 18, 2025 | Kevin Martínez | GameEngine refactoring: Full integration with backends, fixed timestep (60Hz), Program.cs migration, frame-rate independence (v0.7.0)          |
-| 2.1     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Caching: ISceneCache/SceneCache with LRU eviction, MainMenuScene integration, visual status display (v0.7.0)                     |
-| 2.0     | November 18, 2025 | Kevin Martínez | Phase 4 Global State + StateMachine: IGameState/GameState for persistent data, StateMachine framework (v0.7.0)                                 |
-| 1.9     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Parameters: Type-safe parameter passing, SceneParameters builder (v0.6.0)                                                        |
+| 2.6     | November 18, 2025 | Kevin Martínez | Semantic versioning fix: Split features into patch releases (0.7.1 preloading, 0.7.2 archetypes)                                               |
+| 2.5     | November 18, 2025 | Kevin Martínez | Archetype implementation: Simple solution without reflection/dynamic, ArchetypeId/Archetype/ArchetypeManager, query optimization (v0.7.2)      |
+| 2.4     | November 18, 2025 | Kevin Martínez | Scene Preloading: Async background loading with PreloadAsync/PreloadMultipleAsync, Version management migration to Nerdbank (v0.7.1)           |
+| 2.3     | November 18, 2025 | Kevin Martínez | GameEngine refactoring: Full integration with backends, fixed timestep (60Hz), Program.cs migration, frame-rate independence (v0.7.0)          |
+| 2.2     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Caching: ISceneCache/SceneCache with LRU eviction, MainMenuScene integration, visual status display (v0.7.0)                     |
+| 2.1     | November 18, 2025 | Kevin Martínez | Phase 4 Global State + StateMachine: IGameState/GameState for persistent data, StateMachine framework (v0.7.0)                                 |
+| 2.0     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Parameters: Type-safe parameter passing, SceneParameters builder (v0.6.0)                                                        |
 | 1.8     | November 18, 2025 | Kevin Martínez | Phase 4 Transitions: Additional scene transition effects (Slide, Wipe, Zoom), SetTransition() runtime changes, transition selector UI (v0.6.0) |
 | 1.7     | November 18, 2025 | Kevin Martínez | Architecture refinement (v0.6.0): Eliminated circular dependency, SceneContext DI pattern, Scene navigation methods                            |
 | 1.6     | November 18, 2025 | Kevin Martínez | Phase 4 Graphics: MSAA support (v0.5.1), texture filtering & mipmaps (v0.5.0), ECS query caching, fade transitions                             |

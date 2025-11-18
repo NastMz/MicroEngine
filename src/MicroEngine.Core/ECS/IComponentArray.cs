@@ -8,6 +8,8 @@ internal interface IComponentArray
 {
     void Remove(Entity entity);
     bool Has(Entity entity);
+    void AddBoxed(Entity entity, object component);
+    IEnumerable<Entity> GetEntities();
 }
 
 /// <summary>
@@ -27,5 +29,19 @@ internal class ComponentArrayWrapper<T> : IComponentArray where T : struct, ICom
     public bool Has(Entity entity)
     {
         return _array.Has(entity);
+    }
+
+    public void AddBoxed(Entity entity, object component)
+    {
+        if (component is not T typedComponent)
+        {
+            throw new ArgumentException($"Component must be of type {typeof(T).Name}");
+        }
+        _array.Add(entity, typedComponent);
+    }
+
+    public IEnumerable<Entity> GetEntities()
+    {
+        return _array.GetEntities();
     }
 }

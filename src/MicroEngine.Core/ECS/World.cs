@@ -7,6 +7,7 @@ namespace MicroEngine.Core.ECS;
 public sealed class World
 {
     private readonly Dictionary<Type, IComponentArray> _componentArrays = new();
+    private readonly ArchetypeManager _archetypeManager = new();
     private readonly List<ISystem> _systems = new();
     private readonly Queue<Entity> _entitiesToDestroy = new();
     private readonly HashSet<Entity> _entitiesPendingDestruction = new();
@@ -88,6 +89,7 @@ public sealed class World
         }
 
         GetOrCreateComponentArray<T>().Add(entity, component);
+        UpdateEntityArchetype(entity);
         InvalidateCachedQueries();
     }
 
@@ -104,6 +106,7 @@ public sealed class World
         if (_componentArrays.TryGetValue(typeof(T), out var array))
         {
             array.Remove(entity);
+            UpdateEntityArchetype(entity);
             InvalidateCachedQueries();
         }
     }
@@ -297,6 +300,8 @@ public sealed class World
 
     private void ProcessDestroyedEntities()
     {
+        bool hadEntities = _entitiesToDestroy.Count > 0;
+
         while (_entitiesToDestroy.Count > 0)
         {
             var entity = _entitiesToDestroy.Dequeue();
@@ -305,6 +310,8 @@ public sealed class World
             {
                 continue;
             }
+
+            _archetypeManager.RemoveEntity(entity);
 
             foreach (var array in _componentArrays.Values)
             {
@@ -317,5 +324,54 @@ public sealed class World
 
             _entityVersions[entity.Id] = entity.Version + 1;
         }
+
+        if (hadEntities)
+        {
+            InvalidateCachedQueries();
+        }
     }
+
+    private void UpdateEntityArchetype(Entity entity)
+    {
+        var componentTypes = _componentArrays
+            .Where(kv => kv.Value.Has(entity))
+            .Select(kv => kv.Key)
+            .ToList();
+
+        if (componentTypes.Count == 0)
+        {
+            _archetypeManager.RemoveEntity(entity);
+            return;
+        }
+
+        var archetype = _archetypeManager.GetOrCreateArchetype(componentTypes);
+        var components = new Dictionary<Type, object>();
+
+        foreach (var type in componentTypes)
+        {
+            var array = _componentArrays[type];
+            var entities = array.GetEntities();
+            if (entities.Contains(entity))
+            {
+                var wrapperType = typeof(ComponentArrayWrapper<>).MakeGenericType(type);
+                var wrapper = array;
+                var arrayProp = wrapperType.GetProperty("Array");
+                var componentArray = arrayProp!.GetValue(wrapper);
+                var getMethod = componentArray!.GetType().GetMethod("Get");
+                var component = getMethod!.Invoke(componentArray, new object[] { entity });
+                components[type] = component!;
+            }
+        }
+
+        if (_archetypeManager.TryGetEntityArchetype(entity, out var currentArchetype) && currentArchetype != null)
+        {
+            _archetypeManager.MoveEntity(entity, archetype, components);
+        }
+        else
+        {
+            _archetypeManager.AddEntityToArchetype(entity, archetype, components);
+        }
+    }
+
+    internal ArchetypeManager GetArchetypeManager() => _archetypeManager;
 }
