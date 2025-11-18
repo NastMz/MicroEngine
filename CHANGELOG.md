@@ -23,6 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   `ReplaceScene(Scene)`: Replace the current scene with a new one
     -   Scenes delegate to SceneManager internally via `SetSceneManager()`
     -   Clean API: scenes don't need direct access to SceneManager
+-   **Anisotropic Filtering Support**: Proper OpenGL implementation for texture filtering
+    -   P/Invoke calls to `glBindTexture` and `glTexParameterf` for direct GL control
+    -   Correct configuration of `GL_TEXTURE_MAX_ANISOTROPY_EXT` parameter
+    -   Support for 4x, 8x, and 16x anisotropic filtering levels
+    -   Base filter set to Trilinear (required for anisotropic filtering)
+    -   Fixes issue where anisotropic filter inherited behavior from previous filter
+-   **Automatic Mipmap Generation**: For filters requiring mipmaps
+    -   Trilinear and Anisotropic filters auto-generate mipmaps if needed
+    -   GenerateMipmaps() now re-applies current filter after generation
+    -   Prevents filter reset during mipmap generation
+    -   User-friendly: F3/F4 work immediately without manual mipmap generation
 -   **ITimeService Interface**: Platform-agnostic time management abstraction
     -   `DeltaTime` property (time since last frame in seconds)
     -   `CurrentFPS` property (actual frames per second)
@@ -77,6 +88,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   `TimeService.Update()` called at loop start
     -   Delta time from `TimeService.DeltaTime` instead of backend
     -   Cleaner architecture: backend only draws, doesn't manage time
+-   **GraphicsDemo UI**: Updated texture filtering controls
+    -   F3/F4 now indicate auto-generation of mipmaps
+    -   Help text updated: "Trilinear (crisp, auto-generates mipmaps)"
+    -   Help text updated: "Anisotropic (best for rotated, auto-mipmaps)"
+    -   Manual mipmap generation still available with M key
+
+### Fixed
+
+-   **Anisotropic Texture Filtering**: Now works correctly with proper OpenGL configuration
+    -   Previous issue: Anisotropic filter inherited behavior from previous filter
+    -   Root cause: Raylib's TextureFilter enum doesn't set GL_TEXTURE_MAX_ANISOTROPY_EXT
+    -   Solution: Direct OpenGL calls via P/Invoke to configure anisotropy level
+    -   Visual difference now clear between Point, Bilinear, Trilinear, and Anisotropic
+-   **Mipmap Filter Reset**: Filter preserved after GenerateMipmaps()
+    -   Previous issue: Generating mipmaps would reset texture filter to default
+    -   Solution: Re-apply current filter after mipmap generation
+    -   Ensures consistent visual quality when switching filters
 
 ### Removed
 
@@ -96,7 +124,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Details
 
--   **SceneContext.cs**: 66 lines, 6 service properties + constructor validation
+-   **SceneContext.cs**: 60 lines, 5 service properties + constructor validation (reduced from 6)
+-   **Scene.cs**: 120 lines, added navigation methods and SceneManager injection
+-   **RaylibTexture.cs**: 165 lines, P/Invoke for OpenGL anisotropic filtering
 -   **ITimeService.cs**: 73 lines, comprehensive documentation
 -   **TimeService.cs**: 127 lines, high-precision Stopwatch-based implementation
 -   **SceneManager.cs**: Two-phase init pattern (Constructor + Initialize)
@@ -105,6 +135,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **Performance**: Stopwatch provides microsecond-accurate timing
 -   **Frame Rate Limiting**: Smart sleep with high-precision timing
 -   **Delta Time Clamping**: Prevents huge time steps on lag spikes
+-   **OpenGL Integration**: Direct GL calls for anisotropic filtering (GL_TEXTURE_MAX_ANISOTROPY_EXT)
 
 ### Testing
 
@@ -112,8 +143,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **SceneManagerTests**: Now creates real ResourceCache with mocked IResourceLoader
 -   **Manual testing**: Application runs correctly with dependency injection
 -   **MSAA verified**: Still working (configured at startup)
--   **Texture filtering verified**: F1-F4 controls working correctly
+-   **Texture filtering verified**: All filters (Point, Bilinear, Trilinear, Anisotropic) working correctly
+-   **Anisotropic filtering verified**: Visual difference clear at different zoom levels
 -   **Scene transitions verified**: Smooth navigation between demos
+-   **Mipmap generation verified**: Auto-generation working for Trilinear and Anisotropic filters
 
 ### Architecture Improvements
 
