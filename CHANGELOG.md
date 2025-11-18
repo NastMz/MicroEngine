@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-_No unreleased changes at this time._
+-   **Version Management**: Migrated to Nerdbank.GitVersioning (industry standard)
+    -   Removed custom PowerShell script (`generate-version.ps1`)
+    -   Removed MSBuild target for manual version generation
+    -   EngineInfo now wraps Nerdbank's `ThisAssembly` class
+    -   Added git metadata: `GitCommitId`, `GitCommitDate`
+    -   No PowerShell dependency for build process
+    -   VERSION_MANAGEMENT.md updated with Nerdbank documentation
 
 ## [0.7.0-alpha] - 2025-11-18
 

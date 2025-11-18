@@ -58,6 +58,9 @@ public sealed class EcsBasicsDemo : Scene
         _logger = context.Logger;
         _logger.Info(SCENE_NAME, "Demo loaded - showcasing EntityBuilder and EntityFactory with interactivity");
 
+        // Clean up any existing entities (important for cache hits)
+        ClearEntities();
+
         CreateDemoEntities();
 
         _logger.Info(SCENE_NAME, $"Created {World.EntityCount} entities - use WASD/Arrows to move player");
@@ -167,11 +170,9 @@ public sealed class EcsBasicsDemo : Scene
         _logger.Debug(SCENE_NAME, "Interactive entities created using modern Phase 3 patterns");
     }
 
-    private void ResetScene()
+    private void ClearEntities()
     {
-        _logger.Info(SCENE_NAME, "Resetting scene...");
-
-        // Clear tracking lists first
+        // Clear tracking lists
         _enemyEntities.Clear();
         _collectibleEntities.Clear();
         _enemyDirections.Clear();
@@ -187,6 +188,13 @@ public sealed class EcsBasicsDemo : Scene
 
         // Force process destruction queue before creating new entities
         World.Update(0f);
+    }
+
+    private void ResetScene()
+    {
+        _logger.Info(SCENE_NAME, "Resetting scene...");
+
+        ClearEntities();
 
         _time = 0f;
         CreateDemoEntities();

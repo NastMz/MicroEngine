@@ -1,4 +1,5 @@
 using MicroEngine.Core;
+using MicroEngine.Core.Engine;
 using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
@@ -24,7 +25,6 @@ public sealed class MainMenuScene : Scene
     private readonly WipeTransition _wipeTransition;
     private readonly ZoomTransition _zoomTransition;
 
-    private const string ENGINE_VERSION = "v0.6.0-alpha";
     private const int MENU_X = 250;
     private const int MENU_Y = 80;
     private const int LINE_HEIGHT = 28;
@@ -126,7 +126,7 @@ public sealed class MainMenuScene : Scene
         _renderBackend.Clear(new Color(20, 20, 30, 255));
 
         var titlePos = new Vector2(MENU_X, MENU_Y);
-        _renderBackend.DrawText($"MicroEngine {ENGINE_VERSION}", titlePos, 24, Color.White);
+        _renderBackend.DrawText(EngineInfo.FullName, titlePos, 24, Color.White);
 
         var subtitlePos = new Vector2(MENU_X, MENU_Y + 30);
         _renderBackend.DrawText("Demo Showcase", subtitlePos, 20, new Color(180, 180, 180, 255));

@@ -1,6 +1,6 @@
 # MicroEngine — Development Roadmap
 
-**Version:** 2.1  
+**Version:** 2.3  
 **Status:** Reference  
 **Author:** Kevin Martínez  
 **Last Updated:** December 2024
@@ -668,6 +668,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.3     | November 18, 2025 | Kevin Martínez | Version management: Migrated to Nerdbank.GitVersioning, removed PowerShell scripts, added git metadata support (v0.7.0)                        |
 | 2.2     | November 18, 2025 | Kevin Martínez | GameEngine refactoring: Full integration with backends, fixed timestep (60Hz), Program.cs migration, frame-rate independence (v0.7.0)          |
 | 2.1     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Caching: ISceneCache/SceneCache with LRU eviction, MainMenuScene integration, visual status display (v0.7.0)                     |
 | 2.0     | November 18, 2025 | Kevin Martínez | Phase 4 Global State + StateMachine: IGameState/GameState for persistent data, StateMachine framework (v0.7.0)                                 |

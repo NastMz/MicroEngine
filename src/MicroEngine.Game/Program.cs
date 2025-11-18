@@ -26,7 +26,7 @@ internal static class Program
         var textureLoader = new RaylibTextureLoader();
         var textureCache = new ResourceCache<ITexture>(textureLoader, logger);
 
-        renderBackend.Initialize(800, 600, "MicroEngine - Demo Showcase v0.7.0-alpha");
+        renderBackend.Initialize(800, 600, $"{EngineInfo.FullName} - Demo Showcase");
 
         try
         {
