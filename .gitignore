@@ -79,3 +79,7 @@ $RECYCLE.BIN/
 *.msp
 *.lnk
 .fake
+
+# Benchmarks
+
+BenchmarkDotNet.Artifacts/

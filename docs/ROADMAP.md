@@ -267,9 +267,9 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** IN PROGRESS (10/11 features complete)
+**Status:** IN PROGRESS (11/11 features complete)
 
-**Current Version:** v0.7.0-alpha
+**Current Version:** v0.7.3-alpha
 
 ### Features
 
@@ -359,6 +359,14 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
         -   ✅ 14 comprehensive archetype tests (composition, queries, lifecycle)
         -   ✅ Simple implementation: No reflection, no dynamic types, ~30 minutes work
         -   ✅ Expected 3-10x performance improvement for large entity counts
+-   ✅ **Performance Benchmarking Suite** — COMPLETE v0.7.3
+    -   ✅ BenchmarkDotNet integration with comprehensive ECS benchmarks
+    -   ✅ ECS Query benchmarks: 1-4 component queries, 100-10,000 entities
+    -   ✅ Entity lifecycle benchmarks: Creation and destruction with 0-3 components
+    -   ✅ Component operation benchmarks: Access, modification, system simulation
+    -   ✅ Validated archetype optimization: O(n) linear scaling, zero allocations
+    -   ✅ Results: 37,000 queries/sec (10k entities), 424,000 queries/sec (100 entities)
+    -   ✅ Complete documentation with usage guide and interpretation
 -   ⏳ Memory profiling tools (allocation tracking) — PLANNED
 -   ⏳ Stable public API surface (breaking changes frozen) — PLANNED v1.0
 -   ⏳ Comprehensive documentation of all public APIs — PLANNED v1.0
@@ -367,7 +375,6 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 -   ⏳ Savegame system (versioned, backward-compatible) — PLANNED
 -   ⏳ Structured error codes & exception hierarchy — PLANNED
 -   ⏳ Telemetry infrastructure (OpenTelemetry-compatible) — PLANNED
--   ⏳ Performance benchmarking suite — PLANNED
 
 ### Testing Requirements
 
@@ -685,6 +692,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.7     | November 18, 2025 | Kevin Martínez | Performance Benchmarking Suite (v0.7.3): BenchmarkDotNet integration, validated archetype optimization with 37k-424k queries/sec               |
 | 2.6     | November 18, 2025 | Kevin Martínez | Semantic versioning fix: Split features into patch releases (0.7.1 preloading, 0.7.2 archetypes)                                               |
 | 2.5     | November 18, 2025 | Kevin Martínez | Archetype implementation: Simple solution without reflection/dynamic, ArchetypeId/Archetype/ArchetypeManager, query optimization (v0.7.2)      |
 | 2.4     | November 18, 2025 | Kevin Martínez | Scene Preloading: Async background loading with PreloadAsync/PreloadMultipleAsync, Version management migration to Nerdbank (v0.7.1)           |
