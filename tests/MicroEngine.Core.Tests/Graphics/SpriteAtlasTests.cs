@@ -16,6 +16,10 @@ public sealed class SpriteAtlasTests
         public int Width { get; init; }
         public int Height { get; init; }
         public string Format { get; init; } = "RGBA32";
+        public TextureFilter Filter { get; set; }
+        public bool HasMipmaps => false;
+        public int MipmapCount => 1;
+        public void GenerateMipmaps() { }
         public void Dispose() { }
     }
 

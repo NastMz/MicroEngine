@@ -286,11 +286,12 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
     -   ⏳ Scene caching and lazy loading — PLANNED
     -   ⏳ Scene parameter passing (data transfer between scenes) — PLANNED
     -   ⏳ Scene preloading and background loading — PLANNED
--   ⏳ **Graphics rendering improvements** — PLANNED v0.5.0
-    -   ⚠️ **Texture filtering and antialiasing** (HIGH PRIORITY - visible aliasing/jagged edges on sprites)
-    -   Configurable texture filter modes (point, bilinear, trilinear)
-    -   MSAA support for smoother rendering
-    -   Sprite scaling quality improvements
+-   ✅ **Graphics rendering improvements** — COMPLETE v0.5.0
+    -   ✅ **Texture filtering and antialiasing** (configurable filter modes: Point, Bilinear, Trilinear, Anisotropic)
+    -   ✅ Configurable texture filter modes via ITexture.Filter property
+    -   ✅ Real-time filter switching in GraphicsDemo (F1-F4 keys)
+    -   ⏳ MSAA support for smoother rendering — PLANNED v0.5.x
+    -   ⏳ Sprite scaling quality improvements (mipmap generation) — PLANNED v0.5.x
 -   ✅ **ECS optimizations** — COMPLETE v0.5.0
     -   ✅ Query caching (CachedQuery class with automatic invalidation)
     -   ⏳ Archetype optimization — PLANNED v0.5.x

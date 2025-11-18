@@ -1,3 +1,4 @@
+using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Resources;
 
 namespace MicroEngine.Backend.Raylib.Resources;
@@ -7,8 +8,10 @@ namespace MicroEngine.Backend.Raylib.Resources;
 /// </summary>
 internal sealed class RaylibTexture : ITexture
 {
-    private readonly Raylib_cs.Texture2D _texture;
+    private Raylib_cs.Texture2D _texture;
     private bool _disposed;
+    private TextureFilter _filter;
+    private bool _hasMipmaps;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RaylibTexture"/> class.
@@ -20,6 +23,10 @@ internal sealed class RaylibTexture : ITexture
         _texture = texture;
         IsLoaded = true;
         Metadata = metadata;
+        _filter = TextureFilter.Point; // Default to Point filtering for pixel art
+        
+        // Detect if texture was loaded with mipmaps (raylib sets mipmaps > 1 if present)
+        _hasMipmaps = texture.Mipmaps > 1;
     }
 
     /// <inheritdoc/>
@@ -46,6 +53,28 @@ internal sealed class RaylibTexture : ITexture
     /// <inheritdoc/>
     public string Format => "RGBA32";
 
+    /// <inheritdoc/>
+    public TextureFilter Filter
+    {
+        get => _filter;
+        set
+        {
+            if (_filter == value)
+            {
+                return;
+            }
+
+            _filter = value;
+            ApplyFilter();
+        }
+    }
+
+    /// <inheritdoc/>
+    public bool HasMipmaps => _hasMipmaps;
+
+    /// <inheritdoc/>
+    public int MipmapCount => _texture.Mipmaps;
+
     /// <summary>
     /// Gets the underlying Raylib texture.
     /// </summary>
@@ -67,5 +96,48 @@ internal sealed class RaylibTexture : ITexture
 
         _disposed = true;
         GC.SuppressFinalize(this);
+    }
+
+    /// <inheritdoc/>
+    public void GenerateMipmaps()
+    {
+        if (!IsLoaded)
+        {
+            return;
+        }
+
+        if (_hasMipmaps)
+        {
+            return; // Already has mipmaps (either loaded or previously generated)
+        }
+
+        unsafe
+        {
+            Raylib_cs.Raylib.GenTextureMipmaps(ref _texture);
+        }
+
+        // Update mipmap count from the modified texture
+        _hasMipmaps = _texture.Mipmaps > 1;
+    }
+
+    private void ApplyFilter()
+    {
+        if (!IsLoaded)
+        {
+            return;
+        }
+
+        var raylibFilter = _filter switch
+        {
+            TextureFilter.Point => Raylib_cs.TextureFilter.Point,
+            TextureFilter.Bilinear => Raylib_cs.TextureFilter.Bilinear,
+            TextureFilter.Trilinear => Raylib_cs.TextureFilter.Trilinear,
+            TextureFilter.Anisotropic4X => Raylib_cs.TextureFilter.Anisotropic4X,
+            TextureFilter.Anisotropic8X => Raylib_cs.TextureFilter.Anisotropic8X,
+            TextureFilter.Anisotropic16X => Raylib_cs.TextureFilter.Anisotropic16X,
+            _ => Raylib_cs.TextureFilter.Point
+        };
+
+        Raylib_cs.Raylib.SetTextureFilter(_texture, raylibFilter);
     }
 }

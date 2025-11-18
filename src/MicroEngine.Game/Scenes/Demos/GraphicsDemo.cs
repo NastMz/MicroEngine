@@ -22,6 +22,7 @@ public sealed class GraphicsDemo : Scene
     private Camera2D _camera = null!;
     private readonly List<SpriteEntity> _sprites;
     private readonly List<LoadedSprite> _loadedSprites;
+    private TextureFilter _currentFilter;
 
     private const float CAMERA_SPEED = 300f;
     private const float ZOOM_SPEED = 1f;
@@ -51,14 +52,19 @@ public sealed class GraphicsDemo : Scene
         base.OnLoad();
         _logger.Info("GraphicsDemo", "Graphics demo loaded");
 
-        // Initialize camera at center
+        // Initialize camera at center with proper screen offset
+        var screenCenterX = _renderBackend.WindowWidth / 2f;
+        var screenCenterY = _renderBackend.WindowHeight / 2f;
+
         _camera = new Camera2D
         {
             Position = new Vector2(WORLD_SIZE / 2f, WORLD_SIZE / 2f),
-            Offset = new Vector2(400, 300),
+            Offset = new Vector2(screenCenterX, screenCenterY),
             Rotation = 0f,
             Zoom = 1f
         };
+
+        _logger.Info("GraphicsDemo", $"Camera initialized at ({_camera.Position.X}, {_camera.Position.Y}) with offset ({_camera.Offset.X}, {_camera.Offset.Y})");
 
         // Load sprite textures
         LoadAssets();
@@ -126,6 +132,33 @@ public sealed class GraphicsDemo : Scene
             GenerateSprites(50);
         }
 
+        // Texture filtering controls (F1-F4)
+        if (_inputBackend.IsKeyPressed(Key.F1))
+        {
+            SetTextureFilter(TextureFilter.Point);
+        }
+
+        if (_inputBackend.IsKeyPressed(Key.F2))
+        {
+            SetTextureFilter(TextureFilter.Bilinear);
+        }
+
+        if (_inputBackend.IsKeyPressed(Key.F3))
+        {
+            SetTextureFilter(TextureFilter.Trilinear);
+        }
+
+        if (_inputBackend.IsKeyPressed(Key.F4))
+        {
+            SetTextureFilter(TextureFilter.Anisotropic16X);
+        }
+
+        // Generate mipmaps (M key)
+        if (_inputBackend.IsKeyPressed(Key.M))
+        {
+            GenerateAllMipmaps();
+        }
+
         // Update sprite animations (rotate)
         foreach (var sprite in _sprites)
         {
@@ -147,27 +180,37 @@ public sealed class GraphicsDemo : Scene
         // Draw world border
         DrawWorldBorder();
 
+        // DEBUG: Draw camera center marker
+        _renderBackend.DrawRectangle(
+            new Vector2(_camera.Position.X - 50, _camera.Position.Y - 5),
+            new Vector2(100, 10),
+            new Color(255, 0, 0, 255));
+        _renderBackend.DrawRectangle(
+            new Vector2(_camera.Position.X - 5, _camera.Position.Y - 50),
+            new Vector2(10, 100),
+            new Color(255, 0, 0, 255));
+
         // Draw sprites using loaded textures
         foreach (var sprite in _sprites)
         {
             if (sprite.SpriteIndex >= 0 && sprite.SpriteIndex < _loadedSprites.Count)
             {
                 var loadedSprite = _loadedSprites[sprite.SpriteIndex];
-                var halfWidth = loadedSprite.Texture.Width / 2f;
-                var halfHeight = loadedSprite.Texture.Height / 2f;
+                var textureWidth = loadedSprite.Texture.Width;
+                var textureHeight = loadedSprite.Texture.Height;
 
-                var position = sprite.Position;
+                var sourceRect = new Rectangle(0, 0, textureWidth, textureHeight);
                 var destRect = new Rectangle(
-                    position.X,
-                    position.Y,
-                    loadedSprite.Texture.Width * sprite.Scale,
-                    loadedSprite.Texture.Height * sprite.Scale);
+                    sprite.Position.X,
+                    sprite.Position.Y,
+                    textureWidth * sprite.Scale,
+                    textureHeight * sprite.Scale);
 
-                var origin = new Vector2(halfWidth * sprite.Scale, halfHeight * sprite.Scale);
+                var origin = new Vector2(textureWidth / 2f * sprite.Scale, textureHeight / 2f * sprite.Scale);
 
                 _renderBackend.DrawTexturePro(
                     loadedSprite.Texture,
-                    new Rectangle(0, 0, loadedSprite.Texture.Width, loadedSprite.Texture.Height),
+                    sourceRect,
                     destRect,
                     origin,
                     sprite.Rotation,
@@ -227,23 +270,50 @@ public sealed class GraphicsDemo : Scene
             return;
         }
 
+        // Generate sprites around camera center for better visibility
+        var centerX = WORLD_SIZE / 2f;
+        var centerY = WORLD_SIZE / 2f;
+        var spawnRadius = 1200f; // Spawn within wider area for better filter comparison
+
         for (int i = 0; i < count; i++)
         {
+            // Varied scales to showcase filtering: 0.5x, 1x, 2x, 4x
+            float scale;
+            switch (i % 4)
+            {
+                case 0:
+                    scale = 4f;
+                    break;
+                case 1:
+                    scale = 2f;
+                    break;
+                case 2:
+                    scale = 1f;
+                    break;
+                default:
+                    scale = 0.5f;
+                    break;
+            }
+
+            // Random position around center
+            var angle = (float)(_random.NextDouble() * System.Math.PI * 2);
+            var distance = (float)(_random.NextDouble() * spawnRadius);
+            var offsetX = (float)(System.Math.Cos(angle) * distance);
+            var offsetY = (float)(System.Math.Sin(angle) * distance);
+
             var sprite = new SpriteEntity
             {
-                Position = new Vector2(
-                    _random.Next(100, WORLD_SIZE - 100),
-                    _random.Next(100, WORLD_SIZE - 100)),
+                Position = new Vector2(centerX + offsetX, centerY + offsetY),
                 SpriteIndex = _random.Next(_loadedSprites.Count),
-                Rotation = 0f,
+                Rotation = (float)(_random.NextDouble() * 360), // Random rotation
                 RotationSpeed = (float)(_random.NextDouble() * 60 - 30),
-                Scale = (float)(_random.NextDouble() * 0.5 + 0.75)
+                Scale = scale
             };
 
             _sprites.Add(sprite);
         }
 
-        _logger.Info("GraphicsDemo", $"Generated {count} sprites");
+        _logger.Info("GraphicsDemo", $"Generated {count} sprites (first sprite at {_sprites[0].Position.X:F0}, {_sprites[0].Position.Y:F0})");
     }
 
     private void DrawGrid()
@@ -311,9 +381,19 @@ public sealed class GraphicsDemo : Scene
         uiY += LINE_HEIGHT;
 
         _renderBackend.DrawText($"Textures Loaded: {_loadedSprites.Count}/{SPRITE_FILES.Length}", new Vector2(UI_X, uiY), 14, textColor);
+        uiY += LINE_HEIGHT;
+
+        _renderBackend.DrawText($"Texture Filter: {_currentFilter}", new Vector2(UI_X, uiY), 14, textColor);
+        uiY += LINE_HEIGHT;
+
+        var mipmapCount = _loadedSprites.Count(s => s.Texture.HasMipmaps);
+        var totalMipmapLevels = _loadedSprites.Sum(s => s.Texture.MipmapCount);
+        _renderBackend.DrawText($"Mipmaps: {mipmapCount}/{_loadedSprites.Count} ({totalMipmapLevels} levels)", new Vector2(UI_X, uiY), 14, textColor);
         uiY += LINE_HEIGHT + 10;
 
         var controlsColor = new Color(150, 150, 150, 255);
+        var highlightColor = new Color(255, 255, 100, 255);
+
         _renderBackend.DrawText("Controls:", new Vector2(UI_X, uiY), 14, titleColor);
         uiY += LINE_HEIGHT;
 
@@ -327,9 +407,66 @@ public sealed class GraphicsDemo : Scene
         uiY += LINE_HEIGHT;
 
         _renderBackend.DrawText("[SPACE] Regenerate Sprites", new Vector2(UI_X, uiY), 12, controlsColor);
+        uiY += LINE_HEIGHT + 5;
+
+        _renderBackend.DrawText("[F1] Point (pixel art, sharp pixels)", new Vector2(UI_X, uiY), 12, controlsColor);
         uiY += LINE_HEIGHT;
 
+        _renderBackend.DrawText("[F2] Bilinear (smooth, blurry when zoomed out)", new Vector2(UI_X, uiY), 12, controlsColor);
+        uiY += LINE_HEIGHT;
+
+        _renderBackend.DrawText("[F3] Trilinear (crisp at any zoom, needs mipmaps)", new Vector2(UI_X, uiY), 12, controlsColor);
+        uiY += LINE_HEIGHT;
+
+        _renderBackend.DrawText("[F4] Anisotropic (best for rotated textures)", new Vector2(UI_X, uiY), 12, controlsColor);
+        uiY += LINE_HEIGHT;
+
+        _renderBackend.DrawText("[M] Generate Mipmaps (REQUIRED for F3/F4)", new Vector2(UI_X, uiY), 12, controlsColor);
+        uiY += LINE_HEIGHT + 5;
+
         _renderBackend.DrawText("[ESC] Back to Menu", new Vector2(UI_X, uiY), 12, controlsColor);
+        uiY += LINE_HEIGHT + 10;
+
+        // TIP: How to see the difference
+        _renderBackend.DrawText("TIP: Zoom OUT (Q) and compare filters:", new Vector2(UI_X, uiY), 13, highlightColor);
+        uiY += LINE_HEIGHT;
+
+        _renderBackend.DrawText("  F1=Pixelated, F2=Blurry, F3=Sharp (with mipmaps)", new Vector2(UI_X, uiY), 11, highlightColor);
+    }
+
+    private void SetTextureFilter(TextureFilter filter)
+    {
+        _currentFilter = filter;
+
+        foreach (var loadedSprite in _loadedSprites)
+        {
+            loadedSprite.Texture.Filter = filter;
+        }
+
+        _logger.Info("GraphicsDemo", $"Texture filter changed to: {filter}");
+    }
+
+    private void GenerateAllMipmaps()
+    {
+        var generated = 0;
+
+        foreach (var loadedSprite in _loadedSprites)
+        {
+            if (!loadedSprite.Texture.HasMipmaps)
+            {
+                loadedSprite.Texture.GenerateMipmaps();
+                generated++;
+            }
+        }
+
+        if (generated > 0)
+        {
+            _logger.Info("GraphicsDemo", $"Generated mipmaps for {generated} texture(s)");
+        }
+        else
+        {
+            _logger.Info("GraphicsDemo", "All textures already have mipmaps");
+        }
     }
 
     private sealed class SpriteEntity

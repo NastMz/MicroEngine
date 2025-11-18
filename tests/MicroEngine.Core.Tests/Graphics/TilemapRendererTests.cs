@@ -18,6 +18,9 @@ public class TilemapRendererTests
         public long SizeInBytes => Width * Height * 4;
         public ResourceMetadata? Metadata => null;
         public string Format => "RGBA";
+        public TextureFilter Filter { get; set; }
+        public bool HasMipmaps => false;
+        public int MipmapCount => 1;
 
         public FakeTexture(int width, int height)
         {
@@ -28,6 +31,7 @@ public class TilemapRendererTests
             Id = new ResourceId(1);
         }
 
+        public void GenerateMipmaps() { }
         public void Dispose() { }
     }
 
