@@ -126,6 +126,23 @@ public interface IRenderBackend
 
     #endregion
 
+    #region Camera
+
+    /// <summary>
+    /// Begins 2D camera mode with the specified camera.
+    /// All subsequent draw calls will be transformed by the camera.
+    /// </summary>
+    /// <param name="camera">The 2D camera to use for rendering.</param>
+    void BeginCamera2D(Camera2D camera);
+
+    /// <summary>
+    /// Ends 2D camera mode.
+    /// Subsequent draw calls will use screen-space coordinates.
+    /// </summary>
+    void EndCamera2D();
+
+    #endregion
+
     #region FPS and Debug
 
     /// <summary>

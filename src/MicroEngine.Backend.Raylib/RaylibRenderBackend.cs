@@ -201,6 +201,30 @@ public class RaylibRenderBackend : IRenderBackend
 
     #endregion
 
+    #region Camera
+
+    /// <inheritdoc/>
+    public void BeginCamera2D(Core.Graphics.Camera2D camera)
+    {
+        var raylibCamera = new Raylib_cs.Camera2D
+        {
+            Target = new System.Numerics.Vector2(camera.Position.X, camera.Position.Y),
+            Offset = new System.Numerics.Vector2(camera.Offset.X, camera.Offset.Y),
+            Rotation = camera.Rotation,
+            Zoom = camera.Zoom
+        };
+
+        Raylib_cs.Raylib.BeginMode2D(raylibCamera);
+    }
+
+    /// <inheritdoc/>
+    public void EndCamera2D()
+    {
+        Raylib_cs.Raylib.EndMode2D();
+    }
+
+    #endregion
+
     #region FPS and Debug
 
     /// <inheritdoc/>

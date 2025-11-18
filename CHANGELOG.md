@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1-alpha] - 2025-11-18
+
+### Added
+
+-   **Camera2D System**: Full 2D camera implementation with position, rotation, zoom, and follow
+-   **Camera Transformations**: `ScreenToWorld` and `WorldToScreen` coordinate conversion methods
+-   **Camera Controls**: `Move`, `Rotate`, `AdjustZoom`, `Follow`, `LookAt`, `Reset` utility methods
+-   **Visible Bounds**: `GetVisibleBounds` method to query camera viewport in world space
+-   **Camera Rendering**: `BeginCamera2D`/`EndCamera2D` methods in `IRenderBackend` for camera-based rendering
+-   **Raylib Camera Support**: Complete Raylib backend implementation using `BeginMode2D`/`EndMode2D`
+-   **Camera Demo Scene**: Interactive demo showcasing camera movement, zoom, rotation, and follow mode
+-   **Camera Unit Tests**: 17 comprehensive tests covering all camera functionality
+
+### Technical Details
+
+-   `Camera2D` class with properties: Position, Offset, Rotation (degrees), Zoom (clamped > 0)
+-   Zoom clamping: Prevents zero/negative zoom (min 0.0001f) for stability
+-   Smooth camera follow: Lerp-based interpolation with configurable speed
+-   Camera rotation: Applied around camera center point
+-   Viewport calculation: Automatic visible bounds based on screen size and zoom
+-   Demo controls: WASD (move player), arrows (manual camera), Z/X (zoom), F (toggle follow), C (reset), R (rotate)
+-   Full coordinate transformation pipeline: screen ↔ world with zoom, rotation, and offset support
+-   Zero compilation errors and warnings (full XML documentation compliance)
+-   Test coverage: Constructor, properties, transformations, follow, bounds calculation
+
 ## [0.4.0-alpha] - 2025-11-17
 
 ### Added
