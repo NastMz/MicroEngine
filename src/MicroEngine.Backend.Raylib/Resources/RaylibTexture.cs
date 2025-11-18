@@ -1,5 +1,6 @@
 using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Resources;
+using System.Runtime.InteropServices;
 
 namespace MicroEngine.Backend.Raylib.Resources;
 
@@ -12,6 +13,17 @@ internal sealed class RaylibTexture : ITexture
     private bool _disposed;
     private TextureFilter _filter;
     private bool _hasMipmaps;
+
+    // OpenGL constants for anisotropic filtering
+    private const uint GL_TEXTURE_2D = 0x0DE1;
+    private const uint GL_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FE;
+
+    // P/Invoke for OpenGL functions
+    [DllImport("opengl32.dll", EntryPoint = "glBindTexture")]
+    private static extern void GlBindTexture(uint target, uint texture);
+
+    [DllImport("opengl32.dll", EntryPoint = "glTexParameterf")]
+    private static extern void GlTexParameterf(uint target, uint pname, float param);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RaylibTexture"/> class.
@@ -118,6 +130,10 @@ internal sealed class RaylibTexture : ITexture
 
         // Update mipmap count from the modified texture
         _hasMipmaps = _texture.Mipmaps > 1;
+
+        // Re-apply the current filter after generating mipmaps
+        // (Raylib may reset the filter during mipmap generation)
+        ApplyFilter();
     }
 
     private void ApplyFilter()
@@ -127,17 +143,38 @@ internal sealed class RaylibTexture : ITexture
             return;
         }
 
-        var raylibFilter = _filter switch
+        // For anisotropic filtering, we need to manually set the anisotropy level
+        // because Raylib's TextureFilter enum doesn't actually configure the GL parameter
+        if (_filter is TextureFilter.Anisotropic4X or TextureFilter.Anisotropic8X or TextureFilter.Anisotropic16X)
         {
-            TextureFilter.Point => Raylib_cs.TextureFilter.Point,
-            TextureFilter.Bilinear => Raylib_cs.TextureFilter.Bilinear,
-            TextureFilter.Trilinear => Raylib_cs.TextureFilter.Trilinear,
-            TextureFilter.Anisotropic4X => Raylib_cs.TextureFilter.Anisotropic4X,
-            TextureFilter.Anisotropic8X => Raylib_cs.TextureFilter.Anisotropic8X,
-            TextureFilter.Anisotropic16X => Raylib_cs.TextureFilter.Anisotropic16X,
-            _ => Raylib_cs.TextureFilter.Point
-        };
+            // Set base filter to Trilinear (required for anisotropic)
+            Raylib_cs.Raylib.SetTextureFilter(_texture, Raylib_cs.TextureFilter.Trilinear);
+            
+            // Manually set anisotropy level using direct OpenGL calls
+            var anisotropyLevel = _filter switch
+            {
+                TextureFilter.Anisotropic4X => 4.0f,
+                TextureFilter.Anisotropic8X => 8.0f,
+                TextureFilter.Anisotropic16X => 16.0f,
+                _ => 1.0f
+            };
 
-        Raylib_cs.Raylib.SetTextureFilter(_texture, raylibFilter);
+            // Bind the texture and set anisotropy parameter
+            GlBindTexture(GL_TEXTURE_2D, _texture.Id);
+            GlTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropyLevel);
+        }
+        else
+        {
+            // For non-anisotropic filters, use the standard Raylib method
+            var raylibFilter = _filter switch
+            {
+                TextureFilter.Point => Raylib_cs.TextureFilter.Point,
+                TextureFilter.Bilinear => Raylib_cs.TextureFilter.Bilinear,
+                TextureFilter.Trilinear => Raylib_cs.TextureFilter.Trilinear,
+                _ => Raylib_cs.TextureFilter.Point
+            };
+
+            Raylib_cs.Raylib.SetTextureFilter(_texture, raylibFilter);
+        }
     }
 }

@@ -419,13 +419,13 @@ public sealed class GraphicsDemo : Scene
         _renderBackend.DrawText("[F2] Bilinear (smooth, blurry when zoomed out)", new Vector2(UI_X, uiY), 12, controlsColor);
         uiY += LINE_HEIGHT;
 
-        _renderBackend.DrawText("[F3] Trilinear (crisp at any zoom, needs mipmaps)", new Vector2(UI_X, uiY), 12, controlsColor);
+        _renderBackend.DrawText("[F3] Trilinear (crisp, auto-generates mipmaps)", new Vector2(UI_X, uiY), 12, controlsColor);
         uiY += LINE_HEIGHT;
 
-        _renderBackend.DrawText("[F4] Anisotropic (best for rotated textures)", new Vector2(UI_X, uiY), 12, controlsColor);
+        _renderBackend.DrawText("[F4] Anisotropic (best for rotated, auto-mipmaps)", new Vector2(UI_X, uiY), 12, controlsColor);
         uiY += LINE_HEIGHT;
 
-        _renderBackend.DrawText("[M] Generate Mipmaps (REQUIRED for F3/F4)", new Vector2(UI_X, uiY), 12, controlsColor);
+        _renderBackend.DrawText("[M] Manually Generate Mipmaps", new Vector2(UI_X, uiY), 12, controlsColor);
         uiY += LINE_HEIGHT + 5;
 
         _renderBackend.DrawText("[ESC] Back to Menu", new Vector2(UI_X, uiY), 12, controlsColor);
@@ -441,6 +441,31 @@ public sealed class GraphicsDemo : Scene
     private void SetTextureFilter(TextureFilter filter)
     {
         _currentFilter = filter;
+
+        // Trilinear and Anisotropic filters require mipmaps to work properly
+        // Generate them automatically if needed
+        var requiresMipmaps = filter is TextureFilter.Trilinear
+            or TextureFilter.Anisotropic4X
+            or TextureFilter.Anisotropic8X
+            or TextureFilter.Anisotropic16X;
+
+        if (requiresMipmaps)
+        {
+            var generated = 0;
+            foreach (var loadedSprite in _loadedSprites)
+            {
+                if (!loadedSprite.Texture.HasMipmaps)
+                {
+                    loadedSprite.Texture.GenerateMipmaps();
+                    generated++;
+                }
+            }
+
+            if (generated > 0)
+            {
+                _logger.Info("GraphicsDemo", $"Auto-generated mipmaps for {generated} texture(s) (required by {filter})");
+            }
+        }
 
         foreach (var loadedSprite in _loadedSprites)
         {
