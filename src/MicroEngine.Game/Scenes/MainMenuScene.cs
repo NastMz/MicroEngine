@@ -13,9 +13,9 @@ namespace MicroEngine.Game.Scenes;
 /// </summary>
 public sealed class MainMenuScene : Scene
 {
-    private readonly IInputBackend _inputBackend;
-    private readonly IRenderBackend2D _renderBackend;
-    private readonly ILogger _logger;
+    private IInputBackend _inputBackend = null!;
+    private IRenderBackend2D _renderBackend = null!;
+    private ILogger _logger = null!;
 
     private const string ENGINE_VERSION = "v0.4.9-alpha";
     private const int MENU_X = 250;
@@ -28,14 +28,15 @@ public sealed class MainMenuScene : Scene
     public MainMenuScene()
         : base("MainMenu")
     {
-        _inputBackend = Program.InputBackend;
-        _renderBackend = Program.RenderBackend;
-        _logger = Program.Logger;
     }
 
     /// <inheritdoc/>
-    public override void OnLoad()
+    public override void OnLoad(SceneContext context)
     {
+        base.OnLoad(context);
+        _inputBackend = context.InputBackend;
+        _renderBackend = context.RenderBackend;
+        _logger = context.Logger;
         _logger.Info("MainMenu", "Main menu loaded");
     }
 
@@ -112,6 +113,6 @@ public sealed class MainMenuScene : Scene
     private void LoadDemo<T>() where T : Scene, new()
     {
         var demo = new T();
-        Program.SceneManager.PushScene(demo);
+        Context.SceneManager.PushScene(demo);
     }
 }

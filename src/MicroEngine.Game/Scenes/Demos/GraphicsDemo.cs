@@ -13,10 +13,10 @@ namespace MicroEngine.Game.Scenes.Demos;
 /// </summary>
 public sealed class GraphicsDemo : Scene
 {
-    private readonly IInputBackend _inputBackend;
-    private readonly IRenderBackend2D _renderBackend;
-    private readonly ILogger _logger;
-    private readonly ResourceCache<ITexture> _textureCache;
+    private IInputBackend _inputBackend = null!;
+    private IRenderBackend2D _renderBackend = null!;
+    private ILogger _logger = null!;
+    private ResourceCache<ITexture> _textureCache = null!;
     private readonly Random _random;
 
     private Camera2D _camera = null!;
@@ -37,19 +37,19 @@ public sealed class GraphicsDemo : Scene
     public GraphicsDemo()
         : base("GraphicsDemo")
     {
-        _inputBackend = Program.InputBackend;
-        _renderBackend = Program.RenderBackend;
-        _logger = Program.Logger;
-        _textureCache = Program.TextureCache;
         _random = new Random();
         _sprites = new List<SpriteEntity>();
         _loadedSprites = new List<LoadedSprite>();
     }
 
     /// <inheritdoc/>
-    public override void OnLoad()
+    public override void OnLoad(SceneContext context)
     {
-        base.OnLoad();
+        base.OnLoad(context);
+        _inputBackend = context.InputBackend;
+        _renderBackend = context.RenderBackend;
+        _logger = context.Logger;
+        _textureCache = context.TextureCache;
         _logger.Info("GraphicsDemo", "Graphics demo loaded");
 
         // Initialize camera at center with proper screen offset
@@ -81,7 +81,7 @@ public sealed class GraphicsDemo : Scene
         // Exit
         if (_inputBackend.IsKeyPressed(Key.Escape))
         {
-            Program.SceneManager.PopScene();
+            Context.SceneManager.PopScene();
             return;
         }
 

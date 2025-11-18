@@ -61,7 +61,7 @@ public sealed class GameEngine
 
         _gameTime = new GameTime(_configuration.FixedTimeStep);
         _timer = new PrecisionTimer();
-        _sceneManager = new SceneManager(_logger);
+        _sceneManager = new SceneManager(transitionEffect: null);
 
         _state = EngineState.NotInitialized;
         _accumulator = 0.0;
@@ -73,6 +73,11 @@ public sealed class GameEngine
     /// <summary>
     /// Initializes the engine and its systems.
     /// </summary>
+    /// <remarks>
+    /// This is a legacy/stub implementation. The engine is not actively used in the current architecture.
+    /// The SceneManager is not initialized with a SceneContext here.
+    /// TODO: Refactor GameEngine to properly integrate with SceneContext pattern.
+    /// </remarks>
     public void Initialize()
     {
         if (_state != EngineState.NotInitialized)
@@ -84,7 +89,8 @@ public sealed class GameEngine
         _state = EngineState.Initializing;
         _logger.Info(LOG_CATEGORY, "Initializing engine...");
 
-        _sceneManager.Initialize();
+        // TODO: _sceneManager.Initialize(context) - needs SceneContext with all services
+        // Currently the engine is not used; Program.cs handles initialization directly
 
         _state = EngineState.Running;
         _logger.Info(LOG_CATEGORY, "Engine initialized successfully");

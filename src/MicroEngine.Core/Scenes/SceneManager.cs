@@ -11,8 +11,9 @@ public sealed class SceneManager
     private const string LOG_CATEGORY = "SceneManager";
 
     private readonly Stack<Scene> _sceneStack = new();
-    private readonly ILogger _logger;
     private readonly ISceneTransitionEffect? _transitionEffect;
+    private SceneContext _sceneContext = null!;
+    private ILogger _logger = null!;
 
     private Scene? _pendingScene;
     private SceneTransition _pendingTransition;
@@ -36,20 +37,21 @@ public sealed class SceneManager
     /// <summary>
     /// Initializes a new instance of the <see cref="SceneManager"/> class.
     /// </summary>
-    /// <param name="logger">Logger for scene transitions.</param>
     /// <param name="transitionEffect">Optional transition effect (e.g., fade). If null, no transitions are used.</param>
-    public SceneManager(ILogger logger, ISceneTransitionEffect? transitionEffect = null)
+    public SceneManager(ISceneTransitionEffect? transitionEffect = null)
     {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _transitionEffect = transitionEffect;
         _transitionState = TransitionState.None;
     }
 
     /// <summary>
-    /// Initializes the scene manager.
+    /// Initializes the scene manager with the scene context.
     /// </summary>
-    public void Initialize()
+    /// <param name="context">The scene context providing access to engine services.</param>
+    public void Initialize(SceneContext context)
     {
+        _sceneContext = context ?? throw new ArgumentNullException(nameof(context));
+        _logger = context.Logger;
         _logger.Info(LOG_CATEGORY, "Scene manager initialized");
     }
 
@@ -187,7 +189,7 @@ public sealed class SceneManager
 
         // Current scene remains in stack but won't receive updates
         _sceneStack.Push(_pendingScene);
-        _pendingScene.OnLoad();
+        _pendingScene.OnLoad(_sceneContext);
 
         _pendingScene = null;
     }
@@ -231,7 +233,7 @@ public sealed class SceneManager
 
         // Push new scene
         _sceneStack.Push(_pendingScene);
-        _pendingScene.OnLoad();
+        _pendingScene.OnLoad(_sceneContext);
 
         _pendingScene = null;
     }

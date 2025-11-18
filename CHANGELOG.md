@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   **SceneContext Class**: Dependency injection container for engine services
+    -   Contains all 6 core services: RenderBackend, InputBackend, TimeService, Logger, TextureCache, SceneManager
+    -   Constructor validates all parameters are non-null
+    -   Explicit dependency declaration replaces static service locator pattern
+    -   Enables proper unit testing with mock contexts
 -   **ITimeService Interface**: Platform-agnostic time management abstraction
     -   `DeltaTime` property (time since last frame in seconds)
     -   `CurrentFPS` property (actual frames per second)
@@ -24,10 +29,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   Automatic FPS calculation (updates every second)
     -   Delta time clamping (max 100ms to prevent spiral of death)
     -   Thread-safe read operations
--   **Program.TimeService**: Static property for global time access from scenes
+-   **Two-Phase SceneManager Initialization**: Solves circular dependency
+    -   Constructor: Takes optional transition effect only
+    -   Initialize(SceneContext): Receives full context after construction
+    -   Enables SceneManager to be part of SceneContext without recursion
 
 ### Changed
 
+-   **IScene.OnLoad Signature**: Now receives SceneContext parameter
+    -   Old: `void OnLoad()` - no parameters, dependencies implicit
+    -   New: `void OnLoad(SceneContext context)` - explicit dependency injection
+    -   Scenes store context in protected `Context` property
+    -   Breaking change: All scenes must update OnLoad signature
+-   **Scene Base Class**: Added protected Context property
+    -   `protected SceneContext Context { get; private set; } = null!;`
+    -   Available after OnLoad completes
+    -   Accessible to all derived scenes for service access
+-   **Program.cs Architecture**: No longer a static service locator
+    -   Removed 6 public static properties: SceneManager, InputBackend, RenderBackend, TimeService, Logger, TextureCache
+    -   All services created as private fields
+    -   SceneContext assembled from services
+    -   SceneManager initialized with context via Initialize(context)
+    -   Follows SOLID principles (no static coupling)
+-   **All 6 Scene Implementations Updated**: Use dependency injection
+    -   MainMenuScene, GraphicsDemo, EcsBasicsDemo, PhysicsDemo, InputDemo, TilemapDemo
+    -   Fields changed from `readonly` to `null!` (assigned in OnLoad)
+    -   Services accessed via `Context.RenderBackend`, `Context.InputBackend`, etc.
+    -   SceneManager calls via `Context.SceneManager.PopScene()` instead of `Program.SceneManager.PopScene()`
 -   **IRenderBackend → IRenderBackend2D**: Renamed to clarify 2D-only scope
     -   Updated all implementations (RaylibRenderBackend, MockRenderBackend)
     -   Updated all usages across 17 files (scenes, utilities, tests)
@@ -45,6 +73,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+-   **Static Service Locator Antipattern**: Program.\* static properties eliminated
+    -   No more `Program.InputBackend`, `Program.RenderBackend`, `Program.SceneManager`, etc.
+    -   All dependencies now explicit via SceneContext
+    -   Improves testability and follows dependency inversion principle
 -   **Timing Methods from IRenderBackend2D**:
     -   `int GetFPS()` → Use `ITimeService.CurrentFPS`
     -   `float GetDeltaTime()` → Use `ITimeService.DeltaTime`
@@ -53,34 +85,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Details
 
+-   **SceneContext.cs**: 66 lines, 6 service properties + constructor validation
 -   **ITimeService.cs**: 73 lines, comprehensive documentation
 -   **TimeService.cs**: 127 lines, high-precision Stopwatch-based implementation
+-   **SceneManager.cs**: Two-phase init pattern (Constructor + Initialize)
 -   **IRenderBackend2D**: Renamed from IRenderBackend, 22 methods (3 removed)
--   **Architecture**: Time management decoupled from rendering
+-   **Architecture**: Time management decoupled from rendering, dependency injection throughout
 -   **Performance**: Stopwatch provides microsecond-accurate timing
 -   **Frame Rate Limiting**: Smart sleep with high-precision timing
 -   **Delta Time Clamping**: Prevents huge time steps on lag spikes
 
 ### Testing
 
--   **794 tests passing**: All existing tests updated and passing
--   **Manual testing**: Application runs correctly with TimeService
+-   **794 tests passing**: All tests updated with mock SceneContext
+-   **SceneManagerTests**: Now creates real ResourceCache with mocked IResourceLoader
+-   **Manual testing**: Application runs correctly with dependency injection
 -   **MSAA verified**: Still working (configured at startup)
 -   **Texture filtering verified**: F1-F4 controls working correctly
 -   **Scene transitions verified**: Smooth navigation between demos
 
 ### Architecture Improvements
 
+-   **Explicit Dependencies**: No hidden static coupling, all dependencies visible in OnLoad
+-   **Testability**: Scenes can be tested with mock SceneContext
+-   **SOLID Compliance**: Dependency inversion, single responsibility
+-   **Professional Pattern**: Industry-standard dependency injection
 -   **Cleaner Separation**: Backend focuses solely on rendering
 -   **Platform Independence**: Time management uses .NET Stopwatch, not backend-specific APIs
--   **Testability**: TimeService can be mocked/stubbed easily
--   **Scalability**: Future backends (Vulkan, DirectX) won't need timing code
--   **Explicit Intent**: IRenderBackend2D name makes 2D scope clear
+-   **Scalability**: Easy to add new services to SceneContext
 -   **Future-Ready**: Room for IRenderBackend3D without naming confusion
 
 ### Migration Notes
 
-For code using the old timing methods:
+For scenes using the old service locator pattern:
+
+```csharp
+// Old (v0.5.1 and earlier) - Static service locator
+public class MyScene : Scene
+{
+    private readonly IInputBackend _inputBackend;
+
+    public MyScene()
+    {
+        _inputBackend = Program.InputBackend; // Static access
+    }
+
+    public override void OnLoad()
+    {
+        base.OnLoad();
+        Program.SceneManager.PushScene(new OtherScene()); // Static access
+    }
+}
+
+// New (v0.6.0+) - Dependency injection
+public class MyScene : Scene
+{
+    private IInputBackend _inputBackend = null!;
+
+    public MyScene() { } // No constructor assignments
+
+    public override void OnLoad(SceneContext context)
+    {
+        base.OnLoad(context); // Sets Context property
+        _inputBackend = context.InputBackend; // Explicit injection
+        Context.SceneManager.PushScene(new OtherScene()); // Via context
+    }
+}
+```
+
+For accessing time services:
 
 ```csharp
 // Old (v0.5.1 and earlier)
@@ -89,12 +162,10 @@ var deltaTime = renderBackend.GetDeltaTime();
 renderBackend.SetTargetFPS(60);
 
 // New (v0.6.0+)
-var fps = timeService.CurrentFPS;
-var deltaTime = timeService.DeltaTime;
-timeService.TargetFPS = 60;
+var fps = Context.TimeService.CurrentFPS;
+var deltaTime = Context.TimeService.DeltaTime;
+Context.TimeService.TargetFPS = 60;
 ```
-
-Access TimeService via `Program.TimeService` in scenes.
 
 ## [0.5.1-alpha] - 2025-11-18
 

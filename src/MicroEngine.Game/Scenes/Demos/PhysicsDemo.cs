@@ -12,9 +12,9 @@ namespace MicroEngine.Game.Scenes.Demos;
 /// </summary>
 public sealed class PhysicsDemo : Scene
 {
-    private readonly IInputBackend _inputBackend;
-    private readonly IRenderBackend2D _renderBackend;
-    private readonly ILogger _logger;
+    private IInputBackend _inputBackend = null!;
+    private IRenderBackend2D _renderBackend = null!;
+    private ILogger _logger = null!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PhysicsDemo"/> class.
@@ -22,15 +22,15 @@ public sealed class PhysicsDemo : Scene
     public PhysicsDemo()
         : base("PhysicsDemo")
     {
-        _inputBackend = Program.InputBackend;
-        _renderBackend = Program.RenderBackend;
-        _logger = Program.Logger;
     }
 
     /// <inheritdoc/>
-    public override void OnLoad()
+    public override void OnLoad(SceneContext context)
     {
-        base.OnLoad();
+        base.OnLoad(context);
+        _inputBackend = context.InputBackend;
+        _renderBackend = context.RenderBackend;
+        _logger = context.Logger;
         _logger.Info("PhysicsDemo", "Physics demo loaded (placeholder)");
     }
 
@@ -41,7 +41,7 @@ public sealed class PhysicsDemo : Scene
 
         if (_inputBackend.IsKeyPressed(Key.Escape))
         {
-            Program.SceneManager.PopScene();
+            Context.SceneManager.PopScene();
         }
     }
 

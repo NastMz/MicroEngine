@@ -17,9 +17,9 @@ namespace MicroEngine.Game.Scenes.Demos;
 /// </summary>
 public sealed class EcsBasicsDemo : Scene
 {
-    private readonly IInputBackend _inputBackend;
-    private readonly IRenderBackend2D _renderBackend;
-    private readonly ILogger _logger;
+    private IInputBackend _inputBackend = null!;
+    private IRenderBackend2D _renderBackend = null!;
+    private ILogger _logger = null!;
     private readonly MovementSystem _movementSystem;
 
     private const string SCENE_NAME = "EcsBasicsDemo";
@@ -46,16 +46,16 @@ public sealed class EcsBasicsDemo : Scene
     public EcsBasicsDemo()
         : base(SCENE_NAME)
     {
-        _inputBackend = Program.InputBackend;
-        _renderBackend = Program.RenderBackend;
-        _logger = Program.Logger;
         _movementSystem = new MovementSystem();
     }
 
     /// <inheritdoc/>
-    public override void OnLoad()
+    public override void OnLoad(SceneContext context)
     {
-        base.OnLoad();
+        base.OnLoad(context);
+        _inputBackend = context.InputBackend;
+        _renderBackend = context.RenderBackend;
+        _logger = context.Logger;
         _logger.Info(SCENE_NAME, "Demo loaded - showcasing EntityBuilder and EntityFactory with interactivity");
 
         CreateDemoEntities();
@@ -72,7 +72,7 @@ public sealed class EcsBasicsDemo : Scene
 
         if (_inputBackend.IsKeyPressed(Key.Escape))
         {
-            Program.SceneManager.PopScene();
+            Context.SceneManager.PopScene();
         }
         else if (_inputBackend.IsKeyPressed(Key.R))
         {

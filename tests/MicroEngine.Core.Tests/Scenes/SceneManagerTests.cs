@@ -1,5 +1,10 @@
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Scenes;
+using MicroEngine.Core.Time;
+using MicroEngine.Core.Graphics;
+using MicroEngine.Core.Input;
+using MicroEngine.Core.Resources;
+using Moq;
 
 namespace MicroEngine.Core.Tests.Scenes;
 
@@ -19,9 +24,9 @@ public class SceneManagerTests
         {
         }
 
-        public override void OnLoad()
+        public override void OnLoad(SceneContext context)
         {
-            base.OnLoad();
+            base.OnLoad(context);
             LoadCallCount++;
         }
 
@@ -42,17 +47,42 @@ public class SceneManagerTests
         }
     }
 
+    private static SceneContext CreateMockSceneContext(SceneManager sceneManager)
+    {
+        var mockRenderBackend = new Mock<IRenderBackend2D>();
+        var mockInputBackend = new Mock<IInputBackend>();
+        var mockTimeService = new Mock<ITimeService>();
+        var logger = new ConsoleLogger(LogLevel.Error);
+        
+        // ResourceCache is sealed, so create a real instance with a null loader
+        // Tests don't actually load textures, so this is safe
+        var mockTextureLoader = new Mock<IResourceLoader<ITexture>>();
+        var textureCache = new ResourceCache<ITexture>(mockTextureLoader.Object, logger);
+
+        return new SceneContext(
+            mockRenderBackend.Object,
+            mockInputBackend.Object,
+            mockTimeService.Object,
+            logger,
+            textureCache,
+            sceneManager
+        );
+    }
+
     private static SceneManager CreateSceneManager()
     {
-        var logger = new ConsoleLogger(LogLevel.Error);
-        return new SceneManager(logger);
+        var manager = new SceneManager(transitionEffect: null);
+        var context = CreateMockSceneContext(manager);
+        manager.Initialize(context);
+        return manager;
     }
 
     [Fact]
     public void Constructor_InitializesWithEmptyStack()
     {
-        var logger = new ConsoleLogger();
-        var manager = new SceneManager(logger);
+        var manager = new SceneManager(transitionEffect: null);
+        var context = CreateMockSceneContext(manager);
+        manager.Initialize(context);
 
         Assert.NotNull(manager);
         Assert.Null(manager.CurrentScene);
@@ -63,7 +93,6 @@ public class SceneManagerTests
     public void PushScene_ThrowsWhenSceneIsNull()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         Assert.Throws<ArgumentNullException>(() => manager.PushScene(null!));
     }
@@ -72,7 +101,6 @@ public class SceneManagerTests
     public void PushScene_AddsToStackAndCallsOnLoad()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         var scene = new TestScene("TestScene");
         manager.PushScene(scene);
@@ -90,7 +118,6 @@ public class SceneManagerTests
     public void PushScene_MultipleScenesStackCorrectly()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         var scene1 = new TestScene("Scene1");
         var scene2 = new TestScene("Scene2");
@@ -116,7 +143,6 @@ public class SceneManagerTests
     public void PopScene_RemovesFromStackAndCallsOnUnload()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         var scene1 = new TestScene("Scene1");
         var scene2 = new TestScene("Scene2");
@@ -143,7 +169,6 @@ public class SceneManagerTests
     public void PopScene_DoesNothingWhenOneSceneRemains()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         var scene = new TestScene("TestScene");
         manager.PushScene(scene);
@@ -164,7 +189,6 @@ public class SceneManagerTests
     public void PopScene_DoesNothingWhenStackIsEmpty()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         Assert.Equal(0, manager.SceneCount);
 
@@ -179,7 +203,6 @@ public class SceneManagerTests
     public void ReplaceScene_ThrowsWhenSceneIsNull()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         Assert.Throws<ArgumentNullException>(() => manager.ReplaceScene(null!));
     }
@@ -188,7 +211,6 @@ public class SceneManagerTests
     public void ReplaceScene_SwapsTopSceneWithOnLoadUnload()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         var scene1 = new TestScene("Scene1");
         var scene2 = new TestScene("Scene2");
@@ -214,7 +236,6 @@ public class SceneManagerTests
     public void ReplaceScene_WorksOnEmptyStack()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         var scene = new TestScene("TestScene");
 
@@ -230,7 +251,6 @@ public class SceneManagerTests
     public void Update_ProcessesPendingTransitionsAndCallsSceneUpdate()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         var scene = new TestScene("TestScene");
         manager.PushScene(scene);
@@ -252,7 +272,6 @@ public class SceneManagerTests
     public void Render_CallsSceneRender()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         var scene = new TestScene("TestScene");
         manager.PushScene(scene);
@@ -268,7 +287,6 @@ public class SceneManagerTests
     public void Shutdown_UnloadsAllScenesInStack()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         var scene1 = new TestScene("Scene1");
         var scene2 = new TestScene("Scene2");
@@ -298,7 +316,6 @@ public class SceneManagerTests
     public void PendingTransitions_OnlyLastIsProcessed()
     {
         var manager = CreateSceneManager();
-        manager.Initialize();
 
         var scene1 = new TestScene("Scene1");
         var scene2 = new TestScene("Scene2");

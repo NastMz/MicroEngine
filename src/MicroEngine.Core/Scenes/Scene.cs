@@ -22,6 +22,12 @@ public abstract class Scene : IScene
     protected World World { get; }
 
     /// <summary>
+    /// Gets the scene context providing access to engine services.
+    /// Available after OnLoad is called.
+    /// </summary>
+    protected SceneContext Context { get; private set; } = null!;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="Scene"/> class.
     /// </summary>
     /// <param name="name">The scene name.</param>
@@ -33,8 +39,9 @@ public abstract class Scene : IScene
     }
 
     /// <inheritdoc/>
-    public virtual void OnLoad()
+    public virtual void OnLoad(SceneContext context)
     {
+        Context = context ?? throw new ArgumentNullException(nameof(context));
         _isActive = true;
     }
 

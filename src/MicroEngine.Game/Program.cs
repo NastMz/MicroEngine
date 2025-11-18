@@ -16,13 +16,6 @@ internal static class Program
     private static ILogger? _logger;
     private static ResourceCache<ITexture>? _textureCache;
 
-    public static SceneManager SceneManager => _sceneManager ?? throw new InvalidOperationException("SceneManager not initialized");
-    public static Core.Input.IInputBackend InputBackend => _inputBackend ?? throw new InvalidOperationException("InputBackend not initialized");
-    public static Core.Graphics.IRenderBackend2D RenderBackend => _renderBackend ?? throw new InvalidOperationException("RenderBackend not initialized");
-    public static Core.Time.ITimeService TimeService => _timeService ?? throw new InvalidOperationException("TimeService not initialized");
-    public static ILogger Logger => _logger ?? throw new InvalidOperationException("Logger not initialized");
-    public static ResourceCache<ITexture> TextureCache => _textureCache ?? throw new InvalidOperationException("TextureCache not initialized");
-
     private static void Main(string[] args)
     {
         _logger = new ConsoleLogger(LogLevel.Info);
@@ -46,8 +39,21 @@ internal static class Program
             // Create fade transition effect
             var fadeTransition = new FadeTransition(_renderBackend, duration: 0.25f);
             
-            _sceneManager = new SceneManager(_logger, fadeTransition);
-            _sceneManager.Initialize();
+            // Create SceneManager first (it will receive context after creation)
+            _sceneManager = new SceneManager(fadeTransition);
+            
+            // Create scene context with all engine services including SceneManager
+            var sceneContext = new SceneContext(
+                _renderBackend,
+                _inputBackend,
+                _timeService,
+                _logger,
+                _textureCache,
+                _sceneManager
+            );
+
+            // Initialize SceneManager with context
+            _sceneManager.Initialize(sceneContext);
 
             // Load initial scene (MainMenu)
             var mainMenu = new MainMenuScene();

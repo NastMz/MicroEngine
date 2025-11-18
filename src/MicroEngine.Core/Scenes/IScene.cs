@@ -4,6 +4,10 @@ namespace MicroEngine.Core.Scenes;
 /// Defines the contract for a game scene.
 /// Scenes represent different states or levels of the game.
 /// </summary>
+/// <remarks>
+/// Scenes receive a SceneContext during OnLoad, providing access to all engine services
+/// through explicit dependency injection instead of static service locators.
+/// </remarks>
 public interface IScene
 {
     /// <summary>
@@ -19,7 +23,12 @@ public interface IScene
     /// <summary>
     /// Called when the scene is loaded and initialized.
     /// </summary>
-    void OnLoad();
+    /// <param name="context">The scene context providing access to engine services.</param>
+    /// <remarks>
+    /// Store the context as a field if you need to access services in other methods.
+    /// All services in the context are guaranteed to be non-null.
+    /// </remarks>
+    void OnLoad(SceneContext context);
 
     /// <summary>
     /// Called for fixed timestep updates (physics, deterministic logic).
