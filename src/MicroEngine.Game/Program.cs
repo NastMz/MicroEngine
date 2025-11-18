@@ -1,5 +1,6 @@
 ﻿using MicroEngine.Backend.Raylib;
 using MicroEngine.Backend.Raylib.Resources;
+using MicroEngine.Core.Engine;
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Resources;
 using MicroEngine.Core.Scenes;
@@ -10,96 +11,98 @@ namespace MicroEngine.Game;
 
 internal static class Program
 {
-    private static SceneManager? _sceneManager;
-    private static Core.Input.IInputBackend? _inputBackend;
-    private static Core.Graphics.IRenderBackend2D? _renderBackend;
-    private static Core.Time.ITimeService? _timeService;
-    private static ILogger? _logger;
-    private static ResourceCache<ITexture>? _textureCache;
-
     private static void Main(string[] args)
     {
-        _logger = new ConsoleLogger(LogLevel.Info);
-        _logger.Info("Game", "MicroEngine Demo Showcase Starting...");
+        var logger = new ConsoleLogger(LogLevel.Info);
+        logger.Info("Game", "MicroEngine Demo Showcase Starting...");
 
-        _renderBackend = new RaylibRenderBackend();
-        _inputBackend = new RaylibInputBackend();
-        _timeService = new Core.Time.TimeService(targetFPS: 60);
+        var renderBackend = new RaylibRenderBackend();
+        var inputBackend = new RaylibInputBackend();
 
         // Configure MSAA before window initialization
-        _renderBackend.AntiAliasing = Core.Graphics.AntiAliasingMode.MSAA4X;
+        renderBackend.AntiAliasing = Core.Graphics.AntiAliasingMode.MSAA4X;
 
         // Initialize texture resource cache
         var textureLoader = new RaylibTextureLoader();
-        _textureCache = new ResourceCache<ITexture>(textureLoader, _logger);
+        var textureCache = new ResourceCache<ITexture>(textureLoader, logger);
 
-        _renderBackend.Initialize(800, 600, "MicroEngine - Demo Showcase v0.4.9");
+        renderBackend.Initialize(800, 600, "MicroEngine - Demo Showcase v0.7.0-alpha");
 
         try
         {
             // Create all transition effects
-            var fadeTransition = new FadeTransition(_renderBackend, duration: 0.25f);
-            var slideTransition = new SlideTransition(_renderBackend, SlideDirection.Left, duration: 0.5f);
-            var wipeTransition = new WipeTransition(_renderBackend, WipeDirection.LeftToRight, duration: 0.4f);
-            var zoomTransition = new ZoomTransition(_renderBackend, ZoomMode.ZoomOut, duration: 0.5f);
-            
-            // Create SceneManager first (it will receive context after creation)
-            _sceneManager = new SceneManager(fadeTransition);
-            
+            var fadeTransition = new FadeTransition(renderBackend, duration: 0.25f);
+            var slideTransition = new SlideTransition(renderBackend, SlideDirection.Left, duration: 0.5f);
+            var wipeTransition = new WipeTransition(renderBackend, WipeDirection.LeftToRight, duration: 0.4f);
+            var zoomTransition = new ZoomTransition(renderBackend, ZoomMode.ZoomOut, duration: 0.5f);
+
+            // Create engine configuration with fixed timestep for deterministic physics
+            var engineConfig = new EngineConfiguration
+            {
+                FixedTimeStep = 1f / 60f, // 60 updates per second (16.67ms)
+                MaxFixedUpdatesPerFrame = 5 // Prevent spiral of death
+            };
+
+            // Create GameEngine with backends (rendering is uncapped/V-synced)
+            var engine = new GameEngine(
+                engineConfig,
+                renderBackend,
+                inputBackend,
+                logger,
+                fadeTransition
+            );
+
+            // Create scene cache for demo scene reuse (max 5 scenes)
+            var sceneCache = new SceneCache(maxCacheSize: 5);
+
             // Create global game state for persistent data
             var gameState = new GameState();
-            
-            // Create scene context with all engine services (no SceneManager to avoid circular dependency)
+
+            // Create TimeService for FPS tracking (not for limiting - engine handles timing)
+            var timeService = new Core.Time.TimeService(targetFPS: 0);
+
+            // Create scene context with all engine services
             var sceneContext = new SceneContext(
-                _renderBackend,
-                _inputBackend,
-                _timeService,
-                _logger,
-                _textureCache,
+                renderBackend,
+                inputBackend,
+                timeService,
+                logger,
+                textureCache,
                 gameState
             );
 
-            // Initialize SceneManager with context
-            _sceneManager.Initialize(sceneContext);
+            // Initialize engine with scene context
+            engine.Initialize(sceneContext);
 
-            // Load initial scene (MainMenu) with access to SceneManager and transitions
+            // Load initial scene (MainMenu) with access to SceneManager, transitions, and scene cache
             var mainMenu = new MainMenuScene(
-                _sceneManager,
+                engine.SceneManager,
+                sceneCache,
                 fadeTransition,
                 slideTransition,
                 wipeTransition,
                 zoomTransition
             );
-            _sceneManager.ReplaceScene(mainMenu);
+            engine.SceneManager.ReplaceScene(mainMenu);
 
-            _logger.Info("Game", "Main menu running... Press 1-5 to select demo, ESC to exit");
+            logger.Info("Game", "Main menu running... Press 1-5 to select demo, ESC to exit");
 
-            while (!_renderBackend.ShouldClose)
-            {
-                _timeService.Update();
-                var deltaTime = _timeService.DeltaTime;
+            // Run game loop (fixed timestep for updates, variable rate for rendering)
+            engine.Run();
 
-                _inputBackend.Update();
-                _sceneManager.Update(deltaTime);
-
-                _renderBackend.BeginFrame();
-                _sceneManager.Render();
-                _renderBackend.EndFrame();
-            }
-
-            _sceneManager.Shutdown();
-            _logger.Info("Game", "Demo showcase shut down successfully");
+            engine.Shutdown();
+            logger.Info("Game", "Demo showcase shut down successfully");
         }
         catch (Exception ex)
         {
-            _logger.Fatal("Game", "Fatal error occurred", ex);
+            logger.Fatal("Game", "Fatal error occurred", ex);
         }
         finally
         {
-            _renderBackend.Shutdown();
+            renderBackend.Shutdown();
         }
 
-        _logger.Info("Game", "Goodbye!");
+        logger.Info("Game", "Goodbye!");
     }
 }
 

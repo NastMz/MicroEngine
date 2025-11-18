@@ -1,3 +1,5 @@
+using MicroEngine.Core.Graphics;
+using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Scenes;
 using MicroEngine.Core.Time;
@@ -17,6 +19,8 @@ public sealed class GameEngine
     private readonly GameTime _gameTime;
     private readonly PrecisionTimer _timer;
     private readonly SceneManager _sceneManager;
+    private readonly IRenderBackend2D _renderBackend;
+    private readonly IInputBackend _inputBackend;
 
     private EngineState _state;
     private double _accumulator;
@@ -50,18 +54,28 @@ public sealed class GameEngine
     /// Initializes a new instance of the <see cref="GameEngine"/> class.
     /// </summary>
     /// <param name="configuration">Engine configuration.</param>
+    /// <param name="renderBackend">The rendering backend.</param>
+    /// <param name="inputBackend">The input backend.</param>
     /// <param name="logger">Logger instance.</param>
+    /// <param name="transitionEffect">Optional scene transition effect.</param>
     /// <exception cref="ArgumentNullException">Thrown when required parameters are null.</exception>
-    public GameEngine(EngineConfiguration configuration, ILogger logger)
+    public GameEngine(
+        EngineConfiguration configuration,
+        IRenderBackend2D renderBackend,
+        IInputBackend inputBackend,
+        ILogger logger,
+        ISceneTransitionEffect? transitionEffect = null)
     {
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
+        _inputBackend = inputBackend ?? throw new ArgumentNullException(nameof(inputBackend));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _configuration.Validate();
 
         _gameTime = new GameTime(_configuration.FixedTimeStep);
         _timer = new PrecisionTimer();
-        _sceneManager = new SceneManager(transitionEffect: null);
+        _sceneManager = new SceneManager(transitionEffect);
 
         _state = EngineState.NotInitialized;
         _accumulator = 0.0;
@@ -71,15 +85,17 @@ public sealed class GameEngine
     }
 
     /// <summary>
-    /// Initializes the engine and its systems.
+    /// Initializes the engine with a scene context.
     /// </summary>
-    /// <remarks>
-    /// This is a legacy/stub implementation. The engine is not actively used in the current architecture.
-    /// The SceneManager is not initialized with a SceneContext here.
-    /// TODO: Refactor GameEngine to properly integrate with SceneContext pattern.
-    /// </remarks>
-    public void Initialize()
+    /// <param name="sceneContext">The scene context containing all engine services.</param>
+    /// <exception cref="ArgumentNullException">Thrown when sceneContext is null.</exception>
+    public void Initialize(SceneContext sceneContext)
     {
+        if (sceneContext == null)
+        {
+            throw new ArgumentNullException(nameof(sceneContext));
+        }
+
         if (_state != EngineState.NotInitialized)
         {
             _logger.Warn(LOG_CATEGORY, $"Initialize called but engine is in state: {_state}");
@@ -89,8 +105,7 @@ public sealed class GameEngine
         _state = EngineState.Initializing;
         _logger.Info(LOG_CATEGORY, "Initializing engine...");
 
-        // TODO: _sceneManager.Initialize(context) - needs SceneContext with all services
-        // Currently the engine is not used; Program.cs handles initialization directly
+        _sceneManager.Initialize(sceneContext);
 
         _state = EngineState.Running;
         _logger.Info(LOG_CATEGORY, "Engine initialized successfully");
@@ -111,7 +126,7 @@ public sealed class GameEngine
         _logger.Info(LOG_CATEGORY, "Starting main loop");
         _timer.Restart();
 
-        while (!ShouldExit && _state == EngineState.Running)
+        while (!ShouldExit && !_renderBackend.ShouldClose && _state == EngineState.Running)
         {
             ProcessFrame();
         }
@@ -125,13 +140,16 @@ public sealed class GameEngine
     /// </summary>
     private void ProcessFrame()
     {
+        // Update input state
+        _inputBackend.Update();
+
         float deltaTime = _timer.GetDeltaTime();
         _accumulator += deltaTime;
 
         int fixedUpdateCount = 0;
         float fixedDelta = _configuration.FixedTimeStep;
 
-        // Fixed timestep updates
+        // Fixed timestep updates (physics, deterministic logic)
         while (_accumulator >= fixedDelta && fixedUpdateCount < _configuration.MaxFixedUpdatesPerFrame)
         {
             _gameTime.Update(fixedDelta);
@@ -148,11 +166,13 @@ public sealed class GameEngine
             _accumulator = 0.0;
         }
 
-        // Variable timestep update
+        // Variable timestep update (input, animations, non-deterministic logic)
         Update(deltaTime);
 
-        // Render
+        // Render (uncapped or V-synced)
+        _renderBackend.BeginFrame();
         Render();
+        _renderBackend.EndFrame();
     }
 
     /// <summary>

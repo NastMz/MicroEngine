@@ -18,6 +18,7 @@ public sealed class MainMenuScene : Scene
     private IRenderBackend2D _renderBackend = null!;
     private ILogger _logger = null!;
     private readonly SceneManager _sceneManager;
+    private readonly SceneCache _sceneCache;
     private readonly FadeTransition _fadeTransition;
     private readonly SlideTransition _slideTransition;
     private readonly WipeTransition _wipeTransition;
@@ -29,12 +30,14 @@ public sealed class MainMenuScene : Scene
     private const int LINE_HEIGHT = 28;
 
     private string _currentTransition = "Fade";
+    private string _lastCacheInfo = "Cache: No activity yet";
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainMenuScene"/> class.
     /// </summary>
     public MainMenuScene(
         SceneManager sceneManager,
+        SceneCache sceneCache,
         FadeTransition fadeTransition,
         SlideTransition slideTransition,
         WipeTransition wipeTransition,
@@ -42,6 +45,7 @@ public sealed class MainMenuScene : Scene
         : base("MainMenu")
     {
         _sceneManager = sceneManager;
+        _sceneCache = sceneCache;
         _fadeTransition = fadeTransition;
         _slideTransition = slideTransition;
         _wipeTransition = wipeTransition;
@@ -76,15 +80,13 @@ public sealed class MainMenuScene : Scene
         }
         else if (_inputBackend.IsKeyPressed(Key.Four))
         {
-            // Demonstrate scene parameter passing
+            // Demonstrate scene parameter passing with caching
             var parameters = SceneParameters.Create()
                 .Add("fromMenu", true)
                 .Add("welcomeMessage", "Welcome from Main Menu!")
                 .Build();
             
-            var demo = new InputDemo();
-            PushScene(demo, parameters);
-            _logger.Info("MainMenu", $"Loading {nameof(InputDemo)} with {_currentTransition} transition and parameters");
+            LoadDemo<InputDemo>(parameters);
         }
         else if (_inputBackend.IsKeyPressed(Key.Five))
         {
@@ -131,6 +133,24 @@ public sealed class MainMenuScene : Scene
 
         var separatorPos = new Vector2(MENU_X - 50, MENU_Y + 70);
         _renderBackend.DrawText("═══════════════════════════════════════", separatorPos, 16, new Color(100, 100, 100, 255));
+
+        // Scene cache status - Top right corner
+        var cacheX = 600;
+        var cacheY = 20;
+        _renderBackend.DrawText("Scene Cache", new Vector2(cacheX, cacheY), 14, new Color(200, 200, 200, 255));
+        
+        cacheY += 22;
+        _renderBackend.DrawText(_lastCacheInfo, new Vector2(cacheX, cacheY), 11, new Color(255, 200, 100, 255));
+        
+        cacheY += 18;
+        _renderBackend.DrawText($"Stored: {_sceneCache.Count}/{_sceneCache.MaxCacheSize}", new Vector2(cacheX, cacheY), 11, new Color(150, 150, 150, 255));
+        
+        if (_sceneCache.Count > 0)
+        {
+            cacheY += 18;
+            var cachedKeys = string.Join(", ", _sceneCache.GetCachedKeys());
+            _renderBackend.DrawText($"[{cachedKeys}]", new Vector2(cacheX, cacheY), 9, new Color(100, 150, 200, 255));
+        }
 
         var optionY = MENU_Y + 110;
         _renderBackend.DrawText("Select a demo:", new Vector2(MENU_X, optionY), 18, new Color(200, 200, 200, 255));
@@ -183,10 +203,26 @@ public sealed class MainMenuScene : Scene
         _logger.Info("MainMenu", "Main menu unloaded");
     }
 
-    private void LoadDemo<T>() where T : Scene, new()
+    private void LoadDemo<T>(SceneParameters? parameters = null) where T : Scene, new()
     {
-        var demo = new T();
-        PushScene(demo);
-        _logger.Info("MainMenu", $"Loading {typeof(T).Name} with {_currentTransition} transition");
+        var sceneName = typeof(T).Name;
+        var wasInCache = _sceneCache.Contains(sceneName);
+        
+        var demo = _sceneCache.GetOrCreate(sceneName, () => new T());
+        
+        _lastCacheInfo = wasInCache 
+            ? $"Cache HIT: {sceneName} (reused)"
+            : $"Cache MISS: {sceneName} (new)";
+        
+        if (parameters != null)
+        {
+            PushScene(demo, parameters);
+        }
+        else
+        {
+            PushScene(demo);
+        }
+        
+        _logger.Info("MainMenu", $"Loading {sceneName} - {_lastCacheInfo}");
     }
 }
