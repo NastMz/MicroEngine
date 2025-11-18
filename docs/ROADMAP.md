@@ -1,6 +1,6 @@
 # MicroEngine — Development Roadmap
 
-**Version:** 1.5  
+**Version:** 1.6  
 **Status:** Reference  
 **Author:** Kevin Martínez  
 **Last Updated:** November 2025
@@ -287,11 +287,14 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
     -   ⏳ Scene parameter passing (data transfer between scenes) — PLANNED
     -   ⏳ Scene preloading and background loading — PLANNED
 -   ✅ **Graphics rendering improvements** — COMPLETE v0.5.0
-    -   ✅ **Texture filtering and antialiasing** (configurable filter modes: Point, Bilinear, Trilinear, Anisotropic)
+    -   ✅ **Texture filtering** (Point, Bilinear, Trilinear, Anisotropic16X)
     -   ✅ Configurable texture filter modes via ITexture.Filter property
     -   ✅ Real-time filter switching in GraphicsDemo (F1-F4 keys)
-    -   ⏳ MSAA support for smoother rendering — PLANNED v0.5.x
-    -   ⏳ Sprite scaling quality improvements (mipmap generation) — PLANNED v0.5.x
+    -   ✅ **Mipmap support** with auto-detection and manual generation (M key in GraphicsDemo)
+    -   ✅ **MSAA support** (startup configuration only, 4X mode) — COMPLETE v0.5.1
+        -   IRenderBackend.AntiAliasing property (None/MSAA4X)
+        -   RaylibRenderBackend implementation with ConfigFlags.Msaa4xHint
+        -   Note: Must be configured before Initialize() due to Raylib limitations
 -   ✅ **ECS optimizations** — COMPLETE v0.5.0
     -   ✅ Query caching (CachedQuery class with automatic invalidation)
     -   ⏳ Archetype optimization — PLANNED v0.5.x
@@ -479,7 +482,9 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.2.0  | Playable core (ECS, scenes)          | TBD         | ✅ Complete |
 | v0.3.0  | Raylib backend + rendered demo       | TBD         | ✅ Complete |
 | v0.4.9  | Developer comfort update             | Nov 2025    | ✅ Complete |
-| v0.5.x  | Stabilization & polish               | TBD         | Planned     |
+| v0.5.0  | Texture filtering & mipmaps          | Nov 2025    | ✅ Complete |
+| v0.5.1  | MSAA support                         | Nov 2025    | ✅ Complete |
+| v0.5.x  | Stabilization & polish               | TBD         | In Progress |
 | v1.0.0  | Stable public API                    | TBD         | Planned     |
 | v1.1.0  | Scene management & templates         | TBD         | Planned     |
 | v1.2.0  | Asset management & developer tools   | TBD         | Planned     |
@@ -617,6 +622,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                             |
 | ------- | ----------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 1.6     | November 18, 2025 | Kevin Martínez | Phase 4 Graphics: MSAA support (v0.5.1), texture filtering & mipmaps (v0.5.0), ECS query caching, fade transitions                  |
 | 1.5     | November 18, 2025 | Kevin Martínez | Added missing features: SceneManager (Phase 4), Asset Management, Scene Templates, Developer Console, Scene Serialization (Phase 5) |
 | 1.4     | November 18, 2025 | Kevin Martínez | Phase 3 COMPLETE: Tilemap Support (v0.4.8), all 9/9 features implemented                                                            |
 | 1.5     | November 18, 2025 | Kevin Martínez | Phase 4 STARTED: SceneManager stack-based system (v0.4.9), demo refactoring, interactive EcsBasicsDemo                              |

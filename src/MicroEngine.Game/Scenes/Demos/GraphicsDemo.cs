@@ -386,6 +386,10 @@ public sealed class GraphicsDemo : Scene
         _renderBackend.DrawText($"Texture Filter: {_currentFilter}", new Vector2(UI_X, uiY), 14, textColor);
         uiY += LINE_HEIGHT;
 
+        var msaaStatus = _renderBackend.AntiAliasing == AntiAliasingMode.MSAA4X ? "4X" : "Off";
+        _renderBackend.DrawText($"MSAA: {msaaStatus} (configured at startup)", new Vector2(UI_X, uiY), 14, textColor);
+        uiY += LINE_HEIGHT;
+
         var mipmapCount = _loadedSprites.Count(s => s.Texture.HasMipmaps);
         var totalMipmapLevels = _loadedSprites.Sum(s => s.Texture.MipmapCount);
         _renderBackend.DrawText($"Mipmaps: {mipmapCount}/{_loadedSprites.Count} ({totalMipmapLevels} levels)", new Vector2(UI_X, uiY), 14, textColor);

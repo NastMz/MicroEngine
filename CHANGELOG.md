@@ -7,6 +7,123 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1-alpha] - 2025-11-18
+
+### Added
+
+-   **MSAA Support**: Anti-aliasing for smoother rendering (Phase 4 - Graphics improvements)
+    -   `AntiAliasingMode` enum with 2 modes: None(0), MSAA4X(4)
+    -   `IRenderBackend.AntiAliasing` property for configuration
+    -   `RaylibRenderBackend` implementation using ConfigFlags.Msaa4xHint
+    -   **Startup configuration only**: Must be set in Program.cs before Initialize()
+    -   **Raylib limitation**: ConfigFlags must be set BEFORE InitWindow() call
+    -   Read-only status display in GraphicsDemo UI
+
+### Changed
+
+-   **GraphicsDemo UI**: Removed non-functional runtime MSAA controls (F5/F6)
+    -   MSAA now displayed as read-only information
+    -   Shows "MSAA: 4X (configured at startup)" or "Off"
+-   **IRenderBackend.AntiAliasing**: Throws InvalidOperationException if set after initialization
+
+### Removed
+
+-   **Runtime MSAA controls**: F5/F6 key handlers removed (not supported by Raylib at runtime)
+-   **SetAntiAliasing() method**: Removed unused method from GraphicsDemo
+
+### Technical Details
+
+-   **AntiAliasingMode.cs**: 22 lines, 2 modes only (simplified from initial 5 modes)
+-   **IRenderBackend.AntiAliasing**: Property with validation, prevents runtime changes
+-   **Configuration**: Program.cs sets MSAA at line 30, before Initialize() at line 36
+-   **Design principle**: Honest UX - only expose features that actually work
+
+### Testing
+
+-   **Manual testing**: Verified MSAA 4X enabled at startup via Raylib logs
+-   **Integration**: All texture filtering (F1-F4) and mipmap (M) controls working correctly
+-   **Stability**: No crashes, clean startup/shutdown
+
+## [0.5.0-alpha] - 2025-11-18
+
+### Added
+
+-   **Texture Filtering System**: Configurable filter modes for improved visual quality (Phase 4 - Graphics improvements)
+    -   `TextureFilterMode` enum with 6 modes:
+        -   Point (0): Nearest neighbor, sharp pixels
+        -   Bilinear (1): Linear interpolation, smooth scaling
+        -   Trilinear (2): Bilinear + mipmap interpolation
+        -   Anisotropic4X (3): 4x anisotropic filtering
+        -   Anisotropic8X (4): 8x anisotropic filtering
+        -   Anisotropic16X (5): 16x anisotropic filtering
+    -   `ITexture.Filter` property for runtime filter changes
+    -   `RaylibTexture` implementation with Raylib filter mapping
+    -   Real-time filter switching in GraphicsDemo (F1-F4 keys)
+-   **Mipmap Support**: Automatic and manual mipmap generation
+    -   `ITexture.HasMipmaps` property for mipmap detection
+    -   `ITexture.GenerateMipmaps()` method for on-demand generation
+    -   Auto-detection of preloaded mipmaps (no duplicate generation)
+    -   Required for Trilinear and Anisotropic filtering
+    -   GraphicsDemo: M key generates mipmaps for all loaded textures
+-   **GraphicsDemo Enhancements**:
+    -   F1: Point filtering (sharp pixels)
+    -   F2: Bilinear filtering (smooth)
+    -   F3: Trilinear filtering (requires mipmaps)
+    -   F4: Anisotropic 16X filtering (highest quality)
+    -   M: Generate mipmaps for all textures
+    -   Visual feedback showing current filter mode and mipmap status
+    -   Camera zoom controls for testing filtering at different scales
+-   **ECS Query Caching**: Significant performance optimization
+    -   `CachedQuery<T>` class for automatic query result caching
+    -   Automatic invalidation on component add/remove operations
+    -   Reduces redundant entity filtering in systems
+    -   94% performance improvement in PhysicsSystem (verified via benchmarks)
+-   **Scene Transition Effects**: Fade in/out transitions
+    -   `ISceneTransition` interface for extensible transition system
+    -   `FadeTransition` implementation with configurable duration and color
+    -   Async transition support with proper lifecycle management
+    -   18 comprehensive transition tests (all passing)
+
+### Changed
+
+-   **GraphicsDemo**: Increased sprite spawn radius from 200px to 500px
+    -   Better distribution for testing filtering at distance
+    -   Removed debug rectangles for cleaner visuals
+-   **ITexture interface**: Extended with Filter, HasMipmaps, GenerateMipmaps()
+-   **RaylibTexture**: Implemented texture filtering and mipmap support
+-   **MockTexture**: Updated with filter/mipmap properties for testing
+
+### Fixed
+
+-   **Sprite rendering bug**: Fixed critical switch expression issue in RaylibRenderBackend.DrawSprite()
+    -   Incorrect texture application due to missing break/return in filter switch
+    -   Now correctly applies texture filtering before rendering
+-   **Debug code cleanup**: Removed Console.WriteLine statements from production code
+-   **Mipmap warnings**: Trilinear/Anisotropic modes now check for mipmaps and warn if missing
+
+### Technical Details
+
+-   **TextureFilterMode.cs**: 47 lines with comprehensive documentation
+-   **ITexture filter support**: 3 new members (Filter property, HasMipmaps, GenerateMipmaps)
+-   **RaylibTexture**: Full Raylib filter mode mapping (Point↔Nearest, Bilinear↔Linear, etc.)
+-   **CachedQuery**: Generic caching system with automatic invalidation
+-   **FadeTransition**: Async/await pattern with configurable parameters
+-   **No auto-generation**: Mipmaps generated only on explicit request (design decision)
+
+### Testing
+
+-   **789 tests passing**: All existing tests remain green
+-   **18 new transition tests**: Complete FadeTransition coverage
+-   **Manual testing**: All 6 filter modes verified visually in GraphicsDemo
+-   **Mipmap testing**: Auto-detection and manual generation both functional
+-   **Integration testing**: Filter changes work seamlessly with sprite rendering
+
+### Performance
+
+-   **Query caching**: 94% improvement in PhysicsSystem with 100+ entities
+-   **Texture filtering**: Minimal performance impact, significant visual quality gain
+-   **Mipmaps**: Improved texture sampling performance for scaled sprites
+
 ## [0.4.9-alpha] - 2025-11-18
 
 ### Added

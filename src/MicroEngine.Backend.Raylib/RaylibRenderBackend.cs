@@ -13,6 +13,7 @@ namespace MicroEngine.Backend.Raylib;
 public class RaylibRenderBackend : IRenderBackend
 {
     private bool _isInitialized;
+    private AntiAliasingMode _antiAliasing = AntiAliasingMode.None;
 
     #region Window Management
 
@@ -47,6 +48,12 @@ public class RaylibRenderBackend : IRenderBackend
         if (_isInitialized)
         {
             throw new InvalidOperationException("Render backend already initialized");
+        }
+
+        // Apply MSAA setting before window creation
+        if (_antiAliasing == AntiAliasingMode.MSAA4X)
+        {
+            Raylib_cs.Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
         }
 
         Raylib_cs.Raylib.InitWindow(width, height, title);
@@ -247,6 +254,27 @@ public class RaylibRenderBackend : IRenderBackend
     public void SetTargetFPS(int fps)
     {
         Raylib_cs.Raylib.SetTargetFPS(fps);
+    }
+
+    #endregion
+
+    #region Anti-Aliasing
+
+    /// <inheritdoc/>
+    public AntiAliasingMode AntiAliasing
+    {
+        get => _antiAliasing;
+        set
+        {
+            if (_isInitialized)
+            {
+                throw new InvalidOperationException(
+                    "Anti-aliasing mode cannot be changed after initialization. " +
+                    "Set this property before calling Initialize()."
+                );
+            }
+            _antiAliasing = value;
+        }
     }
 
     #endregion

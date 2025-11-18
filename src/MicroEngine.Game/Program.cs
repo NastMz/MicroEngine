@@ -29,6 +29,9 @@ internal static class Program
         _renderBackend = new RaylibRenderBackend();
         _inputBackend = new RaylibInputBackend();
 
+        // Configure MSAA before window initialization
+        _renderBackend.AntiAliasing = Core.Graphics.AntiAliasingMode.MSAA4X;
+
         // Initialize texture resource cache
         var textureLoader = new RaylibTextureLoader();
         _textureCache = new ResourceCache<ITexture>(textureLoader, _logger);

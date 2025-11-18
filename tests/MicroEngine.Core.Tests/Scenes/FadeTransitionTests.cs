@@ -15,6 +15,7 @@ public class FadeTransitionTests
         public int WindowWidth => 800;
         public int WindowHeight => 600;
         public bool ShouldClose => false;
+        public AntiAliasingMode AntiAliasing { get; set; } = AntiAliasingMode.None;
 
         public void Initialize(int width, int height, string title) { }
         public void Shutdown() { }

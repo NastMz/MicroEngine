@@ -161,4 +161,15 @@ public interface IRenderBackend
     void SetTargetFPS(int fps);
 
     #endregion
+
+    #region Anti-Aliasing
+
+    /// <summary>
+    /// Gets or sets the anti-aliasing mode for rendering.
+    /// Anti-aliasing smooths jagged edges by sampling multiple points per pixel.
+    /// Changing this setting may require restarting the rendering context in some backends.
+    /// </summary>
+    AntiAliasingMode AntiAliasing { get; set; }
+
+    #endregion
 }
