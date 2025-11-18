@@ -277,11 +277,23 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
     -   ✅ Scene stack for back navigation (Push/Pop/Replace)
     -   ✅ Proper scene lifecycle management (OnLoad/OnUnload)
     -   ✅ Deferred transition processing (prevents mid-update corruption)
-    -   ⏳ Scene transitions with effects (fade in/out, slide) — PLANNED v0.5.0
+-   ✅ **SceneManager system** (basic implementation complete - v0.4.9)
+    -   ✅ Scene stack for back navigation (Push/Pop/Replace)
+    -   ✅ Proper scene lifecycle management (OnLoad/OnUnload)
+    -   ✅ Deferred transition processing (prevents mid-update corruption)
+    -   ✅ Scene transitions with effects (fade in/out) — COMPLETE v0.5.0
+    -   ⏳ Additional transition effects (slide, wipe, zoom) — PLANNED v0.5.x
     -   ⏳ Scene caching and lazy loading — PLANNED
     -   ⏳ Scene parameter passing (data transfer between scenes) — PLANNED
     -   ⏳ Scene preloading and background loading — PLANNED
--   ECS optimizations (query caching, archetype optimization)
+-   ⏳ **Graphics rendering improvements** — PLANNED v0.5.0
+    -   ⚠️ **Texture filtering and antialiasing** (HIGH PRIORITY - visible aliasing/jagged edges on sprites)
+    -   Configurable texture filter modes (point, bilinear, trilinear)
+    -   MSAA support for smoother rendering
+    -   Sprite scaling quality improvements
+-   ✅ **ECS optimizations** — COMPLETE v0.5.0
+    -   ✅ Query caching (CachedQuery class with automatic invalidation)
+    -   ⏳ Archetype optimization — PLANNED v0.5.x
 -   Memory profiling tools (allocation tracking)
 -   Stable public API surface (breaking changes frozen)
 -   Comprehensive documentation of all public APIs

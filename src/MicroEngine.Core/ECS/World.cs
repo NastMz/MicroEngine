@@ -11,6 +11,7 @@ public sealed class World
     private readonly Queue<Entity> _entitiesToDestroy = new();
     private readonly HashSet<Entity> _entitiesPendingDestruction = new();
     private readonly Dictionary<Entity, string?> _entityNames = new();
+    private readonly List<CachedQuery> _cachedQueries = new();
 
     private uint _nextEntityId = 1;
     private readonly Dictionary<uint, uint> _entityVersions = new();
@@ -87,6 +88,7 @@ public sealed class World
         }
 
         GetOrCreateComponentArray<T>().Add(entity, component);
+        InvalidateCachedQueries();
     }
 
     /// <summary>
@@ -102,6 +104,7 @@ public sealed class World
         if (_componentArrays.TryGetValue(typeof(T), out var array))
         {
             array.Remove(entity);
+            InvalidateCachedQueries();
         }
     }
 
@@ -150,6 +153,27 @@ public sealed class World
         }
 
         if (_componentArrays.TryGetValue(typeof(T), out var array))
+        {
+            return array.Has(entity);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Checks if an entity has a component of the specified type (non-generic version).
+    /// </summary>
+    /// <param name="entity">The entity to check.</param>
+    /// <param name="componentType">The component type to check for.</param>
+    /// <returns>True if the entity has the component, false otherwise.</returns>
+    internal bool HasComponentOfType(Entity entity, Type componentType)
+    {
+        if (!IsEntityValid(entity))
+        {
+            return false;
+        }
+
+        if (_componentArrays.TryGetValue(componentType, out var array))
         {
             return array.Has(entity);
         }
@@ -211,6 +235,50 @@ public sealed class World
     public IEnumerable<Entity> GetAllEntities()
     {
         return _activeEntities;
+    }
+
+    /// <summary>
+    /// Creates a cached query for entities with specific component types.
+    /// The query result is cached and automatically invalidated when components change.
+    /// </summary>
+    /// <param name="componentTypes">The component types to query for.</param>
+    /// <returns>A cached query that can be reused across frames.</returns>
+    public CachedQuery CreateCachedQuery(params Type[] componentTypes)
+    {
+        var query = new CachedQuery(this, componentTypes);
+        _cachedQueries.Add(query);
+        return query;
+    }
+
+    /// <summary>
+    /// Creates a cached query for entities with a specific component type.
+    /// </summary>
+    /// <typeparam name="T">The component type to query for.</typeparam>
+    /// <returns>A cached query that can be reused across frames.</returns>
+    public CachedQuery CreateCachedQuery<T>() where T : struct, IComponent
+    {
+        return CreateCachedQuery(typeof(T));
+    }
+
+    /// <summary>
+    /// Creates a cached query for entities with two specific component types.
+    /// </summary>
+    /// <typeparam name="T1">The first component type.</typeparam>
+    /// <typeparam name="T2">The second component type.</typeparam>
+    /// <returns>A cached query that can be reused across frames.</returns>
+    public CachedQuery CreateCachedQuery<T1, T2>()
+        where T1 : struct, IComponent
+        where T2 : struct, IComponent
+    {
+        return CreateCachedQuery(typeof(T1), typeof(T2));
+    }
+
+    private void InvalidateCachedQueries()
+    {
+        foreach (var query in _cachedQueries)
+        {
+            query.Invalidate();
+        }
     }
 
     private ComponentArray<T> GetOrCreateComponentArray<T>() where T : struct, IComponent

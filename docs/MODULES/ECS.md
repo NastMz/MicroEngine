@@ -14,10 +14,10 @@ objects and their behaviors.
 
 It provides a lightweight, data-oriented approach to game entity management that is:
 
-- **Performant:** Cache-friendly data layout
-- **Flexible:** Easy to add/remove components at runtime
-- **Maintainable:** Clear separation between data and logic
-- **Dimension-agnostic:** Works for both 2D and 3D entities
+-   **Performant:** Cache-friendly data layout
+-   **Flexible:** Easy to add/remove components at runtime
+-   **Maintainable:** Clear separation between data and logic
+-   **Dimension-agnostic:** Works for both 2D and 3D entities
 
 ---
 
@@ -43,22 +43,22 @@ It provides a lightweight, data-oriented approach to game entity management that
 
 ECS is a design pattern that separates:
 
-- **Entities:** Unique identifiers for game objects
-- **Components:** Pure data containers (no logic)
-- **Systems:** Logic that operates on entities with specific component combinations
+-   **Entities:** Unique identifiers for game objects
+-   **Components:** Pure data containers (no logic)
+-   **Systems:** Logic that operates on entities with specific component combinations
 
 ### Key Principles
 
-- **Composition over inheritance:** Entities are defined by their components, not class hierarchies
-- **Data-oriented design:** Components are plain data structures optimized for cache locality
-- **Separation of concerns:** Data (components) is separate from behavior (systems)
+-   **Composition over inheritance:** Entities are defined by their components, not class hierarchies
+-   **Data-oriented design:** Components are plain data structures optimized for cache locality
+-   **Separation of concerns:** Data (components) is separate from behavior (systems)
 
 ### Benefits
 
-- Easy to extend and modify entity behavior
-- Better performance through cache-friendly data access
-- Simpler testing and debugging
-- Natural parallelization opportunities
+-   Easy to extend and modify entity behavior
+-   Better performance through cache-friendly data access
+-   Simpler testing and debugging
+-   Natural parallelization opportunities
 
 ---
 
@@ -222,9 +222,9 @@ ComponentArray<TransformComponent>
 
 Components must be:
 
-- Structs or classes implementing `IComponent`
-- Serializable (for save/load)
-- Self-contained (no references to entities or world)
+-   Structs or classes implementing `IComponent`
+-   Serializable (for save/load)
+-   Self-contained (no references to entities or world)
 
 **Good component:**
 
@@ -337,31 +337,190 @@ var query = world.Query<HealthComponent>()
     .Where(e => e.GetComponent<HealthComponent>().CurrentHealth > 0);
 ```
 
-### Query Caching
+### Query Caching (v0.5.0+)
 
-Queries are cached for performance:
+**CachedQuery** provides automatic query result caching for improved performance in frequently executed systems.
+
+#### Benefits
+
+-   **Reduced enumeration overhead:** Query results are cached and only refreshed when components change
+-   **Automatic invalidation:** Cached queries are automatically marked dirty when entities add/remove components
+-   **Lazy evaluation:** Queries only refresh when accessed after being invalidated
+-   **Simple API:** Drop-in replacement for repeated queries with the same component combination
+
+#### Basic Usage
 
 ```csharp
-public class HealthSystem : ISystem
+public sealed class MovementSystem
 {
-    private EntityQuery _livingEntities;
+    private CachedQuery _movableEntities;
 
     public void Initialize(World world)
     {
-        _livingEntities = world.Query<HealthComponent>()
-            .Where(e => e.GetComponent<HealthComponent>().CurrentHealth > 0)
-            .Cache();
+        // Create cached query for entities with Transform + Velocity
+        _movableEntities = world.CreateCachedQuery<Transform, Velocity>();
     }
 
     public void Update(World world, float deltaTime)
     {
-        foreach (var entity in _livingEntities)
+        // Automatically refreshes if dirty, otherwise uses cached results
+        foreach (var entity in _movableEntities.Entities)
         {
-            // Process living entities
+            ref var transform = ref world.GetComponent<Transform>(entity);
+            ref var velocity = ref world.GetComponent<Velocity>(entity);
+
+            transform.Position += velocity.Value * deltaTime;
         }
     }
 }
 ```
+
+#### Creating Cached Queries
+
+Three overloads are available:
+
+```csharp
+// Single component type
+var query = world.CreateCachedQuery<Transform>();
+
+// Two component types
+var query = world.CreateCachedQuery<Transform, Velocity>();
+
+// Params array (3+ component types)
+var query = world.CreateCachedQuery(typeof(Transform), typeof(Velocity), typeof(Health));
+```
+
+#### Invalidation and Refresh
+
+Cached queries are automatically invalidated when:
+
+-   A component is added to any entity
+-   A component is removed from any entity
+
+```csharp
+var query = world.CreateCachedQuery<Transform>();
+
+// Access query (triggers initial refresh)
+var count = query.Entities.Count; // Refreshes and caches results
+Assert.False(query.IsDirty);
+
+// Add component to any entity
+var entity = world.CreateEntity();
+world.AddComponent(entity, new Transform());
+
+// Query is now dirty
+Assert.True(query.IsDirty);
+
+// Next access automatically refreshes
+var updatedCount = query.Entities.Count; // Refreshes cache
+Assert.False(query.IsDirty);
+```
+
+#### Manual Control
+
+Manual invalidation and refresh are supported for advanced scenarios:
+
+```csharp
+// Force query to refresh on next access
+query.Invalidate();
+
+// Immediately refresh query (bypasses lazy evaluation)
+query.Refresh();
+```
+
+#### Performance Characteristics
+
+-   **First access:** O(n) where n = total entities (builds cache)
+-   **Subsequent accesses (clean):** O(1) (returns cached list)
+-   **Subsequent accesses (dirty):** O(n) (rebuilds cache)
+-   **Invalidation:** O(m) where m = number of cached queries (marks all dirty)
+
+#### When to Use Cached Queries
+
+**Good candidates:**
+
+-   Systems that run every frame with the same component query
+-   Queries with many component types (expensive to enumerate repeatedly)
+-   Read-heavy workloads with infrequent entity/component changes
+
+**Poor candidates:**
+
+-   One-time queries
+-   Queries in systems that run infrequently
+-   Scenarios with very frequent component add/remove (thrashing)
+
+#### Best Practices
+
+```csharp
+// ✅ Cache query in system field, reuse across frames
+public sealed class RenderSystem
+{
+    private CachedQuery _renderableEntities;
+
+    public void Initialize(World world)
+    {
+        _renderableEntities = world.CreateCachedQuery<Transform, Sprite>();
+    }
+
+    public void Update(World world, float deltaTime)
+    {
+        foreach (var entity in _renderableEntities.Entities)
+        {
+            // Render entity
+        }
+    }
+}
+
+// ❌ Don't create cached query every frame
+public void Update(World world, float deltaTime)
+{
+    var query = world.CreateCachedQuery<Transform>(); // Creates new query each frame
+    foreach (var entity in query.Entities) { }
+}
+
+// ✅ Use Count property to check entity count efficiently
+if (_renderableEntities.Count > 0)
+{
+    // Process entities
+}
+
+// ❌ Don't enumerate just to check for empty
+if (_renderableEntities.Entities.Any()) // Unnecessary enumeration
+{
+    // Process entities
+}
+```
+
+#### Multiple Queries and Invalidation
+
+All cached queries are invalidated together when any component changes:
+
+```csharp
+var queryA = world.CreateCachedQuery<Transform>();
+var queryB = world.CreateCachedQuery<Velocity>();
+var queryC = world.CreateCachedQuery<Health>();
+
+// Access all queries
+_ = queryA.Entities;
+_ = queryB.Entities;
+_ = queryC.Entities;
+
+// All clean
+Assert.False(queryA.IsDirty);
+Assert.False(queryB.IsDirty);
+Assert.False(queryC.IsDirty);
+
+// Add component to any entity
+world.AddComponent(entity, new Transform());
+
+// All queries invalidated (conservative approach)
+Assert.True(queryA.IsDirty);
+Assert.True(queryB.IsDirty);
+Assert.True(queryC.IsDirty);
+```
+
+**Note:** Current implementation uses conservative invalidation (all queries marked dirty on any component
+change). Future versions may implement fine-grained invalidation tracking specific component types.
 
 ---
 
@@ -429,9 +588,9 @@ foreach (var entityId in randomEntityList)
 
 Keep components small and focused:
 
-- **Good:** 16-64 bytes per component
-- **Acceptable:** 64-256 bytes
-- **Bad:** > 256 bytes (consider splitting)
+-   **Good:** 16-64 bytes per component
+-   **Acceptable:** 64-256 bytes
+-   **Bad:** > 256 bytes (consider splitting)
 
 ### Component Count per Entity
 
@@ -439,9 +598,9 @@ Optimal: 3-8 components per entity. Too many components can indicate missing abs
 
 ### Query Optimization
 
-- Cache queries in systems instead of creating them every frame
-- Use exclusion queries to reduce iteration
-- Prefer struct components over class components
+-   Cache queries in systems instead of creating them every frame
+-   Use exclusion queries to reduce iteration
+-   Prefer struct components over class components
 
 ---
 
@@ -520,24 +679,24 @@ public class HealthSystem : ISystem
 
 ### Do's
 
-- ✓ Keep components as pure data structures
-- ✓ Put all logic in systems
-- ✓ Use composition to define entity types
-- ✓ Cache queries in systems
-- ✓ Use events for inter-system communication
-- ✓ Keep components small and focused
-- ✓ Use struct components for better performance
-- ✓ Name components descriptively (e.g., `TransformComponent`, not `TC`)
+-   ✓ Keep components as pure data structures
+-   ✓ Put all logic in systems
+-   ✓ Use composition to define entity types
+-   ✓ Cache queries in systems
+-   ✓ Use events for inter-system communication
+-   ✓ Keep components small and focused
+-   ✓ Use struct components for better performance
+-   ✓ Name components descriptively (e.g., `TransformComponent`, not `TC`)
 
 ### Don'ts
 
-- ✗ Don't store logic in components
-- ✗ Don't store references to entities in components
-- ✗ Don't create components larger than 256 bytes
-- ✗ Don't modify components during iteration without `ref`
-- ✗ Don't create/destroy entities mid-system (use deferred operations)
-- ✗ Don't use inheritance for component hierarchies
-- ✗ Don't store World or System references in components
+-   ✗ Don't store logic in components
+-   ✗ Don't store references to entities in components
+-   ✗ Don't create components larger than 256 bytes
+-   ✗ Don't modify components during iteration without `ref`
+-   ✗ Don't create/destroy entities mid-system (use deferred operations)
+-   ✗ Don't use inheritance for component hierarchies
+-   ✗ Don't store World or System references in components
 
 ### Component Design Guidelines
 
@@ -641,10 +800,10 @@ public interface ISystem
 
 ## Related Documentation
 
-- [Architecture](../ARCHITECTURE.md)
-- [Scenes Module](SCENES.md)
-- [Resources Module](RESOURCES.md)
-- [Physics Module](PHYSICS.md)
+-   [Architecture](../ARCHITECTURE.md)
+-   [Scenes Module](SCENES.md)
+-   [Resources Module](RESOURCES.md)
+-   [Physics Module](PHYSICS.md)
 
 ---
 

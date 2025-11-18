@@ -20,12 +20,6 @@ public sealed class EventBusTests
     {
         public DateTime Timestamp { get; } = DateTime.UtcNow;
         public bool IsHandled { get; set; }
-        public int Value { get; }
-
-        public AnotherEvent(int value)
-        {
-            Value = value;
-        }
     }
 
     [Fact]
@@ -37,13 +31,16 @@ public sealed class EventBusTests
         bus.Subscribe<TestEvent>(e => called = true);
 
         Assert.Equal(1, bus.SubscriptionCount);
+        Assert.False(called);
     }
 
     [Fact]
     public void Subscribe_SameHandlerTwice_OnlyAddsOnce()
     {
         using var bus = new EventBus();
-        void Handler(TestEvent e) { }
+        static void Handler(TestEvent e) {
+            // No-op
+         }
 
         bus.Subscribe<TestEvent>(Handler);
         bus.Subscribe<TestEvent>(Handler);
@@ -55,7 +52,9 @@ public sealed class EventBusTests
     public void Unsubscribe_RemovesHandler()
     {
         using var bus = new EventBus();
-        void Handler(TestEvent e) { }
+        static void Handler(TestEvent e) {
+            // No-op
+         }
 
         bus.Subscribe<TestEvent>(Handler);
         bus.Unsubscribe<TestEvent>(Handler);
