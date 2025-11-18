@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3-alpha] - 2025-11-18
+
+### Added
+
+-   **Input Mapping System**: Action-based input abstraction for multi-device support
+-   **Input Actions**: `InputAction` class for defining logical game actions with multiple bindings
+-   **Input Bindings**: `InputBinding` struct for keyboard, mouse, and gamepad input bindings
+-   **Input Binding Types**: Enum for Keyboard, Mouse, and Gamepad binding types
+-   **IInputMap Interface**: Interface for input mapping with action state queries
+-   **InputMap Implementation**: Core input mapper with state tracking (pressed, released, held)
+-   **Action Chaining**: Fluent API for building actions with multiple bindings
+-   **Input State Tracking**: Per-frame tracking of pressed, released, and held states
+-   **Multi-Binding Support**: Single action can be triggered by multiple inputs
+-   **Remapping Support**: Dynamic control remapping at runtime
+-   **Input Action Tests**: 23 comprehensive unit tests for action and binding systems
+
+### Technical Details
+
+-   **Action-Based Design**: Map logical actions ("Jump", "Shoot") to physical inputs
+-   **State Machine**: Tracks previous and current states to detect pressed/released events
+-   **Binding Flexibility**: Keyboard keys, mouse buttons, gamepad buttons per action
+-   **Gamepad Index Support**: Multiple gamepads with independent bindings (0-3)
+-   **Fluent Interface**: Chainable `AddKeyboardBinding()`, `AddMouseBinding()`, `AddGamepadBinding()`
+-   **Query Methods**: `IsActionPressed()`, `IsActionReleased()`, `IsActionHeld()`, `GetActionValue()`
+-   **Backend Integration**: Updates from `IInputBackend` each frame via `Update()` method
+-   **Zero Allocations**: Struct-based bindings and pooled state dictionary
+-   **Test Coverage**: Constructor validation, binding CRUD, state transitions, equals/hashcode
+-   **Full XML Documentation**: All public APIs documented
+
 ## [0.4.2-alpha] - 2025-11-18
 
 ### Added
