@@ -13,12 +13,13 @@ internal sealed class RaylibTexture : ITexture
     /// <summary>
     /// Initializes a new instance of the <see cref="RaylibTexture"/> class.
     /// </summary>
-    public RaylibTexture(ResourceId id, string path, Raylib_cs.Texture2D texture)
+    public RaylibTexture(ResourceId id, string path, Raylib_cs.Texture2D texture, ResourceMetadata? metadata = null)
     {
         Id = id;
         Path = path;
         _texture = texture;
         IsLoaded = true;
+        Metadata = metadata;
     }
 
     /// <inheritdoc/>
@@ -32,6 +33,9 @@ internal sealed class RaylibTexture : ITexture
 
     /// <inheritdoc/>
     public long SizeInBytes => Width * Height * 4; // Assuming RGBA32
+
+    /// <inheritdoc/>
+    public ResourceMetadata? Metadata { get; }
 
     /// <inheritdoc/>
     public int Width => _texture.Width;

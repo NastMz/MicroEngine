@@ -15,25 +15,27 @@ internal sealed class RaylibAudioClip : IAudioClip
     /// <summary>
     /// Initializes a new instance for a sound effect.
     /// </summary>
-    public RaylibAudioClip(ResourceId id, string path, Raylib_cs.Sound sound)
+    public RaylibAudioClip(ResourceId id, string path, Raylib_cs.Sound sound, ResourceMetadata? metadata = null)
     {
         Id = id;
         Path = path;
         _sound = sound;
         _isStreaming = false;
         IsLoaded = true;
+        Metadata = metadata;
     }
 
     /// <summary>
     /// Initializes a new instance for streaming music.
     /// </summary>
-    public RaylibAudioClip(ResourceId id, string path, Raylib_cs.Music music)
+    public RaylibAudioClip(ResourceId id, string path, Raylib_cs.Music music, ResourceMetadata? metadata = null)
     {
         Id = id;
         Path = path;
         _music = music;
         _isStreaming = true;
         IsLoaded = true;
+        Metadata = metadata;
     }
 
     /// <inheritdoc/>
@@ -47,6 +49,9 @@ internal sealed class RaylibAudioClip : IAudioClip
 
     /// <inheritdoc/>
     public long SizeInBytes => _isStreaming ? 1024 * 1024 : 512 * 1024; // Rough estimate
+
+    /// <inheritdoc/>
+    public ResourceMetadata? Metadata { get; }
 
     /// <inheritdoc/>
     public float Duration => _isStreaming 

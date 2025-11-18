@@ -13,6 +13,7 @@ public class ResourceCacheTests
         public string Path { get; init; } = string.Empty;
         public bool IsLoaded { get; init; }
         public long SizeInBytes { get; init; }
+        public ResourceMetadata? Metadata { get; init; }
         public bool IsDisposed { get; private set; }
 
         public static TestResource Create(string path)
@@ -22,7 +23,8 @@ public class ResourceCacheTests
                 Id = new ResourceId(_nextId++),
                 Path = path,
                 IsLoaded = true,
-                SizeInBytes = 1024
+                SizeInBytes = 1024,
+                Metadata = null
             };
         }
 
@@ -40,7 +42,7 @@ public class ResourceCacheTests
 
         public IReadOnlyList<string> SupportedExtensions => new[] { ".txt", ".test" };
 
-        public TestResource Load(string path)
+        public TestResource Load(string path, ResourceMetadata? metadata = null)
         {
             LoadCallCount++;
             var resource = TestResource.Create(path);
@@ -52,6 +54,11 @@ public class ResourceCacheTests
         {
             UnloadCallCount++;
         }
+
+        public ResourceValidationResult Validate(string path)
+        {
+            return ResourceValidationResult.Success();
+        }
     }
 
     [Fact]
@@ -61,7 +68,7 @@ public class ResourceCacheTests
         var logger = new ConsoleLogger(LogLevel.Debug);
         var cache = new ResourceCache<TestResource>(loader, logger);
 
-        var resource = cache.Load("test/resource.txt");
+        var resource = cache.Load("test/resource.txt", validateFirst: false);
 
         Assert.NotNull(resource);
         Assert.EndsWith("test/resource.txt", resource.Path);
@@ -77,8 +84,8 @@ public class ResourceCacheTests
         var logger = new ConsoleLogger(LogLevel.Debug);
         var cache = new ResourceCache<TestResource>(loader, logger);
 
-        var resource1 = cache.Load("test/resource.txt");
-        var resource2 = cache.Load("test/resource.txt");
+        var resource1 = cache.Load("test/resource.txt", validateFirst: false);
+        var resource2 = cache.Load("test/resource.txt", validateFirst: false);
 
         Assert.Same(resource1, resource2);
         Assert.Equal(1, loader.LoadCallCount);
@@ -92,7 +99,7 @@ public class ResourceCacheTests
         var logger = new ConsoleLogger(LogLevel.Debug);
         var cache = new ResourceCache<TestResource>(loader, logger);
 
-        var resource = cache.Load("test/resource.txt");
+        var resource = cache.Load("test/resource.txt", validateFirst: false);
         cache.Unload("test/resource.txt");
 
         Assert.True(resource.IsDisposed);
@@ -107,8 +114,8 @@ public class ResourceCacheTests
         var logger = new ConsoleLogger(LogLevel.Debug);
         var cache = new ResourceCache<TestResource>(loader, logger);
 
-        var resource1 = cache.Load("test/resource.txt");
-        _ = cache.Load("test/resource.txt");
+        var resource1 = cache.Load("test/resource.txt", validateFirst: false);
+        _ = cache.Load("test/resource.txt", validateFirst: false);
         
         cache.Unload("test/resource.txt");
 
@@ -136,9 +143,9 @@ public class ResourceCacheTests
         var logger = new ConsoleLogger(LogLevel.Debug);
         var cache = new ResourceCache<TestResource>(loader, logger);
 
-        cache.Load("test/resource1.txt");
-        cache.Load("test/resource2.txt");
-        cache.Load("test/resource3.txt");
+        cache.Load("test/resource1.txt", validateFirst: false);
+        cache.Load("test/resource2.txt", validateFirst: false);
+        cache.Load("test/resource3.txt", validateFirst: false);
 
         Assert.Equal(3072, cache.TotalMemoryUsage); // 3 * 1024
     }
@@ -150,8 +157,8 @@ public class ResourceCacheTests
         var logger = new ConsoleLogger(LogLevel.Debug);
         var cache = new ResourceCache<TestResource>(loader, logger);
 
-        var resource1 = cache.Load("test/resource1.txt");
-        var resource2 = cache.Load("test/resource2.txt");
+        var resource1 = cache.Load("test/resource1.txt", validateFirst: false);
+        var resource2 = cache.Load("test/resource2.txt", validateFirst: false);
         
         cache.Clear();
 
@@ -167,8 +174,8 @@ public class ResourceCacheTests
         var logger = new ConsoleLogger(LogLevel.Debug);
         var cache = new ResourceCache<TestResource>(loader, logger);
 
-        var resource1 = cache.Load("test/resource1.txt");
-        var resource2 = cache.Load("test/resource2.txt");
+        var resource1 = cache.Load("test/resource1.txt", validateFirst: false);
+        var resource2 = cache.Load("test/resource2.txt", validateFirst: false);
         
         cache.Dispose();
 
@@ -183,8 +190,8 @@ public class ResourceCacheTests
         var logger = new ConsoleLogger(LogLevel.Debug);
         var cache = new ResourceCache<TestResource>(loader, logger);
 
-        var resource1 = cache.Load("test\\resource.txt");
-        var resource2 = cache.Load("test/resource.txt");
+        var resource1 = cache.Load("test\\resource.txt", validateFirst: false);
+        var resource2 = cache.Load("test/resource.txt", validateFirst: false);
 
         Assert.Same(resource1, resource2);
         Assert.Equal(1, loader.LoadCallCount);

@@ -25,4 +25,9 @@ public interface IResource : IDisposable
     /// Gets the size of the resource in bytes (estimated).
     /// </summary>
     long SizeInBytes { get; }
+
+    /// <summary>
+    /// Gets the metadata associated with this resource.
+    /// </summary>
+    ResourceMetadata? Metadata { get; }
 }

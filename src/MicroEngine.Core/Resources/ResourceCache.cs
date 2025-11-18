@@ -29,7 +29,11 @@ public sealed class ResourceCache<T> : IDisposable where T : IResource
     /// Loads or retrieves a cached resource.
     /// Increments reference count if already loaded.
     /// </summary>
-    public T Load(string path)
+    /// <param name="path">File path to the resource.</param>
+    /// <param name="validateFirst">Whether to validate the file before loading. Default is true.</param>
+    /// <returns>Loaded resource instance.</returns>
+    /// <exception cref="InvalidOperationException">If validation fails.</exception>
+    public T Load(string path, bool validateFirst = true)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -42,13 +46,27 @@ public sealed class ResourceCache<T> : IDisposable where T : IResource
             return cached.Resource;
         }
 
+        if (validateFirst)
+        {
+            var validationResult = _loader.Validate(normalizedPath);
+            if (!validationResult.IsValid)
+            {
+                var errorMsg = $"Resource validation failed: {validationResult.ErrorMessage}";
+                _logger.Error(LOG_CATEGORY, errorMsg);
+                throw new InvalidOperationException(errorMsg);
+            }
+        }
+
         _logger.Info(LOG_CATEGORY, $"Loading resource: {normalizedPath}");
-        var resource = _loader.Load(normalizedPath);
+        
+        // Let the loader create metadata - it knows the file format details
+        var resource = _loader.Load(normalizedPath, metadata: null);
         
         _cache[normalizedPath] = new CachedResource
         {
             Resource = resource,
-            RefCount = 1
+            RefCount = 1,
+            LoadedAt = DateTime.UtcNow
         };
 
         return resource;
@@ -137,5 +155,6 @@ public sealed class ResourceCache<T> : IDisposable where T : IResource
     {
         public required T Resource { get; init; }
         public int RefCount { get; set; }
+        public DateTime LoadedAt { get; init; }
     }
 }

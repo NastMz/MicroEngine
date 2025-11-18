@@ -14,13 +14,14 @@ internal sealed class RaylibFont : IFont
     /// <summary>
     /// Initializes a new instance of the <see cref="RaylibFont"/> class.
     /// </summary>
-    public RaylibFont(ResourceId id, string path, Raylib_cs.Font font, int size)
+    public RaylibFont(ResourceId id, string path, Raylib_cs.Font font, int size, ResourceMetadata? metadata = null)
     {
         Id = id;
         Path = path;
         _font = font;
         _size = size;
         IsLoaded = true;
+        Metadata = metadata;
     }
 
     /// <inheritdoc/>
@@ -34,6 +35,9 @@ internal sealed class RaylibFont : IFont
 
     /// <inheritdoc/>
     public long SizeInBytes => _font.GlyphCount * 64; // Rough estimate
+
+    /// <inheritdoc/>
+    public ResourceMetadata? Metadata { get; }
 
     /// <inheritdoc/>
     public int Size => _size;

@@ -9,6 +9,7 @@ namespace MicroEngine.Backend.Raylib.Resources;
 public sealed class RaylibFontLoader : IResourceLoader<IFont>
 {
     private static readonly string[] EXTENSIONS = [".ttf", ".otf"];
+    private readonly ResourceValidator _validator;
     private readonly int _defaultSize;
     private uint _nextId = 1;
 
@@ -16,16 +17,24 @@ public sealed class RaylibFontLoader : IResourceLoader<IFont>
     /// Initializes a new instance of the <see cref="RaylibFontLoader"/> class.
     /// </summary>
     /// <param name="defaultSize">Default font size in pixels (default: 32).</param>
-    public RaylibFontLoader(int defaultSize = 32)
+    /// <param name="validator">Resource validator instance.</param>
+    public RaylibFontLoader(int defaultSize = 32, ResourceValidator? validator = null)
     {
         _defaultSize = defaultSize;
+        _validator = validator ?? new ResourceValidator();
     }
 
     /// <inheritdoc/>
     public IReadOnlyList<string> SupportedExtensions => EXTENSIONS;
 
     /// <inheritdoc/>
-    public IFont Load(string path)
+    public ResourceValidationResult Validate(string path)
+    {
+        return _validator.Validate(path, SupportedExtensions);
+    }
+
+    /// <inheritdoc/>
+    public IFont Load(string path, ResourceMetadata? metadata = null)
     {
         if (!File.Exists(path))
         {
@@ -40,7 +49,16 @@ public sealed class RaylibFontLoader : IResourceLoader<IFont>
         }
 
         var id = new ResourceId(_nextId++);
-        return new RaylibFont(id, path, font, _defaultSize);
+        
+        var enrichedMetadata = metadata ?? ResourceMetadata.FromFile(path);
+        enrichedMetadata = enrichedMetadata.WithCustomMetadata(new Dictionary<string, string>
+        {
+            ["Size"] = _defaultSize.ToString(),
+            ["GlyphCount"] = font.GlyphCount.ToString(),
+            ["BaseSize"] = font.BaseSize.ToString()
+        });
+
+        return new RaylibFont(id, path, font, _defaultSize, enrichedMetadata);
     }
 
     /// <inheritdoc/>

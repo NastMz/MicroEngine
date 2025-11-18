@@ -12,6 +12,7 @@ public sealed class SpriteAtlasTests
         public string Path { get; init; } = string.Empty;
         public bool IsLoaded { get; init; } = true;
         public long SizeInBytes { get; init; }
+        public ResourceMetadata? Metadata { get; init; }
         public int Width { get; init; }
         public int Height { get; init; }
         public string Format { get; init; } = "RGBA32";

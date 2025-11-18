@@ -9,13 +9,28 @@ namespace MicroEngine.Backend.Raylib.Resources;
 public sealed class RaylibTextureLoader : IResourceLoader<ITexture>
 {
     private static readonly string[] EXTENSIONS = [".png", ".jpg", ".jpeg", ".bmp", ".tga", ".gif"];
+    private readonly ResourceValidator _validator;
     private uint _nextId = 1;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RaylibTextureLoader"/> class.
+    /// </summary>
+    public RaylibTextureLoader(ResourceValidator? validator = null)
+    {
+        _validator = validator ?? new ResourceValidator();
+    }
 
     /// <inheritdoc/>
     public IReadOnlyList<string> SupportedExtensions => EXTENSIONS;
 
     /// <inheritdoc/>
-    public ITexture Load(string path)
+    public ResourceValidationResult Validate(string path)
+    {
+        return _validator.Validate(path, SupportedExtensions);
+    }
+
+    /// <inheritdoc/>
+    public ITexture Load(string path, ResourceMetadata? metadata = null)
     {
         if (!File.Exists(path))
         {
@@ -30,7 +45,16 @@ public sealed class RaylibTextureLoader : IResourceLoader<ITexture>
         }
 
         var id = new ResourceId(_nextId++);
-        return new RaylibTexture(id, path, texture);
+        
+        var enrichedMetadata = metadata ?? ResourceMetadata.FromFile(path);
+        enrichedMetadata = enrichedMetadata.WithCustomMetadata(new Dictionary<string, string>
+        {
+            ["Width"] = texture.Width.ToString(),
+            ["Height"] = texture.Height.ToString(),
+            ["Format"] = "RGBA32"
+        });
+
+        return new RaylibTexture(id, path, texture, enrichedMetadata);
     }
 
     /// <inheritdoc/>
