@@ -455,20 +455,20 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 ## Summary of Milestones
 
-| Version  | Milestone                            | Target Date | Status         |
-| -------- | ------------------------------------ | ----------- | -------------- |
-| v0.1.0   | Engine skeleton                      | TBD         | ✅ Complete    |
-| v0.2.0   | Playable core (ECS, scenes)          | TBD         | ✅ Complete    |
-| v0.3.0   | Raylib backend + rendered demo       | TBD         | ✅ Complete    |
-| v0.4.9   | Developer comfort update             | Nov 2025    | ✅ Complete    |
-| v0.5.x   | Stabilization & polish               | TBD         | Planned        |
-| v1.0.0   | Stable public API                    | TBD         | Planned        |
-| v1.1.0   | Scene management & templates         | TBD         | Planned        |
-| v1.2.0   | Asset management & developer tools   | TBD         | Planned        |
-| v1.3.0   | Scene serialization & pipeline       | TBD         | Planned        |
-| v1.5.0   | Full ecosystem maturity              | TBD         | Future         |
-| v2.0.0   | 3D architecture foundation           | TBD         | Future         |
-| v3.x+    | Editors, advanced tools, new domains | TBD         | Exploratory    |
+| Version | Milestone                            | Target Date | Status      |
+| ------- | ------------------------------------ | ----------- | ----------- |
+| v0.1.0  | Engine skeleton                      | TBD         | ✅ Complete |
+| v0.2.0  | Playable core (ECS, scenes)          | TBD         | ✅ Complete |
+| v0.3.0  | Raylib backend + rendered demo       | TBD         | ✅ Complete |
+| v0.4.9  | Developer comfort update             | Nov 2025    | ✅ Complete |
+| v0.5.x  | Stabilization & polish               | TBD         | Planned     |
+| v1.0.0  | Stable public API                    | TBD         | Planned     |
+| v1.1.0  | Scene management & templates         | TBD         | Planned     |
+| v1.2.0  | Asset management & developer tools   | TBD         | Planned     |
+| v1.3.0  | Scene serialization & pipeline       | TBD         | Planned     |
+| v1.5.0  | Full ecosystem maturity              | TBD         | Future      |
+| v2.0.0  | 3D architecture foundation           | TBD         | Future      |
+| v3.x+   | Editors, advanced tools, new domains | TBD         | Exploratory |
 
 ---
 
@@ -597,11 +597,11 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 ## Revision History
 
-| Version | Date              | Author         | Changes                                                                   |
-| ------- | ----------------- | -------------- | ------------------------------------------------------------------------- |
+| Version | Date              | Author         | Changes                                                                                                                             |
+| ------- | ----------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | 1.5     | November 18, 2025 | Kevin Martínez | Added missing features: SceneManager (Phase 4), Asset Management, Scene Templates, Developer Console, Scene Serialization (Phase 5) |
-| 1.4     | November 18, 2025 | Kevin Martínez | Phase 3 COMPLETE: Tilemap Support (v0.4.8), all 9/9 features implemented  |
-| 1.3     | November 18, 2025 | Kevin Martínez | Phase 3 status: 8/9 features (88%), Entity Inspector deferred to Phase 5+ |
-| 1.2     | November 18, 2025 | Kevin Martínez | Added Collision Layer System (v0.4.7), updated Phase 3 progress           |
-| 1.1     | November 17, 2025 | Kevin Martínez | Updated Phase 3 with EntityBuilder/Factory (v0.4.6), retroactive docs     |
-| 1.0     | November 2025     | Kevin Martínez | Initial comprehensive roadmap with detailed phases                        |
+| 1.4     | November 18, 2025 | Kevin Martínez | Phase 3 COMPLETE: Tilemap Support (v0.4.8), all 9/9 features implemented                                                            |
+| 1.3     | November 18, 2025 | Kevin Martínez | Phase 3 status: 8/9 features (88%), Entity Inspector deferred to Phase 5+                                                           |
+| 1.2     | November 18, 2025 | Kevin Martínez | Added Collision Layer System (v0.4.7), updated Phase 3 progress                                                                     |
+| 1.1     | November 17, 2025 | Kevin Martínez | Updated Phase 3 with EntityBuilder/Factory (v0.4.6), retroactive docs                                                               |
+| 1.0     | November 2025     | Kevin Martínez | Initial comprehensive roadmap with detailed phases                                                                                  |
