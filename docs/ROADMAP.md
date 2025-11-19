@@ -706,8 +706,8 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2.9     | January 19, 2025  | Kevin Martínez | Memory Profiling Tools (v0.7.5): MemorySnapshot, MemoryProfiler with leak detection, EcsMemoryProfiler, statistical analysis, 36 tests        |
-| 2.8     | November 18, 2025 | Kevin Martínez | Structured Error Codes & Exception Hierarchy (v0.7.4): MicroEngineException base, domain exceptions, error codes, context management            |
+| 2.9     | January 19, 2025  | Kevin Martínez | Memory Profiling Tools (v0.7.5): MemorySnapshot, MemoryProfiler with leak detection, EcsMemoryProfiler, statistical analysis, 36 tests         |
+| 2.8     | November 18, 2025 | Kevin Martínez | Structured Error Codes & Exception Hierarchy (v0.7.4): MicroEngineException base, domain exceptions, error codes, context management           |
 | 2.7     | November 18, 2025 | Kevin Martínez | Performance Benchmarking Suite (v0.7.3): BenchmarkDotNet integration, validated archetype optimization with 37k-424k queries/sec               |
 | 2.6     | November 18, 2025 | Kevin Martínez | Semantic versioning fix: Split features into patch releases (0.7.1 preloading, 0.7.2 archetypes)                                               |
 | 2.5     | November 18, 2025 | Kevin Martínez | Archetype implementation: Simple solution without reflection/dynamic, ArchetypeId/Archetype/ArchetypeManager, query optimization (v0.7.2)      |
