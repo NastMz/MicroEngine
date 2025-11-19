@@ -27,6 +27,18 @@ public sealed class EngineConfiguration
     public bool VSync { get; init; } = true;
 
     /// <summary>
+    /// Gets whether memory profiling is enabled.
+    /// When enabled, captures memory snapshots periodically for leak detection.
+    /// </summary>
+    public bool EnableMemoryProfiling { get; init; } = false;
+
+    /// <summary>
+    /// Gets the interval (in frames) between memory snapshots when profiling is enabled.
+    /// Default: 60 frames (1 second at 60 FPS).
+    /// </summary>
+    public int MemorySnapshotInterval { get; init; } = 60;
+
+    /// <summary>
     /// Gets the initial window width.
     /// </summary>
     public int WindowWidth { get; init; } = 1280;

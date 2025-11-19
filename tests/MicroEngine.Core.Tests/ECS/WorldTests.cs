@@ -1,4 +1,5 @@
 using MicroEngine.Core.ECS;
+using MicroEngine.Core.Exceptions;
 
 namespace MicroEngine.Core.Tests.ECS;
 
@@ -95,7 +96,9 @@ public class WorldTests
         var entity = Entity.Null;
         var component = new TestComponent { Value = 42 };
 
-        Assert.Throws<InvalidOperationException>(() => world.AddComponent(entity, component));
+        var exception = Assert.Throws<InvalidEntityOperationException>(() => world.AddComponent(entity, component));
+
+        Assert.Equal("ECS-400", exception.ErrorCode);
     }
 
     [Fact]
@@ -250,7 +253,10 @@ public class WorldTests
 
         world.RegisterSystem(system);
 
-        Assert.Throws<InvalidOperationException>(() => world.RegisterSystem(system));
+        var exception = Assert.Throws<WorldException>(() => world.RegisterSystem(system));
+
+        Assert.Equal("ECS-500", exception.ErrorCode);
+        Assert.Contains("already registered", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

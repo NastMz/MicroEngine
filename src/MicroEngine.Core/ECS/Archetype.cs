@@ -1,3 +1,5 @@
+using MicroEngine.Core.Exceptions;
+
 namespace MicroEngine.Core.ECS;
 
 /// <summary>

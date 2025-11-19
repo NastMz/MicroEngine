@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.5-alpha] - 2025-11-18
+
+### Added
+
+-   **Memory Profiling Tools**: Comprehensive memory profiling and leak detection system
+    -   `MemorySnapshot`: Immutable snapshots of memory state with GC statistics
+        -   Captures total memory, generation-specific GC statistics (Gen0/1/2)
+        -   Custom metrics dictionary for domain-specific tracking
+        -   Delta calculation for memory regression detection
+    -   `MemoryProfiler`: Time-series memory tracking with leak detection
+        -   Configurable snapshot history with automatic LRU eviction (default: 1000)
+        -   Baseline tracking for delta calculations
+        -   Leak detection using monotonic increase analysis (10 sample window, 5 MB threshold)
+        -   CSV export for external analysis
+        -   Statistical analysis (min/max/avg memory, GC collections)
+    -   `EcsMemoryProfiler`: ECS-specific memory profiling
+        -   Entity and system count tracking
+        -   Component memory estimation (160 bytes per entity)
+        -   Async monitoring over configurable time periods
+        -   Formatted memory report generation with leak detection
+    -   `ProfilingException`: Structured exceptions for profiling errors (PROF-xxx)
+        -   `InvalidProfilingOperationException`: Invalid profiling operation (PROF-400)
+        -   `InvalidProfilingConfigurationException`: Invalid configuration parameter (PROF-422)
+    -   **GameEngine Integration**: Automatic memory profiling when enabled
+        -   `EnableMemoryProfiling` configuration option (default: false)
+        -   `MemorySnapshotInterval` for capture frequency (default: 60 frames)
+        -   Accessible via `GameEngine.MemoryProfiler` property
+        -   Non-intrusive: Zero performance impact when disabled
+    -   **Structured Exception Migration**: ECS module now uses domain-specific exceptions
+        -   Updated `World`, `ComponentArray`, `Archetype` to use ECS exceptions
+        -   Enhanced error context with entity IDs, component types, and archetype information
+        -   Overloaded constructors for Type and string-based component type names
+    -   Parameter validation with descriptive error messages and context
+    -   Thread-safe profiler implementation with lock-based protection
+    -   43 comprehensive tests covering all profiling components and exception handling (635 total)
+
+## [0.7.4-alpha] - 2025-11-18
+
+### Added
+
+-   **Structured Error Codes & Exception Hierarchy**: Comprehensive exception system with error codes and context
+    -   `MicroEngineException`: Base exception with error code and context support
+    -   `EcsException`: ECS-related errors (ECS-404, ECS-405, ECS-409, ECS-400, ECS-500)
+        -   `EntityNotFoundException`: Entity not found (ECS-404)
+        -   `ComponentNotFoundException`: Component not found on entity (ECS-405)
+        -   `DuplicateComponentException`: Duplicate component (ECS-409)
+        -   `InvalidEntityOperationException`: Invalid entity operation (ECS-400)
+        -   `WorldException`: World operation failures (ECS-500)
+    -   `ResourceException`: Resource-related errors (RES-404, RES-500, RES-400, RES-422)
+        -   `ResourceNotFoundException`: Resource file not found (RES-404)
+        -   `ResourceLoadException`: Resource loading failed (RES-500)
+        -   `InvalidResourceFormatException`: Invalid resource format (RES-400)
+        -   `ResourceValidationException`: Validation failed (RES-422)
+    -   `SceneException`: Scene-related errors (SCENE-500, SCENE-400, SCENE-409)
+        -   `SceneTransitionException`: Scene transition failed (SCENE-500)
+        -   `SceneLifecycleException`: Scene lifecycle error (SCENE-400)
+        -   `InvalidSceneOperationException`: Invalid scene operation (SCENE-409)
+    -   `PhysicsException`: Physics-related errors (PHYS-400, PHYS-500)
+        -   `InvalidCollisionConfigurationException`: Invalid collision config (PHYS-400)
+        -   `PhysicsSimulationException`: Physics simulation error (PHYS-500)
+    -   `BackendException`: Backend-related errors (BACKEND-500, BACKEND-400)
+        -   `BackendInitializationException`: Backend initialization failed (BACKEND-500)
+        -   `BackendOperationException`: Backend operation failed (BACKEND-400)
+    -   Context management with `WithContext(key, value)` for structured logging
+    -   Enhanced `ToString()` with error code, context, and inner exception details
+    -   28 comprehensive exception tests covering all exception types
+
 ## [0.7.3-alpha] - 2025-11-18
 
 ### Added

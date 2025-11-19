@@ -1,3 +1,5 @@
+using MicroEngine.Core.Exceptions;
+
 namespace MicroEngine.Core.ECS;
 
 /// <summary>
@@ -85,7 +87,10 @@ public sealed class World
     {
         if (!IsEntityValid(entity))
         {
-            throw new InvalidOperationException($"Cannot add component to invalid entity {entity}");
+            throw new InvalidEntityOperationException(
+                $"Cannot add component {typeof(T).Name} to invalid entity {entity}")
+                .WithContext("entityId", entity.Id.ToString())
+                .WithContext("componentType", typeof(T).Name);
         }
 
         GetOrCreateComponentArray<T>().Add(entity, component);
@@ -118,7 +123,8 @@ public sealed class World
     {
         if (!IsEntityValid(entity))
         {
-            throw new InvalidOperationException($"Cannot get component from invalid entity {entity}");
+            throw new EntityNotFoundException(entity.Id)
+                .WithContext("componentType", typeof(T).Name);
         }
 
         return ref GetOrCreateComponentArray<T>().Get(entity);
@@ -191,7 +197,9 @@ public sealed class World
     {
         if (_systems.Contains(system))
         {
-            throw new InvalidOperationException($"System {typeof(T).Name} is already registered");
+            throw new WorldException(
+                $"System {typeof(T).Name} is already registered")
+                .WithContext("systemType", typeof(T).Name);
         }
 
         _systems.Add(system);

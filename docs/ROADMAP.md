@@ -267,9 +267,9 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** IN PROGRESS (11/11 features complete)
+**Status:** IN PROGRESS (13/14 features complete)
 
-**Current Version:** v0.7.3-alpha
+**Current Version:** v0.7.5-alpha
 
 ### Features
 
@@ -367,14 +367,27 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
     -   ✅ Validated archetype optimization: O(n) linear scaling, zero allocations
     -   ✅ Results: 37,000 queries/sec (10k entities), 424,000 queries/sec (100 entities)
     -   ✅ Complete documentation with usage guide and interpretation
--   ⏳ Memory profiling tools (allocation tracking) — PLANNED
+-   ✅ **Structured Error Codes & Exception Hierarchy** — COMPLETE v0.7.4
+    -   ✅ `MicroEngineException`: Base exception with error code and context management
+    -   ✅ Domain-specific exceptions: ECS, Resource, Scene, Physics, Backend
+    -   ✅ Error codes follow [MODULE]-[NUMBER] format (e.g., "ECS-404", "RES-500")
+    -   ✅ Context management with `WithContext(key, value)` for structured logging
+    -   ✅ Enhanced diagnostics with error code, context, and inner exception details
+    -   ✅ 28 comprehensive tests covering all exception types
+-   ✅ **Memory Profiling Tools** — COMPLETE v0.7.5
+    -   ✅ `MemorySnapshot`: Immutable snapshots with GC statistics and custom metrics
+    -   ✅ `MemoryProfiler`: Time-series tracking with leak detection and CSV export
+    -   ✅ Leak detection: Monotonic increase analysis (10 sample window, 5 MB threshold)
+    -   ✅ Baseline tracking for delta calculations and memory regression detection
+    -   ✅ `EcsMemoryProfiler`: ECS-specific tracking with entity/component estimation
+    -   ✅ Statistical analysis: min/max/avg memory, generation-specific GC collections
+    -   ✅ Async monitoring support with cancellable time periods
+    -   ✅ 36 comprehensive tests covering all profiling components
 -   ⏳ Stable public API surface (breaking changes frozen) — PLANNED v1.0
 -   ⏳ Comprehensive documentation of all public APIs — PLANNED v1.0
 -   ⏳ Improved physics accuracy (continuous collision detection) — PLANNED
 -   ⏳ Determinism audit across all modules — PLANNED
 -   ⏳ Savegame system (versioned, backward-compatible) — PLANNED
--   ⏳ Structured error codes & exception hierarchy — PLANNED
--   ⏳ Telemetry infrastructure (OpenTelemetry-compatible) — PLANNED
 
 ### Testing Requirements
 
@@ -554,6 +567,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.5.1  | MSAA support                                | Nov 2025    | ✅ Complete |
 | v0.6.0  | Architecture refinement + Scene transitions | Nov 2025    | ✅ Complete |
 | v0.7.0  | State Management + Caching + GameEngine     | Nov 2025    | ✅ Complete |
+| v0.7.5  | Memory Profiling Tools                      | Jan 2025    | ✅ Complete |
 | v0.5.x  | Stabilization & polish                      | TBD         | In Progress |
 | v1.0.0  | Stable public API                           | TBD         | Planned     |
 | v1.1.0  | Scene management & templates                | TBD         | Planned     |
@@ -692,6 +706,8 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.9     | January 19, 2025  | Kevin Martínez | Memory Profiling Tools (v0.7.5): MemorySnapshot, MemoryProfiler with leak detection, EcsMemoryProfiler, statistical analysis, 36 tests        |
+| 2.8     | November 18, 2025 | Kevin Martínez | Structured Error Codes & Exception Hierarchy (v0.7.4): MicroEngineException base, domain exceptions, error codes, context management            |
 | 2.7     | November 18, 2025 | Kevin Martínez | Performance Benchmarking Suite (v0.7.3): BenchmarkDotNet integration, validated archetype optimization with 37k-424k queries/sec               |
 | 2.6     | November 18, 2025 | Kevin Martínez | Semantic versioning fix: Split features into patch releases (0.7.1 preloading, 0.7.2 archetypes)                                               |
 | 2.5     | November 18, 2025 | Kevin Martínez | Archetype implementation: Simple solution without reflection/dynamic, ArchetypeId/Archetype/ArchetypeManager, query optimization (v0.7.2)      |

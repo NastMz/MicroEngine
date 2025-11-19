@@ -1,6 +1,7 @@
 using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
+using MicroEngine.Core.Profiling;
 using MicroEngine.Core.Scenes;
 using MicroEngine.Core.Time;
 
@@ -21,9 +22,11 @@ public sealed class GameEngine
     private readonly SceneManager _sceneManager;
     private readonly IRenderBackend2D _renderBackend;
     private readonly IInputBackend _inputBackend;
+    private readonly MemoryProfiler? _memoryProfiler;
 
     private EngineState _state;
     private double _accumulator;
+    private int _frameCount;
 
     /// <summary>
     /// Gets the current state of the engine.
@@ -49,6 +52,11 @@ public sealed class GameEngine
     /// Gets or sets whether the engine should exit.
     /// </summary>
     public bool ShouldExit { get; set; }
+
+    /// <summary>
+    /// Gets the memory profiler, if enabled.
+    /// </summary>
+    public MemoryProfiler? MemoryProfiler => _memoryProfiler;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GameEngine"/> class.
@@ -77,8 +85,16 @@ public sealed class GameEngine
         _timer = new PrecisionTimer();
         _sceneManager = new SceneManager(transitionEffect);
 
+        // Initialize memory profiler if enabled
+        if (_configuration.EnableMemoryProfiling)
+        {
+            _memoryProfiler = new MemoryProfiler { MaxSnapshots = 500 };
+            _logger.Info(LOG_CATEGORY, $"Memory profiling enabled (snapshot every {_configuration.MemorySnapshotInterval} frames)");
+        }
+
         _state = EngineState.NotInitialized;
         _accumulator = 0.0;
+        _frameCount = 0;
         ShouldExit = false;
 
         _logger.Info(LOG_CATEGORY, "Engine instance created");
@@ -173,6 +189,13 @@ public sealed class GameEngine
         _renderBackend.BeginFrame();
         Render();
         _renderBackend.EndFrame();
+
+        // Memory profiling (capture snapshot at configured interval)
+        _frameCount++;
+        if (_memoryProfiler != null && _frameCount % _configuration.MemorySnapshotInterval == 0)
+        {
+            _memoryProfiler.CaptureSnapshot(forceGC: false);
+        }
     }
 
     /// <summary>

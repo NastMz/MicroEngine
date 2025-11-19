@@ -1,3 +1,5 @@
+using MicroEngine.Core.Exceptions;
+
 namespace MicroEngine.Core.ECS;
 
 /// <summary>
@@ -69,7 +71,7 @@ internal class ComponentArray<T> where T : struct, IComponent
     {
         if (!_entityToIndex.TryGetValue(entity, out int index))
         {
-            throw new InvalidOperationException($"Entity {entity} does not have component {typeof(T).Name}");
+            throw new ComponentNotFoundException(entity.Id, typeof(T));
         }
 
         return ref _components[index];
