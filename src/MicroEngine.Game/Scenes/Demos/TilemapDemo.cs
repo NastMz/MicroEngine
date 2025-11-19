@@ -1,3 +1,6 @@
+using MicroEngine.Core.ECS;
+using MicroEngine.Core.ECS.Components;
+using MicroEngine.Core.ECS.Systems;
 using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
@@ -16,10 +19,15 @@ public sealed class TilemapDemo : Scene
     private IRenderBackend2D _renderBackend = null!;
     private ILogger _logger = null!;
 
+    // ECS for camera control
+    private World _world = null!;
+    private CameraControllerSystem _cameraSystem = null!;
+    private Entity _cameraEntity;
+    private Camera2D _camera = null!;
+
     private const int TILE_SIZE = 32;
     private const int GRID_WIDTH = 25;
     private const int GRID_HEIGHT = 19;
-    private Vector2 _cameraOffset;
     private const float CAMERA_SPEED = 200f;
     
     // Simple procedural tilemap (0 = grass, 1 = water, 2 = dirt, 3 = stone)
@@ -31,7 +39,6 @@ public sealed class TilemapDemo : Scene
     public TilemapDemo()
         : base("TilemapDemo")
     {
-        _cameraOffset = Vector2.Zero;
         _tiles = new int[GRID_WIDTH, GRID_HEIGHT];
     }
 
@@ -42,6 +49,34 @@ public sealed class TilemapDemo : Scene
         _inputBackend = context.InputBackend;
         _renderBackend = context.RenderBackend;
         _logger = context.Logger;
+        
+        // Initialize ECS
+        _world = new World();
+        _cameraSystem = new CameraControllerSystem();
+
+        // Initialize camera (no zoom, just movement)
+        _camera = new Camera2D
+        {
+            Position = Vector2.Zero,
+            Offset = Vector2.Zero,
+            Rotation = 0f,
+            Zoom = 1f
+        };
+
+        // Create camera entity with CameraComponent (no zoom for tilemap)
+        _cameraEntity = _world.CreateEntity();
+        _world.AddComponent(_cameraEntity, new CameraComponent
+        {
+            Camera = _camera,
+            MovementSpeed = CAMERA_SPEED,
+            ZoomSpeed = 0f, // No zoom in tilemap demo
+            MinZoom = 1f,
+            MaxZoom = 1f,
+            DefaultPosition = Vector2.Zero,
+            MoveDirection = Vector2.Zero,
+            ZoomDelta = 0f,
+            ResetRequested = false
+        });
         
         GenerateProceduralTilemap();
         _logger.Info("TilemapDemo", "Tilemap demo loaded with procedural generation");
@@ -64,38 +99,29 @@ public sealed class TilemapDemo : Scene
             return;
         }
 
-        // Camera movement with WASD
-        var movementX = 0f;
-        var movementY = 0f;
-        
-        if (_inputBackend.IsKeyDown(Key.W) || _inputBackend.IsKeyDown(Key.Up))
-        {
-            movementY -= CAMERA_SPEED * deltaTime;
-        }
-        if (_inputBackend.IsKeyDown(Key.S) || _inputBackend.IsKeyDown(Key.Down))
-        {
-            movementY += CAMERA_SPEED * deltaTime;
-        }
-        if (_inputBackend.IsKeyDown(Key.A) || _inputBackend.IsKeyDown(Key.Left))
-        {
-            movementX -= CAMERA_SPEED * deltaTime;
-        }
-        if (_inputBackend.IsKeyDown(Key.D) || _inputBackend.IsKeyDown(Key.Right))
-        {
-            movementX += CAMERA_SPEED * deltaTime;
-        }
+        // Translate input to camera commands
+        ref var cam = ref _world.GetComponent<CameraComponent>(_cameraEntity);
 
-        _cameraOffset = new Vector2(
-            _cameraOffset.X + movementX,
-            _cameraOffset.Y + movementY
-        );
+        // Movement direction (WASD or Arrow keys)
+        float moveX = 0f, moveY = 0f;
+        if (_inputBackend.IsKeyDown(Key.W) || _inputBackend.IsKeyDown(Key.Up)) { moveY -= 1f; }
+        if (_inputBackend.IsKeyDown(Key.S) || _inputBackend.IsKeyDown(Key.Down)) { moveY += 1f; }
+        if (_inputBackend.IsKeyDown(Key.A) || _inputBackend.IsKeyDown(Key.Left)) { moveX -= 1f; }
+        if (_inputBackend.IsKeyDown(Key.D) || _inputBackend.IsKeyDown(Key.Right)) { moveX += 1f; }
+        cam.MoveDirection = new Vector2(moveX, moveY);
 
-        // Reset camera
+        // Reset request (R)
         if (_inputBackend.IsKeyPressed(Key.R))
         {
-            _cameraOffset = Vector2.Zero;
+            cam.ResetRequested = true;
             _logger.Info("TilemapDemo", "Camera reset to origin");
         }
+
+        // Process camera commands via system
+        _cameraSystem.Update(_world, deltaTime);
+
+        // Update local camera reference
+        _camera = cam.Camera;
 
         // Regenerate tilemap
         if (_inputBackend.IsKeyPressed(Key.Space))
@@ -121,8 +147,8 @@ public sealed class TilemapDemo : Scene
         {
             for (int y = 0; y < GRID_HEIGHT; y++)
             {
-                var tileX = x * TILE_SIZE - _cameraOffset.X;
-                var tileY = y * TILE_SIZE - _cameraOffset.Y;
+                var tileX = x * TILE_SIZE - _camera.Position.X;
+                var tileY = y * TILE_SIZE - _camera.Position.Y;
 
                 // Culling - only render visible tiles
                 if (tileX + TILE_SIZE < 0 || tileX > 800 || tileY + TILE_SIZE < 0 || tileY > 600)
@@ -139,7 +165,7 @@ public sealed class TilemapDemo : Scene
 
         // UI Overlay
         _renderBackend.DrawText("Tilemap Demo - Procedural Tiles", new Vector2(20, 20), 20, Color.White);
-        _renderBackend.DrawText($"Camera: ({_cameraOffset.X:F0}, {_cameraOffset.Y:F0})", new Vector2(20, 50), 14, new Color(200, 200, 200, 255));
+        _renderBackend.DrawText($"Camera: ({_camera.Position.X:F0}, {_camera.Position.Y:F0})", new Vector2(20, 50), 14, new Color(200, 200, 200, 255));
         _renderBackend.DrawText("[WASD/Arrows] Move Camera", new Vector2(20, 510), 14, new Color(180, 180, 180, 255));
         _renderBackend.DrawText("[SPACE] Regenerate | [R] Reset Camera", new Vector2(20, 535), 14, new Color(180, 180, 180, 255));
         _renderBackend.DrawText("[ESC] Back to Menu", new Vector2(20, 560), 14, new Color(150, 150, 150, 255));

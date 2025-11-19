@@ -15,11 +15,6 @@ public struct RigidBodyComponent : IComponent
     public Vector2 Velocity { get; set; }
 
     /// <summary>
-    /// Gets or sets the acceleration in units per second squared.
-    /// </summary>
-    public Vector2 Acceleration { get; set; }
-
-    /// <summary>
     /// Gets or sets the mass of the body.
     /// Used in F=ma calculations.
     /// </summary>
@@ -30,12 +25,6 @@ public struct RigidBodyComponent : IComponent
     /// Value between 0 (no drag) and 1 (maximum drag).
     /// </summary>
     public float Drag { get; set; }
-
-    /// <summary>
-    /// Gets or sets the gravity scale.
-    /// 1.0 means normal gravity, 0.0 means no gravity.
-    /// </summary>
-    public float GravityScale { get; set; }
 
     /// <summary>
     /// Gets or sets whether the body is kinematic (not affected by forces).
@@ -52,10 +41,4 @@ public struct RigidBodyComponent : IComponent
     /// Value between 0 (no bounce) and 1 (perfect bounce).
     /// </summary>
     public float Restitution { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether to use continuous collision detection.
-    /// Prevents fast-moving objects from tunneling through other objects.
-    /// </summary>
-    public bool UseContinuousCollision { get; set; }
 }

@@ -16,7 +16,9 @@ public class ArchetypeTests
 
     private struct Health : IComponent
     {
+        #pragma warning disable CS0649 // Field is never assigned - used only for archetype type testing
         public int Value;
+        #pragma warning restore CS0649
     }
 
     [Fact]
@@ -42,6 +44,15 @@ public class ArchetypeTests
     {
         var id1 = new ArchetypeId(new[] { typeof(Position), typeof(Velocity) });
         var id2 = new ArchetypeId(new[] { typeof(Position), typeof(Health) });
+
+        Assert.NotEqual(id1, id2);
+    }
+
+    [Fact]
+    public void ArchetypeId_ThreeComponents_ProducesUniqueHash()
+    {
+        var id1 = new ArchetypeId(new[] { typeof(Position), typeof(Velocity) });
+        var id2 = new ArchetypeId(new[] { typeof(Position), typeof(Velocity), typeof(Health) });
 
         Assert.NotEqual(id1, id2);
     }

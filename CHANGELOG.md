@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0-alpha] - 2025-11-19
+
+### Added
+
+-   **ECS Components & Systems**: Camera and drag abstractions for reusable game logic
+
+    -   `CameraComponent`: Data component for camera control commands
+        -   Camera2D instance with movement and zoom settings
+        -   Input-agnostic commands: MoveDirection, ZoomDelta, ResetRequested
+        -   Configurable speed, zoom limits, and default position
+    -   `CameraControllerSystem`: Stateless system for camera updates
+        -   Processes movement, zoom, and reset commands from CameraComponent
+        -   Input-agnostic design (works with WASD, arrows, gamepad, touch, etc.)
+        -   Automatic command clearing after processing
+    -   `DraggableComponent`: Data component for entity dragging
+        -   Drag state tracking (IsDragging, DragOffset)
+        -   Optional kinematic switching during drag
+        -   Input-agnostic commands: StartDragRequested, DragPosition, StopDragRequested
+    -   `DragSystem`: Stateless system for entity dragging logic
+        -   Processes drag commands from DraggableComponent
+        -   Automatic kinematic/dynamic switching for physics bodies
+        -   Input-agnostic design (works with mouse, touch, gamepad, etc.)
+
+-   **Unit Tests**: Comprehensive test coverage for new systems
+    -   `CameraControllerSystemTests`: 8 tests covering movement, zoom, reset, clamping
+    -   `DragSystemTests`: 10 tests covering drag start/stop, kinematic switching, edge cases
+
+### Changed
+
+-   **GraphicsDemo**: Refactored to use CameraControllerSystem
+    -   Replaced ~50 lines of manual camera logic with ECS integration
+    -   Camera movement now managed by CameraControllerSystem
+    -   Input translated to camera commands (MoveDirection, ZoomDelta, ResetRequested)
+-   **TilemapDemo**: Refactored to use CameraControllerSystem
+    -   Migrated from Vector2 offset to Camera2D with CameraControllerSystem
+    -   Simplified camera movement and reset logic
+    -   Consistent camera API across all demos
+-   **PhysicsDemo**: Refactored to use DragSystem
+    -   Replaced ~40 lines of manual drag logic with ECS integration
+    -   Entity dragging now managed by DragSystem
+    -   Automatic kinematic switching when dragging physics bodies
+    -   Added DraggableComponent to spawned balls
+
+### Removed
+
+-   **RigidBodyComponent**: Cleaned up unused properties
+    -   Removed `Acceleration` property (not used by physics backends)
+    -   Removed `GravityScale` property (UseGravity boolean is sufficient)
+    -   Removed `UseContinuousCollision` property (handled internally by backends)
+    -   Simplified component to only include actively used properties
+-   **EntityBuilder**: Removed gravityScale parameter from WithRigidBody method
+
+### Improved
+
+-   **Code Reduction**: Removed ~150 lines of duplicate logic from demos
+-   **Maintainability**: Camera and drag logic now centralized in reusable systems
+-   **Testability**: Input-agnostic design enables easy unit testing (16 new tests added)
+-   **Extensibility**: Easy to add new features (camera boundaries, drag constraints, etc.)
+-   **Consistency**: All demos now follow ECS patterns (Component + System > Helper)
+
 ## [0.9.0-alpha] - 2025-11-18
 
 ### Added

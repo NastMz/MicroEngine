@@ -1,3 +1,6 @@
+using MicroEngine.Core.ECS;
+using MicroEngine.Core.ECS.Components;
+using MicroEngine.Core.ECS.Systems;
 using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
@@ -18,6 +21,11 @@ public sealed class GraphicsDemo : Scene
     private ILogger _logger = null!;
     private ResourceCache<ITexture> _textureCache = null!;
     private readonly Random _random;
+
+    // ECS for camera control
+    private World _world = null!;
+    private CameraControllerSystem _cameraSystem = null!;
+    private Entity _cameraEntity;
 
     private Camera2D _camera = null!;
     private readonly List<SpriteEntity> _sprites;
@@ -52,6 +60,10 @@ public sealed class GraphicsDemo : Scene
         _textureCache = context.TextureCache;
         _logger.Info("GraphicsDemo", "Graphics demo loaded");
 
+        // Initialize ECS
+        _world = new World();
+        _cameraSystem = new CameraControllerSystem();
+
         // Initialize camera at center with proper screen offset
         var screenCenterX = _renderBackend.WindowWidth / 2f;
         var screenCenterY = _renderBackend.WindowHeight / 2f;
@@ -63,6 +75,21 @@ public sealed class GraphicsDemo : Scene
             Rotation = 0f,
             Zoom = 1f
         };
+
+        // Create camera entity with CameraComponent
+        _cameraEntity = _world.CreateEntity();
+        _world.AddComponent(_cameraEntity, new CameraComponent
+        {
+            Camera = _camera,
+            MovementSpeed = CAMERA_SPEED,
+            ZoomSpeed = ZOOM_SPEED,
+            MinZoom = 0.25f,
+            MaxZoom = 4f,
+            DefaultPosition = new Vector2(WORLD_SIZE / 2f, WORLD_SIZE / 2f),
+            MoveDirection = Vector2.Zero,
+            ZoomDelta = 0f,
+            ResetRequested = false
+        });
 
         _logger.Info("GraphicsDemo", $"Camera initialized at ({_camera.Position.X}, {_camera.Position.Y}) with offset ({_camera.Offset.X}, {_camera.Offset.Y})");
 
@@ -85,46 +112,29 @@ public sealed class GraphicsDemo : Scene
             return;
         }
 
-        // Camera movement (WASD)
-        float movementX = 0f;
-        float movementY = 0f;
-        if (_inputBackend.IsKeyDown(Key.W)) { movementY -= 1f; }
-        if (_inputBackend.IsKeyDown(Key.S)) { movementY += 1f; }
-        if (_inputBackend.IsKeyDown(Key.A)) { movementX -= 1f; }
-        if (_inputBackend.IsKeyDown(Key.D)) { movementX += 1f; }
+        // Translate input to camera commands
+        ref var cam = ref _world.GetComponent<CameraComponent>(_cameraEntity);
 
-        if (System.Math.Abs(movementX) > 0.01f || System.Math.Abs(movementY) > 0.01f)
-        {
-            var movement = new Vector2(movementX, movementY);
-            float length = (float)System.Math.Sqrt(movement.X * movement.X + movement.Y * movement.Y);
-            if (length > 0f)
-            {
-                movement = new Vector2(movement.X / length, movement.Y / length);
-            }
+        // Movement direction (WASD)
+        float moveX = 0f, moveY = 0f;
+        if (_inputBackend.IsKeyDown(Key.W)) { moveY -= 1f; }
+        if (_inputBackend.IsKeyDown(Key.S)) { moveY += 1f; }
+        if (_inputBackend.IsKeyDown(Key.A)) { moveX -= 1f; }
+        if (_inputBackend.IsKeyDown(Key.D)) { moveX += 1f; }
+        cam.MoveDirection = new Vector2(moveX, moveY);
 
-            _camera.Position = new Vector2(
-                _camera.Position.X + movement.X * CAMERA_SPEED * deltaTime / _camera.Zoom,
-                _camera.Position.Y + movement.Y * CAMERA_SPEED * deltaTime / _camera.Zoom);
-        }
+        // Zoom delta (Q/E)
+        if (_inputBackend.IsKeyDown(Key.Q)) { cam.ZoomDelta = -1f; }
+        if (_inputBackend.IsKeyDown(Key.E)) { cam.ZoomDelta = 1f; }
 
-        // Camera zoom (Q/E)
-        if (_inputBackend.IsKeyDown(Key.Q))
-        {
-            _camera.Zoom = System.Math.Max(0.25f, _camera.Zoom - ZOOM_SPEED * deltaTime);
-        }
+        // Reset request (R)
+        if (_inputBackend.IsKeyPressed(Key.R)) { cam.ResetRequested = true; }
 
-        if (_inputBackend.IsKeyDown(Key.E))
-        {
-            _camera.Zoom = System.Math.Min(4f, _camera.Zoom + ZOOM_SPEED * deltaTime);
-        }
+        // Process camera commands via system
+        _cameraSystem.Update(_world, deltaTime);
 
-        // Reset camera (R)
-        if (_inputBackend.IsKeyPressed(Key.R))
-        {
-            _camera.Position = new Vector2(WORLD_SIZE / 2f, WORLD_SIZE / 2f);
-            _camera.Zoom = 1f;
-            _camera.Rotation = 0f;
-        }
+        // Update local camera reference (system modifies the component's camera)
+        _camera = cam.Camera;
 
         // Regenerate sprites (Space)
         if (_inputBackend.IsKeyPressed(Key.Space))

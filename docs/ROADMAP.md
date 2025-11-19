@@ -663,7 +663,8 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.7.0  | State Management + Caching + GameEngine     | Nov 2025    | ✅ Complete |
 | v0.7.5  | Memory Profiling Tools                      | Jan 2025    | ✅ Complete |
 | v0.8.0  | Physics & Savegame Systems                  | Jan 2025    | ✅ Complete |
-| v0.9.0  | Physics Backend Abstraction                 | TBD         | In Progress |
+| v0.9.0  | Physics Backend Abstraction                 | Nov 2025    | ✅ Complete |
+| v0.10.0 | ECS Refactoring & Demo Abstractions         | Nov 2025    | ✅ Complete |
 | v0.5.x  | Stabilization & polish                      | TBD         | In Progress |
 | v1.0.0  | Stable public API                           | TBD         | Planned     |
 | v1.1.0  | Scene management & templates                | TBD         | Planned     |
@@ -802,6 +803,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.2     | November 19, 2025 | Kevin Martínez | ECS Refactoring & Demo Abstractions (v0.10.0): CameraComponent/System, DraggableComponent/DragSystem, RigidBodyComponent cleanup, 16 new tests |
 | 3.1     | January 19, 2025  | Kevin Martínez | Physics Backend Abstraction (v0.9.0 WIP): IPhysicsBackend interface, Aether.Physics2D integration, MicroEngine.Backend.Aether project          |
 | 3.0     | January 19, 2025  | Kevin Martínez | Physics & Savegame (v0.8.0): CCD with swept AABB, collision resolution, PhysicsDemo, complete savegame system with versioning, 10 new tests    |
 | 2.9     | January 19, 2025  | Kevin Martínez | Memory Profiling Tools (v0.7.5): MemorySnapshot, MemoryProfiler with leak detection, EcsMemoryProfiler, statistical analysis, 36 tests         |

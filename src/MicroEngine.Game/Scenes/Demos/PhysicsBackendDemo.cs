@@ -272,10 +272,8 @@ public sealed class PhysicsBackendDemo : Scene
             Mass = 1.0f,
             Velocity = new Vector2(random.Next(-30, 31), random.Next(-30, 31)),
             UseGravity = true,
-            GravityScale = 1.0f,
             Drag = 0.05f,
             Restitution = 0.7f, // Bouncy
-            UseContinuousCollision = true,
             IsKinematic = false
         });
 

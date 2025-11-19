@@ -22,14 +22,11 @@ public sealed class PhysicsDemo : Scene
 
     private World _world = null!;
     private PhysicsBackendSystem _physicsSystem = null!;
+    private DragSystem _dragSystem = null!;
 
     private Entity _ground;
     private readonly List<Entity> _balls;
     private const int MAX_BALLS = 20;
-    
-    // Drag functionality
-    private Entity? _draggedBall;
-    private Vector2 _dragOffset;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PhysicsDemo"/> class.
@@ -38,8 +35,6 @@ public sealed class PhysicsDemo : Scene
         : base("PhysicsDemo")
     {
         _balls = new List<Entity>();
-        _draggedBall = null;
-        _dragOffset = Vector2.Zero;
     }
 
     /// <inheritdoc/>
@@ -57,6 +52,9 @@ public sealed class PhysicsDemo : Scene
         var aetherBackend = new AetherPhysicsBackend();
         _physicsSystem = new PhysicsBackendSystem(aetherBackend);
         _physicsSystem.Initialize(gravity: 750f); // Downward gravity
+        
+        // Create drag system
+        _dragSystem = new DragSystem();
         
         _world.RegisterSystem(_physicsSystem);
 
@@ -107,69 +105,65 @@ public sealed class PhysicsDemo : Scene
 
         var mousePos = _inputBackend.GetMousePosition();
 
-        // Handle mouse input for dragging and spawning
+        // Translate input to drag commands
         if (_inputBackend.IsMouseButtonPressed(MouseButton.Left))
         {
-            // Check if clicking on a ball to drag
-            Entity? clickedBall = null;
-            foreach (var ball in _balls)
+            // Check if clicking on a draggable entity
+            bool foundDraggable = false;
+            var draggables = _world.GetEntitiesWith<DraggableComponent>();
+
+            foreach (var entity in draggables)
             {
-                var transform = _world.GetComponent<TransformComponent>(ball);
-                var collider = _world.GetComponent<ColliderComponent>(ball);
-                var radius = collider.Size.X;
-                
-                var dx = mousePos.X - transform.Position.X;
-                var dy = mousePos.Y - transform.Position.Y;
-                var distanceSquared = dx * dx + dy * dy;
-                
-                if (distanceSquared <= radius * radius)
+                var transform = _world.GetComponent<TransformComponent>(entity);
+                var collider = _world.GetComponent<ColliderComponent>(entity);
+
+                if (IsPointInCollider(mousePos, transform, collider))
                 {
-                    clickedBall = ball;
+                    ref var draggable = ref _world.GetComponent<DraggableComponent>(entity);
+                    draggable.StartDragRequested = true;
+                    draggable.DragPosition = mousePos;
+                    foundDraggable = true;
                     break;
                 }
             }
 
-            if (clickedBall.HasValue)
+            // If no draggable clicked, spawn new ball
+            if (!foundDraggable && _balls.Count < MAX_BALLS)
             {
-                // Start dragging
-                _draggedBall = clickedBall.Value;
-                ref var rigidBody = ref _world.GetComponent<RigidBodyComponent>(_draggedBall.Value);
-                var transform = _world.GetComponent<TransformComponent>(_draggedBall.Value);
-                
-                _dragOffset = new Vector2(
-                    mousePos.X - transform.Position.X,
-                    mousePos.Y - transform.Position.Y
-                );
-                
-                // Make kinematic during drag
-                rigidBody.IsKinematic = true;
-                rigidBody.Velocity = Vector2.Zero;
-            }
-            else if (_balls.Count < MAX_BALLS)
-            {
-                // Spawn new ball
                 SpawnBallAt(mousePos);
             }
         }
 
-        // Handle dragging
-        if (_draggedBall.HasValue && _inputBackend.IsMouseButtonDown(MouseButton.Left))
+        // Update drag position
+        if (_inputBackend.IsMouseButtonDown(MouseButton.Left))
         {
-            ref var transform = ref _world.GetComponent<TransformComponent>(_draggedBall.Value);
-            
-            // Move to mouse position
-            var desiredPos = new Vector2(mousePos.X - _dragOffset.X, mousePos.Y - _dragOffset.Y);
-            transform.Position = desiredPos;
+            var draggables = _world.GetEntitiesWith<DraggableComponent>();
+            foreach (var entity in draggables)
+            {
+                ref var draggable = ref _world.GetComponent<DraggableComponent>(entity);
+                if (draggable.IsDragging)
+                {
+                    draggable.DragPosition = mousePos;
+                }
+            }
         }
-        else if (_draggedBall.HasValue)
+
+        // Stop drag
+        if (_inputBackend.IsMouseButtonReleased(MouseButton.Left))
         {
-            // Released the ball - restore dynamic physics
-            ref var rigidBody = ref _world.GetComponent<RigidBodyComponent>(_draggedBall.Value);
-            rigidBody.IsKinematic = false;
-            rigidBody.Velocity = Vector2.Zero; // Drop with zero velocity
-            
-            _draggedBall = null;
+            var draggables = _world.GetEntitiesWith<DraggableComponent>();
+            foreach (var entity in draggables)
+            {
+                ref var draggable = ref _world.GetComponent<DraggableComponent>(entity);
+                if (draggable.IsDragging)
+                {
+                    draggable.StopDragRequested = true;
+                }
+            }
         }
+
+        // Process drag commands via system
+        _dragSystem.Update(_world, deltaTime);
 
         // Update physics
         _physicsSystem.Update(_world, deltaTime);
@@ -256,10 +250,8 @@ public sealed class PhysicsDemo : Scene
             Mass = 1.0f,
             Velocity = new Vector2(random.Next(-30, 30), 0),
             UseGravity = true,
-            GravityScale = 1.0f,
             Drag = 0.05f, // Air resistance
-            Restitution = 0.7f, // Better bounce
-            UseContinuousCollision = true
+            Restitution = 0.7f // Better bounce
         });
 
         var color = new Color(
@@ -275,9 +267,42 @@ public sealed class PhysicsDemo : Scene
             Shape = RenderShape.Circle
         });
 
+        // Add DraggableComponent for drag interaction
+        _world.AddComponent(ball, new DraggableComponent
+        {
+            IsDragging = false,
+            MakeKinematicOnDrag = true, // Physics bodies should be kinematic when dragged
+            DragOffset = Vector2.Zero,
+            StartDragRequested = false,
+            DragPosition = Vector2.Zero,
+            StopDragRequested = false
+        });
+
         // Create physics body
         _physicsSystem.CreateBodyForEntity(_world, ball);
 
         _balls.Add(ball);
+    }
+
+    private static bool IsPointInCollider(Vector2 point, TransformComponent transform, ColliderComponent collider)
+    {
+        if (collider.Shape == ColliderShape.Circle)
+        {
+            var dx = point.X - transform.Position.X;
+            var dy = point.Y - transform.Position.Y;
+            var distanceSquared = dx * dx + dy * dy;
+            var radius = collider.Size.X;
+            return distanceSquared <= radius * radius;
+        }
+        else if (collider.Shape == ColliderShape.Rectangle)
+        {
+            var halfWidth = collider.Size.X / 2f;
+            var halfHeight = collider.Size.Y / 2f;
+            return point.X >= transform.Position.X - halfWidth &&
+                   point.X <= transform.Position.X + halfWidth &&
+                   point.Y >= transform.Position.Y - halfHeight &&
+                   point.Y <= transform.Position.Y + halfHeight;
+        }
+        return false;
     }
 }

@@ -85,24 +85,20 @@ public sealed class EntityBuilder
     /// </summary>
     /// <param name="mass">The mass of the body.</param>
     /// <param name="drag">The drag coefficient.</param>
-    /// <param name="gravityScale">The gravity scale multiplier.</param>
     /// <param name="useGravity">Whether gravity affects this body.</param>
     /// <param name="isKinematic">Whether the body is kinematic (unaffected by forces).</param>
     /// <returns>This builder for chaining.</returns>
     public EntityBuilder WithRigidBody(
         float mass = 1f,
         float drag = 0f,
-        float gravityScale = 1f,
         bool useGravity = true,
         bool isKinematic = false)
     {
         _world.AddComponent(_entity, new RigidBodyComponent
         {
             Velocity = Vector2.Zero,
-            Acceleration = Vector2.Zero,
             Mass = mass,
             Drag = drag,
-            GravityScale = gravityScale,
             IsKinematic = isKinematic,
             UseGravity = useGravity
         });

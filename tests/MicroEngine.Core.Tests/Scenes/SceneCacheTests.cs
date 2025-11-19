@@ -621,7 +621,7 @@ public sealed class SceneCacheTests
     }
 
     [Fact]
-    public async Task IsPreloading_WithNonExistentScene_ReturnsFalse()
+    public void IsPreloading_WithNonExistentScene_ReturnsFalse()
     {
         // Arrange
         var cache = new SceneCache(5);
