@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0-alpha] - 2025-11-18
+
+### Added
+
+-   **Improved Physics Accuracy**: Continuous Collision Detection (CCD) to prevent tunneling
+
+    -   `CollisionInfo`: Struct containing collision normal, penetration, contact point, and time of impact
+    -   `SweptCollision`: Static class providing swept AABB collision detection
+        -   Prevents fast-moving objects from passing through other objects
+        -   Ray vs AABB intersection testing for precise collision detection
+        -   Time of impact calculation (0-1 range for interpolated collision points)
+    -   Enhanced `PhysicsSystem` with automatic CCD integration
+        -   Checks all potential collisions along movement path
+        -   Resolves collisions at earliest time of impact
+        -   Applies restitution (bounciness) coefficient
+    -   Enhanced `CollisionSystem` with collision resolution
+        -   `CheckSweptCollision`: Performs swept collision detection for moving entities
+        -   `ResolveCollision`: Adjusts position and velocity based on collision normal
+    -   New `RigidBodyComponent` properties:
+        -   `Restitution`: Bounciness coefficient (0-1 range)
+        -   `UseContinuousCollision`: Toggle for CCD (prevents tunneling when enabled)
+    -   `RenderComponent`: Visual rendering data component for basic shapes (Rectangle, Circle, Line)
+    -   **PhysicsDemo**: Fully functional physics demonstration
+        -   Spawns bouncing balls with gravity and collisions
+        -   Ground platform with static collider
+        -   Click to spawn balls or automatic spawning
+        -   Visual feedback with random colors
+        -   Demonstrates CCD preventing tunneling
+
+-   **Savegame System**: Complete save/load system with versioning and backward compatibility
+    -   `SaveMetadata`: Metadata container with versioning, timestamps, and custom data
+        -   Semantic versioning for save format (default: 1.0.0)
+        -   Engine version tracking for compatibility checks
+        -   Creation and modification timestamps (UTC)
+        -   Optional user-defined save names and custom key-value data
+    -   `SaveContainer<T>`: Generic save file wrapper with metadata and game data
+    -   `ISaveSerializer`: Abstraction for serialization format (JSON, binary, etc.)
+    -   `JsonSaveSerializer`: JSON-based serializer using System.Text.Json
+        -   Configurable indentation for human-readable saves
+        -   Camelcase property naming convention
+        -   Null value omission for smaller file sizes
+    -   `ISavegameManager`: Interface for savegame operations (save, load, delete, list, metadata)
+    -   `SavegameManager`: Full-featured savegame manager implementation
+        -   Configurable save directory (default: ./Saves)
+        -   Automatic .sav file extension handling
+        -   Preserves creation timestamp on overwrite
+        -   Updates last modified timestamp
+        -   List all saves in directory
+        -   Lightweight metadata-only loading for save listings
+        -   Type-safe generic save/load operations
+        -   Comprehensive error handling with result types (`SaveResult`, `LoadResult<T>`)
+    -   10 comprehensive tests covering all savegame functionality (645 total tests)
+
+### Changed
+
+-   `PhysicsSystem.ApplyForce`: Made static for consistency
+-   `PhysicsSystem.ApplyImpulse`: Made static for consistency
+-   `PhysicsSystem.Stop`: Made static for consistency
+-   `PhysicsSystem.Update`: Enhanced with CCD integration and collision resolution
+-   `CollisionSystem`: Added swept collision and resolution methods
+
 ## [0.7.5-alpha] - 2025-11-18
 
 ### Added

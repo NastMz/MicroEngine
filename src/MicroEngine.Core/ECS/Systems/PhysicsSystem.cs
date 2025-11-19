@@ -1,5 +1,6 @@
 using MicroEngine.Core.ECS.Components;
 using MicroEngine.Core.Math;
+using MicroEngine.Core.Physics;
 
 namespace MicroEngine.Core.ECS.Systems;
 
@@ -35,6 +36,7 @@ public sealed class PhysicsSystem : ISystem
 
     /// <summary>
     /// Updates all entities with RigidBodyComponent and TransformComponent.
+    /// Includes continuous collision detection to prevent tunneling.
     /// </summary>
     /// <param name="world">The ECS world.</param>
     /// <param name="deltaTime">Time elapsed since last update in seconds.</param>
@@ -83,17 +85,91 @@ public sealed class PhysicsSystem : ISystem
                 velocity = new Vector2(velocity.X * dragFactor, velocity.Y * dragFactor);
             }
 
-            // Update position from velocity
-            var newPosition = new Vector2(
-                transform.Position.X + velocity.X * deltaTime,
-                transform.Position.Y + velocity.Y * deltaTime
-            );
+            // Calculate intended movement
+            var movement = new Vector2(velocity.X * deltaTime, velocity.Y * deltaTime);
+
+            // Perform continuous collision detection if entity has collider
+            if (world.HasComponent<ColliderComponent>(entity) && rigidBody.UseContinuousCollision)
+            {
+                var collider = world.GetComponent<ColliderComponent>(entity);
+                var collisionSystem = new CollisionSystem();
+                var currentBounds = collisionSystem.GetBounds(collider, transform.Position);
+
+                // Check all potential collision targets
+                var allEntities = world.GetAllEntities();
+                CollisionInfo earliestCollision = CollisionInfo.None();
+                
+                foreach (var other in allEntities)
+                {
+                    if (other.Id == entity.Id)
+                    {
+                        continue;
+                    }
+
+                    if (!world.HasComponent<ColliderComponent>(other) ||
+                        !world.HasComponent<TransformComponent>(other))
+                    {
+                        continue;
+                    }
+
+                    var otherCollider = world.GetComponent<ColliderComponent>(other);
+                    var otherTransform = world.GetComponent<TransformComponent>(other);
+                    var otherBounds = collisionSystem.GetBounds(otherCollider, otherTransform.Position);
+
+                    var collision = SweptCollision.SweptAABB(currentBounds, movement, otherBounds);
+
+                    if (collision.IsColliding && collision.TimeOfImpact < earliestCollision.TimeOfImpact)
+                    {
+                        earliestCollision = collision;
+                    }
+                }
+
+                // Resolve collision if found
+                if (earliestCollision.IsColliding)
+                {
+                    // Move to collision point
+                    var safeMovement = new Vector2(
+                        movement.X * earliestCollision.TimeOfImpact,
+                        movement.Y * earliestCollision.TimeOfImpact
+                    );
+
+                    transform.Position = new Vector2(
+                        transform.Position.X + safeMovement.X,
+                        transform.Position.Y + safeMovement.Y
+                    );
+
+                    // Adjust velocity based on collision normal
+                    var dot = velocity.X * earliestCollision.Normal.X + velocity.Y * earliestCollision.Normal.Y;
+                    
+                    if (dot < 0)
+                    {
+                        velocity = new Vector2(
+                            velocity.X - earliestCollision.Normal.X * dot * (1 + rigidBody.Restitution),
+                            velocity.Y - earliestCollision.Normal.Y * dot * (1 + rigidBody.Restitution)
+                        );
+                    }
+                }
+                else
+                {
+                    // No collision, apply full movement
+                    transform.Position = new Vector2(
+                        transform.Position.X + movement.X,
+                        transform.Position.Y + movement.Y
+                    );
+                }
+            }
+            else
+            {
+                // No CCD, just move
+                transform.Position = new Vector2(
+                    transform.Position.X + movement.X,
+                    transform.Position.Y + movement.Y
+                );
+            }
 
             // Update components by reference
             rigidBody.Velocity = velocity;
             rigidBody.Acceleration = Vector2.Zero; // Reset acceleration after applying
-            
-            transform.Position = newPosition;
         }
     }
 
@@ -104,7 +180,7 @@ public sealed class PhysicsSystem : ISystem
     /// <param name="world">The ECS world.</param>
     /// <param name="entity">The entity to apply force to.</param>
     /// <param name="force">The force vector.</param>
-    public void ApplyForce(World world, Entity entity, Vector2 force)
+    public static void ApplyForce(World world, Entity entity, Vector2 force)
     {
         if (!world.HasComponent<RigidBodyComponent>(entity))
         {
@@ -131,7 +207,7 @@ public sealed class PhysicsSystem : ISystem
     /// <param name="world">The ECS world.</param>
     /// <param name="entity">The entity to apply impulse to.</param>
     /// <param name="impulse">The impulse vector.</param>
-    public void ApplyImpulse(World world, Entity entity, Vector2 impulse)
+    public static void ApplyImpulse(World world, Entity entity, Vector2 impulse)
     {
         if (!world.HasComponent<RigidBodyComponent>(entity))
         {
@@ -155,7 +231,7 @@ public sealed class PhysicsSystem : ISystem
     /// </summary>
     /// <param name="world">The ECS world.</param>
     /// <param name="entity">The entity to stop.</param>
-    public void Stop(World world, Entity entity)
+    public static void Stop(World world, Entity entity)
     {
         if (!world.HasComponent<RigidBodyComponent>(entity))
         {

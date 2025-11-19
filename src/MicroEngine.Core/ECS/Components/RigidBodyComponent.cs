@@ -46,4 +46,16 @@ public struct RigidBodyComponent : IComponent
     /// Gets or sets whether the body is affected by gravity.
     /// </summary>
     public bool UseGravity { get; set; }
+
+    /// <summary>
+    /// Gets or sets the restitution (bounciness) coefficient.
+    /// Value between 0 (no bounce) and 1 (perfect bounce).
+    /// </summary>
+    public float Restitution { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to use continuous collision detection.
+    /// Prevents fast-moving objects from tunneling through other objects.
+    /// </summary>
+    public bool UseContinuousCollision { get; set; }
 }

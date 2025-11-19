@@ -1,5 +1,6 @@
 using MicroEngine.Core.ECS.Components;
 using MicroEngine.Core.Math;
+using MicroEngine.Core.Physics;
 
 namespace MicroEngine.Core.ECS.Systems;
 
@@ -168,5 +169,64 @@ public sealed class CollisionSystem : ISystem
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// Performs swept collision detection for a moving entity.
+    /// Prevents tunneling by checking collision along movement path.
+    /// </summary>
+    /// <param name="movingBounds">The bounds of the moving entity.</param>
+    /// <param name="velocity">The velocity of the moving entity.</param>
+    /// <param name="staticBounds">The bounds of the static entity.</param>
+    /// <returns>Collision information including time of impact.</returns>
+    public CollisionInfo CheckSweptCollision(Rectangle movingBounds, Vector2 velocity, Rectangle staticBounds)
+    {
+        return Physics.SweptCollision.SweptAABB(movingBounds, velocity, staticBounds);
+    }
+
+    /// <summary>
+    /// Resolves a collision by adjusting position and velocity.
+    /// </summary>
+    /// <param name="world">The ECS world.</param>
+    /// <param name="entity">The entity to resolve collision for.</param>
+    /// <param name="collision">The collision information.</param>
+    public void ResolveCollision(World world, Entity entity, CollisionInfo collision)
+    {
+        if (!collision.IsColliding)
+        {
+            return;
+        }
+
+        if (!world.HasComponent<TransformComponent>(entity))
+        {
+            return;
+        }
+
+        ref var transform = ref world.GetComponent<TransformComponent>(entity);
+
+        // Adjust position to prevent penetration
+        transform.Position = new Vector2(
+            transform.Position.X + collision.Normal.X * collision.Penetration,
+            transform.Position.Y + collision.Normal.Y * collision.Penetration
+        );
+
+        // Adjust velocity if entity has RigidBody
+        if (world.HasComponent<RigidBodyComponent>(entity))
+        {
+            ref var rigidBody = ref world.GetComponent<RigidBodyComponent>(entity);
+
+            // Project velocity onto collision normal
+            var dot = rigidBody.Velocity.X * collision.Normal.X + rigidBody.Velocity.Y * collision.Normal.Y;
+
+            // Only resolve if moving into collision
+            if (dot < 0)
+            {
+                // Remove velocity component along normal (with restitution)
+                rigidBody.Velocity = new Vector2(
+                    rigidBody.Velocity.X - collision.Normal.X * dot * (1 + rigidBody.Restitution),
+                    rigidBody.Velocity.Y - collision.Normal.Y * dot * (1 + rigidBody.Restitution)
+                );
+            }
+        }
     }
 }

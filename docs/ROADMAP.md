@@ -1,6 +1,6 @@
 # MicroEngine — Development Roadmap
 
-**Version:** 2.3  
+**Version:** 3.0
 **Status:** Reference  
 **Author:** Kevin Martínez  
 **Last Updated:** December 2024
@@ -267,9 +267,9 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** IN PROGRESS (13/14 features complete)
+**Status:** IN PROGRESS (15/16 features complete)
 
-**Current Version:** v0.7.5-alpha
+**Current Version:** v0.8.0-alpha
 
 ### Features
 
@@ -368,6 +368,72 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
     -   ✅ Results: 37,000 queries/sec (10k entities), 424,000 queries/sec (100 entities)
     -   ✅ Complete documentation with usage guide and interpretation
 -   ✅ **Structured Error Codes & Exception Hierarchy** — COMPLETE v0.7.4
+    -   ✅ MicroEngineException: Base exception with error codes (ME-xxx)
+    -   ✅ EcsException: ECS-specific exceptions (ECS-xxx)
+        -   EntityNotFoundException (ECS-404)
+        -   ComponentNotFoundException (ECS-410)
+        -   DuplicateComponentException (ECS-409)
+        -   InvalidEntityOperationException (ECS-400)
+        -   WorldException (ECS-500)
+    -   ✅ SceneException: Scene system exceptions (SCN-xxx)
+        -   SceneNotFoundException (SCN-404)
+        -   SceneTransitionException (SCN-500)
+        -   SceneParameterException (SCN-422)
+    -   ✅ ResourceException: Resource management exceptions (RES-xxx)
+        -   ResourceNotFoundException (RES-404)
+        -   ResourceLoadException (RES-500)
+    -   ✅ StateException: State machine exceptions (STATE-xxx)
+        -   InvalidStateException (STATE-404)
+        -   InvalidTransitionException (STATE-400)
+    -   ✅ Context preservation with entity IDs, component types, scene names
+    -   ✅ ADR-002 documenting exception design decisions
+    -   ✅ 22 comprehensive exception tests
+-   ✅ **Memory Profiling Tools** — COMPLETE v0.7.5
+    -   ✅ MemorySnapshot: GC statistics and custom metrics tracking
+    -   ✅ MemoryProfiler: Time-series memory tracking with leak detection
+    -   ✅ EcsMemoryProfiler: ECS-specific memory profiling and reporting
+    -   ✅ ProfilingException hierarchy (PROF-xxx error codes)
+    -   ✅ GameEngine integration with automatic profiling when enabled
+    -   ✅ 43 comprehensive profiling tests
+-   ✅ **Improved Physics Accuracy** — COMPLETE v0.8.0
+    -   ✅ Continuous Collision Detection (CCD) to prevent tunneling
+        -   CollisionInfo struct with normal, penetration, contact point, time of impact
+        -   SweptCollision class with swept AABB collision detection
+        -   Ray vs AABB intersection testing for precise collision times
+        -   Time of impact calculation (0-1 range) for interpolated collisions
+    -   ✅ Collision resolution system
+        -   Position adjustment to prevent penetration
+        -   Velocity reflection based on collision normal
+        -   Restitution (bounciness) coefficient support
+    -   ✅ Enhanced RigidBodyComponent with Restitution and UseContinuousCollision
+    -   ✅ RenderComponent for basic visual rendering (Rectangle, Circle, Line)
+    -   ✅ PhysicsDemo: Functional demonstration with falling balls and ground collisions
+-   ✅ **Savegame System** — COMPLETE v0.8.0
+    -   ✅ SaveMetadata: Versioning, timestamps, and custom metadata
+        -   Semantic versioning for save format compatibility (default: 1.0.0)
+        -   Engine version tracking for backward compatibility checks
+        -   Creation and modification timestamps (UTC)
+        -   Optional user-defined save names
+        -   Custom key-value metadata dictionary
+    -   ✅ SaveContainer<T>: Generic save file wrapper with metadata
+    -   ✅ ISaveSerializer: Abstraction for serialization format
+    -   ✅ JsonSaveSerializer: JSON-based serializer with System.Text.Json
+        -   Configurable indentation for human-readable saves
+        -   Camelcase naming convention
+        -   Null value omission for smaller files
+    -   ✅ ISavegameManager: Interface for save operations
+    -   ✅ SavegameManager: Complete implementation
+        -   Configurable save directory (default: ./Saves)
+        -   Automatic .sav file extension handling
+        -   Creation timestamp preservation on overwrite
+        -   Last modified timestamp updates
+        -   List all saves, lightweight metadata loading
+        -   Type-safe generic save/load with result types
+        -   Comprehensive error handling (SaveResult, LoadResult<T>)
+    -   ✅ 10 comprehensive savegame tests
+-   ❌ **Stable public API surface** (breaking changes frozen)
+-   ❌ **Comprehensive documentation** of all public APIs
+-   ❌ **Determinism audit** across all modules
     -   ✅ `MicroEngineException`: Base exception with error code and context management
     -   ✅ Domain-specific exceptions: ECS, Resource, Scene, Physics, Backend
     -   ✅ Error codes follow [MODULE]-[NUMBER] format (e.g., "ECS-404", "RES-500")
@@ -706,6 +772,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.0     | January 19, 2025  | Kevin Martínez | Physics & Savegame (v0.8.0): CCD with swept AABB, collision resolution, PhysicsDemo, complete savegame system with versioning, 10 new tests    |
 | 2.9     | January 19, 2025  | Kevin Martínez | Memory Profiling Tools (v0.7.5): MemorySnapshot, MemoryProfiler with leak detection, EcsMemoryProfiler, statistical analysis, 36 tests         |
 | 2.8     | November 18, 2025 | Kevin Martínez | Structured Error Codes & Exception Hierarchy (v0.7.4): MicroEngineException base, domain exceptions, error codes, context management           |
 | 2.7     | November 18, 2025 | Kevin Martínez | Performance Benchmarking Suite (v0.7.3): BenchmarkDotNet integration, validated archetype optimization with 37k-424k queries/sec               |
