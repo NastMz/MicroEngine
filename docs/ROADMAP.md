@@ -459,18 +459,6 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
         -   Helper methods: CreateBodyForEntity, DestroyBodyForEntity
         -   Physics operations: ApplyForce, ApplyImpulse, Stop
     -   ✅ PhysicsDemo migrated to use Aether backend
-        -   Realistic ball stacking and falling physics
-        -   Drag-and-drop with kinematic body switching
-        -   Fixed drag bug: SetBodyType synchronizes IsKinematic changes
-    -   ✅ Legacy physics system removed (PhysicsSystem.cs, CollisionSystem.cs)
-    -   ✅ All demos updated with null-safe OnUnload methods
-    -   ⏳ Unit tests for physics backend abstraction
-    -   ⏳ Documentation for physics backend implementation guide
--   ❌ **Stable public API surface** (breaking changes frozen)
--   ❌ **Comprehensive documentation** of all public APIs
--   ❌ **Determinism audit** across all modules
-    -   ✅ `MicroEngineException`: Base exception with error code and context management
-    -   ✅ Domain-specific exceptions: ECS, Resource, Scene, Physics, Backend
     -   ✅ Error codes follow [MODULE]-[NUMBER] format (e.g., "ECS-404", "RES-500")
     -   ✅ Context management with `WithContext(key, value)` for structured logging
     -   ✅ Enhanced diagnostics with error code, context, and inner exception details
@@ -514,6 +502,44 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 -   ✅ Savegame system working reliably
 -   ✅ Performance targets met (60 FPS with 5000+ entities)
 -   ✅ Zero critical bugs in issue tracker
+
+---
+
+## v0.13.0 — Capability Demonstrations & Polish
+
+**Goal:** Demonstrate hidden capabilities and fill implementation gaps.
+
+**Status:** Planned
+
+### Features
+
+-   **Save/Load Demo** (`SaveLoadDemo`)
+    -   Demonstrate `ISavegameManager` usage
+    -   Save entity positions and restore on restart
+    -   Show metadata handling
+-   **Event System Demo**
+    -   Integrate `EventBus` into `EcsBasicsDemo`
+    -   Demonstrate decoupled communication (e.g., "PlayerDead", "ItemCollected")
+    -   Remove direct system coupling
+-   **Physics Collision Filtering**
+    -   Update `PhysicsBackendSystem` to use `CollisionMatrix`
+    -   Extend `PhysicsDemo` to show layer filtering (e.g., Player vs Enemy, Enemy vs Enemy ignored)
+-   **Spatial Audio Verification**
+    -   Verify/Implement distance attenuation in audio backend
+    -   Update `AudioDemo` to demonstrate sound variation with distance
+-   **Missing Core Features Analysis**
+    -   Document requirements for UI System, Animation System, and Particle System
+
+### Deliverable
+
+**v0.13.0** — "Capabilities Showcase"
+
+### Acceptance Criteria
+
+-   ✅ Save/Load works reliably in demo
+-   ✅ Event system used effectively in at least one demo
+-   ✅ Collision filtering demonstrated visually
+-   ✅ Spatial audio attenuation verified
 
 ---
 
@@ -674,6 +700,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.10.0 | ECS Refactoring & Demo Abstractions         | Nov 2025    | ✅ Complete |
 | v0.11.0 | TextLayoutHelper & UI Improvements         | Nov 2025    | ✅ Complete |
 | v0.12.0 | Audio System Integration & Real Playback    | Nov 2025    | ✅ Complete |
+| v0.13.0 | Capability Demonstrations & Polish          | TBD         | Planned     |
 | v0.x.x  | Stabilization & polish                      | TBD         | In Progress |
 | v1.0.0  | Stable public API                           | TBD         | Planned     |
 | v1.1.0  | Scene management & templates                | TBD         | Planned     |

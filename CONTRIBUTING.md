@@ -33,7 +33,7 @@ We are committed to maintaining a respectful, inclusive, and collaborative envir
 
 ### Prerequisites
 
-- **.NET 8.0 SDK** or later
+- **.NET 9.0 SDK** or later
 - **Git** for version control
 - **Visual Studio 2022**, **Rider**, or **VS Code** with C# extension
 - Familiarity with C# and game engine architecture
