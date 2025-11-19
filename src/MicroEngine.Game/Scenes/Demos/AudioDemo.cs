@@ -126,42 +126,60 @@ public sealed class AudioDemo : Scene
 
         _renderBackend.Clear(new Color(25, 30, 40, 255));
 
-        // Title
-        _renderBackend.DrawText("Audio Demo", new Vector2(300, 30), 24, Color.White);
+        var layout = new TextLayoutHelper(_renderBackend, startX: 50, startY: 30, defaultLineHeight: 25);
+        var titleColor = new Color(180, 220, 255, 255);
+        var sfxTitleColor = new Color(255, 220, 180, 255);
+        var dimColor = new Color(150, 150, 150, 255);
+
+        // Title (centered)
+        layout.SetX(300)
+              .DrawText("Audio Demo", 24, Color.White)
+              .SetX(50)
+              .AddSpacing(45);
 
         // Music controls
-        _renderBackend.DrawText("Music Controls:", new Vector2(50, 100), 18, new Color(180, 220, 255, 255));
-        _renderBackend.DrawText("[SPACE] Play/Pause Music", new Vector2(70, 130), 16, Color.White);
-        _renderBackend.DrawText($"[↑/↓] Music Volume: {_musicVolume:P0}", new Vector2(70, 155), 16, Color.White);
+        layout.DrawSection("Music Controls:", 18, titleColor, spacingAfter: 5)
+              .SetX(70)
+              .DrawText("[SPACE] Play/Pause Music", 16, Color.White)
+              .DrawText($"[↑/↓] Music Volume: {_musicVolume:P0}", 16, Color.White);
         
         var musicStatus = _isMusicPlaying ? "Playing" : "Stopped";
         var musicColor = _isMusicPlaying ? new Color(100, 255, 100, 255) : new Color(255, 100, 100, 255);
-        _renderBackend.DrawText($"Status: {musicStatus}", new Vector2(70, 180), 16, musicColor);
+        layout.DrawText($"Status: {musicStatus}", 16, musicColor);
 
         // Music volume bar
-        DrawVolumeBar(new Vector2(70, 210), _musicVolume, new Color(100, 150, 255, 255));
+        DrawVolumeBar(new Vector2(70, layout.CurrentY), _musicVolume, new Color(100, 150, 255, 255));
+        layout.AddSpacing(35);
 
         // Sound effects controls
-        _renderBackend.DrawText("Sound Effects:", new Vector2(50, 270), 18, new Color(255, 220, 180, 255));
-        _renderBackend.DrawText("[J] Jump Sound", new Vector2(70, 300), 16, Color.White);
-        _renderBackend.DrawText("[C] Collect Sound", new Vector2(70, 325), 16, Color.White);
-        _renderBackend.DrawText("[H] Hit Sound", new Vector2(70, 350), 16, Color.White);
-        _renderBackend.DrawText($"[←/→] SFX Volume: {_sfxVolume:P0}", new Vector2(70, 375), 16, Color.White);
+        layout.SetX(50)
+              .DrawSection("Sound Effects:", 18, sfxTitleColor, spacingAfter: 5)
+              .SetX(70)
+              .DrawText("[J] Jump Sound", 16, Color.White)
+              .DrawText("[C] Collect Sound", 16, Color.White)
+              .DrawText("[H] Hit Sound", 16, Color.White)
+              .DrawText($"[←/→] SFX Volume: {_sfxVolume:P0}", 16, Color.White);
 
         // SFX volume bar
-        DrawVolumeBar(new Vector2(70, 405), _sfxVolume, new Color(255, 180, 100, 255));
+        DrawVolumeBar(new Vector2(70, layout.CurrentY), _sfxVolume, new Color(255, 180, 100, 255));
+        layout.AddSpacing(35);
 
         // Last sound played feedback
         if (_soundFeedbackTimer > 0)
         {
             var alpha = (byte)(255 * (_soundFeedbackTimer / FEEDBACK_DURATION));
-            _renderBackend.DrawText($"Played: {_lastSoundPlayed}", new Vector2(70, 440), 18, new Color(100, 255, 100, alpha));
+            layout.SetX(70)
+                  .DrawText($"Played: {_lastSoundPlayed}", 18, new Color(100, 255, 100, alpha));
         }
 
         // Instructions
-        _renderBackend.DrawText("Note: Audio backend integration required for actual playback", 
-            new Vector2(50, 510), 12, new Color(150, 150, 150, 255));
-        _renderBackend.DrawText("[ESC] Back to Menu", new Vector2(10, 580), 14, new Color(150, 150, 150, 255));
+        layout.SetX(50)
+              .SetY(510)
+              .DrawText("Note: Audio backend integration required for actual playback", 12, dimColor);
+
+        layout.SetX(10)
+              .SetY(580)
+              .DrawText("[ESC] Back to Menu", 14, dimColor);
     }
 
     /// <inheritdoc/>

@@ -372,80 +372,46 @@ public sealed class GraphicsDemo : Scene
 
     private void DrawUI()
     {
-        const int UI_X = 10;
-        int uiY = 10;
-        const int LINE_HEIGHT = 20;
+        var layout = new TextLayoutHelper(_renderBackend, startX: 10, startY: 10, defaultLineHeight: 20);
         var textColor = new Color(200, 200, 200, 255);
         var titleColor = new Color(100, 200, 255, 255);
-
-        _renderBackend.DrawText("Graphics & Camera Demo", new Vector2(UI_X, uiY), 20, titleColor);
-        uiY += LINE_HEIGHT + 10;
-
-        _renderBackend.DrawText($"Camera: ({_camera.Position.X:F0}, {_camera.Position.Y:F0})", new Vector2(UI_X, uiY), 14, textColor);
-        uiY += LINE_HEIGHT;
-
-        _renderBackend.DrawText($"Zoom: {_camera.Zoom:F2}x", new Vector2(UI_X, uiY), 14, textColor);
-        uiY += LINE_HEIGHT;
-
-        _renderBackend.DrawText($"Sprites: {_sprites.Count}", new Vector2(UI_X, uiY), 14, textColor);
-        uiY += LINE_HEIGHT;
-
-        _renderBackend.DrawText($"Textures Loaded: {_loadedSprites.Count}/{SPRITE_FILES.Length}", new Vector2(UI_X, uiY), 14, textColor);
-        uiY += LINE_HEIGHT;
-
-        _renderBackend.DrawText($"Texture Filter: {_currentFilter}", new Vector2(UI_X, uiY), 14, textColor);
-        uiY += LINE_HEIGHT;
-
-        var msaaStatus = _renderBackend.AntiAliasing == AntiAliasingMode.MSAA4X ? "4X" : "Off";
-        _renderBackend.DrawText($"MSAA: {msaaStatus} (configured at startup)", new Vector2(UI_X, uiY), 14, textColor);
-        uiY += LINE_HEIGHT;
-
-        var mipmapCount = _loadedSprites.Count(s => s.Texture.HasMipmaps);
-        var totalMipmapLevels = _loadedSprites.Sum(s => s.Texture.MipmapCount);
-        _renderBackend.DrawText($"Mipmaps: {mipmapCount}/{_loadedSprites.Count} ({totalMipmapLevels} levels)", new Vector2(UI_X, uiY), 14, textColor);
-        uiY += LINE_HEIGHT + 10;
-
         var controlsColor = new Color(150, 150, 150, 255);
         var highlightColor = new Color(255, 255, 100, 255);
 
-        _renderBackend.DrawText("Controls:", new Vector2(UI_X, uiY), 14, titleColor);
-        uiY += LINE_HEIGHT;
+        layout.DrawText("Graphics & Camera Demo", 20, titleColor)
+              .AddSpacing(10)
+              .DrawText($"Camera: ({_camera.Position.X:F0}, {_camera.Position.Y:F0})", 14, textColor)
+              .DrawText($"Zoom: {_camera.Zoom:F2}x", 14, textColor)
+              .DrawText($"Sprites: {_sprites.Count}", 14, textColor)
+              .DrawText($"Textures Loaded: {_loadedSprites.Count}/{SPRITE_FILES.Length}", 14, textColor)
+              .DrawText($"Texture Filter: {_currentFilter}", 14, textColor);
 
-        _renderBackend.DrawText("[WASD] Move Camera", new Vector2(UI_X, uiY), 12, controlsColor);
-        uiY += LINE_HEIGHT;
+        var msaaStatus = _renderBackend.AntiAliasing == AntiAliasingMode.MSAA4X ? "4X" : "Off";
+        layout.DrawText($"MSAA: {msaaStatus} (configured at startup)", 14, textColor);
 
-        _renderBackend.DrawText("[Q/E] Zoom Out/In", new Vector2(UI_X, uiY), 12, controlsColor);
-        uiY += LINE_HEIGHT;
+        var mipmapCount = _loadedSprites.Count(s => s.Texture.HasMipmaps);
+        var totalMipmapLevels = _loadedSprites.Sum(s => s.Texture.MipmapCount);
+        layout.DrawText($"Mipmaps: {mipmapCount}/{_loadedSprites.Count} ({totalMipmapLevels} levels)", 14, textColor)
+              .AddSpacing(10);
 
-        _renderBackend.DrawText("[R] Reset Camera", new Vector2(UI_X, uiY), 12, controlsColor);
-        uiY += LINE_HEIGHT;
-
-        _renderBackend.DrawText("[SPACE] Regenerate Sprites", new Vector2(UI_X, uiY), 12, controlsColor);
-        uiY += LINE_HEIGHT + 5;
-
-        _renderBackend.DrawText("[F1] Point (pixel art, sharp pixels)", new Vector2(UI_X, uiY), 12, controlsColor);
-        uiY += LINE_HEIGHT;
-
-        _renderBackend.DrawText("[F2] Bilinear (smooth, blurry when zoomed out)", new Vector2(UI_X, uiY), 12, controlsColor);
-        uiY += LINE_HEIGHT;
-
-        _renderBackend.DrawText("[F3] Trilinear (crisp, auto-generates mipmaps)", new Vector2(UI_X, uiY), 12, controlsColor);
-        uiY += LINE_HEIGHT;
-
-        _renderBackend.DrawText("[F4] Anisotropic (best for rotated, auto-mipmaps)", new Vector2(UI_X, uiY), 12, controlsColor);
-        uiY += LINE_HEIGHT;
-
-        _renderBackend.DrawText("[M] Manually Generate Mipmaps", new Vector2(UI_X, uiY), 12, controlsColor);
-        uiY += LINE_HEIGHT + 5;
-
-        _renderBackend.DrawText("[ESC] Back to Menu", new Vector2(UI_X, uiY), 12, controlsColor);
-        uiY += LINE_HEIGHT + 10;
+        layout.DrawSection("Controls:", 14, titleColor)
+              .DrawText("[WASD] Move Camera", 12, controlsColor)
+              .DrawText("[Q/E] Zoom Out/In", 12, controlsColor)
+              .DrawText("[R] Reset Camera", 12, controlsColor)
+              .DrawText("[SPACE] Regenerate Sprites", 12, controlsColor)
+              .AddSpacing(5)
+              .DrawText("[F1] Point (pixel art, sharp pixels)", 12, controlsColor)
+              .DrawText("[F2] Bilinear (smooth, blurry when zoomed out)", 12, controlsColor)
+              .DrawText("[F3] Trilinear (crisp, auto-generates mipmaps)", 12, controlsColor)
+              .DrawText("[F4] Anisotropic (best for rotated, auto-mipmaps)", 12, controlsColor)
+              .DrawText("[M] Manually Generate Mipmaps", 12, controlsColor)
+              .AddSpacing(5)
+              .DrawText("[ESC] Back to Menu", 12, controlsColor)
+              .AddSpacing(10);
 
         // TIP: How to see the difference
-        _renderBackend.DrawText("TIP: Zoom OUT (Q) and compare filters:", new Vector2(UI_X, uiY), 13, highlightColor);
-        uiY += LINE_HEIGHT;
-
-        _renderBackend.DrawText("  F1=Pixelated, F2=Blurry, F3=Sharp (with mipmaps)", new Vector2(UI_X, uiY), 11, highlightColor);
+        layout.DrawText("TIP: Zoom OUT (Q) and compare filters:", 13, highlightColor)
+              .DrawText("  F1=Pixelated, F2=Blurry, F3=Sharp (with mipmaps)", 11, highlightColor);
     }
 
     private void SetTextureFilter(TextureFilter filter)

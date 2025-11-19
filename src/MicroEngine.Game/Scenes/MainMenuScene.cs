@@ -203,83 +203,81 @@ public sealed class MainMenuScene : Scene
     {
         _renderBackend.Clear(new Color(20, 20, 30, 255));
 
-        var titlePos = new Vector2(MENU_X, MENU_Y);
-        _renderBackend.DrawText(EngineInfo.FullName, titlePos, 24, Color.White);
-
-        var subtitlePos = new Vector2(MENU_X, MENU_Y + 30);
-        _renderBackend.DrawText("Demo Showcase", subtitlePos, 20, new Color(180, 180, 180, 255));
-
-        var separatorPos = new Vector2(MENU_X - 50, MENU_Y + 70);
-        _renderBackend.DrawText("═══════════════════════════════════════", separatorPos, 16, new Color(100, 100, 100, 255));
-
-        // Scene cache status - Top right corner
-        var cacheX = 600;
-        var cacheY = 20;
-        _renderBackend.DrawText("Scene Cache", new Vector2(cacheX, cacheY), 14, new Color(200, 200, 200, 255));
+        // Center-aligned title section
+        var centerX = 425f; // Screen width / 2
+        var layout = new TextLayoutHelper(_renderBackend, startX: centerX - 150, startY: 40, defaultLineHeight: 30);
         
-        cacheY += 22;
-        _renderBackend.DrawText(_lastCacheInfo, new Vector2(cacheX, cacheY), 11, new Color(255, 200, 100, 255));
+        var titleColor = Color.White;
+        var subtitleColor = new Color(180, 200, 220, 255);
+        var separatorColor = new Color(80, 90, 110, 255);
+        var sectionColor = new Color(200, 220, 240, 255);
+        var optionColor = new Color(120, 180, 255, 255);
+        var exitColor = new Color(255, 120, 120, 255);
+        var dimColor = new Color(160, 160, 160, 255);
+        var cacheHeaderColor = new Color(180, 200, 220, 255);
+
+        // Title (centered)
+        _renderBackend.DrawText(EngineInfo.FullName, new Vector2(centerX - 140, 40), 26, titleColor);
+        _renderBackend.DrawText("Demo Showcase", new Vector2(centerX - 80, 75), 18, subtitleColor);
+
+        // Decorative separator
+        _renderBackend.DrawText("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", new Vector2(150, 110), 14, separatorColor);
+
+        // Scene cache status - Compact top-right corner
+        var cacheLayout = new TextLayoutHelper(_renderBackend, startX: 620, startY: 15, defaultLineHeight: 16);
+        cacheLayout.DrawText("Scene Cache", 12, cacheHeaderColor)
+                   .AddSpacing(2);
         
-        cacheY += 18;
-        var statusColor = _isPreloading ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
-        var statusText = _isPreloading ? $"Preloading... {_preloadedScenes}/6" : $"Stored: {_sceneCache.Count}/{_sceneCache.MaxCacheSize}";
-        _renderBackend.DrawText(statusText, new Vector2(cacheX, cacheY), 11, statusColor);
+        var statusColor = _isPreloading ? new Color(100, 255, 150, 255) : new Color(140, 160, 180, 255);
+        var statusText = _isPreloading ? $"Loading {_preloadedScenes}/6..." : $"{_sceneCache.Count}/{_sceneCache.MaxCacheSize} cached";
+        cacheLayout.DrawText(statusText, 10, statusColor);
         
-        if (_sceneCache.Count > 0)
+        if (_sceneCache.Count > 0 && !_isPreloading)
         {
-            cacheY += 18;
-            var cachedKeys = string.Join(", ", _sceneCache.GetCachedKeys());
-            _renderBackend.DrawText($"[{cachedKeys}]", new Vector2(cacheX, cacheY), 9, new Color(100, 150, 200, 255));
+            cacheLayout.DrawText(_lastCacheInfo, 9, new Color(255, 200, 100, 255));
         }
 
-        var optionY = MENU_Y + 110;
-        _renderBackend.DrawText("Select a demo:", new Vector2(MENU_X, optionY), 18, new Color(200, 200, 200, 255));
+        // Demo selection section
+        layout.SetX(280)
+              .SetY(145)
+              .DrawText("Available Demos", 20, sectionColor)
+              .AddSpacing(15)
+              .SetX(300);
 
-        optionY += LINE_HEIGHT + 10;
-        _renderBackend.DrawText("[1] ECS Basics", new Vector2(MENU_X + 20, optionY), 16, new Color(100, 200, 255, 255));
+        // Demo options with better spacing
+        layout.DrawText("[1] ECS Basics", 16, optionColor, customLineHeight: 26)
+              .DrawText("[2] Graphics & Camera", 16, optionColor, customLineHeight: 26)
+              .DrawText("[3] Physics & Collisions", 16, optionColor, customLineHeight: 26)
+              .DrawText("[4] Input Mapping", 16, optionColor, customLineHeight: 26)
+              .DrawText("[5] Tilemap System", 16, optionColor, customLineHeight: 26)
+              .DrawText("[6] Audio System", 16, optionColor, customLineHeight: 26)
+              .AddSpacing(15)
+              .DrawText("[X] Exit", 16, exitColor);
 
-        optionY += LINE_HEIGHT;
-        _renderBackend.DrawText("[2] Graphics & Camera", new Vector2(MENU_X + 20, optionY), 16, new Color(100, 200, 255, 255));
+        // Decorative separator
+        _renderBackend.DrawText("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", new Vector2(150, 425), 14, separatorColor);
 
-        optionY += LINE_HEIGHT;
-        _renderBackend.DrawText("[3] Physics & Collisions", new Vector2(MENU_X + 20, optionY), 16, new Color(100, 200, 255, 255));
+        // Transition effects section
+        layout.SetX(280)
+              .SetY(455)
+              .DrawText("Scene Transitions", 20, sectionColor)
+              .AddSpacing(15);
 
-        optionY += LINE_HEIGHT;
-        _renderBackend.DrawText("[4] Input Mapping", new Vector2(MENU_X + 20, optionY), 16, new Color(100, 200, 255, 255));
-
-        optionY += LINE_HEIGHT;
-        _renderBackend.DrawText("[5] Tilemap System", new Vector2(MENU_X + 20, optionY), 16, new Color(100, 200, 255, 255));
-
-        optionY += LINE_HEIGHT;
-        _renderBackend.DrawText("[6] Audio System", new Vector2(MENU_X + 20, optionY), 16, new Color(100, 200, 255, 255));
-
-        optionY += LINE_HEIGHT + 10;
-        _renderBackend.DrawText("[X] Exit (close window)", new Vector2(MENU_X + 20, optionY), 16, new Color(255, 100, 100, 255));
-
-        var bottomSeparatorPos = new Vector2(MENU_X - 50, optionY + 40);
-        _renderBackend.DrawText("═══════════════════════════════════════", bottomSeparatorPos, 16, new Color(100, 100, 100, 255));
-
-        // Transition effect selection - horizontal layout
-        var transitionY = optionY + 80;
-        _renderBackend.DrawText("Scene Transitions:", new Vector2(MENU_X, transitionY), 18, new Color(200, 200, 200, 255));
-
-        transitionY += LINE_HEIGHT + 5;
-        var transitionX = MENU_X + 20;
+        // Transition options in a grid layout
+        var transY = layout.CurrentY;
+        var col1X = 300f;
+        var col2X = 480f;
         
-        var fadeColor = _currentTransition == "Fade" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
-        _renderBackend.DrawText($"[F6] Fade {(_currentTransition == "Fade" ? "✓" : "")}", new Vector2(transitionX, transitionY), 14, fadeColor);
+        var fadeColor = _currentTransition == "Fade" ? new Color(100, 255, 150, 255) : dimColor;
+        var slideColor = _currentTransition == "Slide" ? new Color(100, 255, 150, 255) : dimColor;
+        var wipeColor = _currentTransition == "Wipe" ? new Color(100, 255, 150, 255) : dimColor;
+        var zoomColor = _currentTransition == "Zoom" ? new Color(100, 255, 150, 255) : dimColor;
 
-        transitionX += 120;
-        var slideColor = _currentTransition == "Slide" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
-        _renderBackend.DrawText($"[F7] Slide {(_currentTransition == "Slide" ? "✓" : "")}", new Vector2(transitionX, transitionY), 14, slideColor);
-
-        transitionX += 120;
-        var wipeColor = _currentTransition == "Wipe" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
-        _renderBackend.DrawText($"[F8] Wipe {(_currentTransition == "Wipe" ? "✓" : "")}", new Vector2(transitionX, transitionY), 14, wipeColor);
-
-        transitionX += 120;
-        var zoomColor = _currentTransition == "Zoom" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
-        _renderBackend.DrawText($"[F9] Zoom {(_currentTransition == "Zoom" ? "✓" : "")}", new Vector2(transitionX, transitionY), 14, zoomColor);
+        _renderBackend.DrawText($"[F6] Fade {(_currentTransition == "Fade" ? "●" : "○")}", new Vector2(col1X, transY), 14, fadeColor);
+        _renderBackend.DrawText($"[F7] Slide {(_currentTransition == "Slide" ? "●" : "○")}", new Vector2(col2X, transY), 14, slideColor);
+        
+        _renderBackend.DrawText($"[F8] Wipe {(_currentTransition == "Wipe" ? "●" : "○")}", new Vector2(col1X, transY + 25), 14, wipeColor);
+        _renderBackend.DrawText($"[F9] Zoom {(_currentTransition == "Zoom" ? "●" : "○")}", new Vector2(col2X, transY + 25), 14, zoomColor);
     }
 
     private void LoadDemo<T>(SceneParameters? parameters = null) where T : Scene, new()

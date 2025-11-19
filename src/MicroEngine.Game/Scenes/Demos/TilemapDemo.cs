@@ -185,9 +185,15 @@ public sealed class TilemapDemo : Scene
         _renderBackend.EndCamera2D();
 
         // UI Overlay
-        _renderBackend.DrawText("Tilemap Demo - Tilemap System", new Vector2(20, 20), 20, Color.White);
-        _renderBackend.DrawText($"Camera: ({_camera.Position.X:F0}, {_camera.Position.Y:F0})", new Vector2(20, 50), 14, new Color(200, 200, 200, 255));
-        _renderBackend.DrawText($"Tiles: {GRID_WIDTH}x{GRID_HEIGHT} ({_tilemap.TotalTileCount} total)", new Vector2(20, 70), 14, new Color(200, 200, 200, 255));
+        var layout = new TextLayoutHelper(_renderBackend, startX: 20, startY: 20, defaultLineHeight: 20);
+        var infoColor = new Color(200, 200, 200, 255);
+        var controlsColor = new Color(180, 180, 180, 255);
+        var dimColor = new Color(150, 150, 150, 255);
+
+        layout.DrawText("Tilemap Demo - Tilemap System", 20, Color.White)
+              .AddSpacing(10)
+              .DrawText($"Camera: ({_camera.Position.X:F0}, {_camera.Position.Y:F0})", 14, infoColor)
+              .DrawText($"Tiles: {GRID_WIDTH}x{GRID_HEIGHT} ({_tilemap.TotalTileCount} total)", 14, infoColor);
         
         // Calculate visible bounds manually
         var visibleBounds = _camera.GetVisibleBounds(_renderBackend.WindowWidth, _renderBackend.WindowHeight);
@@ -198,11 +204,12 @@ public sealed class TilemapDemo : Scene
         endX = System.Math.Min(_tilemap.Width, endX + 1);
         endY = System.Math.Min(_tilemap.Height, endY + 1);
         var visibleTiles = (endX - startX) * (endY - startY);
-        _renderBackend.DrawText($"Visible Tiles: {visibleTiles} (culling active)", new Vector2(20, 90), 14, new Color(200, 200, 200, 255));
+        layout.DrawText($"Visible Tiles: {visibleTiles} (culling active)", 14, infoColor);
 
-        _renderBackend.DrawText("[WASD/Arrows] Move Camera", new Vector2(20, 510), 14, new Color(180, 180, 180, 255));
-        _renderBackend.DrawText("[SPACE] Regenerate | [R] Reset Camera", new Vector2(20, 535), 14, new Color(180, 180, 180, 255));
-        _renderBackend.DrawText("[ESC] Back to Menu", new Vector2(20, 560), 14, new Color(150, 150, 150, 255));
+        layout.SetY(510)
+              .DrawText("[WASD/Arrows] Move Camera", 14, controlsColor)
+              .DrawText("[SPACE] Regenerate | [R] Reset Camera", 14, controlsColor)
+              .DrawText("[ESC] Back to Menu", 14, dimColor);
 
         // Legend
         DrawLegend();
@@ -354,31 +361,26 @@ public sealed class TilemapDemo : Scene
     private void DrawLegend()
     {
         const int LEGEND_X = 620;
-        const int LEGEND_Y = 20;
         const int BOX_SIZE = 16;
         const int LINE_HEIGHT = 22;
 
-        _renderBackend.DrawText("Tile Types:", new Vector2(LEGEND_X, LEGEND_Y), 14, new Color(200, 200, 200, 255));
+        var layout = new TextLayoutHelper(_renderBackend, startX: LEGEND_X, startY: 20, defaultLineHeight: LINE_HEIGHT);
+        var legendColor = new Color(200, 200, 200, 255);
 
-        var y = LEGEND_Y + 25;
+        layout.DrawText("Tile Types:", 14, legendColor)
+              .AddSpacing(5);
 
-        // Grass
-        _renderBackend.DrawRectangle(new Vector2(LEGEND_X, y), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(TILE_GRASS));
-        _renderBackend.DrawText("Grass", new Vector2(LEGEND_X + BOX_SIZE + 8, y + 2), 12, Color.White);
-        y += LINE_HEIGHT;
+        // Helper method to draw legend item
+        void DrawLegendItem(int tileId, string name)
+        {
+            _renderBackend.DrawRectangle(new Vector2(LEGEND_X, layout.CurrentY), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(tileId));
+            _renderBackend.DrawText(name, new Vector2(LEGEND_X + BOX_SIZE + 8, layout.CurrentY + 2), 12, Color.White);
+            layout.AddSpacing(LINE_HEIGHT);
+        }
 
-        // Water
-        _renderBackend.DrawRectangle(new Vector2(LEGEND_X, y), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(TILE_WATER));
-        _renderBackend.DrawText("Water", new Vector2(LEGEND_X + BOX_SIZE + 8, y + 2), 12, Color.White);
-        y += LINE_HEIGHT;
-
-        // Dirt
-        _renderBackend.DrawRectangle(new Vector2(LEGEND_X, y), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(TILE_DIRT));
-        _renderBackend.DrawText("Dirt", new Vector2(LEGEND_X + BOX_SIZE + 8, y + 2), 12, Color.White);
-        y += LINE_HEIGHT;
-
-        // Stone
-        _renderBackend.DrawRectangle(new Vector2(LEGEND_X, y), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(TILE_STONE));
-        _renderBackend.DrawText("Stone", new Vector2(LEGEND_X + BOX_SIZE + 8, y + 2), 12, Color.White);
+        DrawLegendItem(TILE_GRASS, "Grass");
+        DrawLegendItem(TILE_WATER, "Water");
+        DrawLegendItem(TILE_DIRT, "Dirt");
+        DrawLegendItem(TILE_STONE, "Stone");
     }
 }

@@ -150,74 +150,78 @@ public sealed class InputDemo : Scene
 
         _renderBackend.Clear(new Color(25, 30, 45, 255));
 
+        var layout = new TextLayoutHelper(_renderBackend, startX: 20, startY: 20, defaultLineHeight: 20);
+        var keyboardColor = new Color(200, 200, 255, 255);
+        var mouseColor = new Color(255, 200, 200, 255);
+        var gamepadColor = new Color(200, 255, 200, 255);
+        var dimColor = new Color(180, 180, 180, 255);
+        var grayColor = new Color(120, 120, 120, 255);
+        var controlsColor = new Color(150, 150, 150, 255);
+
         // Title
-        _renderBackend.DrawText(_welcomeMessage, new Vector2(20, 20), 20, Color.White);
+        layout.DrawText(_welcomeMessage, 20, Color.White)
+              .AddSpacing(10);
         
         if (_receivedParameters)
         {
-            _renderBackend.DrawText("✓ Scene parameters received", new Vector2(20, 50), 12, new Color(100, 255, 100, 255));
+            layout.DrawText("✓ Scene parameters received", 12, new Color(100, 255, 100, 255))
+                  .AddSpacing(20);
+        }
+        else
+        {
+            layout.AddSpacing(20);
         }
 
-        var yPos = 90f;
-
         // Keyboard section
-        _renderBackend.DrawText("KEYBOARD", new Vector2(20, yPos), 16, new Color(200, 200, 255, 255));
-        yPos += 30;
-        
-        _renderBackend.DrawText("Recent keys:", new Vector2(40, yPos), 14, new Color(180, 180, 180, 255));
-        yPos += 20;
+        layout.DrawSection("KEYBOARD", 16, keyboardColor, spacingAfter: 10)
+              .SetX(40)
+              .DrawText("Recent keys:", 14, dimColor)
+              .SetX(60);
         
         if (_recentKeys.Count > 0)
         {
             foreach (var key in _recentKeys)
             {
-                _renderBackend.DrawText($"• {key}", new Vector2(60, yPos), 12, Color.White);
-                yPos += 18;
+                layout.DrawText($"• {key}", 12, Color.White, customLineHeight: 18);
             }
         }
         else
         {
-            _renderBackend.DrawText("(none)", new Vector2(60, yPos), 12, new Color(120, 120, 120, 255));
-            yPos += 18;
+            layout.DrawText("(none)", 12, grayColor, customLineHeight: 18);
         }
 
-        yPos += 20;
+        layout.AddSpacing(20);
 
         // Mouse section
-        _renderBackend.DrawText("MOUSE", new Vector2(20, yPos), 16, new Color(255, 200, 200, 255));
-        yPos += 30;
-        
-        _renderBackend.DrawText($"Position: ({_lastMousePosition.X:F0}, {_lastMousePosition.Y:F0})", new Vector2(40, yPos), 12, Color.White);
-        yPos += 20;
-        
-        _renderBackend.DrawText($"Scroll delta: {_scrollAccumulator:F2}", new Vector2(40, yPos), 12, Color.White);
-        yPos += 20;
-        
-        _renderBackend.DrawText("Recent buttons:", new Vector2(40, yPos), 14, new Color(180, 180, 180, 255));
-        yPos += 20;
+        layout.SetX(20)
+              .DrawSection("MOUSE", 16, mouseColor, spacingAfter: 10)
+              .SetX(40)
+              .DrawText($"Position: ({_lastMousePosition.X:F0}, {_lastMousePosition.Y:F0})", 12, Color.White)
+              .DrawText($"Scroll delta: {_scrollAccumulator:F2}", 12, Color.White)
+              .DrawText("Recent buttons:", 14, dimColor)
+              .SetX(60);
         
         if (_recentButtons.Count > 0)
         {
             foreach (var btn in _recentButtons)
             {
-                _renderBackend.DrawText($"• {btn}", new Vector2(60, yPos), 12, Color.White);
-                yPos += 18;
+                layout.DrawText($"• {btn}", 12, Color.White, customLineHeight: 18);
             }
         }
         else
         {
-            _renderBackend.DrawText("(none)", new Vector2(60, yPos), 12, new Color(120, 120, 120, 255));
-            yPos += 18;
+            layout.DrawText("(none)", 12, grayColor, customLineHeight: 18);
         }
 
         // Gamepad section
-        yPos += 20;
-        _renderBackend.DrawText("GAMEPAD", new Vector2(20, yPos), 16, new Color(200, 255, 200, 255));
-        yPos += 30;
+        layout.AddSpacing(20)
+              .SetX(20)
+              .DrawSection("GAMEPAD", 16, gamepadColor, spacingAfter: 10)
+              .SetX(40);
         
         if (!_inputBackend.IsGamepadAvailable(0))
         {
-            _renderBackend.DrawText("No gamepad detected", new Vector2(40, yPos), 12, new Color(150, 150, 150, 255));
+            layout.DrawText("No gamepad detected", 12, controlsColor);
         }
         else
         {
@@ -234,39 +238,38 @@ public sealed class InputDemo : Scene
             {
                 if (System.Math.Abs(leftX) > 0.1f || System.Math.Abs(leftY) > 0.1f)
                 {
-                    _renderBackend.DrawText($"Left Stick: ({leftX:F2}, {leftY:F2})", new Vector2(40, yPos), 12, Color.White);
-                    yPos += 18;
+                    layout.DrawText($"Left Stick: ({leftX:F2}, {leftY:F2})", 12, Color.White, customLineHeight: 18);
                 }
                 
                 if (System.Math.Abs(rightX) > 0.1f || System.Math.Abs(rightY) > 0.1f)
                 {
-                    _renderBackend.DrawText($"Right Stick: ({rightX:F2}, {rightY:F2})", new Vector2(40, yPos), 12, Color.White);
-                    yPos += 18;
+                    layout.DrawText($"Right Stick: ({rightX:F2}, {rightY:F2})", 12, Color.White, customLineHeight: 18);
                 }
             }
             
             // Show button history
-            _renderBackend.DrawText("Recent buttons:", new Vector2(40, yPos), 14, new Color(180, 180, 180, 255));
-            yPos += 20;
+            layout.DrawText("Recent buttons:", 14, dimColor)
+                  .SetX(60);
             
             if (_recentGamepadButtons.Count > 0)
             {
                 foreach (var btn in _recentGamepadButtons)
                 {
-                    _renderBackend.DrawText($"• {btn}", new Vector2(60, yPos), 12, Color.White);
-                    yPos += 18;
+                    layout.DrawText($"• {btn}", 12, Color.White, customLineHeight: 18);
                 }
             }
             else
             {
-                _renderBackend.DrawText("(none)", new Vector2(60, yPos), 12, new Color(120, 120, 120, 255));
+                layout.DrawText("(none)", 12, grayColor);
             }
         }
 
         // Instructions
-        _renderBackend.DrawText("[Press any key/button to record]", new Vector2(20, 510), 14, new Color(180, 180, 180, 255));
-        _renderBackend.DrawText("[SPACE] Clear history", new Vector2(20, 535), 14, new Color(180, 180, 180, 255));
-        _renderBackend.DrawText("[ESC] Back to Menu", new Vector2(20, 560), 14, new Color(150, 150, 150, 255));
+        layout.SetX(20)
+              .SetY(510)
+              .DrawText("[Press any key/button to record]", 14, dimColor)
+              .DrawText("[SPACE] Clear history", 14, dimColor)
+              .DrawText("[ESC] Back to Menu", 14, controlsColor);
     }
 
     /// <inheritdoc/>

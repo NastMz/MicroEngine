@@ -165,9 +165,15 @@ public sealed class PhysicsBackendDemo : Scene
         }
 
         // Instructions
-        _renderBackend.DrawText("Physics Demo - Advanced Features", new Vector2(10, 10), 20, Color.White);
-        _renderBackend.DrawText("[Click] Spawn Ball | [Drag] Move Ball | [ESC] Back to Menu", new Vector2(10, 40), 16, new Color(200, 200, 200, 255));
-        _renderBackend.DrawText($"Balls: {_balls.Count}/{MAX_BALLS}", new Vector2(10, 560), 16, new Color(200, 200, 200, 255));
+        var layout = new TextLayoutHelper(_renderBackend, startX: 10, startY: 10, defaultLineHeight: 20);
+        var infoColor = new Color(200, 200, 200, 255);
+
+        layout.DrawText("Physics Demo - Advanced Features", 20, Color.White)
+              .AddSpacing(10)
+              .DrawText("[Click] Spawn Ball | [Drag] Move Ball | [ESC] Back to Menu", 16, infoColor);
+
+        layout.SetY(560)
+              .DrawText($"Balls: {_balls.Count}/{MAX_BALLS}", 16, infoColor);
     }
 
     /// <inheritdoc/>

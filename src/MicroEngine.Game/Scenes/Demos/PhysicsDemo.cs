@@ -211,9 +211,16 @@ public sealed class PhysicsDemo : Scene
         }
 
         // UI
-        _renderBackend.DrawText("Physics Demo - Realistic Dynamics", new Vector2(20, 20), 20, Color.White);
-        _renderBackend.DrawText($"Balls: {_balls.Count}/{MAX_BALLS}", new Vector2(20, 50), 16, new Color(180, 180, 180, 255));
-        _renderBackend.DrawText("[Click] Spawn Ball | [Drag] Move Ball | [ESC] Back to Menu", new Vector2(10, 580), 14, new Color(150, 150, 150, 255));
+        var layout = new TextLayoutHelper(_renderBackend, startX: 20, startY: 20, defaultLineHeight: 20);
+        var infoColor = new Color(180, 180, 180, 255);
+        var controlsColor = new Color(150, 150, 150, 255);
+
+        layout.DrawText("Physics Demo - Realistic Dynamics", 20, Color.White)
+              .AddSpacing(10)
+              .DrawText($"Balls: {_balls.Count}/{MAX_BALLS}", 16, infoColor);
+
+        layout.SetY(580)
+              .DrawText("[Click] Spawn Ball | [Drag] Move Ball | [ESC] Back to Menu", 14, controlsColor);
     }
 
     /// <inheritdoc/>

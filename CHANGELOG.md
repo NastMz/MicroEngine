@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0-alpha] - 2025-11-19
+
+### Added
+
+-   **TextLayoutHelper**: Automatic text positioning helper for UI rendering
+    -   Eliminates manual Y-coordinate tracking for text rendering
+    -   Fluent API with method chaining support
+    -   Methods: `DrawText`, `AddSpacing`, `SetX/SetY`, `DrawSection`, `DrawKeyValue`, `NewColumn`
+    -   Automatic line height advancement with customizable spacing
+    -   Properties: `CurrentX`, `CurrentY`, `DefaultLineHeight`
+    -   18 comprehensive unit tests with 100% pass rate
+    -   Integrated in all 8 scenes (7 demos + MainMenu)
+    -   Average 30% reduction in UI rendering code
+
+### Changed
+
+-   **All Demos & MainMenu**: Refactored to use TextLayoutHelper
+    -   `GraphicsDemo`: 77 → 43 lines (44% reduction)
+    -   `TilemapDemo`: Cleaner legend rendering with helper function
+    -   `InputDemo`: Improved dynamic list rendering with `SetX()` and custom line heights
+    -   `EcsBasicsDemo`, `AudioDemo`, `PhysicsDemo`, `PhysicsBackendDemo`: Simplified UI code
+    -   `MainMenuScene`: Refactored menu and cache status rendering
+    -   Eliminated manual `yPos`/`uiY` tracking across all scenes
+    -   More readable and maintainable UI rendering code
+
+### Improved
+
+-   **Code Quality**: Reduced UI rendering code verbosity by ~30% across all demos
+-   **Maintainability**: Centralized text layout logic in reusable helper class
+-   **Developer Experience**: Fluent API makes UI code more readable and less error-prone
+
 ## [0.10.0-alpha] - 2025-11-19
 
 ### Added

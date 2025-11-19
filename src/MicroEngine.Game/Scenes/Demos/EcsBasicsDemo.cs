@@ -392,10 +392,18 @@ public sealed class EcsBasicsDemo : Scene
 
     private void RenderUI()
     {
-        _renderBackend.DrawText("ECS Basics - Interactive Demo", new Vector2(10, 10), 20, Color.White);
-        _renderBackend.DrawText($"Entities: {World.EntityCount} | Collected: {_collectedCount}/6", new Vector2(10, 35), 16, new Color(200, 200, 200, 255));
-        _renderBackend.DrawText("Features: EntityBuilder, EntityFactory, MovementSystem", new Vector2(10, 55), 14, new Color(180, 180, 180, 255));
-        _renderBackend.DrawText("[WASD/Arrows] Move | [R] Reset | [ESC] Menu", new Vector2(10, 580), 14, new Color(150, 150, 150, 255));
+        var layout = new TextLayoutHelper(_renderBackend, startX: 10, startY: 10, defaultLineHeight: 20);
+        var infoColor = new Color(200, 200, 200, 255);
+        var dimColor = new Color(180, 180, 180, 255);
+        var controlsColor = new Color(150, 150, 150, 255);
+
+        layout.DrawText("ECS Basics - Interactive Demo", 20, Color.White)
+              .AddSpacing(5)
+              .DrawText($"Entities: {World.EntityCount} | Collected: {_collectedCount}/6", 16, infoColor)
+              .DrawText("Features: EntityBuilder, EntityFactory, MovementSystem", 14, dimColor);
+
+        layout.SetY(580)
+              .DrawText("[WASD/Arrows] Move | [R] Reset | [ESC] Menu", 14, controlsColor);
     }
 
     private static Color GetColorByName(string name) => name switch
