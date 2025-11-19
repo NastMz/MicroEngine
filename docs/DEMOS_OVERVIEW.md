@@ -137,38 +137,50 @@ All demos are accessible from the **MainMenuScene**:
 
 ### 5. Tilemap Demo (`[5]`)
 
-**Purpose:** Demonstrates tile-based rendering with procedural generation and camera movement.
+**Purpose:** Demonstrates the `Tilemap` and `TilemapRenderer` systems with texture-based tile
+rendering, procedural generation, and viewport culling.
 
 **Features:**
 
--   **Procedural Generation:** Random tilemap using simple noise algorithm
+-   **Tilemap System Usage:** Uses `MicroEngine.Core.Graphics.Tilemap` for grid management
+-   **Sprite Batch Rendering:** Demonstrates `SpriteBatch` for efficient tile rendering
+-   **Texture-Based Tiles:** Loads individual tile textures (grass, water, dirt, stone)
+-   **Procedural Generation:** Random tilemap using noise-based algorithm
+-   **Viewport Culling:** Only renders tiles visible to camera (performance optimization)
 -   **Grid Size:** 25x19 tiles (800x608 pixels at 32px/tile)
 -   **Camera Movement:** Smooth scrolling with WASD/Arrows
--   **Viewport Culling:** Only renders visible tiles for performance
--   **Grid Rendering:** 1px spacing between tiles for visual clarity
 -   **Tile Types:** Grass (60%), Water (15%), Dirt (15%), Stone (10%)
 -   **Legend Display:** Color-coded tile type reference
 -   **Regeneration:** SPACE to generate new random tilemap
 
-**Tile Palette:**
+**Tile Types & Assets:**
 
--   **Grass:** RGB(80, 160, 60) - Green
--   **Water:** RGB(50, 100, 200) - Blue
--   **Dirt:** RGB(140, 90, 50) - Brown
--   **Stone:** RGB(120, 120, 130) - Gray
+-   **Grass (ID: 1):** `tile_grass.png` - RGB(80, 160, 60) Green
+-   **Water (ID: 2):** `tile_water.png` - RGB(50, 100, 200) Blue
+-   **Dirt (ID: 3):** `tile_dirt.png` - RGB(140, 90, 50) Brown
+-   **Stone (ID: 4):** `tile_stone.png` - RGB(120, 120, 130) Gray
 
 **Technical Details:**
 
--   Camera offset: Vector2 with smooth translation
--   Culling: Skip tiles outside visible area
--   Tile size: 32x32 pixels (constant)
--   World size: 800x608 pixels (25x19 tiles)
+-   **Tilemap Class:** Manages tile grid, coordinate conversion (world ↔ tile)
+-   **Culling:** Uses `Camera2D.GetVisibleBounds()` and `Tilemap.WorldToTile()`
+-   **SpriteBatch:** Deferred rendering mode with batched draw calls
+-   **Tile Size:** 32x32 pixels (configurable constant)
+-   **Empty Tiles:** ID 0 (skipped during rendering)
+-   **World Coordinates:** Tiles positioned using `Tilemap.TileToWorld()`
+
+**Key Demonstrated Concepts:**
+
+1. **Tilemap API:** `SetTile()`, `GetTile()`, `WorldToTile()`, `TileToWorld()`
+2. **Viewport Culling:** Calculates visible tile bounds to avoid rendering off-screen tiles
+3. **SpriteBatch Integration:** Begin/Draw/End pattern for efficient rendering
+4. **Resource Management:** Texture loading and caching via `ResourceCache<ITexture>`
 
 **Controls:**
 
 -   **WASD/Arrows:** Move camera (200 units/sec)
--   **SPACE:** Regenerate tilemap
--   **R:** Reset camera to origin
+-   **SPACE:** Regenerate tilemap procedurally
+-   **R:** Reset camera to origin (0, 0)
 -   **ESC:** Exit to menu
 
 ---

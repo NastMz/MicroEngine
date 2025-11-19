@@ -5,19 +5,21 @@ using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Math;
+using MicroEngine.Core.Resources;
 using MicroEngine.Core.Scenes;
 
 namespace MicroEngine.Game.Scenes.Demos;
 
 /// <summary>
-/// Demonstrates tilemap concept with procedurally generated grid.
-/// Shows tile-based rendering and camera movement.
+/// Demonstrates the Tilemap and TilemapRenderer systems with procedurally generated terrain.
+/// Shows sprite atlas-based tile rendering, viewport culling, and camera movement.
 /// </summary>
 public sealed class TilemapDemo : Scene
 {
     private IInputBackend _inputBackend = null!;
     private IRenderBackend2D _renderBackend = null!;
     private ILogger _logger = null!;
+    private ResourceCache<ITexture> _textureCache = null!;
 
     // ECS for camera control
     private World _world = null!;
@@ -25,13 +27,24 @@ public sealed class TilemapDemo : Scene
     private Entity _cameraEntity;
     private Camera2D _camera = null!;
 
+    // Tilemap system
+    private Tilemap _tilemap = null!;
+    private SpriteBatch _spriteBatch = null!;
+
+    // Sprite atlas for tiles
+    private SpriteAtlas _tilesAtlas = null!;
+
     private const int TILE_SIZE = 32;
     private const int GRID_WIDTH = 25;
     private const int GRID_HEIGHT = 19;
     private const float CAMERA_SPEED = 200f;
-    
-    // Simple procedural tilemap (0 = grass, 1 = water, 2 = dirt, 3 = stone)
-    private readonly int[,] _tiles;
+
+    // Tile IDs (0 = empty, 1 = grass, 2 = water, 3 = dirt, 4 = stone)
+    private const int TILE_EMPTY = 0;
+    private const int TILE_GRASS = 1;
+    private const int TILE_WATER = 2;
+    private const int TILE_DIRT = 3;
+    private const int TILE_STONE = 4;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TilemapDemo"/> class.
@@ -39,7 +52,6 @@ public sealed class TilemapDemo : Scene
     public TilemapDemo()
         : base("TilemapDemo")
     {
-        _tiles = new int[GRID_WIDTH, GRID_HEIGHT];
     }
 
     /// <inheritdoc/>
@@ -49,27 +61,33 @@ public sealed class TilemapDemo : Scene
         _inputBackend = context.InputBackend;
         _renderBackend = context.RenderBackend;
         _logger = context.Logger;
+        _textureCache = context.TextureCache;
+        
         
         // Initialize ECS
         _world = new World();
         _cameraSystem = new CameraControllerSystem();
 
-        // Initialize camera (no zoom, just movement)
+        // Calculate screen center for camera offset
+        var screenCenterX = _renderBackend.WindowWidth / 2f;
+        var screenCenterY = _renderBackend.WindowHeight / 2f;
+
+        // Initialize camera with centered viewport
         _camera = new Camera2D
         {
             Position = Vector2.Zero,
-            Offset = Vector2.Zero,
+            Offset = new Vector2(screenCenterX, screenCenterY),
             Rotation = 0f,
             Zoom = 1f
         };
 
-        // Create camera entity with CameraComponent (no zoom for tilemap)
+        // Create camera entity with CameraComponent
         _cameraEntity = _world.CreateEntity();
         _world.AddComponent(_cameraEntity, new CameraComponent
         {
             Camera = _camera,
             MovementSpeed = CAMERA_SPEED,
-            ZoomSpeed = 0f, // No zoom in tilemap demo
+            ZoomSpeed = 0f,
             MinZoom = 1f,
             MaxZoom = 1f,
             DefaultPosition = Vector2.Zero,
@@ -77,9 +95,18 @@ public sealed class TilemapDemo : Scene
             ZoomDelta = 0f,
             ResetRequested = false
         });
+
+        // Initialize tilemap system
+        _tilemap = new Tilemap(GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, TILE_SIZE);
+        _spriteBatch = new SpriteBatch(_renderBackend);
         
+        // Load tile textures
+        LoadTileTextures();
+        
+        // Generate procedural tilemap
         GenerateProceduralTilemap();
-        _logger.Info("TilemapDemo", "Tilemap demo loaded with procedural generation");
+        
+        _logger.Info("TilemapDemo", $"Tilemap demo loaded: {GRID_WIDTH}x{GRID_HEIGHT} tiles, 4 tile types");
     }
 
     /// <inheritdoc/>
@@ -134,38 +161,45 @@ public sealed class TilemapDemo : Scene
     /// <inheritdoc/>
     public override void OnRender()
     {
-        // Early exit if not loaded yet (can happen during scene preloading)
-        if (_renderBackend == null)
+        // Early exit if not loaded yet
+        if (_renderBackend == null || _tilemap == null)
         {
             return;
         }
 
         _renderBackend.Clear(new Color(40, 60, 80, 255));
 
-        // Render tilemap
-        for (int x = 0; x < GRID_WIDTH; x++)
-        {
-            for (int y = 0; y < GRID_HEIGHT; y++)
-            {
-                var tileX = x * TILE_SIZE - _camera.Position.X;
-                var tileY = y * TILE_SIZE - _camera.Position.Y;
+        // Begin camera mode for world-space rendering
+        _renderBackend.BeginCamera2D(_camera);
 
-                // Culling - only render visible tiles
-                if (tileX + TILE_SIZE < 0 || tileX > 800 || tileY + TILE_SIZE < 0 || tileY > 600)
-                {
-                    continue;
-                }
+        // Begin sprite batch for tilemap rendering
+        _spriteBatch.Begin(SpriteSortMode.Deferred);
 
-                var tileType = _tiles[x, y];
-                
-                // Draw tile with texture-like details
-                DrawTile(tileX, tileY, tileType);
-            }
-        }
+        // Manual tilemap rendering with culling
+        RenderTilemap();
+
+        // End sprite batch
+        _spriteBatch.End();
+
+        // End camera mode
+        _renderBackend.EndCamera2D();
 
         // UI Overlay
-        _renderBackend.DrawText("Tilemap Demo - Procedural Tiles", new Vector2(20, 20), 20, Color.White);
+        _renderBackend.DrawText("Tilemap Demo - Tilemap System", new Vector2(20, 20), 20, Color.White);
         _renderBackend.DrawText($"Camera: ({_camera.Position.X:F0}, {_camera.Position.Y:F0})", new Vector2(20, 50), 14, new Color(200, 200, 200, 255));
+        _renderBackend.DrawText($"Tiles: {GRID_WIDTH}x{GRID_HEIGHT} ({_tilemap.TotalTileCount} total)", new Vector2(20, 70), 14, new Color(200, 200, 200, 255));
+        
+        // Calculate visible bounds manually
+        var visibleBounds = _camera.GetVisibleBounds(_renderBackend.WindowWidth, _renderBackend.WindowHeight);
+        var (startX, startY) = _tilemap.WorldToTile(new Vector2(visibleBounds.X, visibleBounds.Y));
+        var (endX, endY) = _tilemap.WorldToTile(new Vector2(visibleBounds.X + visibleBounds.Width, visibleBounds.Y + visibleBounds.Height));
+        startX = System.Math.Max(0, startX);
+        startY = System.Math.Max(0, startY);
+        endX = System.Math.Min(_tilemap.Width, endX + 1);
+        endY = System.Math.Min(_tilemap.Height, endY + 1);
+        var visibleTiles = (endX - startX) * (endY - startY);
+        _renderBackend.DrawText($"Visible Tiles: {visibleTiles} (culling active)", new Vector2(20, 90), 14, new Color(200, 200, 200, 255));
+
         _renderBackend.DrawText("[WASD/Arrows] Move Camera", new Vector2(20, 510), 14, new Color(180, 180, 180, 255));
         _renderBackend.DrawText("[SPACE] Regenerate | [R] Reset Camera", new Vector2(20, 535), 14, new Color(180, 180, 180, 255));
         _renderBackend.DrawText("[ESC] Back to Menu", new Vector2(20, 560), 14, new Color(150, 150, 150, 255));
@@ -181,6 +215,99 @@ public sealed class TilemapDemo : Scene
         _logger?.Info("TilemapDemo", "Tilemap demo unloaded");
     }
 
+    private void LoadTileTextures()
+    {
+        // Load the tile atlas texture
+        var atlasTexture = _textureCache.Load("assets/textures/tiles_atlas.png");
+        
+        // Create a grid-based sprite atlas (2x2 grid of 32x32 tiles)
+        _tilesAtlas = SpriteAtlas.CreateGrid(
+            atlasTexture,
+            frameWidth: TILE_SIZE,
+            frameHeight: TILE_SIZE,
+            spacing: 0,
+            margin: 0,
+            namePrefix: "tile");
+        
+        // Manually rename regions to match tile types
+        // Grid layout: [0]=grass, [1]=water, [2]=dirt, [3]=stone
+        var regions = _tilesAtlas.GetRegionNames().ToList();
+        var regionsList = new List<(string oldName, string newName)>
+        {
+            ("tile_0", "grass"),
+            ("tile_1", "water"),
+            ("tile_2", "dirt"),
+            ("tile_3", "stone")
+        };
+        
+        // Re-add regions with proper names
+        foreach (var (oldName, newName) in regionsList)
+        {
+            if (_tilesAtlas.TryGetRegion(oldName, out var region))
+            {
+                _tilesAtlas.RemoveRegion(oldName);
+                _tilesAtlas.AddRegion(newName, region);
+            }
+        }
+        
+        _logger.Info("TilemapDemo", $"Tile atlas loaded with {_tilesAtlas.RegionCount} regions");
+    }
+
+    private void RenderTilemap()
+    {
+        // Calculate visible bounds for culling
+        var visibleBounds = _camera.GetVisibleBounds(_renderBackend.WindowWidth, _renderBackend.WindowHeight);
+        var (startX, startY) = _tilemap.WorldToTile(new Vector2(visibleBounds.X, visibleBounds.Y));
+        var (endX, endY) = _tilemap.WorldToTile(new Vector2(visibleBounds.X + visibleBounds.Width, visibleBounds.Y + visibleBounds.Height));
+
+        // Clamp to tilemap bounds
+        startX = System.Math.Max(0, startX);
+        startY = System.Math.Max(0, startY);
+        endX = System.Math.Min(_tilemap.Width, endX + 1);
+        endY = System.Math.Min(_tilemap.Height, endY + 1);
+
+        // Render only visible tiles
+        for (int y = startY; y < endY; y++)
+        {
+            for (int x = startX; x < endX; x++)
+            {
+                int tileId = _tilemap.GetTile(x, y);
+
+                // Skip empty tiles
+                if (tileId == TILE_EMPTY)
+                {
+                    continue;
+                }
+
+                // Calculate world position
+                var worldPos = _tilemap.TileToWorld(x, y);
+
+                // Get region name from tile ID
+                string? regionName = tileId switch
+                {
+                    TILE_GRASS => "grass",
+                    TILE_WATER => "water",
+                    TILE_DIRT => "dirt",
+                    TILE_STONE => "stone",
+                    _ => null
+                };
+
+                // Draw tile sprite from atlas
+                if (regionName != null && _tilesAtlas.TryGetRegion(regionName, out var region))
+                {
+                    _spriteBatch.DrawRegion(
+                        _tilesAtlas.Texture,
+                        worldPos,
+                        region,
+                        tint: Color.White,
+                        rotation: 0f,
+                        scale: Vector2.One,
+                        layerDepth: 0f);
+                }
+            }
+        }
+    }
+
     private void GenerateProceduralTilemap()
     {
         var random = new Random();
@@ -194,128 +321,64 @@ public sealed class TilemapDemo : Scene
                 
                 if (noise < 0.15) // 15% water
                 {
-                    _tiles[x, y] = 1;
+                    _tilemap.SetTile(x, y, TILE_WATER);
                 }
                 else if (noise < 0.30) // 15% dirt
                 {
-                    _tiles[x, y] = 2;
+                    _tilemap.SetTile(x, y, TILE_DIRT);
                 }
                 else if (noise < 0.40) // 10% stone
                 {
-                    _tiles[x, y] = 3;
+                    _tilemap.SetTile(x, y, TILE_STONE);
                 }
                 else // 60% grass
                 {
-                    _tiles[x, y] = 0;
+                    _tilemap.SetTile(x, y, TILE_GRASS);
                 }
             }
         }
     }
 
-    private static Color GetTileColor(int tileType)
+    private static Color GetTileColor(int tileId)
     {
-        return tileType switch
+        return tileId switch
         {
-            0 => new Color(80, 160, 60, 255),   // Grass - green
-            1 => new Color(50, 100, 200, 255),  // Water - blue
-            2 => new Color(140, 90, 50, 255),   // Dirt - brown
-            3 => new Color(120, 120, 130, 255), // Stone - gray
+            TILE_GRASS => new Color(80, 160, 60, 255),   // Grass - green
+            TILE_WATER => new Color(50, 100, 200, 255),  // Water - blue
+            TILE_DIRT => new Color(140, 90, 50, 255),    // Dirt - brown
+            TILE_STONE => new Color(120, 120, 130, 255), // Stone - gray
             _ => Color.White
         };
     }
 
-    private void DrawTile(float x, float y, int tileType)
-    {
-        const int size = TILE_SIZE;
-        var baseColor = GetTileColor(tileType);
-        
-        // Draw base tile
-        _renderBackend.DrawRectangle(
-            new Vector2(x, y),
-            new Vector2(size - 1, size - 1),
-            baseColor
-        );
-
-        // Add visual details based on tile type
-        switch (tileType)
-        {
-            case 0: // Grass - add darker stripes
-                var grassDark = new Color(
-                    (byte)(baseColor.R * 0.8f),
-                    (byte)(baseColor.G * 0.8f),
-                    (byte)(baseColor.B * 0.8f),
-                    255
-                );
-                _renderBackend.DrawRectangle(new Vector2(x + 4, y + 2), new Vector2(2, 6), grassDark);
-                _renderBackend.DrawRectangle(new Vector2(x + 12, y + 8), new Vector2(2, 6), grassDark);
-                _renderBackend.DrawRectangle(new Vector2(x + 22, y + 4), new Vector2(2, 6), grassDark);
-                break;
-
-            case 1: // Water - add lighter waves
-                var waterLight = new Color(
-                    (byte)System.Math.Min(255, baseColor.R * 1.3f),
-                    (byte)System.Math.Min(255, baseColor.G * 1.3f),
-                    (byte)System.Math.Min(255, baseColor.B * 1.3f),
-                    255
-                );
-                _renderBackend.DrawRectangle(new Vector2(x + 2, y + 8), new Vector2(8, 2), waterLight);
-                _renderBackend.DrawRectangle(new Vector2(x + 18, y + 16), new Vector2(10, 2), waterLight);
-                break;
-
-            case 2: // Dirt - add darker spots
-                var dirtDark = new Color(
-                    (byte)(baseColor.R * 0.7f),
-                    (byte)(baseColor.G * 0.7f),
-                    (byte)(baseColor.B * 0.7f),
-                    255
-                );
-                _renderBackend.DrawRectangle(new Vector2(x + 6, y + 6), new Vector2(4, 4), dirtDark);
-                _renderBackend.DrawRectangle(new Vector2(x + 20, y + 12), new Vector2(4, 4), dirtDark);
-                _renderBackend.DrawRectangle(new Vector2(x + 12, y + 20), new Vector2(4, 4), dirtDark);
-                break;
-
-            case 3: // Stone - add lighter cracks
-                var stoneLight = new Color(
-                    (byte)System.Math.Min(255, baseColor.R * 1.2f),
-                    (byte)System.Math.Min(255, baseColor.G * 1.2f),
-                    (byte)System.Math.Min(255, baseColor.B * 1.2f),
-                    255
-                );
-                _renderBackend.DrawRectangle(new Vector2(x + 8, y + 4), new Vector2(12, 1), stoneLight);
-                _renderBackend.DrawRectangle(new Vector2(x + 4, y + 16), new Vector2(16, 1), stoneLight);
-                _renderBackend.DrawRectangle(new Vector2(x + 12, y + 24), new Vector2(8, 1), stoneLight);
-                break;
-        }
-    }
-
     private void DrawLegend()
     {
-        const int legendX = 620;
-        const int legendY = 20;
-        const int boxSize = 16;
-        const int lineHeight = 22;
+        const int LEGEND_X = 620;
+        const int LEGEND_Y = 20;
+        const int BOX_SIZE = 16;
+        const int LINE_HEIGHT = 22;
 
-        _renderBackend.DrawText("Tile Types:", new Vector2(legendX, legendY), 14, new Color(200, 200, 200, 255));
+        _renderBackend.DrawText("Tile Types:", new Vector2(LEGEND_X, LEGEND_Y), 14, new Color(200, 200, 200, 255));
 
-        var y = legendY + 25;
+        var y = LEGEND_Y + 25;
 
         // Grass
-        _renderBackend.DrawRectangle(new Vector2(legendX, y), new Vector2(boxSize, boxSize), GetTileColor(0));
-        _renderBackend.DrawText("Grass", new Vector2(legendX + boxSize + 8, y + 2), 12, Color.White);
-        y += lineHeight;
+        _renderBackend.DrawRectangle(new Vector2(LEGEND_X, y), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(TILE_GRASS));
+        _renderBackend.DrawText("Grass", new Vector2(LEGEND_X + BOX_SIZE + 8, y + 2), 12, Color.White);
+        y += LINE_HEIGHT;
 
         // Water
-        _renderBackend.DrawRectangle(new Vector2(legendX, y), new Vector2(boxSize, boxSize), GetTileColor(1));
-        _renderBackend.DrawText("Water", new Vector2(legendX + boxSize + 8, y + 2), 12, Color.White);
-        y += lineHeight;
+        _renderBackend.DrawRectangle(new Vector2(LEGEND_X, y), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(TILE_WATER));
+        _renderBackend.DrawText("Water", new Vector2(LEGEND_X + BOX_SIZE + 8, y + 2), 12, Color.White);
+        y += LINE_HEIGHT;
 
         // Dirt
-        _renderBackend.DrawRectangle(new Vector2(legendX, y), new Vector2(boxSize, boxSize), GetTileColor(2));
-        _renderBackend.DrawText("Dirt", new Vector2(legendX + boxSize + 8, y + 2), 12, Color.White);
-        y += lineHeight;
+        _renderBackend.DrawRectangle(new Vector2(LEGEND_X, y), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(TILE_DIRT));
+        _renderBackend.DrawText("Dirt", new Vector2(LEGEND_X + BOX_SIZE + 8, y + 2), 12, Color.White);
+        y += LINE_HEIGHT;
 
         // Stone
-        _renderBackend.DrawRectangle(new Vector2(legendX, y), new Vector2(boxSize, boxSize), GetTileColor(3));
-        _renderBackend.DrawText("Stone", new Vector2(legendX + boxSize + 8, y + 2), 12, Color.White);
+        _renderBackend.DrawRectangle(new Vector2(LEGEND_X, y), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(TILE_STONE));
+        _renderBackend.DrawText("Stone", new Vector2(LEGEND_X + BOX_SIZE + 8, y + 2), 12, Color.White);
     }
 }
