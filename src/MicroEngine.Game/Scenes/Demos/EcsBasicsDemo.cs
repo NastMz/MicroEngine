@@ -102,7 +102,7 @@ public sealed class EcsBasicsDemo : Scene
     public override void OnUnload()
     {
         base.OnUnload();
-        _logger.Info(SCENE_NAME, "Demo unloaded");
+        _logger?.Info(SCENE_NAME, "Demo unloaded");
     }
 
     private void CreateDemoEntities()

@@ -97,17 +97,15 @@ public sealed class MainMenuScene : Scene
         {
             _logger.Info("MainMenu", "Starting background preload of demo scenes...");
 
-            var preloadRequests = new[]
-            {
-                ("EcsBasicsDemo", (Func<IScene>)(() => new EcsBasicsDemo())),
-                ("GraphicsDemo", (Func<IScene>)(() => new GraphicsDemo())),
-                ("PhysicsDemo", (Func<IScene>)(() => new PhysicsDemo())),
-                ("InputDemo", (Func<IScene>)(() => new InputDemo())),
-                ("TilemapDemo", (Func<IScene>)(() => new TilemapDemo())),
-                ("AudioDemo", (Func<IScene>)(() => new AudioDemo()))
-            };
-
-            await _sceneCache.PreloadMultipleAsync(preloadRequests, _preloadCancellation.Token);
+        var preloadRequests = new[]
+        {
+            ("EcsBasicsDemo", (Func<IScene>)(() => new EcsBasicsDemo())),
+            ("GraphicsDemo", (Func<IScene>)(() => new GraphicsDemo())),
+            ("PhysicsDemo", (Func<IScene>)(() => new PhysicsDemo())),
+            ("InputDemo", (Func<IScene>)(() => new InputDemo())),
+            ("TilemapDemo", (Func<IScene>)(() => new TilemapDemo())),
+            ("AudioDemo", (Func<IScene>)(() => new AudioDemo()))
+        };            await _sceneCache.PreloadMultipleAsync(preloadRequests, _preloadCancellation.Token);
 
             _logger.Info("MainMenu", $"Background preload completed: {_preloadedScenes} scenes ready");
         }
@@ -261,25 +259,27 @@ public sealed class MainMenuScene : Scene
         var bottomSeparatorPos = new Vector2(MENU_X - 50, optionY + 40);
         _renderBackend.DrawText("═══════════════════════════════════════", bottomSeparatorPos, 16, new Color(100, 100, 100, 255));
 
-        // Transition effect selection
+        // Transition effect selection - horizontal layout
         var transitionY = optionY + 80;
         _renderBackend.DrawText("Scene Transitions:", new Vector2(MENU_X, transitionY), 18, new Color(200, 200, 200, 255));
 
         transitionY += LINE_HEIGHT + 5;
+        var transitionX = MENU_X + 20;
+        
         var fadeColor = _currentTransition == "Fade" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
-        _renderBackend.DrawText($"[F6] Fade {(_currentTransition == "Fade" ? "✓" : "")}", new Vector2(MENU_X + 20, transitionY), 14, fadeColor);
+        _renderBackend.DrawText($"[F6] Fade {(_currentTransition == "Fade" ? "✓" : "")}", new Vector2(transitionX, transitionY), 14, fadeColor);
 
-        transitionY += 25;
+        transitionX += 120;
         var slideColor = _currentTransition == "Slide" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
-        _renderBackend.DrawText($"[F7] Slide {(_currentTransition == "Slide" ? "✓" : "")}", new Vector2(MENU_X + 20, transitionY), 14, slideColor);
+        _renderBackend.DrawText($"[F7] Slide {(_currentTransition == "Slide" ? "✓" : "")}", new Vector2(transitionX, transitionY), 14, slideColor);
 
-        transitionY += 25;
+        transitionX += 120;
         var wipeColor = _currentTransition == "Wipe" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
-        _renderBackend.DrawText($"[F8] Wipe {(_currentTransition == "Wipe" ? "✓" : "")}", new Vector2(MENU_X + 20, transitionY), 14, wipeColor);
+        _renderBackend.DrawText($"[F8] Wipe {(_currentTransition == "Wipe" ? "✓" : "")}", new Vector2(transitionX, transitionY), 14, wipeColor);
 
-        transitionY += 25;
+        transitionX += 120;
         var zoomColor = _currentTransition == "Zoom" ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
-        _renderBackend.DrawText($"[F9] Zoom {(_currentTransition == "Zoom" ? "✓" : "")}", new Vector2(MENU_X + 20, transitionY), 14, zoomColor);
+        _renderBackend.DrawText($"[F9] Zoom {(_currentTransition == "Zoom" ? "✓" : "")}", new Vector2(transitionX, transitionY), 14, zoomColor);
     }
 
     private void LoadDemo<T>(SceneParameters? parameters = null) where T : Scene, new()

@@ -131,18 +131,14 @@ public sealed class TilemapDemo : Scene
                 }
 
                 var tileType = _tiles[x, y];
-                var color = GetTileColor(tileType);
-
-                _renderBackend.DrawRectangle(
-                    new Vector2(tileX, tileY),
-                    new Vector2(TILE_SIZE - 1, TILE_SIZE - 1), // -1 for grid lines
-                    color
-                );
+                
+                // Draw tile with texture-like details
+                DrawTile(tileX, tileY, tileType);
             }
         }
 
         // UI Overlay
-        _renderBackend.DrawText("Tilemap Demo - Procedural Grid", new Vector2(20, 20), 20, Color.White);
+        _renderBackend.DrawText("Tilemap Demo - Procedural Tiles", new Vector2(20, 20), 20, Color.White);
         _renderBackend.DrawText($"Camera: ({_cameraOffset.X:F0}, {_cameraOffset.Y:F0})", new Vector2(20, 50), 14, new Color(200, 200, 200, 255));
         _renderBackend.DrawText("[WASD/Arrows] Move Camera", new Vector2(20, 510), 14, new Color(180, 180, 180, 255));
         _renderBackend.DrawText("[SPACE] Regenerate | [R] Reset Camera", new Vector2(20, 535), 14, new Color(180, 180, 180, 255));
@@ -156,7 +152,7 @@ public sealed class TilemapDemo : Scene
     public override void OnUnload()
     {
         base.OnUnload();
-        _logger.Info("TilemapDemo", "Tilemap demo unloaded");
+        _logger?.Info("TilemapDemo", "Tilemap demo unloaded");
     }
 
     private void GenerateProceduralTilemap()
@@ -200,6 +196,70 @@ public sealed class TilemapDemo : Scene
             3 => new Color(120, 120, 130, 255), // Stone - gray
             _ => Color.White
         };
+    }
+
+    private void DrawTile(float x, float y, int tileType)
+    {
+        const int size = TILE_SIZE;
+        var baseColor = GetTileColor(tileType);
+        
+        // Draw base tile
+        _renderBackend.DrawRectangle(
+            new Vector2(x, y),
+            new Vector2(size - 1, size - 1),
+            baseColor
+        );
+
+        // Add visual details based on tile type
+        switch (tileType)
+        {
+            case 0: // Grass - add darker stripes
+                var grassDark = new Color(
+                    (byte)(baseColor.R * 0.8f),
+                    (byte)(baseColor.G * 0.8f),
+                    (byte)(baseColor.B * 0.8f),
+                    255
+                );
+                _renderBackend.DrawRectangle(new Vector2(x + 4, y + 2), new Vector2(2, 6), grassDark);
+                _renderBackend.DrawRectangle(new Vector2(x + 12, y + 8), new Vector2(2, 6), grassDark);
+                _renderBackend.DrawRectangle(new Vector2(x + 22, y + 4), new Vector2(2, 6), grassDark);
+                break;
+
+            case 1: // Water - add lighter waves
+                var waterLight = new Color(
+                    (byte)System.Math.Min(255, baseColor.R * 1.3f),
+                    (byte)System.Math.Min(255, baseColor.G * 1.3f),
+                    (byte)System.Math.Min(255, baseColor.B * 1.3f),
+                    255
+                );
+                _renderBackend.DrawRectangle(new Vector2(x + 2, y + 8), new Vector2(8, 2), waterLight);
+                _renderBackend.DrawRectangle(new Vector2(x + 18, y + 16), new Vector2(10, 2), waterLight);
+                break;
+
+            case 2: // Dirt - add darker spots
+                var dirtDark = new Color(
+                    (byte)(baseColor.R * 0.7f),
+                    (byte)(baseColor.G * 0.7f),
+                    (byte)(baseColor.B * 0.7f),
+                    255
+                );
+                _renderBackend.DrawRectangle(new Vector2(x + 6, y + 6), new Vector2(4, 4), dirtDark);
+                _renderBackend.DrawRectangle(new Vector2(x + 20, y + 12), new Vector2(4, 4), dirtDark);
+                _renderBackend.DrawRectangle(new Vector2(x + 12, y + 20), new Vector2(4, 4), dirtDark);
+                break;
+
+            case 3: // Stone - add lighter cracks
+                var stoneLight = new Color(
+                    (byte)System.Math.Min(255, baseColor.R * 1.2f),
+                    (byte)System.Math.Min(255, baseColor.G * 1.2f),
+                    (byte)System.Math.Min(255, baseColor.B * 1.2f),
+                    255
+                );
+                _renderBackend.DrawRectangle(new Vector2(x + 8, y + 4), new Vector2(12, 1), stoneLight);
+                _renderBackend.DrawRectangle(new Vector2(x + 4, y + 16), new Vector2(16, 1), stoneLight);
+                _renderBackend.DrawRectangle(new Vector2(x + 12, y + 24), new Vector2(8, 1), stoneLight);
+                break;
+        }
     }
 
     private void DrawLegend()

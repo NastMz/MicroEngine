@@ -431,6 +431,34 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
         -   Type-safe generic save/load with result types
         -   Comprehensive error handling (SaveResult, LoadResult<T>)
     -   ✅ 10 comprehensive savegame tests
+-   ✅ **Physics Backend Abstraction** — COMPLETE v0.9.0
+    -   ✅ IPhysicsBackend interface (backend-agnostic physics API)
+        -   World management (Initialize, Shutdown, Step)
+        -   Gravity control (SetGravity, GetGravity)
+        -   Body lifecycle (CreateBody, DestroyBody, SetBodyType)
+        -   Collider attachment (AddCircleCollider, AddBoxCollider)
+        -   Position and velocity manipulation
+        -   Force and impulse application
+        -   Gravity and damping configuration
+    -   ✅ MicroEngine.Backend.Aether project
+        -   AetherPhysicsBackend implementation (nkast.Aether.Physics2D v2.0.0)
+        -   Pixels-to-meters conversion (100 pixels = 1 meter)
+        -   Body type support (Static, Kinematic, Dynamic)
+        -   Realistic rigid body dynamics and collision resolution
+        -   Integration with MonoGame.Framework for Aether.Physics2D compatibility
+    -   ✅ PhysicsBackendSystem for ECS integration
+        -   PhysicsBodyComponent: Links ECS entities to physics bodies
+        -   Bidirectional synchronization (ECS ↔ Physics)
+        -   Helper methods: CreateBodyForEntity, DestroyBodyForEntity
+        -   Physics operations: ApplyForce, ApplyImpulse, Stop
+    -   ✅ PhysicsDemo migrated to use Aether backend
+        -   Realistic ball stacking and falling physics
+        -   Drag-and-drop with kinematic body switching
+        -   Fixed drag bug: SetBodyType synchronizes IsKinematic changes
+    -   ✅ Legacy physics system removed (PhysicsSystem.cs, CollisionSystem.cs)
+    -   ✅ All demos updated with null-safe OnUnload methods
+    -   ⏳ Unit tests for physics backend abstraction
+    -   ⏳ Documentation for physics backend implementation guide
 -   ❌ **Stable public API surface** (breaking changes frozen)
 -   ❌ **Comprehensive documentation** of all public APIs
 -   ❌ **Determinism audit** across all modules
@@ -634,6 +662,8 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.6.0  | Architecture refinement + Scene transitions | Nov 2025    | ✅ Complete |
 | v0.7.0  | State Management + Caching + GameEngine     | Nov 2025    | ✅ Complete |
 | v0.7.5  | Memory Profiling Tools                      | Jan 2025    | ✅ Complete |
+| v0.8.0  | Physics & Savegame Systems                  | Jan 2025    | ✅ Complete |
+| v0.9.0  | Physics Backend Abstraction                 | TBD         | In Progress |
 | v0.5.x  | Stabilization & polish                      | TBD         | In Progress |
 | v1.0.0  | Stable public API                           | TBD         | Planned     |
 | v1.1.0  | Scene management & templates                | TBD         | Planned     |
@@ -772,6 +802,7 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 | Version | Date              | Author         | Changes                                                                                                                                        |
 | ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.1     | January 19, 2025  | Kevin Martínez | Physics Backend Abstraction (v0.9.0 WIP): IPhysicsBackend interface, Aether.Physics2D integration, MicroEngine.Backend.Aether project          |
 | 3.0     | January 19, 2025  | Kevin Martínez | Physics & Savegame (v0.8.0): CCD with swept AABB, collision resolution, PhysicsDemo, complete savegame system with versioning, 10 new tests    |
 | 2.9     | January 19, 2025  | Kevin Martínez | Memory Profiling Tools (v0.7.5): MemorySnapshot, MemoryProfiler with leak detection, EcsMemoryProfiler, statistical analysis, 36 tests         |
 | 2.8     | November 18, 2025 | Kevin Martínez | Structured Error Codes & Exception Hierarchy (v0.7.4): MicroEngineException base, domain exceptions, error codes, context management           |

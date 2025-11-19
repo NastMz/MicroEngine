@@ -168,7 +168,7 @@ public sealed class AudioDemo : Scene
     public override void OnUnload()
     {
         base.OnUnload();
-        _logger.Info("AudioDemo", "Audio demo unloaded");
+        _logger?.Info("AudioDemo", "Audio demo unloaded");
     }
 
     private void ToggleMusic()

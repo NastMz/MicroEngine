@@ -1,104 +1,134 @@
 # Physics Module
 
-**Module:** Engine.Core.Physics  
-**Status:** Planned  
-**Version:** 1.0  
+**Module:** MicroEngine.Core.Physics  
+**Status:** Complete (v0.9.0)  
+**Version:** 2.0  
 **Last Updated:** November 2025
 
 ---
 
 ## Overview
 
-The Physics module provides collision detection, spatial queries, and physics simulation for MicroEngine.
+The Physics module provides realistic rigid body dynamics and collision resolution for MicroEngine through a backend-agnostic architecture.
 
-It supports:
+**Current Implementation:**
 
-- **2D collision detection** (AABB, circle, polygon)
-- **3D collision detection** (future: boxes, spheres, meshes)
-- **Spatial partitioning** (quadtree, octree)
-- **Raycasting** and shape casting
-- **Trigger zones** (non-physical collision areas)
-- **Physics simulation** (optional: velocity, forces, gravity)
-- **Collision layers and masks** for filtering
+-   ✅ **Physics Backend Abstraction** (IPhysicsBackend interface)
+-   ✅ **Aether.Physics2D Integration** (Box2D port for .NET)
+-   ✅ **ECS Integration** (PhysicsBackendSystem, PhysicsBodyComponent)
+-   ✅ **2D Rigid Body Dynamics** (gravity, forces, impulses, damping)
+-   ✅ **Collision Detection** (circles, boxes with realistic resolution)
+-   ✅ **Body Types** (Static, Kinematic, Dynamic)
+-   ✅ **Realistic Physics** (proper stacking, falling, bouncing)
 
-The physics system is designed to be:
+**Key Features:**
 
-- **Dimension-agnostic:** Core APIs support both 2D and 3D
-- **Lightweight:** Optional physics simulation (can use detection-only mode)
-- **Flexible:** Integrate with external physics engines (Box2D, Jolt, etc.)
-- **Performant:** Efficient spatial partitioning and broad-phase detection
+-   **Backend-Agnostic:** Swap physics engines without changing game code
+-   **Professional-Grade:** Uses industry-standard Aether.Physics2D (Box2D)
+-   **ECS Native:** Seamless integration with entity-component system
+-   **Type-Safe:** Strong typing prevents runtime errors
+-   **Performant:** Optimized for real-time simulation
+
+**Supported Physics Backends:**
+
+1. **Aether.Physics2D** (Current) — Box2D port, realistic 2D physics
+2. **Custom Backends** (Future) — Implement IPhysicsBackend for alternatives
 
 ---
 
 ## Table of Contents
 
-1. [Core Concepts](#core-concepts)
+1. [Quick Start](#quick-start)
 2. [Architecture](#architecture)
-3. [Collision Detection](#collision-detection)
-4. [Collision Shapes](#collision-shapes)
-5. [Spatial Partitioning](#spatial-partitioning)
-6. [Raycasting](#raycasting)
-7. [Trigger Zones](#trigger-zones)
-8. [Physics Simulation](#physics-simulation)
-9. [Collision Layers](#collision-layers)
-10. [Integration with ECS](#integration-with-ecs)
-11. [Usage Examples](#usage-examples)
-12. [Best Practices](#best-practices)
-13. [API Reference](#api-reference)
+3. [Physics Backend Interface](#physics-backend-interface)
+4. [ECS Integration](#ecs-integration)
+5. [Body Types](#body-types)
+6. [Collision Shapes](#collision-shapes)
+7. [Forces and Impulses](#forces-and-impulses)
+8. [Usage Examples](#usage-examples)
+9. [Best Practices](#best-practices)
+10. [API Reference](#api-reference)
 
 ---
 
-## Core Concepts
+## Quick Start
 
-### Physics Modes
+### Basic Physics Setup
 
-MicroEngine supports two physics modes:
+```csharp
+using MicroEngine.Backend.Aether;
+using MicroEngine.Core.ECS;
+using MicroEngine.Core.ECS.Systems;
+using MicroEngine.Core.ECS.Components;
 
-**1. Detection-Only Mode:**
+// 1. Create physics backend
+var physicsBackend = new AetherPhysicsBackend();
 
-- Only collision detection and queries
-- No velocity, forces, or physics simulation
-- Lightweight, suitable for simple games
-- You manually handle movement and collisions
+// 2. Create physics system
+var physicsSystem = new PhysicsBackendSystem(physicsBackend);
+physicsSystem.Initialize(gravity: 750f); // Downward gravity (pixels/s²)
 
-**2. Simulation Mode (Future):**
+// 3. Register with ECS
+world.RegisterSystem(physicsSystem);
 
-- Full physics simulation with velocity, forces, gravity
-- Integration with external physics engines
-- Automatic collision resolution
-- Suitable for physics-heavy games
+// 4. Create entity with physics
+var ball = world.CreateEntity();
+world.AddComponent(ball, new TransformComponent { Position = new Vector2(400, 100) });
+world.AddComponent(ball, new ColliderComponent
+{
+    Shape = ColliderShape.Circle,
+    Size = new Vector2(15, 15)
+});
+world.AddComponent(ball, new RigidBodyComponent
+{
+    Mass = 1.0f,
+    UseGravity = true,
+    Restitution = 0.7f // Bounciness
+});
 
-### Collision vs Trigger
+// 5. Create physics body
+physicsSystem.CreateBodyForEntity(world, ball);
 
-**Collision:**
-
-- Physical collision that prevents overlap
-- Generates collision response (bounce, slide)
-- Used for solid objects (walls, floors, obstacles)
-
-**Trigger:**
-
-- Detection-only area (objects can overlap)
-- No collision response
-- Used for events (pickups, checkpoints, damage zones)
+// 6. Update physics each frame
+physicsSystem.Update(world, deltaTime);
+```
 
 ---
 
 ## Architecture
 
-### Class Diagram
+### System Overview
 
 ```
-PhysicsWorld
-├── Collision Detection
-│   ├── Broad Phase (spatial partitioning)
-│   └── Narrow Phase (shape tests)
-├── Spatial Structures
-│   ├── QuadTree (2D)
-│   └── OctTree (3D, future)
-├── Raycasting
-└── Collision Events
+Game Scene
+    ↓ creates
+AetherPhysicsBackend (IPhysicsBackend)
+    ↓ manages
+PhysicsBackendSystem
+    ↓ syncs with
+ECS World (Entities + PhysicsBodyComponent)
+    ↓ renders
+IRenderBackend2D
 ```
+
+### Key Components
+
+**IPhysicsBackend:**
+
+-   Abstract interface for physics engines
+-   18 methods covering full physics lifecycle
+-   Backend implementations (Aether, custom)
+
+**PhysicsBackendSystem:**
+
+-   ECS system managing physics simulation
+-   Bidirectional sync between ECS and physics
+-   Helper methods for body management
+
+**PhysicsBodyComponent:**
+
+-   Links ECS entity to physics body handle
+-   Enables entity-physics synchronization
 
 ### Core Classes
 
@@ -868,22 +898,22 @@ public class PlatformerPhysicsSystem : ISystem
 
 ### Do's
 
-- ✓ Use spatial partitioning for large worlds
-- ✓ Separate collision detection from physics simulation
-- ✓ Use layers to filter unnecessary collision checks
-- ✓ Cache collision queries when possible
-- ✓ Use triggers for non-physical interactions
-- ✓ Implement broad-phase optimization
-- ✓ Profile physics performance regularly
+-   ✓ Use spatial partitioning for large worlds
+-   ✓ Separate collision detection from physics simulation
+-   ✓ Use layers to filter unnecessary collision checks
+-   ✓ Cache collision queries when possible
+-   ✓ Use triggers for non-physical interactions
+-   ✓ Implement broad-phase optimization
+-   ✓ Profile physics performance regularly
 
 ### Don'ts
 
-- ✗ Don't test all bodies against all other bodies (O(n²))
-- ✗ Don't perform expensive collision tests every frame for static objects
-- ✗ Don't forget to remove bodies from physics world when entities are destroyed
-- ✗ Don't use complex shapes when simple ones suffice
-- ✗ Don't ignore physics layers (test everything against everything)
-- ✗ Don't raycast every frame unless necessary
+-   ✗ Don't test all bodies against all other bodies (O(n²))
+-   ✗ Don't perform expensive collision tests every frame for static objects
+-   ✗ Don't forget to remove bodies from physics world when entities are destroyed
+-   ✗ Don't use complex shapes when simple ones suffice
+-   ✗ Don't ignore physics layers (test everything against everything)
+-   ✗ Don't raycast every frame unless necessary
 
 ### Performance Tips
 
@@ -977,9 +1007,9 @@ public class PhysicsBody : IComponent
 
 ## Related Documentation
 
-- [Architecture](../ARCHITECTURE.md)
-- [ECS Module](ECS.md)
-- [Scenes Module](SCENES.md)
+-   [Architecture](../ARCHITECTURE.md)
+-   [ECS Module](ECS.md)
+-   [Scenes Module](SCENES.md)
 
 ---
 

@@ -9,7 +9,7 @@ All demos are accessible from the **MainMenuScene**:
 -   Launch `MicroEngine.Game`
 -   Press keys **1-6** to load the corresponding demo
 -   Press **ESC** from any demo to return to the main menu
--   Press **F6-F9** to test scene transition features
+-   Press **F6-F9** to test scene transition effects
 
 ## Available Demos
 
@@ -75,30 +75,31 @@ All demos are accessible from the **MainMenuScene**:
 
 ### 3. Physics Demo (`[3]`)
 
-**Purpose:** Demonstrates physics simulation with Continuous Collision Detection (CCD).
+**Purpose:** Demonstrates realistic rigid body physics with proper collision resolution.
 
 **Features:**
 
--   **Gravity System:** 980 units/sec² downward acceleration
--   **CCD Implementation:** Swept AABB collision to prevent tunneling
--   **Dynamic Spawning:** Auto-spawn balls every 0.5 seconds (max 10)
--   **Click Spawning:** Click anywhere to spawn a ball at that position
--   **Restitution:** 0.6 bounciness coefficient for realistic collisions
--   **Ground Collider:** 600x20 static platform for collision testing
--   **Visual Feedback:** Color-coded balls (random colors)
+-   **Realistic Dynamics:** Proper stacking, falling, and collision resolution
+-   **Gravity System:** 750 pixels/sec² downward gravity
+-   **Dynamic Bodies:** Mass-based physics simulation
+-   **Static Platform:** 600x20 ground for collision testing
+-   **Click Spawning:** Click anywhere to spawn balls (max 20)
+-   **Drag System:** Click and drag balls with kinematic body switching
+-   **Restitution:** 0.7 bounciness for realistic bouncing
+-   **Visual Feedback:** Random colored balls
 -   **Off-screen Cleanup:** Automatic removal when y > 700
--   **Collision Resolution:** Position adjustment + velocity reflection
 
 **Technical Details:**
 
--   **CollisionInfo:** Normal, penetration, contact point, time of impact
--   **SweptCollision:** Ray vs AABB intersection for precise TOI
--   **RenderComponent:** Rectangle, Circle, Line shape rendering
--   **RigidBodyComponent:** Mass, velocity, acceleration, restitution, CCD flag
+-   **Body Types:** Static (ground), Dynamic (balls), Kinematic (during drag)
+-   **Collision Resolution:** Accurate physics simulation with realistic responses
+-   **Drag Mechanics:** Physics disabled during user control, restored on release
 
 **Controls:**
 
 -   **Click:** Spawn ball at mouse position
+-   **Click + Drag:** Move existing ball (becomes kinematic)
+-   **Release:** Drop ball (restores dynamic physics)
 -   **ESC:** Exit to menu
 
 ---
@@ -320,7 +321,7 @@ src/MicroEngine.Game/Scenes/
 
 ## Conclusion
 
-MicroEngine v0.8.0-alpha provides **6 comprehensive, interactive demos** showcasing the engine's core capabilities:
+MicroEngine provides **6 comprehensive, interactive demos** showcasing the engine's core capabilities:
 
 1. **ECS Architecture** - Modern entity patterns with interactive gameplay
 2. **Graphics Pipeline** - Camera system, textures, filtering, caching

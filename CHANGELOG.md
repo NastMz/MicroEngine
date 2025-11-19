@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0-alpha] - 2025-11-18
+
+### Added
+
+-   **Physics Backend Abstraction**: Professional-grade physics engine integration
+
+    -   `IPhysicsBackend`: Backend-agnostic physics simulation interface
+        -   World management (Initialize, Shutdown, Step)
+        -   Gravity control (SetGravity, GetGravity)
+        -   Body lifecycle (CreateBody, DestroyBody, SetBodyType)
+        -   Collider attachment (AddCircleCollider, AddBoxCollider)
+        -   Position and velocity manipulation
+        -   Force and impulse application
+        -   Gravity and damping configuration
+    -   `MicroEngine.Backend.Aether`: Aether.Physics2D integration (Box2D port)
+        -   Realistic rigid body dynamics and collision resolution
+        -   Pixels-to-meters conversion (100:1 ratio)
+        -   Body type support (Static, Kinematic, Dynamic)
+        -   Integration with MonoGame.Framework
+    -   `PhysicsBackendSystem`: ECS integration for physics simulation
+        -   `PhysicsBodyComponent`: Links ECS entities to physics bodies
+        -   Bidirectional synchronization (ECS ↔ Physics)
+        -   Helper methods: CreateBodyForEntity, DestroyBodyForEntity
+        -   Physics operations: ApplyForce, ApplyImpulse, Stop
+    -   `PhysicsBackendDemo`: Advanced physics demonstration scene
+        -   Interactive ball spawning and drag-and-drop
+        -   Realistic stacking and falling physics
+        -   Kinematic body switching during user interaction
+
+### Changed
+
+-   **PhysicsDemo**: Migrated to use PhysicsBackendSystem with Aether.Physics2D
+    -   Replaced custom physics with professional backend
+    -   Improved ball stacking and collision resolution
+    -   Fixed drag system with proper kinematic/dynamic body switching
+    -   Simplified drag logic (no manual collision checks needed)
+
+### Removed
+
+-   **Legacy Physics System**: Removed custom physics implementation
+    -   Removed `PhysicsSystem.cs` (replaced by PhysicsBackendSystem)
+    -   Removed `CollisionSystem.cs` (handled by physics backend)
+    -   Custom CCD implementation superseded by Aether.Physics2D
+
+### Fixed
+
+-   **Drag Bug**: Fixed physics bodies not responding after drag-and-drop
+    -   Added `SetBodyType` method to IPhysicsBackend for dynamic type changes
+    -   PhysicsBackendSystem now synchronizes IsKinematic changes to backend
+    -   Bodies properly transition between kinematic and dynamic states
+-   **Demo OnUnload**: Fixed null reference crashes during scene preloading
+    -   All demos updated with null-safe OnUnload methods
+    -   Logger calls use null-conditional operator (?.)
+    -   PhysicsSystem cleanup checks for null before operations
+
 ## [0.8.0-alpha] - 2025-11-18
 
 ### Added

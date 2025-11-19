@@ -229,7 +229,7 @@ public sealed class GraphicsDemo : Scene
     public override void OnUnload()
     {
         base.OnUnload();
-        _logger.Info("GraphicsDemo", "Graphics demo unloaded");
+        _logger?.Info("GraphicsDemo", "Graphics demo unloaded");
     }
 
     private void LoadAssets()

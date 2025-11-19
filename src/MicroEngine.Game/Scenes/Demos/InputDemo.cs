@@ -21,6 +21,7 @@ public sealed class InputDemo : Scene
     private Vector2 _lastMousePosition;
     private readonly List<string> _recentKeys;
     private readonly List<string> _recentButtons;
+    private readonly List<string> _recentGamepadButtons;
     private const int MAX_HISTORY = 5;
     private float _scrollAccumulator;
 
@@ -35,6 +36,7 @@ public sealed class InputDemo : Scene
         _scrollAccumulator = 0f;
         _recentKeys = new List<string>();
         _recentButtons = new List<string>();
+        _recentGamepadButtons = new List<string>();
     }
 
     /// <inheritdoc/>
@@ -53,7 +55,7 @@ public sealed class InputDemo : Scene
         base.OnLoad(context, parameters);
         
         // Extract parameters if provided
-        if (parameters.TryGet<string>("welcomeMessage", out var message))
+        if (parameters.TryGet<string>("welcomeMessage", out var message) && message != null)
         {
             _welcomeMessage = message;
             _receivedParameters = true;
@@ -113,11 +115,25 @@ public sealed class InputDemo : Scene
         var scroll = _inputBackend.GetMouseWheelDelta();
         _scrollAccumulator += scroll;
 
+        // Track gamepad buttons
+        if (_inputBackend.IsGamepadAvailable(0))
+        {
+            foreach (GamepadButton button in Enum.GetValues<GamepadButton>())
+            {
+                if (_inputBackend.IsGamepadButtonPressed(0, button))
+                {
+                    AddToHistory(_recentGamepadButtons, button.ToString());
+                    _logger.Debug("InputDemo", $"Gamepad button pressed: {button}");
+                }
+            }
+        }
+
         // Clear history on Space
         if (_inputBackend.IsKeyPressed(Key.Space))
         {
             _recentKeys.Clear();
             _recentButtons.Clear();
+            _recentGamepadButtons.Clear();
             _scrollAccumulator = 0f;
             _logger.Info("InputDemo", "Input history cleared");
         }
@@ -199,33 +215,52 @@ public sealed class InputDemo : Scene
         _renderBackend.DrawText("GAMEPAD", new Vector2(20, yPos), 16, new Color(200, 255, 200, 255));
         yPos += 30;
         
-        // Show axis values
-        var leftX = _inputBackend.GetGamepadAxis(0, GamepadAxis.LeftX);
-        var leftY = _inputBackend.GetGamepadAxis(0, GamepadAxis.LeftY);
-        var rightX = _inputBackend.GetGamepadAxis(0, GamepadAxis.RightX);
-        var rightY = _inputBackend.GetGamepadAxis(0, GamepadAxis.RightY);
-        
-        bool hasInput = System.Math.Abs(leftX) > 0.1f || System.Math.Abs(leftY) > 0.1f ||
-                       System.Math.Abs(rightX) > 0.1f || System.Math.Abs(rightY) > 0.1f;
-        
-        if (hasInput)
+        if (!_inputBackend.IsGamepadAvailable(0))
         {
-            if (System.Math.Abs(leftX) > 0.1f || System.Math.Abs(leftY) > 0.1f)
-            {
-                _renderBackend.DrawText($"Left Stick: ({leftX:F2}, {leftY:F2})", new Vector2(40, yPos), 12, Color.White);
-                yPos += 18;
-            }
-            
-            if (System.Math.Abs(rightX) > 0.1f || System.Math.Abs(rightY) > 0.1f)
-            {
-                _renderBackend.DrawText($"Right Stick: ({rightX:F2}, {rightY:F2})", new Vector2(40, yPos), 12, Color.White);
-                yPos += 18;
-            }
+            _renderBackend.DrawText("No gamepad detected", new Vector2(40, yPos), 12, new Color(150, 150, 150, 255));
         }
         else
         {
-            _renderBackend.DrawText("No gamepad input detected", new Vector2(40, yPos), 12, new Color(150, 150, 150, 255));
-            yPos += 18;
+            // Show axis values
+            var leftX = _inputBackend.GetGamepadAxis(0, GamepadAxis.LeftX);
+            var leftY = _inputBackend.GetGamepadAxis(0, GamepadAxis.LeftY);
+            var rightX = _inputBackend.GetGamepadAxis(0, GamepadAxis.RightX);
+            var rightY = _inputBackend.GetGamepadAxis(0, GamepadAxis.RightY);
+            
+            bool hasAxisInput = System.Math.Abs(leftX) > 0.1f || System.Math.Abs(leftY) > 0.1f ||
+                           System.Math.Abs(rightX) > 0.1f || System.Math.Abs(rightY) > 0.1f;
+            
+            if (hasAxisInput)
+            {
+                if (System.Math.Abs(leftX) > 0.1f || System.Math.Abs(leftY) > 0.1f)
+                {
+                    _renderBackend.DrawText($"Left Stick: ({leftX:F2}, {leftY:F2})", new Vector2(40, yPos), 12, Color.White);
+                    yPos += 18;
+                }
+                
+                if (System.Math.Abs(rightX) > 0.1f || System.Math.Abs(rightY) > 0.1f)
+                {
+                    _renderBackend.DrawText($"Right Stick: ({rightX:F2}, {rightY:F2})", new Vector2(40, yPos), 12, Color.White);
+                    yPos += 18;
+                }
+            }
+            
+            // Show button history
+            _renderBackend.DrawText("Recent buttons:", new Vector2(40, yPos), 14, new Color(180, 180, 180, 255));
+            yPos += 20;
+            
+            if (_recentGamepadButtons.Count > 0)
+            {
+                foreach (var btn in _recentGamepadButtons)
+                {
+                    _renderBackend.DrawText($"• {btn}", new Vector2(60, yPos), 12, Color.White);
+                    yPos += 18;
+                }
+            }
+            else
+            {
+                _renderBackend.DrawText("(none)", new Vector2(60, yPos), 12, new Color(120, 120, 120, 255));
+            }
         }
 
         // Instructions
@@ -238,7 +273,7 @@ public sealed class InputDemo : Scene
     public override void OnUnload()
     {
         base.OnUnload();
-        _logger.Info("InputDemo", "Input demo unloaded");
+        _logger?.Info("InputDemo", "Input demo unloaded");
     }
 
     private void AddToHistory(List<string> history, string item)
