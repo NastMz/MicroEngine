@@ -103,7 +103,8 @@ public sealed class MainMenuScene : Scene
                 ("GraphicsDemo", (Func<IScene>)(() => new GraphicsDemo())),
                 ("PhysicsDemo", (Func<IScene>)(() => new PhysicsDemo())),
                 ("InputDemo", (Func<IScene>)(() => new InputDemo())),
-                ("TilemapDemo", (Func<IScene>)(() => new TilemapDemo()))
+                ("TilemapDemo", (Func<IScene>)(() => new TilemapDemo())),
+                ("AudioDemo", (Func<IScene>)(() => new AudioDemo()))
             };
 
             await _sceneCache.PreloadMultipleAsync(preloadRequests, _preloadCancellation.Token);
@@ -129,7 +130,7 @@ public sealed class MainMenuScene : Scene
         if (e.Success)
         {
             _preloadedScenes++;
-            _logger.Debug("MainMenu", $"Preloaded: {e.SceneKey} ({_preloadedScenes}/5)");
+            _logger.Debug("MainMenu", $"Preloaded: {e.SceneKey} ({_preloadedScenes}/6)");
         }
         else
         {
@@ -166,6 +167,10 @@ public sealed class MainMenuScene : Scene
         else if (_inputBackend.IsKeyPressed(Key.Five))
         {
             LoadDemo<TilemapDemo>();
+        }
+        else if (_inputBackend.IsKeyPressed(Key.Six))
+        {
+            LoadDemo<AudioDemo>();
         }
 
         // Transition effect selection
@@ -219,7 +224,7 @@ public sealed class MainMenuScene : Scene
         
         cacheY += 18;
         var statusColor = _isPreloading ? new Color(100, 255, 100, 255) : new Color(150, 150, 150, 255);
-        var statusText = _isPreloading ? $"Preloading... {_preloadedScenes}/5" : $"Stored: {_sceneCache.Count}/{_sceneCache.MaxCacheSize}";
+        var statusText = _isPreloading ? $"Preloading... {_preloadedScenes}/6" : $"Stored: {_sceneCache.Count}/{_sceneCache.MaxCacheSize}";
         _renderBackend.DrawText(statusText, new Vector2(cacheX, cacheY), 11, statusColor);
         
         if (_sceneCache.Count > 0)
@@ -246,6 +251,9 @@ public sealed class MainMenuScene : Scene
 
         optionY += LINE_HEIGHT;
         _renderBackend.DrawText("[5] Tilemap System", new Vector2(MENU_X + 20, optionY), 16, new Color(100, 200, 255, 255));
+
+        optionY += LINE_HEIGHT;
+        _renderBackend.DrawText("[6] Audio System", new Vector2(MENU_X + 20, optionY), 16, new Color(100, 200, 255, 255));
 
         optionY += LINE_HEIGHT + 10;
         _renderBackend.DrawText("[X] Exit (close window)", new Vector2(MENU_X + 20, optionY), 16, new Color(255, 100, 100, 255));

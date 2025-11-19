@@ -24,9 +24,9 @@ public sealed class PhysicsDemo : Scene
     private CollisionSystem _collisionSystem = null!;
 
     private Entity _ground;
-    private readonly List<Entity> _balls = new List<Entity>();
+    private readonly List<Entity> _balls;
     private const int MAX_BALLS = 10;
-    private float _spawnTimer = 0f;
+    private float _spawnTimer;
     private const float SPAWN_INTERVAL = 0.5f;
 
     /// <summary>
@@ -35,6 +35,8 @@ public sealed class PhysicsDemo : Scene
     public PhysicsDemo()
         : base("PhysicsDemo")
     {
+        _balls = new List<Entity>();
+        _spawnTimer = 0f;
     }
 
     /// <inheritdoc/>
@@ -78,6 +80,12 @@ public sealed class PhysicsDemo : Scene
     {
         base.OnUpdate(deltaTime);
 
+        // Early exit if not loaded yet (can happen during scene preloading)
+        if (_inputBackend == null)
+        {
+            return;
+        }
+
         if (_inputBackend.IsKeyPressed(Key.Escape))
         {
             PopScene();
@@ -117,7 +125,13 @@ public sealed class PhysicsDemo : Scene
     /// <inheritdoc/>
     public override void OnRender()
     {
-        _renderBackend.Clear(new Color(20, 20, 30, 255));
+        // Early exit if not loaded yet (can happen during scene preloading)
+        if (_renderBackend == null)
+        {
+            return;
+        }
+
+        _renderBackend.Clear(new Color(20, 25, 35, 255));
 
         // Render ground
         var groundTransform = _world.GetComponent<TransformComponent>(_ground);
