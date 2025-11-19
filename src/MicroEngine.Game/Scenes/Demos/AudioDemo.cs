@@ -1,13 +1,15 @@
+using MicroEngine.Core.Audio;
 using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Math;
+using MicroEngine.Core.Resources;
 using MicroEngine.Core.Scenes;
 
 namespace MicroEngine.Game.Scenes.Demos;
 
 /// <summary>
-/// Demonstrates audio system concepts with simulated playback.
+/// Demonstrates audio system with real playback.
 /// Shows volume control, playback state, and audio feedback UI.
 /// </summary>
 public sealed class AudioDemo : Scene
@@ -15,6 +17,13 @@ public sealed class AudioDemo : Scene
     private IInputBackend _inputBackend = null!;
     private IRenderBackend2D _renderBackend = null!;
     private ILogger _logger = null!;
+    private IAudioBackend _audioBackend = null!;
+    private ResourceCache<IAudioClip> _audioCache = null!;
+
+    private IAudioClip? _backgroundMusic;
+    private IAudioClip? _jumpSound;
+    private IAudioClip? _collectSound;
+    private IAudioClip? _hitSound;
 
     private float _musicVolume;
     private float _sfxVolume;
@@ -22,6 +31,12 @@ public sealed class AudioDemo : Scene
     private string _lastSoundPlayed = "None";
     private float _soundFeedbackTimer;
     private const float FEEDBACK_DURATION = 0.5f;
+
+    // Audio file paths
+    private const string MUSIC_PATH = "assets/audio/music/mixkit-sonor-2-570.mp3";
+    private const string JUMP_SFX_PATH = "assets/audio/sfx/mixkit-player-jumping-in-a-video-game-2043.wav";
+    private const string COLLECT_SFX_PATH = "assets/audio/sfx/mixkit-winning-a-coin-video-game-2069.wav";
+    private const string HIT_SFX_PATH = "assets/audio/sfx/mixkit-air-in-a-hit-2161.wav";
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AudioDemo"/> class.
@@ -40,7 +55,22 @@ public sealed class AudioDemo : Scene
         _inputBackend = context.InputBackend;
         _renderBackend = context.RenderBackend;
         _logger = context.Logger;
-        _logger.Info("AudioDemo", "Audio demo loaded (simulated)");
+        _audioBackend = context.AudioBackend;
+        _audioCache = context.AudioCache;
+
+        // Load audio resources
+        try
+        {
+            _backgroundMusic = _audioCache.Load(MUSIC_PATH);
+            _jumpSound = _audioCache.Load(JUMP_SFX_PATH);
+            _collectSound = _audioCache.Load(COLLECT_SFX_PATH);
+            _hitSound = _audioCache.Load(HIT_SFX_PATH);
+            _logger.Info("AudioDemo", "Audio demo loaded successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("AudioDemo", $"Failed to load audio resources: {ex.Message}");
+        }
     }
 
     /// <inheritdoc/>
@@ -56,9 +86,19 @@ public sealed class AudioDemo : Scene
 
         if (_inputBackend.IsKeyPressed(Key.Escape))
         {
+            if (_isMusicPlaying && _backgroundMusic != null)
+            {
+                _audioBackend.StopMusic(_backgroundMusic);
+            }
             _isMusicPlaying = false;
             PopScene();
             return;
+        }
+
+        // Update music stream (required for streaming audio)
+        if (_isMusicPlaying && _backgroundMusic != null)
+        {
+            _audioBackend.UpdateMusic(_backgroundMusic);
         }
 
         // Music controls
@@ -82,17 +122,17 @@ public sealed class AudioDemo : Scene
         // Sound effect controls
         if (_inputBackend.IsKeyPressed(Key.J))
         {
-            PlaySound("Jump");
+            PlaySound("Jump", _jumpSound);
         }
 
         if (_inputBackend.IsKeyPressed(Key.C))
         {
-            PlaySound("Collect");
+            PlaySound("Collect", _collectSound);
         }
 
         if (_inputBackend.IsKeyPressed(Key.H))
         {
-            PlaySound("Hit");
+            PlaySound("Hit", _hitSound);
         }
 
         // SFX volume controls
@@ -141,7 +181,7 @@ public sealed class AudioDemo : Scene
         layout.DrawSection("Music Controls:", 18, titleColor, spacingAfter: 5)
               .SetX(70)
               .DrawText("[SPACE] Play/Pause Music", 16, Color.White)
-              .DrawText($"[↑/↓] Music Volume: {_musicVolume:P0}", 16, Color.White);
+              .DrawText($"[ArrowUp/ArrowDown] Music Volume: {_musicVolume:P0}", 16, Color.White);
         
         var musicStatus = _isMusicPlaying ? "Playing" : "Stopped";
         var musicColor = _isMusicPlaying ? new Color(100, 255, 100, 255) : new Color(255, 100, 100, 255);
@@ -158,7 +198,7 @@ public sealed class AudioDemo : Scene
               .DrawText("[J] Jump Sound", 16, Color.White)
               .DrawText("[C] Collect Sound", 16, Color.White)
               .DrawText("[H] Hit Sound", 16, Color.White)
-              .DrawText($"[←/→] SFX Volume: {_sfxVolume:P0}", 16, Color.White);
+              .DrawText($"[ArrowLeft/ArrowRight] SFX Volume: {_sfxVolume:P0}", 16, Color.White);
 
         // SFX volume bar
         DrawVolumeBar(new Vector2(70, layout.CurrentY), _sfxVolume, new Color(255, 180, 100, 255));
@@ -173,10 +213,6 @@ public sealed class AudioDemo : Scene
         }
 
         // Instructions
-        layout.SetX(50)
-              .SetY(510)
-              .DrawText("Note: Audio backend integration required for actual playback", 12, dimColor);
-
         layout.SetX(10)
               .SetY(580)
               .DrawText("[ESC] Back to Menu", 14, dimColor);
@@ -186,25 +222,90 @@ public sealed class AudioDemo : Scene
     public override void OnUnload()
     {
         base.OnUnload();
+
+        // Stop music if playing
+        if (_isMusicPlaying && _backgroundMusic != null)
+        {
+            _audioBackend.StopMusic(_backgroundMusic);
+        }
+
+        // Unload audio resources (cache handles disposal)
+        if (_backgroundMusic != null)
+        {
+            _audioCache.Unload(MUSIC_PATH);
+        }
+        if (_jumpSound != null)
+        {
+            _audioCache.Unload(JUMP_SFX_PATH);
+        }
+        if (_collectSound != null)
+        {
+            _audioCache.Unload(COLLECT_SFX_PATH);
+        }
+        if (_hitSound != null)
+        {
+            _audioCache.Unload(HIT_SFX_PATH);
+        }
+
         _logger?.Info("AudioDemo", "Audio demo unloaded");
     }
 
     private void ToggleMusic()
     {
+        if (_backgroundMusic == null)
+        {
+            _logger.Warn("AudioDemo", "Background music not loaded");
+            return;
+        }
+
         _isMusicPlaying = !_isMusicPlaying;
-        _logger.Info("AudioDemo", $"Music {(_isMusicPlaying ? "started" : "stopped")} (simulated)");
+
+        if (_isMusicPlaying)
+        {
+            // Check if music is already playing (from previous session)
+            if (_audioBackend.IsMusicPlaying(_backgroundMusic))
+            {
+                _audioBackend.ResumeMusic(_backgroundMusic);
+            }
+            else
+            {
+                _audioBackend.PlayMusic(_backgroundMusic);
+                _audioBackend.SetMusicVolume(_backgroundMusic, _musicVolume);
+            }
+            _logger.Info("AudioDemo", "Music started");
+        }
+        else
+        {
+            _audioBackend.PauseMusic(_backgroundMusic);
+            _logger.Info("AudioDemo", "Music paused");
+        }
     }
 
     private void UpdateMusicVolume()
     {
+        if (_backgroundMusic != null)
+        {
+            _audioBackend.SetMusicVolume(_backgroundMusic, _musicVolume);
+        }
         _logger.Info("AudioDemo", $"Music Volume: {_musicVolume:P0}");
     }
 
-    private void PlaySound(string soundName)
+    private void PlaySound(string soundName, IAudioClip? sound)
     {
+        if (sound == null)
+        {
+            _logger.Warn("AudioDemo", $"{soundName} sound not loaded");
+            return;
+        }
+
         _lastSoundPlayed = soundName;
         _soundFeedbackTimer = FEEDBACK_DURATION;
-        _logger.Info("AudioDemo", $"Played {soundName} sound at {_sfxVolume:P0} volume (simulated)");
+
+        // Set volume for this specific sound
+        _audioBackend.SetSoundVolume(sound, _sfxVolume);
+        _audioBackend.PlaySound(sound);
+
+        _logger.Info("AudioDemo", $"Played {soundName} sound at {_sfxVolume:P0} volume");
     }
 
     private void DrawVolumeBar(Vector2 position, float volume, Color color)
@@ -222,6 +323,6 @@ public sealed class AudioDemo : Scene
         }
 
         // Border
-        _renderBackend.DrawRectangle(position, new Vector2(barWidth, barHeight), Color.White);
+        _renderBackend.DrawRectangleLines(position, new Vector2(barWidth, barHeight), Color.White);
     }
 }

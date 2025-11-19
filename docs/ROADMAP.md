@@ -3,7 +3,7 @@
 **Version:** 3.0
 **Status:** Reference  
 **Author:** Kevin Martínez  
-**Last Updated:** December 2024
+**Last Updated:** November 2025
 
 ---
 
@@ -269,7 +269,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Status:** IN PROGRESS (15/16 features complete)
 
-**Current Version:** v0.8.0-alpha
+**Current Version:** v0.12.0-alpha
 
 ### Features
 
@@ -673,13 +673,14 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.9.0  | Physics Backend Abstraction                 | Nov 2025    | ✅ Complete |
 | v0.10.0 | ECS Refactoring & Demo Abstractions         | Nov 2025    | ✅ Complete |
 | v0.11.0 | TextLayoutHelper & UI Improvements         | Nov 2025    | ✅ Complete |
-| v0.5.x  | Stabilization & polish                      | TBD         | In Progress |
+| v0.12.0 | Audio System Integration & Real Playback    | Nov 2025    | ✅ Complete |
+| v0.x.x  | Stabilization & polish                      | TBD         | In Progress |
 | v1.0.0  | Stable public API                           | TBD         | Planned     |
 | v1.1.0  | Scene management & templates                | TBD         | Planned     |
 | v1.2.0  | Asset management & developer tools          | TBD         | Planned     |
 | v1.3.0  | Scene serialization & pipeline              | TBD         | Planned     |
 | v1.5.0  | Full ecosystem maturity                     | TBD         | Future      |
-| v2.0.0  | 3D architecture foundation                  | TBD         | Future      |
+| v2.0.0  | 3D architecture foundation                  | TBD         | Exploratory      |
 | v3.x+   | Editors, advanced tools, new domains        | TBD         | Exploratory |
 
 ---

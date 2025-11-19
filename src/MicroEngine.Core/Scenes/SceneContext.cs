@@ -1,3 +1,4 @@
+using MicroEngine.Core.Audio;
 using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
@@ -44,6 +45,16 @@ public sealed class SceneContext
     public ResourceCache<ITexture> TextureCache { get; }
 
     /// <summary>
+    /// Gets the audio resource cache.
+    /// </summary>
+    public ResourceCache<IAudioClip> AudioCache { get; }
+
+    /// <summary>
+    /// Gets the audio backend for sound and music playback.
+    /// </summary>
+    public IAudioBackend AudioBackend { get; }
+
+    /// <summary>
     /// Gets the global game state for persistent data across scenes.
     /// </summary>
     public IGameState GameState { get; }
@@ -56,6 +67,8 @@ public sealed class SceneContext
     /// <param name="timeService">The time service.</param>
     /// <param name="logger">The logger.</param>
     /// <param name="textureCache">The texture resource cache.</param>
+    /// <param name="audioCache">The audio resource cache.</param>
+    /// <param name="audioBackend">The audio backend.</param>
     /// <param name="gameState">The global game state.</param>
     /// <exception cref="ArgumentNullException">Thrown if any parameter is null.</exception>
     public SceneContext(
@@ -64,6 +77,8 @@ public sealed class SceneContext
         ITimeService timeService,
         ILogger logger,
         ResourceCache<ITexture> textureCache,
+        ResourceCache<IAudioClip> audioCache,
+        IAudioBackend audioBackend,
         IGameState gameState)
     {
         RenderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
@@ -71,6 +86,8 @@ public sealed class SceneContext
         TimeService = timeService ?? throw new ArgumentNullException(nameof(timeService));
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         TextureCache = textureCache ?? throw new ArgumentNullException(nameof(textureCache));
+        AudioCache = audioCache ?? throw new ArgumentNullException(nameof(audioCache));
+        AudioBackend = audioBackend ?? throw new ArgumentNullException(nameof(audioBackend));
         GameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
     }
 }

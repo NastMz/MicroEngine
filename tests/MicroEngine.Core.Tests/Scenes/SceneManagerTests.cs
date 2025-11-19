@@ -1,3 +1,4 @@
+using MicroEngine.Core.Audio;
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Scenes;
 using MicroEngine.Core.State;
@@ -69,6 +70,13 @@ public class SceneManagerTests
         var mockTextureLoader = new Mock<IResourceLoader<ITexture>>();
         var textureCache = new ResourceCache<ITexture>(mockTextureLoader.Object, logger);
         
+        // Create mock audio cache
+        var mockAudioLoader = new Mock<IResourceLoader<IAudioClip>>();
+        var audioCache = new ResourceCache<IAudioClip>(mockAudioLoader.Object, logger);
+        
+        // Create mock audio backend
+        var mockAudioBackend = new Mock<IAudioBackend>();
+        
         // Create real GameState for tests
         var gameState = new GameState();
 
@@ -78,6 +86,8 @@ public class SceneManagerTests
             mockTimeService.Object,
             logger,
             textureCache,
+            audioCache,
+            mockAudioBackend.Object,
             gameState
         );
     }

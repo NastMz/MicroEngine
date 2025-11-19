@@ -48,6 +48,11 @@ public interface IAudioBackend
     void ResumeMusic(IAudioClip music);
 
     /// <summary>
+    /// Sets the volume for a specific sound effect (0.0 to 1.0).
+    /// </summary>
+    void SetSoundVolume(IAudioClip sound, float volume);
+
+    /// <summary>
     /// Updates music streaming (must be called every frame for streaming audio).
     /// </summary>
     void UpdateMusic(IAudioClip music);

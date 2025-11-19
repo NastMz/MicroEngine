@@ -273,11 +273,11 @@ public sealed class MainMenuScene : Scene
         var wipeColor = _currentTransition == "Wipe" ? new Color(100, 255, 150, 255) : dimColor;
         var zoomColor = _currentTransition == "Zoom" ? new Color(100, 255, 150, 255) : dimColor;
 
-        _renderBackend.DrawText($"[F6] Fade {(_currentTransition == "Fade" ? "●" : "○")}", new Vector2(col1X, transY), 14, fadeColor);
-        _renderBackend.DrawText($"[F7] Slide {(_currentTransition == "Slide" ? "●" : "○")}", new Vector2(col2X, transY), 14, slideColor);
+        _renderBackend.DrawText($"[F6] Fade {(_currentTransition == "Fade" ? "(Selected)" : "")}", new Vector2(col1X, transY), 14, fadeColor);
+        _renderBackend.DrawText($"[F7] Slide {(_currentTransition == "Slide" ? "(Selected)" : "")}", new Vector2(col2X, transY), 14, slideColor);
         
-        _renderBackend.DrawText($"[F8] Wipe {(_currentTransition == "Wipe" ? "●" : "○")}", new Vector2(col1X, transY + 25), 14, wipeColor);
-        _renderBackend.DrawText($"[F9] Zoom {(_currentTransition == "Zoom" ? "●" : "○")}", new Vector2(col2X, transY + 25), 14, zoomColor);
+        _renderBackend.DrawText($"[F8] Wipe {(_currentTransition == "Wipe" ? "(Selected)" : "")}", new Vector2(col1X, transY + 25), 14, wipeColor);
+        _renderBackend.DrawText($"[F9] Zoom {(_currentTransition == "Zoom" ? "(Selected)" : "")}", new Vector2(col2X, transY + 25), 14, zoomColor);
     }
 
     private void LoadDemo<T>(SceneParameters? parameters = null) where T : Scene, new()

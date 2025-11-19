@@ -187,32 +187,37 @@ rendering, procedural generation, and viewport culling.
 
 ### 6. Audio Demo (`[6]`)
 
-**Purpose:** Simulated audio system demonstration (audio backend integration pending).
+**Purpose:** Demonstrates real audio system with music streaming and sound effect playback.
 
 **Features:**
 
--   **Music Playback:** Simulated play/pause toggle
+-   **Music Playback:** Real streaming music with play/pause/resume controls
 -   **Music Volume:** 0-100% control with up/down arrows
--   **Sound Effects:** 3 simulated sounds (Jump, Collect, Hit)
+-   **Sound Effects:** 3 real sounds (Jump, Collect, Hit)
 -   **Volume Bars:** Visual feedback for music and SFX levels
--   **Playback Status:** "Playing" / "Paused" indicator
+-   **Playback Status:** "Playing" / "Stopped" indicator
 -   **Sound Feedback:** 0.5-second visual flash on SFX trigger
+-   **Resource Loading:** Uses `ResourceCache<IAudioClip>` for audio management
+-   **Streaming Audio:** OGG format for music (efficient streaming)
+-   **Sound Effects:** WAV format for instant playback
 
-**Simulated Sounds:**
+**Audio Files Required:**
 
--   **Jump (J):** Player jump sound effect
--   **Collect (C):** Item collection sound
--   **Hit (H):** Damage/impact sound
+-   **Background Music:** `assets/audio/music/background.ogg`
+-   **Jump (J):** `assets/audio/sfx/jump.wav`
+-   **Collect (C):** `assets/audio/sfx/collect.wav`
+-   **Hit (H):** `assets/audio/sfx/hit.wav`
 
-**Note:** This demo uses simulated controls as the audio backend (`IAudioBackend`, `IMusic`, `ISound`) is not yet fully integrated. The demo shows the intended user experience and interface design.
+**Note:** This demo requires audio files to be placed in the `assets/audio/` directory. See the audio files guide for download instructions.
 
 **Controls:**
 
 -   **SPACE:** Toggle music play/pause
 -   **↑/↓:** Adjust music volume (±10%)
--   **J:** Trigger jump sound
--   **C:** Trigger collect sound
--   **H:** Trigger hit sound
+-   **←/→:** Adjust SFX volume (±10%)
+-   **J:** Play jump sound
+-   **C:** Play collect sound
+-   **H:** Play hit sound
 -   **ESC:** Exit to menu
 
 ---
@@ -258,7 +263,7 @@ All demos maintain **60 FPS** with the following entity counts:
 | Physics    | 1-10 dynamic | 2       | PhysicsSystem, CollisionSystem (CCD)             |
 | Input      | 0            | 0       | Pure input visualization, no entities            |
 | Tilemap    | 0            | 0       | Render-only, 475 tiles (with culling)            |
-| Audio      | 0            | 0       | Simulated controls, no entities                  |
+| Audio      | 0            | 0       | Real audio playback, no entities                 |
 
 ---
 
@@ -273,7 +278,7 @@ src/MicroEngine.Game/Scenes/
     ├── PhysicsDemo.cs        # 252 lines - CCD physics
     ├── InputDemo.cs          # 237 lines - Input visualization
     ├── TilemapDemo.cs        # 210 lines - Procedural tilemap
-    └── AudioDemo.cs          # 195 lines - Simulated audio
+    └── AudioDemo.cs          # 320 lines - Real audio playback
 ```
 
 **Total Demo Code:** ~1,831 lines  
@@ -310,7 +315,7 @@ src/MicroEngine.Game/Scenes/
 
 ### Short Term
 
--   **Audio Integration:** Connect AudioDemo to real audio backend
+-   ~~**Audio Integration:** Connect AudioDemo to real audio backend~~ ✅ COMPLETE
 -   **Tilemap Assets:** Load real tileset textures instead of procedural colors
 -   **InputMap:** Implement rebindable input actions
 -   **More Physics:** Add forces (wind, explosions), constraints (springs, hinges)

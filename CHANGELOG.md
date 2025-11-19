@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+### Fixed
+
+## [0.12.0-alpha] - 2025-11-19
+
+### Added
+
+-   **Audio System Integration**: Complete audio backend integration with real playback
+    -   `IAudioBackend` and `ResourceCache<IAudioClip>` added to `SceneContext`
+    -   Audio backend and audio cache initialization in `Program.cs`
+    -   `RaylibAudioBackend.Initialize()` called on engine startup
+    -   `RaylibAudioBackend.Shutdown()` called on engine shutdown
+    -   Audio services now available to all scenes via dependency injection
+    -   `SetSoundVolume` added to `IAudioBackend` for individual SFX volume control
+
+### Changed
+
+-   **AudioDemo**: Migrated from simulated to real audio playback
+    -   Removed all "(simulated)" log messages
+    -   Integrated with `RaylibAudioBackend` for actual sound playback
+    -   Music streaming with play/pause/resume controls
+    -   Real-time volume control for music and sound effects
+    -   Proper resource loading via `ResourceCache<IAudioClip>`
+    -   Automatic music stream updates in `OnUpdate()`
+    -   Clean resource unloading in `OnUnload()`
+    -   Removed placeholder UI note about backend integration
+-   **SceneContext**: Breaking change - constructor now requires 8 parameters (was 6)
+    -   Added `ResourceCache<IAudioClip> AudioCache` property and parameter
+    -   Added `IAudioBackend AudioBackend` property and parameter
+    -   All creation sites updated (Program.cs, SceneManagerTests.cs)
+
+### Fixed
+
+-   **Test Infrastructure**: Updated `SceneManagerTests` to include audio mocks
+    -   Added mock `IAudioBackend` to test context
+    -   Added mock `ResourceCache<IAudioClip>` to test context
+    -   All 678 tests passing with new audio services
+-   **AudioDemo UI**: Fixed volume bar rendering (was obscured by filled rectangle)
+-   **SFX Volume**: Fixed sound effect volume control not working (implemented per-sound volume)
+
+
 ## [0.11.0-alpha] - 2025-11-19
 
 ### Added

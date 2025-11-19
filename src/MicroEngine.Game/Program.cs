@@ -18,6 +18,7 @@ internal static class Program
 
         var renderBackend = new RaylibRenderBackend();
         var inputBackend = new RaylibInputBackend();
+        var audioBackend = new RaylibAudioBackend();
 
         // Configure MSAA before window initialization
         renderBackend.AntiAliasing = Core.Graphics.AntiAliasingMode.MSAA4X;
@@ -26,7 +27,12 @@ internal static class Program
         var textureLoader = new RaylibTextureLoader();
         var textureCache = new ResourceCache<ITexture>(textureLoader, logger);
 
+        // Initialize audio resource cache
+        var audioLoader = new RaylibAudioClipLoader();
+        var audioCache = new ResourceCache<IAudioClip>(audioLoader, logger);
+
         renderBackend.Initialize(850, 600, $"{EngineInfo.FullName} - Demo Showcase");
+        audioBackend.Initialize();
 
         try
         {
@@ -68,6 +74,8 @@ internal static class Program
                 timeService,
                 logger,
                 textureCache,
+                audioCache,
+                audioBackend,
                 gameState
             );
 
@@ -99,6 +107,7 @@ internal static class Program
         }
         finally
         {
+            audioBackend.Shutdown();
             renderBackend.Shutdown();
         }
 

@@ -68,6 +68,21 @@ public sealed class RaylibAudioBackend : IAudioBackend
     }
 
     /// <inheritdoc/>
+    public void SetSoundVolume(IAudioClip sound, float volume)
+    {
+        if (sound is not Resources.RaylibAudioClip raylibClip || raylibClip.IsStreaming)
+        {
+            throw new ArgumentException(INVALID_SOUND_ERROR, nameof(sound));
+        }
+
+        var nativeSound = raylibClip.NativeSound;
+        if (nativeSound.HasValue)
+        {
+            Raylib_cs.Raylib.SetSoundVolume(nativeSound.Value, volume);
+        }
+    }
+
+    /// <inheritdoc/>
     public void PlayMusic(IAudioClip music)
     {
         if (music is not Resources.RaylibAudioClip raylibClip || !raylibClip.IsStreaming)
