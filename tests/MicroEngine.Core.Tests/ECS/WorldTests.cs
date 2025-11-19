@@ -216,6 +216,30 @@ public class WorldTests
     }
 
     [Fact]
+    public void World_GetEntitiesWith_ExcludesEntitiesPendingDestruction()
+    {
+        var world = new World();
+        var entity1 = world.CreateEntity();
+        var entity2 = world.CreateEntity();
+        var entity3 = world.CreateEntity();
+
+        world.AddComponent(entity1, new TestComponent { Value = 1 });
+        world.AddComponent(entity2, new TestComponent { Value = 2 });
+        world.AddComponent(entity3, new TestComponent { Value = 3 });
+
+        // Destroy entity2 but don't call Update yet (entity is pending destruction)
+        world.DestroyEntity(entity2);
+
+        var entities = world.GetEntitiesWith<TestComponent>().ToList();
+
+        // Should only return valid entities (entity1 and entity3)
+        Assert.Equal(2, entities.Count);
+        Assert.Contains(entity1, entities);
+        Assert.Contains(entity3, entities);
+        Assert.DoesNotContain(entity2, entities); // Pending destruction, should be filtered
+    }
+
+    [Fact]
     public void World_GetAllEntities_ReturnsAllActiveEntities()
     {
         var world = new World();

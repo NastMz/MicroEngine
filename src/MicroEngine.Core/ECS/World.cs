@@ -228,13 +228,15 @@ public sealed class World
 
     /// <summary>
     /// Gets all entities that have a specific component.
+    /// Only returns valid entities (excludes entities pending destruction).
     /// </summary>
     public IEnumerable<Entity> GetEntitiesWith<T>() where T : struct, IComponent
     {
         if (_componentArrays.TryGetValue(typeof(T), out var array))
         {
             var typedArray = ((ComponentArrayWrapper<T>)array).Array;
-            return typedArray.GetEntities();
+            // Filter out invalid entities (pending destruction)
+            return typedArray.GetEntities().Where(IsEntityValid);
         }
 
         return Enumerable.Empty<Entity>();

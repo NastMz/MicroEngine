@@ -38,6 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **Maintainability**: Centralized text layout logic in reusable helper class
 -   **Developer Experience**: Fluent API makes UI code more readable and less error-prone
 
+### Fixed
+
+-   **ECS Entity Queries**: `World.GetEntitiesWith<T>()` now automatically filters out entities pending destruction
+    -   Prevents accessing destroyed entities without manual validation
+    -   Developers no longer need to call `IsEntityValid()` manually
+    -   Fixes potential crashes when iterating over entities that were just destroyed
+    -   Added comprehensive unit test coverage for this edge case
+
 ## [0.10.0-alpha] - 2025-11-19
 
 ### Added
