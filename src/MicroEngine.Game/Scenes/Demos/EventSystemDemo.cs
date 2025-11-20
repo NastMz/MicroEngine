@@ -111,19 +111,19 @@ public sealed class EventSystemDemo : Scene
     {
         // Button 1
         _button1 = World.CreateEntity("Button1");
-        World.AddComponent(_button1, new TransformComponent { Position = new Vector2(150, 200) });
+        World.AddComponent(_button1, new TransformComponent { Position = new Vector2(100, 200) });
 
         // Button 2
         _button2 = World.CreateEntity("Button2");
-        World.AddComponent(_button2, new TransformComponent { Position = new Vector2(350, 200) });
+        World.AddComponent(_button2, new TransformComponent { Position = new Vector2(250, 200) });
 
         // Trigger
         _trigger = World.CreateEntity("Trigger");
-        World.AddComponent(_trigger, new TransformComponent { Position = new Vector2(250, 350) });
+        World.AddComponent(_trigger, new TransformComponent { Position = new Vector2(200, 350) });
 
         // Target
         _target = World.CreateEntity("Target");
-        World.AddComponent(_target, new TransformComponent { Position = new Vector2(600, 300) });
+        World.AddComponent(_target, new TransformComponent { Position = new Vector2(400, 300) });
     }
 
     private void SubscribeToEvents()
@@ -161,7 +161,7 @@ public sealed class EventSystemDemo : Scene
     private void OnButtonPressed(ButtonPressedEvent evt)
     {
         _totalEventsHandled++;
-        AddToLog($"→ Button {evt.ButtonNumber} event handled");
+        AddToLog($"Button {evt.ButtonNumber} event handled");
         
         // Button press triggers the trigger (event chain)
         var triggerEvt = new TriggerEnteredEvent();
@@ -174,7 +174,7 @@ public sealed class EventSystemDemo : Scene
     private void OnTriggerEntered(TriggerEnteredEvent evt)
     {
         _totalEventsHandled++;
-        AddToLog("→ Trigger event handled");
+        AddToLog("Trigger event handled");
         
         // Trigger activates the target (event chain continues)
         var targetEvt = new TargetActivatedEvent();
@@ -188,7 +188,7 @@ public sealed class EventSystemDemo : Scene
     {
         _totalEventsHandled++;
         _targetActivationTimer = 2f;
-        AddToLog("→ Target activated!");
+        AddToLog("Target activated!");
         _logger.Info(SCENE_NAME, "Target activated - event chain complete");
     }
 
@@ -224,7 +224,7 @@ public sealed class EventSystemDemo : Scene
         // Trigger
         var triggerTransform = World.GetComponent<TransformComponent>(_trigger);
         _renderBackend.DrawRectangle(triggerTransform.Position, new Vector2(100, 60), new Color(255, 200, 100, 255));
-        _renderBackend.DrawText("TRIGGER", new Vector2(triggerTransform.Position.X - 30, triggerTransform.Position.Y - 8), 14, Color.Black);
+        _renderBackend.DrawText("TRIGGER", new Vector2(triggerTransform.Position.X - 30, triggerTransform.Position.Y - 8), 14, Color.White);
 
         // Target
         var targetTransform = World.GetComponent<TransformComponent>(_target);
@@ -233,22 +233,24 @@ public sealed class EventSystemDemo : Scene
             : new Color(150, 150, 150, 255);
         _renderBackend.DrawCircle(targetTransform.Position, 40, targetColor);
         _renderBackend.DrawText("TARGET", new Vector2(targetTransform.Position.X - 30, targetTransform.Position.Y - 8), 14, Color.White);
-
-        // Draw event chain arrows
-        _renderBackend.DrawText("→", new Vector2(200, 220), 20, new Color(200, 200, 200, 255));
-        _renderBackend.DrawText("→", new Vector2(300, 280), 20, new Color(200, 200, 200, 255));
-        _renderBackend.DrawText("→", new Vector2(450, 300), 20, new Color(200, 200, 200, 255));
     }
 
     private void RenderUI()
     {
-        var layout = new TextLayoutHelper(_renderBackend, startX: 10, startY: 10, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(_renderBackend, startX: 500, startY: 10, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var dimColor = new Color(150, 150, 150, 255);
 
         layout.DrawText("Event System Demo", 20, Color.White)
               .AddSpacing(5)
-              .DrawText("Event Chain: Button → Trigger → Target", 14, dimColor);
+              .DrawText("Demonstrates decoupled event-driven communication", 12, dimColor)
+              .AddSpacing(10)
+              .DrawText("How it works:", 16, Color.White)
+              .DrawText("1. Press [1] or [2] to trigger a button", 12, dimColor)
+              .DrawText("2. Button publishes ButtonPressedEvent", 12, dimColor)
+              .DrawText("3. Trigger receives event, queues TriggerEnteredEvent", 12, dimColor)
+              .DrawText("4. Target receives event, queues TargetActivatedEvent", 12, dimColor)
+              .DrawText("5. Target lights up green for 2 seconds", 12, dimColor);
 
         // Statistics
         layout.AddSpacing(10)

@@ -343,11 +343,15 @@ public sealed class SaveLoadDemo : Scene
             // Highlight if being dragged
             if (_draggedEntity.HasValue && entity.Equals(_draggedEntity.Value))
             {
-                _renderBackend.DrawRectangle(transform.Position, new Vector2(45, 45), new Color(255, 255, 255, 100));
+                var highlightSize = new Vector2(45, 45);
+                var highlightPos = new Vector2(transform.Position.X - 22.5f, transform.Position.Y - 22.5f);
+                _renderBackend.DrawRectangle(highlightPos, highlightSize, new Color(255, 255, 255, 100));
             }
 
-            // Draw entity as rectangle
-            _renderBackend.DrawRectangle(transform.Position, new Vector2(40, 40), color);
+            // Draw entity as rectangle (position is center, so offset by half size)
+            var rectSize = new Vector2(40, 40);
+            var rectPos = new Vector2(transform.Position.X - 20f, transform.Position.Y - 20f);
+            _renderBackend.DrawRectangle(rectPos, rectSize, color);
 
             // Draw label
             var labelPos = new Vector2(transform.Position.X - 15, transform.Position.Y - 30);

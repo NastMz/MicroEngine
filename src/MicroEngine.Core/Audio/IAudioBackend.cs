@@ -76,4 +76,18 @@ public interface IAudioBackend
     /// Sets the volume for a specific music track (0.0 to 1.0).
     /// </summary>
     void SetMusicVolume(IAudioClip music, float volume);
+
+    /// <summary>
+    /// Plays a sound effect at a specific position with distance attenuation.
+    /// </summary>
+    /// <param name="sound">The sound to play.</param>
+    /// <param name="position">The position of the sound source.</param>
+    /// <param name="maxDistance">Maximum distance for attenuation (sound is silent beyond this).</param>
+    void PlaySoundAtPosition(IAudioClip sound, Math.Vector2 position, float maxDistance);
+
+    /// <summary>
+    /// Sets the listener position for spatial audio calculations.
+    /// </summary>
+    /// <param name="position">The listener's position.</param>
+    void SetListenerPosition(Math.Vector2 position);
 }

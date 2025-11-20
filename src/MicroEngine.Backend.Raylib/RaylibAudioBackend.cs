@@ -196,4 +196,39 @@ public sealed class RaylibAudioBackend : IAudioBackend
             Raylib_cs.Raylib.SetMusicVolume(nativeMusic.Value, System.Math.Clamp(volume, 0f, 1f));
         }
     }
+
+    private Core.Math.Vector2 _listenerPosition = Core.Math.Vector2.Zero;
+
+    /// <inheritdoc/>
+    public void PlaySoundAtPosition(IAudioClip sound, Core.Math.Vector2 position, float maxDistance)
+    {
+        if (sound is not Resources.RaylibAudioClip raylibClip || raylibClip.IsStreaming)
+        {
+            throw new ArgumentException(INVALID_SOUND_ERROR, nameof(sound));
+        }
+
+        var nativeSound = raylibClip.NativeSound;
+        if (!nativeSound.HasValue)
+        {
+            return;
+        }
+
+        // Calculate distance from listener
+        var dx = position.X - _listenerPosition.X;
+        var dy = position.Y - _listenerPosition.Y;
+        var distance = MathF.Sqrt(dx * dx + dy * dy);
+
+        // Calculate attenuation (linear falloff)
+        var attenuation = 1.0f - System.Math.Clamp(distance / maxDistance, 0f, 1f);
+
+        // Play sound with attenuated volume
+        Raylib_cs.Raylib.SetSoundVolume(nativeSound.Value, attenuation);
+        Raylib_cs.Raylib.PlaySound(nativeSound.Value);
+    }
+
+    /// <inheritdoc/>
+    public void SetListenerPosition(Core.Math.Vector2 position)
+    {
+        _listenerPosition = position;
+    }
 }

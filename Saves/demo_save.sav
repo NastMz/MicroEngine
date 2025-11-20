@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "engineVersion": "0.7.5",
+    "createdAt": "2025-11-20T17:21:50.4545767Z",
+    "lastModified": "2025-11-20T17:21:50.454586Z",
+    "saveName": "Demo Save",
+    "customData": {
+      "dataType": "MicroEngine.Game.Scenes.Demos.SaveLoadDemo\u002BGameSaveData"
+    }
+  },
+  "data": {
+    "entityPositions": {
+      "Box1": {
+        "x": 181,
+        "y": 132
+      },
+      "Box2": {
+        "x": 389,
+        "y": 82
+      },
+      "Box3": {
+        "x": 490,
+        "y": 276
+      },
+      "Box4": {
+        "x": 100,
+        "y": 402
+      },
+      "Box5": {
+        "x": 376,
+        "y": 504
+      },
+      "Box6": {
+        "x": 635,
+        "y": 432
+      }
+    }
+  }
+}

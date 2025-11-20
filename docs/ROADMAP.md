@@ -508,7 +508,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Demonstrate hidden capabilities and fill implementation gaps.
 
-**Status:** Planned
+**Status:** ✅ Complete (November 2025)
 
 ### Features
 
@@ -693,13 +693,13 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.5.1  | MSAA support                                | Nov 2025    | ✅ Complete |
 | v0.6.0  | Architecture refinement + Scene transitions | Nov 2025    | ✅ Complete |
 | v0.7.0  | State Management + Caching + GameEngine     | Nov 2025    | ✅ Complete |
-| v0.7.5  | Memory Profiling Tools                      | Jan 2025    | ✅ Complete |
-| v0.8.0  | Physics & Savegame Systems                  | Jan 2025    | ✅ Complete |
+| v0.7.5  | Memory Profiling Tools                      | Nov 2025    | ✅ Complete |
+| v0.8.0  | Physics & Savegame Systems                  | Nov 2025    | ✅ Complete |
 | v0.9.0  | Physics Backend Abstraction                 | Nov 2025    | ✅ Complete |
 | v0.10.0 | ECS Refactoring & Demo Abstractions         | Nov 2025    | ✅ Complete |
 | v0.11.0 | TextLayoutHelper & UI Improvements         | Nov 2025    | ✅ Complete |
 | v0.12.0 | Audio System Integration & Real Playback    | Nov 2025    | ✅ Complete |
-| v0.13.0 | Capability Demonstrations & Polish          | TBD         | Planned     |
+| v0.13.0 | Capability Demonstrations & Polish          | Nov 2025    | ✅ Complete |
 | v0.x.x  | Stabilization & polish                      | TBD         | In Progress |
 | v1.0.0  | Stable public API                           | TBD         | Planned     |
 | v1.1.0  | Scene management & templates                | TBD         | Planned     |

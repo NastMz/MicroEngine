@@ -104,7 +104,11 @@ public sealed class MainMenuScene : Scene
             ("PhysicsDemo", (Func<IScene>)(() => new PhysicsDemo())),
             ("InputDemo", (Func<IScene>)(() => new InputDemo())),
             ("TilemapDemo", (Func<IScene>)(() => new TilemapDemo())),
-            ("AudioDemo", (Func<IScene>)(() => new AudioDemo()))
+            ("AudioDemo", (Func<IScene>)(() => new AudioDemo())),
+            ("SaveLoadDemo", (Func<IScene>)(() => new SaveLoadDemo())),
+            ("EventSystemDemo", (Func<IScene>)(() => new EventSystemDemo())),
+            ("CollisionFilteringDemo", (Func<IScene>)(() => new CollisionFilteringDemo())),
+            ("SpatialAudioDemo", (Func<IScene>)(() => new SpatialAudioDemo()))
         };            await _sceneCache.PreloadMultipleAsync(preloadRequests, _preloadCancellation.Token);
 
             _logger.Info("MainMenu", $"Background preload completed: {_preloadedScenes} scenes ready");
@@ -128,7 +132,7 @@ public sealed class MainMenuScene : Scene
         if (e.Success)
         {
             _preloadedScenes++;
-            _logger.Debug("MainMenu", $"Preloaded: {e.SceneKey} ({_preloadedScenes}/6)");
+            _logger.Debug("MainMenu", $"Preloaded: {e.SceneKey} ({_preloadedScenes}/10)");
         }
         else
         {
@@ -169,6 +173,22 @@ public sealed class MainMenuScene : Scene
         else if (_inputBackend.IsKeyPressed(Key.Six))
         {
             LoadDemo<AudioDemo>();
+        }
+        else if (_inputBackend.IsKeyPressed(Key.Seven))
+        {
+            LoadDemo<SaveLoadDemo>();
+        }
+        else if (_inputBackend.IsKeyPressed(Key.Eight))
+        {
+            LoadDemo<EventSystemDemo>();
+        }
+        else if (_inputBackend.IsKeyPressed(Key.Nine))
+        {
+            LoadDemo<CollisionFilteringDemo>();
+        }
+        else if (_inputBackend.IsKeyPressed(Key.Zero))
+        {
+            LoadDemo<SpatialAudioDemo>();
         }
 
         // Transition effect selection
@@ -229,7 +249,7 @@ public sealed class MainMenuScene : Scene
                    .AddSpacing(2);
         
         var statusColor = _isPreloading ? new Color(100, 255, 150, 255) : new Color(140, 160, 180, 255);
-        var statusText = _isPreloading ? $"Loading {_preloadedScenes}/6..." : $"{_sceneCache.Count}/{_sceneCache.MaxCacheSize} cached";
+        var statusText = _isPreloading ? $"Loading {_preloadedScenes}/10..." : $"{_sceneCache.Count}/{_sceneCache.MaxCacheSize} cached";
         cacheLayout.DrawText(statusText, 10, statusColor);
         
         if (_sceneCache.Count > 0 && !_isPreloading)
@@ -237,21 +257,33 @@ public sealed class MainMenuScene : Scene
             cacheLayout.DrawText(_lastCacheInfo, 9, new Color(255, 200, 100, 255));
         }
 
-        // Demo selection section
-        layout.SetX(280)
+        // Demo selection section - Two columns
+        layout.SetX(200)
               .SetY(145)
               .DrawText("Available Demos", 20, sectionColor)
-              .AddSpacing(15)
-              .SetX(300);
+              .AddSpacing(15);
 
-        // Demo options with better spacing
-        layout.DrawText("[1] ECS Basics", 16, optionColor, customLineHeight: 26)
-              .DrawText("[2] Graphics & Camera", 16, optionColor, customLineHeight: 26)
-              .DrawText("[3] Physics & Collisions", 16, optionColor, customLineHeight: 26)
-              .DrawText("[4] Input Mapping", 16, optionColor, customLineHeight: 26)
-              .DrawText("[5] Tilemap System", 16, optionColor, customLineHeight: 26)
-              .DrawText("[6] Audio System", 16, optionColor, customLineHeight: 26)
-              .AddSpacing(15)
+        // Column 1 (demos 1-5)
+        var col1X = 220f;
+        var col2X = 480f;
+        var demoY = layout.CurrentY;
+
+        _renderBackend.DrawText("[1] ECS Basics", new Vector2(col1X, demoY), 16, optionColor);
+        _renderBackend.DrawText("[2] Graphics & Camera", new Vector2(col1X, demoY + 26), 16, optionColor);
+        _renderBackend.DrawText("[3] Physics & Collisions", new Vector2(col1X, demoY + 52), 16, optionColor);
+        _renderBackend.DrawText("[4] Input Mapping", new Vector2(col1X, demoY + 78), 16, optionColor);
+        _renderBackend.DrawText("[5] Tilemap System", new Vector2(col1X, demoY + 104), 16, optionColor);
+
+        // Column 2 (demos 6-0)
+        _renderBackend.DrawText("[6] Audio System", new Vector2(col2X, demoY), 16, optionColor);
+        _renderBackend.DrawText("[7] Save/Load System", new Vector2(col2X, demoY + 26), 16, optionColor);
+        _renderBackend.DrawText("[8] Event System", new Vector2(col2X, demoY + 52), 16, optionColor);
+        _renderBackend.DrawText("[9] Collision Filtering", new Vector2(col2X, demoY + 78), 16, optionColor);
+        _renderBackend.DrawText("[0] Spatial Audio", new Vector2(col2X, demoY + 104), 16, optionColor);
+
+        // Exit option
+        layout.SetY(demoY + 140)
+              .SetX(300)
               .DrawText("[X] Exit", 16, exitColor);
 
         // Decorative separator
@@ -265,19 +297,19 @@ public sealed class MainMenuScene : Scene
 
         // Transition options in a grid layout
         var transY = layout.CurrentY;
-        var col1X = 300f;
-        var col2X = 480f;
+        var transCol1X = 300f;
+        var transCol2X = 480f;
         
         var fadeColor = _currentTransition == "Fade" ? new Color(100, 255, 150, 255) : dimColor;
         var slideColor = _currentTransition == "Slide" ? new Color(100, 255, 150, 255) : dimColor;
         var wipeColor = _currentTransition == "Wipe" ? new Color(100, 255, 150, 255) : dimColor;
         var zoomColor = _currentTransition == "Zoom" ? new Color(100, 255, 150, 255) : dimColor;
 
-        _renderBackend.DrawText($"[F6] Fade {(_currentTransition == "Fade" ? "(Selected)" : "")}", new Vector2(col1X, transY), 14, fadeColor);
-        _renderBackend.DrawText($"[F7] Slide {(_currentTransition == "Slide" ? "(Selected)" : "")}", new Vector2(col2X, transY), 14, slideColor);
+        _renderBackend.DrawText($"[F6] Fade {(_currentTransition == "Fade" ? "(Selected)" : "")}", new Vector2(transCol1X, transY), 14, fadeColor);
+        _renderBackend.DrawText($"[F7] Slide {(_currentTransition == "Slide" ? "(Selected)" : "")}", new Vector2(transCol2X, transY), 14, slideColor);
         
-        _renderBackend.DrawText($"[F8] Wipe {(_currentTransition == "Wipe" ? "(Selected)" : "")}", new Vector2(col1X, transY + 25), 14, wipeColor);
-        _renderBackend.DrawText($"[F9] Zoom {(_currentTransition == "Zoom" ? "(Selected)" : "")}", new Vector2(col2X, transY + 25), 14, zoomColor);
+        _renderBackend.DrawText($"[F8] Wipe {(_currentTransition == "Wipe" ? "(Selected)" : "")}", new Vector2(transCol1X, transY + 25), 14, wipeColor);
+        _renderBackend.DrawText($"[F9] Zoom {(_currentTransition == "Zoom" ? "(Selected)" : "")}", new Vector2(transCol2X, transY + 25), 14, zoomColor);
     }
 
     private void LoadDemo<T>(SceneParameters? parameters = null) where T : Scene, new()
