@@ -13,6 +13,8 @@ public sealed class MemorySnapshotTests
     [Fact]
     public void Capture_CreatesValidSnapshot()
     {
+        // Ensure some memory is allocated to prevent 0-byte snapshots in CI
+        var _ = new byte[1024];
         var snapshot = MemorySnapshot.Capture(forceGC: false);
 
         Assert.NotNull(snapshot);

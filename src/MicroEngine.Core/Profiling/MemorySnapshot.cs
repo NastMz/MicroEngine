@@ -71,17 +71,23 @@ public sealed class MemorySnapshot
             GC.WaitForPendingFinalizers();
         }
 
-        return new MemorySnapshot
-        {
-            Timestamp = DateTime.UtcNow,
-            TotalMemoryBytes = GC.GetTotalMemory(forceFullCollection: false),
-            Gen0Collections = GC.CollectionCount(0),
-            Gen1Collections = GC.CollectionCount(1),
-            Gen2Collections = GC.CollectionCount(2),
-            Gen0MemoryBytes = GC.GetGCMemoryInfo(GCKind.Ephemeral).GenerationInfo[0].SizeAfterBytes,
-            Gen1MemoryBytes = GC.GetGCMemoryInfo(GCKind.Ephemeral).GenerationInfo[1].SizeAfterBytes,
-            Gen2MemoryBytes = GC.GetGCMemoryInfo(GCKind.FullBlocking).GenerationInfo[2].SizeAfterBytes
-        };
+            var totalMemory = GC.GetTotalMemory(forceFullCollection: false);
+            if (totalMemory <= 0)
+            {
+                totalMemory = GC.GetGCMemoryInfo().HeapSizeBytes;
+            }
+
+            return new MemorySnapshot
+            {
+                Timestamp = DateTime.UtcNow,
+                TotalMemoryBytes = totalMemory,
+                Gen0Collections = GC.CollectionCount(0),
+                Gen1Collections = GC.CollectionCount(1),
+                Gen2Collections = GC.CollectionCount(2),
+                Gen0MemoryBytes = GC.GetGCMemoryInfo(GCKind.Ephemeral).GenerationInfo[0].SizeAfterBytes,
+                Gen1MemoryBytes = GC.GetGCMemoryInfo(GCKind.Ephemeral).GenerationInfo[1].SizeAfterBytes,
+                Gen2MemoryBytes = GC.GetGCMemoryInfo(GCKind.FullBlocking).GenerationInfo[2].SizeAfterBytes
+            };
     }
 
     /// <summary>
