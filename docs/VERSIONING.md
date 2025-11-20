@@ -7,8 +7,7 @@
 
 ---
 
-> [!NOTE]
-> **Planned Feature:** Automated CI/CD workflows and release pipelines described in this document are currently **planned** and not yet fully implemented. Versioning is currently managed manually or via local tools.
+
 
 ## Overview
 
@@ -69,25 +68,6 @@ New features added in a backward-compatible way.
 #### PATCH
 
 Bug fixes, stability improvements, or internal changes.
-
-### Examples
-
-- `0.1.0` — Early development, unstable API
-- `0.2.0` — New ECS features
-- `1.0.0` — API freeze, stable release
-- `1.1.3` — Patch release fixing a backend bug
-- `2.0.0` — Breaking changes to core architecture
-
----
-
-## 2. Release Channels
-
-MicroEngine uses the following release channels:
-
-### Stable Releases
-
-Tagged using:
-
 ```text
 vX.Y.Z
 ```

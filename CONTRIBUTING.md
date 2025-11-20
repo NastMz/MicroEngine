@@ -495,7 +495,7 @@ Closes #67
 
 PRs require:
 
-- ✓ All CI checks passing (currently manual verification)
+- ✓ All CI checks passing
 - ✓ At least one approval from a maintainer
 - ✓ No unresolved conversations
 - ✓ Up-to-date with main branch

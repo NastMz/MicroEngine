@@ -1,19 +1,3 @@
--   **Fully automatic:** No manual updates needed in code
--   **Git integration:** Includes commit metadata (SHA, date) in version info
--   **Industry standard:** Uses proven .NET tooling
-
----
-
-## How It Works
-
-1. **Source:** Version defined in `version.json` (root directory)
-2. **Generation:** Nerdbank.GitVersioning generates `ThisAssembly` class during build
-3. **Wrapper:** `EngineInfo` provides clean public API wrapping `ThisAssembly`
-4. **Consumption:** Application code uses `EngineInfo.FullName`, `EngineInfo.VERSION`, etc.
-
-### Build Process
-
-```
 version.json
     ↓
 Nerdbank.GitVersioning (build-time)
