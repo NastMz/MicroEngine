@@ -168,7 +168,7 @@ Use domain events for decoupling behaviors. Avoid monolithic functions handling 
 
 ### General Guidelines
 
-- **Language:** C# with .NET 8.0+ features
+- **Language:** C# with .NET 9.0+ features
 - **Style:** Follow Microsoft C# Coding Conventions
 - **Naming:** PascalCase for public members, camelCase for private fields with `_` prefix
 - **File Organization:** One class per file (except nested types)
@@ -495,7 +495,7 @@ Closes #67
 
 PRs require:
 
-- ✓ All CI checks passing
+- ✓ All CI checks passing (currently manual verification)
 - ✓ At least one approval from a maintainer
 - ✓ No unresolved conversations
 - ✓ Up-to-date with main branch
@@ -530,4 +530,4 @@ We appreciate your efforts to make this project better.
 ---
 
 **Last Updated:** November 2025  
-**Version:** 1.0
+**Version:** v0.13.0 (Dev)

@@ -1,6 +1,8 @@
 ﻿# MicroEngine  
 *A lightweight, modular game engine built with C# (2D-focused, 3D-capable).*
 
+**Version:** v0.13.0 (Dev)
+
 ---
 
 ## 🚀 Overview
@@ -23,19 +25,6 @@ The engine cleanly separates:
 - 🔸 **Dimension-agnostic architecture (2D today, 3D-ready)**
 - 🔸 **Scene system** with deterministic transitions  
 - 🔸 **Lightweight, readable ECS**
-- 🔸 **Interchangeable backends**
-  - `IRenderBackend`
-  - `IInputBackend`
-  - `IAudioBackend`
-- 🔸 **Safe resource loading** with validation
-- 🔸 **Deterministic single-threaded core**
-- 🔸 **Versioned savegame format**
-
----
-
-## 🧱 Architecture Summary
-
-MicroEngine is structured into three fully independent layers:
 
 - Engine.Core → Pure engine logic
 - Engine.Backend.* → Optional backend implementations

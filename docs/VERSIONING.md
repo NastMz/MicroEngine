@@ -1,11 +1,14 @@
 # MicroEngine — Versioning & Release Strategy
 
-**Version:** 1.0  
+**Version:** v0.13.0 (Dev)  
 **Status:** Reference  
 **Author:** Kevin Martínez  
 **Last Updated:** November 2025
 
 ---
+
+> [!NOTE]
+> **Planned Feature:** Automated CI/CD workflows and release pipelines described in this document are currently **planned** and not yet fully implemented. Versioning is currently managed manually or via local tools.
 
 ## Overview
 

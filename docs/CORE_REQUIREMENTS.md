@@ -1,6 +1,6 @@
 ﻿# MicroEngine – Core Requirements
 
-**Version:** 1.0  
+**Version:** v0.13.0 (Dev)  
 **Status:** Mandatory  
 **Author:** Kevin Martínez  
 **Last Updated:** 2025  
@@ -432,10 +432,10 @@ Simplifies reasoning, prevents race conditions, enables performance.
 Core must define interfaces, backends implement them.
 
 **Requirements:**
-- ✅ Core defines `IRenderBackend`
+- ✅ Core defines `IRenderBackend2D`
 - ✅ Core defines `IInputBackend`
 - ✅ Core defines `IAudioBackend`
-- ✅ Core defines `IWindowBackend`
+- ✅ Core defines `IPhysicsBackend`
 - ✅ Backends implement all required interfaces
 
 ### **R7.2 – Interchangeable Modules**

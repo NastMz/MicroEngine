@@ -1,6 +1,6 @@
 # MicroEngine — Architecture Overview
 
-**Version:** 1.0  
+**Version:** v0.13.0 (Dev)  
 **Status:** Reference  
 **Author:** Kevin Martínez  
 **Last Updated:** November 2025
@@ -168,9 +168,10 @@ See [Section 6: Update & Render Cycle](#6-update--render-cycle)
 │                                                    │
 │  Concrete implementations:                         │
 │  - MicroEngine.Backend.Raylib                      │
-│  - MicroEngine.Backend.OpenGL                      │
-│  - MicroEngine.Backend.SDL                         │
-│  - MicroEngine.Backend.Null (for testing)          │
+│  - MicroEngine.Backend.Aether                      │
+│  - MicroEngine.Backend.OpenGL (Planned)            │
+│  - MicroEngine.Backend.SDL (Planned)               │
+│  - MicroEngine.Backend.Null (Example)              │
 └────────────────────────────────────────────────────┘
                         ↓
                         ↓ implements interfaces
@@ -180,10 +181,10 @@ See [Section 6: Update & Render Cycle](#6-update--render-cycle)
 │  ECS → Scenes → Time → Resources → Physics         │
 │                                                    │
 │  Defines interfaces:                               │
-│  - IRenderBackend                                  │
+│  - IRenderBackend2D                                │
 │  - IInputBackend                                   │
 │  - IAudioBackend                                   │
-│  - IWindowBackend                                  │
+│  - IPhysicsBackend                                 │
 └────────────────────────────────────────────────────┘
 ```
 
@@ -248,8 +249,7 @@ MicroEngine.Core/
 │   └── AudioManager.cs          → Audio system wrapper
 │
 ├── Graphics/
-│   ├── IRenderBackend.cs        → Render interface
-│   ├── IWindowBackend.cs        → Window interface
+│   ├── IRenderBackend2D.cs      → Render interface
 │   ├── Renderer.cs              → High-level render API
 │   ├── Camera.cs                → Camera abstraction
 │   ├── Color.cs                 → Color utilities
@@ -493,7 +493,7 @@ The core defines abstract interfaces that backends must implement:
 **Rendering:**
 
 ```csharp
-public interface IRenderBackend
+public interface IRenderBackend2D
 {
     void BeginFrame();
     void Clear(Color color);
@@ -536,15 +536,14 @@ public interface IAudioBackend
 }
 ```
 
-**Window:**
+**Physics:**
 
 ```csharp
-public interface IWindowBackend
+public interface IPhysicsBackend
 {
-    void Create(string title, int width, int height);
-    void Close();
-    bool ShouldClose();
-    Vector2 GetSize();
+    IBody CreateBody(BodyDef def);
+    void DestroyBody(IBody body);
+    void Step(float timeStep);
 }
 ```
 
@@ -558,9 +557,10 @@ Backends exist as **separate assemblies** (projects):
 
 ```
 MicroEngine.Backend.Raylib/
-MicroEngine.Backend.OpenGL/
-MicroEngine.Backend.SDL/
-MicroEngine.Backend.Null/      (headless for testing)
+MicroEngine.Backend.Aether/
+MicroEngine.Backend.OpenGL/    (Planned)
+MicroEngine.Backend.SDL/       (Planned)
+MicroEngine.Backend.Null/      (Example)
 ```
 
 ## **4.1 Backend Responsibilities**
@@ -570,6 +570,7 @@ Each backend implements:
 - ? Rendering (window management, drawing)
 - ? Input handling (keyboard, mouse, gamepad)
 - ? Audio playback (sounds, music)
+- ? Physics simulation (collision, dynamics)
 - ? Resource loading (textures, fonts)
 
 ## **4.2 Backend Requirements**
@@ -609,10 +610,10 @@ MicroEngine.Backend.Raylib/
 ```csharp
 public class RaylibBackendFactory
 {
-    public IRenderBackend CreateRenderBackend() => new RaylibRenderBackend();
+    public IRenderBackend2D CreateRenderBackend() => new RaylibRenderBackend();
     public IInputBackend CreateInputBackend() => new RaylibInputBackend();
     public IAudioBackend CreateAudioBackend() => new RaylibAudioBackend();
-    public IWindowBackend CreateWindowBackend() => new RaylibWindowBackend();
+    // Window management is handled by RenderBackend
 }
 
 // Usage in game
@@ -620,8 +621,7 @@ var factory = new RaylibBackendFactory();
 var engine = new GameEngine(
     factory.CreateRenderBackend(),
     factory.CreateInputBackend(),
-    factory.CreateAudioBackend(),
-    factory.CreateWindowBackend()
+    factory.CreateAudioBackend()
 );
 ```
 
@@ -748,8 +748,7 @@ public class Program
         var engine = new GameEngine(
             backendFactory.CreateRenderBackend(),
             backendFactory.CreateInputBackend(),
-            backendFactory.CreateAudioBackend(),
-            backendFactory.CreateWindowBackend()
+            backendFactory.CreateAudioBackend()
         );
 
         // Configure
