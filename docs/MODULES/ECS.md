@@ -308,6 +308,106 @@ public interface ISystem
 
 ---
 
+## Event System (v0.13.0+)
+
+The Event System provides a decoupled way for entities and systems to communicate without direct references.
+
+### Core Components
+
+#### IEvent Interface
+
+All events must implement the `IEvent` interface:
+
+```csharp
+public interface IEvent
+{
+    DateTime Timestamp { get; }
+}
+```
+
+#### EventBus
+
+The central hub for publishing and subscribing to events.
+
+```csharp
+// Subscribe
+eventBus.Subscribe<PlayerDiedEvent>(OnPlayerDied);
+
+// Publish
+eventBus.Publish(new PlayerDiedEvent(playerEntity));
+
+// Unsubscribe
+eventBus.Unsubscribe<PlayerDiedEvent>(OnPlayerDied);
+```
+
+### Usage Example
+
+#### 1. Define an Event
+
+```csharp
+public readonly struct PlayerJumpEvent : IEvent
+{
+    public DateTime Timestamp { get; }
+    public Entity Player { get; }
+    public float JumpForce { get; }
+
+    public PlayerJumpEvent(Entity player, float force)
+    {
+        Timestamp = DateTime.UtcNow;
+        Player = player;
+        JumpForce = force;
+    }
+}
+```
+
+#### 2. Publish from a System
+
+```csharp
+public class PlayerInputSystem : ISystem
+{
+    private readonly EventBus _eventBus;
+
+    public void Update(World world, float deltaTime)
+    {
+        if (Input.IsKeyPressed(Key.Space))
+        {
+            _eventBus.Publish(new PlayerJumpEvent(entity, 500f));
+        }
+    }
+}
+```
+
+#### 3. Subscribe in another System
+
+```csharp
+public class AudioSystem : ISystem
+{
+    public void Initialize(World world)
+    {
+        world.EventBus.Subscribe<PlayerJumpEvent>(OnPlayerJump);
+    }
+
+    private void OnPlayerJump(PlayerJumpEvent evt)
+    {
+        _audio.PlaySound(_jumpSound);
+    }
+
+    public void Shutdown(World world)
+    {
+        world.EventBus.Unsubscribe<PlayerJumpEvent>(OnPlayerJump);
+    }
+}
+```
+
+### Best Practices
+
+-   **Keep Events Lightweight:** Events should be small structs containing only data relevant to the event.
+-   **Unsubscribe:** Always unsubscribe in `Shutdown` or `OnDestroy` to prevent memory leaks.
+-   **Don't Overuse:** Use direct method calls for tightly coupled logic. Use events for loose coupling (e.g., UI updates, achievements, audio).
+
+
+---
+
 ## Query and Filtering
 
 ### Basic Queries

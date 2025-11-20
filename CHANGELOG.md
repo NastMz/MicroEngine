@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [0.13.0] - 2025-11-20
+
+### Added
+
+-   **New Interactive Demos**: 4 new demos showcasing advanced engine capabilities
+    -   **Save/Load Demo**: Entity persistence, metadata handling, and drag-and-drop state restoration
+    -   **Event System Demo**: Decoupled communication via `EventBus` with visual event logging
+    -   **Collision Filtering Demo**: Platformer physics with specific collision rules (pass-through enemies)
+    -   **Spatial Audio Demo**: 3D positional audio with distance attenuation and continuous looping
+-   **Spatial Audio API**: Extended `IAudioBackend` with 3D audio support
+    -   `PlaySoundAtPosition(clip, position, maxDistance)`: Plays sound with distance-based volume
+    -   `SetListenerPosition(position)`: Updates audio listener for spatial calculations
+    -   `RaylibAudioBackend` implementation with linear attenuation model
+
+### Changed
+
+-   **MainMenuScene**: Integrated 4 new demos (Keys 7-0) and updated UI layout
+-   **Documentation**: Updated `DEMOS_OVERVIEW.md` with new features
+
+### Fixed
+
+-   **SaveLoadDemo**: Fixed drag detection to use center-based radius check
+-   **CollisionFilteringDemo**: Fixed obstacle collisions and enemy spawn logic
+-   **SpatialAudioDemo**: Fixed sound looping and asset loading issues
+
 ## [0.12.0-alpha] - 2025-11-19
 
 ### Added

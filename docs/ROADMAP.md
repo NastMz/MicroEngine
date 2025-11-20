@@ -269,7 +269,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Status:** IN PROGRESS (15/16 features complete)
 
-**Current Version:** v0.12.0-alpha
+**Current Version:** v0.13.0
 
 ### Features
 

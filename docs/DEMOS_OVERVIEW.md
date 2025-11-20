@@ -185,6 +185,8 @@ rendering, procedural generation, and viewport culling.
 
 ---
 
+---
+
 ### 6. Audio Demo (`[6]`)
 
 **Purpose:** Demonstrates real audio system with music streaming and sound effect playback.
@@ -208,8 +210,6 @@ rendering, procedural generation, and viewport culling.
 -   **Collect (C):** `assets/audio/sfx/collect.wav`
 -   **Hit (H):** `assets/audio/sfx/hit.wav`
 
-**Note:** This demo requires audio files to be placed in the `assets/audio/` directory. See the audio files guide for download instructions.
-
 **Controls:**
 
 -   **SPACE:** Toggle music play/pause
@@ -218,6 +218,91 @@ rendering, procedural generation, and viewport culling.
 -   **J:** Play jump sound
 -   **C:** Play collect sound
 -   **H:** Play hit sound
+-   **ESC:** Exit to menu
+
+---
+
+### 7. Save/Load Demo (`[7]`)
+
+**Purpose:** Demonstrates the `SavegameManager` system for persisting game state.
+
+**Features:**
+
+-   **Entity Persistence:** Saves/loads positions of 5 draggable entities
+-   **Metadata Handling:** Displays save timestamp and entity count
+-   **Visual Feedback:** "Saved!" and "Loaded!" notifications
+-   **Drag & Drop:** Interactive entity positioning (centered drag)
+-   **File Management:** Uses JSON serialization to `saves/demo_save.json`
+
+**Controls:**
+
+-   **Click + Drag:** Move entities
+-   **S:** Save current state
+-   **L:** Load saved state
+-   **D:** Delete save file
+-   **ESC:** Exit to menu
+
+---
+
+### 8. Event System Demo (`[8]`)
+
+**Purpose:** Showcases the decoupled `EventBus` architecture for entity communication.
+
+**Features:**
+
+-   **Event Chain:** Button -> Trigger -> Target interaction flow
+-   **Custom Events:** `ButtonPressed`, `TriggerEntered`, `TargetActivated`
+-   **Visual Logging:** Real-time log of event flow and payload data
+-   **Event Statistics:** Tracks total events processed
+-   **Decoupling:** Entities communicate without direct references
+
+**Controls:**
+
+-   **Click Button:** Fires `ButtonPressed` event
+-   **Hover Trigger:** Fires `TriggerEntered` event
+-   **C:** Clear event log
+-   **ESC:** Exit to menu
+
+---
+
+### 9. Collision Filtering Demo (`[9]`)
+
+**Purpose:** Demonstrates advanced physics collision layers and filtering rules.
+
+**Features:**
+
+-   **Platformer Physics:** Gravity, jumping, and solid collisions
+-   **Collision Layers:** Player, Enemy, Obstacle, Ground
+-   **Filtering Rules:**
+    -   **Player:** Collides with everything
+    -   **Enemies:** Collide with Player/Obstacles, **Pass through each other**
+-   **Visual Proof:** Enemies spawn moving towards each other and cross paths
+-   **Collision Log:** Real-time reporting of collision events
+
+**Controls:**
+
+-   **Left/Right:** Move Player
+-   **SPACE:** Jump
+-   **C:** Clear collision log
+-   **ESC:** Exit to menu
+
+---
+
+### 10. Spatial Audio Demo (`[0]`)
+
+**Purpose:** Verifies 3D positional audio with distance-based attenuation.
+
+**Features:**
+
+-   **3D Sound Sources:** 3 distinct emitters at different positions
+-   **Distance Attenuation:** Volume drops as player moves away
+-   **Continuous Looping:** Independent loop timers for each source
+-   **Visual Indicators:** Source positions and player listener range
+-   **Listener Update:** Updates audio listener position to match player
+
+**Controls:**
+
+-   **WASD/Arrows:** Move listener (Player)
 -   **ESC:** Exit to menu
 
 ---
@@ -338,7 +423,7 @@ src/MicroEngine.Game/Scenes/
 
 ## Conclusion
 
-MicroEngine provides **6 comprehensive, interactive demos** showcasing the engine's core capabilities:
+MicroEngine provides **10 comprehensive, interactive demos** showcasing the engine's core capabilities:
 
 1. **ECS Architecture** - Modern entity patterns with interactive gameplay
 2. **Graphics Pipeline** - Camera system, textures, filtering, caching
@@ -346,11 +431,15 @@ MicroEngine provides **6 comprehensive, interactive demos** showcasing the engin
 4. **Input Handling** - Multi-device input visualization
 5. **Tile Rendering** - Procedural generation with camera scrolling
 6. **Audio Preview** - Simulated audio controls and UI design
+7. **Save/Load System** - Entity persistence and state management
+8. **Event System** - Decoupled entity communication
+9. **Collision Filtering** - Complex physics interaction rules
+10. **Spatial Audio** - 3D positional sound and attenuation
 
 All demos are **fully functional**, **well-documented**, and **ready for testing**. They demonstrate best practices for scene management, entity patterns, and game systems architecture.
 
 ---
 
-**Version:** 0.8.0-alpha  
-**Last Updated:** 2025-01-19  
+**Version:** 0.13.0
+**Last Updated:** 2025-11-20
 **Status:** All demos complete and tested ✅

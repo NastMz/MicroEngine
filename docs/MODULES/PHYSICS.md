@@ -642,52 +642,71 @@ public void AddImpulse(Rigidbody body, Vector3 impulse)
 
 ---
 
-## Collision Layers
+## Collision Layers (v0.13.0+)
 
-### Layer System
+### CollisionLayer Struct
+
+Layers are defined using the `CollisionLayer` struct, which combines an ID (0-31) and a debug name.
 
 ```csharp
+public readonly struct CollisionLayer
+{
+    public int Id { get; }
+    public string Name { get; }
+
+    public CollisionLayer(int id, string name) { ... }
+}
+
+// Predefined layers
 public static class PhysicsLayers
 {
-    public const int Default = 1 << 0;
-    public const int Player = 1 << 1;
-    public const int Enemy = 1 << 2;
-    public const int Environment = 1 << 3;
-    public const int Projectile = 1 << 4;
-    public const int Triggers = 1 << 5;
+    public static readonly CollisionLayer Default = new(0, "Default");
+    public static readonly CollisionLayer Player = new(1, "Player");
+    public static readonly CollisionLayer Enemy = new(2, "Enemy");
+    public static readonly CollisionLayer Environment = new(3, "Environment");
 }
-```
-
-### Layer Filtering
-
-```csharp
-var playerBody = new PhysicsBody
-{
-    Layer = PhysicsLayers.Player,
-    LayerMask = PhysicsLayers.Environment | PhysicsLayers.Enemy
-};
-
-// Player collides with Environment and Enemy, but not other Players
 ```
 
 ### Collision Matrix
 
+The `CollisionMatrix` defines which layers can collide with each other. By default, all layers collide with everything.
+
 ```csharp
 public class CollisionMatrix
 {
-    private bool[,] _matrix;
+    // Enable/Disable collision between two layers
+    public void SetCollision(CollisionLayer layerA, CollisionLayer layerB, bool canCollide);
 
-    public bool ShouldCollide(int layerA, int layerB)
-    {
-        return _matrix[layerA, layerB];
-    }
-
-    public void SetCollision(int layerA, int layerB, bool canCollide)
-    {
-        _matrix[layerA, layerB] = canCollide;
-        _matrix[layerB, layerA] = canCollide;
-    }
+    // Check if two layers should collide
+    public bool CanCollide(CollisionLayer layerA, CollisionLayer layerB);
 }
+```
+
+### Usage Example
+
+```csharp
+// 1. Configure Matrix
+var matrix = new CollisionMatrix();
+
+// Player collides with everything (default)
+// Enemies collide with Player and Environment
+// Enemies IGNORE other Enemies
+
+matrix.SetCollision(PhysicsLayers.Enemy, PhysicsLayers.Enemy, false);
+
+// 2. Assign Layers to Bodies
+var playerBody = physicsSystem.CreateBody(playerEntity);
+playerBody.Layer = PhysicsLayers.Player;
+
+var enemyBody1 = physicsSystem.CreateBody(enemyEntity1);
+enemyBody1.Layer = PhysicsLayers.Enemy;
+
+var enemyBody2 = physicsSystem.CreateBody(enemyEntity2);
+enemyBody2.Layer = PhysicsLayers.Enemy;
+
+// 3. Result
+// Player hits Enemy1 -> Collision
+// Enemy1 hits Enemy2 -> No Collision (Pass through)
 ```
 
 ---

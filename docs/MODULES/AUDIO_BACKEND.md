@@ -321,11 +321,11 @@ public class Music : IResource
 
 ---
 
-## 3D Spatial Audio
+## 2D Spatial Audio
 
 ### Listener Setup
 
-Set the listener position (usually the camera or player):
+Set the listener position (usually the camera or player) to enable spatial calculations:
 
 ```csharp
 public class AudioListenerSystem : ISystem
@@ -337,63 +337,42 @@ public class AudioListenerSystem : ISystem
         var camera = world.Query<CameraComponent, TransformComponent>().First();
         var transform = camera.GetComponent<TransformComponent>();
 
+        // Update listener position for 2D spatial audio
         _audio.SetListenerPosition(transform.Position);
-        _audio.SetListenerOrientation(
-            forward: transform.Forward,
-            up: transform.Up
-        );
     }
 }
 ```
 
-### Playing 3D Sounds
+### Playing Spatial Sounds
+
+Play sounds at specific 2D coordinates with distance-based attenuation:
 
 ```csharp
 // Play sound at specific position
-var explosionPos = new Vector3(100, 50, 0);
-audioBackend.PlaySound3D(explosionSound, explosionPos, volume: 1.0f);
+var explosionPos = new Vector2(100, 50);
+float maxDistance = 500f; // Sound becomes inaudible beyond this distance
+
+_audio.PlaySoundAtPosition(explosionSound, explosionPos, maxDistance);
 ```
 
 ### Distance Attenuation
 
-Sound volume decreases with distance from listener:
+The backend automatically calculates volume based on the distance between the listener and the sound source.
+
+-   **Linear Attenuation:** Volume drops linearly from 1.0 (at source) to 0.0 (at maxDistance).
+-   **Max Distance:** The radius at which the sound becomes completely silent.
 
 ```csharp
-public void PlaySound3D(Sound sound, Vector3 position, float volume,
-    float minDistance = 10.0f, float maxDistance = 100.0f)
-{
-    var listenerPos = GetListenerPosition();
-    var distance = Vector3.Distance(listenerPos, position);
-
-    if (distance > maxDistance)
-        return; // Too far, don't play
-
-    var attenuation = 1.0f;
-    if (distance > minDistance)
-    {
-        attenuation = 1.0f - (distance - minDistance) / (maxDistance - minDistance);
-    }
-
-    PlaySoundInternal(sound, volume * attenuation);
-}
+// Internal logic example
+float distance = Vector2.Distance(listenerPos, soundPos);
+float volume = 1.0f - Math.Clamp(distance / maxDistance, 0f, 1f);
 ```
 
-### Stereo Panning
+### Best Practices
 
-Pan sound based on direction from listener:
-
-```csharp
-public float CalculatePan(Vector3 soundPosition)
-{
-    var listenerPos = GetListenerPosition();
-    var listenerRight = GetListenerRight();
-
-    var toSound = Vector3.Normalize(soundPosition - listenerPos);
-    var pan = Vector3.Dot(toSound, listenerRight);
-
-    return Math.Clamp(pan, -1.0f, 1.0f); // -1 = left, 1 = right
-}
-```
+1.  **Update Listener Every Frame:** Ensure `SetListenerPosition` is called in your update loop (e.g., in a `CameraSystem` or `AudioListenerSystem`).
+2.  **Tune Max Distance:** Adjust `maxDistance` based on the importance of the sound. Loud explosions should have a larger range than footsteps.
+3.  **Use Mono Sounds:** Spatial audio works best with mono sound files, as the backend handles the stereo panning and volume.
 
 ---
 
