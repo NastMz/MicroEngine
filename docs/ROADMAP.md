@@ -488,7 +488,6 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 ### Documentation
 
 -   Complete API reference documentation
--   Migration guide from 0.x to 1.0
 -   Performance optimization guide
 
 ### Deliverable
