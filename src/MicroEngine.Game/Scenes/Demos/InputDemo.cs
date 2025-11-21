@@ -13,7 +13,7 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class InputDemo : Scene
 {
     private IInputBackend _inputBackend = null!;
-    private IRenderBackend2D _renderBackend = null!;
+    private IRenderer2D _renderer = null!;
     private ILogger _logger = null!;
     private string _welcomeMessage;
     private bool _receivedParameters;
@@ -44,7 +44,7 @@ public sealed class InputDemo : Scene
     {
         base.OnLoad(context);
         _inputBackend = context.InputBackend;
-        _renderBackend = context.RenderBackend;
+        _renderer = context.Renderer;
         _logger = context.Logger;
         _logger.Info("InputDemo", "Input demo loaded - showing real-time input state");
     }
@@ -143,14 +143,14 @@ public sealed class InputDemo : Scene
     public override void OnRender()
     {
         // Early exit if not loaded yet (can happen during scene preloading)
-        if (_renderBackend == null)
+        if (_renderer == null)
         {
             return;
         }
 
-        _renderBackend.Clear(new Color(25, 30, 45, 255));
+        _renderer.Clear(new Color(25, 30, 45, 255));
 
-        var layout = new TextLayoutHelper(_renderBackend, startX: 20, startY: 20, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(_renderer, startX: 20, startY: 20, defaultLineHeight: 20);
         var keyboardColor = new Color(200, 200, 255, 255);
         var mouseColor = new Color(255, 200, 200, 255);
         var gamepadColor = new Color(200, 255, 200, 255);

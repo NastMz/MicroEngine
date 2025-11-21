@@ -11,7 +11,7 @@ namespace MicroEngine.Backend.Raylib;
 /// Provides 2D rendering capabilities using Raylib-cs.
 /// Timing is managed externally by ITimeService.
 /// </summary>
-public class RaylibRenderBackend : IRenderBackend2D
+public class RaylibRenderBackend : IWindow, IRenderer2D
 {
     private bool _isInitialized;
     private AntiAliasingMode _antiAliasing = AntiAliasingMode.None;
@@ -21,7 +21,7 @@ public class RaylibRenderBackend : IRenderBackend2D
     private string _windowTitle = string.Empty;
 
     /// <inheritdoc/>
-    public string WindowTitle
+    public string Title
     {
         get => _windowTitle;
         set
@@ -35,10 +35,10 @@ public class RaylibRenderBackend : IRenderBackend2D
     }
 
     /// <inheritdoc/>
-    public int WindowWidth => Raylib_cs.Raylib.GetScreenWidth();
+    public int Width => Raylib_cs.Raylib.GetScreenWidth();
 
     /// <inheritdoc/>
-    public int WindowHeight => Raylib_cs.Raylib.GetScreenHeight();
+    public int Height => Raylib_cs.Raylib.GetScreenHeight();
 
     /// <inheritdoc/>
     public bool ShouldClose => Raylib_cs.Raylib.WindowShouldClose();

@@ -16,9 +16,9 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class EventSystemDemo : Scene
 {
     private IInputBackend _inputBackend = null!;
-    private IRenderBackend2D _renderBackend = null!;
+    private IRenderer2D _renderer = null!;
     private ILogger _logger = null!;
-    private readonly EventBus _eventBus;
+    private EventBus _eventBus = null!;
 
     private const string SCENE_NAME = "EventSystemDemo";
     
@@ -38,15 +38,15 @@ public sealed class EventSystemDemo : Scene
     public EventSystemDemo()
         : base(SCENE_NAME)
     {
-        _eventBus = new EventBus();
     }
 
     /// <inheritdoc/>
     public override void OnLoad(SceneContext context)
     {
         base.OnLoad(context);
+        _eventBus = context.Services.GetService<EventBus>();
         _inputBackend = context.InputBackend;
-        _renderBackend = context.RenderBackend;
+        _renderer = context.Renderer;
         _logger = context.Logger;
         _logger.Info(SCENE_NAME, "Event System demo loaded - demonstrating EventBus patterns");
 
@@ -92,7 +92,7 @@ public sealed class EventSystemDemo : Scene
     /// <inheritdoc/>
     public override void OnRender()
     {
-        _renderBackend.Clear(new Color(20, 25, 30, 255));
+        _renderer.Clear(new Color(20, 25, 30, 255));
 
         RenderEntities();
         RenderUI();
@@ -103,7 +103,6 @@ public sealed class EventSystemDemo : Scene
     {
         base.OnUnload();
         UnsubscribeFromEvents();
-        _eventBus.Dispose();
         _logger?.Info(SCENE_NAME, "Event System demo unloaded");
     }
 
@@ -213,31 +212,31 @@ public sealed class EventSystemDemo : Scene
     {
         // Button 1
         var button1Transform = World.GetComponent<TransformComponent>(_button1);
-        _renderBackend.DrawRectangle(button1Transform.Position, new Vector2(80, 50), new Color(100, 150, 255, 255));
-        _renderBackend.DrawText("BTN 1", new Vector2(button1Transform.Position.X - 20, button1Transform.Position.Y - 8), 14, Color.White);
+        _renderer.DrawRectangle(button1Transform.Position, new Vector2(80, 50), new Color(100, 150, 255, 255));
+        _renderer.DrawText("BTN 1", new Vector2(button1Transform.Position.X - 20, button1Transform.Position.Y - 8), 14, Color.White);
 
         // Button 2
         var button2Transform = World.GetComponent<TransformComponent>(_button2);
-        _renderBackend.DrawRectangle(button2Transform.Position, new Vector2(80, 50), new Color(100, 150, 255, 255));
-        _renderBackend.DrawText("BTN 2", new Vector2(button2Transform.Position.X - 20, button2Transform.Position.Y - 8), 14, Color.White);
+        _renderer.DrawRectangle(button2Transform.Position, new Vector2(80, 50), new Color(100, 150, 255, 255));
+        _renderer.DrawText("BTN 2", new Vector2(button2Transform.Position.X - 20, button2Transform.Position.Y - 8), 14, Color.White);
 
         // Trigger
         var triggerTransform = World.GetComponent<TransformComponent>(_trigger);
-        _renderBackend.DrawRectangle(triggerTransform.Position, new Vector2(100, 60), new Color(255, 200, 100, 255));
-        _renderBackend.DrawText("TRIGGER", new Vector2(triggerTransform.Position.X - 30, triggerTransform.Position.Y - 8), 14, Color.White);
+        _renderer.DrawRectangle(triggerTransform.Position, new Vector2(100, 60), new Color(255, 200, 100, 255));
+        _renderer.DrawText("TRIGGER", new Vector2(triggerTransform.Position.X - 30, triggerTransform.Position.Y - 8), 14, Color.White);
 
         // Target
         var targetTransform = World.GetComponent<TransformComponent>(_target);
         var targetColor = _targetActivationTimer > 0 
             ? new Color(100, 255, 100, 255) 
             : new Color(150, 150, 150, 255);
-        _renderBackend.DrawCircle(targetTransform.Position, 40, targetColor);
-        _renderBackend.DrawText("TARGET", new Vector2(targetTransform.Position.X - 30, targetTransform.Position.Y - 8), 14, Color.White);
+        _renderer.DrawCircle(targetTransform.Position, 40, targetColor);
+        _renderer.DrawText("TARGET", new Vector2(targetTransform.Position.X - 30, targetTransform.Position.Y - 8), 14, Color.White);
     }
 
     private void RenderUI()
     {
-        var layout = new TextLayoutHelper(_renderBackend, startX: 500, startY: 10, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(_renderer, startX: 500, startY: 10, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var dimColor = new Color(150, 150, 150, 255);
 

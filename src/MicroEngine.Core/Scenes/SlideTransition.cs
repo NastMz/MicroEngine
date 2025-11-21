@@ -27,7 +27,8 @@ public enum SlideDirection
 /// </summary>
 public sealed class SlideTransition : ISceneTransitionEffect
 {
-    private readonly IRenderBackend2D _renderBackend;
+    private readonly IRenderer2D _renderer;
+    private readonly IWindow _window;
     private readonly float _duration;
     private readonly SlideDirection _direction;
     private readonly Color _backgroundColor;
@@ -45,17 +46,20 @@ public sealed class SlideTransition : ISceneTransitionEffect
     /// <summary>
     /// Initializes a new instance of the <see cref="SlideTransition"/> class.
     /// </summary>
-    /// <param name="renderBackend">Render backend for drawing the slide overlay.</param>
+    /// <param name="renderer">Render backend for drawing the slide overlay.</param>
+    /// <param name="window">Window for getting screen dimensions.</param>
     /// <param name="direction">Direction from which the new scene slides in.</param>
     /// <param name="duration">Duration of the slide effect in seconds.</param>
     /// <param name="backgroundColor">Background color visible during slide (default: black).</param>
     public SlideTransition(
-        IRenderBackend2D renderBackend,
+        IRenderer2D renderer,
+        IWindow window,
         SlideDirection direction = SlideDirection.Left,
         float duration = 0.5f,
         Color? backgroundColor = null)
     {
-        _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
+        _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
+        _window = window ?? throw new ArgumentNullException(nameof(window));
         _duration = duration > 0 ? duration : throw new ArgumentOutOfRangeException(nameof(duration), "Duration must be positive");
         _direction = direction;
         _backgroundColor = backgroundColor ?? new Color(0, 0, 0, 255);
@@ -104,8 +108,8 @@ public sealed class SlideTransition : ISceneTransitionEffect
             progress = 1f - progress;
         }
 
-        int screenWidth = _renderBackend.WindowWidth;
-        int screenHeight = _renderBackend.WindowHeight;
+        int screenWidth = _window.Width;
+        int screenHeight = _window.Height;
 
         // Calculate slide offset based on direction
         Vector2 offset = _direction switch
@@ -134,7 +138,7 @@ public sealed class SlideTransition : ISceneTransitionEffect
             _ => new Vector2(screenWidth, screenHeight)
         };
 
-        _renderBackend.DrawRectangle(bgPosition, bgSize, _backgroundColor);
+        _renderer.DrawRectangle(bgPosition, bgSize, _backgroundColor);
     }
 
     /// <inheritdoc/>

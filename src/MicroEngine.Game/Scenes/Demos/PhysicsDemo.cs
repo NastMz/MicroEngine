@@ -17,10 +17,9 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class PhysicsDemo : Scene
 {
     private IInputBackend _inputBackend = null!;
-    private IRenderBackend2D _renderBackend = null!;
+    private IRenderer2D _renderer = null!;
     private ILogger _logger = null!;
 
-    private World _world = null!;
     private PhysicsBackendSystem _physicsSystem = null!;
     private DragSystem _dragSystem = null!;
 
@@ -42,46 +41,42 @@ public sealed class PhysicsDemo : Scene
     {
         base.OnLoad(context);
         _inputBackend = context.InputBackend;
-        _renderBackend = context.RenderBackend;
+        _renderer = context.Renderer;
         _logger = context.Logger;
 
-        // Initialize ECS
-        _world = new World();
-        
-        // Create physics backend system with Aether
-        var aetherBackend = new AetherPhysicsBackend();
-        _physicsSystem = new PhysicsBackendSystem(aetherBackend);
+        // Get physics system from DI container
+        _physicsSystem = context.Services.GetService<PhysicsBackendSystem>();
         _physicsSystem.Initialize(gravity: 750f); // Downward gravity
         
         // Create drag system
         _dragSystem = new DragSystem();
         
-        _world.RegisterSystem(_physicsSystem);
+        World.RegisterSystem(_physicsSystem);
 
         // Create ground (static platform)
-        _ground = _world.CreateEntity();
-        _world.AddComponent(_ground, new TransformComponent { Position = new Vector2(400, 550) });
-        _world.AddComponent(_ground, new ColliderComponent 
+        _ground = World.CreateEntity();
+        World.AddComponent(_ground, new TransformComponent { Position = new Vector2(400, 550) });
+        World.AddComponent(_ground, new ColliderComponent 
         { 
             Shape = ColliderShape.Rectangle, 
             Size = new Vector2(600, 20),
             Enabled = true
         });
-        _world.AddComponent(_ground, new RigidBodyComponent
+        World.AddComponent(_ground, new RigidBodyComponent
         {
             Mass = 0f, // Infinite mass (static)
             UseGravity = false,
             Restitution = 0.3f, // Some bounce
             Drag = 0.5f // Ground friction
         });
-        _world.AddComponent(_ground, new RenderComponent 
+        World.AddComponent(_ground, new RenderComponent 
         { 
             Color = new Color(100, 100, 100, 255),
             Shape = RenderShape.Rectangle
         });
 
         // Create physics body for ground
-        _physicsSystem.CreateBodyForEntity(_world, _ground);
+        _physicsSystem.CreateBodyForEntity(World, _ground);
 
         _logger.Info("PhysicsDemo", "Physics demo loaded - click to spawn balls");
     }
@@ -110,16 +105,16 @@ public sealed class PhysicsDemo : Scene
         {
             // Check if clicking on a draggable entity
             bool foundDraggable = false;
-            var draggables = _world.GetEntitiesWith<DraggableComponent>();
+            var draggables = World.GetEntitiesWith<DraggableComponent>();
 
             foreach (var entity in draggables)
             {
-                var transform = _world.GetComponent<TransformComponent>(entity);
-                var collider = _world.GetComponent<ColliderComponent>(entity);
+                var transform = World.GetComponent<TransformComponent>(entity);
+                var collider = World.GetComponent<ColliderComponent>(entity);
 
                 if (IsPointInCollider(mousePos, transform, collider))
                 {
-                    ref var draggable = ref _world.GetComponent<DraggableComponent>(entity);
+                    ref var draggable = ref World.GetComponent<DraggableComponent>(entity);
                     draggable.StartDragRequested = true;
                     draggable.DragPosition = mousePos;
                     foundDraggable = true;
@@ -137,10 +132,10 @@ public sealed class PhysicsDemo : Scene
         // Update drag position
         if (_inputBackend.IsMouseButtonDown(MouseButton.Left))
         {
-            var draggables = _world.GetEntitiesWith<DraggableComponent>();
+            var draggables = World.GetEntitiesWith<DraggableComponent>();
             foreach (var entity in draggables)
             {
-                ref var draggable = ref _world.GetComponent<DraggableComponent>(entity);
+                ref var draggable = ref World.GetComponent<DraggableComponent>(entity);
                 if (draggable.IsDragging)
                 {
                     draggable.DragPosition = mousePos;
@@ -151,10 +146,10 @@ public sealed class PhysicsDemo : Scene
         // Stop drag
         if (_inputBackend.IsMouseButtonReleased(MouseButton.Left))
         {
-            var draggables = _world.GetEntitiesWith<DraggableComponent>();
+            var draggables = World.GetEntitiesWith<DraggableComponent>();
             foreach (var entity in draggables)
             {
-                ref var draggable = ref _world.GetComponent<DraggableComponent>(entity);
+                ref var draggable = ref World.GetComponent<DraggableComponent>(entity);
                 if (draggable.IsDragging)
                 {
                     draggable.StopDragRequested = true;
@@ -163,18 +158,18 @@ public sealed class PhysicsDemo : Scene
         }
 
         // Process drag commands via system
-        _dragSystem.Update(_world, deltaTime);
+        _dragSystem.Update(World, deltaTime);
 
         // Update physics
-        _physicsSystem.Update(_world, deltaTime);
+        _physicsSystem.Update(World, deltaTime);
 
         // Remove balls that fell off screen
         for (int i = _balls.Count - 1; i >= 0; i--)
         {
-            var transform = _world.GetComponent<TransformComponent>(_balls[i]);
+            var transform = World.GetComponent<TransformComponent>(_balls[i]);
             if (transform.Position.Y > 700)
             {
-                _world.DestroyEntity(_balls[i]);
+                World.DestroyEntity(_balls[i]);
                 _balls.RemoveAt(i);
             }
         }
@@ -184,17 +179,17 @@ public sealed class PhysicsDemo : Scene
     public override void OnRender()
     {
         // Early exit if not loaded yet (can happen during scene preloading)
-        if (_renderBackend == null)
+        if (_renderer == null)
         {
             return;
         }
 
-        _renderBackend.Clear(new Color(20, 25, 35, 255));
+        _renderer.Clear(new Color(20, 25, 35, 255));
 
         // Render ground
-        var groundTransform = _world.GetComponent<TransformComponent>(_ground);
-        var groundCollider = _world.GetComponent<ColliderComponent>(_ground);
-        _renderBackend.DrawRectangle(
+        var groundTransform = World.GetComponent<TransformComponent>(_ground);
+        var groundCollider = World.GetComponent<ColliderComponent>(_ground);
+        _renderer.DrawRectangle(
             new Vector2(groundTransform.Position.X - groundCollider.Size.X / 2, groundTransform.Position.Y - groundCollider.Size.Y / 2),
             groundCollider.Size,
             new Color(100, 100, 100, 255)
@@ -203,15 +198,15 @@ public sealed class PhysicsDemo : Scene
         // Render balls
         foreach (var ball in _balls)
         {
-            var transform = _world.GetComponent<TransformComponent>(ball);
-            var collider = _world.GetComponent<ColliderComponent>(ball);
-            var render = _world.GetComponent<RenderComponent>(ball);
+            var transform = World.GetComponent<TransformComponent>(ball);
+            var collider = World.GetComponent<ColliderComponent>(ball);
+            var render = World.GetComponent<RenderComponent>(ball);
 
-            _renderBackend.DrawCircle(transform.Position, collider.Size.X, render.Color);
+            _renderer.DrawCircle(transform.Position, collider.Size.X, render.Color);
         }
 
         // UI
-        var layout = new TextLayoutHelper(_renderBackend, startX: 20, startY: 20, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(_renderer, startX: 20, startY: 20, defaultLineHeight: 20);
         var infoColor = new Color(180, 180, 180, 255);
         var controlsColor = new Color(150, 150, 150, 255);
 
@@ -226,33 +221,23 @@ public sealed class PhysicsDemo : Scene
     /// <inheritdoc/>
     public override void OnUnload()
     {
-        // Clean up physics bodies
-        if (_physicsSystem != null)
-        {
-            foreach (var ball in _balls)
-            {
-                _physicsSystem.DestroyBodyForEntity(_world, ball);
-            }
-            _physicsSystem.DestroyBodyForEntity(_world, _ground);
-            _physicsSystem.Shutdown();
-        }
         base.OnUnload();
         _logger?.Info("PhysicsDemo", "Physics demo unloaded");
     }
 
     private void SpawnBallAt(Vector2 position)
     {
-        var ball = _world.CreateEntity();
+        var ball = World.CreateEntity();
         var random = new Random();
 
-        _world.AddComponent(ball, new TransformComponent { Position = position });
-        _world.AddComponent(ball, new ColliderComponent 
+        World.AddComponent(ball, new TransformComponent { Position = position });
+        World.AddComponent(ball, new ColliderComponent 
         { 
             Shape = ColliderShape.Circle, 
             Size = new Vector2(15, 15),
             Enabled = true
         });
-        _world.AddComponent(ball, new RigidBodyComponent 
+        World.AddComponent(ball, new RigidBodyComponent 
         { 
             Mass = 1.0f,
             Velocity = new Vector2(random.Next(-30, 30), 0),
@@ -268,14 +253,14 @@ public sealed class PhysicsDemo : Scene
             255
         );
 
-        _world.AddComponent(ball, new RenderComponent 
+        World.AddComponent(ball, new RenderComponent 
         { 
             Color = color,
             Shape = RenderShape.Circle
         });
 
         // Add DraggableComponent for drag interaction
-        _world.AddComponent(ball, new DraggableComponent
+        World.AddComponent(ball, new DraggableComponent
         {
             IsDragging = false,
             MakeKinematicOnDrag = true, // Physics bodies should be kinematic when dragged
@@ -286,7 +271,7 @@ public sealed class PhysicsDemo : Scene
         });
 
         // Create physics body
-        _physicsSystem.CreateBodyForEntity(_world, ball);
+        _physicsSystem.CreateBodyForEntity(World, ball);
 
         _balls.Add(ball);
     }
@@ -313,3 +298,4 @@ public sealed class PhysicsDemo : Scene
         return false;
     }
 }
+

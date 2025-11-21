@@ -6,13 +6,13 @@ namespace MicroEngine.Core.Tests.Scenes;
 
 public class WipeTransitionTests
 {
-    private class MockRenderBackend : IRenderBackend2D
+    private class MockRenderBackend : IRenderer2D, IWindow
     {
         public int DrawRectangleCallCount { get; private set; }
 
-        public string WindowTitle { get; set; } = "Test";
-        public int WindowWidth => 800;
-        public int WindowHeight => 600;
+        public string Title { get; set; } = "Test";
+        public int Width => 800;
+        public int Height => 600;
         public bool ShouldClose => false;
         public AntiAliasingMode AntiAliasing { get; set; } = AntiAliasingMode.None;
 
@@ -44,7 +44,7 @@ public class WipeTransitionTests
     {
         var renderBackend = new MockRenderBackend();
 
-        var transition = new WipeTransition(renderBackend);
+        var transition = new WipeTransition(renderBackend, renderBackend);
 
         Assert.NotNull(transition);
         Assert.True(transition.IsComplete);
@@ -54,7 +54,8 @@ public class WipeTransitionTests
     [Fact]
     public void Constructor_ThrowsWhenRenderBackendIsNull()
     {
-        Assert.Throws<ArgumentNullException>(() => new WipeTransition(null!));
+        Assert.Throws<ArgumentNullException>(() => new WipeTransition(null!, new MockRenderBackend()));
+        Assert.Throws<ArgumentNullException>(() => new WipeTransition(new MockRenderBackend(), null!));
     }
 
     [Fact]
@@ -62,15 +63,15 @@ public class WipeTransitionTests
     {
         var renderBackend = new MockRenderBackend();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => new WipeTransition(renderBackend, duration: 0f));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new WipeTransition(renderBackend, duration: -0.5f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WipeTransition(renderBackend, renderBackend, duration: 0f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WipeTransition(renderBackend, renderBackend, duration: -0.5f));
     }
 
     [Fact]
     public void Start_ResetsStateAndBeginsTransition()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new WipeTransition(renderBackend, duration: 1.0f);
+        var transition = new WipeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
 
@@ -82,7 +83,7 @@ public class WipeTransitionTests
     public void Update_ProgressesTransition()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new WipeTransition(renderBackend, duration: 1.0f);
+        var transition = new WipeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(0.5f);
@@ -95,7 +96,7 @@ public class WipeTransitionTests
     public void Update_CompletesTransitionWhenDurationReached()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new WipeTransition(renderBackend, duration: 1.0f);
+        var transition = new WipeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(1.0f);
@@ -108,7 +109,7 @@ public class WipeTransitionTests
     public void Render_DrawsWipeOverlayDuringTransition()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new WipeTransition(renderBackend, WipeDirection.LeftToRight, duration: 1.0f);
+        var transition = new WipeTransition(renderBackend, renderBackend, WipeDirection.LeftToRight, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(0.5f);
@@ -121,7 +122,7 @@ public class WipeTransitionTests
     public void Reset_ResetsTransitionState()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new WipeTransition(renderBackend, duration: 1.0f);
+        var transition = new WipeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(0.5f);
@@ -142,7 +143,7 @@ public class WipeTransitionTests
     {
         var renderBackend = new MockRenderBackend();
 
-        var transition = new WipeTransition(renderBackend, direction);
+        var transition = new WipeTransition(renderBackend, renderBackend, direction);
 
         Assert.NotNull(transition);
     }
@@ -151,7 +152,7 @@ public class WipeTransitionTests
     public void Render_EdgeInMode_DrawsFourRectangles()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new WipeTransition(renderBackend, WipeDirection.EdgeIn, duration: 1.0f);
+        var transition = new WipeTransition(renderBackend, renderBackend, WipeDirection.EdgeIn, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(0.5f);

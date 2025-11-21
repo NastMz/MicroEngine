@@ -6,13 +6,13 @@ namespace MicroEngine.Core.Tests.Scenes;
 
 public class ZoomTransitionTests
 {
-    private class MockRenderBackend : IRenderBackend2D
+    private class MockRenderBackend : IRenderer2D, IWindow
     {
         public int DrawRectangleCallCount { get; private set; }
 
-        public string WindowTitle { get; set; } = "Test";
-        public int WindowWidth => 800;
-        public int WindowHeight => 600;
+        public string Title { get; set; } = "Test";
+        public int Width => 800;
+        public int Height => 600;
         public bool ShouldClose => false;
         public AntiAliasingMode AntiAliasing { get; set; } = AntiAliasingMode.None;
 
@@ -44,7 +44,7 @@ public class ZoomTransitionTests
     {
         var renderBackend = new MockRenderBackend();
 
-        var transition = new ZoomTransition(renderBackend);
+        var transition = new ZoomTransition(renderBackend, renderBackend);
 
         Assert.NotNull(transition);
         Assert.True(transition.IsComplete);
@@ -54,7 +54,8 @@ public class ZoomTransitionTests
     [Fact]
     public void Constructor_ThrowsWhenRenderBackendIsNull()
     {
-        Assert.Throws<ArgumentNullException>(() => new ZoomTransition(null!));
+        Assert.Throws<ArgumentNullException>(() => new ZoomTransition(null!, new MockRenderBackend()));
+        Assert.Throws<ArgumentNullException>(() => new ZoomTransition(new MockRenderBackend(), null!));
     }
 
     [Fact]
@@ -62,15 +63,15 @@ public class ZoomTransitionTests
     {
         var renderBackend = new MockRenderBackend();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => new ZoomTransition(renderBackend, duration: 0f));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new ZoomTransition(renderBackend, duration: -0.5f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ZoomTransition(renderBackend, renderBackend, duration: 0f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ZoomTransition(renderBackend, renderBackend, duration: -0.5f));
     }
 
     [Fact]
     public void Start_ResetsStateAndBeginsTransition()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new ZoomTransition(renderBackend, duration: 1.0f);
+        var transition = new ZoomTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
 
@@ -82,7 +83,7 @@ public class ZoomTransitionTests
     public void Update_ProgressesTransition()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new ZoomTransition(renderBackend, duration: 1.0f);
+        var transition = new ZoomTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(0.5f);
@@ -95,7 +96,7 @@ public class ZoomTransitionTests
     public void Update_CompletesTransitionWhenDurationReached()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new ZoomTransition(renderBackend, duration: 1.0f);
+        var transition = new ZoomTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(1.0f);
@@ -108,7 +109,7 @@ public class ZoomTransitionTests
     public void Render_DrawsZoomOverlayDuringTransition()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new ZoomTransition(renderBackend, ZoomMode.ZoomOut, duration: 1.0f);
+        var transition = new ZoomTransition(renderBackend, renderBackend, ZoomMode.ZoomOut, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(0.5f);
@@ -122,7 +123,7 @@ public class ZoomTransitionTests
     public void Reset_ResetsTransitionState()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new ZoomTransition(renderBackend, duration: 1.0f);
+        var transition = new ZoomTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(0.5f);
@@ -139,7 +140,7 @@ public class ZoomTransitionTests
     {
         var renderBackend = new MockRenderBackend();
 
-        var transition = new ZoomTransition(renderBackend, zoomMode);
+        var transition = new ZoomTransition(renderBackend, renderBackend, zoomMode);
 
         Assert.NotNull(transition);
     }

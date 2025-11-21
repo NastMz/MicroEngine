@@ -129,6 +129,10 @@ public abstract class Scene : IScene
     {
         Context = context ?? throw new ArgumentNullException(nameof(context));
         _isActive = true;
+
+        // Clear World to ensure fresh state on reload
+        // This prevents entity accumulation when scenes are cached and reused
+        World.Clear();
     }
 
     /// <inheritdoc/>

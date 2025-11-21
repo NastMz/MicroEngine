@@ -21,7 +21,8 @@ public enum ZoomMode
 /// </summary>
 public sealed class ZoomTransition : ISceneTransitionEffect
 {
-    private readonly IRenderBackend2D _renderBackend;
+    private readonly IRenderer2D _renderer;
+    private readonly IWindow _window;
     private readonly float _duration;
     private readonly ZoomMode _zoomMode;
     private readonly Color _backgroundColor;
@@ -39,17 +40,20 @@ public sealed class ZoomTransition : ISceneTransitionEffect
     /// <summary>
     /// Initializes a new instance of the <see cref="ZoomTransition"/> class.
     /// </summary>
-    /// <param name="renderBackend">Render backend for drawing the zoom overlay.</param>
+    /// <param name="renderer">Render backend for drawing the zoom overlay.</param>
+    /// <param name="window">Window for getting screen dimensions.</param>
     /// <param name="zoomMode">Zoom mode (in or out).</param>
     /// <param name="duration">Duration of the zoom effect in seconds.</param>
     /// <param name="backgroundColor">Background color visible during zoom (default: black).</param>
     public ZoomTransition(
-        IRenderBackend2D renderBackend,
+        IRenderer2D renderer,
+        IWindow window,
         ZoomMode zoomMode = ZoomMode.ZoomOut,
         float duration = 0.5f,
         Color? backgroundColor = null)
     {
-        _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
+        _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
+        _window = window ?? throw new ArgumentNullException(nameof(window));
         _duration = duration > 0 ? duration : throw new ArgumentOutOfRangeException(nameof(duration), "Duration must be positive");
         _zoomMode = zoomMode;
         _backgroundColor = backgroundColor ?? new Color(0, 0, 0, 255);
@@ -94,8 +98,8 @@ public sealed class ZoomTransition : ISceneTransitionEffect
         // Calculate alpha based on fade direction
         float alpha = _isFadeOut ? progress : (1f - progress);
 
-        int screenWidth = _renderBackend.WindowWidth;
-        int screenHeight = _renderBackend.WindowHeight;
+        int screenWidth = _window.Width;
+        int screenHeight = _window.Height;
 
         // Zoom effect: draw borders that expand/contract
         // This creates the illusion of zooming by covering parts of the screen
@@ -125,7 +129,7 @@ public sealed class ZoomTransition : ISceneTransitionEffect
         );
 
         // Draw fullscreen overlay
-        _renderBackend.DrawRectangle(
+        _renderer.DrawRectangle(
             Vector2.Zero,
             new Vector2(screenWidth, screenHeight),
             overlayColor
@@ -145,25 +149,25 @@ public sealed class ZoomTransition : ISceneTransitionEffect
             float verticalBorder = (screenHeight / 2f) * (borderSize / (System.Math.Min(screenWidth, screenHeight) / 2f));
 
             // Left border
-            _renderBackend.DrawRectangle(
+            _renderer.DrawRectangle(
                 Vector2.Zero,
                 new Vector2(horizontalBorder, screenHeight),
                 borderColor);
 
             // Right border
-            _renderBackend.DrawRectangle(
+            _renderer.DrawRectangle(
                 new Vector2(screenWidth - horizontalBorder, 0),
                 new Vector2(horizontalBorder, screenHeight),
                 borderColor);
 
             // Top border
-            _renderBackend.DrawRectangle(
+            _renderer.DrawRectangle(
                 new Vector2(horizontalBorder, 0),
                 new Vector2(screenWidth - 2 * horizontalBorder, verticalBorder),
                 borderColor);
 
             // Bottom border
-            _renderBackend.DrawRectangle(
+            _renderer.DrawRectangle(
                 new Vector2(horizontalBorder, screenHeight - verticalBorder),
                 new Vector2(screenWidth - 2 * horizontalBorder, verticalBorder),
                 borderColor);

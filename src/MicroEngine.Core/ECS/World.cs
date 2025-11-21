@@ -227,6 +227,36 @@ public sealed class World
     }
 
     /// <summary>
+    /// Clears all entities, components, and systems from the world.
+    /// This resets the world to a fresh state, useful for scene reloads.
+    /// </summary>
+    public void Clear()
+    {
+        // Process any pending destructions first
+        ProcessDestroyedEntities();
+
+        // Destroy all active entities
+        var entitiesToDestroy = _activeEntities.ToList();
+        foreach (var entity in entitiesToDestroy)
+        {
+            DestroyEntity(entity);
+        }
+
+        // Process the destruction queue
+        ProcessDestroyedEntities();
+
+        // Clear systems
+        _systems.Clear();
+
+        // Clear cached queries
+        _cachedQueries.Clear();
+
+        // Reset entity ID counter
+        _nextEntityId = 1;
+    }
+
+
+    /// <summary>
     /// Gets all entities that have a specific component.
     /// Only returns valid entities (excludes entities pending destruction).
     /// </summary>

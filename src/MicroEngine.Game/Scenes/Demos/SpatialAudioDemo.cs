@@ -15,8 +15,9 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class SpatialAudioDemo : Scene
 {
     private IInputBackend _inputBackend = null!;
-    private IRenderBackend2D _renderBackend = null!;
-    private IAudioBackend _audioBackend = null!;
+    private IRenderer2D _renderer = null!;
+    private IAudioDevice _audioDevice = null!;
+    private ISoundPlayer _soundPlayer = null!;
     private ILogger _logger = null!;
     private ResourceCache<IAudioClip> _audioCache = null!;
 
@@ -45,15 +46,16 @@ public sealed class SpatialAudioDemo : Scene
     {
         base.OnLoad(context);
         _inputBackend = context.InputBackend;
-        _renderBackend = context.RenderBackend;
-        _audioBackend = context.AudioBackend;
+        _renderer = context.Renderer;
+        _audioDevice = context.AudioDevice;
+        _soundPlayer = context.SoundPlayer;
         _logger = context.Logger;
         _audioCache = context.AudioCache;
         _logger.Info(SCENE_NAME, "Spatial Audio demo loaded - demonstrating distance attenuation");
 
         // Initialize listener at center
         _listenerPosition = new Vector2(400, 300);
-        _audioBackend.SetListenerPosition(_listenerPosition);
+        _audioDevice.SetListenerPosition(_listenerPosition);
 
         // Create 3 sound sources at different positions
         _soundSources.Add(new Vector2(200, 200));
@@ -110,7 +112,7 @@ public sealed class SpatialAudioDemo : Scene
             MathF.Max(50f, MathF.Min(550f, _listenerPosition.Y))
         );
 
-        _audioBackend.SetListenerPosition(_listenerPosition);
+        _audioDevice.SetListenerPosition(_listenerPosition);
 
         // Continuous loop for each source
         for (int i = 0; i < 3; i++)
@@ -121,7 +123,7 @@ public sealed class SpatialAudioDemo : Scene
             if (_loopTimers[i] <= 0)
             {
                 _loopTimers[i] = _loopIntervals[i];
-                _audioBackend.PlaySoundAtPosition(_soundClips[i]!, _soundSources[i], MAX_DISTANCE);
+                _soundPlayer.PlaySoundAtPosition(_soundClips[i]!, _soundSources[i], MAX_DISTANCE);
             }
         }
     }
@@ -129,7 +131,7 @@ public sealed class SpatialAudioDemo : Scene
     /// <inheritdoc/>
     public override void OnRender()
     {
-        _renderBackend.Clear(new Color(10, 15, 20, 255));
+        _renderer.Clear(new Color(10, 15, 20, 255));
 
         RenderSoundSources();
         RenderListener();
@@ -162,39 +164,39 @@ public sealed class SpatialAudioDemo : Scene
             var attenuation = 1.0f - MathF.Min(distance / MAX_DISTANCE, 1f);
 
             // Draw attenuation radius
-            _renderBackend.DrawCircle(source, MAX_DISTANCE, new Color(100, 100, 150, 20));
+            _renderer.DrawCircle(source, MAX_DISTANCE, new Color(100, 100, 150, 20));
 
             // Draw distance line
-            _renderBackend.DrawLine(_listenerPosition, source, new Color(150, 150, 150, 100));
+            _renderer.DrawLine(_listenerPosition, source, new Color(150, 150, 150, 100));
 
             // Draw sound source
             var sourceColor = new Color(255, 200, 100, 255);
-            _renderBackend.DrawCircle(source, 20, sourceColor);
-            _renderBackend.DrawText($"S{i + 1}", new Vector2(source.X - 8, source.Y - 8), 14, Color.White);
+            _renderer.DrawCircle(source, 20, sourceColor);
+            _renderer.DrawText($"S{i + 1}", new Vector2(source.X - 8, source.Y - 8), 14, Color.White);
 
             // Draw label and info
             var labelPos = new Vector2(source.X - 30, source.Y - 40);
-            _renderBackend.DrawText($"Source {i + 1}", labelPos, 12, Color.White);
+            _renderer.DrawText($"Source {i + 1}", labelPos, 12, Color.White);
             
             var infoPos = new Vector2(source.X - 30, source.Y + 25);
-            _renderBackend.DrawText($"Dist: {distance:F0}px", infoPos, 10, new Color(200, 200, 200, 255));
-            _renderBackend.DrawText($"Vol: {attenuation * 100:F0}%", new Vector2(infoPos.X, infoPos.Y + 12), 10, new Color(200, 200, 200, 255));
+            _renderer.DrawText($"Dist: {distance:F0}px", infoPos, 10, new Color(200, 200, 200, 255));
+            _renderer.DrawText($"Vol: {attenuation * 100:F0}%", new Vector2(infoPos.X, infoPos.Y + 12), 10, new Color(200, 200, 200, 255));
         }
     }
 
     private void RenderListener()
     {
         // Draw listener
-        _renderBackend.DrawCircle(_listenerPosition, 25, new Color(100, 150, 255, 255));
-        _renderBackend.DrawText("L", new Vector2(_listenerPosition.X - 8, _listenerPosition.Y - 10), 20, Color.White);
+        _renderer.DrawCircle(_listenerPosition, 25, new Color(100, 150, 255, 255));
+        _renderer.DrawText("L", new Vector2(_listenerPosition.X - 8, _listenerPosition.Y - 10), 20, Color.White);
         
         var labelPos = new Vector2(_listenerPosition.X - 25, _listenerPosition.Y - 45);
-        _renderBackend.DrawText("Listener", labelPos, 12, Color.White);
+        _renderer.DrawText("Listener", labelPos, 12, Color.White);
     }
 
     private void RenderUI()
     {
-        var layout = new TextLayoutHelper(_renderBackend, startX: 10, startY: 10, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(_renderer, startX: 10, startY: 10, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var dimColor = new Color(150, 150, 150, 255);
 

@@ -10,11 +10,11 @@ namespace MicroEngine.Core.Tests.Graphics;
 /// </summary>
 public sealed class TextLayoutHelperTests
 {
-    private readonly Mock<IRenderBackend2D> _mockRenderBackend;
+    private readonly Mock<IRenderer2D> _mockRenderBackend;
 
     public TextLayoutHelperTests()
     {
-        _mockRenderBackend = new Mock<IRenderBackend2D>();
+        _mockRenderBackend = new Mock<IRenderer2D>();
     }
 
     [Fact]

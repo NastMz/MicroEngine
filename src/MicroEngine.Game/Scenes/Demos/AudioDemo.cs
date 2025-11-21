@@ -15,9 +15,10 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class AudioDemo : Scene
 {
     private IInputBackend _inputBackend = null!;
-    private IRenderBackend2D _renderBackend = null!;
+    private IRenderer2D _renderer = null!;
     private ILogger _logger = null!;
-    private IAudioBackend _audioBackend = null!;
+    private ISoundPlayer _soundPlayer = null!;
+    private IMusicPlayer _musicPlayer = null!;
     private ResourceCache<IAudioClip> _audioCache = null!;
 
     private IAudioClip? _backgroundMusic;
@@ -53,9 +54,10 @@ public sealed class AudioDemo : Scene
     {
         base.OnLoad(context);
         _inputBackend = context.InputBackend;
-        _renderBackend = context.RenderBackend;
+        _renderer = context.Renderer;
         _logger = context.Logger;
-        _audioBackend = context.AudioBackend;
+        _soundPlayer = context.SoundPlayer;
+        _musicPlayer = context.MusicPlayer;
         _audioCache = context.AudioCache;
 
         // Load audio resources
@@ -88,7 +90,7 @@ public sealed class AudioDemo : Scene
         {
             if (_isMusicPlaying && _backgroundMusic != null)
             {
-                _audioBackend.StopMusic(_backgroundMusic);
+                _musicPlayer.StopMusic(_backgroundMusic);
             }
             _isMusicPlaying = false;
             PopScene();
@@ -98,7 +100,7 @@ public sealed class AudioDemo : Scene
         // Update music stream (required for streaming audio)
         if (_isMusicPlaying && _backgroundMusic != null)
         {
-            _audioBackend.UpdateMusic(_backgroundMusic);
+            _musicPlayer.UpdateMusic(_backgroundMusic);
         }
 
         // Music controls
@@ -159,14 +161,14 @@ public sealed class AudioDemo : Scene
     public override void OnRender()
     {
         // Early exit if not loaded yet (can happen during scene preloading)
-        if (_renderBackend == null)
+        if (_renderer == null)
         {
             return;
         }
 
-        _renderBackend.Clear(new Color(25, 30, 40, 255));
+        _renderer.Clear(new Color(25, 30, 40, 255));
 
-        var layout = new TextLayoutHelper(_renderBackend, startX: 50, startY: 30, defaultLineHeight: 25);
+        var layout = new TextLayoutHelper(_renderer, startX: 50, startY: 30, defaultLineHeight: 25);
         var titleColor = new Color(180, 220, 255, 255);
         var sfxTitleColor = new Color(255, 220, 180, 255);
         var dimColor = new Color(150, 150, 150, 255);
@@ -226,7 +228,7 @@ public sealed class AudioDemo : Scene
         // Stop music if playing
         if (_isMusicPlaying && _backgroundMusic != null)
         {
-            _audioBackend.StopMusic(_backgroundMusic);
+            _musicPlayer.StopMusic(_backgroundMusic);
         }
 
         // Unload audio resources (cache handles disposal)
@@ -263,20 +265,20 @@ public sealed class AudioDemo : Scene
         if (_isMusicPlaying)
         {
             // Check if music is already playing (from previous session)
-            if (_audioBackend.IsMusicPlaying(_backgroundMusic))
+            if (_musicPlayer.IsMusicPlaying(_backgroundMusic))
             {
-                _audioBackend.ResumeMusic(_backgroundMusic);
+                _musicPlayer.ResumeMusic(_backgroundMusic);
             }
             else
             {
-                _audioBackend.PlayMusic(_backgroundMusic);
-                _audioBackend.SetMusicVolume(_backgroundMusic, _musicVolume);
+                _musicPlayer.PlayMusic(_backgroundMusic);
+                _musicPlayer.SetMusicVolume(_backgroundMusic, _musicVolume);
             }
             _logger.Info("AudioDemo", "Music started");
         }
         else
         {
-            _audioBackend.PauseMusic(_backgroundMusic);
+            _musicPlayer.PauseMusic(_backgroundMusic);
             _logger.Info("AudioDemo", "Music paused");
         }
     }
@@ -285,7 +287,7 @@ public sealed class AudioDemo : Scene
     {
         if (_backgroundMusic != null)
         {
-            _audioBackend.SetMusicVolume(_backgroundMusic, _musicVolume);
+            _musicPlayer.SetMusicVolume(_backgroundMusic, _musicVolume);
         }
         _logger.Info("AudioDemo", $"Music Volume: {_musicVolume:P0}");
     }
@@ -302,8 +304,8 @@ public sealed class AudioDemo : Scene
         _soundFeedbackTimer = FEEDBACK_DURATION;
 
         // Set volume for this specific sound
-        _audioBackend.SetSoundVolume(sound, _sfxVolume);
-        _audioBackend.PlaySound(sound);
+        _soundPlayer.SetSoundVolume(sound, _sfxVolume);
+        _soundPlayer.PlaySound(sound);
 
         _logger.Info("AudioDemo", $"Played {soundName} sound at {_sfxVolume:P0} volume");
     }
@@ -314,15 +316,15 @@ public sealed class AudioDemo : Scene
         const float barHeight = 20f;
 
         // Background
-        _renderBackend.DrawRectangle(position, new Vector2(barWidth, barHeight), new Color(50, 50, 50, 255));
+        _renderer.DrawRectangle(position, new Vector2(barWidth, barHeight), new Color(50, 50, 50, 255));
 
         // Filled portion
         if (volume > 0)
         {
-            _renderBackend.DrawRectangle(position, new Vector2(barWidth * volume, barHeight), color);
+            _renderer.DrawRectangle(position, new Vector2(barWidth * volume, barHeight), color);
         }
 
         // Border
-        _renderBackend.DrawRectangleLines(position, new Vector2(barWidth, barHeight), Color.White);
+        _renderer.DrawRectangleLines(position, new Vector2(barWidth, barHeight), Color.White);
     }
 }

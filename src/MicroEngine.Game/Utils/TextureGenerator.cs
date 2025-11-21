@@ -26,7 +26,7 @@ public abstract class ProceduralShape
     /// <param name="position">World position to draw at.</param>
     /// <param name="rotation">Rotation in degrees (optional).</param>
     /// <param name="scale">Scale factor (optional).</param>
-    public abstract void Render(IRenderBackend2D renderBackend, Vector2 position, float rotation = 0f, float scale = 1f);
+    public abstract void Render(IRenderer2D renderBackend, Vector2 position, float rotation = 0f, float scale = 1f);
 }
 
 /// <summary>
@@ -47,7 +47,7 @@ public sealed class RectangleShape : ProceduralShape
     }
 
     /// <inheritdoc/>
-    public override void Render(IRenderBackend2D renderBackend, Vector2 position, float rotation = 0f, float scale = 1f)
+    public override void Render(IRenderer2D renderBackend, Vector2 position, float rotation = 0f, float scale = 1f)
     {
         var scaledSize = new Vector2(Size.X * scale, Size.Y * scale);
         renderBackend.DrawRectangle(position, scaledSize, Color);
@@ -74,7 +74,7 @@ public sealed class CircleShape : ProceduralShape
     }
 
     /// <inheritdoc/>
-    public override void Render(IRenderBackend2D renderBackend, Vector2 position, float rotation = 0f, float scale = 1f)
+    public override void Render(IRenderer2D renderBackend, Vector2 position, float rotation = 0f, float scale = 1f)
     {
         float scaledRadius = _radius * scale;
         var center = new Vector2(position.X + scaledRadius, position.Y + scaledRadius);
@@ -107,7 +107,7 @@ public sealed class BorderedRectangleShape : ProceduralShape
     }
 
     /// <inheritdoc/>
-    public override void Render(IRenderBackend2D renderBackend, Vector2 position, float rotation = 0f, float scale = 1f)
+    public override void Render(IRenderer2D renderBackend, Vector2 position, float rotation = 0f, float scale = 1f)
     {
         var scaledSize = new Vector2(Size.X * scale, Size.Y * scale);
         var scaledBorder = _borderWidth * scale;

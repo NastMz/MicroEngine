@@ -16,7 +16,7 @@ namespace MicroEngine.Game.Scenes;
 public sealed class MainMenuScene : Scene
 {
     private IInputBackend _inputBackend = null!;
-    private IRenderBackend2D _renderBackend = null!;
+    private IRenderer2D _renderBackend = null!;
     private ILogger _logger = null!;
     private readonly SceneManager _sceneManager;
     private readonly SceneCache _sceneCache;
@@ -60,7 +60,7 @@ public sealed class MainMenuScene : Scene
     {
         base.OnLoad(context);
         _inputBackend = context.InputBackend;
-        _renderBackend = context.RenderBackend;
+        _renderBackend = context.Renderer;
         _logger = context.Logger;
         _logger.Info("MainMenu", "Main menu loaded");
 

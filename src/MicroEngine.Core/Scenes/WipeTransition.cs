@@ -33,7 +33,8 @@ public enum WipeDirection
 /// </summary>
 public sealed class WipeTransition : ISceneTransitionEffect
 {
-    private readonly IRenderBackend2D _renderBackend;
+    private readonly IRenderer2D _renderer;
+    private readonly IWindow _window;
     private readonly float _duration;
     private readonly WipeDirection _direction;
     private readonly Color _wipeColor;
@@ -51,17 +52,20 @@ public sealed class WipeTransition : ISceneTransitionEffect
     /// <summary>
     /// Initializes a new instance of the <see cref="WipeTransition"/> class.
     /// </summary>
-    /// <param name="renderBackend">Render backend for drawing the wipe overlay.</param>
+    /// <param name="renderer">Render backend for drawing the wipe overlay.</param>
+    /// <param name="window">Window for getting screen dimensions.</param>
     /// <param name="direction">Direction of the wipe effect.</param>
     /// <param name="duration">Duration of the wipe effect in seconds.</param>
     /// <param name="wipeColor">Color of the wipe overlay (default: black).</param>
     public WipeTransition(
-        IRenderBackend2D renderBackend,
+        IRenderer2D renderer,
+        IWindow window,
         WipeDirection direction = WipeDirection.LeftToRight,
         float duration = 0.4f,
         Color? wipeColor = null)
     {
-        _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
+        _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
+        _window = window ?? throw new ArgumentNullException(nameof(window));
         _duration = duration > 0 ? duration : throw new ArgumentOutOfRangeException(nameof(duration), "Duration must be positive");
         _direction = direction;
         _wipeColor = wipeColor ?? new Color(0, 0, 0, 255);
@@ -110,15 +114,15 @@ public sealed class WipeTransition : ISceneTransitionEffect
             progress = 1f - progress;
         }
 
-        int screenWidth = _renderBackend.WindowWidth;
-        int screenHeight = _renderBackend.WindowHeight;
+        int screenWidth = _window.Width;
+        int screenHeight = _window.Height;
 
         switch (_direction)
         {
             case WipeDirection.LeftToRight:
                 {
                     float width = screenWidth * progress;
-                    _renderBackend.DrawRectangle(
+                    _renderer.DrawRectangle(
                         Vector2.Zero,
                         new Vector2(width, screenHeight),
                         _wipeColor);
@@ -129,7 +133,7 @@ public sealed class WipeTransition : ISceneTransitionEffect
                 {
                     float width = screenWidth * progress;
                     float x = screenWidth - width;
-                    _renderBackend.DrawRectangle(
+                    _renderer.DrawRectangle(
                         new Vector2(x, 0),
                         new Vector2(width, screenHeight),
                         _wipeColor);
@@ -139,7 +143,7 @@ public sealed class WipeTransition : ISceneTransitionEffect
             case WipeDirection.TopToBottom:
                 {
                     float height = screenHeight * progress;
-                    _renderBackend.DrawRectangle(
+                    _renderer.DrawRectangle(
                         Vector2.Zero,
                         new Vector2(screenWidth, height),
                         _wipeColor);
@@ -150,7 +154,7 @@ public sealed class WipeTransition : ISceneTransitionEffect
                 {
                     float height = screenHeight * progress;
                     float y = screenHeight - height;
-                    _renderBackend.DrawRectangle(
+                    _renderer.DrawRectangle(
                         new Vector2(0, y),
                         new Vector2(screenWidth, height),
                         _wipeColor);
@@ -166,7 +170,7 @@ public sealed class WipeTransition : ISceneTransitionEffect
                     
                     // For simplicity, draw expanding rectangles (circular would require more complex rendering)
                     float size = currentRadius * 2f;
-                    _renderBackend.DrawRectangle(
+                    _renderer.DrawRectangle(
                         new Vector2(center.X - currentRadius, center.Y - currentRadius),
                         new Vector2(size, size),
                         _wipeColor);
@@ -180,10 +184,10 @@ public sealed class WipeTransition : ISceneTransitionEffect
                     float marginY = (screenHeight / 2f) * (1f - progress);
                     
                     // Draw four rectangles from edges
-                    _renderBackend.DrawRectangle(Vector2.Zero, new Vector2(margin, screenHeight), _wipeColor); // Left
-                    _renderBackend.DrawRectangle(new Vector2(screenWidth - margin, 0), new Vector2(margin, screenHeight), _wipeColor); // Right
-                    _renderBackend.DrawRectangle(new Vector2(margin, 0), new Vector2(screenWidth - 2 * margin, marginY), _wipeColor); // Top
-                    _renderBackend.DrawRectangle(new Vector2(margin, screenHeight - marginY), new Vector2(screenWidth - 2 * margin, marginY), _wipeColor); // Bottom
+                    _renderer.DrawRectangle(Vector2.Zero, new Vector2(margin, screenHeight), _wipeColor); // Left
+                    _renderer.DrawRectangle(new Vector2(screenWidth - margin, 0), new Vector2(margin, screenHeight), _wipeColor); // Right
+                    _renderer.DrawRectangle(new Vector2(margin, 0), new Vector2(screenWidth - 2 * margin, marginY), _wipeColor); // Top
+                    _renderer.DrawRectangle(new Vector2(margin, screenHeight - marginY), new Vector2(screenWidth - 2 * margin, marginY), _wipeColor); // Bottom
                 }
                 break;
         }

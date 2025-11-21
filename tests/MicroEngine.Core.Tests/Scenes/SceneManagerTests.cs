@@ -60,7 +60,8 @@ public class SceneManagerTests
 
     private static SceneContext CreateMockSceneContext()
     {
-        var mockRenderBackend = new Mock<IRenderBackend2D>();
+        var mockRenderer = new Mock<IRenderer2D>();
+        var mockWindow = new Mock<IWindow>();
         var mockInputBackend = new Mock<IInputBackend>();
         var mockTimeService = new Mock<ITimeService>();
         var logger = new ConsoleLogger(LogLevel.Error);
@@ -74,21 +75,30 @@ public class SceneManagerTests
         var mockAudioLoader = new Mock<IResourceLoader<IAudioClip>>();
         var audioCache = new ResourceCache<IAudioClip>(mockAudioLoader.Object, logger);
         
-        // Create mock audio backend
-        var mockAudioBackend = new Mock<IAudioBackend>();
+        // Create mock audio backends
+        var mockAudioDevice = new Mock<IAudioDevice>();
+        var mockSoundPlayer = new Mock<ISoundPlayer>();
+        var mockMusicPlayer = new Mock<IMusicPlayer>();
         
         // Create real GameState for tests
         var gameState = new GameState();
+        
+        // Create mock service container
+        var mockServiceContainer = new Mock<DependencyInjection.IServiceContainer>();
 
         return new SceneContext(
-            mockRenderBackend.Object,
+            mockWindow.Object,
+            mockRenderer.Object,
             mockInputBackend.Object,
             mockTimeService.Object,
             logger,
             textureCache,
             audioCache,
-            mockAudioBackend.Object,
-            gameState
+            mockAudioDevice.Object,
+            mockSoundPlayer.Object,
+            mockMusicPlayer.Object,
+            gameState,
+            mockServiceContainer.Object
         );
     }
 

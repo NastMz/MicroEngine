@@ -3,50 +3,10 @@ using MicroEngine.Core.Math;
 namespace MicroEngine.Core.Graphics;
 
 /// <summary>
-/// Backend-agnostic 2D rendering interface.
-/// Provides unified API for 2D rendering operations across different backends.
+/// Interface for 2D rendering operations.
 /// </summary>
-/// <remarks>
-/// This interface focuses solely on 2D rendering capabilities.
-/// Future 3D support will be provided through IRenderBackend3D or a more abstract pipeline.
-/// The backend is responsible only for drawing; timing is managed by ITimeService.
-/// </remarks>
-public interface IRenderBackend2D
+public interface IRenderer2D
 {
-    #region Window Management
-
-    /// <summary>
-    /// Gets or sets the window title.
-    /// </summary>
-    string WindowTitle { get; set; }
-
-    /// <summary>
-    /// Gets the window width in pixels.
-    /// </summary>
-    int WindowWidth { get; }
-
-    /// <summary>
-    /// Gets the window height in pixels.
-    /// </summary>
-    int WindowHeight { get; }
-
-    /// <summary>
-    /// Gets whether the window should close.
-    /// </summary>
-    bool ShouldClose { get; }
-
-    /// <summary>
-    /// Initializes the rendering backend and creates a window.
-    /// </summary>
-    void Initialize(int width, int height, string title);
-
-    /// <summary>
-    /// Shuts down the rendering backend and closes the window.
-    /// </summary>
-    void Shutdown();
-
-    #endregion
-
     #region Frame Management
 
     /// <summary>

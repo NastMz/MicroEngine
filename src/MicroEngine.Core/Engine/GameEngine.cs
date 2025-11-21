@@ -20,7 +20,8 @@ public sealed class GameEngine
     private readonly GameTime _gameTime;
     private readonly PrecisionTimer _timer;
     private readonly SceneManager _sceneManager;
-    private readonly IRenderBackend2D _renderBackend;
+    private readonly IWindow _window;
+    private readonly IRenderer2D _renderer;
     private readonly IInputBackend _inputBackend;
     private readonly MemoryProfiler? _memoryProfiler;
 
@@ -62,20 +63,23 @@ public sealed class GameEngine
     /// Initializes a new instance of the <see cref="GameEngine"/> class.
     /// </summary>
     /// <param name="configuration">Engine configuration.</param>
-    /// <param name="renderBackend">The rendering backend.</param>
+    /// <param name="window">The window manager.</param>
+    /// <param name="renderer">The 2D renderer.</param>
     /// <param name="inputBackend">The input backend.</param>
     /// <param name="logger">Logger instance.</param>
     /// <param name="transitionEffect">Optional scene transition effect.</param>
     /// <exception cref="ArgumentNullException">Thrown when required parameters are null.</exception>
     public GameEngine(
         EngineConfiguration configuration,
-        IRenderBackend2D renderBackend,
+        IWindow window,
+        IRenderer2D renderer,
         IInputBackend inputBackend,
         ILogger logger,
         ISceneTransitionEffect? transitionEffect = null)
     {
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-        _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
+        _window = window ?? throw new ArgumentNullException(nameof(window));
+        _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
         _inputBackend = inputBackend ?? throw new ArgumentNullException(nameof(inputBackend));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -142,7 +146,7 @@ public sealed class GameEngine
         _logger.Info(LOG_CATEGORY, "Starting main loop");
         _timer.Restart();
 
-        while (!ShouldExit && !_renderBackend.ShouldClose && _state == EngineState.Running)
+        while (!ShouldExit && !_window.ShouldClose && _state == EngineState.Running)
         {
             ProcessFrame();
         }
@@ -186,9 +190,9 @@ public sealed class GameEngine
         Update(deltaTime);
 
         // Render (uncapped or V-synced)
-        _renderBackend.BeginFrame();
+        _renderer.BeginFrame();
         Render();
-        _renderBackend.EndFrame();
+        _renderer.EndFrame();
 
         // Memory profiling (capture snapshot at configured interval)
         _frameCount++;

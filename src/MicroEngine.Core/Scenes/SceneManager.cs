@@ -1,3 +1,4 @@
+using MicroEngine.Core.DependencyInjection;
 using MicroEngine.Core.Logging;
 
 namespace MicroEngine.Core.Scenes;
@@ -11,8 +12,10 @@ public sealed class SceneManager
     private const string LOG_CATEGORY = "SceneManager";
 
     private readonly Stack<Scene> _sceneStack = new();
+    private readonly Dictionary<Scene, IServiceContainer> _sceneScopes = new();
     private ISceneTransitionEffect? _transitionEffect;
     private SceneContext _sceneContext = null!;
+    private IServiceContainer _rootContainer = null!;
     private ILogger _logger = null!;
 
     private Scene? _pendingScene;
@@ -46,12 +49,13 @@ public sealed class SceneManager
     }
 
     /// <summary>
-    /// Initializes the scene manager with the scene context.
+    /// Initializes the scene manager with the scene context and root service container.
     /// </summary>
     /// <param name="context">The scene context providing access to engine services.</param>
     public void Initialize(SceneContext context)
     {
         _sceneContext = context ?? throw new ArgumentNullException(nameof(context));
+        _rootContainer = context.Services ?? throw new ArgumentException("SceneContext must have a Services container", nameof(context));
         _logger = context.Logger;
         _logger.Info(LOG_CATEGORY, "Scene manager initialized");
     }
@@ -236,6 +240,25 @@ public sealed class SceneManager
 
         _logger.Info(LOG_CATEGORY, $"Pushing scene: {_pendingScene.Name}");
 
+        // Create scoped container for this scene
+        var scope = _rootContainer.CreateScope();
+        _sceneScopes[_pendingScene] = scope;
+
+        // Create scene context with scoped container
+        var scopedContext = new SceneContext(
+            _sceneContext.Window,
+            _sceneContext.Renderer,
+            _sceneContext.InputBackend,
+            _sceneContext.TimeService,
+            _sceneContext.Logger,
+            _sceneContext.TextureCache,
+            _sceneContext.AudioCache,
+            _sceneContext.AudioDevice,
+            _sceneContext.SoundPlayer,
+            _sceneContext.MusicPlayer,
+            _sceneContext.GameState,
+            scope);
+
         // Current scene remains in stack but won't receive updates
         _sceneStack.Push(_pendingScene);
         _pendingScene.SetSceneManager(this);
@@ -243,12 +266,12 @@ public sealed class SceneManager
         // Call appropriate OnLoad overload based on whether parameters were provided
         if (_pendingParameters != null)
         {
-            _pendingScene.OnLoad(_sceneContext, _pendingParameters);
+            _pendingScene.OnLoad(scopedContext, _pendingParameters);
             _pendingParameters = null;
         }
         else
         {
-            _pendingScene.OnLoad(_sceneContext);
+            _pendingScene.OnLoad(scopedContext);
         }
 
         _pendingScene = null;
@@ -264,6 +287,13 @@ public sealed class SceneManager
         var currentScene = _sceneStack.Pop();
         _logger.Info(LOG_CATEGORY, $"Popping scene: {currentScene.Name}");
         currentScene.OnUnload();
+
+        // Dispose scoped container
+        if (_sceneScopes.TryGetValue(currentScene, out var scope))
+        {
+            scope.Dispose();
+            _sceneScopes.Remove(currentScene);
+        }
 
         // Resume previous scene (if any)
         if (_sceneStack.Count > 0)
@@ -285,11 +315,37 @@ public sealed class SceneManager
             var oldScene = _sceneStack.Pop();
             _logger.Info(LOG_CATEGORY, $"Replacing scene: {oldScene.Name} → {_pendingScene.Name}");
             oldScene.OnUnload();
+
+            // Dispose old scene's scoped container
+            if (_sceneScopes.TryGetValue(oldScene, out var oldScope))
+            {
+                oldScope.Dispose();
+                _sceneScopes.Remove(oldScene);
+            }
         }
         else
         {
             _logger.Info(LOG_CATEGORY, $"Loading initial scene: {_pendingScene.Name}");
         }
+
+        // Create scoped container for new scene
+        var scope = _rootContainer.CreateScope();
+        _sceneScopes[_pendingScene] = scope;
+
+        // Create scene context with scoped container
+        var scopedContext = new SceneContext(
+            _sceneContext.Window,
+            _sceneContext.Renderer,
+            _sceneContext.InputBackend,
+            _sceneContext.TimeService,
+            _sceneContext.Logger,
+            _sceneContext.TextureCache,
+            _sceneContext.AudioCache,
+            _sceneContext.AudioDevice,
+            _sceneContext.SoundPlayer,
+            _sceneContext.MusicPlayer,
+            _sceneContext.GameState,
+            scope);
 
         // Push new scene
         _sceneStack.Push(_pendingScene);
@@ -298,12 +354,12 @@ public sealed class SceneManager
         // Call appropriate OnLoad overload based on whether parameters were provided
         if (_pendingParameters != null)
         {
-            _pendingScene.OnLoad(_sceneContext, _pendingParameters);
+            _pendingScene.OnLoad(scopedContext, _pendingParameters);
             _pendingParameters = null;
         }
         else
         {
-            _pendingScene.OnLoad(_sceneContext);
+            _pendingScene.OnLoad(scopedContext);
         }
 
         _pendingScene = null;
@@ -365,6 +421,13 @@ public sealed class SceneManager
             var scene = _sceneStack.Pop();
             _logger.Info(LOG_CATEGORY, $"Unloading scene: {scene.Name}");
             scene.OnUnload();
+
+            // Dispose scoped container
+            if (_sceneScopes.TryGetValue(scene, out var scope))
+            {
+                scope.Dispose();
+                _sceneScopes.Remove(scene);
+            }
         }
 
         _pendingScene = null;

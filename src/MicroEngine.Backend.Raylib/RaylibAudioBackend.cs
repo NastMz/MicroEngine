@@ -4,9 +4,9 @@ using MicroEngine.Core.Resources;
 namespace MicroEngine.Backend.Raylib;
 
 /// <summary>
-/// Raylib implementation of IAudioBackend.
+/// Raylib implementation of audio interfaces.
 /// </summary>
-public sealed class RaylibAudioBackend : IAudioBackend
+public sealed class RaylibAudioBackend : IAudioDevice, ISoundPlayer, IMusicPlayer
 {
     private const string INVALID_MUSIC_ERROR = "Music must be a streaming RaylibAudioClip";
     private const string INVALID_SOUND_ERROR = "Sound must be a non-streaming RaylibAudioClip";

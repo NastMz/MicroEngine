@@ -9,7 +9,8 @@ namespace MicroEngine.Core.Scenes;
 /// </summary>
 public sealed class FadeTransition : ISceneTransitionEffect
 {
-    private readonly IRenderBackend2D _renderBackend;
+    private readonly IRenderer2D _renderer;
+    private readonly IWindow _window;
     private readonly float _duration;
     private readonly Color _fadeColor;
 
@@ -26,12 +27,14 @@ public sealed class FadeTransition : ISceneTransitionEffect
     /// <summary>
     /// Initializes a new instance of the <see cref="FadeTransition"/> class.
     /// </summary>
-    /// <param name="renderBackend">Render backend for drawing the fade overlay.</param>
+    /// <param name="renderer">Render backend for drawing the fade overlay.</param>
+    /// <param name="window">Window for getting screen dimensions.</param>
     /// <param name="duration">Duration of the fade effect in seconds.</param>
     /// <param name="fadeColor">Color to fade to (default: black).</param>
-    public FadeTransition(IRenderBackend2D renderBackend, float duration = 0.3f, Color? fadeColor = null)
+    public FadeTransition(IRenderer2D renderer, IWindow window, float duration = 0.3f, Color? fadeColor = null)
     {
-        _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
+        _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
+        _window = window ?? throw new ArgumentNullException(nameof(window));
         _duration = duration > 0 ? duration : throw new ArgumentOutOfRangeException(nameof(duration), "Duration must be positive");
         _fadeColor = fadeColor ?? new Color(0, 0, 0, 255);
         _isComplete = true; // Initially complete (no transition running)
@@ -80,8 +83,8 @@ public sealed class FadeTransition : ISceneTransitionEffect
         }
 
         // Get screen dimensions
-        int screenWidth = _renderBackend.WindowWidth;
-        int screenHeight = _renderBackend.WindowHeight;
+        int screenWidth = _window.Width;
+        int screenHeight = _window.Height;
 
         // Draw fullscreen rectangle with fade color
         Color fadeWithAlpha = new Color(
@@ -91,7 +94,7 @@ public sealed class FadeTransition : ISceneTransitionEffect
             (byte)(alpha * 255)
         );
 
-        _renderBackend.DrawRectangle(
+        _renderer.DrawRectangle(
             Vector2.Zero,
             new Vector2(screenWidth, screenHeight),
             fadeWithAlpha

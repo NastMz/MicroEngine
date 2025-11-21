@@ -10,7 +10,7 @@ namespace MicroEngine.Core.Graphics;
 public class SpriteBatch : ISpriteBatch
 {
     private readonly List<SpriteBatchItem> _items;
-    private readonly IRenderBackend2D _renderBackend;
+    private readonly IRenderer2D _renderer;
     private bool _begun;
     private SpriteSortMode _sortMode;
 
@@ -23,11 +23,11 @@ public class SpriteBatch : ISpriteBatch
     /// <summary>
     /// Initializes a new instance of the <see cref="SpriteBatch"/> class.
     /// </summary>
-    /// <param name="renderBackend">Render backend for drawing.</param>
+    /// <param name="renderer">Renderer for drawing.</param>
     /// <param name="initialCapacity">Initial capacity for sprite queue.</param>
-    public SpriteBatch(IRenderBackend2D renderBackend, int initialCapacity = 256)
+    public SpriteBatch(IRenderer2D renderer, int initialCapacity = 256)
     {
-        _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
+        _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
         _items = new List<SpriteBatchItem>(initialCapacity);
         _begun = false;
         _sortMode = SpriteSortMode.Deferred;
@@ -211,7 +211,7 @@ public class SpriteBatch : ISpriteBatch
             destWidth,
             destHeight);
 
-        _renderBackend.DrawTexturePro(
+        _renderer.DrawTexturePro(
             item.Texture,
             source,
             destRect,

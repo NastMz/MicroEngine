@@ -17,12 +17,12 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class TilemapDemo : Scene
 {
     private IInputBackend _inputBackend = null!;
-    private IRenderBackend2D _renderBackend = null!;
+    private IRenderer2D _renderer = null!;
+    private IWindow _window = null!;
     private ILogger _logger = null!;
     private ResourceCache<ITexture> _textureCache = null!;
 
     // ECS for camera control
-    private World _world = null!;
     private CameraControllerSystem _cameraSystem = null!;
     private Entity _cameraEntity;
     private Camera2D _camera = null!;
@@ -59,18 +59,18 @@ public sealed class TilemapDemo : Scene
     {
         base.OnLoad(context);
         _inputBackend = context.InputBackend;
-        _renderBackend = context.RenderBackend;
+        _renderer = context.Renderer;
+        _window = context.Window;
         _logger = context.Logger;
         _textureCache = context.TextureCache;
         
         
-        // Initialize ECS
-        _world = new World();
+        // Initialize camera system
         _cameraSystem = new CameraControllerSystem();
 
         // Calculate screen center for camera offset
-        var screenCenterX = _renderBackend.WindowWidth / 2f;
-        var screenCenterY = _renderBackend.WindowHeight / 2f;
+        var screenCenterX = _window.Width / 2f;
+        var screenCenterY = _window.Height / 2f;
 
         // Initialize camera with centered viewport
         _camera = new Camera2D
@@ -82,8 +82,8 @@ public sealed class TilemapDemo : Scene
         };
 
         // Create camera entity with CameraComponent
-        _cameraEntity = _world.CreateEntity();
-        _world.AddComponent(_cameraEntity, new CameraComponent
+        _cameraEntity = World.CreateEntity();
+        World.AddComponent(_cameraEntity, new CameraComponent
         {
             Camera = _camera,
             MovementSpeed = CAMERA_SPEED,
@@ -98,7 +98,7 @@ public sealed class TilemapDemo : Scene
 
         // Initialize tilemap system
         _tilemap = new Tilemap(GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, TILE_SIZE);
-        _spriteBatch = new SpriteBatch(_renderBackend);
+        _spriteBatch = new SpriteBatch(_renderer);
         
         // Load tile textures
         LoadTileTextures();
@@ -127,7 +127,7 @@ public sealed class TilemapDemo : Scene
         }
 
         // Translate input to camera commands
-        ref var cam = ref _world.GetComponent<CameraComponent>(_cameraEntity);
+        ref var cam = ref World.GetComponent<CameraComponent>(_cameraEntity);
 
         // Movement direction (WASD or Arrow keys)
         float moveX = 0f, moveY = 0f;
@@ -145,7 +145,7 @@ public sealed class TilemapDemo : Scene
         }
 
         // Process camera commands via system
-        _cameraSystem.Update(_world, deltaTime);
+        _cameraSystem.Update(World, deltaTime);
 
         // Update local camera reference
         _camera = cam.Camera;
@@ -162,15 +162,15 @@ public sealed class TilemapDemo : Scene
     public override void OnRender()
     {
         // Early exit if not loaded yet
-        if (_renderBackend == null || _tilemap == null)
+        if (_renderer == null || _tilemap == null)
         {
             return;
         }
 
-        _renderBackend.Clear(new Color(40, 60, 80, 255));
+        _renderer.Clear(new Color(40, 60, 80, 255));
 
         // Begin camera mode for world-space rendering
-        _renderBackend.BeginCamera2D(_camera);
+        _renderer.BeginCamera2D(_camera);
 
         // Begin sprite batch for tilemap rendering
         _spriteBatch.Begin(SpriteSortMode.Deferred);
@@ -182,10 +182,10 @@ public sealed class TilemapDemo : Scene
         _spriteBatch.End();
 
         // End camera mode
-        _renderBackend.EndCamera2D();
+        _renderer.EndCamera2D();
 
         // UI Overlay
-        var layout = new TextLayoutHelper(_renderBackend, startX: 20, startY: 20, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(_renderer, startX: 20, startY: 20, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var controlsColor = new Color(180, 180, 180, 255);
         var dimColor = new Color(150, 150, 150, 255);
@@ -196,7 +196,7 @@ public sealed class TilemapDemo : Scene
               .DrawText($"Tiles: {GRID_WIDTH}x{GRID_HEIGHT} ({_tilemap.TotalTileCount} total)", 14, infoColor);
         
         // Calculate visible bounds manually
-        var visibleBounds = _camera.GetVisibleBounds(_renderBackend.WindowWidth, _renderBackend.WindowHeight);
+        var visibleBounds = _camera.GetVisibleBounds(_window.Width, _window.Height);
         var (startX, startY) = _tilemap.WorldToTile(new Vector2(visibleBounds.X, visibleBounds.Y));
         var (endX, endY) = _tilemap.WorldToTile(new Vector2(visibleBounds.X + visibleBounds.Width, visibleBounds.Y + visibleBounds.Height));
         startX = System.Math.Max(0, startX);
@@ -263,7 +263,7 @@ public sealed class TilemapDemo : Scene
     private void RenderTilemap()
     {
         // Calculate visible bounds for culling
-        var visibleBounds = _camera.GetVisibleBounds(_renderBackend.WindowWidth, _renderBackend.WindowHeight);
+        var visibleBounds = _camera.GetVisibleBounds(_window.Width, _window.Height);
         var (startX, startY) = _tilemap.WorldToTile(new Vector2(visibleBounds.X, visibleBounds.Y));
         var (endX, endY) = _tilemap.WorldToTile(new Vector2(visibleBounds.X + visibleBounds.Width, visibleBounds.Y + visibleBounds.Height));
 
@@ -364,7 +364,7 @@ public sealed class TilemapDemo : Scene
         const int BOX_SIZE = 16;
         const int LINE_HEIGHT = 22;
 
-        var layout = new TextLayoutHelper(_renderBackend, startX: LEGEND_X, startY: 20, defaultLineHeight: LINE_HEIGHT);
+        var layout = new TextLayoutHelper(_renderer, startX: LEGEND_X, startY: 20, defaultLineHeight: LINE_HEIGHT);
         var legendColor = new Color(200, 200, 200, 255);
 
         layout.DrawText("Tile Types:", 14, legendColor)
@@ -373,8 +373,8 @@ public sealed class TilemapDemo : Scene
         // Helper method to draw legend item
         void DrawLegendItem(int tileId, string name)
         {
-            _renderBackend.DrawRectangle(new Vector2(LEGEND_X, layout.CurrentY), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(tileId));
-            _renderBackend.DrawText(name, new Vector2(LEGEND_X + BOX_SIZE + 8, layout.CurrentY + 2), 12, Color.White);
+            _renderer.DrawRectangle(new Vector2(LEGEND_X, layout.CurrentY), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(tileId));
+            _renderer.DrawText(name, new Vector2(LEGEND_X + BOX_SIZE + 8, layout.CurrentY + 2), 12, Color.White);
             layout.AddSpacing(LINE_HEIGHT);
         }
 
@@ -384,3 +384,4 @@ public sealed class TilemapDemo : Scene
         DrawLegendItem(TILE_STONE, "Stone");
     }
 }
+

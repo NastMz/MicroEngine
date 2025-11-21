@@ -16,7 +16,7 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class SaveLoadDemo : Scene
 {
     private IInputBackend _inputBackend = null!;
-    private IRenderBackend2D _renderBackend = null!;
+    private IRenderer2D _renderer = null!;
     private ILogger _logger = null!;
     private ISavegameManager _savegameManager = null!;
 
@@ -44,7 +44,7 @@ public sealed class SaveLoadDemo : Scene
     {
         base.OnLoad(context);
         _inputBackend = context.InputBackend;
-        _renderBackend = context.RenderBackend;
+        _renderer = context.Renderer;
         _logger = context.Logger;
         _savegameManager = new SavegameManager("./Saves");
         _logger.Info(SCENE_NAME, "Save/Load demo loaded - drag entities and save/load their positions");
@@ -92,7 +92,7 @@ public sealed class SaveLoadDemo : Scene
     /// <inheritdoc/>
     public override void OnRender()
     {
-        _renderBackend.Clear(new Color(25, 30, 35, 255));
+        _renderer.Clear(new Color(25, 30, 35, 255));
 
         RenderEntities();
         RenderUI();
@@ -345,23 +345,23 @@ public sealed class SaveLoadDemo : Scene
             {
                 var highlightSize = new Vector2(45, 45);
                 var highlightPos = new Vector2(transform.Position.X - 22.5f, transform.Position.Y - 22.5f);
-                _renderBackend.DrawRectangle(highlightPos, highlightSize, new Color(255, 255, 255, 100));
+                _renderer.DrawRectangle(highlightPos, highlightSize, new Color(255, 255, 255, 100));
             }
 
             // Draw entity as rectangle (position is center, so offset by half size)
             var rectSize = new Vector2(40, 40);
             var rectPos = new Vector2(transform.Position.X - 20f, transform.Position.Y - 20f);
-            _renderBackend.DrawRectangle(rectPos, rectSize, color);
+            _renderer.DrawRectangle(rectPos, rectSize, color);
 
             // Draw label
             var labelPos = new Vector2(transform.Position.X - 15, transform.Position.Y - 30);
-            _renderBackend.DrawText(name, labelPos, 12, Color.White);
+            _renderer.DrawText(name, labelPos, 12, Color.White);
         }
     }
 
     private void RenderUI()
     {
-        var layout = new TextLayoutHelper(_renderBackend, startX: 10, startY: 10, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(_renderer, startX: 10, startY: 10, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var dimColor = new Color(150, 150, 150, 255);
 

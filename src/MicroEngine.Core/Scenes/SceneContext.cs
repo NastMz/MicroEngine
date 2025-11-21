@@ -1,4 +1,5 @@
 using MicroEngine.Core.Audio;
+using MicroEngine.Core.DependencyInjection;
 using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
@@ -20,9 +21,14 @@ namespace MicroEngine.Core.Scenes;
 public sealed class SceneContext
 {
     /// <summary>
-    /// Gets the 2D rendering backend.
+    /// Gets the window manager.
     /// </summary>
-    public IRenderBackend2D RenderBackend { get; }
+    public IWindow Window { get; }
+
+    /// <summary>
+    /// Gets the 2D renderer.
+    /// </summary>
+    public IRenderer2D Renderer { get; }
 
     /// <summary>
     /// Gets the input backend for keyboard, mouse, and gamepad input.
@@ -50,9 +56,19 @@ public sealed class SceneContext
     public ResourceCache<IAudioClip> AudioCache { get; }
 
     /// <summary>
-    /// Gets the audio backend for sound and music playback.
+    /// Gets the audio device manager.
     /// </summary>
-    public IAudioBackend AudioBackend { get; }
+    public IAudioDevice AudioDevice { get; }
+
+    /// <summary>
+    /// Gets the sound player for sound effects.
+    /// </summary>
+    public ISoundPlayer SoundPlayer { get; }
+
+    /// <summary>
+    /// Gets the music player for streaming audio.
+    /// </summary>
+    public IMusicPlayer MusicPlayer { get; }
 
     /// <summary>
     /// Gets the global game state for persistent data across scenes.
@@ -60,34 +76,38 @@ public sealed class SceneContext
     public IGameState GameState { get; }
 
     /// <summary>
+    /// Gets the service container for resolving scoped services.
+    /// </summary>
+    public IServiceContainer Services { get; }
+
+    /// <summary>
     /// Initializes a new instance of the SceneContext with all required services.
     /// </summary>
-    /// <param name="renderBackend">The 2D rendering backend.</param>
-    /// <param name="inputBackend">The input backend.</param>
-    /// <param name="timeService">The time service.</param>
-    /// <param name="logger">The logger.</param>
-    /// <param name="textureCache">The texture resource cache.</param>
-    /// <param name="audioCache">The audio resource cache.</param>
-    /// <param name="audioBackend">The audio backend.</param>
-    /// <param name="gameState">The global game state.</param>
-    /// <exception cref="ArgumentNullException">Thrown if any parameter is null.</exception>
     public SceneContext(
-        IRenderBackend2D renderBackend,
+        IWindow window,
+        IRenderer2D renderer,
         IInputBackend inputBackend,
         ITimeService timeService,
         ILogger logger,
         ResourceCache<ITexture> textureCache,
         ResourceCache<IAudioClip> audioCache,
-        IAudioBackend audioBackend,
-        IGameState gameState)
+        IAudioDevice audioDevice,
+        ISoundPlayer soundPlayer,
+        IMusicPlayer musicPlayer,
+        IGameState gameState,
+        IServiceContainer services)
     {
-        RenderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
+        Window = window ?? throw new ArgumentNullException(nameof(window));
+        Renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
         InputBackend = inputBackend ?? throw new ArgumentNullException(nameof(inputBackend));
         TimeService = timeService ?? throw new ArgumentNullException(nameof(timeService));
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         TextureCache = textureCache ?? throw new ArgumentNullException(nameof(textureCache));
         AudioCache = audioCache ?? throw new ArgumentNullException(nameof(audioCache));
-        AudioBackend = audioBackend ?? throw new ArgumentNullException(nameof(audioBackend));
+        AudioDevice = audioDevice ?? throw new ArgumentNullException(nameof(audioDevice));
+        SoundPlayer = soundPlayer ?? throw new ArgumentNullException(nameof(soundPlayer));
+        MusicPlayer = musicPlayer ?? throw new ArgumentNullException(nameof(musicPlayer));
         GameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
+        Services = services ?? throw new ArgumentNullException(nameof(services));
     }
 }

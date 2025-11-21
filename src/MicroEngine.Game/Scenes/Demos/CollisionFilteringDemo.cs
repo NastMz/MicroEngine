@@ -16,7 +16,7 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class CollisionFilteringDemo : Scene
 {
     private IInputBackend _inputBackend = null!;
-    private IRenderBackend2D _renderBackend = null!;
+    private IRenderer2D _renderer = null!;
     private ILogger _logger = null!;
 
     private const string SCENE_NAME = "CollisionFilteringDemo";
@@ -52,7 +52,7 @@ public sealed class CollisionFilteringDemo : Scene
     {
         base.OnLoad(context);
         _inputBackend = context.InputBackend;
-        _renderBackend = context.RenderBackend;
+        _renderer = context.Renderer;
         _logger = context.Logger;
         _logger.Info(SCENE_NAME, "Collision Filtering demo loaded - platformer with collision filtering");
 
@@ -409,7 +409,7 @@ public sealed class CollisionFilteringDemo : Scene
     /// <inheritdoc/>
     public override void OnRender()
     {
-        _renderBackend.Clear(new Color(20, 25, 30, 255));
+        _renderer.Clear(new Color(20, 25, 30, 255));
 
         RenderEntities();
         RenderUI();
@@ -428,7 +428,7 @@ public sealed class CollisionFilteringDemo : Scene
         if (World.IsEntityValid(_ground))
         {
             var groundTransform = World.GetComponent<TransformComponent>(_ground);
-            _renderBackend.DrawRectangle(
+            _renderer.DrawRectangle(
                 new Vector2(0, groundTransform.Position.Y),
                 new Vector2(800, 50),
                 new Color(80, 80, 80, 255)
@@ -443,8 +443,8 @@ public sealed class CollisionFilteringDemo : Scene
 
             var transform = World.GetComponent<TransformComponent>(obstacle);
             var obstaclePos = new Vector2(transform.Position.X - 15, transform.Position.Y - 30);
-            _renderBackend.DrawRectangle(obstaclePos, new Vector2(30, 60), new Color(100, 100, 100, 255));
-            _renderBackend.DrawText("OBS", new Vector2(transform.Position.X - 12, transform.Position.Y - 8), 10, Color.White);
+            _renderer.DrawRectangle(obstaclePos, new Vector2(30, 60), new Color(100, 100, 100, 255));
+            _renderer.DrawText("OBS", new Vector2(transform.Position.X - 12, transform.Position.Y - 8), 10, Color.White);
         }
 
         // Draw enemies
@@ -454,22 +454,22 @@ public sealed class CollisionFilteringDemo : Scene
                 continue;
 
             var transform = World.GetComponent<TransformComponent>(enemy);
-            _renderBackend.DrawCircle(transform.Position, 18, new Color(255, 100, 100, 255));
-            _renderBackend.DrawText("E", new Vector2(transform.Position.X - 5, transform.Position.Y - 6), 12, Color.White);
+            _renderer.DrawCircle(transform.Position, 18, new Color(255, 100, 100, 255));
+            _renderer.DrawText("E", new Vector2(transform.Position.X - 5, transform.Position.Y - 6), 12, Color.White);
         }
 
         // Draw player
         if (World.IsEntityValid(_player))
         {
             var playerTransform = World.GetComponent<TransformComponent>(_player);
-            _renderBackend.DrawCircle(playerTransform.Position, 20, new Color(100, 150, 255, 255));
-            _renderBackend.DrawText("P", new Vector2(playerTransform.Position.X - 5, playerTransform.Position.Y - 6), 12, Color.White);
+            _renderer.DrawCircle(playerTransform.Position, 20, new Color(100, 150, 255, 255));
+            _renderer.DrawText("P", new Vector2(playerTransform.Position.X - 5, playerTransform.Position.Y - 6), 12, Color.White);
         }
     }
 
     private void RenderUI()
     {
-        var layout = new TextLayoutHelper(_renderBackend, startX: 10, startY: 10, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(_renderer, startX: 10, startY: 10, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var dimColor = new Color(150, 150, 150, 255);
 

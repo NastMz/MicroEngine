@@ -6,14 +6,14 @@ namespace MicroEngine.Core.Tests.Scenes;
 
 public class FadeTransitionTests
 {
-    private class MockRenderBackend : IRenderBackend2D
+    private class MockRenderBackend : IRenderer2D, IWindow
     {
         public int DrawRectangleCallCount { get; private set; }
         public Color LastDrawColor { get; private set; }
 
-        public string WindowTitle { get; set; } = "Test";
-        public int WindowWidth => 800;
-        public int WindowHeight => 600;
+        public string Title { get; set; } = "Test";
+        public int Width => 800;
+        public int Height => 600;
         public bool ShouldClose => false;
         public AntiAliasingMode AntiAliasing { get; set; } = AntiAliasingMode.None;
 
@@ -46,7 +46,7 @@ public class FadeTransitionTests
     {
         var renderBackend = new MockRenderBackend();
 
-        var transition = new FadeTransition(renderBackend);
+        var transition = new FadeTransition(renderBackend, renderBackend);
 
         Assert.NotNull(transition);
         Assert.True(transition.IsComplete);
@@ -56,7 +56,8 @@ public class FadeTransitionTests
     [Fact]
     public void Constructor_ThrowsWhenRenderBackendIsNull()
     {
-        Assert.Throws<ArgumentNullException>(() => new FadeTransition(null!));
+        Assert.Throws<ArgumentNullException>(() => new FadeTransition(null!, new MockRenderBackend()));
+        Assert.Throws<ArgumentNullException>(() => new FadeTransition(new MockRenderBackend(), null!));
     }
 
     [Fact]
@@ -64,15 +65,15 @@ public class FadeTransitionTests
     {
         var renderBackend = new MockRenderBackend();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => new FadeTransition(renderBackend, duration: 0f));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new FadeTransition(renderBackend, duration: -0.5f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new FadeTransition(renderBackend, renderBackend, duration: 0f));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new FadeTransition(renderBackend, renderBackend, duration: -0.5f));
     }
 
     [Fact]
     public void Start_ResetsStateAndBeginsTransition()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new FadeTransition(renderBackend, duration: 1.0f);
+        var transition = new FadeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
 
@@ -84,7 +85,7 @@ public class FadeTransitionTests
     public void Update_ProgressesTransition()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new FadeTransition(renderBackend, duration: 1.0f);
+        var transition = new FadeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(0.5f); // 50% progress
@@ -97,7 +98,7 @@ public class FadeTransitionTests
     public void Update_CompletesTransitionWhenDurationReached()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new FadeTransition(renderBackend, duration: 1.0f);
+        var transition = new FadeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(1.0f); // 100% progress
@@ -110,7 +111,7 @@ public class FadeTransitionTests
     public void Update_ClampsProgressToOne()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new FadeTransition(renderBackend, duration: 1.0f);
+        var transition = new FadeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(2.0f); // 200% would exceed
@@ -123,7 +124,7 @@ public class FadeTransitionTests
     public void Update_DoesNothingWhenComplete()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new FadeTransition(renderBackend, duration: 1.0f);
+        var transition = new FadeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(1.0f); // Complete
@@ -139,7 +140,7 @@ public class FadeTransitionTests
     public void Render_DoesNotDrawWhenProgressIsZero()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new FadeTransition(renderBackend, duration: 1.0f);
+        var transition = new FadeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Render();
@@ -151,7 +152,7 @@ public class FadeTransitionTests
     public void Render_DrawsWithCorrectAlphaForFadeOut()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new FadeTransition(renderBackend, duration: 1.0f);
+        var transition = new FadeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(0.5f); // 50% progress
@@ -166,7 +167,7 @@ public class FadeTransitionTests
     public void Render_DrawsWithCorrectAlphaForFadeIn()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new FadeTransition(renderBackend, duration: 1.0f);
+        var transition = new FadeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: false);
         transition.Update(0.5f); // 50% progress
@@ -181,7 +182,7 @@ public class FadeTransitionTests
     public void Reset_ResetsTransitionToInitialState()
     {
         var renderBackend = new MockRenderBackend();
-        var transition = new FadeTransition(renderBackend, duration: 1.0f);
+        var transition = new FadeTransition(renderBackend, renderBackend, duration: 1.0f);
 
         transition.Start(fadeOut: true);
         transition.Update(0.5f);
@@ -196,7 +197,7 @@ public class FadeTransitionTests
     {
         var renderBackend = new MockRenderBackend();
         var customColor = new Color(255, 0, 0, 255); // Red
-        var transition = new FadeTransition(renderBackend, duration: 1.0f, fadeColor: customColor);
+        var transition = new FadeTransition(renderBackend, renderBackend, duration: 1.0f, fadeColor: customColor);
 
         transition.Start(fadeOut: true);
         transition.Update(1.0f); // Full fade

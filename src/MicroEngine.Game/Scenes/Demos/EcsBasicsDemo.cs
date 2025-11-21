@@ -18,7 +18,7 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class EcsBasicsDemo : Scene
 {
     private IInputBackend _inputBackend = null!;
-    private IRenderBackend2D _renderBackend = null!;
+    private IRenderer2D _renderer = null!;
     private ILogger _logger = null!;
     private readonly MovementSystem _movementSystem;
 
@@ -54,12 +54,9 @@ public sealed class EcsBasicsDemo : Scene
     {
         base.OnLoad(context);
         _inputBackend = context.InputBackend;
-        _renderBackend = context.RenderBackend;
+        _renderer = context.Renderer;
         _logger = context.Logger;
         _logger.Info(SCENE_NAME, "Demo loaded - showcasing EntityBuilder and EntityFactory with interactivity");
-
-        // Clean up any existing entities (important for cache hits)
-        ClearEntities();
 
         CreateDemoEntities();
 
@@ -91,7 +88,7 @@ public sealed class EcsBasicsDemo : Scene
     /// <inheritdoc/>
     public override void OnRender()
     {
-        _renderBackend.Clear(new Color(30, 30, 40, 255));
+        _renderer.Clear(new Color(30, 30, 40, 255));
 
         RenderEntities();
         RenderLabels();
@@ -351,13 +348,13 @@ public sealed class EcsBasicsDemo : Scene
                 renderPos = new Vector2(renderPos.X, renderPos.Y + bounceOffset);
             }
 
-            _renderBackend.DrawCircle(renderPos, size, color);
+            _renderer.DrawCircle(renderPos, size, color);
 
             // Draw trail for player (simple effect)
             if (entity.Equals(_playerEntity))
             {
                 var trailColor = new Color(100, 150, 255, 80);
-                _renderBackend.DrawCircle(renderPos, size + 4, trailColor);
+                _renderer.DrawCircle(renderPos, size + 4, trailColor);
             }
         }
     }
@@ -386,13 +383,13 @@ public sealed class EcsBasicsDemo : Scene
             // Draw label above entity
             var labelOffset = new Vector2(-20f, -30f);
             var textPos = new Vector2(labelPos.X + labelOffset.X, labelPos.Y + labelOffset.Y);
-            _renderBackend.DrawText(name, textPos, 12, new Color(220, 220, 220, 200));
+            _renderer.DrawText(name, textPos, 12, new Color(220, 220, 220, 200));
         }
     }
 
     private void RenderUI()
     {
-        var layout = new TextLayoutHelper(_renderBackend, startX: 10, startY: 10, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(_renderer, startX: 10, startY: 10, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var dimColor = new Color(180, 180, 180, 255);
         var controlsColor = new Color(150, 150, 150, 255);

@@ -17,13 +17,13 @@ namespace MicroEngine.Game.Scenes.Demos;
 public sealed class GraphicsDemo : Scene
 {
     private IInputBackend _inputBackend = null!;
-    private IRenderBackend2D _renderBackend = null!;
+    private IWindow _window = null!;
+    private IRenderer2D _renderer = null!;
     private ILogger _logger = null!;
     private ResourceCache<ITexture> _textureCache = null!;
     private readonly Random _random;
 
     // ECS for camera control
-    private World _world = null!;
     private CameraControllerSystem _cameraSystem = null!;
     private Entity _cameraEntity;
 
@@ -55,18 +55,18 @@ public sealed class GraphicsDemo : Scene
     {
         base.OnLoad(context);
         _inputBackend = context.InputBackend;
-        _renderBackend = context.RenderBackend;
+        _window = context.Window;
+        _renderer = context.Renderer;
         _logger = context.Logger;
         _textureCache = context.TextureCache;
         _logger.Info("GraphicsDemo", "Graphics demo loaded");
 
-        // Initialize ECS
-        _world = new World();
+        // Initialize camera system
         _cameraSystem = new CameraControllerSystem();
 
         // Initialize camera at center with proper screen offset
-        var screenCenterX = _renderBackend.WindowWidth / 2f;
-        var screenCenterY = _renderBackend.WindowHeight / 2f;
+        var screenCenterX = _window.Width / 2f;
+        var screenCenterY = _window.Height / 2f;
 
         _camera = new Camera2D
         {
@@ -77,8 +77,8 @@ public sealed class GraphicsDemo : Scene
         };
 
         // Create camera entity with CameraComponent
-        _cameraEntity = _world.CreateEntity();
-        _world.AddComponent(_cameraEntity, new CameraComponent
+        _cameraEntity = World.CreateEntity();
+        World.AddComponent(_cameraEntity, new CameraComponent
         {
             Camera = _camera,
             MovementSpeed = CAMERA_SPEED,
@@ -113,7 +113,7 @@ public sealed class GraphicsDemo : Scene
         }
 
         // Translate input to camera commands
-        ref var cam = ref _world.GetComponent<CameraComponent>(_cameraEntity);
+        ref var cam = ref World.GetComponent<CameraComponent>(_cameraEntity);
 
         // Movement direction (WASD)
         float moveX = 0f, moveY = 0f;
@@ -131,7 +131,7 @@ public sealed class GraphicsDemo : Scene
         if (_inputBackend.IsKeyPressed(Key.R)) { cam.ResetRequested = true; }
 
         // Process camera commands via system
-        _cameraSystem.Update(_world, deltaTime);
+        _cameraSystem.Update(World, deltaTime);
 
         // Update local camera reference (system modifies the component's camera)
         _camera = cam.Camera;
@@ -179,10 +179,10 @@ public sealed class GraphicsDemo : Scene
     /// <inheritdoc/>
     public override void OnRender()
     {
-        _renderBackend.Clear(new Color(20, 20, 30, 255));
+        _renderer.Clear(new Color(20, 20, 30, 255));
 
         // Begin camera mode
-        _renderBackend.BeginCamera2D(_camera);
+        _renderer.BeginCamera2D(_camera);
 
         // Draw grid
         DrawGrid();
@@ -191,11 +191,11 @@ public sealed class GraphicsDemo : Scene
         DrawWorldBorder();
 
         // DEBUG: Draw camera center marker
-        _renderBackend.DrawRectangle(
+        _renderer.DrawRectangle(
             new Vector2(_camera.Position.X - 50, _camera.Position.Y - 5),
             new Vector2(100, 10),
             new Color(255, 0, 0, 255));
-        _renderBackend.DrawRectangle(
+        _renderer.DrawRectangle(
             new Vector2(_camera.Position.X - 5, _camera.Position.Y - 50),
             new Vector2(10, 100),
             new Color(255, 0, 0, 255));
@@ -218,7 +218,7 @@ public sealed class GraphicsDemo : Scene
 
                 var origin = new Vector2(textureWidth / 2f * sprite.Scale, textureHeight / 2f * sprite.Scale);
 
-                _renderBackend.DrawTexturePro(
+                _renderer.DrawTexturePro(
                     loadedSprite.Texture,
                     sourceRect,
                     destRect,
@@ -229,7 +229,7 @@ public sealed class GraphicsDemo : Scene
         }
 
         // End camera mode
-        _renderBackend.EndCamera2D();
+        _renderer.EndCamera2D();
 
         // UI (screen space)
         DrawUI();
@@ -334,7 +334,7 @@ public sealed class GraphicsDemo : Scene
         {
             for (int y = 0; y < WORLD_SIZE; y += GRID_SPACING)
             {
-                _renderBackend.DrawRectangle(new Vector2(x, y), new Vector2(2, 2), gridColor);
+                _renderer.DrawRectangle(new Vector2(x, y), new Vector2(2, 2), gridColor);
             }
         }
     }
@@ -346,25 +346,25 @@ public sealed class GraphicsDemo : Scene
         const float BORDER_THICKNESS = 4f;
 
         // Top
-        _renderBackend.DrawRectangle(
+        _renderer.DrawRectangle(
             new Vector2(0, 0),
             new Vector2(WORLD_SIZE, BORDER_THICKNESS),
             borderColor);
 
         // Bottom
-        _renderBackend.DrawRectangle(
+        _renderer.DrawRectangle(
             new Vector2(0, WORLD_SIZE - BORDER_THICKNESS),
             new Vector2(WORLD_SIZE, BORDER_THICKNESS),
             borderColor);
 
         // Left
-        _renderBackend.DrawRectangle(
+        _renderer.DrawRectangle(
             new Vector2(0, 0),
             new Vector2(BORDER_THICKNESS, WORLD_SIZE),
             borderColor);
 
         // Right
-        _renderBackend.DrawRectangle(
+        _renderer.DrawRectangle(
             new Vector2(WORLD_SIZE - BORDER_THICKNESS, 0),
             new Vector2(BORDER_THICKNESS, WORLD_SIZE),
             borderColor);
@@ -372,7 +372,7 @@ public sealed class GraphicsDemo : Scene
 
     private void DrawUI()
     {
-        var layout = new TextLayoutHelper(_renderBackend, startX: 10, startY: 10, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(_renderer, startX: 10, startY: 10, defaultLineHeight: 20);
         var textColor = new Color(200, 200, 200, 255);
         var titleColor = new Color(100, 200, 255, 255);
         var controlsColor = new Color(150, 150, 150, 255);
@@ -386,7 +386,7 @@ public sealed class GraphicsDemo : Scene
               .DrawText($"Textures Loaded: {_loadedSprites.Count}/{SPRITE_FILES.Length}", 14, textColor)
               .DrawText($"Texture Filter: {_currentFilter}", 14, textColor);
 
-        var msaaStatus = _renderBackend.AntiAliasing == AntiAliasingMode.MSAA4X ? "4X" : "Off";
+        var msaaStatus = _renderer.AntiAliasing == AntiAliasingMode.MSAA4X ? "4X" : "Off";
         layout.DrawText($"MSAA: {msaaStatus} (configured at startup)", 14, textColor);
 
         var mipmapCount = _loadedSprites.Count(s => s.Texture.HasMipmaps);
@@ -489,3 +489,4 @@ public sealed class GraphicsDemo : Scene
         public ITexture Texture { get; set; } = null!;
     }
 }
+

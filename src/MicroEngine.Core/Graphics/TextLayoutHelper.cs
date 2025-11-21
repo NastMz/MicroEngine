@@ -12,7 +12,7 @@ namespace MicroEngine.Core.Graphics;
 /// </remarks>
 public sealed class TextLayoutHelper
 {
-    private readonly IRenderBackend2D _renderBackend;
+    private readonly IRenderer2D _renderer;
     private readonly float _startX;
     private readonly float _startY;
     private float _currentY;
@@ -41,13 +41,13 @@ public sealed class TextLayoutHelper
     /// <summary>
     /// Initializes a new instance of the <see cref="TextLayoutHelper"/> class.
     /// </summary>
-    /// <param name="renderBackend">The render backend to use for drawing text.</param>
+    /// <param name="renderer">The render backend to use for drawing text.</param>
     /// <param name="startX">Starting X position for text.</param>
     /// <param name="startY">Starting Y position for text.</param>
     /// <param name="defaultLineHeight">Default line height. If 0 or negative, calculated automatically.</param>
-    public TextLayoutHelper(IRenderBackend2D renderBackend, float startX, float startY, float defaultLineHeight = 20f)
+    public TextLayoutHelper(IRenderer2D renderer, float startX, float startY, float defaultLineHeight = 20f)
     {
-        _renderBackend = renderBackend ?? throw new ArgumentNullException(nameof(renderBackend));
+        _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
         _startX = startX;
         _startY = startY;
         _currentY = startY;
@@ -65,7 +65,7 @@ public sealed class TextLayoutHelper
     /// <returns>This instance for method chaining.</returns>
     public TextLayoutHelper DrawText(string text, int fontSize, Color color, float? customLineHeight = null)
     {
-        _renderBackend.DrawText(text, new Vector2(CurrentX, _currentY), fontSize, color);
+        _renderer.DrawText(text, new Vector2(CurrentX, _currentY), fontSize, color);
         
         var lineHeight = customLineHeight ?? (_defaultLineHeight > 0 ? _defaultLineHeight : fontSize + 6);
         _currentY += lineHeight;
@@ -189,13 +189,13 @@ public sealed class TextLayoutHelper
         Color valueColor, 
         float keyValueSpacing = 10f)
     {
-        _renderBackend.DrawText(key, new Vector2(CurrentX, _currentY), fontSize, keyColor);
+        _renderer.DrawText(key, new Vector2(CurrentX, _currentY), fontSize, keyColor);
         
         // Simple approximation: assume each character is roughly fontSize * 0.6 wide
         var keyWidth = key.Length * fontSize * 0.6f;
         var valueX = CurrentX + keyWidth + keyValueSpacing;
         
-        _renderBackend.DrawText(value, new Vector2(valueX, _currentY), fontSize, valueColor);
+        _renderer.DrawText(value, new Vector2(valueX, _currentY), fontSize, valueColor);
         
         var lineHeight = _defaultLineHeight > 0 ? _defaultLineHeight : fontSize + 6;
         _currentY += lineHeight;

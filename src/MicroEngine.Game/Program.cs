@@ -1,7 +1,12 @@
-﻿using MicroEngine.Backend.Raylib;
+﻿using MicroEngine.Backend.Aether;
+using MicroEngine.Backend.Raylib;
 using MicroEngine.Backend.Raylib.Resources;
+using MicroEngine.Core.DependencyInjection;
+using MicroEngine.Core.ECS.Systems;
 using MicroEngine.Core.Engine;
+using MicroEngine.Core.Events;
 using MicroEngine.Core.Logging;
+using MicroEngine.Core.Physics;
 using MicroEngine.Core.Resources;
 using MicroEngine.Core.Scenes;
 using MicroEngine.Core.State;
@@ -37,10 +42,10 @@ internal static class Program
         try
         {
             // Create all transition effects
-            var fadeTransition = new FadeTransition(renderBackend, duration: 0.25f);
-            var slideTransition = new SlideTransition(renderBackend, SlideDirection.Left, duration: 0.5f);
-            var wipeTransition = new WipeTransition(renderBackend, WipeDirection.LeftToRight, duration: 0.4f);
-            var zoomTransition = new ZoomTransition(renderBackend, ZoomMode.ZoomOut, duration: 0.5f);
+            var fadeTransition = new FadeTransition(renderBackend, renderBackend, duration: 0.25f);
+            var slideTransition = new SlideTransition(renderBackend, renderBackend, SlideDirection.Left, duration: 0.5f);
+            var wipeTransition = new WipeTransition(renderBackend, renderBackend, WipeDirection.LeftToRight, duration: 0.4f);
+            var zoomTransition = new ZoomTransition(renderBackend, renderBackend, ZoomMode.ZoomOut, duration: 0.5f);
 
             // Create engine configuration with fixed timestep for deterministic physics
             var engineConfig = new EngineConfiguration
@@ -52,7 +57,8 @@ internal static class Program
             // Create GameEngine with backends (rendering is uncapped/V-synced)
             var engine = new GameEngine(
                 engineConfig,
-                renderBackend,
+                renderBackend, // IWindow
+                renderBackend, // IRenderer2D
                 inputBackend,
                 logger,
                 fadeTransition
@@ -67,16 +73,41 @@ internal static class Program
             // Create TimeService for FPS tracking (not for limiting - engine handles timing)
             var timeService = new Core.Time.TimeService(targetFPS: 0);
 
+            // Create DI container and register services
+            var serviceContainer = new ServiceContainer();
+
+            // Register singleton services (shared across entire application)
+            serviceContainer.RegisterSingleton(logger);
+            serviceContainer.RegisterSingleton(renderBackend); // IWindow + IRenderer2D
+            serviceContainer.RegisterSingleton(inputBackend);
+            serviceContainer.RegisterSingleton(timeService);
+            serviceContainer.RegisterSingleton(textureCache);
+            serviceContainer.RegisterSingleton(audioCache);
+            serviceContainer.RegisterSingleton(audioBackend); // IAudioDevice + ISoundPlayer + IMusicPlayer
+            serviceContainer.RegisterSingleton(gameState);
+
+            // Register scoped services (per scene load)
+            serviceContainer.RegisterScoped<EventBus>(s => new EventBus());
+            serviceContainer.RegisterScoped<PhysicsBackendSystem>(s =>
+            {
+                var backend = new AetherPhysicsBackend();
+                return new PhysicsBackendSystem(backend);
+            });
+
             // Create scene context with all engine services
             var sceneContext = new SceneContext(
-                renderBackend,
+                renderBackend, // IWindow
+                renderBackend, // IRenderer2D
                 inputBackend,
                 timeService,
                 logger,
                 textureCache,
                 audioCache,
-                audioBackend,
-                gameState
+                audioBackend, // IAudioDevice
+                audioBackend, // ISoundPlayer
+                audioBackend, // IMusicPlayer
+                gameState,
+                serviceContainer
             );
 
             // Initialize engine with scene context
