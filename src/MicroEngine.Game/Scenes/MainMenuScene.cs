@@ -18,7 +18,7 @@ public sealed class MainMenuScene : Scene
     private IInputBackend _inputBackend = null!;
     private IRenderer2D _renderBackend = null!;
     private ILogger _logger = null!;
-    private readonly SceneManager _sceneManager;
+    private readonly ISceneNavigator _navigator;
     private readonly SceneCache _sceneCache;
     private readonly FadeTransition _fadeTransition;
     private readonly SlideTransition _slideTransition;
@@ -39,7 +39,7 @@ public sealed class MainMenuScene : Scene
     /// Initializes a new instance of the <see cref="MainMenuScene"/> class.
     /// </summary>
     public MainMenuScene(
-        SceneManager sceneManager,
+        ISceneNavigator navigator,
         SceneCache sceneCache,
         FadeTransition fadeTransition,
         SlideTransition slideTransition,
@@ -47,7 +47,7 @@ public sealed class MainMenuScene : Scene
         ZoomTransition zoomTransition)
         : base("MainMenu")
     {
-        _sceneManager = sceneManager;
+        _navigator = navigator;
         _sceneCache = sceneCache;
         _fadeTransition = fadeTransition;
         _slideTransition = slideTransition;
@@ -195,25 +195,25 @@ public sealed class MainMenuScene : Scene
         if (_inputBackend.IsKeyPressed(Key.F6))
         {
             _currentTransition = "Fade";
-            _sceneManager.SetTransition(_fadeTransition);
+            _navigator.SetTransition(_fadeTransition);
             _logger.Info("MainMenu", "Transition changed to: Fade");
         }
         else if (_inputBackend.IsKeyPressed(Key.F7))
         {
             _currentTransition = "Slide";
-            _sceneManager.SetTransition(_slideTransition);
+            _navigator.SetTransition(_slideTransition);
             _logger.Info("MainMenu", "Transition changed to: Slide");
         }
         else if (_inputBackend.IsKeyPressed(Key.F8))
         {
             _currentTransition = "Wipe";
-            _sceneManager.SetTransition(_wipeTransition);
+            _navigator.SetTransition(_wipeTransition);
             _logger.Info("MainMenu", "Transition changed to: Wipe");
         }
         else if (_inputBackend.IsKeyPressed(Key.F9))
         {
             _currentTransition = "Zoom";
-            _sceneManager.SetTransition(_zoomTransition);
+            _navigator.SetTransition(_zoomTransition);
             _logger.Info("MainMenu", "Transition changed to: Zoom");
         }
     }

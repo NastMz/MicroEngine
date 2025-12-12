@@ -7,7 +7,7 @@ namespace MicroEngine.Core.Scenes;
 /// Manages scene lifecycle and navigation using a stack-based approach.
 /// Supports pushing, popping, and replacing scenes with automatic lifecycle management.
 /// </summary>
-public sealed class SceneManager
+public sealed class SceneManager : ISceneNavigator
 {
     private const string LOG_CATEGORY = "SceneManager";
 
@@ -257,11 +257,12 @@ public sealed class SceneManager
             _sceneContext.SoundPlayer,
             _sceneContext.MusicPlayer,
             _sceneContext.GameState,
-            scope);
+            scope,
+            this); // Pass navigator
 
         // Current scene remains in stack but won't receive updates
         _sceneStack.Push(_pendingScene);
-        _pendingScene.SetSceneManager(this);
+        _pendingScene.SetNavigator(this);
         
         // Call appropriate OnLoad overload based on whether parameters were provided
         if (_pendingParameters != null)
@@ -345,11 +346,12 @@ public sealed class SceneManager
             _sceneContext.SoundPlayer,
             _sceneContext.MusicPlayer,
             _sceneContext.GameState,
-            scope);
+            scope,
+            this); // Pass navigator
 
         // Push new scene
         _sceneStack.Push(_pendingScene);
-        _pendingScene.SetSceneManager(this);
+        _pendingScene.SetNavigator(this);
         
         // Call appropriate OnLoad overload based on whether parameters were provided
         if (_pendingParameters != null)

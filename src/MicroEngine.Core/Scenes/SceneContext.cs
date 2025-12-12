@@ -81,6 +81,11 @@ public sealed class SceneContext
     public IServiceContainer Services { get; }
 
     /// <summary>
+    /// Gets the scene navigator for scene transitions.
+    /// </summary>
+    public ISceneNavigator Navigator { get; }
+
+    /// <summary>
     /// Initializes a new instance of the SceneContext with all required services.
     /// </summary>
     public SceneContext(
@@ -95,7 +100,8 @@ public sealed class SceneContext
         ISoundPlayer soundPlayer,
         IMusicPlayer musicPlayer,
         IGameState gameState,
-        IServiceContainer services)
+        IServiceContainer services,
+        ISceneNavigator navigator)
     {
         Window = window ?? throw new ArgumentNullException(nameof(window));
         Renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
@@ -109,5 +115,6 @@ public sealed class SceneContext
         MusicPlayer = musicPlayer ?? throw new ArgumentNullException(nameof(musicPlayer));
         GameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
         Services = services ?? throw new ArgumentNullException(nameof(services));
+        Navigator = navigator ?? throw new ArgumentNullException(nameof(navigator));
     }
 }

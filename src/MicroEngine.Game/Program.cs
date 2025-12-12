@@ -107,15 +107,16 @@ internal static class Program
                 audioBackend, // ISoundPlayer
                 audioBackend, // IMusicPlayer
                 gameState,
-                serviceContainer
+                serviceContainer,
+                engine.SceneManager // ISceneNavigator
             );
 
             // Initialize engine with scene context
             engine.Initialize(sceneContext);
 
-            // Load initial scene (MainMenu) with access to SceneManager, transitions, and scene cache
+            // Load initial scene (MainMenu) with access to Navigator, transitions, and scene cache
             var mainMenu = new MainMenuScene(
-                engine.SceneManager,
+                sceneContext.Navigator,
                 sceneCache,
                 fadeTransition,
                 slideTransition,

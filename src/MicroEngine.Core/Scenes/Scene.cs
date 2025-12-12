@@ -9,7 +9,7 @@ namespace MicroEngine.Core.Scenes;
 public abstract class Scene : IScene
 {
     private bool _isActive;
-    private SceneManager? _sceneManager;
+    private ISceneNavigator? _navigator;
 
     /// <inheritdoc/>
     public string Name { get; }
@@ -40,27 +40,27 @@ public abstract class Scene : IScene
     }
 
     /// <summary>
-    /// Internal method to set the scene manager reference.
+    /// Internal method to set the scene navigator reference.
     /// Called by SceneManager during scene loading.
     /// </summary>
-    internal void SetSceneManager(SceneManager sceneManager)
+    internal void SetNavigator(ISceneNavigator navigator)
     {
-        _sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
+        _navigator = navigator ?? throw new ArgumentNullException(nameof(navigator));
     }
 
     /// <summary>
     /// Pushes a new scene onto the scene stack.
     /// </summary>
     /// <param name="scene">The scene to push.</param>
-    /// <exception cref="InvalidOperationException">Thrown if scene manager is not initialized.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if navigator is not initialized.</exception>
     protected void PushScene(Scene scene)
     {
-        if (_sceneManager == null)
+        if (_navigator == null)
         {
-            throw new InvalidOperationException("Scene manager not initialized. This scene has not been loaded yet.");
+            throw new InvalidOperationException("Navigator not initialized. This scene has not been loaded yet.");
         }
         
-        _sceneManager.PushScene(scene);
+        _navigator.PushScene(scene);
     }
 
     /// <summary>
@@ -68,44 +68,44 @@ public abstract class Scene : IScene
     /// </summary>
     /// <param name="scene">The scene to push.</param>
     /// <param name="parameters">Parameters to pass to the new scene.</param>
-    /// <exception cref="InvalidOperationException">Thrown if scene manager is not initialized.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if navigator is not initialized.</exception>
     protected void PushScene(Scene scene, SceneParameters parameters)
     {
-        if (_sceneManager == null)
+        if (_navigator == null)
         {
-            throw new InvalidOperationException("Scene manager not initialized. This scene has not been loaded yet.");
+            throw new InvalidOperationException("Navigator not initialized. This scene has not been loaded yet.");
         }
         
-        _sceneManager.PushScene(scene, parameters);
+        _navigator.PushScene(scene, parameters);
     }
 
     /// <summary>
     /// Pops the current scene from the scene stack.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown if scene manager is not initialized.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if navigator is not initialized.</exception>
     protected void PopScene()
     {
-        if (_sceneManager == null)
+        if (_navigator == null)
         {
-            throw new InvalidOperationException("Scene manager not initialized. This scene has not been loaded yet.");
+            throw new InvalidOperationException("Navigator not initialized. This scene has not been loaded yet.");
         }
         
-        _sceneManager.PopScene();
+        _navigator.PopScene();
     }
 
     /// <summary>
     /// Replaces the current scene with a new one.
     /// </summary>
     /// <param name="scene">The scene to replace with.</param>
-    /// <exception cref="InvalidOperationException">Thrown if scene manager is not initialized.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if navigator is not initialized.</exception>
     protected void ReplaceScene(Scene scene)
     {
-        if (_sceneManager == null)
+        if (_navigator == null)
         {
-            throw new InvalidOperationException("Scene manager not initialized. This scene has not been loaded yet.");
+            throw new InvalidOperationException("Navigator not initialized. This scene has not been loaded yet.");
         }
         
-        _sceneManager.ReplaceScene(scene);
+        _navigator.ReplaceScene(scene);
     }
 
     /// <summary>
@@ -113,15 +113,15 @@ public abstract class Scene : IScene
     /// </summary>
     /// <param name="scene">The scene to replace with.</param>
     /// <param name="parameters">Parameters to pass to the new scene.</param>
-    /// <exception cref="InvalidOperationException">Thrown if scene manager is not initialized.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if navigator is not initialized.</exception>
     protected void ReplaceScene(Scene scene, SceneParameters parameters)
     {
-        if (_sceneManager == null)
+        if (_navigator == null)
         {
-            throw new InvalidOperationException("Scene manager not initialized. This scene has not been loaded yet.");
+            throw new InvalidOperationException("Navigator not initialized. This scene has not been loaded yet.");
         }
         
-        _sceneManager.ReplaceScene(scene, parameters);
+        _navigator.ReplaceScene(scene, parameters);
     }
 
     /// <inheritdoc/>

@@ -85,6 +85,9 @@ public class SceneManagerTests
         
         // Create mock service container
         var mockServiceContainer = new Mock<DependencyInjection.IServiceContainer>();
+        
+        // Create mock navigator
+        var mockNavigator = new Mock<ISceneNavigator>();
 
         return new SceneContext(
             mockWindow.Object,
@@ -98,7 +101,8 @@ public class SceneManagerTests
             mockSoundPlayer.Object,
             mockMusicPlayer.Object,
             gameState,
-            mockServiceContainer.Object
+            mockServiceContainer.Object,
+            mockNavigator.Object
         );
     }
 
