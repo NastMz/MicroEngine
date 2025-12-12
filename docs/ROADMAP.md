@@ -249,15 +249,6 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 -   ✅ Event-driven architecture enabled
 -   ✅ Resource hot-reload functional
 
-### Remaining Work
-
--   Entity factory usage guide (documentation)
--   Refactor demo scenes to use EntityBuilder/EntityFactory (optional)
--   Tilemap demo scene (optional)
-
-**Deferred to Phase 5+:**
-
--   Entity inspector UI (requires editor infrastructure - see Phase 7)
 
 **Phase 3 Complete:** All core features implemented (9/9 features ✅)
 
@@ -558,10 +549,12 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
     -   Recommended asset packs integration (Kenney.nl, OpenGameArt)
     -   Asset licensing guide and compliance tools
 -   Asset importer CLI (automated asset conversion)
--   **Scene template system**
-    -   Base scene classes with common functionality (`BaseDemoScene`, `BaseGameScene`)
-    -   Scene templates for common patterns (menu, gameplay, loading)
-    -   Scene bootstrapping helpers and factory methods
+-   **Scene template system** (⚠️ Partially implemented - base infrastructure exists)
+    -   ✅ Base scene classes with common functionality (Scene base class)
+    -   ✅ Scene navigation methods (PushScene, PopScene, ReplaceScene)
+    -   ✅ SceneParameters for data passing
+    -   ❌ Scene templates for common patterns (menu, gameplay, loading)
+    -   ❌ Scene bootstrapping helpers and factory methods
 -   **Scene serialization/deserialization**
     -   Scene file format (JSON/YAML)
     -   Scene loading and saving system
