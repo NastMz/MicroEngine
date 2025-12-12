@@ -586,10 +586,10 @@ var bodies = physicsWorld.OverlapShape(shape);
 
 ## Physics Simulation
 
-### Rigidbody Component (Future)
+### RigidBodyComponent (Future)
 
 ```csharp
-public class Rigidbody : IComponent
+public class RigidBodyComponent : IComponent
 {
     public Vector3 Velocity { get; set; }
     public Vector3 AngularVelocity { get; set; }

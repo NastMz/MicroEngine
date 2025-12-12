@@ -103,12 +103,13 @@ ResourceManager
 Central manager for all resource operations.
 
 ```csharp
-public class ResourceManager
+public class ResourceCache<T> where T : class
 {
-    public T Load<T>(string path) where T : IResource;
-    public Task<T> LoadAsync<T>(string path) where T : IResource;
-    public void Unload<T>(string path) where T : IResource;
-    public bool IsLoaded<T>(string path) where T : IResource;
+    public T Load(string path);
+    public bool TryLoad(string path, out T resource);
+    public void Unload(string path);
+    public bool IsLoaded(string path);
+    public void Clear();
 }
 ```
 
@@ -200,12 +201,16 @@ public class DataFile : IResource
 
 ### Synchronous Loading
 
-Load resources immediately (blocks until loaded).
+Load resources via SceneContext caches:
 
 ```csharp
-var texture = ResourceManager.Load<Texture>("textures/player.png");
-var sound = ResourceManager.Load<Sound>("sounds/jump.wav");
-var font = ResourceManager.Load<Font>("fonts/default.ttf");
+public override void OnLoad(SceneContext context)
+{
+    base.OnLoad(context);
+    
+    var texture = context.TextureCache.Load("textures/player.png");
+    var sound = context.AudioCache.Load("sounds/jump.wav");
+}
 ```
 
 ### Type Safety

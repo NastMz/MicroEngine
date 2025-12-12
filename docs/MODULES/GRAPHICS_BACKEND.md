@@ -13,7 +13,7 @@ The Graphics Backend module defines the rendering abstraction layer for MicroEng
 
 It provides:
 
-- **Backend-agnostic rendering API** through `IRenderBackend`
+- **Backend-agnostic rendering API** through `IRenderer2D`
 - **2D rendering primitives** with future 3D extensibility
 - **Support for multiple rendering implementations** (Raylib, SDL, OpenGL, etc.)
 - **Consistent rendering interface** across platforms

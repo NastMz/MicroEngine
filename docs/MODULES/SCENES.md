@@ -3,7 +3,7 @@
 **Module:** Engine.Core.Scenes  
 **Status:** Active  
 **Version:** 1.0  
-**Last Updated:** November 2025
+**Last Updated:** December 2025
 
 ---
 
@@ -81,39 +81,118 @@ SceneManager
 
 ### Core Classes
 
+#### SceneContext
+
+Provides scenes with access to all engine services. Passed to scenes during `OnLoad()`.
+
+```csharp
+public sealed class SceneContext
+{
+    // Rendering
+    public IWindow Window { get; }
+    public IRenderer2D Renderer { get; }
+
+    // Input
+    public IInputBackend InputBackend { get; }
+
+    // Time
+    public ITimeService TimeService { get; }
+
+    // Logging
+    public ILogger Logger { get; }
+
+    // Resources
+    public ResourceCache<ITexture> TextureCache { get; }
+    public ResourceCache<IAudioClip> AudioCache { get; }
+
+    // Audio
+    public IAudioDevice AudioDevice { get; }
+    public ISoundPlayer SoundPlayer { get; }
+    public IMusicPlayer MusicPlayer { get; }
+
+    // State
+    public IGameState GameState { get; }
+
+    // Dependency Injection
+    public IServiceContainer Services { get; }
+
+    // Navigation
+    public ISceneNavigator Navigator { get; }
+}
+```
+
+**Usage Example:**
+
+```csharp
+public override void OnLoad(SceneContext context)
+{
+    base.OnLoad(context);
+
+    // Access services
+    var texture = context.TextureCache.Load("player.png");
+    var mousePos = context.InputBackend.GetMousePosition();
+    context.Logger.LogInfo("Scene loaded");
+
+    // Navigate to another scene
+    context.Navigator.PushScene(new OtherScene());
+}
+```
+
 #### Scene
 
 Base class for all scenes.
 
 ```csharp
-public abstract class Scene
+public abstract class Scene : IScene
 {
     public string Name { get; }
-    public World World { get; }
+    protected World World { get; }
+    protected SceneContext Context { get; private set; } = null!;
 
-    public virtual void OnEnter() { }
-    public virtual void OnExit() { }
-    public virtual void OnPause() { }
-    public virtual void OnResume() { }
-    public abstract void Update(float deltaTime);
+    // Lifecycle methods
+    public virtual void OnLoad(SceneContext context) { }
+    public virtual void OnLoad(SceneContext context, SceneParameters parameters) { }
+    public virtual void OnUnload() { }
+    public virtual void OnUpdate(float deltaTime) { }
+    public virtual void OnFixedUpdate(float fixedDeltaTime) { }
+    public virtual void OnRender() { }
+
+    // Navigation methods (use ISceneNavigator internally)
+    protected void PushScene(Scene scene);
+    protected void PushScene(Scene scene, SceneParameters parameters);
+    protected void PopScene();
+    protected void ReplaceScene(Scene scene);
+    protected void ReplaceScene(Scene scene, SceneParameters parameters);
+}
+```
+
     public virtual void Render(IRenderBackend renderer) { }
 }
 ```
 
 #### SceneManager
 
-Manages scene lifecycle and transitions.
+Manages scene lifecycle and transitions. Implements `ISceneNavigator` for scene navigation.
 
 ```csharp
-public class SceneManager
+public sealed class SceneManager : ISceneNavigator
 {
-    public Scene CurrentScene { get; }
+    public Scene? CurrentScene { get; }
+    public int SceneCount { get; }
 
-    public void ChangeScene(Scene newScene, Transition transition = null);
+    // ISceneNavigator methods
     public void PushScene(Scene scene);
+    public void PushScene(Scene scene, SceneParameters parameters);
     public void PopScene();
+    public void ReplaceScene(Scene scene);
+    public void ReplaceScene(Scene scene, SceneParameters parameters);
+    public void SetTransition(ISceneTransitionEffect? effect);
+
+    // Internal engine methods
+    public void Initialize(SceneContext context);
     public void Update(float deltaTime);
-    public void Render(IRenderBackend renderer);
+    public void Render();
+    public void Shutdown();
 }
 ```
 
@@ -136,18 +215,118 @@ public abstract class Transition
 ### Lifecycle Phases
 
 ```
-[Created] → OnEnter → [Active] → OnExit → [Destroyed]
-              ↓                     ↑
-           OnPause → [Paused] → OnResume
+[Created] → OnLoad → [Active] → OnUnload → [Destroyed]
 ```
+
+**Note:** The current implementation does not have pause/resume functionality. Scenes are either active or destroyed.
 
 ### Lifecycle Hooks
 
-#### OnEnter
+#### OnLoad(SceneContext context)
 
-Called when the scene becomes active.
+Called when the scene is loaded and becomes active. This is where you initialize your scene.
 
 ```csharp
+public override void OnLoad(SceneContext context)
+{
+    base.OnLoad(context); // IMPORTANT: Call base to set Context property
+
+    // Access engine services via context
+    _renderer = context.Renderer;
+    _input = context.InputBackend;
+    _logger = context.Logger;
+
+    // Load resources
+    _backgroundTexture = context.TextureCache.Load("backgrounds/level1.png");
+
+    // Initialize entities
+    World.Clear(); // Clear any existing entities (important for scene reloading)
+    CreatePlayer();
+    CreateEnemies();
+}
+```
+
+#### OnLoad(SceneContext context, SceneParameters parameters)
+
+Overload that receives parameters passed from the previous scene.
+
+```csharp
+public override void OnLoad(SceneContext context, SceneParameters parameters)
+{
+    base.OnLoad(context, parameters);
+
+    // Access passed parameters
+    if (parameters.TryGet<int>("level", out var level))
+    {
+        _currentLevel = level;
+    }
+
+    // Continue initialization
+    LoadLevel(_currentLevel);
+}
+```
+
+#### OnUnload
+
+Called when the scene is being destroyed. Clean up resources here.
+
+```csharp
+public override void OnUnload()
+{
+    // Unload resources (if manually managed)
+    // Note: ResourceCache handles most cleanup automatically
+
+    // Stop any ongoing processes
+    _musicPlayer?.Stop();
+
+    // Log cleanup
+    Context.Logger.LogInfo($"Scene '{Name}' unloaded");
+
+    base.OnUnload();
+}
+```
+
+#### OnUpdate(float deltaTime)
+
+Called every frame for game logic updates.
+
+```csharp
+public override void OnUpdate(float deltaTime)
+{
+    // Update game logic
+    HandleInput();
+    UpdatePlayer(deltaTime);
+    UpdateEnemies(deltaTime);
+
+    // Update ECS systems
+    World.Update(deltaTime);
+}
+```
+
+#### OnFixedUpdate(float fixedDeltaTime)
+
+Called at a fixed timestep (typically 60 Hz) for physics updates.
+
+```csharp
+public override void OnFixedUpdate(float fixedDeltaTime)
+{
+    // Physics updates happen here
+    // This is called by the engine at a fixed rate
+}
+```
+
+#### OnRender
+
+Called every frame for rendering. The renderer is already set up by the engine.
+
+```csharp
+public override void OnRender()
+{
+    // Rendering is handled by the engine
+    // You typically don't need to override this unless doing custom rendering
+}
+```
+
 public override void OnEnter()
 {
     // Initialize scene-specific resources

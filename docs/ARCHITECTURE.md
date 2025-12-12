@@ -3,7 +3,7 @@
 **Version:** v0.13.0 (Dev)  
 **Status:** Reference  
 **Author:** Kevin Martínez  
-**Last Updated:** November 2025
+**Last Updated:** December 2025
 
 ---
 
@@ -17,6 +17,7 @@ This document describes how the engine is structured internally and how all its 
 
 - 📘 [Core Requirements](CORE_REQUIREMENTS.md) — Mandatory technical rules
 - 📘 [Engine Design Document](ENGINE_DESIGN_DOCUMENT.md) — Vision and goals
+- 📘 [Dependency Injection & Navigation](DI_AND_NAVIGATION.md) — DI Container and ISceneNavigator pattern
 - 📘 [Roadmap](ROADMAP.md) — Development timeline
 
 ---

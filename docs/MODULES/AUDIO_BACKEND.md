@@ -182,8 +182,13 @@ audioBackend.Dispose();
 ### Loading Sounds
 
 ```csharp
-var jumpSound = ResourceManager.Load<Sound>("sounds/jump.wav");
-var explosionSound = ResourceManager.Load<Sound>("sounds/explosion.wav");
+public override void OnLoad(SceneContext context)
+{
+    base.OnLoad(context);
+    
+    var jumpSound = context.AudioCache.Load("sounds/jump.wav");
+    var explosionSound = context.AudioCache.Load("sounds/explosion.wav");
+}
 ```
 
 ### Playing Sounds
@@ -498,20 +503,20 @@ public class GameplayScene : Scene
     private Sound _jumpSound;
     private Music _levelMusic;
 
-    public override void OnEnter()
+    public override void OnLoad(SceneContext context)
     {
-        _jumpSound = ResourceManager.Load<Sound>("sounds/jump.wav");
-        _levelMusic = ResourceManager.Load<Music>("music/level1.ogg");
+        base.OnLoad(context);
+        
+        _jumpSound = context.AudioCache.Load("sounds/jump.wav");
+        _levelMusic = context.AudioCache.Load("music/level1.ogg");
 
-        audioBackend.PlayMusic(_levelMusic, loop: true);
+        context.MusicPlayer.Play(_levelMusic, loop: true);
     }
 
-    public override void OnExit()
+    public override void OnUnload()
     {
-        audioBackend.StopMusic();
-
-        ResourceManager.Unload(_jumpSound);
-        ResourceManager.Unload(_levelMusic);
+        Context.MusicPlayer.Stop();
+        base.OnUnload();
     }
 }
 ```

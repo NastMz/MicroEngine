@@ -679,6 +679,13 @@ public class PlayerInputSystem : ISystem
         _input = input;
     }
 
+    // Or access via SceneContext
+    public override void OnLoad(SceneContext context)
+    {
+        base.OnLoad(context);
+        _input = context.InputBackend;
+    }
+
     public void Update(World world, float deltaTime)
     {
         var player = world.Query<PlayerComponent, TransformComponent>().First();

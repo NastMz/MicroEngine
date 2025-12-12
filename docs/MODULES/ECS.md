@@ -3,7 +3,7 @@
 **Module:** Engine.Core.ECS  
 **Status:** Active  
 **Version:** 1.0  
-**Last Updated:** November 2025
+**Last Updated:** December 2025
 
 ---
 
@@ -147,6 +147,41 @@ var entity = world.CreateEntity();
 ```csharp
 world.DestroyEntity(entity);
 ```
+
+**Note:** Entities are not destroyed immediately. They are marked for destruction and removed at the end of the frame.
+
+### Clearing the World
+
+The `Clear()` method removes all entities, components, and systems from the world:
+
+```csharp
+world.Clear();
+```
+
+**When to use:**
+- At the beginning of `Scene.OnLoad()` to ensure a clean state
+- When reloading a scene to prevent entity accumulation
+- When resetting game state
+
+**Example:**
+```csharp
+public override void OnLoad(SceneContext context)
+{
+    base.OnLoad(context);
+
+    // IMPORTANT: Clear the world to remove any entities from previous loads
+    World.Clear();
+
+    // Now create fresh entities
+    CreatePlayer();
+    CreateEnemies();
+}
+```
+
+**Why it's important:**
+- Scenes can be cached and reloaded multiple times
+- Without `Clear()`, entities from previous loads would accumulate
+- Ensures deterministic scene initialization
 
 Destruction is deferred until the end of the frame to prevent mid-update issues.
 
@@ -326,85 +361,135 @@ public interface IEvent
 ```
 
 #### EventBus
+## Event System
 
-The central hub for publishing and subscribing to events.
+The Event System provides decoupled communication between systems and entities using the publish-subscribe pattern.
 
-```csharp
-// Subscribe
-eventBus.Subscribe<PlayerDiedEvent>(OnPlayerDied);
+### EventBus Lifecycle
 
-// Publish
-eventBus.Publish(new PlayerDiedEvent(playerEntity));
+**Important:** `EventBus` is a **scoped service** that is created per scene and automatically disposed when the scene is unloaded.
 
-// Unsubscribe
-eventBus.Unsubscribe<PlayerDiedEvent>(OnPlayerDied);
-```
-
-### Usage Example
-
-#### 1. Define an Event
+**Accessing EventBus:**
 
 ```csharp
-public readonly struct PlayerJumpEvent : IEvent
+public override void OnLoad(SceneContext context)
 {
-    public DateTime Timestamp { get; }
-    public Entity Player { get; }
-    public float JumpForce { get; }
+    base.OnLoad(context);
 
-    public PlayerJumpEvent(Entity player, float force)
-    {
-        Timestamp = DateTime.UtcNow;
-        Player = player;
-        JumpForce = force;
-    }
+    // Get the EventBus for this scene from the service container
+    var eventBus = context.Services.GetService<EventBus>();
+
+    // Subscribe to events
+    eventBus.Subscribe<PlayerJumpEvent>(OnPlayerJump);
+    eventBus.Subscribe<EnemyDefeatedEvent>(OnEnemyDefeated);
+}
+
+private void OnPlayerJump(PlayerJumpEvent evt)
+{
+    Context.Logger.LogInfo($"Player jumped with force {evt.JumpForce}");
 }
 ```
 
-#### 2. Publish from a System
+**Automatic Cleanup:**
+- EventBus is scoped to the scene
+- When the scene is unloaded, the EventBus is automatically disposed
+- All subscriptions are cleared automatically
+- No manual cleanup required
+
+### Defining Events
+
+Events are simple data classes:
 
 ```csharp
-public class PlayerInputSystem : ISystem
+public class PlayerJumpEvent
+{
+    public float JumpForce { get; set; }
+    public Vector2 Position { get; set; }
+}
+
+public class EnemyDefeatedEvent
+{
+    public Entity Enemy { get; set; }
+    public int ScoreValue { get; set; }
+}
+```
+
+### Publishing Events
+
+```csharp
+public class PlayerSystem : ISystem
 {
     private readonly EventBus _eventBus;
 
+    public PlayerSystem(EventBus eventBus)
+    {
+        _eventBus = eventBus;
+    }
+
     public void Update(World world, float deltaTime)
     {
-        if (Input.IsKeyPressed(Key.Space))
+        if (InputManager.IsKeyPressed(Key.Space))
         {
-            _eventBus.Publish(new PlayerJumpEvent(entity, 500f));
+            // Publish event
+            _eventBus.Publish(new PlayerJumpEvent
+            {
+                JumpForce = 500f,
+                Position = playerPosition
+            });
         }
     }
 }
 ```
 
-#### 3. Subscribe in another System
+### Subscribing to Events
 
 ```csharp
 public class AudioSystem : ISystem
 {
-    public void Initialize(World world)
+    private readonly EventBus _eventBus;
+    private readonly IAudioBackend _audio;
+
+    public AudioSystem(EventBus eventBus, IAudioBackend audio)
     {
-        world.EventBus.Subscribe<PlayerJumpEvent>(OnPlayerJump);
+        _eventBus = eventBus;
+        _audio = audio;
+
+        // Subscribe to events
+        _eventBus.Subscribe<PlayerJumpEvent>(OnPlayerJump);
     }
 
     private void OnPlayerJump(PlayerJumpEvent evt)
     {
-        _audio.PlaySound(_jumpSound);
+        _audio.PlaySound(jumpSound);
     }
 
-    public void Shutdown(World world)
+    public void Update(World world, float deltaTime)
     {
-        world.EventBus.Unsubscribe<PlayerJumpEvent>(OnPlayerJump);
+        // System update logic
     }
 }
 ```
 
+### Event Flow Example
+
+```
+PlayerSystem                EventBus                 AudioSystem
+     |                          |                          |
+     |--- Publish(JumpEvent) -->|                          |
+     |                          |--- Notify Subscribers -->|
+     |                          |                          |
+     |                          |                    OnPlayerJump()
+     |                          |                     PlaySound()
+```
+
 ### Best Practices
 
--   **Keep Events Lightweight:** Events should be small structs containing only data relevant to the event.
--   **Unsubscribe:** Always unsubscribe in `Shutdown` or `OnDestroy` to prevent memory leaks.
--   **Don't Overuse:** Use direct method calls for tightly coupled logic. Use events for loose coupling (e.g., UI updates, achievements, audio).
-
+- ✓ Use events for decoupled communication
+- ✓ Keep event classes simple (data only)
+- ✓ Subscribe in constructor or OnLoad
+- ✓ EventBus is automatically cleaned up (scoped service)
+- ✗ Don't use events for high-frequency updates (use systems instead)
+- ✗ Don't store event references (they're transient)
 
 ---
 
