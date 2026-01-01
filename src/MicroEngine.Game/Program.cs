@@ -10,15 +10,11 @@ using MicroEngine.Core.Physics;
 using MicroEngine.Core.Resources;
 using MicroEngine.Core.Scenes;
 using MicroEngine.Core.State;
+using MicroEngine.Core.Graphics;
+using MicroEngine.Core.Input;
+using MicroEngine.Core.Time;
+using MicroEngine.Core.Audio;
 using MicroEngine.Game.Scenes;
-using MicroEngine.Core.Graphics;
-using MicroEngine.Core.Input;
-using MicroEngine.Core.Time;
-using MicroEngine.Core.Audio;
-using MicroEngine.Core.Graphics;
-using MicroEngine.Core.Input;
-using MicroEngine.Core.Time;
-using MicroEngine.Core.Audio;
 
 namespace MicroEngine.Game;
 

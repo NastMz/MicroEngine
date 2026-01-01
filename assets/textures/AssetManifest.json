@@ -1,0 +1,109 @@
+{
+  "assets": [
+    {
+        "assetName": "dungeon_tiles",
+        "texturePath": "assets/textures/dungeon_tiles.png",
+        "tileSize": 32,
+        "tiles": [
+            { "id": "floor_stone_var1", "x": 0, "y": 0, "passable": true },
+            { "id": "floor_stone_var2", "x": 1, "y": 0, "passable": true },
+            { "id": "floor_stone_var3", "x": 2, "y": 0, "passable": true },
+            { "id": "floor_cracked_var1", "x": 3, "y": 0, "passable": true },
+            { "id": "floor_edge_top", "x": 4, "y": 0, "passable": true },
+            { "id": "wall_brick_top_var1", "x": 5, "y": 0, "passable": false },
+            { "id": "wall_brick_top_var2", "x": 6, "y": 0, "passable": false },
+            { "id": "wall_brick_top_var3", "x": 7, "y": 0, "passable": false },
+
+            { "id": "floor_stone_var4", "x": 0, "y": 1, "passable": true },
+            { "id": "floor_stone_var5", "x": 1, "y": 1, "passable": true },
+            { "id": "floor_stone_var6", "x": 2, "y": 1, "passable": true },
+            { "id": "floor_cracked_var2", "x": 3, "y": 1, "passable": true },
+            { "id": "floor_edge_mid", "x": 4, "y": 1, "passable": true },
+            { "id": "wall_brick_mid_var1", "x": 5, "y": 1, "passable": false },
+            { "id": "wall_brick_mid_cracked", "x": 6, "y": 1, "passable": false },
+            { "id": "wall_brick_mid_var2", "x": 7, "y": 1, "passable": false },
+
+            { "id": "floor_stone_var7", "x": 0, "y": 2, "passable": true },
+            { "id": "floor_stone_var8", "x": 1, "y": 2, "passable": true },
+            { "id": "floor_stone_var9", "x": 2, "y": 2, "passable": true },
+            { "id": "floor_cracked_var3", "x": 3, "y": 2, "passable": true },
+            { "id": "floor_edge_bot", "x": 4, "y": 2, "passable": true },
+            { "id": "wall_brick_base_var1", "x": 5, "y": 2, "passable": false },
+            { "id": "wall_brick_base_var2", "x": 6, "y": 2, "passable": false },
+            { "id": "wall_brick_base_var3", "x": 7, "y": 2, "passable": false },
+
+            { "id": "wall_corner_top_left", "x": 0, "y": 3, "passable": false },
+            { "id": "wall_corner_top_right", "x": 1, "y": 3, "passable": false },
+            { "id": "wall_corner_l_shape", "x": 2, "y": 3, "passable": false },
+            { "id": "wall_curved_left", "x": 3, "y": 3, "passable": false },
+            { "id": "wall_curved_mid", "x": 4, "y": 3, "passable": false },
+            { "id": "wall_curved_right", "x": 5, "y": 3, "passable": false },
+            { "id": "wall_top_horizontal_1", "x": 6, "y": 3, "passable": false },
+            { "id": "wall_top_horizontal_2", "x": 7, "y": 3, "passable": false },
+
+            { "id": "hole_top_left", "x": 0, "y": 4, "passable": false },
+            { "id": "hole_top_mid", "x": 1, "y": 4, "passable": false },
+            { "id": "hole_top_right", "x": 2, "y": 4, "passable": false },
+            { "id": "pillar_stone", "x": 3, "y": 4, "passable": false },
+
+            { "id": "hole_mid_left", "x": 0, "y": 5, "passable": false },
+            { "id": "hole_void_center", "x": 1, "y": 5, "passable": false },
+            { "id": "hole_mid_right", "x": 2, "y": 5, "passable": false },
+
+            { "id": "hole_bot_left", "x": 0, "y": 6, "passable": false },
+            { "id": "hole_bot_mid", "x": 1, "y": 6, "passable": false },
+            { "id": "hole_bot_right", "x": 2, "y": 6, "passable": false }
+        ]
+    },
+    {
+        "assetName": "red_slime_blob",
+        "texturePath": "assets/textures/blob.png",
+        "tileSize": 32,
+        "animations": {
+            "idle": [
+            { "id": "slime_red_idle_1", "x": 0, "y": 0, "passable": false, "metadata": { "state": "neutral" } },
+            { "id": "slime_red_idle_2", "x": 1, "y": 0, "passable": false, "metadata": { "state": "squashed" } },
+            { "id": "slime_red_idle_3", "x": 2, "y": 0, "passable": false, "metadata": { "state": "stretched" } },
+            { "id": "slime_red_idle_4", "x": 3, "y": 0, "passable": false, "metadata": { "state": "neutral_var" } }
+            ]
+        },
+        "tiles": [
+            { "id": "slime_red_frame_0", "x": 0, "y": 0, "passable": false },
+            { "id": "slime_red_frame_1", "x": 1, "y": 0, "passable": false },
+            { "id": "slime_red_frame_2", "x": 2, "y": 0, "passable": false },
+            { "id": "slime_red_frame_3", "x": 3, "y": 0, "passable": false }
+        ]
+    },
+    {
+        "assetName": "hero",
+        "texturePath": "assets/textures/hero.png",
+        "tileSize": 214,
+        "tiles": [
+            { "id": "walk_down_1", "x": 0, "y": 0, "passable": false, "metadata": { "dir": "down", "step": 1 } },
+            { "id": "walk_down_2", "x": 1, "y": 0, "passable": false, "metadata": { "dir": "down", "step": 2 } },
+            { "id": "walk_down_3", "x": 2, "y": 0, "passable": false, "metadata": { "dir": "down", "step": 3 } },
+            { "id": "walk_down_4", "x": 3, "y": 0, "passable": false, "metadata": { "dir": "down", "step": 4 } },
+
+            { "id": "walk_up_1", "x": 0, "y": 1, "passable": false, "metadata": { "dir": "up", "step": 1 } },
+            { "id": "walk_up_2", "x": 1, "y": 1, "passable": false, "metadata": { "dir": "up", "step": 2 } },
+            { "id": "walk_up_3", "x": 2, "y": 1, "passable": false, "metadata": { "dir": "up", "step": 3 } },
+            { "id": "walk_up_4", "x": 3, "y": 1, "passable": false, "metadata": { "dir": "up", "step": 4 } },
+
+            { "id": "walk_left_1", "x": 0, "y": 2, "passable": false, "metadata": { "dir": "left", "step": 1 } },
+            { "id": "walk_left_2", "x": 1, "y": 2, "passable": false, "metadata": { "dir": "left", "step": 2 } },
+            { "id": "walk_left_3", "x": 2, "y": 2, "passable": false, "metadata": { "dir": "left", "step": 3 } },
+            { "id": "walk_left_4", "x": 3, "y": 2, "passable": false, "metadata": { "dir": "left", "step": 4 } },
+
+            { "id": "walk_right_1", "x": 0, "y": 3, "passable": false, "metadata": { "dir": "right", "step": 1 } },
+            { "id": "walk_right_2", "x": 1, "y": 3, "passable": false, "metadata": { "dir": "right", "step": 2 } },
+            { "id": "walk_right_3", "x": 2, "y": 3, "passable": false, "metadata": { "dir": "right", "step": 3 } },
+            { "id": "walk_right_4", "x": 3, "y": 3, "passable": false, "metadata": { "dir": "right", "step": 4 } },
+
+            { "id": "attack_down", "x": 0, "y": 4, "passable": false, "metadata": { "action": "attack", "dir": "down" } },
+            { "id": "attack_up", "x": 1, "y": 4, "passable": false, "metadata": { "action": "attack", "dir": "up" } },
+            { "id": "attack_left", "x": 2, "y": 4, "passable": false, "metadata": { "action": "attack", "dir": "left" } },
+            { "id": "attack_right", "x": 3, "y": 4, "passable": false, "metadata": { "action": "attack", "dir": "right" } }
+        ]
+    }
+  ]
+}

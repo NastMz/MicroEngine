@@ -6,6 +6,7 @@ using MicroEngine.Core.Logging;
 using MicroEngine.Core.Math;
 using MicroEngine.Core.Scenes;
 using MicroEngine.Game.Scenes.Demos;
+using MicroEngine.Game.Scenes.Demos.Zelda;
 
 namespace MicroEngine.Game.Scenes;
 
@@ -108,7 +109,8 @@ public sealed class MainMenuScene : Scene
             ("SaveLoadDemo", (Func<IScene>)(() => new SaveLoadDemo())),
             ("EventSystemDemo", (Func<IScene>)(() => new EventSystemDemo())),
             ("CollisionFilteringDemo", (Func<IScene>)(() => new CollisionFilteringDemo())),
-            ("SpatialAudioDemo", (Func<IScene>)(() => new SpatialAudioDemo()))
+            ("SpatialAudioDemo", (Func<IScene>)(() => new SpatialAudioDemo())),
+            ("ZeldaDemo", (Func<IScene>)(() => new ZeldaScene()))
         };            await _sceneCache.PreloadMultipleAsync(preloadRequests, _preloadCancellation.Token);
 
             _logger.Info("MainMenu", $"Background preload completed: {_preloadedScenes} scenes ready");
@@ -189,6 +191,10 @@ public sealed class MainMenuScene : Scene
         else if (_inputBackend.IsKeyPressed(Key.Zero))
         {
             LoadDemo<SpatialAudioDemo>();
+        }
+        else if (_inputBackend.IsKeyPressed(Key.Z))
+        {
+            LoadDemo<ZeldaScene>();
         }
 
         // Transition effect selection
@@ -280,9 +286,10 @@ public sealed class MainMenuScene : Scene
         _renderBackend.DrawText("[8] Event System", new Vector2(col2X, demoY + 52), 16, optionColor);
         _renderBackend.DrawText("[9] Collision Filtering", new Vector2(col2X, demoY + 78), 16, optionColor);
         _renderBackend.DrawText("[0] Spatial Audio", new Vector2(col2X, demoY + 104), 16, optionColor);
+        _renderBackend.DrawText("[Z] Zelda Stress Test", new Vector2(col1X, demoY + 140), 16, new Color(255, 200, 100, 255));
 
         // Exit option
-        layout.SetY(demoY + 140)
+        layout.SetY(demoY + 180)
               .SetX(300)
               .DrawText("[X] Exit", 16, exitColor);
 
