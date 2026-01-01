@@ -58,7 +58,7 @@ public class ArchetypeTests
     }
 
     [Fact]
-    public void Archetype_AddEntity_StoresEntityAndComponents()
+    public void Archetype_AddEntity_StoresEntity()
     {
         var archetype = new Archetype(
             new ArchetypeId(new[] { typeof(Position), typeof(Velocity) }),
@@ -66,13 +66,8 @@ public class ArchetypeTests
         );
 
         var entity = new Entity(1, 0);
-        var components = new Dictionary<Type, object>
-        {
-            { typeof(Position), new Position { X = 10, Y = 20 } },
-            { typeof(Velocity), new Velocity { Vx = 1, Vy = 2 } }
-        };
 
-        archetype.AddEntity(entity, components);
+        archetype.AddEntity(entity);
 
         Assert.Contains(entity, archetype.Entities);
         Assert.Single(archetype.Entities);
@@ -87,18 +82,14 @@ public class ArchetypeTests
         );
 
         var entity = new Entity(1, 0);
-        var components = new Dictionary<Type, object>
-        {
-            { typeof(Position), new Position { X = 10, Y = 20 } }
-        };
 
-        archetype.AddEntity(entity, components);
+        archetype.AddEntity(entity);
 
-        Assert.Throws<InvalidOperationException>(() => archetype.AddEntity(entity, components));
+        Assert.Throws<InvalidOperationException>(() => archetype.AddEntity(entity));
     }
 
     [Fact]
-    public void Archetype_RemoveEntity_RemovesEntityAndComponents()
+    public void Archetype_RemoveEntity_RemovesEntity()
     {
         var archetype = new Archetype(
             new ArchetypeId(new[] { typeof(Position) }),
@@ -106,12 +97,8 @@ public class ArchetypeTests
         );
 
         var entity = new Entity(1, 0);
-        var components = new Dictionary<Type, object>
-        {
-            { typeof(Position), new Position { X = 10, Y = 20 } }
-        };
 
-        archetype.AddEntity(entity, components);
+        archetype.AddEntity(entity);
         archetype.RemoveEntity(entity);
 
         Assert.DoesNotContain(entity, archetype.Entities);

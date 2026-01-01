@@ -85,6 +85,8 @@ public class SceneManagerTests
         
         // Create mock service container
         var mockServiceContainer = new Mock<DependencyInjection.IServiceContainer>();
+        mockServiceContainer.Setup(c => c.CreateScope())
+            .Returns(new Mock<DependencyInjection.IServiceContainer>().Object);
         
         // Create mock navigator
         var mockNavigator = new Mock<ISceneNavigator>();

@@ -22,14 +22,14 @@ internal class ArchetypeManager
         return archetype;
     }
 
-    public void AddEntityToArchetype(Entity entity, Archetype archetype, Dictionary<Type, object> components)
+    public void AddEntityToArchetype(Entity entity, Archetype archetype)
     {
         if (_entityToArchetype.ContainsKey(entity))
         {
             throw new InvalidOperationException($"Entity {entity} already belongs to an archetype");
         }
 
-        archetype.AddEntity(entity, components);
+        archetype.AddEntity(entity);
         _entityToArchetype[entity] = archetype;
     }
 
@@ -44,14 +44,14 @@ internal class ArchetypeManager
         _entityToArchetype.Remove(entity);
     }
 
-    public void MoveEntity(Entity entity, Archetype newArchetype, Dictionary<Type, object> components)
+    public void MoveEntity(Entity entity, Archetype newArchetype)
     {
         if (_entityToArchetype.TryGetValue(entity, out var oldArchetype))
         {
             oldArchetype.RemoveEntity(entity);
         }
 
-        newArchetype.AddEntity(entity, components);
+        newArchetype.AddEntity(entity);
         _entityToArchetype[entity] = newArchetype;
     }
 

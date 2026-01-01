@@ -373,6 +373,9 @@ public sealed class World
 
     private void UpdateEntityArchetype(Entity entity)
     {
+        // 1. Get current component types efficiently
+        // Note: For now we use LINQ, which allocates. In a future iteration, 
+        // we should optimize this using a BitSet or pre-allocated signature to avoid GC.
         var componentTypes = _componentArrays
             .Where(kv => kv.Value.Has(entity))
             .Select(kv => kv.Key)
@@ -384,32 +387,21 @@ public sealed class World
             return;
         }
 
+        // 2. Get or create the target archetype (index)
         var archetype = _archetypeManager.GetOrCreateArchetype(componentTypes);
-        var components = new Dictionary<Type, object>();
 
-        foreach (var type in componentTypes)
+        // 3. Move only the entity reference (No data copying/Reflection!)
+        if (_archetypeManager.TryGetEntityArchetype(entity, out var currentArchetype))
         {
-            var array = _componentArrays[type];
-            var entities = array.GetEntities();
-            if (entities.Contains(entity))
+            if (currentArchetype != archetype)
             {
-                var wrapperType = typeof(ComponentArrayWrapper<>).MakeGenericType(type);
-                var wrapper = array;
-                var arrayProp = wrapperType.GetProperty("Array");
-                var componentArray = arrayProp!.GetValue(wrapper);
-                var getMethod = componentArray!.GetType().GetMethod("Get");
-                var component = getMethod!.Invoke(componentArray, new object[] { entity });
-                components[type] = component!;
+                _archetypeManager.MoveEntity(entity, archetype);
             }
-        }
-
-        if (_archetypeManager.TryGetEntityArchetype(entity, out var currentArchetype) && currentArchetype != null)
-        {
-            _archetypeManager.MoveEntity(entity, archetype, components);
+            // else: Entity is already in the correct archetype, do nothing.
         }
         else
         {
-            _archetypeManager.AddEntityToArchetype(entity, archetype, components);
+            _archetypeManager.AddEntityToArchetype(entity, archetype);
         }
     }
 

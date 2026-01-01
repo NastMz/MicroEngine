@@ -12,7 +12,33 @@ public delegate void EventHandler<T>(T eventData) where T : IEvent;
 /// </summary>
 public sealed class EventBus : IDisposable
 {
-    private readonly Dictionary<Type, List<Delegate>> _subscribers = new();
+    private interface IHandlerWrapper
+    {
+        void Invoke(IEvent eventData);
+        bool Wraps(Delegate handler);
+    }
+
+    private sealed class HandlerWrapper<T> : IHandlerWrapper where T : IEvent
+    {
+        private readonly EventHandler<T> _handler;
+
+        public HandlerWrapper(EventHandler<T> handler)
+        {
+            _handler = handler;
+        }
+
+        public void Invoke(IEvent eventData)
+        {
+            _handler((T)eventData);
+        }
+        
+        public bool Wraps(Delegate handler)
+        {
+             return _handler == (Delegate)handler;
+        }
+    }
+
+    private readonly Dictionary<Type, List<IHandlerWrapper>> _subscribers = new();
     private readonly Queue<IEvent> _eventQueue = new();
     private readonly object _lock = new();
     private bool _disposed;
@@ -60,13 +86,14 @@ public sealed class EventBus : IDisposable
             var eventType = typeof(T);
             if (!_subscribers.TryGetValue(eventType, out var handlers))
             {
-                handlers = new List<Delegate>();
+                handlers = new List<IHandlerWrapper>();
                 _subscribers[eventType] = handlers;
             }
 
-            if (!handlers.Contains(handler))
+            // Avoid duplicate subscriptions
+            if (!handlers.Any(h => h.Wraps(handler)))
             {
-                handlers.Add(handler);
+                 handlers.Add(new HandlerWrapper<T>(handler));
             }
         }
     }
@@ -90,7 +117,7 @@ public sealed class EventBus : IDisposable
             var eventType = typeof(T);
             if (_subscribers.TryGetValue(eventType, out var handlers))
             {
-                handlers.Remove(handler);
+                handlers.RemoveAll(h => h.Wraps(handler));
                 if (handlers.Count == 0)
                 {
                     _subscribers.Remove(eventType);
@@ -110,35 +137,19 @@ public sealed class EventBus : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(eventData);
 
-        List<Delegate>? handlersCopy;
+        List<IHandlerWrapper>? handlersCopy = null;
 
         lock (_lock)
         {
-            var eventType = typeof(T);
-            if (!_subscribers.TryGetValue(eventType, out var handlers))
-            {
-                return;
-            }
-
-            handlersCopy = new List<Delegate>(handlers);
+             if (_subscribers.TryGetValue(typeof(T), out var handlers))
+             {
+                 handlersCopy = new List<IHandlerWrapper>(handlers);
+             }
         }
 
-        foreach (var handler in handlersCopy)
+        if (handlersCopy != null)
         {
-            if (eventData.IsHandled)
-            {
-                break;
-            }
-
-            try
-            {
-                ((EventHandler<T>)handler).Invoke(eventData);
-            }
-            catch
-            {
-                // Swallow handler exceptions to prevent one handler from breaking others
-                // In production, log this exception
-            }
+            DispatchEvents(handlersCopy, eventData);
         }
     }
 
@@ -184,33 +195,42 @@ public sealed class EventBus : IDisposable
             }
 
             var eventType = eventData.GetType();
-            List<Delegate>? handlersCopy;
+            List<IHandlerWrapper>? handlersCopy = null;
 
             lock (_lock)
             {
-                if (!_subscribers.TryGetValue(eventType, out var handlers))
-                {
-                    continue;
-                }
-
-                handlersCopy = new List<Delegate>(handlers);
+                 if (_subscribers.TryGetValue(eventType, out var handlers))
+                 {
+                     handlersCopy = new List<IHandlerWrapper>(handlers);
+                 }
+            }
+            
+            if (handlersCopy != null)
+            {
+                 DispatchEvents(handlersCopy, eventData);
+            }
+        }
+    }
+    
+    private void DispatchEvents(List<IHandlerWrapper> handlers, IEvent eventData)
+    {
+        foreach (var handler in handlers)
+        {
+            if (eventData.IsHandled)
+            {
+                break;
             }
 
-            foreach (var handler in handlersCopy)
+            try
             {
-                if (eventData.IsHandled)
-                {
-                    break;
-                }
-
-                try
-                {
-                    handler.DynamicInvoke(eventData);
-                }
-                catch
-                {
-                    // Swallow handler exceptions
-                }
+                handler.Invoke(eventData);
+            }
+            catch (Exception ex)
+            {
+                // CRITICAL: Previously swallowed. We MUST rethrow to expose bugs.
+                // In a production engine, you might wrap this in a custom EngineException
+                // or ensure it's logged to a file before rethrowing.
+                throw new InvalidOperationException($"Error handling event {eventData.GetType().Name}", ex);
             }
         }
     }
