@@ -1,7 +1,7 @@
 ﻿using MicroEngine.Backend.Aether;
 using MicroEngine.Backend.Raylib;
 using MicroEngine.Backend.Raylib.Resources;
-using MicroEngine.Core.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MicroEngine.Core.ECS.Systems;
 using MicroEngine.Core.Engine;
 using MicroEngine.Core.Events;
@@ -11,6 +11,14 @@ using MicroEngine.Core.Resources;
 using MicroEngine.Core.Scenes;
 using MicroEngine.Core.State;
 using MicroEngine.Game.Scenes;
+using MicroEngine.Core.Graphics;
+using MicroEngine.Core.Input;
+using MicroEngine.Core.Time;
+using MicroEngine.Core.Audio;
+using MicroEngine.Core.Graphics;
+using MicroEngine.Core.Input;
+using MicroEngine.Core.Time;
+using MicroEngine.Core.Audio;
 
 namespace MicroEngine.Game;
 
@@ -54,14 +62,17 @@ internal static class Program
                 MaxFixedUpdatesPerFrame = 5 // Prevent spiral of death
             };
 
-            // Create GameEngine with backends (rendering is uncapped/V-synced)
+            // Create SceneManager manually to inject into Engine
+            var sceneManager = new SceneManager(fadeTransition);
+
+            // Create GameEngine with backends and SceneManager
             var engine = new GameEngine(
                 engineConfig,
                 renderBackend, // IWindow
                 renderBackend, // IRenderer2D
                 inputBackend,
                 logger,
-                fadeTransition
+                sceneManager
             );
 
             // Create scene cache for demo scene reuse (max 5 scenes)
@@ -73,26 +84,32 @@ internal static class Program
             // Create TimeService for FPS tracking (not for limiting - engine handles timing)
             var timeService = new Core.Time.TimeService(targetFPS: 0);
 
-            // Create DI container and register services
-            var serviceContainer = new ServiceContainer();
+            // Create DI container and register services via ServiceCollection
+            var services = new ServiceCollection();
 
             // Register singleton services (shared across entire application)
-            serviceContainer.RegisterSingleton(logger);
-            serviceContainer.RegisterSingleton(renderBackend); // IWindow + IRenderer2D
-            serviceContainer.RegisterSingleton(inputBackend);
-            serviceContainer.RegisterSingleton(timeService);
-            serviceContainer.RegisterSingleton(textureCache);
-            serviceContainer.RegisterSingleton(audioCache);
-            serviceContainer.RegisterSingleton(audioBackend); // IAudioDevice + ISoundPlayer + IMusicPlayer
-            serviceContainer.RegisterSingleton(gameState);
+            services.AddSingleton<ILogger>(logger);
+            services.AddSingleton<IWindow>(renderBackend);
+            services.AddSingleton<IRenderer2D>(renderBackend);
+            services.AddSingleton<IInputBackend>(inputBackend);
+            services.AddSingleton<ITimeService>(timeService);
+            services.AddSingleton(textureCache);
+            services.AddSingleton(audioCache);
+            services.AddSingleton<IAudioDevice>(audioBackend);
+            services.AddSingleton<ISoundPlayer>(audioBackend);
+            services.AddSingleton<IMusicPlayer>(audioBackend);
+            services.AddSingleton<IGameState>(gameState);
 
             // Register scoped services (per scene load)
-            serviceContainer.RegisterScoped<EventBus>(s => new EventBus());
-            serviceContainer.RegisterScoped<PhysicsBackendSystem>(s =>
+            services.AddScoped<EventBus>();
+            services.AddScoped<PhysicsBackendSystem>(s =>
             {
                 var backend = new AetherPhysicsBackend();
                 return new PhysicsBackendSystem(backend);
             });
+
+            // Build the provider
+            var serviceProvider = services.BuildServiceProvider();
 
             // Create scene context with all engine services
             var sceneContext = new SceneContext(
@@ -107,8 +124,8 @@ internal static class Program
                 audioBackend, // ISoundPlayer
                 audioBackend, // IMusicPlayer
                 gameState,
-                serviceContainer,
-                engine.SceneManager // ISceneNavigator
+                serviceProvider,
+                sceneManager // ISceneNavigator
             );
 
             // Initialize engine with scene context

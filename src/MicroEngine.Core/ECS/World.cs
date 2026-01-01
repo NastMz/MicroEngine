@@ -371,15 +371,21 @@ public sealed class World
         }
     }
 
+    private readonly List<Type> _reusableComponentTypeList = new();
+
     private void UpdateEntityArchetype(Entity entity)
     {
-        // 1. Get current component types efficiently
-        // Note: For now we use LINQ, which allocates. In a future iteration, 
-        // we should optimize this using a BitSet or pre-allocated signature to avoid GC.
-        var componentTypes = _componentArrays
-            .Where(kv => kv.Value.Has(entity))
-            .Select(kv => kv.Key)
-            .ToList();
+        // 1. Get current component types efficiently without allocation
+        _reusableComponentTypeList.Clear();
+        foreach (var (type, array) in _componentArrays)
+        {
+            if (array.Has(entity))
+            {
+                _reusableComponentTypeList.Add(type);
+            }
+        }
+
+        var componentTypes = _reusableComponentTypeList;
 
         if (componentTypes.Count == 0)
         {
@@ -388,6 +394,8 @@ public sealed class World
         }
 
         // 2. Get or create the target archetype (index)
+        // Note: GetOrCreateArchetype will create a new immutable ArchetypeId from this list,
+        // which involves copying, but we avoided the closure and list allocation from LINQ above.
         var archetype = _archetypeManager.GetOrCreateArchetype(componentTypes);
 
         // 3. Move only the entity reference (No data copying/Reflection!)

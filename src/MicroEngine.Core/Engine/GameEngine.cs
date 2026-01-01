@@ -69,30 +69,37 @@ public sealed class GameEngine
     /// <param name="logger">Logger instance.</param>
     /// <param name="transitionEffect">Optional scene transition effect.</param>
     /// <exception cref="ArgumentNullException">Thrown when required parameters are null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when required parameters are null.</exception>
     public GameEngine(
         EngineConfiguration configuration,
         IWindow window,
         IRenderer2D renderer,
         IInputBackend inputBackend,
         ILogger logger,
-        ISceneTransitionEffect? transitionEffect = null)
+        SceneManager sceneManager,
+        MemoryProfiler? memoryProfiler = null)
     {
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _window = window ?? throw new ArgumentNullException(nameof(window));
         _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
         _inputBackend = inputBackend ?? throw new ArgumentNullException(nameof(inputBackend));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
+        _memoryProfiler = memoryProfiler;
 
         _configuration.Validate();
 
         _gameTime = new GameTime(_configuration.FixedTimeStep);
         _timer = new PrecisionTimer();
-        _sceneManager = new SceneManager(transitionEffect);
 
         // Initialize memory profiler if enabled
         if (_configuration.EnableMemoryProfiling)
         {
-            _memoryProfiler = new MemoryProfiler { MaxSnapshots = 500 };
+            if (_memoryProfiler == null)
+            {
+               // Fallback if not injected but requested (though ideally should be injected)
+               _memoryProfiler = new MemoryProfiler { MaxSnapshots = 500 };
+            }
             _logger.Info(LOG_CATEGORY, $"Memory profiling enabled (snapshot every {_configuration.MemorySnapshotInterval} frames)");
         }
 

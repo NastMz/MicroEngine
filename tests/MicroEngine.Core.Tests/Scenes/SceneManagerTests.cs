@@ -1,4 +1,5 @@
 using MicroEngine.Core.Audio;
+using Microsoft.Extensions.DependencyInjection;
 using MicroEngine.Core.Logging;
 using MicroEngine.Core.Scenes;
 using MicroEngine.Core.State;
@@ -83,10 +84,20 @@ public class SceneManagerTests
         // Create real GameState for tests
         var gameState = new GameState();
         
-        // Create mock service container
-        var mockServiceContainer = new Mock<DependencyInjection.IServiceContainer>();
-        mockServiceContainer.Setup(c => c.CreateScope())
-            .Returns(new Mock<DependencyInjection.IServiceContainer>().Object);
+        // Setup Dependency Injection Mocks using Microsoft.Extensions.DependencyInjection
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        var mockScopeFactory = new Mock<IServiceScopeFactory>();
+        var mockScope = new Mock<IServiceScope>();
+        
+        // Setup Scope Factory to return our mock scope
+        mockScopeFactory.Setup(f => f.CreateScope()).Returns(mockScope.Object);
+        // Setup Mock Scope to return the service provider
+        mockScope.Setup(s => s.ServiceProvider).Returns(mockServiceProvider.Object);
+        
+        // Setup ServiceProvider to return ScopeFactory when requested
+        mockServiceProvider
+            .Setup(x => x.GetService(typeof(IServiceScopeFactory)))
+            .Returns(mockScopeFactory.Object);
         
         // Create mock navigator
         var mockNavigator = new Mock<ISceneNavigator>();
@@ -103,7 +114,7 @@ public class SceneManagerTests
             mockSoundPlayer.Object,
             mockMusicPlayer.Object,
             gameState,
-            mockServiceContainer.Object,
+            mockServiceProvider.Object,
             mockNavigator.Object
         );
     }

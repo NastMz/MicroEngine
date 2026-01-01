@@ -1,5 +1,5 @@
 using MicroEngine.Core.Audio;
-using MicroEngine.Core.DependencyInjection;
+
 using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Input;
 using MicroEngine.Core.Logging;
@@ -76,9 +76,9 @@ public sealed class SceneContext
     public IGameState GameState { get; }
 
     /// <summary>
-    /// Gets the service container for resolving scoped services.
+    /// Gets the service provider for resolving scoped services.
     /// </summary>
-    public IServiceContainer Services { get; }
+    public IServiceProvider Services { get; }
 
     /// <summary>
     /// Gets the scene navigator for scene transitions.
@@ -100,7 +100,7 @@ public sealed class SceneContext
         ISoundPlayer soundPlayer,
         IMusicPlayer musicPlayer,
         IGameState gameState,
-        IServiceContainer services,
+        IServiceProvider services,
         ISceneNavigator navigator)
     {
         Window = window ?? throw new ArgumentNullException(nameof(window));

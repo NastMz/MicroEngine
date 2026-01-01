@@ -1,3 +1,5 @@
+using MicroEngine.Core.Exceptions;
+
 namespace MicroEngine.Core.Events;
 
 /// <summary>
@@ -227,10 +229,9 @@ public sealed class EventBus : IDisposable
             }
             catch (Exception ex)
             {
-                // CRITICAL: Previously swallowed. We MUST rethrow to expose bugs.
-                // In a production engine, you might wrap this in a custom EngineException
-                // or ensure it's logged to a file before rethrowing.
-                throw new InvalidOperationException($"Error handling event {eventData.GetType().Name}", ex);
+                // Rethrow with context to ensure bugs are not swallowed.
+                // This ensures issues in event handlers are visible immediately.
+                throw new EventBusException($"Error handling event {eventData.GetType().Name}", ex);
             }
         }
     }

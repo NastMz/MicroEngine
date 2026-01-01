@@ -1,4 +1,4 @@
-using MicroEngine.Core.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MicroEngine.Core.Logging;
 
 namespace MicroEngine.Core.Scenes;
@@ -12,10 +12,10 @@ public sealed class SceneManager : ISceneNavigator
     private const string LOG_CATEGORY = "SceneManager";
 
     private readonly Stack<Scene> _sceneStack = new();
-    private readonly Dictionary<Scene, IServiceContainer> _sceneScopes = new();
+    private readonly Dictionary<Scene, IServiceScope> _sceneScopes = new();
     private ISceneTransitionEffect? _transitionEffect;
     private SceneContext _sceneContext = null!;
-    private IServiceContainer _rootContainer = null!;
+    private IServiceProvider _rootProvider = null!;
     private ILogger _logger = null!;
 
     private Scene? _pendingScene;
@@ -55,7 +55,7 @@ public sealed class SceneManager : ISceneNavigator
     public void Initialize(SceneContext context)
     {
         _sceneContext = context ?? throw new ArgumentNullException(nameof(context));
-        _rootContainer = context.Services ?? throw new ArgumentException("SceneContext must have a Services container", nameof(context));
+        _rootProvider = context.Services ?? throw new ArgumentException("SceneContext must have a Services container", nameof(context));
         _logger = context.Logger;
         _logger.Info(LOG_CATEGORY, "Scene manager initialized");
     }
@@ -241,7 +241,7 @@ public sealed class SceneManager : ISceneNavigator
         _logger.Info(LOG_CATEGORY, $"Pushing scene: {_pendingScene.Name}");
 
         // Create scoped container for this scene
-        var scope = _rootContainer.CreateScope();
+        var scope = _rootProvider.CreateScope();
         _sceneScopes[_pendingScene] = scope;
 
         // Create scene context with scoped container
@@ -257,7 +257,7 @@ public sealed class SceneManager : ISceneNavigator
             _sceneContext.SoundPlayer,
             _sceneContext.MusicPlayer,
             _sceneContext.GameState,
-            scope,
+            scope.ServiceProvider,
             this); // Pass navigator
 
         // Current scene remains in stack but won't receive updates
@@ -330,7 +330,7 @@ public sealed class SceneManager : ISceneNavigator
         }
 
         // Create scoped container for new scene
-        var scope = _rootContainer.CreateScope();
+        var scope = _rootProvider.CreateScope();
         _sceneScopes[_pendingScene] = scope;
 
         // Create scene context with scoped container
@@ -346,7 +346,7 @@ public sealed class SceneManager : ISceneNavigator
             _sceneContext.SoundPlayer,
             _sceneContext.MusicPlayer,
             _sceneContext.GameState,
-            scope,
+            scope.ServiceProvider,
             this); // Pass navigator
 
         // Push new scene
