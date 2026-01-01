@@ -8,41 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
-- **Dependency Injection Container**: Introduced `IServiceContainer` and `ServiceContainer` for managing service lifetimes
-  - Support for Singleton, Scoped, and Transient service lifetimes
-  - Automatic disposal of scoped services when scenes are unloaded
-  - Integration with `SceneContext` for scene-level dependency injection
-- **ISceneNavigator Interface**: New abstraction for scene navigation to eliminate circular dependencies
-  - `SceneManager` now implements `ISceneNavigator`
-  - Scenes depend on interface instead of concrete `SceneManager` class
-  - Improves testability and follows Dependency Inversion Principle
-- **SceneContext.Navigator Property**: Added `ISceneNavigator` property to `SceneContext` for scene navigation
-- **World.Clear() Method**: Added method to clear all entities, components, and systems from the ECS world
-  - Essential for scene reloading to prevent entity accumulation
-  - Ensures deterministic scene initialization
+- **Exception Handling**: Introduced `EventBusException` for standardized event error handling in `ECS` module.
+- **Dependency Injection**: Adopted `Microsoft.Extensions.DependencyInjection` (v9.0.0) as the standard DI container.
+  - Replaced custom `IServiceContainer` with standard `IServiceProvider`.
+  - Added `Microsoft.Extensions.DependencyInjection` NuGet package to Core.
 
 ### Changed
+- **Dependency Injection Migration**:
+  - Replaced custom `ServiceContainer` implementation with `Microsoft.Extensions.DependencyInjection`.
+  - Refactored `SceneManager` to use `IServiceScopeFactory` for creating scene scopes.
+  - Updated `ServiceLifetime` to use standard `Microsoft.Extensions.DependencyInjection.ServiceLifetime`.
+- **Game Engine**:
+  - Refactored `GameEngine` constructor to accept injected references (`SceneManager`, `MemoryProfiler`) instead of instantiating them.
+  - `Program.cs` now properly builds a `ServiceProvider` and manages the composition root.
+- **EventBus**:
+  - Now throws `EventBusException` instead of generic exceptions or swallowing errors.
+  - Scoped to `Scene` via the new DI container.
+- **Scene Lifecycle**:
+  - `SceneContext` now exposes `IServiceProvider` via the `Services` property.
 
-- **Scene Lifecycle**: Updated scene lifecycle to use `OnLoad(SceneContext)` and `OnUnload()` instead of `OnEnter()`/`OnExit()`
-  - `OnLoad` now receives `SceneContext` with all engine services
-  - Removed pause/resume functionality (not currently implemented)
-- **EventBus Lifecycle**: `EventBus` is now a scoped service instead of a World property
-  - Retrieved via `context.Services.GetService<EventBus>()`
-  - Automatically disposed when scene is unloaded
-  - No manual cleanup required
-- **PhysicsBackendSystem**: Now registered as a scoped service
-  - One instance per scene
-  - Automatically disposed with scene cleanup
-- **SceneContext**: Expanded to include 13 properties providing access to all engine services
-  - Added `Navigator`, `Services`, and other service properties
-  - Centralized service access point for scenes
-
-### Fixed
-
-- Circular dependency between `Scene` and `SceneManager` eliminated via `ISceneNavigator`
-- Scene reloading now properly clears previous entities via `World.Clear()`
-- EventBus subscriptions now automatically cleaned up when scenes are unloaded
+### Removed
+- **Legacy DI**: Removed custom `IServiceContainer`, `ServiceContainer`, and related interfaces in favor of the standard library.
 
 ## [0.13.0] - 2025-11-20
 

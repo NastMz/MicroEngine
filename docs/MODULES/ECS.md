@@ -430,16 +430,29 @@ public class PlayerSystem : ISystem
     {
         if (InputManager.IsKeyPressed(Key.Space))
         {
-            // Publish event
-            _eventBus.Publish(new PlayerJumpEvent
+            try
             {
-                JumpForce = 500f,
-                Position = playerPosition
-            });
+                // Publish event
+                _eventBus.Publish(new PlayerJumpEvent
+                {
+                    JumpForce = 500f,
+                    Position = playerPosition
+                });
+            }
+            catch (EventBusException ex)
+            {
+                // Handle event processing errors
+                Context.Logger.LogError($"Event failed: {ex.Message}");
+            }
         }
     }
 }
 ```
+
+### Error Handling
+
+The `EventBus` wraps exceptions thrown by subscribers in a `EventBusException`. This ensures that errors in event handlers are trapped and can be logged or handled without crashing the entire event chain silently.
+
 
 ### Subscribing to Events
 

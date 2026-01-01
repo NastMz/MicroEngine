@@ -738,29 +738,54 @@ The game layer is responsible for:
 ## **5.3 Game Entry Point**
 
 ```csharp
+using Microsoft.Extensions.DependencyInjection;
+
 public class Program
 {
     public static void Main()
     {
-        // Create backend
-        var backendFactory = new RaylibBackendFactory();
+        // 1. Create Backends
+        var renderBackend = new RaylibRenderBackend();
+        var inputBackend = new RaylibInputBackend();
+        var logger = new ConsoleLogger();
+        
+        // 2. Setup Dependency Injection
+        var services = new ServiceCollection();
+        services.AddSingleton<IWindow>(renderBackend);
+        services.AddSingleton<IRenderer2D>(renderBackend);
+        services.AddSingleton<IInputBackend>(inputBackend);
+        services.AddSingleton<ILogger>(logger);
+        services.AddScoped<EventBus>(); // Scoped per scene
+        
+        var serviceProvider = services.BuildServiceProvider();
 
-        // Create engine
+        // 3. Create SceneManager (injected dependency)
+        // Note: Transition effects created here
+        var sceneManager = new SceneManager(new FadeTransition(renderBackend, renderBackend));
+
+        // 4. Create Engine
+        var config = new EngineConfiguration { FixedTimeStep = 1f / 60f };
         var engine = new GameEngine(
-            backendFactory.CreateRenderBackend(),
-            backendFactory.CreateInputBackend(),
-            backendFactory.CreateAudioBackend()
+            config,
+            renderBackend,
+            renderBackend,
+            inputBackend,
+            logger,
+            sceneManager
         );
 
-        // Configure
-        engine.Window.Create("My Game", 800, 600);
-
-        // Register scenes
+        // 5. Initialize & Run
+        // Pass the service provider to the engine initialization
+        var sceneContext = new SceneContext(
+            renderBackend, renderBackend, inputBackend, ..., 
+            serviceProvider, 
+            sceneManager
+        );
+        engine.Initialize(sceneContext);
+        
         engine.SceneManager.Register("menu", new MainMenuScene());
-        engine.SceneManager.Register("game", new GameplayScene());
         engine.SceneManager.SetActive("menu");
-
-        // Run
+        
         engine.Run();
     }
 }

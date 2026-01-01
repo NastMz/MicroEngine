@@ -4,118 +4,94 @@ This document supplements the main ARCHITECTURE.md with details on the Dependenc
 
 ---
 
-## Dependency Injection Container
+## Dependency Injection
 
-MicroEngine includes a lightweight dependency injection (DI) container for managing service lifetimes and dependencies.
+MicroEngine uses `Microsoft.Extensions.DependencyInjection` for robust, industry-standard dependency management.
 
 ### Service Lifetimes
 
-Services can be registered with three different lifetimes:
+Services can be registered with three standard lifetimes:
+
+- **Singleton**: One instance for the entire application (`AddSingleton`).
+- **Scoped**: One instance per scope, typically per scene (`AddScoped`).
+- **Transient**: New instance every time it's requested (`AddTransient`).
+
+### Service Registration
+
+Services are registered using `ServiceCollection` at the application startup:
 
 ```csharp
-public enum ServiceLifetime
-{
-    Singleton,  // One instance for the entire application
-    Scoped,     // One instance per scope (typically per scene)
-    Transient   // New instance every time it's requested
-}
-```
+using Microsoft.Extensions.DependencyInjection;
 
-### IServiceContainer
-
-The core interface for service registration and resolution:
-
-```csharp
-public interface IServiceContainer : IDisposable
-{
-    // Registration
-    void RegisterSingleton<TService, TImplementation>() 
-        where TImplementation : class, TService;
-    void RegisterSingleton<TService>(TService instance);
-    
-    void RegisterScoped<TService, TImplementation>() 
-        where TImplementation : class, TService;
-    
-    void RegisterTransient<TService, TImplementation>() 
-        where TImplementation : class, TService;
-
-    // Resolution
-    TService GetService<TService>();
-    TService? GetServiceOrNull<TService>();
-    
-    // Scoping
-    IServiceContainer CreateScope();
-}
-```
-
-### ServiceContainer Implementation
-
-The concrete implementation manages service lifetimes and dependency resolution:
-
-```csharp
-var services = new ServiceContainer();
+var services = new ServiceCollection();
 
 // Register singleton (shared across entire application)
-services.RegisterSingleton<ILogger, ConsoleLogger>();
+services.AddSingleton<ILogger>(new ConsoleLogger());
+services.AddSingleton<IGameState, GameState>();
 
-// Register scoped (one per scene)
-services.RegisterScoped<EventBus>();
-services.RegisterScoped<PhysicsBackendSystem>();
+// Register scoped (created per scene)
+services.AddScoped<EventBus>();
+services.AddScoped<PhysicsBackendSystem>();
 
 // Register transient (new instance each time)
-services.RegisterTransient<ICommandHandler, MyCommandHandler>();
+services.AddTransient<ICommandHandler, MyCommandHandler>();
+
+// Build the provider
+var serviceProvider = services.BuildServiceProvider();
 
 // Resolve services
-var logger = services.GetService<ILogger>();
+var logger = serviceProvider.GetService<ILogger>();
 ```
 
 ### Scoped Services
 
-Scoped services are created once per scope and disposed when the scope ends. This is particularly useful for scene-specific services:
+Scoped services are crucial for scene isolation. They are created when a scope is created and disposed when the scope ends.
 
 ```csharp
 // In SceneManager, when loading a scene:
-var sceneScope = _serviceContainer.CreateScope();
-
-// Register scene-specific services
-sceneScope.RegisterScoped<EventBus>();
-sceneScope.RegisterScoped<PhysicsBackendSystem>();
-
-// Pass scope to scene via SceneContext
-var context = new SceneContext(
-    // ... other services ...
-    services: sceneScope,
-    navigator: this
-);
-
-// When scene is unloaded:
-sceneScope.Dispose(); // Automatically disposes all scoped services
+using (var scope = _serviceProvider.CreateScope())
+{
+    // The scope provides access to scoped services like EventBus
+    var eventBus = scope.ServiceProvider.GetRequiredService<EventBus>();
+    
+    // Pass the scoped provider to the scene via SceneContext
+    var context = new SceneContext(
+        // ... other services ...
+        services: scope.ServiceProvider,
+        navigator: this
+    );
+    
+    // ... Load and run scene ...
+}
+// When scope is disposed, EventBus and other scoped services are disposed automatically
 ```
 
 ### Integration with Scenes
 
-Scenes access services through `SceneContext.Services`:
+Scenes access services through `SceneContext.Services` (which is an `IServiceProvider`):
 
 ```csharp
+using Microsoft.Extensions.DependencyInjection;
+
 public override void OnLoad(SceneContext context)
 {
     base.OnLoad(context);
 
     // Get scoped EventBus for this scene
-    var eventBus = context.Services.GetService<EventBus>();
+    var eventBus = context.Services.GetRequiredService<EventBus>();
     eventBus.Subscribe<PlayerJumpEvent>(OnPlayerJump);
 
     // Get scoped physics system
-    var physics = context.Services.GetService<PhysicsBackendSystem>();
+    var physics = context.Services.GetRequiredService<PhysicsBackendSystem>();
 }
 ```
 
 ### Benefits
 
-- **Automatic Lifecycle Management:** Services are automatically disposed when their scope ends
-- **Testability:** Easy to mock services for unit testing
-- **Decoupling:** Components depend on interfaces, not concrete implementations
-- **Scene Isolation:** Each scene gets its own instances of scoped services (EventBus, PhysicsBackendSystem)
+- **Standardization:** Uses the standard .NET DI system familiar to most developers.
+- **Automatic Lifecycle Management:** Services are automatically disposed when their scope ends.
+- **Testability:** Easy to mock `IServiceProvider` for unit testing.
+- **Scene Isolation:** Each scene gets its own instances of scoped services (EventBus, PhysicsBackendSystem).
 
 ---
 
