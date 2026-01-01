@@ -9,6 +9,7 @@ using MicroEngine.Core.Logging;
 using MicroEngine.Core.Math;
 using MicroEngine.Core.Resources;
 using MicroEngine.Core.Scenes;
+using MicroEngine.Core.Audio;
 using MicroEngine.Game.Scenes.Demos.Zelda.Systems;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -19,12 +20,16 @@ public sealed class ZeldaScene : Scene
     private IInputBackend _input = null!;
     private IRenderer2D _renderer = null!;
     private ILogger _logger = null!;
-    private ResourceCache<ITexture> _textureCache = null!;
-    private EventBus _eventBus = null!;
+    private ResourceCache<ITexture> _textureCache;
+    private ResourceCache<IAudioClip> _audioCache;
+    private ISoundPlayer _soundPlayer;
+    private EventBus _eventBus;
 
     private AnimationSystem _animationSystem = null!;
     private RenderSystem _renderSystem = null!;
-    private CombatSystem _combatSystem = null!;
+    private CombatSystem _combatSystem;
+    private IAudioClip _swordClip;
+    private IAudioClip _hitClip;
 
     private Camera2D _camera = null!;
     private Entity _playerEntity;
@@ -38,7 +43,7 @@ public sealed class ZeldaScene : Scene
     private const int HERO_SIZE = 214;
 
     // Map Data
-    private int[,] _map = new int[ZeldaConstants.MAP_HEIGHT, ZeldaConstants.MAP_WIDTH]; 
+    private int[,] _map;
     private readonly Dictionary<int, bool> _tilePassability = new();
 
     public ZeldaScene() : base("ZeldaDemo") 
@@ -100,7 +105,8 @@ public sealed class ZeldaScene : Scene
                 {
                     for (int x = 0; x < width; x++)
                     {
-                        _map[y, x] = data[y * width + x];
+                        int index = y * width + x;
+                        _map[y, x] = index < data.Length ? data[index] : 0;
                     }
                 }
                 _logger.Info("Zelda", $"Loaded static map: {width}x{height}");
@@ -146,10 +152,18 @@ public sealed class ZeldaScene : Scene
                IsPointPassable(new Vector2(worldPos.X + radius, worldPos.Y + radius));
     }
 
-    private bool IsPointPassable(Vector2 worldPos)
+    public void PlaySound(IAudioClip clip)
     {
-        int tx = (int)(worldPos.X / ZeldaConstants.TILE_SIZE);
-        int ty = (int)(worldPos.Y / ZeldaConstants.TILE_SIZE);
+        _soundPlayer?.PlaySound(clip);
+    }
+
+    public IAudioClip SwordClip => _swordClip;
+    public IAudioClip HitClip => _hitClip;
+
+    public bool IsPointPassable(Vector2 pos)
+    {
+        int tx = (int)(pos.X / ZeldaConstants.TILE_SIZE);
+        int ty = (int)(pos.Y / ZeldaConstants.TILE_SIZE);
 
         if (tx < 0 || tx >= ZeldaConstants.MAP_WIDTH || ty < 0 || ty >= ZeldaConstants.MAP_HEIGHT) return false;
 
@@ -165,6 +179,8 @@ public sealed class ZeldaScene : Scene
         _renderer = context.Renderer;
         _logger = context.Logger;
         _textureCache = context.TextureCache;
+        _audioCache = context.AudioCache;
+        _soundPlayer = context.SoundPlayer;
         _eventBus = context.Services.GetRequiredService<EventBus>();
 
         _camera = new Camera2D
@@ -187,6 +203,10 @@ public sealed class ZeldaScene : Scene
         World.RegisterSystem(_animationSystem);
 
         _enemyQuery = World.CreateCachedQuery(typeof(EnemyComponent), typeof(TransformComponent));
+
+        // Load Audio
+        _swordClip = _audioCache.Load(ZeldaConstants.SWORD_SFX_PATH);
+        _hitClip = _audioCache.Load(ZeldaConstants.HIT_SFX_PATH);
 
         LoadMap();
         SpawnPlayer();

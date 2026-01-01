@@ -162,6 +162,7 @@ public class CombatSystem : ISystem, IDisposable
 
             // Flash red
             sprite.Tint = ZeldaConstants.COLOR_DAMAGE;
+            _scene.PlaySound(_scene.HitClip);
 
             // Simple Knockback
             if (_currentWorld.HasComponent<TransformComponent>(e.TargetEntity) && 

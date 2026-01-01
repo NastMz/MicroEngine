@@ -15,6 +15,12 @@ public static class ZeldaConstants
     public const string BLOB_TEXTURE_PATH = "assets/textures/blob.png";
     /// <summary> Path to the tileset texture for the dungeon. </summary>
     public const string TILES_TEXTURE_PATH = "assets/textures/dungeon_tiles.png";
+    /// <summary> Path to the sword swing sound effect. </summary>
+    public const string SWORD_SFX_PATH = "assets/audio/sfx/sword.wav";
+    /// <summary> Path to the enemy hit sound effect. </summary>
+    public const string HIT_SFX_PATH = "assets/audio/sfx/hit.wav";
+    
+    // --- Map Settings ---
     /// <summary> Path to the static map layout JSON. </summary>
     public const string MAP_JSON_PATH = "assets/maps/zelda_map.json";
 
@@ -56,7 +62,7 @@ public static class ZeldaConstants
     /// <summary> Radius of the sword swing hitbox. </summary>
     public const float ATTACK_HIT_THRESHOLD = 20f;
     /// <summary> Radius of the body-to-body collision hitbox. </summary>
-    public const float PROXIMITY_HIT_THRESHOLD = 20f;
+    public const float PROXIMITY_HIT_THRESHOLD = 15f;
     /// <summary> Duration of invulnerability after taking damage (seconds). </summary>
     public const float INVULNERABILITY_DURATION = 0.5f;
     /// <summary> Force applied to push entities away on hit. </summary>

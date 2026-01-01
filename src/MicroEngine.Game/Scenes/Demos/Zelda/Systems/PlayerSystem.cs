@@ -64,8 +64,8 @@ public class PlayerSystem : ISystem
             // --- 2. Handle Attacking State ---
             if (player.State == PlayerState.Attacking)
             {
-                player.AttackTimer -= deltaTime;
-                if (player.AttackTimer <= 0)
+                // If the attack animation has finished, transition back to idle
+                if (!animator.IsPlaying)
                 {
                     player.State = PlayerState.Idle;
                     animator.CurrentClipName = animator.CurrentClipName?.Replace("attack", "walk") ?? ZeldaConstants.CLIP_WALK_DOWN;
@@ -91,11 +91,11 @@ public class PlayerSystem : ISystem
                 else if (currentClip.Contains("right")) dirSuffix = "right";
                 
                 _logger.Info("Player", $"Attack Triggered! Dir: {dirSuffix}");
-
                 animator.CurrentClipName = $"attack_{dirSuffix}";
                 animator.IsPlaying = true;
                 animator.CurrentFrame = 0;
                 animator.FrameTimer = 0;
+                _scene.PlaySound(_scene.SwordClip);
                 continue; 
             }
 
