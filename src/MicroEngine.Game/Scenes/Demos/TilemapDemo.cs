@@ -185,15 +185,15 @@ public sealed class TilemapDemo : Scene
         _renderer.EndCamera2D();
 
         // UI Overlay
-        var layout = new TextLayoutHelper(_renderer, startX: 20, startY: 20, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(startX: 20, startY: 20, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var controlsColor = new Color(180, 180, 180, 255);
         var dimColor = new Color(150, 150, 150, 255);
 
-        layout.DrawText("Tilemap Demo - Tilemap System", 20, Color.White)
+        layout.DrawText(_renderer, "Tilemap Demo - Tilemap System", 20, Color.White)
               .AddSpacing(10)
-              .DrawText($"Camera: ({_camera.Position.X:F0}, {_camera.Position.Y:F0})", 14, infoColor)
-              .DrawText($"Tiles: {GRID_WIDTH}x{GRID_HEIGHT} ({_tilemap.TotalTileCount} total)", 14, infoColor);
+              .DrawText(_renderer, $"Camera: ({_camera.Position.X:F0}, {_camera.Position.Y:F0})", 14, infoColor)
+              .DrawText(_renderer, $"Tiles: {GRID_WIDTH}x{GRID_HEIGHT} ({_tilemap.TotalTileCount} total)", 14, infoColor);
         
         // Calculate visible bounds manually
         var visibleBounds = _camera.GetVisibleBounds(_window.Width, _window.Height);
@@ -204,12 +204,12 @@ public sealed class TilemapDemo : Scene
         endX = System.Math.Min(_tilemap.Width, endX + 1);
         endY = System.Math.Min(_tilemap.Height, endY + 1);
         var visibleTiles = (endX - startX) * (endY - startY);
-        layout.DrawText($"Visible Tiles: {visibleTiles} (culling active)", 14, infoColor);
+        layout.DrawText(_renderer, $"Visible Tiles: {visibleTiles} (culling active)", 14, infoColor);
 
         layout.SetY(510)
-              .DrawText("[WASD/Arrows] Move Camera", 14, controlsColor)
-              .DrawText("[SPACE] Regenerate | [R] Reset Camera", 14, controlsColor)
-              .DrawText("[ESC] Back to Menu", 14, dimColor);
+              .DrawText(_renderer, "[WASD/Arrows] Move Camera", 14, controlsColor)
+              .DrawText(_renderer, "[SPACE] Regenerate | [R] Reset Camera", 14, controlsColor)
+              .DrawText(_renderer, "[ESC] Back to Menu", 14, dimColor);
 
         // Legend
         DrawLegend();
@@ -364,10 +364,10 @@ public sealed class TilemapDemo : Scene
         const int BOX_SIZE = 16;
         const int LINE_HEIGHT = 22;
 
-        var layout = new TextLayoutHelper(_renderer, startX: LEGEND_X, startY: 20, defaultLineHeight: LINE_HEIGHT);
+        var layout = new TextLayoutHelper(startX: LEGEND_X, startY: 20, defaultLineHeight: LINE_HEIGHT);
         var legendColor = new Color(200, 200, 200, 255);
 
-        layout.DrawText("Tile Types:", 14, legendColor)
+        layout.DrawText(_renderer, "Tile Types:", 14, legendColor)
               .AddSpacing(5);
 
         // Helper method to draw legend item
@@ -384,4 +384,5 @@ public sealed class TilemapDemo : Scene
         DrawLegendItem(TILE_STONE, "Stone");
     }
 }
+
 

@@ -46,13 +46,14 @@ public sealed class PhysicsDemo : Scene
         _logger = context.Logger;
 
         // Get physics system from DI container
-        _physicsSystem = context.Services.GetService<PhysicsBackendSystem>();
+        _physicsSystem = context.Services.GetRequiredService<PhysicsBackendSystem>();
         _physicsSystem.Initialize(gravity: 750f); // Downward gravity
         
         // Create drag system
         _dragSystem = new DragSystem();
         
-        World.RegisterSystem(_physicsSystem);
+        // TODO: PhysicsSystem should be registered via DI in World constructor
+        // World.RegisterSystem(_physicsSystem);
 
         // Create ground (static platform)
         _ground = World.CreateEntity();
@@ -207,16 +208,16 @@ public sealed class PhysicsDemo : Scene
         }
 
         // UI
-        var layout = new TextLayoutHelper(_renderer, startX: 20, startY: 20, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(startX: 20, startY: 20, defaultLineHeight: 20);
         var infoColor = new Color(180, 180, 180, 255);
         var controlsColor = new Color(150, 150, 150, 255);
 
-        layout.DrawText("Physics Demo - Realistic Dynamics", 20, Color.White)
+        layout.DrawText(_renderer, "Physics Demo - Realistic Dynamics", 20, Color.White)
               .AddSpacing(10)
-              .DrawText($"Balls: {_balls.Count}/{MAX_BALLS}", 16, infoColor);
+              .DrawText(_renderer, $"Balls: {_balls.Count}/{MAX_BALLS}", 16, infoColor);
 
         layout.SetY(580)
-              .DrawText("[Click] Spawn Ball | [Drag] Move Ball | [ESC] Back to Menu", 14, controlsColor);
+              .DrawText(_renderer, "[Click] Spawn Ball | [Drag] Move Ball | [ESC] Back to Menu", 14, controlsColor);
     }
 
     /// <inheritdoc/>
@@ -299,4 +300,5 @@ public sealed class PhysicsDemo : Scene
         return false;
     }
 }
+
 

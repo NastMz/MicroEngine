@@ -150,7 +150,7 @@ public sealed class InputDemo : Scene
 
         _renderer.Clear(new Color(25, 30, 45, 255));
 
-        var layout = new TextLayoutHelper(_renderer, startX: 20, startY: 20, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(startX: 20, startY: 20, defaultLineHeight: 20);
         var keyboardColor = new Color(200, 200, 255, 255);
         var mouseColor = new Color(255, 200, 200, 255);
         var gamepadColor = new Color(200, 255, 200, 255);
@@ -159,12 +159,12 @@ public sealed class InputDemo : Scene
         var controlsColor = new Color(150, 150, 150, 255);
 
         // Title
-        layout.DrawText(_welcomeMessage, 20, Color.White)
+        layout.DrawText(_renderer, _welcomeMessage, 20, Color.White)
               .AddSpacing(10);
         
         if (_receivedParameters)
         {
-            layout.DrawText("✓ Scene parameters received", 12, new Color(100, 255, 100, 255))
+            layout.DrawText(_renderer, "✓ Scene parameters received", 12, new Color(100, 255, 100, 255))
                   .AddSpacing(20);
         }
         else
@@ -173,55 +173,55 @@ public sealed class InputDemo : Scene
         }
 
         // Keyboard section
-        layout.DrawSection("KEYBOARD", 16, keyboardColor, spacingAfter: 10)
+        layout.DrawSection(_renderer, "KEYBOARD", 16, keyboardColor, spacingAfter: 10)
               .SetX(40)
-              .DrawText("Recent keys:", 14, dimColor)
+              .DrawText(_renderer, "Recent keys:", 14, dimColor)
               .SetX(60);
         
         if (_recentKeys.Count > 0)
         {
             foreach (var key in _recentKeys)
             {
-                layout.DrawText($"• {key}", 12, Color.White, customLineHeight: 18);
+                layout.DrawText(_renderer, $"• {key}", 12, Color.White, customLineHeight: 18);
             }
         }
         else
         {
-            layout.DrawText("(none)", 12, grayColor, customLineHeight: 18);
+            layout.DrawText(_renderer, "(none)", 12, grayColor, customLineHeight: 18);
         }
 
         layout.AddSpacing(20);
 
         // Mouse section
         layout.SetX(20)
-              .DrawSection("MOUSE", 16, mouseColor, spacingAfter: 10)
+              .DrawSection(_renderer, "MOUSE", 16, mouseColor, spacingAfter: 10)
               .SetX(40)
-              .DrawText($"Position: ({_lastMousePosition.X:F0}, {_lastMousePosition.Y:F0})", 12, Color.White)
-              .DrawText($"Scroll delta: {_scrollAccumulator:F2}", 12, Color.White)
-              .DrawText("Recent buttons:", 14, dimColor)
+              .DrawText(_renderer, $"Position: ({_lastMousePosition.X:F0}, {_lastMousePosition.Y:F0})", 12, Color.White)
+              .DrawText(_renderer, $"Scroll delta: {_scrollAccumulator:F2}", 12, Color.White)
+              .DrawText(_renderer, "Recent buttons:", 14, dimColor)
               .SetX(60);
         
         if (_recentButtons.Count > 0)
         {
             foreach (var btn in _recentButtons)
             {
-                layout.DrawText($"• {btn}", 12, Color.White, customLineHeight: 18);
+                layout.DrawText(_renderer, $"• {btn}", 12, Color.White, customLineHeight: 18);
             }
         }
         else
         {
-            layout.DrawText("(none)", 12, grayColor, customLineHeight: 18);
+            layout.DrawText(_renderer, "(none)", 12, grayColor, customLineHeight: 18);
         }
 
         // Gamepad section
         layout.AddSpacing(20)
               .SetX(20)
-              .DrawSection("GAMEPAD", 16, gamepadColor, spacingAfter: 10)
+              .DrawSection(_renderer, "GAMEPAD", 16, gamepadColor, spacingAfter: 10)
               .SetX(40);
         
         if (!_inputBackend.IsGamepadAvailable(0))
         {
-            layout.DrawText("No gamepad detected", 12, controlsColor);
+            layout.DrawText(_renderer, "No gamepad detected", 12, controlsColor);
         }
         else
         {
@@ -238,38 +238,38 @@ public sealed class InputDemo : Scene
             {
                 if (System.Math.Abs(leftX) > 0.1f || System.Math.Abs(leftY) > 0.1f)
                 {
-                    layout.DrawText($"Left Stick: ({leftX:F2}, {leftY:F2})", 12, Color.White, customLineHeight: 18);
+                    layout.DrawText(_renderer, $"Left Stick: ({leftX:F2}, {leftY:F2})", 12, Color.White, customLineHeight: 18);
                 }
                 
                 if (System.Math.Abs(rightX) > 0.1f || System.Math.Abs(rightY) > 0.1f)
                 {
-                    layout.DrawText($"Right Stick: ({rightX:F2}, {rightY:F2})", 12, Color.White, customLineHeight: 18);
+                    layout.DrawText(_renderer, $"Right Stick: ({rightX:F2}, {rightY:F2})", 12, Color.White, customLineHeight: 18);
                 }
             }
             
             // Show button history
-            layout.DrawText("Recent buttons:", 14, dimColor)
+            layout.DrawText(_renderer, "Recent buttons:", 14, dimColor)
                   .SetX(60);
             
             if (_recentGamepadButtons.Count > 0)
             {
                 foreach (var btn in _recentGamepadButtons)
                 {
-                    layout.DrawText($"• {btn}", 12, Color.White, customLineHeight: 18);
+                    layout.DrawText(_renderer, $"• {btn}", 12, Color.White, customLineHeight: 18);
                 }
             }
             else
             {
-                layout.DrawText("(none)", 12, grayColor);
+                layout.DrawText(_renderer, "(none)", 12, grayColor);
             }
         }
 
         // Instructions
         layout.SetX(20)
               .SetY(510)
-              .DrawText("[Press any key/button to record]", 14, dimColor)
-              .DrawText("[SPACE] Clear history", 14, dimColor)
-              .DrawText("[ESC] Back to Menu", 14, controlsColor);
+              .DrawText(_renderer, "[Press any key/button to record]", 14, dimColor)
+              .DrawText(_renderer, "[SPACE] Clear history", 14, dimColor)
+              .DrawText(_renderer, "[ESC] Back to Menu", 14, controlsColor);
     }
 
     /// <inheritdoc/>
@@ -288,3 +288,4 @@ public sealed class InputDemo : Scene
         }
     }
 }
+

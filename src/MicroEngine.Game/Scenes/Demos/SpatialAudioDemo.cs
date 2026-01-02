@@ -196,47 +196,48 @@ public sealed class SpatialAudioDemo : Scene
 
     private void RenderUI()
     {
-        var layout = new TextLayoutHelper(_renderer, startX: 10, startY: 10, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 10, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var dimColor = new Color(150, 150, 150, 255);
 
-        layout.DrawText("Spatial Audio Demo", 20, Color.White)
+        layout.DrawText(_renderer, "Spatial Audio Demo", 20, Color.White)
               .AddSpacing(5)
-              .DrawText($"Max Distance: {MAX_DISTANCE}px", 14, dimColor)
+              .DrawText(_renderer, $"Max Distance: {MAX_DISTANCE}px", 14, dimColor)
               .AddSpacing(10)
-              .DrawText("How it works:", 16, Color.White)
-              .DrawText("- Each source plays a DIFFERENT sound", 12, dimColor)
-              .DrawText("- Sounds loop continuously", 12, dimColor)
-              .DrawText("- Volume decreases with distance", 12, dimColor)
-              .DrawText("- Move listener (blue) with arrow keys", 12, dimColor)
-              .DrawText("- Get close to hear each sound clearly", 12, dimColor);
+              .DrawText(_renderer, "How it works:", 16, Color.White)
+              .DrawText(_renderer, "- Each source plays a DIFFERENT sound", 12, dimColor)
+              .DrawText(_renderer, "- Sounds loop continuously", 12, dimColor)
+              .DrawText(_renderer, "- Volume decreases with distance", 12, dimColor)
+              .DrawText(_renderer, "- Move listener (blue) with arrow keys", 12, dimColor)
+              .DrawText(_renderer, "- Get close to hear each sound clearly", 12, dimColor);
 
         var soundsLoaded = _soundClips.Count(c => c != null);
         if (soundsLoaded == 0)
         {
             layout.AddSpacing(10)
-                  .DrawText("[!] No audio files loaded", 14, new Color(255, 200, 100, 255))
-                  .DrawText("Demo works without audio", 12, dimColor);
+                  .DrawText(_renderer, "[!] No audio files loaded", 14, new Color(255, 200, 100, 255))
+                  .DrawText(_renderer, "Demo works without audio", 12, dimColor);
         }
         else
         {
             layout.AddSpacing(10)
-                  .DrawText($"[OK] {soundsLoaded}/3 sounds loaded", 14, new Color(100, 255, 100, 255))
-                  .DrawText("Sounds playing in loop", 12, dimColor);
+                  .DrawText(_renderer, $"[OK] {soundsLoaded}/3 sounds loaded", 14, new Color(100, 255, 100, 255))
+                  .DrawText(_renderer, "Sounds playing in loop", 12, dimColor);
         }
 
         // Legend
         layout.AddSpacing(10)
-              .DrawText("Legend:", 16, Color.White)
-              .DrawText("[O] Listener (Blue) - Move with arrows", 12, new Color(100, 150, 255, 255))
-              .DrawText("[O] Sound Source (Orange)", 12, new Color(255, 200, 100, 255))
-              .DrawText("[o] Attenuation Radius", 12, new Color(100, 100, 150, 255))
-              .DrawText("[-] Distance Line", 12, new Color(150, 150, 150, 255));
+              .DrawText(_renderer, "Legend:", 16, Color.White)
+              .DrawText(_renderer, "[O] Listener (Blue) - Move with arrows", 12, new Color(100, 150, 255, 255))
+              .DrawText(_renderer, "[O] Sound Source (Orange)", 12, new Color(255, 200, 100, 255))
+              .DrawText(_renderer, "[o] Attenuation Radius", 12, new Color(100, 100, 150, 255))
+              .DrawText(_renderer, "[-] Distance Line", 12, new Color(150, 150, 150, 255));
 
         // Controls
         layout.SetY(500)
-              .DrawText("Controls:", 16, Color.White)
-              .DrawText("[Arrow Keys] Move Listener", 14, dimColor)
-              .DrawText("[ESC] Menu", 14, dimColor);
+              .DrawText(_renderer, "Controls:", 16, Color.White)
+              .DrawText(_renderer, "[Arrow Keys] Move Listener", 14, dimColor)
+              .DrawText(_renderer, "[ESC] Menu", 14, dimColor);
     }
 }
+

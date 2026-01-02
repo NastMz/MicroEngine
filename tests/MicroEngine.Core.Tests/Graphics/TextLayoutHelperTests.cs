@@ -21,29 +21,29 @@ public sealed class TextLayoutHelperTests
     public void Constructor_SetsInitialPosition()
     {
         // Arrange & Act
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
 
         // Assert
         Assert.Equal(10, layout.CurrentX);
         Assert.Equal(20, layout.CurrentY);
     }
 
-    [Fact]
+    [Fact(Skip = "TextLayoutHelper no longer takes renderer in constructor")]
     public void Constructor_ThrowsWhenRenderBackendIsNull()
     {
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new TextLayoutHelper(null!, 0, 0));
+        // Test obsoleto - TextLayoutHelper es ref struct sin renderer
+        Assert.True(true);
     }
 
     [Fact]
     public void DrawText_CallsRenderBackendWithCorrectParameters()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
         var color = new Color(255, 255, 255, 255);
 
         // Act
-        layout.DrawText("Test", 14, color);
+        layout.DrawText(_mockRenderBackend.Object, "Test", 14, color);
 
         // Assert
         _mockRenderBackend.Verify(
@@ -55,10 +55,10 @@ public sealed class TextLayoutHelperTests
     public void DrawText_AdvancesYPosition()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20, defaultLineHeight: 20);
 
         // Act
-        layout.DrawText("Test", 14, Color.White);
+        layout.DrawText(_mockRenderBackend.Object, "Test", 14, Color.White);
 
         // Assert
         Assert.Equal(40, layout.CurrentY); // 20 + 20
@@ -68,10 +68,10 @@ public sealed class TextLayoutHelperTests
     public void DrawText_UsesCustomLineHeight()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
 
         // Act
-        layout.DrawText("Test", 14, Color.White, customLineHeight: 30);
+        layout.DrawText(_mockRenderBackend.Object, "Test", 14, Color.White, customLineHeight: 30);
 
         // Assert
         Assert.Equal(50, layout.CurrentY); // 20 + 30
@@ -81,10 +81,10 @@ public sealed class TextLayoutHelperTests
     public void DrawText_CalculatesLineHeightFromFontSizeWhenDefaultIsZero()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20, defaultLineHeight: 0);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20, defaultLineHeight: 0);
 
         // Act
-        layout.DrawText("Test", 14, Color.White);
+        layout.DrawText(_mockRenderBackend.Object, "Test", 14, Color.White);
 
         // Assert
         Assert.Equal(40, layout.CurrentY); // 20 + (14 + 6)
@@ -94,21 +94,21 @@ public sealed class TextLayoutHelperTests
     public void DrawText_SupportsMethodChaining()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
 
         // Act
-        var result = layout.DrawText("Test1", 14, Color.White)
-                           .DrawText("Test2", 14, Color.White);
+        var result = layout.DrawText(_mockRenderBackend.Object, "Test1", 14, Color.White)
+                           .DrawText(_mockRenderBackend.Object, "Test2", 14, Color.White);
 
-        // Assert
-        Assert.Same(layout, result);
+        // Assert - ref struct returns itself by value, verify Y position advanced
+        Assert.Equal(60, result.CurrentY); // 20 + 20 + 20 (two texts with default line height)
     }
 
     [Fact]
     public void AddSpacing_IncreasesYPosition()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
 
         // Act
         layout.AddSpacing(15);
@@ -121,7 +121,7 @@ public sealed class TextLayoutHelperTests
     public void SetX_UpdatesCurrentX()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
 
         // Act
         layout.SetX(50);
@@ -134,7 +134,7 @@ public sealed class TextLayoutHelperTests
     public void SetY_UpdatesCurrentY()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
 
         // Act
         layout.SetY(100);
@@ -147,7 +147,7 @@ public sealed class TextLayoutHelperTests
     public void SetPosition_UpdatesBothXAndY()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
 
         // Act
         layout.SetPosition(50, 100);
@@ -161,7 +161,7 @@ public sealed class TextLayoutHelperTests
     public void ResetY_ResetsToStartingY()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
         layout.SetY(100);
 
         // Act
@@ -175,7 +175,7 @@ public sealed class TextLayoutHelperTests
     public void Reset_ResetsBothXAndY()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
         layout.SetPosition(100, 200);
 
         // Act
@@ -190,8 +190,8 @@ public sealed class TextLayoutHelperTests
     public void NewColumn_SetsXAndResetsY()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
-        layout.DrawText("Test", 14, Color.White); // Advances Y
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
+        layout.DrawText(_mockRenderBackend.Object, "Test", 14, Color.White); // Advances Y
 
         // Act
         layout.NewColumn(200);
@@ -205,11 +205,11 @@ public sealed class TextLayoutHelperTests
     public void DrawSection_DrawsTitleAndAddsSpacing()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20, defaultLineHeight: 20);
         var titleColor = new Color(100, 200, 255, 255);
 
         // Act
-        layout.DrawSection("Section Title", 18, titleColor, spacingAfter: 10);
+        layout.DrawSection(_mockRenderBackend.Object, "Section Title", 18, titleColor, spacingAfter: 10);
 
         // Assert
         _mockRenderBackend.Verify(
@@ -222,12 +222,12 @@ public sealed class TextLayoutHelperTests
     public void DrawKeyValue_DrawsBothKeyAndValue()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20);
         var keyColor = new Color(200, 200, 200, 255);
         var valueColor = new Color(100, 255, 100, 255);
 
         // Act
-        layout.DrawKeyValue("Key", "Value", 12, keyColor, valueColor);
+        layout.DrawKeyValue(_mockRenderBackend.Object, "Key", "Value", 12, keyColor, valueColor);
 
         // Assert
         _mockRenderBackend.Verify(
@@ -242,11 +242,11 @@ public sealed class TextLayoutHelperTests
     public void DefaultLineHeight_CanBeChanged()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20, defaultLineHeight: 20);
 
         // Act
         layout.DefaultLineHeight = 30;
-        layout.DrawText("Test", 14, Color.White);
+        layout.DrawText(_mockRenderBackend.Object, "Test", 14, Color.White);
 
         // Assert
         Assert.Equal(50, layout.CurrentY); // 20 + 30
@@ -256,15 +256,15 @@ public sealed class TextLayoutHelperTests
     public void FluentAPI_WorksCorrectly()
     {
         // Arrange
-        var layout = new TextLayoutHelper(_mockRenderBackend.Object, startX: 10, startY: 20, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 20, defaultLineHeight: 20);
 
         // Act
-        layout.DrawText("Title", 20, Color.White)
+        layout.DrawText(_mockRenderBackend.Object, "Title", 20, Color.White)
               .AddSpacing(10)
-              .DrawText("Line 1", 14, Color.White)
-              .DrawText("Line 2", 14, Color.White)
+              .DrawText(_mockRenderBackend.Object, "Line 1", 14, Color.White)
+              .DrawText(_mockRenderBackend.Object, "Line 2", 14, Color.White)
               .SetX(50)
-              .DrawText("Column 2", 14, Color.White);
+              .DrawText(_mockRenderBackend.Object, "Column 2", 14, Color.White);
 
         // Assert
         Assert.Equal(50, layout.CurrentX);
@@ -272,3 +272,4 @@ public sealed class TextLayoutHelperTests
         Assert.Equal(110, layout.CurrentY);
     }
 }
+

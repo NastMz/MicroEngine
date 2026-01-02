@@ -23,11 +23,14 @@ public class RenderSystem : ISystem
         _sortedEntities.Clear();
         foreach (var entity in _renderQuery.Entities)
         {
-            _sortedEntities.Add(entity);
+            if (world.IsEntityValid(entity))
+                _sortedEntities.Add(entity);
         }
 
         // Sort by Layer, then by Y position for depth sorting
         _sortedEntities.Sort((a, b) => {
+            if (!world.IsEntityValid(a) || !world.IsEntityValid(b)) return 0;
+            
             var sA = world.GetComponent<SpriteComponent>(a);
             var sB = world.GetComponent<SpriteComponent>(b);
             if (sA.Layer != sB.Layer) return sA.Layer.CompareTo(sB.Layer);

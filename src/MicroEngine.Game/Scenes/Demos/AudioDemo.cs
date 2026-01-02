@@ -168,26 +168,26 @@ public sealed class AudioDemo : Scene
 
         _renderer.Clear(new Color(25, 30, 40, 255));
 
-        var layout = new TextLayoutHelper(_renderer, startX: 50, startY: 30, defaultLineHeight: 25);
+        var layout = new TextLayoutHelper(startX: 50, startY: 30, defaultLineHeight: 25);
         var titleColor = new Color(180, 220, 255, 255);
         var sfxTitleColor = new Color(255, 220, 180, 255);
         var dimColor = new Color(150, 150, 150, 255);
 
         // Title (centered)
         layout.SetX(300)
-              .DrawText("Audio Demo", 24, Color.White)
+              .DrawText(_renderer, "Audio Demo", 24, Color.White)
               .SetX(50)
               .AddSpacing(45);
 
         // Music controls
-        layout.DrawSection("Music Controls:", 18, titleColor, spacingAfter: 5)
+        layout.DrawSection(_renderer, "Music Controls:", 18, titleColor, spacingAfter: 5)
               .SetX(70)
-              .DrawText("[SPACE] Play/Pause Music", 16, Color.White)
-              .DrawText($"[ArrowUp/ArrowDown] Music Volume: {_musicVolume:P0}", 16, Color.White);
+              .DrawText(_renderer, "[SPACE] Play/Pause Music", 16, Color.White)
+              .DrawText(_renderer, $"[ArrowUp/ArrowDown] Music Volume: {_musicVolume:P0}", 16, Color.White);
         
         var musicStatus = _isMusicPlaying ? "Playing" : "Stopped";
         var musicColor = _isMusicPlaying ? new Color(100, 255, 100, 255) : new Color(255, 100, 100, 255);
-        layout.DrawText($"Status: {musicStatus}", 16, musicColor);
+        layout.DrawText(_renderer, $"Status: {musicStatus}", 16, musicColor);
 
         // Music volume bar
         DrawVolumeBar(new Vector2(70, layout.CurrentY), _musicVolume, new Color(100, 150, 255, 255));
@@ -195,12 +195,12 @@ public sealed class AudioDemo : Scene
 
         // Sound effects controls
         layout.SetX(50)
-              .DrawSection("Sound Effects:", 18, sfxTitleColor, spacingAfter: 5)
+              .DrawSection(_renderer, "Sound Effects:", 18, sfxTitleColor, spacingAfter: 5)
               .SetX(70)
-              .DrawText("[J] Jump Sound", 16, Color.White)
-              .DrawText("[C] Collect Sound", 16, Color.White)
-              .DrawText("[H] Hit Sound", 16, Color.White)
-              .DrawText($"[ArrowLeft/ArrowRight] SFX Volume: {_sfxVolume:P0}", 16, Color.White);
+              .DrawText(_renderer, "[J] Jump Sound", 16, Color.White)
+              .DrawText(_renderer, "[C] Collect Sound", 16, Color.White)
+              .DrawText(_renderer, "[H] Hit Sound", 16, Color.White)
+              .DrawText(_renderer, $"[ArrowLeft/ArrowRight] SFX Volume: {_sfxVolume:P0}", 16, Color.White);
 
         // SFX volume bar
         DrawVolumeBar(new Vector2(70, layout.CurrentY), _sfxVolume, new Color(255, 180, 100, 255));
@@ -211,13 +211,13 @@ public sealed class AudioDemo : Scene
         {
             var alpha = (byte)(255 * (_soundFeedbackTimer / FEEDBACK_DURATION));
             layout.SetX(70)
-                  .DrawText($"Played: {_lastSoundPlayed}", 18, new Color(100, 255, 100, alpha));
+                  .DrawText(_renderer, $"Played: {_lastSoundPlayed}", 18, new Color(100, 255, 100, alpha));
         }
 
         // Instructions
         layout.SetX(10)
               .SetY(580)
-              .DrawText("[ESC] Back to Menu", 14, dimColor);
+              .DrawText(_renderer, "[ESC] Back to Menu", 14, dimColor);
     }
 
     /// <inheritdoc/>
@@ -328,3 +328,4 @@ public sealed class AudioDemo : Scene
         _renderer.DrawRectangleLines(position, new Vector2(barWidth, barHeight), Color.White);
     }
 }
+

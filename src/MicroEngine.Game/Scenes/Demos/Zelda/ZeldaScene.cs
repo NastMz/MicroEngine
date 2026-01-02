@@ -28,6 +28,8 @@ public sealed class ZeldaScene : Scene
     private AnimationSystem _animationSystem = null!;
     private RenderSystem _renderSystem = null!;
     private CombatSystem _combatSystem;
+    private PlayerSystem _playerSystem = null!;
+    private EnemyAISystem _enemyAISystem = null!;
     private IAudioClip _swordClip;
     private IAudioClip _hitClip;
 
@@ -196,11 +198,10 @@ public sealed class ZeldaScene : Scene
         _animationSystem = new AnimationSystem();
         _renderSystem = new RenderSystem(_renderer);
         _combatSystem = new CombatSystem(_eventBus, _logger, this);
-
-        World.RegisterSystem(new PlayerSystem(_input, _eventBus, _logger, this));
-        World.RegisterSystem(new EnemyAISystem(this));
-        World.RegisterSystem(_combatSystem);
-        World.RegisterSystem(_animationSystem);
+        
+        // Create systems that will be called manually since DI is not set up
+        _playerSystem = new PlayerSystem(_input, _eventBus, _logger, this);
+        _enemyAISystem = new EnemyAISystem(this);
 
         _enemyQuery = World.CreateCachedQuery(typeof(EnemyComponent), typeof(TransformComponent));
 
@@ -385,6 +386,12 @@ public sealed class ZeldaScene : Scene
             _camera.Position = Vector2.Lerp(_camera.Position, transform.Position, 8.0f * deltaTime);
         }
 
+        // Call systems manually since DI is not configured
+        _playerSystem.Update(World, deltaTime);
+        _enemyAISystem.Update(World, deltaTime);
+        _combatSystem.Update(World, deltaTime);
+        _animationSystem.Update(World, deltaTime);
+
         base.OnUpdate(deltaTime);
     }
 
@@ -456,6 +463,8 @@ public sealed class ZeldaScene : Scene
                 float slimeDrawSize = ZeldaConstants.TILE_SIZE * ZeldaConstants.ENEMY_SCALE;
                 foreach (var enemy in _enemyQuery.Entities)
                 {
+                    if (!World.IsEntityValid(enemy)) continue;
+                    
                     var eTrans = World.GetComponent<TransformComponent>(enemy);
                     Vector2 eBodyCenter = eTrans.Position + new Vector2(0, -slimeDrawSize * 0.4f);
                     _renderer.DrawCircleLines(eBodyCenter, 16f, ZeldaConstants.COLOR_DEBUG_HITBOX_ENEMY);
@@ -466,13 +475,13 @@ public sealed class ZeldaScene : Scene
         _renderer.EndCamera2D();
 
         // UI Overlay
-        var layout = new TextLayoutHelper(_renderer, 20, 20, 25);
-        layout.DrawText(_statusMessage, 28, _statusColor);
+        var layout = new TextLayoutHelper(startX: 20, startY: 20, defaultLineHeight: 25);
+        layout.DrawText(_renderer, _statusMessage, 28, _statusColor);
         
         // --- RESTORED CONTROLS GUIDE ---
-        layout.DrawText("WASD: MOVE | SPACE: ATTACK", 16, ZeldaConstants.COLOR_UI_TEXT);
-        layout.DrawText("H: TOGGLE HITBOXES | R: RESTART", 16, ZeldaConstants.COLOR_UI_TEXT);
-        layout.DrawText($"ENEMIES REMAINING: {(_enemyQuery?.Count ?? 0)}", 16, ZeldaConstants.COLOR_UI_COUNTER);
+        layout.DrawText(_renderer, "WASD: MOVE | SPACE: ATTACK", 16, ZeldaConstants.COLOR_UI_TEXT);
+        layout.DrawText(_renderer, "H: TOGGLE HITBOXES | R: RESTART", 16, ZeldaConstants.COLOR_UI_TEXT);
+        layout.DrawText(_renderer, $"ENEMIES REMAINING: {(_enemyQuery?.Count ?? 0)}", 16, ZeldaConstants.COLOR_UI_COUNTER);
         
         if (World.IsEntityValid(_playerEntity))
         {
@@ -497,3 +506,4 @@ public sealed class ZeldaScene : Scene
         base.OnUnload();
     }
 }
+

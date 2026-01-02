@@ -3,16 +3,15 @@ using MicroEngine.Core.Math;
 namespace MicroEngine.Core.Graphics;
 
 /// <summary>
-/// Helper class for automatic text layout and positioning.
-/// Eliminates manual coordinate tracking when rendering multiple lines of text.
+/// Helper for automatic text layout and positioning with fluent API.
 /// </summary>
 /// <remarks>
 /// This helper maintains a current Y position and automatically advances it
 /// after each text draw operation, making UI text rendering much more ergonomic.
+/// Uses a fluent API pattern for easy method chaining.
 /// </remarks>
 public sealed class TextLayoutHelper
 {
-    private readonly IRenderer2D _renderer;
     private readonly float _startX;
     private readonly float _startY;
     private float _currentY;
@@ -41,13 +40,11 @@ public sealed class TextLayoutHelper
     /// <summary>
     /// Initializes a new instance of the <see cref="TextLayoutHelper"/> class.
     /// </summary>
-    /// <param name="renderer">The render backend to use for drawing text.</param>
     /// <param name="startX">Starting X position for text.</param>
     /// <param name="startY">Starting Y position for text.</param>
     /// <param name="defaultLineHeight">Default line height. If 0 or negative, calculated automatically.</param>
-    public TextLayoutHelper(IRenderer2D renderer, float startX, float startY, float defaultLineHeight = 20f)
+    public TextLayoutHelper(float startX, float startY, float defaultLineHeight = 20f)
     {
-        _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
         _startX = startX;
         _startY = startY;
         _currentY = startY;
@@ -58,14 +55,15 @@ public sealed class TextLayoutHelper
     /// <summary>
     /// Draws text at the current position and automatically advances Y position.
     /// </summary>
+    /// <param name="renderer">The render backend to use for drawing text.</param>
     /// <param name="text">Text to draw.</param>
     /// <param name="fontSize">Font size.</param>
     /// <param name="color">Text color.</param>
     /// <param name="customLineHeight">Optional custom line height for this text. If null, uses DefaultLineHeight.</param>
     /// <returns>This instance for method chaining.</returns>
-    public TextLayoutHelper DrawText(string text, int fontSize, Color color, float? customLineHeight = null)
+    public TextLayoutHelper DrawText(IRenderer2D renderer, string text, int fontSize, Color color, float? customLineHeight = null)
     {
-        _renderer.DrawText(text, new Vector2(CurrentX, _currentY), fontSize, color);
+        renderer.DrawText(text, new Vector2(CurrentX, _currentY), fontSize, color);
         
         var lineHeight = customLineHeight ?? (_defaultLineHeight > 0 ? _defaultLineHeight : fontSize + 6);
         _currentY += lineHeight;
@@ -156,14 +154,15 @@ public sealed class TextLayoutHelper
     /// <summary>
     /// Draws a section with a title and optional spacing after.
     /// </summary>
+    /// <param name="renderer">The render backend to use for drawing text.</param>
     /// <param name="title">Section title.</param>
     /// <param name="titleFontSize">Title font size.</param>
     /// <param name="titleColor">Title color.</param>
     /// <param name="spacingAfter">Spacing to add after the title.</param>
     /// <returns>This instance for method chaining.</returns>
-    public TextLayoutHelper DrawSection(string title, int titleFontSize, Color titleColor, float spacingAfter = 5f)
+    public TextLayoutHelper DrawSection(IRenderer2D renderer, string title, int titleFontSize, Color titleColor, float spacingAfter = 5f)
     {
-        DrawText(title, titleFontSize, titleColor);
+        DrawText(renderer, title, titleFontSize, titleColor);
         if (spacingAfter > 0)
         {
             AddSpacing(spacingAfter);
@@ -174,6 +173,7 @@ public sealed class TextLayoutHelper
     /// <summary>
     /// Draws a key-value pair on the same line.
     /// </summary>
+    /// <param name="renderer">The render backend to use for drawing text.</param>
     /// <param name="key">Key text.</param>
     /// <param name="value">Value text.</param>
     /// <param name="fontSize">Font size.</param>
@@ -182,6 +182,7 @@ public sealed class TextLayoutHelper
     /// <param name="keyValueSpacing">Spacing between key and value.</param>
     /// <returns>This instance for method chaining.</returns>
     public TextLayoutHelper DrawKeyValue(
+        IRenderer2D renderer,
         string key, 
         string value, 
         int fontSize, 
@@ -189,13 +190,13 @@ public sealed class TextLayoutHelper
         Color valueColor, 
         float keyValueSpacing = 10f)
     {
-        _renderer.DrawText(key, new Vector2(CurrentX, _currentY), fontSize, keyColor);
+        renderer.DrawText(key, new Vector2(CurrentX, _currentY), fontSize, keyColor);
         
         // Simple approximation: assume each character is roughly fontSize * 0.6 wide
         var keyWidth = key.Length * fontSize * 0.6f;
         var valueX = CurrentX + keyWidth + keyValueSpacing;
         
-        _renderer.DrawText(value, new Vector2(valueX, _currentY), fontSize, valueColor);
+        renderer.DrawText(value, new Vector2(valueX, _currentY), fontSize, valueColor);
         
         var lineHeight = _defaultLineHeight > 0 ? _defaultLineHeight : fontSize + 6;
         _currentY += lineHeight;

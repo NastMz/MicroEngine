@@ -361,42 +361,42 @@ public sealed class SaveLoadDemo : Scene
 
     private void RenderUI()
     {
-        var layout = new TextLayoutHelper(_renderer, startX: 10, startY: 10, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 10, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var dimColor = new Color(150, 150, 150, 255);
 
-        layout.DrawText("Save/Load System Demo", 20, Color.White)
+        layout.DrawText(_renderer, "Save/Load System Demo", 20, Color.White)
               .AddSpacing(5)
-              .DrawText($"Entities: {_entities.Count(e => World.IsEntityValid(e))}", 16, infoColor);
+              .DrawText(_renderer, $"Entities: {_entities.Count(e => World.IsEntityValid(e))}", 16, infoColor);
 
         // Save metadata
         if (_currentSaveMetadata != null)
         {
             layout.AddSpacing(10)
-                  .DrawText("Save File Info:", 16, Color.White)
-                  .DrawKeyValue("Name", _currentSaveMetadata.SaveName ?? "N/A", 14, dimColor, infoColor)
-                  .DrawKeyValue("Created", _currentSaveMetadata.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"), 14, dimColor, infoColor)
-                  .DrawKeyValue("Modified", _currentSaveMetadata.LastModified.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"), 14, dimColor, infoColor);
+                  .DrawText(_renderer, "Save File Info:", 16, Color.White)
+                  .DrawKeyValue(_renderer, "Name", _currentSaveMetadata.SaveName ?? "N/A", 14, dimColor, infoColor)
+                  .DrawKeyValue(_renderer, "Created", _currentSaveMetadata.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"), 14, dimColor, infoColor)
+                  .DrawKeyValue(_renderer, "Modified", _currentSaveMetadata.LastModified.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"), 14, dimColor, infoColor);
         }
         else
         {
             layout.AddSpacing(10)
-                  .DrawText("No save file found", 14, dimColor);
+                  .DrawText(_renderer, "No save file found", 14, dimColor);
         }
 
         // Status message
         if (_statusTimer > 0)
         {
             layout.AddSpacing(10)
-                  .DrawText(_statusMessage, 16, new Color(100, 255, 100, 255));
+                  .DrawText(_renderer, _statusMessage, 16, new Color(100, 255, 100, 255));
         }
 
         // Controls
         layout.SetY(520)
-              .DrawText("Controls:", 16, Color.White)
-              .DrawText("[Click + Drag] Move entities", 14, dimColor)
-              .DrawText("[F5] Save | [F6] Load | [F7] Delete Save", 14, dimColor)
-              .DrawText("[R] Reset | [ESC] Menu", 14, dimColor);
+              .DrawText(_renderer, "Controls:", 16, Color.White)
+              .DrawText(_renderer, "[Click + Drag] Move entities", 14, dimColor)
+              .DrawText(_renderer, "[F5] Save | [F6] Load | [F7] Delete Save", 14, dimColor)
+              .DrawText(_renderer, "[R] Reset | [ESC] Menu", 14, dimColor);
     }
 
     /// <summary>
@@ -407,3 +407,4 @@ public sealed class SaveLoadDemo : Scene
         public Dictionary<string, Vector2> EntityPositions { get; set; } = new();
     }
 }
+

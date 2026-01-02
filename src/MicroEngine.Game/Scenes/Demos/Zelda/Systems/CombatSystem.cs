@@ -58,6 +58,8 @@ public class CombatSystem : ISystem, IDisposable
         
         foreach (var enemyEntity in _enemyQuery.Entities)
         {
+            if (!world.IsEntityValid(enemyEntity)) continue;
+            
             var enemyTransform = world.GetComponent<TransformComponent>(enemyEntity);
             float slimeDrawSize = ZeldaConstants.TILE_SIZE * ZeldaConstants.ENEMY_SCALE;
             Vector2 enemyBodyCenter = enemyTransform.Position + new Vector2(0, -slimeDrawSize * 0.4f);
@@ -66,7 +68,12 @@ public class CombatSystem : ISystem, IDisposable
             {
                 if (playerHealth.InvulnerabilityTimer <= 0)
                 {
-                    _eventBus.Queue(new DamageEvent(playerEntity, ZeldaConstants.ENEMY_DAMAGE, enemyEntity));
+                    _eventBus.Queue<DamageEvent>(e =>
+                    {
+                        e.TargetEntity = playerEntity;
+                        e.DamageAmount = ZeldaConstants.ENEMY_DAMAGE;
+                        e.AttackerEntity = enemyEntity;
+                    });
                 }
             }
         }
@@ -92,6 +99,8 @@ public class CombatSystem : ISystem, IDisposable
 
             foreach (var enemyEntity in _enemyQuery.Entities)
             {
+                if (!world.IsEntityValid(enemyEntity)) continue;
+                
                 var enemyTransform = world.GetComponent<TransformComponent>(enemyEntity);
                 ref var enemyHealth = ref world.GetComponent<HealthComponent>(enemyEntity);
 
@@ -106,7 +115,12 @@ public class CombatSystem : ISystem, IDisposable
                    (distToAttackPoint < ZeldaConstants.ATTACK_HIT_THRESHOLD || distToPlayer < ZeldaConstants.PROXIMITY_HIT_THRESHOLD))
                 {
                     _logger.Info("Combat", $"Player hit enemy {enemyEntity.Id}. DistToAP: {distToAttackPoint:F1}, DistToP: {distToPlayer:F1}");
-                    _eventBus.Queue(new DamageEvent(enemyEntity, ZeldaConstants.SWORD_DAMAGE, playerEntity));
+                    _eventBus.Queue<DamageEvent>(e =>
+                    {
+                        e.TargetEntity = enemyEntity;
+                        e.DamageAmount = ZeldaConstants.SWORD_DAMAGE;
+                        e.AttackerEntity = playerEntity;
+                    });
                 }
             }
         }
@@ -124,6 +138,8 @@ public class CombatSystem : ISystem, IDisposable
 
         foreach (var enemyEntity in _enemyQuery.Entities)
         {
+            if (!world.IsEntityValid(enemyEntity)) continue;
+            
             ref var enemyHealth = ref world.GetComponent<HealthComponent>(enemyEntity);
             if (enemyHealth.InvulnerabilityTimer > 0)
             {
@@ -141,7 +157,11 @@ public class CombatSystem : ISystem, IDisposable
         // 4. Check for Victory
         if (_enemyQuery.Count == 0 && playerHealth.Current > 0)
         {
-            _eventBus.Publish(new ZeldaGameStateEvent(ZeldaConstants.MSG_VICTORY, true));
+            _eventBus.Queue<ZeldaGameStateEvent>(e =>
+            {
+                e.Message = ZeldaConstants.MSG_VICTORY;
+                e.IsGameOver = true;
+            });
         }
     }
 
@@ -185,7 +205,11 @@ public class CombatSystem : ISystem, IDisposable
             {
                 if (_currentWorld.HasComponent<PlayerComponent>(e.TargetEntity))
                 {
-                    _eventBus.Publish(new ZeldaGameStateEvent(ZeldaConstants.MSG_GAME_OVER, true));
+                    _eventBus.Queue<ZeldaGameStateEvent>(evt =>
+                    {
+                        evt.Message = ZeldaConstants.MSG_GAME_OVER;
+                        evt.IsGameOver = true;
+                    });
                     sprite.Visible = false;
                 }
                 else

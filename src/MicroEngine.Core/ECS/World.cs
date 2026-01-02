@@ -4,7 +4,7 @@ namespace MicroEngine.Core.ECS;
 
 /// <summary>
 /// The central container for all ECS data and operations.
-/// Manages entities, components, and systems.
+/// Manages entities, components, and systems with full dependency injection support.
 /// </summary>
 public sealed class World
 {
@@ -15,6 +15,7 @@ public sealed class World
     private readonly HashSet<Entity> _entitiesPendingDestruction = new();
     private readonly Dictionary<Entity, string?> _entityNames = new();
     private readonly List<CachedQuery> _cachedQueries = new();
+    private readonly IServiceProvider? _serviceProvider;
 
     private uint _nextEntityId = 1;
     private readonly Dictionary<uint, uint> _entityVersions = new();
@@ -29,6 +30,15 @@ public sealed class World
     /// Gets the number of registered systems.
     /// </summary>
     public int SystemCount => _systems.Count;
+
+    /// <summary>
+    /// Initializes a new World with optional dependency injection support.
+    /// </summary>
+    /// <param name="serviceProvider">Optional IServiceProvider for system dependency injection.</param>
+    public World(IServiceProvider? serviceProvider = null)
+    {
+        _serviceProvider = serviceProvider;
+    }
 
     /// <summary>
     /// Creates a new entity with an optional name for debugging.
@@ -191,10 +201,26 @@ public sealed class World
     }
 
     /// <summary>
-    /// Registers a system to be updated each frame.
+    /// Registers and creates a system using dependency injection.
+    /// The World uses the provided IServiceProvider to instantiate the system,
+    /// ensuring all dependencies are properly validated and resolved at load time.
     /// </summary>
-    public void RegisterSystem<T>(T system) where T : ISystem
+    /// <typeparam name="T">Type of system to register.</typeparam>
+    /// <exception cref="InvalidOperationException">Thrown if no IServiceProvider was provided or if dependencies cannot be resolved.</exception>
+    public void RegisterSystem<T>() where T : class, ISystem
     {
+        if (_serviceProvider == null)
+        {
+            throw new InvalidOperationException(
+                $"Cannot register system {typeof(T).Name}: World was created without an IServiceProvider. " +
+                "Provide a service provider to enable dependency injection for systems.");
+        }
+
+        var system = _serviceProvider.GetService(typeof(T)) as T
+            ?? throw new InvalidOperationException(
+                $"Failed to resolve system {typeof(T).Name} from the service provider. " +
+                "Ensure the system is registered in the DI container.");
+
         if (_systems.Contains(system))
         {
             throw new WorldException(

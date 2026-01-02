@@ -1,4 +1,5 @@
 using MicroEngine.Core.Exceptions;
+using MicroEngine.Core.Resources;
 
 namespace MicroEngine.Core.Events;
 
@@ -9,9 +10,21 @@ namespace MicroEngine.Core.Events;
 public delegate void EventHandler<T>(T eventData) where T : IEvent;
 
 /// <summary>
-/// Central event bus for publishing and subscribing to events.
-/// Thread-safe implementation for event-driven communication.
+/// Delegate for initializing an event instance from the pool.
+/// Enables zero-allocation event publishing: SDK rents from pool, user fills, SDK returns.
 /// </summary>
+/// <typeparam name="T">Type of event to initialize.</typeparam>
+public delegate void EventInitializer<T>(T eventData) where T : IEvent;
+
+/// <summary>
+/// Central event bus for publishing and subscribing to events.
+/// Thread-safe, zero-allocation implementation for event-driven communication.
+/// </summary>
+/// <remarks>
+/// The SDK manages all event lifecycle via object pools to eliminate garbage collection
+/// pressure during gameplay. Users provide an EventInitializer delegate instead of creating
+/// event instances directly, ensuring SDK control over memory management.
+/// </remarks>
 public sealed class EventBus : IDisposable
 {
     private interface IHandlerWrapper
@@ -42,6 +55,7 @@ public sealed class EventBus : IDisposable
 
     private readonly Dictionary<Type, List<IHandlerWrapper>> _subscribers = new();
     private readonly Queue<IEvent> _eventQueue = new();
+    private readonly Dictionary<Type, object> _eventPools = new(); // Type -> ObjectPool<T>
     private readonly object _lock = new();
     private bool _disposed;
 
@@ -156,24 +170,73 @@ public sealed class EventBus : IDisposable
     }
 
     /// <summary>
-    /// Queues an event for deferred processing.
-    /// Event will be processed when ProcessEvents() is called.
+    /// Queues an event for deferred processing using the object pool.
+    /// The SDK rents an instance from the pool, invokes the initializer to fill it,
+    /// then enqueues it for processing.
     /// </summary>
     /// <typeparam name="T">Type of event to queue.</typeparam>
-    /// <param name="eventData">Event data to queue.</param>
-    public void Queue<T>(T eventData) where T : IEvent
+    /// <param name="initializer">Delegate to initialize the event instance.</param>
+    public void Queue<T>(EventInitializer<T> initializer) where T : class, IEvent, IPoolable, new()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentNullException.ThrowIfNull(eventData);
+        ArgumentNullException.ThrowIfNull(initializer);
+
+        // Get or create pool for this event type
+        var poolType = typeof(ObjectPool<>).MakeGenericType(typeof(T));
+        var eventType = typeof(T);
 
         lock (_lock)
         {
-            _eventQueue.Enqueue(eventData);
+            if (!_eventPools.TryGetValue(eventType, out var poolObj))
+            {
+                poolObj = Activator.CreateInstance(poolType, 16, 256)!;
+                _eventPools[eventType] = poolObj;
+            }
+
+            // Rent from pool and initialize
+            var rentMethod = poolType.GetMethod("Rent")!;
+            var eventInstance = (T)rentMethod.Invoke(poolObj, new object?[] { null })!;
+            
+            initializer(eventInstance);
+            _eventQueue.Enqueue(eventInstance);
         }
     }
 
     /// <summary>
-    /// Processes all queued events.
+    /// Alternative Queue method that takes the event type dynamically.
+    /// Useful for reflection-based event sending.
+    /// </summary>
+    public void Queue(Type eventType, Action<IEvent> initializer)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(eventType);
+        ArgumentNullException.ThrowIfNull(initializer);
+
+        if (!typeof(IEvent).IsAssignableFrom(eventType))
+        {
+            throw new ArgumentException($"Type {eventType.Name} must implement IEvent", nameof(eventType));
+        }
+
+        lock (_lock)
+        {
+            if (!_eventPools.TryGetValue(eventType, out var poolObj))
+            {
+                var poolType = typeof(ObjectPool<>).MakeGenericType(eventType);
+                poolObj = Activator.CreateInstance(poolType, 16, 256)!;
+                _eventPools[eventType] = poolObj;
+            }
+
+            var eventPoolType = typeof(ObjectPool<>).MakeGenericType(eventType);
+            var rentMethod = eventPoolType.GetMethod("Rent")!;
+            var eventInstance = (IEvent)rentMethod.Invoke(poolObj, new object?[] { null })!;
+            
+            initializer(eventInstance);
+            _eventQueue.Enqueue(eventInstance);
+        }
+    }
+
+    /// <summary>
+    /// Processes all queued events and returns them to their respective pools.
     /// Should be called once per frame or update cycle.
     /// </summary>
     public void ProcessEvents()
@@ -210,6 +273,27 @@ public sealed class EventBus : IDisposable
             if (handlersCopy != null)
             {
                  DispatchEvents(handlersCopy, eventData);
+            }
+
+            // Return event to pool after processing
+            ReturnToPool(eventData);
+        }
+    }
+
+    /// <summary>
+    /// Returns an event instance to its object pool for reuse.
+    /// </summary>
+    private void ReturnToPool(IEvent eventData)
+    {
+        var eventType = eventData.GetType();
+
+        lock (_lock)
+        {
+            if (_eventPools.TryGetValue(eventType, out var poolObj) && eventData is IPoolable poolable)
+            {
+                var poolType = typeof(ObjectPool<>).MakeGenericType(eventType);
+                var returnMethod = poolType.GetMethod("Return")!;
+                returnMethod.Invoke(poolObj, new object[] { eventData });
             }
         }
     }
@@ -259,7 +343,7 @@ public sealed class EventBus : IDisposable
     }
 
     /// <summary>
-    /// Disposes the event bus and clears all state.
+    /// Disposes the event bus and all pooled resources.
     /// </summary>
     public void Dispose()
     {
@@ -272,6 +356,15 @@ public sealed class EventBus : IDisposable
         {
             _eventQueue.Clear();
             _subscribers.Clear();
+
+            // Dispose all object pools
+            foreach (var pool in _eventPools.Values)
+            {
+                var disposable = pool as IDisposable;
+                disposable?.Dispose();
+            }
+            _eventPools.Clear();
+
             _disposed = true;
         }
 

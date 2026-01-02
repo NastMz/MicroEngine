@@ -6,20 +6,37 @@ public sealed class EventBusTests
 {
     private sealed class TestEvent : IEvent
     {
-        public DateTime Timestamp { get; } = DateTime.UtcNow;
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
         public bool IsHandled { get; set; }
-        public string Message { get; }
+        public string Message { get; set; } = string.Empty;
+
+        public TestEvent()
+        {
+        }
 
         public TestEvent(string message)
         {
             Message = message;
         }
+
+        public void Reset()
+        {
+            Timestamp = DateTime.UtcNow;
+            IsHandled = false;
+            Message = string.Empty;
+        }
     }
 
     private sealed class AnotherEvent : IEvent
     {
-        public DateTime Timestamp { get; } = DateTime.UtcNow;
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
         public bool IsHandled { get; set; }
+
+        public void Reset()
+        {
+            Timestamp = DateTime.UtcNow;
+            IsHandled = false;
+        }
     }
 
     [Fact]
@@ -138,7 +155,7 @@ public sealed class EventBusTests
     {
         using var bus = new EventBus();
 
-        bus.Queue(new TestEvent("test"));
+        bus.Queue<TestEvent>(e => { e.Message = "test"; });
 
         Assert.Equal(1, bus.QueuedEventCount);
     }
@@ -151,9 +168,9 @@ public sealed class EventBusTests
 
         bus.Subscribe<TestEvent>(e => callCount++);
 
-        bus.Queue(new TestEvent("test1"));
-        bus.Queue(new TestEvent("test2"));
-        bus.Queue(new TestEvent("test3"));
+        bus.Queue<TestEvent>(e => { e.Message = "test1"; });
+        bus.Queue<TestEvent>(e => { e.Message = "test2"; });
+        bus.Queue<TestEvent>(e => { e.Message = "test3"; });
 
         Assert.Equal(3, bus.QueuedEventCount);
 
@@ -178,7 +195,7 @@ public sealed class EventBusTests
 
         bus.Subscribe<TestEvent>(e => secondCalled = true);
 
-        bus.Queue(new TestEvent("test"));
+        bus.Queue<TestEvent>(e => { e.Message = "test"; });
         bus.ProcessEvents();
 
         Assert.True(firstCalled);
@@ -190,9 +207,9 @@ public sealed class EventBusTests
     {
         using var bus = new EventBus();
 
-        bus.Queue(new TestEvent("test1"));
-        bus.Queue(new TestEvent("test2"));
-        bus.Queue(new TestEvent("test3"));
+        bus.Queue<TestEvent>(e => { e.Message = "test1"; });
+        bus.Queue<TestEvent>(e => { e.Message = "test2"; });
+        bus.Queue<TestEvent>(e => { e.Message = "test3"; });
 
         Assert.Equal(3, bus.QueuedEventCount);
 
@@ -222,7 +239,7 @@ public sealed class EventBusTests
         var bus = new EventBus();
 
         bus.Subscribe<TestEvent>(e => { });
-        bus.Queue(new TestEvent("test"));
+        bus.Queue<TestEvent>(e => { e.Message = "test"; });
 
         bus.Dispose();
 
@@ -258,3 +275,4 @@ public sealed class EventBusTests
             bus.Publish<TestEvent>(null!));
     }
 }
+

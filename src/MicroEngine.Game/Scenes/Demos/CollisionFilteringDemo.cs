@@ -469,57 +469,57 @@ public sealed class CollisionFilteringDemo : Scene
 
     private void RenderUI()
     {
-        var layout = new TextLayoutHelper(_renderer, startX: 10, startY: 10, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(startX: 10, startY: 10, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var dimColor = new Color(150, 150, 150, 255);
 
-        layout.DrawText("Collision Filtering Demo", 20, Color.White)
+        layout.DrawText(_renderer, "Collision Filtering Demo", 20, Color.White)
               .AddSpacing(5)
-              .DrawText("Simple platformer demonstrating collision layers", 12, dimColor)
+              .DrawText(_renderer, "Simple platformer demonstrating collision layers", 12, dimColor)
               .AddSpacing(10)
-              .DrawText("How it works:", 16, Color.White)
-              .DrawText("- Player collides with enemies and obstacles", 12, dimColor)
-              .DrawText("- Enemies pass through each other!", 12, new Color(255, 200, 100, 255))
-              .DrawText("- Enemies bounce off obstacles and screen edges", 12, dimColor);
+              .DrawText(_renderer, "How it works:", 16, Color.White)
+              .DrawText(_renderer, "- Player collides with enemies and obstacles", 12, dimColor)
+              .DrawText(_renderer, "- Enemies pass through each other!", 12, new Color(255, 200, 100, 255))
+              .DrawText(_renderer, "- Enemies bounce off obstacles and screen edges", 12, dimColor);
 
         // Collision Matrix
         layout.AddSpacing(10)
-              .DrawText("Collision Matrix:", 16, Color.White)
-              .DrawText("What collides:", 12, new Color(100, 255, 100, 255))
-              .DrawText("  Player with Enemies, Obstacles", 11, dimColor)
-              .DrawText("  Enemies with Obstacles", 11, dimColor)
+              .DrawText(_renderer, "Collision Matrix:", 16, Color.White)
+              .DrawText(_renderer, "What collides:", 12, new Color(100, 255, 100, 255))
+              .DrawText(_renderer, "  Player with Enemies, Obstacles", 11, dimColor)
+              .DrawText(_renderer, "  Enemies with Obstacles", 11, dimColor)
               .AddSpacing(5)
-              .DrawText("What does NOT collide:", 12, new Color(255, 100, 100, 255))
-              .DrawText("  Enemies with Enemies (pass through!)", 11, dimColor);
+              .DrawText(_renderer, "What does NOT collide:", 12, new Color(255, 100, 100, 255))
+              .DrawText(_renderer, "  Enemies with Enemies (pass through!)", 11, dimColor);
 
         // Collision Log
         layout.AddSpacing(10)
-              .DrawText("Collision Log:", 16, Color.White);
+              .DrawText(_renderer, "Collision Log:", 16, Color.White);
 
         if (_collisionLog.Count == 0)
         {
-            layout.DrawText("No collisions yet", 12, dimColor);
+            layout.DrawText(_renderer, "No collisions yet", 12, dimColor);
         }
         else
         {
             foreach (var logEntry in _collisionLog)
             {
-                layout.DrawText(logEntry, 12, new Color(255, 200, 100, 255));
+                layout.DrawText(_renderer, logEntry, 12, new Color(255, 200, 100, 255));
             }
         }
 
         // Legend
         layout.AddSpacing(10)
-              .DrawText("Legend:", 16, Color.White)
-              .DrawText("[P] Player (Blue) - You control this", 12, new Color(100, 150, 255, 255))
-              .DrawText("[E] Enemy (Red) - Move automatically", 12, new Color(255, 100, 100, 255))
-              .DrawText("[OBS] Obstacle (Gray) - Static", 12, new Color(100, 100, 100, 255));
+              .DrawText(_renderer, "Legend:", 16, Color.White)
+              .DrawText(_renderer, "[P] Player (Blue) - You control this", 12, new Color(100, 150, 255, 255))
+              .DrawText(_renderer, "[E] Enemy (Red) - Move automatically", 12, new Color(255, 100, 100, 255))
+              .DrawText(_renderer, "[OBS] Obstacle (Gray) - Static", 12, new Color(100, 100, 100, 255));
 
         // Controls
         layout.SetY(500)
-              .DrawText("Controls:", 16, Color.White)
-              .DrawText("[Left/Right] Move | [SPACE] Jump", 14, dimColor)
-              .DrawText("Watch: Enemies pass through each other!", 14, new Color(255, 200, 100, 255))
-              .DrawText("[C] Clear Log | [ESC] Menu", 14, dimColor);
+              .DrawText(_renderer, "Controls:", 16, Color.White)
+              .DrawText(_renderer, "[Left/Right] Move | [SPACE] Jump", 14, dimColor)
+              .DrawText(_renderer, "Watch: Enemies pass through each other!", 14, new Color(255, 200, 100, 255))
+              .DrawText(_renderer, "[C] Clear Log | [ESC] Menu", 14, dimColor);
     }
 }

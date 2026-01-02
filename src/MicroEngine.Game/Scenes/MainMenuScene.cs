@@ -231,7 +231,7 @@ public sealed class MainMenuScene : Scene
 
         // Center-aligned title section
         var centerX = 425f; // Screen width / 2
-        var layout = new TextLayoutHelper(_renderBackend, startX: centerX - 150, startY: 40, defaultLineHeight: 30);
+        var layout = new TextLayoutHelper(startX: centerX - 150, startY: 40, defaultLineHeight: 30);
         
         var titleColor = Color.White;
         var subtitleColor = new Color(180, 200, 220, 255);
@@ -250,23 +250,23 @@ public sealed class MainMenuScene : Scene
         _renderBackend.DrawText("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", new Vector2(150, 110), 14, separatorColor);
 
         // Scene cache status - Compact top-right corner
-        var cacheLayout = new TextLayoutHelper(_renderBackend, startX: 620, startY: 15, defaultLineHeight: 16);
-        cacheLayout.DrawText("Scene Cache", 12, cacheHeaderColor)
+        var cacheLayout = new TextLayoutHelper(startX: 620, startY: 15, defaultLineHeight: 16);
+        cacheLayout.DrawText(_renderBackend, "Scene Cache", 12, cacheHeaderColor)
                    .AddSpacing(2);
         
         var statusColor = _isPreloading ? new Color(100, 255, 150, 255) : new Color(140, 160, 180, 255);
         var statusText = _isPreloading ? $"Loading {_preloadedScenes}/10..." : $"{_sceneCache.Count}/{_sceneCache.MaxCacheSize} cached";
-        cacheLayout.DrawText(statusText, 10, statusColor);
+        cacheLayout.DrawText(_renderBackend, statusText, 10, statusColor);
         
         if (_sceneCache.Count > 0 && !_isPreloading)
         {
-            cacheLayout.DrawText(_lastCacheInfo, 9, new Color(255, 200, 100, 255));
+            cacheLayout.DrawText(_renderBackend, _lastCacheInfo, 9, new Color(255, 200, 100, 255));
         }
 
         // Demo selection section - Two columns
         layout.SetX(200)
               .SetY(145)
-              .DrawText("Available Demos", 20, sectionColor)
+              .DrawText(_renderBackend, "Available Demos", 20, sectionColor)
               .AddSpacing(15);
 
         // Column 1 (demos 1-5)
@@ -291,7 +291,7 @@ public sealed class MainMenuScene : Scene
         // Exit option
         layout.SetY(demoY + 180)
               .SetX(300)
-              .DrawText("[X] Exit", 16, exitColor);
+              .DrawText(_renderBackend, "[X] Exit", 16, exitColor);
 
         // Decorative separator
         _renderBackend.DrawText("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", new Vector2(150, 425), 14, separatorColor);
@@ -299,7 +299,7 @@ public sealed class MainMenuScene : Scene
         // Transition effects section
         layout.SetX(280)
               .SetY(455)
-              .DrawText("Scene Transitions", 20, sectionColor)
+              .DrawText(_renderBackend, "Scene Transitions", 20, sectionColor)
               .AddSpacing(15);
 
         // Transition options in a grid layout

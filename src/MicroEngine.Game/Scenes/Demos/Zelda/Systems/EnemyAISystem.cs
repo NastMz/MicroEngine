@@ -29,6 +29,8 @@ public class EnemyAISystem : ISystem
 
         foreach (var entity in _enemyQuery.Entities)
         {
+            if (!world.IsEntityValid(entity)) continue;
+            
             ref var enemy = ref world.GetComponent<EnemyComponent>(entity);
             ref var transform = ref world.GetComponent<TransformComponent>(entity);
             ref var animator = ref world.GetComponent<AnimatorComponent>(entity);

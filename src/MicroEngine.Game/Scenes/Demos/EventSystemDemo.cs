@@ -45,7 +45,7 @@ public sealed class EventSystemDemo : Scene
     public override void OnLoad(SceneContext context)
     {
         base.OnLoad(context);
-        _eventBus = context.Services.GetService<EventBus>();
+        _eventBus = context.Services.GetRequiredService<EventBus>();
         _inputBackend = context.InputBackend;
         _renderer = context.Renderer;
         _logger = context.Logger;
@@ -135,6 +135,8 @@ public sealed class EventSystemDemo : Scene
 
     private void UnsubscribeFromEvents()
     {
+        if (_eventBus == null) return;
+        
         _eventBus.Unsubscribe<ButtonPressedEvent>(OnButtonPressed);
         _eventBus.Unsubscribe<TriggerEnteredEvent>(OnTriggerEntered);
         _eventBus.Unsubscribe<TargetActivatedEvent>(OnTargetActivated);
@@ -142,8 +144,7 @@ public sealed class EventSystemDemo : Scene
 
     private void PressButton(int buttonNumber)
     {
-        var evt = new ButtonPressedEvent { ButtonNumber = buttonNumber };
-        _eventBus.Queue(evt);
+        _eventBus.Queue<ButtonPressedEvent>(e => { e.ButtonNumber = buttonNumber; });
         _totalEventsPublished++;
         AddToLog($"Button {buttonNumber} pressed");
         _logger.Debug(SCENE_NAME, $"Button {buttonNumber} pressed - event queued");
@@ -151,8 +152,7 @@ public sealed class EventSystemDemo : Scene
 
     private void EnterTrigger()
     {
-        var evt = new TriggerEnteredEvent();
-        _eventBus.Queue(evt);
+        _eventBus.Queue<TriggerEnteredEvent>(e => { });
         _totalEventsPublished++;
         AddToLog("Trigger entered");
         _logger.Debug(SCENE_NAME, "Trigger entered - event queued");
@@ -164,8 +164,7 @@ public sealed class EventSystemDemo : Scene
         AddToLog($"Button {evt.ButtonNumber} event handled");
         
         // Button press triggers the trigger (event chain)
-        var triggerEvt = new TriggerEnteredEvent();
-        _eventBus.Queue(triggerEvt);
+        _eventBus.Queue<TriggerEnteredEvent>(e => { });
         _totalEventsPublished++;
         
         _logger.Info(SCENE_NAME, $"Button {evt.ButtonNumber} event handled - triggering chain");
@@ -177,8 +176,7 @@ public sealed class EventSystemDemo : Scene
         AddToLog("Trigger event handled");
         
         // Trigger activates the target (event chain continues)
-        var targetEvt = new TargetActivatedEvent();
-        _eventBus.Queue(targetEvt);
+        _eventBus.Queue<TargetActivatedEvent>(e => { });
         _totalEventsPublished++;
         
         _logger.Info(SCENE_NAME, "Trigger event handled - activating target");
@@ -237,43 +235,43 @@ public sealed class EventSystemDemo : Scene
 
     private void RenderUI()
     {
-        var layout = new TextLayoutHelper(_renderer, startX: 500, startY: 10, defaultLineHeight: 20);
+        var layout = new TextLayoutHelper(startX: 500, startY: 10, defaultLineHeight: 20);
         var infoColor = new Color(200, 200, 200, 255);
         var dimColor = new Color(150, 150, 150, 255);
 
-        layout.DrawText("Event System Demo", 20, Color.White)
+        layout.DrawText(_renderer, "Event System Demo", 20, Color.White)
               .AddSpacing(5)
-              .DrawText("Demonstrates decoupled event-driven communication", 12, dimColor)
+              .DrawText(_renderer, "Demonstrates decoupled event-driven communication", 12, dimColor)
               .AddSpacing(10)
-              .DrawText("How it works:", 16, Color.White)
-              .DrawText("1. Press [1] or [2] to trigger a button", 12, dimColor)
-              .DrawText("2. Button publishes ButtonPressedEvent", 12, dimColor)
-              .DrawText("3. Trigger receives event, queues TriggerEnteredEvent", 12, dimColor)
-              .DrawText("4. Target receives event, queues TargetActivatedEvent", 12, dimColor)
-              .DrawText("5. Target lights up green for 2 seconds", 12, dimColor);
+              .DrawText(_renderer, "How it works:", 16, Color.White)
+              .DrawText(_renderer, "1. Press [1] or [2] to trigger a button", 12, dimColor)
+              .DrawText(_renderer, "2. Button publishes ButtonPressedEvent", 12, dimColor)
+              .DrawText(_renderer, "3. Trigger receives event, queues TriggerEnteredEvent", 12, dimColor)
+              .DrawText(_renderer, "4. Target receives event, queues TargetActivatedEvent", 12, dimColor)
+              .DrawText(_renderer, "5. Target lights up green for 2 seconds", 12, dimColor);
 
         // Statistics
         layout.AddSpacing(10)
-              .DrawText("Statistics:", 16, Color.White)
-              .DrawKeyValue("Published", _totalEventsPublished.ToString(), 14, dimColor, infoColor)
-              .DrawKeyValue("Handled", _totalEventsHandled.ToString(), 14, dimColor, infoColor)
-              .DrawKeyValue("Queued", _eventBus.QueuedEventCount.ToString(), 14, dimColor, infoColor);
+              .DrawText(_renderer, "Statistics:", 16, Color.White)
+              .DrawKeyValue(_renderer, "Published", _totalEventsPublished.ToString(), 14, dimColor, infoColor)
+              .DrawKeyValue(_renderer, "Handled", _totalEventsHandled.ToString(), 14, dimColor, infoColor)
+              .DrawKeyValue(_renderer, "Queued", _eventBus.QueuedEventCount.ToString(), 14, dimColor, infoColor);
 
         // Event Log
         layout.AddSpacing(10)
-              .DrawText("Event Log (last 5):", 16, Color.White);
+              .DrawText(_renderer, "Event Log (last 5):", 16, Color.White);
 
         foreach (var logEntry in _eventLog)
         {
-            layout.DrawText(logEntry, 12, new Color(180, 180, 180, 255));
+            layout.DrawText(_renderer, logEntry, 12, new Color(180, 180, 180, 255));
         }
 
         // Controls
         layout.SetY(520)
-              .DrawText("Controls:", 16, Color.White)
-              .DrawText("[1] Press Button 1 | [2] Press Button 2", 14, dimColor)
-              .DrawText("[SPACE] Enter Trigger | [C] Clear Log", 14, dimColor)
-              .DrawText("[ESC] Menu", 14, dimColor);
+              .DrawText(_renderer, "Controls:", 16, Color.White)
+              .DrawText(_renderer, "[1] Press Button 1 | [2] Press Button 2", 14, dimColor)
+              .DrawText(_renderer, "[SPACE] Enter Trigger | [C] Clear Log", 14, dimColor)
+              .DrawText(_renderer, "[ESC] Menu", 14, dimColor);
     }
 
     // Custom Events
@@ -282,17 +280,37 @@ public sealed class EventSystemDemo : Scene
         public int ButtonNumber { get; set; }
         public bool IsHandled { get; set; }
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        public void Reset()
+        {
+            ButtonNumber = 0;
+            IsHandled = false;
+            Timestamp = DateTime.UtcNow;
+        }
     }
 
     private sealed class TriggerEnteredEvent : IEvent
     {
         public bool IsHandled { get; set; }
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        public void Reset()
+        {
+            IsHandled = false;
+            Timestamp = DateTime.UtcNow;
+        }
     }
 
     private sealed class TargetActivatedEvent : IEvent
     {
         public bool IsHandled { get; set; }
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        public void Reset()
+        {
+            IsHandled = false;
+            Timestamp = DateTime.UtcNow;
+        }
     }
 }
+

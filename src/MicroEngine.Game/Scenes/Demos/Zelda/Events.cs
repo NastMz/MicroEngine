@@ -8,15 +8,18 @@ namespace MicroEngine.Game.Scenes.Demos.Zelda;
 /// </summary>
 public sealed class DamageEvent : GameEvent
 {
-    public Entity TargetEntity { get; }
-    public int DamageAmount { get; }
-    public Entity AttackerEntity { get; }
+    public Entity TargetEntity { get; set; }
+    public int DamageAmount { get; set; }
+    public Entity AttackerEntity { get; set; }
 
-    public DamageEvent(Entity targetEntity, int damageAmount, Entity attackerEntity = default)
+    public DamageEvent() { }
+
+    public override void Reset()
     {
-        TargetEntity = targetEntity;
-        DamageAmount = damageAmount;
-        AttackerEntity = attackerEntity;
+        base.Reset();
+        TargetEntity = default;
+        DamageAmount = 0;
+        AttackerEntity = default;
     }
 }
 
@@ -25,12 +28,15 @@ public sealed class DamageEvent : GameEvent
 /// </summary>
 public sealed class ZeldaGameStateEvent : GameEvent
 {
-    public string Message { get; }
-    public bool IsGameOver { get; }
+    public string Message { get; set; } = string.Empty;
+    public bool IsGameOver { get; set; }
 
-    public ZeldaGameStateEvent(string message, bool isGameOver)
+    public ZeldaGameStateEvent() { }
+
+    public override void Reset()
     {
-        Message = message;
-        IsGameOver = isGameOver;
+        base.Reset();
+        Message = string.Empty;
+        IsGameOver = false;
     }
 }
