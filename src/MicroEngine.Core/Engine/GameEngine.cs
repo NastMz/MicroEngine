@@ -67,8 +67,8 @@ public sealed class GameEngine
     /// <param name="renderer">The 2D renderer.</param>
     /// <param name="inputBackend">The input backend.</param>
     /// <param name="logger">Logger instance.</param>
-    /// <param name="transitionEffect">Optional scene transition effect.</param>
-    /// <exception cref="ArgumentNullException">Thrown when required parameters are null.</exception>
+    /// <param name="sceneManager">Scene manager instance.</param>
+    /// <param name="memoryProfiler">Optional memory profiler.</param>
     /// <exception cref="ArgumentNullException">Thrown when required parameters are null.</exception>
     public GameEngine(
         EngineConfiguration configuration,

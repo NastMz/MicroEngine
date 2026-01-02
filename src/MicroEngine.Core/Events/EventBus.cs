@@ -49,7 +49,7 @@ public sealed class EventBus : IDisposable
         
         public bool Wraps(Delegate handler)
         {
-             return _handler == (Delegate)handler;
+             return _handler.Equals(handler);
         }
     }
 

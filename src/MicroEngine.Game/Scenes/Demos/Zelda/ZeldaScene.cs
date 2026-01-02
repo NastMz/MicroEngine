@@ -15,23 +15,26 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MicroEngine.Game.Scenes.Demos.Zelda;
 
+/// <summary>
+/// Zelda-style action RPG demo scene with combat, AI enemies, and collision detection.
+/// </summary>
 public sealed class ZeldaScene : Scene
 {
     private IInputBackend _input = null!;
     private IRenderer2D _renderer = null!;
     private ILogger _logger = null!;
-    private ResourceCache<ITexture> _textureCache;
-    private ResourceCache<IAudioClip> _audioCache;
-    private ISoundPlayer _soundPlayer;
-    private EventBus _eventBus;
+    private ResourceCache<ITexture> _textureCache = null!;
+    private ResourceCache<IAudioClip> _audioCache = null!;
+    private ISoundPlayer _soundPlayer = null!;
+    private EventBus _eventBus = null!;
 
     private AnimationSystem _animationSystem = null!;
     private RenderSystem _renderSystem = null!;
-    private CombatSystem _combatSystem;
+    private CombatSystem _combatSystem = null!;
     private PlayerSystem _playerSystem = null!;
     private EnemyAISystem _enemyAISystem = null!;
-    private IAudioClip _swordClip;
-    private IAudioClip _hitClip;
+    private IAudioClip _swordClip = null!;
+    private IAudioClip _hitClip = null!;
 
     private Camera2D _camera = null!;
     private Entity _playerEntity;
@@ -45,9 +48,12 @@ public sealed class ZeldaScene : Scene
     private const int HERO_SIZE = 214;
 
     // Map Data
-    private int[,] _map;
+    private int[,] _map = null!;
     private readonly Dictionary<int, bool> _tilePassability = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ZeldaScene"/> class.
+    /// </summary>
     public ZeldaScene() : base("ZeldaDemo") 
     {
     }
@@ -119,8 +125,15 @@ public sealed class ZeldaScene : Scene
             _logger.Error("Zelda", $"Error loading map: {ex.Message}");
             // Fallback: Generate empty map with walls
             for (int y = 0; y < ZeldaConstants.MAP_HEIGHT; y++)
+            {
                 for (int x = 0; x < ZeldaConstants.MAP_WIDTH; x++)
-                    if (x == 0 || x == 39 || y == 0 || y == 39) _map[y, x] = 2;
+                {
+                    if (x == 0 || x == 39 || y == 0 || y == 39)
+                    {
+                        _map[y, x] = 2;
+                    }
+                }
+            }
         }
     }
 
@@ -145,6 +158,12 @@ public sealed class ZeldaScene : Scene
         return tile.ValueKind != JsonValueKind.Undefined && tile.GetProperty("passable").GetBoolean();
     }
 
+    /// <summary>
+    /// Checks if a position with given radius is passable (not blocked by walls).
+    /// </summary>
+    /// <param name="worldPos">World position to check.</param>
+    /// <param name="radius">Collision radius.</param>
+    /// <returns>True if passable, false otherwise.</returns>
     public bool IsPassable(Vector2 worldPos, float radius = 8f)
     {
         // Check 4 corners of a bounding box for better collision feel
@@ -154,25 +173,45 @@ public sealed class ZeldaScene : Scene
                IsPointPassable(new Vector2(worldPos.X + radius, worldPos.Y + radius));
     }
 
+    /// <summary>
+    /// Plays a sound effect.
+    /// </summary>
+    /// <param name="clip">Audio clip to play.</param>
     public void PlaySound(IAudioClip clip)
     {
         _soundPlayer?.PlaySound(clip);
     }
 
+    /// <summary>
+    /// Gets the sword swing audio clip.
+    /// </summary>
     public IAudioClip SwordClip => _swordClip;
+    
+    /// <summary>
+    /// Gets the hit impact audio clip.
+    /// </summary>
     public IAudioClip HitClip => _hitClip;
 
+    /// <summary>
+    /// Checks if a single point is passable.
+    /// </summary>
+    /// <param name="pos">Point to check.</param>
+    /// <returns>True if passable, false otherwise.</returns>
     public bool IsPointPassable(Vector2 pos)
     {
         int tx = (int)(pos.X / ZeldaConstants.TILE_SIZE);
         int ty = (int)(pos.Y / ZeldaConstants.TILE_SIZE);
 
-        if (tx < 0 || tx >= ZeldaConstants.MAP_WIDTH || ty < 0 || ty >= ZeldaConstants.MAP_HEIGHT) return false;
+        if (tx < 0 || tx >= ZeldaConstants.MAP_WIDTH || ty < 0 || ty >= ZeldaConstants.MAP_HEIGHT)
+        {
+            return false;
+        }
 
         int tileType = _map[ty, tx];
         return _tilePassability.TryGetValue(tileType, out bool passable) && passable;
     }
 
+    /// <inheritdoc/>
     public override void OnLoad(SceneContext context)
     {
         base.OnLoad(context);
@@ -324,7 +363,10 @@ public sealed class ZeldaScene : Scene
             });
 
             var frames = new List<SpriteRegion>();
-            for (int f = 0; f < 4; f++) frames.Add(new SpriteRegion(new Rectangle(f * ZeldaConstants.TILE_SIZE, 0, ZeldaConstants.TILE_SIZE, ZeldaConstants.TILE_SIZE)));
+            for (int f = 0; f < 4; f++)
+            {
+                frames.Add(new SpriteRegion(new Rectangle(f * ZeldaConstants.TILE_SIZE, 0, ZeldaConstants.TILE_SIZE, ZeldaConstants.TILE_SIZE)));
+            }
             var idleClip = new AnimationClip(ZeldaConstants.CLIP_ENEMY_IDLE, frames, 0.15f, true);
 
             World.AddComponent(enemy, new AnimatorComponent
@@ -361,6 +403,7 @@ public sealed class ZeldaScene : Scene
         }
     }
 
+    /// <inheritdoc/>
     public override void OnUpdate(float deltaTime)
     {
         if (_input.IsKeyPressed(Key.Escape))
@@ -395,6 +438,7 @@ public sealed class ZeldaScene : Scene
         base.OnUpdate(deltaTime);
     }
 
+    /// <inheritdoc/>
     public override void OnRender()
     {
         _renderer.Clear(new Color(20, 25, 20, 255));
@@ -463,7 +507,10 @@ public sealed class ZeldaScene : Scene
                 float slimeDrawSize = ZeldaConstants.TILE_SIZE * ZeldaConstants.ENEMY_SCALE;
                 foreach (var enemy in _enemyQuery.Entities)
                 {
-                    if (!World.IsEntityValid(enemy)) continue;
+                    if (!World.IsEntityValid(enemy))
+                    {
+                        continue;
+                    }
                     
                     var eTrans = World.GetComponent<TransformComponent>(enemy);
                     Vector2 eBodyCenter = eTrans.Position + new Vector2(0, -slimeDrawSize * 0.4f);
@@ -500,6 +547,7 @@ public sealed class ZeldaScene : Scene
         }
     }
 
+    /// <inheritdoc/>
     public override void OnUnload()
     {
         _eventBus.Unsubscribe<ZeldaGameStateEvent>(OnGameStateChanged);

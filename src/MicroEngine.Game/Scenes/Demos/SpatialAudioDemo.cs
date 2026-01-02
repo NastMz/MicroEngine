@@ -96,10 +96,25 @@ public sealed class SpatialAudioDemo : Scene
         // Move listener with arrow keys
         var movementX = 0f;
         var movementY = 0f;
-        if (_inputBackend.IsKeyDown(Key.Up)) movementY -= LISTENER_SPEED * deltaTime;
-        if (_inputBackend.IsKeyDown(Key.Down)) movementY += LISTENER_SPEED * deltaTime;
-        if (_inputBackend.IsKeyDown(Key.Left)) movementX -= LISTENER_SPEED * deltaTime;
-        if (_inputBackend.IsKeyDown(Key.Right)) movementX += LISTENER_SPEED * deltaTime;
+        if (_inputBackend.IsKeyDown(Key.Up))
+        {
+            movementY -= LISTENER_SPEED * deltaTime;
+        }
+
+        if (_inputBackend.IsKeyDown(Key.Down))
+        {
+            movementY += LISTENER_SPEED * deltaTime;
+        }
+
+        if (_inputBackend.IsKeyDown(Key.Left))
+        {
+            movementX -= LISTENER_SPEED * deltaTime;
+        }
+
+        if (_inputBackend.IsKeyDown(Key.Right))
+        {
+            movementX += LISTENER_SPEED * deltaTime;
+        }
 
         _listenerPosition = new Vector2(
             _listenerPosition.X + movementX,
@@ -117,7 +132,10 @@ public sealed class SpatialAudioDemo : Scene
         // Continuous loop for each source
         for (int i = 0; i < 3; i++)
         {
-            if (_soundClips[i] == null) continue;
+            if (_soundClips[i] == null)
+            {
+                continue;
+            }
 
             _loopTimers[i] -= deltaTime;
             if (_loopTimers[i] <= 0)

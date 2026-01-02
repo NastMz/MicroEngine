@@ -164,14 +164,23 @@ public sealed class CollisionFilteringDemo : Scene
     private void MovePlayer(float deltaTime)
     {
         if (!World.IsEntityValid(_player))
+        {
             return;
+        }
 
         ref var transform = ref World.GetComponent<TransformComponent>(_player);
         
         // 1. Horizontal Movement
         var movementX = 0f;
-        if (_inputBackend.IsKeyDown(Key.Left)) movementX -= PLAYER_SPEED * deltaTime;
-        if (_inputBackend.IsKeyDown(Key.Right)) movementX += PLAYER_SPEED * deltaTime;
+        if (_inputBackend.IsKeyDown(Key.Left))
+        {
+            movementX -= PLAYER_SPEED * deltaTime;
+        }
+
+        if (_inputBackend.IsKeyDown(Key.Right))
+        {
+            movementX += PLAYER_SPEED * deltaTime;
+        }
 
         // Apply X movement
         transform.Position = new Vector2(transform.Position.X + movementX, transform.Position.Y);
@@ -218,7 +227,10 @@ public sealed class CollisionFilteringDemo : Scene
 
         foreach (var obstacle in _obstacles)
         {
-            if (!World.IsEntityValid(obstacle)) continue;
+            if (!World.IsEntityValid(obstacle))
+            {
+                continue;
+            }
 
             var obstacleTransform = World.GetComponent<TransformComponent>(obstacle);
             var obstacleLayer = _entityLayers[obstacle];
@@ -243,9 +255,13 @@ public sealed class CollisionFilteringDemo : Scene
                 {
                     // Resolve X
                     if (playerTransform.Position.X < obstacleTransform.Position.X)
+                    {
                         playerTransform.Position = new Vector2(obsLeft - playerRadius, playerTransform.Position.Y);
+                    }
                     else
+                    {
                         playerTransform.Position = new Vector2(obsRight + playerRadius, playerTransform.Position.Y);
+                    }
                 }
                 else
                 {
@@ -279,7 +295,10 @@ public sealed class CollisionFilteringDemo : Scene
             // Player vs Enemies
             foreach (var enemy in _enemies)
             {
-                if (!World.IsEntityValid(enemy)) continue;
+                if (!World.IsEntityValid(enemy))
+                {
+                    continue;
+                }
 
                 var enemyTransform = World.GetComponent<TransformComponent>(enemy);
                 var enemyLayer = _entityLayers[enemy];
@@ -298,7 +317,10 @@ public sealed class CollisionFilteringDemo : Scene
         // Check enemy collisions
         foreach (var enemy in _enemies)
         {
-            if (!World.IsEntityValid(enemy)) continue;
+            if (!World.IsEntityValid(enemy))
+            {
+                continue;
+            }
 
             ref var enemyTransform = ref World.GetComponent<TransformComponent>(enemy);
             var enemyLayer = _entityLayers[enemy];
@@ -306,7 +328,10 @@ public sealed class CollisionFilteringDemo : Scene
             // Enemy vs Obstacles
             foreach (var obstacle in _obstacles)
             {
-                if (!World.IsEntityValid(obstacle)) continue;
+                if (!World.IsEntityValid(obstacle))
+                {
+                    continue;
+                }
 
                 var obstacleTransform = World.GetComponent<TransformComponent>(obstacle);
                 var obstacleLayer = _entityLayers[obstacle];
@@ -337,7 +362,9 @@ public sealed class CollisionFilteringDemo : Scene
         for (int i = 0; i < _enemies.Count; i++)
         {
             if (!World.IsEntityValid(_enemies[i]))
+            {
                 continue;
+            }
 
             var enemy1Transform = World.GetComponent<TransformComponent>(_enemies[i]);
             var enemy1Layer = _entityLayers[_enemies[i]];
@@ -345,7 +372,9 @@ public sealed class CollisionFilteringDemo : Scene
             for (int j = i + 1; j < _enemies.Count; j++)
             {
                 if (!World.IsEntityValid(_enemies[j]))
+                {
                     continue;
+                }
 
                 var enemy2Transform = World.GetComponent<TransformComponent>(_enemies[j]);
                 var enemy2Layer = _entityLayers[_enemies[j]];
@@ -369,7 +398,9 @@ public sealed class CollisionFilteringDemo : Scene
         foreach (var enemy in _enemies)
         {
             if (!World.IsEntityValid(enemy))
+            {
                 continue;
+            }
 
             ref var transform = ref World.GetComponent<TransformComponent>(enemy);
             var direction = _enemyDirections[enemy];
@@ -439,7 +470,9 @@ public sealed class CollisionFilteringDemo : Scene
         foreach (var obstacle in _obstacles)
         {
             if (!World.IsEntityValid(obstacle))
+            {
                 continue;
+            }
 
             var transform = World.GetComponent<TransformComponent>(obstacle);
             var obstaclePos = new Vector2(transform.Position.X - 15, transform.Position.Y - 30);
@@ -451,7 +484,9 @@ public sealed class CollisionFilteringDemo : Scene
         foreach (var enemy in _enemies)
         {
             if (!World.IsEntityValid(enemy))
+            {
                 continue;
+            }
 
             var transform = World.GetComponent<TransformComponent>(enemy);
             _renderer.DrawCircle(transform.Position, 18, new Color(255, 100, 100, 255));

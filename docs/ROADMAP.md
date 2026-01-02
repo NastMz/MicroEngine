@@ -1,9 +1,9 @@
 # MicroEngine — Development Roadmap
 
-**Version:** 3.0
+**Version:** 3.1
 **Status:** Reference  
 **Author:** Kevin Martínez  
-**Last Updated:** November 2025
+**Last Updated:** January 2026
 
 ---
 
@@ -258,12 +258,35 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 
 **Goal:** Prepare the engine for production use and stabilize the API.
 
-**Status:** IN PROGRESS (15/16 features complete)
+**Status:** ✅ COMPLETE (16/16 features)
 
-**Current Version:** v0.13.0
+**Current Version:** v0.14.0
 
 ### Features
 
+-   ✅ **Zero-Allocation Architecture** — COMPLETE v0.14.0
+    -   ✅ ObjectPool<T> generic pooling infrastructure (16 initial capacity, 256 max)
+    -   ✅ EventBus pooling with Queue<T>(Action<T>) API
+    -   ✅ IPoolable interface with Reset() contract
+    -   ✅ TextLayoutHelper converted to sealed class for proper fluent API semantics
+    -   ✅ Tag component converted to readonly struct
+    -   ✅ All game events implement IPoolable (DamageEvent, ZeldaGameStateEvent, etc.)
+-   ✅ **Code Quality & Build Pipeline** — COMPLETE v0.14.0
+    -   ✅ All CS8618 warnings fixed (nullable field initialization)
+    -   ✅ All CS1591 warnings fixed (XML documentation for public APIs)
+    -   ✅ All IDE0011 warnings fixed (braces in control flow statements)
+    -   ✅ CS0252 warning fixed (delegate comparison using Equals())
+    -   ✅ CS1572/CS1573 warnings fixed (XML param documentation)
+    -   ✅ 674 unit tests passing with zero warnings
+    -   ✅ Pipeline-ready (warnings treated as errors)
+-   ✅ **Entity Lifecycle Robustness** — COMPLETE v0.14.0
+    -   ✅ IsEntityValid() defensive checks in all ECS systems
+    -   ✅ Race condition fixes for mid-frame entity destruction
+    -   ✅ Zelda demo systems (PlayerSystem, EnemyAISystem, CombatSystem, RenderSystem)
+    -   ✅ EventSystemDemo null-safety improvements
+-   ✅ **Service Resolution** — COMPLETE v0.14.0
+    -   ✅ Migrated from GetService<T>() to GetRequiredService<T>() for fail-fast DI
+    -   ✅ EventBus and PhysicsBackendSystem properly resolved
 -   ✅ **SceneManager system** — COMPLETE v0.6.0
     -   ✅ Scene stack for back navigation (Push/Pop/Replace)
     -   ✅ Proper scene lifecycle management (OnLoad/OnUnload)
@@ -854,3 +877,4 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 | 1.2     | November 18, 2025 | Kevin Martínez | Added Collision Layer System (v0.4.7), updated Phase 3 progress                                                                                |
 | 1.1     | November 17, 2025 | Kevin Martínez | Updated Phase 3 with EntityBuilder/Factory (v0.4.6), retroactive docs                                                                          |
 | 1.0     | November 2025     | Kevin Martínez | Initial comprehensive roadmap with detailed phases                                                                                             |
+| 3.3     | January 2, 2026   | Kevin Martínez | Phase 4 COMPLETE: Zero-allocation architecture (ObjectPool, EventBus pooling), code quality fixes (0 warnings), entity lifecycle robustness (v0.14.0) |

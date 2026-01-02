@@ -5,30 +5,64 @@ All notable changes to MicroEngine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.14.0] - 2026-01-02
 
 ### Added
-- **Exception Handling**: Introduced `EventBusException` for standardized event error handling in `ECS` module.
-- **Dependency Injection**: Adopted `Microsoft.Extensions.DependencyInjection` (v9.0.0) as the standard DI container.
-  - Replaced custom `IServiceContainer` with standard `IServiceProvider`.
-  - Added `Microsoft.Extensions.DependencyInjection` NuGet package to Core.
+
+-   **Zero-Allocation Architecture**: Implemented "Pit of Success" patterns for high-performance scenarios.
+    -   **ObjectPool<T>**: Generic object pooling with configurable capacity and max size.
+    -   **EventBus Pooling**: Events are pooled and reused via `Queue<T>(Action<T>)` API.
+    -   **IPoolable Interface**: Reset() contract for poolable objects.
+-   **Exception Handling**: Introduced `EventBusException` for standardized event error handling in `ECS` module.
+-   **Dependency Injection**: Adopted `Microsoft.Extensions.DependencyInjection` (v9.0.0) as the standard DI container.
+    -   Replaced custom `IServiceContainer` with standard `IServiceProvider`.
+    -   Added `Microsoft.Extensions.DependencyInjection` NuGet package to Core.
+-   **Asset Management**: Automatic asset copying to output directory via `.csproj` configuration.
+-   **Entity Validation**: Added defensive `IsEntityValid()` checks in all ECS systems to prevent accessing destroyed entities.
 
 ### Changed
-- **Dependency Injection Migration**:
-  - Replaced custom `ServiceContainer` implementation with `Microsoft.Extensions.DependencyInjection`.
-  - Refactored `SceneManager` to use `IServiceScopeFactory` for creating scene scopes.
-  - Updated `ServiceLifetime` to use standard `Microsoft.Extensions.DependencyInjection.ServiceLifetime`.
-- **Game Engine**:
-  - Refactored `GameEngine` constructor to accept injected references (`SceneManager`, `MemoryProfiler`) instead of instantiating them.
-  - `Program.cs` now properly builds a `ServiceProvider` and manages the composition root.
-- **EventBus**:
-  - Now throws `EventBusException` instead of generic exceptions or swallowing errors.
-  - Scoped to `Scene` via the new DI container.
-- **Scene Lifecycle**:
-  - `SceneContext` now exposes `IServiceProvider` via the `Services` property.
+
+-   **EventBus Architecture**:
+    -   Migrated from direct instantiation to pooled allocation using `ObjectPool<T>`.
+    -   `Publish<T>()` removed in favor of `Queue<T>(Action<T>)` for zero-allocation event dispatching.
+    -   Events must implement `IPoolable` with `Reset()` method.
+    -   Now throws `EventBusException` instead of generic exceptions.
+    -   Scoped to `Scene` via DI container.
+-   **TextLayoutHelper**: Converted back from `ref struct` to `sealed class` to support fluent API with proper reference semantics.
+-   **World.RegisterSystem**: Changed to DI-only approach; systems must be registered via service provider.
+    -   ZeldaScene systems now called manually in `OnUpdate()` as temporary solution.
+-   **Tag Component**: Converted from `class` to `readonly struct` for better performance.
+-   **Service Resolution**: Changed all `GetService<T>()` calls to `GetRequiredService<T>()` to fail fast on missing dependencies.
+-   **Dependency Injection Migration**:
+    -   Replaced custom `ServiceContainer` implementation with `Microsoft.Extensions.DependencyInjection`.
+    -   Refactored `SceneManager` to use `IServiceScopeFactory` for creating scene scopes.
+    -   Updated `ServiceLifetime` to use standard `Microsoft.Extensions.DependencyInjection.ServiceLifetime`.
+-   **Game Engine**:
+    -   Refactored `GameEngine` constructor to accept injected references (`SceneManager`, `MemoryProfiler`).
+    -   `Program.cs` now properly builds a `ServiceProvider` and manages composition root.
+-   **Scene Lifecycle**:
+    -   `SceneContext` now exposes `IServiceProvider` via the `Services` property.
+-   **Code Quality**:
+    -   Fixed all CS8618 warnings (nullable fields) by adding `null!` initializers.
+    -   Fixed all CS1591 warnings (missing XML comments) for public APIs.
+    -   Fixed all IDE0011 warnings (missing braces) in control flow statements.
+    -   Fixed CS0252 warning (delegate comparison) by using `.Equals()`.
+    -   Fixed CS1572/CS1573 warnings (XML param mismatches) in GameEngine.
+
+### Fixed
+
+-   **Entity Destruction Race Condition**: Added `IsEntityValid()` validation in all systems before accessing components to prevent crashes when entities are destroyed mid-frame:
+    -   RenderSystem: During sort and render loops.
+    -   EnemyAISystem: Before component access.
+    -   CombatSystem: In all enemy iteration loops.
+    -   ZeldaScene.OnRender: In debug hitbox rendering.
+-   **EventSystemDemo**: Added null-safety check in `UnsubscribeFromEvents()` to prevent NullReferenceException on early scene unload.
+-   **Delegate Comparison**: Fixed potential reference comparison issue in EventBus by using `Equals()` instead of `==`.
 
 ### Removed
-- **Legacy DI**: Removed custom `IServiceContainer`, `ServiceContainer`, and related interfaces in favor of the standard library.
+
+-   **Legacy DI**: Removed custom `IServiceContainer`, `ServiceContainer`, and related interfaces in favor of the standard library.
+-   **Obsolete Code**: Removed old `Publish<T>(T)` API and related non-pooling event methods.
 
 ## [0.13.0] - 2025-11-20
 
@@ -91,7 +125,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     -   All 678 tests passing with new audio services
 -   **AudioDemo UI**: Fixed volume bar rendering (was obscured by filled rectangle)
 -   **SFX Volume**: Fixed sound effect volume control not working (implemented per-sound volume)
-
 
 ## [0.11.0-alpha] - 2025-11-19
 

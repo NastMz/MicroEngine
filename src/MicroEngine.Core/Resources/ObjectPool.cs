@@ -61,10 +61,14 @@ public sealed class ObjectPool<T> : IDisposable where T : class, IPoolable, new(
     public ObjectPool(int initialCapacity = 16, int maxSize = 256)
     {
         if (initialCapacity < 0)
+        {
             throw new ArgumentException("Initial capacity cannot be negative.", nameof(initialCapacity));
+        }
         
         if (maxSize < initialCapacity)
+        {
             throw new ArgumentException("Max size must be >= initial capacity.", nameof(maxSize));
+        }
 
         _maxSize = maxSize;
         _available = new Stack<T>(initialCapacity);

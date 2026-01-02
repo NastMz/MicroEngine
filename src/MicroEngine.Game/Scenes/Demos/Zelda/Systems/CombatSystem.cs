@@ -7,6 +7,9 @@ using MicroEngine.Core.Logging;
 
 namespace MicroEngine.Game.Scenes.Demos.Zelda.Systems;
 
+/// <summary>
+/// Coordinates combat interactions between the player and enemies, applying damage and knockback.
+/// </summary>
 public class CombatSystem : ISystem, IDisposable
 {
     private readonly EventBus _eventBus;
@@ -16,12 +19,35 @@ public class CombatSystem : ISystem, IDisposable
     private bool _isSubscribed;
     private World? _currentWorld;
     private readonly ZeldaScene _scene;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether debug combat visuals are shown.
+    /// </summary>
     public bool ShowDebug { get; set; } = false;
+
+    /// <summary>
+    /// Gets the last calculated attack point for debugging.
+    /// </summary>
     public Vector2 LastAttackPoint { get; private set; }
+
+    /// <summary>
+    /// Gets the last attack radius used for hit detection.
+    /// </summary>
     public float LastAttackRadius { get; private set; } = ZeldaConstants.ATTACK_HIT_THRESHOLD;
+
+    /// <summary>
+    /// Gets the proximity radius used to detect near hits between player and enemies.
+    /// </summary>
     public float PlayerProximityRadius { get; private set; } = ZeldaConstants.PROXIMITY_HIT_THRESHOLD;
+
+    /// <summary>
+    /// Gets the last computed center position of the player's body for collision checks.
+    /// </summary>
     public Vector2 LastPlayerBodyCenter { get; private set; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CombatSystem"/> class.
+    /// </summary>
     public CombatSystem(EventBus eventBus, ILogger logger, ZeldaScene scene)
     {
         _eventBus = eventBus;
@@ -29,6 +55,9 @@ public class CombatSystem : ISystem, IDisposable
         _scene = scene;
     }
 
+    /// <summary>
+    /// Updates combat interactions, applies damage, and processes invulnerability timers.
+    /// </summary>
     public void Update(World world, float deltaTime)
     {
         _currentWorld = world;
@@ -41,7 +70,10 @@ public class CombatSystem : ISystem, IDisposable
         _enemyQuery ??= world.CreateCachedQuery(typeof(EnemyComponent), typeof(TransformComponent), typeof(HealthComponent));
         _playerQuery ??= world.CreateCachedQuery(typeof(PlayerComponent), typeof(TransformComponent), typeof(HealthComponent));
 
-        if (_playerQuery.Count == 0) return;
+        if (_playerQuery.Count == 0)
+        {
+            return;
+        }
 
         var playerEntity = _playerQuery.Entities[0];
         ref var playerHealth = ref world.GetComponent<HealthComponent>(playerEntity);
@@ -49,7 +81,10 @@ public class CombatSystem : ISystem, IDisposable
         ref var player = ref world.GetComponent<PlayerComponent>(playerEntity);
 
         // Stop all combat if player is dead
-        if (playerHealth.Current <= 0) return;
+        if (playerHealth.Current <= 0)
+        {
+            return;
+        }
 
         // 1. Enemy hitting Player
         // Calculate body centers for fair damage detection (pivots are at the feet)
@@ -58,7 +93,10 @@ public class CombatSystem : ISystem, IDisposable
         
         foreach (var enemyEntity in _enemyQuery.Entities)
         {
-            if (!world.IsEntityValid(enemyEntity)) continue;
+            if (!world.IsEntityValid(enemyEntity))
+            {
+                continue;
+            }
             
             var enemyTransform = world.GetComponent<TransformComponent>(enemyEntity);
             float slimeDrawSize = ZeldaConstants.TILE_SIZE * ZeldaConstants.ENEMY_SCALE;
@@ -86,10 +124,22 @@ public class CombatSystem : ISystem, IDisposable
             float swordReach = ZeldaConstants.SWORD_REACH; 
             
             string clipName = animator.CurrentClipName ?? "";
-            if (clipName.Contains("up")) attackOffset = new Vector2(0, -swordReach);
-            else if (clipName.Contains("down")) attackOffset = new Vector2(0, swordReach);
-            else if (clipName.Contains("left")) attackOffset = new Vector2(-swordReach, 0);
-            else if (clipName.Contains("right")) attackOffset = new Vector2(swordReach, 0);
+            if (clipName.Contains("up"))
+            {
+                attackOffset = new Vector2(0, -swordReach);
+            }
+            else if (clipName.Contains("down"))
+            {
+                attackOffset = new Vector2(0, swordReach);
+            }
+            else if (clipName.Contains("left"))
+            {
+                attackOffset = new Vector2(-swordReach, 0);
+            }
+            else if (clipName.Contains("right"))
+            {
+                attackOffset = new Vector2(swordReach, 0);
+            }
 
             // Calculate attack start point from the body center calculated in step 1
             Vector2 attackPoint = playerBodyCenter + attackOffset;
@@ -99,7 +149,10 @@ public class CombatSystem : ISystem, IDisposable
 
             foreach (var enemyEntity in _enemyQuery.Entities)
             {
-                if (!world.IsEntityValid(enemyEntity)) continue;
+                if (!world.IsEntityValid(enemyEntity))
+                {
+                    continue;
+                }
                 
                 var enemyTransform = world.GetComponent<TransformComponent>(enemyEntity);
                 ref var enemyHealth = ref world.GetComponent<HealthComponent>(enemyEntity);
@@ -138,7 +191,10 @@ public class CombatSystem : ISystem, IDisposable
 
         foreach (var enemyEntity in _enemyQuery.Entities)
         {
-            if (!world.IsEntityValid(enemyEntity)) continue;
+            if (!world.IsEntityValid(enemyEntity))
+            {
+                continue;
+            }
             
             ref var enemyHealth = ref world.GetComponent<HealthComponent>(enemyEntity);
             if (enemyHealth.InvulnerabilityTimer > 0)
@@ -167,7 +223,10 @@ public class CombatSystem : ISystem, IDisposable
 
     private void OnDamage(DamageEvent e)
     {
-        if (_currentWorld == null || !_currentWorld.IsEntityValid(e.TargetEntity)) return;
+        if (_currentWorld == null || !_currentWorld.IsEntityValid(e.TargetEntity))
+        {
+            return;
+        }
 
         if (_currentWorld.HasComponent<HealthComponent>(e.TargetEntity) && 
             _currentWorld.HasComponent<SpriteComponent>(e.TargetEntity))
@@ -220,6 +279,9 @@ public class CombatSystem : ISystem, IDisposable
         }
     }
 
+    /// <summary>
+    /// Releases event subscriptions held by the combat system.
+    /// </summary>
     public void Dispose()
     {
         _eventBus.Unsubscribe<DamageEvent>(OnDamage);

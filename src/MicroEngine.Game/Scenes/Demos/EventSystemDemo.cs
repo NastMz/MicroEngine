@@ -135,7 +135,10 @@ public sealed class EventSystemDemo : Scene
 
     private void UnsubscribeFromEvents()
     {
-        if (_eventBus == null) return;
+        if (_eventBus == null)
+        {
+            return;
+        }
         
         _eventBus.Unsubscribe<ButtonPressedEvent>(OnButtonPressed);
         _eventBus.Unsubscribe<TriggerEnteredEvent>(OnTriggerEntered);

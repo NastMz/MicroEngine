@@ -7,6 +7,9 @@ using MicroEngine.Core.Logging;
 
 namespace MicroEngine.Game.Scenes.Demos.Zelda.Systems;
 
+/// <summary>
+/// Handles player input, movement, animations, and attack state transitions.
+/// </summary>
 public class PlayerSystem : ISystem
 {
     private readonly IInputBackend _input;
@@ -16,6 +19,9 @@ public class PlayerSystem : ISystem
     private CachedQuery? _playerQuery;
     private bool _isControlDisabled;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PlayerSystem"/> class.
+    /// </summary>
     public PlayerSystem(IInputBackend input, EventBus eventBus, ILogger logger, ZeldaScene scene)
     {
         _input = input;
@@ -25,13 +31,19 @@ public class PlayerSystem : ISystem
         _eventBus.Subscribe<ZeldaGameStateEvent>(e => _isControlDisabled = e.IsGameOver);
     }
 
+    /// <summary>
+    /// Updates player state based on input and orchestrates attack transitions.
+    /// </summary>
     public void Update(World world, float deltaTime)
     {
         _playerQuery ??= world.CreateCachedQuery(typeof(PlayerComponent), typeof(TransformComponent), typeof(AnimatorComponent), typeof(HealthComponent));
 
         foreach (var entity in _playerQuery.Entities)
         {
-            if (!world.IsEntityValid(entity)) continue;
+            if (!world.IsEntityValid(entity))
+            {
+                continue;
+            }
 
             ref var player = ref world.GetComponent<PlayerComponent>(entity);
             ref var transform = ref world.GetComponent<TransformComponent>(entity);
@@ -86,9 +98,18 @@ public class PlayerSystem : ISystem
                 
                 string currentClip = animator.CurrentClipName ?? ZeldaConstants.CLIP_WALK_DOWN;
                 string dirSuffix = "down";
-                if (currentClip.Contains("up")) dirSuffix = "up";
-                else if (currentClip.Contains("left")) dirSuffix = "left";
-                else if (currentClip.Contains("right")) dirSuffix = "right";
+                if (currentClip.Contains("up"))
+                {
+                    dirSuffix = "up";
+                }
+                else if (currentClip.Contains("left"))
+                {
+                    dirSuffix = "left";
+                }
+                else if (currentClip.Contains("right"))
+                {
+                    dirSuffix = "right";
+                }
                 
                 _logger.Info("Player", $"Attack Triggered! Dir: {dirSuffix}");
                 animator.CurrentClipName = $"attack_{dirSuffix}";
@@ -103,10 +124,29 @@ public class PlayerSystem : ISystem
             Vector2 movement = Vector2.Zero;
             bool moved = false;
 
-            if (_input.IsKeyDown(Key.W) || _input.IsKeyDown(Key.Up)) { movement += new Vector2(0, -1); moved = true; }
-            if (_input.IsKeyDown(Key.S) || _input.IsKeyDown(Key.Down)) { movement += new Vector2(0, 1); moved = true; }
-            if (_input.IsKeyDown(Key.A) || _input.IsKeyDown(Key.Left)) { movement += new Vector2(-1, 0); moved = true; }
-            if (_input.IsKeyDown(Key.D) || _input.IsKeyDown(Key.Right)) { movement += new Vector2(1, 0); moved = true; }
+            if (_input.IsKeyDown(Key.W) || _input.IsKeyDown(Key.Up))
+            {
+                movement += new Vector2(0, -1);
+                moved = true;
+            }
+
+            if (_input.IsKeyDown(Key.S) || _input.IsKeyDown(Key.Down))
+            {
+                movement += new Vector2(0, 1);
+                moved = true;
+            }
+
+            if (_input.IsKeyDown(Key.A) || _input.IsKeyDown(Key.Left))
+            {
+                movement += new Vector2(-1, 0);
+                moved = true;
+            }
+
+            if (_input.IsKeyDown(Key.D) || _input.IsKeyDown(Key.Right))
+            {
+                movement += new Vector2(1, 0);
+                moved = true;
+            }
 
             if (moved)
             {
@@ -114,11 +154,17 @@ public class PlayerSystem : ISystem
                 
                 // Try move X with collision radius
                 Vector2 nextPosX = transform.Position + new Vector2(movement.X * player.Speed * deltaTime, 0);
-                if (_scene.IsPassable(nextPosX, 10f)) { transform.Position = nextPosX; }
+                if (_scene.IsPassable(nextPosX, 10f))
+                {
+                    transform.Position = nextPosX;
+                }
                 
                 // Try move Y with collision radius
                 Vector2 nextPosY = transform.Position + new Vector2(0, movement.Y * player.Speed * deltaTime);
-                if (_scene.IsPassable(nextPosY, 10f)) { transform.Position = nextPosY; }
+                if (_scene.IsPassable(nextPosY, 10f))
+                {
+                    transform.Position = nextPosY;
+                }
                 
                 player.State = PlayerState.Walking;
 
