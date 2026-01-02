@@ -249,7 +249,6 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 -   ✅ Event-driven architecture enabled
 -   ✅ Resource hot-reload functional
 
-
 **Phase 3 Complete:** All core features implemented (9/9 features ✅)
 
 ---
@@ -713,7 +712,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.8.0  | Physics & Savegame Systems                  | Nov 2025    | ✅ Complete |
 | v0.9.0  | Physics Backend Abstraction                 | Nov 2025    | ✅ Complete |
 | v0.10.0 | ECS Refactoring & Demo Abstractions         | Nov 2025    | ✅ Complete |
-| v0.11.0 | TextLayoutHelper & UI Improvements         | Nov 2025    | ✅ Complete |
+| v0.11.0 | TextLayoutHelper & UI Improvements          | Nov 2025    | ✅ Complete |
 | v0.12.0 | Audio System Integration & Real Playback    | Nov 2025    | ✅ Complete |
 | v0.13.0 | Capability Demonstrations & Polish          | Nov 2025    | ✅ Complete |
 | v0.x.x  | Stabilization & polish                      | TBD         | In Progress |
@@ -722,7 +721,7 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v1.2.0  | Asset management & developer tools          | TBD         | Planned     |
 | v1.3.0  | Scene serialization & pipeline              | TBD         | Planned     |
 | v1.5.0  | Full ecosystem maturity                     | TBD         | Future      |
-| v2.0.0  | 3D architecture foundation                  | TBD         | Exploratory      |
+| v2.0.0  | 3D architecture foundation                  | TBD         | Exploratory |
 | v3.x+   | Editors, advanced tools, new domains        | TBD         | Exploratory |
 
 ---
@@ -852,29 +851,29 @@ The roadmap provides a clear long-term vision while remaining flexible enough to
 
 ## Revision History
 
-| Version | Date              | Author         | Changes                                                                                                                                        |
-| ------- | ----------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 3.2     | November 19, 2025 | Kevin Martínez | ECS Refactoring & Demo Abstractions (v0.10.0): CameraComponent/System, DraggableComponent/DragSystem, RigidBodyComponent cleanup, 16 new tests |
-| 3.1     | January 19, 2025  | Kevin Martínez | Physics Backend Abstraction (v0.9.0 WIP): IPhysicsBackend interface, Aether.Physics2D integration, MicroEngine.Backend.Aether project          |
-| 3.0     | January 19, 2025  | Kevin Martínez | Physics & Savegame (v0.8.0): CCD with swept AABB, collision resolution, PhysicsDemo, complete savegame system with versioning, 10 new tests    |
-| 2.9     | January 19, 2025  | Kevin Martínez | Memory Profiling Tools (v0.7.5): MemorySnapshot, MemoryProfiler with leak detection, EcsMemoryProfiler, statistical analysis, 36 tests         |
-| 2.8     | November 18, 2025 | Kevin Martínez | Structured Error Codes & Exception Hierarchy (v0.7.4): MicroEngineException base, domain exceptions, error codes, context management           |
-| 2.7     | November 18, 2025 | Kevin Martínez | Performance Benchmarking Suite (v0.7.3): BenchmarkDotNet integration, validated archetype optimization with 37k-424k queries/sec               |
-| 2.6     | November 18, 2025 | Kevin Martínez | Semantic versioning fix: Split features into patch releases (0.7.1 preloading, 0.7.2 archetypes)                                               |
-| 2.5     | November 18, 2025 | Kevin Martínez | Archetype implementation: Simple solution without reflection/dynamic, ArchetypeId/Archetype/ArchetypeManager, query optimization (v0.7.2)      |
-| 2.4     | November 18, 2025 | Kevin Martínez | Scene Preloading: Async background loading with PreloadAsync/PreloadMultipleAsync, Version management migration to Nerdbank (v0.7.1)           |
-| 2.3     | November 18, 2025 | Kevin Martínez | GameEngine refactoring: Full integration with backends, fixed timestep (60Hz), Program.cs migration, frame-rate independence (v0.7.0)          |
-| 2.2     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Caching: ISceneCache/SceneCache with LRU eviction, MainMenuScene integration, visual status display (v0.7.0)                     |
-| 2.1     | November 18, 2025 | Kevin Martínez | Phase 4 Global State + StateMachine: IGameState/GameState for persistent data, StateMachine framework (v0.7.0)                                 |
-| 2.0     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Parameters: Type-safe parameter passing, SceneParameters builder (v0.6.0)                                                        |
-| 1.8     | November 18, 2025 | Kevin Martínez | Phase 4 Transitions: Additional scene transition effects (Slide, Wipe, Zoom), SetTransition() runtime changes, transition selector UI (v0.6.0) |
-| 1.7     | November 18, 2025 | Kevin Martínez | Architecture refinement (v0.6.0): Eliminated circular dependency, SceneContext DI pattern, Scene navigation methods                            |
-| 1.6     | November 18, 2025 | Kevin Martínez | Phase 4 Graphics: MSAA support (v0.5.1), texture filtering & mipmaps (v0.5.0), ECS query caching, fade transitions                             |
-| 1.5     | November 18, 2025 | Kevin Martínez | Added missing features: SceneManager (Phase 4), Asset Management, Scene Templates, Developer Console, Scene Serialization (Phase 5)            |
-| 1.4     | November 18, 2025 | Kevin Martínez | Phase 3 COMPLETE: Tilemap Support (v0.4.8), all 9/9 features implemented                                                                       |
-| 1.5     | November 18, 2025 | Kevin Martínez | Phase 4 STARTED: SceneManager stack-based system (v0.4.9), demo refactoring, interactive EcsBasicsDemo                                         |
-| 1.3     | November 18, 2025 | Kevin Martínez | Phase 3 status: 8/9 features (88%), Entity Inspector deferred to Phase 5+                                                                      |
-| 1.2     | November 18, 2025 | Kevin Martínez | Added Collision Layer System (v0.4.7), updated Phase 3 progress                                                                                |
-| 1.1     | November 17, 2025 | Kevin Martínez | Updated Phase 3 with EntityBuilder/Factory (v0.4.6), retroactive docs                                                                          |
-| 1.0     | November 2025     | Kevin Martínez | Initial comprehensive roadmap with detailed phases                                                                                             |
+| Version | Date              | Author         | Changes                                                                                                                                               |
+| ------- | ----------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.2     | November 19, 2025 | Kevin Martínez | ECS Refactoring & Demo Abstractions (v0.10.0): CameraComponent/System, DraggableComponent/DragSystem, RigidBodyComponent cleanup, 16 new tests        |
+| 3.1     | January 19, 2025  | Kevin Martínez | Physics Backend Abstraction (v0.9.0 WIP): IPhysicsBackend interface, Aether.Physics2D integration, MicroEngine.Backend.Aether project                 |
+| 3.0     | January 19, 2025  | Kevin Martínez | Physics & Savegame (v0.8.0): CCD with swept AABB, collision resolution, PhysicsDemo, complete savegame system with versioning, 10 new tests           |
+| 2.9     | January 19, 2025  | Kevin Martínez | Memory Profiling Tools (v0.7.5): MemorySnapshot, MemoryProfiler with leak detection, EcsMemoryProfiler, statistical analysis, 36 tests                |
+| 2.8     | November 18, 2025 | Kevin Martínez | Structured Error Codes & Exception Hierarchy (v0.7.4): MicroEngineException base, domain exceptions, error codes, context management                  |
+| 2.7     | November 18, 2025 | Kevin Martínez | Performance Benchmarking Suite (v0.7.3): BenchmarkDotNet integration, validated archetype optimization with 37k-424k queries/sec                      |
+| 2.6     | November 18, 2025 | Kevin Martínez | Semantic versioning fix: Split features into patch releases (0.7.1 preloading, 0.7.2 archetypes)                                                      |
+| 2.5     | November 18, 2025 | Kevin Martínez | Archetype implementation: Simple solution without reflection/dynamic, ArchetypeId/Archetype/ArchetypeManager, query optimization (v0.7.2)             |
+| 2.4     | November 18, 2025 | Kevin Martínez | Scene Preloading: Async background loading with PreloadAsync/PreloadMultipleAsync, Version management migration to Nerdbank (v0.7.1)                  |
+| 2.3     | November 18, 2025 | Kevin Martínez | GameEngine refactoring: Full integration with backends, fixed timestep (60Hz), Program.cs migration, frame-rate independence (v0.7.0)                 |
+| 2.2     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Caching: ISceneCache/SceneCache with LRU eviction, MainMenuScene integration, visual status display (v0.7.0)                            |
+| 2.1     | November 18, 2025 | Kevin Martínez | Phase 4 Global State + StateMachine: IGameState/GameState for persistent data, StateMachine framework (v0.7.0)                                        |
+| 2.0     | November 18, 2025 | Kevin Martínez | Phase 4 Scene Parameters: Type-safe parameter passing, SceneParameters builder (v0.6.0)                                                               |
+| 1.8     | November 18, 2025 | Kevin Martínez | Phase 4 Transitions: Additional scene transition effects (Slide, Wipe, Zoom), SetTransition() runtime changes, transition selector UI (v0.6.0)        |
+| 1.7     | November 18, 2025 | Kevin Martínez | Architecture refinement (v0.6.0): Eliminated circular dependency, SceneContext DI pattern, Scene navigation methods                                   |
+| 1.6     | November 18, 2025 | Kevin Martínez | Phase 4 Graphics: MSAA support (v0.5.1), texture filtering & mipmaps (v0.5.0), ECS query caching, fade transitions                                    |
+| 1.5     | November 18, 2025 | Kevin Martínez | Added missing features: SceneManager (Phase 4), Asset Management, Scene Templates, Developer Console, Scene Serialization (Phase 5)                   |
+| 1.4     | November 18, 2025 | Kevin Martínez | Phase 3 COMPLETE: Tilemap Support (v0.4.8), all 9/9 features implemented                                                                              |
+| 1.5     | November 18, 2025 | Kevin Martínez | Phase 4 STARTED: SceneManager stack-based system (v0.4.9), demo refactoring, interactive EcsBasicsDemo                                                |
+| 1.3     | November 18, 2025 | Kevin Martínez | Phase 3 status: 8/9 features (88%), Entity Inspector deferred to Phase 5+                                                                             |
+| 1.2     | November 18, 2025 | Kevin Martínez | Added Collision Layer System (v0.4.7), updated Phase 3 progress                                                                                       |
+| 1.1     | November 17, 2025 | Kevin Martínez | Updated Phase 3 with EntityBuilder/Factory (v0.4.6), retroactive docs                                                                                 |
+| 1.0     | November 2025     | Kevin Martínez | Initial comprehensive roadmap with detailed phases                                                                                                    |
 | 3.3     | January 2, 2026   | Kevin Martínez | Phase 4 COMPLETE: Zero-allocation architecture (ObjectPool, EventBus pooling), code quality fixes (0 warnings), entity lifecycle robustness (v0.14.0) |
