@@ -1,9 +1,11 @@
+using MicroEngine.Core.Audio;
 using MicroEngine.Core.ECS;
 using MicroEngine.Core.ECS.Components;
 using MicroEngine.Core.Input;
 using MicroEngine.Core.Events;
 using MicroEngine.Core.Math;
 using MicroEngine.Core.Logging;
+using System;
 
 namespace MicroEngine.Game.Scenes.Demos.Zelda.Systems;
 
@@ -15,28 +17,36 @@ public class PlayerSystem : ISystem
     private readonly IInputBackend _input;
     private readonly EventBus _eventBus;
     private readonly ILogger _logger;
-    private readonly ZeldaScene _scene;
+    private readonly ISoundPlayer _soundPlayer;
     private CachedQuery? _playerQuery;
+    private CachedQuery? _mapQuery;
     private bool _isControlDisabled;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PlayerSystem"/> class.
     /// </summary>
-    public PlayerSystem(IInputBackend input, EventBus eventBus, ILogger logger, ZeldaScene scene)
+    public PlayerSystem(IInputBackend input, EventBus eventBus, ILogger logger, ISoundPlayer soundPlayer)
     {
         _input = input;
         _eventBus = eventBus;
         _logger = logger;
-        _scene = scene;
-        _eventBus.Subscribe<ZeldaGameStateEvent>(e => _isControlDisabled = e.IsGameOver);
+        _soundPlayer = soundPlayer;
+        _eventBus.Subscribe<GameStateEvent>(e => _isControlDisabled = e.IsGameOver);
     }
 
-    /// <summary>
-    /// Updates player state based on input and orchestrates attack transitions.
-    /// </summary>
+    /// <inheritdoc/>
     public void Update(World world, float deltaTime)
     {
         _playerQuery ??= world.CreateCachedQuery(typeof(PlayerComponent), typeof(TransformComponent), typeof(AnimatorComponent), typeof(HealthComponent));
+        _mapQuery ??= world.CreateCachedQuery(typeof(MapComponent));
+
+        if (_playerQuery.Count == 0 || _mapQuery.Count == 0)
+        {
+            return;
+        }
+
+        var mapEntity = _mapQuery.Entities[0];
+        var map = world.GetComponent<MapComponent>(mapEntity);
 
         foreach (var entity in _playerQuery.Entities)
         {
@@ -111,12 +121,21 @@ public class PlayerSystem : ISystem
                     dirSuffix = "right";
                 }
                 
-                _logger.Info("Player", $"Attack Triggered! Dir: {dirSuffix}");
+                _logger.Info(ZeldaConstants.LOG_PLAYER, $"Attack Triggered! Dir: {dirSuffix}");
                 animator.CurrentClipName = $"attack_{dirSuffix}";
                 animator.IsPlaying = true;
                 animator.CurrentFrame = 0;
                 animator.FrameTimer = 0;
-                _scene.PlaySound(_scene.SwordClip);
+                
+                // Emit sound event if audio component is present
+                if (world.HasComponent<AudioComponent>(entity))
+                {
+                    var audio = world.GetComponent<AudioComponent>(entity);
+                    if (audio.AttackClip != null)
+                    {
+                        _eventBus.Queue<PlaySoundEvent>(e => e.Clip = audio.AttackClip);
+                    }
+                }
                 continue; 
             }
 
@@ -154,14 +173,14 @@ public class PlayerSystem : ISystem
                 
                 // Try move X with collision radius
                 Vector2 nextPosX = transform.Position + new Vector2(movement.X * player.Speed * deltaTime, 0);
-                if (_scene.IsPassable(nextPosX, 10f))
+                if (IsPassable(map, nextPosX, ZeldaConstants.PLAYER_COLLISION_RADIUS))
                 {
                     transform.Position = nextPosX;
                 }
                 
                 // Try move Y with collision radius
                 Vector2 nextPosY = transform.Position + new Vector2(0, movement.Y * player.Speed * deltaTime);
-                if (_scene.IsPassable(nextPosY, 10f))
+                if (IsPassable(map, nextPosY, ZeldaConstants.PLAYER_COLLISION_RADIUS))
                 {
                     transform.Position = nextPosY;
                 }
@@ -182,7 +201,31 @@ public class PlayerSystem : ISystem
             {
                 player.State = PlayerState.Idle;
                 animator.IsPlaying = false; 
+                animator.CurrentFrame = 0;
             }
         }
+    }
+
+    private bool IsPassable(MapComponent map, Vector2 worldPos, float radius)
+    {
+        // Simple 4-point collision check
+        Vector2[] points = 
+        {
+            worldPos + new Vector2(-radius, -radius),
+            worldPos + new Vector2(radius, -radius),
+            worldPos + new Vector2(-radius, radius),
+            worldPos + new Vector2(radius, radius)
+        };
+
+        foreach (var p in points)
+        {
+            int tx = (int)(p.X / ZeldaConstants.TILE_SIZE);
+            int ty = (int)(p.Y / ZeldaConstants.TILE_SIZE);
+            if (!map.IsPassable(tx, ty)) 
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }

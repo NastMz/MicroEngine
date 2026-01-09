@@ -1,9 +1,11 @@
+using MicroEngine.Core.Audio;
 using MicroEngine.Core.ECS;
 using MicroEngine.Core.ECS.Components;
 using MicroEngine.Core.Events;
 using MicroEngine.Core.Math;
 using MicroEngine.Core.Graphics;
 using MicroEngine.Core.Logging;
+using System;
 
 namespace MicroEngine.Game.Scenes.Demos.Zelda.Systems;
 
@@ -14,11 +16,12 @@ public class CombatSystem : ISystem, IDisposable
 {
     private readonly EventBus _eventBus;
     private readonly ILogger _logger;
+    private readonly ISoundPlayer _soundPlayer;
     private CachedQuery? _enemyQuery;
     private CachedQuery? _playerQuery;
     private bool _isSubscribed;
     private World? _currentWorld;
-    private readonly ZeldaScene _scene;
+    private CachedQuery? _mapQuery;
 
     /// <summary>
     /// Gets or sets a value indicating whether debug combat visuals are shown.
@@ -48,11 +51,11 @@ public class CombatSystem : ISystem, IDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="CombatSystem"/> class.
     /// </summary>
-    public CombatSystem(EventBus eventBus, ILogger logger, ZeldaScene scene)
+    public CombatSystem(EventBus eventBus, ILogger logger, ISoundPlayer soundPlayer)
     {
         _eventBus = eventBus;
         _logger = logger;
-        _scene = scene;
+        _soundPlayer = soundPlayer;
     }
 
     /// <summary>
@@ -100,7 +103,7 @@ public class CombatSystem : ISystem, IDisposable
             
             var enemyTransform = world.GetComponent<TransformComponent>(enemyEntity);
             float slimeDrawSize = ZeldaConstants.TILE_SIZE * ZeldaConstants.ENEMY_SCALE;
-            Vector2 enemyBodyCenter = enemyTransform.Position + new Vector2(0, -slimeDrawSize * 0.4f);
+            Vector2 enemyBodyCenter = enemyTransform.Position + new Vector2(0, -slimeDrawSize * ZeldaConstants.ENEMY_BODY_CENTER_Y_FACTOR);
 
             if (Vector2.Distance(playerBodyCenter, enemyBodyCenter) < ZeldaConstants.PROXIMITY_HIT_THRESHOLD)
             {
@@ -158,7 +161,7 @@ public class CombatSystem : ISystem, IDisposable
                 ref var enemyHealth = ref world.GetComponent<HealthComponent>(enemyEntity);
 
                 float slimeDrawSize = ZeldaConstants.TILE_SIZE * ZeldaConstants.ENEMY_SCALE;
-                Vector2 enemyBodyCenter = enemyTransform.Position + new Vector2(0, -slimeDrawSize * 0.4f);
+                Vector2 enemyBodyCenter = enemyTransform.Position + new Vector2(0, -slimeDrawSize * ZeldaConstants.ENEMY_BODY_CENTER_Y_FACTOR);
 
                 // Use body centers for both parties for more "natural" feeling hits
                 float distToAttackPoint = Vector2.Distance(attackPoint, enemyBodyCenter);
@@ -167,7 +170,7 @@ public class CombatSystem : ISystem, IDisposable
                 if (enemyHealth.InvulnerabilityTimer <= 0 && 
                    (distToAttackPoint < ZeldaConstants.ATTACK_HIT_THRESHOLD || distToPlayer < ZeldaConstants.PROXIMITY_HIT_THRESHOLD))
                 {
-                    _logger.Info("Combat", $"Player hit enemy {enemyEntity.Id}. DistToAP: {distToAttackPoint:F1}, DistToP: {distToPlayer:F1}");
+                    _logger.Info(ZeldaConstants.LOG_COMBAT, $"Player hit enemy {enemyEntity.Id}. DistToAP: {distToAttackPoint:F1}, DistToP: {distToPlayer:F1}");
                     _eventBus.Queue<DamageEvent>(e =>
                     {
                         e.TargetEntity = enemyEntity;
@@ -213,7 +216,7 @@ public class CombatSystem : ISystem, IDisposable
         // 4. Check for Victory
         if (_enemyQuery.Count == 0 && playerHealth.Current > 0)
         {
-            _eventBus.Queue<ZeldaGameStateEvent>(e =>
+            _eventBus.Queue<GameStateEvent>(e =>
             {
                 e.Message = ZeldaConstants.MSG_VICTORY;
                 e.IsGameOver = true;
@@ -237,11 +240,20 @@ public class CombatSystem : ISystem, IDisposable
             health.Current -= e.DamageAmount;
             health.InvulnerabilityTimer = ZeldaConstants.INVULNERABILITY_DURATION;
 
-            _logger.Info("Combat", $"Entity {e.TargetEntity.Id} took {e.DamageAmount} damage. HP: {health.Current}");
+            _logger.Info(ZeldaConstants.LOG_COMBAT, $"Entity {e.TargetEntity.Id} took {e.DamageAmount} damage. HP: {health.Current}");
 
             // Flash red
             sprite.Tint = ZeldaConstants.COLOR_DAMAGE;
-            _scene.PlaySound(_scene.HitClip);
+
+            // Play hit sound if target has audio component
+            if (_currentWorld.HasComponent<AudioComponent>(e.TargetEntity))
+            {
+                var audio = _currentWorld.GetComponent<AudioComponent>(e.TargetEntity);
+                if (audio.HitClip != null)
+                {
+                    _eventBus.Queue<PlaySoundEvent>(evt => evt.Clip = audio.HitClip);
+                }
+            }
 
             // Simple Knockback
             if (_currentWorld.HasComponent<TransformComponent>(e.TargetEntity) && 
@@ -254,9 +266,15 @@ public class CombatSystem : ISystem, IDisposable
                 Vector2 nextPos = targetTrans.Position + knockDir * ZeldaConstants.KNOCKBACK_FORCE;
                 
                 // Only apply knockback if the destination is passable
-                if (_scene.IsPassable(nextPos, 10f))
+                _mapQuery ??= _currentWorld.CreateCachedQuery(typeof(MapComponent));
+                if (_mapQuery.Count > 0)
                 {
-                    targetTrans.Position = nextPos;
+                    var mapEntity = _mapQuery.Entities[0];
+                    var map = _currentWorld.GetComponent<MapComponent>(mapEntity);
+                    if (IsPassable(map, nextPos, ZeldaConstants.ENEMY_COLLISION_RADIUS))
+                    {
+                        targetTrans.Position = nextPos;
+                    }
                 }
             }
 
@@ -264,7 +282,7 @@ public class CombatSystem : ISystem, IDisposable
             {
                 if (_currentWorld.HasComponent<PlayerComponent>(e.TargetEntity))
                 {
-                    _eventBus.Queue<ZeldaGameStateEvent>(evt =>
+                    _eventBus.Queue<GameStateEvent>(evt =>
                     {
                         evt.Message = ZeldaConstants.MSG_GAME_OVER;
                         evt.IsGameOver = true;
@@ -285,5 +303,27 @@ public class CombatSystem : ISystem, IDisposable
     public void Dispose()
     {
         _eventBus.Unsubscribe<DamageEvent>(OnDamage);
+    }
+
+    private bool IsPassable(MapComponent map, Vector2 worldPos, float radius)
+    {
+        Vector2[] points = 
+        {
+            worldPos + new Vector2(-radius, -radius),
+            worldPos + new Vector2(radius, -radius),
+            worldPos + new Vector2(-radius, radius),
+            worldPos + new Vector2(radius, radius)
+        };
+
+        foreach (var p in points)
+        {
+            int tx = (int)(p.X / ZeldaConstants.TILE_SIZE);
+            int ty = (int)(p.Y / ZeldaConstants.TILE_SIZE);
+            if (!map.IsPassable(tx, ty)) 
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }

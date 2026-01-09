@@ -15,7 +15,7 @@ public sealed class World
     private readonly HashSet<Entity> _entitiesPendingDestruction = new();
     private readonly Dictionary<Entity, string?> _entityNames = new();
     private readonly List<CachedQuery> _cachedQueries = new();
-    private readonly IServiceProvider? _serviceProvider;
+    private IServiceProvider? _serviceProvider;
 
     private uint _nextEntityId = 1;
     private readonly Dictionary<uint, uint> _entityVersions = new();
@@ -36,6 +36,14 @@ public sealed class World
     /// </summary>
     /// <param name="serviceProvider">Optional IServiceProvider for system dependency injection.</param>
     public World(IServiceProvider? serviceProvider = null)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    /// <summary>
+    /// Sets the service provider for the world. Useful when the world is created before the DI container.
+    /// </summary>
+    internal void SetServiceProvider(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }
@@ -229,6 +237,26 @@ public sealed class World
         }
 
         _systems.Add(system);
+    }
+
+    /// <summary>
+    /// Gets a registered system of the specified type.
+    /// </summary>
+    /// <typeparam name="T">Type of system to retrieve.</typeparam>
+    /// <returns>The system instance.</returns>
+    /// <exception cref="WorldException">Thrown if the system is not registered.</exception>
+    public T GetSystem<T>() where T : class, ISystem
+    {
+        foreach (var system in _systems)
+        {
+            if (system is T typedSystem)
+            {
+                return typedSystem;
+            }
+        }
+
+        throw new WorldException($"System {typeof(T).Name} is not registered")
+            .WithContext("systemType", typeof(T).Name);
     }
 
     /// <summary>

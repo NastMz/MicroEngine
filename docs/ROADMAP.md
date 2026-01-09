@@ -715,7 +715,8 @@ with the architecture principles defined in the [Architecture document](ARCHITEC
 | v0.11.0 | TextLayoutHelper & UI Improvements          | Nov 2025    | ✅ Complete |
 | v0.12.0 | Audio System Integration & Real Playback    | Nov 2025    | ✅ Complete |
 | v0.13.0 | Capability Demonstrations & Polish          | Nov 2025    | ✅ Complete |
-| v0.x.x  | Stabilization & polish                      | TBD         | In Progress |
+| v0.14.0 | Zero-Allocation & Refactoring              | Jan 2026    | ✅ Complete |
+| v0.14.1 | Zelda Demo Refactoring                    | Jan 2026    | ✅ Complete |
 | v1.0.0  | Stable public API                           | TBD         | Planned     |
 | v1.1.0  | Scene management & templates                | TBD         | Planned     |
 | v1.2.0  | Asset management & developer tools          | TBD         | Planned     |

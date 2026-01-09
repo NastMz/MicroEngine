@@ -130,6 +130,9 @@ public abstract class Scene : IScene
         Context = context ?? throw new ArgumentNullException(nameof(context));
         _isActive = true;
 
+        // Initialize world with scene services to enable DI for systems
+        World.SetServiceProvider(context.Services);
+
         // Clear World to ensure fresh state on reload
         // This prevents entity accumulation when scenes are cached and reused
         World.Clear();

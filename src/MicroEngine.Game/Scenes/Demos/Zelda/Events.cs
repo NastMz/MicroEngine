@@ -41,9 +41,34 @@ public sealed class DamageEvent : GameEvent
 }
 
 /// <summary>
+/// Event raised to trigger sound playback.
+/// </summary>
+public sealed class PlaySoundEvent : GameEvent
+{
+    /// <summary>
+    /// Gets or sets the audio clip to play.
+    /// </summary>
+    public MicroEngine.Core.Resources.IAudioClip? Clip { get; set; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PlaySoundEvent"/> class.
+    /// </summary>
+    public PlaySoundEvent() { }
+
+    /// <summary>
+    /// Resets the play sound event to its default state.
+    /// </summary>
+    public override void Reset()
+    {
+        base.Reset();
+        Clip = null;
+    }
+}
+
+/// <summary>
 /// Event raised when the game state changes (e.g., player death).
 /// </summary>
-public sealed class ZeldaGameStateEvent : GameEvent
+public sealed class GameStateEvent : GameEvent
 {
     /// <summary>
     /// Gets or sets the message describing the game state change.
@@ -56,9 +81,9 @@ public sealed class ZeldaGameStateEvent : GameEvent
     public bool IsGameOver { get; set; }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ZeldaGameStateEvent"/> class.
+    /// Initializes a new instance of the <see cref="GameStateEvent"/> class.
     /// </summary>
-    public ZeldaGameStateEvent() { }
+    public GameStateEvent() { }
 
     /// <summary>
     /// Resets the game state notification to its default values.

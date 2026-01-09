@@ -10,7 +10,7 @@ namespace MicroEngine.Core.Graphics;
 /// after each text draw operation, making UI text rendering much more ergonomic.
 /// Uses a fluent API pattern for easy method chaining.
 /// </remarks>
-public sealed class TextLayoutHelper
+public ref struct TextLayoutHelper
 {
     private readonly float _startX;
     private readonly float _startY;

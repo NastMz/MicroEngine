@@ -53,9 +53,23 @@ public sealed class EventBus : IDisposable
         }
     }
 
+    private interface IEventPool : IDisposable
+    {
+        IEvent Rent();
+        void Return(IEvent eventData);
+    }
+
+    private sealed class EventPoolWrapper<T> : IEventPool where T : class, IEvent, IPoolable, new()
+    {
+        private readonly ObjectPool<T> _pool = new(16, 256);
+        public IEvent Rent() => _pool.Rent();
+        public void Return(IEvent eventData) => _pool.Return((T)eventData);
+        public void Dispose() => _pool.Dispose();
+    }
+
     private readonly Dictionary<Type, List<IHandlerWrapper>> _subscribers = new();
     private readonly Queue<IEvent> _eventQueue = new();
-    private readonly Dictionary<Type, object> _eventPools = new(); // Type -> ObjectPool<T>
+    private readonly Dictionary<Type, IEventPool> _eventPools = new(); // Type -> IEventPool
     private readonly object _lock = new();
     private bool _disposed;
 
@@ -181,58 +195,25 @@ public sealed class EventBus : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(initializer);
 
-        // Get or create pool for this event type
-        var poolType = typeof(ObjectPool<>).MakeGenericType(typeof(T));
-        var eventType = typeof(T);
-
         lock (_lock)
         {
-            if (!_eventPools.TryGetValue(eventType, out var poolObj))
-            {
-                poolObj = Activator.CreateInstance(poolType, 16, 256)!;
-                _eventPools[eventType] = poolObj;
-            }
-
-            // Rent from pool and initialize
-            var rentMethod = poolType.GetMethod("Rent")!;
-            var eventInstance = (T)rentMethod.Invoke(poolObj, new object?[] { null })!;
+            var pool = GetOrAddPool<T>();
+            var eventInstance = (T)pool.Rent();
             
             initializer(eventInstance);
             _eventQueue.Enqueue(eventInstance);
         }
     }
 
-    /// <summary>
-    /// Alternative Queue method that takes the event type dynamically.
-    /// Useful for reflection-based event sending.
-    /// </summary>
-    public void Queue(Type eventType, Action<IEvent> initializer)
+    private EventPoolWrapper<T> GetOrAddPool<T>() where T : class, IEvent, IPoolable, new()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentNullException.ThrowIfNull(eventType);
-        ArgumentNullException.ThrowIfNull(initializer);
-
-        if (!typeof(IEvent).IsAssignableFrom(eventType))
+        var eventType = typeof(T);
+        if (!_eventPools.TryGetValue(eventType, out var pool))
         {
-            throw new ArgumentException($"Type {eventType.Name} must implement IEvent", nameof(eventType));
+            pool = new EventPoolWrapper<T>();
+            _eventPools[eventType] = pool;
         }
-
-        lock (_lock)
-        {
-            if (!_eventPools.TryGetValue(eventType, out var poolObj))
-            {
-                var poolType = typeof(ObjectPool<>).MakeGenericType(eventType);
-                poolObj = Activator.CreateInstance(poolType, 16, 256)!;
-                _eventPools[eventType] = poolObj;
-            }
-
-            var eventPoolType = typeof(ObjectPool<>).MakeGenericType(eventType);
-            var rentMethod = eventPoolType.GetMethod("Rent")!;
-            var eventInstance = (IEvent)rentMethod.Invoke(poolObj, new object?[] { null })!;
-            
-            initializer(eventInstance);
-            _eventQueue.Enqueue(eventInstance);
-        }
+        return (EventPoolWrapper<T>)pool;
     }
 
     /// <summary>
@@ -289,11 +270,9 @@ public sealed class EventBus : IDisposable
 
         lock (_lock)
         {
-            if (_eventPools.TryGetValue(eventType, out var poolObj) && eventData is IPoolable poolable)
+            if (_eventPools.TryGetValue(eventType, out var pool))
             {
-                var poolType = typeof(ObjectPool<>).MakeGenericType(eventType);
-                var returnMethod = poolType.GetMethod("Return")!;
-                returnMethod.Invoke(poolObj, new object[] { eventData });
+                pool.Return(eventData);
             }
         }
     }

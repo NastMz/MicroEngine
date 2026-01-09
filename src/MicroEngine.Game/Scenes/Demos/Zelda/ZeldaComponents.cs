@@ -122,3 +122,53 @@ public struct ProjectileComponent : IComponent
     /// </summary>
     public float LifeTime;
 }
+
+/// <summary>
+/// Component storing the tilemap collision data for navigation.
+/// </summary>
+public struct MapComponent : IComponent
+{
+    /// <summary>
+    /// The 2D array of tile types.
+    /// </summary>
+    public int[,] Tiles;
+
+    /// <summary>
+    /// Width of the map in tiles.
+    /// </summary>
+    public int Width;
+
+    /// <summary>
+    /// Height of the map in tiles.
+    /// </summary>
+    public int Height;
+
+    /// <summary>
+    /// Checks if a tile coordinate is passable.
+    /// </summary>
+    public readonly bool IsPassable(int tx, int ty)
+    {
+        if (tx < 0 || tx >= Width || ty < 0 || ty >= Height)
+        {
+            return false;
+        }
+        // In this demo, tile type 0 is passable (ground)
+        return Tiles[ty, tx] == ZeldaConstants.TILE_ID_FLOOR_STONE_VAR1;
+    }
+}
+
+/// <summary>
+/// Component storing audio clip references for an entity.
+/// </summary>
+public struct AudioComponent : IComponent
+{
+    /// <summary>
+    /// Clip played when the entity attacks.
+    /// </summary>
+    public MicroEngine.Core.Resources.IAudioClip? AttackClip;
+
+    /// <summary>
+    /// Clip played when the entity takes damage.
+    /// </summary>
+    public MicroEngine.Core.Resources.IAudioClip? HitClip;
+}

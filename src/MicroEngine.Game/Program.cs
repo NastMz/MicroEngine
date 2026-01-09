@@ -104,6 +104,14 @@ internal static class Program
                 return new PhysicsBackendSystem(backend);
             });
 
+            // Register Game Systems
+            services.AddTransient<MicroEngine.Game.Scenes.Demos.Zelda.Systems.AnimationSystem>();
+            services.AddTransient<MicroEngine.Game.Scenes.Demos.Zelda.Systems.RenderSystem>();
+            services.AddTransient<MicroEngine.Game.Scenes.Demos.Zelda.Systems.CombatSystem>();
+            services.AddTransient<MicroEngine.Game.Scenes.Demos.Zelda.Systems.PlayerSystem>();
+            services.AddTransient<MicroEngine.Game.Scenes.Demos.Zelda.Systems.EnemyAISystem>();
+            services.AddTransient<MicroEngine.Game.Scenes.Demos.Zelda.Systems.AudioSystem>();
+
             // Build the provider
             var serviceProvider = services.BuildServiceProvider();
 

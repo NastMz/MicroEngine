@@ -5,6 +5,16 @@ All notable changes to MicroEngine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.1] - 2026-01-02
+
+### Changed
+
+-   **Zelda Demo Refactoring**: Centralized all magic numbers and strings into `ZeldaConstants.cs`.
+    -   Refactored `ZeldaScene.cs`, `CombatSystem.cs`, `PlayerSystem.cs`, `EnemyAISystem.cs`, and `ZeldaComponents.cs`.
+    -   Added constants for asset paths, tile IDs, physics values, UI layout, and logging tags.
+-   **ZeldaScene Stability**: Fixed invalid context access in `OnRender` and added `_window` field for dynamic layout.
+-   **Documentation**: Updated Roadmap and Demo documentation to reflect refactoring.
+
 ## [0.14.0] - 2026-01-02
 
 ### Added

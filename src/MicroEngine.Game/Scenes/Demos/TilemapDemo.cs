@@ -370,18 +370,18 @@ public sealed class TilemapDemo : Scene
         layout.DrawText(_renderer, "Tile Types:", 14, legendColor)
               .AddSpacing(5);
 
-        // Helper method to draw legend item
-        void DrawLegendItem(int tileId, string name)
-        {
-            _renderer.DrawRectangle(new Vector2(LEGEND_X, layout.CurrentY), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(tileId));
-            _renderer.DrawText(name, new Vector2(LEGEND_X + BOX_SIZE + 8, layout.CurrentY + 2), 12, Color.White);
-            layout.AddSpacing(LINE_HEIGHT);
-        }
+        DrawLegendItem(ref layout, TILE_GRASS, "Grass");
+        DrawLegendItem(ref layout, TILE_WATER, "Water");
+        DrawLegendItem(ref layout, TILE_DIRT, "Dirt");
+        DrawLegendItem(ref layout, TILE_STONE, "Stone");
 
-        DrawLegendItem(TILE_GRASS, "Grass");
-        DrawLegendItem(TILE_WATER, "Water");
-        DrawLegendItem(TILE_DIRT, "Dirt");
-        DrawLegendItem(TILE_STONE, "Stone");
+        // Helper method to draw legend item
+        void DrawLegendItem(ref TextLayoutHelper l, int tileId, string name)
+        {
+            _renderer.DrawRectangle(new Vector2(LEGEND_X, l.CurrentY), new Vector2(BOX_SIZE, BOX_SIZE), GetTileColor(tileId));
+            _renderer.DrawText(name, new Vector2(LEGEND_X + BOX_SIZE + 8, l.CurrentY + 2), 12, Color.White);
+            l.AddSpacing(LINE_HEIGHT);
+        }
     }
 }
 
