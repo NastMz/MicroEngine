@@ -8,7 +8,7 @@
 
 ## Context and problem
 
-The repository contains a prototype with useful lessons. Treating existing implementations
+The repository originally contained a prototype with useful lessons. Treating existing implementations
 as mandatory would constrain an independently designed general-purpose 2D framework.
 
 ## Alternatives considered
@@ -37,3 +37,8 @@ This record does not approve any technical architecture from prior agent proposa
 Requirements and consumer experiences precede technical selection. Historical tests/demos
 do not prove the new engine. Greenfield does not require rewriting suitable implementations
 by dogma, nor migrating them automatically. New implementation needs separate authorization.
+
+## Transition implementation
+
+The owner approved active-tree retirement on 2026-10-12. The prototype is preserved
+at `legacy-final`; see [history](../history.md). This does not approve technical architecture.

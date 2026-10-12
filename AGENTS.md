@@ -6,9 +6,9 @@ Repository context must be sufficient without previous chats or agent memory.
 ## Current authorization and status
 
 - The next version is a greenfield, general-purpose C#/.NET 2D framework.
-- Existing source, demos, tests and architecture documents describe the historical prototype.
-- The current phase authorizes documentation only. Do not implement, migrate, delete,
-  restructure or change engine code, dependencies or CI without explicit authorization.
+- The prototype is retired from the active tree and preserved at `legacy-final`; read docs/engineering/history.md.
+- Repository transition was approved and completed. No new engine implementation,
+  dependencies or CI are authorized without explicit scope and approved contracts.
 - ECS, scenes, DI, storage, renderers and dependencies are not approved technical choices.
 - An agent recommendation is a proposal, not an accepted decision.
 

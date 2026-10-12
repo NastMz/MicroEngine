@@ -2,44 +2,30 @@
 
 ## Read and establish scope
 
-1. Read [the index](README.md), [manifesto](manifesto.md) and [requirements](requirements.md).
-2. Read [accepted decisions](decisions/README.md); distinguish proposals from approval.
-3. Check [current work](roadmap.md#current-work), implementation evidence and open questions.
-4. Identify authorized work and affected IDs. Current authorization is documentation only.
+1. Read [index](README.md), [manifesto](manifesto.md) and [requirements](requirements.md).
+2. Read [accepted decisions](decisions/README.md), [roadmap](roadmap.md) and approval evidence.
+3. Identify authorized work and affected IDs. Repository transition is approved;
+   new engine implementation still needs approved scope and contracts.
 
-Previous chats, agent memory and installed skills are not prerequisites.
-Root CONTRIBUTING.md describes prototype conventions; this guide covers the new direction.
+No previous chat or external memory is required. [History](history.md) explains access
+to the retired prototype; do not restore it over active work by default.
 
 ## Propose and implement
 
-Use the [ADR template](templates/adr.md) for significant architectural choices and request
-explicit owner approval. Use the [capability template](templates/capability.md) for concrete
-behavior. Neither is required for a typo or small clarification.
+Use the [ADR template](templates/adr.md) for significant decisions and the
+[capability template](templates/capability.md) for concrete behavior. Do not require
+these for typos. Keep genre rules in consumers and test public behavior/integration.
+Update affected records rather than creating duplicate trackers.
 
-When implementation is authorized, test public behavior and relevant integration,
-keep genre rules in consumers and update affected records. External examples consume
-public APIs without engine internals. Do not duplicate task trackers.
+## Checks
 
-## Existing checks — prototype only
+No greenfield build/test runner exists. Record commands when projects are approved and
+created. Historical prototype workflows are available via Git history only.
+For documentation, read back changed files, check relative links, status consistency
+and `git diff --check`. Inspect untracked files explicitly.
 
-Existing CI uses .NET 9 and these commands from the repository root:
+## Close work
 
-~~~sh
-dotnet restore
-dotnet build --configuration Release --no-restore
-dotnet test --configuration Release --no-build --verbosity normal
-~~~
-
-Source: [build workflow](../../.github/workflows/build.yml).
-Commands restore dependencies and generate artifacts; run only within authorized scope.
-They were not run for this documentary foundation. Success does not verify greenfield
-capabilities. New runners remain undecided until new projects exist.
-
-For documentation, read back files, check relative links and approval/status consistency,
-and run git diff --check. Inspect untracked files explicitly because diff omits them.
-
-## Close the work
-
-Report affected IDs/files, observed checks, limitations, delivery state and next action.
-Follow the [document policy](document-policy.md). Commit/push/PR require authorization;
+Report actual evidence, affected IDs, failed/skipped checks and next work. Follow
+[document policy](document-policy.md). Commit/push/PR need applicable authorization;
 use Conventional Commits without AI attribution.

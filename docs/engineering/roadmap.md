@@ -5,12 +5,12 @@ technical design and engine construction are not yet authorized.
 
 ## Current work
 
-The documentary foundation is authored for owner review. Creation does not approve
-all proposed conventions or technical choices. No greenfield capability is implemented
-or verified; the existing engine is the historical prototype.
+The owner approved repository transition on 2026-10-12. The prototype is preserved
+at `legacy-final` and retired from the active tree. No new engine exists. See [history](history.md).
 
-Next action: review this foundation, choose a bounded discovery milestone and resolve
-only the decisions it requires. Do not infer runtime implementation authorization.
+Next action: design minimal external-consumer startup/run/shutdown, including partial
+initialization failure. Approve platform scope, ownership/errors and integration
+acceptance before selecting a backend or creating projects. ECS and scenes are not prerequisites.
 
 ## Scenario candidates
 
