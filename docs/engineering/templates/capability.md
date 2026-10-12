@@ -1,0 +1,39 @@
+# CAP-NNN: Capability title
+
+Create under docs/engineering/capabilities/ only for a concrete capability.
+
+- Proposal status: proposed | investigating | approved | deferred | rejected
+- Delivery status: not-started | in-progress | implemented | verified
+- Approval: person/date/evidence, or pending
+- Requirements and decisions: linked IDs
+- Implementation and verification: links/evidence, or none
+
+## Problem, responsibilities and limits
+
+Describe the consumer need, owned responsibilities, exclusions and game-owned behavior.
+
+## Expected behavior and use cases
+
+Specify observable behavior and examples. Label API sketches as conceptual proposals;
+separate approved behavior, implemented behavior and open questions.
+
+## Public contracts, configuration and extensibility
+
+Describe inputs, outputs, ordering, ownership and extension points without prematurely
+fixing classes or dependencies. Link the actual API once implemented.
+
+## Invariants and errors
+
+Define lifecycle, invalid inputs, failure behavior, cleanup and diagnostics.
+Include threading and performance constraints only when justified.
+
+## Dependencies, tests and acceptance
+
+Link dependent requirements/capabilities. List observable acceptance cases, unit and
+integration checks and external-consumer scenarios. Record commands, environment,
+outcomes and limitations; implementation is not verification.
+
+## Evolution and open questions
+
+Record material scope changes and consumer impact. Re-establish affected verification
+evidence after relevant changes.

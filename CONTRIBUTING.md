@@ -1,3 +1,9 @@
+## Greenfield contribution entry point
+
+For the next version, start with the [engineering contribution guide](docs/engineering/contributing.md).
+The guidelines below describe the historical prototype, not approved greenfield architecture.
+Current authorization is documentation only.
+
 # Contributing to MicroEngine
 
 Thank you for your interest in contributing to MicroEngine!

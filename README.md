@@ -1,4 +1,11 @@
-﻿# MicroEngine  
+## Greenfield direction
+
+The next version is a general-purpose C#/.NET 2D framework designed independently of
+the historical prototype below. Start with the [engineering foundation](docs/engineering/README.md)
+for confirmed intent, decisions, open questions and current work. Current authorization
+is documentation only; no prior technical proposal is approved by this notice.
+
+# MicroEngine
 *A lightweight, modular game engine built with C# (2D-focused, 3D-capable).*
 
 **Version:** v0.13.0 (Dev)
