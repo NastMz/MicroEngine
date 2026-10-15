@@ -39,4 +39,4 @@ architecture or publication. Current ready tasks prepare design; no engine codin
 
 ## H0 authorized development
 
-ADR-0002 delegates technical H0 choices. See toolchain.md for exact restore/build/test commands and current-state.md for observed checks/limitations. Hosting and contract tests now exist; the external probe is delivered for manual H0 validation, not a manually accepted milestone. Do not use historical planning-only statements above as current execution authority.
+ADR-0002 delegates technical H0 choices. See toolchain.md for exact restore/build/test commands and current-state.md for observed checks/limitations. Hosting and contract tests now exist; the external probe/H0 was accepted by the owner on2026-10-15 based on existing evidence; no manual rerun is required. Do not use historical planning-only statements above as current execution authority.

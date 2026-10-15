@@ -1,6 +1,6 @@
 # H0 lifecycle execution record
 Branch: codex/h0-lifecycle; baseline: 75a5eef1770f31235c69f8dcc9019de530226886.
-Local uncommitted delivery; no remote/main integration. Canonical task state: engineering backlog. Runner: dotnet test.
+Original delivery was uncommitted; implementation committed 0771a8344861e3c1d76f7a4285869cec1ba60220 after explicit owner authorization2026-10-15; no remote/main integration. Canonical task state: engineering backlog. Runner: dotnet test.
 
 ## Specs
 S1: "H0 será una ejecución headless." "La ejecución inicial será secuencial, con afinidad de hilo explícita." "Las sesiones de ejecución serán de un solo uso." Full constraints: L1 and ADR-0002.
@@ -11,7 +11,7 @@ S3: "Ejecuta las pruebas, registra evidencias y continúa con las tareas indepen
 T1: S1-S2; inline documentary preparation; independent review required.
 T2: S3; inline ME-004 implementation, test-first.
 T3: S3; delegated independent verification, then inline delivery evidence.
-Commit authorization: not granted by repository policy; baseline/paths evidence instead. No competing task states here.
+Historical commit authority absent during initial delivery; owner granted local commits2026-10-15. Implementation identity:0771a8344861e3c1d76f7a4285869cec1ba60220. No competing task states here.
 
 ## Log
 L1: Original owner request (verbatim):
@@ -79,3 +79,5 @@ L6 (2026-10-13): user said "continua". Independent verification initial PASS was
 L7 (2026-10-13): targeted independent recheck15passed, candidate manifestunchanged, no blockers. Final parent31/31 spotcheck exit0 and manual command sequence outputs/exits0/1/0/2 verified aggregateexit0. ME-004 completed in canonical backlog, H0 awaits owner manualvalidation. No independentreadytask. Risk: item5 (test toolchain/dependencies), item4 (explicit thread-affinity contract/rejection). MainHEAD unchanged, no remote/commits; preserving previous localchanges. Repository summaries substitute for unavailable memory mutation, not falsely reported saved.
 
 L8 (2026-10-15): owner correction "No fuerces la version de .net porque estas pidiendome una versiona anterior a la que tengo"; SDK inventory10.0.402 installed/10.0.401 absent. RED exact-pin dotnet--version failure reproduced. GREEN global.json minimum10.0.100/latestFeature/allowPrereleasefalse selects10.0.402; restore+31 tests pass exit0. Only SDK policy/docs changed, no engine/public contract changes. Independent sdk_rollforward_verify narrow check passed; actual SDK10.0.402, three targetsnet10.0, H0 state unchanged. No new backlog horizon/manual approval inferred; previous task state retained.
+
+L9(2026-10-15): owner accepted H0 on existing criteria/evidence and authorized local coherent commits. Source/tests/publicconsumer and crosslinked foundation committed 0771a8344861e3c1d76f7a4285869cec1ba60220 (all10source hashes unchanged,31tests passed immediatelybefore). Acceptance documentation follows separately; no futurecapability approval implied.

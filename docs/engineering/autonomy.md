@@ -64,3 +64,5 @@ that acceptance. Do not invent new scope merely to remain busy.
 ## Policy verification — 2026-10-15
 
 Independent autonomy_policy_verify readback passed after one documentary correction: explicit fourth H0 invalid-scenario reproduction command and automated-evidence row. All original behavior criteria retained. Six changed-document link checks found no missing targets; git diff --check passed. All10 delivered source/config hashes matched; no engine/test changes or coverage reduction, so no redundant runtime rerun. H0 remains awaiting owner product acceptance; backlog ME-001..ME-004 completed, no eligible independent task. CodeGraph initialization added derived index state only, not product scope or authority.
+
+Subsequent owner decision2026-10-15: H0 was explicitly accepted against existing evidence/criteria. Earlier pending-acceptance references in dated verification notes are historical, not an active H0 blocker. This does not accept any future milestone.

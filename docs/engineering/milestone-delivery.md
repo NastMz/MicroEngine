@@ -38,3 +38,5 @@ Owner policy clarification, 2026-10-15: autonomy by default, intervention by exc
 H0's four console scenarios are already automated; their repetition provides no new functional
 coverage on the same environment. The remaining owner decision is whether the delivered scope
 and limitations satisfy the product milestone. Do not accept it on the owner's behalf.
+
+Subsequent owner decision2026-10-15: H0 was explicitly accepted against existing evidence/criteria. Earlier pending-acceptance references in dated verification notes are historical, not an active H0 blocker. This does not accept any future milestone.

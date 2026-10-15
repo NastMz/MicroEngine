@@ -1,6 +1,6 @@
 # CAP-001 — H0 headless lifecycle contract
 
-Revision: H0-1.1, 2026-10-13; H0-1 initial finalization 2026-10-12. Status: approved delegated technical specification; implemented and automatically verified. Manual milestone acceptance pending.
+Revision: H0-1.1, 2026-10-13; H0-1 initial finalization 2026-10-12. Status: approved delegated technical specification; implemented and automatically verified. Owner H0 acceptance recorded2026-10-15; no scope expansion.
 Authority: [ADR-0002](../decisions/0002-initial-execution-scope.md), owner-approved scope and delegated technical choices. FR-001, NFR-001/NFR-002/NFR-004.
 
 ## Scope and evolution
@@ -77,3 +77,5 @@ H0-1.1 correction: independent targeted authority review confirmed argument-vali
 ## Implemented evidence — 2026-10-13
 
 [Hosting library](../../../engine/Hosting/Hosting.csproj), [public contract tests](../../../checks/Hosting.Contracts/LifecycleTests.cs), [independent consumer](../../../examples/LifecycleProbe/Program.cs). Parent full public suite31/31; independent initial scratch26+3probes passed; targeted correction scratch15/15 passed. Native-frame cases T07/T13 remain N/A. No scheduler/timing guarantee. Source candidate manifest after correction: BB537B427946017C372596984FA6D9DCCC890997ADB7C28F00EB3A1852C42870; baseline75a5eef1770f31235c69f8dcc9019de530226886, uncommitted codex/h0-lifecycle. [H0 manual packet](../milestones/H0.md).
+
+H0 owner acceptance2026-10-15 references delivered criteria/evidence and implementation commit 0771a8344861e3c1d76f7a4285869cec1ba60220. This does not approve CAP-002 or H1 implementation.

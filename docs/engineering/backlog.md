@@ -13,7 +13,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-003 | decision preparation | P0 | completed | ME-001, ME-002 | Below |
 | ME-004 | implementation | P1 | completed | ME-003; owner approval | Below |
 
-ME-001/002/003 preparation and ME-004 automated construction are complete. No independent ready task remains; H0 awaits manual validation. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
+ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next bounded horizon is H1 candidate preparation, not implementation. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
 
 ## ME-001 — Investigate initial platform and delivery constraints
@@ -118,6 +118,8 @@ Select from the current table; initial planning selection was ME-001.
 - 2026-10-13 closure: A1 separate public-only projects/net10, no production packages/legacy: pass. A2 public traces incl origin-classified argument misuse:31 passed/0failed/0skipped; native T07/T13 N/A. A3 success/failure/stopped/unknown exact output and exits0/1/0/2: pass in agent commands and tests. A4 SDK/build/restore confirmed, serial checks recorded; VSTest sandbox timeout and approved outside-sandbox success not conflated. A5 docs/source/tests synchronized, H0 delivery packet tested; manual acceptance pending.
 - Independent h0_final_verify initial scratch source review26+3probes, then targeted authority correction required argument origin classification. One correction batch RED4/31 -> GREEN31/31; targeted scratch15/15 confirmed resolved, no remaining blockers, four public types/no friend assembly. Parent full31/31 spotcheck repeated afterward. RDD globaloff exit0; no native review/mode change.
 - Change locator: baseline75a5eef1770f31235c69f8dcc9019de530226886; uncommitted codex/h0-lifecycle; source manifestBB537B427946017C372596984FA6D9DCCC890997ADB7C28F00EB3A1852C42870. Code/check surfaces above + capabilities.md current CAP-001 evidence only; no future scope changed. User .gitignore/preexisting documentary changes preserved. No commit/remote/main integration. Evidence: milestones/H0.md, toolchain.md, lifecycle H0-1.1 and recovery log. Next eligible tasks:none; owner manual H0 validation is next gate.
+
+- 2026-10-15: owner explicitly accepted H0 based on delivered evidence/criteria; milestone verified, no scope expansion or asserted manual rerun. ME-004 remains completed. Implementation/test/consumer/contracts commit:0771a8344861e3c1d76f7a4285869cec1ba60220; precommit SDK10.0.402 restore+31tests pass,10source hashes matched, no unrelated .gitignore/.atl/.codegraph staged.
 
 <details><summary>Historical blocked packet (before owner approval)</summary>
 

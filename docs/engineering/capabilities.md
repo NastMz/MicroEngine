@@ -5,7 +5,7 @@ CAP-001 has an approved/implemented bounded H0 slice; other entries remain candi
 
 | ID | Capability | General responsibility / exclusions | Horizon |
 | --- | --- | --- | --- |
-| CAP-001 | Application lifecycle | Initialize/run/stop/cleanup; no game rules | H0 headless implemented/automatically verified; [spec](specs/lifecycle.md); manual milestone pending |
+| CAP-001 | Application lifecycle | Initialize/run/stop/cleanup; no game rules | H0 headless implemented/automatically verified; [spec](specs/lifecycle.md); owner accepted2026-10-15 |
 | CAP-002 | Time and execution phases | Observable ordering, pause and deltas; no turn rules | Next candidate; [spec](specs/frame-execution.md) proposed |
 | CAP-003 | Input actions | Digital/analog intent from devices; no character controls | First playable discovery |
 | CAP-004 | 2D presentation | Sprites, text, cameras, ordering; no genre HUD | First playable discovery |

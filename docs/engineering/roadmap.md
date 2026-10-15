@@ -1,18 +1,18 @@
 # Evolutionary roadmap
 
-Current horizon: implement the owner-approved H0 external headless lifecycle. Approval is scoped in ADR-0002, not future engine architecture. The prototype remains at [legacy-final](history.md).
+H0 is accepted by the owner (2026-10-15). Current horizon: prepare the next H1 candidate through bounded specifications/investigations and task packets; no future engine construction is approved. The prototype remains at [legacy-final](history.md).
 
 ## Current executable horizon
 
-[Backlog](backlog.md) is the only task-state source. ME-001/002/003 preparation is complete; ME-004 automated implementation is completed; H0 manual validation is pending. See [current state](current-state.md).
+[Backlog](backlog.md) is the only task-state source. ME-001/002/003 preparation is complete; ME-004 automated implementation is completed; H0 owner acceptance is recorded; H1 candidate preparation is authorized by the current owner request. See [current state](current-state.md).
 An authorized future development session follows [execution](execution.md) and may continue
-independent ready work. No background scheduler or engine implementation is installed.
+independent ready work. No background scheduler is installed; H0 is implemented, not a playable game.
 
 ## Milestones and candidate validation scenarios
 
 | ID | Scenario/outcome | Candidate capabilities | Exit criteria to refine | Status |
 | --- | --- | --- | --- | --- |
-| H0 | External application starts/runs/stops safely | CAP-001; CAP-002 only if needed | Approved lifecycle/failure traces, runnable public consumer, integration checks | Awaiting manual H0 validation |
+| H0 | External application starts/runs/stops safely | CAP-001 headless slice only | Lifecycle/failure traces, runnable public consumer and31 tests; explicit owner acceptance | Verified / owner accepted2026-10-15 |
 | H1 | Simple Mario-inspired platformer | CAP-003/004/005/006/007/008 | Movement, obstacles, jump and animation in an external game; game owns jump rules; manual playability | Candidate |
 | H2 | Zelda-inspired top-down adventure | CAP-009/010 plus refined presentation/input | Exploration and transitions without engine-owned combat/progression; manual interaction | Candidate |
 | H3 | Pokemon-inspired RPG | CAP-012/013 plus validated shared capabilities | Exploration, menus and turn interaction; game owns battle/turn rules; manual flow | Candidate |

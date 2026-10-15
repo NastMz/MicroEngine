@@ -27,7 +27,7 @@ explicit delegation is recorded. A generated recommendation does not approve its
 ## AI-first development entry
 
 Read [backlog](backlog.md), [execution protocol](execution.md) and [autonomy policy](autonomy.md).
-Ready packets are self-contained; ME-001/002/003 preparation is complete; ME-004 is completed with evidence in the backlog; H0 manual validation is pending.
+Ready packets are self-contained; ME-001/002/003 preparation is complete; ME-004 is completed with evidence in the backlog; H0 owner acceptance was recorded2026-10-15; only H1 preparation is authorized next.
 [Capabilities](capabilities.md) describes general needs without genre modules.
 [Lifecycle](specs/lifecycle.md) is the approved delegated H0-1 contract. [Frame execution](specs/frame-execution.md) remains proposed/outside H0. [Toolchain](toolchain.md) records versions and checks. Use [task template](templates/task.md),
 [manual milestone delivery](milestone-delivery.md), [findings intake](findings.md) and
@@ -35,4 +35,4 @@ Ready packets are self-contained; ME-001/002/003 preparation is complete; ME-004
 
 ## Validate the current increment
 
-[H0 delivery packet](milestones/H0.md) contains tested commands, expected traces/exits and owner checklist. Current capability/state is in current-state.md. No later engine task is implicitly prepared by this delivery.
+[H0 delivery packet](milestones/H0.md) contains tested commands, expected traces/exits and the owner acceptance record. Current capability/state is in current-state.md. No later engine task is implicitly prepared by this delivery.
