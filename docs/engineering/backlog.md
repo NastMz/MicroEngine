@@ -16,8 +16,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-006 | investigation | P0 | completed | H0 acceptance | Below |
 | ME-007 | decision preparation | P0 | completed | ME-005, ME-006 | Below |
 | ME-008 | specification | P1 | completed | ME-007; reviewed delegated ADR-0003 approval | Below |
-| ME-009 | implementation | P1 | ready | ME-008 | Below |
-| ME-010 | implementation | P1 | pending | ME-009 | Below |
+| ME-009 | implementation | P1 | completed | ME-008 | Below |
+| ME-010 | implementation | P1 | in-progress | ME-009 | Below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next bounded horizon is H1 candidate preparation, not implementation. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -220,3 +220,9 @@ Authority: autonomy.md, accepted ADR-0003/H1-R1; FR-001/002,NFR-001/002. Ready a
 Authority same ADR/spec. Depends on completed ME-009. Scope engine/Desktop/*.cs,Desktop.csproj; checks/Desktop.Contracts/*.cs,csproj; examples/FirstPlayable/*.cs,csproj; docs/engineering/{milestones/H1.md,current-state.md,toolchain.md,capabilities.md,backlog.md,roadmap.md,findings.md}; odd/tasks/technical-autonomy-h1.md. Exact dependency Raylib-cs8.1.0, native raylib6 verification pending. Acceptance native adapter seam failure/thread/reservation/lifetime/focus tests, public consumer --smoke/--fail-update/invalid args, actual Windows native start/stop + package/runtime/license/hash evidence, unchanged H0/Loop regressions and independent implementation verification. Commands serial restore/test Desktop.Contracts, build FirstPlayable, dotnet run --project examples/FirstPlayable -c Release --no-build -- --smoke 60 and --smoke 60 --fail-update; invalid argument exit2. Expected stopped0/failed1/usage2, no hanging process. Native unavailable means blocked applicable proof, never fabricated pass. Subjective feel/readability remains owner gate, not automated technical acceptance. Risk native dependency/global affinity/public contract; independent verifier. Rollback only new Desktop/consumer/seam tests/docs, no destructive unrelated edits. Pending until ME-009 evidence.
 
 ME-008 closure2026-10-15: independent design PASS after one correction batch and targeted recheck. Accepted ADR-0003/H1-R1 by delegated technical authority; exact paths/signatures/runner/failure/native evidence requirements documented. Runtime N/A at design gate, no implementation success inferred.
+
+ME-009 claim2026-10-15: ready -> in-progress, Codex root, baseline4d71b6e. H1-R1 exact packet; parent inline writer, independent verifier after own RED/GREEN.
+
+ME-009 own verification2026-10-15: RED20failed/1passed runnable tests against stubs; GREEN21passed/0failed/0skipped, H031passed/0failed/0skipped. Serial Release commands/toolchain, SDK10.0.402. Managed source/model only, no native reference. Independent managed_runtime_verify scratch review underway, closure pending.
+
+ME-009 closure2026-10-15: independent managed_runtime_verify scratch21/21 plus nested misuse/end/dispose probe22/22 PASS, no blockers/native dependencies; parent persisted probe and reran22/22. H031/31 unchanged. ME-010 pending -> ready after managed closure -> in-progress claimed Codex root baseline4d71b6e plus forthcoming managed commit; packet/surfaces fixed above.

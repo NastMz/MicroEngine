@@ -14,7 +14,7 @@ S7: "Sea imprescindible evaluar manualmente una experiencia subjetiva, como juga
 ## Tasks
 T1 S1/S2/S6: inline completed, independent technical_authority_review PASS after original blocker correction/recheck; runtime N/A.
 T2 S2/S3/S4: inline completed, technical_authority_review design PASS, ADR-0003/H1-R1 accepted and ME-008 completed; runtime evidence pending implementation.
-T3 S3/S4: inline fixed-step/input/presentation general capability with public tests; pending.
+T3 S3/S4: inline completed;22managed tests/31H0 pass, independent managed_runtime_verify scratchPASS; no native dependencies.
 T4 S3/S4/S7: inline private native adapter and external tracer with tests/smoke; pending.
 T5 S5/S6/S7: inline evidence, next bounded horizon and local ledger; pending.
 
@@ -25,3 +25,7 @@ L2 — Baseline clean for task except pre-existing .gitignore changes and genera
 L3 — Policy review: technical_authority_review PASS after bounded correction of active old authority claims; historical dated evidence preserved. Runtime RED N/A for documentary policy; independent structural72links zero missing, diff-check pass. Local commit follows; RDD off unchanged.
 
 L4 — Governance commit81d2d2d; independent design four original blockers corrected in one batch, targeted PASS. ADR-0003 and H1-R1 approved by delegated technical authority. ME-009 ready, ME-010 pending managed proof; no native installation yet.
+
+L5 — ME-009 own RED20/21failed -> GREEN21/21, H031/31. Stub failures were runnable NotImplemented assertions, not compile errors. Independent scratch verification requested; no task closure inferred before verdict.
+
+L6 — Managed verification scratch21+1 targeted probe passed, no blockers; writer persisted nested diagnostic probe, parent22/22. ME-009 completed; ME-010 claimed after readiness.

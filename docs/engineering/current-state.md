@@ -18,3 +18,7 @@ H1 platformer remains a candidate roadmap milestone. Current owner delegation au
 Local commits authorized; no remote/main integration. Existing .gitignore edits, .atl and generated .codegraph excluded/preserved. RDD globaloff observed, not changed. Persistent memory unavailable; repository evidence is authoritative.
 
 H0 acceptance commit: c4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc. Next proposal: [ADR-0003](decisions/0003-next-validation-tracer.md), graphical H1.0 versus timing-first. Technical scope/dependency decisions may now be resolved under delegation; subjective product acceptance remains pending; backend/signatures are unselected.
+
+## Technical autonomy / managed H1-R1
+
+Owner technical delegation active; ADR-0003/H1-R1 accepted after independent design review. New engine/Loop fixed-step/input/primitive presentation contract and pure FirstPlayable.Model implemented,22managed tests and31H0 tests pass; independent scratch verification PASS. Desktop/native construction now underway, not verified. H1.0 subjective product acceptance remains pending; full H1 unimplemented.
