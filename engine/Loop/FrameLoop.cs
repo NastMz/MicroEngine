@@ -22,7 +22,7 @@ public static class FrameLoop
             while (!control.Stopped)
             {
                 var frame = platform!.Poll();
-                if (frame.CloseRequested) { control.RequestStop(); break; }
+                if (control.Stopped || frame.CloseRequested) { control.RequestStop(); break; }
                 if (frame.Input is null || frame.Elapsed < TimeSpan.Zero)
                     throw new InvalidOperationException("Invalid platform frame input or elapsed time.");
                 long discarded = 0;
@@ -57,8 +57,12 @@ public static class FrameLoop
                 Exception? drawFailure = null;
                 try
                 {
-                    var canvas = platform.Canvas ?? throw new InvalidOperationException("Platform returned a null canvas.");
-                    draw(canvas, new PresentationFrame((double)accumulator / options.Step.Ticks, TimeSpan.FromTicks(discarded), control));
+                    if (!control.Stopped)
+                    {
+                        var canvas = platform.Canvas ?? throw new InvalidOperationException("Platform returned a null canvas.");
+                        if (!control.Stopped)
+                            draw(canvas, new PresentationFrame((double)accumulator / options.Step.Ticks, TimeSpan.FromTicks(discarded), control));
+                    }
                 }
                 catch (Exception error) { drawFailure = error; }
                 try { platform.End(); }

@@ -19,10 +19,11 @@ public sealed class LoopTests
         private readonly Queue<PlatformFrame> _frames = new(frames);
         public List<string> Trace { get; } = [];
         public Exception? BeginError, EndError, DisposeError, CanvasError;
+        public Action? OnBegin, OnCanvas;
         public bool NullCanvas;
-        public ICanvas Canvas => CanvasError is not null ? throw CanvasError : NullCanvas ? null! : this;
+        public ICanvas Canvas { get { OnCanvas?.Invoke(); return CanvasError is not null ? throw CanvasError : NullCanvas ? null! : this; } }
         public PlatformFrame Poll() { Trace.Add("poll"); return _frames.Count > 0 ? _frames.Dequeue() : new(TimeSpan.Zero, Input(), CloseRequested: true); }
-        public void Begin() { Trace.Add("begin"); if (BeginError is not null) throw BeginError; }
+        public void Begin() { Trace.Add("begin"); OnBegin?.Invoke(); if (BeginError is not null) throw BeginError; }
         public void End() { Trace.Add("end"); if (EndError is not null) throw EndError; }
         public void Dispose() { Trace.Add("dispose"); if (DisposeError is not null) throw DisposeError; }
         public void Clear(Rgba color) { }
@@ -74,6 +75,21 @@ public sealed class LoopTests
         Assert.AreEqual(ExecutionOutcome.Stopped, result.Outcome);
         Assert.AreEqual(phase == "update" ? 1 : 2, ticks); Assert.AreEqual(phase == "update" ? 0 : 1, draws);
         Assert.AreEqual(draws, p.Trace.Count(x => x == "end"));
+    }
+
+    [TestMethod]
+    [DataRow("begin")]
+    [DataRow("canvas")]
+    public void StopInsidePlatformPresentationBoundarySuppressesConsumerDraw(string phase)
+    {
+        var p = new Platform(Frame(0), Frame(0)); FrameControl? control = null; var draws = 0;
+        Action stop = () => control?.RequestStop();
+        if (phase == "begin") p.OnBegin = stop; else p.OnCanvas = stop;
+        var report = FrameLoop.Run(() => p, Options(), _ => { }, (_, frame) => { control = frame.Control; draws++; });
+        Assert.AreEqual(ExecutionOutcome.Stopped, report.Outcome);
+        Assert.AreEqual(1, draws);
+        Assert.AreEqual(2, p.Trace.Count(x => x == "end"));
+        Assert.AreEqual("dispose", p.Trace[^1]);
     }
 
     [TestMethod]

@@ -15,8 +15,8 @@ S7: "Sea imprescindible evaluar manualmente una experiencia subjetiva, como juga
 T1 S1/S2/S6: inline completed, independent technical_authority_review PASS after original blocker correction/recheck; runtime N/A.
 T2 S2/S3/S4: inline completed, technical_authority_review design PASS, ADR-0003/H1-R1 accepted and ME-008 completed; runtime evidence pending implementation.
 T3 S3/S4: inline completed;22managed tests/31H0 pass, independent managed_runtime_verify scratchPASS; no native dependencies.
-T4 S3/S4/S7: inline private native adapter and external tracer with tests/smoke; pending.
-T5 S5/S6/S7: inline evidence, next bounded horizon and local ledger; pending.
+T4 S3/S4/S7: inline completed;9native seam tests + actual smoke/failure/CLI harness, independent desktop_tracer_verify scratchPASS, H1.0 technically accepted; subjective gate pending.
+T5 S5/S6/S7: inline evidence/next horizon synchronized; final regression/commit ledger follows. Current functional handoff requires subjective experience; no technical owner approval requested.
 
 ## Log
 L1 — Owner request2026-10-15: broad technical delegation, ADR/contract/dependency/backend/project/refactoring/task/horizon approval, objective technical acceptance and local commits; independent reviews/specifications/tests/evidence/docs mandatory. Human exceptions remain strategic product changes, destructive/external/irreversible actions, subjective experience, reasonably unresolvable blockers or no useful roadmap-aligned work. No remote or main integration. Above S clauses quote the actionable instruction; full authority captured in autonomy policy.
@@ -29,3 +29,7 @@ L4 — Governance commit81d2d2d; independent design four original blockers corre
 L5 — ME-009 own RED20/21failed -> GREEN21/21, H031/31. Stub failures were runnable NotImplemented assertions, not compile errors. Independent scratch verification requested; no task closure inferred before verdict.
 
 L6 — Managed verification scratch21+1 targeted probe passed, no blockers; writer persisted nested diagnostic probe, parent22/22. ME-009 completed; ME-010 claimed after readiness.
+
+L7 — ME-009 commit0dfb2ce. ME-010 RED8/9fail -> GREEN9/9; initial compile warnings not counted RED. Native actual Windows60frames58updates/close exit0, forced update ApplicationException/close exit1, invalid usage2; client-only screenshot inspected. NativeSmoke.ps1 independently repeated in scratch, seven scenariosPASS; package/native provenance hashes independently matched. No native implementation blockers. H1.0 objectively accepted, full H1 and subjective experience not accepted. Next candidates spatial obstacles/animation, not speculative far-roadmap capabilities.
+
+L8 — Separate ME-011/F-008 acceptance defect: platform Begin/Canvas could request stop but draw still ran. Own focusedRED2/2, fixed shared loop checks, GREEN24/24. Independent managed_runtime_verify baseline0dfb2ce scratch reproduced2/2fail, fresh current24/24PASS. No contract relaxation. Parent rebuilt native consumer then NativeSmoke seven scenariosPASS, Desktop9/9,H031/31; current64tests total. Dedicated fix commit precedes native delivery commit. Risk shared public callback ordering, independent targeted proof completed.
