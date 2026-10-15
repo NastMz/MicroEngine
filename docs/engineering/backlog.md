@@ -15,7 +15,9 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-005 | specification | P0 | completed | H0 acceptance | Below |
 | ME-006 | investigation | P0 | completed | H0 acceptance | Below |
 | ME-007 | decision preparation | P0 | completed | ME-005, ME-006 | Below |
-| ME-008 | specification | P1 | pending | ME-007; reviewed delegated ADR-0003 approval | Below |
+| ME-008 | specification | P1 | completed | ME-007; reviewed delegated ADR-0003 approval | Below |
+| ME-009 | implementation | P1 | ready | ME-008 | Below |
+| ME-010 | implementation | P1 | pending | ME-009 | Below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next bounded horizon is H1 candidate preparation, not implementation. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -204,3 +206,17 @@ Record dated transition reason, executor/reviewer, baseline/change locator, chec
 findings under each packet. Preserve past results. Agents may prepare tasks and approve technical contracts through independent review and recorded approval under autonomy.md; code or task completion alone is not approval. Add only concrete next-horizon work; future catalog rows are not tasks.
 
 Delivery ledger2026-10-15: H0 implementation0771a8344861e3c1d76f7a4285869cec1ba60220; acceptance c4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc; ME-005..007 reviewed proposals 7addfd3911aaea67c2170d99736637e7ecf3749c. Historical closure before broader delegation: ME-008 was blocked; reevaluate under current autonomy.md.
+
+## ME-008 current execution packet —2026-10-15
+
+Authority: owner technical delegation/autonomy.md. Pending -> ready after ME-007 completed and authority reevaluation; ready -> in-progress claimed Codex root baseline81d2d2d. Scope: docs/engineering/specs/h1-runtime.md, specs/h1-first-playable.md, decisions/0003-next-validation-tracer.md, toolchain.md, decisions/README.md, backlog.md/current-state.md/roadmap.md and odd/tasks/technical-autonomy-h1.md. Deliver exact H1-R1 signatures/ownership/time/input/failure/package/source/check/rollback packet; no engine writes yet. Acceptance: independent design review then explicit delegated ADR/spec approval, no H0 break or full-H1 acceptance. Checks: source evidence/readback/links/diff-check; runtime N/A until code. Failure: keep construction unready if review blockers remain.
+
+## ME-009 — Fixed-step/input/presentation public runtime
+
+Authority: autonomy.md, accepted ADR-0003/H1-R1; FR-001/002,NFR-001/002. Ready after ME-008 independent design PASS. Scope new engine/Loop/*.cs, Loop.csproj; examples/FirstPlayable.Model/*.cs, csproj; checks/Loop.Contracts/*.cs,csproj; own backlog/evidence and H1/current-state/capabilities docs. No H0 source changes or native dependency. Acceptance all approved managed time/input/stop/error/ownership traces and consumer movement/jump/floor tested through public API; headless project graph has no Desktop; H031regressions unchanged. Runner serial restore/test Loop.Contracts and Hosting.Contracts Release from toolchain, test-first RED where deterministic. Risk public API/failure semantics, independent verifier required. Rollback remove only new projects and own docs; preserve user .gitignore. Claim not yet.
+
+## ME-010 — Desktop adapter and external H1.0 tracer
+
+Authority same ADR/spec. Depends on completed ME-009. Scope engine/Desktop/*.cs,Desktop.csproj; checks/Desktop.Contracts/*.cs,csproj; examples/FirstPlayable/*.cs,csproj; docs/engineering/{milestones/H1.md,current-state.md,toolchain.md,capabilities.md,backlog.md,roadmap.md,findings.md}; odd/tasks/technical-autonomy-h1.md. Exact dependency Raylib-cs8.1.0, native raylib6 verification pending. Acceptance native adapter seam failure/thread/reservation/lifetime/focus tests, public consumer --smoke/--fail-update/invalid args, actual Windows native start/stop + package/runtime/license/hash evidence, unchanged H0/Loop regressions and independent implementation verification. Commands serial restore/test Desktop.Contracts, build FirstPlayable, dotnet run --project examples/FirstPlayable -c Release --no-build -- --smoke 60 and --smoke 60 --fail-update; invalid argument exit2. Expected stopped0/failed1/usage2, no hanging process. Native unavailable means blocked applicable proof, never fabricated pass. Subjective feel/readability remains owner gate, not automated technical acceptance. Risk native dependency/global affinity/public contract; independent verifier. Rollback only new Desktop/consumer/seam tests/docs, no destructive unrelated edits. Pending until ME-009 evidence.
+
+ME-008 closure2026-10-15: independent design PASS after one correction batch and targeted recheck. Accepted ADR-0003/H1-R1 by delegated technical authority; exact paths/signatures/runner/failure/native evidence requirements documented. Runtime N/A at design gate, no implementation success inferred.

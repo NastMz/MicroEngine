@@ -1,5 +1,27 @@
 # ADR-0003 — Next validation tracer boundary
 
+Status: accepted2026-10-15 by Codex root under explicit owner technical delegation in [autonomy](../autonomy.md). Independent technical_authority_review recommended approval after corrected H1-R1 design and targeted recheck. This is technical acceptance, not subjective playability acceptance; H0 unchanged.
+
+## Decision
+
+Proceed with bounded graphical H1.0 next rather than headless timing-first/full H1. Implement approved [H1-R1](../specs/h1-runtime.md) with native-independent Loop and consumer-model projects, separate Desktop adapter using Raylib-cs8.1.0/raylib6 candidate assets and external tracer. Exact restore/package/license/build/native evidence remains mandatory before technical completion. No ECS/scenes/audio/assets/solver/multiplatform or distribution promise.
+
+## Alternatives and consequences
+
+[ME-006](../investigations/h1-native-options.md) compares Raylib-cs and SDL3-CS; choose Raylib-cs for the smaller primitive 2D path, accept passive-maintenance and native deployment costs, isolate interop to Desktop. SDL3-CS would require more managed wrapping. Timing-first lowers native risk but postpones integration evidence; full H1 is too broad. Reconsider binding if exact package/load/license checks fail or public native coupling becomes necessary. Backend replacement must preserve/review contracts and regressions.
+
+H1-R1 has explicit time/input/cleanup semantics and a narrow internal native seam. Public FrameApiException has internal construction; Desktop friend access is a deliberate one-way adapter implementation privilege, not a game extension API. Separate pure model avoids native test coupling. Main-thread entry is caller obligation, creating-thread affinity checked; uncertain native cleanup poisons global reservation rather than falsely claiming safe reuse.
+
+## Approval and limits
+
+Owner delegation authorizes technical approval; independent design PASS recorded2026-10-15, runtime N/A at approval. Construction ready only through complete backlog packet. Subjective product evaluation remains human-owned after technical delivery. New distant capability work must follow observed roadmap needs.
+
+## Earlier proposal (historical, authority superseded)
+
+<details><summary>Original proposal and alternatives</summary>
+
+# ADR-0003 — Next validation tracer boundary
+
 Status: proposed. Prepared 2026-10-15 under ME-007; delegated technical review/approval pending.
 This record does not supersede accepted ADR-0002 or alter H0 acceptance.
 
@@ -69,3 +91,5 @@ blanket approval. H0 acceptance and its evidence remain unchanged.
 ## Approval record
 
 Pending independent technical review. Approval may be recorded by the delegated agent under autonomy.md; no subjective product acceptance is implied.
+
+</details>

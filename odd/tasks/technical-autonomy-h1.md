@@ -13,7 +13,7 @@ S7: "Sea imprescindible evaluar manualmente una experiencia subjetiva, como juga
 
 ## Tasks
 T1 S1/S2/S6: inline completed, independent technical_authority_review PASS after original blocker correction/recheck; runtime N/A.
-T2 S2/S3/S4: inline ADR-0003 reevaluation and ME-008 exact reviewed contract/toolchain; pending.
+T2 S2/S3/S4: inline completed, technical_authority_review design PASS, ADR-0003/H1-R1 accepted and ME-008 completed; runtime evidence pending implementation.
 T3 S3/S4: inline fixed-step/input/presentation general capability with public tests; pending.
 T4 S3/S4/S7: inline private native adapter and external tracer with tests/smoke; pending.
 T5 S5/S6/S7: inline evidence, next bounded horizon and local ledger; pending.
@@ -23,3 +23,5 @@ L1 — Owner request2026-10-15: broad technical delegation, ADR/contract/depende
 L2 — Baseline clean for task except pre-existing .gitignore changes and generated .codegraph; preserve both. RDD global off confirmed with elevated read-only query after sandbox access denial. Source H0 mapped with CodeGraph; no changes planned to H0 contracts. Mapping trigger delegated one read-only authority mapper. Parent writes inline; no writer trigger. Forecast exceeds400 authored lines across independently reviewable local units; no PR prepared or remote delivery strategy selected, do not force arbitrary splits by file type.
 
 L3 — Policy review: technical_authority_review PASS after bounded correction of active old authority claims; historical dated evidence preserved. Runtime RED N/A for documentary policy; independent structural72links zero missing, diff-check pass. Local commit follows; RDD off unchanged.
+
+L4 — Governance commit81d2d2d; independent design four original blockers corrected in one batch, targeted PASS. ADR-0003 and H1-R1 approved by delegated technical authority. ME-009 ready, ME-010 pending managed proof; no native installation yet.
