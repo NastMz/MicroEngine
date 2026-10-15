@@ -21,3 +21,5 @@ No ECS/scenes/audio/solver/asset pipeline/animation/packaging/CI. Raylib-cs exis
 Pre-existing .gitignore additions and generated .codegraph remain outside commits. No unrelated edits reverted, no remote operation or main merge.
 
 Final regression after stop-boundary correction:24Loop+9Desktop+31Hosting=64passed,0failed,0skipped; rebuilt native harness seven scenariosPASS. ME-008..011 completed. ME-012 is subjective baseline feedback only, no technical approval gate. No ready independent task in the current bounded horizon; further technical refinement stays delegated.
+
+Delivered native source/evidence c540bcd5e6650f7765d2df7158e0e3691f55fc83; [full local ledger](evidence/h1-0/README.md#local-delivery-references2026-10-15).

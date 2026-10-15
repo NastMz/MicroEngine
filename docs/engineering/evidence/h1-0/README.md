@@ -33,3 +33,15 @@ desktop_tracer_verify copied scoped sources/config into system-temp scratch, res
 ## Final stop-boundary correction
 
 ME-011 independently reproduced baseline0dfb2ce Begin/Canvas stop bug (two focused failures), current24managed tests pass in fresh scratch. Fix commit43c8df9. Parent rebuilt native consumer, seven-scenario harnessPASS, Desktop9/9,H031/31; final64tests,0failed/0skipped. Original22test results above are historical pre-correction evidence, not the final count. H0 source remains unchanged.
+
+## Local delivery references2026-10-15
+
+| Unit | Commit |
+| --- | --- |
+| Technical autonomy/policy/templates | 81d2d2df9142a82d4e4bb7427d055a3ee86ea275 |
+| Reviewed ADR-0003/H1-R1 approval | 4d71b6e0466861f56d7250c307d02ef6ea9a3da4 |
+| Managed runtime/model/tests | 0dfb2ce6bef7d0ce4e0e7bac019a0f4ee288d4ea |
+| Reproduced stop-boundary correction/tests | 43c8df9a9984db8d7c718ab179e6428a01e3aee7 |
+| Native adapter/consumer/tests/evidence | c540bcd5e6650f7765d2df7158e0e3691f55fc83 |
+
+Final64tests pass, native harnessPASS, independent policy/design/managed/native/targeted fix reviews complete. Main unchanged; no remote/main integration. Existing .gitignore hash unchanged, .codegraph excluded. No broad technical approval request: ME-012 only subjective experience.

@@ -246,3 +246,5 @@ ME-011 closure2026-10-15: independent managed_runtime_verify reproduced baseline
 ## ME-012 — Evaluate H1.0 baseline experience
 
 Authority: reserved subjective product gate in autonomy.md. Executor: owner, no agent claim; technical prerequisites completed ME-010/011, not awaiting technical approval. Scope: evaluate movement/jump response and primitive player/floor readability in the delivered FirstPlayable revision; record feedback in milestone H1.md/findings.md, no engine change. Blocker: indispensable subjective experience cannot be established by automated correctness tests. Do not request replay of technical smoke/failure/usage cases. Acceptance: explicit feedback or product acceptance tied to delivered revision, no inference by agent. Does not block unrelated technical work by default; this active horizon has no other ready task. Next refinement input is F-010, not a pre-approved distant capability list.
+
+Final source/evidence commit c540bcd5e6650f7765d2df7158e0e3691f55fc83; stop fix43c8df9a9984db8d7c718ab179e6428a01e3aee7. Complete local ledger: evidence/h1-0/README.md.
