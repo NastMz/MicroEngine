@@ -10,11 +10,11 @@ This is the active context for the greenfield C#/.NET 2D framework.
 3. Check [roadmap](roadmap.md), [contributing](contributing.md) and [document policy](document-policy.md).
 4. Consult [history](history.md) for the retired prototype.
 
-## Current state — 2026-10-12
+## Current state — 2026-10-15
 
 The owner approved the repository transition. The historical prototype is preserved at
-`legacy-final`, not present as active projects. H0 hosting implementation is automatically verified under accepted ADR-0002; see [current state](current-state.md). No native backend/solution is selected. ECS, DI and rendering remain open.
-ADR-0001 records product direction; ADR-0002 records bounded H0 approval and delegated technical authority.
+`legacy-final`, not present as active projects. H0 hosting implementation is automatically verified under accepted ADR-0002; see [current state](current-state.md). H1.0 Loop/Desktop/FirstPlayable now technically verified under accepted ADR-0003; Raylib-cs8.1.0 isolated to Desktop. ECS/DI/scenes remain open.
+ADR-0001 records product direction; ADR-0002 records bounded H0 approval; autonomy.md records current technical delegation and ADR-0003 the next bounded tracer.
 
 ## Templates
 
@@ -30,7 +30,7 @@ explicit delegation is recorded. A generated recommendation does not approve its
 Read [backlog](backlog.md), [execution protocol](execution.md) and [autonomy policy](autonomy.md).
 Ready packets are self-contained; ME-001/002/003 preparation is complete; ME-004 is completed with evidence in the backlog; H0 owner acceptance was recorded2026-10-15; the next H1 horizon may be specified, independently reviewed, technically approved and built under delegated authority.
 [Capabilities](capabilities.md) describes general needs without genre modules.
-[Lifecycle](specs/lifecycle.md) is the approved delegated H0-1 contract. [Frame execution](specs/frame-execution.md) remains proposed/outside H0. [Toolchain](toolchain.md) records versions and checks. Use [task template](templates/task.md),
+[Lifecycle](specs/lifecycle.md) is the approved delegated H0-1 contract. [Frame execution](specs/frame-execution.md) preserves earlier proposals; [H1-R1](specs/h1-runtime.md) is the accepted narrow Loop/Desktop contract, outside H0. [Toolchain](toolchain.md) records versions and checks. Use [task template](templates/task.md),
 [manual milestone delivery](milestone-delivery.md), [findings intake](findings.md) and
 [planning validation](planning-validation.md). This is a protocol, not background automation.
 

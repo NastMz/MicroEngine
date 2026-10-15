@@ -27,7 +27,7 @@ and [manual delivery](milestone-delivery.md); no exhaustive future task list.
 
 ## Decisions still open
 
-Future platform support/package distribution; native backend and CAP-002;
+Future platform support/package distribution; broader native backends and execution beyond H1-R1;
 entity model/storage; scenes/worlds; rendering, input, audio, physics and asset formats.
 Decide only what a concrete increment needs. No ECS/DI/backend/solver, editor, hot reload,
 networking or 3D commitment is inherited or approved here.
@@ -40,4 +40,6 @@ ADR approval, task completion and milestone acceptance are separate records.
 
 ## Next refinement only
 
-Proposed [H1.0 tracer](specs/h1-first-playable.md) is a subset, not completion of [H1](milestones/H1.md). ME-005/006 prepare scenario/options; ME-007 prepares [ADR-0003](decisions/0003-next-validation-tracer.md). ME-008 technical packet awaits independent review and delegated ADR-0003 approval under autonomy.md. No H1 construction task is ready.
+Proposed [H1.0 tracer](specs/h1-first-playable.md) is a subset, not completion of [H1](milestones/H1.md). ME-005/006 prepare scenario/options; ME-007 prepares [ADR-0003](decisions/0003-next-validation-tracer.md). ME-008 technical packet awaits independent review and delegated ADR-0003 approval under autonomy.md. H1.0 construction is now technically verified under accepted H1-R1; no broader H1 construction task is ready without further bounded specification.
+
+H1.0 technical slice accepted2026-10-15 by delegated authority after independent verification; subjective experience pending. Full H1 remains candidate. Next refinement: static obstacle/spatial interaction and animation/content based on delivered tracer evidence/feedback; no distant tasks generated.

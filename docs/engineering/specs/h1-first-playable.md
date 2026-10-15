@@ -1,6 +1,6 @@
 # H1.0 — Proposed first graphical tracer
 
-Status: proposed, not a construction contract. ME-005, 2026-10-15.
+Status: historical scenario proposal refined into approved [H1-R1](h1-runtime.md),2026-10-15. Use H1-R1 for exact construction contract and milestone evidence for actual checks. ME-005 original proposal preserved below.
 See [H1](../milestones/H1.md). H0 acceptance does not approve this scope.
 
 ## Purpose and boundaries

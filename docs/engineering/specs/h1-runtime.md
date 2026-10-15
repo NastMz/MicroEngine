@@ -56,3 +56,5 @@ All classes below sealed, no public setters; record structs readonly. Unless sta
 - GameModel sealed in FirstPlayable.Model with getters X:float,Y:float,VerticalVelocity:float,Grounded:bool, public void Update(TimeSpan delta,InputSnapshot input); default starts(40,268), grounded. Reject nonpositive/nonfinite delta and null input. Model uses only general public Loop API.
 
 Desktop.Contracts uses internal injection only to supply a deterministic fake native API; assertions exercise public platform methods. Its separate runner is dotnet test checks/Desktop.Contracts/Desktop.Contracts.csproj -c Release --no-restore -p:UseSharedCompilation=false -m:1 -nodeReuse:false after explicit serial restore. H0 and Loop runners do not load Desktop. Real native smoke complements, not replaces, seam tests.
+
+Implementation note2026-10-15: native fake tests inject an isolated WindowReservation instance to exercise permanent poison without poisoning the test process; production always uses the single static process reservation. Raylib-cs package range is exact [8.1.0], no managed transitive dependency in restored net10 group.

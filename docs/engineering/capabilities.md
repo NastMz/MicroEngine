@@ -1,14 +1,14 @@
 # General capability catalog
 
 IDs describe consumer needs, not modules, classes or package commitments.
-CAP-001 has an approved/implemented bounded H0 slice; other entries remain candidates except confirmed product constraints in [requirements](requirements.md). Promote concrete behavior through a spec and approval, not this inventory.
+CAP-001 has an approved/implemented bounded H0 slice; CAP-002/003/004 now have narrow verified H1-R1 slices; remaining behavior remains candidate except confirmed product constraints in [requirements](requirements.md). Promote concrete behavior through a spec and approval, not this inventory.
 
 | ID | Capability | General responsibility / exclusions | Horizon |
 | --- | --- | --- | --- |
 | CAP-001 | Application lifecycle | Initialize/run/stop/cleanup; no game rules | H0 headless implemented/automatically verified; [spec](specs/lifecycle.md); owner accepted2026-10-15 |
-| CAP-002 | Time and execution phases | Observable ordering, pause and deltas; no turn rules | Next candidate; [spec](specs/frame-execution.md) proposed |
-| CAP-003 | Input actions | Digital/analog intent from devices; no character controls | First playable discovery |
-| CAP-004 | 2D presentation | Sprites, text, cameras, ordering; no genre HUD | First playable discovery |
+| CAP-002 | Time and execution phases | Observable ordering, pause and deltas; no turn rules | H1-R1 fixed-step/clamp/drop/alpha slice verified; broader proposals remain |
+| CAP-003 | Input actions | Digital/analog intent from devices; no character controls | H1-R1 digital held/ordered-edge/focus slice verified; analog/remapping not implemented |
+| CAP-004 | 2D presentation | Sprites, text, cameras, ordering; no genre HUD | H1-R1 primitive canvas slice verified; sprites/text/cameras not implemented |
 | CAP-005 | Entity composition | Identity, data and behavior composition; ECS choice open | First playable discovery |
 | CAP-006 | Assets and ownership | Acquisition/sharing/release; no inherited format | First playable discovery |
 | CAP-007 | Spatial queries and movement | Geometry, collision queries, optional kinematic mechanisms; no jump rules | Platformer validation |
@@ -24,3 +24,5 @@ CAP-001 has an approved/implemented bounded H0 slice; other entries remain candi
 
 Metroidvania and modern platformer are stress scenarios, not new Core capability names.
 No inventory row creates an implementation promise, dependency graph or technology selection.
+
+H1-R1 evidence: [contract](specs/h1-runtime.md), [delivery](milestones/H1.md), [native provenance](evidence/h1-0/README.md). Full catalog entries are not globally fulfilled by narrow slices.

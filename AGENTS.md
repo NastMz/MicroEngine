@@ -10,7 +10,7 @@ Technical autonomy by default, human intervention by exception (owner2026-10-15)
 - The next version is a greenfield, general-purpose C#/.NET 2D framework.
 - The prototype is retired from the active tree and preserved at `legacy-final`; read docs/engineering/history.md.
 - Repository transition was approved and completed. New technical construction is delegated under docs/engineering/autonomy.md; specifications and reviewed significant ADRs must precede implementation.
-- ECS, scenes, DI, storage and native renderers are not approved technical choices. H0 test-only dependencies are selected under ADR-0002 delegation.
+- ECS, scenes, DI and storage remain unselected. ADR-0003/H1-R1 approve the bounded Loop/Desktop primitive tracer, Raylib isolated to Desktop; no broader backend scope inferred.
 - Agents may approve technical ADRs after independent review under the owner delegation; a recommendation alone is not approval.
 
 ## Working procedure

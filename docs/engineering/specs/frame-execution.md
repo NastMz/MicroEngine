@@ -1,3 +1,5 @@
+Current relation2026-10-15: [H1-R1](h1-runtime.md) approves/implements a bounded fixed-step/input/presentation slice outside H0. The earlier alternative matrix below remains historical proposal evidence, not a competing active implementation contract.
+
 # CAP-002 — Frame execution contract refinement
 
 Status: proposed; approval pending; implementation: none. ME-002 refinement, 2026-10-12.

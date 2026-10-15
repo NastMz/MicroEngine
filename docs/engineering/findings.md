@@ -12,8 +12,7 @@ and task/ADR links. Never record secrets or unsupported root causes.
 
 An in-scope acceptance defect may be corrected in the current task with evidence.
 An out-of-scope need remains intake until refinement and approval. Prioritize by blocked
-accepted behavior and consequence, not opportunistic enthusiasm. Significant product or
-contract changes go to the owner. Preserve technical debt intentionally deferred with reason.
+accepted behavior and consequence, not opportunistic enthusiasm. Substantial product vision/strategic scope changes go to the owner; technical contract changes follow delegated ADR/spec approval and independent review in autonomy.md. Preserve technical debt intentionally deferred with reason.
 Review relevant entries at selection and milestone refinement; no periodic meeting required.
 
 ## Known planning constraints
@@ -37,3 +36,15 @@ Origin: ME-004 independent targeted authority review, 2026-10-13. Earlier H0-1 n
 ## F-007 — Serial MSBuild and sandboxed testhost connection
 
 Origin: ME-004, 2026-10-13. Independent h0_build_diagnosis reproduced silent graph failure with >1MSBuild node around build-only executable consumer reference; serial graph builds. Use -m:1 in documented checks. Sandboxed VSTest aborted90s connecting to testhost; identical authorized outside-sandbox command passed31 tests. Status: environment limitation recorded, not a need for engine concurrency or global sandbox changes. Revisit parallel build only when actual workload requires it; no new speculative task.
+
+## F-008 — Stop must be checked after platform callbacks
+
+Origin ME-011,2026-10-15 final acceptance audit. Public supplied platform can request retained FrameControl stop during Begin/Canvas access. RED2cases drew again despite stop because FrameLoop checked only before Begin. Fix rechecks after Poll/Begin/Canvas while retaining End after committed Begin; full managed24pass, H031pass and native9pass, native harnessPASS. Independent targeted verdict recorded in backlog before closure. No criterion/scope change or coverage reduction. Status: resolved; independent targeted baseline2/2fail/current24/24pass, no blockers.
+
+## F-009 — Narrow renderer surface does not imply narrow native binary
+
+Origin ME-010,2026-10-15. Restored raylib6build logs include audio/3D modules even though MicroEngine exposes only primitive2D. Desktop alone references exact Raylib-cs8.1.0; managed headless graph has none. Footprint/update and embedded third-party redistribution review are real costs, not new engine-capability authority. Status: documented/deferred distribution review, no redistribution approved.
+
+## F-010 — Next platformer gap is concrete environment interaction
+
+Origin H1.0 tracer evidence,2026-10-15. External model currently clamps one floor and draws one player, with no obstacle/animation/content. Next refinement candidates: bounded static rectangle obstacle queries and consumer-owned movement resolution; minimal pose/clip timing after the need is specified. Do not infer ECS/scene/physics/asset-manager necessity. Status: recorded next-horizon input; full H1 not accepted, no speculative broad implementation task. Subjective baseline feedback may affect feel/presentation, not general geometry correctness.

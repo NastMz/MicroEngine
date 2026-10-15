@@ -1,24 +1,23 @@
-<!-- Current authority:2026-10-15 technical delegation supersedes earlier approval-only restrictions; see autonomy.md. Historical dated evidence is not rewritten. -->
 # Current implementation state
 
-Updated2026-10-15. Branch codex/h0-lifecycle. Main unchanged:75a5eef1770f31235c69f8dcc9019de530226886.
+Updated2026-10-15; branch codex/h0-lifecycle. Main remains75a5eef1770f31235c69f8dcc9019de530226886. [Backlog](backlog.md) owns task states.
+
+## Authority
+
+[Technical autonomy](autonomy.md) is active: reviewed technical ADRs/contracts/dependencies/horizons, objective acceptance and local commits delegated. Human exceptions only as specified there; no remote/main integration. RDD globaloff observed, unchanged. Memory identity unavailable; repository is authoritative.
 
 ## Accepted H0
 
-Owner explicitly accepted H0 based on delivered technical evidence and documented criteria, without scope expansion or a claimed manual rerun. ME-001..ME-004 completed. Implementation/tests/public consumer/contracts commit:0771a8344861e3c1d76f7a4285869cec1ba60220. Headless remains permanent mode; configuration reusable, sessions single-use/sequential/thread-affine, partial-failure ownership/cleanup verified. Small report and origin-classified API misuse retained.
+Owner accepted2026-10-15, scope unchanged. Implementation0771a8344861e3c1d76f7a4285869cec1ba60220; acceptance c4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc. Permanent headless Hosting unchanged,31tests pass. [H0 evidence](milestones/H0.md).
 
-SDK selection stable10.0 roll-forward (10.0.402 tested);31 public tests passed again before commit, all10delivery source/config hashes matched. Independent source/SDK/policy reviews recorded in [H0](milestones/H0.md). No production packages, native backend, ECS/scenes/physics/audio or scheduler implemented. Windowsx64 validation only; no native, multiplatform, package-distribution or performance promise.
+## H1.0 construction
 
-## Next bounded horizon
+[ADR-0003](decisions/0003-next-validation-tracer.md) and [H1-R1](specs/h1-runtime.md) accepted after independent design PASS. ME-008 completed. Managed Loop and pure external game model verified24tests, independent scratchPASS; commit0dfb2ce plus independently verified stop-boundary correction43c8df9. Desktop adapter/consumer technically verified and accepted:9seam tests, actual native start/stop/failure/usage traces,640x360 capture and independent desktop_tracer_verify fresh-scratch PASS; no reproduced blockers. [Evidence](evidence/h1-0/README.md).
 
-H1 platformer remains a candidate roadmap milestone. Current owner delegation authorizes technical specification, approval and implementation within the roadmap after required independent review. H1 authority now comes from the separate2026-10-15 technical delegation, not H0 acceptance. Preserve game rules outside mandatory engine capabilities; do not select ECS/native backend/contracts without the necessary decision authority. [Backlog](backlog.md) owns task states.
+No ECS/scenes/audio/solver/asset pipeline/animation/packaging/CI. Raylib-cs exists only in Desktop graph. Windowsx64 validation only, no performance/multiplatform promise. H1.0 technical acceptance recorded by delegated agent; this is not full H1 or subjective product acceptance. [H1 packet](milestones/H1.md).
 
-## Delivery constraints
+## Preserved local work
 
-Local commits authorized; no remote/main integration. Existing .gitignore edits, .atl and generated .codegraph excluded/preserved. RDD globaloff observed, not changed. Persistent memory unavailable; repository evidence is authoritative.
+Pre-existing .gitignore additions and generated .codegraph remain outside commits. No unrelated edits reverted, no remote operation or main merge.
 
-H0 acceptance commit: c4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc. Next proposal: [ADR-0003](decisions/0003-next-validation-tracer.md), graphical H1.0 versus timing-first. Technical scope/dependency decisions may now be resolved under delegation; subjective product acceptance remains pending; backend/signatures are unselected.
-
-## Technical autonomy / managed H1-R1
-
-Owner technical delegation active; ADR-0003/H1-R1 accepted after independent design review. New engine/Loop fixed-step/input/primitive presentation contract and pure FirstPlayable.Model implemented,22managed tests and31H0 tests pass; independent scratch verification PASS. Desktop/native construction now underway, not verified. H1.0 subjective product acceptance remains pending; full H1 unimplemented.
+Final regression after stop-boundary correction:24Loop+9Desktop+31Hosting=64passed,0failed,0skipped; rebuilt native harness seven scenariosPASS. ME-008..011 completed. ME-012 is subjective baseline feedback only, no technical approval gate. No ready independent task in the current bounded horizon; further technical refinement stays delegated.
