@@ -41,3 +41,7 @@ evidence after relevant changes.
 ## Authority and acceptance gate
 
 Apply autonomy.md: technical decisions and objective acceptance are delegated; significant ADRs need independent review. Record technical approval actor/source and review separately from subjective product acceptance. Use the complete human-exception list in [autonomy](../autonomy.md); do not create additional technical approval gates. Local commits authorized; no remote/main integration.
+
+## Infrastructure-independence assessment
+
+Apply [ADR-0004](../decisions/0004-replaceable-infrastructure.md)/NFR-005: identify concrete use case, dependency direction and native type exposure, public replacement seam, mandatory versus optional/specialized features, and adapter-specific target/thread/scheduling assumptions. Explain limitations or justified N/A; no universal-interface, additional-backend or exporter requirement. Preserve functional acceptance scope and link affected consumer tests/evidence.

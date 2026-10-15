@@ -78,6 +78,10 @@ Execute every pertinent check that available tools can automate or reproduce. Im
 within scope and preserve required review, acceptance criteria and coverage. Reproduction commands
 are evidence for collaborators, not an instruction for the owner to do the agent's verification.
 
+## Permanent architecture check
+
+Apply [ADR-0004](decisions/0004-replaceable-infrastructure.md)/NFR-005 on each evolution: dependency direction/native type leakage; public provider substitution without foundational edits/friend names; cohesive opt-in contracts and optional/specialized support; adapter-specific scheduling/thread/platform restrictions; concrete use case versus speculative abstraction. Record applicable conclusions, limitations and consumer impact in the affected ADR/spec/task, not a duplicate universal checklist artifact. Technical scope/acceptance is unchanged; no extra backends or export work implied.
+
 ## Review and close
 
 Move to in-review with exact change/result and evidence. Low-risk documentary work needs

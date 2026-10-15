@@ -58,3 +58,7 @@ scope/spec invalidate affected readiness and proof. Capture new needs in [findin
 without expanding current work. The owner requested this operating model on 2026-10-12;
 its conventions are active for authorized work and may evolve through recorded changes;
 technical acceptance now follows the2026-10-15 delegation in autonomy.md, not automatic promotion.
+
+## Architectural review baseline
+
+[ADR-0004](decisions/0004-replaceable-infrastructure.md)/NFR-005 is permanent for subsequent horizons. Significant ADRs and affected capability specs record provider replacement/optionality, dependency and native-type boundaries, target assumptions and scope-preserving tradeoffs. Existing evidence is not retroactively evidence of all backends or targets.

@@ -16,6 +16,10 @@ H1-R1 has explicit time/input/cleanup semantics and a narrow internal native sea
 
 Owner delegation authorizes technical approval; independent design PASS recorded2026-10-15, runtime N/A at approval. Construction ready only through complete backlog packet. Subjective product evaluation remains human-owned after technical delivery. New distant capability work must follow observed roadmap needs.
 
+## Subsequent cross-cutting constraint
+
+[ADR-0004](0004-replaceable-infrastructure.md) clarifies the H1 profile/public extension seam and records the existing Desktop friend-name coupling. It does not supersede this bounded scenario/dependency choice or change its delivered acceptance. H1 is not a universal backend contract; future work must meet the new directive without assuming equivalent provider features.
+
 ## Earlier proposal (historical, authority superseded)
 
 <details><summary>Original proposal and alternatives</summary>

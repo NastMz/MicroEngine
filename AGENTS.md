@@ -13,6 +13,10 @@ Technical autonomy by default, human intervention by exception (owner2026-10-15)
 - ECS, scenes, DI and storage remain unselected. ADR-0003/H1-R1 approve the bounded Loop/Desktop primitive tracer, Raylib isolated to Desktop; no broader backend scope inferred.
 - Agents may approve technical ADRs after independent review under the owner delegation; a recommendation alone is not approval.
 
+## Permanent architectural directive
+
+Apply [ADR-0004](docs/engineering/decisions/0004-replaceable-infrastructure.md)/NFR-005 in every subsequent horizon: implementation-independent foundations, public replaceable providers, minimal cohesive opt-in contracts, heterogeneous optional capabilities and explicit target assumptions. Future Windows/Linux/macOS/browser/WebAssembly possibilities are not current support/export commitments. No speculative abstractions/backends or changed functional acceptance.
+
 ## Working procedure
 
 1. Read the manifesto, requirements, accepted decisions, roadmap, backlog, execution

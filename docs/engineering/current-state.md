@@ -23,3 +23,5 @@ Pre-existing .gitignore additions and generated .codegraph remain outside commit
 Final regression after stop-boundary correction:24Loop+9Desktop+31Hosting=64passed,0failed,0skipped; rebuilt native harness seven scenariosPASS. ME-008..011 completed. ME-012 is subjective baseline feedback only, no technical approval gate. No ready independent task in the current bounded horizon; further technical refinement stays delegated.
 
 Delivered native source/evidence c540bcd5e6650f7765d2df7158e0e3691f55fc83; [full local ledger](evidence/h1-0/README.md#local-delivery-references2026-10-15).
+
+Architectural directive2026-10-15: [ADR-0004](decisions/0004-replaceable-infrastructure.md)/NFR-005 formalizes replaceable infrastructure, optional cohesive profiles and future portability boundaries. Documentary/design clarification only; H1-R1 remains implemented as before. Desktop friend-name privilege is a disclosed coupling (F-011), not resolved or a requirement for custom adapters. No new target/backend/API/support claim or changed H0/H1 criteria.

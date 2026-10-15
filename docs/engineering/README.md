@@ -6,7 +6,7 @@ This is the active context for the greenfield C#/.NET 2D framework.
 ## Start here
 
 1. Read [manifesto](manifesto.md) and [requirements](requirements.md).
-2. Read [accepted decisions](decisions/README.md).
+2. Read [accepted decisions](decisions/README.md), including the cross-cutting [infrastructure directive](decisions/0004-replaceable-infrastructure.md).
 3. Check [roadmap](roadmap.md), [contributing](contributing.md) and [document policy](document-policy.md).
 4. Consult [history](history.md) for the retired prototype.
 

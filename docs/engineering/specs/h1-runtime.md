@@ -58,3 +58,11 @@ All classes below sealed, no public setters; record structs readonly. Unless sta
 Desktop.Contracts uses internal injection only to supply a deterministic fake native API; assertions exercise public platform methods. Its separate runner is dotnet test checks/Desktop.Contracts/Desktop.Contracts.csproj -c Release --no-restore -p:UseSharedCompilation=false -m:1 -nodeReuse:false after explicit serial restore. H0 and Loop runners do not load Desktop. Real native smoke complements, not replaces, seam tests.
 
 Implementation note2026-10-15: native fake tests inject an isolated WindowReservation instance to exercise permanent poison without poisoning the test process; production always uses the single static process reservation. Raylib-cs package range is exact [8.1.0], no managed transitive dependency in restored net10 group.
+
+## Cross-cutting architecture clarification — ADR-0004
+
+[ADR-0004](../decisions/0004-replaceable-infrastructure.md) constrains future evolution without changing H1-R1 signatures/behavior/acceptance. IFramePlatform/ICanvas and the Run factory are the public custom-provider seam; IDesktopApi is only the concrete adapter's private test seam. No custom provider needs Desktop, Raylib or friend access to run a conforming primitive graphical profile. Ordinary custom-provider exceptions remain execution failures under current rules; equivalent privileged engine-origin API-error classification is NOT promised.
+
+This synchronous input/time/primitive-canvas combination is an opt-in H1 profile, not the universal platform interface. Headless and future nonmatching capabilities must not be forced through it. Desktop's native entry-thread/single-window/key mapping restrictions stay adapter-specific. Future browser scheduling may require a different driver; no browser support or driver is added now. Optional features require demonstrated contracts, not new mandatory methods here.
+
+Known implementation coupling: Loop's Desktop friend-name privilege for internal FrameApiException. This is not the extension protocol and must not be copied for future providers. F-011 records the limitation and review trigger: changes to this boundary must design backend-independent origin/guard handling before broadening provider claims. No source change or claim of resolved coupling in this documentary clarification.

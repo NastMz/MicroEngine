@@ -30,6 +30,12 @@ Architecture may evolve. Significant changes require reasons and consideration o
 compatibility is not a promise of immutability. Do not impose constraints on a future public
 versioning policy before it is decided.
 
+## Infrastructure independence (owner directive,2026-10-15)
+
+MicroEngine is modular and implementation-agnostic: developers may select, replace or implement rendering, physics, audio, input and platform providers through cohesive public contracts. Necessary foundations do not depend on concrete providers; unused systems are not mandatory. Providers may expose different optional/specialized capabilities. Design for demonstrated needs, not a universal interface.
+
+Windows/Linux/macOS/browser/WebAssembly are future architectural possibilities, not current delivery commitments or universal compatibility requirements. Preserve room for different execution/platform models without speculative backends/exporters/abstractions. Evaluate new coupling and target restrictions in every evolution. [ADR-0004](decisions/0004-replaceable-infrastructure.md) records rationale, limits and current-design assessment; existing functional scope/acceptance stays unchanged.
+
 ## Relationship to the prototype
 
 The prototype is a laboratory and historical reference, not the target architecture.

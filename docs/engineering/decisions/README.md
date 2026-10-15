@@ -7,6 +7,7 @@ ADRs capture significant choices, not every edit. A generated proposal is never 
 | [ADR-0001](0001-greenfield-direction.md) | Greenfield direction and historical prototype | accepted | 2026-10-12 | Explicit repository-owner direction, quoted in the record |
 | [ADR-0002](0002-initial-execution-scope.md) | Initial execution scope | accepted | 2026-10-12 | Owner scoped approval and explicit technical delegation recorded in ADR |
 | [ADR-0003](0003-next-validation-tracer.md) | Next validation tracer boundary | accepted | 2026-10-15 | Codex root under owner delegation; independent design PASS |
+| [ADR-0004](0004-replaceable-infrastructure.md) | Replaceable infrastructure and bounded capability contracts | accepted | 2026-10-15 | Owner directive; Codex root delegated adoption after independent review PASS |
 
 ## Convention
 

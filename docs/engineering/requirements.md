@@ -7,7 +7,7 @@ Evidence and approval rules: [document policy](document-policy.md).
 
 ## Confirmed requirements
 
-All rows originate in explicit repository-owner instructions of 2026-10-12, represented
+Rows originate in explicit repository-owner instructions (2026-10-12 foundation;2026-10-15 NFR-005 directive), represented
 in the [manifesto](manifesto.md) and [ADR-0001](decisions/0001-greenfield-direction.md).
 They are approved intent, not claims of greenfield implementation.
 
@@ -19,6 +19,7 @@ They are approved intent, not claims of greenfield implementation.
 | NFR-002 | Make capabilities testable and diagnosable | Foundation | approved | Owner product/direction instruction, 2026-10-12 | Implemented capabilities have observable acceptance tests and actionable failure evidence | FR-001 |
 | NFR-003 | Measure reasonable performance instead of assuming it | Foundation | approved | Owner product/direction instruction, 2026-10-12 | Performance-sensitive capabilities identify workload, environment, measurements and agreed budgets before verification | FR-001 |
 | NFR-004 | Support evolutionary architecture with proportionate documentation | Foundation | approved | Owner product/direction instruction, 2026-10-12 | Significant decisions retain rationale/history; changed contracts and consumer impact are documented | None |
+| NFR-005 | Preserve replaceable infrastructure and cohesive opt-in capability contracts | Foundation | approved | Owner architectural directive,2026-10-15; ADR-0004 | Each evolution records dependency direction, public-only provider substitution, optional/specialized feature assumptions and future target restrictions; no vendor/universal-platform guarantee inferred from a single adapter; implementation conformance evidenced per slice | FR-001; NFR-004 |
 | DOC-001 | Enable onboarding without previous chats or agent memory | Foundation | approved | Owner product/direction instruction, 2026-10-12 | A collaborator finds intent, current decisions, actual implementation state and next work from repository links | NFR-004 |
 | SCOPE-001 | Treat the next engine as greenfield; preserve the prototype as reference | Foundation | approved | Owner product/direction instruction, 2026-10-12 | No prototype technology is declared mandatory merely because it exists; reuse follows ADR-0001 criteria | None |
 
@@ -45,3 +46,5 @@ and verification results. Changed scope requires renewed approval; retain a shor
 ## H0 evidence slice — 2026-10-13
 
 FR-001: independent project-reference consumer uses public API only. NFR-001/NFR-002: H0-1.1 ownership, partial initialization, reverse cleanup, origin-classified misuse and execution reports exercised by31 public cases. NFR-004/DOC-001: accepted scoped ADR/toolchain/spec/backlog and delivery packet synchronized. Links: [contract](specs/lifecycle.md), [implementation](../../engine/Hosting/Hosting.csproj), [tests](../../checks/Hosting.Contracts/LifecycleTests.cs), [H0 delivery](milestones/H0.md). These are verified H0 slices, not global fulfillment of general engine requirements. NFR-003 budgets not applicable to this correctness increment; no performance claim. Future/game capabilities remain candidates.
+
+NFR-005 approval is a permanent architectural constraint, not verification of all existing/future providers. [ADR-0004](decisions/0004-replaceable-infrastructure.md) identifies current conformity and limitations; no current functional acceptance criterion changed.
