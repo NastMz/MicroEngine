@@ -4,7 +4,7 @@ Single task-state source of truth. Dated task records distinguish preparation fr
 Priority P0 precedes P1; ID ascending breaks ties. Completion is recorded only with task evidence.
 Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](templates/task.md).
 
-## Current horizon: prepare the first lifecycle increment
+## Accepted H0 and current H1 preparation horizon
 
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
@@ -12,6 +12,10 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-002 | specification | P0 | completed | none | Below |
 | ME-003 | decision preparation | P0 | completed | ME-001, ME-002 | Below |
 | ME-004 | implementation | P1 | completed | ME-003; owner approval | Below |
+| ME-005 | specification | P0 | completed | H0 acceptance | Below |
+| ME-006 | investigation | P0 | completed | H0 acceptance | Below |
+| ME-007 | decision preparation | P0 | completed | ME-005, ME-006 | Below |
+| ME-008 | specification | P1 | blocked | ME-007; owner H1 scope authority | Below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next bounded horizon is H1 candidate preparation, not implementation. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -142,6 +146,57 @@ Select from the current table; initial planning selection was ME-001.
 
 
 </details>
+
+
+## ME-005 — Specify the next H1 validation tracer
+
+- Authority: owner2026-10-15 accepted H0 and requested next-roadmap specifications/tasks. Documentary preparation only, not H1 scope approval.
+- Dependencies: H0 accepted with source0771a8344861e3c1d76f7a4285869cec1ba60220.
+- Objective: propose the smallest H1-facing external platformer validation, map reusable engine vs game-owned behavior and retain full-H1 gaps.
+- Allowed surfaces: specs/h1-first-playable.md and milestones/H1.md (new under docs/engineering); roadmap.md and backlog.md ME-005 state/evidence, all under docs/engineering.
+- Acceptance: observable scenario/exit/failure traces; CAP-002/003/004 boundaries; CAP-006/007/008 gaps explicitly deferred as needed, no full-H1 completion claim; game jump/collision rules outside mandatory engine; approval gaps and verification ownership explicit.
+- Checks: relative links, trace/requirement mapping, git diff --check and independent documentary consistency review (can share ME-007 review batch). Runtime N/A, no executable created.
+- Risk/rollback: proposed contracts only, preserve H0. No accepted signature/technology/requirement changes; own new proposal/task notes reversible.
+- Claim: none; baselinec4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc.
+
+- 2026-10-15: claimed by Codex root; ready gate satisfied: H0 accepted, documentary authority/paths/criteria/checks complete; baselinec4f8e6b.
+
+- 2026-10-15: completed after independent h1_preparation_verify readback. ME-005 CAP-003/004 label swap corrected in one batch; targeted recheck passed. ME-006 source claims supported, assessments/unknowns explicit. Evidence: specs/h1-first-playable.md, milestones/H1.md, investigations/h1-native-options.md. Runtime N/A; proposals not accepted. Baseline c4f8e6b.
+
+## ME-006 — Investigate bounded native-validation choices
+
+- Authority: same owner next-horizon preparation request, documentary/public-source investigation only. H0 accepted; independent of ME-005.
+- Allowed surfaces: docs/engineering/investigations/h1-native-options.md (new), docs/engineering/backlog.md ME-006 state/evidence.
+- Objective: compare graphical tracer versus headless timing-first order and two viable native binding candidates, with reversibility/packaging/threading/ownership/validation costs.
+- Acceptance: dated primary sources, facts vs assessment/unknowns, candidate version support not asserted as installed/tested; no license/support assumption beyond sources; identify exact future evidence before dependency selection.
+- Exclusions: no package install, native spike, engine/demo code, platform support promise, private service or publication; no accepted backend choice.
+- Checks: source readback/links, git diff --check and independent documentary source/consistency readback (shared ME-007 batch allowed). Runtime N/A.
+- Risk/rollback: research only; remove own report/task notes if needed, retain H0/source evidence.
+- Claim: none; baselinec4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc.
+
+- 2026-10-15: claimed by Codex root; ready gate satisfied: H0 accepted, research-only authority/paths/criteria/checks complete; baselinec4f8e6b. Earlier candidate lookup is bibliographic preparation, detailed evidence read follows claim.
+
+- 2026-10-15: completed after independent h1_preparation_verify readback. ME-005 CAP-003/004 label swap corrected in one batch; targeted recheck passed. ME-006 source claims supported, assessments/unknowns explicit. Evidence: specs/h1-first-playable.md, milestones/H1.md, investigations/h1-native-options.md. Runtime N/A; proposals not accepted. Baseline c4f8e6b.
+
+## ME-007 — Prepare H1 construction-boundary decision
+
+- Authority: documentary preparation, never owner approval. Depends on completed ME-005/006 evidence.
+- Allowed surfaces: docs/engineering/decisions/0003-next-validation-tracer.md (new), decisions/README.md, backlog.md ME-007/ME-008 records and current-state.md/roadmap.md under docs/engineering.
+- Acceptance: one bounded strategic scope decision; viable alternatives/consequences/evidence; recommend but do not accept; identify delegated-local details versus reserved decisions; exact next readiness/verification requirements without inventing implementation authority.
+- Checks: dependency/source/spec consistency, relative links, git diff --check and independent design readback; runtime N/A. Preserve H0 criteria and source.
+- Rollback: own proposed ADR/index/task notes only. State: pending until dependencies completed.
+
+- 2026-10-15: pending -> ready after ME-005/006 completed independent evidence; ready -> in-progress, claimed Codex root, baseline c4f8e6b. Documentary scope only.
+
+- 2026-10-15: in-progress -> in-review -> completed after independent h1_preparation_verify design readback. One correction batch repaired ADR table seam and H1 CAP-002 mapping; targeted recheck passed. Evidence: decisions/0003-next-validation-tracer.md, register, roadmap/current-state; runtime N/A. ADR remains proposed; ME-008 blocked on owner scope/dependency authority. No ready independent task remains.
+
+## ME-008 — Finalize H1.0 technical construction packet
+
+- State: blocked, not executable. Depends on completed ME-007 and owner approval of the new scope/dependency authority. No H1 implementation task is currently ready.
+- Required before ready: accepted bounded scenario, delegated native dependency authority, exact source/project surfaces, public signatures/ownership/input-time semantics, package/native version and license/deployment validation plan, Windows environment and commands, deterministic/public-consumer checks, independent review/rollback.
+- Intended scope after authority: finalize only that packet; implementation requires separate complete ready task(s). No library/demo/backend may be improvised from this blocked outline.
+- Current missing decision: whether to introduce a native window/input/presentation validation increment next, or stay headless for CAP-002 first. Both exceed accepted H0 behavior.
+- No allowed construction paths/runner are fabricated before that decision. H1 remains candidate, not accepted.
 
 ## Updates
 

@@ -15,3 +15,5 @@ H1 platformer remains a candidate roadmap milestone. Current owner request autho
 ## Delivery constraints
 
 Local commits authorized; no remote/main integration. Existing .gitignore edits, .atl and generated .codegraph excluded/preserved. RDD globaloff observed, not changed. Persistent memory unavailable; repository evidence is authoritative.
+
+H0 acceptance commit: c4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc. Next proposal: [ADR-0003](decisions/0003-next-validation-tracer.md), graphical H1.0 versus timing-first. Owner scope/native-dependency authority remains pending; backend/signatures are unselected.
