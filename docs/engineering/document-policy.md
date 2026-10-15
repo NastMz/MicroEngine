@@ -2,7 +2,7 @@
 
 Status: active initial documentary operating convention, established under the owner's
 2026-10-12 request to prepare and validate AI-first execution. It governs authorized
-sessions; technical execution authority is separately recorded in accepted ADR-0002.
+sessions; current technical execution/approval authority is recorded in autonomy.md; ADR-0002 retains historical H0 scope.
 
 ## Sources of truth
 
@@ -21,14 +21,14 @@ approved contract to match code; resolve authority and scope first.
 
 - Proposed: suggestion without commitment.
 - Investigating: evidence gathering, not approval.
-- Approved: owner accepted scope; record person/date/evidence.
+- Approved: owner or delegated technical authority accepted scope; record actor/date/source and independent review for significant decisions.
 - Implemented: code exists; link it. Checks may still be pending.
 - Verified: acceptance observed; record command, environment, outcome and evidence.
 - Deferred/rejected: preserve ID and reason.
 
 Accepted ADRs do not prove implementation. Milestones need observed exit criteria.
 Changed behavior or acceptance invalidates affected verification: preserve the old result
-historically and reopen only affected work. Agents cannot approve their own proposals.
+historically and reopen only affected work. Delegated agents may approve technical proposals only after required independent review, with rationale/evidence; subjective product acceptance remains human-owned.
 
 ## Proportional updates
 
@@ -57,4 +57,4 @@ are distinct. Ready does not authorize unapproved implementation. Changes to tas
 scope/spec invalidate affected readiness and proof. Capture new needs in [findings](findings.md)
 without expanding current work. The owner requested this operating model on 2026-10-12;
 its conventions are active for authorized work and may evolve through recorded changes;
-this activation does not accept technical proposals.
+technical acceptance now follows the2026-10-15 delegation in autonomy.md, not automatic promotion.

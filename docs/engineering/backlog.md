@@ -15,7 +15,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-005 | specification | P0 | completed | H0 acceptance | Below |
 | ME-006 | investigation | P0 | completed | H0 acceptance | Below |
 | ME-007 | decision preparation | P0 | completed | ME-005, ME-006 | Below |
-| ME-008 | specification | P1 | blocked | ME-007; owner H1 scope authority | Below |
+| ME-008 | specification | P1 | pending | ME-007; reviewed delegated ADR-0003 approval | Below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next bounded horizon is H1 candidate preparation, not implementation. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -188,20 +188,19 @@ Select from the current table; initial planning selection was ME-001.
 
 - 2026-10-15: pending -> ready after ME-005/006 completed independent evidence; ready -> in-progress, claimed Codex root, baseline c4f8e6b. Documentary scope only.
 
-- 2026-10-15: in-progress -> in-review -> completed after independent h1_preparation_verify design readback. One correction batch repaired ADR table seam and H1 CAP-002 mapping; targeted recheck passed. Evidence: decisions/0003-next-validation-tracer.md, register, roadmap/current-state; runtime N/A. ADR remains proposed; ME-008 blocked on owner scope/dependency authority. No ready independent task remains.
+- 2026-10-15: in-progress -> in-review -> completed after independent h1_preparation_verify design readback. One correction batch repaired ADR table seam and H1 CAP-002 mapping; targeted recheck passed. Evidence: decisions/0003-next-validation-tracer.md, register, roadmap/current-state; runtime N/A. ADR remains proposed; Historical blocker, now superseded by technical delegation: ME-008 awaited owner authority. No ready independent task remains.
 
 ## ME-008 — Finalize H1.0 technical construction packet
 
-- State: blocked, not executable. Depends on completed ME-007 and owner approval of the new scope/dependency authority. No H1 implementation task is currently ready.
+- State: pending, not executable until technical readiness. Depends on completed ME-007 and independently reviewed delegated technical approval of ADR-0003 under autonomy.md. No H1 implementation task is currently ready.
 - Required before ready: accepted bounded scenario, delegated native dependency authority, exact source/project surfaces, public signatures/ownership/input-time semantics, package/native version and license/deployment validation plan, Windows environment and commands, deterministic/public-consumer checks, independent review/rollback.
 - Intended scope after authority: finalize only that packet; implementation requires separate complete ready task(s). No library/demo/backend may be improvised from this blocked outline.
-- Current missing decision: whether to introduce a native window/input/presentation validation increment next, or stay headless for CAP-002 first. Both exceed accepted H0 behavior.
+- Technical decision under delegated review: whether to introduce a native window/input/presentation validation increment next, or stay headless for CAP-002 first. Both exceed accepted H0 behavior.
 - No allowed construction paths/runner are fabricated before that decision. H1 remains candidate, not accepted.
 
 ## Updates
 
 Record dated transition reason, executor/reviewer, baseline/change locator, checks and
-findings under each packet. Preserve past results. Agents may prepare tasks objectively,
-not approve contracts. Add only concrete next-horizon work; future catalog rows are not tasks.
+findings under each packet. Preserve past results. Agents may prepare tasks and approve technical contracts through independent review and recorded approval under autonomy.md; code or task completion alone is not approval. Add only concrete next-horizon work; future catalog rows are not tasks.
 
-Delivery ledger2026-10-15: H0 implementation0771a8344861e3c1d76f7a4285869cec1ba60220; acceptance c4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc; ME-005..007 reviewed proposals 7addfd3911aaea67c2170d99736637e7ecf3749c. ME-008 remains blocked; no independent ready task remains.
+Delivery ledger2026-10-15: H0 implementation0771a8344861e3c1d76f7a4285869cec1ba60220; acceptance c4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc; ME-005..007 reviewed proposals 7addfd3911aaea67c2170d99736637e7ecf3749c. Historical closure before broader delegation: ME-008 was blocked; reevaluate under current autonomy.md.

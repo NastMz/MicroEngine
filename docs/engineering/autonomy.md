@@ -1,3 +1,33 @@
+# Technical autonomy policy
+
+Status: active, owner delegation2026-10-15. Supersedes narrower approval rules below; product manifesto unchanged.
+
+## Default authority
+
+**Technical autonomy by default; human intervention by exception.** The owner authorizes agents to investigate/select justified solutions; create/review/approve/supersede technical ADRs; define/evolve public contracts; choose dependencies/tools/backends; create projects/components/tests/examples; refactor/replace justified implementations; plan/prepare/execute/close tasks; refine next horizons from the roadmap; accept objectively verifiable technical milestones; make coherent local commits; continue ready work in the active session.
+
+This is technical authority within the general-purpose C#/.NET 2D vision and Mario/Zelda/Pokemon validation roadmap, not permission for arbitrary capabilities or mandatory genre modules. An architectural consequence alone does not require owner approval. Recommendations become decisions only through recorded approval under this authority, not through code existence.
+
+## Mandatory controls
+
+Respect manifesto/requirements. Significant architectural changes require an ADR, alternatives/consumer impact and independent review before approval. New capabilities require specifications and observable acceptance criteria before construction. Run applicable automated/regression checks, fix defects without weakening criteria/coverage, record actual evidence and synchronize documentation. Close tasks only with sufficient proof and traceable local commits. Preserve unrelated work and superseded decisions. Review switches remain user-owned.
+
+## Human exceptions
+
+Ask only for substantial product vision/strategic scope changes; destructive/external/irreversible operations requiring authorization; indispensable subjective playability/ergonomics/presentation evaluation; blockers not reasonably resolvable by bounded research, alternatives or independent review; or no useful roadmap work when continuing would invent unrelated requirements. Stop only affected work and continue safe independent work. Available credentials do not authorize remote access. No remote publication, PR/push, main integration or release without explicit authorization.
+
+## Two acceptance gates
+
+Technical acceptance is delegated: criteria-by-criteria objective evidence, environment, failed/skipped checks and independent review where applicable. Subjective product acceptance remains human-owned and cannot be fabricated. A technically verified increment may await subjective acceptance while independent tasks continue. Do not ask the owner to repeat checks the agent can automate. Do not treat a future subjective gate as an automatic technical blocker.
+
+## Operation
+
+Use [execution](execution.md) and [backlog](backlog.md); refine only the next useful horizon. Document discoveries/debt through [findings](findings.md), not hidden scope growth. Local commits are authorized; narrow surfaces and rollback boundaries still apply. Changed contracts require new rationale/review/regression proof, not silent specification edits to fit failing code. A session protocol is not a background scheduler.
+
+## Historical policy (superseded2026-10-15)
+
+<details><summary>Earlier bounded H0 authority and evidence, preserved verbatim</summary>
+
 # Agent autonomy policy
 
 Status: active initial policy for authorized sessions.
@@ -66,3 +96,5 @@ that acceptance. Do not invent new scope merely to remain busy.
 Independent autonomy_policy_verify readback passed after one documentary correction: explicit fourth H0 invalid-scenario reproduction command and automated-evidence row. All original behavior criteria retained. Six changed-document link checks found no missing targets; git diff --check passed. All10 delivered source/config hashes matched; no engine/test changes or coverage reduction, so no redundant runtime rerun. H0 remains awaiting owner product acceptance; backlog ME-001..ME-004 completed, no eligible independent task. CodeGraph initialization added derived index state only, not product scope or authority.
 
 Subsequent owner decision2026-10-15: H0 was explicitly accepted against existing evidence/criteria. Earlier pending-acceptance references in dated verification notes are historical, not an active H0 blocker. This does not accept any future milestone.
+
+</details>

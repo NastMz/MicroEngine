@@ -1,3 +1,4 @@
+<!-- Current authority:2026-10-15 technical delegation supersedes earlier approval-only restrictions; see autonomy.md. Historical dated evidence is not rewritten. -->
 # Planning-system validation
 
 This record concerns documentary workflow, not runtime correctness.

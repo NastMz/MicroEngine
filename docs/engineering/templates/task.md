@@ -35,3 +35,7 @@ Required independent verification cannot be replaced by author confidence.
 Dated transitions, owner/reviewer, baseline/change locator, criteria results, command/exit
 codes, environment, docs updated, findings IDs, remaining blockers and next work.
 Readiness requires the execution protocol gate; blank fields prohibit ready.
+
+## Authority and acceptance gate
+
+Apply autonomy.md: technical decisions and objective acceptance are delegated; significant ADRs need independent review. Record technical approval actor/source and review separately from subjective product acceptance. Use the complete human-exception list in [autonomy](../autonomy.md); do not create additional technical approval gates. Local commits authorized; no remote/main integration.

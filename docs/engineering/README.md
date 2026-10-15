@@ -1,3 +1,4 @@
+<!-- Current authority:2026-10-15 technical delegation supersedes earlier approval-only restrictions; see autonomy.md. Historical dated evidence is not rewritten. -->
 # MicroEngine engineering foundation
 
 This is the active context for the greenfield C#/.NET 2D framework.
@@ -27,7 +28,7 @@ explicit delegation is recorded. A generated recommendation does not approve its
 ## AI-first development entry
 
 Read [backlog](backlog.md), [execution protocol](execution.md) and [autonomy policy](autonomy.md).
-Ready packets are self-contained; ME-001/002/003 preparation is complete; ME-004 is completed with evidence in the backlog; H0 owner acceptance was recorded2026-10-15; only H1 preparation is authorized next.
+Ready packets are self-contained; ME-001/002/003 preparation is complete; ME-004 is completed with evidence in the backlog; H0 owner acceptance was recorded2026-10-15; the next H1 horizon may be specified, independently reviewed, technically approved and built under delegated authority.
 [Capabilities](capabilities.md) describes general needs without genre modules.
 [Lifecycle](specs/lifecycle.md) is the approved delegated H0-1 contract. [Frame execution](specs/frame-execution.md) remains proposed/outside H0. [Toolchain](toolchain.md) records versions and checks. Use [task template](templates/task.md),
 [manual milestone delivery](milestone-delivery.md), [findings intake](findings.md) and

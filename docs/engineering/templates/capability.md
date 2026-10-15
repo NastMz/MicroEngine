@@ -4,7 +4,7 @@ Create under docs/engineering/capabilities/ only for a concrete capability.
 
 - Proposal status: proposed | investigating | approved | deferred | rejected
 - Delivery status: not-started | in-progress | implemented | verified
-- Approval: person/date/evidence, or pending
+- Approval: owner or delegated technical actor/date/source/review evidence, or pending
 - Requirements and decisions: linked IDs
 - Implementation and verification: links/evidence, or none
 
@@ -37,3 +37,7 @@ outcomes and limitations; implementation is not verification.
 
 Record material scope changes and consumer impact. Re-establish affected verification
 evidence after relevant changes.
+
+## Authority and acceptance gate
+
+Apply autonomy.md: technical decisions and objective acceptance are delegated; significant ADRs need independent review. Record technical approval actor/source and review separately from subjective product acceptance. Use the complete human-exception list in [autonomy](../autonomy.md); do not create additional technical approval gates. Local commits authorized; no remote/main integration.

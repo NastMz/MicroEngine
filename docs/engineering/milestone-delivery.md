@@ -1,3 +1,4 @@
+<!-- Current authority:2026-10-15 technical delegation supersedes earlier approval-only restrictions; see autonomy.md. Historical dated evidence is not rewritten. -->
 # Milestone delivery and human validation
 
 Milestones are consumer experiences, not merely completed task lists.
@@ -17,24 +18,22 @@ reproduction commands optional when the agent has already verified them. A manua
 must explain what additional evidence a person can provide; do not duplicate automated cases
 as mandatory human work. Preserve the behavior criteria and coverage regardless of evaluator.
 
-## Human review
+## Subjective human validation
 
 State 'awaiting manual validation' separately from automated task completion.
-For technically completed headless milestones, clarify this as 'awaiting owner product acceptance',
-not pending repetition of technical tests. A human-only check is justified by evidence that tools
+Objective headless milestones need no mandatory human gate; accept them technically when criteria pass. Subjective acceptance, where actually required, is separate. A human-only check is justified by evidence that tools
 cannot legitimately establish, not simply by the milestone label.
-The owner records date/revision, passed cases, failures and decision. Manual failure opens
+For indispensable subjective evaluation, the owner records date/revision, passed cases, failures and decision. Manual failure opens
 a linked defect; it does not erase historical evidence or authorize unrelated features.
 Changes invalidate affected manual cases, not automatically every previous milestone.
 Close milestone only after required automated and manual criteria pass.
 
 ## Continue without unnecessary coordination
 
-While manual feedback is pending, continue independent ready tasks whose dependencies
-do not require that milestone's acceptance. Never mark a gate passed on the owner's behalf.
+While subjective feedback is pending, continue independent ready tasks whose dependencies do not require that experience. Never claim subjective product acceptance on the owner's behalf; objective technical milestones may be accepted by the delegated agent with evidence and required review.
 H0 now has a runnable [manual delivery packet](milestones/H0.md); automated task completion is not manual milestone or game acceptance.
 
-Owner policy clarification, 2026-10-15: autonomy by default, intervention by exception.
+Historical policy clarification (superseded by technical delegation), 2026-10-15: autonomy by default, intervention by exception.
 H0's four console scenarios are already automated; their repetition provides no new functional
 coverage on the same environment. The remaining owner decision is whether the delivered scope
 and limitations satisfy the product milestone. Do not accept it on the owner's behalf.

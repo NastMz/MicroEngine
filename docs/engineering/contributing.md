@@ -1,3 +1,4 @@
+<!-- Current authority:2026-10-15 technical delegation supersedes earlier approval-only restrictions; see autonomy.md. Historical dated evidence is not rewritten. -->
 # Continue MicroEngine from a fresh session
 
 ## Read and establish scope
@@ -19,23 +20,21 @@ Update affected records rather than creating duplicate trackers.
 
 ## Checks
 
-No greenfield build/test runner exists. Record commands when projects are approved and
-created. Historical prototype workflows are available via Git history only.
+The current runner and exact serial restore/build/test commands are in [toolchain](toolchain.md). Historical prototype workflows remain in Git history only.
 For documentation, read back changed files, check relative links, status consistency
 and `git diff --check`. Inspect untracked files explicitly.
 
 ## Close work
 
 Report actual evidence, affected IDs, failed/skipped checks and next work. Follow
-[document policy](document-policy.md). Commit/push/PR need applicable authorization;
+[document policy](document-policy.md). Coherent local commits are authorized; push/PR/main integration need explicit authorization;
 use Conventional Commits without AI attribution.
 
 ## Start an agent development session
 
 Ask the agent to develop eligible ready tasks. It reads the [backlog](backlog.md),
 [execution](execution.md) and [autonomy](autonomy.md), claims one task and continues
-independent work after verified closure. The session request does not accept pending
-architecture or publication. Current ready tasks prepare design; no engine coding is ready.
+independent work after verified closure. Technical architecture approval is delegated under autonomy.md after independent review. Publication remains prohibited. Select actual ready work from the backlog, including reviewed construction packets.
 
 ## H0 authorized development
 

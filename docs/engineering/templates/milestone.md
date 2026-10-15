@@ -3,7 +3,7 @@
 Create under docs/engineering/milestones/ only for a bounded milestone.
 
 - Status: candidate | approved | in-progress | verified | deferred
-- Approval and origin: person/date/evidence, or pending
+- Approval and origin: owner or delegated technical actor/date/source/review evidence, or pending
 - Scenario: external consumer and observable goal
 - Requirements, capabilities and decisions: linked IDs
 
@@ -24,3 +24,7 @@ links, commands/results, failures, skipped checks and environment limitations.
 ## Next work
 
 State the next bounded action and blockers without exhaustively planning future milestones.
+
+## Authority and acceptance gate
+
+Apply autonomy.md: technical decisions and objective acceptance are delegated; significant ADRs need independent review. Record technical approval actor/source and review separately from subjective product acceptance. Use the complete human-exception list in [autonomy](../autonomy.md); do not create additional technical approval gates. Local commits authorized; no remote/main integration.

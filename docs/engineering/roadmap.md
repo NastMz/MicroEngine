@@ -1,6 +1,7 @@
+<!-- Current authority:2026-10-15 technical delegation supersedes earlier approval-only restrictions; see autonomy.md. Historical dated evidence is not rewritten. -->
 # Evolutionary roadmap
 
-H0 is accepted by the owner (2026-10-15). Current horizon: prepare the next H1 candidate through bounded specifications/investigations and task packets; no future engine construction is approved. The prototype remains at [legacy-final](history.md).
+H0 is accepted by the owner (2026-10-15). Current horizon: prepare the next H1 candidate through bounded specifications/investigations and task packets; reviewed future technical construction is delegated within the roadmap. The prototype remains at [legacy-final](history.md).
 
 ## Current executable horizon
 
@@ -39,4 +40,4 @@ ADR approval, task completion and milestone acceptance are separate records.
 
 ## Next refinement only
 
-Proposed [H1.0 tracer](specs/h1-first-playable.md) is a subset, not completion of [H1](milestones/H1.md). ME-005/006 prepare scenario/options; ME-007 prepares [ADR-0003](decisions/0003-next-validation-tracer.md). ME-008 technical packet awaits new scope/dependency authority. No H1 construction task is ready.
+Proposed [H1.0 tracer](specs/h1-first-playable.md) is a subset, not completion of [H1](milestones/H1.md). ME-005/006 prepare scenario/options; ME-007 prepares [ADR-0003](decisions/0003-next-validation-tracer.md). ME-008 technical packet awaits independent review and delegated ADR-0003 approval under autonomy.md. No H1 construction task is ready.

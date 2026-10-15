@@ -1,6 +1,6 @@
 # ADR-0003 — Next validation tracer boundary
 
-Status: proposed. Prepared 2026-10-15 under ME-007; owner decision pending.
+Status: proposed. Prepared 2026-10-15 under ME-007; delegated technical review/approval pending.
 This record does not supersede accepted ADR-0002 or alter H0 acceptance.
 
 ## Context and evidence
@@ -11,7 +11,7 @@ Reviewed ME-005 [scenario](../specs/h1-first-playable.md) and ME-006
 [options report](../investigations/h1-native-options.md) bound the next horizon.
 Neither document approves public signatures or dependencies.
 
-## Decision requested from the owner
+## Technical decision under delegated review
 
 Approve a bounded **H1.0 graphical tracer next**, on Windows only: external consumer,
 primitive window/presentation, input, fixed-step execution and consumer-owned floor/jump
@@ -45,7 +45,7 @@ mandatory graphics initialization in headless consumers. A private backend is mo
 reversible than exported native APIs, but still entails deployment and maintenance cost.
 Review H0 compatibility explicitly; breaking its contracts is outside this delegation.
 
-## Delegation proposed, not yet granted
+## Technical discretion under owner delegation2026-10-15
 
 Within approved scope agents may decide names, project partition, keys/units/defaults,
 private mechanisms, exact supported dependency versions and deterministic tests,
@@ -55,17 +55,17 @@ architecture. ECS/scenes/physics choices are not silently delegated.
 
 ## Readiness and response to rejection/modification
 
-ME-008 remains blocked until this scope/delegation is accepted. Then finalize exact
+ME-008 readiness awaits independent technical review and delegated acceptance of this record. Then finalize exact
 paths/signatures, input-edge/time/stop/focus semantics, selected dependency/native assets,
 licenses, Windows runner/environment, failure/deployment checks and rollback. Obtain
 independent contract review before separate implementation tasks become ready.
 No installation or native code is authorized by mere existence of this proposal.
 
-If the owner selects timing-first, revise only affected proposal/tasks and preserve
+If technical review selects timing-first, revise only affected proposal/tasks and preserve
 graphical research as historical input. If deferred, leave ME-008 blocked. If modified,
 update linked scope and review impacted contracts; do not treat partial agreement as
 blanket approval. H0 acceptance and its evidence remain unchanged.
 
 ## Approval record
 
-Pending. Agent recommendation and task completion do not constitute owner approval.
+Pending independent technical review. Approval may be recorded by the delegated agent under autonomy.md; no subjective product acceptance is implied.

@@ -1,7 +1,7 @@
 # Agent execution protocol
 
 Operational scope: the owner requested this planning system on 2026-10-12.
-The later owner approval in ADR-0002 authorizes bounded H0 construction after reviewed contracts. This is a repository
+The2026-10-15 owner delegation in autonomy.md authorizes reviewed technical decisions, construction, local commits and objective acceptance within the roadmap. ADR-0002 preserves H0 scope. This is a repository
 protocol executed by an agent, not a scheduler, daemon or guarantee of background work.
 
 ## Fresh-session entry
@@ -30,18 +30,18 @@ its recommendation. A completed task does not imply a milestone passed manual te
 Normal transitions: pending -> ready -> in-progress -> in-review -> completed.
 Any active task may become blocked. Unblocking returns to pending for readiness recheck,
 not automatically ready. Review corrections return to in-progress within the same scope.
-Scope changes reopen preparation and approval; do not silently redefine acceptance.
+Scope changes reopen preparation and the applicable delegated technical or reserved human approval; do not silently redefine acceptance.
 
 ## Readiness gate
 
 All conditions must hold:
 - Kind and explicit execution authority recorded (investigation, docs or implementation).
 - Objective, exclusions, linked requirements/spec revision and accepted decisions recorded.
-- Every dependency completed with evidence; human decision dependencies explicitly resolved.
+- Every dependency completed with evidence; genuine strategic/product human dependencies explicitly resolved, technical dependencies resolved through delegated decisions.
 - Narrow edit surfaces and deliverable locations identified; no unresolved contract choice.
 - Observable acceptance, applicable checks/commands or justified N/A recorded.
 - Risk and review route, failure/rollback boundaries and evidence packet defined.
-- No unresolved product/platform/dependency decision needed for this task.
+- No unresolved decision needed: technical choices are resolved autonomously with review; strategic changes outside the manifesto require owner input.
 - Fresh-session context complete; no promises to obtain context from a previous chat.
 
 Agents may mark ready when these objective conditions hold; they cannot fabricate authority.
@@ -71,7 +71,7 @@ Run task-focused and applicable integration checks, normalize before final verif
 and compare public behavior with acceptance, not only internal tests.
 
 Use check-only commands after freezing a reviewed candidate. Update affected docs with
-implementation and tests. Do not select technologies or change contracts to make tests pass.
+implementation and tests. Do not change technologies/contracts merely to evade tests; justified changes require rationale, independent review and renewed affected proof.
 Missing runners, failures and unavailable review are recorded, never labeled passed.
 
 Execute every pertinent check that available tools can automate or reproduce. Implement fixes
@@ -102,10 +102,10 @@ session without asking permission for routine task steps. Stop on user request, 
 session/resources, unsafe ownership or no eligible tasks. At a milestone/manual gate,
 prepare its packet and continue unrelated tasks if they remain eligible.
 
-Technical verification and product acceptance are separate gates. An owner-acceptance dependency
+Technical verification/acceptance (delegated) and subjective product acceptance (human) are separate gates. An owner-acceptance dependency
 blocks only tasks that actually need that decision; it does not freeze the whole backlog.
 Check that a claimed dependency is real. Do not request manual repetition of automated checks
-or promote a human-owned milestone to accepted. If no independent task is ready, report that
+or claim subjective product acceptance. Technical acceptance is delegated after sufficient objective evidence. If no independent task is ready, report that
 fact without creating speculative tasks or asking the owner to perform operational checks.
 
 Do not bypass a blocked dependency, start speculative tasks or schedule later runs.

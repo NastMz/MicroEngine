@@ -1,3 +1,4 @@
+<!-- Current authority:2026-10-15 technical delegation supersedes earlier approval-only restrictions; see autonomy.md. Historical dated evidence is not rewritten. -->
 # Current implementation state
 
 Updated2026-10-15. Branch codex/h0-lifecycle. Main unchanged:75a5eef1770f31235c69f8dcc9019de530226886.
@@ -10,10 +11,10 @@ SDK selection stable10.0 roll-forward (10.0.402 tested);31 public tests passed a
 
 ## Next bounded horizon
 
-H1 platformer remains a candidate roadmap milestone. Current owner request authorizes specifications, investigations and executable preparation packets only within approved authority. No H1 implementation is inferred from H0 acceptance. Preserve game rules outside mandatory engine capabilities; do not select ECS/native backend/contracts without the necessary decision authority. [Backlog](backlog.md) owns task states.
+H1 platformer remains a candidate roadmap milestone. Current owner delegation authorizes technical specification, approval and implementation within the roadmap after required independent review. H1 authority now comes from the separate2026-10-15 technical delegation, not H0 acceptance. Preserve game rules outside mandatory engine capabilities; do not select ECS/native backend/contracts without the necessary decision authority. [Backlog](backlog.md) owns task states.
 
 ## Delivery constraints
 
 Local commits authorized; no remote/main integration. Existing .gitignore edits, .atl and generated .codegraph excluded/preserved. RDD globaloff observed, not changed. Persistent memory unavailable; repository evidence is authoritative.
 
-H0 acceptance commit: c4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc. Next proposal: [ADR-0003](decisions/0003-next-validation-tracer.md), graphical H1.0 versus timing-first. Owner scope/native-dependency authority remains pending; backend/signatures are unselected.
+H0 acceptance commit: c4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc. Next proposal: [ADR-0003](decisions/0003-next-validation-tracer.md), graphical H1.0 versus timing-first. Technical scope/dependency decisions may now be resolved under delegation; subjective product acceptance remains pending; backend/signatures are unselected.
