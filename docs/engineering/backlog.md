@@ -203,3 +203,5 @@ Select from the current table; initial planning selection was ME-001.
 Record dated transition reason, executor/reviewer, baseline/change locator, checks and
 findings under each packet. Preserve past results. Agents may prepare tasks objectively,
 not approve contracts. Add only concrete next-horizon work; future catalog rows are not tasks.
+
+Delivery ledger2026-10-15: H0 implementation0771a8344861e3c1d76f7a4285869cec1ba60220; acceptance c4f8e6b2b25b3e6c0fe2ed0130f718ebaa4c4dbc; ME-005..007 reviewed proposals 7addfd3911aaea67c2170d99736637e7ecf3749c. ME-008 remains blocked; no independent ready task remains.
