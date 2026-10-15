@@ -41,3 +41,7 @@ Use the next stable ID; never recycle IDs. Record description, rationale, priori
 origin (owner instruction, issue or evidence), observable acceptance criteria and dependencies.
 For approval, add who/when/evidence. For implemented or verified status, add code/spec links
 and verification results. Changed scope requires renewed approval; retain a short change note.
+
+## H0 evidence slice — 2026-10-13
+
+FR-001: independent project-reference consumer uses public API only. NFR-001/NFR-002: H0-1.1 ownership, partial initialization, reverse cleanup, origin-classified misuse and execution reports exercised by31 public cases. NFR-004/DOC-001: accepted scoped ADR/toolchain/spec/backlog and delivery packet synchronized. Links: [contract](specs/lifecycle.md), [implementation](../../engine/Hosting/Hosting.csproj), [tests](../../checks/Hosting.Contracts/LifecycleTests.cs), [H0 delivery](milestones/H0.md). These are verified H0 slices, not global fulfillment of general engine requirements. NFR-003 budgets not applicable to this correctness increment; no performance claim. Future/game capabilities remain candidates.

@@ -1,6 +1,8 @@
 # Living documentation policy
 
-Status: initial convention authored for owner review, not approval of technical architecture.
+Status: active initial documentary operating convention, established under the owner's
+2026-10-12 request to prepare and validate AI-first execution. It governs authorized
+sessions; technical execution authority is separately recorded in accepted ADR-0002.
 
 ## Sources of truth
 
@@ -46,3 +48,13 @@ requires renewed approval. Report failures and limitations instead of promoting 
 
 The prototype is reference, not a greenfield contract. External memory may assist
 navigation but cannot be the only home of authoritative project context.
+
+## AI-first planning records
+
+[Backlog](backlog.md) owns task state; [execution](execution.md) defines transitions.
+Approval of a requirement/spec/ADR, task completion and milestone manual acceptance
+are distinct. Ready does not authorize unapproved implementation. Changes to task
+scope/spec invalidate affected readiness and proof. Capture new needs in [findings](findings.md)
+without expanding current work. The owner requested this operating model on 2026-10-12;
+its conventions are active for authorized work and may evolve through recorded changes;
+this activation does not accept technical proposals.

@@ -5,6 +5,7 @@ ADRs capture significant choices, not every edit. A generated proposal is never 
 | ID | Title | Status | Date | Approval basis |
 | --- | --- | --- | --- | --- |
 | [ADR-0001](0001-greenfield-direction.md) | Greenfield direction and historical prototype | accepted | 2026-10-12 | Explicit repository-owner direction, quoted in the record |
+| [ADR-0002](0002-initial-execution-scope.md) | Initial execution scope | accepted | 2026-10-12 | Owner scoped approval and explicit technical delegation recorded in ADR |
 
 ## Convention
 
@@ -17,4 +18,4 @@ old ADR superseded and link both directions. Preserve its original reasoning and
 do not rewrite the old conclusion as though the new decision always existed.
 
 ECS, entity storage, scenes/worlds, DI, rendering, platforms, physics and packaging remain
-open. No prior chat recommendation is registered as accepted. See [open decisions](../roadmap.md#open-decisions).
+open. No prior chat recommendation is registered as accepted. See [open decisions](../roadmap.md#decisions-still-open).

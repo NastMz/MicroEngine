@@ -1,39 +1,38 @@
-# Roadmap and current work
+# Evolutionary roadmap
 
-This scenario map is not an implementation schedule. Product direction is confirmed;
-technical design and engine construction are not yet authorized.
+Current horizon: implement the owner-approved H0 external headless lifecycle. Approval is scoped in ADR-0002, not future engine architecture. The prototype remains at [legacy-final](history.md).
 
-## Current work
+## Current executable horizon
 
-The owner approved repository transition on 2026-10-12. The prototype is preserved
-at `legacy-final` and retired from the active tree. No new engine exists. See [history](history.md).
+[Backlog](backlog.md) is the only task-state source. ME-001/002/003 preparation is complete; ME-004 automated implementation is completed; H0 manual validation is pending. See [current state](current-state.md).
+An authorized future development session follows [execution](execution.md) and may continue
+independent ready work. No background scheduler or engine implementation is installed.
 
-Next action: design minimal external-consumer startup/run/shutdown, including partial
-initialization failure. Approve platform scope, ownership/errors and integration
-acceptance before selecting a backend or creating projects. ECS and scenes are not prerequisites.
+## Milestones and candidate validation scenarios
 
-## Scenario candidates
+| ID | Scenario/outcome | Candidate capabilities | Exit criteria to refine | Status |
+| --- | --- | --- | --- | --- |
+| H0 | External application starts/runs/stops safely | CAP-001; CAP-002 only if needed | Approved lifecycle/failure traces, runnable public consumer, integration checks | Awaiting manual H0 validation |
+| H1 | Simple Mario-inspired platformer | CAP-003/004/005/006/007/008 | Movement, obstacles, jump and animation in an external game; game owns jump rules; manual playability | Candidate |
+| H2 | Zelda-inspired top-down adventure | CAP-009/010 plus refined presentation/input | Exploration and transitions without engine-owned combat/progression; manual interaction | Candidate |
+| H3 | Pokemon-inspired RPG | CAP-012/013 plus validated shared capabilities | Exploration, menus and turn interaction; game owns battle/turn rules; manual flow | Candidate |
+| H4 | Metroidvania / modern platformer stress | Needs discovered from earlier milestones | Greater content/state/movement demands with evidence, not presumed Core modules | Deferred candidate |
 
-| Candidate | Purpose | Requirements | Risks and acceptance to refine |
-| --- | --- | --- | --- |
-| Simple Mario-inspired platformer | Movement, collision and animation | C-001, FR-002 | External game flow; no core-owned jump rules |
-| Zelda-inspired top-down adventure | Exploration, transitions and interaction | C-002, FR-002 | Public contracts; game owns combat |
-| Pokemon-inspired RPG | Exploration, menus and turn-based interaction | C-003, FR-002 | Game owns turns; no mandatory RPG libraries |
-| Later metroidvania / modern platformer | Stress needs discovered by earlier scenarios | None committed | Candidate only; no date or exhaustive capability backlog |
+H0 is an engineering prerequisite, not proof of game generality. H1-H4 are a proposed
+refinement sequence, not approved game scopes, dates or capability commitments.
+Select/refine each milestone only when prior evidence identifies necessary work.
+Use [capability catalog](capabilities.md), [milestone template](templates/milestone.md)
+and [manual delivery](milestone-delivery.md); no exhaustive future task list.
 
-Order and game scope are not approved. Use the [milestone template](templates/milestone.md)
-when concrete scope exists.
+## Decisions still open
 
-## Open decisions
+Future platform support/package distribution; native backend and CAP-002;
+entity model/storage; scenes/worlds; rendering, input, audio, physics and asset formats.
+Decide only what a concrete increment needs. No ECS/DI/backend/solver, editor, hot reload,
+networking or 3D commitment is inherited or approved here.
 
-| Question | Resolve when |
-| --- | --- |
-| Initial platforms and distribution | Before selecting backends/dependencies |
-| First validation scenario | Before planning construction |
-| Entity/composition model and storage | Scenario requirements justify comparison |
-| Runtime, time and scene semantics | Before dependent capability approval |
-| Rendering, input, audio and physics choices | Relevant milestone, using evidence |
-| New code placement, packaging and compatibility | Before project creation or public release |
+## Refinement
 
-No ECS, DI container, backend, solver, render graph, asynchronous loading, hot reload,
-editor or 3D commitment is created here.
+[Findings](findings.md) captures evidence and debt without adding arbitrary work.
+Move concrete approved needs into bounded backlog packets with dependencies. Requirement,
+ADR approval, task completion and milestone acceptance are separate records.

@@ -29,3 +29,14 @@ and `git diff --check`. Inspect untracked files explicitly.
 Report actual evidence, affected IDs, failed/skipped checks and next work. Follow
 [document policy](document-policy.md). Commit/push/PR need applicable authorization;
 use Conventional Commits without AI attribution.
+
+## Start an agent development session
+
+Ask the agent to develop eligible ready tasks. It reads the [backlog](backlog.md),
+[execution](execution.md) and [autonomy](autonomy.md), claims one task and continues
+independent work after verified closure. The session request does not accept pending
+architecture or publication. Current ready tasks prepare design; no engine coding is ready.
+
+## H0 authorized development
+
+ADR-0002 delegates technical H0 choices. See toolchain.md for exact restore/build/test commands and current-state.md for observed checks/limitations. Hosting and contract tests now exist; the external probe is delivered for manual H0 validation, not a manually accepted milestone. Do not use historical planning-only statements above as current execution authority.

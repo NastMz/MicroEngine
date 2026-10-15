@@ -1,0 +1,37 @@
+# ME-NNN — Outcome-oriented task title
+
+Use a concrete execution packet, not a vague feature name. Store canonical state in backlog;
+link a separate packet only when its detail warrants it.
+
+- Kind: investigation | specification | implementation | validation | documentation
+- Priority/state: P0/P1/...; pending | ready | in-progress | blocked | in-review | completed
+- Authority: person/date/source; scope and implementation authorization separately
+- Requirements/capability/spec revision/accepted ADRs: links
+- Dependencies: task IDs plus human/external conditions
+- Claim: owner/session label, timestamp, baseline revision; none until claimed
+
+## Objective and exclusions
+
+Describe one observable result. List what must not change and what remains game-owned.
+
+## Allowed edit surfaces and deliverables
+
+Exact repository-relative files/narrow globs, including authorized new paths. Avoid a
+whole-repository wildcard. Name output locations and public-contract constraints.
+
+## Acceptance and tests
+
+Observable criteria, public-interface examples, exact focused/integration commands and
+environment. If unavailable, justified N/A and alternative evidence. No invented runner.
+List documentation changes and required manual checks.
+
+## Risk, review and recovery
+
+Risk and proportional review route, known baseline failures, safe rollback boundary.
+Required independent verification cannot be replaced by author confidence.
+
+## Evidence and state log
+
+Dated transitions, owner/reviewer, baseline/change locator, criteria results, command/exit
+codes, environment, docs updated, findings IDs, remaining blockers and next work.
+Readiness requires the execution protocol gate; blank fields prohibit ready.
