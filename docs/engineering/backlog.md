@@ -19,10 +19,12 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-009 | implementation | P1 | completed | ME-008 | Below |
 | ME-010 | implementation | P1 | completed | ME-009 | Below |
 | ME-011 | implementation correction | P0 | completed | ME-009 | Below |
-| ME-012 | subjective product validation | P1 | blocked | ME-010 | Below |
+| ME-012 | subjective product validation | P1 | completed | ME-010 | Below |
 | ME-013 | architectural documentation | P0 | completed | none | Below |
 | ME-014 | specification | P0 | completed | ME-013 | Below |
 | ME-015 | implementation correction | P0 | completed | ME-014 | Below |
+| ME-016 | specification | P0 | completed | ME-012 | Below |
+| ME-017 | consumer implementation | P0 | ready | ME-016 | Below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -276,3 +278,15 @@ ME-015 final scope clarification2026-10-16: ADR-0003/0004 receive only bidirecti
 ME-015 closure2026-10-16: independent provider_guard_verify fresh TEMP restore/test Loop36/36,Desktop9/9,H031/31=76/76; focused12/12 subset, native seven-scenario harnessPASS with0warnings/0errors. Source equivalence check preserves7Desktop predicates/messages/order;1Loop-internal guard retained, FrameLoop/H0/native/consumer bytes unchanged. Compiled metadata has no Desktop friendship, external provider assembly uses public guard only. No blockers; F-011 resolved for this named-friend coupling, not universal backend/portability conformance. Actor Codex root, reviewed ADR-0005/H1-R1.1. Parent spotcheck and coherent source/docs/tests commit follows; normal push to authorized branch only. ME-012 subjective product feedback remains pending, no technical owner approval requested.
 
 ME-014/015 delivery2026-10-16: contracta1d4666, implementationc59efd2; normal push to origin/feat/h1-runtime confirmed. Parent focused12/12spotcheck passed after independent verification. No remaining ready task in current horizon; ME-012 remains subjective feedback only, no global technical approval blocker. F-010 is next refinement input, not automatically approved distant functionality.
+
+ME-012 closure2026-10-16: owner explicitly reports immediate/comfortable movement and clear player/floor, plus nonblocking near-landing jump observation and permission to continue. Criterion was feedback OR acceptance: feedback received, task completed; no invented explicit acceptance of full H1 or future buffered behavior. Current deliveredexample553a5d9 association by unchanged game/model source, user did not provide a commit hash. Observation recorded as gameplay need, not confirmed engine defect.
+
+## ME-016 — Specify optional consumer jump buffering
+
+Authority current owner feedback/request, autonomy, FR-002/NFR-001/002/004/005, ADR-0003/0004. Independent from broader full-H1 implementation. Pending -> ready -> in-progress claimed Codex root2026-10-16 baseline553a5d9. Surfaces docs/engineering/{specs/platformer-controller.md,backlog.md,milestones/H1.md,current-state.md,findings.md}; odd/tasks/platformer-jump-buffer.md. Deliver exact options/update/window/reset/pause semantics, test packet, buffer/coyote alternatives and rationale; source proof landing_input_map public trace. No core/API/backend changes or new research phase. Acceptance independent consumer-design review and delegated spec approval; no new permanent engine rule, disabled behavior preserved. Runtime N/A design (reproduction already observed in scratch), links/diff/readback. Rollback own spec/task evidence only.
+
+## ME-017 — Add opt-in buffer to example controller
+
+Pending until completed reviewed ME-016. Surfaces examples/FirstPlayable.Model/{GameModel.cs,PlatformerOptions.cs}; examples/FirstPlayable/{Program.cs,ControllerPlatform.cs}; checks/Loop.Contracts/{Loop.Contracts.csproj,JumpBufferTests.cs}; docs/engineering/{backlog.md,specs/platformer-controller.md,specs/h1-runtime.md,milestones/H1.md,current-state.md,findings.md}; odd/tasks/platformer-jump-buffer.md. No engine source/config/dependency changes. Criteria/tests per consumer spec: optional window, disabled exact landing-edge behavior, inside/exact/expired window, one-use/refresh/no-held/no-air-jump, reset and inactive/close consumer bridge. Keep all76existing tests and native seven-scenario harness; observe RED before feature implementation. Public tests serial Loop.Contracts runner, full Desktop/Hosting regressions; native harness rebuilds actual consumer. Risk shared consumer behavior, independent scratch verification mandatory. No criterion/coverage reduction, no coyote placeholder/ledge/physics feature. Rollback own option/controller/test/docs changes only; preserve unrelated .gitignore.
+
+ME-016 closure2026-10-16: independent jump_buffer_review designPASS, no blockers. PC-1 approved by Codex root under user gameplay request/delegation. Source baseline public tick39reproduction supports consumer tolerance change, not engine-loss diagnosis. Buffer100ms explicit sample choice/zero-disabled compatibility; coyote deferred without ledges. Runtime N/A designgate, exact tests/signatures/surfaces/review/failure/rollback supplied. ME-017 pending -> ready.
