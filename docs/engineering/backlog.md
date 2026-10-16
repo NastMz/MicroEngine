@@ -27,6 +27,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-017 | consumer implementation | P0 | completed | ME-016 | Below |
 | ME-018 | specification | P0 | completed | ME-017 | PO-1 below |
 | ME-019 | consumer implementation | P1 | completed | ME-018 | PO-1 below |
+| ME-020 | specification | P0 | completed | ME-019 | AV-1 below |
+| ME-021 | presentation implementation | P1 | ready | ME-020 | AV-1 below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -318,3 +320,13 @@ ME-019 closure2026-10-16: independent obstacle_verify PASS in fresh short TEMP c
 ME-018/019 delivery: contract663d629, implementation/tests/evidence8cd722c55bf379fe47ff2ed1735b9b98fe49100a, normal push confirmed origin/feat/h1-static-obstacles. Parent15/15focused spotcheckPASS. Main81de6a9 has previous buffered increment only. No new prepared task in the bounded obstacle horizon; meaningful subjective obstacle handoff documented in H1 packet.
 
 ME-019 subjective follow-up2026-10-16: owner reports verbatim 'Funciona sin ningun problema' after obstacle sample handoff. Positive feedback received, no reported issues; existing technical completion unchanged. No full-H1 acceptance/new main integration inferred. Associated delivered629b201/implementation8cd722c; owner supplied no hash.
+
+## ME-020 — Specify procedural animation slice
+
+Authority owner continuation2026-10-16 after positive obstacle feedback, roadmap H1 CAP-008, FR-002/ADR-0003/0004. Claimed Codex root baseline1d9a5fd on feat/h1-avatar-animation; ready -> in-progress -> in-review. Scope docs/engineering/{specs/avatar-animation.md,backlog.md,current-state.md,roadmap.md,capabilities.md,milestones/H1.md}; odd/tasks/h1-avatar-animation.md. Deliver AV-1 exact simulation-time pose/gait/facing/renderer/content contract, alternatives and test packet. Independent design approval before construction, no engine/asset framework. Acceptance readback/local links/diff and independent design PASS; runtime N/A at design gate. Rollback only own draft/docs, no prior gameplay changes.
+
+## ME-021 — Animate the external sample avatar
+
+Pending until ME-020 reviewed delegated AV-1 approval. Exact source/test/docs surfaces, contracts, acceptance and serial runners in AV-1. Preserve108tests, no engine/GameModel/obstacle/dependency changes. Runnable RED then focused/full GREEN; native seven scenarios, independent scratch verifier and parent spotcheck mandatory before closure. Claim records baseline after spec commit. Objective technical acceptance delegated; subjective readability of new art/poses human-owned. Risk item3 presentation observable; rollback own animator/renderer/Program/link/tests/doc deltas. No coyote/texture/provider methods/full-H1 acceptance inferred.
+
+ME-020 closure2026-10-16: independent animation_design_review PASS, no blockers; AV-1 approved by Codex root under delegated authority, no significant engine architecture change. Consumer procedural content/timing/facing/rendering contracts exact; no engine/asset/dependency/game rules. Diff/readbackPASS, runtimeN/A design. ME-021 ready.
