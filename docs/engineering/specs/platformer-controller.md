@@ -4,7 +4,7 @@ Status: approved PC-1 by Codex root2026-10-16 under owner request/technical dele
 
 ## Observed need and decision
 
-Owner reports comfortable immediate movement/clear primitives and occasional missed presses just before perceived landing; explicitly nonblocking gameplay observation, not confirmed engine defect. Public model trace at step1/60second: press jump tick1, empty ticks2..38, press tick39. Tick39 begins airborne, tests jump eligibility, then resolves floor; result Grounded=true,Y268,velocity0, next empty tick stays grounded. This is compatible with reported timing, not proof of exact native event time. Loop already preserves edges through zero-update frames.
+Owner reports comfortable immediate movement/clear primitives and occasional missed presses just before perceived landing; explicitly nonblocking gameplay observation, not confirmed engine defect. Public model tests derive the landing update from a disabled baseline at step1/60second, rather than assuming a floating-point flight duration. A press on that update begins airborne, tests jump eligibility, then resolves floor; result Grounded=true,Y268,velocity0, next empty tick stays grounded. This is compatible with reported timing, not proof of exact native event time. Loop already preserves edges through zero-update frames.
 
 Choose configurable jump buffering in the consumer. Parameterless model stays disabled to preserve current behavior/other usages; FirstPlayable explicitly selects100ms (approximately6fixed updates), a provisional usability setting, not a universal optimum. Do not change speed180, jump impulse-300, gravity900, floor268, x-clamp0..616, render geometry or native input mappings. User feedback on the buffered version remains unobserved.
 
@@ -33,7 +33,7 @@ ControllerPlatform lives in the executable; its actual source is linked into Loo
 
 ## Acceptance / runnable probes
 
-New checks/Loop.Contracts/JumpBufferTests.cs: reproduce tick39drop with default/explicitzero; opt-in accepts landing-tick or prior-tick intent; exactwindow accepted, windowminus1tick expired; fresh edge refresh; held/duplicate/no immediateairjump/no latent repeat; zero/negative/null/large window validation; ClearJumpBuffer preserves visible state; inactive/close wrapper cancels pending, active/zero-tick poll preserves it and forwarding/lifetime delegates unchanged. Keep existing movement/jump/landing and all76baseline tests; no assertions removed.
+New checks/Loop.Contracts/JumpBufferTests.cs: reproduce contact-update edge drop with default/explicitzero; opt-in accepts landing-tick or prior-tick intent; exactwindow accepted, windowminus1tick expired; fresh edge refresh; held/duplicate/no immediateairjump/no latent repeat; zero/negative/null/large window validation; ClearJumpBuffer preserves visible state; inactive/close wrapper cancels pending, active/zero-tick poll preserves it and forwarding/lifetime delegates unchanged. Keep existing movement/jump/landing and all76baseline tests; no assertions removed.
 
 Use serial Release dotnet test checks/Loop.Contracts/Loop.Contracts.csproj with --no-restore -p:UseSharedCompilation=false -m:1 -nodeReuse:false. Full Desktop/Hosting runners same flags. checks/Desktop.Contracts/NativeSmoke.ps1 rebuilds consumer and verifies seven scenarios/CLI, not subjective usability. New feature tests must fail observably before buffering implementation; existing baseline drop is expected old behavior, not an engine regression.
 
@@ -42,3 +42,5 @@ Independent consumer design readback before approval; independent scratch verifi
 ## Rollback / future refinement
 
 Remove only own options/model delta/example wrapper/test-link and related documentation to restore baseline; never touch unrelated work. Do not silently enable buffering on other consumers or build a mandatory platformer controller into Core. Next broad H1 capabilities remain separate roadmap refinements; this task is narrowly driven by received gameplay feedback.
+
+Verification2026-10-16: implemented ME-017; author93/93, native sevenPASS; independent jump_buffer_verify scratch53/53 and buffer-disabled mutationRED/restoredGREEN. No engine bytes changed. Objective contract verified, subjective buffered feel unobserved.

@@ -1,3 +1,4 @@
+using FirstPlayable;
 using FirstPlayable.Model;
 using MicroEngine.Desktop;
 using MicroEngine.Hosting;
@@ -18,12 +19,12 @@ for (var i = 0; i < args.Length; i++)
     }
 }
 
-var game = new GameModel();
+var game = new GameModel(new PlatformerOptions(TimeSpan.FromMilliseconds(100)));
 var frames = 0;
 var updates = 0;
 var options = new LoopOptions(TimeSpan.FromSeconds(1d / 60), 5, TimeSpan.FromMilliseconds(250));
 Console.WriteLine("Controls: Left/A, Right/D, Space jump; Escape/window close exits.");
-var report = FrameLoop.Run(() => new DesktopPlatform(new DesktopWindowOptions(640, 360, "MicroEngine H1.0 — first tracer")), options,
+var report = FrameLoop.Run(() => new ControllerPlatform(new DesktopPlatform(new DesktopWindowOptions(640, 360, "MicroEngine H1.0 — first tracer")), game), options,
     frame =>
     {
         if (failUpdate) throw new ApplicationException("Requested update failure.");

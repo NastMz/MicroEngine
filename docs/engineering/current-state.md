@@ -1,6 +1,6 @@
 # Current implementation state
 
-Updated2026-10-16; branch feat/h1-runtime (renamed from codex/h0-lifecycle; history unchanged). Main remains75a5eef1770f31235c69f8dcc9019de530226886. [Backlog](backlog.md) owns task states.
+Updated2026-10-16; branch feat/platformer-jump-buffer (based on delivered553a5d9); prior branch feat/h1-runtime (renamed from codex/h0-lifecycle; history unchanged). Main remains75a5eef1770f31235c69f8dcc9019de530226886. [Backlog](backlog.md) owns task states.
 
 ## Authority
 
@@ -37,3 +37,7 @@ ADR-0005/H1-R1.1 accepted after independent design; implementation independently
 Final76tests=36Loop+9Desktop+31Hosting pass,0failed/0skipped; native harness seven scenariosPASS, consumer rebuild0warnings/0errors. No other backend/dependency/game capability/platform support added, H0/H1 acceptance unchanged. ME-014/015 completed; ME-012 remains subjective product feedback only. Historical64test/native evidence remains baseline, not the final count.
 
 Delivery2026-10-16: ADR-0005 contract commita1d4666; implementation/tests/evidence c59efd2, normal push confirmed to origin/feat/h1-runtime. Main75a5eef1770f31235c69f8dcc9019de530226886 unchanged; pre-existing .gitignore/.codegraph not committed. No PR/release/force/merge.
+
+## Optional consumer jump buffer2026-10-16
+
+ME-012 baseline feedback received (comfortable immediate movement/readable primitives, nonblocking near-landing observation), not full-H1 acceptance. PC-1 design independently reviewed/approved under ME-016. ME-017 implements configurable buffer only in external model/sample, disabled by default, explicit100ms sample. Core/backends/movement constants unchanged; coyote deferred because no ledges. Author93tests pass plus seven native smoke cases; independent jump_buffer_verify scratch53/53 and mutation-probePASS; ME-017 completed (closure evidence in backlog). New buffered feel remains unobserved. Pre-existing .gitignore/.codegraph preserved outside feature commits.

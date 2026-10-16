@@ -24,7 +24,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-014 | specification | P0 | completed | ME-013 | Below |
 | ME-015 | implementation correction | P0 | completed | ME-014 | Below |
 | ME-016 | specification | P0 | completed | ME-012 | Below |
-| ME-017 | consumer implementation | P0 | ready | ME-016 | Below |
+| ME-017 | consumer implementation | P0 | completed | ME-016 | Below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -289,4 +289,10 @@ Authority current owner feedback/request, autonomy, FR-002/NFR-001/002/004/005, 
 
 Pending until completed reviewed ME-016. Surfaces examples/FirstPlayable.Model/{GameModel.cs,PlatformerOptions.cs}; examples/FirstPlayable/{Program.cs,ControllerPlatform.cs}; checks/Loop.Contracts/{Loop.Contracts.csproj,JumpBufferTests.cs}; docs/engineering/{backlog.md,specs/platformer-controller.md,specs/h1-runtime.md,milestones/H1.md,current-state.md,findings.md}; odd/tasks/platformer-jump-buffer.md. No engine source/config/dependency changes. Criteria/tests per consumer spec: optional window, disabled exact landing-edge behavior, inside/exact/expired window, one-use/refresh/no-held/no-air-jump, reset and inactive/close consumer bridge. Keep all76existing tests and native seven-scenario harness; observe RED before feature implementation. Public tests serial Loop.Contracts runner, full Desktop/Hosting regressions; native harness rebuilds actual consumer. Risk shared consumer behavior, independent scratch verification mandatory. No criterion/coverage reduction, no coyote placeholder/ledge/physics feature. Rollback own option/controller/test/docs changes only; preserve unrelated .gitignore.
 
-ME-016 closure2026-10-16: independent jump_buffer_review designPASS, no blockers. PC-1 approved by Codex root under user gameplay request/delegation. Source baseline public tick39reproduction supports consumer tolerance change, not engine-loss diagnosis. Buffer100ms explicit sample choice/zero-disabled compatibility; coyote deferred without ledges. Runtime N/A designgate, exact tests/signatures/surfaces/review/failure/rollback supplied. ME-017 pending -> ready.
+ME-016 closure2026-10-16: independent jump_buffer_review designPASS, no blockers. PC-1 approved by Codex root under user gameplay request/delegation. Public contact-boundary reproduction supports consumer tolerance change (fixture correction recorded in the feature log), not engine-loss diagnosis. Buffer100ms explicit sample choice/zero-disabled compatibility; coyote deferred without ledges. Runtime N/A designgate, exact tests/signatures/surfaces/review/failure/rollback supplied. ME-017 pending -> ready.
+
+ME-017 claim2026-10-16: ready -> in-progress Codex root baseline389552c, branchfeat/platformer-jump-buffer. Approved PC-1, source/test surfaces fixed; parent test-first inline implementation, independent verification after checks.
+
+ME-017 author evidence2026-10-16: corrected cancellation RED3failed/14passed; GREEN focused17/17, full Loop53/Desktop9/Hosting31=93passed,0failed/0skipped. NativeSmoke.ps1 seven scenariosPASS; rebuilt consumer0warnings/0errors. Engine source/dependencies unchanged; independent implementation verification pending.
+
+ME-017 closure2026-10-16: independent jump_buffer_verify fresh TEMP53/53PASS; scratch mutation disabling queue causes corrected landing probe failure, restored1/1PASS. S1-S4 satisfied, no blockers; Program100ms/wrapper wired, default disabled, unchanged engine/movement/native-free checks. Parent93/93 and seven native cases verified above. Objective consumer technical completion only; buffered subjective feel unobserved. No ready task remains in this bounded feedback horizon; later roadmap refinement is separate from this scoped change.

@@ -1,5 +1,5 @@
 # Optional landing jump buffer in the external example
-Branch feat/platformer-jump-buffer; baseline553a5d9, no main integration. Authorized task-branch push to origin with configured Git authentication.
+Branch feat/platformer-jump-buffer; product baseline553a5d9, reviewed implementation baseline389552c, no main integration. Authorized task-branch push to origin with configured Git authentication.
 Existing serial Release dotnet suites/native harness; memory mirror unavailable (no registered runtime identity). Delivery by coherent local units, no PR/release/force.
 
 ## Specs
@@ -9,9 +9,9 @@ S3: "No lo considero un bloqueo ni un fallo confirmado del motor, sino una obser
 S4: "No quiero convertir esos comportamientos en reglas obligatorias del motor ni afectar otros modelos de movimiento." Only consumer GameModel/example/test/docs surfaces; parameterless controller keeps buffer disabled, example explicitly opts into100ms. Coyote deferred: actual current game has no ledge/walk-off case. No engine API/dependency/backend/scope change.
 
 ## Tasks
-T1 S1-S4 inline: ME-016 completed, PC-1 approved after independent jump_buffer_review designPASS; runtimeN/A designgate.
-T2 S1-S4 inline: ME-017 optional buffer, consumer pause/reset bridge and public tests; runnable RED/GREEN, independent implementation verification; pending.
-T3 S1-S4 inline: feedback/technical evidence/local commits/authorized push; pending.
+T1 S1-S4 inline: ME-016 completed, commit389552c, PC-1 approved after independent jump_buffer_review designPASS; runtimeN/A designgate.
+T2 S1-S4 inline: ME-017 optional buffer, consumer pause/reset bridge and public tests; runnable RED/GREEN and independent jump_buffer_verify scratchPASS; completed, commit recorded below.
+T3 S1-S4 inline: feedback/technical evidence/local commits/authorized push; delivery pending below.
 
 ## Log
 L1 User request verbatim:
@@ -23,3 +23,9 @@ L2 Exploration: landing_input_map read-only CodeGraph/scratch trace found model 
 L3 Route: parent writes inline (no writer trigger). Shared example public model behavior/config changes require independent review. New consumer spec suffices under ADR-0003/0004; no significant engine architecture choice/new ADR. Forecast under400 authored lines before evidence, no PR prepared. Preserve .gitignore/.codegraph and existing76tests. New feature branch only, no main merge.
 
 L4 2026-10-16: jump_buffer_review independent designPASS, no blockers; exact timing/boundary/reset/wrapper/headless tests approved, no engine ADR required. PC-1 accepted, ME-017ready.
+
+L5 Fixture correction: the initial tick39 trace claim in L2 was disproved by local tests (Y267.99927, still airborne). Tests now derive contact from unchanged disabled behavior instead of changing physics. Corrected cancellation RED: 3 failed/14 passed of17 with Clear/Poll cancellation stubbed.
+
+L6 Author GREEN: focused17/17, full53Loop+9Desktop+31Hosting=93pass/0fail/0skip; native seven scenariosPASS, build0warnings/0errors. RDD globaloff unchanged; memory mirror remains unavailable. Independent implementation verification requested.
+
+L7 Independent jump_buffer_verify PASS S1-S4: fresh TEMP Loop53/53; scratch-only disabling buffer makes corrected landing probe fail, restoration1/1PASS. Program opts100ms/wrapper wired, default behavior/constants/native-free checks preserved; engine diff empty. Advisory clarified product baseline553a5d9 versus specification/implementation baseline389552c. Parent spotcheck follows.
