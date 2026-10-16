@@ -41,3 +41,5 @@ Delivery2026-10-16: ADR-0005 contract commita1d4666; implementation/tests/eviden
 ## Optional consumer jump buffer2026-10-16
 
 ME-012 baseline feedback received (comfortable immediate movement/readable primitives, nonblocking near-landing observation), not full-H1 acceptance. PC-1 design independently reviewed/approved under ME-016. ME-017 implements configurable buffer only in external model/sample, disabled by default, explicit100ms sample. Core/backends/movement constants unchanged; coyote deferred because no ledges. Author93tests pass plus seven native smoke cases; independent jump_buffer_verify scratch53/53 and mutation-probePASS; ME-017 completed (closure evidence in backlog). New buffered feel remains unobserved. Pre-existing .gitignore/.codegraph preserved outside feature commits.
+
+Consumer delivery references: specification389552c; implementation/tests/evidence bcd2b20119468234e562226ea6ecc590b3ec2ea5 on feat/platformer-jump-buffer. Normal push result appears in session delivery report; no main integration.

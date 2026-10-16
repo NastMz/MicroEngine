@@ -10,8 +10,8 @@ S4: "No quiero convertir esos comportamientos en reglas obligatorias del motor n
 
 ## Tasks
 T1 S1-S4 inline: ME-016 completed, commit389552c, PC-1 approved after independent jump_buffer_review designPASS; runtimeN/A designgate.
-T2 S1-S4 inline: ME-017 optional buffer, consumer pause/reset bridge and public tests; runnable RED/GREEN and independent jump_buffer_verify scratchPASS; completed, commit recorded below.
-T3 S1-S4 inline: feedback/technical evidence/local commits/authorized push; delivery pending below.
+T2 S1-S4 inline: ME-017 optional buffer, consumer pause/reset bridge and public tests; runnable RED/GREEN and independent jump_buffer_verify scratchPASS; completed, commitbcd2b20119468234e562226ea6ecc590b3ec2ea5.
+T3 S1-S4 inline: feedback/technical evidence/local commits completed; normal push pending below.
 
 ## Log
 L1 User request verbatim:
@@ -29,3 +29,5 @@ L5 Fixture correction: the initial tick39 trace claim in L2 was disproved by loc
 L6 Author GREEN: focused17/17, full53Loop+9Desktop+31Hosting=93pass/0fail/0skip; native seven scenariosPASS, build0warnings/0errors. RDD globaloff unchanged; memory mirror remains unavailable. Independent implementation verification requested.
 
 L7 Independent jump_buffer_verify PASS S1-S4: fresh TEMP Loop53/53; scratch-only disabling buffer makes corrected landing probe fail, restoration1/1PASS. Program opts100ms/wrapper wired, default behavior/constants/native-free checks preserved; engine diff empty. Advisory clarified product baseline553a5d9 versus specification/implementation baseline389552c. Parent spotcheck follows.
+
+L8 Delivery references: design389552c; implementation/tests/evidence bcd2b20119468234e562226ea6ecc590b3ec2ea5. Parent17/17spotcheck and git diff --checkPASS after independent review. 400authored-line planning heuristic approximately reached across design+implementation (94+306); no PR requested or prepared, no artificial split/coverage reduction. Only normal authorized task-branch push, not merge/PR/release. Main remains75a5eef1770f31235c69f8dcc9019de530226886; .gitignore hash034c09bc53f13d8002c98c5d5422e390dc49c6d6cb4390a633c6074b76403133 preserved. Memory attribution unavailable; repository recovery retained here.
