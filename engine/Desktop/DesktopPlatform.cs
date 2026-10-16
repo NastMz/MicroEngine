@@ -38,8 +38,8 @@ internal sealed class WindowReservation
     private int _taken;
     internal void Take()
     {
-        if (Interlocked.CompareExchange(ref _taken, 1, 0) != 0)
-            throw new FrameApiException("Only one Desktop window may own native state; prior cleanup may be uncertain.");
+        FrameApi.Require(Interlocked.CompareExchange(ref _taken, 1, 0) == 0,
+            "Only one Desktop window may own native state; prior cleanup may be uncertain.");
     }
     internal void Release() => Interlocked.Exchange(ref _taken, 0);
 }
@@ -79,7 +79,7 @@ public sealed class DesktopPlatform : IFramePlatform
     public PlatformFrame Poll()
     {
         CheckAccess();
-        if (_drawing) throw new FrameApiException("Poll cannot run during drawing.");
+        FrameApi.Require(!_drawing, "Poll cannot run during drawing.");
         var frame = _api.Read();
         var elapsed = !frame.Active || frame.Active != _active ? TimeSpan.Zero : frame.Elapsed;
         _active = frame.Active;
@@ -89,7 +89,7 @@ public sealed class DesktopPlatform : IFramePlatform
     public void Begin()
     {
         CheckAccess();
-        if (_drawing) throw new FrameApiException("Drawing is already active.");
+        FrameApi.Require(!_drawing, "Drawing is already active.");
         _api.Begin();
         _drawing = true;
     }
@@ -128,20 +128,20 @@ public sealed class DesktopPlatform : IFramePlatform
 
     private void CheckThread()
     {
-        if (Environment.CurrentManagedThreadId != _owner)
-            throw new FrameApiException("Desktop operations belong to the window's creating thread.");
+        FrameApi.Require(Environment.CurrentManagedThreadId == _owner,
+            "Desktop operations belong to the window's creating thread.");
     }
 
     private void CheckAccess()
     {
         CheckThread();
-        if (_disposed) throw new FrameApiException("The Desktop window is disposed.");
+        FrameApi.Require(!_disposed, "The Desktop window is disposed.");
     }
 
     private void CheckDrawing()
     {
         CheckAccess();
-        if (!_drawing) throw new FrameApiException("Canvas operations require committed drawing.");
+        FrameApi.Require(_drawing, "Canvas operations require committed drawing.");
     }
 
     private sealed class CanvasView(DesktopPlatform owner) : ICanvas
@@ -150,10 +150,10 @@ public sealed class DesktopPlatform : IFramePlatform
         public void Fill(Rect rectangle, Rgba color)
         {
             owner.CheckDrawing();
-            if (!float.IsFinite(rectangle.X) || !float.IsFinite(rectangle.Y)
-                || !float.IsFinite(rectangle.Width) || !float.IsFinite(rectangle.Height)
-                || rectangle.Width < 0 || rectangle.Height < 0)
-                throw new FrameApiException("Rectangle coordinates must be finite and sizes nonnegative.");
+            FrameApi.Require(float.IsFinite(rectangle.X) && float.IsFinite(rectangle.Y)
+                && float.IsFinite(rectangle.Width) && float.IsFinite(rectangle.Height)
+                && rectangle.Width >= 0 && rectangle.Height >= 0,
+                "Rectangle coordinates must be finite and sizes nonnegative.");
             owner._api.Fill(rectangle, color);
         }
     }

@@ -10,8 +10,8 @@ S4: "Tienes permitido hacer commit y push de ahora en adelante"; "no uses la nom
 
 ## Tasks
 T1 S1-S3 inline: ME-014 completed, independent push_policy_review designPASS; ADR-0005/H1-R1.1 accepted, runtimeN/A.
-T2 S1-S3 inline: ME-015 public guard/remove friend/provider regression tests; pending; independent verification mandatory for public error contract.
-T3 S4 inline: scoped commits/evidence/normal push; pending.
+T2 S1-S3 inline: ME-015 completed; independent provider_guard_verify fresh scratch76/76 and native7scenariosPASS, no blockers.
+T3 S4 inline: scoped source/docs/tests commit and authorized normal push follow final spotcheck; no main/PR/force.
 
 ## Log
 L1 Original current request: "continua". Prior explicit authorization: "Tienes permitido hacer commit y push de ahora en adelante, sigue trabajando"; naming correction: "Si pero no uses la nomenclatura codex/* usa git flow (feat, fex, docs, etc)".
@@ -19,3 +19,7 @@ L2 2026-10-16: inspected current source with CodeGraph, named friend is actual F
 L3 Delivery policy independently reviewed push_policy_review PASS; commit a75f22c normal push origin/feat/h1-runtime confirmed. Pre-existing .gitignore/.codegraph preserved. RDD globaloff observed, unchanged.
 
 L4 2026-10-16: independent designPASS, minimal one-method guard approved. Clarification7Desktop guard sites migrate,1FrameControl internal guard remains. ME-015 readiness gate satisfied after ME-014 completion; code not yet written.
+
+L5 Design commit a1d4666. ME-015 claimed before source writes. Public guard tests against a no-op stub plus existing friend attribute: RED8fail/4pass (runnable, no compilation error). Implemented guard/removal/migration7Desktop sites. GREEN36Loop+9Desktop+31H0=76tests, native rebuild0warnings/0errors and seven native smoke scenariosPASS. No H0/FrameLoop classification source change. Independent implementation verification requested before closure.
+
+L6 2026-10-16: independent verifier fresh TEMP76/76 and native7scenariosPASS, exact external guard behavior/no-friend metadata; allS1-S4PASS. F-011 resolved specifically, no universal backend/target claim. Source frozen after own checks, no normalization/reviewer source corrections. Parent focused spotcheck required. Original .gitignore hash034c09bc53f13d8002c98c5d5422e390dc49c6d6cb4390a633c6074b76403133 preserved. Risk:item3 public shared error contract, independently verified.

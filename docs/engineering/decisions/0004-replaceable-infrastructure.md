@@ -53,3 +53,5 @@ This change adds no runtime code, APIs, packages, adapters, exporter or platform
 ## Approval and review record
 
 Owner supplied the architectural principle2026-10-15. Independent technical_authority_review PASS recommended documentary adoption: all seven constraints/non-goals represented, current extension route and unresolved coupling honestly stated, no runtime/API or acceptance change. Codex root records technical acceptance2026-10-15 under autonomy.md. Readback:15affected documents/91relative targets,0missing; dependency/source readback and git diff --check passed. Executable diff from e5df4fe empty; runtime tests N/A/not rerun. This is architectural adoption, not full implementation conformance or any new milestone acceptance.
+
+Subsequent F-011 remediation2026-10-16: [ADR-0005](0005-provider-neutral-validation.md) approves a one-method provider-neutral validation contract, motivated by existing Desktop checks rather than a speculative backend. ME-015 removes named friendship; verification recorded in backlog/current state. Baseline e5df4fe assessment above remains historically accurate and not retroactively implementation proof.

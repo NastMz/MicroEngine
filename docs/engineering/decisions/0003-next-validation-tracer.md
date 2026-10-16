@@ -97,3 +97,5 @@ blanket approval. H0 acceptance and its evidence remain unchanged.
 Pending independent technical review. Approval may be recorded by the delegated agent under autonomy.md; no subjective product acceptance is implied.
 
 </details>
+
+Subsequent error-boundary change2026-10-16: [ADR-0005](0005-provider-neutral-validation.md) supersedes only named Desktop friendship with public provider-neutral validation under H1-R1.1. Scenario/dependency/functional acceptance remain unchanged. Original rationale above is historical for that superseded mechanism.

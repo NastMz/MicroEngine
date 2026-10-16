@@ -29,3 +29,9 @@ Architectural directive2026-10-15: [ADR-0004](decisions/0004-replaceable-infrast
 Owner2026-10-15 authorizes normal push to origin https://github.com/NastMz/MicroEngine.git with configured Git authentication, current task branch feat/h1-runtime. No PR/force-push/main integration implied; actual delivery result recorded separately. Historical no-publication notes describe earlier authority.
 
 Push confirmed2026-10-16: a75f22c published successfully to origin/feat/h1-runtime via normal push, upstream configured; no main integration, PR or force push. Independent push_policy_review PASS before delivery. Original .gitignore and generated .codegraph excluded. Historical source/branch references preserved.
+
+## Provider-neutral validation2026-10-16
+
+ADR-0005/H1-R1.1 accepted after independent design; implementation independently verified provider_guard_verify in fresh TEMP copy. FrameApi.Require is the additive public guard; Loop no longer names Desktop as friend. Seven Desktop guards migrated with same predicates/messages/order; engine-internal FrameControl guard unchanged. Public nonfriend provider tests plus compiled metadata verify F-011 coupling resolved. Guard is not security/origin proof; intentional false invocation means API misuse, ordinary operational exceptions retain Failed.
+
+Final76tests=36Loop+9Desktop+31Hosting pass,0failed/0skipped; native harness seven scenariosPASS, consumer rebuild0warnings/0errors. No other backend/dependency/game capability/platform support added, H0/H1 acceptance unchanged. ME-014/015 completed; ME-012 remains subjective product feedback only. Historical64test/native evidence remains baseline, not the final count.

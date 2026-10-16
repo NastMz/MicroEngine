@@ -1,7 +1,4 @@
 using System.Collections.Frozen;
-using System.Runtime.CompilerServices;
-
-[assembly: InternalsVisibleTo("Desktop")]
 
 namespace MicroEngine.Loop;
 

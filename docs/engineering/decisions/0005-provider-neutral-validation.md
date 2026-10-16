@@ -31,3 +31,7 @@ One small public method is a maintenance commitment, chosen for an actual adapte
 ## Review and approval
 
 Independent push_policy_review design PASS2026-10-16 recommends adoption; minimal public guard/ordinary-error distinction and exact checks are consistent with ADR-0004 and current H1 scope. Codex root accepts ADR/H1-R1.1 under delegated authority. Source readback clarifies7Desktop guards migrate,1Loop-internal guard retained. Runtime N/A at design gate; construction evidence remains pending.
+
+## Implementation evidence2026-10-16
+
+ME-015: author runnableRED8fail/4pass -> GREEN76existing+new suite cases (36Loop/9Desktop/31H0), native seven-scenario harnessPASS. Independent provider_guard_verify repeats fresh TEMP76/76, focused12/12subset, native harnessPASS;0warnings/errors, no blockers. Core no Desktop friendship in compiled metadata, public test-provider assembly has no Desktop reference/friendship. All7Desktop checks preserve predicates/messages/order;1internal FrameControl check retained. No FrameLoop/Hosting/native API/game source changed. F-011 resolved for the named coupling only, not universal conformance.
