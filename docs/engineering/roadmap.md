@@ -43,3 +43,7 @@ ADR approval, task completion and milestone acceptance are separate records.
 Proposed [H1.0 tracer](specs/h1-first-playable.md) is a subset, not completion of [H1](milestones/H1.md). ME-005/006 prepare scenario/options; ME-007 prepares [ADR-0003](decisions/0003-next-validation-tracer.md). ME-008 technical packet awaits independent review and delegated ADR-0003 approval under autonomy.md. H1.0 construction is now technically verified under accepted H1-R1; no broader H1 construction task is ready without further bounded specification.
 
 H1.0 technical slice accepted2026-10-15 by delegated authority after independent verification; subjective experience pending. Full H1 remains candidate. Next refinement: static obstacle/spatial interaction and animation/content based on delivered tracer evidence/feedback; no distant tasks generated.
+
+## Active bounded refinement2026-10-16
+
+Baseline H1.0 subjective feedback received under ME-012; optional consumer jump buffer delivered under ME-016/017, without full-H1 acceptance. Owner authorized integrating the verified baseline into main (81de6a9). Next ME-018/019: [PO-1](specs/platformer-obstacles.md), consumer-owned static solids/axis movement. Specification review precedes construction; no engine solver, reusable geometry contract, coyote time, animation or broader level system inferred. Later H1 content/animation remains candidate, not a parallel speculative task list.

@@ -25,6 +25,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-015 | implementation correction | P0 | completed | ME-014 | Below |
 | ME-016 | specification | P0 | completed | ME-012 | Below |
 | ME-017 | consumer implementation | P0 | completed | ME-016 | Below |
+| ME-018 | specification | P0 | completed | ME-017 | PO-1 below |
+| ME-019 | consumer implementation | P1 | ready | ME-018 | PO-1 below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -298,3 +300,13 @@ ME-017 author evidence2026-10-16: corrected cancellation RED3failed/14passed; GR
 ME-017 closure2026-10-16: independent jump_buffer_verify fresh TEMP53/53PASS; scratch mutation disabling queue causes corrected landing probe failure, restored1/1PASS. S1-S4 satisfied, no blockers; Program100ms/wrapper wired, default disabled, unchanged engine/movement/native-free checks. Parent93/93 and seven native cases verified above. Objective consumer technical completion only; buffered subjective feel unobserved. No ready task remains in this bounded feedback horizon; later roadmap refinement is separate from this scoped change.
 
 ME-016/017 delivery references: specification389552c, implementation/tests/evidence bcd2b20119468234e562226ea6ecc590b3ec2ea5, branchfeat/platformer-jump-buffer. Parent final17/17spotcheckPASS. Normal push blocked before execution by runtime destination/credential authorization review; requires explicit owner confirmation. Technical completion unchanged; no main integration/PR/release.
+
+## ME-018 — Specify static obstacle consumer slice
+
+Claim2026-10-16 Codex root baseline81de6a9; ready -> in-progress -> in-review. Authority owner continuation after main integration, roadmap H1/F-010, FR-002, ADR-0003/0004. Scope docs/engineering/{specs/platformer-obstacles.md,backlog.md,current-state.md,roadmap.md,findings.md}; odd/tasks/h1-static-obstacles.md. Deliver PO-1 exact geometry/validation/ownership/axis/contact/buffer/sample contracts, alternatives, runnable packet and rollback. Independent scope map confirms consumer-owned static rectangle interaction is the next documented gap; no engine solver/API extraction justified yet. Acceptance independent design PASS and delegated approval before ME-019 readiness. Runtime N/A specification; links/readback/diff checks. No new product milestone acceptance.
+
+## ME-019 — Demonstrate static obstacle interaction
+
+Pending until ME-018 independent review/approval. Scope new examples/FirstPlayable.Model/StaticObstacle.cs; examples/FirstPlayable.Model/GameModel.cs; examples/FirstPlayable/Program.cs; new checks/Loop.Contracts/ObstacleTests.cs; docs/engineering/{specs/platformer-obstacles.md,backlog.md,current-state.md,roadmap.md,findings.md,milestones/H1.md}; odd/tasks/h1-static-obstacles.md. Exact contract/acceptance/commands in PO-1. Preserve93existing regressions plus native seven cases. Runnable RED before implementation; focused/full GREEN; independent scratch verification and parent spotcheck. Risk item3 shared consumer model; no engine/config/dependency changes. Rollback own rectangle/resolution/example/test deltas, preserve prior PC-1 and unrelated files. No coyote/animation/dynamic solver implied. No known failing baseline checks; new geometry edge cases must be pinned, not waived.
+
+ME-018 closure2026-10-16: independent obstacle_design_review recheckPASS for support/PC-1, exact crossing predicates and deterministic validation corrections. Codex root approves PO-1 under delegated authority. Local links/diff checksPASS; runtime N/A design. ME-019 now ready with exact acceptance/commands/surfaces and independent verification gate; no obstacle code implemented yet.

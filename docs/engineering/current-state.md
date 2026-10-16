@@ -43,3 +43,9 @@ Delivery2026-10-16: ADR-0005 contract commita1d4666; implementation/tests/eviden
 ME-012 baseline feedback received (comfortable immediate movement/readable primitives, nonblocking near-landing observation), not full-H1 acceptance. PC-1 design independently reviewed/approved under ME-016. ME-017 implements configurable buffer only in external model/sample, disabled by default, explicit100ms sample. Core/backends/movement constants unchanged; coyote deferred because no ledges. Author93tests pass plus seven native smoke cases; independent jump_buffer_verify scratch53/53 and mutation-probePASS; ME-017 completed (closure evidence in backlog). New buffered feel remains unobserved. Pre-existing .gitignore/.codegraph preserved outside feature commits.
 
 Consumer delivery references: specification389552c; implementation/tests/evidence bcd2b20119468234e562226ea6ecc590b3ec2ea5 on feat/platformer-jump-buffer. Normal push result appears in session delivery report; no main integration.
+
+## Integration and next horizon2026-10-16
+
+Owner explicitly authorized main integration and next work. Fetched origin, verified ancestor relation, fast-forwarded local main to81de6a9 and normal-pushed origin/main; divergence0/0. No merge conflict/history rewrite, unrelated .gitignore/.codegraph preserved. Current work branch feat/h1-static-obstacles, baseline81de6a9. The older "no main integration" records describe previous deliveries/authority, not this authorization.
+
+ME-018/019 refine only F-010 static rectangular solids and consumer-owned movement resolution under PO-1. Scope excludes engine geometry/physics interfaces, other backends, animation, ECS/scenes and coyote time. PO-1 independent design review pending; no obstacle implementation or acceptance claimed. Main contains verified93tests/native seven-case buffer baseline, not the proposed obstacle slice.
