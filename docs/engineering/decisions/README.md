@@ -8,6 +8,7 @@ ADRs capture significant choices, not every edit. A generated proposal is never 
 | [ADR-0002](0002-initial-execution-scope.md) | Initial execution scope | accepted | 2026-10-12 | Owner scoped approval and explicit technical delegation recorded in ADR |
 | [ADR-0003](0003-next-validation-tracer.md) | Next validation tracer boundary | accepted | 2026-10-15 | Codex root under owner delegation; independent design PASS |
 | [ADR-0004](0004-replaceable-infrastructure.md) | Replaceable infrastructure and bounded capability contracts | accepted | 2026-10-15 | Owner directive; Codex root delegated adoption after independent review PASS |
+| [ADR-0005](0005-provider-neutral-validation.md) | Provider-neutral frame validation | accepted | 2026-10-16 | Delegated approval after push_policy_review design PASS |
 
 ## Convention
 
