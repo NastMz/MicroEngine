@@ -1,10 +1,10 @@
 # Current implementation state
 
-Updated2026-10-15; branch codex/h0-lifecycle. Main remains75a5eef1770f31235c69f8dcc9019de530226886. [Backlog](backlog.md) owns task states.
+Updated2026-10-15; branch feat/h1-runtime (renamed from codex/h0-lifecycle; history unchanged). Main remains75a5eef1770f31235c69f8dcc9019de530226886. [Backlog](backlog.md) owns task states.
 
 ## Authority
 
-[Technical autonomy](autonomy.md) is active: reviewed technical ADRs/contracts/dependencies/horizons, objective acceptance and local commits delegated. Human exceptions only as specified there; no remote/main integration. RDD globaloff observed, unchanged. Memory identity unavailable; repository is authoritative.
+[Technical autonomy](autonomy.md) is active: reviewed technical ADRs/contracts/dependencies/horizons, objective acceptance and local commits delegated. Human exceptions only as specified there; normal authorized task-branch push allowed; no main integration. RDD globaloff observed, unchanged. Memory identity unavailable; repository is authoritative.
 
 ## Accepted H0
 
@@ -18,10 +18,12 @@ No ECS/scenes/audio/solver/asset pipeline/animation/packaging/CI. Raylib-cs exis
 
 ## Preserved local work
 
-Pre-existing .gitignore additions and generated .codegraph remain outside commits. No unrelated edits reverted, no remote operation or main merge.
+Pre-existing .gitignore additions and generated .codegraph remain outside commits. No unrelated edits reverted, no main merge; normal task-branch push now authorized.
 
 Final regression after stop-boundary correction:24Loop+9Desktop+31Hosting=64passed,0failed,0skipped; rebuilt native harness seven scenariosPASS. ME-008..011 completed. ME-012 is subjective baseline feedback only, no technical approval gate. No ready independent task in the current bounded horizon; further technical refinement stays delegated.
 
 Delivered native source/evidence c540bcd5e6650f7765d2df7158e0e3691f55fc83; [full local ledger](evidence/h1-0/README.md#local-delivery-references2026-10-15).
 
 Architectural directive2026-10-15: [ADR-0004](decisions/0004-replaceable-infrastructure.md)/NFR-005 formalizes replaceable infrastructure, optional cohesive profiles and future portability boundaries. Documentary/design clarification only; H1-R1 remains implemented as before. Desktop friend-name privilege is a disclosed coupling (F-011), not resolved or a requirement for custom adapters. No new target/backend/API/support claim or changed H0/H1 criteria.
+
+Owner2026-10-15 authorizes normal push to origin https://github.com/NastMz/MicroEngine.git with configured Git authentication, current task branch feat/h1-runtime. No PR/force-push/main integration implied; actual delivery result recorded separately. Historical no-publication notes describe earlier authority.

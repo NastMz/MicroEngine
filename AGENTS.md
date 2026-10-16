@@ -37,7 +37,8 @@ Do not promote statuses without the evidence and authority those rules require.
 - Technical artifacts default to English; follow an explicit language request when provided.
 - Keep documentation proportional. Do not create a specification or ADR for every small edit.
 - Preserve superseded decisions and historical material; link replacements.
-- Coherent local commits are authorized. Do not publish, perform remote operations or integrate main without explicit authorization.
+- Coherent commits and normal task-branch pushes to the authorized origin are allowed; see autonomy.md for destination/authentication scope. No main integration, PR/release, force-push or unrelated publication by inference.
+- Use feat/<topic>, fix/<topic> or docs/<topic> branch names, never codex/*. Preserve historical branch references.
 - Use Conventional Commits when committing is authorized; no AI attribution or Co-Authored-By.
 
 ## Agent skills

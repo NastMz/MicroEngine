@@ -14,7 +14,7 @@ Respect manifesto/requirements. Significant architectural changes require an ADR
 
 ## Human exceptions
 
-Ask only for substantial product vision/strategic scope changes; destructive/external/irreversible operations requiring authorization; indispensable subjective playability/ergonomics/presentation evaluation; blockers not reasonably resolvable by bounded research, alternatives or independent review; or no useful roadmap work when continuing would invent unrelated requirements. Stop only affected work and continue safe independent work. Available credentials do not authorize remote access. No remote publication, PR/push, main integration or release without explicit authorization.
+Ask only for substantial product vision/strategic scope changes; destructive/external/irreversible operations requiring authorization; indispensable subjective playability/ergonomics/presentation evaluation; blockers not reasonably resolvable by bounded research, alternatives or independent review; or no useful roadmap work when continuing would invent unrelated requirements. Stop only affected work and continue safe independent work. Available credentials do not authorize remote access. Remote operations require explicit destination/operation/authentication authorization. The owner has authorized non-force pushes of this project work to origin (https://github.com/NastMz/MicroEngine.git) using the configured Git authentication; standard task-branch pushes no longer require a routine prompt. This does not authorize PR creation, main integration, release, force-push, deletion of remote branches/tags or publishing unrelated work.
 
 ## Two acceptance gates
 
@@ -23,6 +23,10 @@ Technical acceptance is delegated: criteria-by-criteria objective evidence, envi
 ## Operation
 
 Use [execution](execution.md) and [backlog](backlog.md); refine only the next useful horizon. Document discoveries/debt through [findings](findings.md), not hidden scope growth. Local commits are authorized; narrow surfaces and rollback boundaries still apply. Changed contracts require new rationale/review/regression proof, not silent specification edits to fit failing code. A session protocol is not a background scheduler.
+
+## Branch and push convention — owner2026-10-15
+
+Use work-type branches such as feat/<topic>, fix/<topic> and docs/<topic>, not codex/*. No unrequested develop/release branches or merge topology is imposed by this naming convention. The existing branch was renamed locally to feat/h1-runtime with commit history unchanged; historical records retain the original branch names as evidence. Normal push targets the corresponding task branch, never main by inference. Audit exact staged/outgoing scope, preserve unrelated edits, do not print credentials, and record actual push results. Remote rejection/conflict is diagnosed without force/history rewriting.
 
 ## Historical policy (superseded2026-10-15)
 
