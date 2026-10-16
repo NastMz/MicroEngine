@@ -28,7 +28,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-018 | specification | P0 | completed | ME-017 | PO-1 below |
 | ME-019 | consumer implementation | P1 | completed | ME-018 | PO-1 below |
 | ME-020 | specification | P0 | completed | ME-019 | AV-1 below |
-| ME-021 | presentation implementation | P1 | ready | ME-020 | AV-1 below |
+| ME-021 | presentation implementation | P1 | completed | ME-020 | AV-1 below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -330,3 +330,9 @@ Authority owner continuation2026-10-16 after positive obstacle feedback, roadmap
 Pending until ME-020 reviewed delegated AV-1 approval. Exact source/test/docs surfaces, contracts, acceptance and serial runners in AV-1. Preserve108tests, no engine/GameModel/obstacle/dependency changes. Runnable RED then focused/full GREEN; native seven scenarios, independent scratch verifier and parent spotcheck mandatory before closure. Claim records baseline after spec commit. Objective technical acceptance delegated; subjective readability of new art/poses human-owned. Risk item3 presentation observable; rollback own animator/renderer/Program/link/tests/doc deltas. No coyote/texture/provider methods/full-H1 acceptance inferred.
 
 ME-020 closure2026-10-16: independent animation_design_review PASS, no blockers; AV-1 approved by Codex root under delegated authority, no significant engine architecture change. Consumer procedural content/timing/facing/rendering contracts exact; no engine/asset/dependency/game rules. Diff/readbackPASS, runtimeN/A design. ME-021 ready.
+
+ME-021 claim2026-10-16: ready -> in-progress -> in-review, Codex root baseline93be595 on feat/h1-avatar-animation. Exact AV-1 surfaces; runnable scaffoldRED9failed/0passed then focusedGREEN9/9 and Loop77/77. Parent inline writer, independent implementation verification required before closure. No GameModel/engine/package edits; native/full regression results follow.
+
+ME-021 author evidence2026-10-16:117tests=77Loop+9Desktop+31Hosting pass/0failed/0skipped, focused9/9; native seven-scenario harnessPASS with consumer rebuild0warnings/0errors. No engine/gameplay/package/dependency changes. Independent verification pending, no subjective/full-H1 acceptance.
+
+ME-021 closure2026-10-16: independent animation_verify PASS fresh shortTEMP77/77 plus independent timing/overflow/atomicity/phase/reset/instance/render-purity/exact-content probes. Consumer build0warnings/0errors. Hash comparison:11engine files and GameModel/StaticObstacle/PlatformerOptions exact baseline, no new engine files. Parent117tests/native sevenPASS; local links/diff checksPASS. Codex root accepts objective AV-1 technical slice under delegation. No skipped required proof or reproduced blockers. New presentation subjective feedback remains unobserved; no full-H1 acceptance. No independent ready task remains in this bounded animation horizon; further sprite/assets/clip contracts require concrete refinement, not implied by this demonstration.

@@ -47,3 +47,7 @@ H1.0 technical slice accepted2026-10-15 by delegated authority after independent
 ## Active bounded refinement2026-10-16
 
 Baseline H1.0 subjective feedback received under ME-012; optional consumer jump buffer delivered under ME-016/017, without full-H1 acceptance. Owner authorized integrating the verified baseline into main (81de6a9). Next ME-018/019: [PO-1](specs/platformer-obstacles.md), consumer-owned static solids/axis movement. Specification review precedes construction; no engine solver, reusable geometry contract, coyote time, animation or broader level system inferred. Later H1 content/animation remains candidate, not a parallel speculative task list.
+
+## Animation horizon2026-10-16
+
+After positive PO-1 owner feedback, ME-020/021 refine [AV-1](specs/avatar-animation.md): consumer-only procedural idle/walk/air/facing and deterministic playback through existing primitive canvas. No texture/resource/provider method or generic animation library. This narrow visual demonstration does not fulfill all CAP-004/006/008 or accept full H1. Broader asset/clip needs remain candidates until concrete requirements justify their contracts.

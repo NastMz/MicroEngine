@@ -20,6 +20,7 @@ for (var i = 0; i < args.Length; i++)
 }
 
 var game = new GameModel(new PlatformerOptions(TimeSpan.FromMilliseconds(100)), [new StaticObstacle(180, 260, 64, 40)]);
+var animation = new AvatarAnimation();
 var frames = 0;
 var updates = 0;
 var options = new LoopOptions(TimeSpan.FromSeconds(1d / 60), 5, TimeSpan.FromMilliseconds(250));
@@ -29,7 +30,9 @@ var report = FrameLoop.Run(() => new ControllerPlatform(new DesktopPlatform(new 
     {
         if (failUpdate) throw new ApplicationException("Requested update failure.");
         updates++;
+        var oldX = game.X;
         game.Update(frame.Delta, frame.Input);
+        animation.Update(frame.Delta, game.X - oldX, game.Grounded);
     },
     (canvas, frame) =>
     {
@@ -38,7 +41,7 @@ var report = FrameLoop.Run(() => new ControllerPlatform(new DesktopPlatform(new 
         canvas.Fill(new Rect(0, 300, 640, 60), new Rgba(70, 100, 75));
         foreach (var solid in game.Obstacles)
             canvas.Fill(new Rect(solid.X, solid.Y, solid.Width, solid.Height), new Rgba(95, 130, 165));
-        canvas.Fill(new Rect(game.X, game.Y, 24, 32), new Rgba(240, 180, 65));
+        AvatarRenderer.Draw(canvas, game.X, game.Y, animation);
         frames++;
         if (limit > 0 && frames >= limit) frame.Control.RequestStop();
     });

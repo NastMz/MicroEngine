@@ -1,6 +1,6 @@
 # Current implementation state
 
-Updated2026-10-16; branch feat/h1-static-obstacles (baseline81de6a9); main81de6a9 integrated and published by owner authorization. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
+Updated2026-10-16; branch feat/h1-avatar-animation (baseline1d9a5fd); main81de6a9 integrated and published by owner authorization. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
 
 ## Authority
 
@@ -55,3 +55,9 @@ PO-1 construction2026-10-16: ME-018 independently reviewed/approved (contract663
 PO-1 closure2026-10-16: independent obstacle_verify scratch68/68 and1000mixed-update committed-baseline comparison/probesPASS. ME-018/019 completed,108regressions/native sevenPASS. Current branch feat/h1-static-obstacles contains the new obstacle; main81de6a9 remains the integrated buffered baseline. New slice awaits subjective playability feedback only, not automated rechecks. Next animation/content is candidate refinement, not implementation authority by itself.
 
 Owner obstacle feedback2026-10-16: 'Funciona sin ningun problema'. PO-1 delivered sample now has positive subjective feedback; earlier unobserved notes are historical. No code change, full-H1 acceptance or new main merge inferred. Technical evidence unchanged108tests/native sevenPASS.
+
+## Procedural avatar slice2026-10-16
+
+Current branch feat/h1-avatar-animation baseline1d9a5fd; main81de6a9 unchanged. ME-020 AV-1 independently reviewed/approved (93be595); ME-021 consumer-only animator/renderer implemented, independent verification pending. Idle/two-frame walk/air and facing use simulation updates/resolved horizontal displacement. Rendering five source-authored rectangles replaces the player box inside unchanged24x32collision envelope. No engine/GameModel/obstacle/asset/dependency changes; sprite/textures/asset lifetime remain unselected. Author117tests pass, new9tests observed RED thenGREEN; native evidence follows. No subjective acceptance of new presentation claimed.
+
+AV-1 closure2026-10-16: ME-020/021 completed,117tests/native sevenPASS, independent animation_verify scratch77/77 plus all authored pose/timing/render probesPASS.11engine files and gameplay model blobs unchanged. Primitive figure is consumer presentation, no engine animation/asset capability or full-H1 acceptance. Current branchfeat/h1-avatar-animation not merged into main; meaningful subjective pose/gait/readability feedback remains unobserved.

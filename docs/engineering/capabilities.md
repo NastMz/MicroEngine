@@ -26,3 +26,5 @@ Metroidvania and modern platformer are stress scenarios, not new Core capability
 No inventory row creates an implementation promise, dependency graph or technology selection.
 
 H1-R1 evidence: [contract](specs/h1-runtime.md), [delivery](milestones/H1.md), [native provenance](evidence/h1-0/README.md). Full catalog entries are not globally fulfilled by narrow slices.
+
+AV-1/ME-020/021 scoped discovery: consumer-authored procedural frame content and deterministic avatar pose/gait playback through existing primitive presentation. Not a general engine clip/player library or asset capability; no texture/format/ownership choice. Evidence and actual task state in backlog/H1 packet.

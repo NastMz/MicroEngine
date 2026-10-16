@@ -1,6 +1,6 @@
 # AV-1 — Procedural avatar presentation
 
-Status: approved2026-10-16 by Codex root under technical delegation after independent animation_design_review PASS; ME-020 completed, ME-021 ready. Scope owner continuation2026-10-16, roadmap H1/CAP-008, FR-002/NFR-004/005, ADR-0003/0004. Consumer-only demonstration, not an engine animation or asset capability.
+Status: approved2026-10-16 by Codex root under technical delegation after independent animation_design_review PASS; ME-020/021 completed, implemented and independently verified. Scope owner continuation2026-10-16, roadmap H1/CAP-008, FR-002/NFR-004/005, ADR-0003/0004. Consumer-only demonstration, not an engine animation or asset capability.
 
 ## Outcome and alternatives
 
@@ -41,3 +41,5 @@ Runnable RED before implementation, focused/full GREEN. Serial commands: dotnet 
 ## Risk, review and recovery
 
 Risk item3: externally visible sample presentation; independent design and implementation review. No significant engine architecture change; AV-1 under accepted ADRs suffices. Scope exact new examples/FirstPlayable.Model/AvatarAnimation.cs, examples/FirstPlayable/AvatarRenderer.cs, checks/Loop.Contracts/AvatarAnimationTests.cs; examples/FirstPlayable/Program.cs; checks/Loop.Contracts/Loop.Contracts.csproj; docs/engineering/{specs/avatar-animation.md,backlog.md,current-state.md,roadmap.md,milestones/H1.md,capabilities.md}; odd/tasks/h1-avatar-animation.md. Rollback only own animator/render/tests/link/Program/doc deltas to restore old gold box; preserve collision/buffer and unrelated work. Findings may inform later sprite/content needs; they do not silently authorize extraction or a full asset manager.
+
+Verification2026-10-16: author117tests/native sevenPASS; independent animation_verify scratch77/77 plus public/phase/render probesPASS, build0warnings/0errors. Engine/gameplay hashes match baseline. Technical slice accepted, no subjective visual acceptance inferred.
