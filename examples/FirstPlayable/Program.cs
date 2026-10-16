@@ -19,7 +19,7 @@ for (var i = 0; i < args.Length; i++)
     }
 }
 
-var game = new GameModel(new PlatformerOptions(TimeSpan.FromMilliseconds(100)));
+var game = new GameModel(new PlatformerOptions(TimeSpan.FromMilliseconds(100)), [new StaticObstacle(180, 260, 64, 40)]);
 var frames = 0;
 var updates = 0;
 var options = new LoopOptions(TimeSpan.FromSeconds(1d / 60), 5, TimeSpan.FromMilliseconds(250));
@@ -36,6 +36,8 @@ var report = FrameLoop.Run(() => new ControllerPlatform(new DesktopPlatform(new 
         // Game geometry and colors belong to this external consumer, not the engine.
         canvas.Clear(new Rgba(24, 28, 40));
         canvas.Fill(new Rect(0, 300, 640, 60), new Rgba(70, 100, 75));
+        foreach (var solid in game.Obstacles)
+            canvas.Fill(new Rect(solid.X, solid.Y, solid.Width, solid.Height), new Rgba(95, 130, 165));
         canvas.Fill(new Rect(game.X, game.Y, 24, 32), new Rgba(240, 180, 65));
         frames++;
         if (limit > 0 && frames >= limit) frame.Control.RequestStop();

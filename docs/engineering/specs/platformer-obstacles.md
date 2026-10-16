@@ -1,6 +1,6 @@
 # PO-1 — Static solids in the external platformer
 
-Status: approved2026-10-16 by Codex root under technical delegation; independent obstacle_design_review targeted recheck PASS after three contract corrections. ME-018 completed, ME-019 ready. Owner continuation2026-10-16, roadmap H1/F-010, FR-002 and ADR-0003/0004 authorize this bounded refinement. No engine geometry/physics API is selected.
+Status: approved2026-10-16 by Codex root under technical delegation; independent obstacle_design_review targeted recheck PASS after three contract corrections. ME-018/019 completed; implementation independently verified. Owner continuation2026-10-16, roadmap H1/F-010, FR-002 and ADR-0003/0004 authorize this bounded refinement. No engine geometry/physics API is selected.
 
 ## Outcome and boundaries
 
@@ -51,3 +51,5 @@ Observe runnable RED tests before behavior implementation, then focused/full GRE
 Choose consumer-local immutable rectangles and axis sweeps: concrete F-010 need without committing Core to platformer rules. Reject ad-hoc extra clamps because they obscure ownership and cannot test multiple solids. Defer extraction into engine geometry until another concrete consumer demonstrates reusable semantics; Loop.Rect remains a presentation value. General physics/backend/ECS introduces unjustified scope. Axis ordering is intentionally simple and may produce different corner motion than a continuous solver; keep this limitation explicit rather than promising universal collision.
 
 Risk item3: additive public consumer contracts/shared movement behavior; independent design and implementation review required. No significant engine architecture change, so PO-1 suffices under existing ADRs rather than a new engine ADR. Rollback only own new rectangle/tests and GameModel/Program deltas plus associated task/docs; preserve unrelated files and all prior buffered behavior. Findings go to findings.md; do not add coyote time or animation to fix this slice implicitly.
+
+Verification2026-10-16: author108tests and native sevenPASS; independent obstacle_verify fresh scratch68/68 plus1000-update actual-baseline compatibility/probesPASS, no blockers. No engine/dependency changes. Subjective obstacle experience not observed.

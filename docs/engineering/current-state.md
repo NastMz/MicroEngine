@@ -1,6 +1,6 @@
 # Current implementation state
 
-Updated2026-10-16; branch feat/platformer-jump-buffer (based on delivered553a5d9); prior branch feat/h1-runtime (renamed from codex/h0-lifecycle; history unchanged). Main remains75a5eef1770f31235c69f8dcc9019de530226886. [Backlog](backlog.md) owns task states.
+Updated2026-10-16; branch feat/h1-static-obstacles (baseline81de6a9); main81de6a9 integrated and published by owner authorization. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
 
 ## Authority
 
@@ -49,3 +49,7 @@ Consumer delivery references: specification389552c; implementation/tests/evidenc
 Owner explicitly authorized main integration and next work. Fetched origin, verified ancestor relation, fast-forwarded local main to81de6a9 and normal-pushed origin/main; divergence0/0. No merge conflict/history rewrite, unrelated .gitignore/.codegraph preserved. Current work branch feat/h1-static-obstacles, baseline81de6a9. The older "no main integration" records describe previous deliveries/authority, not this authorization.
 
 ME-018/019 refine only F-010 static rectangular solids and consumer-owned movement resolution under PO-1. Scope excludes engine geometry/physics interfaces, other backends, animation, ECS/scenes and coyote time. PO-1 independent design review pending; no obstacle implementation or acceptance claimed. Main contains verified93tests/native seven-case buffer baseline, not the proposed obstacle slice.
+
+PO-1 construction2026-10-16: ME-018 independently reviewed/approved (contract663d629); ME-019 implemented consumer-only static immutable solids, copied validated geometry, nearest-face axis sweeps and support/collision handling compatible with PC-1. Example renders its collision list. Author108tests/native sevenPASS, build0warnings/0errors. Independent implementation verification in progress; no technical completion yet. No engine/backend/dependency changes; no subjective obstacle acceptance inferred.
+
+PO-1 closure2026-10-16: independent obstacle_verify scratch68/68 and1000mixed-update committed-baseline comparison/probesPASS. ME-018/019 completed,108regressions/native sevenPASS. Current branch feat/h1-static-obstacles contains the new obstacle; main81de6a9 remains the integrated buffered baseline. New slice awaits subjective playability feedback only, not automated rechecks. Next animation/content is candidate refinement, not implementation authority by itself.

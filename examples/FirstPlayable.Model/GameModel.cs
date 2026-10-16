@@ -12,10 +12,23 @@ public sealed class GameModel
     public bool Grounded { get; private set; } = true;
 
     public GameModel() : this(new PlatformerOptions(TimeSpan.Zero)) { }
-    public GameModel(PlatformerOptions options)
+    public IReadOnlyList<StaticObstacle> Obstacles { get; }
+    public GameModel(PlatformerOptions options) : this(options, []) { }
+    public GameModel(PlatformerOptions options, IEnumerable<StaticObstacle> obstacles)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(obstacles);
         _jumpBufferWindowTicks = options.JumpBufferWindow.Ticks;
+        var copy = new List<StaticObstacle>();
+        foreach (var solid in obstacles)
+        {
+            if (!StaticObstacle.IsValid(solid.X, solid.Y, solid.Width, solid.Height))
+                throw new ArgumentOutOfRangeException(nameof(obstacles));
+            if (Overlap(X, 24, solid.X, solid.Width) && Overlap(Y, 32, solid.Y, solid.Height))
+                throw new ArgumentException("A static solid overlaps the initial player.", nameof(obstacles));
+            copy.Add(solid);
+        }
+        Obstacles = copy.AsReadOnly();
     }
     public void ClearJumpBuffer() => _pendingJumpTicks = -1;
 
@@ -30,22 +43,55 @@ public sealed class GameModel
         if (jumpPressed && _jumpBufferWindowTicks > 0) _pendingJumpTicks = _jumpBufferWindowTicks;
         var seconds = (float)delta.TotalSeconds;
         var horizontal = (input.IsHeld("right") ? 1 : 0) - (input.IsHeld("left") ? 1 : 0);
-        X = Math.Clamp(X + horizontal * 180 * seconds, 0, 616);
+        var requestedX = Math.Clamp(X + horizontal * 180 * seconds, 0, 616);
+        var resolvedX = requestedX;
+        foreach (var solid in Obstacles)
+        {
+            if (!Overlap(Y, 32, solid.Y, solid.Height)) continue;
+            if (requestedX > X && X + 24 <= solid.X && requestedX + 24 >= solid.X)
+                resolvedX = Math.Min(resolvedX, solid.X - 24);
+            if (requestedX < X && X >= solid.X + solid.Width && requestedX <= solid.X + solid.Width)
+                resolvedX = Math.Max(resolvedX, solid.X + solid.Width);
+        }
+        X = resolvedX;
+        // Contact coordinates alone must never re-ground a just-buffered launch.
+        Grounded = Grounded && (Y == 268 || Obstacles.Any(solid => Y + 32 == solid.Y && Overlap(X, 24, solid.X, solid.Width)));
         if (Grounded && (jumpPressed || _pendingJumpTicks >= 0)) LaunchJump();
         if (!Grounded)
         {
             VerticalVelocity += 900 * seconds;
-            Y += VerticalVelocity * seconds;
-            if (Y >= 268)
+            var requestedY = Y + VerticalVelocity * seconds;
+            var resolvedY = requestedY;
+            var downwardContact = requestedY > Y && Y <= 268 && requestedY >= 268;
+            var upwardContact = false;
+            if (downwardContact) resolvedY = 268;
+            foreach (var solid in Obstacles)
             {
-                Y = 268;
+                if (!Overlap(X, 24, solid.X, solid.Width)) continue;
+                if (requestedY > Y && Y + 32 <= solid.Y && requestedY + 32 >= solid.Y)
+                {
+                    resolvedY = Math.Min(resolvedY, solid.Y - 32);
+                    downwardContact = true;
+                }
+                if (requestedY < Y && Y >= solid.Y + solid.Height && requestedY <= solid.Y + solid.Height)
+                {
+                    resolvedY = Math.Max(resolvedY, solid.Y + solid.Height);
+                    upwardContact = true;
+                }
+            }
+            Y = resolvedY;
+            if (upwardContact || downwardContact)
+            {
                 VerticalVelocity = 0;
-                Grounded = true;
+                Grounded = downwardContact;
                 // Consume at contact, without integrating twice or granting airborne eligibility.
-                if (_pendingJumpTicks >= 0) LaunchJump();
+                if (Grounded && _pendingJumpTicks >= 0) LaunchJump();
             }
         }
     }
+
+    private static bool Overlap(float start, float length, float other, float otherLength)
+        => start < other + otherLength && start + length > other;
 
     private void LaunchJump()
     {
