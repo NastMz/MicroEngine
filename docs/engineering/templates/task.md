@@ -38,4 +38,4 @@ Readiness requires the execution protocol gate; blank fields prohibit ready.
 
 ## Authority and acceptance gate
 
-Apply autonomy.md: technical decisions and objective acceptance are delegated; significant ADRs need independent review. Record technical approval actor/source and review separately from subjective product acceptance. Use the complete human-exception list in [autonomy](../autonomy.md); do not create additional technical approval gates. Local commits authorized; no remote/main integration.
+Apply autonomy.md: technical decisions and objective acceptance are delegated; significant ADRs need independent review. Record technical approval actor/source and review separately from subjective product acceptance. Use the complete human-exception list in [autonomy](../autonomy.md); do not create additional technical approval gates. Local commits/normal authorized task-branch pushes allowed. Positive owner feedback authorizes evaluated verified increment integration/push to main under autonomy.md; record feedback/revision, technical evidence and integration result. No PR/release/force or unrelated work implied.

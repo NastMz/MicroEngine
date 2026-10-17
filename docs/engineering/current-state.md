@@ -1,10 +1,10 @@
 # Current implementation state
 
-Updated2026-10-17; branch feat/h2-room-explorer (baseline4081247); main81de6a9 integrated and published by owner authorization. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
+Updated2026-10-17; branch docs/positive-feedback-integration (baseline9db127f); main9db127f integrated and published by owner authorization. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
 
 ## Authority
 
-[Technical autonomy](autonomy.md) is active: reviewed technical ADRs/contracts/dependencies/horizons, objective acceptance and local commits delegated. Human exceptions only as specified there; normal authorized task-branch push allowed; no main integration. RDD globaloff observed, unchanged. Memory identity unavailable; repository is authoritative.
+[Technical autonomy](autonomy.md) is active: reviewed technical ADRs/contracts/dependencies/horizons, objective acceptance and local commits delegated. Human exceptions only as specified there; normal task-branch push allowed; positive owner feedback authorizes evaluated verified increment integration/push to main under autonomy.md. RDD globaloff observed, unchanged. Memory identity unavailable; repository is authoritative.
 
 ## Accepted H0
 
@@ -73,3 +73,5 @@ ME-022 contractbf86152 independently reviewed/approved; ME-023 input2dfccbd inde
 RE-1 closure2026-10-17: ME-022/023/024 completed;136tests and both native seven-case harnessesPASS. Independent room_explorer_verify85/85/public probes/new native sevenPASS, model uses public Loop only. Source of Loop/Hosting/FirstPlayable unchanged. New RoomExplorer requires only subjective navigation/readability feedback, no repeated automated acceptance. Stacked-to-main delivery slices documented, no main integration/PR/full-H2 acceptance inferred.
 
 RE-1 owner feedback2026-10-17: 'Funciona perfectamente'. Delivered two-room tracer now has positive subjective feedback; older unobserved notes are historical. No code/criteria/full-H2 acceptance or main merge inferred. Technical evidence136tests/both native seven-case harnessesPASS unchanged.
+
+Owner delivery-policy update2026-10-17: positive owner feedback authorizes normal main integration/push of the evaluated technically verified increment (autonomy.md), not full-milestone acceptance or unrelated work. Explicit existing integration completed81de6a9..9db127f, main/origin main0/0; previous no-main records are historical. Unrelated .gitignore/.codegraph preserved. Policy update independent review pending before closure.

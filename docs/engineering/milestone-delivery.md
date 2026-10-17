@@ -39,3 +39,7 @@ coverage on the same environment. The remaining owner decision is whether the de
 and limitations satisfy the product milestone. Do not accept it on the owner's behalf.
 
 Subsequent owner decision2026-10-15: H0 was explicitly accepted against existing evidence/criteria. Earlier pending-acceptance references in dated verification notes are historical, not an active H0 blocker. This does not accept any future milestone.
+
+## Positive-feedback delivery authority (owner2026-10-17)
+
+A positive owner valuation of the delivered technically verified increment authorizes its normal main integration/push without another routine prompt, under autonomy.md. Record exact feedback, evaluated revision/scope, technical evidence and resulting main/push references; preserve unrelated work. This does not automatically accept the whole milestone or authorize subsequent unevaluated features. Ambiguous feedback association or unsafe integration requires clarification; already integrated source is a no-op. Continue independent prepared work after integration.

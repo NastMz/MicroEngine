@@ -32,6 +32,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-022 | specification | P0 | completed | ME-021 | RE-1 below |
 | ME-023 | adapter implementation | P0 | completed | ME-022 | RE-1 below |
 | ME-024 | consumer implementation | P1 | completed | ME-023 | RE-1 below |
+| ME-025 | delivery policy | P0 | completed | none; owner instruction | Below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -369,3 +370,9 @@ ME-024 closure2026-10-17: independent room_explorer_verify fresh shortTEMP85/85 
 ME-022/023/024 delivery2026-10-17: contractbf86152, input2dfccbd at origin/feat/h2-vertical-input, consumer/tests/evidence2ce5175136cbf06928d5096084f32cec79da1b8f at origin/feat/h2-room-explorer; normal pushes confirmed. Stacked-to-main slices176input/contract and319consumer lines (before ledger), prior unmerged H1 slices explicit prerequisites in odd/tasks/h2-room-explorer.md. No PR/main integration. Manual H2.0 handoff in milestones/H2.md, subjective navigation unobserved.
 
 ME-024 owner follow-up2026-10-17: verbatim 'Funciona perfectamente' after RE-1 handoff. Positive subjective exploration-tracer feedback recorded against delivered02f048f/implementation2ce5175 (owner supplied no hash); no reported issues. Completed task state/technical evidence unchanged; no full-H2 acceptance or main integration inferred.
+
+## ME-025 — Integrate evaluated increments after positive owner feedback
+
+Owner explicit instruction2026-10-17, Codex root claim baseline9db127f on docs/positive-feedback-integration, ready -> in-progress -> in-review. Scope AGENTS.md; docs/engineering/{autonomy.md,execution.md,milestone-delivery.md,templates/task.md,current-state.md,backlog.md}; odd/tasks/positive-feedback-integration.md. Actual existing main integration9db127f/push completed. Acceptance exact continuing positive-feedback scope/destination/authentication/verification/preservation/idempotency/record/continuation rules; independent policy review and links/diff/source-integrity checks before closure. RuntimeN/A documentary authority, not new code. Risk5delivery/authority; no relaxed technical checks, full milestone acceptance, PR/release/force or unrelated work. Rollback only own policy/doc changes, never already published history/unrelated files. Next product work separately scoped after roadmap map.
+
+ME-025 closure2026-10-17: independent positive_integration_policy_review targeted recheckPASS after current-state active-summary correction. AGENTS/autonomy/execution/delivery template synchronized with explicit standing owner authority; no technical acceptance/review/scope safeguards reduced. Links/diff readback/source-integrity checks, runtimeN/A unchanged code. Existing main9db127f normal-pushed,0/0. Policy commit/main delivery authorized by current explicit instruction; later new product increments still need their own positive owner feedback before main delivery.

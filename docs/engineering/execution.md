@@ -122,3 +122,7 @@ handoff, not multiple simultaneous questions.
 Task ID; executor/reviewer; baseline and change locator; accepted spec/ADR revisions;
 each acceptance result; exact commands and exit codes; environment; skipped/failed checks;
 doc changes; findings IDs; remaining manual checks; next eligible IDs. No secrets.
+
+## Delivery after positive owner feedback (2026-10-17)
+
+Apply autonomy.md positive-feedback integration: record evaluated revision and exact feedback, confirm technical checks/review complete, preserve unrelated work, fetch origin and integrate/push only the evaluated scope to main (prefer fast-forward). Verify/source-record main and remote synchronization. Reconcile divergent history safely with applicable review/retests, no force/reset or inferred approval of later work. If already integrated, record no-op. This is explicit standing owner authorization, not agent acceptance or a mandatory PR; full milestone product acceptance remains separate. Continue the next eligible scoped task after delivery.
