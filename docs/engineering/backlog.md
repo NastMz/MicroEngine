@@ -48,6 +48,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-038 | optional presentation | P1 | completed | ME-037 | [NL-1](specs/optional-labels.md) |
 | ME-039 | specification | P1 | completed | ME-038 | [IMG-1](specs/optional-images.md) |
 | ME-040 | optional image resources | P1 | completed | ME-039 | [IMG-1](specs/optional-images.md) |
+| ME-041 | specification | P1 | completed | ME-040 | [SPR-1](specs/sprite-regions.md) |
+| ME-042 | optional sprite regions | P1 | in-progress | ME-041 | [SPR-1](specs/sprite-regions.md) |
 
 Use this table for current selection. Dated records below preserve earlier authority,
 dependencies and failed/pending checks; later closure evidence supersedes those states.

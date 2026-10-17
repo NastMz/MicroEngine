@@ -34,3 +34,5 @@ Under [autonomy](../autonomy.md), agents may accept/supersede technical ADRs aft
 [ADR-0008](0008-optional-label-canvas.md) accepted2026-10-17 by Codex root after checkpoint_design_review PASS: optional short-label profile, primitive providers unchanged.
 
 [ADR-0009](0009-optional-image-resources.md) accepted2026-10-17 by Codex root after checkpoint_design_review PASS: optional immutable image values/context-owned resource leases.
+
+- [ADR-0010 — Optional source-region image drawing](0010-optional-image-regions.md): accepted after independent SPR-1 design review.
