@@ -5,7 +5,7 @@ H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persisten
 
 ## Current executable horizon
 
-[Backlog](backlog.md) is the only task-state source. ME-039/040 complete IMG-1 with independent technical proof. ME-041 approved SPR-1; ME-042 implements only optional source regions and equivalent external avatar sheet presentation, pending independent closure. Do not assume a full asset/animation framework. See [current state](current-state.md).
+[Backlog](backlog.md) is the only task-state source. ME-039/040 complete IMG-1 with independent technical proof. ME-041/042 complete SPR-1 optional source regions and equivalent external avatar sheet presentation with independent193test/7native/parity proof. No independent ready implementation task remains; next refinement must identify a concrete roadmap/consumer need. Do not assume a full asset/animation framework. See [current state](current-state.md).
 An authorized future development session follows [execution](execution.md) and may continue
 independent ready work. No background scheduler is installed; H0 is implemented, not a playable game.
 

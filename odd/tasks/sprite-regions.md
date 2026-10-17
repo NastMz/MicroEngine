@@ -1,6 +1,6 @@
 # Optional sprite-region presentation
 
-Objective: SPR-1 next concrete CAP-004/006/008 slice after IMG-1. Branch feat/sprite-regions; baseline is the main integration ledger immediately following87a599e. Runner: serial Release managed suites and seven native harnesses. Delivery: cached stacked-to-main, forecast650 authored lines; coherent provider and consumer slices, no PR/main integration for new behavior. Memory mirror pending unavailable host identity.
+Objective: SPR-1 next concrete CAP-004/006/008 slice after IMG-1. Branch feat/sprite-regions; baseline7507858. Runner: serial Release managed suites and seven native harnesses. Delivery: cached stacked-to-main, forecast650 authored lines; coherent provider and consumer slices, no PR/main integration for new behavior. Memory mirror pending unavailable host identity.
 
 ## Specs
 S1: "Funciona perfectamente, continua". Record positive IMG-1 feedback and integrate only evaluated verified87a599e into main under standing owner authority; preserve unrelated .gitignore/.codegraph work.
@@ -9,11 +9,13 @@ S3: Technical acceptance requires observed deterministic RED/GREEN, actual nativ
 
 ## Tasks
 T1 S1 inline completed main integration87a599e plus ledger; source parity observed, no extra runtime rerun.
-T2 S2-S3 inline in-progress ME-041 spec/ADR review; mapping trigger resolved by next_after_turn_map.
-T3 S2-S3 inline pending ME-042 optional region provider, consumer sheet and regressions; independent high-risk verification after own checks.
+T2 S2-S3 inline completed commit468680e ME-041 spec/ADR review; mapping trigger resolved by next_after_turn_map.
+T3 S2-S3 inline completed commits52e2acd/552f468 ME-042 optional region provider, consumer sheet and regressions; independent high-risk verification after own checks.
 
 ## Log
 L1 Owner request verbatim: Funciona perfectamente, continua
 L2 Mapping recommends source-region sprite presentation: AV-1 deferred sprites, IMG-1 proves ownership only; reuse existing simulation pose signals, keep generic asset/clip systems and battle rules excluded. Parent inline writer; design and whole-feature independent review mandatory for public profile/native presentation changes. Cached stacked-to-main budget is a slicing heuristic, not code-golf. Source-region profile is additive, never modifies existing provider contracts.
 L3 Independent checkpoint_design_review PASS/no blockers before source. Advisories adopted: overflow-safe source bounds; transparent badge source-over preserves torso. Codex root approves ADR-0010/SPR-1, completes ME-041 and claims ME-042 before source. Baseline7507858; two task documents/spec and ADR are the complete resumed contract; no memory mirror available.
 L4 ME-041 approval468680e before implementation. Desktop region tests observed RED4/4 before provider implementation, then fullGREEN36/36. Native region probeRED NotImplementedException before mapping ->GREEN8exact orientation/boundary/background RGB samples plus half-alpha/source-over/transparent overlay/clean close. ConsumerRED4/4 ->GREEN fullLoop126/126; per-pixel parity checks8x24x32source pixels, immutable simulation state, fallback and provider optionality. Hosting31/31. Total193/193author managed tests, FirstPlayableRelease build0warnings/0errors. No packages/SDK/model/old renderer/helper changes. RDDglobaloff observed unchanged. Pending independent wholefeature/native regressions before objective closure.
+L5 Coherent provider52e2acd (229authored lines) and consumer552f468 (226authored lines) slices follow cached stacked-to-main. Frozen552f468 independent checkpoint_verify PASS S1/S2/S3;193tests/focused8/7native harnesses/six fresh builds/managed and real-native8pose and fractional pixel parity;15candidate hashes unchanged. No blockers/correction; OOMstaticonly. Owned lingering scratch dotnet PIDs terminated after complete PASS logs; no workspace changes. ParentRegion native spotcheckPASS; local-link10docs/diffcheckPASS. Codex root accepts objective SPR-1 and closes ME-041/042. No new main/fullmilestone/subjective acceptance. No ready independent work remains; generic clip/assets/decoder/atlas/encounter requirements not invented. Runtime memory identity unavailable; mirror pending, repo recovery complete. Task-branch publication result follows.
+L6 Parent in-process harness emitted PASS but stale inherited LASTEXITCODE caused a false orchestration failure (script NoBuild starts .NET via Process, not native PowerShell invocation). Reran exact harness in fresh pwsh -NoProfile -File: actual process exit0/PASS, no source correction needed. Verified552f468 engine/examples/checks/config parity and main/origin/main7507858; final local-link10docs PASS.
