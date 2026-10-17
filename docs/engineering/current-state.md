@@ -1,6 +1,6 @@
 # Current implementation state
 
-Updated2026-10-17; branch feat/h3-turn-menu (baseline827171d); main827171d contains evaluated marker source and integration evidence. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
+Updated2026-10-17; owner positively evaluated TM-1 at733b9b8 ("Funciona perfectamente"). This verified menu/turn increment is authorized for normal fast-forward integration into main under the standing positive-feedback policy. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
 
 ## Authority
 
