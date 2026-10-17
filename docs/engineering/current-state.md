@@ -97,3 +97,5 @@ TM-1 closure2026-10-17: ME-028/029completed, independent157/157+2450assertions/n
 ## CP-1 checkpoint horizon2026-10-17
 
 After owner continuation, feat/h3-persistence baseline751686a refines C-003/CAP-013. Reviewed accepted ADR-0006/CP-1 defines consumer-owned immutable checkpoint and24byte little-endian codec, additive validated factories, transient reset. No engine/file/native/dependency changes. Author RED4->GREEN4/4,161regressions/three native harnessesPASS; independent checkpoint_verify pending, ME-031in-review. Main remains evaluated751686a; no new subjective validation required for this managed contract.
+
+CP-1 independent outcome2026-10-17: checkpoint_verify PARTIAL/execution unavailable, not technical acceptance. Five committed candidate sources matched scratch hashes; static contract/default-update/dependency review corroborated. Normal and local-only restore hung/terminated, independent probes/full suites not executed. ME-031blocked despite author161tests/three native harnesses and final4/4spotcheckPASS. Main751686a unchanged; implementationa4dc7a1 preserved on feat/h3-persistence. No subjective test request or full-H3 claim.

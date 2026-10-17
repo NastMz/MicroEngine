@@ -38,7 +38,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-028 | specification | P0 | completed | ME-027 | TM-1 below |
 | ME-029 | consumer implementation | P1 | completed | ME-028 | TM-1 below |
 | ME-030 | specification | P1 | completed | ME-029 | [CP-1](specs/consumer-checkpoint.md) |
-| ME-031 | consumer implementation | P1 | in-review | ME-030 | [CP-1](specs/consumer-checkpoint.md) |
+| ME-031 | consumer implementation | P1 | blocked | ME-030; independent execution unavailable | [CP-1](specs/consumer-checkpoint.md) |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -438,3 +438,5 @@ ME-030 P1 in-progress Codex root baseline751686a, owner continuation2026-10-17, 
 ME-030 completed2026-10-17: CP-1/ADR-0006 independent checkpoint_design_review PASS/no blockers, Codex root delegated approval. RuntimeN/A design; diff/readback checks. ME-031 ready, claimed in-progress before source construction under approved CP-1.
 
 ME-031 author proof2026-10-17: checkpointRED4failed/0passed ->GREEN4/4; full110Loop+20Desktop+31Hosting=161passed/0failed/0skipped. All three existing native seven-case harnessesPASS exact0/1/2/cleanup; no engine/executable/native/dependency changes. Independent checkpoint_verify whole-feature scratch proof pending; task in-review, not completed.
+
+ME-031 blocker2026-10-17: owner resumed 'continua'. Independent checkpoint_verify PARTIAL, not PASS. FreshGUIDTEMP copy/all5source hashes matched implementationa4dc7a1; static contract checks and unchanged prior Update bodies/project dependencies corroborated. Restore hung twice (normal then bounded local-cache-only/no-audit retry), terminated; independent probes/full suites NOT executed. Author final4/4spotcheck/161regressions/three native harnesses remain valid but do not replace independent execution. Taskblocked, no weakened criteria/technical acceptance/main integration. No independent ready task in CP-1 horizon; recovery requires an executable isolated verifier environment, not owner repetition of tests.

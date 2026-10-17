@@ -9,7 +9,7 @@ S2: Preserve157tests/previous behavior and ADR-0004, review before construction,
 
 ## Tasks
 T1 S1-S2 inline completed ME-030 contract06d972f, independent checkpoint_design_review PASS before source edits.
-T2 S1-S2 inline in-review ME-031 factories/codec/tests RED4failed->GREEN4/4, author161regressions/three native harnessesPASS; independent verifier pending.
+T2 S1-S2 inline blocked ME-031 implementationa4dc7a1, RED4failed->GREEN4/4, author161regressions/three native harnessesPASS; independent static review corroborated, fresh-scratch execution unavailable. No technical acceptance/main integration.
 
 ## Log
 L1 Owner request verbatim: continua con el siguiente trabajo
@@ -20,3 +20,5 @@ L3 Independent checkpoint_design_review PASS, no blockers; CP-1/ADR-0006 approve
 L4 ME-030contract06d972f. Four runnable checkpoint testsRED4failed/0passed on throwing scaffolds ->GREEN4/4 after factories/codec. Existing constructor/Update unchanged; transient reset intentional CP-1. Full regression/native proof and independent verification required before ME-031closure.
 
 L5 Author161/161(all157baseline retained plus4checkpoint methods), three native harnessesPASS/exits0/1/2, diffcheckPASS. checkpoint_verify launched for independent freshTEMP public probes/source hash/full-suite proof, no workspace mutations. No user action requested for automatable serialized-state correctness.
+
+L6 Owner resume verbatim: continua. checkpoint_verify PARTIAL/no source blocker:5source hashes match a4dc7a1, existing Update bodies/dependencies retained; isolated restore hung twice and was terminated, probes/suites not run. No invented PASS. Parent final4/4spotcheckPASS. ME-031blocked on independent execution; no new review loop, scope expansion or main delivery. Current horizon has no other ready task. Source/contract commits preserved; branch publication records partial status only. Runtime identity unavailable; local log substitutes for recovery, not attributed memory.
