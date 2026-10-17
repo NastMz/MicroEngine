@@ -33,6 +33,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-023 | adapter implementation | P0 | completed | ME-022 | RE-1 below |
 | ME-024 | consumer implementation | P1 | completed | ME-023 | RE-1 below |
 | ME-025 | delivery policy | P0 | completed | none; owner instruction | Below |
+| ME-026 | specification | P0 | completed | ME-024 | IM-1 below |
+| ME-027 | consumer implementation | P1 | ready | ME-026 | IM-1 below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -376,3 +378,15 @@ ME-024 owner follow-up2026-10-17: verbatim 'Funciona perfectamente' after RE-1 h
 Owner explicit instruction2026-10-17, Codex root claim baseline9db127f on docs/positive-feedback-integration, ready -> in-progress -> in-review. Scope AGENTS.md; docs/engineering/{autonomy.md,execution.md,milestone-delivery.md,templates/task.md,current-state.md,backlog.md}; odd/tasks/positive-feedback-integration.md. Actual existing main integration9db127f/push completed. Acceptance exact continuing positive-feedback scope/destination/authentication/verification/preservation/idempotency/record/continuation rules; independent policy review and links/diff/source-integrity checks before closure. RuntimeN/A documentary authority, not new code. Risk5delivery/authority; no relaxed technical checks, full milestone acceptance, PR/release/force or unrelated work. Rollback only own policy/doc changes, never already published history/unrelated files. Next product work separately scoped after roadmap map.
 
 ME-025 closure2026-10-17: independent positive_integration_policy_review targeted recheckPASS after current-state active-summary correction. AGENTS/autonomy/execution/delivery template synchronized with explicit standing owner authority; no technical acceptance/review/scope safeguards reduced. Links/diff readback/source-integrity checks, runtimeN/A unchanged code. Existing main9db127f normal-pushed,0/0. Policy commit/main delivery authorized by current explicit instruction; later new product increments still need their own positive owner feedback before main delivery.
+
+ME-025 delivery2026-10-17: policy commit8ff1f0a independently reviewedPASS, fast-forwarded/pushed main after existing source9db127f;0/0remote divergence. Current explicit policy/integration instruction satisfied; new product branch feat/h2-marker-interaction has no automatic main authorization until positively evaluated.
+
+## ME-026 — Specify manual marker interaction probe
+
+Owner continuation2026-10-17, C-002/H2/FR-002/ADR-0004. Claimed Codex root baseline8ff1f0a, ready -> in-progress -> in-review. Exact surfaces IM-1 linked spec/backlog/current-state/roadmap/H2/capabilities and odd task file; no source before review. Deliver precise consumer-only pressed-edge eligibility/toggle/event/trace/shared-content/validation rules, baseline preservation, tests/commands/rollback. Independent design PASS then delegated approval before ME-027ready; runtimeN/A design, links/readback/diff checks. No NPC/dialogue/input/engine infrastructure scope.
+
+## ME-027 — Demonstrate room-local manual interaction
+
+Pending approved reviewed ME-026. Exact source/tests/docs surfaces, semantics and runners in IM-1. Keep136baseline tests and existing movement/room/CLI behavior; public RED then focused/full GREEN, both native harnesses, independent scratch verifier with actual baseline trace comparison and parent spotcheck. Risk3shared consumer behavior; no engine/project/dependency changes. Technical acceptance delegated, subjective discoverability/readability owner-owned; positive feedback later authorizes evaluated increment main integration, not unrelated or full-H2 scope. Rollback own marker deltas only. No known baseline failures.
+
+ME-026 closure2026-10-17: independent marker_design_reviewPASS no blockers; IM-1 approved by Codex root under technical delegation. Exact final-overlap/edge/toggle/event/validation/render/trace/room retention contracts and runnable packet, no engine abstraction. RuntimeN/A design, diff/readback; ME-027ready.
