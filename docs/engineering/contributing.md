@@ -100,3 +100,9 @@ The probe owns its window/images, samples RGB not opaque alpha, and closes/unloa
 Images are opt-in through `IImageCanvas`; primitive-only providers remain valid. See [IMG-1](specs/optional-images.md) for pixel format, context-bound lease ownership and Desktop budgets. No file loader or mandatory asset manager is introduced.
 
 Run the serial Release suites from toolchain.md, then `powershell -File checks/ImageNativeSmoke.ps1`. The native probe builds its separate executable, checks actual RGB/alpha/point-sampling pixels, releases resources explicitly and through window teardown, and requires exit0 and clean close. A PASS is technical evidence, not aesthetic acceptance. For subjective appearance only, run `dotnet run --project examples/FirstPlayable -c Release`: the existing moving avatar now has a tiny turquoise/white/dark badge; movement and procedural poses are unchanged.
+
+## Optional source-region verification (SPR-1)
+
+Run `powershell -File checks/RegionNativeSmoke.ps1` after the serial managed suites. The separate probe selects the interior of a colored source image and checks exact framebuffer edges/orientation, point sampling, transparent overlay and half-alpha blending, then requires clean resource/window teardown. Existing ImageNativeSmoke proves whole-image behavior independently. Both are automated technical checks, not owner tasks.
+
+FirstPlayable now selects eight source-authored cells for existing idle/walk0/walk1/air/facing states. `dotnet run --project examples/FirstPlayable -c Release` is only useful for subjective presentation feedback; no new controls or gameplay rules. Providers omitting IImageRegionCanvas retain the previous primitive avatar and optional whole-image badge. See [SPR-1](specs/sprite-regions.md) for strict source bounds and lifetime semantics.

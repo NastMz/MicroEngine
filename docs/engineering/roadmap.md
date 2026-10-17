@@ -1,11 +1,11 @@
 <!-- Current authority:2026-10-15 technical delegation supersedes earlier approval-only restrictions; see autonomy.md. Historical dated evidence is not rewritten. -->
 # Evolutionary roadmap
 
-H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persistence/labels are technically verified; full playable-milestone acceptance is not inferred. Current horizon IMG-1 adds optional in-memory image ownership and one avatar supplement after reviewed ADR-0009; no asset pipeline or genre rules. The prototype remains at [legacy-final](history.md).
+H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persistence/labels are technically verified; full playable-milestone acceptance is not inferred. IMG-1 is positively evaluated and integrated. Current horizon SPR-1 adds optional source-region drawing and consumer-owned sprite-sheet selection after reviewed ADR-0010; no asset pipeline, generic animation state or genre rules. The prototype remains at [legacy-final](history.md).
 
 ## Current executable horizon
 
-[Backlog](backlog.md) is the only task-state source. ME-039/040 complete IMG-1 with independent technical proof. No prepared implementation task remains; refine only the next concrete consumer/content need after this bounded delivery, without assuming a full asset/animation framework. See [current state](current-state.md).
+[Backlog](backlog.md) is the only task-state source. ME-039/040 complete IMG-1 with independent technical proof. ME-041 approved SPR-1; ME-042 implements only optional source regions and equivalent external avatar sheet presentation, pending independent closure. Do not assume a full asset/animation framework. See [current state](current-state.md).
 An authorized future development session follows [execution](execution.md) and may continue
 independent ready work. No background scheduler is installed; H0 is implemented, not a playable game.
 

@@ -1,5 +1,7 @@
 # Current implementation state
 
+Active candidate: SPR-1 optional source-region sprite presentation on feat/sprite-regions; ADR-0010 accepted after independent design review. ME-041completed/ME-042in-review, author193testsPASS and native region readbackPASS. Existing avatar artwork/poses/movement preserved, now one source sheet on region-capable providers; old whole-image/primitive fallback unchanged. Main/origin/main7507858 includes owner-positive IMG-1. Whole-feature independent verification pending; no new main integration or full-milestone acceptance.
+
 Updated2026-10-17. Owner positively evaluated NL-1 delivery1dce7b3 ("Funciona perfectamente"). Main/origin were fast-forwarded751686a..01c9ea5 and normally pushed,0/0 divergence; evaluated source/configuration parity with1dce7b3 passed. This includes the reviewed CP-1/CF-1/CL-1/onboarding/optional-label stack, with no new behavioral scope. Earlier dated states remain historical, including superseded blockers and pending-readability notes. [Backlog](backlog.md) owns task states and approval/evidence history.
 
 ## Authority
