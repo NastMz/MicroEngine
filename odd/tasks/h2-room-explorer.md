@@ -9,7 +9,7 @@ S2: Existing roadmap H2 "Exploration and transitions without engine-owned combat
 ## Tasks
 T1 S1-S2 inline: completed ME-022 contractbf86152 H1 evidence/feedback reconciliation, H2 contract and independent decision review; bounded scope mapping delegated after inline evidence budget.
 T2 S2 inline: completed ME-023 independently verified20/20+3probesPASS additive Desktop up/down action mapping with existing left/right/jump regression tests; no public key/device API.
-T3 S2 inline: pending ME-024 independent RoomExplorer model/executable and public tests; RED/GREEN, native smoke, independent scratch verification, subjective navigation handoff.
+T3 S2 inline: completed ME-024 independently85/85+probes/native7PASS independent RoomExplorer model/executable and public tests; RED/GREEN, native smoke, independent scratch verification, subjective navigation handoff.
 
 ## Log
 L1 Owner request verbatim: Funciona sin ningun problema, dale con lo siguiente
@@ -21,3 +21,9 @@ L4 Independent explorer_design_review found one documentary blocker: blanket unc
 L5 Contractbf86152 approved after independent recheck. ME-023 runnableRED11/11fail ->GREEN20Desktop/20, CBool method-group compile issue safely corrected using bool-targeted lambdas (no dependency change). Existing native harness rebuilt0warnings/0errors; independent input verification before ME-024 dependency promotion.
 
 L6 Resumed2026-10-17 after owner 'continua'. First input verifier had no verdict due unavailable capacity; new authorized resumed verification vertical_input_verify_resume freshTEMP20/20 plus3mapping/order/query probesPASS. Parent prior128tests/native7PASS retained; ME-023closed, ME-024ready, no dependency bypass. Memory identity still unavailable.
+
+L7 ME-023 commit2dfccbd includes source/tests/independent evidence; final parent focused11/11PASS. ME-024 claimed after dependency closure. New model scaffoldRED8/8failed ->GREEN8/8 after public-only exact-Y fixture correction, not altered collision/portal tolerance. Author136tests pass; new native sevenPASS. Delivery forecast now exceeds400authored lines including specification, projects and harness; requested chain preference (feature-branch-chain vs stacked-to-main), no PR/main action inferred and no new commit before resolving it. Continue technical proof independently of delivery choice.
+
+L8 Owner delivery choice2026-10-17: 'Cambios encadenados hacia main'. Cache delivery_strategy=ask-on-risk, chain_strategy=stacked-to-main. Skills resolved from .atl registry and loaded before planning: work-unit-commits/chained-pr. Prospective review boundaries:4081247..2dfccbd contract+input (independently verified), then2dfccbd..consumer delivery (dependent consumer/tests/native evidence). Prior unmerged H1 obstacle/avatar branches remain explicit prerequisites for eventual main delivery; no PR/main integration authorized by this choice. One honest slicing pass, no code shrinking or history rewrite. Actual line counts recorded before delivery.
+
+L9 Independent room_explorer_verify freshTEMP85/85 plus both-room exact portal/public movement/invalid atomicity/replay probesPASS; new native7PASS/build0warnings/0errors. No product blockers, no source edits by verifier. West-boundary probe persisted in existing parameterized tests, parent8/8finalPASS. ME-024 objective closure under delegation, not subjective/full-H2 acceptance. Main/old gameplay source unchanged. Links/diff checksPASS; no next ready task within this bounded tracer; meaningful manual handoff only navigation/transition discoverability.

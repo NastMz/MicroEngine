@@ -51,3 +51,7 @@ Baseline H1.0 subjective feedback received under ME-012; optional consumer jump 
 ## Animation horizon2026-10-16
 
 After positive PO-1 owner feedback, ME-020/021 refine [AV-1](specs/avatar-animation.md): consumer-only procedural idle/walk/air/facing and deterministic playback through existing primitive canvas. No texture/resource/provider method or generic animation library. This narrow visual demonstration does not fulfill all CAP-004/006/008 or accept full H1. Broader asset/clip needs remain candidates until concrete requirements justify their contracts.
+
+## Next independent consumer2026-10-16
+
+Positive AV-1 owner feedback recorded, full-H1 human acceptance not inferred. [RE-1](specs/room-explorer.md) defines H2.0 two-room exploration through the same public Loop/Desktop, separate from FirstPlayable.Model. ME-022 reviewed; ME-023 additive native up/down actions precede ME-024. [H2 packet](milestones/H2.md) separates objective tests and subjective navigation. No engine world/scene/map/asset abstraction or broad Zelda scope; later content is not yet prepared.

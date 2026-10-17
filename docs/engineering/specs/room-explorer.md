@@ -1,6 +1,6 @@
 # RE-1 — Two-room external exploration tracer
 
-Status approved2026-10-16 by Codex root under delegation after explorer_design_review targeted recheck PASS; ME-022 completed. Owner continuation2026-10-16, roadmap H2/FR-002/ADR-0004. This is not full H2 or a reusable engine scene/world contract.
+Status approved2026-10-16 by Codex root under delegation after explorer_design_review targeted recheck PASS; ME-022/023/024 completed, technically verified. Owner continuation2026-10-16, roadmap H2/FR-002/ADR-0004. This is not full H2 or a reusable engine scene/world contract.
 
 ## Decision and exclusions
 
@@ -34,3 +34,5 @@ New checks/Loop.Contracts/RoomExplorerTests.cs plus project reference to model, 
 Runnable RED before behavior, focused/full GREEN; commands serial dotnet test checks/{Loop.Contracts,Desktop.Contracts,Hosting.Contracts}/respective.csproj -c Release --no-restore -p:UseSharedCompilation=false -m:1 -nodeReuse:false; restore required for new model graph. Existing checks/Desktop.Contracts/NativeSmoke.ps1 and new checks/RoomExplorerSmoke.ps1. Independent scratch verifier before technical acceptance and parent spotcheck. Subjective handoff only for navigation/portal discoverability/readability; no full H2 acceptance claimed.
 
 Allowed surfaces: new examples/RoomExplorer.Model/{RoomExplorer.Model.csproj,Explorer.cs}, examples/RoomExplorer/{RoomExplorer.csproj,Program.cs}, checks/Loop.Contracts/RoomExplorerTests.cs, checks/Desktop.Contracts/DesktopActionTests.cs, checks/RoomExplorerSmoke.ps1, engine/Desktop/DesktopActions.cs; existing engine/Desktop/RaylibApi.cs, checks/Loop.Contracts/Loop.Contracts.csproj; docs/engineering/{specs/room-explorer.md,backlog.md,current-state.md,roadmap.md,milestones/H1.md,milestones/H2.md,capabilities.md,contributing.md}; odd/tasks/h2-room-explorer.md. Risk items3/5 shared input backend and new project wiring, independent review/verification required. No significant engine architecture API change, RE-1 records alternatives under ADR-0004 rather than premature scene ADR. Rollback own action extraction/extra mappings, consumer/tests/project ref/docs only; preserve FirstPlayable and unrelated work.
+
+Verification2026-10-17: ME-023 independent20Desktop/20+3probesPASS; ME-024 independent85Loop/85 plus public transition probes/native sevenPASS/build0warnings. Parent136tests and both native seven-case harnessesPASS, final focused8/8PASS. Subjective navigation unobserved; no general worlds/maps/asset capability or full-H2 acceptance inferred.

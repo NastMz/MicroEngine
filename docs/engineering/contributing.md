@@ -43,3 +43,15 @@ Use feat/<topic>, fix/<topic>, docs/<topic> as appropriate, not codex/*. Current
 ## H0 authorized development
 
 ADR-0002 delegates technical H0 choices. See toolchain.md for exact restore/build/test commands and current-state.md for observed checks/limitations. Hosting and contract tests now exist; the external probe/H0 was accepted by the owner on2026-10-15 based on existing evidence; no manual rerun is required. Do not use historical planning-only statements above as current execution authority.
+
+## H2.0 exploration tracer
+
+When RE-1/ME-024 delivery is recorded in backlog, run:
+
+~~~powershell
+dotnet run --project examples/RoomExplorer/RoomExplorer.csproj -c Release
+# Automated native lifecycle/CLI proof, not manual playability:
+pwsh -NoProfile -File checks/RoomExplorerSmoke.ps1
+~~~
+
+Arrows/WASD move. Cross the cyan passage at the Courtyard's right edge or Hall's left edge, with the whole body aligned inside the opening. Room changes are printed to stdout. Escape/window close exits. --smoke N(1..600) stops after Npresentations; --fail-update injects callback failure; normal/failure/usage exits0/1/2. No extra SDK version, native backend or package is introduced by this consumer. Windows native validation only; headless Loop model tests remain native-free.
