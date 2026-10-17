@@ -22,7 +22,7 @@ public sealed class CheckpointTests
             var checkpoint = new TurnCheckpoint(1, room, 310, 164, true, menu, option, phase);
             var original = TurnSession.Restore(checkpoint);
             var restored = TurnSession.Restore(TurnCheckpointCodec.Decode(TurnCheckpointCodec.Encode(original.Capture())));
-            Assert.AreEqual(checkpoint, restored.Capture());
+            Assert.AreEqual(checkpoint with { Version = 2 }, restored.Capture());
             Assert.AreNotSame(original, restored);
             Assert.IsFalse(restored.TurnResolved);
             foreach (var input in new[] { Input("down", "jump", "jump"), Input("jump"), new InputSnapshot(["right"], []) })
@@ -34,7 +34,7 @@ public sealed class CheckpointTests
             }
         }
         var fresh = new TurnSession();
-        Assert.AreEqual(new TurnCheckpoint(1, Room.Courtyard, 40, 164, false, false, MenuOption.Advance, 0), fresh.Capture());
+        Assert.AreEqual(new TurnCheckpoint(2, Room.Courtyard, 40, 164, false, false, MenuOption.Advance, 0), fresh.Capture());
         fresh.Update(TimeSpan.FromSeconds(1.5), new InputSnapshot(["right"], ["jump"]));
         fresh.Update(TimeSpan.FromTicks(1), Input("jump"));
         Assert.IsTrue(fresh.TurnResolved);
@@ -64,7 +64,7 @@ public sealed class CheckpointTests
     {
         var session = new TurnSession();
         var state = session.Capture();
-        TurnCheckpoint[] invalid = [state with { Version = 0 }, state with { Version = 2 }, state with { Room = (Room)2 },
+        TurnCheckpoint[] invalid = [state with { Version = 0 }, state with { Version = 3 }, state with { Room = (Room)2 },
             state with { X = -1 }, state with { X = 617 }, state with { Y = -1 }, state with { Y = 329 },
             state with { X = float.NaN }, state with { Y = float.PositiveInfinity }, state with { X = float.NegativeInfinity },
             state with { SelectedOption = (MenuOption)(-1) }, state with { TurnPhase = -1 }, state with { TurnPhase = 4 }];
@@ -92,8 +92,8 @@ public sealed class CheckpointTests
         var state = session.Capture();
         foreach (var length in new[] { 0, 1, 23, 25, 48 })
             Assert.ThrowsExactly<FormatException>(() => TurnCheckpointCodec.Decode(new byte[length]));
-        foreach (var (offset, word) in new (int, int)[] { (0, 2), (4, -1), (8, BitConverter.SingleToInt32Bits(float.NaN)),
-            (12, BitConverter.SingleToInt32Bits(329)), (16, 8), (16, -1), (20, 4) })
+        foreach (var (offset, word) in new (int, int)[] { (0, 3), (4, -1), (8, BitConverter.SingleToInt32Bits(float.NaN)),
+            (12, BitConverter.SingleToInt32Bits(329)), (16, 16), (16, -1), (20, 4) })
         {
             var bytes = TurnCheckpointCodec.Encode(state);
             BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(offset), word);

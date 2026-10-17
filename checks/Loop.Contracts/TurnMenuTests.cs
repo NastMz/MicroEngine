@@ -11,8 +11,8 @@ public sealed class TurnMenuTests
 {
     private static readonly TimeSpan Tick = TimeSpan.FromTicks(1);
     private static InputSnapshot Input(string[]? held = null, params string[] pressed) => new(held ?? [], pressed);
-    private static (Room, float, float, bool, bool, MenuOption, int, bool) State(TurnSession g)
-        => (g.Room, g.X, g.Y, g.MarkerActivated, g.MenuOpen, g.SelectedOption, g.TurnPhase, g.TurnResolved);
+    private static (Room, float, float, bool, bool, MenuOption, int, bool, bool) State(TurnSession g)
+        => (g.Room, g.X, g.Y, g.MarkerActivated, g.MenuOpen, g.SelectedOption, g.TurnPhase, g.TurnResolved, g.EncounterCompleted);
     private static TurnSession Open()
     {
         var g = new TurnSession(); g.Update(TimeSpan.FromSeconds(1.5), Input(["right"], "jump", "jump"));
@@ -55,15 +55,18 @@ public sealed class TurnMenuTests
     }
 
     [TestMethod]
-    public void PhaseWrapsAndHeldCaseOrUnknownEdgesCannotResolveTurns()
+    public void PhaseCompletesAndHeldCaseOrUnknownEdgesCannotResolveTurns()
     {
         var g = Open();
-        for (var i = 1; i <= 5; i++)
+        for (var i = 1; i <= 4; i++)
         {
             g.Update(Tick, Input(null, "jump", "jump")); Assert.AreEqual(i % 4, g.TurnPhase); Assert.IsTrue(g.TurnResolved);
             g.Update(Tick, Input(["up", "down", "jump"], "Jump", "Up", "left", "unknown"));
             Assert.IsFalse(g.TurnResolved); Assert.AreEqual(i % 4, g.TurnPhase); Assert.AreEqual(MenuOption.Advance, g.SelectedOption);
+            Assert.AreEqual(i == 4, g.EncounterCompleted); Assert.AreEqual(i != 4, g.MenuOpen);
         }
+        var marker = g.MarkerActivated; g.Update(Tick, Input(null, "jump", "jump"));
+        Assert.IsTrue(g.EncounterCompleted); Assert.IsFalse(g.TurnResolved); Assert.IsFalse(g.MenuOpen); Assert.AreEqual(marker, g.MarkerActivated);
         var other = new TurnSession(); Assert.IsFalse(other.MenuOpen); Assert.IsFalse(other.MarkerActivated); Assert.AreEqual(0, other.TurnPhase);
     }
 
@@ -104,8 +107,8 @@ public sealed class TurnMenuPresentationTests
         public void Fill(Rect rectangle, Rgba color) => Calls.Add((rectangle, color));
     }
 
-    private static (Room, float, float, bool, MenuOption, int, bool) State(TurnSession g)
-        => (g.Room, g.X, g.Y, g.MenuOpen, g.SelectedOption, g.TurnPhase, g.TurnResolved);
+    private static (Room, float, float, bool, MenuOption, int, bool, bool) State(TurnSession g)
+        => (g.Room, g.X, g.Y, g.MenuOpen, g.SelectedOption, g.TurnPhase, g.TurnResolved, g.EncounterCompleted);
 
     [TestMethod]
     public void OverlayAppearsOnlyWhileOpenAndDrawsExactPureContent()

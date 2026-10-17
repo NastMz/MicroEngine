@@ -11,7 +11,10 @@ internal static class MenuRenderer
         ArgumentNullException.ThrowIfNull(session);
         var gray = new Rgba(70, 75, 85); var gold = new Rgba(240, 180, 65);
         for (var i = 0; i < 4; i++)
-            canvas.Fill(new Rect(20 + 20 * i, 20, 12, 12), session.TurnPhase == i ? new Rgba(70, 200, 210) : gray);
+            canvas.Fill(new Rect(20 + 20 * i, 20, 12, 12), session.EncounterCompleted ? new Rgba(80, 200, 120)
+                : session.TurnPhase == i ? new Rgba(70, 200, 210) : gray);
+        if (session.EncounterCompleted && canvas is ILabelCanvas completedLabels)
+            completedLabels.Label("Completed", 20, 42, 20, new(80, 200, 120));
         if (!session.MenuOpen) return;
         canvas.Fill(new Rect(420, 40, 200, 40), session.SelectedOption == MenuOption.Advance ? gold : gray);
         canvas.Fill(new Rect(420, 88, 200, 40), session.SelectedOption == MenuOption.Return ? gold : gray);

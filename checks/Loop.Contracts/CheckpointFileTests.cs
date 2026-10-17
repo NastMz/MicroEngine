@@ -69,7 +69,7 @@ public sealed class CheckpointFileTests
             Assert.ThrowsExactly<ArgumentException>(() => CheckpointFile.Read(path));
         }
         Assert.ThrowsExactly<ArgumentNullException>(() => CheckpointFile.CreateNew(Target, null!));
-        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => CheckpointFile.CreateNew(Target, State with { Version = 2 }));
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => CheckpointFile.CreateNew(Target, State with { Version = 3 }));
         Assert.ThrowsExactly<FileNotFoundException>(() => CheckpointFile.Read(Target));
         var missing = Path.Combine(_root, "missing", "checkpoint.bin");
         Assert.ThrowsExactly<DirectoryNotFoundException>(() => CheckpointFile.CreateNew(missing, State));
@@ -89,7 +89,7 @@ public sealed class CheckpointFileTests
     [TestMethod]
     public void MalformedAndOversizedReadsPreserveFilesAndReleaseHandles()
     {
-        var badVersion = TurnCheckpointCodec.Encode(State); badVersion[0] = 2;
+        var badVersion = TurnCheckpointCodec.Encode(State); badVersion[0] = 3;
         var badFlags = TurnCheckpointCodec.Encode(State); badFlags[16] = 8;
         foreach (var bytes in new[] { Array.Empty<byte>(), new byte[23], new byte[25], new byte[1024 * 1024], badVersion, badFlags })
         {
