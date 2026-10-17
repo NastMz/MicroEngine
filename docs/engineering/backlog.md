@@ -44,6 +44,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-034 | specification | P1 | completed | ME-033 | [CL-1](specs/checkpoint-launch.md) |
 | ME-035 | consumer integration | P1 | completed | ME-034 | [CL-1](specs/checkpoint-launch.md) |
 | ME-036 | onboarding documentation | P1 | completed | ME-035 | DOC-001 packet below |
+| ME-037 | specification | P1 | in-progress | ME-036 | [NL-1](specs/optional-labels.md) |
+| ME-038 | optional presentation | P1 | pending | ME-037 | [NL-1](specs/optional-labels.md) |
 
 Use this table for current selection. Dated records below preserve earlier authority,
 dependencies and failed/pending checks; later closure evidence supersedes those states.

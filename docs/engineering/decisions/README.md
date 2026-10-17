@@ -30,3 +30,5 @@ Under [autonomy](../autonomy.md), agents may accept/supersede technical ADRs aft
 [ADR-0006](0006-consumer-checkpoints.md) accepted2026-10-17: consumer-owned checkpoints, independent checkpoint_design_review PASS, Codex root delegated approval.
 
 [ADR-0007](0007-checkpoint-file-boundary.md) accepted2026-10-17 by Codex root: optional consumer file boundary, checkpoint_design_review PASS before implementation.
+
+[ADR-0008](0008-optional-label-canvas.md) accepted2026-10-17 by Codex root after checkpoint_design_review PASS: optional short-label profile, primitive providers unchanged.
