@@ -85,3 +85,5 @@ IM-1 closure2026-10-17: ME-026/027completed; independent marker_verify98/98,1000
 IM-1 owner feedback2026-10-17: 'Funciona perfectamente' after delivered0a8bfe3/b21266f. Marker now has positive subjective feedback and standing main-delivery authorization.149tests/native harnesses/independent proof applies to unchanged source; no full-H2 acceptance inferred. Integration result recorded below after execution.
 
 IM-1 integration confirmed2026-10-17: main8ff1f0a..de1c08d normal-pushed, main/origin0/0, engine/examples/checks identical to evaluated0a8bfe3. Marker now positively evaluated and integrated; earlier pending-integration statements are historical. No prepared task remains in bounded marker horizon, full-H2 acceptance not inferred.
+
+Next horizon2026-10-17: main827171d contains evaluated marker source/feedback. New branch feat/h3-turn-menu prepares TM-1 (ME-028/029), independent consumer composition of RoomExplorer.Model for menu/turn-flow only. No engine UI/text/font/combat/save API or existing model edits authorized by this packet. Specification review pending; H3 intended run command is a handoff plan, not runtime evidence.

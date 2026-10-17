@@ -4,7 +4,7 @@ Single task-state source of truth. Dated task records distinguish preparation fr
 Priority P0 precedes P1; ID ascending breaks ties. Completion is recorded only with task evidence.
 Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](templates/task.md).
 
-## Accepted H0 and current H1 preparation horizon
+## Accepted foundation and current executable horizons
 
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
@@ -35,6 +35,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-025 | delivery policy | P0 | completed | none; owner instruction | Below |
 | ME-026 | specification | P0 | completed | ME-024 | IM-1 below |
 | ME-027 | consumer implementation | P1 | completed | ME-026 | IM-1 below |
+| ME-028 | specification | P0 | completed | ME-027 | TM-1 below |
+| ME-029 | consumer implementation | P1 | ready | ME-028 | TM-1 below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -400,3 +402,13 @@ ME-026/027 delivery2026-10-17: contract4419243, source/tests/evidenceb21266f9ecd
 ME-027 owner feedback2026-10-17: 'Funciona perfectamente', associated0a8bfe3/b21266f marker delivery. Positive subjective feedback recorded; existing technical closure unchanged. Standing owner policy authorizes normal main integration/push of this evaluated scope; no full-H2 acceptance or unrelated work inferred.
 
 ME-027 integration2026-10-17: positive owner feedback triggered normal main fast-forward/push8ff1f0a..de1c08d,0/0remote divergence; source engine/examples/checks identical to evaluated0a8bfe3. No new code or repeated operational checks/full-H2 acceptance. Unrelated local work preserved.
+
+## ME-028 — Specify first menu/turn consumer
+
+Owner continuation2026-10-17, H3/C-003/FR-002/ADR-0004. Claimed Codex root baseline827171d on feat/h3-turn-menu, ready -> in-progress -> in-review. Deliver TM-1 precise consumer composition/open/pause/ordered selection/confirmation/phase/return/render/trace/project/CLI/test/rollback contract and independent review before approval. Exact docs/task surfaces in TM-1. No engine UI/text/combat/save API. RuntimeN/A design; links/readback/diff and independent design PASS required. Consumer-first alternative avoids speculative optional text contract before actual label need.
+
+## ME-029 — Demonstrate exploration/menu/turn flow
+
+Pending reviewed ME-028 approval. Exact new model/executable/test/harness/project-ref and docs surfaces/commands/acceptance in TM-1. Preserve149baseline tests and all prior source dependencies/behaviors, observe RED/GREEN; independent whole-feature scratch verifier with public ordered-edge/phase/pause/resume probes and source baseline comparison, parent spotcheck, both old native harnesses plus new one. Risk3/5 new consumer contract/project graph; no engine/old-game code edits. Managed model/tests and executable/native evidence are coherent review slices under cached stacked-to-main, no source compression/criteria reduction. Objective technical closure delegated; new positive owner feedback needed for main delivery; no full-H3 acceptance.
+
+ME-028 closure2026-10-17: independent turn_menu_design_review targeted visibility/test-seam recheckPASS. TM-1 approved by Codex root under technical delegation; phasepipsalways/menuonlyopen and native-free renderer proof exact. No engine/UI/text/battle API decision. RuntimeN/A design, links/readback/diff checks; ME-029ready. Existing backlog heading refreshed to reflect current horizons rather than historical H1 preparation.

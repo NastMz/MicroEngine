@@ -59,3 +59,5 @@ Positive AV-1 owner feedback recorded, full-H1 human acceptance not inferred. [R
 ## Bounded manual interaction2026-10-17
 
 H2/C-002 includes interaction beyond RE-1 traversal. ME-026/027 [IM-1](specs/marker-interaction.md) probe one source-authored room-local marker using existing Space/jump edge, no Desktop binding/engine interaction/NPC/dialogue/world/persistence API. Positive RE-1 delivery and integration policy are in main8ff1f0a; marker technical/subjective states are distinct in backlog/H2 packet. H3 menus/turn behavior remains candidate, not silently prepared here.
+
+H3 preparation2026-10-17: H2 traversal/manual-marker slices positively evaluated/integrated; ME-028/029 [TM-1](specs/turn-menu.md) refine only first menu/turn flow via a new external consumer, private composition of existing exploration. No additional H2 gameplay or premature engine text/UI framework. [H3 packet](milestones/H3.md) separates technical/subjective evidence; no full-H3 or persistence commitment.

@@ -32,3 +32,5 @@ AV-1/ME-020/021 scoped discovery: consumer-authored procedural frame content and
 RE-1/H2.0 validates a second top-down consumer using existing CAP-002/003/004 slices plus consumer-owned room transition policy (CAP-009 discovery). It does not add reusable engine worlds/maps/scene lifetime or imply CAP-009/010 completion. Native up/down actions are additive Desktop mappings, not mandatory engine action vocabulary.
 
 IM-1/H2.1 is consumer-owned manual interaction discovery under C-002: one strict-overlap marker and in-memory activation flag using existing input/presentation. No reusable engine interaction/scene/world/save capability or new action vocabulary selected.
+
+TM-1/H3.0 proposed discovery covers consumer-owned menu selection/turn indication using current primitive rendering and console labels. It does not implement CAP-012 engine UI or CAP-013 storage, nor select font/text/scene APIs. Task-state/review evidence belongs to backlog and H3 packet.
