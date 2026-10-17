@@ -29,6 +29,9 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-019 | consumer implementation | P1 | completed | ME-018 | PO-1 below |
 | ME-020 | specification | P0 | completed | ME-019 | AV-1 below |
 | ME-021 | presentation implementation | P1 | completed | ME-020 | AV-1 below |
+| ME-022 | specification | P0 | completed | ME-021 | RE-1 below |
+| ME-023 | adapter implementation | P0 | ready | ME-022 | RE-1 below |
+| ME-024 | consumer implementation | P1 | pending | ME-023 | RE-1 below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -338,3 +341,19 @@ ME-021 author evidence2026-10-16:117tests=77Loop+9Desktop+31Hosting pass/0failed
 ME-021 closure2026-10-16: independent animation_verify PASS fresh shortTEMP77/77 plus independent timing/overflow/atomicity/phase/reset/instance/render-purity/exact-content probes. Consumer build0warnings/0errors. Hash comparison:11engine files and GameModel/StaticObstacle/PlatformerOptions exact baseline, no new engine files. Parent117tests/native sevenPASS; local links/diff checksPASS. Codex root accepts objective AV-1 technical slice under delegation. No skipped required proof or reproduced blockers. New presentation subjective feedback remains unobserved; no full-H1 acceptance. No independent ready task remains in this bounded animation horizon; further sprite/assets/clip contracts require concrete refinement, not implied by this demonstration.
 
 ME-020/021 delivery2026-10-16: contract93be595, implementation/tests/evidence1206951c93db601eaa2cda7b01ff8a9f79b2bcca normal push confirmed origin/feat/h1-avatar-animation, parent focused9/9spotcheckPASS. No main integration/PR/release; subjective AV-1 pose/readability feedback unobserved, no independent ready task in current bounded horizon.
+
+ME-021 owner follow-up2026-10-16: "Funciona sin ningun problema, dale con lo siguiente". Positive AV-1 feedback associated4081247/1206951 (no user hash), not exhaustive/full-H1 acceptance or merge permission. No code changed by feedback.
+
+## ME-022 — Specify independent H2 exploration tracer
+
+Claim2026-10-16 Codex root baseline4081247, feat/h2-room-explorer, ready -> in-progress -> in-review. Authority current owner continuation, roadmap H2/FR-002/ADR-0004/autonomy. Scope RE-1 and linked engineering backlog/current-state/roadmap/H1/H2/capabilities/contributing; odd/tasks/h2-room-explorer.md. Acceptance exact consumer movement/topology/transition/input adapter/CLI/project/test/rollback contract reviewed independently then technically approved. No engine scene/map/resource API; no new strategic product scope. Runtime N/A design, links/diff/readback. Independent scope map confirms H2 preparation is next bounded need, H1 subjective acceptance not inferred.
+
+## ME-023 — Expose additive Desktop vertical actions
+
+Pending ME-022 accepted RE-1. Surfaces new engine/Desktop/DesktopActions.cs, checks/Desktop.Contracts/DesktopActionTests.cs; engine/Desktop/RaylibApi.cs plus RE-1/backlog/current-state/odd task evidence. Exact mapping/order/query/legacy/alias behavior in RE-1. Runnable RED then focused/full Desktop tests and existing native harness; independent scratch verification before closure (may cover whole RE-1 feature after both work units, before objective acceptance). No public contract/dependency/focus/lifecycle changes; safe rollback own helper and additive up/down mapping. Risk3shared mapping, independent verifier required. No baseline failures.
+
+## ME-024 — Validate two-room exploration through public engine API
+
+Pending ME-023 and reviewed RE-1. Exact new model/executable/tests/smoke and Loop.Contracts reference/doc surfaces in RE-1; no FirstPlayable/model changes. Acceptance all model/transition/input/native/CLI criteria, preserve117baseline tests, independent scratch verification and parent spotcheck, commit/push traceability, objective technical acceptance vs unobserved subjective navigation. RED/GREEN commands and recovery in RE-1. Risk3/5 consumer contracts/project wiring; no engine world/ECS/asset APIs. No baseline failures, no new package versions.
+
+ME-022 closure2026-10-16: independent explorer_design_review targeted recheckPASS after contradictory unchanged-code wording corrected. RE-1 approved by Codex root under delegated authority. No runtime needed for design; links/readback/diff checks. ME-023ready; ME-024 remains pending independent input closure, do not bypass dependency.
