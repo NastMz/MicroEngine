@@ -63,3 +63,5 @@ serial build/test instructions; do not infer installation requirements from hist
 Agents run reproducible technical checks themselves; manual experience is reserved for
 genuinely subjective product evidence. Passing tests does not authorize main integration
 or full milestone acceptance. Follow [autonomy](autonomy.md), not older dated restrictions.
+
+Current candidate: [optional in-memory images IMG-1](specs/optional-images.md), ME-039/040, under [ADR-0009](decisions/0009-optional-image-resources.md). Refer to backlog/current-state for actual closure evidence; no asset pipeline or additional backend commitment.

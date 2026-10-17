@@ -94,3 +94,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File checks/LabelNativeSmoke.ps1
 ~~~
 
 The probe owns its window/images, samples RGB not opaque alpha, and closes/unloads them. It proves drawing, not subjective legibility or other platform support. In TurnExplorer, open the marker menu to see Advance/Return names; no new controls. See [NL-1](specs/optional-labels.md), [ADR-0008](decisions/0008-optional-label-canvas.md) and backlog for actual verification state.
+
+## Optional image verification (IMG-1)
+
+Images are opt-in through `IImageCanvas`; primitive-only providers remain valid. See [IMG-1](specs/optional-images.md) for pixel format, context-bound lease ownership and Desktop budgets. No file loader or mandatory asset manager is introduced.
+
+Run the serial Release suites from toolchain.md, then `powershell -File checks/ImageNativeSmoke.ps1`. The native probe builds its separate executable, checks actual RGB/alpha/point-sampling pixels, releases resources explicitly and through window teardown, and requires exit0 and clean close. A PASS is technical evidence, not aesthetic acceptance. For subjective appearance only, run `dotnet run --project examples/FirstPlayable -c Release`: the existing moving avatar now has a tiny turquoise/white/dark badge; movement and procedural poses are unchanged.

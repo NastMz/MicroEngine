@@ -1,7 +1,7 @@
 <!-- Current authority:2026-10-15 technical delegation supersedes earlier approval-only restrictions; see autonomy.md. Historical dated evidence is not rewritten. -->
 # Evolutionary roadmap
 
-H0 is accepted by the owner (2026-10-15). Current horizon: prepare the next H1 candidate through bounded specifications/investigations and task packets; reviewed future technical construction is delegated within the roadmap. The prototype remains at [legacy-final](history.md).
+H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persistence/labels are technically verified; full playable-milestone acceptance is not inferred. Current horizon IMG-1 adds optional in-memory image ownership and one avatar supplement after reviewed ADR-0009; no asset pipeline or genre rules. The prototype remains at [legacy-final](history.md).
 
 ## Current executable horizon
 

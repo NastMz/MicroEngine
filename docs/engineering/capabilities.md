@@ -42,3 +42,5 @@ CF-1 probes CAP-013 disk IO as optional consumer adapter referencing CP-1 only. 
 CL-1 integrates consumer checkpoint adapters at executable startup/shutdown, not an engine storage API or compulsory game service. Same versioned data and no-overwrite contract; no native input additions.
 
 NL-1 adds a bounded optional ILabelCanvas profile under CAP-004/012 for short printable-ASCII labels through provider default face. Primitive providers need not implement it; generic text/layout/fonts/assets remain candidates. No native dependency in foundation or game rules; ADR-0008 describes finite scope.
+
+IMG-1 candidate (ME-039/040): CAP-004/006 bounded optional in-memory raster/profile and context-bound leases; CAP-016 public provider substitution retained. No file decoding, asset catalogs, atlas, mandatory image support or full CAP fulfillment. [Contract](specs/optional-images.md), [ADR-0009](decisions/0009-optional-image-resources.md); see backlog for current verification state.
