@@ -63,3 +63,5 @@ H2/C-002 includes interaction beyond RE-1 traversal. ME-026/027 [IM-1](specs/mar
 H3 preparation2026-10-17: H2 traversal/manual-marker slices positively evaluated/integrated; ME-028/029 [TM-1](specs/turn-menu.md) refine only first menu/turn flow via a new external consumer, private composition of existing exploration. No additional H2 gameplay or premature engine text/UI framework. [H3 packet](milestones/H3.md) separates technical/subjective evidence; no full-H3 or persistence commitment.
 
 CP-1 next horizon2026-10-17: owner continuation refines C-003/CAP-013 into [consumer checkpoints](specs/consumer-checkpoint.md), reviewed ADR-0006. Only versioned bytes/validated state reconstruction; no engine storage, disk IO, battle or UI expansion. ME-030/031 state in backlog.
+
+CF-1 horizon2026-10-17: [checkpoint files](specs/checkpoint-files.md)/ADR-0007 add optional consumer create-new/read storage after verified CP-1. No replacement/autosave/game controls/engine storage. Prior CP-1 and new CF-1 remain on stacked task branches until applicable main-delivery authority.

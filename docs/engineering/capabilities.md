@@ -36,3 +36,5 @@ IM-1/H2.1 is consumer-owned manual interaction discovery under C-002: one strict
 TM-1/H3.0 proposed discovery covers consumer-owned menu selection/turn indication using current primitive rendering and console labels. It does not implement CAP-012 engine UI or CAP-013 storage, nor select font/text/scene APIs. Task-state/review evidence belongs to backlog and H3 packet.
 
 CP-1 is consumer-owned versioned checkpoint discovery under CAP-013, not engine persistence or disk durability. Format/factories reviewed in ADR-0006; state/evidence in backlog.
+
+CF-1 probes CAP-013 disk IO as optional consumer adapter referencing CP-1 only. Create-new/read, bounded payload, no existing destination replacement; not a general engine save provider or portability/durability promise.

@@ -39,8 +39,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-029 | consumer implementation | P1 | completed | ME-028 | TM-1 below |
 | ME-030 | specification | P1 | completed | ME-029 | [CP-1](specs/consumer-checkpoint.md) |
 | ME-031 | consumer implementation | P1 | completed | ME-030 | [CP-1](specs/consumer-checkpoint.md) |
-| ME-032 | specification | P1 | in-progress | ME-031 | [CF-1](specs/checkpoint-files.md) |
-| ME-033 | consumer adapter | P1 | pending | ME-032 | [CF-1](specs/checkpoint-files.md) |
+| ME-032 | specification | P1 | completed | ME-031 | [CF-1](specs/checkpoint-files.md) |
+| ME-033 | consumer adapter | P1 | in-review | ME-032 | [CF-1](specs/checkpoint-files.md) |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -444,3 +444,7 @@ ME-031 author proof2026-10-17: checkpointRED4failed/0passed ->GREEN4/4; full110L
 ME-031 blocker2026-10-17: owner resumed 'continua'. Independent checkpoint_verify PARTIAL, not PASS. FreshGUIDTEMP copy/all5source hashes matched implementationa4dc7a1; static contract checks and unchanged prior Update bodies/project dependencies corroborated. Restore hung twice (normal then bounded local-cache-only/no-audit retry), terminated; independent probes/full suites NOT executed. Author final4/4spotcheck/161regressions/three native harnesses remain valid but do not replace independent execution. Taskblocked, no weakened criteria/technical acceptance/main integration. No independent ready task in CP-1 horizon; recovery requires an executable isolated verifier environment, not owner repetition of tests.
 
 ME-031 recovery/closure2026-10-17: owner 'Que debo hacer o lo haces tu?' resumed technical recovery, not waiver of proof. Outside-sandbox dotnet10.0.402/local-cache-only restore with NuGetAudit=false/serial/no-shared-compilation/no-node-reuse exited0 promptly. Independent checkpoint_verify freshGUIDTEMP copy (no git/index/bin/obj reuse)4/4public checkpoint tests and110Loop+20Desktop+31Hosting=161/161PASS, no blockers/advisories; all5candidate hashes matched before/after/current implementationa4dc7a1. Existing Update bodies/project dependencies retained. Earlier PARTIAL is historical, now resolved execution-context limitation, no code/SDK/package change. Parent final4/4spotcheckPASS, source parity/diffcheckPASS. Codex root accepts objective CP-1, ME-031completed; no subjective test needed for byte contract, main751686a unchanged.
+
+## ME-032 / ME-033 — Checkpoint file horizon
+
+ME-032 completed2026-10-17 at5d6f2c3: CF-1/ADR-0007 reviewed checkpoint_design_review PASS/no blockers, Codex root delegated approval. Advisory preserving write+close errors incorporated before source. ME-033 claimed ready->in-progress before construction, baseline3e77a8d; focusedRED5failed/0passed ->GREEN5/5, no existing model/engine/native graph change. Full regressions/independent verification required; in-review, no technical acceptance yet.

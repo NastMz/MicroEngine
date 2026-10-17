@@ -64,3 +64,13 @@ pwsh -NoProfile -File checks/TurnExplorerSmoke.ps1
 ~~~
 
 Arrows/WASD explore; Space at the Courtyard marker opens the menu. Up/down selects top Advance (one square) or bottom Return (two squares); Space confirms. Menu pauses movement; Advance moves the cyclic four-pip indicator, Return resumes exploration on the next update. Console names options/traces; no in-window text API. Escape/window close exits. --smoke N(1..600), --fail-update and normal/failure/usage exits0/1/2 match the other tracers. No new package/native backend/SDK constraint. Task/evidence state in backlog ME-028/029 and milestones/H3.md.
+
+## Consumer checkpoint file checks
+
+CF-1 uses owned unique TEMP directories only; no user save files. Focused automated command:
+
+~~~powershell
+dotnet test checks/Loop.Contracts/Loop.Contracts.csproj -c Release --no-restore -p:UseSharedCompilation=false -m:1 -nodeReuse:false --filter FullyQualifiedName~CheckpointFileTests
+~~~
+
+Optional examples/TurnExplorer.Storage references only the consumer model. CheckpointFile.CreateNew(path, session.Capture()) refuses existing destinations; CheckpointFile.Read(path) validates CP-1 bytes, then TurnSession.Restore creates a new session. No game keybindings/automatic paths/overwrite API. See [CF-1](specs/checkpoint-files.md).
