@@ -3,4 +3,5 @@
     <Compile Include="../../examples/FirstPlayable/AvatarRenderer.cs" Link="AvatarRenderer.cs" />
   </ItemGroup>
   <ItemGroup><ProjectReference Include="../../examples/RoomExplorer.Model/RoomExplorer.Model.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../examples/TurnExplorer.Model/TurnExplorer.Model.csproj" /></ItemGroup>
 </Project>

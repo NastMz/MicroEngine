@@ -36,7 +36,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-026 | specification | P0 | completed | ME-024 | IM-1 below |
 | ME-027 | consumer implementation | P1 | completed | ME-026 | IM-1 below |
 | ME-028 | specification | P0 | completed | ME-027 | TM-1 below |
-| ME-029 | consumer implementation | P1 | ready | ME-028 | TM-1 below |
+| ME-029 | consumer implementation | P1 | in-progress | ME-028 | TM-1 below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -412,3 +412,7 @@ Owner continuation2026-10-17, H3/C-003/FR-002/ADR-0004. Claimed Codex root basel
 Pending reviewed ME-028 approval. Exact new model/executable/test/harness/project-ref and docs surfaces/commands/acceptance in TM-1. Preserve149baseline tests and all prior source dependencies/behaviors, observe RED/GREEN; independent whole-feature scratch verifier with public ordered-edge/phase/pause/resume probes and source baseline comparison, parent spotcheck, both old native harnesses plus new one. Risk3/5 new consumer contract/project graph; no engine/old-game code edits. Managed model/tests and executable/native evidence are coherent review slices under cached stacked-to-main, no source compression/criteria reduction. Objective technical closure delegated; new positive owner feedback needed for main delivery; no full-H3 acceptance.
 
 ME-028 closure2026-10-17: independent turn_menu_design_review targeted visibility/test-seam recheckPASS. TM-1 approved by Codex root under technical delegation; phasepipsalways/menuonlyopen and native-free renderer proof exact. No engine/UI/text/battle API decision. RuntimeN/A design, links/readback/diff checks; ME-029ready. Existing backlog heading refreshed to reflect current horizons rather than historical H1 preparation.
+
+ME-029 claim2026-10-17: Codex root baselinecf92075 on feat/h3-turn-menu, ready -> in-progress before source edits. Approved TM-1 exact surfaces/acceptance; parent inline writer. Commit slices managed model/tests then executable/renderer/native proof; whole-feature independent review before closure, no task dependency bypass.
+
+ME-029 managed slice2026-10-17 baselinecf92075: runnableRED6failed/0passed ->focusedGREEN6/6, fullLoop104/104. New private-composition model and public ordered-menu/pause/phase/invalid/replay tests only; no previous model/engine source changes. Task remains in-progress, native presentation and whole-feature independent verification pending before closure.
