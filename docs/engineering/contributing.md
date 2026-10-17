@@ -84,3 +84,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File checks/TurnExplorerPersisten
 ~~~
 
 [CL-1](specs/checkpoint-launch.md) defines exact traces/error/ordering; no manual repetition of this harness is required.
+
+## Optional label verification
+
+NL-1 leaves ICanvas unchanged. Consumers may type-test ILabelCanvas; unsupported providers keep primitive presentation. Desktop provides short ASCII labels using its default face. Native pixel/readback proof:
+
+~~~powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File checks/LabelNativeSmoke.ps1
+~~~
+
+The probe owns its window/images, samples RGB not opaque alpha, and closes/unloads them. It proves drawing, not subjective legibility or other platform support. In TurnExplorer, open the marker menu to see Advance/Return names; no new controls. See [NL-1](specs/optional-labels.md), [ADR-0008](decisions/0008-optional-label-canvas.md) and backlog for actual verification state.

@@ -67,3 +67,5 @@ CP-1 next horizon2026-10-17: owner continuation refines C-003/CAP-013 into [cons
 CF-1 horizon2026-10-17: [checkpoint files](specs/checkpoint-files.md)/ADR-0007 add optional consumer create-new/read storage after verified CP-1. No replacement/autosave/game controls/engine storage. Prior CP-1 and new CF-1 remain on stacked task branches until applicable main-delivery authority.
 
 CL-1 horizon2026-10-17: [checkpoint startup/exit](specs/checkpoint-launch.md) composes verified CP-1/CF-1 for actual process restart in TurnExplorer, optional flags only. No autosave/overwrite/storage system/game rule expansion; current task states in backlog.
+
+NL-1 horizon2026-10-17: [optional labels](specs/optional-labels.md)/ADR-0008 refines real TurnExplorer console-only names into optional cohesive presentation support. Earlier positive feedback not a defect classification; ICanvas and fallback retained. Not generic UI/font resources/localization/backends. Task/evidence state in backlog.

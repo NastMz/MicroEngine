@@ -19,5 +19,11 @@ internal static class MenuRenderer
         canvas.Fill(new Rect(432, 54, 12, 12), dark);
         canvas.Fill(new Rect(432, 102, 12, 12), dark);
         canvas.Fill(new Rect(452, 102, 12, 12), dark);
+        if (canvas is ILabelCanvas labels)
+        {
+            var light = new Rgba(240, 240, 245);
+            labels.Label("Advance", 480, 50, 20, session.SelectedOption == MenuOption.Advance ? dark : light);
+            labels.Label("Return", 480, 98, 20, session.SelectedOption == MenuOption.Return ? dark : light);
+        }
     }
 }

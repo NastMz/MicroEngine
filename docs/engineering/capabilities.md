@@ -40,3 +40,5 @@ CP-1 is consumer-owned versioned checkpoint discovery under CAP-013, not engine 
 CF-1 probes CAP-013 disk IO as optional consumer adapter referencing CP-1 only. Create-new/read, bounded payload, no existing destination replacement; not a general engine save provider or portability/durability promise.
 
 CL-1 integrates consumer checkpoint adapters at executable startup/shutdown, not an engine storage API or compulsory game service. Same versioned data and no-overwrite contract; no native input additions.
+
+NL-1 adds a bounded optional ILabelCanvas profile under CAP-004/012 for short printable-ASCII labels through provider default face. Primitive providers need not implement it; generic text/layout/fonts/assets remain candidates. No native dependency in foundation or game rules; ADR-0008 describes finite scope.
