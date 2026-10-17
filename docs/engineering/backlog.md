@@ -54,7 +54,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-044 | map model and presentation | P1 | completed | ME-043 | [MAP-1](specs/map-viewport.md) |
 | ME-045 | map executable and verification | P1 | completed | ME-044 | [MAP-1](specs/map-viewport.md) |
 | ME-046 | specification | P1 | completed | ME-045 | [MAP-2](specs/map-navigation.md) |
-| ME-047 | solid navigation | P1 | in-review | ME-046 | [MAP-2](specs/map-navigation.md) |
+| ME-047 | solid navigation | P1 | completed | ME-046 | [MAP-2](specs/map-navigation.md) |
 
 Use this table for current selection. Dated records below preserve earlier authority,
 dependencies and failed/pending checks; later closure evidence supersedes those states.
@@ -514,3 +514,11 @@ Independent checkpoint_verify PASS S1/S2/S3, no change-caused blockers, frozenf6
 
 MAP-1 owner feedback2026-10-17: "Funciona perfectamente, continua" on ff1c322. Positive navigation/camera assessment, not fullH2 acceptance. Source stack also contains independent SPR-1 which has no positive owner feedback; main integration deliberately selects MAP-1 only instead of silently publishing unrelated unapproved behavior. Integration branch feat/map-main-integration based7507858 retains main185tests plus8MAPtests=193; SPR's8tests stay on its feature branch (not removed from main). MAP source/test/probe bytes copied exactly from evaluatedff1c322, Loop.Contracts adds only MAPmodel reference/renderer link. Main-based managed/native revalidation and independent scope audit required before integration.
 MAP-only integration closure2026-10-17: independent checkpoint_verify frozen96a5da4 PASS193/193 (130Loop+32Desktop+31Hosting),2MAPnative harnesses fresh build,11MAPfiles identicalff1c322 and12candidate hashes matched. Engine/oldgames/config unchanged7507858; SPRsource/tests/API explicitly excluded. Parent nativeViewport spotcheckPASS. Main fast-forward7507858..96a5da4 normally pushed,0/0 divergence; owner-positive MAP navigation recorded, no fullH2/SPR acceptance inferred.
+
+## ME-046 / ME-047 — MAP-2 technical closure2026-10-17
+
+ME-046 approveda02c8a2 after independent checkpoint_design_review PASS before source. Model/navigation/render/tests85d9752; nativejourney/controls/docs457ced3. AuthorRED7navigation tests and nativeREDmovementpassedfuturewall ->GREEN200/200=137Loop+32Desktop+31Hosting; old193tests retained, two exact-render expectations extended with solid entries only. Contact/detour/portal/return journey preserves prior12viewport plus10newRGBsamples (22total).
+
+Independent checkpoint_verify PASS S1/S2/S3/no change-caused blockers on frozen457ced3 in fresh GUID system-TEMP copy, no Git/index/build reuse. Focused7/7/full200/200, all9native harnesses Navigation/MapViewport/MapExplorer/Image/Label/TurnPersistence/Turn/Room/DesktopPASS, sevenfresh example/probe buildsPASS. Independent public probes immutability/fourCreatecontacts/overlap, fourfaceMaxValue no tunneling, Y-firstcorner, slide/edgefreedom, portal/camera, replay/no penetration, invalidatomicity and rendererclip/order/purityPASS. Eightcandidate source/test/harness hashes matched before/after. Engine/oldgames/projects/packages/SDK/config unchangedfa85679. Multi-wall ordering is static reviewed only (onefixedwall/map); no invented runtime fixture. Command wrapper delays did not cause globalprocess cleanup. Baseline-only absentSPR doc links corrected separatelyb5f2718 to immutable historicalaa0243b documents, branch-only command labels; all9document links now resolve and historical Git objects verified. No SPR code added.
+
+Parent nativeNavigation spotcheck, verified-source parity and git diff/check linksPASS. RDDglobaloff unchanged. Codex root accepts objective MAP-2 and closes ME-046/047. Subjective barrier readability/wall slide/detour feel unobserved, fullH2 unclaimed. Main/origin/mainfa85679 includes only positively evaluated MAP-1; new MAP-2 remains on feat/map-navigation awaiting applicable integration authority. Pre-existing .gitignore/.codegraph preserved. No independent ready task remains; future horizon requires concrete roadmap need rather than a speculative general physics library.

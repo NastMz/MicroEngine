@@ -5,7 +5,7 @@ H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persisten
 
 ## Current executable horizon
 
-[Backlog](backlog.md) is the only task-state source. ME-039/040 complete IMG-1 with independent technical proof. ME-041/042 complete SPR-1 optional source regions and equivalent external avatar sheet presentation with independent193test/7native/parity proof. ME-043/044 complete the reviewed MAP-1 contract and model/presentation; ME-045 completed independent201test/9native/public-probe verification and objective technical acceptance. Owner positively evaluated MAP-1 navigation; this does not accept fullH2. ME-046 reviewed MAP-2; ME-047 implements bounded solid-navigation proof with independent closure pending. Do not assume a full asset/animation framework. See [current state](current-state.md).
+[Backlog](backlog.md) is the only task-state source. ME-039/040 complete IMG-1 with independent technical proof. ME-041/042 complete SPR-1 optional source regions and equivalent external avatar sheet presentation with independent193test/7native/parity proof. ME-043/044 complete the reviewed MAP-1 contract and model/presentation; ME-045 completed independent201test/9native/public-probe verification and objective technical acceptance. Owner positively evaluated MAP-1 navigation; this does not accept fullH2. ME-046/047 complete MAP-2 with independent200test/9native/navigation proof. Subjective solid-navigation feel remains owner-owned; no independent ready task remains. Do not assume a full asset/animation framework. See [current state](current-state.md).
 An authorized future development session follows [execution](execution.md) and may continue
 independent ready work. No background scheduler is installed; H0 is implemented, not a playable game.
 

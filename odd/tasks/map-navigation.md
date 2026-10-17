@@ -9,8 +9,8 @@ S3: Observe public RED/GREEN, bounded native scripted detour and actual pixels, 
 
 ## Tasks
 T1 S1 inline completed main96a5da4/integrationledgerfa85679; independent193tests/2native/MAP-only parityPASS.
-T2 S2-S3 inline in-progress ME-046 specification/review.
-T3 S2-S3 inline pending ME-047 model/renderer/tests/native journey/independent closure.
+T2 S2-S3 inline completed commita02c8a2 ME-046 specification/review.
+T3 S2-S3 inline completed commits85d9752/457ced3 ME-047 model/renderer/tests/native journey/independent closure.
 
 ## Log
 L1 Owner request verbatim: Funciona perfectamente, continua
@@ -18,3 +18,4 @@ L2 MAP-1 positive feedback does not make decorative geometry a defect. New MAP-2
 L3 Independent checkpoint_design_review PASS/no blockers. Multi-solid ordering has no public fixture seam and is static-review-only; no test API added. Root approves MAP-2, completes ME-046 and claims ME-047 before source. Baselinefa85679, no new engine/shared architecture.
 L4 Approvala02c8a2 before source. Public navigationRED7/7, native journeyREDactual movement passed through future wall/reachedRuins before new policy ->GREEN contact/detour/return and22RGBsamples. FullLoop137/137 including baseline130, native Map process12casesPASS, Desktop32/32/Hosting31/31, total200/200; builds0warnings/errors. Only two existing exact-render sequences extended with new gray solid draw, prior assertions retained. Multi-solid ordering remains algorithmic-only (onefixedwall/map), no fabricated runtime proof. Native/managed newcoverage supplements priorMAP1, does not classify earlier decorative behavior as a bug. RDDglobaloff unchanged. ME-047in-review pending independent wholefeature before objective acceptance.
 L5 Parent local-link gate found SPR references inherited from selected MAP-only integration96a5da4. Corrected README/backlog/capabilities/contributing links to immutable historicalaa0243b Git documents (both objects verified); marked SPR-only commands branch-scoped. No SPRsource/importedfiles, no verified source/test/probe byte changes. This baseline documentary correction is separate from MAP-2 behavior and does not fabricate feedback.
+L6 Independent checkpoint_verify PASS S1/S2/S3 frozen457ced3:200tests/focused7/all9native/sevenfreshbuilds/publicnavigation-renderprobes/eightmatchinghashes, no blockers/correction. Multiwallorder static-only; onepublicwall/map. Parent nativeNavigation spotcheckPASS, nine-documentlinksPASSafterbaselinehistoricalSPRlinkfixb5f2718. Verified source/test/probe bytes unchanged; engine/oldgames/projects/config/dependencies untouched. Coherent slices85d9752=147authoredlines and457ced3=83authoredlines; no budget-driven compression. Root accepts objectiveMAP2, completesME046/047, no subjective/fullH2 acceptance. Mainfa85679 unchanged. No readyindependenttask; nextscope not invented. Mirror pendingunavailablehostidentity; complete repo evidence retained. Taskbranchpublication follows.
