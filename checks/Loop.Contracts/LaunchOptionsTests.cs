@@ -44,6 +44,12 @@ public sealed class LaunchOptionsTests
             Assert.IsFalse(LaunchOptions.TryParse(args, out var invalid));
             Assert.IsNull(invalid);
         }
+        foreach (var args in new[] { new[] { "--smoke", "--load", "missing" },
+            ["--smoke", "--save-new", "new"], ["--smoke", "--fail-update"] })
+        {
+            Assert.IsFalse(LaunchOptions.TryParse(args, out var invalid));
+            Assert.IsNull(invalid);
+        }
         Assert.ThrowsExactly<ArgumentNullException>(() => LaunchOptions.TryParse(null!, out _));
     }
 }

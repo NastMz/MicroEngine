@@ -78,12 +78,13 @@ try {
     $failure = Invoke-Probe ('--save-new "' + $never + '" --smoke 60 --fail-update') 1
     Require ($failure -match 'outcome:Failed;' -and $failure -match 'Window closed successfully' -and $failure -notmatch 'checkpoint:saved' -and -not [IO.File]::Exists($never)) 'Runtime failure saved or leaked native state.'
 
-    foreach ($arguments in @('--load', '--save-new', '--load --smoke 1', '--save-new " "', '--load a --load b', '--save-new a --save-new b')) {
+    foreach ($arguments in @('--load', '--save-new', '--load --smoke 1', '--save-new " "', '--load a --load b', '--save-new a --save-new b',
+        ('--smoke --load "' + $missing + '"'), ('--smoke --save-new "' + $never + '"'), '--smoke --fail-update')) {
         $invalid = Invoke-Probe $arguments 2
-        Require ($invalid -match 'Usage: TurnExplorer' -and $invalid -match '--save-new PATH' -and $invalid -notmatch 'Initializing raylib|checkpoint:loaded|checkpoint:saved') 'New invalid CLI had effects or lacked usage.'
+        Require ($invalid -match 'Usage: TurnExplorer' -and $invalid -match '--save-new PATH' -and $invalid -notmatch 'Initializing raylib|checkpoint:loaded|checkpoint:saved' -and -not [IO.File]::Exists($never)) 'New invalid CLI had effects or lacked usage.'
     }
     Require (([IO.Directory]::GetFiles($fixture, '.checkpoint-*.tmp')).Length -eq 0) 'Temporary file residue.'
-    Write-Output 'PASS: 14 persistence CLI/native cases; exact exits0/1/2, two-process durable restore, load before acquire/save after close, no overwrite/failure save.'
+    Write-Output 'PASS: 17 persistence CLI/native cases; exact exits0/1/2, two-process durable restore, load before acquire/save after close, no overwrite/failure save.'
 }
 finally {
     Pop-Location

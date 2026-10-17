@@ -11,9 +11,13 @@ internal sealed record LaunchOptions(int Limit, bool FailUpdate, string? LoadPat
         string? load = null, save = null;
         for (var i = 0; i < args.Length; i++)
         {
-            if (args[i] == "--smoke" && i + 1 < args.Length && limit == 0
-                && int.TryParse(args[++i], out var parsed) && parsed is >= 1 and <= 600)
+            if (args[i] == "--smoke")
+            {
+                if (i + 1 >= args.Length || limit != 0 || !int.TryParse(args[i + 1], out var parsed)
+                    || parsed is < 1 or > 600) return false;
                 limit = parsed;
+                i++;
+            }
             else if (args[i] == "--fail-update" && !failUpdate) failUpdate = true;
             else if (args[i] is "--load" or "--save-new")
             {
