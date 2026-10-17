@@ -1,6 +1,6 @@
 # Current implementation state
 
-Updated2026-10-17; branch feat/h2-marker-interaction (baseline8ff1f0a); main8ff1f0a integrated and published by owner authorization. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
+Updated2026-10-17; branch main after evaluated marker integration; source main de1c08d integrated and published under positive-feedback authority. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
 
 ## Authority
 
@@ -83,3 +83,5 @@ ME-026 IM-1 independently reviewed/approved at4419243. ME-027 consumer-only mark
 IM-1 closure2026-10-17: ME-026/027completed; independent marker_verify98/98,1000baseline movement updates/probes/newnative7PASS, parent149tests/both native harnessesPASS. No engine/project/dependency changes, source-model/render marker only. Main8ff1f0a remains evaluated prior increments plus reviewed positive-feedback policy; marker not integrated before its own owner evaluation. No independent ready task in this bounded horizon; subjective interaction handoff in H2 packet.
 
 IM-1 owner feedback2026-10-17: 'Funciona perfectamente' after delivered0a8bfe3/b21266f. Marker now has positive subjective feedback and standing main-delivery authorization.149tests/native harnesses/independent proof applies to unchanged source; no full-H2 acceptance inferred. Integration result recorded below after execution.
+
+IM-1 integration confirmed2026-10-17: main8ff1f0a..de1c08d normal-pushed, main/origin0/0, engine/examples/checks identical to evaluated0a8bfe3. Marker now positively evaluated and integrated; earlier pending-integration statements are historical. No prepared task remains in bounded marker horizon, full-H2 acceptance not inferred.
