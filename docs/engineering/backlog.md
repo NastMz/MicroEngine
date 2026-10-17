@@ -41,8 +41,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-031 | consumer implementation | P1 | completed | ME-030 | [CP-1](specs/consumer-checkpoint.md) |
 | ME-032 | specification | P1 | completed | ME-031 | [CF-1](specs/checkpoint-files.md) |
 | ME-033 | consumer adapter | P1 | completed | ME-032 | [CF-1](specs/checkpoint-files.md) |
-| ME-034 | specification | P1 | in-progress | ME-033 | [CL-1](specs/checkpoint-launch.md) |
-| ME-035 | consumer integration | P1 | pending | ME-034 | [CL-1](specs/checkpoint-launch.md) |
+| ME-034 | specification | P1 | completed | ME-033 | [CL-1](specs/checkpoint-launch.md) |
+| ME-035 | consumer integration | P1 | in-progress | ME-034 | [CL-1](specs/checkpoint-launch.md) |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -452,3 +452,7 @@ ME-031 recovery/closure2026-10-17: owner 'Que debo hacer o lo haces tu?' resumed
 ME-032 completed2026-10-17 at5d6f2c3: CF-1/ADR-0007 reviewed checkpoint_design_review PASS/no blockers, Codex root delegated approval. Advisory preserving write+close errors incorporated before source. ME-033 claimed ready->in-progress before construction, baseline3e77a8d; focusedRED5failed/0passed ->GREEN5/5, no existing model/engine/native graph change. Full regressions/independent verification required; in-review, no technical acceptance yet.
 
 ME-033 closure2026-10-17 implementation7232471: independent checkpoint_verify freshGUIDTEMP/no prior build/index reuse, local-cache/outside-sandbox proofPASS. Independent16public checks (relative path/exact bytes/round-trip/no overwrite/temp ownership/locked read/large malformed handle release/directory target/missing parent), focused5/5 and full115Loop+20Desktop+31Hosting=166/166PASS. Four source/project/test hashes match before/after/current; Storage references only consumer model, no packages/Desktop/native. Prior engine/models/executables/Desktop/Hosting source diff empty. Parent final5/5/frozen-sourceparity/diff/link checksPASS; no blockers/advisories. Compound write/close/cleanup failure branches static-reviewed only, explicitly not fault-injected per CF-1. Codex root accepts objective CF-1; ME-033completed, no subjective gate/main integration/full-H3 acceptance. Existing native evidence retained on unchanged runtime sources.
+
+## ME-034 / ME-035 — Checkpoint launch integration
+
+ME-034completed2026-10-17 contract554d4c6: CL-1 independent checkpoint_design_review PASS, Codex root delegated approval before source. ME-035claimed ready->in-progress baselinebb75223. Internal source-linked parser RED3failed->GREEN3/3, Loop118/118; oldflag grammar retained. Parser slice does not change executable yet; native integration/RED/GREEN/full independent proof required before closure.

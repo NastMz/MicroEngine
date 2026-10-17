@@ -6,4 +6,5 @@
   <ItemGroup><ProjectReference Include="../../examples/TurnExplorer.Model/TurnExplorer.Model.csproj" /></ItemGroup>
   <ItemGroup><Compile Include="../../examples/TurnExplorer/MenuRenderer.cs" Link="TurnMenuRenderer.cs" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../../examples/TurnExplorer.Storage/TurnExplorer.Storage.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../../examples/TurnExplorer/LaunchOptions.cs" Link="TurnLaunchOptions.cs" /></ItemGroup>
 </Project>
