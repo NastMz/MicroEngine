@@ -65,3 +65,5 @@ H3 preparation2026-10-17: H2 traversal/manual-marker slices positively evaluated
 CP-1 next horizon2026-10-17: owner continuation refines C-003/CAP-013 into [consumer checkpoints](specs/consumer-checkpoint.md), reviewed ADR-0006. Only versioned bytes/validated state reconstruction; no engine storage, disk IO, battle or UI expansion. ME-030/031 state in backlog.
 
 CF-1 horizon2026-10-17: [checkpoint files](specs/checkpoint-files.md)/ADR-0007 add optional consumer create-new/read storage after verified CP-1. No replacement/autosave/game controls/engine storage. Prior CP-1 and new CF-1 remain on stacked task branches until applicable main-delivery authority.
+
+CL-1 horizon2026-10-17: [checkpoint startup/exit](specs/checkpoint-launch.md) composes verified CP-1/CF-1 for actual process restart in TurnExplorer, optional flags only. No autosave/overwrite/storage system/game rule expansion; current task states in backlog.

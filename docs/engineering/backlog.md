@@ -42,7 +42,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-032 | specification | P1 | completed | ME-031 | [CF-1](specs/checkpoint-files.md) |
 | ME-033 | consumer adapter | P1 | completed | ME-032 | [CF-1](specs/checkpoint-files.md) |
 | ME-034 | specification | P1 | completed | ME-033 | [CL-1](specs/checkpoint-launch.md) |
-| ME-035 | consumer integration | P1 | in-progress | ME-034 | [CL-1](specs/checkpoint-launch.md) |
+| ME-035 | consumer integration | P1 | in-review | ME-034 | [CL-1](specs/checkpoint-launch.md) |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -456,3 +456,5 @@ ME-033 closure2026-10-17 implementation7232471: independent checkpoint_verify fr
 ## ME-034 / ME-035 — Checkpoint launch integration
 
 ME-034completed2026-10-17 contract554d4c6: CL-1 independent checkpoint_design_review PASS, Codex root delegated approval before source. ME-035claimed ready->in-progress baselinebb75223. Internal source-linked parser RED3failed->GREEN3/3, Loop118/118; oldflag grammar retained. Parser slice does not change executable yet; native integration/RED/GREEN/full independent proof required before closure.
+
+ME-035 integration proof2026-10-17: parsercced7fa preserved old grammar; new process harnessREDusage exit2 for --save-new before Program integration ->GREEN14cases. Parentfull118Loop+20Desktop+31Hosting=169PASS, build0warnings/0errors. Opt-in --load before native/no fallback; --save-new after nonfailed loop cleanup only, preserve existing destinations, failuresexit1/invalidusage2. Independent wholefeature/native regression pending, taskin-review.

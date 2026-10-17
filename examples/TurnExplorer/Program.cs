@@ -4,23 +4,30 @@ using MicroEngine.Loop;
 using RoomExplorer.Model;
 using TurnExplorer;
 using TurnExplorer.Model;
+using TurnExplorer.Storage;
 
-var limit = 0;
-var failUpdate = false;
-for (var i = 0; i < args.Length; i++)
+if (!LaunchOptions.TryParse(args, out var options) || options is null)
 {
-    if (args[i] == "--smoke" && i + 1 < args.Length && limit == 0
-        && int.TryParse(args[++i], out var parsed) && parsed is >= 1 and <= 600)
-        limit = parsed;
-    else if (args[i] == "--fail-update" && !failUpdate) failUpdate = true;
-    else
-    {
-        Console.Error.WriteLine("Usage: TurnExplorer [--smoke N(1..600)] [--fail-update]");
-        return 2;
-    }
+    Console.Error.WriteLine("Usage: TurnExplorer [--smoke N(1..600)] [--fail-update] [--load PATH] [--save-new PATH]");
+    return 2;
 }
+var limit = options.Limit;
+var failUpdate = options.FailUpdate;
 
 var game = new TurnSession();
+if (options.LoadPath is not null)
+{
+    try
+    {
+        game = TurnSession.Restore(CheckpointFile.Read(options.LoadPath));
+        Console.WriteLine("checkpoint:loaded");
+    }
+    catch (Exception error)
+    {
+        Console.Error.WriteLine($"checkpoint:load-failed:{error.GetType().Name}:{error.Message}");
+        return 1;
+    }
+}
 var frames = 0;
 var updates = 0;
 Console.WriteLine("Controls: Arrows/WASD explore; Space at marker opens menu; Up/Down select, Space confirms; top=Advance, bottom=Return; Escape/window close exits.");
@@ -55,4 +62,18 @@ var report = FrameLoop.Run(
 Console.WriteLine($"outcome:{report.Outcome};frames:{frames};updates:{updates}");
 if (report.PrimaryError is not null) Console.Error.WriteLine($"primary:{report.PrimaryError.GetType().Name}:{report.PrimaryError.Message}");
 foreach (var error in report.CleanupErrors) Console.Error.WriteLine($"cleanup:{error.GetType().Name}:{error.Message}");
-return report.Outcome == ExecutionOutcome.Failed ? 1 : 0;
+if (report.Outcome == ExecutionOutcome.Failed) return 1;
+if (options.SaveNewPath is not null)
+{
+    try
+    {
+        CheckpointFile.CreateNew(options.SaveNewPath, game.Capture());
+        Console.WriteLine("checkpoint:saved");
+    }
+    catch (Exception error)
+    {
+        Console.Error.WriteLine($"checkpoint:save-failed:{error.GetType().Name}:{error.Message}");
+        return 1;
+    }
+}
+return 0;

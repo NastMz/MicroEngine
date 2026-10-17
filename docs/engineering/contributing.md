@@ -74,3 +74,13 @@ dotnet test checks/Loop.Contracts/Loop.Contracts.csproj -c Release --no-restore 
 ~~~
 
 Optional examples/TurnExplorer.Storage references only the consumer model. CheckpointFile.CreateNew(path, session.Capture()) refuses existing destinations; CheckpointFile.Read(path) validates CP-1 bytes, then TurnSession.Restore creates a new session. No game keybindings/automatic paths/overwrite API. See [CF-1](specs/checkpoint-files.md).
+
+## TurnExplorer checkpoint launch
+
+Opt-in syntax: --load PATH restores before opening the window; --save-new PATH writes after successful exit, never replaces an existing file. Omit both for unchanged behavior. Filesystem failures exit1; invalid syntax exits2; update/cleanup failure skips saving. No IO in frame callbacks. Automated evidence command (owned TEMP files only):
+
+~~~powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File checks/TurnExplorerPersistenceSmoke.ps1
+~~~
+
+[CL-1](specs/checkpoint-launch.md) defines exact traces/error/ordering; no manual repetition of this harness is required.
