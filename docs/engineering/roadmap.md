@@ -1,11 +1,11 @@
 <!-- Current authority:2026-10-15 technical delegation supersedes earlier approval-only restrictions; see autonomy.md. Historical dated evidence is not rewritten. -->
 # Evolutionary roadmap
 
-H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persistence/labels are technically verified; full playable-milestone acceptance is not inferred. Current horizon IMG-1 adds optional in-memory image ownership and one avatar supplement after reviewed ADR-0009; no asset pipeline or genre rules. The prototype remains at [legacy-final](history.md).
+H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persistence/labels are technically verified; full playable-milestone acceptance is not inferred. IMG-1 is positively evaluated and integrated. SPR-1 is technically verified on the stacked task branch. Current horizon MAP-1 validates larger source-authored maps and consumer-owned viewport following in a separate external example; no engine scene/map/camera API. The prototype remains at [legacy-final](history.md).
 
 ## Current executable horizon
 
-[Backlog](backlog.md) is the only task-state source. ME-039/040 complete IMG-1 with independent technical proof. No prepared implementation task remains; refine only the next concrete consumer/content need after this bounded delivery, without assuming a full asset/animation framework. See [current state](current-state.md).
+[Backlog](backlog.md) is the only task-state source. ME-039/040 complete IMG-1 with independent technical proof. ME-041/042 complete SPR-1 optional source regions and equivalent external avatar sheet presentation with independent193test/7native/parity proof. ME-043/044 complete the reviewed MAP-1 contract and model/presentation; ME-045 completed independent201test/9native/public-probe verification and objective technical acceptance. Subjective map navigation remains owner-owned; no independent ready task remains. Do not assume a full asset/animation framework. See [current state](current-state.md).
 An authorized future development session follows [execution](execution.md) and may continue
 independent ready work. No background scheduler is installed; H0 is implemented, not a playable game.
 
