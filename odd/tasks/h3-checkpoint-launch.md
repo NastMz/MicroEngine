@@ -9,7 +9,7 @@ S2: Default invocation/controls/game rules/old CLI behavior unchanged; opt-in lo
 
 ## Tasks
 T1 S1-S2 inline completed ME-034 reviewed contract554d4c6; no new ADR for accepted CP-1/CF-1 composition.
-T2 S1-S2 inline in-review ME-035 parsercced7fa RED3->GREEN3/3, native REDusage2->GREEN14cases/full169PASS; independent whole-feature proof pending.
+T2 S1-S2 inline completed ME-035 parsercced7fa/integration79bf05c/correctionb768c13. Whole-feature169/oldnative3/independent7checks retained; targeted independent parser3/3/native17PASS, parentfinal3/3PASS. CL-1 objectively accepted, no main integration.
 
 ## Log
 L1 Owner request verbatim: continua con el siguiente trabajo
@@ -22,3 +22,5 @@ L4 Parser RED3failed/0passed ->GREEN3/3, fullLoop118/118. Immutable options pres
 L5 New native harness observedRED(exit2 Usage for --save-new before integration) ->GREEN14process cases after integration, builds0warnings/0errors. Parentfull118Loop+20Desktop+31Hosting=169PASS. Existing gameupdate/render/engine/models/storage unchanged, only Program launch/exit integration. Independent whole-feature scratch/full/native/probe proof required; source freeze now, no technical closure yet.
 
 L6 Initial independent checkpoint_verify frozen79bf05c sweep: full169/focused3/newnative14/oldthree harnesses/7independent process probesPASS, exactlyoneblocker. args[++i] in smoke predicate let next --load/--save-new be reinterpreted after numeric failure, violating parse-before-effects. Analogous --smoke --fail-update was latent baseline behavior, not preserved as a valid grammar. Parent regressionRED1failed/2passed ->GREEN3/3 with atomic validate-before-i++, Loop118/118; native harness expanded17cases incl three malformed smoke-prefix variants, no IO/native effects. Single bounded correctionbatch only; targeted independent recheck required, no second full review or weakened criteria.
+
+L7 Independent targeted recheckPASS onb768c13: freshGUIDTEMP3corrected file hashes retained, parser3/3/native17/build0warnings0errors, no remaining blockers/advisories. Full169/oldthree native/independent7process checks apply to unchanged components from initial sweep; no new fullreview. Parentfinal3/3/sourceparity/diff/linkPASS. Objective CL-1 accepted, ME-034/035completed, no user operational tests/main integration/full-H3 acceptance. Review/bug root cause and correction preserved; cached stacked slices554d4c6/cced7fa/79bf05c/b768c13 remain coherent, no PR. Session outcome opt-in actual restart persistence, no ready CL-1task; later features require separate refinement. Unrelated .gitignore/.codegraph retained; attributed memory unavailable, repository recovery log authoritative.
