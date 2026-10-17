@@ -33,6 +33,27 @@ try
         Draw(clipped, (0, 90, new(95, 130, 165)), (49, 90, new(95, 130, 165)), (50, 90, new(24, 40, 32)));
         Draw(MapWalker.Create(Zone.Ruins, 8, 304), (2, 110, new(70, 200, 210)), (170, 10, new(95, 130, 165)), (500, 300, new(32, 24, 48)));
         Console.WriteLine("map:viewport:verified");
+        var journey = new MapWalker();
+        void Move(int seconds, string direction, Zone zone, float x, float y, float cameraX, float cameraY)
+        {
+            journey.Update(TimeSpan.FromSeconds(seconds), new([direction], []));
+            if ((journey.Zone, journey.X, journey.Y, journey.CameraX, journey.CameraY) != (zone, x, y, cameraX, cameraY))
+                throw new InvalidOperationException($"Navigation state mismatch after {direction}: {journey.Zone},{journey.X},{journey.Y}.");
+            foreach (var wall in MapLayout.For(zone).Solids)
+                if (x < wall.X + wall.Width && x + 24 > wall.X && y < wall.Y + wall.Height && y + 32 > wall.Y)
+                    throw new InvalidOperationException("Navigation penetrated a wall.");
+        }
+        Move(10, "right", Zone.Meadow, 696, 304, 388, 140);
+        Draw(journey, (310, 170, new(240, 180, 65)), (334, 170, new(110, 120, 140)), (334, 40, new(24, 40, 32)));
+        Move(1, "up", Zone.Meadow, 696, 124, 388, 0);
+        Draw(journey, (334, 170, new(24, 40, 32)), (310, 130, new(240, 180, 65)));
+        Move(1, "right", Zone.Meadow, 876, 124, 568, 0);
+        Move(1, "down", Zone.Meadow, 876, 304, 568, 140);
+        Move(10, "right", Zone.Ruins, 8, 304, 0, 140);
+        Draw(journey, (402, 110, new(110, 120, 140)), (2, 110, new(70, 200, 210)), (10, 170, new(240, 180, 65)));
+        Move(1, "left", Zone.Meadow, 1248, 304, 640, 140);
+        Draw(journey, (82, 100, new(110, 120, 140)), (610, 170, new(240, 180, 65)));
+        Console.WriteLine("map:navigation:verified");
     }
     Console.WriteLine("map:closed"); return 0;
 }

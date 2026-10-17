@@ -23,7 +23,7 @@ for (int i = 0; i < args.Length; i++)
 
 var game = new MapWalker();
 int frames = 0, updates = 0;
-Console.WriteLine("Controls: Arrows/WASD move; large map scrolls; cyan passage at Meadow right edge / Ruins left edge changes map; Escape/window close exits.");
+Console.WriteLine("Controls: Arrows/WASD move; gray barriers block movement, detour around them; large map scrolls; cyan passage at Meadow right edge / Ruins left edge changes map; Escape/window close exits.");
 var report = FrameLoop.Run(
     () => new DesktopPlatform(new(640, 360, "MicroEngine — map and viewport explorer")),
     new(TimeSpan.FromSeconds(1d / 60), 5, TimeSpan.FromMilliseconds(250)),

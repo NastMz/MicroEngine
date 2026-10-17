@@ -48,3 +48,5 @@ IMG-1 candidate (ME-039/040): CAP-004/006 bounded optional in-memory raster/prof
 SPR-1 candidate: CAP-004/006/008/016 bounded optional integer source-region profile, external avatar sheet selection driven by existing simulation state. No generic clips, animation state, loaders or atlas metadata in the engine. [SPR-1](specs/sprite-regions.md), [ADR-0010](decisions/0010-optional-image-regions.md); task state remains in backlog.
 
 MAP-1 candidate probes CAP-009/010 through separate consumer-owned immutable fixed maps and camera/viewport translation. It does not fulfill a reusable map/scene/loader/camera API or choose a tile format. [MAP-1](specs/map-viewport.md); backlog/current-state record actual verification.
+
+MAP-2 candidate: CAP-007/009/010 spatial navigation tested by explicit consumer-owned solid rectangles and swept-axis resolution in MapExplorer; no engine collision/map/physics abstraction or collision contract for other games. Decorative geometry remains separate. [MAP-2](specs/map-navigation.md).

@@ -54,7 +54,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-044 | map model and presentation | P1 | completed | ME-043 | [MAP-1](specs/map-viewport.md) |
 | ME-045 | map executable and verification | P1 | completed | ME-044 | [MAP-1](specs/map-viewport.md) |
 | ME-046 | specification | P1 | completed | ME-045 | [MAP-2](specs/map-navigation.md) |
-| ME-047 | solid navigation | P1 | in-progress | ME-046 | [MAP-2](specs/map-navigation.md) |
+| ME-047 | solid navigation | P1 | in-review | ME-046 | [MAP-2](specs/map-navigation.md) |
 
 Use this table for current selection. Dated records below preserve earlier authority,
 dependencies and failed/pending checks; later closure evidence supersedes those states.
