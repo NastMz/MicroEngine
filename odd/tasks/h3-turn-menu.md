@@ -7,8 +7,8 @@ S1: "continua con el siguiente trabajo". Refine only the next documented roadmap
 S2: Preserve existing149tests, FirstPlayable/RoomExplorer behavior and public engine contracts; reuse public Loop/Desktop and compose existing exploration in a new consumer. Proposed concrete menu details require independent specification review before source construction. No speculative UI/text/font/scene/persistence framework.
 
 ## Tasks
-T1 S1-S2 inline: in-progress ME-028 bounded H3 contract/task packet, independent design review/technical approval. Read-only h3_horizon_map used to select consumer-first menus rather than premature ITextCanvas.
-T2 S1-S2 inline: pending ME-029 model/executable/tests/native harness, observable RED/GREEN, whole-feature independent verification and objective closure. Managed and native presentation are separate coherent commit slices, not separate approval gates.
+T1 S1-S2 inline: completed ME-028 contractcf92075 bounded H3 contract/task packet, independent design review/technical approval. Read-only h3_horizon_map used to select consumer-first menus rather than premature ITextCanvas.
+T2 S1-S2 inline: completed ME-029 managed0a93f9a, whole-feature157/157+2450assertions/native7independentPASS model/executable/tests/native harness, observable RED/GREEN, whole-feature independent verification and objective closure. Managed and native presentation are separate coherent commit slices, not separate approval gates.
 
 ## Log
 L1 Owner request verbatim: continua con el siguiente trabajo
@@ -20,3 +20,9 @@ L4 Independent turn_menu_design_review found one ambiguity: overlay visibility. 
 L5 Independent targeted design recheckPASS; TM-1 approved by Codex root, ME-028closed. No implementation beforecontract approval. Exact render visibility/null/order testseam included; source/public API scope remains consumer-only.
 
 L6 ME-029 claimed before source changes atcf92075. Managed model RED6/6fail ->GREEN6/6, Loop104/104; private composition of Explorer with consumed opening edge and at-most-one ordered confirmation. First coherent model/test commit planned, task not complete or independently verified yet. Subsequent visual/native slice supplies renderer/harness proof before whole-feature verification.
+
+L7 Managed slice0a93f9a preserved self-verified model/tests. Actual-source menu renderer RED2/2failed ->GREENcombined8/8, Loop106/106; overlay absent/open/returned4/9/4calls, exact colors/geometry and purity pinned. New CLI/native consumer source complete; all native/remaining suite results and independent verifier required before taskclosure.
+
+L8 Author final157tests/all three native seven-case harnessesPASS/builds0warnings/0errors. Whole-feature turn_menu_verify independently checks baselinecf92075 through committedmanaged0a93f9a plus currentpresentation overlay; no false HEAD-only scope. No engine/old-game source changes. Subjective selection/discoverability feedback remains owner-only; labelsinconsole explicit, no productionUI claim.
+
+L9 Independent turn_menu_verify fullfeaturePASS: freshTEMP157/157+2450public/render assertions/newnative7PASS, no blockers. All8candidate source/project/test/harness bytes match tested snapshot,25prior engine/example files unchanged. Program traces/deps/render purity validated. ME-029objective closure under delegation, no subjective/full-H3 acceptance. Parent final combined8/8spotcheck and coherent presentation/native commit follow; no artificial split/codecompression. Memory attribution unavailable; repository retains recovery/evidence.

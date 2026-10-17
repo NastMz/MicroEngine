@@ -55,3 +55,12 @@ pwsh -NoProfile -File checks/RoomExplorerSmoke.ps1
 ~~~
 
 Arrows/WASD move. Cross the cyan passage at the Courtyard's right edge or Hall's left edge, with the whole body aligned inside the opening. Room changes are printed to stdout. Escape/window close exits. --smoke N(1..600) stops after Npresentations; --fail-update injects callback failure; normal/failure/usage exits0/1/2. No extra SDK version, native backend or package is introduced by this consumer. Windows native validation only; headless Loop model tests remain native-free.
+
+## H3.0 menu/turn tracer
+
+~~~powershell
+dotnet run --project examples/TurnExplorer/TurnExplorer.csproj -c Release
+pwsh -NoProfile -File checks/TurnExplorerSmoke.ps1
+~~~
+
+Arrows/WASD explore; Space at the Courtyard marker opens the menu. Up/down selects top Advance (one square) or bottom Return (two squares); Space confirms. Menu pauses movement; Advance moves the cyclic four-pip indicator, Return resumes exploration on the next update. Console names options/traces; no in-window text API. Escape/window close exits. --smoke N(1..600), --fail-update and normal/failure/usage exits0/1/2 match the other tracers. No new package/native backend/SDK constraint. Task/evidence state in backlog ME-028/029 and milestones/H3.md.

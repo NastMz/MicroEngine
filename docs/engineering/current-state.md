@@ -1,6 +1,6 @@
 # Current implementation state
 
-Updated2026-10-17; branch main after evaluated marker integration; source main de1c08d integrated and published under positive-feedback authority. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
+Updated2026-10-17; branch feat/h3-turn-menu (baseline827171d); main827171d contains evaluated marker source and integration evidence. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
 
 ## Authority
 
@@ -87,3 +87,9 @@ IM-1 owner feedback2026-10-17: 'Funciona perfectamente' after delivered0a8bfe3/b
 IM-1 integration confirmed2026-10-17: main8ff1f0a..de1c08d normal-pushed, main/origin0/0, engine/examples/checks identical to evaluated0a8bfe3. Marker now positively evaluated and integrated; earlier pending-integration statements are historical. No prepared task remains in bounded marker horizon, full-H2 acceptance not inferred.
 
 Next horizon2026-10-17: main827171d contains evaluated marker source/feedback. New branch feat/h3-turn-menu prepares TM-1 (ME-028/029), independent consumer composition of RoomExplorer.Model for menu/turn-flow only. No engine UI/text/font/combat/save API or existing model edits authorized by this packet. Specification review pending; H3 intended run command is a handoff plan, not runtime evidence.
+
+## H3.0 menu/turn construction2026-10-17
+
+ME-028 TM-1 independently reviewed/approved atcf92075; managed model/tests slice0a93f9a self-verified. New TurnExplorer.Model privately composes RoomExplorer.Model with no Desktop/FirstPlayable dependency; new executable uses public Loop/Desktop and procedural menu. Opening consumes interaction edge, menu freezes exploration, ordered navigation/one confirmation resolves bounded phase0..3, Return resumes on next update. Renderer only draws rows while open, phase pips always; console names options. Author157tests and all three native seven-case harnessesPASS, builds0warnings/0errors; independent whole-feature verification pending. No engine/old-game/project package versions changed. New presentation unobserved, no full-H3/UI/text/save capability or main integration inferred.
+
+TM-1 closure2026-10-17: ME-028/029completed, independent157/157+2450assertions/newnative7PASS, author157tests/all three harnessesPASS. Prior25engine/example file hashes unchanged, no package-version changes. New TurnExplorer model/executable/renderer only; console-label limitation remains explicit. Main827171d unchanged until positive owner feedback on this new verified menu flow. No independent ready task in bounded horizon; subjective selection/discoverability/turn response handoff in H3 packet.

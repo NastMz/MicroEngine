@@ -36,7 +36,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-026 | specification | P0 | completed | ME-024 | IM-1 below |
 | ME-027 | consumer implementation | P1 | completed | ME-026 | IM-1 below |
 | ME-028 | specification | P0 | completed | ME-027 | TM-1 below |
-| ME-029 | consumer implementation | P1 | in-progress | ME-028 | TM-1 below |
+| ME-029 | consumer implementation | P1 | completed | ME-028 | TM-1 below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -416,3 +416,9 @@ ME-028 closure2026-10-17: independent turn_menu_design_review targeted visibilit
 ME-029 claim2026-10-17: Codex root baselinecf92075 on feat/h3-turn-menu, ready -> in-progress before source edits. Approved TM-1 exact surfaces/acceptance; parent inline writer. Commit slices managed model/tests then executable/renderer/native proof; whole-feature independent review before closure, no task dependency bypass.
 
 ME-029 managed slice2026-10-17 baselinecf92075: runnableRED6failed/0passed ->focusedGREEN6/6, fullLoop104/104. New private-composition model and public ordered-menu/pause/phase/invalid/replay tests only; no previous model/engine source changes. Task remains in-progress, native presentation and whole-feature independent verification pending before closure.
+
+ME-029 presentation slice2026-10-17: actual-source renderer scaffoldRED2failed/0passed ->combined menu/model/renderGREEN8/8, Loop106/106. New executable shares public content and renderer, no prior source edits. Whole-feature remains in-review until independent verification; managed0a93f9a is a review boundary, not technical acceptance.
+
+ME-029 author final2026-10-17:157tests=106Loop+20Desktop+31Hosting pass/0failed/0skipped, focused8/8; all three native seven-case harnessesPASS and builds0warnings/0errors. Whole-feature independent turn_menu_verify pending; no source changes to engine/old examples, no package-version changes, no new main delivery yet.
+
+ME-029 closure2026-10-17: independent turn_menu_verify whole candidate(cf92075 baseline, managed0a93f9a plus renderer/executable overlay) freshTEMP157/157 and2450independent assertionsPASS. Ordered edges/duplicates/case/held/single confirmation/stale occurrence/Return/reopen/phase/invalid-state/MaxValue/isolation/baselineExplorer and exact renderer4/9/4 geometry/colors/purity/null checks verified. New native harness normal/failure/five invalid scenariosPASS with exits0/1/2/native close/build0warnings/0errors. All8candidate source/project/test/harness files matched tested snapshot hashes;25prior engine/examples files unchanged. Parent157tests/all three native harnessesPASS; no blockers/skipped required proof. Codex root accepts objective TM-1 under delegation, not subjective menu usability/full-H3 acceptance. No independent ready task in bounded horizon; new positive owner feedback later authorizes this evaluated increment main integration.

@@ -1,6 +1,6 @@
 # TM-1 — External exploration/menu/turn tracer
 
-Status approved2026-10-17 by Codex root under delegation after turn_menu_design_review targeted recheck PASS; ME-028 completed, ME-029 ready. Owner continuation2026-10-17, H3/C-003/FR-002, ADR-0004. This is a narrow menu/turn-flow probe, not full H3/Pokemon or engine UI/combat/persistence support.
+Status approved2026-10-17 by Codex root under delegation after turn_menu_design_review targeted recheck PASS; ME-028/029 completed, implemented and independently verified. Owner continuation2026-10-17, H3/C-003/FR-002, ADR-0004. This is a narrow menu/turn-flow probe, not full H3/Pokemon or engine UI/combat/persistence support.
 
 ## Outcome and alternatives
 
@@ -39,3 +39,5 @@ Runnable scaffold RED before behavior, focused/full GREEN. Serial dotnet test ch
 ## Scope and recovery
 
 New source files only examples/TurnExplorer.Model/{TurnExplorer.Model.csproj,TurnSession.cs}, examples/TurnExplorer/{TurnExplorer.csproj,Program.cs,MenuRenderer.cs}, checks/Loop.Contracts/TurnMenuTests.cs, checks/TurnExplorerSmoke.ps1; existing checks/Loop.Contracts/Loop.Contracts.csproj. Docs engineering/{specs/turn-menu.md,backlog.md,current-state.md,roadmap.md,milestones/H3.md,capabilities.md,contributing.md}; odd/tasks/h3-turn-menu.md. Risk3/5 consumer contracts/new project wiring, independent review/verification required. Rollback own new consumer/test/harness/project-reference/docs only; previous examples/engine/unrelated work untouched. Main827171d remains until positive owner feedback on this evaluated verified slice; no automatic milestone acceptance or PR/force/release.
+
+Verification2026-10-17: author157tests/all three native seven-case harnessesPASS; independent turn_menu_verify157/157+2450public/render assertions/newnative7PASS, build0warnings/0errors. All8candidate code/project/test/harness hashes match tested snapshot;25prior engine/example files unchanged. Objective TM-1 accepted, subjective console-label/menu discoverability unobserved; no full-H3/engineUI/text/save support or new main delivery inferred.

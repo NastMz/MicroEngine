@@ -4,4 +4,5 @@
   </ItemGroup>
   <ItemGroup><ProjectReference Include="../../examples/RoomExplorer.Model/RoomExplorer.Model.csproj" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../../examples/TurnExplorer.Model/TurnExplorer.Model.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../../examples/TurnExplorer/MenuRenderer.cs" Link="TurnMenuRenderer.cs" /></ItemGroup>
 </Project>
