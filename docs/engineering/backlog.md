@@ -428,3 +428,9 @@ ME-029 delivery2026-10-17: contractcf92075, managed0a93f9a and presentationb8ac2
 ME-029 owner feedback2026-10-17: "Funciona perfectamente" on delivered733b9b8. Bounded TM-1 experience positively evaluated; existing technical proof retained, no source or acceptance-criteria changes. Standing policy authorizes normal main integration/push of this scope, not full-H3 acceptance. Fetch confirmed local/remote main827171d synchronized and ancestor of evaluated HEAD; unrelated .gitignore/.codegraph preserved.
 
 ME-029 integration2026-10-17: main/origin main fast-forward827171d..bb32d15 and push succeeded,0/0 divergence. Engine/examples/checks comparison against evaluated733b9b8 exit0 (identical); no redundant runtime rerun for passive feedback documentation. Independent next_after_turn_map readback found no eligible task or concrete need for new UI/text/storage/battle scope. CAP-012/013 remain discovery candidates; full-H3 acceptance not inferred. Unrelated local edits preserved.
+
+## ME-030 / ME-031 — Consumer checkpoint horizon
+
+ME-030 P1 in-progress Codex root baseline751686a, owner continuation2026-10-17, C-003/CAP-013/ADR-0004. CP-1/ADR-0006 packets define exact surfaces/contracts/criteria; independent design review before approval. ME-031 pending ME-030, no source construction yet. No engine storage/file IO/native changes or full-H3 acceptance.
+
+ME-030 completed2026-10-17: CP-1/ADR-0006 independent checkpoint_design_review PASS/no blockers, Codex root delegated approval. RuntimeN/A design; diff/readback checks. ME-031 ready, claimed in-progress before source construction under approved CP-1.
