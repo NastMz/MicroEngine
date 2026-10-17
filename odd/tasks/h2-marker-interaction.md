@@ -7,8 +7,8 @@ S1: "sigue con el sigueinte trabajo" authorizes the next bounded roadmap horizon
 S2: "De ahora en adelante integra a main cada vez que te de una valoracion positiva" applies to evaluated verified increments, not this new unevaluated marker behavior. Preserve all136baseline tests, existing movement/room/CLI behavior and unrelated work.
 
 ## Tasks
-T1 S1-S2 inline: in-progress ME-026 IM-1 exact consumer interaction specification, independent review before approval/source construction. Read-only scope mapping supplied by next_product_horizon.
-T2 S1-S2 inline: pending ME-027 source/test/native proof/independent verification/technical closure, then subjective interaction handoff; integration only after positive owner feedback on this slice.
+T1 S1-S2 inline: completed ME-026 contract4419243 IM-1 exact consumer interaction specification, independent review before approval/source construction. Read-only scope mapping supplied by next_product_horizon.
+T2 S1-S2 inline: completed ME-027 independently verified98/98+baseline/probes/native7PASS source/test/native proof/independent verification/technical closure, then subjective interaction handoff; integration only after positive owner feedback on this slice.
 
 ## Log
 L1 Owner request verbatim: De ahora en adelante integra a main cada vez que te de una valoracion positiva, sigue con el sigueinte trabajo e integra lo existente en main
@@ -16,3 +16,9 @@ L2 Prior policy task ME-025 source9db127f/main integration then policy8ff1f0a in
 L3 next_product_horizon read-only handoff: C-002/H2 explicitly include interaction. Smallest useful case is a consumer-local marker, existing Space/jump edge interpreted locally, no new input mapping/NPC/dialogue/engine interaction API. No H3 scope inferred. Parent writes inline, no writer trigger; shared consumer model requires independent verifier.
 
 L4 Independent marker_design_reviewPASS no blockers; Codex root approves IM-1, ME-026closed and ME-027ready. Exact source surfaces and baseline136tests preserved. No implementation before approved contract.
+
+L5 Contract4419243; parent source/tests only after approval. ME-027 exclusive execution from4419243, explicit claim bookkeeping reconciled late after initial own tests, no overlap or scope expansion. RunnableRED8fail/5pass ->GREEN13/13, fullLoop98/Desktop20/H031=149cases. No engine/project/dependency changes. Independent implementation verification before closure, main still8ff1f0a.
+
+L6 Author final149tests/both native seven-case harnessesPASS, consumer rebuild0warnings/0errors; no source-normalizing formatter configured. Independent marker_verify fresh scratch/public-baseline comparison requested. Manual packet asks only for discoverability/response/readability, not automated checks. New feature not in main until own positive owner feedback; prior integrated main8ff1f0a/policy unchanged.
+
+L7 Independent marker_verify freshTEMP98/98/strict state probes/native7PASS;1000actual4419243baseline room/X/Y updates identical. Program constants/room/colors/order/lowercase successful-update trace verified, no engine/project/dependency changes. ME-027technical closure under delegation; no subjective/full-H2 acceptance. Parent final13/13spotcheck and coherent delivery follow. No next ready task in this bounded horizon; manual interaction response/discoverability is the meaningful product handoff. Memory attribution unavailable; repository retains session recovery.

@@ -1,6 +1,6 @@
 # IM-1 — Room-local marker interaction
 
-Status approved2026-10-17 by Codex root under delegation after independent marker_design_review PASS; ME-026 completed, ME-027 ready. Owner continuation2026-10-17, H2/C-002/FR-002, ADR-0004. Small consumer-only delta to [RE-1](room-explorer.md), not a generic engine interaction capability.
+Status approved2026-10-17 by Codex root under delegation after independent marker_design_review PASS; ME-026/027 completed, implemented and independently verified. Owner continuation2026-10-17, H2/C-002/FR-002, ADR-0004. Small consumer-only delta to [RE-1](room-explorer.md), not a generic engine interaction capability.
 
 ## Outcome and exclusions
 
@@ -43,3 +43,5 @@ Independent design and fresh scratch implementation verification plus parent spo
 ## Scope, risk and rollback
 
 Allowed source surfaces: examples/RoomExplorer.Model/Explorer.cs, examples/RoomExplorer/Program.cs, new checks/Loop.Contracts/MarkerInteractionTests.cs. Docs: engineering/{specs/marker-interaction.md,specs/room-explorer.md,backlog.md,current-state.md,roadmap.md,milestones/H2.md,capabilities.md}; odd/tasks/h2-marker-interaction.md. Risk3shared consumer behavior; no engine/dependency/control binding change. Rollback only own marker state/eligibility/render/trace/tests/doc deltas; keep all RE-1 movement/portal, H1 and unrelated work. No significant engine architecture decision; do not extract this single-consumer policy into Core.
+
+Verification2026-10-17: author149tests/both native seven-case harnessesPASS; independent marker_verify98Loop/98 plus marker probes/1000actual-baseline movement comparison/native7PASS, build0warnings/0errors. No engine/project/dependency changes. Subjective interaction unobserved, new feature awaits own positive feedback for main integration.

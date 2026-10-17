@@ -34,7 +34,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-024 | consumer implementation | P1 | completed | ME-023 | RE-1 below |
 | ME-025 | delivery policy | P0 | completed | none; owner instruction | Below |
 | ME-026 | specification | P0 | completed | ME-024 | IM-1 below |
-| ME-027 | consumer implementation | P1 | ready | ME-026 | IM-1 below |
+| ME-027 | consumer implementation | P1 | completed | ME-026 | IM-1 below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -390,3 +390,7 @@ Owner continuation2026-10-17, C-002/H2/FR-002/ADR-0004. Claimed Codex root basel
 Pending approved reviewed ME-026. Exact source/tests/docs surfaces, semantics and runners in IM-1. Keep136baseline tests and existing movement/room/CLI behavior; public RED then focused/full GREEN, both native harnesses, independent scratch verifier with actual baseline trace comparison and parent spotcheck. Risk3shared consumer behavior; no engine/project/dependency changes. Technical acceptance delegated, subjective discoverability/readability owner-owned; positive feedback later authorizes evaluated increment main integration, not unrelated or full-H2 scope. Rollback own marker deltas only. No known baseline failures.
 
 ME-026 closure2026-10-17: independent marker_design_reviewPASS no blockers; IM-1 approved by Codex root under technical delegation. Exact final-overlap/edge/toggle/event/validation/render/trace/room retention contracts and runnable packet, no engine abstraction. RuntimeN/A design, diff/readback; ME-027ready.
+
+ME-027 execution record2026-10-17: Codex root, baseline4419243, feat/h2-marker-interaction, ready -> in-progress -> in-review. Parent exclusively owned source/tests; explicit claim bookkeeping recorded late after initial RED/GREEN, not represented as an earlier write. Scope remained approved IM-1/no competing writer. Runnable RED8failed/5passed of13 ->GREEN13/13, Loop98/98/Desktop20/20/H031/31 (149total; harness results follow). Independent implementation verification required before closure; no engine/project/dependency edits.
+
+ME-027 closure2026-10-17: independent marker_verify freshTEMP98/98 plus strict boundary/corner/coalescing/held/case/invalid-state/order/transition/no latent probesPASS;1000updates against actual4419243 baseline room/X/Y identical. Program constants/room/colors/order/fixed-update lowercase trace verified. Independent RoomExplorer native sevenPASS/build0warnings/0errors. Parent149tests/both native seven-case harnessesPASS, links/diff checksPASS. Engine/FirstPlayable/project/package/dependency bytes unchanged. Codex root accepts objective IM-1 under delegation; subjective marker discoverability/response unobserved, no full-H2 acceptance. No independent ready task remains in this bounded horizon; positive owner feedback after handoff will authorize normal main integration under policy, not prior feedback on older source.

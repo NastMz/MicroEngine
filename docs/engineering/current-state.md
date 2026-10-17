@@ -1,6 +1,6 @@
 # Current implementation state
 
-Updated2026-10-17; branch docs/positive-feedback-integration (baseline9db127f); main9db127f integrated and published by owner authorization. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
+Updated2026-10-17; branch feat/h2-marker-interaction (baseline8ff1f0a); main8ff1f0a integrated and published by owner authorization. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
 
 ## Authority
 
@@ -75,3 +75,9 @@ RE-1 closure2026-10-17: ME-022/023/024 completed;136tests and both native seven-
 RE-1 owner feedback2026-10-17: 'Funciona perfectamente'. Delivered two-room tracer now has positive subjective feedback; older unobserved notes are historical. No code/criteria/full-H2 acceptance or main merge inferred. Technical evidence136tests/both native seven-case harnessesPASS unchanged.
 
 Owner delivery-policy update2026-10-17: positive owner feedback authorizes normal main integration/push of the evaluated technically verified increment (autonomy.md), not full-milestone acceptance or unrelated work. Explicit existing integration completed81de6a9..9db127f, main/origin main0/0; previous no-main records are historical. Unrelated .gitignore/.codegraph preserved. Policy update independent review pending before closure.
+
+## H2.1 marker interaction2026-10-17
+
+ME-026 IM-1 independently reviewed/approved at4419243. ME-027 consumer-only marker implemented, source RoomExplorer.Model/Program and public tests; no engine/project/dependency change. Space/jump edge toggles nonblocking Courtyard marker only on strict final-position overlap; held/duplicates/invalid/room transition semantics explicitly tested. Activation is instance-local state, not durable storage or engine scene/interaction API. Author149tests and both native seven-case harnessesPASS, builds0warnings/0errors. Independent implementation verification pending. Main8ff1f0a remains prior evaluated source plus reviewed integration policy; new marker awaits its own future positive owner feedback before main integration.
+
+IM-1 closure2026-10-17: ME-026/027completed; independent marker_verify98/98,1000baseline movement updates/probes/newnative7PASS, parent149tests/both native harnessesPASS. No engine/project/dependency changes, source-model/render marker only. Main8ff1f0a remains evaluated prior increments plus reviewed positive-feedback policy; marker not integrated before its own owner evaluation. No independent ready task in this bounded horizon; subjective interaction handoff in H2 packet.

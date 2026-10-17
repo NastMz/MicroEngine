@@ -55,3 +55,7 @@ After positive PO-1 owner feedback, ME-020/021 refine [AV-1](specs/avatar-animat
 ## Next independent consumer2026-10-16
 
 Positive AV-1 owner feedback recorded, full-H1 human acceptance not inferred. [RE-1](specs/room-explorer.md) defines H2.0 two-room exploration through the same public Loop/Desktop, separate from FirstPlayable.Model. ME-022 reviewed; ME-023 additive native up/down actions precede ME-024. [H2 packet](milestones/H2.md) separates objective tests and subjective navigation. No engine world/scene/map/asset abstraction or broad Zelda scope; later content is not yet prepared.
+
+## Bounded manual interaction2026-10-17
+
+H2/C-002 includes interaction beyond RE-1 traversal. ME-026/027 [IM-1](specs/marker-interaction.md) probe one source-authored room-local marker using existing Space/jump edge, no Desktop binding/engine interaction/NPC/dialogue/world/persistence API. Positive RE-1 delivery and integration policy are in main8ff1f0a; marker technical/subjective states are distinct in backlog/H2 packet. H3 menus/turn behavior remains candidate, not silently prepared here.
