@@ -104,7 +104,7 @@ public sealed class MapExplorerTests
     {
         var game = MapWalker.Create(Zone.Meadow, 508, 304); var before = State(game); var canvas = new Canvas();
         MapRenderer.Draw(canvas, game); Assert.AreEqual(new Rgba(24, 40, 32), canvas.Background);
-        CollectionAssert.AreEqual(new (Rect, Rgba)[] { (new(200, 100, 100, 80), new(180, 100, 70)), (new(308, 164, 24, 32), new(240, 180, 65)) }, canvas.Fills);
+        CollectionAssert.AreEqual(new (Rect, Rgba)[] { (new(200, 100, 100, 80), new(180, 100, 70)), (new(520, 60, 32, 280), new(110, 120, 140)), (new(308, 164, 24, 32), new(240, 180, 65)) }, canvas.Fills);
         var repeated = new Canvas(); MapRenderer.Draw(repeated, game); CollectionAssert.AreEqual(canvas.Fills, repeated.Fills); Assert.AreEqual(before, State(game));
         canvas = new(); MapRenderer.Draw(canvas, MapWalker.Create(Zone.Meadow, 258, 40));
         Assert.AreEqual((new Rect(200, 80, 100, 60), new Rgba(95, 130, 165)), canvas.Fills[0]);
@@ -117,7 +117,7 @@ public sealed class MapExplorerTests
     {
         var canvas = new Canvas(); var game = MapWalker.Create(Zone.Ruins, 8, 304); MapRenderer.Draw(canvas, game);
         Assert.AreEqual(new Rgba(32, 24, 48), canvas.Background);
-        CollectionAssert.AreEqual(new (Rect, Rgba)[] { (new(160, 0, 100, 60), new(95, 130, 165)), (new(0, 100, 8, 160), new(70, 200, 210)), (new(8, 164, 24, 32), new(240, 180, 65)) }, canvas.Fills);
+        CollectionAssert.AreEqual(new (Rect, Rgba)[] { (new(160, 0, 100, 60), new(95, 130, 165)), (new(400, 60, 32, 200), new(110, 120, 140)), (new(0, 100, 8, 160), new(70, 200, 210)), (new(8, 164, 24, 32), new(240, 180, 65)) }, canvas.Fills);
         Assert.ThrowsExactly<ArgumentNullException>(() => MapRenderer.Draw(null!, game)); Assert.ThrowsExactly<ArgumentNullException>(() => MapRenderer.Draw(canvas, null!));
     }
 }
