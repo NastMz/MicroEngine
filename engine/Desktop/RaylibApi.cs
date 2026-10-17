@@ -20,17 +20,8 @@ internal sealed class RaylibApi : IDesktopApi
         var now = Stopwatch.GetTimestamp();
         var elapsed = Stopwatch.GetElapsedTime(_last, now);
         _last = now;
-        var held = new List<string>(); var pressed = new List<string>();
-        Add("left", KeyboardKey.Left, KeyboardKey.A);
-        Add("right", KeyboardKey.Right, KeyboardKey.D);
-        Add("jump", KeyboardKey.Space, KeyboardKey.Space);
-        return new(elapsed, Raylib.IsWindowFocused() && !Raylib.IsWindowMinimized(), Raylib.WindowShouldClose(), held.ToArray(), pressed.ToArray());
-
-        void Add(string action, KeyboardKey first, KeyboardKey second)
-        {
-            if (Raylib.IsKeyDown(first) || Raylib.IsKeyDown(second)) held.Add(action);
-            if (Raylib.IsKeyPressed(first) || Raylib.IsKeyPressed(second)) pressed.Add(action);
-        }
+        var actions = DesktopActions.Read(key => Raylib.IsKeyDown(key), key => Raylib.IsKeyPressed(key));
+        return new(elapsed, Raylib.IsWindowFocused() && !Raylib.IsWindowMinimized(), Raylib.WindowShouldClose(), actions.Held, actions.Pressed);
     }
     public void Begin() => Raylib.BeginDrawing();
     public void End() => Raylib.EndDrawing();

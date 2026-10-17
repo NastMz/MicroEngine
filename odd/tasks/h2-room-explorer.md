@@ -7,8 +7,8 @@ S1: "Funciona sin ningun problema, dale con lo siguiente" records positive AV-1 
 S2: Existing roadmap H2 "Exploration and transitions without engine-owned combat/progression; manual interaction" guides a reviewed two-room external consumer tracer. Concrete movement/portal details are delegated technical choices before review, not new strategic product requirements. Preserve117baseline tests and platformer/gameplay behavior.
 
 ## Tasks
-T1 S1-S2 inline: in-progress ME-022 H1 evidence/feedback reconciliation, H2 contract and independent decision review; bounded scope mapping delegated after inline evidence budget.
-T2 S2 inline: pending ME-023 additive Desktop up/down action mapping with existing left/right/jump regression tests; no public key/device API.
+T1 S1-S2 inline: completed ME-022 contractbf86152 H1 evidence/feedback reconciliation, H2 contract and independent decision review; bounded scope mapping delegated after inline evidence budget.
+T2 S2 inline: completed ME-023 independently verified20/20+3probesPASS additive Desktop up/down action mapping with existing left/right/jump regression tests; no public key/device API.
 T3 S2 inline: pending ME-024 independent RoomExplorer model/executable and public tests; RED/GREEN, native smoke, independent scratch verification, subjective navigation handoff.
 
 ## Log
@@ -17,3 +17,7 @@ L2 Prior delivery4081247/implementation1206951 receives positive AV-1 subjective
 L3 Mapping handoff supports two-room exploration using public Loop/Desktop; CodeGraph additionally showed native Desktop presently maps only left/right/jump. Actual four-way desktop interaction needs explicit additive up/down mappings before a runnable consumer. No unobserved backend support assumed. RDD globaloff confirmed outside sandbox, unchanged; prior sandbox status error was environmental only. Unrelated .gitignore/.codegraph preserved.
 
 L4 Independent explorer_design_review found one documentary blocker: blanket unchanged-H1-code wording contradicted explicit adapter/project delta. Corrected to unchanged H1 consumer/model behavior, additive mapping, all117baseline tests retained/passing. No other design blocker found. Targeted recheck only requested before approval.
+
+L5 Contractbf86152 approved after independent recheck. ME-023 runnableRED11/11fail ->GREEN20Desktop/20, CBool method-group compile issue safely corrected using bool-targeted lambdas (no dependency change). Existing native harness rebuilt0warnings/0errors; independent input verification before ME-024 dependency promotion.
+
+L6 Resumed2026-10-17 after owner 'continua'. First input verifier had no verdict due unavailable capacity; new authorized resumed verification vertical_input_verify_resume freshTEMP20/20 plus3mapping/order/query probesPASS. Parent prior128tests/native7PASS retained; ME-023closed, ME-024ready, no dependency bypass. Memory identity still unavailable.

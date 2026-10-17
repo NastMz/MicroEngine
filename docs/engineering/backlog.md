@@ -30,8 +30,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-020 | specification | P0 | completed | ME-019 | AV-1 below |
 | ME-021 | presentation implementation | P1 | completed | ME-020 | AV-1 below |
 | ME-022 | specification | P0 | completed | ME-021 | RE-1 below |
-| ME-023 | adapter implementation | P0 | ready | ME-022 | RE-1 below |
-| ME-024 | consumer implementation | P1 | pending | ME-023 | RE-1 below |
+| ME-023 | adapter implementation | P0 | completed | ME-022 | RE-1 below |
+| ME-024 | consumer implementation | P1 | ready | ME-023 | RE-1 below |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -357,3 +357,7 @@ Pending ME-022 accepted RE-1. Surfaces new engine/Desktop/DesktopActions.cs, che
 Pending ME-023 and reviewed RE-1. Exact new model/executable/tests/smoke and Loop.Contracts reference/doc surfaces in RE-1; no FirstPlayable/model changes. Acceptance all model/transition/input/native/CLI criteria, preserve117baseline tests, independent scratch verification and parent spotcheck, commit/push traceability, objective technical acceptance vs unobserved subjective navigation. RED/GREEN commands and recovery in RE-1. Risk3/5 consumer contracts/project wiring; no engine world/ECS/asset APIs. No baseline failures, no new package versions.
 
 ME-022 closure2026-10-16: independent explorer_design_review targeted recheckPASS after contradictory unchanged-code wording corrected. RE-1 approved by Codex root under delegated authority. No runtime needed for design; links/readback/diff checks. ME-023ready; ME-024 remains pending independent input closure, do not bypass dependency.
+
+ME-023 claimed Codex root2026-10-16 baselinebf86152, ready -> in-progress -> in-review. Runnable scaffoldRED11failed/0passed; new+legacyDesktop GREEN20/20. Initial direct method-group conversion failed compilation because Raylib returnsCBool; bool-targeted lambdas corrected binding without dependency/public API change. Native existing-consumer harness checked before independent closure. ME-024 remains pending.
+
+ME-023 closure2026-10-17: independent vertical_input_verify_resume fresh TEMP20/20 plus3independent mapping/query/order probesPASS, no blockers or workspace edits. Previous verifier ended without verdict due unavailable capacity, never treated as PASS. Author128tests=77Loop+20Desktop+31Hosting and existing native sevenPASS. No focus/lifecycle/time/publicAPI change. ME-024 dependency satisfied ->ready. Parent focused spotcheck before commit.
