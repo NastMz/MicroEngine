@@ -50,6 +50,9 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-040 | optional image resources | P1 | completed | ME-039 | [IMG-1](specs/optional-images.md) |
 | ME-041 | specification | P1 | completed | ME-040 | [SPR-1](specs/sprite-regions.md) |
 | ME-042 | optional sprite regions | P1 | completed | ME-041 | [SPR-1](specs/sprite-regions.md) |
+| ME-043 | specification | P1 | completed | ME-042 | [MAP-1](specs/map-viewport.md) |
+| ME-044 | map model and presentation | P1 | in-progress | ME-043 | [MAP-1](specs/map-viewport.md) |
+| ME-045 | map executable and verification | P1 | pending | ME-044 | [MAP-1](specs/map-viewport.md) |
 
 Use this table for current selection. Dated records below preserve earlier authority,
 dependencies and failed/pending checks; later closure evidence supersedes those states.
