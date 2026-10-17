@@ -44,8 +44,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-034 | specification | P1 | completed | ME-033 | [CL-1](specs/checkpoint-launch.md) |
 | ME-035 | consumer integration | P1 | completed | ME-034 | [CL-1](specs/checkpoint-launch.md) |
 | ME-036 | onboarding documentation | P1 | completed | ME-035 | DOC-001 packet below |
-| ME-037 | specification | P1 | in-progress | ME-036 | [NL-1](specs/optional-labels.md) |
-| ME-038 | optional presentation | P1 | pending | ME-037 | [NL-1](specs/optional-labels.md) |
+| ME-037 | specification | P1 | completed | ME-036 | [NL-1](specs/optional-labels.md) |
+| ME-038 | optional presentation | P1 | in-review | ME-037 | [NL-1](specs/optional-labels.md) |
 
 Use this table for current selection. Dated records below preserve earlier authority,
 dependencies and failed/pending checks; later closure evidence supersedes those states.
@@ -470,3 +470,7 @@ ME-035 closure2026-10-17: initial independent checkpoint_verify169/169/old3nativ
 P1 DOC-001/NFR-004, owner continuation2026-10-17, baselinecb038c8. Claimed Codex root ready->in-progress on docs/current-onboarding. Read-only next_after_turn_map found engineering README still presenting H1 preparation/current2026-10-15, contributing hardcoded feat/h1-runtime and duplicated superseded delivery restrictions. Scope only engineering/README.md, contributing.md, current-state.md current summary, backlog.md; preserve historical dated evidence and existing autonomy policy. Deliver current verified H0/H1/H2/H3/CP1/CF1/CL1 pointers, distinguish task branches/main and technical/product acceptance; no new product/permission decision. Check relative links/readback/status consistency/git diff/source parity; runtimeN/A passive documentation. One bounded independent authority-consistency readback for mirrored delivery guidance, no code/SDK/dependency changes or artificial runtime rerun. Rollback own documentary edits only, preserve unrelated files. No new ADR/spec/ODD feature artifact required for this understood correction.
 
 ME-036 closure2026-10-17: four-document status/authority synchronization complete, independent checkpoint_design_review PASS/no blockers against unchanged autonomy.md. Local-link targets/readback/status consistency/git diffPASS; engine/examples/checks/global.json/NuGet.config identical to baselinecb038c8. Runtime/tests N/A documentation-only, no redundant rerun. Main751686a untouched, latest verified behavior remains CL-1cb038c8; no fullmilestone/newpermission/feature approval. Unrelated .gitignore/.codegraph preserved; no ready implementation task created from speculative text/UI needs. Repository evidence retained while runtime memory registration unavailable.
+
+## ME-037 / ME-038 — Optional in-window labels
+
+ME-037completed2026-10-17 contract6df157c/ADR-0008 accepted by Codex root after checkpoint_design_review PASS. Concrete CAP-004/012 menu names, not retroactive TM-1 defect or broad text/UI promise. ME-038claimed before source at373efa5, parentinline, DesktopRED4->GREEN4, nativeREDNotImplemented->GREEN444glyphRGBpixels/black0/cleanclose, consumerRED2->GREEN2. Full175tests/0failed/0skip; sourcefreeze in-review pending independent wholefeature proof. Exact NL-1 edit surfaces/contracts, no package/SDK changes; primitive Fill fallback4/9/4 preserved.

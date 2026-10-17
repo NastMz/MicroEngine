@@ -60,6 +60,12 @@ public interface ICanvas
     void Fill(Rect rectangle, Rgba color);
 }
 
+/// <summary>Optional provider-owned default-face labels, not a general typography API.</summary>
+public interface ILabelCanvas : ICanvas
+{
+    void Label(string text, int x, int y, int pixelSize, Rgba color);
+}
+
 public interface IFramePlatform : IDisposable
 {
     PlatformFrame Poll();

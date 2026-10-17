@@ -29,6 +29,7 @@ internal interface IDesktopApi
     void End();
     void Clear(Rgba color);
     void Fill(Rect rectangle, Rgba color);
+    void Label(string text, int x, int y, int pixelSize, Rgba color);
     void Close();
 }
 
@@ -144,7 +145,7 @@ public sealed class DesktopPlatform : IFramePlatform
         FrameApi.Require(_drawing, "Canvas operations require committed drawing.");
     }
 
-    private sealed class CanvasView(DesktopPlatform owner) : ICanvas
+    private sealed class CanvasView(DesktopPlatform owner) : ILabelCanvas
     {
         public void Clear(Rgba color) { owner.CheckDrawing(); owner._api.Clear(color); }
         public void Fill(Rect rectangle, Rgba color)
@@ -155,6 +156,15 @@ public sealed class DesktopPlatform : IFramePlatform
                 && rectangle.Width >= 0 && rectangle.Height >= 0,
                 "Rectangle coordinates must be finite and sizes nonnegative.");
             owner._api.Fill(rectangle, color);
+        }
+        public void Label(string text, int x, int y, int pixelSize, Rgba color)
+        {
+            owner.CheckDrawing();
+            FrameApi.Require(text is not null && text.Length <= 80
+                && text.All(character => character is >= ' ' and <= '~')
+                && pixelSize is >= 10 and <= 64,
+                "Labels require at most 80 printable ASCII characters and pixel size 10..64.");
+            if (!string.IsNullOrEmpty(text)) owner._api.Label(text, x, y, pixelSize, color);
         }
     }
 }

@@ -20,6 +20,7 @@ public sealed class DesktopTests
         public void End() { Trace.Add("end"); if (EndError is not null) throw EndError; }
         public void Clear(Rgba color) => Trace.Add("clear");
         public void Fill(Rect rect, Rgba color) => Trace.Add("fill");
+        public void Label(string text, int x, int y, int pixelSize, Rgba color) => Trace.Add("label");
         public void Close() { Trace.Add("close"); if (CloseError is not null) throw CloseError; }
     }
 

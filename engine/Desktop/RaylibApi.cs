@@ -28,4 +28,6 @@ internal sealed class RaylibApi : IDesktopApi
     public void Clear(Rgba color) => Raylib.ClearBackground(new Color(color.R, color.G, color.B, color.A));
     public void Fill(Rect rectangle, Rgba color) => Raylib.DrawRectangleRec(new Rectangle(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height), new Color(color.R, color.G, color.B, color.A));
     public void Close() => Raylib.CloseWindow();
+    public void Label(string text, int x, int y, int pixelSize, Rgba color)
+        => Raylib.DrawText(text, x, y, pixelSize, new Color(color.R, color.G, color.B, color.A));
 }
