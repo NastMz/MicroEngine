@@ -16,6 +16,23 @@ public sealed class TurnSession
     public MenuOption SelectedOption { get; private set; }
     public int TurnPhase { get; private set; }
     public bool TurnResolved { get; private set; }
+    public TurnSession() { }
+    private TurnSession(Explorer exploration) => _exploration = exploration;
+    public TurnCheckpoint Capture() => new(1, Room, X, Y, MarkerActivated, MenuOpen, SelectedOption, TurnPhase);
+    public static TurnSession Restore(TurnCheckpoint checkpoint)
+    {
+        ArgumentNullException.ThrowIfNull(checkpoint);
+        if (checkpoint.Version != 1) throw new ArgumentOutOfRangeException(nameof(checkpoint.Version));
+        if (!Enum.IsDefined(checkpoint.SelectedOption)) throw new ArgumentOutOfRangeException(nameof(checkpoint.SelectedOption));
+        if (checkpoint.TurnPhase is < 0 or > 3) throw new ArgumentOutOfRangeException(nameof(checkpoint.TurnPhase));
+        var exploration = Explorer.Create(checkpoint.Room, checkpoint.X, checkpoint.Y, checkpoint.MarkerActivated);
+        return new TurnSession(exploration)
+        {
+            MenuOpen = checkpoint.MenuOpen,
+            SelectedOption = checkpoint.SelectedOption,
+            TurnPhase = checkpoint.TurnPhase
+        };
+    }
     public void Update(TimeSpan delta, InputSnapshot input)
     {
         ArgumentNullException.ThrowIfNull(input);

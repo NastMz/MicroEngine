@@ -37,6 +37,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-027 | consumer implementation | P1 | completed | ME-026 | IM-1 below |
 | ME-028 | specification | P0 | completed | ME-027 | TM-1 below |
 | ME-029 | consumer implementation | P1 | completed | ME-028 | TM-1 below |
+| ME-030 | specification | P1 | completed | ME-029 | [CP-1](specs/consumer-checkpoint.md) |
+| ME-031 | consumer implementation | P1 | in-review | ME-030 | [CP-1](specs/consumer-checkpoint.md) |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
@@ -434,3 +436,5 @@ ME-029 integration2026-10-17: main/origin main fast-forward827171d..bb32d15 and 
 ME-030 P1 in-progress Codex root baseline751686a, owner continuation2026-10-17, C-003/CAP-013/ADR-0004. CP-1/ADR-0006 packets define exact surfaces/contracts/criteria; independent design review before approval. ME-031 pending ME-030, no source construction yet. No engine storage/file IO/native changes or full-H3 acceptance.
 
 ME-030 completed2026-10-17: CP-1/ADR-0006 independent checkpoint_design_review PASS/no blockers, Codex root delegated approval. RuntimeN/A design; diff/readback checks. ME-031 ready, claimed in-progress before source construction under approved CP-1.
+
+ME-031 author proof2026-10-17: checkpointRED4failed/0passed ->GREEN4/4; full110Loop+20Desktop+31Hosting=161passed/0failed/0skipped. All three existing native seven-case harnessesPASS exact0/1/2/cleanup; no engine/executable/native/dependency changes. Independent checkpoint_verify whole-feature scratch proof pending; task in-review, not completed.

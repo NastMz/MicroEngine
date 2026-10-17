@@ -1,6 +1,6 @@
 # ADR-0006 — Consumer-owned checkpoints before engine storage
 
-Status: proposed2026-10-17. Technical authority: [autonomy](../autonomy.md). C-003/CAP-013 discovery: [CP-1](../specs/consumer-checkpoint.md).
+Status: accepted2026-10-17 after checkpoint_design_review PASS; Codex root under technical delegation. Technical authority: [autonomy](../autonomy.md). C-003/CAP-013 discovery: [CP-1](../specs/consumer-checkpoint.md).
 
 ## Proposed decision and alternatives
 
@@ -14,6 +14,6 @@ No concrete infrastructure leaks into engine, mandatory system or private reflec
 
 ## Approval
 
-Pending independent design review; no source construction before recorded acceptance.
+Independent checkpoint_design_review PASS (no blockers) recorded before source construction.
 
-Accepted2026-10-17 by Codex root under technical delegation after independent checkpoint_design_review PASS (no blockers). Proposed status above is historical drafting context; operative status accepted. CP-1 additive; TM-1 historical acceptance unchanged.
+Accepted2026-10-17 by Codex root under technical delegation after independent checkpoint_design_review PASS (no blockers). CP-1 additive; TM-1 historical acceptance unchanged.

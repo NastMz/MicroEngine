@@ -14,6 +14,13 @@ public sealed class Explorer
     public Room Room { get; private set; }
     public float X { get; private set; } = 40;
     public float Y { get; private set; } = 164;
+    public static Explorer Create(Room room, float x, float y, bool markerActivated)
+    {
+        if (!Enum.IsDefined(room)) throw new ArgumentOutOfRangeException(nameof(room));
+        if (!float.IsFinite(x) || x < 0 || x > 616) throw new ArgumentOutOfRangeException(nameof(x));
+        if (!float.IsFinite(y) || y < 0 || y > 328) throw new ArgumentOutOfRangeException(nameof(y));
+        return new Explorer { Room = room, X = x, Y = y, MarkerActivated = markerActivated };
+    }
     public void Update(TimeSpan delta, InputSnapshot input)
     {
         ArgumentNullException.ThrowIfNull(input);
