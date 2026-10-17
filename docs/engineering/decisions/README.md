@@ -28,3 +28,5 @@ open. No prior chat recommendation is registered as accepted. See [open decision
 Under [autonomy](../autonomy.md), agents may accept/supersede technical ADRs after independent review. Record actor/date/source and review evidence; preserve replaced decisions with bidirectional links. Strategic product vision and subjective product acceptance remain human-owned.
 
 [ADR-0006](0006-consumer-checkpoints.md) accepted2026-10-17: consumer-owned checkpoints, independent checkpoint_design_review PASS, Codex root delegated approval.
+
+[ADR-0007](0007-checkpoint-file-boundary.md) accepted2026-10-17 by Codex root: optional consumer file boundary, checkpoint_design_review PASS before implementation.
