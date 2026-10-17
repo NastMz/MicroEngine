@@ -9,4 +9,8 @@
   <ItemGroup><Compile Include="../../examples/TurnExplorer/MenuRenderer.cs" Link="TurnMenuRenderer.cs" /></ItemGroup>
   <ItemGroup><ProjectReference Include="../../examples/TurnExplorer.Storage/TurnExplorer.Storage.csproj" /></ItemGroup>
   <ItemGroup><Compile Include="../../examples/TurnExplorer/LaunchOptions.cs" Link="TurnLaunchOptions.cs" /></ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../examples/MapExplorer.Model/MapExplorer.Model.csproj" />
+    <Compile Include="../../examples/MapExplorer/MapRenderer.cs" Link="MapRenderer.cs" />
+  </ItemGroup>
 </Project>
