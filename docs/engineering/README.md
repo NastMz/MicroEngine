@@ -64,7 +64,7 @@ Agents run reproducible technical checks themselves; manual experience is reserv
 genuinely subjective product evidence. Passing tests does not authorize main integration
 or full milestone acceptance. Follow [autonomy](autonomy.md), not older dated restrictions.
 
-IMG-1 is verified and positively evaluated/integrated. Current candidate: [optional source-region presentation SPR-1](specs/sprite-regions.md), ME-041/042, under [ADR-0010](decisions/0010-optional-image-regions.md). Refer to backlog/current-state for actual closure evidence; no asset pipeline or additional backend commitment.
+IMG-1 is verified and positively evaluated/integrated. Separate verified feature, not included in main/MAP branches: [optional source-region presentation SPR-1](https://github.com/NastMz/MicroEngine/blob/aa0243b577bcdee7c9e1b895325b8813fa9a3e45/docs/engineering/specs/sprite-regions.md), ME-041/042, under [ADR-0010](https://github.com/NastMz/MicroEngine/blob/aa0243b577bcdee7c9e1b895325b8813fa9a3e45/docs/engineering/decisions/0010-optional-image-regions.md). Refer to backlog/current-state for actual closure evidence; no asset pipeline or additional backend commitment.
 
 Latest technically verified validation: [MAP-1 larger maps and viewport](specs/map-viewport.md), separate MapExplorer consumer; no engine camera/map abstraction. See backlog for ME-043/044/045 and contributing for commands. Earlier current-candidate notes describe prior horizons.
 

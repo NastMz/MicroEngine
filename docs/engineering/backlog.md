@@ -48,8 +48,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-038 | optional presentation | P1 | completed | ME-037 | [NL-1](specs/optional-labels.md) |
 | ME-039 | specification | P1 | completed | ME-038 | [IMG-1](specs/optional-images.md) |
 | ME-040 | optional image resources | P1 | completed | ME-039 | [IMG-1](specs/optional-images.md) |
-| ME-041 | specification | P1 | completed | ME-040 | [SPR-1](specs/sprite-regions.md) |
-| ME-042 | optional sprite regions | P1 | completed | ME-041 | [SPR-1](specs/sprite-regions.md) |
+| ME-041 | specification | P1 | completed | ME-040 | [SPR-1](https://github.com/NastMz/MicroEngine/blob/aa0243b577bcdee7c9e1b895325b8813fa9a3e45/docs/engineering/specs/sprite-regions.md) |
+| ME-042 | optional sprite regions | P1 | completed | ME-041 | [SPR-1](https://github.com/NastMz/MicroEngine/blob/aa0243b577bcdee7c9e1b895325b8813fa9a3e45/docs/engineering/specs/sprite-regions.md) |
 | ME-043 | specification | P1 | completed | ME-042 | [MAP-1](specs/map-viewport.md) |
 | ME-044 | map model and presentation | P1 | completed | ME-043 | [MAP-1](specs/map-viewport.md) |
 | ME-045 | map executable and verification | P1 | completed | ME-044 | [MAP-1](specs/map-viewport.md) |
