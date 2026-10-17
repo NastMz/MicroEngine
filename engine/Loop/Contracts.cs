@@ -66,6 +66,18 @@ public interface ILabelCanvas : ICanvas
     void Label(string text, int x, int y, int pixelSize, Rgba color);
 }
 
+public interface IImageResource : IDisposable
+{
+    int Width { get; }
+    int Height { get; }
+}
+
+public interface IImageCanvas : ICanvas
+{
+    IImageResource CreateImage(PixelImage image);
+    void DrawImage(IImageResource image, Rect destination);
+}
+
 public interface IFramePlatform : IDisposable
 {
     PlatformFrame Poll();

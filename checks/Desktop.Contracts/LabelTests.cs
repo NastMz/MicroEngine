@@ -27,6 +27,9 @@ public sealed class LabelTests
             Labels.Add((text, x, y, size, color));
         }
         public void Close() => Trace.Add("close");
+        public object CreateImage(PixelImage image) => throw new NotImplementedException();
+        public void DrawImage(object image, Rect destination) => throw new NotImplementedException();
+        public void ReleaseImage(object image) => throw new NotImplementedException();
     }
     private static DesktopPlatform Window(Api api) => new(new(640, 360, "labels"), api, new WindowReservation());
     private static ILabelCanvas Labels(DesktopPlatform window)

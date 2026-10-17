@@ -30,6 +30,9 @@ internal interface IDesktopApi
     void Clear(Rgba color);
     void Fill(Rect rectangle, Rgba color);
     void Label(string text, int x, int y, int pixelSize, Rgba color);
+    object CreateImage(PixelImage image);
+    void DrawImage(object image, Rect destination);
+    void ReleaseImage(object image);
     void Close();
 }
 
@@ -45,7 +48,7 @@ internal sealed class WindowReservation
     internal void Release() => Interlocked.Exchange(ref _taken, 0);
 }
 
-public sealed class DesktopPlatform : IFramePlatform
+public sealed partial class DesktopPlatform : IFramePlatform
 {
     private static readonly WindowReservation ProcessReservation = new();
     private readonly IDesktopApi _api;
@@ -109,22 +112,21 @@ public sealed class DesktopPlatform : IFramePlatform
         CheckThread();
         if (_disposed) return;
         _disposed = true;
-        Exception? endError = null;
+        List<Exception> errors = [];
         if (_drawing)
         {
             _drawing = false;
-            try { _api.End(); } catch (Exception error) { endError = error; }
+            try { _api.End(); } catch (Exception error) { errors.Add(error); }
         }
-        try { _api.Close(); }
-        catch (Exception closeError)
+        while (_images.Count > 0)
         {
-            // Keep the process reservation held: native state may still exist.
-            if (endError is not null) throw new AggregateException(endError, closeError);
-            throw;
+            try { _images[^1].Release(); } catch (Exception error) { errors.Add(error); }
         }
-        _reservation.Release();
-        if (endError is not null)
-            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(endError).Throw();
+        try { _api.Close(); _reservation.Release(); }
+        catch (Exception error) { errors.Add(error); } // Failed close retains the poisoned reservation.
+        if (errors.Count == 1)
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(errors[0]).Throw();
+        if (errors.Count > 1) throw new AggregateException(errors);
     }
 
     private void CheckThread()
@@ -145,7 +147,7 @@ public sealed class DesktopPlatform : IFramePlatform
         FrameApi.Require(_drawing, "Canvas operations require committed drawing.");
     }
 
-    private sealed class CanvasView(DesktopPlatform owner) : ILabelCanvas
+    private sealed class CanvasView(DesktopPlatform owner) : ILabelCanvas, IImageCanvas
     {
         public void Clear(Rgba color) { owner.CheckDrawing(); owner._api.Clear(color); }
         public void Fill(Rect rectangle, Rgba color)
@@ -166,5 +168,7 @@ public sealed class DesktopPlatform : IFramePlatform
                 "Labels require at most 80 printable ASCII characters and pixel size 10..64.");
             if (!string.IsNullOrEmpty(text)) owner._api.Label(text, x, y, pixelSize, color);
         }
+        public IImageResource CreateImage(PixelImage image) => owner.CreateImage(image);
+        public void DrawImage(IImageResource image, Rect destination) => owner.DrawImage(image, destination);
     }
 }
