@@ -1,6 +1,6 @@
 # Current implementation state
 
-Updated2026-10-17; owner positively evaluated TM-1 at733b9b8 ("Funciona perfectamente"). This verified menu/turn increment is authorized for normal fast-forward integration into main under the standing positive-feedback policy. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
+Updated2026-10-17; owner positively evaluated TM-1 at733b9b8 ("Funciona perfectamente"). Main and origin/main were fast-forwarded from827171d tobb32d15, with0/0 divergence and identical engine/example/check bytes to the evaluated revision. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
 
 ## Authority
 
