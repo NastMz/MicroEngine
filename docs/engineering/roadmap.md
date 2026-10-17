@@ -5,7 +5,7 @@ H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persisten
 
 ## Current executable horizon
 
-[Backlog](backlog.md) is the only task-state source. ME-001/002/003 preparation is complete; ME-004 automated implementation is completed; H0 owner acceptance is recorded; H1 candidate preparation is authorized by the current owner request. See [current state](current-state.md).
+[Backlog](backlog.md) is the only task-state source. ME-039/040 complete IMG-1 with independent technical proof. No prepared implementation task remains; refine only the next concrete consumer/content need after this bounded delivery, without assuming a full asset/animation framework. See [current state](current-state.md).
 An authorized future development session follows [execution](execution.md) and may continue
 independent ready work. No background scheduler is installed; H0 is implemented, not a playable game.
 

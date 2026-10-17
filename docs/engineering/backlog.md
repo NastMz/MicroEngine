@@ -47,7 +47,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-037 | specification | P1 | completed | ME-036 | [NL-1](specs/optional-labels.md) |
 | ME-038 | optional presentation | P1 | completed | ME-037 | [NL-1](specs/optional-labels.md) |
 | ME-039 | specification | P1 | completed | ME-038 | [IMG-1](specs/optional-images.md) |
-| ME-040 | optional image resources | P1 | in-review | ME-039 | [IMG-1](specs/optional-images.md) |
+| ME-040 | optional image resources | P1 | completed | ME-039 | [IMG-1](specs/optional-images.md) |
 
 Use this table for current selection. Dated records below preserve earlier authority,
 dependencies and failed/pending checks; later closure evidence supersedes those states.
@@ -482,3 +482,9 @@ ME-038 closure2026-10-17: independent checkpoint_verify freshGUIDTEMP/no build/i
 ME-038 owner feedback2026-10-17: 'Funciona perfectamente' on delivered1dce7b3/a9e3236 NL-1. Bounded label presentation positively evaluated; no fullH3/milestone acceptance or new feature scope. Fetch confirmed main/origin751686a0/0 and ancestor of evaluatedHEAD. Integration range contains only reviewed verified CP-1/CF-1/CL-1/onboarding/NL-1 units; latest independent175/old4native/nativeglyph/provider checks cover full evaluated source stack. Standing policy authorizes normal fast-forward/push of that scope, no force/PR/release. Unrelated .gitignore/.codegraph excluded, no source changes or redundant runtime rerun for feedback docs.
 
 ME-038 integration2026-10-17: main/origin main fast-forward751686a..01c9ea5 and normal push succeeded,0/0 divergence. Entire evaluated source/configuration matches1dce7b3 (engine/examples/checks/global.json/NuGet.config diff exit0); no new runtime verification required for unchanged reviewed bytes. Existing175/native/provider/cleanup evidence retained; fullH3 acceptance not inferred. Backlog table38tasks allcompleted, no ready/active independent task; no speculative scope added during delivery. Unrelated .gitignore/.codegraph preserved.
+
+## ME-039 / ME-040 — Optional image resource closure
+
+ME-039 completed at17c2a53: independent checkpoint_design_review PASS preceded delegated approval of ADR-0009/IMG-1. ME-040 implementation a1f6a9c (image values/public profile/context-owned leases/Desktop/native proof), 5e3d54e (badge/fallback/tests/docs), normalized candidateed79408. Observed author RED7 resource cases, RED2 consumer cases, native RED NotImplementedException; GREEN185/185=122Loop+32Desktop+31Hosting. Additional classification test was introduced after implementation and passed directly; no RED claim for it.
+
+Independent checkpoint_verify PASS/no blockers/advisories on frozened79408 in fresh GUID system-TEMP source copy with no build/index reuse. Full185/185, focused10/10, all6native harnesses (image; labels444glyph pixels; persistence17cases; Turn7; Room7; Desktop7),14independent public/native probes. Five fresh Release builds0warnings/0errors;15candidate source/project/harness hashes matched before/after. Existing models/storage/AvatarRenderer/package/SDK/config unchanged againstba815c0. Parent image native spotcheckPASS and git diff --checkPASS. Actual OOM/compound native cleanup failures received static review only, not injected runtime proof. RDD globaloff unchanged; no native RDD started. Codex root accepts objective IMG-1 and completes ME-040 under delegation. Subjective badge appearance is not claimed accepted; no fullH1/othermilestone acceptance or main integration inferred. Pre-existing .gitignore/.codegraph preserved. Next horizon remains candidate content/animation needs, not an automatically approved asset manager, decoder or battle system.
