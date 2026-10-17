@@ -8,8 +8,8 @@ S1: "continua con el siguiente trabajo". Refine CAP-004/CAP-012 concrete console
 S2: Preserve primitive ICanvas/external providers/default other consumers; separate capability with fallback, no vendor types/Core dependency. Review significant ADR/contract before construction; observable argument/lifetime/error/renderer/native pixel proof and regressions. No automatic full milestone acceptance or main delivery.
 
 ## Tasks
-T1 S1-S2 inline in-progress ME-037 specify/review ADR-0008/NL-1 before source.
-T2 S1-S2 inline pending ME-038 optional contract/Desktop forwarding/native readback/consumer fallback tests; coherent commits and independent whole-feature verification before closure.
+T1 S1-S2 inline completed ME-037 reviewed ADR-0008/NL-1 contract6df157c before source.
+T2 S1-S2 inline completed ME-038 backendd404f13/consumera9e3236; independent175/175+14provider probes+nativeRGB444/black0+old4harnessesPASS, parentfocused6/6PASS. Objective acceptance only, readability not owner-evaluated.
 
 ## Log
 L1 Owner request verbatim: continua con el siguiente trabajo
@@ -20,3 +20,5 @@ L3 Independent checkpoint_design_review PASS/no blockers, default-font/pixel pro
 L4 Approved contract6df157c. DesktopRED4failed->GREEN4/4, fullDesktop24/24; nativeprobeREDNotImplemented with cleanclose->GREEN444RGBglyphpixels/blackbaseline0/cleanclose/build0warnings0errors. Managed contract/adapter/native-proof unit prepared; consumer tests RED2failed->GREEN2/2. Full120Loop+24Desktop+31Hosting=175PASS, old169retained. Independent wholefeature/public-provider/native/regression proof still required before closure.
 
 L5 Backend/profile/nativeproof d404f13 is coherent without consumer source change; consumer MenuRenderer/actual-source tests form next slice. Full current175PASS includes both; no taskclosed yet. Sourcefreeze now; independent wholefeature provider/error/native/regression proof before objective acceptance. Cached slices below400 each, no compression/PR inference.
+
+L6 Independent wholefeature checkpoint_verify PASS: freshGUIDTEMP175/175/focused6/14providerprobes/native0baseline444glyphRGB/extreme-coordinate-size/old4nativeharnesses, ten candidate hashes retained, builds0warnings0errors; no blockers/advisories. Parentfinal6/6/sourceparity/diff/linkPASS. ME-037/038completed, objective NL-1 accepted by Codex root; new labels readability pending optional human experience, no repeated operational checks or fullH3/main acceptance. Cached slices6df157c/d404f13/a9e3236 under400each; final passive evidence closure, no source compression. No remaining ready task in bounded label horizon. Session result public optional profile preserves base providers and actual consumer fallback, no source/config/SDK/package drift; attributed memory unavailable, repository recovery log retained.

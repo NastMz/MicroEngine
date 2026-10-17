@@ -45,7 +45,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-035 | consumer integration | P1 | completed | ME-034 | [CL-1](specs/checkpoint-launch.md) |
 | ME-036 | onboarding documentation | P1 | completed | ME-035 | DOC-001 packet below |
 | ME-037 | specification | P1 | completed | ME-036 | [NL-1](specs/optional-labels.md) |
-| ME-038 | optional presentation | P1 | in-review | ME-037 | [NL-1](specs/optional-labels.md) |
+| ME-038 | optional presentation | P1 | completed | ME-037 | [NL-1](specs/optional-labels.md) |
 
 Use this table for current selection. Dated records below preserve earlier authority,
 dependencies and failed/pending checks; later closure evidence supersedes those states.
@@ -474,3 +474,5 @@ ME-036 closure2026-10-17: four-document status/authority synchronization complet
 ## ME-037 / ME-038 — Optional in-window labels
 
 ME-037completed2026-10-17 contract6df157c/ADR-0008 accepted by Codex root after checkpoint_design_review PASS. Concrete CAP-004/012 menu names, not retroactive TM-1 defect or broad text/UI promise. ME-038claimed before source at373efa5, parentinline, DesktopRED4->GREEN4, nativeREDNotImplemented->GREEN444glyphRGBpixels/black0/cleanclose, consumerRED2->GREEN2. Full175tests/0failed/0skip; sourcefreeze in-review pending independent wholefeature proof. Exact NL-1 edit surfaces/contracts, no package/SDK changes; primitive Fill fallback4/9/4 preserved.
+
+ME-038 closure2026-10-17: independent checkpoint_verify freshGUIDTEMP/no build/index reuse175/175=120Loop+24Desktop+31Hosting, focused6/6,14independent public provider/renderer checks, native coordinate extremes/minmaxsizes/empty probePASS. LabelNativeSmoke blackRGB0/glyphRGB444/cleanclose, all4old native harnesses (persistence17included)PASS, Release4consumers/probe0warnings0errors. Ten frozen source/project/test/harness hashes match before/after/currenta9e3236; project/package dependencies unchanged, Raylib confined to Desktop and native testprobe, prior othergames/models/storage/CLI unchanged. Parentfinal6/6/sourceparity/diff/linkPASS, no blockers/advisories. Codex root accepts objective NL-1, ME-038completed; optional subjective readability not claimed/fullH3 not accepted/main751686a untouched. Source commits d404f13/a9e3236 coherent stack slices, no PR. Runtime identity unavailable; repository records evidence, unrelated local work preserved.

@@ -1,6 +1,6 @@
 # Current implementation state
 
-Updated2026-10-17. Last recorded main delivery751686a includes positively evaluated TM-1 and its integration evidence. Latest technically verified behavioral delivery is CL-1 atcb038c8 on feat/h3-checkpoint-launch, stacking CP-1/CF-1; it is not integrated into main. The current onboarding follow-up is documentation only. Earlier dated states below are historical records, including superseded blockers. [Backlog](backlog.md) owns task states and approval/evidence history.
+Updated2026-10-17. Last recorded main delivery751686a includes positively evaluated TM-1 and its integration evidence. Latest technically verified behavioral delivery is NL-1 ata9e3236 on feat/optional-labels, stacking the verified checkpoint horizons and onboarding correction; it is not integrated into main. Optional label readability is not owner-evaluated. Earlier dated states below are historical records, including superseded blockers. [Backlog](backlog.md) owns task states and approval/evidence history.
 
 ## Authority
 
@@ -117,3 +117,5 @@ CL-1 closure2026-10-17: ME-034/035completed. Executable supports --load PATH bef
 ## NL-1 optional labels2026-10-17
 
 Branch feat/optional-labels baseline373efa5, reviewed ADR-0008/contract6df157c before construction. Additive ILabelCanvas profile (bounded ASCII/default provider face), ICanvas/IFramePlatform unchanged; Desktop forwards to existing pinned Raylib, no native reference in Loop. Consumer type-test appends Advance/Return names, primitive fallback4/9/4Fill retained, game state unchanged. AuthorDesktopRED4->GREEN4, consumerRED2->GREEN2, nativeRED->GREEN444RGBglyphpixels/black0/cleanclose; full175testsPASS. Independent wholefeature verification pending; ME-038in-review, main751686a unchanged. New legibility not owner-evaluated; no fullUI/fonts/assets/multiplatform claim.
+
+NL-1 closure2026-10-17: ME-037/038completed. Independent175/175+14publicprovider probes, nativeRGB0baseline/444glyph/cleanclose/extremebounds, all4old native harnessesPASS; ten source hashes retained, parent6/6spotcheckPASS. Base ICanvas unchanged; type-tested optional labels append names without losing primitive fallback. No blockers or package/SDK changes. Objective acceptance delegated; owner readability unobserved, main751686a unchanged, no broader text/UI promise.

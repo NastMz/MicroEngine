@@ -21,7 +21,7 @@ revisions, evidence and delivery boundaries.
 | H0 | Permanent headless lifecycle; owner accepted | [Lifecycle](specs/lifecycle.md), [H0 packet](milestones/H0.md) |
 | H1 tracers | Fixed-step Loop, Desktop adapter, external platformer with static solids and procedural animation | [H1 packet](milestones/H1.md) |
 | H2 tracers | Separate two-room exploration and marker interaction | [H2 packet](milestones/H2.md) |
-| H3 tracers | Menu/turn flow; versioned consumer checkpoints, optional create-new/read adapter and opt-in process startup/exit integration | [H3 packet](milestones/H3.md), [CP-1](specs/consumer-checkpoint.md), [CF-1](specs/checkpoint-files.md), [CL-1](specs/checkpoint-launch.md) |
+| H3 tracers | Menu/turn flow, optional in-window labels; versioned consumer checkpoints, optional create-new/read adapter and opt-in process startup/exit integration | [H3 packet](milestones/H3.md), [NL-1](specs/optional-labels.md), [CP-1](specs/consumer-checkpoint.md), [CF-1](specs/checkpoint-files.md), [CL-1](specs/checkpoint-launch.md) |
 
 CL-1 evidence includes169 managed regressions, the prior native harnesses and a targeted
 independent parser correction with17 persistence cases. Full H1/H2/H3 acceptance is not
@@ -29,6 +29,9 @@ inferred from these slices. Last recorded main delivery includes positively eval
 checkpoint work remains on task branches, as detailed in current-state/backlog.
 Windows native validation only; Raylib-cs is isolated to Desktop. ECS/scenes/DI, general
 UI/text/assets/storage systems and other platform support remain unselected or candidate.
+NL-1 adds only a bounded optional label profile:175 managed tests/native RGB readback and
+independent provider/fallback proof passed; it is not a general text/UI system or owner
+readability acceptance. Native-only verification code may reference the adapter's dependency.
 
 ## Templates
 
