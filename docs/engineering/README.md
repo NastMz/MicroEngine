@@ -66,4 +66,4 @@ or full milestone acceptance. Follow [autonomy](autonomy.md), not older dated re
 
 IMG-1 is verified and positively evaluated/integrated. Current candidate: [optional source-region presentation SPR-1](specs/sprite-regions.md), ME-041/042, under [ADR-0010](decisions/0010-optional-image-regions.md). Refer to backlog/current-state for actual closure evidence; no asset pipeline or additional backend commitment.
 
-Next bounded validation: [MAP-1 larger maps and viewport](specs/map-viewport.md), separate MapExplorer consumer; no engine camera/map abstraction. See backlog for ME-043/044/045 and contributing for commands. Earlier current-candidate notes describe prior horizons.
+Latest technically verified validation: [MAP-1 larger maps and viewport](specs/map-viewport.md), separate MapExplorer consumer; no engine camera/map abstraction. See backlog for ME-043/044/045 and contributing for commands. Earlier current-candidate notes describe prior horizons.
