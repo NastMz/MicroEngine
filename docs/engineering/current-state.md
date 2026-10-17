@@ -1,6 +1,6 @@
 # Current implementation state
 
-Updated2026-10-17. Last recorded main delivery751686a includes positively evaluated TM-1 and its integration evidence. Latest technically verified behavioral delivery is NL-1 ata9e3236 on feat/optional-labels, stacking the verified checkpoint horizons and onboarding correction; it is not integrated into main. Optional label readability is not owner-evaluated. Earlier dated states below are historical records, including superseded blockers. [Backlog](backlog.md) owns task states and approval/evidence history.
+Updated2026-10-17. Owner positively evaluated NL-1 delivery1dce7b3 ("Funciona perfectamente"). The evaluated source includes verified CP-1/CF-1/CL-1, onboarding and optional labels; standing policy authorizes normal main integration of this reviewed stack. Fetch confirmed main/origin751686a synchronized and ancestor of the evaluated revision; execution result is recorded below. Earlier dated states remain historical, including superseded blockers and pending-readability notes. [Backlog](backlog.md) owns task states and approval/evidence history.
 
 ## Authority
 

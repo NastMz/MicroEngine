@@ -25,13 +25,13 @@ revisions, evidence and delivery boundaries.
 
 CL-1 evidence includes169 managed regressions, the prior native harnesses and a targeted
 independent parser correction with17 persistence cases. Full H1/H2/H3 acceptance is not
-inferred from these slices. Last recorded main delivery includes positively evaluated TM-1;
-checkpoint work remains on task branches, as detailed in current-state/backlog.
+inferred from these slices. Owner positively evaluated NL-1 delivery1dce7b3, including its
+verified checkpoint stack; main-integration evidence is in current-state/backlog.
 Windows native validation only; Raylib-cs is isolated to Desktop. ECS/scenes/DI, general
 UI/text/assets/storage systems and other platform support remain unselected or candidate.
 NL-1 adds only a bounded optional label profile:175 managed tests/native RGB readback and
-independent provider/fallback proof passed; it is not a general text/UI system or owner
-readability acceptance. Native-only verification code may reference the adapter's dependency.
+independent provider/fallback proof passed; owner feedback on this bounded presentation is
+positive, not full text/UI or milestone acceptance. Native-only verification code may reference the adapter's dependency.
 
 ## Templates
 
