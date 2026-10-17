@@ -5,4 +5,3 @@
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../../engine/Desktop/Desktop.csproj" /></ItemGroup>
 </Project>
-
