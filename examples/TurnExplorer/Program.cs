@@ -30,7 +30,7 @@ if (options.LoadPath is not null)
 }
 var frames = 0;
 var updates = 0;
-Console.WriteLine("Controls: Arrows/WASD explore; Space at marker opens menu; Up/Down select, Space confirms; top=Advance, bottom=Return; Escape/window close exits.");
+Console.WriteLine("Controls: Arrows/WASD explore; Space at marker opens menu; Up/Down select, Space confirms; four Advances complete once; top=Advance, bottom=Return; Escape/window close exits.");
 var report = FrameLoop.Run(
     () => new DesktopPlatform(new DesktopWindowOptions(640, 360, "MicroEngine H3.0 — turn explorer")),
     new LoopOptions(TimeSpan.FromSeconds(1d / 60), 5, TimeSpan.FromMilliseconds(250)),
@@ -38,6 +38,7 @@ var report = FrameLoop.Run(
     {
         if (failUpdate) throw new ApplicationException("Requested update failure.");
         var room = game.Room; var wasOpen = game.MenuOpen; var selected = game.SelectedOption;
+        var wasCompleted = game.EncounterCompleted;
         game.Update(frame.Delta, frame.Input);
         updates++;
         if (game.Room != room) Console.WriteLine($"room:{game.Room}");
@@ -45,6 +46,7 @@ var report = FrameLoop.Run(
         else if (!game.MenuOpen && wasOpen) Console.WriteLine("menu:closed");
         else if (game.MenuOpen && game.SelectedOption != selected) Console.WriteLine($"menu:selected:{game.SelectedOption}");
         if (game.TurnResolved) Console.WriteLine($"turn:phase:{game.TurnPhase}");
+        if (game.EncounterCompleted && !wasCompleted) Console.WriteLine("encounter:completed");
     },
     (canvas, frame) =>
     {

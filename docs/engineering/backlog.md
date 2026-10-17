@@ -56,7 +56,7 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-046 | specification | P1 | completed | ME-045 | [MAP-2](specs/map-navigation.md) |
 | ME-047 | solid navigation | P1 | completed | ME-046 | [MAP-2](specs/map-navigation.md) |
 | ME-048 | specification | P1 | completed | ME-047 | [TURN-2](specs/turn-outcome.md) |
-| ME-049 | durable turn outcome | P1 | in-progress | ME-048 | [TURN-2](specs/turn-outcome.md) |
+| ME-049 | durable turn outcome | P1 | in-review | ME-048 | [TURN-2](specs/turn-outcome.md) |
 
 Use this table for current selection. Dated records below preserve earlier authority,
 dependencies and failed/pending checks; later closure evidence supersedes those states.

@@ -1,6 +1,6 @@
 # TURN-2 — One deterministic, durable encounter outcome
 
-Status: approved2026-10-17 by Codex root after checkpoint_design_review PASS. ME-048 preparation, ME-049 pending. C-003/CAP-012/013, FR-002/NFR-001/002/004/005; [ADR-0011](../decisions/0011-compatible-turn-outcome.md). Explicit successor to TM-1/CP-1 only within TurnExplorer, not engine combat/fullH3.
+Status: approved2026-10-17 by Codex root after checkpoint_design_review PASS. ME-048 completed, ME-049 in-review. C-003/CAP-012/013, FR-002/NFR-001/002/004/005; [ADR-0011](../decisions/0011-compatible-turn-outcome.md). Explicit successor to TM-1/CP-1 only within TurnExplorer, not engine combat/fullH3.
 
 ## Outcome rules
 

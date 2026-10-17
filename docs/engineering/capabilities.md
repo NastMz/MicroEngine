@@ -50,3 +50,5 @@ SPR-1 candidate: CAP-004/006/008/016 bounded optional integer source-region prof
 MAP-1 candidate probes CAP-009/010 through separate consumer-owned immutable fixed maps and camera/viewport translation. It does not fulfill a reusable map/scene/loader/camera API or choose a tile format. [MAP-1](specs/map-viewport.md); backlog/current-state record actual verification.
 
 MAP-2 candidate: CAP-007/009/010 spatial navigation tested by explicit consumer-owned solid rectangles and swept-axis resolution in MapExplorer; no engine collision/map/physics abstraction or collision contract for other games. Decorative geometry remains separate. [MAP-2](specs/map-navigation.md).
+
+TURN-2 candidate refines C-003/CAP-012/013: one game-owned deterministic completion, compatible versioned checkpoint outcome and existing optional labels. No engine encounter/battle/progression/storage subsystem. [TURN-2](specs/turn-outcome.md), [ADR-0011](decisions/0011-compatible-turn-outcome.md).

@@ -46,7 +46,7 @@ try {
     $normal = Invoke-Probe ('--smoke 2 --save-new "' + $fresh + '"') 0
     Require ($normal -match 'outcome:Stopped;frames:2;' -and $normal -match 'checkpoint:saved') 'Default save did not succeed.'
     Require ($normal.IndexOf('Window closed successfully') -ge 0 -and $normal.IndexOf('Window closed successfully') -lt $normal.IndexOf('checkpoint:saved')) 'Save was not after native close.'
-    SameBytes $fresh ([byte[]](1,0,0,0, 0,0,0,0, 0,0,32,66, 0,0,36,67, 0,0,0,0, 0,0,0,0))
+    SameBytes $fresh ([byte[]](2,0,0,0, 0,0,0,0, 0,0,32,66, 0,0,36,67, 0,0,0,0, 0,0,0,0))
 
     $seed = Join-Path $fixture 'seed.bin'
     $resumed = Join-Path $fixture 'resumed.bin'
@@ -55,7 +55,19 @@ try {
     $loaded = Invoke-Probe ('--load "' + $seed + '" --save-new "' + $resumed + '" --smoke 2') 0
     Require ($loaded -match 'checkpoint:loaded' -and $loaded -match 'checkpoint:saved' -and $loaded -match 'Window closed successfully') 'Process restart failed.'
     Require ($loaded.IndexOf('checkpoint:loaded') -lt $loaded.IndexOf('Initializing raylib')) 'Load was not before native acquisition.'
-    SameBytes $seed $state; SameBytes $resumed $state
+    [byte[]]$canonical = $state.Clone(); $canonical[0] = 2
+    SameBytes $seed $state; SameBytes $resumed $canonical
+
+    $completed = Join-Path $fixture 'completed.bin'
+    $completedResumed = Join-Path $fixture 'completed-resumed.bin'
+    [byte[]]$done = 2,0,0,0, 0,0,0,0, 0,0,155,67, 0,0,36,67, 9,0,0,0, 0,0,0,0
+    [IO.File]::WriteAllBytes($completed, $done)
+    $restart = Invoke-Probe ('--load "' + $completed + '" --save-new "' + $completedResumed + '" --smoke 2') 0
+    Require ($restart -match 'checkpoint:loaded' -and $restart -match 'checkpoint:saved' -and $restart -match 'Window closed successfully' -and $restart -notmatch 'encounter:completed|menu:open|turn:phase:') 'Completed restart reopened or fabricated a completion event.'
+    SameBytes $completed $done; SameBytes $completedResumed $done
+    $completedExisting = Invoke-Probe ('--load "' + $completed + '" --save-new "' + $completed + '" --smoke 2') 1
+    Require ($completedExisting -match 'checkpoint:save-failed:IOException:' -and $completedExisting -match 'Window closed successfully') 'Completed existing save was replaced.'
+    SameBytes $completed $done
 
     $never = Join-Path $fixture 'never.bin'
     $missing = Join-Path $fixture 'missing.bin'
@@ -66,6 +78,20 @@ try {
         [IO.File]::WriteAllBytes($bad, $bytes)
         $corrupt = Invoke-Probe ('--load "' + $bad + '" --save-new "' + $never + '" --smoke 2') 1
         Require ($corrupt -match 'checkpoint:load-failed:FormatException:' -and $corrupt -notmatch 'Initializing raylib' -and -not [IO.File]::Exists($never)) 'Corrupt load had effects.'
+        SameBytes $bad $bytes
+    }
+    foreach ($kind in @('v1-completed', 'completed-menu', 'completed-phase', 'unknown-version', 'unknown-flag')) {
+        [byte[]]$bytes = $done.Clone()
+        switch ($kind) {
+            'v1-completed' { $bytes[0] = 1 }
+            'completed-menu' { $bytes[16] = 11 }
+            'completed-phase' { $bytes[20] = 1 }
+            'unknown-version' { $bytes[0] = 3 }
+            'unknown-flag' { $bytes[16] = 17 }
+        }
+        [IO.File]::WriteAllBytes($bad, $bytes)
+        $invalidState = Invoke-Probe ('--load "' + $bad + '" --save-new "' + $never + '" --smoke 2') 1
+        Require ($invalidState -match 'checkpoint:load-failed:FormatException:' -and $invalidState -notmatch 'Initializing raylib' -and -not [IO.File]::Exists($never)) 'Invalid version/outcome state had effects.'
         SameBytes $bad $bytes
     }
 
@@ -84,7 +110,7 @@ try {
         Require ($invalid -match 'Usage: TurnExplorer' -and $invalid -match '--save-new PATH' -and $invalid -notmatch 'Initializing raylib|checkpoint:loaded|checkpoint:saved' -and -not [IO.File]::Exists($never)) 'New invalid CLI had effects or lacked usage.'
     }
     Require (([IO.Directory]::GetFiles($fixture, '.checkpoint-*.tmp')).Length -eq 0) 'Temporary file residue.'
-    Write-Output 'PASS: 17 persistence CLI/native cases; exact exits0/1/2, two-process durable restore, load before acquire/save after close, no overwrite/failure save.'
+    Write-Output 'PASS: 24 persistence CLI/native cases; exact exits0/1/2, v1-compatible/v2-completed restart, load before acquire/save after close, no overwrite/failure save.'
 }
 finally {
     Pop-Location

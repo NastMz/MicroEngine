@@ -69,3 +69,5 @@ IMG-1 is verified and positively evaluated/integrated. Separate verified feature
 Latest technically verified validation: [MAP-1 larger maps and viewport](specs/map-viewport.md), separate MapExplorer consumer; no engine camera/map abstraction. See backlog for ME-043/044/045 and contributing for commands. Earlier current-candidate notes describe prior horizons.
 
 Current bounded horizon: [MAP-2 explicit solid navigation](specs/map-navigation.md) in MapExplorer only. Main includes owner-positive MAP-1; SPR-1 is still independent/unintegrated. Backlog owns ME-046/047 technical status; contributing explains subjective-only navigation handoff.
+
+Current horizon: [TURN-2 durable turn completion](specs/turn-outcome.md)/ADR-0011, ME-048/049. MAP-2 is owner-positive/integrated; TURN-2 is a new independently verified technical candidate, not implicit fullH3 acceptance. See backlog for closure status and contributing for playability-only handoff.
