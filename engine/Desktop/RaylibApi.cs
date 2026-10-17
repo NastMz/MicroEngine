@@ -75,6 +75,11 @@ internal sealed class RaylibApi : IDesktopApi
             System.Numerics.Vector2.Zero, 0, new Color(255, 255, 255, 255));
     }
     public void ReleaseImage(object image) => Raylib.UnloadTexture((Texture2D)image);
+    public void DrawImageRegion(object image, Rect source, Rect destination)
+        => Raylib.DrawTexturePro((Texture2D)image,
+            new Rectangle(source.X, source.Y, source.Width, source.Height),
+            new Rectangle(destination.X, destination.Y, destination.Width, destination.Height),
+            System.Numerics.Vector2.Zero, 0, new Color(255, 255, 255, 255));
     public void Label(string text, int x, int y, int pixelSize, Rgba color)
         => Raylib.DrawText(text, x, y, pixelSize, new Color(color.R, color.G, color.B, color.A));
 }

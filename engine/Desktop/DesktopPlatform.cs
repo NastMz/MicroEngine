@@ -32,6 +32,7 @@ internal interface IDesktopApi
     void Label(string text, int x, int y, int pixelSize, Rgba color);
     object CreateImage(PixelImage image);
     void DrawImage(object image, Rect destination);
+    void DrawImageRegion(object image, Rect source, Rect destination);
     void ReleaseImage(object image);
     void Close();
 }
@@ -147,7 +148,7 @@ public sealed partial class DesktopPlatform : IFramePlatform
         FrameApi.Require(_drawing, "Canvas operations require committed drawing.");
     }
 
-    private sealed class CanvasView(DesktopPlatform owner) : ILabelCanvas, IImageCanvas
+    private sealed class CanvasView(DesktopPlatform owner) : ILabelCanvas, IImageRegionCanvas
     {
         public void Clear(Rgba color) { owner.CheckDrawing(); owner._api.Clear(color); }
         public void Fill(Rect rectangle, Rgba color)
@@ -170,5 +171,6 @@ public sealed partial class DesktopPlatform : IFramePlatform
         }
         public IImageResource CreateImage(PixelImage image) => owner.CreateImage(image);
         public void DrawImage(IImageResource image, Rect destination) => owner.DrawImage(image, destination);
+        public void DrawImageRegion(IImageResource image, Rect source, Rect destination) => owner.DrawImageRegion(image, source, destination);
     }
 }

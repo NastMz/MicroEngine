@@ -28,6 +28,7 @@ public sealed class LabelTests
         }
         public void Close() => Trace.Add("close");
         public object CreateImage(PixelImage image) => throw new NotImplementedException();
+        public void DrawImageRegion(object image, Rect source, Rect destination) => throw new NotImplementedException();
         public void DrawImage(object image, Rect destination) => throw new NotImplementedException();
         public void ReleaseImage(object image) => throw new NotImplementedException();
     }
