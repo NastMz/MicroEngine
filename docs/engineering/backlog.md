@@ -43,9 +43,11 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-033 | consumer adapter | P1 | completed | ME-032 | [CF-1](specs/checkpoint-files.md) |
 | ME-034 | specification | P1 | completed | ME-033 | [CL-1](specs/checkpoint-launch.md) |
 | ME-035 | consumer integration | P1 | completed | ME-034 | [CL-1](specs/checkpoint-launch.md) |
+| ME-036 | onboarding documentation | P1 | completed | ME-035 | DOC-001 packet below |
 
-ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
-Select from the current table; initial planning selection was ME-001.
+Use this table for current selection. Dated records below preserve earlier authority,
+dependencies and failed/pending checks; later closure evidence supersedes those states.
+H0 owner acceptance is recorded; later technical slices do not imply full milestone acceptance.
 
 ## ME-001 — Investigate initial platform and delivery constraints
 
@@ -460,3 +462,9 @@ ME-034completed2026-10-17 contract554d4c6: CL-1 independent checkpoint_design_re
 ME-035 integration proof2026-10-17: parsercced7fa preserved old grammar; new process harnessREDusage exit2 for --save-new before Program integration ->GREEN14cases. Parentfull118Loop+20Desktop+31Hosting=169PASS, build0warnings/0errors. Opt-in --load before native/no fallback; --save-new after nonfailed loop cleanup only, preserve existing destinations, failuresexit1/invalidusage2. Independent wholefeature/native regression pending, taskin-review.
 
 ME-035 closure2026-10-17: initial independent checkpoint_verify169/169/old3native/new14cases/7independent process probesPASS, but found one genuine new-effect blocker in parser args[++i] after invalid smoke numeric value. Initial79bf05c FAIL preserved, no false acceptance. Single correctionb768c13: atomic lookahead, regressionRED1failed2passed ->GREEN3/3, parentLoop118/118/newnative17PASS. Independent freshGUIDTEMP targeted recheck ONLY: corrected3file hashes match, parser3/3/native17/Releasebuild0warnings0errorsPASS, no blockers/advisories, unchanged-component initial proof retained (not a second full sweep). Parentfinal3/3/sourceparity/diff/linkPASS. Codex root accepts objective CL-1, ME-035completed; no engine/model/storage/game-update/render changes, no SDK/package changes or subjective test needed. Main751686a unchanged.
+
+## ME-036 — Synchronize current onboarding
+
+P1 DOC-001/NFR-004, owner continuation2026-10-17, baselinecb038c8. Claimed Codex root ready->in-progress on docs/current-onboarding. Read-only next_after_turn_map found engineering README still presenting H1 preparation/current2026-10-15, contributing hardcoded feat/h1-runtime and duplicated superseded delivery restrictions. Scope only engineering/README.md, contributing.md, current-state.md current summary, backlog.md; preserve historical dated evidence and existing autonomy policy. Deliver current verified H0/H1/H2/H3/CP1/CF1/CL1 pointers, distinguish task branches/main and technical/product acceptance; no new product/permission decision. Check relative links/readback/status consistency/git diff/source parity; runtimeN/A passive documentation. One bounded independent authority-consistency readback for mirrored delivery guidance, no code/SDK/dependency changes or artificial runtime rerun. Rollback own documentary edits only, preserve unrelated files. No new ADR/spec/ODD feature artifact required for this understood correction.
+
+ME-036 closure2026-10-17: four-document status/authority synchronization complete, independent checkpoint_design_review PASS/no blockers against unchanged autonomy.md. Local-link targets/readback/status consistency/git diffPASS; engine/examples/checks/global.json/NuGet.config identical to baselinecb038c8. Runtime/tests N/A documentation-only, no redundant rerun. Main751686a untouched, latest verified behavior remains CL-1cb038c8; no fullmilestone/newpermission/feature approval. Unrelated .gitignore/.codegraph preserved; no ready implementation task created from speculative text/UI needs. Repository evidence retained while runtime memory registration unavailable.

@@ -1,6 +1,6 @@
 # Current implementation state
 
-Updated2026-10-17; owner positively evaluated TM-1 at733b9b8 ("Funciona perfectamente"). Main and origin/main were fast-forwarded from827171d tobb32d15, with0/0 divergence and identical engine/example/check bytes to the evaluated revision. Earlier branches and main revisions below are historical records. [Backlog](backlog.md) owns task states.
+Updated2026-10-17. Last recorded main delivery751686a includes positively evaluated TM-1 and its integration evidence. Latest technically verified behavioral delivery is CL-1 atcb038c8 on feat/h3-checkpoint-launch, stacking CP-1/CF-1; it is not integrated into main. The current onboarding follow-up is documentation only. Earlier dated states below are historical records, including superseded blockers. [Backlog](backlog.md) owns task states and approval/evidence history.
 
 ## Authority
 

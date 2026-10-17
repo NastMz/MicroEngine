@@ -27,18 +27,18 @@ and `git diff --check`. Inspect untracked files explicitly.
 ## Close work
 
 Report actual evidence, affected IDs, failed/skipped checks and next work. Follow
-[document policy](document-policy.md). Coherent commits and normal task-branch pushes to the configured authorized origin are allowed under autonomy.md; PR/main integration/release still need explicit authorization;
+[document policy](document-policy.md). Delivery authority is defined in [autonomy](autonomy.md), including normal task-branch publication and the standing positive-feedback main-integration rule. Do not infer PR/release authorization;
 use Conventional Commits without AI attribution.
 
 ## Start an agent development session
 
 Ask the agent to develop eligible ready tasks. It reads the [backlog](backlog.md),
 [execution](execution.md) and [autonomy](autonomy.md), claims one task and continues
-independent work after verified closure. Technical architecture approval is delegated under autonomy.md after independent review. Only task-branch push within the explicit origin/authentication scope is authorized; no main integration or release. Select actual ready work from the backlog, including reviewed construction packets.
+independent work after verified closure. Technical architecture approval is delegated under autonomy.md after independent review. Select actual ready work from the backlog, including reviewed construction packets; refine the next concrete roadmap need when appropriate. Publication and main integration follow autonomy.md, not task completion alone.
 
 ## Branch naming and delivery
 
-Use feat/<topic>, fix/<topic>, docs/<topic> as appropriate, not codex/*. Current branch: feat/h1-runtime (local rename only, history preserved). Push without force to the same task branch on authorized origin using configured Git authentication. Preserve unrelated local work and verify outgoing commits; never infer permission to merge main, create a PR or rewrite/delete remote history.
+Use feat/<topic>, fix/<topic>, docs/<topic> as appropriate, not codex/*. Establish the actual checkout with `git branch --show-current` and `git status --short`; do not assume a historical branch is current. Push without force to the same task branch on authorized origin using configured Git authentication. Preserve unrelated local work and verify outgoing commits. Apply the standing positive-feedback rule in autonomy.md for evaluated verified main delivery; no PR/release/history rewrite or remote deletion follows by inference.
 
 ## H0 authorized development
 
