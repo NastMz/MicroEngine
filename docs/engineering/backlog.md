@@ -41,6 +41,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-031 | consumer implementation | P1 | completed | ME-030 | [CP-1](specs/consumer-checkpoint.md) |
 | ME-032 | specification | P1 | completed | ME-031 | [CF-1](specs/checkpoint-files.md) |
 | ME-033 | consumer adapter | P1 | completed | ME-032 | [CF-1](specs/checkpoint-files.md) |
+| ME-034 | specification | P1 | in-progress | ME-033 | [CL-1](specs/checkpoint-launch.md) |
+| ME-035 | consumer integration | P1 | pending | ME-034 | [CL-1](specs/checkpoint-launch.md) |
 
 ME-001/002/003 preparation and ME-004 automated construction are complete. H0 owner acceptance was recorded2026-10-15; the next horizon was initially preparation; current technical delegation and accepted H1-R1 authorize the bounded implemented H1.0 slice. Earlier preparation authority did not itself approve construction; later scoped approval is recorded in ADR-0002.
 Select from the current table; initial planning selection was ME-001.
