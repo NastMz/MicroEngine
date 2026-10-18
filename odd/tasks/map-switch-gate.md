@@ -9,11 +9,12 @@ S3: Public/native RED/GREEN, baseline206tests and10native harnesses retained, ne
 
 ## Tasks
 T1 S1 inline completed main49acb84/integrationledgerce6f6d8, source/config parity and origin0/0 observed.
-T2 S2-S3 inline in-progress ME-050 specification/review.
-T3 S2-S3 inline pending ME-051 model/view/presentation/native proof/independent closure.
+T2 S2-S3 inline completed commitac4a365 ME-050 specification/review.
+T3 S2-S3 inline completed commits7a3cb56/d723ade ME-051 model/view/presentation/native proof/independent closure.
 
 ## Log
 L1 Owner request verbatim: Funciona perfectamente, continua
 L2 Read-only mapping recommends dynamic topology rather than another cosmetic marker or game-progression framework. Gate is the existing single Meadow barrier; opening permits its formerly blocked direct path, while prior detour remains valid. Parent inline writer, independent design and high-risk consumer contract verification; no engine/shared architecture ADR required under ADR-0004. No map save/loading added and TurnExplorer/old checkpoints untouched.
 L3 Independent checkpoint_design_review PASS/no blockers, snapshot advisory adopted: retain oldview before activation and zone change. Root approves MAP3, completesME050 and claimsME051 before source, baselinece6f6d8. No engine/architecture/persistence scope.
 L4 Approvalac4a365 before source. PublicinteractionRED6/6 ->GREEN149/149Loop; nativeREDactualmissingblueSwitchpixel(24/40/32instead90/140/220) ->GREENallprior22plus6newRGBsamples/closedandopenview/shortcut/portal/return/reset. Authorfull212/212=149Loop+32Desktop+31Hosting, MapExplorer12processcasesPASS, freshbuilds0warnings/errors. Single old exact-render sequence gained blue switch entry, prior geometry retained; oldclosedcollision/detour routes unchanged. SourceSwitchmetadata immutable; oldBlockingSolidsreference retained beforeactivation/zones. RDDglobaloff unchanged. ME051in-review pendingindependent wholefeature; no engine/othergame/storage/project/package/SDK/config edits.
+L5 Independent checkpoint_verify PASS S1/S2/S3 frozend723ade, full212/focused6/all11native/boundedpublicprobe, freshbuilds0warnings/errors; post-run eightmatchinghashes/protectedpathsunchanged. Pre-runhashes not separatelyprinted, no false before/afterclaim. Scratchprobe reference typo correctedonce/candidateuntouched, no blockers/correction. Parent nativeSwitchGate/sourceparity/local-link9docs/diffPASS. Root accepts objectiveMAP3, closesME050/051; no subjective/fullH2 acceptance, physicalkeyautomation or persistence. Coherent slices7a3cb56=137authoredlines/d723ade=86authoredlines, cachedstacked-to-main no code-golf. Maince6f6d8 unchanged; no independentreadytask or speculativeframework queued. Memorymirrorpending unavailablehostidentity, complete repository recovery here. Branchpublication follows.

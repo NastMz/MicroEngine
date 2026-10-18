@@ -1,6 +1,6 @@
 # MAP-3 — One switch changes map reachability
 
-Status: approved2026-10-17 by Codex root after checkpoint_design_review PASS; ME-050 completed, ME-051 claimed in-progress. C-002/CAP-007/009/010/012, FR-002/NFR-001/002/004/005. Successor to [MAP-2](map-navigation.md), game-owned interaction, no engine architecture/ADR or persistent format change.
+Status: approved2026-10-17 by Codex root after checkpoint_design_review PASS; ME-050/051 completed; source7a3cb56/d723ade independently verified212tests/11native, objective accepted by root under delegation. C-002/CAP-007/009/010/012, FR-002/NFR-001/002/004/005. Successor to [MAP-2](map-navigation.md), game-owned interaction, no engine architecture/ADR or persistent format change.
 
 ## Fixed content and run state
 
