@@ -59,6 +59,8 @@ Read [execution](execution.md), [autonomy](autonomy.md) and the [task template](
 | ME-049 | durable turn outcome | P1 | completed | ME-048 | [TURN-2](specs/turn-outcome.md) |
 | ME-050 | specification | P1 | completed | ME-049 | [MAP-3](specs/map-switch-gate.md) |
 | ME-051 | switch gate reachability | P1 | completed | ME-050 | [MAP-3](specs/map-switch-gate.md) |
+| ME-052 | specification | P1 | completed | ME-051 | [GOAL-1](specs/platformer-goal.md) |
+| ME-053 | platformer goal and replay | P1 | in-progress | ME-052 | [GOAL-1](specs/platformer-goal.md) |
 
 Use this table for current selection. Dated records below preserve earlier authority,
 dependencies and failed/pending checks; later closure evidence supersedes those states.
