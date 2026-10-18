@@ -30,8 +30,8 @@ Origin: owner-requested validation scenarios and capability exploration; not imp
 
 | ID | Description and rationale | Priority | Status | Origin | Acceptance criteria to refine | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- |
-| C-001 | Explore movement, collision and animation for a simple platformer | Candidate | proposed | Owner scenario exploration, 2026-10-12 | External scenario validates the approved general capabilities without moving jump rules into the core | FR-002 |
-| C-002 | Explore maps, transitions and interaction for a top-down adventure | Candidate | proposed | Owner scenario exploration, 2026-10-12 | External scenario validates approved contracts without engine-specific combat rules | FR-002 |
+| C-001 | Explore movement, collision and animation for a simple platformer | Candidate | verified | Owner scenario exploration, 2026-10-12 | External scenario validates the approved general capabilities without moving jump rules into the core | FR-002 |
+| C-002 | Explore maps, transitions and interaction for a top-down adventure | Candidate | approved | Owner scenario exploration, 2026-10-12 | External scenario validates approved contracts without engine-specific combat rules | FR-002 |
 | C-003 | Explore menus, persistence and turn-based interaction for an RPG | Candidate | proposed | Owner scenario exploration, 2026-10-12 | Game owns turn/combat rules; shared technical needs are specified independently | FR-002 |
 
 No runtime, ECS, renderer, scene API, UI toolkit or backend requirement is inferred from
@@ -49,3 +49,5 @@ and verification results. Changed scope requires renewed approval; retain a shor
 FR-001: independent project-reference consumer uses public API only. NFR-001/NFR-002: H0-1.1 ownership, partial initialization, reverse cleanup, origin-classified misuse and execution reports exercised by31 public cases. NFR-004/DOC-001: accepted scoped ADR/toolchain/spec/backlog and delivery packet synchronized. Links: [contract](specs/lifecycle.md), [implementation](../../engine/Hosting/Hosting.csproj), [tests](../../checks/Hosting.Contracts/LifecycleTests.cs), [H0 delivery](milestones/H0.md). These are verified H0 slices, not global fulfillment of general engine requirements. NFR-003 budgets not applicable to this correctness increment; no performance claim. Future/game capabilities remain candidates.
 
 NFR-005 approval is a permanent architectural constraint, not verification of all existing/future providers. [ADR-0004](decisions/0004-replaceable-infrastructure.md) identifies current conformity and limitations; no current functional acceptance criterion changed.
+
+C001 bounded Meadow Run scenario verified/owneraccepted2026-10-18, [closure](evidence/kpf-1/acceptance.md); no broader catalogue completion inferred. C002 next bounded playable horizon explicitly selected by owner, refined by ADV-1 rather than speculative Zelda systems.
