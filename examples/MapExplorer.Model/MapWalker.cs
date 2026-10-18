@@ -7,6 +7,9 @@ public sealed class MapWalker
     public Zone Zone { get; private set; }
     public float X { get; private set; } = 40;
     public float Y { get; private set; } = 304;
+    public bool GateOpen { get; private set; }
+    // The sole Meadow solid is the gate; opening never removes the separate Ruins wall.
+    public IReadOnlyList<Rect> BlockingSolids => GateOpen && Zone == Zone.Meadow ? Array.Empty<Rect>() : MapLayout.For(Zone).Solids;
     public float CameraX => Math.Clamp(X + 12 - 320, 0, MapLayout.For(Zone).Width - 640);
     public float CameraY => Math.Clamp(Y + 16 - 180, 0, MapLayout.For(Zone).Height - 360);
 
@@ -31,8 +34,9 @@ public sealed class MapWalker
         float distance = 180 * (float)delta.TotalSeconds;
         float requestedX = X + dx * distance;
         float resolvedY = Math.Clamp(Y + dy * distance, 0, map.Height - 32);
+        var blocking = BlockingSolids; // One immutable pre-interaction view for both axis sweeps.
         // Deliberate Y-then-X swept-axis path; this is not continuous diagonal time of impact.
-        foreach (var wall in map.Solids)
+        foreach (var wall in blocking)
         {
             if (X >= wall.X + wall.Width || X + 24 <= wall.X) continue;
             if (resolvedY > Y && Y + 32 <= wall.Y && resolvedY + 32 > wall.Y)
@@ -40,7 +44,7 @@ public sealed class MapWalker
             else if (resolvedY < Y && Y >= wall.Y + wall.Height && resolvedY < wall.Y + wall.Height)
                 resolvedY = MathF.Max(resolvedY, wall.Y + wall.Height);
         }
-        foreach (var wall in map.Solids)
+        foreach (var wall in blocking)
         {
             if (resolvedY >= wall.Y + wall.Height || resolvedY + 32 <= wall.Y) continue;
             if (requestedX > X && X + 24 <= wall.X && requestedX + 24 > wall.X)
@@ -61,5 +65,8 @@ public sealed class MapWalker
         }
         X = Math.Clamp(requestedX, 0, map.Width - 24);
         Y = resolvedY;
+        if (!GateOpen && map.Switch is Rect trigger && X < trigger.X + trigger.Width && X + 24 > trigger.X
+            && Y < trigger.Y + trigger.Height && Y + 32 > trigger.Y && input.Pressed.Contains("jump"))
+            GateOpen = true;
     }
 }
