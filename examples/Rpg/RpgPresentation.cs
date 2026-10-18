@@ -6,7 +6,7 @@ namespace Rpg;
 public sealed class RpgPresentation : IDisposable
 {
     public static IReadOnlyList<string> AssetNames {get;}=Array.AsReadOnly<string>([
-        "ArMM1998/character","ArMM1998/Overworld","ArMM1998/Inner","gem_blue"]);
+        "Hero/character","Town/atlas","Dungeon/atlas"]);
     private readonly ImageSet _images;
     private readonly FrameAnimation _walk=new([new(0,0,16,32),new(16,0,16,32),new(32,0,16,32),new(48,0,16,32)],TimeSpan.FromMilliseconds(120));
     private Rect _previous=new(40,164,24,32);
@@ -44,24 +44,34 @@ public sealed class RpgPresentation : IDisposable
         bool camp=game.Room==RoomExplorer.Model.Room.Courtyard;
         canvas.Fill(new(8,88,656,376),new(110,120,130));
         canvas.Fill(new(16,96,640,360),camp?new(66,118,80):new(91,107,119));
-        Region(canvas,camp?"ArMM1998/Overworld":"ArMM1998/Inner",camp?new(0,48,48,48):new(0,112,48,48),new(464,320,96,96));
+        // Only flat ground is added: Explorer's collision and portal geometry are unchanged.
+        for(int y=96;y<456;y+=32)
+        for(int x=16;x<656;x+=32)
+        {
+            int height=Math.Min(32,456-y);
+            Region(canvas,"Town/atlas",new(0,0,16,height/2),new(x,y,32,height));
+        }
+        TerrainPatch(canvas,new(16,240,640,96));
+        Region(canvas,"Town/atlas",new(16,0,16,16),new(camp?80:144,128,32,32));
+        Region(canvas,"Town/atlas",new(16,0,16,16),new(camp?560:496,368,32,32));
         canvas.Fill(camp?new(648,216,8,120):new(16,216,8,120),new(70,200,220));
         labels.Label(camp?"Meadow >":"< Camp",camp?548:24,196,18,new(240,240,245));
         if(camp)
         {
             canvas.Fill(new(316,246,40,60),game.EncounterCleared?new(70,180,110):new(200,160,60));
-            canvas.DrawImage(_images.Get(canvas,"gem_blue"),new(320,250,32,32));
+            Region(canvas,"Dungeon/atlas",new(32,144,16,16),new(320,250,32,32));
         }
         var pose=_moving?_walk.Current:new Rect(0,0,16,32);
-        Region(canvas,"ArMM1998/character",pose with { Y=_row },new(12+game.X,64+game.Y,32,64));
+        Region(canvas,"Hero/character",pose with { Y=_row },new(12+game.X,64+game.Y,32,64));
         labels.Label($"{(camp?"Camp":"Meadow")} | Trainer {(game.EncounterCleared?"cleared":"ready")}",20,12,22,new(240,240,245));
         labels.Label(game.EncounterCleared?"Training complete - both rooms remain open":"Move: WASD/arrows | Space: challenge | Esc: exit",20,44,18,new(240,240,245));
     }
     private void Encounter(IImageRegionCanvas canvas,ILabelCanvas labels,RpgSession game)
     {
         canvas.Fill(new(16,80,640,224),new(44,60,75));
-        Region(canvas,"ArMM1998/character",new(0,64,16,32),new(96,156,64,128));
-        canvas.DrawImage(_images.Get(canvas,"gem_blue"),new(448,160,96,96));
+        TerrainPatch(canvas,new(16,80,640,224));
+        Region(canvas,"Hero/character",new(0,64,16,32),new(96,156,64,128));
+        Region(canvas,"Dungeon/atlas",new(32,144,16,16),new(448,160,96,96));
         labels.Label($"Training Sentinel | Turn {game.Battle.Turn}",20,12,22,new(240,240,245));
         labels.Label($"Player HP {game.Battle.PlayerHp}/12",32,96,18,new(240,240,245));
         labels.Label($"Sentinel HP {game.Battle.OpponentHp}/10",400,96,18,new(240,240,245));
@@ -80,6 +90,19 @@ public sealed class RpgPresentation : IDisposable
                 labels.Label(((BattleAction)i).ToString(),48,y+5,20,new(240,240,245));
             }
             labels.Label("Up/down: select | Space: confirm | Esc: exit",32,454,16,new(240,240,245));
+        }
+    }
+    // This one authored 3x3 dirt motif has known corner/edge/interior roles. Not an autotiler.
+    private void TerrainPatch(IImageRegionCanvas canvas,Rect destination)
+    {
+        int columns=(int)destination.Width/32,rows=(int)destination.Height/32;
+        for(int row=0;row<rows;row++)
+        for(int column=0;column<columns;column++)
+        {
+            int sourceColumn=column==0?0:column==columns-1?2:1;
+            int sourceRow=row==0?1:row==rows-1?3:2;
+            Region(canvas,"Town/atlas",new(sourceColumn*16,sourceRow*16,16,16),
+                new(destination.X+column*32,destination.Y+row*32,32,32));
         }
     }
     private static void Bar(ICanvas canvas,int x,int hp,int maximum)

@@ -27,10 +27,10 @@ try {
         finally { $process.Dispose() }
     }
     $probe = Invoke-Captured 'checks/Rpg.NativeProbe/bin/Release/net10.0/Rpg.NativeProbe.dll' '' 0
-    foreach ($marker in @('rpg:Victory:verified','rpg:Defeat:verified','rpg:Retreated:verified','rpg:four-images:verified','rpg:closed','Window closed successfully')) {
+    foreach ($marker in @('rpg:Victory:verified','rpg:Defeat:verified','rpg:Retreated:verified','rpg:assets:3:verified','rpg:closed','Window closed successfully')) {
         if ($probe -notmatch [regex]::Escape($marker)) { throw "RPG proof missing $marker`: $probe" }
     }
-    Write-Output 'PASS: public RPG exploration/portals, three outcomes, resume/retry, actual art/HP/menu/result pixels, four shared images and native close.'
+    Write-Output 'PASS: public RPG exploration/portals, three outcomes, resume/retry, original terrain/creature/hero pixels, HP/menu/result, three selected sheets and native close.'
     $cases = @(
         @{ Args = '--smoke 20'; Exit = 0; Marker = 'outcome:Stopped'; Native = $true },
         @{ Args = '--fail-update'; Exit = 1; Marker = 'primary:ApplicationException:Requested update failure.'; Native = $true },
@@ -43,6 +43,7 @@ try {
     foreach ($case in $cases) {
         $output = Invoke-Captured 'examples/Rpg/bin/Release/net10.0/Rpg.dll' $case.Args $case.Exit
         if ($output -notmatch [regex]::Escape($case.Marker)) { throw "RPG CLI marker missing: $output" }
+        if ($case.Args -eq '--smoke 20' -and $output -notmatch 'red sentinel marker') { throw "RPG help does not describe current art: $output" }
         if ($case.Native -and $output -notmatch 'Window closed successfully') { throw "Native cleanup missing: $output" }
         if (-not $case.Native -and $output -match 'Initializing raylib') { throw "Invalid CLI acquired native state: $output" }
     }

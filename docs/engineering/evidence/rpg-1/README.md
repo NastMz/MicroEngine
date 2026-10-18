@@ -109,3 +109,9 @@ Frozen executableeb595a8 parity and integrated RpgNativeSmoke-NoBuild/CLI7spotch
 This changes local delivery state, not product/fullH3 acceptance. Current main's later passive
 commit records this event without modifying executable bytes. Sourceworkunits ecf239c/e35b9bd/
 eb595a8 and technicalclosureb6660cf remain traceable.
+
+## Current art horizon
+The original captures and four-image proof above describe frozen RPG1. The subsequent
+[RPG-ART-1 selection and evidence](assets.md) replaces presentation content with three owned
+images, preserving all functional rules. The current encounter is the red sentinel marker,
+not the former blue marker. No subjective H3 acceptance is inferred from technical proof.

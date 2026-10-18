@@ -29,15 +29,34 @@ try
                     {var c=Raylib.GetImageColor(image,i,j);if(c.R==240&&c.G==240&&c.B==245)count++;}
                     if(count<20)throw new InvalidOperationException("Required RPG text missing from framebuffer.");
                 }
+                void OriginalPixel(string key,int sourceX,int sourceY,int x,int y)
+                {
+                    var sheet=sources[key];var color=sheet.Pixels[sourceY*sheet.Width+sourceX];
+                    if(color.A!=255)throw new InvalidOperationException("Selected terrain reference must be opaque.");
+                    Pixel(x,y,color);
+                }
+                void Monster(int x,int y,int scale)
+                {
+                    var sheet=sources["Dungeon/atlas"];int opaque=0;
+                    for(int sy=0;sy<16;sy++)for(int sx=0;sx<16;sx++)
+                    {
+                        var c=sheet.Pixels[(144+sy)*sheet.Width+32+sx];if(c.A!=255)continue;
+                        for(int dy=0;dy<scale;dy++)for(int dx=0;dx<scale;dx++)Pixel(x+sx*scale+dx,y+sy*scale+dy,c);
+                        opaque++;
+                    }
+                    if(opaque<25)throw new InvalidOperationException("Selected creature is not visibly rendered.");
+                }
                 Glyphs(20,12,600,25);
                 if(game.Mode==RpgMode.Exploration)
                 {
                     bool camp=game.Room==RoomExplorer.Model.Room.Courtyard;
                     Pixel(camp?652:20,220,new(70,200,220));
+                    OriginalPixel("Town/atlas",8,8,32,112);
                     if(!canvas.Labels.Any(text=>text.StartsWith(camp?"Camp |":"Meadow |")))throw new InvalidOperationException("Room UI mismatch.");
                     if(game.Body==new Rect(40,164,24,32))
                     {
-                        var sheet=sources["ArMM1998/character"];int opaque=0;
+                        Monster(320,250,2);
+                        var sheet=sources["Hero/character"];int opaque=0;
                         for(int y=0;y<32;y++)for(int x=0;x<16;x++)
                         {
                             var c=sheet.Pixels[y*sheet.Width+x];if(c.A!=255)continue;
@@ -49,6 +68,9 @@ try
                 }
                 else
                 {
+                    OriginalPixel("Town/atlas",1,17,18,82); // Top-left authored terrain corner.
+                    OriginalPixel("Town/atlas",16,32,336,240); // Interior, not an edge repeated throughout.
+                    Monster(448,160,6);
                     Pixel(34,122,game.Battle.PlayerHp>0?new(70,190,110):new(70,75,85));
                     Pixel(402,122,game.Battle.OpponentHp>0?new(70,190,110):new(70,75,85));
                     Glyphs(32,96,240,22);Glyphs(400,96,250,22);
@@ -87,8 +109,8 @@ try
             { Course.Open(game,Advance);if(game.Battle!=new BattleSnapshot(12,10,0,BattleOutcome.None)||game.EncounterNumber!=2)throw new InvalidOperationException("Retry did not reset battle.");Draw(); }
             Console.WriteLine($"rpg:{outcome}:verified");
         }
-        if(canvas.Creates!=4)throw new InvalidOperationException($"RPG cache acquired {canvas.Creates}, expected four.");
-        Console.WriteLine("rpg:four-images:verified");
+        if(canvas.Creates!=3||RpgPresentation.AssetNames.Count!=3)throw new InvalidOperationException($"RPG selected three-sheet bundle acquired {canvas.Creates} resources.");
+        Console.WriteLine("rpg:assets:3:verified");
     }
     Console.WriteLine("rpg:closed");return 0;
 }

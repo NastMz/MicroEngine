@@ -53,3 +53,26 @@ not project dependencies. Full original sheets may contain unused cells; availab
 not approve new entities, maps, props, statuses or mechanics. Existing ArMM provenance caveat
 remains in its source notice; no disputed tree regions are used. Selection precedes construction;
 actual integration/proof will be recorded here separately rather than inferred from this plan.
+
+## Implemented art evidence
+Selection/design commit: 8a2dd0a, before presentation replacement. The consumer now owns
+three runtime images (Town/atlas, Dungeon/atlas, Hero/character); the previous four-image
+RPG1 evidence remains historical, not the current bundle. No engine, session rules or old
+consumer changed. Real hero animation remains unchanged; the static opponent is intentional.
+
+Observed test-first evidence: the new compound-terrain test failed against the old renderer
+(missing corner source 0,16), then all 21 RPG model/renderer cases passed. Native smoke passed
+with zero build warnings/errors, all three outcomes and exact HP/turn/retry/resume rules,
+original PNG terrain corner/interior samples, hero scaling and opponent scaling at 2x/6x,
+three cached sheets, clean close, and seven production CLI cases with exits 0/1/2.
+VerifyRpgAssets passed seven original SHA256 checks; an isolated corrupt copy was rejected.
+All 264 packed cells were compared with original individual tiles: zero-gutter stride16 passed.
+
+The flat route uses complete corners/edges/interior rather than random neighboring cells.
+No decorative walls or houses imply nonexistent collision. No status/VFX mechanics or new UI
+framework were introduced. Run checks/RpgNativeSmoke.ps1 and checks/VerifyRpgAssets.ps1.
+Independent final verification is pending; subjective presentation acceptance remains owner-owned.
+
+![Exploration with selected art](art-camp.png)
+![Battle with selected art](art-battle.png)
+![Victory with selected art](art-victory.png)

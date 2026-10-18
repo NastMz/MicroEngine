@@ -16,7 +16,7 @@ try
     string assets=Path.Combine(AppContext.BaseDirectory,"Assets");
     var sources=RpgPresentation.AssetNames.ToDictionary(name=>name,name=>DesktopImageDecoder.Decode(File.ReadAllBytes(Path.Combine(assets,name+".png"))));
     using var art=new RpgPresentation(sources);var game=new RpgSession();int frames=0,updates=0;
-    Console.WriteLine("Trail Duel: explore Camp/Meadow. Space at the blue trainer starts combat; up/down selects Attack/Guard/Retreat, Space confirms. Escape exits.");
+    Console.WriteLine("Trail Duel: explore Camp/Meadow. Space at the red sentinel marker starts combat; up/down selects Attack/Guard/Retreat, Space confirms. Escape exits.");
     var report=FrameLoop.Run(()=>new DesktopPlatform(new(672,480,"MicroEngine - Trail Duel",2048,32)),
         new LoopOptions(TimeSpan.FromSeconds(1d/60),5,TimeSpan.FromMilliseconds(250)),
         frame=>
