@@ -81,3 +81,5 @@ Current delivery integrates [SPR-1](specs/sprite-regions.md) with GOAL-1, not a 
 Current selected playable horizon: [KPF-1 real-art platformer](specs/kenney-platformer.md), [run/evidence/subjective handoff](evidence/kpf-1/README.md), [ADR0012 classification](decisions/0012-playable-platformer-infrastructure.md). Optional TwoD utilities are not Core genre modules. Only local commits authorized for this horizon.
 
 Selected C002 playable horizon: [Courtyard Key ADV1](specs/adventure.md), [run/reuse/evidence](evidence/adv-1/README.md). Meadow Run is closed after explicit owner feedback and public-boundary audit; new topdown consumer reuses existing engine without changes. Backlog ME060 owns technical closure; subjective adventure evaluation remains pending.
+
+Current selected H3 playable candidate: [RPG-1 Trail Duel](specs/rpg-encounter.md), [run/evidence](evidence/rpg-1/README.md). Closed tileset assessment remains candidate input only; existing public exploration/canvases/image/animation services support game-owned encounter states without engine changes. Backlog ME064/065/066 owns actual closure status.
