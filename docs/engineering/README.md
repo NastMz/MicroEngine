@@ -77,3 +77,5 @@ Current bounded horizon: [MAP-3 switch-controlled map shortcut](specs/map-switch
 Current bounded horizon: [GOAL-1 platformer course completion and replay](specs/platformer-goal.md), ME-052/053. MAP-3 is owner-positive/integrated; GOAL-1 status/evidence is in backlog. This is optional consumer gameplay, not engine lifecycle/reset or a shared level framework.
 
 Current delivery integrates [SPR-1](specs/sprite-regions.md) with GOAL-1, not a new gameplay horizon. Consult the backlog for ME-054 verification and actual main delivery.
+
+Current selected playable horizon: [KPF-1 real-art platformer](specs/kenney-platformer.md), [run/evidence/subjective handoff](evidence/kpf-1/README.md), [ADR0012 classification](decisions/0012-playable-platformer-infrastructure.md). Optional TwoD utilities are not Core genre modules. Only local commits authorized for this horizon.

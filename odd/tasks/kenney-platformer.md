@@ -13,7 +13,7 @@ S6: "No publiques al remoto ni integres cambios en main sin autorización." Pres
 ## Tasks
 T1 S1-S6 inline completed asset verification, bounded architecture specification/ADR and independent design review.
 T2 S3-S5 inline completed minimum general capabilities and deterministic tests (RED/GREEN where meaningful).
-T3 S1-S6 inline in-progress real-art playable consumer, native proof, independent verification and delivery.
+T3 S1-S6 inline in-review real-art playable consumer, native proof, independent verification and delivery.
 
 ## Log
 L1 Owner original request verbatim:
@@ -117,3 +117,5 @@ No persigas completar toda la arquitectura 2D antes de tener un juego funcional.
 L2 Design reviewer required fixed course/order and retry-safe cache cleanup; one correction/targetedPASS resolves both. Root approves ADR0012/KPF1 before source. Source-free docs/assets verification only; no meaningful RED for this unit. Official Kenney URL/CC0+embeddedlicense verified; archiveSHA553b907f3f0e505ab65f56f245ccaff3123c8fe3f3a0dfce9373b996bfc18cc2. Existing226tests remain baseline; RDDglobaloff unchanged.
 
 L3 TwoD9runnableRED->9GREEN, Desktop2RED->38fullGREEN, game3RED->3GREEN (later missingcoin/buffer regression checks added without fabricatedRED). Initial testproject accidentally used Xunit annotations with MSTest; compiler error corrected before runnableRED, no dependency change. One extreme-displacement test corrected from a finitely clamped result to genuinely unrepresentable unblocked coordinates; contract unchanged. Public course completes517steps and identical reset. Native PNG/atlas/camera/course proofPASS; screenshot convenience TakeScreenshot prepended cwd to an absolute path, so switched to checked ExportImage of existing readback, thenPASS. Original asset bytes preserved with narrow asset.gitattributes to prevent XML/license line-ending conversion. Full feature independent review pending; main/origin untouched, no remote operations.
+
+L4 Own game6/6,TwoD9/9,Desktop38/38; newnative PNG/camera/course517steps/reset/identicalreplay+CLI7casesPASS/build0warnings. Nine original source asset hashesPASS and native screenshot inspected, no generated art or commercialMario assets. Full independent baseline+horizon verification requested at frozen game commit; no physical key or subjective/fullH1 claim.

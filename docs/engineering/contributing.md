@@ -142,3 +142,7 @@ Run `dotnet run --project examples/FirstPlayable -c Release`. Move with Left/Rig
 ## Integrated optional sprites
 
 FirstPlayable selects the eight equivalent source-authored avatar cells through optional IImageRegionCanvas; primitive/whole-image fallback remains supported. Goal completion and consumed Space reset remain unchanged. Automated `pwsh -NoProfile -File checks/RegionNativeSmoke.ps1` verifies native crop/orientation/RGBA/lifetime; GoalNativeSmoke verifies course/reset with actual sprites. See [SPR-1](specs/sprite-regions.md). No repeated owner checks are required after positive feedback.
+
+## Real-art platformer (KPF-1)
+
+Run `dotnet run --project examples/Platformer/Platformer.csproj -c Release`. See [controls, evidence and owner-only evaluation](evidence/kpf-1/README.md). New automated checks: TwoD.Contracts, Platformer.Contracts and `pwsh -NoProfile -File checks/PlatformerNativeSmoke.ps1`, in addition to all existing regressions. Pack assets copy to output; execution does not download resources. Windows validation only. No SDK/package changes; latest scope permits local commits, not push/main.

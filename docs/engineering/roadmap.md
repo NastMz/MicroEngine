@@ -71,3 +71,7 @@ CL-1 horizon2026-10-17: [checkpoint startup/exit](specs/checkpoint-launch.md) co
 NL-1 horizon2026-10-17: [optional labels](specs/optional-labels.md)/ADR-0008 refines real TurnExplorer console-only names into optional cohesive presentation support. Earlier positive feedback not a defect classification; ICanvas and fallback retained. Not generic UI/font resources/localization/backends. Task/evidence state in backlog.
 
 Next-horizon assessment2026-10-17: all prepared functional tasks are complete; ME-054 closes the remaining evaluated sprite delivery. No next independent capability has a concrete consumer requirement yet. Do not generate generic atlas/clip/decoder systems, another cosmetic tracer or speculative persistence/mechanics. A subsequent horizon needs a bounded C-001/C-002/C-003 validation objective; positive slice feedback alone does not accept full H1/H2/H3.
+
+## Selected platformer horizon2026-10-18
+
+Owner selected platforms→Mario-inspired playable validation before later Zelda/Pokemon. [KPF-1](specs/kenney-platformer.md), ME055/056/057, is only this next executable horizon: one real Kenney CC0 level, coins/hazard/platform progression/finish/replay. ADR0012 classifies optional general utilities versus game rules. No speculative distant task expansion; new actual visual/control feedback gates subsequent gameplay refinement. This owner request resolves the earlier unselected-objective stop. No remote/main authorization for this horizon.

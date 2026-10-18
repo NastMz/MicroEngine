@@ -565,10 +565,12 @@ SPR-1 main delivery2026-10-17: owner "Funciona perfectamente, continua" on5aa2af
 | --- | --- | --- | --- | --- | --- |
 | ME-055 | architecture and asset verification | P1 | completed | ME-054 | [KPF-1](specs/kenney-platformer.md) |
 | ME-056 | reusable 2D capabilities | P1 | completed | ME-055 | [KPF-1](specs/kenney-platformer.md) |
-| ME-057 | real-art playable level | P1 | in-progress | ME-056 | [KPF-1](specs/kenney-platformer.md) |
+| ME-057 | real-art playable level | P1 | in-review | ME-056 | [KPF-1](specs/kenney-platformer.md) |
 
 ME-055 claimed by root2026-10-18 baseline2415072 on feat/kenney-platformer. New owner platforms objective supersedes prior no-selected-objective stop. Latest no-push/no-main instruction supersedes standing publication policy for this horizon. Asset download public/explicitly requested; design review pending.
 
 ME-055 closure: Kenney official page/CC0 deed/download1.1 and embedded License.txt verified; selected original PNG/XML/license hashes in Assets/provenance.json. Independent design two blockers corrected once, targeted PASS; root approves ADR0012/KPF1 before source. ME056 claimed baseline2415072; no-push/main instruction active.
 
 ME056 construction evidence: TwoD runnableRED9/9failed against stubs ->GREEN9/9; Desktop DecoderBudget RED2failed ->GREEN2 and fullDesktop38/38 including all36baseline. Public native real902atlas/default256rejection/expanded2048upload and malformedPNG cleanupPASS. Significant design independently reviewed before source; full-feature implementation review remains final horizon gate. ME057 implementation claimed; explicit dependency is tested utility availability, not subjective acceptance.
+
+ME057 author evidence: game6/6, TwoD9/9, Desktop38/38 PASS; native KPF actualasset517stepcourse/reset/replay/atlas sample/PNG corruption/default+expanded budgets PASS and productionCLI7cases exits0/1/2PASS. Full baseline/horizon independent review now required before objective closure. No coverage reduction, no FirstPlayable/MAP/TURN edits. Spawn screenshot inspected for actualart visibility, not subjective acceptance.
