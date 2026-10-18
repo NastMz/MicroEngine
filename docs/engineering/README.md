@@ -64,7 +64,7 @@ Agents run reproducible technical checks themselves; manual experience is reserv
 genuinely subjective product evidence. Passing tests does not authorize main integration
 or full milestone acceptance. Follow [autonomy](autonomy.md), not older dated restrictions.
 
-IMG-1 is verified and positively evaluated/integrated. Separate verified feature, not included in main/MAP branches: [optional source-region presentation SPR-1](https://github.com/NastMz/MicroEngine/blob/aa0243b577bcdee7c9e1b895325b8813fa9a3e45/docs/engineering/specs/sprite-regions.md), ME-041/042, under [ADR-0010](https://github.com/NastMz/MicroEngine/blob/aa0243b577bcdee7c9e1b895325b8813fa9a3e45/docs/engineering/decisions/0010-optional-image-regions.md). Refer to backlog/current-state for actual closure evidence; no asset pipeline or additional backend commitment.
+IMG-1 is verified and positively evaluated/integrated. SPR-1 has now received positive owner feedback; current-main reconciliation and verification status are recorded in backlog/current-state. Historical verified feature: [optional source-region presentation SPR-1](https://github.com/NastMz/MicroEngine/blob/aa0243b577bcdee7c9e1b895325b8813fa9a3e45/docs/engineering/specs/sprite-regions.md), ME-041/042, under [ADR-0010](https://github.com/NastMz/MicroEngine/blob/aa0243b577bcdee7c9e1b895325b8813fa9a3e45/docs/engineering/decisions/0010-optional-image-regions.md). Refer to backlog/current-state for actual closure evidence; no asset pipeline or additional backend commitment.
 
 Latest technically verified validation: [MAP-1 larger maps and viewport](specs/map-viewport.md), separate MapExplorer consumer; no engine camera/map abstraction. See backlog for ME-043/044/045 and contributing for commands. Earlier current-candidate notes describe prior horizons.
 
@@ -75,3 +75,5 @@ Current horizon: [TURN-2 durable turn completion](specs/turn-outcome.md)/ADR-001
 Current bounded horizon: [MAP-3 switch-controlled map shortcut](specs/map-switch-gate.md), ME-050/051. TURN-2 is owner-positive/integrated; MAP-3 status/evidence is in backlog. This is consumer-owned topology, not a new engine module or map-persistence contract.
 
 Current bounded horizon: [GOAL-1 platformer course completion and replay](specs/platformer-goal.md), ME-052/053. MAP-3 is owner-positive/integrated; GOAL-1 status/evidence is in backlog. This is optional consumer gameplay, not engine lifecycle/reset or a shared level framework.
+
+Current delivery integrates [SPR-1](specs/sprite-regions.md) with GOAL-1, not a new gameplay horizon. Consult the backlog for ME-054 verification and actual main delivery.

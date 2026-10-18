@@ -8,8 +8,8 @@ S2: Reconcile only known SPR-1 contracts/implementation/tests/specification with
 S3: Verify current-baseline managed regressions and native harnesses plus region proof, independent verification before main delivery, record evidence and normal commits/push. No new scope or full H1 acceptance inferred.
 
 ## Tasks
-T1 S1-S3 inline in-progress selective reconciliation and own checks; independent verifier required for public/native optional contract.
-T2 S1-S3 inline pending evidence, authorized main delivery and next-roadmap assessment.
+T1 S1-S3 inline completed d6d8ebd; focused and native checks plus independent PASS.
+T2 S1-S3 inline in-progress closure evidence and authorized main delivery; next-roadmap assessment complete, no independent ready task.
 
 ## Log
 L1 Owner original request verbatim: Funciona perfectamente, continua
@@ -18,3 +18,5 @@ L2 Existing evaluated implementation52e2acd/552f468 and reviewed ADR0010; source
 SPR-1 reconciliation: Goal.NativeProbe now source-links and uses actual AvatarSprites, preserving every existing course/reset/replay/RGB assertion while exercising the new presentation lease across the same controller reset. Prior primitive/whole-image fallback remains independently covered by SpriteRegionTests. This is integration proof, not new gameplay.
 
 L3 Own focused SpriteRegion+Goal tests10/10 PASS. Native GoalNativeSmoke PASS after actual AvatarSprites source-link integration; RegionNativeSmoke checked separately. Existing evaluated provider sources transferred unchanged; Program diff only lifetime variable and two rendering calls replaced by one. GOAL model/input/animation transitions untouched. UTF-8 title preserved. Independent verifier will run long full suites/harnesses on frozen candidate; RDDglobaloff remains unchanged.
+
+ME-054 closure2026-10-17: checkpoint_verify PASS S1/S2/S3 on frozend6d8ebd versus28a5ece in fresh system-temp scratch with local-cache restore. Loop159/159, Desktop36/36, Hosting31/31 =>226/226; all13native harnesses (Goal actualsprites, Region, SwitchGate, MapNavigation, MapViewport, MapExplorer, TurnOutcome, TurnPersistence24cases, Turn, Room, Desktop, Image, Label) PASS. Fresh builds0warnings/errors; all23candidatefiles hash-identical after execution. Protected gameplay/config unchanged; evaluatedSPR implementation preserved exactly. Parent focused10/10, Goal/Region nativePASS, final Goal -NoBuild spotcheckPASS. Local changed-doc links/gitdiffcheckPASS. Initial workspace-vs-Git raw comparison differed by CRLF; corrected Git-blob comparisonPASS, no source changes. No physical-key or new subjective/fullmilestone acceptance inferred; owner positiveSPR feedback applies, GOAL feedback already recorded. No independent ready task after delivery; next horizon needs concrete consumer validation objective, not speculative infrastructure. Runtime memory mirror pending unavailable authoritative identity.

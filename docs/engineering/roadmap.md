@@ -1,7 +1,7 @@
 <!-- Current authority:2026-10-15 technical delegation supersedes earlier approval-only restrictions; see autonomy.md. Historical dated evidence is not rewritten. -->
 # Evolutionary roadmap
 
-H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persistence/labels are technically verified; full playable-milestone acceptance is not inferred. IMG-1 is positively evaluated and integrated. SPR-1 is technically verified on the stacked task branch. MAP-1 is positively evaluated and integrated independently of SPR-1. MAP-2 is positively evaluated and integrated. TURN-2 is positively evaluated and integrated. MAP-3 and GOAL-1 are positively evaluated and integrated. GOAL-1 validates a complete replayable external platformer course through an opt-in goal/reset, not engine game-rules or a level manager. The prototype remains at [legacy-final](history.md).
+H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persistence/labels are technically verified; full playable-milestone acceptance is not inferred. IMG-1 is positively evaluated and integrated. SPR-1 is technically verified and positively evaluated; ME-054 completed current-main reconciliation with independent226test/13native proof. MAP-1 is positively evaluated and integrated independently of SPR-1. MAP-2 is positively evaluated and integrated. TURN-2 is positively evaluated and integrated. MAP-3 and GOAL-1 are positively evaluated and integrated. GOAL-1 validates a complete replayable external platformer course through an opt-in goal/reset, not engine game-rules or a level manager. The prototype remains at [legacy-final](history.md).
 
 ## Current executable horizon
 
@@ -69,3 +69,5 @@ CF-1 horizon2026-10-17: [checkpoint files](specs/checkpoint-files.md)/ADR-0007 a
 CL-1 horizon2026-10-17: [checkpoint startup/exit](specs/checkpoint-launch.md) composes verified CP-1/CF-1 for actual process restart in TurnExplorer, optional flags only. No autosave/overwrite/storage system/game rule expansion; current task states in backlog.
 
 NL-1 horizon2026-10-17: [optional labels](specs/optional-labels.md)/ADR-0008 refines real TurnExplorer console-only names into optional cohesive presentation support. Earlier positive feedback not a defect classification; ICanvas and fallback retained. Not generic UI/font resources/localization/backends. Task/evidence state in backlog.
+
+Next-horizon assessment2026-10-17: all prepared functional tasks are complete; ME-054 closes the remaining evaluated sprite delivery. No next independent capability has a concrete consumer requirement yet. Do not generate generic atlas/clip/decoder systems, another cosmetic tracer or speculative persistence/mechanics. A subsequent horizon needs a bounded C-001/C-002/C-003 validation objective; positive slice feedback alone does not accept full H1/H2/H3.
