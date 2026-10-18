@@ -8,11 +8,11 @@ CAP-001 has an approved/implemented bounded H0 slice; CAP-002/003/004 now have n
 | CAP-001 | Application lifecycle | Initialize/run/stop/cleanup; no game rules | H0 headless implemented/automatically verified; [spec](specs/lifecycle.md); owner accepted2026-10-15 |
 | CAP-002 | Time and execution phases | Observable ordering, pause and deltas; no turn rules | H1-R1 fixed-step/clamp/drop/alpha slice verified; broader proposals remain |
 | CAP-003 | Input actions | Digital/analog intent from devices; no character controls | H1-R1 digital held/ordered-edge/focus slice verified; analog/remapping not implemented |
-| CAP-004 | 2D presentation | Sprites, text, cameras, ordering; no genre HUD | H1-R1 primitive canvas slice verified; sprites/text/cameras not implemented |
+| CAP-004 | 2D presentation | Sprites, text, cameras, ordering; no genre HUD | Primitive/optional raster/source-region/default-label slices verified; consumer ordering/viewport composition demonstrated, no reusable camera/depth/layer system |
 | CAP-005 | Entity composition | Identity, data and behavior composition; ECS choice open | First playable discovery |
-| CAP-006 | Assets and ownership | Acquisition/sharing/release; no inherited format | First playable discovery |
-| CAP-007 | Spatial queries and movement | Geometry, collision queries, optional kinematic mechanisms; no jump rules | Platformer validation |
-| CAP-008 | Animation | Clips and playback; no combat-state library | Platformer validation |
+| CAP-006 | Assets and ownership | Acquisition/sharing/release; no inherited format | Public image leases/ImageSet and Desktop PNG decoder verified; semantic atlas/import metadata remains candidate |
+| CAP-007 | Spatial queries and movement | Geometry, collision queries, optional kinematic mechanisms; no jump rules | Optional static2D AABB sweeps verified; logical surfaces/height filtering not implemented |
+| CAP-008 | Animation | Clips and playback; no combat-state library | FrameAnimation region playback/reset verified; general clip metadata/state/depth systems not selected |
 | CAP-009 | Worlds and transitions | Content lifetime and handoff; no adventure progression | Adventure validation |
 | CAP-010 | Maps | General spatial content; no prescribed tile format | Adventure validation |
 | CAP-011 | Audio | Clips, independent playback, music and lifecycle | Playable milestone refinement |
@@ -60,3 +60,5 @@ GOAL-1 candidate refines C-001 playable-course validation with opt-in consumer g
 KPF-1/ADR0012: concrete real-art platformer need justifies optional engine/TwoD static AABB sweeps, deterministic region playback and image-lease caching. Desktop supplies bounded CPU PNG decoding and explicit configurable image limits (old256/32 defaults preserved). Game owns level/coin/hazard/gravity/input-forgiveness/camera-follow/finish/reset policy. One level composes existing lifecycle; no new scene manager, general physics, atlas editor, artistic-style restriction or export commitment. Point sampling remains this adapter profile, not a universal art requirement.
 
 ADV1 demonstrates cross-game reuse rather than new capability: unchanged TwoD static sweeps for normalized topdown navigation/immutable gate worlds instead of platformer gravity; same FrameAnimation/ImageSet/PNG/region/label/lifecycle/input across two areas. Game owns key/lever/altar/portal/reset policy. No specialized Zelda module, duplicate general cache/decoder/collision/animation/scene framework or new engine abstraction. Subjective H2 scenario validation remains pending.
+
+ADV-ART-2 findings F014/F015: [tileset/depth assessment](evidence/adv-1/tileset-assessment.md) separates current public pixel/lease/draw capabilities from consumer composition and deferred semantic atlas, authored tile layers, stable visual ordering and logical surface needs. CAP004/006/007/009/010 are not fulfilled globally. These are candidate capability inputs, not new genre modules or prepared implementation tasks. Two fixed rooms do not justify editor/autotiling/3D or a mandatory depth system.

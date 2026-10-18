@@ -97,3 +97,6 @@ shrineb648df89910649452d6b9e08b3d90b9a5692c7bf0b4811dafe6a69466d83b0f6).
 Root accepts objective ADV-ART-2/ME062 only. Owner functional feedback recorded; new visual
 composition/fullH2acceptance not inferred. This bounded pass ends at subjective composition,
 not more speculative polish/editor work. Local-only, no push/main, unrelated.gitignore/.codegraph preserved.
+
+## Subsequent owner interpretation review2026-10-18
+The owner identifies underused combinable sheet pieces and asks for learning rather than continued demo expansion. [Tileset/depth assessment](tileset-assessment.md) supersedes any reading of the earlier crop/coherence PASS as proof of terrain-edge compatibility or general depth/elevation support. Earlier tests and frozen-source verdict remain valid for their actual pixel/bounds/route/lifetime scope; visual/fullH2 acceptance is not inferred. No composition source changed for this review.
