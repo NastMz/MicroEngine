@@ -3,7 +3,7 @@
 First bounded H3 integration: public exploration/portals, trainer interaction, menu,
 game-owned deterministic combat, result and return. [Contract](../../specs/rpg-encounter.md),
 [ADR0013](../../decisions/0013-consumer-rpg-encounter.md), backlogME064/065/066.
-Technical candidate awaiting independent final proof; product/fullH3 acceptance unobserved.
+Technically accepted after independent verification; product/fullH3 acceptance unobserved.
 
 ## Run and owner-only experience
 
@@ -42,7 +42,7 @@ presentationRED6/6 -> combined20/20GREEN. Native actualPNG source2x, numericHP/b
 selected-row highlight, visible result/return glyphs, public portals and all3combat outcomes,
 frozen/resumed position, retry/fullHP, one-shot victory, shared4leases and clean native closePASS.
 ProductionCLI7cases with exact0/1/2 exitsPASS, invalid flags before native acquisition;
-fresh build0warnings/errors. Independent baseline/horizon verification still pending.
+fresh build0warnings/errors. Independent baseline/horizon verification passed; final results below.
 
 ## Reuse and boundaries
 
@@ -69,3 +69,34 @@ prevent menu-opening attacks, duplicate turns, post-win retaliation and result-r
 leaks. Pixel/route tests are objective evidence, not combat balance or product acceptance.
 Future battle/content/metadata needs must arise from demonstrated requirements, not Pokemon
 feature imitation. F014/F015 and visual-tool candidates remain deferred.
+
+## Independent technical closure2026-10-18
+
+Frozen eb595a8a25f676144ad55b5a3f0e0b2c1cea9890 vsbb82c0b; independent
+kenney_platformer_verify PASS S1-S5, no blockers/correction. Reviewed design ecf239c preceded
+model e35b9bd and desktop integration eb595a8. FreshserialRelease Hosting31/Loop159/Desktop38/
+TwoD10/Platformer6/Adventure13/Rpg20 =277/277PASS. Fresh RPG build0warnings/errors.
+Fresh RpgNativeSmoke/AdventureNativeSmoke/TurnExplorerSmokePASS; newRpg proves all3outcomes,
+exactHP/turn/resume/retry/one-shot/sourcePNG/menu/result/framebuffer/4leases/cleanclose and
+7productionCLIcases0/1/2. Other13baseline nativeharnesses not freshly rerun: previous accepted
+proof retained on unchangedprotectedpaths, not claimed as a freshall16run. Requiredfailures:none.
+
+All10original assetmanifest/baseline/candidate/Gitblobhashes identical; engine/oldgames/oldtests/
+config/tooling unchanged. Independent public-only boundary and actualcapture inspectionPASS.
+Fresh gitarchive scratch294sourcefiles initial/finaldigest
+036e903f09df7a56dc53dca160570e83bf57a3c305671446ec756c83a4b4bf2a identical;
+no.git/.codegraph/bin/obj/.vs copied. Scratch:
+C:/Users/Usuario/AppData/Local/Temp/MicroEngine-RPG1-verify-76213064edb44986b4c3b180abc52333.
+Committedcamp/battle/Victory captures match independentfreshpixels/hashes:
+c401d7c80ae7388a02035da60d4b94cd7af68974e9de9b78bc03fd8d109aab0a;
+053f65038a51a16a1679d5f2af1f5cb3320fee40967b9914ad609edf564f3c7b;
+319e70a7c2803affdd9b54ab5eb639ac7505bc66db061f49ad7d5904ba91e286.
+
+Parent final currentnative -NoBuild/CLI7 and originalassethash spotcheckPASS. Root accepts
+objective RPG1/ME066 only and agrees with independent localmain maturity recommendation:
+bounded rollback, reviewedspec, no protectedsourcechanges, complete requiredproof.
+Latest owner permits localmain integration without furtherordinaryapproval; no remote push,
+product/fullH3 acceptance or deferredtile/visualtool authority inferred. RDD remains explicitlyoff.
+No independentreadytask beyond newplayable subjectivegate; do not add more RPG features by analogy.
+
+![Battle](battle.png)

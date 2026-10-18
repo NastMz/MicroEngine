@@ -92,3 +92,5 @@ Parent spotcheck, one bounded correction/recheck if blockers, no invented proof.
 Objective technical acceptance delegated; stop at new playable movement/interaction/menu/turn/
 result clarity assessment. Owner tileset evaluation closed, candidate metadata/layers/depth/
 surfaces/tooling remain deferred. No extra H3 scope invented after this finite slice.
+
+RPG1technicalacceptance2026-10-18: independentS1-S5PASS on eb595a8,277managed/3freshnative/assetandprotectedsourceparityPASS, no blockers. Rootobjectiveacceptance only; [finalevidence](../evidence/rpg-1/README.md). No new product/fullH3acceptance inferred.
