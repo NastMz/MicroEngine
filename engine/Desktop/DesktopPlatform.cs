@@ -10,6 +10,14 @@ public sealed class DesktopWindowOptions
     public int Width { get; }
     public int Height { get; }
     public string Title { get; }
+    public int MaxImageDimension { get; } = 256;
+    public int MaxImageResources { get; } = 32;
+    public DesktopWindowOptions(int width, int height, string title, int maxImageDimension, int maxImageResources) : this(width, height, title)
+    {
+        if (maxImageDimension is < 1 or > 8192) throw new ArgumentOutOfRangeException(nameof(maxImageDimension));
+        if (maxImageResources is < 1 or > 256) throw new ArgumentOutOfRangeException(nameof(maxImageResources));
+        MaxImageDimension = maxImageDimension; MaxImageResources = maxImageResources;
+    }
     public DesktopWindowOptions(int width, int height, string title)
     {
         if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
@@ -53,6 +61,8 @@ public sealed partial class DesktopPlatform : IFramePlatform
 {
     private static readonly WindowReservation ProcessReservation = new();
     private readonly IDesktopApi _api;
+    private readonly int _maxImageDimension;
+    private readonly int _maxImageResources;
     private readonly WindowReservation _reservation;
     private readonly int _owner = Environment.CurrentManagedThreadId;
     private readonly ICanvas _canvas;
@@ -65,6 +75,7 @@ public sealed partial class DesktopPlatform : IFramePlatform
     internal DesktopPlatform(DesktopWindowOptions options, IDesktopApi api, WindowReservation reservation)
     {
         ArgumentNullException.ThrowIfNull(options);
+        _maxImageDimension = options.MaxImageDimension; _maxImageResources = options.MaxImageResources;
         (_api, _reservation, _canvas) = (api, reservation, new CanvasView(this));
         _reservation.Take();
         try

@@ -10,8 +10,8 @@ public sealed partial class DesktopPlatform
     {
         CheckDrawing();
         FrameApi.Require(image is not null, "Image data is required.");
-        if (image!.Width > 256 || image.Height > 256 || _images.Count >= 32)
-            throw new NotSupportedException("Desktop supports images up to 256x256 and 32 live image resources.");
+        if (image!.Width > _maxImageDimension || image.Height > _maxImageDimension || _images.Count >= _maxImageResources)
+            throw new NotSupportedException($"Desktop image budget is {_maxImageDimension}x{_maxImageDimension} and {_maxImageResources} live resources.");
         var handle = _api.CreateImage(image)
             ?? throw new InvalidOperationException("Native image creation returned no resource.");
         try
