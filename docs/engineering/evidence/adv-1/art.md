@@ -1,7 +1,6 @@
 # ADV-ART-1 — real adventure art
 
-Current candidate: local `feat/adventure-art`, baseline `0a6e95f`. Technical verification
-in progress; no subjective acceptance, push or main integration. [Contract](../../specs/adventure-art.md).
+Current candidate: local `feat/adventure-art`, baseline `0a6e95f`. Technical verification passed; no subjective acceptance, push or main integration. [Contract](../../specs/adventure-art.md).
 
 ## Resource decision
 
@@ -51,3 +50,27 @@ Raylib solely to read framebuffer evidence; production game contains no native/v
 After technical closure, evaluate only new art readability, directional movement appearance
 and whether walls/gate/objects/passages are clear. Existing controls, puzzle and replay remain
 unchanged. No requirement to rerun tests or accept fullH2/combat/future art. Main remains unchanged.
+
+## Independent technical closure2026-10-18
+
+Frozen implementation892d8ff581355eb4640df89f6b73d78163272706 vs0a6e95f:
+independent kenney_platformer_verify PASS S1-S4, no blockers/correction. Fresh serial
+Release Hosting31/Loop159/Desktop38/TwoD10/Platformer6/Adventure12 =256/256PASS;
+all15nativeharnessesPASS including Adventure actualPNG/originalpixel2x/gateRGB/HUD/
+460stepcourse/consumedreset/identicalreplay/shared7imageleases plus7productionCLIcases0/1/2.
+Fresh Adventure build0warnings/errors. All10originalfiles match manifests and committed
+Gitblobs. Visual source inspection confirms down0/right32/up64/left96; selected floor/wall/gate
+cells fully opaque/inbounds. Engine/model/olderconsumers/Program/config/dependencies unchanged.
+
+Isolated gitarchive scratch269files, no.git/.codegraph/buildoutput copied; initial/final
+source digest b8043260ce58c11886d130c360616c5f221cfbe77d1072e4ccc9b309bbedf656 identical.
+Scratch: C:/Users/Usuario/AppData/Local/Temp/MicroEngine-ADVART-verify-dbe44a73cf6343628c37a7148fcef824.
+One setup-only --no-restore build lacked executable assetsfile; local-cache restore and same
+build passed. Earlier reviewer interruption returned no verdict and was not counted as proof.
+Root accepts objective ADV-ART-1/ME061 only. No subjective/fullH2 acceptance, legal clearance,
+external distribution or main integration inferred. RDD remains explicitly disabled.
+
+Captures from actual native rendering, not concept art:
+
+![Courtyard](art-courtyard.png)
+![Shrine](art-shrine.png)

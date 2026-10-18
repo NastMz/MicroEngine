@@ -597,6 +597,8 @@ ADV-1 technical closure2026-10-18: independent kenney_platformer_verify PASS S1-
 
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
-| ME-061 | licensed adventure presentation | P1 | in-review | ME-060; owner art request | [ADV-ART-1](specs/adventure-art.md) |
+| ME-061 | licensed adventure presentation | P1 | completed | ME-060; owner art request | [ADV-ART-1](specs/adventure-art.md) |
 
 Claimed root on feat/adventure-art baseline0a6e95f. Allowed surfaces AdventurePresentation, its assets, Adventure presentation/native checks, targeted engineering evidence/docs and odd/tasks/adventure-art.md; no engine/AdventureModel/oldconsumer/config edits. ArMM1998 author CC0 publication/actual ZIP verified; selected original three sheets + existing four Kenney icons, source notice/hash manifest. Independent read-only asset assessment considered all three owner choices; root chooses viable preferred atlas, no tree draw regions. New expectations RED3/3 then GREEN12/12; native course460/replay/sevenimages/actualPNG2x/gateRGB/HUD/CLI7casesPASS. Independent final verification pending; no new subjective acceptance or main/push. Prior acceptance criteria and model tests unchanged. Memory mirror pending unavailable authoritative identity.
+
+ME061 objectiveclosure: independent kenney_platformer_verify PASS S1-S4 on892d8ff, no blockers/correction;256/256managed,15/15native,7productionCLIcasesPASS;10assetmanifest/GitblobhashesPASS,269sourcefilefrozenparityPASS. Actualsprite directions/2x/opaquetiles verified; protected engine/model/oldconsumers/config/dependencies unchanged. [Finalevidence](evidence/adv-1/art.md). Roottechnicalacceptance only; newart/navigation/interaction subjectiveevaluation remains owner-owned, fullH2unaccepted. No independentreadywork beyondthisgate, no speculativecombat/audio/persistence scope. Localonly/main-origin2415072unchanged.

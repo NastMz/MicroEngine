@@ -9,9 +9,9 @@ S3. "No quiero que el Core conozca paquetes concretos ni que se introduzcan depe
 S4. "La incorporación de sprites debe servir también para validar las capacidades generales de carga de recursos, atlas, animaciones, escalado y renderizado 2D cuando sean necesarias." Test actual selected PNGs, source bounds, directional frames and scale, movement/reset clock, cache/lifetime, unchanged public gameplay course and CLI. Independent review before technical closure; subjective presentation remains owner-owned.
 
 ## Tasks
-- T1 / S1-S4 / inline / completed / asset assessment and bounded presentation contract; no meaningful runnable RED for provenance docs.
-- T2 / S2-S4 / inline / completed / new presentation expectations RED then implementation GREEN and native proof.
-- T3 / S1-S4 / independent verification / in progress / fresh isolated verification, evidence and local closure commit.
+- T1 / S1-S4 / inline / completed / 892d8ff / asset assessment and bounded presentation contract; no meaningful runnable RED for provenance docs.
+- T2 / S2-S4 / inline / completed / 892d8ff / new presentation expectations RED then implementation GREEN and native proof.
+- T3 / S1-S4 / independent verification / completed / frozen892d8ff PASS / fresh isolated verification, evidence and local closure commit.
 
 ## Log
 L1. Owner request (verbatim, including truncated final word):
@@ -32,3 +32,5 @@ Mantén
 L2. Mapping delegated to existing read-only explorer after bounded evidence budget; parent writes inline (no writer trigger). Memory mirror pending: authoritative runtime identity unavailable, no memory calls permitted. Preserve unrelated .gitignore/.codegraph. RDD remains previously explicitly disabled; ordinary independent verification retained. No new architecture/API decision: existing ADR0004/0012 apply.
 
 L3. New presentation tests RED3/3 against baseline; GREEN12/12 after changes. Native route460/reset/replay/sevenimages/HUD/gate sourceRGB/2x original character pixel comparison and7productionCLIcasesPASS. Asset hashesPASS. Native outdatedsixmarker and transparentcandidategrass failed honestly before corrections. Independent final verification pending. No meaningful RED for license documentation. Rollback is presentation/assets/its checks+linked docs only, no engine/model changes. RDD explicitly globaloff confirmed elevated; no native RDD started.
+
+L4. Independent verification resumed after interrupted actor returned no verdict. PASS S1-S4,256/256managed,15/15native,7CLIcases,all10original/Gitblobhashes,269frozenfileparity SHA b8043260ce58c11886d130c360616c5f221cfbe77d1072e4ccc9b309bbedf656. No blockers/correction. Exactdirectionrows visuallyconfirmed, no protectedsourcechange. Roottechnicalacceptance only; ownernewpresentationgate remains. Evidence art.md. Localonly; memorymirrorstillpending runtimeidentityunavailable. Risk: none (consumer-only presentation, no engine/publiccontract/dependency changes).
