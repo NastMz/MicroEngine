@@ -38,3 +38,5 @@ Under [autonomy](../autonomy.md), agents may accept/supersede technical ADRs aft
 - [ADR-0011 — Compatible durable turn completion](0011-compatible-turn-outcome.md): accepted after independent TURN-2 design review.
 
 - [ADR-0010 — Optional image source regions](0010-optional-image-regions.md): accepted after independent SPR-1 design review; owner positively evaluated sprite presentation.
+
+- [ADR-0012 — Optional reusable 2D utilities and real-art platformer](0012-playable-platformer-infrastructure.md): accepted after independent design review2026-10-18.

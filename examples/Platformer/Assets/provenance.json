@@ -1,0 +1,57 @@
+{
+  "title": "Kenney New Platformer Pack",
+  "version": "1.1",
+  "retrieved": "2026-10-18",
+  "page": "https://kenney.nl/assets/new-platformer-pack",
+  "download": "https://kenney.nl/media/pages/assets/new-platformer-pack/1896103897-1764756702/kenney_new-platformer-pack-1.1.zip",
+  "archive_sha256": "553b907f3f0e505ab65f56f245ccaff3123c8fe3f3a0dfce9373b996bfc18cc2",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "files": [
+    {
+      "source": "License.txt",
+      "file": "License.txt",
+      "sha256": "f0bc5a99a4710f75a2d507e2ab153025af203d9a6b5a698df737a47684316077"
+    },
+    {
+      "source": "Spritesheets/spritesheet-characters-default.png",
+      "file": "spritesheet-characters-default.png",
+      "sha256": "f3d060ab294c262d51a8033074d1cd799506b7c536c941b4109ec35def178d3e"
+    },
+    {
+      "source": "Spritesheets/spritesheet-characters-default.xml",
+      "file": "spritesheet-characters-default.xml",
+      "sha256": "e7817c1d6777b27dbb807d73159cc4642d11725359b59e618d94616ca05ee556"
+    },
+    {
+      "source": "Sprites/Backgrounds/Default/background_color_hills.png",
+      "file": "background_color_hills.png",
+      "sha256": "4690d86430aae4b22f212173414213dca16637f1748a7fb7c75a21c5cf6cc4e4"
+    },
+    {
+      "source": "Sprites/Tiles/Default/terrain_grass_block_top.png",
+      "file": "terrain_grass_block_top.png",
+      "sha256": "4eae0c24b3cac19c77025c789d9b6fcb9c1a98cdffe2a8375b32c86ebfcbdcc6"
+    },
+    {
+      "source": "Sprites/Tiles/Default/terrain_grass_block_center.png",
+      "file": "terrain_grass_block_center.png",
+      "sha256": "5b8f08b5a557ce0600ae48f6702b0f3ec799484083faeca259cb7ef181ecc03b"
+    },
+    {
+      "source": "Sprites/Tiles/Default/coin_gold.png",
+      "file": "coin_gold.png",
+      "sha256": "edc38726153392a10c0ddd73a72aeef91bf41baf9b697fd334eb43f9ed12b56c"
+    },
+    {
+      "source": "Sprites/Tiles/Default/flag_green_a.png",
+      "file": "flag_green_a.png",
+      "sha256": "dd0fb1c58ea696999ff5371257c627fd2c1a48ffdd907a9b96319be075d0aeb9"
+    },
+    {
+      "source": "Sprites/Tiles/Default/spikes.png",
+      "file": "spikes.png",
+      "sha256": "3aac88c1bde80bee1bdd0a87297beba45bf7ba5659450f69eb5473826e377221"
+    }
+  ]
+}
