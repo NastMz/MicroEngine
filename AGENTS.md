@@ -17,6 +17,10 @@ Technical autonomy by default, human intervention by exception (owner2026-10-15)
 
 Apply [ADR-0004](docs/engineering/decisions/0004-replaceable-infrastructure.md)/NFR-005 in every subsequent horizon: implementation-independent foundations, public replaceable providers, minimal cohesive opt-in contracts, heterogeneous optional capabilities and explicit target assumptions. Future Windows/Linux/macOS/browser/WebAssembly possibilities are not current support/export commitments. No speculative abstractions/backends or changed functional acceptance.
 
+Apply NFR-006/[ADR-0012](docs/engineering/decisions/0012-playable-platformer-infrastructure.md) as a permanent graphical-style review criterion: no artificial Core sprite-size/resolution/sampling/art-style restriction; explicit demonstrated provider budgets, no speculative renderer.
+
+KPF-1 owner restriction2026-10-18: local commits only; no push or main integration without new explicit authorization. Previous standing positive-feedback delivery rules do not override this horizon restriction.
+
 ## Working procedure
 
 1. Read the manifesto, requirements, accepted decisions, roadmap, backlog, execution

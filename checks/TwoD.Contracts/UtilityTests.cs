@@ -32,6 +32,12 @@ public class UtilityTests
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new StaticWorld([new(0, 0, -1, 2)]));
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new StaticWorld([]).Move(new(0, 0, 10, 10), float.MaxValue, 0));
     }
+    [TestMethod] public void WorldRejectsMutuallyOverlappingSolidsButAcceptsTouching()
+    {
+        Assert.ThrowsExactly<ArgumentException>(() => new StaticWorld([new(0,0,10,10),new(5,0,10,10)]));
+        var touching = new StaticWorld([new(0,0,10,10),new(10,0,10,10)]);
+        Assert.AreEqual(new Rect(20,0,5,5),touching.Move(new(20,0,5,5),0,0).Bounds);
+    }
     [TestMethod] public void NegativeSweepAndCeilingContactRetainBodySize()
     {
         var world = new StaticWorld([new(0, 0, 10, 100), new(10, 0, 100, 10)]);

@@ -1,3 +1,4 @@
+<!-- Current KPF-1 owner restriction2026-10-18: local commits allowed; no remote publication/main integration without new explicit authorization. This supersedes earlier standing delivery permission for this horizon only. -->
 # Technical autonomy policy
 
 Status: active, owner delegation2026-10-15. Supersedes narrower approval rules below; product manifesto unchanged.

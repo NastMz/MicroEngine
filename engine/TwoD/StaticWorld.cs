@@ -12,6 +12,9 @@ public sealed class StaticWorld
         ArgumentNullException.ThrowIfNull(solids);
         _solids = solids.ToArray();
         foreach (var solid in _solids) Validate(solid);
+        for (int i = 0; i < _solids.Length; i++)
+        for (int j = i + 1; j < _solids.Length; j++)
+            if (Intersects(_solids[i], _solids[j])) throw new ArgumentException("Static solids must not overlap.", nameof(solids));
     }
     public static bool Overlaps(Rect a, Rect b)
     {

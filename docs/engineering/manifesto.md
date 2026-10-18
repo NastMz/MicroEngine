@@ -45,3 +45,7 @@ rewriting is a goal by itself.
 
 See [requirements](requirements.md), [ADR-0001](decisions/0001-greenfield-direction.md)
 and the [roadmap](roadmap.md). Earlier agent recommendations remain proposals only.
+
+## Artistic-style independence (owner directive,2026-10-18)
+
+MicroEngine must leave room for pixel art, high-resolution sprites/illustrations, spritesheets/animation and programmatic primitives, with ordinary ordered layers/backgrounds and later optional parallax. Source dimensions and art style are not Core genre/scale rules. Assess real sampling/scaling/resolution constraints in every horizon; adapter budgets/capabilities must be explicit rather than universal promises. This does not require speculative advanced rendering or immediate support for every import/filter/effect. NFR-006/ADR-0012 apply this directive to KPF-1.
