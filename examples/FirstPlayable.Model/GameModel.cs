@@ -10,15 +10,20 @@ public sealed class GameModel
     public float Y { get; private set; } = 268;
     public float VerticalVelocity { get; private set; }
     public bool Grounded { get; private set; } = true;
+    public bool GoalEnabled { get; }
+    public bool Completed { get; private set; }
+    public static Rect Goal => new(580, 260, 40, 40);
 
     public GameModel() : this(new PlatformerOptions(TimeSpan.Zero)) { }
     public IReadOnlyList<StaticObstacle> Obstacles { get; }
     public GameModel(PlatformerOptions options) : this(options, []) { }
-    public GameModel(PlatformerOptions options, IEnumerable<StaticObstacle> obstacles)
+    public GameModel(PlatformerOptions options, IEnumerable<StaticObstacle> obstacles) : this(options, obstacles, false) { }
+    public GameModel(PlatformerOptions options, IEnumerable<StaticObstacle> obstacles, bool goalEnabled)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(obstacles);
         _jumpBufferWindowTicks = options.JumpBufferWindow.Ticks;
+        GoalEnabled = goalEnabled;
         var copy = new List<StaticObstacle>();
         foreach (var solid in obstacles)
         {
@@ -36,6 +41,15 @@ public sealed class GameModel
     {
         ArgumentNullException.ThrowIfNull(input);
         if (delta <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(delta));
+        if (Completed)
+        {
+            if (input.Pressed.Contains("jump"))
+            {
+                X = 40; Y = 268; VerticalVelocity = 0; Grounded = true; Completed = false;
+                ClearJumpBuffer();
+            }
+            return; // Reset consumes this input; it cannot also move or launch the player.
+        }
         // Age only previous intent. Inputs and contact in this update share one discrete boundary.
         if (_pendingJumpTicks >= 0)
             _pendingJumpTicks = delta.Ticks > _pendingJumpTicks ? -1 : _pendingJumpTicks - delta.Ticks;
@@ -87,6 +101,13 @@ public sealed class GameModel
                 // Consume at contact, without integrating twice or granting airborne eligibility.
                 if (Grounded && _pendingJumpTicks >= 0) LaunchJump();
             }
+        }
+        // Finish only after contact and buffered launch resolution, never while airborne.
+        if (GoalEnabled && Grounded && Y == 268 && Overlap(X, 24, Goal.X, Goal.Width) && Overlap(Y, 32, Goal.Y, Goal.Height))
+        {
+            Completed = true;
+            VerticalVelocity = 0;
+            ClearJumpBuffer();
         }
     }
 
