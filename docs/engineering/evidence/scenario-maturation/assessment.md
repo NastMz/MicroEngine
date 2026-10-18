@@ -58,3 +58,13 @@ Read-only independent cross_scenario_map source assessment agrees; no source tes
 this passive assessment. Baseline278 managed/three native art proofs retained. LAUNCH-1 will
 record new RED/GREEN and native/CLI verification separately. Acceptance does not imply new
 platform support or acceptance of absent future capabilities.
+
+## LAUNCH-1 implementation evidence
+Root observed five contract tests RED against an unimplemented stub, then five GREEN on the
+actual linked parser. The same source is linked by all three executables, with usage strings,
+loop/report/startup/cleanup and gameplay unchanged. No engine/dependency/model/asset changes.
+Own verification delegated to cross_scenario_map for long suites:283/283 across eight projects,
+three unchanged native scripts PASS, zero build warnings/errors. Initial sandbox VSTest failed
+to connect to testhost; the same check outside sandbox succeeded. No required failure remains.
+Independent frozen-commit final verification is still pending. No new subjective gate is needed
+for identical CLI behavior. Broader runner/GUI extraction remains unprepared, not next by inertia.

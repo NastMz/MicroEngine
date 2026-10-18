@@ -655,5 +655,5 @@ Owner accepts the bounded RPG functional/visual scenario at5d768bf/4453e85; [acc
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
 | ME-069 | acceptance and transverse assessment | P1 | completed | ME-068; owner acceptance | [Assessment](evidence/scenario-maturation/assessment.md) |
-| ME-070 | compatible shared example launch parsing | P1 | ready | ME-069; independent LAUNCH-1 review | [LAUNCH-1](specs/example-launch.md) |
+| ME-070 | compatible shared example launch parsing | P1 | in-review | ME-069; independent LAUNCH-1 review | [LAUNCH-1](specs/example-launch.md) |
 Only proven parser duplication is executable scope; wider runner/UI/maps/save/audio remain unprepared.

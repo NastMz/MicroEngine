@@ -10,8 +10,8 @@ S4. "Utiliza los resultados para proponer el siguiente horizonte de maduración,
 S5. "Continúa autónomamente con las tareas técnicamente justificadas. Reserva mi intervención para una nueva experiencia jugable significativa o una decisión estratégica genuina." Execute reviewed minimal shared launch parsing after tests; preserve all game behavior, CLI grammar/output/exits and engine bytes.
 
 ## Tasks
-- T1 / S1-S4 / inline with read-only mapping / in progress / acceptance, cross-scenario assessment and next horizon packet.
-- T2 / S4-S5 / inline / pending / LAUNCH-1 extraction after independent scope review, RED/GREEN tests and three unchanged native regressions.
+- T1 / S1-S4 / inline with read-only mapping / completed / 47cf395 / acceptance, cross-scenario assessment and next horizon packet.
+- T2 / S4-S5 / inline / in-review / LAUNCH-1 extraction after independent scope review, RED/GREEN tests and three unchanged native regressions.
 - T3 / S1-S5 / independent verification / pending / protected parity, final evidence and technical closure.
 
 ## Log
@@ -19,3 +19,5 @@ L1. Owner2026-10-18: "He completado la validación manual del escenario RPG de H
 L2. Root inspected clean scoped baseline; unrelated.gitignore and .codegraph preserved. RDDoff. Engram mirror pending: authoritative runtime identity unavailable; no memory calls. Mapping trigger delegated read-only cross_scenario_map, source-supported handoff. Parent spotcheck three Program files confirms exact parser/report duplication; CodeGraph returned no matching top-level Program source, focused filesystem fallback used. No new renderer/game experience requested or needed.
 
 L3. Independent cross_scenario_map preimplementation PASS, no blockers; shared source linked identically in each exe/test, keep per-game Usage. Root approves LAUNCH-1 under delegation, ME069 completed/ME070ready. Scope intentionally narrower than generic runner: no report/ownership changes. Documentation-only checks: no meaningful runnable RED, source-based review instead.
+
+L4. T1 committed47cf395. T2 inline rationale: one understood extraction, no Writer trigger; risk item3 shared CLI semantics. New parser stub runnableRED5/5 thenGREEN5/5. Delegated long checks cross_scenario_map283/283 and all3nativePASS, initial sandbox testhost connection failure resolved with same required test outside sandbox. Native scripts unchanged. ME070in-review; frozen independent verifier before completion. No full runner/UI work added.

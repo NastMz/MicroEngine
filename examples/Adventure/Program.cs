@@ -3,13 +3,12 @@ using Adventure.Model;
 using MicroEngine.Desktop;
 using MicroEngine.Hosting;
 using MicroEngine.Loop;
-int limit=0;bool fail=false;
-for(int i=0;i<args.Length;i++)
+if (!MicroEngine.Examples.LaunchOptions.TryParse(args, out var launch))
 {
-    if(args[i]=="--smoke"&&limit==0&&i+1<args.Length&&int.TryParse(args[++i],out int n)&&n is >=1 and <=600)limit=n;
-    else if(args[i]=="--fail-update"&&!fail)fail=true;
-    else { Console.Error.WriteLine("Usage: Adventure [--smoke N(1..600)] [--fail-update]");return 2; }
+    Console.Error.WriteLine("Usage: Adventure [--smoke N(1..600)] [--fail-update]");
+    return 2;
 }
+int limit = launch.FrameLimit; bool fail = launch.FailUpdate;
 try
 {
     string assets=Path.Combine(AppContext.BaseDirectory,"Assets");
