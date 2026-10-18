@@ -15,7 +15,7 @@ independent ready work. No background scheduler is installed; H0 is implemented,
 | --- | --- | --- | --- | --- |
 | H0 | External application starts/runs/stops safely | CAP-001 headless slice only | Lifecycle/failure traces, runnable public consumer and31 tests; explicit owner acceptance | Verified / owner accepted2026-10-15 |
 | H1 | Simple Mario-inspired platformer | CAP-002/003/004/005/006/007/008 | Movement, obstacles, jump and animation in an external game; game owns jump rules; manual playability | First bounded playable scenario accepted2026-10-18 |
-| H2 | Zelda-inspired top-down adventure | CAP-009/010 plus refined presentation/input | Exploration and transitions without engine-owned combat/progression; manual interaction | Candidate |
+| H2 | Zelda-inspired top-down adventure | CAP-009/010 plus refined presentation/input | Exploration and transitions without engine-owned combat/progression; manual interaction | ADV-1 technically verified; subjective pending |
 | H3 | Pokemon-inspired RPG | CAP-012/013 plus validated shared capabilities | Exploration, menus and turn interaction; game owns battle/turn rules; manual flow | Candidate |
 | H4 | Metroidvania / modern platformer stress | Needs discovered from earlier milestones | Greater content/state/movement demands with evidence, not presumed Core modules | Deferred candidate |
 
@@ -79,3 +79,5 @@ Owner selected platforms→Mario-inspired playable validation before later Zelda
 ## Accepted platformer and selected topdown horizon2026-10-18
 
 Owner normal/death-reset/win/visual/control feedback plus public-boundary audit closes the first bounded H1/C001 Meadow Run scenario. No menu/audio/polish expansion or exhaustive CAP completion. [ADV1](specs/adventure.md), ME059/060, selects only two-area topdown movement, lever/gate, key/altar and replay using unchanged TwoD/Loop/Desktop. No new engine capability, Zelda module, combat/persistence/inventory framework or generic scene manager. Continue ready scoped work to new subjective navigation/interaction/flow gate; no remote/main delivery inferred.
+
+ADV1 closure: ME058/059/060 complete after independent255tests/15native/publicreuse/hashPASS, engine unchanged. New subjective two-area navigation/interaction/flow gate ready; first Meadow Run scenario accepted/closed, broader futurecapacities unchanged. Do not refine more combat/state/rendering/Pokemon work before the new playable evidence identifies a need; no independent ready task now.

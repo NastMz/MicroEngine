@@ -10,7 +10,7 @@ This is the active context for the greenfield C#/.NET 2D framework.
 3. Check [roadmap](roadmap.md), [contributing](contributing.md) and [document policy](document-policy.md).
 4. Consult [history](history.md) for the retired prototype.
 
-## Current state — 2026-10-17
+## Current state — 2026-10-18
 
 The prototype is retired and preserved at `legacy-final`. These bounded increments are
 implemented and technically verified; [current state](current-state.md) records exact
@@ -20,7 +20,7 @@ revisions, evidence and delivery boundaries.
 | --- | --- | --- |
 | H0 | Permanent headless lifecycle; owner accepted | [Lifecycle](specs/lifecycle.md), [H0 packet](milestones/H0.md) |
 | H1/C-001 | Meadow Run first real-art playable scenario accepted/closed; historical tracers retained | [Scenario acceptance](evidence/kpf-1/acceptance.md), [H1 packet](milestones/H1.md) |
-| H2 tracers | Separate two-room exploration and marker interaction | [H2 packet](milestones/H2.md) |
+| H2 / ADV-1 | Courtyard Key topdown lever/gate/key/altar/replay; engine unchanged | [Run/evidence](evidence/adv-1/README.md), [H2 packet](milestones/H2.md) |
 | H3 tracers | Menu/turn flow, optional in-window labels; versioned consumer checkpoints, optional create-new/read adapter and opt-in process startup/exit integration | [H3 packet](milestones/H3.md), [NL-1](specs/optional-labels.md), [CP-1](specs/consumer-checkpoint.md), [CF-1](specs/checkpoint-files.md), [CL-1](specs/checkpoint-launch.md) |
 
 CL-1 evidence includes169 managed regressions, the prior native harnesses and a targeted
