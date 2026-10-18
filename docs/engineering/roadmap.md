@@ -75,3 +75,7 @@ Next-horizon assessment2026-10-17: all prepared functional tasks are complete; M
 ## Selected platformer horizon2026-10-18
 
 Owner selected platforms→Mario-inspired playable validation before later Zelda/Pokemon. [KPF-1](specs/kenney-platformer.md), ME055/056/057, is only this next executable horizon: one real Kenney CC0 level, coins/hazard/platform progression/finish/replay. ADR0012 classifies optional general utilities versus game rules. No speculative distant task expansion; new actual visual/control feedback gates subsequent gameplay refinement. This owner request resolves the earlier unselected-objective stop. No remote/main authorization for this horizon.
+
+## Accepted platformer and selected topdown horizon2026-10-18
+
+Owner normal/death-reset/win/visual/control feedback plus public-boundary audit closes the first bounded H1/C001 Meadow Run scenario. No menu/audio/polish expansion or exhaustive CAP completion. [ADV1](specs/adventure.md), ME059/060, selects only two-area topdown movement, lever/gate, key/altar and replay using unchanged TwoD/Loop/Desktop. No new engine capability, Zelda module, combat/persistence/inventory framework or generic scene manager. Continue ready scoped work to new subjective navigation/interaction/flow gate; no remote/main delivery inferred.

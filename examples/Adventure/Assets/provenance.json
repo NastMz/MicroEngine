@@ -1,0 +1,47 @@
+{
+  "title": "Kenney New Platformer Pack",
+  "version": "1.1",
+  "source": "https://kenney.nl/assets/new-platformer-pack",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "selected": "2026-10-18",
+  "archive_sha256": "553b907f3f0e505ab65f56f245ccaff3123c8fe3f3a0dfce9373b996bfc18cc2",
+  "origin": "same locally retained archive verified for Meadow Run; no new download",
+  "files": [
+    {
+      "source": "License.txt",
+      "file": "License.txt",
+      "sha256": "f0bc5a99a4710f75a2d507e2ab153025af203d9a6b5a698df737a47684316077"
+    },
+    {
+      "source": "Spritesheets/spritesheet-characters-default.png",
+      "file": "spritesheet-characters-default.png",
+      "sha256": "f3d060ab294c262d51a8033074d1cd799506b7c536c941b4109ec35def178d3e"
+    },
+    {
+      "source": "Sprites/Tiles/Default/terrain_grass_block_center.png",
+      "file": "terrain_grass_block_center.png",
+      "sha256": "5b8f08b5a557ce0600ae48f6702b0f3ec799484083faeca259cb7ef181ecc03b"
+    },
+    {
+      "source": "Sprites/Tiles/Default/lever_left.png",
+      "file": "lever_left.png",
+      "sha256": "0f2b18eb4d9262280ab2bc0db710a431cbe39131ee1df6480c1cb67ab63c0413"
+    },
+    {
+      "source": "Sprites/Tiles/Default/lever_right.png",
+      "file": "lever_right.png",
+      "sha256": "00f2a09adf164792aa8981b96cc35b473b473f2a686af3bcba1a43f02bad964c"
+    },
+    {
+      "source": "Sprites/Tiles/Default/key_yellow.png",
+      "file": "key_yellow.png",
+      "sha256": "ba64b3f3149d440814e371ea1c16eb924b33983e75faefcd2bd3f216c74866a1"
+    },
+    {
+      "source": "Sprites/Tiles/Default/gem_blue.png",
+      "file": "gem_blue.png",
+      "sha256": "3c17e659a6db0a9e44a6eaf6ad3fd0856bed5410d229787e52499749d4d0ed39"
+    }
+  ]
+}

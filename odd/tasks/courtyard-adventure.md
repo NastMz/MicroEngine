@@ -9,9 +9,9 @@ S3: "El objetivo será comprobar cuánto podemos reutilizar de MicroEngine en un
 S4: "Mantén la autonomía técnica acordada, las revisiones independientes y la documentación actualizada. Solicita mi intervención únicamente cuando exista una nueva experiencia jugable que requiera evaluación subjetiva o un bloqueo estratégico real." Implement ready scope under existing technical delegation, automate tests/native verification, stop at new playable subjective gate. Preserve unrelated.gitignore/.codegraph, no remote/main operations or expanded combat/persistence/menu/audio scope.
 
 ## Tasks
-T1 S1 inline completed pendingcommit boundary audit/acceptance record; independent kenney_platformer_verify PASS on821450d.
-T2 S2-S4 inline in-progress ADV-1 detailed content/contract and independent design review.
-T3 S2-S4 inline pending independent adventure/model/renderer/native evidence and whole-feature review.
+T1 S1 inline completed6d41050 boundary audit/acceptance record; independent kenney_platformer_verify PASS on821450d.
+T2 S2-S4 inline completed ADV-1 detailed content/contract and independent design review.
+T3 S2-S4 inline in-progress independent adventure/model/renderer/native evidence and whole-feature review.
 
 ## Log
 L1 Owner request verbatim:
@@ -26,3 +26,5 @@ El objetivo será comprobar cuánto podemos reutilizar de MicroEngine en un jueg
 Mantén la autonomía técnica acordada, las revisiones independientes y la documentación actualizada. Solicita mi intervención únicamente cuando exista una nueva experiencia jugable que requiera evaluación subjetiva o un bloqueo estratégico real.
 
 L2 Read-only platformer auditPASS: no vendor/private/reflection/friend/PInvoke access in game; generic utilities free of Meadow content/rules. Current244test/14native proof remains applicable unchanged. Independent mapping identifies no new engine gap for two-room topdown/key/lever/shrine game. Reuse TwoD/Loop/Desktop unchanged, game content/transitions only; no generic scene framework needed.
+
+L3 Independent ADV1 designPASS/no blockers; root approves before source. Adopt resolved-displacement animation and retained immutable gate-view checks. No engine change demonstrated; no new engine module/API or ADR added. Same verified local Kenneyarchive used for seven original assets (sixPNG/license), hashes/provenance recorded, no remote transfer.
