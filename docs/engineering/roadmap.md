@@ -93,3 +93,9 @@ Owner asks to retain the functional scenario and learn from its visual limitatio
 Owner closes tileset evaluation and selects a minimal H3 technical RPG. [RPG-1](specs/rpg-encounter.md)/ADR0013 approve two-room public Explorer reuse, explicit encounter, game-owned Attack/Guard/Retreat, victory/defeat/retreat result and exploration resumption. ME064/065/066 are the only executable horizon; no full Pokemon, persistence extension, new engine UI/battle/world/map/depth system or tooling implied. Independent designPASS; technical implementation/proof and new subjective flow gate follow. Current owner additionally permits mature localmain integration without routine approval; product acceptance remains separate.
 
 RPG-ART-1 now precedes replacement presentation: [candidate/selection evidence](evidence/rpg-1/assets.md), [bounded content contract](specs/rpg-art.md), ME067/068. It preserves the already working RPG1 encounter and selects matchedTinyTown/Dungeon+retainedanimatedhero, not sixstyles or new mechanics. Future interiors/NPCs/status/effects are resource inventory only, not implementation scope. No semanticmap/depth/editor/tools work reopened.
+
+## Post-scenario maturation — 2026-10-18
+H3 bounded RPG is owner-accepted functionally and visually: [record](evidence/rpg-1/acceptance.md).
+[Transverse assessment](evidence/scenario-maturation/assessment.md) separates actual reuse,
+consumer policy and demonstrated duplication. Next executable horizon is [LAUNCH-1](specs/example-launch.md),
+example-only compatible parsing; no genre modules or speculative completeness features.

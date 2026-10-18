@@ -649,3 +649,11 @@ RPG1localmain delivery2026-10-18: ownerlatest mature-integration authority, inde
 | ME-068 | bounded public-only art integration | P1 | completed | ME-067 | [RPG-ART-1](specs/rpg-art.md) |
 
 Rootbaseline1f38a29 on feat/rpg-art. ExistingfunctionalRPG1 preserved, graphicreplacement onlyafterselection. All6owner candidates inspected; correctedpacked/unpackedstride, Urbanactualarchive availability and license-vs-release facts. Independent checkpoint_design_review PASS, rootapprovesRPG-ART1 beforepresentation. ExactTinyTown/Dungeonpackedatlases+existinganimatedArMMhero selected; sevenoriginalPNG/license/metadatafiles plushashmanifest, no staticfakewalk. Selectedpackedstride16 matchesall132individualoriginaltiles ineachpack. VerifyRpgAssetspositivePASS; all originalattributes preservebytes. AllowedME068surfaces RpgPresentation/ownAssets/contentcsproj/Programintrotextonly, existingRpgpresentation/nativechecks/newassetverification andlinkedengineeringdocs/log. No engine/RpgSession/oldgame/oldtests/SDK/dependency/mechanic changes, no maptools/depth/status/VFXexpansion. Newbundle3images replaces4oldimages, strictallimages/lifetimes/sourceclock/route checks retained. Independent finalproofpending; no product/fullH3acceptance. Localcommits/maturelocalmain permitted; no push. Memorymirrorpending identityunavailable, RDDoff unchanged.
+
+## Accepted H3 and cross-scenario maturation — 2026-10-18
+Owner accepts the bounded RPG functional/visual scenario at5d768bf/4453e85; [acceptance](evidence/rpg-1/acceptance.md).
+| ID | Kind | Priority | State | Dependencies | Packet |
+| --- | --- | --- | --- | --- | --- |
+| ME-069 | acceptance and transverse assessment | P1 | completed | ME-068; owner acceptance | [Assessment](evidence/scenario-maturation/assessment.md) |
+| ME-070 | compatible shared example launch parsing | P1 | ready | ME-069; independent LAUNCH-1 review | [LAUNCH-1](specs/example-launch.md) |
+Only proven parser duplication is executable scope; wider runner/UI/maps/save/audio remain unprepared.
