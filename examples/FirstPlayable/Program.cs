@@ -19,21 +19,24 @@ for (var i = 0; i < args.Length; i++)
     }
 }
 
-var game = new GameModel(new PlatformerOptions(TimeSpan.FromMilliseconds(100)), [new StaticObstacle(180, 260, 64, 40)]);
+var game = new GameModel(new PlatformerOptions(TimeSpan.FromMilliseconds(100)), [new StaticObstacle(180, 260, 64, 40)], true);
 var animation = new AvatarAnimation();
 using var avatarImage = new AvatarImage();
 var frames = 0;
 var updates = 0;
 var options = new LoopOptions(TimeSpan.FromSeconds(1d / 60), 5, TimeSpan.FromMilliseconds(250));
-Console.WriteLine("Controls: Left/A, Right/D, Space jump; Escape/window close exits.");
+Console.WriteLine("Controls: Left/A, Right/D, Space jump; reach cyan goal on ground, fresh Space restarts completed run; Escape/window close exits.");
 var report = FrameLoop.Run(() => new ControllerPlatform(new DesktopPlatform(new DesktopWindowOptions(640, 360, "MicroEngine H1.0 — first tracer")), game), options,
     frame =>
     {
         if (failUpdate) throw new ApplicationException("Requested update failure.");
         updates++;
         var oldX = game.X;
+        var wasCompleted = game.Completed;
         game.Update(frame.Delta, frame.Input);
-        animation.Update(frame.Delta, game.X - oldX, game.Grounded);
+        if (wasCompleted && !game.Completed) { animation = new AvatarAnimation(); Console.WriteLine("goal:reset"); }
+        else if (!wasCompleted && game.Completed) { animation.Update(frame.Delta, 0, true); Console.WriteLine("goal:completed"); }
+        else if (!game.Completed) animation.Update(frame.Delta, game.X - oldX, game.Grounded);
     },
     (canvas, frame) =>
     {
@@ -42,6 +45,7 @@ var report = FrameLoop.Run(() => new ControllerPlatform(new DesktopPlatform(new 
         canvas.Fill(new Rect(0, 300, 640, 60), new Rgba(70, 100, 75));
         foreach (var solid in game.Obstacles)
             canvas.Fill(new Rect(solid.X, solid.Y, solid.Width, solid.Height), new Rgba(95, 130, 165));
+        GoalRenderer.Draw(canvas, game);
         AvatarRenderer.Draw(canvas, game.X, game.Y, animation);
         avatarImage.Draw(canvas, game.X, game.Y);
         frames++;

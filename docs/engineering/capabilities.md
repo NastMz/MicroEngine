@@ -54,3 +54,5 @@ MAP-2 candidate: CAP-007/009/010 spatial navigation tested by explicit consumer-
 TURN-2 candidate refines C-003/CAP-012/013: one game-owned deterministic completion, compatible versioned checkpoint outcome and existing optional labels. No engine encounter/battle/progression/storage subsystem. [TURN-2](specs/turn-outcome.md), [ADR-0011](decisions/0011-compatible-turn-outcome.md).
 
 MAP-3 candidate validates C-002/CAP-007/009/010/012 interaction/topology composition through one consumer switch and gate, with shared read-only current blocking views. No engine interaction/gate/world-state/storage registry. [MAP-3](specs/map-switch-gate.md).
+
+GOAL-1 candidate refines C-001 playable-course validation with opt-in consumer goal/completion/reset through existing movement/input/presentation. Default controllers remain unchanged; no engine goal/lives/score/scene/platformer module. [GOAL-1](specs/platformer-goal.md).

@@ -73,3 +73,5 @@ Current bounded horizon: [MAP-2 explicit solid navigation](specs/map-navigation.
 Current horizon: [TURN-2 durable turn completion](specs/turn-outcome.md)/ADR-0011, ME-048/049. MAP-2 is owner-positive/integrated; TURN-2 is a new independently verified technical candidate, not implicit fullH3 acceptance. See backlog for closure status and contributing for playability-only handoff.
 
 Current bounded horizon: [MAP-3 switch-controlled map shortcut](specs/map-switch-gate.md), ME-050/051. TURN-2 is owner-positive/integrated; MAP-3 status/evidence is in backlog. This is consumer-owned topology, not a new engine module or map-persistence contract.
+
+Current bounded horizon: [GOAL-1 platformer course completion and replay](specs/platformer-goal.md), ME-052/053. MAP-3 is owner-positive/integrated; GOAL-1 status/evidence is in backlog. This is optional consumer gameplay, not engine lifecycle/reset or a shared level framework.
