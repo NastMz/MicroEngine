@@ -628,7 +628,9 @@ ME063closure2026-10-18: classification and deferred-validation matrix recorded a
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
 | ME-064 | H3 bounded specification and reuse decision | P1 | completed | ME-063; owner H3 authority | [RPG-1](specs/rpg-encounter.md), [ADR0013](decisions/0013-consumer-rpg-encounter.md) |
-| ME-065 | consumer encounter and public model regressions | P1 | in-progress | ME-064 | [RPG-1](specs/rpg-encounter.md) |
-| ME-066 | desktop encounter integration and independent proof | P1 | pending | ME-065 | [RPG-1](specs/rpg-encounter.md) |
+| ME-065 | consumer encounter and public model regressions | P1 | completed | ME-064 | [RPG-1](specs/rpg-encounter.md) |
+| ME-066 | desktop encounter integration and independent proof | P1 | in-progress | ME-065 | [RPG-1](specs/rpg-encounter.md) |
 
 Owner closes tilesetassessment ME063, accepts conclusions, leaves metadata/layers/depth/surfaces/tooling as deferred candidates; explicitly selects minimal H3 RPG combat integration. Root baselinebb82c0b/feat/rpg-encounter. ME064 independent checkpoint_design_review PASS, root approvesADR0013/RPG1 before source; navigationdirectionadvisory incorporated. ME065claimed: only newRpg.Model/Rpg.Contracts and linkedcontract/log/docs; ME066 aftertestedmodel availability owns newRpg/Rpg.NativeProbe/RpgNativeSmoke andlinkedengineeringevidence. Existingengine/alloldconsumer/config/dependencies/assetbytes protected. No persistenceformat/battleframework/maptools. Root may maturely integrate localmain under latestowner instruction; remote push not inferred. No product/fullH3acceptance; no human technicalapprovalgate. Memorymirrorpending unavailable runtimeidentity, RDDoff unchanged.
+
+ME065construction: publicmodeltests runnableRED13/13 againststubs ->GREEN13/13, thenheld/wrongcaseexplorationregressionadded ->14/14PASS. ExistingExplorer navigation/portal implementation unchanged; combat/result/retry/input boundaries game-owned. ME066readyclaimed ontestedmodelavailability, finalindependent wholefeature gate remains before objectiveclosure. Protectedsourceunchanged.

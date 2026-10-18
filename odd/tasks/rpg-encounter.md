@@ -10,9 +10,9 @@ S4. "Define el alcance mínimo verificable, sus dependencias y criterios de acep
 S5. "No te detengas por aprobaciones técnicas ordinarias. Solicita mi intervención cuando exista una experiencia jugable que requiera evaluación subjetiva o un bloqueo estratégico legítimo. También si consideras algo lo suficientemente maduro para ingresar a min tienes permitido hacerlo sin esperar mi aprobación." Technical decisions/commits delegated; accept objective evidence only, stop at genuinely new playability evaluation. Local main integration permitted by maturity judgment, no product acceptance inferred.
 
 ## Tasks
-- T1 / S1-S5 / inline + independent design review / completed / ME064 specification and ADR before construction.
-- T2 / S2-S4 / inline / in progress / ME065 game model/public behavior tests; model+tests+contract work-unit commit.
-- T3 / S2-S5 / inline + independent verification / pending / ME066 presentation/native proof/docs/technical closure; second implementation slice and passive closure.
+- T1 / S1-S5 / inline + independent design review / completed / ecf239c / ME064 specification and ADR before construction.
+- T2 / S2-S4 / inline / completed / ME065 game model/public behavior tests; model+tests+contract work-unit commit.
+- T3 / S2-S5 / inline + independent verification / in progress / ME066 presentation/native proof/docs/technical closure; second implementation slice and passive closure.
 
 ## Log
 L1. Owner request verbatim:
@@ -30,3 +30,5 @@ No te detengas por aprobaciones técnicas ordinarias. Solicita mi intervención 
 L2. Git baselinebb82c0b, unrelated.gitignore/.codegraph preserved. Read-only reuse map delegated after bounded evidence budget. Parent writes inline (no parallel-writer/context trigger); long regression and independent checks delegated. English technical artifacts. Memory mirror pending unavailable runtime identity; no memory calls permitted. Explicit RDD off retained. No SDK/package/backend changes. Owner closes ME063/F014/F015 evaluation, not an instruction to implement candidate tile systems. Route uses existing auto-chain preference, coherent local slices not file-type commits. Risk expected none for consumer-only behavior; no shared/persisted/API breaks.
 
 L3. Independent checkpoint_design_review PASS before source; navigationpreceding/following advisory recorded. Root approves ADR0013/RPG1 under delegatedauthority. ME064complete/ME065readyclaimed. No runnableRED forspecdocs. Parentinline implementation; independent finalverification atfeatureend. Ownerclosedtilesetreview explicit; all F014/F015 candidates remain deferred.
+
+L4. ModelRunnableRED13/13 againstexplicitstubs thenGREEN13/13; additionalheld/wrongcaseexplorationtestGREEN14/14. No oldmodel/collision/input/codec changes. ME065complete permits ME066independentdesktopwork; finalfeatureverification stillrequired. Modelworkunit includes publictests/routehelper/contractreferences; rollback only newRpgmodel/checks andlinkedstate, no oldgame migration.
