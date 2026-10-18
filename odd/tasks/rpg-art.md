@@ -11,9 +11,9 @@ S5. "Incorpora la selección de assets y su documentación al horizonte H3 antes
 S6. "No amplíes el alcance técnico del RPG simplemente por disponer de más recursos gráficos." / "Continúa autónomamente con el roadmap y las validaciones establecidas. Solicita mi intervención únicamente cuando exista una experiencia jugable que requiera evaluación subjetiva o un bloqueo estratégico legítimo." Keep same two rooms/encounter/three actions/outcomes. No status ailments/VFX rules/new GUI APIs, depth/semantic/map tools or capabilities by inventory. Verify all prior behavior/ownership and request only new subjective presentation assessment.
 
 ## Tasks
-- T1 / S1-S6 / inline + independent design / completed / ME067 evaluation, exact original asset bundle and approved bounded art contract before presentation.
-- T2 / S2-S6 / inline / in progress / ME068 public-only art integration, semantic source regressions RED/GREEN and native evidence.
-- T3 / S1-S6 / independent verification / pending / full model/renderer regressions, original/Git hashes, protected parity and objective closure.
+- T1 / S1-S6 / inline + independent design / completed / 8a2dd0a / ME067 evaluation, exact original asset bundle and approved bounded art contract before presentation.
+- T2 / S2-S6 / inline / completed / 5d768bf / ME068 public-only art integration, semantic source regressions RED/GREEN and native evidence.
+- T3 / S1-S6 / independent verification / completed / full model/renderer regressions, original/Git hashes, protected parity and objective closure.
 
 ## Log
 L1. Owner request verbatim:
@@ -62,3 +62,5 @@ L2. ExistingRPG1 is functional atmain1f38a29, not erased; owner art directive no
 L3. Independent checkpoint_design_review PASS; parentapprovedRPG-ART1 beforepresentation, interiorcell assertionadvisoryadopted. All264packedtiles comparedpixelwise tooriginalindividualPNGs proving16stride; sevenselectedoriginalhashesPASS. TinyTown/Dungeonrelease1.1/1.0 bothCC0-1.0, metadata1gapreferstounpackedonly. Research targetedcorrectionacknowledged. Source/TGA assumption correctedactualMonsterRPG2combatZIPPNG/XML; UrbanZIPactual486individualPNGverified. Sevenoriginals importedimmutable, authoredHeroNOTICE distinctfromoriginallicense. T1rollbackonlynewassetbundle/selectionpacket/validator; no runtimechangeatthiscommit.
 
 L4. T1 selection committed8a2dd0a. T2 new terrain regression RED observed, then21 RPG cases GREEN; native original terrain/hero/monster pixels, three-sheet lifetime and all CLI7/outcomes PASS. Source rules/Core unchanged. Three new art captures preserve historical RPG1 captures. T3 independent frozen-commit verification next; Engram mirror remains pending because runtime identity is unavailable.
+
+L5. Independent kenney_platformer_verify S1-S6 PASS on frozen5d768bf:278/278, three fresh native harnesses, CLI7, original/Git integrity and corruption rejection. Parent native-NoBuild/CLI7/originalhash spotcheckPASS. No blockers, no correction. ME068 technically completed; subjective presentation/fullH3 remains pending. Localmain integration mature under owner authorization. RDDoff; no remote. Required-check failures:none. Other13 native harnesses not freshly rerun. Mirror pending/runtime identity unavailable.

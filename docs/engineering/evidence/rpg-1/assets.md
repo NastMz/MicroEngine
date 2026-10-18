@@ -76,3 +76,23 @@ Independent final verification is pending; subjective presentation acceptance re
 ![Exploration with selected art](art-camp.png)
 ![Battle with selected art](art-battle.png)
 ![Victory with selected art](art-victory.png)
+
+## Independent technical closure
+Frozen implementation5d768bf independently verified against1f38a29: S1-S6 PASS,
+278/278 (Hosting31, Loop159, Desktop38, TwoD10, Platformer6, Adventure13, Rpg21).
+Fresh RPG build zero warnings/errors. RpgNativeSmoke (three outcomes, original pixels,
+three sheets and CLI7), AdventureNativeSmoke and TurnExplorerSmoke PASS. Both asset
+verifiers PASS; isolated corrupt Town rejected exit1. Other13 native harnesses retain
+accepted baseline evidence, not a fresh run. Engine/model/old consumers/config/dependencies
+unchanged. Seven original hashes and Git blobs match provenance. No required failures.
+Fresh archive scratch: MicroEngine-RPGART1-verify-e4b7a68b3e0c43af9ed21e1eab284b16;
+311-file initial/final digest527aa700e08ada51dc441887d23c3fa2c66aea7a63ac5e1ae2c5aa324d58f058.
+Fresh captures exactly match committed art captures. Parent native-NoBuild/CLI7 and asset
+spot checks PASS. Objective RPG-ART-1/ME068 accepted under delegated authority; independent
+review recommends authorized localmain integration. Subjective art/fullH3 acceptance is pending.
+
+Learned: packed/unpacked metadata must be distinguished; authored compound regions resolve
+this composition problem without a Core feature. Sprite inventory is not a roadmap mandate.
+The two Tiny sheets are coherent with each other, while the retained taller ArMM hero is an
+intentional cross-pack compromise preserving real animation; aesthetic coherence needs owner
+experience. Static enemies/status-free UI are current limits, not missing promised mechanics.
