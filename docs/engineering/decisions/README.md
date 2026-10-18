@@ -40,3 +40,5 @@ Under [autonomy](../autonomy.md), agents may accept/supersede technical ADRs aft
 - [ADR-0010 — Optional image source regions](0010-optional-image-regions.md): accepted after independent SPR-1 design review; owner positively evaluated sprite presentation.
 
 - [ADR-0012 — Optional reusable 2D utilities and real-art platformer](0012-playable-platformer-infrastructure.md): accepted after independent design review2026-10-18.
+
+- [ADR-0013 — Consumer-owned RPG encounter](0013-consumer-rpg-encounter.md): accepted2026-10-18 by root after independent design PASS; reuses public Explorer and existing drawing infrastructure, no engine combat API.

@@ -113,3 +113,6 @@ Independent autonomy_policy_verify readback passed after one documentary correct
 Subsequent owner decision2026-10-15: H0 was explicitly accepted against existing evidence/criteria. Earlier pending-acceptance references in dated verification notes are historical, not an active H0 blocker. This does not accept any future milestone.
 
 </details>
+
+## Owner delivery update2026-10-18 — RPG horizon
+The latest owner authorizes local main integration when the agent judges an increment sufficiently mature, without waiting for another ordinary approval. This supersedes the earlier no-main restriction for mature evaluated/verified local work and the current H3 horizon. Require coherent commits, required independent review and objective evidence; never infer subjective product/fullmilestone acceptance. No force/history rewrite, PR/release or new remote publication permission is inferred; current work remains local. The agent may retain an immature candidate on its feature branch with the actual reason recorded.
