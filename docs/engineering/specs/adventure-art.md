@@ -5,7 +5,9 @@ Status: technically accepted2026-10-18 by root after independent S1-S4 PASS on89
 Presentation-only refinement of [ADV-1](adventure.md), not a new gameplay horizon.
 Engine, gameplay, input, collision, rooms, interactions and completion/replay remain unchanged.
 
-## Bounded composition
+Current bounded scene composition is specified by [ADV-ART-2](adventure-composition.md); its content palette supersedes the original floor/wall composition below without changing animation/gameplay.
+
+## Bounded composition (ADV-ART-1 baseline)
 
 Use original ArMM1998 character, Overworld and Inner sheets through existing public
 DesktopImageDecoder, ImageSet, FrameAnimation and IImageRegionCanvas. Content coordinates

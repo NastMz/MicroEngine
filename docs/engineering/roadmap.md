@@ -83,3 +83,5 @@ Owner normal/death-reset/win/visual/control feedback plus public-boundary audit 
 ADV1 closure: ME058/059/060 complete after independent255tests/15native/publicreuse/hashPASS, engine unchanged. New subjective two-area navigation/interaction/flow gate ready; first Meadow Run scenario accepted/closed, broader futurecapacities unchanged. Do not refine more combat/state/rendering/Pokemon work before the new playable evidence identifies a need; no independent ready task now.
 
 ADV-ART-1 is a bounded C-002 presentation refinement, not a new gameplay horizon: [licensed adventure art](specs/adventure-art.md), [evidence](evidence/adv-1/art.md). It reuses existing image/atlas/animation/scaling capabilities without widening H2 or adding Core game/style dependencies. Current technical state remains in backlog.
+
+Owner validated the ADV functional cycle. ADV-ART-2 is one bounded visual composition pass within C-002, not permission to extend this example indefinitely. [Content scope/limits](specs/adventure-composition.md); after technical proof, only new composition needs subjective evaluation. No new combat/persistence/editor horizon inferred.

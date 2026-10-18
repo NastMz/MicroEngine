@@ -76,4 +76,19 @@ namespace Adventure.Contracts;
         game.Update(Course.Step,new(["left"],["jump"]));art.Advance(Course.Step,game);art.Draw(canvas,game);
         Assert.AreEqual(new Rect(0,0,16,32),canvas.Regions[^1]);
     }
+    [TestMethod] public void RoomsHaveDistinctGroundRoutesAndLayeredArchitecturalLandmarks()
+    {
+        using var art=new AdventurePresentation(Sources());var game=new AdventureModel();var canvas=new Canvas();
+        var initial=(game.Body,game.Area,game.LeverOn,game.HasKey,game.Completed);
+        art.Draw(canvas,game);
+        Assert.IsTrue(canvas.Regions.Distinct().Count()>=8,"Courtyard needs varied ground, route and boundary content, not a single repeated tile.");
+        Assert.IsTrue(canvas.Regions.Where(r=>r.Width==16&&r.Height==16).Distinct().Count()>=4,"Clipped edge sizes do not count as terrain variety.");
+        Assert.AreEqual(initial,(game.Body,game.Area,game.LeverOn,game.HasKey,game.Completed));
+        var driver=new Course.Driver(game);driver.OpenAndEnter();canvas.Regions.Clear();canvas.Destinations.Clear();
+        art.Draw(canvas,game);
+        Assert.IsTrue(canvas.Regions.Distinct().Count()>=8,"Shrine needs its own floor, inlays and architectural treatment.");
+        Assert.IsTrue(canvas.Regions.Where(r=>r.Width==16&&r.Height==16).Distinct().Count()>=4,"Shrine floor variety must use distinct complete tiles.");
+        Assert.IsTrue(canvas.Destinations.Any(r=>r.X==288&&r.Y==128&&r.Width==32&&r.Height==128),"Pillar artwork must align with the existing solid, not add a new obstacle.");
+        Assert.AreEqual(new Rect(game.Body.X-4,game.Body.Y-40,32,64),canvas.Destinations[^1],"Player remains above scenery.");
+    }
 }

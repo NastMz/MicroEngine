@@ -4,6 +4,8 @@ Baseline821450d, local feat/courtyard-adventure. [Contract](../../specs/adventur
 
 Current presentation refinement: [ADV-ART-1 art/evidence](art.md) supersedes the original front-facing Kenney appearance below. Original ADV-1 proof remains historical; gameplay is preserved.
 
+Owner has now positively evaluated the functional cycle. [ADV-ART-2 bounded composition/evidence](composition.md) addresses the remaining repetitive/basic visual observation; no new composition acceptance inferred.
+
 ## Run and subjective-only evaluation
 
 ```powershell

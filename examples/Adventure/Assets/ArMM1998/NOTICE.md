@@ -17,8 +17,8 @@ Credit is retained for provenance, not asserted as an attribution obligation.
 ## Selection and limitations
 
 - `character.png`: only four walking/idle direction groups, no swords/equipment actions.
-- `Overworld.png`: only one grass region and one stone region. No tree regions rendered.
-- `Inner.png`: only floor and gate regions. Other furniture is unused.
+- `Overworld.png`: grass variants, flat dirt/paving and low boundary foliage. No tree regions rendered.
+- `Inner.png`: floor bands, rugs, column relief and gate/frieze regions. Freestanding furniture is unused.
 
 Publication comments raise an unverified similarity concern about some trees and
 Nintendo's Minish Cap; the author disputes that concern. This is not a finding of

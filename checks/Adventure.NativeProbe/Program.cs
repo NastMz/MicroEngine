@@ -23,6 +23,23 @@ try
                 if(colors.Count<25)throw new InvalidOperationException("Adventure artwork not rendered.");
                 for(int y=8;y<58;y++)for(int x=12;x<620;x++) {var c=Raylib.GetImageColor(image,x,y);if(c.R==240&&c.G==240&&c.B==245)glyphs++;}
                 if(glyphs<30)throw new InvalidOperationException("Adventure HUD missing.");
+                void OriginalPixel(string name,int sourceX,int sourceY,int x,int y)
+                {
+                    var sheet=sources[name];var expected=sheet.Pixels[sourceY*sheet.Width+sourceX];
+                    var actual=Raylib.GetImageColor(image,x,y);
+                    if(expected.A!=255||actual.R!=expected.R||actual.G!=expected.G||actual.B!=expected.B)
+                        throw new InvalidOperationException($"Scene composition source mismatch at {x},{y}.");
+                }
+                if(game.Area==Area.Courtyard)
+                {
+                    OriginalPixel("ArMM1998/Overworld",200,234,288,180); // Flat route, not a new collider.
+                    OriginalPixel("ArMM1998/Overworld",40,104,416,96); // Separate grass patch.
+                }
+                else
+                {
+                    OriginalPixel("ArMM1998/Overworld",232,196,432,264); // Temple floor.
+                    OriginalPixel("ArMM1998/Inner",10,142,484,188); // Complete altar rug, clear of the gem.
+                }
                 if(game.Area==Area.Courtyard&&game.Body==new Rect(64,168,24,24))
                 {
                     var character=sources["ArMM1998/character"];int samples=0;
@@ -43,7 +60,7 @@ try
                 {
                     var actual=Raylib.GetImageColor(image,324,180);
                     var sheet=sources[game.LeverOn?"ArMM1998/Overworld":"ArMM1998/Inner"];
-                    var expected=sheet.Pixels[(game.LeverOn?106:10)*sheet.Width+(game.LeverOn?66:98)];
+                    var expected=sheet.Pixels[(game.LeverOn?234:10)*sheet.Width+(game.LeverOn?202:98)];
                     if(expected.A!=255)throw new InvalidOperationException("Gate reference sample must be opaque.");
                     if(actual.R!=expected.R||actual.G!=expected.G||actual.B!=expected.B)throw new InvalidOperationException("Gate rendering/topology mismatch.");
                 }
@@ -61,6 +78,7 @@ try
         Draw();int second=Course.Run(game,(delta,state)=>art.Advance(delta,state));Draw();
         if(first!=second||canvas.Creates!=7)throw new InvalidOperationException($"Adventure replay/cache mismatch {first}/{second}/{canvas.Creates}.");
         Console.WriteLine($"adventure:course:{first}:verified");Console.WriteLine("adventure:reuse:7:verified");Console.WriteLine("adventure:reset:verified");
+        Console.WriteLine("adventure:composition:verified");
     }
     Console.WriteLine("adventure:closed");return 0;
 }

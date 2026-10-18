@@ -26,7 +26,7 @@ try {
         $stdout = $process.StandardOutput.ReadToEndAsync(); $stderr = $process.StandardError.ReadToEndAsync()
         if (-not $process.WaitForExit(30000)) { $process.Kill(); $process.WaitForExit(); throw 'Adventure probe timed out.' }
         $output = $stdout.Result + $stderr.Result
-        if ($process.ExitCode -ne 0 -or $output -notmatch 'adventure:course:[0-9]+:verified' -or $output -notmatch 'adventure:reuse:7:verified' -or $output -notmatch 'adventure:closed' -or $output -notmatch 'adventure:reset:verified' -or $output -notmatch 'Window closed successfully') {
+        if ($process.ExitCode -ne 0 -or $output -notmatch 'adventure:composition:verified' -or $output -notmatch 'adventure:course:[0-9]+:verified' -or $output -notmatch 'adventure:reuse:7:verified' -or $output -notmatch 'adventure:closed' -or $output -notmatch 'adventure:reset:verified' -or $output -notmatch 'Window closed successfully') {
             throw "Native adventure route/reuse/reset was not proved.`n$output"
         }
         Write-Output 'PASS: two adventure areas, gate topology pixels, public interactions/key/altar/replay and shared seven-image cache.'
