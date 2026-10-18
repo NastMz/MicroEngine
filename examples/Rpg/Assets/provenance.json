@@ -1,0 +1,82 @@
+{
+  "selected": "2026-10-18",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "sources": [
+    {
+      "author": "Kenney",
+      "release": "1.1",
+      "id": "town",
+      "archive_sha256": "9768692dccff1d706408a5aedd6ca4f6cd1409506cbc84cb2f862919764be977",
+      "archive": "https://kenney.nl/media/pages/assets/tiny-town/a415fbeb49-1735736916/kenney_tiny-town.zip",
+      "source": "https://kenney.nl/assets/tiny-town",
+      "license": "CC0-1.0"
+    },
+    {
+      "author": "Kenney",
+      "release": "1.0",
+      "id": "dungeon",
+      "archive_sha256": "c109438ab06f65fd80f9b2686a4cf9c7c11dc64444b47333ec71d602f8bb5fc7",
+      "archive": "https://kenney.nl/media/pages/assets/tiny-dungeon/f8422efb44-1674742415/kenney_tiny-dungeon.zip",
+      "source": "https://kenney.nl/assets/tiny-dungeon",
+      "license": "CC0-1.0"
+    },
+    {
+      "author": "ArMM1998",
+      "release": "published-2017-02-16",
+      "id": "hero",
+      "archive_sha256": "c678f5447ab44fa31ba2e498dd845f4f4dda97fd1d89291a442e0a23a446c133",
+      "archive": "https://opengameart.org/sites/default/files/gfx_3.zip",
+      "source": "https://opengameart.org/content/zelda-like-tilesets-and-sprites",
+      "license": "CC0-1.0"
+    }
+  ],
+  "runtime_images": [
+    "Hero/character.png",
+    "Town/atlas.png",
+    "Dungeon/atlas.png"
+  ],
+  "files": [
+    {
+      "file": "Town/atlas.png",
+      "source": "Tilemap/tilemap_packed.png",
+      "sha256": "3a54d99ecde790d4fdea207a3644cf130fc56fa838f1beb1507c185a95b8e902",
+      "package": "town"
+    },
+    {
+      "file": "Town/License.txt",
+      "source": "License.txt",
+      "sha256": "c483c167cc3bdfe17c15f957ff847d409f64d81b410b28783636cf3b2b7814c5",
+      "package": "town"
+    },
+    {
+      "file": "Town/Tilesheet.txt",
+      "source": "Tilesheet.txt",
+      "sha256": "1b86fae0b27a628f18cfd89c6e148ea1d727f5ef02fc1dbeb5a6e9f9667bea00",
+      "package": "town"
+    },
+    {
+      "file": "Dungeon/atlas.png",
+      "source": "Tilemap/tilemap_packed.png",
+      "sha256": "d24e60a41e4ac7a745c0304dfde121143688557f40215f23221c29cfe683825f",
+      "package": "dungeon"
+    },
+    {
+      "file": "Dungeon/License.txt",
+      "source": "License.txt",
+      "sha256": "9f574a2f1f636a3db8a0665ba90212f34e2b5e61ecb533d77c05237766374111",
+      "package": "dungeon"
+    },
+    {
+      "file": "Dungeon/Tilesheet.txt",
+      "source": "Tilesheet.txt",
+      "sha256": "1b86fae0b27a628f18cfd89c6e148ea1d727f5ef02fc1dbeb5a6e9f9667bea00",
+      "package": "dungeon"
+    },
+    {
+      "file": "Hero/character.png",
+      "source": "gfx/character.png",
+      "sha256": "c69beb279dafd75ece32755ef3da32d6d720daba7b225f849a220cd73a3f5329",
+      "package": "hero"
+    }
+  ]
+}
