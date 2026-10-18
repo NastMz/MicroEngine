@@ -14,7 +14,7 @@ independent ready work. No background scheduler is installed; H0 is implemented,
 | ID | Scenario/outcome | Candidate capabilities | Exit criteria to refine | Status |
 | --- | --- | --- | --- | --- |
 | H0 | External application starts/runs/stops safely | CAP-001 headless slice only | Lifecycle/failure traces, runnable public consumer and31 tests; explicit owner acceptance | Verified / owner accepted2026-10-15 |
-| H1 | Simple Mario-inspired platformer | CAP-002/003/004/005/006/007/008 | Movement, obstacles, jump and animation in an external game; game owns jump rules; manual playability | Candidate |
+| H1 | Simple Mario-inspired platformer | CAP-002/003/004/005/006/007/008 | Movement, obstacles, jump and animation in an external game; game owns jump rules; manual playability | First bounded playable scenario accepted2026-10-18 |
 | H2 | Zelda-inspired top-down adventure | CAP-009/010 plus refined presentation/input | Exploration and transitions without engine-owned combat/progression; manual interaction | Candidate |
 | H3 | Pokemon-inspired RPG | CAP-012/013 plus validated shared capabilities | Exploration, menus and turn interaction; game owns battle/turn rules; manual flow | Candidate |
 | H4 | Metroidvania / modern platformer stress | Needs discovered from earlier milestones | Greater content/state/movement demands with evidence, not presumed Core modules | Deferred candidate |

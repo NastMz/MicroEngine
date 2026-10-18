@@ -146,3 +146,7 @@ FirstPlayable selects the eight equivalent source-authored avatar cells through 
 ## Real-art platformer (KPF-1)
 
 Run `dotnet run --project examples/Platformer/Platformer.csproj -c Release`. See [controls, evidence and owner-only evaluation](evidence/kpf-1/README.md). New automated checks: TwoD.Contracts, Platformer.Contracts and `pwsh -NoProfile -File checks/PlatformerNativeSmoke.ps1`, in addition to all existing regressions. Pack assets copy to output; execution does not download resources. Windows validation only. No SDK/package changes; latest scope permits local commits, not push/main.
+
+## Courtyard Key top-down adventure (ADV-1)
+
+Run `dotnet run --project examples/Adventure/Adventure.csproj -c Release`. WASD/arrows move; fresh Space interacts at lever/key/altar and replays after victory; Escape closes. [Full run/reuse/subjective packet](evidence/adv-1/README.md). Automated new checks: Adventure.Contracts plus `pwsh -NoProfile -File checks/AdventureNativeSmoke.ps1`; retain all earlier suites/harnesses. Asset files are local output content, no runtime download. No new engine dependencies or APIs.

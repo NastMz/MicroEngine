@@ -583,8 +583,10 @@ KPF-1 technical closure2026-10-18: independent kenney_platformer_verify PASS S1-
 | --- | --- | --- | --- | --- | --- |
 | ME-058 | platformer scenario acceptance audit | P1 | completed | ME-057; explicit owner feedback | [Acceptance](evidence/kpf-1/acceptance.md) |
 | ME-059 | adventure contract/reuse design | P1 | completed | ME-058 | [ADV-1](specs/adventure.md) |
-| ME-060 | topdown adventure consumer | P1 | in-progress | ME-059 | [ADV-1](specs/adventure.md) |
+| ME-060 | topdown adventure consumer | P1 | in-review | ME-059 | [ADV-1](specs/adventure.md) |
 
 ME058 claimed/closed by root after independent kenney_platformer_verify auditPASS of821450d and explicit owner normal/death-reset/win/visual/control acceptance; source unchanged, prior244/14proof applies, no redundant tests. First bounded platformer scenario accepted/closed, no menu/audio/polish requirement. ME059 claimed on feat/courtyard-adventure baseline821450d; no push/main operations.
 
 ME059 completed after checkpoint_design_review PASS; root approves ADV1 before source, no new engine ADR because no shared architecture/API change. ME060 claimed baseline821450d+closure6d41050 on localfeat/courtyard-adventure. Existing verified CC0archive reused locally with originalbytes/hashes; no downloads or remote writes. Adopt actual-displacement animation and immutable gate-view regression advisories.
+
+ME060 own evidence: model9runnableRED->9GREEN, presentation2additionalGREEN=>11/11. Native newAdventure route/key/altar/reset/replay/gateRGB/HUD/shared6imagesPASS, productionCLI7cases0/1/2PASS, build0warnings/errors. Engine and old consumers unchanged; independent full baseline+horizon verification pending. No new engine API/dependency/scene/decoder/cache/solver. Native screenshots inspected but no subjective acceptance inferred.

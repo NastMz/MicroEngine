@@ -19,7 +19,7 @@ revisions, evidence and delivery boundaries.
 | Increment | What exists | Contract / evidence |
 | --- | --- | --- |
 | H0 | Permanent headless lifecycle; owner accepted | [Lifecycle](specs/lifecycle.md), [H0 packet](milestones/H0.md) |
-| H1 tracers | Fixed-step Loop, Desktop adapter, external platformer with static solids and procedural animation | [H1 packet](milestones/H1.md) |
+| H1/C-001 | Meadow Run first real-art playable scenario accepted/closed; historical tracers retained | [Scenario acceptance](evidence/kpf-1/acceptance.md), [H1 packet](milestones/H1.md) |
 | H2 tracers | Separate two-room exploration and marker interaction | [H2 packet](milestones/H2.md) |
 | H3 tracers | Menu/turn flow, optional in-window labels; versioned consumer checkpoints, optional create-new/read adapter and opt-in process startup/exit integration | [H3 packet](milestones/H3.md), [NL-1](specs/optional-labels.md), [CP-1](specs/consumer-checkpoint.md), [CF-1](specs/checkpoint-files.md), [CL-1](specs/checkpoint-launch.md) |
 
@@ -79,3 +79,5 @@ Current bounded horizon: [GOAL-1 platformer course completion and replay](specs/
 Current delivery integrates [SPR-1](specs/sprite-regions.md) with GOAL-1, not a new gameplay horizon. Consult the backlog for ME-054 verification and actual main delivery.
 
 Current selected playable horizon: [KPF-1 real-art platformer](specs/kenney-platformer.md), [run/evidence/subjective handoff](evidence/kpf-1/README.md), [ADR0012 classification](decisions/0012-playable-platformer-infrastructure.md). Optional TwoD utilities are not Core genre modules. Only local commits authorized for this horizon.
+
+Selected C002 playable horizon: [Courtyard Key ADV1](specs/adventure.md), [run/reuse/evidence](evidence/adv-1/README.md). Meadow Run is closed after explicit owner feedback and public-boundary audit; new topdown consumer reuses existing engine without changes. Backlog ME060 owns technical closure; subjective adventure evaluation remains pending.

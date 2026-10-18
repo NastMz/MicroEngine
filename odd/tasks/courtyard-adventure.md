@@ -10,8 +10,8 @@ S4: "Mantén la autonomía técnica acordada, las revisiones independientes y la
 
 ## Tasks
 T1 S1 inline completed6d41050 boundary audit/acceptance record; independent kenney_platformer_verify PASS on821450d.
-T2 S2-S4 inline completed ADV-1 detailed content/contract and independent design review.
-T3 S2-S4 inline in-progress independent adventure/model/renderer/native evidence and whole-feature review.
+T2 S2-S4 inline completed726db95 ADV-1 detailed content/contract and independent design review.
+T3 S2-S4 inline in-review independent adventure/model/renderer/native evidence and whole-feature review.
 
 ## Log
 L1 Owner request verbatim:
@@ -28,3 +28,5 @@ Mantén la autonomía técnica acordada, las revisiones independientes y la docu
 L2 Read-only platformer auditPASS: no vendor/private/reflection/friend/PInvoke access in game; generic utilities free of Meadow content/rules. Current244test/14native proof remains applicable unchanged. Independent mapping identifies no new engine gap for two-room topdown/key/lever/shrine game. Reuse TwoD/Loop/Desktop unchanged, game content/transitions only; no generic scene framework needed.
 
 L3 Independent ADV1 designPASS/no blockers; root approves before source. Adopt resolved-displacement animation and retained immutable gate-view checks. No engine change demonstrated; no new engine module/API or ADR added. Same verified local Kenneyarchive used for seven original assets (sixPNG/license), hashes/provenance recorded, no remote transfer.
+
+L4 New model9runnableRED againststubs->9GREEN; presentation2additionalGREEN/no inventedRED. Actual PNG/room/gateclosed-openRGB/HUD/key/altar/reset/identicalreplay/shared6imagecache/newnative+productionCLI7PASS, Release0warnings/errors. Engine/oldgames/config/packages unchanged. Native snapshots inspected; front-facing art limitation documented, no subjective acceptance. Independent final checks now required. Newscriptdiagnostics corrected to adventure wording and stronger invalidCLI native-start detection before freeze; no engine code normalization.
