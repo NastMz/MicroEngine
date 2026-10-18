@@ -71,3 +71,5 @@ Latest technically verified validation: [MAP-1 larger maps and viewport](specs/m
 Current bounded horizon: [MAP-2 explicit solid navigation](specs/map-navigation.md) in MapExplorer only. Main includes owner-positive MAP-1; SPR-1 is still independent/unintegrated. Backlog owns ME-046/047 technical status; contributing explains subjective-only navigation handoff.
 
 Current horizon: [TURN-2 durable turn completion](specs/turn-outcome.md)/ADR-0011, ME-048/049. MAP-2 is owner-positive/integrated; TURN-2 is a new independently verified technical candidate, not implicit fullH3 acceptance. See backlog for closure status and contributing for playability-only handoff.
+
+Current bounded horizon: [MAP-3 switch-controlled map shortcut](specs/map-switch-gate.md), ME-050/051. TURN-2 is owner-positive/integrated; MAP-3 status/evidence is in backlog. This is consumer-owned topology, not a new engine module or map-persistence contract.

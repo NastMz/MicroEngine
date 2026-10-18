@@ -54,6 +54,26 @@ try
         Move(1, "left", Zone.Meadow, 1248, 304, 640, 140);
         Draw(journey, (82, 100, new(110, 120, 140)), (610, 170, new(240, 180, 65)));
         Console.WriteLine("map:navigation:verified");
+        var gate = MapWalker.Create(Zone.Meadow, 650, 304);
+        if (gate.GateOpen || gate.CameraX != 342 || gate.CameraY != 140) throw new InvalidOperationException("Switch fixture mismatch.");
+        Draw(gate, (280, 150, new(90, 140, 220)), (380, 170, new(110, 120, 140)), (310, 170, new(240, 180, 65)));
+        var closedView = gate.BlockingSolids;
+        gate.Update(TimeSpan.FromTicks(1), new(["jump"], []));
+        if (gate.GateOpen) throw new InvalidOperationException("Held input opened gate.");
+        gate.Update(TimeSpan.FromTicks(1), new([], ["jump", "jump"]));
+        if (!gate.GateOpen || gate.BlockingSolids.Count != 0 || closedView.Count != 1 || gate.X != 650 || gate.Y != 304)
+            throw new InvalidOperationException("Switch did not change only future topology.");
+        Draw(gate, (280, 150, new(80, 200, 120)), (380, 170, new(24, 40, 32)), (310, 170, new(240, 180, 65)));
+        gate.Update(TimeSpan.FromSeconds(1), new(["right"], []));
+        if (gate.X != 830 || gate.Y != 304 || gate.CameraX != 522 || gate.CameraY != 140) throw new InvalidOperationException("Open shortcut remained blocked.");
+        gate.Update(TimeSpan.FromSeconds(10), new(["right"], []));
+        if (gate.Zone != Zone.Ruins || gate.X != 8 || gate.Y != 304 || gate.CameraX != 0 || gate.CameraY != 140 || !gate.GateOpen || gate.BlockingSolids.Count != 1)
+            throw new InvalidOperationException("Gate state or Ruins wall was lost.");
+        gate.Update(TimeSpan.FromSeconds(1), new(["left"], []));
+        if (gate.Zone != Zone.Meadow || gate.X != 1248 || gate.Y != 304 || gate.CameraX != 640 || gate.CameraY != 140
+            || !gate.GateOpen || gate.BlockingSolids.Count != 0 || closedView.Count != 1 || new MapWalker().GateOpen)
+            throw new InvalidOperationException("Gate state failed return or new-session isolation.");
+        Console.WriteLine("map:switch-gate:verified");
     }
     Console.WriteLine("map:closed"); return 0;
 }
