@@ -1,6 +1,6 @@
 # GOAL-1 — A complete, replayable platformer course
 
-Status: approved2026-10-17 by Codex root after checkpoint_design_review PASS; ME-052 completed, ME-053 claimed in-progress. C-001/CAP-002/003/004/007/008, FR-002/NFR-001/002/004/005. Consumer-owned win/reset state; no new shared engine architecture/ADR.
+Status: approved2026-10-17 by Codex root after checkpoint_design_review PASS; ME-052/ME-053 completed. Implementation b2f890a/5bad728 independently verified: 218/218 managed tests and 12/12 native harnesses; no blockers. C-001/CAP-002/003/004/007/008, FR-002/NFR-001/002/004/005. Consumer-owned win/reset state; no new shared engine architecture/ADR.
 
 ## Opt-in model contract
 
