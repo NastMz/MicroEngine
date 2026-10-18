@@ -2,6 +2,8 @@
 
 Baseline821450d, local feat/courtyard-adventure. [Contract](../../specs/adventure.md), [Meadow Run acceptance](../kpf-1/acceptance.md), [backlog](../../backlog.md). No push/main integration authorized for this delivery.
 
+Current presentation refinement: [ADV-ART-1 art/evidence](art.md) supersedes the original front-facing Kenney appearance below. Original ADV-1 proof remains historical; gameplay is preserved.
+
 ## Run and subjective-only evaluation
 
 ```powershell

@@ -7,10 +7,12 @@ namespace Adventure;
 public sealed class AdventurePresentation : IDisposable
 {
     public static IReadOnlyList<string> AssetNames { get; } = Array.AsReadOnly<string>([
-        "spritesheet-characters-default","terrain_grass_block_center","lever_left","lever_right","key_yellow","gem_blue"]);
-    private static readonly Rect Idle = new(645,0,128,128);
+        "ArMM1998/character","ArMM1998/Overworld","ArMM1998/Inner","lever_left","lever_right","key_yellow","gem_blue"]);
     private readonly ImageSet _images;
-    private readonly FrameAnimation _walk = new([new(0,129,128,128),new(129,129,128,128)],TimeSpan.FromMilliseconds(120));
+    private readonly FrameAnimation _walk = new([new(0,0,16,32),new(16,0,16,32),new(32,0,16,32),new(48,0,16,32)],TimeSpan.FromMilliseconds(120));
+    private Rect _previous = new(64,168,24,24);
+    private Area _area = Area.Courtyard;
+    private int _row;
     private int _run;
     private bool _disposed;
     public AdventurePresentation(IReadOnlyDictionary<string,PixelImage> sources) => _images=new(sources);
@@ -18,7 +20,18 @@ public sealed class AdventurePresentation : IDisposable
     {
         ArgumentNullException.ThrowIfNull(game); ObjectDisposedException.ThrowIf(_disposed,this);
         if(elapsed<TimeSpan.Zero)throw new ArgumentOutOfRangeException(nameof(elapsed));
-        if(_run!=game.RunNumber) { _walk.Reset();_run=game.RunNumber; }
+        if(_run!=game.RunNumber||_area!=game.Area)
+        {
+            _walk.Reset();_run=game.RunNumber;_area=game.Area;_row=0;_previous=game.Body;
+        }
+        if(game.Moving)
+        {
+            float dx=game.Body.X-_previous.X,dy=game.Body.Y-_previous.Y;
+            int row=dx>0?32:dx<0?96:dy<0?64:dy>0?0:_row;
+            if(row!=_row)_walk.Reset();
+            _row=row;
+        }
+        _previous=game.Body;
         if(game.Moving&&!game.Completed)_walk.Advance(elapsed);else _walk.Reset();
     }
     public void Draw(ICanvas canvas,AdventureModel game)
@@ -27,18 +40,14 @@ public sealed class AdventurePresentation : IDisposable
         if(canvas is not IImageRegionCanvas images)throw new NotSupportedException("This adventure requires image-region rendering.");
         var floor=game.Area==Area.Courtyard?new Rgba(76,126,85):new Rgba(67,90,113);
         canvas.Clear(floor);
+        Tile(images,game.Area==Area.Courtyard?"ArMM1998/Overworld":"ArMM1998/Inner",
+            game.Area==Area.Courtyard?new(64,96,16,16):new(176,32,16,16),new(0,64,640,296));
         canvas.Fill(game.Area==Area.Courtyard?new Rect(600,144,24,72):new Rect(16,144,16,72),new(60,180,210,160));
-        var wall=_images.Get(images,"terrain_grass_block_center");
         foreach(var solid in game.ActiveSolids)
-        for(float y=solid.Y;y<solid.Y+solid.Height;y+=32)
-        for(float x=solid.X;x<solid.X+solid.Width;x+=32)
-        {
-            float width=Math.Min(32,solid.X+solid.Width-x),height=Math.Min(32,solid.Y+solid.Height-y);
-            images.DrawImageRegion(wall,new(0,0,width*2,height*2),new(x,y,width,height));
-        }
+            Tile(images,"ArMM1998/Overworld",new(352,16,16,16),solid);
         if(game.Area==Area.Courtyard)
         {
-            if(!game.LeverOn)canvas.Fill(AdventureModel.Gate,new(210,145,55));
+            if(!game.LeverOn)Tile(images,"ArMM1998/Inner",new(96,0,16,16),AdventureModel.Gate);
             Whole(images,game.LeverOn?"lever_right":"lever_left",AdventureModel.Lever);
         }
         else
@@ -46,8 +55,9 @@ public sealed class AdventurePresentation : IDisposable
             if(!game.HasKey)Whole(images,"key_yellow",AdventureModel.Key);
             canvas.Fill(AdventureModel.Altar,new(105,90,130));Whole(images,"gem_blue",AdventureModel.Altar);
         }
-        images.DrawImageRegion(_images.Get(images,"spritesheet-characters-default"),game.Moving&&!game.Completed?_walk.Current:Idle,
-            new(game.Body.X-12,game.Body.Y-24,48,48));
+        var pose=game.Moving&&!game.Completed?_walk.Current:new Rect(0,0,16,32);
+        images.DrawImageRegion(_images.Get(images,"ArMM1998/character"),pose with { Y=_row },
+            new(game.Body.X-4,game.Body.Y-40,32,64));
         canvas.Fill(new(0,0,640,64),new(24,28,40));
         if(canvas is ILabelCanvas labels)
         {
@@ -59,6 +69,16 @@ public sealed class AdventurePresentation : IDisposable
             else if(game.Area==Area.Shrine&&!game.HasKey&&StaticWorld.Overlaps(game.Body,AdventureModel.Key))prompt="Space: take the key";
             else if(game.Area==Area.Shrine&&StaticWorld.Overlaps(game.Body,AdventureModel.Altar))prompt=game.HasKey?"Space: restore the shrine":"The shrine needs the golden key";
             labels.Label(prompt,12,36,18,new(240,240,245));
+        }
+    }
+    private void Tile(IImageRegionCanvas canvas,string key,Rect source,Rect destination)
+    {
+        var image=_images.Get(canvas,key);
+        for(float y=destination.Y;y<destination.Y+destination.Height;y+=32)
+        for(float x=destination.X;x<destination.X+destination.Width;x+=32)
+        {
+            float width=Math.Min(32,destination.X+destination.Width-x),height=Math.Min(32,destination.Y+destination.Height-y);
+            canvas.DrawImageRegion(image,source with { Width=width/2,Height=height/2 },new(x,y,width,height));
         }
     }
     private void Whole(IImageCanvas canvas,string key,Rect destination)=>canvas.DrawImage(_images.Get(canvas,key),destination);

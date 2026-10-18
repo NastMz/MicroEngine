@@ -23,9 +23,28 @@ try
                 if(colors.Count<25)throw new InvalidOperationException("Adventure artwork not rendered.");
                 for(int y=8;y<58;y++)for(int x=12;x<620;x++) {var c=Raylib.GetImageColor(image,x,y);if(c.R==240&&c.G==240&&c.B==245)glyphs++;}
                 if(glyphs<30)throw new InvalidOperationException("Adventure HUD missing.");
+                if(game.Area==Area.Courtyard&&game.Body==new Rect(64,168,24,24))
+                {
+                    var character=sources["ArMM1998/character"];int samples=0;
+                    for(int y=0;y<32;y++)for(int x=0;x<16;x++)
+                    {
+                        var expected=character.Pixels[y*character.Width+x];if(expected.A!=255)continue;
+                        for(int dy=0;dy<2;dy++)for(int dx=0;dx<2;dx++)
+                        {
+                            var actual=Raylib.GetImageColor(image,60+x*2+dx,128+y*2+dy);
+                            if(actual.R!=expected.R||actual.G!=expected.G||actual.B!=expected.B)
+                                throw new InvalidOperationException("Original character atlas/2x pixel scale mismatch.");
+                            samples++;
+                        }
+                    }
+                    if(samples<100)throw new InvalidOperationException("Character reference lacks visible pixels.");
+                }
                 if(game.Area==Area.Courtyard)
                 {
-                    var actual=Raylib.GetImageColor(image,324,180);var expected=game.LeverOn?new Rgba(76,126,85):new Rgba(210,145,55);
+                    var actual=Raylib.GetImageColor(image,324,180);
+                    var sheet=sources[game.LeverOn?"ArMM1998/Overworld":"ArMM1998/Inner"];
+                    var expected=sheet.Pixels[(game.LeverOn?106:10)*sheet.Width+(game.LeverOn?66:98)];
+                    if(expected.A!=255)throw new InvalidOperationException("Gate reference sample must be opaque.");
                     if(actual.R!=expected.R||actual.G!=expected.G||actual.B!=expected.B)throw new InvalidOperationException("Gate rendering/topology mismatch.");
                 }
                 if(capture is not null&&!Raylib.ExportImage(image,Path.Combine(Path.GetTempPath(),capture)))throw new InvalidOperationException("Adventure capture export failed.");
@@ -40,8 +59,8 @@ try
         int first=driver.Steps;game.Update(Course.Step,new(["right"],["jump"]));art.Advance(Course.Step,game);
         if(game.Body!=new Rect(64,168,24,24)||game.Area!=Area.Courtyard||game.HasKey||game.LeverOn)throw new InvalidOperationException("Reset input leaked.");
         Draw();int second=Course.Run(game,(delta,state)=>art.Advance(delta,state));Draw();
-        if(first!=second||canvas.Creates!=6)throw new InvalidOperationException($"Adventure replay/cache mismatch {first}/{second}/{canvas.Creates}.");
-        Console.WriteLine($"adventure:course:{first}:verified");Console.WriteLine("adventure:reuse:6:verified");Console.WriteLine("adventure:reset:verified");
+        if(first!=second||canvas.Creates!=7)throw new InvalidOperationException($"Adventure replay/cache mismatch {first}/{second}/{canvas.Creates}.");
+        Console.WriteLine($"adventure:course:{first}:verified");Console.WriteLine("adventure:reuse:7:verified");Console.WriteLine("adventure:reset:verified");
     }
     Console.WriteLine("adventure:closed");return 0;
 }

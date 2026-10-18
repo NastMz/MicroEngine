@@ -1,0 +1,28 @@
+{
+  "title": "Zelda-like tilesets and sprites",
+  "author": "ArMM1998",
+  "source": "https://opengameart.org/content/zelda-like-tilesets-and-sprites",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "retrieved": "2026-10-18",
+  "archive_url": "https://opengameart.org/sites/default/files/gfx_3.zip",
+  "archive_sha256": "c678f5447ab44fa31ba2e498dd845f4f4dda97fd1d89291a442e0a23a446c133",
+  "archive_license": "No embedded license file; CC0 declaration verified on author publication page. See NOTICE.md.",
+  "files": [
+    {
+      "sha256": "c69beb279dafd75ece32755ef3da32d6d720daba7b225f849a220cd73a3f5329",
+      "file": "character.png",
+      "source": "gfx/character.png"
+    },
+    {
+      "sha256": "2172a3629161c3c4a8c319efa5584f77d2ec28d6bf498b1d04e3e548e7717697",
+      "file": "Overworld.png",
+      "source": "gfx/Overworld.png"
+    },
+    {
+      "sha256": "8cde6c5dd77e5543c38d2e0138eb9a14c2a8831898d73c9ff76a0e315299bb5d",
+      "file": "Inner.png",
+      "source": "gfx/Inner.png"
+    }
+  ]
+}

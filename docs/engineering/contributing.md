@@ -150,3 +150,5 @@ Run `dotnet run --project examples/Platformer/Platformer.csproj -c Release`. See
 ## Courtyard Key top-down adventure (ADV-1)
 
 Run `dotnet run --project examples/Adventure/Adventure.csproj -c Release`. WASD/arrows move; fresh Space interacts at lever/key/altar and replays after victory; Escape closes. [Full run/reuse/subjective packet](evidence/adv-1/README.md). Automated new checks: Adventure.Contracts plus `pwsh -NoProfile -File checks/AdventureNativeSmoke.ps1`; retain all earlier suites/harnesses. Asset files are local output content, no runtime download. No new engine dependencies or APIs.
+
+ADV-ART-1 refreshes only Courtyard Key art using original ArMM1998 CC0 sheets and retained Kenney interaction icons. Same Adventure run command/controls; no engine/model change or runtime download. Run `pwsh -NoProfile -File checks/VerifyAdventureAssets.ps1`, Adventure.Contracts and AdventureNativeSmoke alongside existing regressions. [Selection, provenance caveat, evidence and subjective-only handoff](evidence/adv-1/art.md).
