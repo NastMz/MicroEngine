@@ -22,6 +22,7 @@ public sealed class DesktopTests
         public void Fill(Rect rect, Rgba color) => Trace.Add("fill");
         public void Label(string text, int x, int y, int pixelSize, Rgba color) => Trace.Add("label");
         public object CreateImage(PixelImage image) => throw new NotImplementedException();
+        public void DrawImageRegion(object image, Rect source, Rect destination) => throw new NotImplementedException();
         public void DrawImage(object image, Rect destination) => throw new NotImplementedException();
         public void ReleaseImage(object image) => throw new NotImplementedException();
         public void Close() { Trace.Add("close"); if (CloseError is not null) throw CloseError; }

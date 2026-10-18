@@ -21,7 +21,7 @@ for (var i = 0; i < args.Length; i++)
 
 var game = new GameModel(new PlatformerOptions(TimeSpan.FromMilliseconds(100)), [new StaticObstacle(180, 260, 64, 40)], true);
 var animation = new AvatarAnimation();
-using var avatarImage = new AvatarImage();
+using var avatarSprites = new AvatarSprites();
 var frames = 0;
 var updates = 0;
 var options = new LoopOptions(TimeSpan.FromSeconds(1d / 60), 5, TimeSpan.FromMilliseconds(250));
@@ -46,8 +46,7 @@ var report = FrameLoop.Run(() => new ControllerPlatform(new DesktopPlatform(new 
         foreach (var solid in game.Obstacles)
             canvas.Fill(new Rect(solid.X, solid.Y, solid.Width, solid.Height), new Rgba(95, 130, 165));
         GoalRenderer.Draw(canvas, game);
-        AvatarRenderer.Draw(canvas, game.X, game.Y, animation);
-        avatarImage.Draw(canvas, game.X, game.Y);
+        avatarSprites.Draw(canvas, game.X, game.Y, animation);
         frames++;
         if (limit > 0 && frames >= limit) frame.Control.RequestStop();
     });

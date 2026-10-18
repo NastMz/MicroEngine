@@ -36,3 +36,5 @@ Under [autonomy](../autonomy.md), agents may accept/supersede technical ADRs aft
 [ADR-0009](0009-optional-image-resources.md) accepted2026-10-17 by Codex root after checkpoint_design_review PASS: optional immutable image values/context-owned resource leases.
 
 - [ADR-0011 — Compatible durable turn completion](0011-compatible-turn-outcome.md): accepted after independent TURN-2 design review.
+
+- [ADR-0010 — Optional image source regions](0010-optional-image-regions.md): accepted after independent SPR-1 design review; owner positively evaluated sprite presentation.

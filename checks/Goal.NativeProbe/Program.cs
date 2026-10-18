@@ -6,7 +6,7 @@ using Raylib_cs;
 
 try
 {
-    using var badge = new AvatarImage();
+    using var sprites = new AvatarSprites();
     using (var window = new DesktopPlatform(new(640, 360, "MicroEngine platformer goal verification")))
     {
         var game = new GameModel(new(TimeSpan.FromMilliseconds(100)), [new(180, 260, 64, 40)], true);
@@ -18,7 +18,7 @@ try
                 window.Begin(); var canvas = window.Canvas; canvas.Clear(new(24, 28, 40));
                 canvas.Fill(new(0, 300, 640, 60), new(70, 100, 75));
                 foreach (var solid in game.Obstacles) canvas.Fill(new(solid.X, solid.Y, solid.Width, solid.Height), new(95, 130, 165));
-                GoalRenderer.Draw(canvas, game); AvatarRenderer.Draw(canvas, game.X, game.Y, animation); badge.Draw(canvas, game.X, game.Y); window.End();
+                GoalRenderer.Draw(canvas, game); sprites.Draw(canvas, game.X, game.Y, animation); window.End();
             }
             var image = Raylib.LoadImageFromScreen();
             try

@@ -6,5 +6,6 @@
     <Compile Include="../../examples/FirstPlayable/GoalRenderer.cs" Link="GoalRenderer.cs" />
     <Compile Include="../../examples/FirstPlayable/AvatarRenderer.cs" Link="AvatarRenderer.cs" />
     <Compile Include="../../examples/FirstPlayable/AvatarImage.cs" Link="AvatarImage.cs" />
+    <Compile Include="../../examples/FirstPlayable/AvatarSprites.cs" Link="AvatarSprites.cs" />
   </ItemGroup>
 </Project>

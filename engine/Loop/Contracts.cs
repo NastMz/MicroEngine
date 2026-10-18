@@ -78,6 +78,12 @@ public interface IImageCanvas : ICanvas
     void DrawImage(IImageResource image, Rect destination);
 }
 
+/// <summary>Optional positive integer source-pixel regions, without flipping or atlas metadata.</summary>
+public interface IImageRegionCanvas : IImageCanvas
+{
+    void DrawImageRegion(IImageResource image, Rect source, Rect destination);
+}
+
 public interface IFramePlatform : IDisposable
 {
     PlatformFrame Poll();

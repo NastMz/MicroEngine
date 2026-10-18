@@ -2,6 +2,7 @@
     <Compile Include="../../examples/FirstPlayable/ControllerPlatform.cs" Link="ControllerPlatform.cs" />
     <Compile Include="../../examples/FirstPlayable/AvatarRenderer.cs" Link="AvatarRenderer.cs" />
     <Compile Include="../../examples/FirstPlayable/AvatarImage.cs" Link="AvatarImage.cs" />
+    <Compile Include="../../examples/FirstPlayable/AvatarSprites.cs" Link="AvatarSprites.cs" />
     <Compile Include="../../examples/FirstPlayable/GoalRenderer.cs" Link="GoalRenderer.cs" />
   </ItemGroup>
   <ItemGroup><ProjectReference Include="../../examples/RoomExplorer.Model/RoomExplorer.Model.csproj" /></ItemGroup>

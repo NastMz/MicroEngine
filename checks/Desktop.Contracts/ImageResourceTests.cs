@@ -40,6 +40,7 @@ public sealed class ImageResourceTests
             if (ReleaseErrors.TryGetValue(id, out var error)) throw error;
         }
         public void Close() { Trace.Add("close"); if (CloseError is not null) throw CloseError; }
+        public void DrawImageRegion(object image, Rect source, Rect destination) => throw new NotImplementedException();
     }
     private static PixelImage Pixel() => new(1, 1, new Rgba[] { new(1, 2, 3, 4) });
     private static DesktopPlatform Window(Api api, WindowReservation? reservation = null)
