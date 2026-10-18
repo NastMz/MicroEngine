@@ -2,7 +2,7 @@
 
 Local feat/adventure-composition, baseline31ebe37. Owner accepts the functional cycle,
 not the earlier basic presentation. [Contract](../../specs/adventure-composition.md).
-Technical candidate pending independent verification; new subjective composition not accepted.
+Technically accepted after independent verification; new subjective composition not accepted.
 
 ## What changed, and why no engine expansion
 
@@ -74,3 +74,26 @@ acceptance or start another polish/mechanics horizon without a real roadmap need
 
 ![Courtyard composition](composition-courtyard.png)
 ![Shrine composition](composition-shrine.png)
+
+## Independent closure2026-10-18
+
+Frozen39f35fce3c3f1d7ef4808a5747ef1bd7bfdfc6b2 vs31ebe37: independent
+kenney_platformer_verify PASS S1-S3, no blockers/correction. FreshserialRelease
+Hosting31/Loop159/Desktop38/TwoD10/Platformer6/Adventure13 =257/257PASS;
+Adventure build0warnings/errors. Fresh Adventure native course460/reuse7/reset/composition/
+cleanclose and7CLIexits0/1/2PASS; Platformer native/course/replay/CLIregressionPASS.
+Remaining13nativeharnesses not rerun: priorproof892d8ff retained on unchangedprotectedpaths,
+not represented as a fresh15harness run. All10assetmanifest/Gitblobhashes and baselineblobparityPASS.
+
+Fresh gitarchive scratch274sourcefiles, initial/finaldigest
+36a928645c6df1c991b3ff82baafa264ea0de8805243cd74e20387f482d68f6a identical;
+no.git/.codegraph/bin/obj/.vs copied. Scratch:
+C:/Users/Usuario/AppData/Local/Temp/MicroEngine-ADVART2-verify-bf23d1e1e7a143fe99adb1aaa0a4bc13.
+No requiredcheckfailure. Independent crop/geometry/publicboundary reviewPASS: all volumetric
+art lies within current solids, flatdecor does not imply newbarriers, originalassets/provenance
+and engine/model/oldconsumer/config/dependencies unchanged. Fresh native captures pixel-identical
+to committed screenshots (courtyard6b28bf930cc138d82fabcf5b75c38dea556bbc6b61c54d8abeedd59477b7dd1b;
+shrineb648df89910649452d6b9e08b3d90b9a5692c7bf0b4811dafe6a69466d83b0f6).
+Root accepts objective ADV-ART-2/ME062 only. Owner functional feedback recorded; new visual
+composition/fullH2acceptance not inferred. This bounded pass ends at subjective composition,
+not more speculative polish/editor work. Local-only, no push/main, unrelated.gitignore/.codegraph preserved.

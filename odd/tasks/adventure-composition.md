@@ -8,9 +8,9 @@ S2. "Mantén el ciclo jugable actual y sus pruebas de regresión." Preserve all 
 S3. "Después de la mejora, evalúa qué hemos aprendido sobre el pipeline de tiles, la composición de escenarios y la separación entre motor y contenido." Record selection, layer/content policy, evidence, honest limitations and whether a general capability expansion is actually necessary. This is one bounded art pass, not indefinite development; subjective new composition remains owner-owned.
 
 ## Tasks
-- T1 / S1-S3 / inline / completed / content design and review existing atlas regions; meaningful RED not applicable to passive art selection.
-- T2 / S1-S2 / inline / completed / runnable composition tests RED then GREEN/content/native proof, one coherent behavior commit.
-- T3 / S1-S3 / independent verification / in progress / protected-byte/regression review and evidence/closure.
+- T1 / S1-S3 / inline / completed / 39f35fc / content design and review existing atlas regions; meaningful RED not applicable to passive art selection.
+- T2 / S1-S2 / inline / completed / 39f35fc / runnable composition tests RED then GREEN/content/native proof, one coherent behavior commit.
+- T3 / S1-S3 / independent verification / completed / frozen39f35fc PASS / protected-byte/regression review and evidence/closure.
 
 ## Log
 L1. Owner request verbatim:
@@ -27,3 +27,7 @@ Puedes continuar autónomamente sin solicitar nuevas aprobaciones técnicas ordi
 L2. Owner accepts existing functional cycle, not existing or future composition. No main/push authorization inferred under latest local-only horizon restriction. Preserve .gitignore/.codegraph. Existing source/header/provenance reviewed via CodeGraph and targeted docs; read-only atlas mapping delegated after evidence budget. Parent writes inline, no writer trigger. Memory mirror pending: runtime identity unavailable, no agent memory calls permitted. RDD remains explicitly off. Existing reusable rendering suffices provisionally; no significant architecture decision/new ADR expected.
 
 L3. New composition regression RED1 (missing solid-aligned pillar), then added stronger complete16x16-source diversity assertions after noticing edge clips could inflate total diversity; RED1 at newassertion, all originalassertionsretained. A proposed replacement of that newlyauthored count assertion was rejected byauto-review; no suchreplacementexecuted. Kept existingassertion and added strictfulltilecoverage instead. GREEN13/13, allprior12retained. ActualPNGnative originalpath/grass/floor/rugRGB added, gateopenreferenceupdatedto path, closedgate/2x/HUD460stepcourse/replay/sevenleases/CLI7PASS; assethashesPASS, build0warnings/errors. Onevisualreadback replaced an unintended grassedge crop with grassvariant before freeze. Rootcontentdesign uses existingcontracts only, noADR. Rollback entireconsumercomposition+newchecks/docs only. RDDexplicitlyoff. Independent final reviewpending; sourcefileshaven'tchanged outside narrowscope.
+
+L4. Independent kenney_platformer_verify PASS S1-S3/no blockers/correction on39f35fc.257/257managed, freshAdventure+PlatformernativePASS; other13nativepriorproof892d8ffretained-notrerun.10assetmanifest/Gitblob/baselinehashesPASS;274sourcefileinitial/finaldigest36a928645c6df1c991b3ff82baafa264ea0de8805243cd74e20387f482d68f6a identical. Screenshotsbyte/pixelparityPASS, allselectedcrops visuallychecked, propsalignedwithsolids, protectedsourcesunchanged. No requiredfailures. Rootobjectiveacceptance only, finitepassendsatnewsubjectivecompositiongate. Parentfinalspotcheck/native/link/diffplanned below. Memorymirrorpending no registeredidentity. Risk: none (consumercontentonly, noengine/sharedcontract/dependencychange).
+
+L5. Parent final currentnative -NoBuild plus7CLIcases/assethash spotcheckPASS; changedlocaldoclinks anddiffcheckPASS. No furthercodechanges after frozen39f35fc. Localclosurecommit follows; no remote/main operations.

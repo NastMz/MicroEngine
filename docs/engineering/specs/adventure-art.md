@@ -1,6 +1,6 @@
 # ADV-ART-1 — licensed Courtyard Key presentation
 
-Status: technically accepted2026-10-18 by root after independent S1-S4 PASS on892d8ff; [evidence](../evidence/adv-1/art.md). Subjective presentation remains pending.
+Status: technically accepted2026-10-18 by root after independent S1-S4 PASS on892d8ff; [evidence](../evidence/adv-1/art.md). Owner subsequently evaluated the functional cycle positively but requested richer composition; ADV-ART-2 addresses that observation, not implicit visual acceptance.
 
 Presentation-only refinement of [ADV-1](adventure.md), not a new gameplay horizon.
 Engine, gameplay, input, collision, rooms, interactions and completion/replay remain unchanged.

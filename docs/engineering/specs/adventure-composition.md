@@ -1,5 +1,7 @@
 # ADV-ART-2 — bounded authored room composition
 
+Status: technically accepted2026-10-18 by root after independent S1-S3PASS on39f35fc; [evidence](../evidence/adv-1/composition.md). Subjective composition pending.
+
 Presentation-only continuation of [ADV-ART-1](adventure-art.md); owner positively evaluated
 the functional cycle, but requested a finite visual composition pass. Root authorizes this
 local content design under existing public contracts; no new engine architecture decision.
