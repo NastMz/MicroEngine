@@ -100,3 +100,12 @@ product/fullH3 acceptance or deferredtile/visualtool authority inferred. RDD rem
 No independentreadytask beyond newplayable subjectivegate; do not add more RPG features by analogy.
 
 ![Battle](battle.png)
+
+## Local main delivery
+Normal fast-forward2415072..b6660cf completed under the latest owner maturity authorization,
+including the earlier verified ancestorstack. No history rewrite or remote publication.
+Frozen executableeb595a8 parity and integrated RpgNativeSmoke-NoBuild/CLI7spotcheckPASS;
+.gitignore's pre-existing working bytes preserved. Origin/main remains2415072.
+This changes local delivery state, not product/fullH3 acceptance. Current main's later passive
+commit records this event without modifying executable bytes. Sourceworkunits ecf239c/e35b9bd/
+eb595a8 and technicalclosureb6660cf remain traceable.
