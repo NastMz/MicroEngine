@@ -59,7 +59,7 @@ try
             try
             {
                 if(!Raylib.ExportImage(capture,Path.Combine(Path.GetTempPath(),name)))throw new InvalidOperationException("Campaign capture failed.");
-                var color=Raylib.GetImageColor(capture,350,400);return(color.R,color.G,color.B);
+                var color=Raylib.GetImageColor(capture,500,450);return(color.R,color.G,color.B);
             }
             finally{Raylib.UnloadImage(capture);}
         }
@@ -78,11 +78,21 @@ try
             bool jump=current.Grounded&&current.Body.X==previous&&current.Body.X<1450;previous=current.Body.X;
             campaign.Update(Course.Step,new(["right"],jump?["jump"]:[]));
         }
-        if(!campaign.Current.Dead)throw new InvalidOperationException("Second-level hazard not reached.");
+        if(!campaign.Current.Dead || campaign.Current.Body.Y<=528 || campaign.Current.Body.X>=720)throw new InvalidOperationException("Second-level gap death not reached.");
         CampaignFrame("microengine-meadow2-retry.png");
         campaign.Update(Course.Step,new(["right"],["jump"]));
         if(campaign.LevelNumber!=2||campaign.Current.Dead||campaign.Current.CollectedCount!=0)throw new InvalidOperationException("Current-level retry failed.");
-        int campaignSecond=Course.Run(campaign.Current,(delta,_)=>art.AdvanceCampaign(delta,campaign));
+                bool raisedCaptured=false;
+        int campaignSecond=Course.Run(campaign.Current,(delta,state)=>
+        {
+            art.AdvanceCampaign(delta,campaign);
+            if(!raisedCaptured&&state.CollectedCount==2)
+            {
+                if(state.Body.Y>=392)throw new InvalidOperationException("Elevated coin collected from floor.");
+                CampaignFrame("microengine-meadow3-raised.png");raisedCaptured=true;
+            }
+        });
+        if(!raisedCaptured)throw new InvalidOperationException("Raised route not rendered.");
         if(!campaign.Completed)throw new InvalidOperationException("Second flag did not complete campaign.");
         CampaignFrame("microengine-meadow2-final.png");
         campaign.Update(Course.Step,new(["right"],["jump"]));
@@ -92,6 +102,7 @@ try
         campaign.Update(Course.Step,new([],["jump"]));
         if(campaignSecond!=Course.Run(campaign.Current)||!campaign.Completed)throw new InvalidOperationException("Campaign second-level replay diverged.");
         Console.WriteLine("platformer:campaign:two-levels:verified");
+        Console.WriteLine("platformer:distinct-gap-raised-route:verified");
     }
     Console.WriteLine("platformer:closed");return 0;
 }

@@ -73,7 +73,7 @@ public sealed class CampaignTests
         Assert.AreEqual(1,first.LevelNumber);
         Assert.AreSame(LevelGame.Solids,first.Terrain); Assert.AreSame(LevelGame.Coins,first.CoinPositions);
         Assert.AreEqual(LevelGame.Hazard,first.Danger); Assert.AreEqual(LevelGame.Flag,first.Goal);
-        Assert.AreEqual(new Rect(384,384,96,48),second.Terrain[1]);
+        Assert.AreEqual(new Rect(576,432,1344,48),second.Terrain[1]);
         Assert.AreEqual(new Rect(240,400,24,24),second.CoinPositions[0]);
         Assert.AreEqual(new Rect(1536,412,48,20),second.Danger);
         Assert.ThrowsExactly<NotSupportedException>(()=>((IList<Rect>)second.Terrain)[0]=default);

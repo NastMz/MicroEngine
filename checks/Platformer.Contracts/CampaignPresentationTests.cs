@@ -17,12 +17,14 @@ public sealed class CampaignPresentationTests
     {
         public List<Image> Images { get; } = [];
         public List<Rect> Regions { get; } = [];
+        public List<(Rect Source,Rect Destination)> Draws { get; } = [];
+        public List<Rect> WholeImages { get; } = [];
         public List<string> Labels { get; } = [];
-        public void Clear(Rgba color) { Regions.Clear(); Labels.Clear(); }
+        public void Clear(Rgba color) { Regions.Clear(); Labels.Clear(); Draws.Clear(); WholeImages.Clear(); }
         public void Fill(Rect rectangle, Rgba color) { }
         public IImageResource CreateImage(PixelImage image) { var value=new Image(); Images.Add(value); return value; }
-        public void DrawImage(IImageResource image, Rect destination) { }
-        public void DrawImageRegion(IImageResource image, Rect source, Rect destination) => Regions.Add(source);
+        public void DrawImage(IImageResource image, Rect destination) => WholeImages.Add(destination);
+        public void DrawImageRegion(IImageResource image, Rect source, Rect destination) { Regions.Add(source); Draws.Add((source,destination)); }
         public void Label(string text, int x,int y,int pixelSize,Rgba color) => Labels.Add(text);
     }
     private static PlatformerPresentation Art() => new(Path.Combine(AppContext.BaseDirectory,"Assets"),
@@ -55,5 +57,15 @@ public sealed class CampaignPresentationTests
         art.Advance(TimeSpan.Zero,second);art.Draw(canvas,second);
         Assert.AreEqual(initial,canvas.Regions[^1]);
         Assert.AreEqual(first.RunNumber,second.RunNumber);
+    }
+    [TestMethod]
+    public void RendererDoesNotBridgePhysicalGapAndUsesElevatedCoinContent()
+    {
+        using var art=Art();var canvas=new Canvas();var second=new LevelGame(2);
+        art.Draw(canvas,second);
+        Assert.IsFalse(canvas.Draws.Any(draw=>draw.Destination.Y==432 && draw.Destination.X>=480 && draw.Destination.X<576));
+        Assert.IsTrue(canvas.WholeImages.Contains(new Rect(864,304,24,24)));
+        Assert.IsTrue(canvas.Draws.Any(draw=>draw.Destination.X==816 && draw.Destination.Y==336));
+        Assert.IsFalse(second.Completed);Assert.AreEqual(0,second.CollectedCount);
     }
 }

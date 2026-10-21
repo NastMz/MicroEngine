@@ -5,11 +5,10 @@ namespace Platformer.Model;
 /// <summary>One game's rules and immutable content, using the optional engine collision module.</summary>
 public sealed class LevelGame
 {
-    public static IReadOnlyList<Rect> Solids { get; } = Array.AsReadOnly<Rect>([
-        new(0,432,1920,48), new(336,384,96,48), new(432,360,96,72), new(768,336,144,24), new(1104,384,144,48)]);
-    public static IReadOnlyList<Rect> Coins { get; } = Array.AsReadOnly<Rect>([new(192,400,24,24), new(672,400,24,24), new(1344,400,24,24)]);
-    public static Rect Hazard => new(1440,412,48,20);
-    public static Rect Flag => new(1824,336,48,96);
+    public static IReadOnlyList<Rect> Solids => LevelContent.First.Terrain;
+    public static IReadOnlyList<Rect> Coins => LevelContent.First.Coins;
+    public static Rect Hazard => LevelContent.First.Danger;
+    public static Rect Flag => LevelContent.First.Goal;
     public int LevelNumber { get; }
     public IReadOnlyList<Rect> Terrain { get; }
     public IReadOnlyList<Rect> CoinPositions { get; }
@@ -19,16 +18,16 @@ public sealed class LevelGame
     public LevelGame() : this(1) { }
     public LevelGame(int levelNumber)
     {
-        if (levelNumber is not (1 or 2)) throw new ArgumentOutOfRangeException(nameof(levelNumber));
+        var content = LevelContent.For(levelNumber);
         LevelNumber = levelNumber;
-        Terrain = levelNumber == 1 ? Solids : Array.AsReadOnly<Rect>([
-            new(0,432,1920,48),new(384,384,96,48),new(480,360,96,72),new(864,336,144,24),new(1200,384,144,48)]);
-        CoinPositions = levelNumber == 1 ? Coins : Array.AsReadOnly<Rect>([new(240,400,24,24),new(720,400,24,24),new(1392,400,24,24)]);
-        Danger = levelNumber == 1 ? Hazard : new(1536,412,48,20);
-        Goal = Flag;
+        Terrain = content.Terrain;
+        CoinPositions = content.Coins;
+        Danger = content.Danger;
+        Goal = content.Goal;
+        _collected = new bool[CoinPositions.Count];
         _world = new(Terrain);
     }
-    private readonly bool[] _collected = new bool[3];
+    private readonly bool[] _collected;
     private long _pending = -1;
     private float _velocity;
     public Rect Body { get; private set; } = new(48,392,28,40);
@@ -38,6 +37,7 @@ public sealed class LevelGame
     public bool Walking { get; private set; }
     public int RunNumber { get; private set; }
     public float CameraX => Math.Clamp(Body.X + 14 - 384, 0, 1152);
+    public int CoinCount => CoinPositions.Count;
     public int CollectedCount => _collected.Count(value => value);
     public bool IsCollected(int index) => _collected[index];
     public void ClearJumpBuffer() => _pending = -1;
@@ -66,7 +66,7 @@ public sealed class LevelGame
         if (Grounded && _pending >= 0) Launch();
         if (Body.Y > 528 || StaticWorld.Overlaps(Body, Danger)) { Dead = true; Freeze(); return; }
         for (int i = 0; i < _collected.Length; i++) if (!_collected[i] && StaticWorld.Overlaps(Body, CoinPositions[i])) _collected[i] = true;
-        if (CollectedCount == 3 && StaticWorld.Overlaps(Body, Goal)) { Completed = true; Freeze(); }
+        if (CollectedCount == CoinCount && StaticWorld.Overlaps(Body, Goal)) { Completed = true; Freeze(); }
     }
     private void Launch() { _velocity = -540; Grounded = false; _pending = -1; }
     private void Freeze() { _velocity = 0; _pending = -1; Walking = false; }

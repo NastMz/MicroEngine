@@ -36,7 +36,7 @@ public sealed class PlatformerPresentation : IDisposable
     {
         ArgumentNullException.ThrowIfNull(game);
         string status = game.Completed ? "Meadow Run complete! Space to replay" : game.Current.Completed ? "Level complete! Space to continue" : game.Current.Dead ? "Spikes! Space to retry this level" : "A/D or arrows: move | Space: jump | Esc: exit";
-        DrawCore(canvas, game.Current, $"Level {game.LevelNumber}/2 - Coins {game.Current.CollectedCount}/3 - reach the green flag", status);
+        DrawCore(canvas, game.Current, $"Level {game.LevelNumber}/2 - Coins {game.Current.CollectedCount}/{game.Current.CoinCount} - reach the green flag", status);
     }
     public void Advance(TimeSpan elapsed, LevelGame game)
     {
@@ -60,14 +60,14 @@ public sealed class PlatformerPresentation : IDisposable
             var tile = _images.Get(images, y == solid.Y ? "terrain_grass_block_top" : "terrain_grass_block_center");
             images.DrawImageRegion(tile, new(0,0,width * 64 / 48,height * 64 / 48), new(x-game.CameraX,y,width,height));
         }
-        for (int i = 0; i < 3; i++) if (!game.IsCollected(i)) Whole(images, "coin_gold", game.CoinPositions[i], game.CameraX);
+        for (int i = 0; i < game.CoinCount; i++) if (!game.IsCollected(i)) Whole(images, "coin_gold", game.CoinPositions[i], game.CameraX);
         Whole(images, "spikes", game.Danger, game.CameraX);
         Whole(images, "flag_green_a", game.Goal, game.CameraX);
         var source = game.Dead ? _frames["character_beige_hit"] : !game.Grounded ? _frames["character_beige_jump"] : game.Walking ? _walk.Current : _frames["character_beige_idle"];
         images.DrawImageRegion(_images.Get(images, "spritesheet-characters-default"), source, new(game.Body.X-game.CameraX-18,game.Body.Y+game.Body.Height-64,64,64));
         if (canvas is ILabelCanvas labels)
         {
-            labels.Label(header ?? $"Coins {game.CollectedCount}/3 - reach the green flag", 16,16,20,new(25,40,55));
+            labels.Label(header ?? $"Coins {game.CollectedCount}/{game.CoinCount} - reach the green flag", 16,16,20,new(25,40,55));
             labels.Label(status ?? (game.Completed ? "Level complete! Space to replay" : game.Dead ? "Spikes! Space to retry" : "A/D or arrows: move | Space: jump | Esc: exit"),16,46,18,new(25,40,55));
         }
     }
