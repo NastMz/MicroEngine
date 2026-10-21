@@ -14,4 +14,4 @@
     <ProjectReference Include="../../examples/Platformer.Model/Platformer.Model.csproj" />
   </ItemGroup>
   <ItemGroup><Compile Include="../../examples/Platformer/GamePlatform.cs" Link="GamePlatform.cs" /></ItemGroup>
-</Project>
+<ItemGroup><Compile Include="../../examples/Platformer/PlatformerPresentation.cs" Link="PlatformerPresentation.cs"/><Content Include="../../examples/Platformer/Assets/**" Link="Assets/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/></ItemGroup></Project>

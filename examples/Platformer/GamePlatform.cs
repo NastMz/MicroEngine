@@ -6,20 +6,30 @@ namespace Platformer;
 public sealed class GamePlatform : IFramePlatform
 {
     private readonly IFramePlatform _inner;
-    private readonly LevelGame _game;
+    private readonly Action _clear;
     public GamePlatform(IFramePlatform inner, LevelGame game)
     {
         ArgumentNullException.ThrowIfNull(inner); ArgumentNullException.ThrowIfNull(game);
-        (_inner, _game) = (inner, game);
+        (_inner, _clear) = (inner, game.ClearJumpBuffer);
+    }
+    public static GamePlatform ForCampaign(IFramePlatform inner, CampaignGame game)
+    {
+        ArgumentNullException.ThrowIfNull(game);
+        return new GamePlatform(inner, (Action)game.ClearJumpBuffer);
+    }
+    private GamePlatform(IFramePlatform inner, Action clear)
+    {
+        ArgumentNullException.ThrowIfNull(inner);
+        (_inner, _clear) = (inner, clear);
     }
     public PlatformFrame Poll()
     {
         var frame = _inner.Poll();
-        if (!frame.Active || frame.CloseRequested) _game.ClearJumpBuffer();
+        if (!frame.Active || frame.CloseRequested) _clear();
         return frame;
     }
     public void Begin() => _inner.Begin();
     public ICanvas Canvas => _inner.Canvas;
     public void End() => _inner.End();
-    public void Dispose() { _game.ClearJumpBuffer(); _inner.Dispose(); }
+    public void Dispose() { _clear(); _inner.Dispose(); }
 }

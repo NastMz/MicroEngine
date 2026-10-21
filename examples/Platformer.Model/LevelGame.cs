@@ -10,7 +10,24 @@ public sealed class LevelGame
     public static IReadOnlyList<Rect> Coins { get; } = Array.AsReadOnly<Rect>([new(192,400,24,24), new(672,400,24,24), new(1344,400,24,24)]);
     public static Rect Hazard => new(1440,412,48,20);
     public static Rect Flag => new(1824,336,48,96);
-    private readonly StaticWorld _world = new(Solids);
+    public int LevelNumber { get; }
+    public IReadOnlyList<Rect> Terrain { get; }
+    public IReadOnlyList<Rect> CoinPositions { get; }
+    public Rect Danger { get; }
+    public Rect Goal { get; }
+    private readonly StaticWorld _world;
+    public LevelGame() : this(1) { }
+    public LevelGame(int levelNumber)
+    {
+        if (levelNumber is not (1 or 2)) throw new ArgumentOutOfRangeException(nameof(levelNumber));
+        LevelNumber = levelNumber;
+        Terrain = levelNumber == 1 ? Solids : Array.AsReadOnly<Rect>([
+            new(0,432,1920,48),new(384,384,96,48),new(480,360,96,72),new(864,336,144,24),new(1200,384,144,48)]);
+        CoinPositions = levelNumber == 1 ? Coins : Array.AsReadOnly<Rect>([new(240,400,24,24),new(720,400,24,24),new(1392,400,24,24)]);
+        Danger = levelNumber == 1 ? Hazard : new(1536,412,48,20);
+        Goal = Flag;
+        _world = new(Terrain);
+    }
     private readonly bool[] _collected = new bool[3];
     private long _pending = -1;
     private float _velocity;
@@ -47,9 +64,9 @@ public sealed class LevelGame
         Grounded = motion.BlockedY && _velocity > 0;
         if (motion.BlockedY) _velocity = 0;
         if (Grounded && _pending >= 0) Launch();
-        if (Body.Y > 528 || StaticWorld.Overlaps(Body, Hazard)) { Dead = true; Freeze(); return; }
-        for (int i = 0; i < _collected.Length; i++) if (!_collected[i] && StaticWorld.Overlaps(Body, Coins[i])) _collected[i] = true;
-        if (CollectedCount == 3 && StaticWorld.Overlaps(Body, Flag)) { Completed = true; Freeze(); }
+        if (Body.Y > 528 || StaticWorld.Overlaps(Body, Danger)) { Dead = true; Freeze(); return; }
+        for (int i = 0; i < _collected.Length; i++) if (!_collected[i] && StaticWorld.Overlaps(Body, CoinPositions[i])) _collected[i] = true;
+        if (CollectedCount == 3 && StaticWorld.Overlaps(Body, Goal)) { Completed = true; Freeze(); }
     }
     private void Launch() { _velocity = -540; Grounded = false; _pending = -1; }
     private void Freeze() { _velocity = 0; _pending = -1; Walking = false; }

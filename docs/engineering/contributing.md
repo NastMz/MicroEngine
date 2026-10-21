@@ -156,3 +156,9 @@ ADV-ART-1 refreshes only Courtyard Key art using original ArMM1998 CC0 sheets an
 ADV-ART-2 keeps the same Adventure run command/controls and adds bounded authored room composition only. [Comparison, technical checks and pipeline lessons](evidence/adv-1/composition.md). Existing Adventure native harness now also requires four source-pixel scene composition samples; all prior course/CLI/cleanup checks remain. No extra assets, importer, editor or engine API.
 
 RPG-1 Trail Duel: `dotnet run --project examples/Rpg/Rpg.csproj -c Release`. [Controls, deterministic outcomes, technical proof and owner-only evaluation](evidence/rpg-1/README.md). New checks: Rpg.Contracts and `pwsh -NoProfile -File checks/RpgNativeSmoke.ps1`; retain old regressions. Public Explorer supplies navigation; combat/UI/progression stay in the new consumer. No engine change, package update, runtime download or save support. Images/labels required by this example only.
+
+## Meadow Run phase2
+[MR-2 run and evidence](evidence/meadow-2/README.md): same Platformer project now runs two levels;
+Space after first flag continues, death retries current level, final Space restarts campaign.
+The original standalone LevelGame remains a regression API. Current technical/product status
+is in backlog and evidence; no audio/enemy/pause/menu implementation is implied.

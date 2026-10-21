@@ -665,7 +665,7 @@ Owner accepts transverse assessment/LAUNCH-1 and authorizes incremental minigame
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
 | ME-071 | permanent Asset Readiness and bounded minigame plan | P1 | completed | ME-070; owner direction | [Roadmap](evidence/meadow-2/roadmap.md), [MR-2](specs/meadow-progression.md) |
-| ME-072 | two-level consumer progression | P1 | in-progress | ME-071 reviewed approval | [MR-2](specs/meadow-progression.md) |
-| ME-073 | native progression and independent closure | P1 | pending | ME-072 | [MR-2](specs/meadow-progression.md) |
+| ME-072 | two-level consumer progression | P1 | in-review | ME-071 reviewed approval | [MR-2](specs/meadow-progression.md) |
+| ME-073 | native progression and independent closure | P1 | in-progress | ME-072 | [MR-2](specs/meadow-progression.md) |
 Only MR-2 executable horizon; enemies/audio/powers/menu remain capability candidates. Root8976f97,
 feat/meadow-progression; unrelated.gitignore/.codegraph preserved, RDDoff, memorymirrorpending.

@@ -50,6 +50,48 @@ try
         int second=Course.Run(game,(delta,state)=>art.Advance(delta,state));
         if(first!=second || !game.Completed || game.CollectedCount!=3) throw new InvalidOperationException("Public replay diverged.");
         Console.WriteLine($"platformer:course:{first}:verified"); Console.WriteLine("platformer:reset:verified");
+        var campaign=new CampaignGame();
+        (byte R,byte G,byte B) CampaignFrame(string name)
+        {
+            art.AdvanceCampaign(TimeSpan.Zero,campaign);
+            for(int i=0;i<2;i++){window.Begin();art.DrawCampaign(window.Canvas,campaign);window.End();}
+            var capture=Raylib.LoadImageFromScreen();
+            try
+            {
+                if(!Raylib.ExportImage(capture,Path.Combine(Path.GetTempPath(),name)))throw new InvalidOperationException("Campaign capture failed.");
+                var color=Raylib.GetImageColor(capture,350,400);return(color.R,color.G,color.B);
+            }
+            finally{Raylib.UnloadImage(capture);}
+        }
+        var levelOnePixel=CampaignFrame("microengine-meadow2-level1.png");
+        int campaignFirst=Course.Run(campaign.Current,(delta,_)=>art.AdvanceCampaign(delta,campaign));
+        if(campaign.Completed)throw new InvalidOperationException("First flag completed campaign.");
+        CampaignFrame("microengine-meadow2-continue.png");
+        campaign.Update(Course.Step,new(["right"],["jump"]));
+        if(campaign.LevelNumber!=2 || campaign.Current.Body!=new Rect(48,392,28,40))throw new InvalidOperationException("Level continuation consumed-input mismatch.");
+        var levelTwoPixel=CampaignFrame("microengine-meadow2-level2.png");
+        if(levelOnePixel==levelTwoPixel)throw new InvalidOperationException("Distinct second-level terrain pixels missing.");
+        float previous=float.NaN;
+        for(int i=0;i<2000&&!campaign.Current.Dead;i++)
+        {
+            var current=campaign.Current;
+            bool jump=current.Grounded&&current.Body.X==previous&&current.Body.X<1450;previous=current.Body.X;
+            campaign.Update(Course.Step,new(["right"],jump?["jump"]:[]));
+        }
+        if(!campaign.Current.Dead)throw new InvalidOperationException("Second-level hazard not reached.");
+        CampaignFrame("microengine-meadow2-retry.png");
+        campaign.Update(Course.Step,new(["right"],["jump"]));
+        if(campaign.LevelNumber!=2||campaign.Current.Dead||campaign.Current.CollectedCount!=0)throw new InvalidOperationException("Current-level retry failed.");
+        int campaignSecond=Course.Run(campaign.Current,(delta,_)=>art.AdvanceCampaign(delta,campaign));
+        if(!campaign.Completed)throw new InvalidOperationException("Second flag did not complete campaign.");
+        CampaignFrame("microengine-meadow2-final.png");
+        campaign.Update(Course.Step,new(["right"],["jump"]));
+        if(campaign.LevelNumber!=1||campaign.Completed||campaign.Current.Body!=new Rect(48,392,28,40))throw new InvalidOperationException("Final campaign restart failed.");
+        CampaignFrame("microengine-meadow2-restart.png");
+        if(campaignFirst!=Course.Run(campaign.Current))throw new InvalidOperationException("Campaign first-level replay diverged.");
+        campaign.Update(Course.Step,new([],["jump"]));
+        if(campaignSecond!=Course.Run(campaign.Current)||!campaign.Completed)throw new InvalidOperationException("Campaign second-level replay diverged.");
+        Console.WriteLine("platformer:campaign:two-levels:verified");
     }
     Console.WriteLine("platformer:closed");return 0;
 }

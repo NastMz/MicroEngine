@@ -10,10 +10,10 @@ public static class Course
         for (int i = 1; i <= 2000; i++)
         {
             int next = Enumerable.Range(0, 3).FirstOrDefault(index => !game.IsCollected(index), -1);
-            float target = next >= 0 ? LevelGame.Coins[next].X + 12 : LevelGame.Flag.X + 24;
+            float target = next >= 0 ? game.CoinPositions[next].X + 12 : game.Goal.X + 24;
             bool right = game.Body.X + 14 < target;
             bool obstacle = right && game.Body.X == previousX;
-            bool hazard = right && game.Body.X + 28 >= LevelGame.Hazard.X - 60 && game.Body.X + 28 <= LevelGame.Hazard.X;
+            bool hazard = right && game.Body.X + 28 >= game.Danger.X - 60 && game.Body.X + 28 <= game.Danger.X;
             bool jump = game.Grounded && (obstacle || hazard);
             previousX = game.Body.X;
             game.Update(Step, new(right ? ["right"] : [], jump ? ["jump"] : []));
