@@ -11,8 +11,8 @@ S5. "Continúa autónomamente con las tareas técnicamente justificadas. Reserva
 
 ## Tasks
 - T1 / S1-S4 / inline with read-only mapping / completed / 47cf395 / acceptance, cross-scenario assessment and next horizon packet.
-- T2 / S4-S5 / inline / in-review / LAUNCH-1 extraction after independent scope review, RED/GREEN tests and three unchanged native regressions.
-- T3 / S1-S5 / independent verification / pending / protected parity, final evidence and technical closure.
+- T2 / S4-S5 / inline / completed / dc670cc / LAUNCH-1 extraction after independent scope review, RED/GREEN tests and three unchanged native regressions.
+- T3 / S1-S5 / independent verification / completed / protected parity, final evidence and technical closure.
 
 ## Log
 L1. Owner2026-10-18: "He completado la validación manual del escenario RPG de H3." "Todos los comportamientos probados funcionaron correctamente." "Visualmente el resultado es suficiente para una demostración técnica. No considero necesario agregar más contenido, criaturas, animaciones o mejoras artísticas en esta etapa." "El combate actual se parece más a un RPG clásico estilo Final Fantasy que al sistema específico de Pokémon, pero eso es aceptable para el objetivo técnico de H3. Las mecánicas propias de Pokémon se evaluarán en una etapa posterior."
@@ -21,3 +21,5 @@ L2. Root inspected clean scoped baseline; unrelated.gitignore and .codegraph pre
 L3. Independent cross_scenario_map preimplementation PASS, no blockers; shared source linked identically in each exe/test, keep per-game Usage. Root approves LAUNCH-1 under delegation, ME069 completed/ME070ready. Scope intentionally narrower than generic runner: no report/ownership changes. Documentation-only checks: no meaningful runnable RED, source-based review instead.
 
 L4. T1 committed47cf395. T2 inline rationale: one understood extraction, no Writer trigger; risk item3 shared CLI semantics. New parser stub runnableRED5/5 thenGREEN5/5. Delegated long checks cross_scenario_map283/283 and all3nativePASS, initial sandbox testhost connection failure resolved with same required test outside sandbox. Native scripts unchanged. ME070in-review; frozen independent verifier before completion. No full runner/UI work added.
+
+L5.2026-10-21: earlier verifier no verdict/usage limit preserved; fresh launch_final_verify independentlyPASS S1-S5,283tests/3native/2asset scripts/21byte-equivalent CLI comparisons. Parent native-NoBuild/CLI7PASS. ME070/T2/T3 completed on proof, source dc670cc. No skipped required checks. Protected bytes unchanged. No next implementation packet prepared; pause/restart is bounded future maturation candidate requiring concrete specification, not implicit engine/UI authority. Mirror pending runtimeidentity unavailable; no memory calls. Scope~300authoredlines, no PR/remote. Localmain maturity authority retained; no subjective gate for identical CLI.

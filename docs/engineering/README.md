@@ -10,7 +10,9 @@ This is the active context for the greenfield C#/.NET 2D framework.
 3. Check [roadmap](roadmap.md), [contributing](contributing.md) and [document policy](document-policy.md).
 4. Consult [history](history.md) for the retired prototype.
 
-## Current state — 2026-10-18
+## Current state — 2026-10-21
+
+Latest: [H3 bounded RPG accepted](evidence/rpg-1/acceptance.md) functionally and visually by the owner. [Cross-scenario assessment and LAUNCH-1 closure](evidence/scenario-maturation/assessment.md) records actual reuse, consumer policy, limits and next candidates;283 tests and independent compatibility proof. Earlier horizon notes below are historical, not pending gates.
 
 The prototype is retired and preserved at `legacy-final`. These bounded increments are
 implemented and technically verified; [current state](current-state.md) records exact

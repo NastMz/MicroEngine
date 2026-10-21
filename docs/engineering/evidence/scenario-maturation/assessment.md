@@ -68,3 +68,28 @@ three unchanged native scripts PASS, zero build warnings/errors. Initial sandbox
 to connect to testhost; the same check outside sandbox succeeded. No required failure remains.
 Independent frozen-commit final verification is still pending. No new subjective gate is needed
 for identical CLI behavior. Broader runner/GUI extraction remains unprepared, not next by inertia.
+
+## Independent closure — 2026-10-21
+Frozen dc670cc against4453e85: independent launch_final_verify PASS on S1-S5.
+283/283 managed tests, all three unchanged native scripts and both asset verifiers PASS.
+21/21 baseline/candidate direct executable invalid-argument comparisons were byte-identical:
+exit2, empty stdout, exact per-game Usage and no native startup. Existing valid cases and
+current-culture integer grammar passed. No required check skipped; initial sandbox temp-access
+failure resolved by identical escalated fresh git-archive verification, not weakened coverage.
+Protected-tree SHA256:48ED9D1B7F8B122A5BCC57540F801F998CB24D4E253A2DF745F7D6C0746FCE40.
+All Program suffixes from try through report/cleanup identical; models/assets/engine/dependencies
+and native scripts unchanged. Parent current RpgNativeSmoke-NoBuild/CLI7 spot check PASS.
+Root accepts objective LAUNCH-1/ME070. Risk item3 shared CLI, compatibility independently proven.
+No new manual test is needed for unchanged behavior. Original H3 functional/visual acceptance
+stands separately. Earlier final-verifier attempt returned no verdict because of a usage limit;
+this new independent frozen verification supplies the missing proof, not an inferred PASS.
+
+## Next work boundary
+No remaining prepared implementation task. Shared startup/reporting is demonstrated duplication,
+but a broader runner is not automatically necessary after this small extraction. The next
+product-facing maturation candidate is a bounded reusable pause/restart flow in one existing
+minigame, only after specifying pause-time/input/reset/ownership behavior and assessing actual
+reuse; not an approved engine scene/UI capability or a new prepared task. Audio, save UX,
+metadata/depth and additional backends retain their earlier concrete promotion requirements.
+Do not add another technical demo or Pokemon rules merely to create work. This assessment and
+LAUNCH-1 close the current executable horizon, with no new subjective experience to evaluate.
