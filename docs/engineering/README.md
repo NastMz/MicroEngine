@@ -88,3 +88,8 @@ Current selected H3 playable candidate: [RPG-1 Trail Duel](specs/rpg-encounter.m
 
 Asset Readiness is a permanent lightweight gate: [procedure](asset-readiness.md).
 Phase2 current packet: [MR-2](specs/meadow-progression.md), [staged roadmap](evidence/meadow-2/roadmap.md).
+
+Current2026-10-21: [Meadow Run MR-2](evidence/meadow-2/README.md) implements two-level progression
+with289managed/independent native proof, feature-only pending new subjective experience.
+[Asset Readiness](asset-readiness.md) now applies to future visual/sonic tasks; [phase roadmap](evidence/meadow-2/roadmap.md)
+keeps enemies/audio/powers/UI as candidate horizons, not simultaneously prepared implementation.

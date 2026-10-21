@@ -1,5 +1,7 @@
 # Current implementation state
 
+Latest2026-10-21: MR-2 two-level Meadow Run technically accepted on feat/meadow-progression, source bce6e82;289 tests/independent native/protected proof. [Play and evidence](evidence/meadow-2/README.md). Owner progression/clarity/feel evaluation pending; no main/push or additional mechanics. Asset Readiness is permanent. Earlier dated horizons below retain history.
+
 Latest2026-10-18: bounded H3 RPG functional and visual owner acceptance recorded at [acceptance](evidence/rpg-1/acceptance.md), executable5d768bf/main4453e85;278 tests/independent proof retained. No more RPG art or Pokemon-specific mechanics. [Cross-scenario maturation](evidence/scenario-maturation/assessment.md) owns the next assessed horizon. Dated pending states below are historical, not current blockers.
 
 Current2026-10-18: first Meadow Run platformer scenario accepted/closed after explicit owner normal/death-reset/win/visual/control feedback and independent public-boundary auditPASS. [Acceptance](evidence/kpf-1/acceptance.md). Next ADV-1 Courtyard Key two-area topdown consumer is approved after independent design; ME058/059/060completed: independent255/255tests/all15nativeharnesses/publicprobes/260filehashparityPASS, no blockers; parent native+7CLIspotcheckPASS. Objective ADV1 technicallyaccepted, new subjective navigation/interaction/readability/flow evaluation pending. Engine remains byte-unchanged from821450d. Local feat/courtyard-adventure only, no push/main integration. Prior unobserved KPF acceptance statements below are dated history.

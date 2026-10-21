@@ -665,7 +665,13 @@ Owner accepts transverse assessment/LAUNCH-1 and authorizes incremental minigame
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
 | ME-071 | permanent Asset Readiness and bounded minigame plan | P1 | completed | ME-070; owner direction | [Roadmap](evidence/meadow-2/roadmap.md), [MR-2](specs/meadow-progression.md) |
-| ME-072 | two-level consumer progression | P1 | in-review | ME-071 reviewed approval | [MR-2](specs/meadow-progression.md) |
-| ME-073 | native progression and independent closure | P1 | in-progress | ME-072 | [MR-2](specs/meadow-progression.md) |
+| ME-072 | two-level consumer progression | P1 | completed | ME-071 reviewed approval | [MR-2](specs/meadow-progression.md) |
+| ME-073 | native progression and independent closure | P1 | completed | ME-072 | [MR-2](specs/meadow-progression.md) |
 Only MR-2 executable horizon; enemies/audio/powers/menu remain capability candidates. Root8976f97,
 feat/meadow-progression; unrelated.gitignore/.codegraph preserved, RDDoff, memorymirrorpending.
+
+ME071/072/073closure2026-10-21: designae9754f/sourcebce6e82 independentlyPASS S1-S6,
+289/289managed,3freshnative/2otherassetverifiers,9/9originalPlatformerhashes/11assetbytes,
+protected90entryhashparityPASS; parentnative/CLI7PASS. [Evidence/subjectivehandoff](evidence/meadow-2/README.md).
+Two-levelplayability ownergatepending, no otherreadytask; do not implement futureenemies/audio/powers
+fromcandidateinventory. Localfeatureonly/no main/push, preserve.gitignore/.codegraph, RDDoff.
