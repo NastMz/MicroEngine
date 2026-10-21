@@ -126,3 +126,11 @@ doc changes; findings IDs; remaining manual checks; next eligible IDs. No secret
 ## Delivery after positive owner feedback (2026-10-17)
 
 Apply autonomy.md positive-feedback integration: record evaluated revision and exact feedback, confirm technical checks/review complete, preserve unrelated work, fetch origin and integrate/push only the evaluated scope to main (prefer fast-forward). Verify/source-record main and remote synchronization. Reconcile divergent history safely with applicable review/retests, no force/reset or inferred approval of later work. If already integrated, record no-op. This is explicit standing owner authorization, not agent acceptance or a mandatory PR; full milestone product acceptance remains separate. Continue the next eligible scoped task after delivery.
+
+## Asset Readiness
+Before content-dependent implementation, apply the [lightweight content gate](asset-readiness.md)
+in the task/spec. Existing/missing/selected resources, licenses/provenance/formats, interpretation
+and technical limits must be explicit. Validate changed visual/sonic composition in context,
+not merely successful loading. Reuse prior evidence; justified N/A for no external content.
+Public free compatible assets do not require routine owner approval. No speculative asset
+inventory or audio/particle subsystem follows from this gate.

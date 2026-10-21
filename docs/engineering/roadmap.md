@@ -99,3 +99,10 @@ H3 bounded RPG is owner-accepted functionally and visually: [record](evidence/rp
 [Transverse assessment](evidence/scenario-maturation/assessment.md) separates actual reuse,
 consumer policy and demonstrated duplication. Next executable horizon is [LAUNCH-1](specs/example-launch.md),
 example-only compatible parsing; no genre modules or speculative completeness features.
+
+## Phase2: complete minigame validation2026-10-21
+Owner accepts cross-scenario assessment/LAUNCH-1 and selects Meadow Run maturation toward2-3levels,
+enemies/progression/feedback/UI/audio as incremental objectives, not simultaneous construction.
+[Phase roadmap/assets](evidence/meadow-2/roadmap.md), [MR-2 first packet](specs/meadow-progression.md).
+Permanent [Asset Readiness](asset-readiness.md) precedes content-dependent implementation.
+Only two-level game-owned progression is prepared now; no engine scene/UI/audio API by inference.

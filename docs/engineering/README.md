@@ -85,3 +85,6 @@ Current selected playable horizon: [KPF-1 real-art platformer](specs/kenney-plat
 Selected C002 playable horizon: [Courtyard Key ADV1](specs/adventure.md), [run/reuse/evidence](evidence/adv-1/README.md). Meadow Run is closed after explicit owner feedback and public-boundary audit; new topdown consumer reuses existing engine without changes. Backlog ME060 owns technical closure; subjective adventure evaluation remains pending.
 
 Current selected H3 playable candidate: [RPG-1 Trail Duel](specs/rpg-encounter.md), [run/evidence](evidence/rpg-1/README.md). Closed tileset assessment remains candidate input only; existing public exploration/canvases/image/animation services support game-owned encounter states without engine changes. Backlog ME064/065/066 owns actual closure status.
+
+Asset Readiness is a permanent lightweight gate: [procedure](asset-readiness.md).
+Phase2 current packet: [MR-2](specs/meadow-progression.md), [staged roadmap](evidence/meadow-2/roadmap.md).

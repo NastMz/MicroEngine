@@ -39,3 +39,8 @@ Readiness requires the execution protocol gate; blank fields prohibit ready.
 ## Authority and acceptance gate
 
 Apply autonomy.md: technical decisions and objective acceptance are delegated; significant ADRs need independent review. Record technical approval actor/source and review separately from subjective product acceptance. Use the complete human-exception list in [autonomy](../autonomy.md); do not create additional technical approval gates. Local commits/normal authorized task-branch pushes allowed. Positive owner feedback authorizes evaluated verified increment integration/push to main under autonomy.md; record feedback/revision, technical evidence and integration result. No PR/release/force or unrelated work implied.
+
+## Asset Readiness (only when relevant)
+Existing resources and prior provenance; actual gaps; selected file roles/source/license/format;
+interpretation/backend limits; contextual composition checks and evidence. Record ready/gap/N/A
+with reason. See [Asset Readiness](../asset-readiness.md); no extra ceremony for non-content work.

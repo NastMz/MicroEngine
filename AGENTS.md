@@ -62,3 +62,8 @@ Autonomy is the default within approved scope: agents implement, verify, correct
 evidence rather than assigning executable checks to the owner. Escalate only the exceptions in autonomy.md; subjective product acceptance is human-owned, objective technical acceptance is delegated. Preserve acceptance criteria and coverage.
 H0 construction is authorized within ADR-0002 after the reviewed H0-1 contract/readiness gate. Technical decisions/contracts and objectively verified milestones may be approved under delegated authority after required review. Never bypass dependencies or mark subjective product validation passed.
 The protocol is not a scheduler; later/background work needs separate authorization.
+
+## Asset Readiness
+Content-dependent increments must apply [Asset Readiness](docs/engineering/asset-readiness.md)
+before implementation: existing/gaps/selected sources/licenses/formats/technical limits and
+contextual visual/sonic composition evidence. N/A is valid when no content is needed.
