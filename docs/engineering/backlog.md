@@ -680,3 +680,11 @@ MR2owneracceptance2026-10-21: accepts continuation/currentlevelretry/finalrestar
 289test/independentproof; explicitly NOT evidence of distinct scenarios or campaign variety.
 [Scope distinction](evidence/meadow-2/README.md). ME071/072/073 remaincompleted; nextconsumerlevel
 representation evaluation authorized, no editor/Corelevelmodule or speculativecapabilities.
+
+## Differentiated scenario horizon — 2026-10-21
+| ID | Kind | Priority | State | Dependencies | Packet |
+| --- | --- | --- | --- | --- | --- |
+| ME-074 | consumer level representation evaluation | P1 | completed | ME-073 owner boundedacceptance | [MR-3](specs/meadow-distinct-levels.md) |
+| ME-075 | authored gap/elevated-route content | P1 | in-progress | ME-074 reviewed approval | [MR-3](specs/meadow-distinct-levels.md) |
+| ME-076 | differentiated challenge verification | P1 | pending | ME-075 | [MR-3](specs/meadow-distinct-levels.md) |
+Rootf27d971/feat/meadow-distinct-levels; localonly; protectengine/othergames/assets/deps and.gitignore/.codegraph.

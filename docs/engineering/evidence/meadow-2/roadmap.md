@@ -27,3 +27,10 @@ apply findings to Adventure/RPG rather than promoting platform rules into Core.
 No audio archive downloaded/imported or heard, no audio backend selected. Page declarations
 are preliminary availability/license evidence, not final individual-file readiness. Current
 MR-2 needs no new image/audio/VFX files. Existing pack/license/hash evidence remains authority.
+
+## Differentiated composition after MR-2 feedback
+MR-2 accepted onlytransition/retry/restart; similar shiftedcourses did not validate variety.
+Next [MR-3](../../specs/meadow-distinct-levels.md) separates privateauthored LevelContent from
+one controller/renderer, preserving level1 and giving level2 a realfloor gap/elevatedcoin.
+No editor, generic enginelevelsystem, newassets or per-levelphysics. Enemy/audio/menu needs
+remain staged candidates; the nextmanualgate must be significant gameplay, not datarefactoring.
