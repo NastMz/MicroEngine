@@ -67,3 +67,19 @@ No manual technical repetition requested. Source ae9754f(design/process),bce6e82
 Risk item3: additive game-consumer contract change, default/static API and originalreplay
 independently preserved. AssetReadiness reused license/art integrity with changedcontext proof;
 no audio/particle provider or enemy asset selection inferred from preliminary research.
+
+## Owner acceptance and evidence limit — 2026-10-21
+Owner: "Para el alcance técnico de MR-2, considero válida la demostración de continuación,
+reintento del nivel actual y reinicio de campaña. Puedes aceptar ese incremento si las
+verificaciones restantes están completas."
+Owner: "Sin embargo, no debemos interpretar tener dos identificadores de nivel como haber
+demostrado que MicroEngine facilita construir una campaña con escenarios realmente diferentes."
+
+All required technical checks were already complete (289tests, independent proof above).
+Root records bounded functional acceptance of MR-2 continuation/currentretry/campaignrestart.
+The second course is essentially a shifted composition; MR-2 does NOT validate distinct
+scenario authoring, challenge variety, rich campaign design or level-authoring ergonomics.
+This is not an engine defect, nor permission to label a small offset as a meaningful new level.
+Next: evaluate consumer-owned level representation and prove a materially different challenge
+using public engine APIs. No editor/generic engine level system is justified. Reserve next
+manual gate for significant gameplay difference, never a technical data refactor alone.
