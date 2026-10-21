@@ -1,0 +1,27 @@
+{
+  "license": "CC0-1.0",
+  "license_sha256": "f0bc5a99a4710f75a2d507e2ab153025af203d9a6b5a698df737a47684316077",
+  "retrieved": "2026-10-21",
+  "page": "https://kenney.nl/assets/new-platformer-pack",
+  "archive_sha256": "553b907f3f0e505ab65f56f245ccaff3123c8fe3f3a0dfce9373b996bfc18cc2",
+  "license_file": "License.txt",
+  "files": [
+    {
+      "width": 64,
+      "file": "slime_spike_walk_a.png",
+      "sha256": "63afbc1c4c51ffc915254975f8ce7258792172ac826d8e1a27d20ab00e9f40a1",
+      "source": "Sprites/Enemies/Default/slime_spike_walk_a.png",
+      "height": 64
+    },
+    {
+      "width": 64,
+      "file": "slime_spike_walk_b.png",
+      "sha256": "b4f99b086f3de245fee5c426e3e5997df4b238e49c4cae48e105661ee454e24f",
+      "source": "Sprites/Enemies/Default/slime_spike_walk_b.png",
+      "height": 64
+    }
+  ],
+  "version": "1.1",
+  "download": "https://kenney.nl/media/pages/assets/new-platformer-pack/1896103897-1764756702/kenney_new-platformer-pack-1.1.zip",
+  "title": "Kenney New Platformer Pack"
+}

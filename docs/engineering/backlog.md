@@ -697,3 +697,11 @@ jump/raisedrouteexperience. No otherreadytask, no speculativeenemy/audio/menuimp
 MR3ownerpositive2026-10-21: "Funciona perfectamente, continua", evaluated101fd10/390df8f.
 293test/independentproof complete; bounded gap/elevatedroute accepted, not completecampaign.
 Localmain integration permitted, next enemy horizon must get ownassetreadiness/spec/review.
+
+## MR-4 bounded enemy horizon2026-10-21
+| ID | Kind | Priority | State | Dependencies | Packet |
+| --- | --- | --- | --- | --- | --- |
+| ME-077 | enemy assets and scope preparation | P1 | completed | ME-076 positiveownerfeedback | [MR-4](specs/meadow-patrol.md) |
+| ME-078 | one avoid-only patrol and two poses | P1 | in-progress | ME-077 reviewedapproval | [MR-4](specs/meadow-patrol.md) |
+| ME-079 | independent patrol validation | P1 | pending | ME-078 | [MR-4](specs/meadow-patrol.md) |
+Root6804ac6/feat/meadow-patrol, localonly. Actualsamepackenemyresourcesselected, no Core/AI/physics scope.
