@@ -174,3 +174,7 @@ Trail Duel integrates exploration/room portals, trainer interaction, game-owned 
 Latest owner permits mature localmain integration. Root accepted independent maturity recommendation and performed normal fast-forward2415072eefaa4e3401945c2b49fcc18d059e200f..b6660cfc5c13480db2c2a831dd6847f96d025e9a. This includes earlier verified KPF/ADV/art/findings ancestors and the bounded RPG1 workunits; no squash, force, history rewrite or remote publication. Verified executable bytes exactly match frozeneb595a8; post-integration RpgNativeSmoke-NoBuild plus7CLIcasesPASS. Independent277managed/3freshnative/hash/publicboundary proof remains applicable, no redundant full-suite claim. Existing.gitignore working bytes and.codegraph preserved. Origin/main still2415072; only localmain moved. New RPG experience/fullH3 productacceptance remains pending, all technical tasks complete. No more maptools/artpolish/RPG mechanics invented after this horizon.
 
 LAUNCH-1 closed2026-10-21: source dc670cc, independent283/283managed and3native/2asset/21CLIparityPASS; see [maturation closure](evidence/scenario-maturation/assessment.md). No engine/game behavior changes, no additional subjective acceptance required. Next candidates are not prepared tasks.
+
+Latest MR3 technicaldelivery: [run/evidence](evidence/meadow-3/README.md), source101fd10,
+293tests/independentproofPASS on feat/meadow-distinct-levels. Realgap+raisedcoin insecondcourse;
+MR2boundedacceptance/localmainf27d971 recorded separately. Newexperienceunaccepted, no push/main.

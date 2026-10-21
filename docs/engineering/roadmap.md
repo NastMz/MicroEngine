@@ -106,3 +106,9 @@ enemies/progression/feedback/UI/audio as incremental objectives, not simultaneou
 [Phase roadmap/assets](evidence/meadow-2/roadmap.md), [MR-2 first packet](specs/meadow-progression.md).
 Permanent [Asset Readiness](asset-readiness.md) precedes content-dependent implementation.
 Only two-level game-owned progression is prepared now; no engine scene/UI/audio API by inference.
+
+MR3current2026-10-21: [distinct authored gap/elevatedroute](evidence/meadow-3/README.md) is
+technically verified293tests on feature, with unchangedengine/controller/campaign and reusedart.
+MR2acceptance is onlyprogression; do not equate identifierswithvariety. One specificdifferent
+challenge now exists, not a demonstrated richcampaign/editor. Nextnewmanualgate is its actual
+playability; datarefactor alone needed no ownerapproval. Enemy/audio/UI remain futurecandidates.

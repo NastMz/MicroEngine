@@ -93,3 +93,7 @@ Current2026-10-21: [Meadow Run MR-2](evidence/meadow-2/README.md) implements two
 with289managed/independent native proof, feature-only pending new subjective experience.
 [Asset Readiness](asset-readiness.md) now applies to future visual/sonic tasks; [phase roadmap](evidence/meadow-2/roadmap.md)
 keeps enemies/audio/powers/UI as candidate horizons, not simultaneously prepared implementation.
+
+Current Meadow Run [MR-3](evidence/meadow-3/README.md) replaces the second course's shifted
+geometry with a real gap/elevated-coin challenge, reusing one game controller/renderer and
+unchanged engine APIs. Technical293-test proof complete; meaningful new play feedback pending.
