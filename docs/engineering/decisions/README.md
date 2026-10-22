@@ -42,3 +42,5 @@ Under [autonomy](../autonomy.md), agents may accept/supersede technical ADRs aft
 - [ADR-0012 — Optional reusable 2D utilities and real-art platformer](0012-playable-platformer-infrastructure.md): accepted after independent design review2026-10-18.
 
 - [ADR-0013 — Consumer-owned RPG encounter](0013-consumer-rpg-encounter.md): accepted2026-10-18 by root after independent design PASS; reuses public Explorer and existing drawing infrastructure, no engine combat API.
+
+- [ADR-0014 — Game-owned session flow over additive semantic input](0014-game-session-input.md): accepted2026-10-21 after independent session_flow_map PASS; P/R report input only, no enginepause/UI/scene orgenericbinding API.
