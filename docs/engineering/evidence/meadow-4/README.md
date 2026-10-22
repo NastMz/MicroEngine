@@ -61,3 +61,9 @@ avoidance and retryclarity; no manualrepeat of hashes/tests/CLI. Futureaudio/men
 horizons remain staged, not readyimplementation; no need addmoreenemies/powersbeforefeedback.
 Same-packresources and gameownedstate provide this boundedbehavior withoutnewengineAPI.
 Riskitem3 sharedconsumerstate; priorsemantics/protectedboundaries independentlyverified.
+
+## Owner feedback
+Owner2026-10-21: "Funciona perfectamente, continua" afterMR4patrolhandoff.
+Root records positive subjective evaluation of bounded movingpatrolavoidance at47439e2/9233b39;
+298managed/independentnativeproofcomplete. No audio/menu/powers acceptance inferred.
+Normal localmain integration authorized for evaluatedMR4 only; no push.
