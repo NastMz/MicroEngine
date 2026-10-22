@@ -702,6 +702,12 @@ Localmain integration permitted, next enemy horizon must get ownassetreadiness/s
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
 | ME-077 | enemy assets and scope preparation | P1 | completed | ME-076 positiveownerfeedback | [MR-4](specs/meadow-patrol.md) |
-| ME-078 | one avoid-only patrol and two poses | P1 | in-review | ME-077 reviewedapproval | [MR-4](specs/meadow-patrol.md) |
-| ME-079 | independent patrol validation | P1 | in-progress | ME-078 | [MR-4](specs/meadow-patrol.md) |
+| ME-078 | one avoid-only patrol and two poses | P1 | completed | ME-077 reviewedapproval | [MR-4](specs/meadow-patrol.md) |
+| ME-079 | independent patrol validation | P1 | completed | ME-078 | [MR-4](specs/meadow-patrol.md) |
 Root6804ac6/feat/meadow-patrol, localonly. Actualsamepackenemyresourcesselected, no Core/AI/physics scope.
+
+ME077/078/079closure: design/assets15797fd/source47439e2 independentS1-S5PASS,
+298managed/3nativeactualexit0/3assetverifiers/original+newasset/protected93entryparityPASS;
+parentnative/CLI7/assetspotcheckexit0. [Play/evidence](evidence/meadow-4/README.md).
+MR3positive evaluatedscope integratedlocalmain6804ac6; newMR4 featureonly, no push/main.
+Nextsubjectivegate movingenemyavoidance/readability/fairness. No additionalpreparedtask.

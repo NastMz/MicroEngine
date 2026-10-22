@@ -97,3 +97,7 @@ keeps enemies/audio/powers/UI as candidate horizons, not simultaneously prepared
 Current Meadow Run [MR-3](evidence/meadow-3/README.md) replaces the second course's shifted
 geometry with a real gap/elevated-coin challenge, reusing one game controller/renderer and
 unchanged engine APIs. Technical293-test proof complete; meaningful new play feedback pending.
+
+Current MR-4 [run/evidence](evidence/meadow-4/README.md), source47439e2: one level2avoid-only
+spikedslime with two originalsamepackposes.298managed/independentnative/assetproof complete,
+no enginechanges. MR3accepted/localmain6804ac6; MR4featureonly awaiting newpatrolexperience.

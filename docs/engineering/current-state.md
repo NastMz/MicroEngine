@@ -178,3 +178,8 @@ LAUNCH-1 closed2026-10-21: source dc670cc, independent283/283managed and3native/
 Latest MR3 technicaldelivery: [run/evidence](evidence/meadow-3/README.md), source101fd10,
 293tests/independentproofPASS on feat/meadow-distinct-levels. Realgap+raisedcoin insecondcourse;
 MR2boundedacceptance/localmainf27d971 recorded separately. Newexperienceunaccepted, no push/main.
+
+Latest MR4: source47439e2 onfeat/meadow-patrol, technicallyaccepted298tests/3nativeactualexit0/
+3assetchecks; [evidence](evidence/meadow-4/README.md). Protectedengine/campaign/provider/program/
+othergames/deps unchanged. Newpatrolownerexperiencepending, no main/push. MR3positivefeedback
+record6804ac6 integratedlocalmain; olderpendingnotes arehistorical.

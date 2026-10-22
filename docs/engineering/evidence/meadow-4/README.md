@@ -41,3 +41,23 @@ The otherhistorical nativeharnesses retainacceptedproof, not a newallharnessrun.
 
 ![Patrol pose a](patrol-a.png)
 ![Patrol pose b](patrol-b.png)
+
+## Independent objective closure
+Frozen47439e2vs6804ac6: launch_final_verify S1-S5PASS, no blockers/corrections.
+298/298managed, threefreshnativewrappers actualexit0, allthreeassetverifiers exit0. Prior
+unconfirmedwrapperstops resolved by independentnormalcompletion, not by countingmarkersalone.
+Originallevel1 remains517steps/noenemy, old293casesgreen; additionalposecount9 isrequiredcontent,
+not reducedownershipcoverage. Bothnativeoriginalposes/sourcepixels,100mscontact/freeze/retry/
+avoidance/campaigncompletion andCLI7PASS. Parentcurrentnative-NoBuild/CLI7/assetspotcheckexit0.
+Old9manifesthashes/all11assetbytes unchanged;2neworiginalhashes/licensematchprovenance.
+Protected93entries SHA2569A78959C56F6A509DD4BD19A5AABFF4AC46517AEB503A44EB0C8F4667791E0D7.
+No requiredcheckskipped; initialsandboxrestorefailure resolved with identicalescalatedrun.
+Otherhistoricalnativeharnesses retainproof, notfreshallharnessrun. RootobjectiveMR4/ME078/079
+accepted; ownerpatrolreadability/fairness/avoidancefeel pending. No main/pushfornewMR4.
+
+## Next boundary
+The newmovinghazard is a significant playablechange. Only assess readability/fairness/jump
+avoidance and retryclarity; no manualrepeat of hashes/tests/CLI. Futureaudio/menu/feedback
+horizons remain staged, not readyimplementation; no need addmoreenemies/powersbeforefeedback.
+Same-packresources and gameownedstate provide this boundedbehavior withoutnewengineAPI.
+Riskitem3 sharedconsumerstate; priorsemantics/protectedboundaries independentlyverified.

@@ -112,3 +112,7 @@ technically verified293tests on feature, with unchangedengine/controller/campaig
 MR2acceptance is onlyprogression; do not equate identifierswithvariety. One specificdifferent
 challenge now exists, not a demonstrated richcampaign/editor. Nextnewmanualgate is its actual
 playability; datarefactor alone needed no ownerapproval. Enemy/audio/UI remain futurecandidates.
+
+MR4selected/technicallyverified: [one avoid-only slime](evidence/meadow-4/README.md) afterowner
+positiveMR3feedback. Existingpublicdrawing/overlap/loop/resources support gameownedpatrol with
+samepackart. Onlynewavoidancefeelgatepending; audio/menu/powers remainlaterboundedhorizons.

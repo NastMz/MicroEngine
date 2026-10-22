@@ -10,9 +10,9 @@ S4. Prior owner: "No crees sistemas genéricos gigantescos de forma anticipada, 
 S5. Prior owner: "Reserva la siguiente validación manual para cuando exista una diferencia jugable significativa, no simplemente otro nivel con el mismo contenido." Final subjectivegate only actual movingobstacleavoidance/readability; technicalchecks autonomous.
 
 ## Tasks
-- T1 / S1-S5 / inline with read-only map/design review / in progress / ME077 assetpreparation and reviewedcontract.
-- T2 / S2-S5 / inline / pending / ME078 gameownedpatrol/contact/twoposepresentation withtests.
-- T3 / S1-S5 / independent verification / pending / ME079 fullregression/native/provenance closure and handoff.
+- T1 / S1-S5 / inline with read-only map/design review / completed / 15797fd / ME077 assetpreparation and reviewedcontract.
+- T2 / S2-S5 / inline / completed / 47439e2 / ME078 gameownedpatrol/contact/twoposepresentation withtests.
+- T3 / S1-S5 / independent verification / completed / ME079 fullregression/native/provenance closure and handoff.
 
 ## Log
 L1. Owner2026-10-21: "Funciona perfectamente, continua" inresponseMR3. Prioracceptedroadmapforincrementalenemies/feedback/audio/menusinS2 above, notallatonce. MR3positivefeedback6804ac6 integratednormal localmain; new feat/meadow-patrol. No remote. Unrelated.gitignore/.codegraph preserved. Memorymirrorpending runtimeidentity unavailable/RDDoff.
@@ -21,3 +21,5 @@ L2. Mappingtrigger enemy_scope_map read-only recommendsoneavoid-onlypatrol, no s
 L3. Independent review contactconcern initiallyraised; targetedmath/publicreachability recheckdowngradedtoadvisory:27maxrelativedisplacement<68combinedwidth andfloorclampingpreventsverticalpass. No speculativephysicsadded. Exactboundreverseimmediate andterminalphasefreeze clarified; rootapprovesMR4beforecode. Assets2original64PNGs importedbyte-identical withnewseparateprovenance, oldmanifest/licenseunchanged.
 
 L4. Design/assets15797fd; modelRED4->20GREEN, rendererRED2->21GREEN. Cause-neutralDefeat feedbackcorrectsnewenemy/fall attribution; negativeelapsedclockvalidation tested. Ownlongsuite298PASS/assetintegrityPASS. Delegatednativewrappers emittedallPASSmarkers but runnerstoppednonexitingwrappers: exit0notclaimed; finalfreshreviewmustresolve. Earlierparentnativewholewrapperexit0 beforemessagechange. Nativebothrealposepixels/contact100ms/freeze/retry/avoidanceproofexists, protectedpathsunchanged. ME078in-review/ME079claimed; no main/push/newsubjectiveacceptance.
+
+L5. Finalfreshlaunch_final_verify S1-S5PASS/298tests/3nativeactualexit0/3assetverifiers/protected93entryparity. Unconfirmedownwrapperexitsresolved byactualindependentsuccess. Parentnative-NoBuild/CLI7/assetcheckactualexit0. ME078/079technicallyclosed on47439e2, no correctionrequired. Newenemyavoidanceexperienceunaccepted; no main/push. Memorymirrorpendingidentity, repositoryrecoverytruth. No furtherreadytaskbeforemeaningfulpatrolfeedback; futureaudio/menu notsilentlyimplemented.
