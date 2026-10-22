@@ -29,6 +29,39 @@ public sealed class PlatformerPresentation : IDisposable
         _images = new(sources);
     }
     private static int Number(XElement element, string name) => int.Parse((string)element.Attribute(name)!, CultureInfo.InvariantCulture);
+    public void AdvanceSession(TimeSpan elapsed, MeadowSession game)
+    {
+        ArgumentNullException.ThrowIfNull(game);
+        if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
+        if (game.AdvancedThisUpdate) AdvanceCampaign(elapsed, game.Campaign);
+    }
+    public void DrawSession(ICanvas canvas, MeadowSession game)
+    {
+        ArgumentNullException.ThrowIfNull(canvas); ArgumentNullException.ThrowIfNull(game);
+        if (canvas is not ILabelCanvas labels || canvas is not IImageRegionCanvas)
+            throw new NotSupportedException("Session screens require image-region and label rendering.");
+        DrawCampaign(canvas, game.Campaign);
+        if (game.Phase == SessionPhase.Running)
+        {
+            labels.Label("P: pause | R: restart | Esc: exit",16,72,16,new(25,40,55));
+            return;
+        }
+        canvas.Fill(new(176,120,416,240),new(20,35,50,245));
+        var ink=new Rgba(245,245,235);
+        if (game.Phase == SessionPhase.Title)
+        {
+            labels.Label("Meadow Run",208,148,28,ink);
+            labels.Label("Space: start",208,212,22,ink);
+            labels.Label("P: pause | R: restart | Esc: exit",192,286,16,ink);
+        }
+        else
+        {
+            labels.Label("Paused",208,140,28,ink);
+            labels.Label(game.Selection == 0 ? "> Resume" : "  Resume",208,198,22,ink);
+            labels.Label(game.Selection == 1 ? "> Restart campaign" : "  Restart campaign",208,236,22,ink);
+            labels.Label("Up/Down + Space | P: resume",192,298,16,ink);
+        }
+    }
     public void AdvanceCampaign(TimeSpan elapsed, CampaignGame game)
     {
         ArgumentNullException.ThrowIfNull(game); Advance(elapsed, game.Current);

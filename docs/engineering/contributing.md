@@ -166,3 +166,8 @@ is in backlog and evidence; no audio/enemy/pause/menu implementation is implied.
 ## MR-4 patrol candidate
 [Run/evidence](evidence/meadow-4/README.md): level2 spikedslime is avoid-only, no stomp.
 Current technical/product status in backlog; nextmanualexperience is enemyavoidance afterproof.
+
+## Meadow Run session flow
+[MR-5 controls/evidence](evidence/meadow-5/README.md): Space starts, P pauses/resumes, R restarts
+campaign; whilepaused Up/Down+Space choose Resume/Restart. Escapeexits. Sessionflowusescurrent
+art/labels anddoesnotchange standaloneCampaignGame or previousconsumercontrols.

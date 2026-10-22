@@ -17,6 +17,11 @@ public sealed class GamePlatform : IFramePlatform
         ArgumentNullException.ThrowIfNull(game);
         return new GamePlatform(inner, (Action)game.ClearJumpBuffer);
     }
+    public static GamePlatform ForSession(IFramePlatform inner, MeadowSession game)
+    {
+        ArgumentNullException.ThrowIfNull(game);
+        return new GamePlatform(inner, (Action)game.ClearJumpBuffer);
+    }
     private GamePlatform(IFramePlatform inner, Action clear)
     {
         ArgumentNullException.ThrowIfNull(inner);

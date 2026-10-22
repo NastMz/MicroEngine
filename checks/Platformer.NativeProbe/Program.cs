@@ -152,6 +152,41 @@ try
         Course.Run(hit,(delta,_)=>art.AdvanceCampaign(delta,enemyCampaign));
         if(!enemyCampaign.Completed)throw new InvalidOperationException("Avoidance route did not complete.");
         Console.WriteLine("platformer:patrol:poses-contact-retry-avoidance:verified");
+        var session=new MeadowSession();
+        int SessionFrame(string filename,bool panel,bool arrow=false)
+        {
+            for(int frame=0;frame<2;frame++){window.Begin();art.DrawSession(window.Canvas,session);window.End();}
+            var image=Raylib.LoadImageFromScreen();
+            try
+            {
+                var corner=Raylib.GetImageColor(image,180,124);
+                if(panel?(corner.R>80||corner.G>90):(corner.R<180||corner.G<180))throw new InvalidOperationException("Session panel visibility mismatch.");
+                int pixels=0;
+                for(int y=198;y<220;y++)for(int x=208;x<222;x++)
+                {var color=Raylib.GetImageColor(image,x,y);if(color.R>180&&color.G>180&&color.B>170)pixels++;}
+                if(arrow&&pixels==0)throw new InvalidOperationException("Selected resume arrow missing.");
+                if(!Raylib.ExportImage(image,Path.Combine(Path.GetTempPath(),filename)))throw new InvalidOperationException("Session capture failed.");
+                return pixels;
+            }
+            finally{Raylib.UnloadImage(image);}
+        }
+        SessionFrame("microengine-meadow5-title.png",true);
+        session.Update(Course.Step,new(["right"],["jump"]));art.AdvanceSession(Course.Step,session);
+        if(session.Campaign.Current.Body!=new Rect(48,392,28,40)||session.AdvancedThisUpdate)throw new InvalidOperationException("Start edge leaked into gameplay.");
+        Course.Run(session.Campaign.Current);session.Update(Course.Step,new([],["jump"]));
+        session.Update(Course.Step,new([],["pause"]));
+        var pausedState=(session.Campaign.Current.Body,session.Campaign.Current.EnemyBody,session.Campaign.Current.CollectedCount);
+        for(int i=0;i<100;i++){session.Update(Course.Step,new(["right","jump"],["unknown"]));art.AdvanceSession(Course.Step,session);}
+        if(pausedState!=(session.Campaign.Current.Body,session.Campaign.Current.EnemyBody,session.Campaign.Current.CollectedCount))throw new InvalidOperationException("Paused simulation advanced.");
+        int selected=SessionFrame("microengine-meadow5-paused.png",true,true);
+        session.Update(Course.Step,new([],["down"]));int unselected=SessionFrame("microengine-meadow5-selection.png",true);
+        if(selected<=unselected)throw new InvalidOperationException("Native selection arrow did not change.");
+        var oldCampaign=session.Campaign;session.Update(Course.Step,new(["right"],["jump"]));art.AdvanceSession(Course.Step,session);
+        if(ReferenceEquals(oldCampaign,session.Campaign)||session.Campaign.LevelNumber!=1||session.Campaign.Current.Body!=new Rect(48,392,28,40))throw new InvalidOperationException("Menu restart did not consume input.");
+        session.Update(Course.Step,new([],["pause"]));session.Update(Course.Step,new(["right"],["pause","jump"]));
+        if(session.Phase!=SessionPhase.Running||session.AdvancedThisUpdate||session.Campaign.Current.Body.X!=48)throw new InvalidOperationException("Pause resume edge leaked.");
+        SessionFrame("microengine-meadow5-resumed.png",false);
+        Console.WriteLine("platformer:session:title-pause-selection-resume-restart:verified");
     }
     Console.WriteLine("platformer:closed");return 0;
 }

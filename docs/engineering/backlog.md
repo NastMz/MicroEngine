@@ -720,6 +720,6 @@ horizon must get independent preparation/contract, not implicit engineUI/input a
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
 | ME-080 | semantic controls/session design | P1 | completed | ME-079 ownerpositive | [MR-5](specs/meadow-session-flow.md), [ADR0014](decisions/0014-game-session-input.md) |
-| ME-081 | start/pause/restart implementation | P1 | in-progress | ME-080 reviewedapproval | [MR-5](specs/meadow-session-flow.md) |
-| ME-082 | independent session validation | P1 | pending | ME-081 | [MR-5](specs/meadow-session-flow.md) |
+| ME-081 | start/pause/restart implementation | P1 | in-review | ME-080 reviewedapproval | [MR-5](specs/meadow-session-flow.md) |
+| ME-082 | independent session validation | P1 | in-progress | ME-081 | [MR-5](specs/meadow-session-flow.md) |
 Root6204b48/feat/meadow-session-flow; additiveadapteractions proposed, no nativegamecalls/UIframework.

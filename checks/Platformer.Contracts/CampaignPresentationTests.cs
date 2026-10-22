@@ -90,4 +90,24 @@ public sealed class CampaignPresentationTests
         Assert.AreSame(first,canvas.WholeResources[^1]);Assert.AreEqual(9,canvas.Images.Count);
         Assert.IsTrue(canvas.Labels.Any(text=>text.Contains("Avoid spiked slime")));
     }
+    [TestMethod]
+    public void SessionPanelsAndPausedAnimationReuseTheSameNineLeases()
+    {
+        using var art=Art();var canvas=new Canvas();var session=new MeadowSession();
+        art.DrawSession(canvas,session);Assert.IsTrue(canvas.Labels.Contains("Space: start"));
+        session.Update(Course.Step,new([],["jump"]));Course.Run(session.Campaign.Current);session.Update(Course.Step,new([],["jump"]));
+        art.AdvanceSession(TimeSpan.Zero,session);art.DrawSession(canvas,session);
+        art.AdvanceSession(TimeSpan.FromMilliseconds(120),session);art.DrawSession(canvas,session);
+        var frame=canvas.WholeResources[^1];
+        session.Update(Course.Step,new([],["pause"]));
+        for(int i=0;i<50;i++)art.AdvanceSession(TimeSpan.FromMilliseconds(100),session);
+        art.DrawSession(canvas,session);Assert.AreSame(frame,canvas.WholeResources[^1]);
+        Assert.IsTrue(canvas.Labels.Contains("Paused"));Assert.IsTrue(canvas.Labels.Contains("> Resume"));
+        session.Update(Course.Step,new([],["down"]));art.DrawSession(canvas,session);
+        Assert.IsTrue(canvas.Labels.Contains("> Restart campaign"));
+        session.Update(Course.Step,new([],["pause"]));art.DrawSession(canvas,session);
+        Assert.IsFalse(canvas.Labels.Contains("Paused"));Assert.AreSame(frame,canvas.WholeResources[^1]);
+        Assert.AreEqual(9,canvas.Images.Count);
+        art.Dispose();foreach(var image in canvas.Images)Assert.AreEqual(1,image.Releases);
+    }
 }

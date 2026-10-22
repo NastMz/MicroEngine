@@ -17,6 +17,8 @@ public sealed class DesktopActionTests
     [DataRow(KeyboardKey.W, "up")]
     [DataRow(KeyboardKey.Down, "down")]
     [DataRow(KeyboardKey.S, "down")]
+    [DataRow(KeyboardKey.P, "pause")]
+    [DataRow(KeyboardKey.R, "restart")]
     public void PhysicalAliasesProduceOneAction(KeyboardKey key, string action)
     {
         var result = DesktopActions.Read(k => k == key, k => k == key);
@@ -28,7 +30,7 @@ public sealed class DesktopActionTests
     public void AliasCoalescingAndLegacyFirstOrderAreStable()
     {
         var result = DesktopActions.Read(_ => true, _ => true);
-        CollectionAssert.AreEqual(new[] { "left", "right", "jump", "up", "down" }, result.Held);
+        CollectionAssert.AreEqual(new[] { "left", "right", "jump", "up", "down", "pause", "restart" }, result.Held);
         CollectionAssert.AreEqual(result.Held, result.Pressed);
         result = DesktopActions.Read(k => k == KeyboardKey.Left || k == KeyboardKey.Space, _ => false);
         CollectionAssert.AreEqual(new[] { "left", "jump" }, result.Held); Assert.AreEqual(0, result.Pressed.Length);
@@ -45,6 +47,6 @@ public sealed class DesktopActionTests
         }
         var result = DesktopActions.Read(k => Query(k, false), k => Query(k, true));
         Assert.AreEqual(0, result.Held.Length); Assert.AreEqual(0, result.Pressed.Length);
-        Assert.AreEqual(18, calls.Count); Assert.IsTrue(calls.Values.All(count => count == 1));
+        Assert.AreEqual(22, calls.Count); Assert.IsTrue(calls.Values.All(count => count == 1));
     }
 }

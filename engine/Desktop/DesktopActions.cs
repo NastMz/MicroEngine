@@ -12,6 +12,8 @@ internal static class DesktopActions
         Add("jump", KeyboardKey.Space, KeyboardKey.Space);
         Add("up", KeyboardKey.Up, KeyboardKey.W);
         Add("down", KeyboardKey.Down, KeyboardKey.S);
+        Add("pause", KeyboardKey.P, KeyboardKey.P);
+        Add("restart", KeyboardKey.R, KeyboardKey.R);
         return (down.ToArray(), edges.ToArray());
 
         void Add(string action, KeyboardKey first, KeyboardKey second)
