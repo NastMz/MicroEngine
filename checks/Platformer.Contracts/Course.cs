@@ -4,7 +4,7 @@ namespace Platformer.Checks;
 public static class Course
 {
     public static readonly TimeSpan Step = TimeSpan.FromSeconds(1d / 60);
-    public static int Run(LevelGame game, Action<TimeSpan, LevelGame>? afterStep = null, bool anticipateGaps = true)
+    public static int Run(LevelGame game, Action<TimeSpan, LevelGame>? afterStep = null, bool anticipateGaps = true, bool anticipateEnemies = true, Func<LevelGame,bool>? stopWhen = null)
     {
         float previousX = float.NaN;
         for (int i = 1; i <= 2000; i++)
@@ -18,12 +18,13 @@ public static class Course
             bool gap = anticipateGaps && right && game.Terrain.Any(solid => solid.Y == 432 && solid.X + solid.Width < 1920
                 && game.Body.X + 28 >= solid.X + solid.Width - 60 && game.Body.X + 28 <= solid.X + solid.Width
                 && !game.Terrain.Any(nextSolid => nextSolid.Y == 432 && nextSolid.X == solid.X + solid.Width));
-            bool jump = game.Grounded && (obstacle || hazard || gap);
+            bool enemy = anticipateEnemies && right && game.EnemyBody is { } patrol && patrol.X - (game.Body.X + 28) is >= 0 and <= 70;
+            bool jump = game.Grounded && (obstacle || hazard || gap || enemy);
             previousX = game.Body.X;
             game.Update(Step, new(right ? ["right"] : [], jump ? ["jump"] : []));
             afterStep?.Invoke(Step, game);
             if (game.Dead) throw new InvalidOperationException($"Course died at {game.Body}.");
-            if (game.Completed) return i;
+            if (game.Completed || stopWhen?.Invoke(game) == true) return i;
         }
         throw new InvalidOperationException($"Course bound exceeded at {game.Body}; coins:{game.CollectedCount}.");
     }

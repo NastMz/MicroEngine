@@ -14,11 +14,12 @@ public sealed class PlatformerPresentation : IDisposable
     private readonly FrameAnimation _walk;
     private int _run;
     private LevelGame? _level;
+    private long _enemyPhase;
     public PlatformerPresentation(string assetDirectory, Func<byte[], PixelImage> decode)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(assetDirectory); ArgumentNullException.ThrowIfNull(decode);
         var sources = new Dictionary<string, PixelImage>(StringComparer.Ordinal);
-        foreach (var key in new[] { "background_color_hills", "spritesheet-characters-default", "terrain_grass_block_top", "terrain_grass_block_center", "coin_gold", "flag_green_a", "spikes" })
+        foreach (var key in new[] { "background_color_hills", "spritesheet-characters-default", "terrain_grass_block_top", "terrain_grass_block_center", "coin_gold", "flag_green_a", "spikes", "slime_spike_walk_a", "slime_spike_walk_b" })
             sources.Add(key, decode(File.ReadAllBytes(Path.Combine(assetDirectory, key + ".png"))));
         using var reader = XmlReader.Create(Path.Combine(assetDirectory, "spritesheet-characters-default.xml"),
             new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null, MaxCharactersInDocument = 65536 });
@@ -35,14 +36,17 @@ public sealed class PlatformerPresentation : IDisposable
     public void DrawCampaign(ICanvas canvas, CampaignGame game)
     {
         ArgumentNullException.ThrowIfNull(game);
-        string status = game.Completed ? "Meadow Run complete! Space to replay" : game.Current.Completed ? "Level complete! Space to continue" : game.Current.Dead ? "Spikes! Space to retry this level" : "A/D or arrows: move | Space: jump | Esc: exit";
+        string status = game.Completed ? "Meadow Run complete! Space to replay" : game.Current.Completed ? "Level complete! Space to continue" : game.Current.Dead ? "Defeat! Space to retry this level" : game.Current.EnemyBody is not null ? "Avoid spiked slime | Space: jump | Esc: exit" : "A/D or arrows: move | Space: jump | Esc: exit";
         DrawCore(canvas, game.Current, $"Level {game.LevelNumber}/2 - Coins {game.Current.CollectedCount}/{game.Current.CoinCount} - reach the green flag", status);
     }
     public void Advance(TimeSpan elapsed, LevelGame game)
     {
         ArgumentNullException.ThrowIfNull(game);
-        if (!ReferenceEquals(_level, game) || _run != game.RunNumber) { _walk.Reset(); _run = game.RunNumber; _level = game; }
+        if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
+        if (!ReferenceEquals(_level, game) || _run != game.RunNumber) { _walk.Reset(); _run = game.RunNumber; _level = game; _enemyPhase = 0; }
         if (game.Walking && game.Grounded && !game.Completed && !game.Dead) _walk.Advance(elapsed); else _walk.Reset();
+        if (game.EnemyBody is not null && !game.Completed && !game.Dead)
+            _enemyPhase = (_enemyPhase + elapsed.Ticks % TimeSpan.FromMilliseconds(240).Ticks) % TimeSpan.FromMilliseconds(240).Ticks;
     }
     public void Draw(ICanvas canvas, LevelGame game) => DrawCore(canvas, game, null, null);
     private void DrawCore(ICanvas canvas, LevelGame game, string? header, string? status)
@@ -63,6 +67,8 @@ public sealed class PlatformerPresentation : IDisposable
         for (int i = 0; i < game.CoinCount; i++) if (!game.IsCollected(i)) Whole(images, "coin_gold", game.CoinPositions[i], game.CameraX);
         Whole(images, "spikes", game.Danger, game.CameraX);
         Whole(images, "flag_green_a", game.Goal, game.CameraX);
+        if (game.EnemyBody is Rect enemy)
+            Whole(images, _enemyPhase < TimeSpan.FromMilliseconds(120).Ticks ? "slime_spike_walk_a" : "slime_spike_walk_b", new(enemy.X-12,enemy.Y+enemy.Height-64,64,64), game.CameraX);
         var source = game.Dead ? _frames["character_beige_hit"] : !game.Grounded ? _frames["character_beige_jump"] : game.Walking ? _walk.Current : _frames["character_beige_idle"];
         images.DrawImageRegion(_images.Get(images, "spritesheet-characters-default"), source, new(game.Body.X-game.CameraX-18,game.Body.Y+game.Body.Height-64,64,64));
         if (canvas is ILabelCanvas labels)

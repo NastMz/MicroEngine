@@ -31,7 +31,7 @@ Advance framephase every120ms using same simulationdelta; phase freezes in termi
 resets onlevelinstance/run; terminalupdates retain currentphase, never Reset eachframe. Simpletwofilephase logic is gamepresentation, not a new engine
 animator; existing ImageSet owns both extraimages, total9 acrosscampaign, originallevel1 still7.
 No imageflipping/backendAPI change. HUD existingsecondline may clarify "Avoid spiked slime"
-while activelevel2; preserve prompts/CLIhelp. Verify realPNGpixels/pose distinction/collider
+while activelevel2; campaign defeat uses cause-neutral "Defeat! Space to retry this level" (enemy/fall/spikes), not a false spikes diagnosis. Advance rejects negativeelapsed before any clockmutation; preserve other prompts/CLIhelp. Verify realPNGpixels/pose distinction/collider
 composition in nativecapture andmanagedcanvas cache/disposal tests; no claim ofaestheticacceptance.
 
 ## Execution packet and acceptance

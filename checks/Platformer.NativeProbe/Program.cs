@@ -103,6 +103,55 @@ try
         if(campaignSecond!=Course.Run(campaign.Current)||!campaign.Completed)throw new InvalidOperationException("Campaign second-level replay diverged.");
         Console.WriteLine("platformer:campaign:two-levels:verified");
         Console.WriteLine("platformer:distinct-gap-raised-route:verified");
+        var enemyCampaign=new CampaignGame();Course.Run(enemyCampaign.Current);
+        enemyCampaign.Update(Course.Step,new([],["jump"]));
+        Course.Run(enemyCampaign.Current,anticipateEnemies:false,stopWhen:state=>state.Body.X>=960);
+        for(int i=0;i<100&&!enemyCampaign.Current.Grounded;i++)enemyCampaign.Update(Course.Step,new([],[]));
+        art.AdvanceCampaign(TimeSpan.Zero,enemyCampaign);
+        void VerifyPatrolFrame(string key,string name)
+        {
+            for(int frame=0;frame<2;frame++){window.Begin();art.DrawCampaign(window.Canvas,enemyCampaign);window.End();}
+            var expected=DesktopImageDecoder.Decode(File.ReadAllBytes(Path.Combine(assets,key+".png")));
+            if(expected.Width!=64||expected.Height!=64)throw new InvalidOperationException("Enemy original dimensions changed.");
+            var enemy=enemyCampaign.Current.EnemyBody??throw new InvalidOperationException("Missing authored enemy.");
+            int left=(int)MathF.Ceiling(enemy.X-12-enemyCampaign.Current.CameraX);
+            int top=(int)(enemy.Y+enemy.Height-64);
+            var image=Raylib.LoadImageFromScreen();
+            try
+            {
+                int checkedPixels=0;
+                for(int y=1;y<63;y++)for(int x=1;x<63;x++)
+                {
+                    var pixel=expected.Pixels[y*64+x];
+                    if(pixel.A!=255||expected.Pixels[y*64+x-1]!=pixel||expected.Pixels[y*64+x+1]!=pixel||expected.Pixels[(y-1)*64+x]!=pixel||expected.Pixels[(y+1)*64+x]!=pixel)continue;
+                    var actual=Raylib.GetImageColor(image,left+x,top+y);
+                    if(actual.R!=pixel.R||actual.G!=pixel.G||actual.B!=pixel.B)throw new InvalidOperationException("Patrol original framebuffer pixel mismatch.");
+                    checkedPixels++;
+                }
+                if(checkedPixels<25)throw new InvalidOperationException("Insufficient enemy pixel proof.");
+                if(!Raylib.ExportImage(image,Path.Combine(Path.GetTempPath(),name)))throw new InvalidOperationException("Enemy capture export failed.");
+            }
+            finally{Raylib.UnloadImage(image);}
+        }
+        VerifyPatrolFrame("slime_spike_walk_a","microengine-meadow4-patrol-a.png");
+        art.AdvanceCampaign(TimeSpan.FromMilliseconds(120),enemyCampaign);
+        VerifyPatrolFrame("slime_spike_walk_b","microengine-meadow4-patrol-b.png");
+        for(int i=0;i<100&&!enemyCampaign.Current.Dead;i++)
+        {
+            enemyCampaign.Update(TimeSpan.FromMilliseconds(100),new(["right"],[]));
+            art.AdvanceCampaign(TimeSpan.FromMilliseconds(100),enemyCampaign);
+        }
+        var hit=enemyCampaign.Current;
+        if(!hit.Dead||hit.EnemyBody is not Rect contact||!MicroEngine.TwoD.StaticWorld.Overlaps(hit.Body,contact)||hit.CollectedCount!=2)
+            throw new InvalidOperationException("Public maximum-delta enemy contact not proved.");
+        var stoppedEnemy=hit.EnemyBody;
+        enemyCampaign.Update(Course.Step,new(["right"],[]));
+        if(hit.EnemyBody!=stoppedEnemy)throw new InvalidOperationException("Enemy did not freeze after contact.");
+        enemyCampaign.Update(Course.Step,new(["right"],["jump"]));
+        if(hit.EnemyBody!=new Rect(1152,392,40,40)||hit.Dead||hit.CollectedCount!=0)throw new InvalidOperationException("Patrol retry did not reset.");
+        Course.Run(hit,(delta,_)=>art.AdvanceCampaign(delta,enemyCampaign));
+        if(!enemyCampaign.Completed)throw new InvalidOperationException("Avoidance route did not complete.");
+        Console.WriteLine("platformer:patrol:poses-contact-retry-avoidance:verified");
     }
     Console.WriteLine("platformer:closed");return 0;
 }

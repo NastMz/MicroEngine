@@ -162,3 +162,7 @@ RPG-1 Trail Duel: `dotnet run --project examples/Rpg/Rpg.csproj -c Release`. [Co
 Space after first flag continues, death retries current level, final Space restarts campaign.
 The original standalone LevelGame remains a regression API. Current technical/product status
 is in backlog and evidence; no audio/enemy/pause/menu implementation is implied.
+
+## MR-4 patrol candidate
+[Run/evidence](evidence/meadow-4/README.md): level2 spikedslime is avoid-only, no stomp.
+Current technical/product status in backlog; nextmanualexperience is enemyavoidance afterproof.

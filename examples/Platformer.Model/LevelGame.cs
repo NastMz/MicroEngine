@@ -9,6 +9,10 @@ public sealed class LevelGame
     public static IReadOnlyList<Rect> Coins => LevelContent.First.Coins;
     public static Rect Hazard => LevelContent.First.Danger;
     public static Rect Flag => LevelContent.First.Goal;
+    private readonly PatrolContent? _patrol;
+    private float _enemyX;
+    private int _enemyDirection = 1;
+    public Rect? EnemyBody => _patrol is null ? null : new Rect(_enemyX, _patrol.Spawn.Y, _patrol.Spawn.Width, _patrol.Spawn.Height);
     public int LevelNumber { get; }
     public IReadOnlyList<Rect> Terrain { get; }
     public IReadOnlyList<Rect> CoinPositions { get; }
@@ -24,6 +28,7 @@ public sealed class LevelGame
         CoinPositions = content.Coins;
         Danger = content.Danger;
         Goal = content.Goal;
+        _patrol = content.Patrol; _enemyX = _patrol?.Spawn.X ?? 0;
         _collected = new bool[CoinPositions.Count];
         _world = new(Terrain);
     }
@@ -64,9 +69,18 @@ public sealed class LevelGame
         Grounded = motion.BlockedY && _velocity > 0;
         if (motion.BlockedY) _velocity = 0;
         if (Grounded && _pending >= 0) Launch();
+        AdvancePatrol(seconds);
+        if (EnemyBody is Rect enemy && StaticWorld.Overlaps(Body, enemy)) { Dead = true; Freeze(); return; }
         if (Body.Y > 528 || StaticWorld.Overlaps(Body, Danger)) { Dead = true; Freeze(); return; }
         for (int i = 0; i < _collected.Length; i++) if (!_collected[i] && StaticWorld.Overlaps(Body, CoinPositions[i])) _collected[i] = true;
         if (CollectedCount == CoinCount && StaticWorld.Overlaps(Body, Goal)) { Completed = true; Freeze(); }
+    }
+    private void AdvancePatrol(float seconds)
+    {
+        if (_patrol is null) return;
+        _enemyX += _enemyDirection * _patrol.Speed * seconds;
+        if (_enemyX >= _patrol.MaxX) { _enemyX = 2 * _patrol.MaxX - _enemyX; _enemyDirection = -1; }
+        else if (_enemyX <= _patrol.MinX) { _enemyX = 2 * _patrol.MinX - _enemyX; _enemyDirection = 1; }
     }
     private void Launch() { _velocity = -540; Grounded = false; _pending = -1; }
     private void Freeze() { _velocity = 0; _pending = -1; Walking = false; }
@@ -74,5 +88,6 @@ public sealed class LevelGame
     {
         Body = new(48,392,28,40); Grounded = true; Completed = false; Dead = false; Walking = false;
         _velocity = 0; _pending = -1; Array.Clear(_collected); RunNumber++;
+        _enemyX = _patrol?.Spawn.X ?? 0; _enemyDirection = 1;
     }
 }
