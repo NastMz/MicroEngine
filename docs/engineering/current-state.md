@@ -183,3 +183,9 @@ Latest MR4: source47439e2 onfeat/meadow-patrol, technicallyaccepted298tests/3nat
 3assetchecks; [evidence](evidence/meadow-4/README.md). Protectedengine/campaign/provider/program/
 othergames/deps unchanged. Newpatrolownerexperiencepending, no main/push. MR3positivefeedback
 record6804ac6 integratedlocalmain; olderpendingnotes arehistorical.
+
+Latest2026-10-22: [MR-5 sessionflow](evidence/meadow-5/README.md) technicallyaccepted on
+feat/meadow-session-flow/source01719a6:309tests/independentnativeactualexit0/protectedproof.
+Title/Running/Paused, semanticPpause/Rrestart appended byDesktop; no newCorepause/UI contract.
+MR4evaluatedscope integratedlocalmain6204b48; MR5UXnotaccepted, no newmain/push. Olderpending
+technicalgates below/above are datedhistory; backlog has canonical completedME081/082.

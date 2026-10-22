@@ -720,6 +720,12 @@ horizon must get independent preparation/contract, not implicit engineUI/input a
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
 | ME-080 | semantic controls/session design | P1 | completed | ME-079 ownerpositive | [MR-5](specs/meadow-session-flow.md), [ADR0014](decisions/0014-game-session-input.md) |
-| ME-081 | start/pause/restart implementation | P1 | in-review | ME-080 reviewedapproval | [MR-5](specs/meadow-session-flow.md) |
-| ME-082 | independent session validation | P1 | in-progress | ME-081 | [MR-5](specs/meadow-session-flow.md) |
+| ME-081 | start/pause/restart implementation | P1 | completed | ME-080 reviewedapproval | [MR-5](specs/meadow-session-flow.md) |
+| ME-082 | independent session validation | P1 | completed | ME-081 | [MR-5](specs/meadow-session-flow.md) |
 Root6204b48/feat/meadow-session-flow; additiveadapteractions proposed, no nativegamecalls/UIframework.
+
+MR5technicalclosure2026-10-22: source01719a6/design9cb2fb5 independentlyS1-S4PASS,
+309managed/all3freshnativeactualexit0/3assetverifiers/protectedparity; parentnative/session/CLI7exit0.
+ME081/082completed. [Evidence/UXhandoff](evidence/meadow-5/README.md). MR4positivefeedbackalready
+integratedlocalmain6204b48; currentownerpositive not inferred asMR5acceptance. MR5featureonly,
+no main/push, no otherpreparedtask before newstart/pause/restart experience. RDDoff/memorymirrorpending.

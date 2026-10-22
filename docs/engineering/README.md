@@ -101,3 +101,7 @@ unchanged engine APIs. Technical293-test proof complete; meaningful new play fee
 Current MR-4 [run/evidence](evidence/meadow-4/README.md), source47439e2: one level2avoid-only
 spikedslime with two originalsamepackposes.298managed/independentnative/assetproof complete,
 no enginechanges. MR3accepted/localmain6804ac6; MR4featureonly awaiting newpatrolexperience.
+
+Current2026-10-22: [MR-5 run/evidence](evidence/meadow-5/README.md) adds title, pause/resume and
+explicit campaignrestart;309managed/independentfreshnativeproof complete onfeature. OwnerUX
+feedback pending, no extra manualtechnicalchecks. MR4 is accepted/integrated separately.
