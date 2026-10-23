@@ -1,6 +1,6 @@
 # MR-6 — Four event-driven short sounds
 
-Technical verification in progress. Owner acceptance of sound association, loudness and comfort
+Technical verification completed2026-10-22; objective acceptance recorded under delegated authority. Owner acceptance of sound association, loudness and comfort
 is not recorded. MR-5 session UX is accepted separately and integrated in local main `aa385cb`.
 
 ## Run
@@ -76,3 +76,42 @@ After objective closure, evaluate only cue association, relative loudness, annoy
 comfort during real play. Do not repeat automated input/cleanup/hash tests manually. This new
 sonic feedback is the meaningful experience gate; it does not authorize music or richer audio
 infrastructure by analogy. No main integration or push for MR-6 before applicable owner feedback.
+
+## Final independent closure —2026-10-22
+
+Frozen source `749e8c2d6ffe4d8c1f761e42c303678cbbbdfe28`, baseline
+`aa385cb49ff1d979c1092f5a5530fff7e6f6f25a`. A separate verifier used a fresh archive,
+SDK10.0.402 and serial Release builds: S1-S6 PASS, zero blockers or corrections.
+
+| Check | Observed result |
+| --- | --- |
+| Hosting / Loop / Desktop / TwoD | 31 /159 /50 /10 passed |
+| Platformer / Adventure / RPG / ExampleLaunch | 36 /13 /22 /5 passed |
+| Total managed | 326 passed, zero failed or skipped |
+| Fresh Platformer / Adventure / RPG / Audio native wrappers | All actual exit0 |
+| Audio / patrol / Adventure / RPG asset verifiers | All actual exit0 |
+| Isolated modified WAV sample | Rejected exit1; original hashes still pass |
+| Parent fresh Audio and Platformer native spot checks | Both actual exit0, zero build warnings/errors |
+
+Reproduce the managed checks with `dotnet test checks/<name>.Contracts/<name>.Contracts.csproj
+-c Release -p:NuGetAudit=false -p:UseSharedCompilation=false -m:1 -nodeReuse:false` for
+Hosting, Loop, Desktop, TwoD, Platformer, Adventure and RPG; ExampleLaunch uses
+`checks/ExampleLaunch.Contracts/ExampleLaunch.Contracts.csproj`. Execute the native and asset
+PowerShell scripts documented above and in the contribution guide. A partial aggregate capture
+was excluded, not counted as proof; affected suites were rerun individually to completed exit0.
+
+Fresh native proof includes rejection of a foreign audio device without closing it, native WAV
+load/play/stop/close/reopen without a window, and existing scenario/CLI regressions. Protected
+Loop, Hosting, TwoD, renderer, game platform, other games, prior asset blobs and dependency
+versions match baseline. Only the authorized Desktop project reference and new provider surfaces
+change engine construction. Original licensed WAVs remain unmodified.
+
+Traceable work units: `2b38294` (readiness/ADR), `94ea02d` (provider), `9a2ced2`
+(foreign ownership correction), `749e8c2` (game events/integration). ME083-086 are completed.
+MR-5 positive feedback is recorded separately and integrated in local main `aa385cb`.
+MR-6 remains on `feat/audio-feedback`; no push or main integration. No subjective listening
+acceptance is inferred. Memory mirror remains pending because runtime attribution is unavailable.
+
+Risk: items3,4,5 — new public provider contract, owner-thread/native resource lifecycle and
+Desktop project dependency. Independent failure/ownership tests and fresh native proof pass;
+no package version, Loop contract, music or broad audio framework change.

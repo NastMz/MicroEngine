@@ -120,3 +120,8 @@ samepackart. Onlynewavoidancefeelgatepending; audio/menu/powers remainlaterbound
 MR5technicalclosure2026-10-22: [sessionflow](evidence/meadow-5/README.md),309tests andfreshnative
 exit0proof complete. Onlystart/pause/resume/restart UXneeds newownerexperience. No audio/music/
 particles/power horizon prepared by inference; theirasset/readiness/contracts remainfuturework.
+
+MR6 technical closure2026-10-22: [four one-shot cues](evidence/meadow-6/README.md), independent
+326-test/four-fresh-native/four-asset proof. Optional provider is reusable; mappings and gameplay
+rules remain consumer-owned. Next gate is subjective sonic association/loudness/comfort only.
+Music, mixing and richer content are candidates, not prepared requirements. MR5 UX is accepted.

@@ -189,3 +189,9 @@ feat/meadow-session-flow/source01719a6:309tests/independentnativeactualexit0/pro
 Title/Running/Paused, semanticPpause/Rrestart appended byDesktop; no newCorepause/UI contract.
 MR4evaluatedscope integratedlocalmain6204b48; MR5UXnotaccepted, no newmain/push. Olderpending
 technicalgates below/above are datedhistory; backlog has canonical completedME081/082.
+
+Latest2026-10-22 MR6: [one-shot audio evidence](evidence/meadow-6/README.md), source749e8c2,
+326 managed tests, four fresh native wrappers, four asset verifiers and independent S1-S6 PASS.
+ME083-086 objectively complete. Optional independent Audio contract; Desktop owns native resources;
+game owns four cue mappings/events. MR5 owner acceptance integrated localmainaa385cb. MR6 listening
+association/loudness/comfort pending on feat/audio-feedback; no main/push or new ready task.

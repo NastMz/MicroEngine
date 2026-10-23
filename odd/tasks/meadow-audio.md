@@ -11,10 +11,10 @@ S5. Priorowner: "No crees sistemas genéricos gigantescos de forma anticipada, p
 S6. Priorowner: "No solicites mi revisión para cambios puramente técnicos ya verificables." Finalmanualgate only perceivedsoundassociation/levels/comfort, automatedstate/cleanup/hash/nativechecksagentowned.
 
 ## Tasks
-- T1 / S1-S6 / inline + map/design review / in progress / ME083 assets/ADR/contract.
-- T2 / S4-S5 / inline / pending / ME084 optionalAudio/replaceableDesktop provider plusfakefailuretests.
-- T3 / S2-S6 / inline / pending / ME085 transientgameevents/fourcueintegration/headlessandnativeproof.
-- T4 / S1-S6 / independent final verification / pending / ME086 fullregressions/resources/delivery.
+- T1 / S1-S6 / inline + map/design review / completed / ME083 assets/ADR/contract; 2b38294.
+- T2 / S4-S5 / inline / completed / ME084 optional provider and failure tests; 94ea02d, 9a2ced2.
+- T3 / S2-S6 / inline / completed / ME085 transient events, integration and proof; 749e8c2.
+- T4 / S1-S6 / independent final verification / completed / ME086 S1-S6 independently PASS on 749e8c2; closure in this work unit.
 
 ## Log
 L1. Owner2026-10-22: "Funciona perfectamente, continua" afterMR5. Priorroadmap explicitlyauthorizesincrementalaudio andsameassetreadiness, no speculativeallfeatures. Rootaa385cb recordsMR5acceptance andnormalmainFF6204b48..aa385cb, unrelated.gitignorehashpreserved. Newbranchfeat/audio-feedback; no remote, RDDoff; memorymirrorpendingruntimeidentityunavailable. Mappingbudgetdelegated audio_scope_map, parentinline writer(noWritertrigger).
@@ -29,3 +29,5 @@ L5. ME084 runnableDesktopaudioRED6againststubs ->46GREEN, additionalchunkorder/p
 L6. Ownershipedgecases observedRED individually: foreigndevicecouldbeclosed and wrongthreadwrapperDisposecouldpoisonlaterownercleanup. Fixedbeforefinalfreeze; Desktop50GREEN/Platformer36GREEN. Foreignreadycheckneverclosesunownednative; wrapperguardbeforestatechange. MoreexplicitADR prose/profile retainedsameacceptedarchitecture. Providerfix workunit recorded separately; no reviewPASS inferredbeforefinalindependentgate.
 
 L7. Newconsumerworkunit includes transientmodel events (readonlyliveview, validtickclear/invalidatomic), fourcuefeedback primedbeforetick, typedonlysilentfallback, SoundPlatform partialacquire/combinedcleanup/threadguard, originalaudioassets andpositive/isolatednegativehashproof. Own326managed/4native-NoBuildexits0/4assetchecksPASS; NoBuildresultsnotclaimedfreshforeignfixture untilfinalreview. Fullprovider andconsumer baselines tobechecked fromaa385cb; memorymirrorpending, RDDoff. ME085in-review/ME086claimed.
+
+L8. Final independent verification archived frozen749e8c2 againstaa385cb in a fresh system-temp tree: S1-S6 PASS, zero blockers, 326/326 managed tests, all four fresh-build native wrappers actual exit0, all four asset verifiers exit0. Isolated modified sample rejected exit1; originals unchanged. One incomplete aggregate output capture was excluded and affected suites rerun individually to actual exit0. Parent fresh-build AudioNativeSmoke and PlatformerNativeSmoke both exit0, zero build warnings/errors. Protected engine/game/dependency hashes match baseline except authorized surfaces. ME084/085/086 objectively complete; listening remains owner-owned. No MR6 main integration/push, RDD off, memory mirror pending unavailable runtime identity.

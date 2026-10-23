@@ -738,7 +738,13 @@ perpositivefeedback authority, no push; nextaudiofeedback needs ownassets/contra
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
 | ME-083 | audio assets and ownership ADR | P1 | completed | ME-082 positiveownerfeedback | [MR-6](specs/meadow-audio.md), [ADR0015](decisions/0015-optional-one-shot-audio.md) |
-| ME-084 | optionalAudio/provider contracts | P1 | in-review | ME-083 reviewedapproval | [MR-6](specs/meadow-audio.md) |
-| ME-085 | fourgameevents/soundintegration | P1 | in-review | ME-084 | [MR-6](specs/meadow-audio.md) |
-| ME-086 | independent audio proof | P1 | in-progress | ME-085 | [MR-6](specs/meadow-audio.md) |
+| ME-084 | optionalAudio/provider contracts | P1 | completed | ME-083 reviewedapproval | [MR-6](specs/meadow-audio.md) |
+| ME-085 | fourgameevents/soundintegration | P1 | completed | ME-084 | [MR-6](specs/meadow-audio.md) |
+| ME-086 | independent audio proof | P1 | completed | ME-085 | [MR-6](specs/meadow-audio.md) |
 Rootaa385cb/feat/audio-feedback, unrelatedworkpreserved; no music/mixer/streaming/Coregenre scope.
+
+MR6 technical closure2026-10-22: source749e8c2 independently S1-S6 PASS; 326/326 managed,
+four fresh-build native wrappers and four asset verifiers actual exit0. Parent fresh Audio and
+Platformer wrappers exit0. [Evidence/listening handoff](evidence/meadow-6/README.md).
+ME083-086 completed; subjective sound association/loudness/comfort pending. No further ready
+independent task; music/mixer/content expansion remains unprepared. Feature only, no main/push.
