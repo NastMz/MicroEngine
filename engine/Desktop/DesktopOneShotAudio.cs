@@ -24,14 +24,18 @@ public sealed class DesktopOneShotAudio : IOneShotAudio
         var copies=new Dictionary<string,byte[]>(StringComparer.Ordinal);
         foreach(var pair in waves){ArgumentException.ThrowIfNullOrWhiteSpace(pair.Key);copies.Add(pair.Key,WaveFile.CopyAndValidate(pair.Value));}
         (_api,_reservation)=(api,reservation);_reservation.Take();
+        bool acquired=false;
         try
         {
-            _api.Init();if(!_api.Ready)throw new AudioDeviceUnavailableException();
+            if(_api.Ready)throw new InvalidOperationException("A foreign audio device is already initialized.");
+            acquired=true;_api.Init();if(!_api.Ready)throw new AudioDeviceUnavailableException();
             foreach(var pair in copies){var sound=_api.Load(pair.Value);_sounds.Add(pair.Key,sound);_api.Volume(sound,.5f);}
         }
         catch(Exception initialization)
         {
-            var errors=new List<Exception>{initialization};Cleanup(errors,false);Throw(errors);throw;
+            var errors=new List<Exception>{initialization};
+            if(acquired)Cleanup(errors,false);else _reservation.Release();
+            Throw(errors);throw;
         }
     }
     public void Play(string cue)

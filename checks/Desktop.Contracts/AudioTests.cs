@@ -16,9 +16,9 @@ public sealed class AudioTests
     private static Dictionary<string,byte[]> Waves()=>new(){{"alpha",Wave()},{"beta",Wave()}};
     private sealed class Api : IDesktopAudioApi
     {
-        public List<string> Trace { get; }=[];public HashSet<string> Fail {get;}=[];public bool Ready {get;set;}=true;private int _id;
+        public List<string> Trace { get; }=[];public HashSet<string> Fail {get;}=[];private bool _initialized;private bool _ready=true;public bool Foreign;public bool Ready {get=>Foreign||(_initialized&&_ready);set=>_ready=value;}private int _id;
         private void Call(string value){Trace.Add(value);if(Fail.Contains(value))throw new InvalidOperationException(value);}
-        public void Init()=>Call("init");public object Load(byte[] encoded){int id=++_id;Call($"load:{id}");return id;}
+        public void Init(){_initialized=true;Call("init");}public object Load(byte[] encoded){int id=++_id;Call($"load:{id}");return id;}
         public void Volume(object sound,float volume){Assert.AreEqual(.5f,volume);Call($"volume:{sound}");}
         public void Play(object sound)=>Call($"play:{sound}");public void Stop(object sound)=>Call($"stop:{sound}");
         public void Unload(object sound)=>Call($"unload:{sound}");public void Close()=>Call("close");
@@ -104,5 +104,11 @@ public sealed class AudioTests
         Assert.ThrowsExactly<InvalidOperationException>(()=>new DesktopOneShotAudio(Waves(),api,reservation));
         CollectionAssert.AreEqual(new[]{"unload:1","close"},api.Trace.TakeLast(2).ToArray());
         using var recovered=new DesktopOneShotAudio(Waves(),new Api(),reservation);
+    }
+    [TestMethod] public void ForeignAudioDeviceIsNeverAcquiredOrClosed()
+    {
+        var api=new Api{Foreign=true};var reservation=new AudioReservation();
+        Assert.ThrowsExactly<InvalidOperationException>(()=>new DesktopOneShotAudio(Waves(),api,reservation));Assert.AreEqual(0,api.Trace.Count);
+        api.Foreign=false;using var recovered=new DesktopOneShotAudio(Waves(),api,reservation);
     }
 }
