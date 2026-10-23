@@ -733,3 +733,12 @@ no main/push, no otherpreparedtask before newstart/pause/restart experience. RDD
 MR5ownerpositive2026-10-22: "Funciona perfectamente, continua", evaluated01719a6/d46ed80.
 SessionUXaccepted withinMR5scope;309tests/independentproof complete. Localmainintegration
 perpositivefeedback authority, no push; nextaudiofeedback needs ownassets/contracts/review.
+
+## MR-6 bounded one-shot feedback2026-10-22
+| ID | Kind | Priority | State | Dependencies | Packet |
+| --- | --- | --- | --- | --- | --- |
+| ME-083 | audio assets and ownership ADR | P1 | completed | ME-082 positiveownerfeedback | [MR-6](specs/meadow-audio.md), [ADR0015](decisions/0015-optional-one-shot-audio.md) |
+| ME-084 | optionalAudio/provider contracts | P1 | in-progress | ME-083 reviewedapproval | [MR-6](specs/meadow-audio.md) |
+| ME-085 | fourgameevents/soundintegration | P1 | pending | ME-084 | [MR-6](specs/meadow-audio.md) |
+| ME-086 | independent audio proof | P1 | pending | ME-085 | [MR-6](specs/meadow-audio.md) |
+Rootaa385cb/feat/audio-feedback, unrelatedworkpreserved; no music/mixer/streaming/Coregenre scope.

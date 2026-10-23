@@ -1,0 +1,59 @@
+{
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "page": "https://opengameart.org/content/8-bit-platformer-sfx-0",
+  "retrieved": "2026-10-22",
+  "title": "8-bit Platformer SFX",
+  "author": "MoxieCat",
+  "files": [
+    {
+      "sha256": "5370db118da8710b95d91a1f7a98b0f86e815cd668b45d2bc6c9cdbe2deb0db8",
+      "channels": 1,
+      "cue": "jump",
+      "bits": 16,
+      "file": "jump_1.wav",
+      "rms": 0.07058132662929695,
+      "url": "https://opengameart.org/sites/default/files/jump_1.wav",
+      "sample_rate": 44100,
+      "peak": 0.335540771484375,
+      "duration_seconds": 0.2871655328798186
+    },
+    {
+      "sha256": "be0fca32cb4d39cb84a54951897d6ae070e8d5d9749132b72d7fd07aec18c824",
+      "channels": 1,
+      "cue": "coin",
+      "bits": 16,
+      "file": "button.wav",
+      "rms": 0.029947297075836266,
+      "url": "https://opengameart.org/sites/default/files/button.wav",
+      "sample_rate": 44100,
+      "peak": 0.136138916015625,
+      "duration_seconds": 0.28895691609977325
+    },
+    {
+      "sha256": "a572bed733d262ee92bc55a5d0781e1a19d7458c39438e41e5357338a2aa93a8",
+      "channels": 1,
+      "cue": "defeat",
+      "bits": 16,
+      "file": "playerhurt.wav",
+      "rms": 0.042078358667735516,
+      "url": "https://opengameart.org/sites/default/files/playerhurt.wav",
+      "sample_rate": 44100,
+      "peak": 0.21881103515625,
+      "duration_seconds": 0.5005215419501133
+    },
+    {
+      "sha256": "2e50e65a01c76aea5c5e0328d01614bf3d3eec8b90eb963991cc7883dcec3846",
+      "channels": 1,
+      "cue": "level-complete",
+      "bits": 16,
+      "file": "spring.wav",
+      "rms": 0.06306065977463848,
+      "url": "https://opengameart.org/sites/default/files/spring.wav",
+      "sample_rate": 44100,
+      "peak": 0.19091796875,
+      "duration_seconds": 0.3339455782312925
+    }
+  ],
+  "embedded_license": false
+}

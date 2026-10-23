@@ -44,3 +44,5 @@ Under [autonomy](../autonomy.md), agents may accept/supersede technical ADRs aft
 - [ADR-0013 — Consumer-owned RPG encounter](0013-consumer-rpg-encounter.md): accepted2026-10-18 by root after independent design PASS; reuses public Explorer and existing drawing infrastructure, no engine combat API.
 
 - [ADR-0014 — Game-owned session flow over additive semantic input](0014-game-session-input.md): accepted2026-10-21 after independent session_flow_map PASS; P/R report input only, no enginepause/UI/scene orgenericbinding API.
+
+- [ADR-0015 — Optional one-shot audio](0015-optional-one-shot-audio.md): accepted2026-10-22 by root after independent audio_scope_map readiness/ownership/profile review PASS; no Loop/render coupling.
