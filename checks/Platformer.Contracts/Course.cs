@@ -4,7 +4,7 @@ namespace Platformer.Checks;
 public static class Course
 {
     public static readonly TimeSpan Step = TimeSpan.FromSeconds(1d / 60);
-    public static int Run(LevelGame game, Action<TimeSpan, LevelGame>? afterStep = null, bool anticipateGaps = true, bool anticipateEnemies = true, Func<LevelGame,bool>? stopWhen = null)
+    public static int Run(LevelGame game, Action<TimeSpan, LevelGame>? afterStep = null, bool anticipateGaps = true, bool anticipateEnemies = true, Func<LevelGame,bool>? stopWhen = null, Action<TimeSpan,InputSnapshot>? update = null)
     {
         float previousX = float.NaN;
         for (int i = 1; i <= 2000; i++)
@@ -21,7 +21,8 @@ public static class Course
             bool enemy = anticipateEnemies && right && game.EnemyBody is { } patrol && patrol.X - (game.Body.X + 28) is >= 0 and <= 70;
             bool jump = game.Grounded && (obstacle || hazard || gap || enemy);
             previousX = game.Body.X;
-            game.Update(Step, new(right ? ["right"] : [], jump ? ["jump"] : []));
+            var input=new InputSnapshot(right ? ["right"] : [], jump ? ["jump"] : []);
+            if(update is null)game.Update(Step,input);else update(Step,input);
             afterStep?.Invoke(Step, game);
             if (game.Dead) throw new InvalidOperationException($"Course died at {game.Body}.");
             if (game.Completed || stopWhen?.Invoke(game) == true) return i;

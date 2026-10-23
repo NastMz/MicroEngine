@@ -26,7 +26,7 @@ try {
         $stdout = $process.StandardOutput.ReadToEndAsync(); $stderr = $process.StandardError.ReadToEndAsync()
         if (-not $process.WaitForExit(30000)) { $process.Kill(); $process.WaitForExit(); throw 'Platformer probe timed out.' }
         $output = $stdout.Result + $stderr.Result
-        if ($process.ExitCode -ne 0 -or $output -notmatch 'platformer:course:[0-9]+:verified' -or $output -notmatch 'platformer:closed' -or $output -notmatch 'platformer:reset:verified' -or $output -notmatch 'platformer:campaign:two-levels:verified' -or $output -notmatch 'platformer:patrol:poses-contact-retry-avoidance:verified' -or $output -notmatch 'platformer:session:title-pause-selection-resume-restart:verified' -or $output -notmatch 'Window closed successfully') {
+        if ($process.ExitCode -ne 0 -or $output -notmatch 'platformer:course:[0-9]+:verified' -or $output -notmatch 'platformer:closed' -or $output -notmatch 'platformer:reset:verified' -or $output -notmatch 'platformer:campaign:two-levels:verified' -or $output -notmatch 'platformer:patrol:poses-contact-retry-avoidance:verified' -or $output -notmatch 'platformer:session:title-pause-selection-resume-restart:verified' -or $output -notmatch 'platformer:audio:four-cues-pause-reset:verified' -or $output -notmatch 'Window closed successfully') {
             throw "Native platformer goal/reset was not proved.`n$output"
         }
         Write-Output 'PASS: real Kenney PNG/atlas pixels, budget isolation, full course/coins/camera/reset/replay and clean close.'

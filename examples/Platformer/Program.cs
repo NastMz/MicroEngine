@@ -1,3 +1,4 @@
+using MicroEngine.Audio;
 using MicroEngine.Desktop;
 using MicroEngine.Hosting;
 using MicroEngine.Loop;
@@ -13,11 +14,22 @@ try
 {
     var game = new MeadowSession();
     using var art = new PlatformerPresentation(Path.Combine(AppContext.BaseDirectory,"Assets"), DesktopImageDecoder.Decode);
+    IOneShotAudio? audio=null;
+    var feedback=new MeadowSoundFeedback();
+    IOneShotAudio? CreateAudio()
+    {
+        var directory=Path.Combine(AppContext.BaseDirectory,"Assets","Audio");
+        var waves=MeadowSoundFeedback.CueFiles.ToDictionary(pair=>pair.Key,pair=>File.ReadAllBytes(Path.Combine(directory,pair.Value)));
+        try{audio=new DesktopOneShotAudio(waves);}
+        catch(AudioDeviceUnavailableException){Console.Error.WriteLine("audio:unavailable: continuing silently");audio=null;}
+        feedback.Publish(game,audio);
+        return audio;
+    }
     int frames=0, updates=0;
     Console.WriteLine("Meadow Run: Space starts. P pauses/resumes, R restarts campaign, Escape exits. Paused: Up/Down and Space select. Collect three coins per level, avoid spiked slime and reach the flag.");
-    var report = FrameLoop.Run(() => GamePlatform.ForSession(new DesktopPlatform(new DesktopWindowOptions(768,480,"MicroEngine - Meadow Run",2048,32)),game),
+    var report = FrameLoop.Run(() => SoundPlatform.Create(() => GamePlatform.ForSession(new DesktopPlatform(new DesktopWindowOptions(768,480,"MicroEngine - Meadow Run",2048,32)),game),CreateAudio),
         new LoopOptions(TimeSpan.FromSeconds(1d/60),5,TimeSpan.FromMilliseconds(250)),
-        frame => { if(fail) throw new ApplicationException("Requested update failure."); updates++; game.Update(frame.Delta,frame.Input); art.AdvanceSession(frame.Delta,game); },
+        frame => { if(fail) throw new ApplicationException("Requested update failure."); updates++; game.Update(frame.Delta,frame.Input); feedback.Publish(game,audio); art.AdvanceSession(frame.Delta,game); },
         (canvas,frame) => { art.DrawSession(canvas,game); frames++; if(limit>0 && frames>=limit) frame.Control.RequestStop(); });
     Console.WriteLine($"outcome:{report.Outcome};frames:{frames};updates:{updates}");
     if(report.PrimaryError is not null) Console.Error.WriteLine($"primary:{report.PrimaryError.GetType().Name}:{report.PrimaryError.Message}");

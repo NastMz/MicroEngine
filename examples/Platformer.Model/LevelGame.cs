@@ -13,6 +13,8 @@ public sealed class LevelGame
     private float _enemyX;
     private int _enemyDirection = 1;
     public Rect? EnemyBody => _patrol is null ? null : new Rect(_enemyX, _patrol.Spawn.Y, _patrol.Spawn.Width, _patrol.Spawn.Height);
+    private readonly List<LevelEvent> _events = [];
+    public IReadOnlyList<LevelEvent> EventsThisUpdate { get; }
     public int LevelNumber { get; }
     public IReadOnlyList<Rect> Terrain { get; }
     public IReadOnlyList<Rect> CoinPositions { get; }
@@ -23,6 +25,7 @@ public sealed class LevelGame
     public LevelGame(int levelNumber)
     {
         var content = LevelContent.For(levelNumber);
+        EventsThisUpdate = _events.AsReadOnly();
         LevelNumber = levelNumber;
         Terrain = content.Terrain;
         CoinPositions = content.Coins;
@@ -50,6 +53,7 @@ public sealed class LevelGame
     {
         ArgumentNullException.ThrowIfNull(input);
         if (delta <= TimeSpan.Zero || delta > TimeSpan.FromMilliseconds(100)) throw new ArgumentOutOfRangeException(nameof(delta));
+        _events.Clear();
         bool jump = input.Pressed.Contains("jump");
         if (Completed || Dead)
         {
@@ -70,10 +74,10 @@ public sealed class LevelGame
         if (motion.BlockedY) _velocity = 0;
         if (Grounded && _pending >= 0) Launch();
         AdvancePatrol(seconds);
-        if (EnemyBody is Rect enemy && StaticWorld.Overlaps(Body, enemy)) { Dead = true; Freeze(); return; }
-        if (Body.Y > 528 || StaticWorld.Overlaps(Body, Danger)) { Dead = true; Freeze(); return; }
-        for (int i = 0; i < _collected.Length; i++) if (!_collected[i] && StaticWorld.Overlaps(Body, CoinPositions[i])) _collected[i] = true;
-        if (CollectedCount == CoinCount && StaticWorld.Overlaps(Body, Goal)) { Completed = true; Freeze(); }
+        if (EnemyBody is Rect enemy && StaticWorld.Overlaps(Body, enemy)) { Dead = true; _events.Add(LevelEvent.Defeated); Freeze(); return; }
+        if (Body.Y > 528 || StaticWorld.Overlaps(Body, Danger)) { Dead = true; _events.Add(LevelEvent.Defeated); Freeze(); return; }
+        for (int i = 0; i < _collected.Length; i++) if (!_collected[i] && StaticWorld.Overlaps(Body, CoinPositions[i])) { _collected[i] = true; _events.Add(LevelEvent.CoinCollected); }
+        if (CollectedCount == CoinCount && StaticWorld.Overlaps(Body, Goal)) { Completed = true; _events.Add(LevelEvent.LevelCompleted); Freeze(); }
     }
     private void AdvancePatrol(float seconds)
     {
@@ -82,7 +86,7 @@ public sealed class LevelGame
         if (_enemyX >= _patrol.MaxX) { _enemyX = 2 * _patrol.MaxX - _enemyX; _enemyDirection = -1; }
         else if (_enemyX <= _patrol.MinX) { _enemyX = 2 * _patrol.MinX - _enemyX; _enemyDirection = 1; }
     }
-    private void Launch() { _velocity = -540; Grounded = false; _pending = -1; }
+    private void Launch() { _velocity = -540; Grounded = false; _pending = -1; _events.Add(LevelEvent.Jumped); }
     private void Freeze() { _velocity = 0; _pending = -1; Walking = false; }
     private void Reset()
     {

@@ -739,6 +739,6 @@ perpositivefeedback authority, no push; nextaudiofeedback needs ownassets/contra
 | --- | --- | --- | --- | --- | --- |
 | ME-083 | audio assets and ownership ADR | P1 | completed | ME-082 positiveownerfeedback | [MR-6](specs/meadow-audio.md), [ADR0015](decisions/0015-optional-one-shot-audio.md) |
 | ME-084 | optionalAudio/provider contracts | P1 | in-review | ME-083 reviewedapproval | [MR-6](specs/meadow-audio.md) |
-| ME-085 | fourgameevents/soundintegration | P1 | in-progress | ME-084 | [MR-6](specs/meadow-audio.md) |
-| ME-086 | independent audio proof | P1 | pending | ME-085 | [MR-6](specs/meadow-audio.md) |
+| ME-085 | fourgameevents/soundintegration | P1 | in-review | ME-084 | [MR-6](specs/meadow-audio.md) |
+| ME-086 | independent audio proof | P1 | in-progress | ME-085 | [MR-6](specs/meadow-audio.md) |
 Rootaa385cb/feat/audio-feedback, unrelatedworkpreserved; no music/mixer/streaming/Coregenre scope.

@@ -187,7 +187,33 @@ try
         if(session.Phase!=SessionPhase.Running||session.AdvancedThisUpdate||session.Campaign.Current.Body.X!=48)throw new InvalidOperationException("Pause resume edge leaked.");
         SessionFrame("microengine-meadow5-resumed.png",false);
         Console.WriteLine("platformer:session:title-pause-selection-resume-restart:verified");
+        var soundSession=new MeadowSession();var recording=new RecordingAudio();var feedback=new MeadowSoundFeedback();
+        feedback.Publish(soundSession,recording);
+        soundSession.Update(Course.Step,new([],["jump"]));feedback.Publish(soundSession,recording);
+        if(recording.Cues.Count!=0)throw new InvalidOperationException("Title confirmation played stale gameplay audio.");
+        Course.Run(soundSession.Campaign.Current,(_,_)=>feedback.Publish(soundSession,recording),update:soundSession.Update);
+        if(recording.Cues.Count(c=>c=="coin")!=3||recording.Cues.Count(c=>c=="level-complete")!=1||!recording.Cues.Contains("jump"))
+            throw new InvalidOperationException("Public session audio cue mapping failed.");
+        soundSession.Update(Course.Step,new([],["jump"]));feedback.Publish(soundSession,recording);
+        try{Course.Run(soundSession.Campaign.Current,(_,_)=>feedback.Publish(soundSession,recording),anticipateGaps:false,update:soundSession.Update);throw new InvalidOperationException("Expected public fall missing.");}
+        catch(InvalidOperationException)when(soundSession.Campaign.Current.Dead){}
+        if(recording.Cues.Count(c=>c=="defeat")!=1)throw new InvalidOperationException("Defeat cue was absent or repeated.");
+        soundSession.Update(Course.Step,new([],["jump"]));feedback.Publish(soundSession,recording);
+        soundSession.Update(Course.Step,new([],["pause"]));feedback.Publish(soundSession,recording);
+        int cuesBefore=recording.Cues.Count;
+        for(int i=0;i<50;i++){soundSession.Update(Course.Step,new(["jump"],[]));feedback.Publish(soundSession,recording);}
+        if(recording.Cues.Count!=cuesBefore||recording.Stops<2)throw new InvalidOperationException("Paused or restarted audio leaked.");
+        Console.WriteLine("platformer:audio:four-cues-pause-reset:verified");
     }
     Console.WriteLine("platformer:closed");return 0;
 }
 catch(Exception error) { Console.Error.WriteLine($"platformer:failed:{error}");return 1; }
+
+sealed class RecordingAudio : MicroEngine.Audio.IOneShotAudio
+{
+    public List<string> Cues {get;}=[];
+    public int Stops;
+    public void Play(string cue)=>Cues.Add(cue);
+    public void StopAll()=>Stops++;
+    public void Dispose(){}
+}

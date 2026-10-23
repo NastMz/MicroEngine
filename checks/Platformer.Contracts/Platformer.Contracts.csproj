@@ -14,4 +14,4 @@
     <ProjectReference Include="../../examples/Platformer.Model/Platformer.Model.csproj" />
   </ItemGroup>
   <ItemGroup><Compile Include="../../examples/Platformer/GamePlatform.cs" Link="GamePlatform.cs" /></ItemGroup>
-<ItemGroup><Compile Include="../../examples/Platformer/PlatformerPresentation.cs" Link="PlatformerPresentation.cs"/><Content Include="../../examples/Platformer/Assets/**" Link="Assets/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/></ItemGroup></Project>
+<ItemGroup><Compile Include="../../examples/Platformer/PlatformerPresentation.cs" Link="PlatformerPresentation.cs"/><Content Include="../../examples/Platformer/Assets/**" Link="Assets/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/></ItemGroup><ItemGroup><ProjectReference Include="../../engine/Audio/Audio.csproj"/><Compile Include="../../examples/Platformer/MeadowSoundFeedback.cs" Link="MeadowSoundFeedback.cs"/><Compile Include="../../examples/Platformer/SoundPlatform.cs" Link="SoundPlatform.cs"/></ItemGroup></Project>

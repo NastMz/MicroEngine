@@ -40,7 +40,7 @@ ME083 preparation; ME084 contracts/provider+fakefault tests; ME085 events/consum
 ME086 independentclosure. Allowed newengine/Audio/*, engine/Desktop/DesktopOneShotAudio.cs,
 DesktopAudioApi.cs,WaveFile.cs,Desktop.csproj; checks/Desktop.Contracts/AudioTests.cs(new);
 Platformer.Model/LevelGame.cs,newLevelEvent.cs; Platformer/Program.cs,newMeadowSoundFeedback.cs,
-newSoundPlatform.cs,Assets/Audio/*; Platformer.Contracts/newAudioFeedbackTests.cs,csproj;
+newSoundPlatform.cs,Assets/Audio/*; Platformer.Contracts/newAudioFeedbackTests.cs,Course.cs,csproj;
 Platformer.NativeProbe/Program.cs,PlatformerNativeSmoke.ps1;newAudioNativeProbe/newAudioSmoke/
 newVerifyPlatformerAudioAssets; linkedengineeringdocs/log. No otherengine/action/loop/Hosting,
 othergames/models/assets/defaultinput/dependencyversion changes. Risk3+4+5 (newoptionalcontract,
@@ -67,3 +67,8 @@ of perceived loudness, device distortion or aesthetic coherence. Those require l
 Use the exact WAV/profile and typed-fallback/cleanup acceptance tables in ADR-0015. Program
 primes feedback before the first session tick. Native proof checks successful decode/load,
 device readiness and request/stop/close/reopen, not audibility or sample-exact DAC output.
+
+Additional ownership regressions: foreign already-ready device is rejected without Init/Close;
+wrong-thread SoundPlatform disposal has no effects and does not poison later owner cleanup.
+Both were observed RED before correction. Actual native probe also preserves a foreign device
+and then proves normal device close/reopen. These tighten ownership, not functional scope.

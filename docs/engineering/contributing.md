@@ -171,3 +171,9 @@ Current technical/product status in backlog; nextmanualexperience is enemyavoida
 [MR-5 controls/evidence](evidence/meadow-5/README.md): Space starts, P pauses/resumes, R restarts
 campaign; whilepaused Up/Down+Space choose Resume/Restart. Escapeexits. Sessionflowusescurrent
 art/labels anddoesnotchange standaloneCampaignGame or previousconsumercontrols.
+
+## MR-6 short audio feedback
+[Run and proof](evidence/meadow-6/README.md). Same Platformer command and controls; jump, coin,
+defeat and completion now request four short original CC0 sounds. Audio is optional and separate
+from window ownership. On unavailable hardware Program explicitly warns and continues silently;
+corrupt assets/playback/cleanup failures are not silently ignored. No music is implemented.
