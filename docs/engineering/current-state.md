@@ -195,3 +195,12 @@ Latest2026-10-22 MR6: [one-shot audio evidence](evidence/meadow-6/README.md), so
 ME083-086 objectively complete. Optional independent Audio contract; Desktop owns native resources;
 game owns four cue mappings/events. MR5 owner acceptance integrated localmainaa385cb. MR6 listening
 association/loudness/comfort pending on feat/audio-feedback; no main/push or new ready task.
+
+Active mission2026-10-24: the owner delegated completion of Meadow Run, Courtyard Key and Trail
+Duel as small coherent games plus evidence-driven MicroEngine evolution. The durable record is
+[`odd/tasks/microengine-three-game-mission.md`](../../odd/tasks/microengine-three-game-mission.md);
+FR-003/004/005 and NFR-007 own the outcomes. MR-6 objective evidence remains valid; subjective
+audio notes are retained for integrated evaluation and no longer freeze unrelated progression.
+ME-087 reconciles governance; ME-088 is the next bounded delivery/replanning unit. The KPF-1
+local-only restriction is historical. Ordinary mission delivery uses the exact origin/authentication
+scope in autonomy.md; no PR, release, force-push or unrelated publication is inferred.

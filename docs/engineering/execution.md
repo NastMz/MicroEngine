@@ -102,15 +102,16 @@ and leave the work explicitly uncommitted. Never publish implicitly.
 ## Continue and stop
 
 After closing a task, recompute eligible work and continue during the authorized active
-session without asking permission for routine task steps. Stop on user request, exhausted
-session/resources, unsafe ownership or no eligible tasks. At a milestone/manual gate,
-prepare its packet and continue unrelated tasks if they remain eligible.
+session without asking permission for routine task steps. Under the active three-game mission,
+an empty ready queue triggers proportionate refinement of the next concrete mission need; it is
+not itself a stopping condition. Stop on user request, exhausted session/resources, unsafe
+ownership, a genuine strategic ambiguity, or absence of any safe mission-aligned refinement.
+At a milestone/manual gate, prepare its packet and continue unrelated tasks if they remain eligible.
 
 Technical verification/acceptance (delegated) and subjective product acceptance (human) are separate gates. An owner-acceptance dependency
 blocks only tasks that actually need that decision; it does not freeze the whole backlog.
 Check that a claimed dependency is real. Do not request manual repetition of automated checks
-or claim subjective product acceptance. Technical acceptance is delegated after sufficient objective evidence. If no independent task is ready, report that
-fact without creating speculative tasks or asking the owner to perform operational checks.
+or claim subjective product acceptance. Technical acceptance is delegated after sufficient objective evidence. If no independent task is ready, refine from the approved mission and observed evidence without creating speculative capabilities or asking the owner to perform operational checks.
 
 Do not bypass a blocked dependency, start speculative tasks or schedule later runs.
 When human input is necessary, report one concrete decision with evidence and ask at most

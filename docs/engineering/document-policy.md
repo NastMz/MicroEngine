@@ -10,6 +10,7 @@ sessions; current technical execution/approval authority is recorded in autonomy
 | --- | --- |
 | Product intent | Manifesto |
 | Required behavior | Requirements and approved capability specifications |
+| Long-running mission scope and recovery | `odd/tasks/microengine-three-game-mission.md` plus its Engram mirror when available |
 | Significant choice | Accepted ADR with explicit approval evidence |
 | Current scenario and next work | Roadmap and scoped milestone |
 | What actually works | Implementation links and observed verification evidence |
@@ -58,6 +59,9 @@ scope/spec invalidate affected readiness and proof. Capture new needs in [findin
 without expanding current work. The owner requested this operating model on 2026-10-12;
 its conventions are active for authorized work and may evolve through recorded changes;
 technical acceptance now follows the2026-10-15 delegation in autonomy.md, not automatic promotion.
+The 2026-10-24 mission supplies the durable completion outcomes: when no task is ready, refine
+the next evidence-backed mission slice in the backlog rather than treating the empty queue as
+completion or inventing unrelated scope.
 
 ## Architectural review baseline
 

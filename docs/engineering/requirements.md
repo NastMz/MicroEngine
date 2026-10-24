@@ -7,7 +7,7 @@ Evidence and approval rules: [document policy](document-policy.md).
 
 ## Confirmed requirements
 
-Rows originate in explicit repository-owner instructions (2026-10-12 foundation;2026-10-15 NFR-005 directive), represented
+Rows originate in explicit repository-owner instructions (2026-10-12 foundation;2026-10-15 NFR-005 directive;2026-10-24 three-game completion mission), represented
 in the [manifesto](manifesto.md) and [ADR-0001](decisions/0001-greenfield-direction.md).
 They are approved intent, not claims of greenfield implementation.
 
@@ -15,18 +15,23 @@ They are approved intent, not claims of greenfield implementation.
 | --- | --- | --- | --- | --- | --- | --- |
 | FR-001 | Provide a general-purpose C#/.NET 2D framework; avoid repeated infrastructure | Foundation | approved | Owner product/direction instruction, 2026-10-12 | External consumers can use supported capabilities through documented public APIs | None |
 | FR-002 | Permit external genre extensions; keep game rules outside mandatory engine capabilities | Foundation | approved | Owner product/direction instruction, 2026-10-12 | Scenario examples contain their own rules; extension consumption needs no private engine access | FR-001 |
+| FR-003 | Complete Meadow Run as a small coherent platformer campaign | Mission | approved | Owner three-game completion mission, 2026-10-24 | Approximately three genuinely different levels provide progression, terrain/obstacle variety, enemies, collectibles, an integrated additional mechanic, animation/effects, music/sound, session UI and explicit campaign victory/defeat/recovery | FR-001; FR-002 |
+| FR-004 | Complete Courtyard Key as a small coherent top-down adventure | Mission | approved | Owner three-game completion mission, 2026-10-24 | Connected visually differentiated locations support NPC interaction/dialogue, items/inventory/use, chained objectives, fitting hazards or combat, presentation/audio/UI, world progression and a conclusion | FR-001; FR-002 |
+| FR-005 | Complete Trail Duel as a small coherent exploration and turn-combat RPG | Mission | approved | Owner three-game completion mission, 2026-10-24 | Distinct locations, NPCs/dialogue, explorer/combatant separation, team or companion design, statistics/skills/turn combat, menus/inventory/progression, differentiated world/combat presentation, justified persistence and a completed adventure are integrated | FR-001; FR-002 |
 | NFR-001 | Make lifecycle and ownership explicit to prevent hidden ordering and cleanup obligations | Foundation | approved | Owner product/direction instruction, 2026-10-12 | Each approved capability specifies ownership, order, errors and observable lifecycle tests | FR-001 |
 | NFR-002 | Make capabilities testable and diagnosable | Foundation | approved | Owner product/direction instruction, 2026-10-12 | Implemented capabilities have observable acceptance tests and actionable failure evidence | FR-001 |
 | NFR-003 | Measure reasonable performance instead of assuming it | Foundation | approved | Owner product/direction instruction, 2026-10-12 | Performance-sensitive capabilities identify workload, environment, measurements and agreed budgets before verification | FR-001 |
 | NFR-004 | Support evolutionary architecture with proportionate documentation | Foundation | approved | Owner product/direction instruction, 2026-10-12 | Significant decisions retain rationale/history; changed contracts and consumer impact are documented | None |
 | NFR-005 | Preserve replaceable infrastructure and cohesive opt-in capability contracts | Foundation | approved | Owner architectural directive,2026-10-15; ADR-0004 | Each evolution records dependency direction, public-only provider substitution, optional/specialized feature assumptions and future target restrictions; no vendor/universal-platform guarantee inferred from a single adapter; implementation conformance evidenced per slice | FR-001; NFR-004 |
 | NFR-006 | Preserve 2D artistic-style independence | Foundation | approved | Owner platformer directive,2026-10-18; ADR-0012 | Review actual resolution/sprite-size/sampling/scaling/layer assumptions per horizon; keep provider budgets explicit and configurable where demonstrated, not universal Core art rules. Pixel art, high-resolution art, sheets and primitives remain possible; no promise of every filter/importer/parallax/backend now | NFR-005 |
+| NFR-007 | Sustain autonomous mission execution without weakening engineering controls | Mission | approved | Owner three-game completion mission, 2026-10-24 | After each work unit, objective verification/review/evidence and coherent delivery are recorded, the next concrete mission slice is selected or refined, and only genuine strategic, subjective, destructive/external or tooling blockers require human intervention | NFR-002; NFR-004 |
 | DOC-001 | Enable onboarding without previous chats or agent memory | Foundation | approved | Owner product/direction instruction, 2026-10-12 | A collaborator finds intent, current decisions, actual implementation state and next work from repository links | NFR-004 |
 | SCOPE-001 | Treat the next engine as greenfield; preserve the prototype as reference | Foundation | approved | Owner product/direction instruction, 2026-10-12 | No prototype technology is declared mandatory merely because it exists; reuse follows ADR-0001 criteria | None |
 
 ## Discovery candidates
 
-Origin: owner-requested validation scenarios and capability exploration; not implementation commitments.
+Origin: owner-requested validation scenarios and capability exploration. These rows preserve the
+historical tracer scope; FR-003 through FR-005 now own the approved completion outcomes.
 
 | ID | Description and rationale | Priority | Status | Origin | Acceptance criteria to refine | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- |

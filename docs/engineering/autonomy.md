@@ -1,7 +1,21 @@
-<!-- Current KPF-1 owner restriction2026-10-18: local commits allowed; no remote publication/main integration without new explicit authorization. This supersedes earlier standing delivery permission for this horizon only. -->
+<!-- Current authority: owner three-game completion mission2026-10-24 supersedes the KPF-1 local-only restriction for ordinary mission delivery; external safety limits remain. -->
 # Technical autonomy policy
 
-Status: active, owner delegation2026-10-15. Supersedes narrower approval rules below; product manifesto unchanged.
+Status: active, owner delegations2026-10-15 and2026-10-24. Supersedes narrower approval rules below; product manifesto and mission requirements remain controlling.
+
+## Three-game mission authority - owner2026-10-24
+
+The owner delegates the complete technical and operational mission: finish Meadow Run,
+Courtyard Key and Trail Duel, and evolve MicroEngine through their demonstrated shared needs.
+Agents refine the roadmap, create proportionate specs/ADRs, implement, verify, correct, document,
+commit, integrate objectively mature local work and continue to the next concrete slice without
+routine owner approval. The mission record is
+[`odd/tasks/microengine-three-game-mission.md`](../../odd/tasks/microengine-three-game-mission.md).
+
+This delegation removes artificial per-increment stops; it does not remove Asset Readiness,
+observable acceptance, independent review where required, subjective human product acceptance,
+or external/destructive safety boundaries. A unified launcher, genre framework or speculative
+engine subsystem is not inferred from the word “integrated”.
 
 ## Default authority
 
@@ -15,7 +29,7 @@ Respect manifesto/requirements. Significant architectural changes require an ADR
 
 ## Human exceptions
 
-Ask only for substantial product vision/strategic scope changes; destructive/external/irreversible operations requiring authorization; indispensable subjective playability/ergonomics/presentation evaluation; blockers not reasonably resolvable by bounded research, alternatives or independent review; or no useful roadmap work when continuing would invent unrelated requirements. Stop only affected work and continue safe independent work. Available credentials do not authorize remote access. Remote operations require explicit destination/operation/authentication authorization. The owner has authorized non-force pushes of this project work to origin (https://github.com/NastMz/MicroEngine.git) using the configured Git authentication; standard task-branch pushes no longer require a routine prompt. Owner2026-10-17 additionally authorizes normal integration/push to main after positive feedback on the evaluated technically verified increment, as specified below. This does not authorize PR creation, release, force-push, deletion of remote branches/tags or publishing unrelated work.
+Ask only for substantial product vision/strategic scope changes; destructive/external/irreversible operations outside recorded authorization; indispensable integrated subjective playability/ergonomics/presentation evaluation; blockers not reasonably resolvable by bounded research, alternatives or independent review; or a genuine mission ambiguity whose alternatives materially change the product. Stop only affected work and continue safe independent work. Available credentials alone do not authorize remote access. For this repository the owner explicitly authorizes ordinary non-force task-branch and objectively verified local-main pushes to destination `origin` (`https://github.com/NastMz/MicroEngine.git`) using the configured Git authentication/session. Fetching that same origin for safe reconciliation is also authorized. This does not authorize PR creation, release, force-push, deletion of remote branches/tags, other destinations/authentication sessions or publishing unrelated work.
 
 ## Two acceptance gates
 

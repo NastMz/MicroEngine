@@ -1,6 +1,6 @@
 # Product manifesto
 
-Status: confirmed product direction. Origin: repository owner instructions, 2026-10-12.
+Status: confirmed product direction. Origin: repository owner instructions, 2026-10-12; autonomous three-game completion mission, 2026-10-24.
 
 ## Purpose
 
@@ -18,6 +18,20 @@ external extension authors, working alone or collaboratively.
 - RPG, platformer, metroidvania, Pokemon-like and Zelda-like libraries are not mandatory engine parts.
 - 3D is outside current scope. Future possibilities do not justify premature generalization.
 - No obligation exists to preserve prototype APIs, implementations, patterns or dependencies.
+
+## Reference-game completion mission
+
+MicroEngine is validated by completing three small but coherent reference games: Meadow Run
+(platformer), Courtyard Key (top-down adventure) and Trail Duel (turn-based RPG). They are
+independently runnable consumers integrated through the same public engine foundations, not a
+single required launcher and not genre modules inside Core. Each game must progress beyond a
+technical tracer into a recognizable, integrated experience with a beginning, progression,
+failure/recovery where appropriate and a conclusion.
+
+The games drive evidence-based engine evolution. A shared capability is justified by a concrete
+consumer need, an identifiable cross-consumer need, a verified composition/ergonomics limit or
+an infrastructure responsibility that belongs in the engine. This mission does not justify
+speculative universal systems, backends or abstractions.
 
 ## Principles
 

@@ -748,3 +748,26 @@ four fresh-build native wrappers and four asset verifiers actual exit0. Parent f
 Platformer wrappers exit0. [Evidence/listening handoff](evidence/meadow-6/README.md).
 ME083-086 completed; subjective sound association/loudness/comfort pending. No further ready
 independent task; music/mixer/content expansion remains unprepared. Feature only, no main/push.
+
+## Three-game completion mission2026-10-24
+
+Authority: owner autonomous mission2026-10-24; [durable scope and log](../../odd/tasks/microengine-three-game-mission.md),
+FR-003/004/005 and NFR-007. Subjective findings remain for integrated human evaluation unless
+they genuinely block technical progress. Each implementation slice still requires a bounded
+specification, Asset Readiness when content-dependent, objective proof and applicable review.
+
+| ID | Kind | Priority | State | Dependencies | Packet |
+| --- | --- | --- | --- | --- | --- |
+| ME-087 | mission governance reconciliation | P0 | in-review | owner mission2026-10-24 | [Mission T1](../../odd/tasks/microengine-three-game-mission.md) |
+| ME-088 | MR-6 delivery reconciliation and next Meadow slice | P0 | pending | ME-087 | [Mission T2](../../odd/tasks/microengine-three-game-mission.md), [MR-6](specs/meadow-audio.md) |
+| ME-089 | Meadow Run campaign completion | P1 | pending | ME-088; bounded next-slice packet | [Mission T3](../../odd/tasks/microengine-three-game-mission.md) |
+| ME-090 | Courtyard Key adventure completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T4](../../odd/tasks/microengine-three-game-mission.md) |
+| ME-091 | Trail Duel RPG completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T5](../../odd/tasks/microengine-three-game-mission.md) |
+| ME-092 | cross-game hardening and integrated handoff | P2 | pending | ME-089; ME-090; ME-091 | [Mission T6](../../odd/tasks/microengine-three-game-mission.md) |
+
+ME-087 claim2026-10-24: Codex root, baseline1c61799, branchfeat/audio-feedback. Allowed surfaces:
+`AGENTS.md`; `odd/tasks/microengine-three-game-mission.md`; `docs/engineering/README.md`;
+`manifesto.md`; `requirements.md`; `autonomy.md`; `roadmap.md`; `backlog.md`; `execution.md`;
+`document-policy.md`; `current-state.md`. Documentation-only; no engine/game/test/assets/dependency
+bytes. Acceptance: current entry points expose the mission, remove stale artificial stops, preserve
+architecture/safety/verification controls, link without missing targets, and pass `git diff --check`.

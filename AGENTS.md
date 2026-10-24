@@ -3,7 +3,7 @@
 Read [the engineering index](docs/engineering/README.md) before planning or editing.
 Repository context must be sufficient without previous chats or agent memory.
 
-Technical autonomy by default, human intervention by exception (owner2026-10-15). Technical ADRs/contracts/dependencies, next roadmap horizons and objective acceptance are delegated after required review; apply the complete exception list in [autonomy](docs/engineering/autonomy.md).
+Technical autonomy by default, human intervention by exception (owner2026-10-15, expanded by the three-game completion mission on 2026-10-24). Technical ADRs/contracts/dependencies, next roadmap horizons and objective acceptance are delegated after required review; apply the complete exception list in [autonomy](docs/engineering/autonomy.md).
 
 ## Current authorization and status
 
@@ -12,6 +12,8 @@ Technical autonomy by default, human intervention by exception (owner2026-10-15)
 - Repository transition was approved and completed. New technical construction is delegated under docs/engineering/autonomy.md; specifications and reviewed significant ADRs must precede implementation.
 - ECS, scenes, DI and storage remain unselected. ADR-0003/H1-R1 approve the bounded Loop/Desktop primitive tracer, Raylib isolated to Desktop; no broader backend scope inferred.
 - Agents may approve technical ADRs after independent review under the owner delegation; a recommendation alone is not approval.
+- The active product mission is to complete Meadow Run, Courtyard Key and Trail Duel as small, coherent, independently runnable games that exercise the same general-purpose engine. [Mission record](odd/tasks/microengine-three-game-mission.md), [requirements](docs/engineering/requirements.md) and [roadmap](docs/engineering/roadmap.md) own the durable scope.
+- Finishing one bounded increment is not a stopping condition. After objective closure, select or refine the next concrete mission slice, preserve proportional specifications/review, and continue during the authorized session.
 
 ## Permanent architectural directive
 
@@ -19,7 +21,7 @@ Apply [ADR-0004](docs/engineering/decisions/0004-replaceable-infrastructure.md)/
 
 Apply NFR-006/[ADR-0012](docs/engineering/decisions/0012-playable-platformer-infrastructure.md) as a permanent graphical-style review criterion: no artificial Core sprite-size/resolution/sampling/art-style restriction; explicit demonstrated provider budgets, no speculative renderer.
 
-KPF-1 owner restriction2026-10-18: local commits only; no push or main integration without new explicit authorization. Previous standing positive-feedback delivery rules do not override this horizon restriction.
+The KPF-1 local-only restriction dated 2026-10-18 is historical and superseded for the active mission. Coherent local integration and ordinary non-force pushes use the exact destination/authentication scope in [autonomy](docs/engineering/autonomy.md); PRs, releases, force-pushes and unrelated publication remain unauthorized.
 
 ## Working procedure
 
@@ -61,7 +63,7 @@ Continue independent ready work without routine permission prompts. Follow
 Autonomy is the default within approved scope: agents implement, verify, correct and record
 evidence rather than assigning executable checks to the owner. Escalate only the exceptions in autonomy.md; subjective product acceptance is human-owned, objective technical acceptance is delegated. Preserve acceptance criteria and coverage.
 H0 construction is authorized within ADR-0002 after the reviewed H0-1 contract/readiness gate. Technical decisions/contracts and objectively verified milestones may be approved under delegated authority after required review. Never bypass dependencies or mark subjective product validation passed.
-The protocol is not a scheduler; later/background work needs separate authorization.
+The protocol is not a scheduler and no background execution is implied. The active session may continue across mission work units without a routine approval prompt; a later scheduled/background run still needs its own runtime mechanism.
 
 ## Asset Readiness
 Content-dependent increments must apply [Asset Readiness](docs/engineering/asset-readiness.md)

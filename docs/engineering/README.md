@@ -10,9 +10,14 @@ This is the active context for the greenfield C#/.NET 2D framework.
 3. Check [roadmap](roadmap.md), [contributing](contributing.md) and [document policy](document-policy.md).
 4. Consult [history](history.md) for the retired prototype.
 
-## Current state — 2026-10-21
+## Current state - 2026-10-24
 
-Latest: [H3 bounded RPG accepted](evidence/rpg-1/acceptance.md) functionally and visually by the owner. [Cross-scenario assessment and LAUNCH-1 closure](evidence/scenario-maturation/assessment.md) records actual reuse, consumer policy, limits and next candidates;283 tests and independent compatibility proof. Earlier horizon notes below are historical, not pending gates.
+Latest direction: the owner delegated the complete three-game mission. The active recovery record is
+[`odd/tasks/microengine-three-game-mission.md`](../../odd/tasks/microengine-three-game-mission.md),
+with the [roadmap](roadmap.md) and [backlog](backlog.md) owning executable sequencing. MR-6 already
+has 326 managed tests, four native wrappers, four asset verifiers and independent S1-S6 proof;
+mission reconciliation and the next bounded Meadow campaign slice are current. Earlier horizon
+notes below are historical evidence, not pending permission gates.
 
 The prototype is retired and preserved at `legacy-final`. These bounded increments are
 implemented and technically verified; [current state](current-state.md) records exact
