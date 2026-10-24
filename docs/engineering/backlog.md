@@ -759,8 +759,8 @@ specification, Asset Readiness when content-dependent, objective proof and appli
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
 | ME-087 | mission governance reconciliation | P0 | completed | owner mission2026-10-24 | [Mission T1](../../odd/tasks/microengine-three-game-mission.md), `a54277d` |
-| ME-088 | MR-6 delivery reconciliation and next Meadow slice | P0 | ready | ME-087 | [Mission T2](../../odd/tasks/microengine-three-game-mission.md), [MR-6](specs/meadow-audio.md) |
-| ME-089 | Meadow Run campaign completion | P1 | pending | ME-088; bounded next-slice packet | [Mission T3](../../odd/tasks/microengine-three-game-mission.md) |
+| ME-088 | MR-6 delivery reconciliation and next Meadow slice | P0 | in-review | ME-087 | [Mission T2](../../odd/tasks/microengine-three-game-mission.md), [MR-6](specs/meadow-audio.md), [MR-7](specs/meadow-third-course.md) |
+| ME-089 | MR-7 staggered third-course construction | P1 | pending | ME-088; reviewed MR-7 contract | [Mission T3](../../odd/tasks/microengine-three-game-mission.md), [MR-7](specs/meadow-third-course.md) |
 | ME-090 | Courtyard Key adventure completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T4](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-091 | Trail Duel RPG completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T5](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-092 | cross-game hardening and integrated handoff | P2 | pending | ME-089; ME-090; ME-091 | [Mission T6](../../odd/tasks/microengine-three-game-mission.md) |
@@ -776,3 +776,17 @@ ME-087 closure2026-10-24: author `git diff --check`, 11-file local-link and miss
 checks PASS. Independent verifier found no blockers and passed S1/S5/S7-S10 against baseline
 `1c61799`; no runtime suite was applicable. Commit `a54277d`. RDD global mode was off, so no
 native review transaction was started. ME-088 is the next eligible task.
+
+ME-088 claim2026-10-24: Codex root, baseline `8fd2d69`, branch `feat/audio-feedback`.
+Allowed documentation surfaces: `odd/tasks/microengine-three-game-mission.md`,
+`docs/engineering/backlog.md`, `roadmap.md`, `current-state.md`, `README.md`,
+`specs/meadow-third-course.md`, and `evidence/meadow-7/README.md`. Git operations may verify and
+fast-forward objectively mature commits to local main without touching unrelated `.gitignore` or
+`.codegraph/`. No engine/game/test/asset/dependency write is authorized in ME-088.
+
+ME-088 evidence2026-10-24: unchanged MR-6 source revalidated with Desktop50/50,
+Platformer36/36, fresh Audio and Platformer native wrappers, and audio asset verifier, all exit0.
+MR-7 preparation uses existing assets and public consumer capabilities. Independent contract review
+validated the exact route (500 updates/four jumps/all coins) and no-jump defeat (124 updates), then
+reported one omitted `SessionTests.cs` surface; correction targeted recheck PASS. MR-7 is approved
+for later construction with no engine/shared-contract or new-asset requirement.

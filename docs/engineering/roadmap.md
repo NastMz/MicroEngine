@@ -8,7 +8,8 @@ Courtyard Key and Trail Duel as small coherent games while preserving consumer-o
 and evidence-driven engine extraction. The durable scope and work-unit sequence are recorded in
 the [mission task document](../../odd/tasks/microengine-three-game-mission.md); FR-003, FR-004,
 FR-005 and NFR-007 define product acceptance. Current ordering is: reconcile mission governance
-and MR-6, finish Meadow Run through bounded campaign slices, mature Courtyard Key and Trail Duel
+and MR-6, implement the reviewed MR-7 staggered third course, finish Meadow Run through further
+bounded campaign slices, mature Courtyard Key and Trail Duel
 through their own vertical slices, then run cross-game hardening and an integrated human handoff.
 The order may alternate when a demonstrated shared dependency makes that more efficient.
 
@@ -16,7 +17,7 @@ H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persisten
 
 ## Current executable horizon
 
-[Backlog](backlog.md) is the only task-state source. Historical tracer closures below remain evidence, not the stopping condition. ME-087 is the active mission-governance reconciliation; ME-088 then reconciles the already verified MR-6 slice and prepares the next bounded Meadow campaign work. Later mission tasks remain pending until their immediate packet is refined. Do not assume a full asset/animation framework or any shared subsystem before consumer evidence. See [current state](current-state.md).
+[Backlog](backlog.md) is the only task-state source. Historical tracer closures below remain evidence, not the stopping condition. ME-087 completed mission-governance reconciliation; ME-088 reconciles the already verified MR-6 slice and prepares the reviewed MR-7 staggered third course. Later mission tasks remain pending until their immediate packet is refined. Do not assume a full asset/animation framework or any shared subsystem before consumer evidence. See [current state](current-state.md).
 An authorized future development session follows [execution](execution.md) and may continue
 independent ready work. No background scheduler is installed; H0 is implemented, not a playable game.
 

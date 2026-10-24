@@ -204,3 +204,9 @@ audio notes are retained for integrated evaluation and no longer freeze unrelate
 ME-087 reconciles governance; ME-088 is the next bounded delivery/replanning unit. The KPF-1
 local-only restriction is historical. Ordinary mission delivery uses the exact origin/authentication
 scope in autonomy.md; no PR, release, force-push or unrelated publication is inferred.
+
+MR-7 preparation2026-10-24: [proposed staggered third-course contract](specs/meadow-third-course.md)
+and [Asset Readiness packet](evidence/meadow-7/README.md) select a three-gap low/high/low route
+using existing game-owned geometry, physics, camera, assets and MR-6 events. No engine/shared
+contract or new asset is proposed. Construction remains pending independent technical review;
+the current MR-6 source is unchanged.

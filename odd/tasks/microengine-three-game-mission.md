@@ -21,13 +21,22 @@ S10. “Integrated” currently means three independently runnable, repository-c
 ## Tasks
 
 - [x] T1 — S1, S5, S7-S10 — Route: inline (no writer trigger). Status: completed. Reconciled governance, roadmap, backlog, execution, current-state, and contributor entry documentation with this mission. Commit: `a54277d`.
-- [ ] T2 — S2, S6-S8 — Route: inline (no writer trigger). Reconcile MR-6 objective closure with the new mission authority, run proportional regression/native/audio evidence, independently verify if required, integrate verified local work, and define the next Meadow campaign slice. Commit: pending.
+- [ ] T2 — S2, S6-S8 — Route: inline (no writer trigger). Status: in-review. Reconcile MR-6 objective closure with the new mission authority, run proportional regression/native/audio evidence, independently verify if required, integrate verified local work, and define the next Meadow campaign slice. Commit: pending.
 - [ ] T3 — S2, S5-S8 — Route: inline by default; delegate only if a mandatory trigger fires. Deliver Meadow Run campaign completion through bounded vertical slices and integrated review. Commit: pending.
 - [ ] T4 — S3, S5-S8 — Route: inline by default; delegate only if a mandatory trigger fires. Deliver Courtyard Key adventure completion through bounded vertical slices and integrated review. Commit: pending.
 - [ ] T5 — S4-S8 — Route: inline by default; delegate only if a mandatory trigger fires. Deliver Trail Duel RPG completion through bounded vertical slices and integrated review. Commit: pending.
 - [ ] T6 — S7-S10 — Route: inline by default; independent verification required for high-risk/shared-contract changes. Run cross-game hardening, documentation synchronization, combined verification, authorized delivery reconciliation, and prepare the integrated human evaluation. Commit: pending.
 
 ## Log
+
+### L3 — 2026-10-24 — MR-6 revalidation and MR-7 preparation
+
+MR-6 source was unchanged from its independently verified closure. Fresh proportional checks
+passed: Desktop 50/50, Platformer 36/36, Audio native device/WAV load-play-stop-close-reopen,
+Platformer native pixels/course/CLI, and four audio asset hashes/provenance. The MR-7 third-course
+contract and reuse-only Asset Readiness packet were independently reviewed. Exact geometry was
+reachable; one omitted `SessionTests.cs` edit surface was corrected and targeted recheck passed.
+No engine/shared contract or new asset is needed. Local integration and commit recording remain.
 
 ### L2 — 2026-10-24 — T1 verification
 
