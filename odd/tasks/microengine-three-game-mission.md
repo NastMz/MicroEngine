@@ -20,7 +20,7 @@ S10. “Integrated” currently means three independently runnable, repository-c
 
 ## Tasks
 
-- [ ] T1 — S1, S5, S7-S10 — Route: inline (no writer trigger). Status: in-review. Reconcile governance, roadmap, backlog, execution, current-state, and contributor entry documentation with this mission; claim the first bounded work unit. Commit: pending.
+- [x] T1 — S1, S5, S7-S10 — Route: inline (no writer trigger). Status: completed. Reconciled governance, roadmap, backlog, execution, current-state, and contributor entry documentation with this mission. Commit: `a54277d`.
 - [ ] T2 — S2, S6-S8 — Route: inline (no writer trigger). Reconcile MR-6 objective closure with the new mission authority, run proportional regression/native/audio evidence, independently verify if required, integrate verified local work, and define the next Meadow campaign slice. Commit: pending.
 - [ ] T3 — S2, S5-S8 — Route: inline by default; delegate only if a mandatory trigger fires. Deliver Meadow Run campaign completion through bounded vertical slices and integrated review. Commit: pending.
 - [ ] T4 — S3, S5-S8 — Route: inline by default; delegate only if a mandatory trigger fires. Deliver Courtyard Key adventure completion through bounded vertical slices and integrated review. Commit: pending.
@@ -36,7 +36,8 @@ Governance reconciliation changed only the 11 authorized documentation surfaces.
 Independent verification against baseline `1c61799` returned no findings and PASS for S1, S5,
 S7, S8, S9 and S10. Runtime suites were N/A because no product source, tests, assets,
 dependencies or executable configuration changed. Engram mirror remains pending because its MCP
-tools are unavailable in this session.
+tools are unavailable in this session. Work-unit commit: `a54277d`. Receipt-driven development
+was explicitly off at global scope, so no native review lifecycle was started.
 
 ### L1 — 2026-10-24 — Original user request (verbatim)
 

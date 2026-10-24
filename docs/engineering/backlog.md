@@ -758,8 +758,8 @@ specification, Asset Readiness when content-dependent, objective proof and appli
 
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
-| ME-087 | mission governance reconciliation | P0 | in-review | owner mission2026-10-24 | [Mission T1](../../odd/tasks/microengine-three-game-mission.md) |
-| ME-088 | MR-6 delivery reconciliation and next Meadow slice | P0 | pending | ME-087 | [Mission T2](../../odd/tasks/microengine-three-game-mission.md), [MR-6](specs/meadow-audio.md) |
+| ME-087 | mission governance reconciliation | P0 | completed | owner mission2026-10-24 | [Mission T1](../../odd/tasks/microengine-three-game-mission.md), `a54277d` |
+| ME-088 | MR-6 delivery reconciliation and next Meadow slice | P0 | ready | ME-087 | [Mission T2](../../odd/tasks/microengine-three-game-mission.md), [MR-6](specs/meadow-audio.md) |
 | ME-089 | Meadow Run campaign completion | P1 | pending | ME-088; bounded next-slice packet | [Mission T3](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-090 | Courtyard Key adventure completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T4](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-091 | Trail Duel RPG completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T5](../../odd/tasks/microengine-three-game-mission.md) |
@@ -771,3 +771,8 @@ ME-087 claim2026-10-24: Codex root, baseline1c61799, branchfeat/audio-feedback. 
 `document-policy.md`; `current-state.md`. Documentation-only; no engine/game/test/assets/dependency
 bytes. Acceptance: current entry points expose the mission, remove stale artificial stops, preserve
 architecture/safety/verification controls, link without missing targets, and pass `git diff --check`.
+
+ME-087 closure2026-10-24: author `git diff --check`, 11-file local-link and mission-structure
+checks PASS. Independent verifier found no blockers and passed S1/S5/S7-S10 against baseline
+`1c61799`; no runtime suite was applicable. Commit `a54277d`. RDD global mode was off, so no
+native review transaction was started. ME-088 is the next eligible task.
