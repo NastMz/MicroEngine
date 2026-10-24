@@ -9,7 +9,7 @@ public sealed class CampaignTests
 {
     private static readonly InputSnapshot Next = new(["right"], ["jump"]);
     [TestMethod]
-    public void BothLevelsCompleteAndRestartWithConsumedTransitions()
+    public void ThreeLevelsCompleteAndRestartWithConsumedTransitions()
     {
         var campaign = new CampaignGame();
         int first = Course.Run(campaign.Current);
@@ -23,6 +23,10 @@ public sealed class CampaignTests
         Assert.AreEqual(new Rect(48,392,28,40), campaign.Current.Body);
         Assert.IsFalse(campaign.Completed);
         int second = Course.Run(campaign.Current);
+        Assert.IsFalse(campaign.Completed);
+        campaign.Update(Course.Step, Next);
+        Assert.AreEqual(3, campaign.LevelNumber);
+        int third = Course.Run(campaign.Current);
         Assert.IsTrue(campaign.Completed);
         var final = campaign.Current;
         campaign.Update(Course.Step, new(["jump"], []));
@@ -34,6 +38,9 @@ public sealed class CampaignTests
         Assert.AreEqual(first, Course.Run(campaign.Current));
         campaign.Update(Course.Step, Next);
         Assert.AreEqual(second, Course.Run(campaign.Current));
+        campaign.Update(Course.Step, Next);
+        Assert.AreEqual(third, Course.Run(campaign.Current));
+        Assert.IsTrue(campaign.Completed);
     }
     [TestMethod]
     public void InvalidTerminalUpdatesAreAtomicAndNullTakesPrecedence()
@@ -64,7 +71,9 @@ public sealed class CampaignTests
         Assert.AreSame(current, campaign.Current); Assert.AreEqual(2, campaign.LevelNumber);
         Assert.IsFalse(current.Dead); Assert.AreEqual(0, current.CollectedCount);
         Assert.AreEqual(new Rect(48,392,28,40), current.Body);
-        Course.Run(current); Assert.IsTrue(campaign.Completed);
+        Course.Run(current); Assert.IsFalse(campaign.Completed);
+        campaign.Update(Course.Step, Next); Assert.AreEqual(3,campaign.LevelNumber);
+        Course.Run(campaign.Current); Assert.IsTrue(campaign.Completed);
     }
     [TestMethod]
     public void LevelContentIsImmutableAndDefaultLevelRemainsCompatible()
@@ -79,7 +88,7 @@ public sealed class CampaignTests
         Assert.ThrowsExactly<NotSupportedException>(()=>((IList<Rect>)second.Terrain)[0]=default);
         var before=(first.Body,first.CollectedCount,first.RunNumber);
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(()=>new LevelGame(0));
-        Assert.ThrowsExactly<ArgumentOutOfRangeException>(()=>new LevelGame(3));
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(()=>new LevelGame(4));
         Assert.AreEqual(before,(first.Body,first.CollectedCount,first.RunNumber));
         // The original null call remains source-compatible, not an ambiguous overload.
         Assert.ThrowsExactly<ArgumentNullException>(()=>new GamePlatform(null!,null!));

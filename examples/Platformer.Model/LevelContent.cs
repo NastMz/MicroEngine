@@ -25,10 +25,16 @@ public sealed class LevelContent
         [new(0,432,480,48),new(576,432,1344,48),new(720,384,96,48),new(816,336,96,96)],
         [new(240,400,24,24),new(864,304,24,24),new(1368,400,24,24)],
         new(1536,412,48,20),new(1824,336,48,96), new(new(1152,392,40,40),1056,1248,60));
+    public static LevelContent Third { get; } = new(
+        [new(0,432,384,48),new(480,432,288,48),new(864,432,336,48),new(1296,432,624,48),
+         new(432,384,96,48),new(768,336,96,96),new(1248,384,96,48)],
+        [new(456,352,24,24),new(792,304,24,24),new(1272,352,24,24)],
+        new(1536,412,48,20),new(1824,336,48,96));
     public static LevelContent For(int number) => number switch
     {
         1 => First,
         2 => Second,
+        3 => Third,
         _ => throw new ArgumentOutOfRangeException(nameof(number))
     };
 }

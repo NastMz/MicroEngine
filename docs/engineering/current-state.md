@@ -217,3 +217,20 @@ Fresh reconciliation checks passed Desktop50/50, Platformer36/36, Audio native, 
 and audio asset provenance. No merge commit or history rewrite; unrelated `.gitignore` and
 `.codegraph/` remain. MR-7 construction is the next ready task. Remote synchronization is not
 claimed by this local record.
+
+Remote delivery2026-10-24: authorized fetch showed `origin/main` 0 behind/51 commits behind local;
+ordinary non-force push advanced `origin/main` from `2415072` to `da6d6da`. Post-fetch local/main
+divergence is 0/0. No task branch, PR, release, force-push or remote deletion was performed.
+
+MR-7 candidate2026-10-24 on `feat/meadow-third-course`: consumer-only third authored course,
+campaign 1→2→3→complete→1 and `/3` presentation. Managed RED8→GREEN40; full serial330/330,
+Platformer/Adventure/RPG native and patrol/audio asset verifiers PASS. One native regression check
+was updated because it legitimately shared final-campaign semantics. No engine, asset, dependency,
+audio event, CLI option or other-game source change. Independent verification pending; no technical
+acceptance, main integration, push or subjective course-quality claim yet.
+
+MR-7 independent closure2026-10-24: fresh scratch candidate, serial330/330, all three game native
+wrappers, both Meadow asset verifiers, rejected-CLI parity and data-hash invariant PASS. One native
+coin-pixel evidence gap was corrected with bounded source-PNG color scanning; targeted recheck had
+no findings. S1-S6 objectively accepted under delegated authority. Commit/main/push and subjective
+course-quality evidence remain separate.

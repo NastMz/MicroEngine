@@ -36,18 +36,35 @@ public sealed class CampaignPresentationTests
     {
         var art=Art(); var canvas=new Canvas();var campaign=new CampaignGame();
         art.DrawCampaign(canvas,campaign);
-        Assert.IsTrue(canvas.Labels.Any(text=>text.Contains("Level 1/2")));
+        Assert.IsTrue(canvas.Labels.Any(text=>text.Contains("Level 1/3")));
         Course.Run(campaign.Current);art.DrawCampaign(canvas,campaign);
         Assert.IsTrue(canvas.Labels.Any(text=>text.Contains("Space to continue")));
         campaign.Update(Course.Step,new([], ["jump"]));art.AdvanceCampaign(Course.Step,campaign);art.DrawCampaign(canvas,campaign);
-        Assert.IsTrue(canvas.Labels.Any(text=>text.Contains("Level 2/2")));
+        Assert.IsTrue(canvas.Labels.Any(text=>text.Contains("Level 2/3")));
         art.AdvanceCampaign(TimeSpan.FromMilliseconds(120),campaign);art.DrawCampaign(canvas,campaign);
+        Course.Run(campaign.Current);art.DrawCampaign(canvas,campaign);
+        Assert.IsTrue(canvas.Labels.Any(text=>text.Contains("Space to continue")));
+        campaign.Update(Course.Step,new([], ["jump"]));art.AdvanceCampaign(Course.Step,campaign);art.DrawCampaign(canvas,campaign);
+        Assert.IsTrue(canvas.Labels.Any(text=>text.Contains("Level 3/3")));
         Course.Run(campaign.Current);art.DrawCampaign(canvas,campaign);
         Assert.IsTrue(canvas.Labels.Any(text=>text.Contains("Meadow Run complete! Space to replay")));
         campaign.Update(Course.Step,new([], ["jump"]));art.DrawCampaign(canvas,campaign);
         // Seven original images plus two actually rendered patrol poses.
         Assert.AreEqual(9,canvas.Images.Count);
         art.Dispose();art.Dispose();foreach(var image in canvas.Images)Assert.AreEqual(1,image.Releases);
+    }
+    [TestMethod]
+    public void ThirdCourseRendererKeepsThreeGapsAndStaggeredCoinLandings()
+    {
+        using var art=Art();var canvas=new Canvas();var third=new LevelGame(3);
+        art.Draw(canvas,third);
+        foreach(float start in new[]{384f,768f,1200f})
+            Assert.IsFalse(canvas.Draws.Any(draw=>draw.Destination.Y==432 && draw.Destination.X>=start && draw.Destination.X<start+96));
+        Assert.IsTrue(canvas.Draws.Any(draw=>draw.Destination.X==432 && draw.Destination.Y==384));
+        Assert.IsTrue(canvas.Draws.Any(draw=>draw.Destination.X==768 && draw.Destination.Y==336));
+        Assert.IsTrue(canvas.Draws.Any(draw=>draw.Destination.X==1248 && draw.Destination.Y==384));
+        foreach(var coin in new[]{new Rect(456,352,24,24),new Rect(792,304,24,24),new Rect(1272,352,24,24)})
+            Assert.IsTrue(canvas.WholeImages.Contains(coin));
     }
     [TestMethod]
     public void NewLevelInstanceResetsAnimationEvenWithSameRunNumber()

@@ -22,12 +22,24 @@ S10. “Integrated” currently means three independently runnable, repository-c
 
 - [x] T1 — S1, S5, S7-S10 — Route: inline (no writer trigger). Status: completed. Reconciled governance, roadmap, backlog, execution, current-state, and contributor entry documentation with this mission. Commit: `a54277d`.
 - [x] T2 — S2, S6-S8 — Route: inline (no writer trigger). Status: completed. Reconciled and revalidated MR-6, integrated verified local work, and approved the MR-7 third-course packet. Commit: `1f8edc2`.
-- [ ] T3 — S2, S5-S8 — Route: inline by default; delegate only if a mandatory trigger fires. Deliver Meadow Run campaign completion through bounded vertical slices and integrated review. Commit: pending.
+- [ ] T3 — S2, S5-S8 — Route: inline (no writer trigger). Status: in-progress. Deliver Meadow Run campaign completion through bounded vertical slices and integrated review. Current slice: ME-089/MR-7 third course. Commit: pending.
 - [ ] T4 — S3, S5-S8 — Route: inline by default; delegate only if a mandatory trigger fires. Deliver Courtyard Key adventure completion through bounded vertical slices and integrated review. Commit: pending.
 - [ ] T5 — S4-S8 — Route: inline by default; delegate only if a mandatory trigger fires. Deliver Trail Duel RPG completion through bounded vertical slices and integrated review. Commit: pending.
 - [ ] T6 — S7-S10 — Route: inline by default; independent verification required for high-risk/shared-contract changes. Run cross-game hardening, documentation synchronization, combined verification, authorized delivery reconciliation, and prepare the integrated human evaluation. Commit: pending.
 
 ## Log
+
+### L4 — 2026-10-24 — MR-7 implementation candidate
+
+ME-089 implemented the reviewed third course on `feat/meadow-third-course` without engine or asset
+changes. Platformer tests observed RED8 then GREEN40. Final author evidence: serial330/330,
+Platformer/Adventure/RPG native PASS, patrol/audio asset checks PASS. The first Platformer native
+run found a stale level-2-is-final patrol assertion, which was corrected within the approved test
+surface. A nonexistent generic asset script exited64; the specification now names the two real
+verifiers and both pass. Independent scratch verification passed serial330, three native wrappers,
+both asset checks, CLI parity and data-hash invariance. It found one missing native coin-pixel proof;
+original-PNG color scanning corrected it and targeted recheck returned no findings. MR-7 S1-S6 are
+objectively accepted; commit/main/push and later subjective course-quality evidence remain.
 
 ### L3 — 2026-10-24 — MR-6 revalidation and MR-7 preparation
 
@@ -38,7 +50,9 @@ contract and reuse-only Asset Readiness packet were independently reviewed. Exac
 reachable; one omitted `SessionTests.cs` edit surface was corrected and targeted recheck passed.
 No engine/shared contract or new asset is needed. Local integration and commit recording remain.
 Local `main` fast-forwarded from `aa385cb` to `1f8edc2` with unrelated `.gitignore` and
-`.codegraph/` preserved. MR-7 is the next executable Meadow slice.
+`.codegraph/` preserved; closure advanced it to `da6d6da`. Authorized `origin/main` synchronization
+then fast-forwarded `2415072..da6d6da` and verified 0/0 divergence. MR-7 is the next executable
+Meadow slice.
 
 ### L2 — 2026-10-24 — T1 verification
 

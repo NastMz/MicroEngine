@@ -93,16 +93,59 @@ try
             }
         });
         if(!raisedCaptured)throw new InvalidOperationException("Raised route not rendered.");
-        if(!campaign.Completed)throw new InvalidOperationException("Second flag did not complete campaign.");
-        CampaignFrame("microengine-meadow2-final.png");
+        if(campaign.Completed)throw new InvalidOperationException("Second flag completed the three-level campaign.");
+        campaign.Update(Course.Step,new(["right"],["jump"]));
+        if(campaign.LevelNumber!=3||campaign.Current.Body!=new Rect(48,392,28,40))throw new InvalidOperationException("Third-level continuation mismatch.");
+        CampaignFrame("microengine-meadow7-level3.png");
+        var verifiedGaps=new bool[3];
+        var expectedCoinColors=DesktopImageDecoder.Decode(File.ReadAllBytes(Path.Combine(assets,"coin_gold.png"))).Pixels
+            .Where(pixel=>pixel.A==255).Select(pixel=>(pixel.R,pixel.G,pixel.B)).ToHashSet();
+        var gaps=new[]{(Start:384f,CoinX:456f,CoinY:352,PlatformY:400),(Start:768f,CoinX:792f,CoinY:304,PlatformY:352),(Start:1200f,CoinX:1272f,CoinY:352,PlatformY:400)};
+        void VerifyVisibleThirdGap(int index)
+        {
+            float camera=campaign.Current.CameraX;
+            int gapX=(int)(gaps[index].Start+48-camera),floorX=(int)(gaps[index].Start-24-camera),platformX=(int)(gaps[index].CoinX-camera),coinX=(int)(gaps[index].CoinX+12-camera);
+            if(gapX<1||gapX>=767||floorX<1||floorX>=767||platformX<1||platformX>=767||coinX<1||coinX>=767)return;
+            if(campaign.Current.IsCollected(index))throw new InvalidOperationException($"Third-course coin {index+1} was collected before native pixel proof.");
+            CampaignFrame($"microengine-meadow7-gap{index+1}.png");
+            var image=Raylib.LoadImageFromScreen();
+            try
+            {
+                var gap=Raylib.GetImageColor(image,gapX,450);var floor=Raylib.GetImageColor(image,floorX,450);
+                var platform=Raylib.GetImageColor(image,platformX,gaps[index].PlatformY);
+                if((gap.R,gap.G,gap.B)==(floor.R,floor.G,floor.B)||(gap.R,gap.G,gap.B)==(platform.R,platform.G,platform.B))
+                    throw new InvalidOperationException($"Third-course gap/platform pixels missing for gap {index+1}.");
+                int coinPixels=0;
+                for(int y=gaps[index].CoinY;y<gaps[index].CoinY+24;y++)for(int x=coinX-12;x<coinX+12;x++)
+                {
+                    var coin=Raylib.GetImageColor(image,x,y);
+                    if(expectedCoinColors.Contains((coin.R,coin.G,coin.B)))coinPixels++;
+                }
+                if(coinPixels<20)
+                    throw new InvalidOperationException($"Third-course original coin pixel mismatch for coin {index+1}.");
+                verifiedGaps[index]=true;
+            }
+            finally{Raylib.UnloadImage(image);}
+        }
+        int campaignThird=Course.Run(campaign.Current,(delta,state)=>
+        {
+            art.AdvanceCampaign(delta,campaign);
+            for(int index=0;index<verifiedGaps.Length;index++)if(!verifiedGaps[index])VerifyVisibleThirdGap(index);
+        });
+        if(verifiedGaps.Any(value=>!value))throw new InvalidOperationException("All three native gap views were not captured.");
+        if(!campaign.Completed)throw new InvalidOperationException("Third flag did not complete campaign.");
+        CampaignFrame("microengine-meadow7-final.png");
         campaign.Update(Course.Step,new(["right"],["jump"]));
         if(campaign.LevelNumber!=1||campaign.Completed||campaign.Current.Body!=new Rect(48,392,28,40))throw new InvalidOperationException("Final campaign restart failed.");
         CampaignFrame("microengine-meadow2-restart.png");
         if(campaignFirst!=Course.Run(campaign.Current))throw new InvalidOperationException("Campaign first-level replay diverged.");
         campaign.Update(Course.Step,new([],["jump"]));
-        if(campaignSecond!=Course.Run(campaign.Current)||!campaign.Completed)throw new InvalidOperationException("Campaign second-level replay diverged.");
-        Console.WriteLine("platformer:campaign:two-levels:verified");
+        if(campaignSecond!=Course.Run(campaign.Current)||campaign.Completed)throw new InvalidOperationException("Campaign second-level replay diverged.");
+        campaign.Update(Course.Step,new([],["jump"]));
+        if(campaignThird!=Course.Run(campaign.Current)||!campaign.Completed)throw new InvalidOperationException("Campaign third-level replay diverged.");
+        Console.WriteLine("platformer:campaign:three-levels:verified");
         Console.WriteLine("platformer:distinct-gap-raised-route:verified");
+        Console.WriteLine("platformer:third-course:three-gaps-staggered:verified");
         var enemyCampaign=new CampaignGame();Course.Run(enemyCampaign.Current);
         enemyCampaign.Update(Course.Step,new([],["jump"]));
         Course.Run(enemyCampaign.Current,anticipateEnemies:false,stopWhen:state=>state.Body.X>=960);
@@ -150,7 +193,11 @@ try
         enemyCampaign.Update(Course.Step,new(["right"],["jump"]));
         if(hit.EnemyBody!=new Rect(1152,392,40,40)||hit.Dead||hit.CollectedCount!=0)throw new InvalidOperationException("Patrol retry did not reset.");
         Course.Run(hit,(delta,_)=>art.AdvanceCampaign(delta,enemyCampaign));
-        if(!enemyCampaign.Completed)throw new InvalidOperationException("Avoidance route did not complete.");
+        if(enemyCampaign.Completed)throw new InvalidOperationException("Level-two avoidance completed the three-level campaign.");
+        enemyCampaign.Update(Course.Step,new([],["jump"]));
+        if(enemyCampaign.LevelNumber!=3)throw new InvalidOperationException("Avoidance route did not continue to level three.");
+        Course.Run(enemyCampaign.Current,(delta,_)=>art.AdvanceCampaign(delta,enemyCampaign));
+        if(!enemyCampaign.Completed)throw new InvalidOperationException("Avoidance campaign route did not complete.");
         Console.WriteLine("platformer:patrol:poses-contact-retry-avoidance:verified");
         var session=new MeadowSession();
         int SessionFrame(string filename,bool panel,bool arrow=false)

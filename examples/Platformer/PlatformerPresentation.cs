@@ -70,7 +70,7 @@ public sealed class PlatformerPresentation : IDisposable
     {
         ArgumentNullException.ThrowIfNull(game);
         string status = game.Completed ? "Meadow Run complete! Space to replay" : game.Current.Completed ? "Level complete! Space to continue" : game.Current.Dead ? "Defeat! Space to retry this level" : game.Current.EnemyBody is not null ? "Avoid spiked slime | Space: jump | Esc: exit" : "A/D or arrows: move | Space: jump | Esc: exit";
-        DrawCore(canvas, game.Current, $"Level {game.LevelNumber}/2 - Coins {game.Current.CollectedCount}/{game.Current.CoinCount} - reach the green flag", status);
+        DrawCore(canvas, game.Current, $"Level {game.LevelNumber}/3 - Coins {game.Current.CollectedCount}/{game.Current.CoinCount} - reach the green flag", status);
     }
     public void Advance(TimeSpan elapsed, LevelGame game)
     {

@@ -760,7 +760,7 @@ specification, Asset Readiness when content-dependent, objective proof and appli
 | --- | --- | --- | --- | --- | --- |
 | ME-087 | mission governance reconciliation | P0 | completed | owner mission2026-10-24 | [Mission T1](../../odd/tasks/microengine-three-game-mission.md), `a54277d` |
 | ME-088 | MR-6 delivery reconciliation and next Meadow slice | P0 | completed | ME-087 | [Mission T2](../../odd/tasks/microengine-three-game-mission.md), [MR-6](specs/meadow-audio.md), [MR-7](specs/meadow-third-course.md), `1f8edc2` |
-| ME-089 | MR-7 staggered third-course construction | P1 | ready | ME-088; reviewed MR-7 contract | [Mission T3](../../odd/tasks/microengine-three-game-mission.md), [MR-7](specs/meadow-third-course.md) |
+| ME-089 | MR-7 staggered third-course construction | P1 | in-review | ME-088; reviewed MR-7 contract | [Mission T3](../../odd/tasks/microengine-three-game-mission.md), [MR-7](specs/meadow-third-course.md) |
 | ME-090 | Courtyard Key adventure completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T4](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-091 | Trail Duel RPG completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T5](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-092 | cross-game hardening and integrated handoff | P2 | pending | ME-089; ME-090; ME-091 | [Mission T6](../../odd/tasks/microengine-three-game-mission.md) |
@@ -795,4 +795,23 @@ ME-088 closure2026-10-24: approved packet/work-unit `1f8edc2`; local `main` fast
 `aa385cb..1f8edc2`. This integrates the previously verified MR-6 source plus the mission and MR-7
 preparation without merge commits or history rewrite. Unrelated `.gitignore` and `.codegraph/`
 remain untouched. ME-089 is the next eligible task. Remote synchronization is a separate ordinary
-delivery operation under autonomy.md and has not yet been claimed as completed.
+delivery operation under autonomy.md. Authorized `origin/main` push completed
+`2415072..da6d6da`; post-fetch divergence is 0/0.
+
+ME-089 claim2026-10-24: Codex root, baseline `da6d6da`, branch `feat/meadow-third-course`.
+Allowed source/test/check/document surfaces are exactly the MR-7 specification edit boundary,
+including corrected `SessionTests.cs`; new file authorization is limited to an optional
+`checks/Platformer.Contracts/ThirdLevelTests.cs` and `docs/engineering/evidence/meadow-7/`.
+No engine, dependency, asset, CLI-option, other-game or unrelated workspace path. Test-first policy:
+observe RED for level-3 content/route, `1→2→3→complete→1`, `/3` HUD and native pixels, then GREEN;
+preserve all prior Platformer behavior and applicable repository regressions.
+
+ME-089 author evidence2026-10-24: managed RED8 expected failures before source; GREEN40/40.
+Platformer native first run proved the new three-gap route then exposed one stale patrol scenario
+that assumed level2 ended the campaign; corrected within the approved test surface, final native
+PASS. Full serial suite330/330, Adventure/RPG native PASS, patrol/audio asset verifiers PASS.
+The nonexistent generic asset command failed exit64 and was replaced in the contract by the two
+actual verifier names; no failed product check is hidden. Independent verification in fresh scratch
+passed S1-S3/S5-S6 and all required commands/invariants, then reported one S4 native coin-pixel
+evidence gap. Bounded original-PNG color scanning corrected it; targeted native recheck PASS with no
+remaining findings. Objective technical acceptance delegated; commit pending.

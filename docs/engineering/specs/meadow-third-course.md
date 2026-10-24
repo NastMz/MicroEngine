@@ -55,8 +55,8 @@ human play evaluation are required; asset existence alone is not acceptance.
 - Focused managed command: `dotnet test checks/Platformer.Contracts/Platformer.Contracts.csproj -c Release -p:NuGetAudit=false -p:UseSharedCompilation=false -m:1 -nodeReuse:false`.
 - Native command: `pwsh -NoProfile -File checks/PlatformerNativeSmoke.ps1` with new third-course
   assertions plus every existing assertion.
-- Asset command: `pwsh -NoProfile -File checks/VerifyPlatformerAssets.ps1`; MR-6 audio assets are
-  unchanged and retain their existing verifier evidence.
+- Asset commands: `pwsh -NoProfile -File checks/VerifyPlatformerPatrolAssets.ps1` and
+  `pwsh -NoProfile -File checks/VerifyPlatformerAudioAssets.ps1`; MR-7 adds no asset bytes.
 - Run the repository's serial managed suite and existing Adventure/RPG native smoke checks before
   objective closure because campaign helpers and public presentation are shared consumer surfaces.
 

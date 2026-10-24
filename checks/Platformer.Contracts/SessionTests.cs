@@ -52,6 +52,7 @@ public sealed class SessionTests
         var dead=session.Campaign;Tick(session,["pause","jump","restart"]);
         Assert.AreNotSame(dead,session.Campaign);Assert.AreEqual(1,session.Campaign.LevelNumber);Assert.IsFalse(session.AdvancedThisUpdate);
         Course.Run(session.Campaign.Current);Tick(session,["jump"]);Course.Run(session.Campaign.Current);
+        Assert.IsFalse(session.Campaign.Completed);Tick(session,["jump"]);Course.Run(session.Campaign.Current);
         Assert.IsTrue(session.Campaign.Completed);Tick(session,["pause"]);var complete=session.Campaign;
         Tick(session,["restart"]);Assert.AreNotSame(complete,session.Campaign);Assert.IsFalse(session.Campaign.Completed);
         Assert.AreEqual(new Rect(48,392,28,40),session.Campaign.Current.Body);
