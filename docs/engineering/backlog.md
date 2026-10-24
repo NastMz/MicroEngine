@@ -760,7 +760,7 @@ specification, Asset Readiness when content-dependent, objective proof and appli
 | --- | --- | --- | --- | --- | --- |
 | ME-087 | mission governance reconciliation | P0 | completed | owner mission2026-10-24 | [Mission T1](../../odd/tasks/microengine-three-game-mission.md), `a54277d` |
 | ME-088 | MR-6 delivery reconciliation and next Meadow slice | P0 | completed | ME-087 | [Mission T2](../../odd/tasks/microengine-three-game-mission.md), [MR-6](specs/meadow-audio.md), [MR-7](specs/meadow-third-course.md), `1f8edc2` |
-| ME-089 | MR-7 staggered third-course construction | P1 | in-review | ME-088; reviewed MR-7 contract | [Mission T3](../../odd/tasks/microengine-three-game-mission.md), [MR-7](specs/meadow-third-course.md) |
+| ME-089 | MR-7 staggered third-course construction | P1 | completed | ME-088; reviewed MR-7 contract | [Mission T3](../../odd/tasks/microengine-three-game-mission.md), [MR-7](specs/meadow-third-course.md), `2aa3aab` |
 | ME-090 | Courtyard Key adventure completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T4](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-091 | Trail Duel RPG completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T5](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-092 | cross-game hardening and integrated handoff | P2 | pending | ME-089; ME-090; ME-091 | [Mission T6](../../odd/tasks/microengine-three-game-mission.md) |
@@ -814,4 +814,10 @@ The nonexistent generic asset command failed exit64 and was replaced in the cont
 actual verifier names; no failed product check is hidden. Independent verification in fresh scratch
 passed S1-S3/S5-S6 and all required commands/invariants, then reported one S4 native coin-pixel
 evidence gap. Bounded original-PNG color scanning corrected it; targeted native recheck PASS with no
-remaining findings. Objective technical acceptance delegated; commit pending.
+remaining findings. Objective technical acceptance delegated; work-unit `2aa3aab`.
+
+ME-089 closure2026-10-24: work-unit `2aa3aab`, independent S1-S6 PASS after one bounded evidence
+correction. No engine, dependency, asset byte, CLI option or other-game source changed. Risk item3:
+additive campaign semantics; protected session/presentation/native consumers are covered. T3 remains
+open for the next bounded Meadow mission need; MR-7 subjective rhythm/distinction joins the later
+integrated human evaluation rather than blocking technical progress.

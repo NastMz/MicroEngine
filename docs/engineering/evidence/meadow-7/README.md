@@ -66,3 +66,7 @@ before collection by scanning its 24×24 framebuffer destination for at least 20
 the original `coin_gold.png`. An initial exact-center comparison correctly failed because 64→24
 scaling/subpixel camera placement made one sample brittle; the bounded source-color scan passed.
 Targeted independent recheck found no remaining findings. No correction changed game behavior.
+
+Traceable work unit: `2aa3aab` (`feat(meadow): add staggered third course`). Risk: item 3,
+additive shared consumer campaign semantics. Objective technical acceptance applies to MR-7 only;
+full Meadow Run mission completion and subjective course quality are not inferred.

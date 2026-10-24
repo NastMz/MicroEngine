@@ -39,7 +39,8 @@ surface. A nonexistent generic asset script exited64; the specification now name
 verifiers and both pass. Independent scratch verification passed serial330, three native wrappers,
 both asset checks, CLI parity and data-hash invariance. It found one missing native coin-pixel proof;
 original-PNG color scanning corrected it and targeted recheck returned no findings. MR-7 S1-S6 are
-objectively accepted; commit/main/push and later subjective course-quality evidence remain.
+objectively accepted in work-unit `2aa3aab`; main/push and later subjective course-quality evidence
+remain. T3 stays open for the next bounded Meadow completion slice.
 
 ### L3 — 2026-10-24 — MR-6 revalidation and MR-7 preparation
 
