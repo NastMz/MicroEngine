@@ -29,6 +29,25 @@ S10. “Integrated” currently means three independently runnable, repository-c
 
 ## Log
 
+### L5 — 2026-10-24 — Session checkpoint after MR-7 delivery
+
+- Meadow Run: MR-6 audio plus MR-7 third staggered course are integrated and published at
+  `f55aa97`; three-level progression, enemies, collectibles, session flow and transient audio have
+  objective proof. Full FR-003 completion is not claimed; remaining experience gaps require one
+  evidence-backed next slice and later integrated subjective evaluation.
+- Courtyard Key: existing ADV-1/art/composition technical state is unchanged; full FR-004 remains
+  pending a bounded completion packet.
+- Trail Duel: existing RPG-1 functional/visual accepted state is unchanged; full FR-005 remains
+  pending a bounded completion packet.
+- MicroEngine: MR-6 optional replaceable one-shot audio is integrated; MR-7 required no engine
+  change. Main/origin are synchronized 0/0 at `f55aa97`.
+- Verification: MR-7 managed RED8→GREEN40; serial330/330; Platformer, Adventure and RPG native;
+  patrol/audio asset verification; independent scratch and targeted recheck PASS.
+- Known limitations: subjective MR-6 listening and MR-7 rhythm/distinction are deferred to the
+  integrated human review; Engram tools and fresh CodeGraph sync were unavailable in this session.
+- Next action: execute ready ME-093, comparing FR-003 to delivered behavior and content evidence,
+  then approve one smallest Meadow slice. Do not presume power-up, music, particles or engine scope.
+
 ### L4 — 2026-10-24 — MR-7 implementation candidate
 
 ME-089 implemented the reviewed third course on `feat/meadow-third-course` without engine or asset

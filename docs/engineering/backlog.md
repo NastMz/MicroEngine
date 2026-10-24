@@ -764,6 +764,7 @@ specification, Asset Readiness when content-dependent, objective proof and appli
 | ME-090 | Courtyard Key adventure completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T4](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-091 | Trail Duel RPG completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T5](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-092 | cross-game hardening and integrated handoff | P2 | pending | ME-089; ME-090; ME-091 | [Mission T6](../../odd/tasks/microengine-three-game-mission.md) |
+| ME-093 | assess remaining Meadow completion gaps and prepare the next bounded slice | P1 | ready | ME-089 | [Mission T3](../../odd/tasks/microengine-three-game-mission.md), FR-003 |
 
 ME-087 claim2026-10-24: Codex root, baseline1c61799, branchfeat/audio-feedback. Allowed surfaces:
 `AGENTS.md`; `odd/tasks/microengine-three-game-mission.md`; `docs/engineering/README.md`;
@@ -821,3 +822,9 @@ correction. No engine, dependency, asset byte, CLI option or other-game source c
 additive campaign semantics; protected session/presentation/native consumers are covered. T3 remains
 open for the next bounded Meadow mission need; MR-7 subjective rhythm/distinction joins the later
 integrated human evaluation rather than blocking technical progress.
+
+ME-089 delivery2026-10-24: local `main` fast-forwarded `da6d6da..f55aa97`; authorized ordinary
+push advanced `origin/main` by the same two commits and post-fetch divergence is 0/0. Unrelated
+`.gitignore` and `.codegraph/` remain untouched. ME-093 is the next eligible task: compare FR-003
+with delivered MR-2..MR-7, inspect reusable content/evidence, and approve one smallest integrated
+slice that closes a real remaining game-experience gap without speculative engine infrastructure.

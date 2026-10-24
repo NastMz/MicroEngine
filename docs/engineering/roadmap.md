@@ -17,7 +17,7 @@ H0 is accepted by the owner (2026-10-15). Bounded H1/H2/H3 tracers and persisten
 
 ## Current executable horizon
 
-[Backlog](backlog.md) is the only task-state source. Historical tracer closures below remain evidence, not the stopping condition. ME-087/088 completed mission-governance and MR-6/local-delivery reconciliation. ME-089 is ready to construct the reviewed MR-7 staggered third course. Later mission tasks remain pending until their immediate packet is refined. Do not assume a full asset/animation framework or any shared subsystem before consumer evidence. See [current state](current-state.md).
+[Backlog](backlog.md) is the only task-state source. Historical tracer closures below remain evidence, not the stopping condition. ME-087/088 completed mission-governance and MR-6/local-delivery reconciliation; ME-089 delivered the reviewed MR-7 staggered third course to main/origin. ME-093 is ready to assess the remaining FR-003 gaps and prepare exactly one next Meadow slice. Later mission tasks remain pending until their immediate packet is refined. Do not assume a power-up, music, particle system or shared subsystem before consumer/content evidence. See [current state](current-state.md).
 An authorized future development session follows [execution](execution.md) and may continue
 independent ready work. No background scheduler is installed; H0 is implemented, not a playable game.
 
