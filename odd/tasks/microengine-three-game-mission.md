@@ -21,7 +21,7 @@ S10. “Integrated” currently means three independently runnable, repository-c
 ## Tasks
 
 - [x] T1 — S1, S5, S7-S10 — Route: inline (no writer trigger). Status: completed. Reconciled governance, roadmap, backlog, execution, current-state, and contributor entry documentation with this mission. Commit: `a54277d`.
-- [ ] T2 — S2, S6-S8 — Route: inline (no writer trigger). Status: in-review. Reconcile MR-6 objective closure with the new mission authority, run proportional regression/native/audio evidence, independently verify if required, integrate verified local work, and define the next Meadow campaign slice. Commit: pending.
+- [x] T2 — S2, S6-S8 — Route: inline (no writer trigger). Status: completed. Reconciled and revalidated MR-6, integrated verified local work, and approved the MR-7 third-course packet. Commit: `1f8edc2`.
 - [ ] T3 — S2, S5-S8 — Route: inline by default; delegate only if a mandatory trigger fires. Deliver Meadow Run campaign completion through bounded vertical slices and integrated review. Commit: pending.
 - [ ] T4 — S3, S5-S8 — Route: inline by default; delegate only if a mandatory trigger fires. Deliver Courtyard Key adventure completion through bounded vertical slices and integrated review. Commit: pending.
 - [ ] T5 — S4-S8 — Route: inline by default; delegate only if a mandatory trigger fires. Deliver Trail Duel RPG completion through bounded vertical slices and integrated review. Commit: pending.
@@ -37,6 +37,8 @@ Platformer native pixels/course/CLI, and four audio asset hashes/provenance. The
 contract and reuse-only Asset Readiness packet were independently reviewed. Exact geometry was
 reachable; one omitted `SessionTests.cs` edit surface was corrected and targeted recheck passed.
 No engine/shared contract or new asset is needed. Local integration and commit recording remain.
+Local `main` fast-forwarded from `aa385cb` to `1f8edc2` with unrelated `.gitignore` and
+`.codegraph/` preserved. MR-7 is the next executable Meadow slice.
 
 ### L2 — 2026-10-24 — T1 verification
 

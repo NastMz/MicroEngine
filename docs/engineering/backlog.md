@@ -759,8 +759,8 @@ specification, Asset Readiness when content-dependent, objective proof and appli
 | ID | Kind | Priority | State | Dependencies | Packet |
 | --- | --- | --- | --- | --- | --- |
 | ME-087 | mission governance reconciliation | P0 | completed | owner mission2026-10-24 | [Mission T1](../../odd/tasks/microengine-three-game-mission.md), `a54277d` |
-| ME-088 | MR-6 delivery reconciliation and next Meadow slice | P0 | in-review | ME-087 | [Mission T2](../../odd/tasks/microengine-three-game-mission.md), [MR-6](specs/meadow-audio.md), [MR-7](specs/meadow-third-course.md) |
-| ME-089 | MR-7 staggered third-course construction | P1 | pending | ME-088; reviewed MR-7 contract | [Mission T3](../../odd/tasks/microengine-three-game-mission.md), [MR-7](specs/meadow-third-course.md) |
+| ME-088 | MR-6 delivery reconciliation and next Meadow slice | P0 | completed | ME-087 | [Mission T2](../../odd/tasks/microengine-three-game-mission.md), [MR-6](specs/meadow-audio.md), [MR-7](specs/meadow-third-course.md), `1f8edc2` |
+| ME-089 | MR-7 staggered third-course construction | P1 | ready | ME-088; reviewed MR-7 contract | [Mission T3](../../odd/tasks/microengine-three-game-mission.md), [MR-7](specs/meadow-third-course.md) |
 | ME-090 | Courtyard Key adventure completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T4](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-091 | Trail Duel RPG completion | P1 | pending | ME-087; bounded next-slice packet | [Mission T5](../../odd/tasks/microengine-three-game-mission.md) |
 | ME-092 | cross-game hardening and integrated handoff | P2 | pending | ME-089; ME-090; ME-091 | [Mission T6](../../odd/tasks/microengine-three-game-mission.md) |
@@ -790,3 +790,9 @@ MR-7 preparation uses existing assets and public consumer capabilities. Independ
 validated the exact route (500 updates/four jumps/all coins) and no-jump defeat (124 updates), then
 reported one omitted `SessionTests.cs` surface; correction targeted recheck PASS. MR-7 is approved
 for later construction with no engine/shared-contract or new-asset requirement.
+
+ME-088 closure2026-10-24: approved packet/work-unit `1f8edc2`; local `main` fast-forwarded
+`aa385cb..1f8edc2`. This integrates the previously verified MR-6 source plus the mission and MR-7
+preparation without merge commits or history rewrite. Unrelated `.gitignore` and `.codegraph/`
+remain untouched. ME-089 is the next eligible task. Remote synchronization is a separate ordinary
+delivery operation under autonomy.md and has not yet been claimed as completed.
