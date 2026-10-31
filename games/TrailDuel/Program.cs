@@ -1,4 +1,4 @@
-using MicroEngine.Raylib;
+using MicroEngine.Desktop;
 using TrailDuel;
 
 // TRAIL_SAVE_DIR (optional) keeps saves and achievements in another folder, e.g. for capture runs.

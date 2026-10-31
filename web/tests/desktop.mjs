@@ -2,9 +2,11 @@
 // the browser runs stored (run.mjs scripts). Equal files mean the browser build produced the same frames from
 // the same input, seed and starting point.
 //
-//   node web/tests/desktop.mjs [--out DIR] [--games A,B] [--skip-run]
+//   node web/tests/desktop.mjs [--out DIR] [--games A,B] [--skip-run] [--platform NAME]
 //                              [--reference FILE [--names-only]] [--write-reference FILE]
 //
+// --platform runs the games on another desktop platform (sdl); the default stays raylib, the platform the browser
+// build shares, because the browser comparison is byte for byte on the PNG files.
 // --skip-run compares captures already in --out/desktop/<Game>/<script> (for example pulled from a device).
 //
 // --reference also checks the native captures against a platform's visual reference (captures.mjs): every capture
@@ -27,6 +29,7 @@ const only = option('--games', '');
 const skipRun = args.includes('--skip-run');
 const referenceFile = option('--reference', '');
 const writeReference = option('--write-reference', '');
+const platform = option('--platform', 'raylib');
 const saveDirVariable = { MeadowRun: 'MEADOW_SAVE_DIR', CourtyardKey: 'COURTYARD_SAVE_DIR', TrailDuel: 'TRAIL_SAVE_DIR', NeonRift: 'RIFT_SAVE_DIR' };
 
 const { scenarios } = JSON.parse(fs.readFileSync(path.join(here, 'scenarios.json'), 'utf8'));
@@ -40,7 +43,7 @@ for (const s of scenarios.filter(s => !only || only.split(',').includes(s.game))
     fs.rmSync(dir, { recursive: true, force: true });
     fs.mkdirSync(dir, { recursive: true });
     const saves = fs.mkdtempSync(path.join(os.tmpdir(), 'microengine-saves-'));
-    const run = spawnSync(exe, ['--script', path.join(repo, 'games', s.game, 'scripts', s.script), '--hidden', '--mute', '--captures', dir],
+    const run = spawnSync(exe, ['--script', path.join(repo, 'games', s.game, 'scripts', s.script), '--hidden', '--mute', '--platform', platform, '--captures', dir],
       { env: { ...process.env, ...s.env, [saveDirVariable[s.game]]: saves }, encoding: 'utf8' });
     fs.rmSync(saves, { recursive: true, force: true });
     if (run.status !== 0) {
