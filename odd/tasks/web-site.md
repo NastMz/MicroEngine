@@ -95,3 +95,18 @@ parallelism. T3-T7 share the site's files and stay inline.
   redirected storage host, never printed; wrong token and SHA mismatch fail clearly); production-style build with a
   dummy DEMOS_TOKEN passes check-dist (no repository links, no open source or MIT claims in pages, no internal files,
   token value absent); `npm run test:browser` 732 checks pass in Chrome and Firefox. No engine code changed.
+- L10 (2026-10-30) Owner approved the distribution model (proprietary private source; free personal, educational
+  and commercial use; no royalties; games belong to creators; runtime shippable inside games; no standalone
+  redistribution or resale; optional "Made with MicroEngine"; name MicroEngine SDK License). Earlier MIT copies keep
+  their rights; the current implementation is a greenfield rewrite never published as source. Asked: prepare the
+  licence replacement (final text pending legal review), add third-party notices to the site and web packages,
+  keep public docs aligned, prepare demos-v0.1.0 and Vercel, verify no internal files, source or credentials leak;
+  no public deployment or final licence.
+- L11 Done: LICENSE is an all-rights-reserved holding notice; SDK licence draft for counsel; THIRD-PARTY-NOTICES.md
+  (published at /docs/third-party-notices/, copied into every package with the .NET, Emscripten and raylib licence
+  files); /docs/licensing/ states the planned model. Found and fixed: packages embedded build-machine paths (PDB
+  locations, C assertion file names, the user profile folder); web builds now compile without debug information in
+  separate folders and with -ffile-prefix-map, and check-dist rejects user-profile paths. demos-v0.1.0 rebuilt,
+  packed and pinned (sha256 2ca15d76…). Evidence: dotnet test 279/279; npm test 20/20; browser suite 732 checks
+  pass in Chrome and Firefox against the pinned archive; production-style build with a dummy token passes all
+  exposure checks. Not done (owner): push, GitHub release, Vercel project, final licence text.
