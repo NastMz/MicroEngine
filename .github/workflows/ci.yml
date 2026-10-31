@@ -84,7 +84,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CANARY: ${{ vars.DEMO_CANARY || 'NeonRift' }}
-        run: node site/scripts/demos.mjs plan --policy ci --canary "$CANARY" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+          # Public runners are free: build every game whose key changed (an engine change rebuilds and plays all four,
+          # and the release then finds every package stored). Private: one canary game for engine-wide changes.
+          POLICY: ${{ vars.PUBLIC_RUNNERS == 'true' && 'all' || 'ci' }}
+        run: node site/scripts/demos.mjs plan --policy "$POLICY" --canary "$CANARY" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Decide
         id: decide
         env:
