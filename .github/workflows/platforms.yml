@@ -145,8 +145,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # The newest ios workload can require an Xcode the image does not have yet, so the job pins the SDK
-      # (web/toolchain.env) and the workload set (platforms/ios/toolchain.env), and selects the Xcode that set's ios
-      # pack names.
+      # (web/toolchain.env) and the workload set (platforms/ios/toolchain.env).
       - name: Pinned versions
         run: sed 's/[[:space:]]*#.*$//' web/toolchain.env platforms/ios/toolchain.env | grep '=' >> "$GITHUB_ENV"
       - uses: actions/setup-dotnet@v4
@@ -155,20 +154,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Toolchain (ios workload, Xcode)
+      - name: Toolchain (ios workload)
         run: |
           echo "{ \"sdk\": { \"version\": \"$DOTNET_SDK_VERSION\", \"rollForward\": \"disable\" } }" > global.json
           dotnet workload install ios --version "$IOS_WORKLOAD_SET" > /dev/null
-          ios=$(dotnet workload list | awk '$1 == "ios" { print $2 }' | cut -d/ -f1)
-          xcode=$(ls -d /Applications/Xcode_"$(cut -d. -f1,2 <<< "$ios")"*.app | sort -V | tail -1)
-          echo "ios workload $ios; Xcode on the image: $(ls -d /Applications/Xcode_*.app | xargs -n1 basename | paste -sd' ' -)"
-          sudo xcode-select -s "$xcode"
-          { echo "### iOS toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^ios ' | tr -s ' ')"; echo "- $(xcodebuild -version | tr '\n' ' ')"; echo; } >> "$GITHUB_STEP_SUMMARY"
+          echo "Xcode on the image: $(ls -d /Applications/Xcode_*.app | xargs -n1 basename | paste -sd' ' -)"
       - run: dotnet build games/MeadowRun -c Release
+      # The ios pack checks the Xcode version and names the one it needs; that Xcode is selected and the build repeated.
       - name: App for the simulator
         run: |
-          dotnet build platforms/ios -c Release
+          if ! dotnet build platforms/ios -c Release > ios-build.log 2>&1; then
+            need=$(grep -o 'requires Xcode [0-9.]*' ios-build.log | head -1 | awk '{ print $3 }')
+            [ -n "$need" ] || { tail -40 ios-build.log; exit 1; }
+            xcode=$(ls -d /Applications/Xcode_"$need".app /Applications/Xcode_"$need".0.app 2>/dev/null | head -1)
+            [ -n "$xcode" ] || { echo "::error::The ios workload needs Xcode $need, which this image does not have."; exit 1; }
+            sudo xcode-select -s "$xcode"
+            dotnet build platforms/ios -c Release
+          fi
           app=$(ls -d platforms/ios/bin/MeadowRun/Release/net10.0-ios/iossimulator-arm64/*.app)
           echo "APP=$app" >> "$GITHUB_ENV"
-          echo "- App: $(basename "$app"), $(du -sh "$app" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+          { echo "### iOS toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^ios ' | tr -s ' ')"
+            echo "- $(xcodebuild -version | paste -sd' ' -)"; echo "- App: $(basename "$app"), $(du -sh "$app" | cut -f1)"; echo; } >> "$GITHUB_STEP_SUMMARY"
       - run: platforms/ios/simulator-checks.sh "$APP" MeadowRun

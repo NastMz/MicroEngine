@@ -55,11 +55,20 @@ internal static class MobileRun
         }
         RunResult result;
         bool audio;
+        // The active scene, logged when it changes, so a test can tell that input sent by the system reached the game
+        // without depending on a screenshot. A diagnostic read from a timer thread: only a reference is read.
+        string? scene = null;
+        using var watch = new Timer(_ =>
+        {
+            string? now = game.Scenes?.Current?.GetType().Name;
+            if (now is not null && now != scene) log($"microengine: scene {scene = now}");
+        }, null, 0, 250);
         using (platform)
         {
             audio = platform.Audio.IsAvailable;
             result = GameRunner.Run(game, platform, options);
         }
+        watch.Change(Timeout.Infinite, Timeout.Infinite);
         foreach (var capture in result.Captures) log($"microengine: capture {Path.GetFileName(capture)}");
         if (result.Error is { } error)
         {

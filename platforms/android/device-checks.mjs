@@ -121,14 +121,17 @@ adb('shell', 'am', 'force-stop', pkg);
 adb('logcat', '-c');
 awake();
 adb('shell', 'am', 'start', '-W', '-n', activity);
-await waitFor(/microengine: start/, 60_000);
-const before = await picture(path.join(out, 'input-before.png'), 60_000);
-await sleep(2000);
-for (const key of ['KEYCODE_ENTER', 'KEYCODE_ENTER', 'KEYCODE_DPAD_RIGHT', 'KEYCODE_ENTER']) { adb('shell', 'input', 'keyevent', key); await sleep(700); }
-await sleep(2000);
-const after = screenshot(path.join(out, 'input-after.png'));
-record('input', before.length > 0 && after.length > 0 && !before.equals(after) && !crashed(log()),
-  before.equals(after) ? 'the screen did not change after Enter and Right' : 'the screen changed after Enter and Right (input-before.png, input-after.png)');
+// The host logs each scene change; keys from the system must take the game past its first scene. Screenshots are kept
+// for review only: some emulator images return a black screencap of a GL surface.
+const scenes = text => [...text.matchAll(/microengine: scene (\w+)/g)].map(m => m[1]);
+const first = scenes(await waitFor(/microengine: scene /, 120_000))[0];
+await picture(path.join(out, 'input-before.png'), 20_000);
+for (const key of ['KEYCODE_ENTER', 'KEYCODE_ENTER', 'KEYCODE_DPAD_RIGHT', 'KEYCODE_ENTER']) { adb('shell', 'input', 'keyevent', key); await sleep(1500); }
+await sleep(3000);
+screenshot(path.join(out, 'input-after.png'));
+const reached = scenes(log());
+record('input', !!first && reached.length > 1 && !crashed(log()),
+  first ? `scenes after Enter, Enter, Right, Enter: ${reached.join(' → ')}` : 'the game logged no scene');
 adb('shell', 'input', 'keyevent', 'KEYCODE_HOME');
 await sleep(3000);
 adb('shell', 'am', 'start', '-W', '-n', activity);
