@@ -123,6 +123,8 @@ jobs:
   verify:
     name: Verify the packages to publish (Chrome and Firefox)
     needs: [preflight, draft]
+    # Explicit: a skipped build further up would otherwise skip every later job (see the draft job).
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.draft.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write # a draft release is only readable with push access
@@ -164,7 +166,7 @@ jobs:
   publish:
     name: Publish
     needs: [preflight, verify]
-    if: ${{ !inputs.dry-run }}
+    if: ${{ !cancelled() && !inputs.dry-run && needs.verify.result == 'success' }}
     uses: ./.github/workflows/deploy-site.yml
     permissions:
       contents: write
