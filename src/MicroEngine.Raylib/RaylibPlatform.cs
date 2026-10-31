@@ -50,7 +50,9 @@ public sealed class RaylibPlatform : IPlatform
         // A page may be smaller than the virtual canvas (a small iframe); the canvas then scales down instead of being cropped.
         if (!OperatingSystem.IsBrowser()) Rl.SetWindowMinSize(settings.VirtualWidth, settings.VirtualHeight);
         Rl.SetExitKey(Raylib_cs.KeyboardKey.Null);
-        if (!options.Hidden && !OperatingSystem.IsBrowser()) Rl.SetTargetFPS(Math.Max(60, Rl.GetMonitorRefreshRate(Rl.GetCurrentMonitor())));
+        // On Android raylib's GetCurrentMonitor detaches the calling thread from the JVM, which aborts a thread that is
+        // running .NET code (the experimental host, platforms/android); the display's vsync paces frames there instead.
+        if (!options.Hidden && !OperatingSystem.IsBrowser() && !OperatingSystem.IsAndroid()) Rl.SetTargetFPS(Math.Max(60, Rl.GetMonitorRefreshRate(Rl.GetCurrentMonitor())));
         _target = Rl.LoadRenderTexture(settings.VirtualWidth, settings.VirtualHeight);
         Rl.SetTextureFilter(_target.Texture, Raylib_cs.TextureFilter.Point);
         _renderer = new RaylibRenderer(settings.VirtualWidth, settings.VirtualHeight);

@@ -5,6 +5,8 @@
 //   node web/tests/desktop.mjs [--out DIR] [--games A,B] [--skip-run]
 //                              [--reference FILE [--names-only]] [--write-reference FILE]
 //
+// --skip-run compares captures already in --out/desktop/<Game>/<script> (for example pulled from a device).
+//
 // --reference also checks the native captures against a platform's visual reference (captures.mjs): every capture
 // present, same size, no visible change. --names-only checks completeness and sizes only, for a platform without
 // its own reference yet. --write-reference records a new reference from this run's captures.
@@ -49,6 +51,11 @@ for (const s of scenarios.filter(s => !only || only.split(',').includes(s.game))
       continue;
     }
   }
+  if (!fs.existsSync(dir)) {
+    failures++;
+    console.log(`FAIL desktop ${s.game} ${s.script}: no captures in ${dir}`);
+    continue;
+  }
   const desktop = fs.readdirSync(dir).filter(f => f.endsWith('.png')).sort();
   for (const browser of ['chrome', 'firefox']) {
     const web = path.join(out, browser, s.game, name);
@@ -80,6 +87,8 @@ if (referenceFile || writeReference) {
   }
   if (referenceFile) {
     const reference = JSON.parse(fs.readFileSync(referenceFile, 'utf8'));
+    // With --games, only those games' captures are expected.
+    if (only) reference.captures = Object.fromEntries(Object.entries(reference.captures).filter(([name]) => only.split(',').includes(name.split('/')[0])));
     const result = compare(summaries, reference, { namesOnly: args.includes('--names-only') });
     for (const note of result.notes) console.log(`note ${note}`);
     for (const problem of result.problems) console.log(`FAIL ${problem}`);

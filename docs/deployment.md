@@ -10,24 +10,67 @@ whatever demo changed, checks everything, and deploys production. Local scripts 
 
 ## Pipeline
 
-One workflow, [`.github/workflows/pipeline.yml`](../.github/workflows/pipeline.yml):
+One workflow, [`.github/workflows/pipeline.yml`](../.github/workflows/pipeline.yml), runs only the checks a change
+needs (see [What runs for a change](#what-runs-for-a-change)), in tiers: the fast tier first, so a broken change never
+occupies a Windows or macOS runner, then the integration tier. The expensive, experimental platforms (macOS native
+rendering, Android, iOS) are a separate workflow, [`platforms.yml`](../.github/workflows/platforms.yml), that never
+takes part in a deployment ([Platform workflow](#platform-workflow)).
 
-| Job | Runs on | What it does |
-| --- | --- | --- |
-| Plan | every run | computes each game's key and lists the games whose package is not stored yet; detects engine changes |
-| .NET tests | engine, game or test changes (always on `main`) | `dotnet test MicroEngine.slnx -c Release` on Windows, Linux and macOS (macOS does not block yet); native tests excluded, skipped tests listed with their reason |
-| Native Linux | same | under Xvfb and a PulseAudio null sink: the native keyboard and audio tests, and the 15 scripted scenarios compared with the Linux visual reference |
-| Native macOS | same | experimental, never blocks: native tests and the scripted scenarios (completeness and size only); captures kept as an artifact |
-| Build *Game* | one job per game whose key is not stored | `web/setup.sh` (cached), `web/build.sh <Game>`, then `demos.mjs publish` stores the package |
-| Site | every run, after the above succeed | unit tests, `npm run build` with the stored packages, browser checks in Chrome and Firefox |
-| Deploy | after Site succeeds | `vercel build` and `vercel deploy --prebuilt`: a preview for pull requests, production for `main` |
+| Job | Tier | Runs when | What it does |
+| --- | --- | --- | --- |
+| Plan | fast | every run | tests the change planner, decides the checks from the changed paths, computes each game's key and lists the games whose package is not stored yet |
+| .NET tests (Linux) | fast | `dotnet` | `dotnet test MicroEngine.slnx -c Release` without the native tests; skipped tests listed with their reason |
+| .NET tests (Windows) | integration | `dotnet`, after Linux passed | the same on Windows |
+| .NET tests (macOS) | integration | `macos`, after Linux passed | the same on macOS; never blocks a deployment |
+| Native Linux | integration | `native`, after Linux passed | under Xvfb and a PulseAudio null sink: the native keyboard and audio tests, and the 15 scripted scenarios compared with the Linux visual reference |
+| Build *Game* | integration | the game's key is not stored | `web/setup.sh` (cached), `web/build.sh <Game>`, then `demos.mjs publish` stores the package |
+| Site | integration | every run, after the builds | unit tests, `npm run build` with the stored packages, then the browser suites Plan chose, in Chrome and Firefox |
+| Deploy | — | Site passed and no needed check failed | `vercel build` and `vercel deploy --prebuilt`: a preview for pull requests, production for `main` |
+
+A job the change does not need is skipped, and a skipped check never stops a deployment; a failed one always does,
+except macOS. The NuGet package folder is cached per system, keyed on the project files.
 
 | Event | Result |
 | --- | --- |
-| Pull request (this repository) | everything above, then a **preview** deployment linked in a pull request comment |
+| Pull request (this repository) | the checks for the files it changes, then a **preview** deployment linked in a pull request comment |
 | Pull request from a fork | checks only; no credentials, no deployment |
-| Push to `main` (an approved, merged pull request) | everything above, then a **production** deployment |
-| Manual run (Actions → pipeline → Run workflow) | a preview of any branch, or production from `main` only |
+| Push to `main` (an approved, merged pull request) | the checks for what the push changed since the previous `main`, then a **production** deployment |
+| Manual run (Actions → pipeline → Run workflow) | every check, then a preview of any branch, or production from `main` only |
+
+### What runs for a change
+
+[`.github/scripts/changes.mjs`](../.github/scripts/changes.mjs) maps each changed path to the checks that can catch
+a regression in it; its rules are tested (`node --test .github/scripts/*.test.mjs`). A path no rule knows runs everything, so a
+new folder is never skipped by accident. Manual runs and a missing comparison base also run everything.
+
+| Change | .NET Linux, Windows | .NET macOS | Native Linux | Demo builds | Browser suites | Platform workflow |
+| --- | --- | --- | --- | --- | --- | --- |
+| Engine core (`src/MicroEngine`) | yes | yes | yes | every game (keys change) | all (packages rebuilt) | — |
+| raylib backend (`src/MicroEngine.Raylib`) | yes | yes | yes | every game | all | weekly or manual |
+| One game's code (`games/<Name>`) | yes | — | yes | that game | all | — |
+| A game's Markdown (`games/**/*.md`) | — | — | — | — | layout | — |
+| Engine tests (`tests/MicroEngine.Tests`) | yes | yes | — | — | — | — |
+| Backend tests (`tests/MicroEngine.Raylib.Tests`) | yes | yes | yes | — | — | — |
+| Game tests, samples | yes | — | — | — | — | — |
+| Desktop capture scripts (`web/tests`) | — | — | yes | — | — | — |
+| Web host or toolchain (`web/`) | — | — | — | every game | all | — |
+| Site (`site/`) | — | — | — | — | all | — |
+| Documentation (`docs/`, other Markdown) | — | — | — | — | layout | — |
+| Mobile hosts (`platforms/`, `platforms.yml`) | — | — | — | — | — | on the pull request |
+| Task records, experiments (`odd/`, `experiments/`) | — | — | — | — | — | — |
+| The pipeline, its scripts, build settings | everything | everything | everything | as keys say | all | — |
+
+Browser suites (`site/tests/browser.mjs --suites`): `layout` opens every page at desktop, tablet and phone widths
+and checks the diagrams; `play` loads, plays, restarts and exits each demo; `touch` checks the emulated phone and
+tablet panels. A rebuilt package is always played, whatever the paths say: demo keys, not paths, decide that.
+
+### Platform workflow
+
+[`.github/workflows/platforms.yml`](../.github/workflows/platforms.yml) is the full tier: checks that need expensive
+runners or are not stable yet. It runs every Monday on `main`, on demand (Actions → platforms → Run workflow), and on
+pull requests that change the mobile hosts. A failure there is shown and diagnosed in the run's summary but never
+blocks the pipeline or a deployment. Its jobs and what each one proves are listed in
+[Platforms: what CI proves](guide/platforms.md#what-ci-proves).
 
 ### Demo packages are addressed by content
 

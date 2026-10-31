@@ -1,0 +1,26 @@
+<Project>
+  <!-- Experimental mobile hosts (platforms/README.md). Like the browser host, each one runs a game chosen with
+       -p:Game=<Id> from web/games.props, so there is one entry per game for every host and no game is copied.
+       These projects are not in MicroEngine.slnx: they need the android or ios workload. -->
+  <Import Project="../Directory.Build.props" />
+  <PropertyGroup>
+    <Game Condition="'$(Game)' == ''">MeadowRun</Game>
+  </PropertyGroup>
+  <Import Project="../web/games.props" />
+  <PropertyGroup>
+    <!-- Each game builds into its own folders. -->
+    <BaseIntermediateOutputPath>obj/$(Game)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin/$(Game)/</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+    <!-- The host references the desktop game project (an executable) only for its gameplay assembly. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <!-- SaveStore serializes game types with reflection-based System.Text.Json, as in the browser host. -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <TrimMode>partial</TrimMode>
+    <!-- IL2104: framework assemblies (System.Text.Json, Microsoft.iOS) report their own trim warnings in a trimmed
+         device build; with TreatWarningsAsErrors the iOS build would stop on them. -->
+    <NoWarn>$(NoWarn);IL2026;IL3050;IL2104</NoWarn>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <GameDir>$(MSBuildThisFileDirectory)../games/$([System.IO.Path]::GetDirectoryName('$(GameProject)'))/</GameDir>
+  </PropertyGroup>
+</Project>

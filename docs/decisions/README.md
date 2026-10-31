@@ -16,3 +16,4 @@ available at tag `reference/pre-rebuild` under `docs/engineering/decisions/`.
 | [0009](0009-public-site.md) | Public site: Astro and Starlight, documentation read from the repository, pinned demo archive | Accepted |
 | [0010](0010-delivery-pipeline.md) | Content-addressed demo packages and a prebuilt Vercel deployment pipeline (amends 0009) | Accepted |
 | [0011](0011-desktop-platform-validation.md) | Desktop platform validation: Windows, Linux and macOS test matrix, native Linux checks, per-system visual references | Accepted |
+| [0012](0012-tiered-ci-and-platform-experiments.md) | Tiered CI driven by changed paths, and a separate platform workflow (amends 0010, 0011) | Accepted |

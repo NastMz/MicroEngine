@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // Browser checks for the built site (site/dist, with demo packages), in the installed Chrome and Firefox:
-//   node tests/browser.mjs [--browsers chrome,firefox] [--out test-results]
-// - every page at desktop, tablet and phone widths: no horizontal scroll, images with alt text, no request to a
+//   node tests/browser.mjs [--browsers chrome,firefox] [--suites layout,play,touch] [--out test-results]
+// Suites (all by default; CI runs only `layout` when a change touches documentation alone):
+// - layout: every page at desktop, tablet and phone widths: no horizontal scroll, images with alt text, no request to a
 //   demo package (/play/) until Play is pressed; full-page screenshots are written to --out for review;
-// - each demo page on desktop: Play creates the iframe, the host's messages drive the status (ready, playing),
+// - play: each demo page on desktop: Play creates the iframe, the host's messages drive the status (ready, playing),
 //   Restart reloads, Exit removes the game; the size shown before loading is honoured;
-// - phone and tablet with touch (Chrome device emulation, not a real device): the "Made for a keyboard" panel shows
+// - touch: phone and tablet with touch (Chrome device emulation, not a real device): the "Made for a keyboard" panel shows
 //   instead of the Play button, "Try anyway" still loads the game;
-// - pages with diagrams: every diagram is drawn (an SVG, no Mermaid error) in the documentation's colours.
+// - layout, pages with diagrams: every diagram is drawn (an SVG, no Mermaid error) in the documentation's colours.
 import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
@@ -16,6 +17,8 @@ import { serve } from './serve-dist.mjs';
 const args = process.argv.slice(2);
 const option = (name, fallback) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : fallback; };
 const browsers = option('--browsers', 'chrome,firefox').split(',');
+const suites = new Set(option('--suites', 'layout,play,touch').split(','));
+for (const suite of suites) if (!['layout', 'play', 'touch'].includes(suite)) throw new Error(`unknown suite '${suite}' (layout, play, touch)`);
 const out = path.resolve(option('--out', 'test-results'));
 fs.mkdirSync(out, { recursive: true });
 
@@ -201,9 +204,9 @@ try {
   for (const label of browsers) {
     const browser = await launch(label);
     try {
-      await layout(browser, label, server.url);
-      await play(browser, label, server.url);
-      if (label === 'chrome') await touch(browser, server.url);
+      if (suites.has('layout')) await layout(browser, label, server.url);
+      if (suites.has('play')) await play(browser, label, server.url);
+      if (suites.has('touch') && label === 'chrome') await touch(browser, server.url);
     } finally {
       await browser.close();
     }
