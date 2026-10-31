@@ -51,6 +51,11 @@ for (const s of scenarios.filter(s => !only || only.split(',').includes(s.game))
       continue;
     }
   }
+  if (!fs.existsSync(dir)) {
+    failures++;
+    console.log(`FAIL desktop ${s.game} ${s.script}: no captures in ${dir}`);
+    continue;
+  }
   const desktop = fs.readdirSync(dir).filter(f => f.endsWith('.png')).sort();
   for (const browser of ['chrome', 'firefox']) {
     const web = path.join(out, browser, s.game, name);
