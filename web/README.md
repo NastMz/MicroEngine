@@ -77,6 +77,13 @@ Opening `index.html` from disk does not work (browsers block the runtime's reque
 | `game.json` | `{ "id", "title", "dev" }` for the page and for whoever embeds the package |
 | `_framework/` | .NET runtime, raylib and the game assemblies (with `.br` and `.gz` copies) |
 | `content.txt`, `Content/` | The game's asset files and their list (absent for fully procedural games) |
+| `THIRD-PARTY-NOTICES.txt`, `licenses/` | MicroEngine's third-party notices and the complete licence files of the .NET runtime, Emscripten and raylib |
+
+Release packages are compiled with `-p:MicroEngineWebPackage=true`: the engine and game assemblies get no debug
+information and build into their own `obj/web/` and `bin/web/` folders (desktop builds keep theirs), and native code
+is compiled with `-ffile-prefix-map`, so no build-machine path ends up in a package. Emscripten still writes one
+.NET runtime file's location as a comment in `dotnet.native.*.js`: build releases with a toolchain folder outside
+your user profile (`MICROENGINE_WEB_TOOLS`).
 
 ### Embedding (for the landing page)
 

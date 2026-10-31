@@ -64,6 +64,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # A release created by hand (docs/deployment.md) is never overwritten: its archive is the pinned one.
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists; leaving it as it is."
+            exit 0
+          fi
           gh release create "$GITHUB_REF_NAME" dist/web-release/microengine-web-demos-*.tar.gz dist/web-release/demos.lock.json \
             --title "Web demos ${{ steps.version.outputs.version }}" \
             --notes "Web packages of the four demos, built from $GITHUB_SHA. Pin them with the attached demos.lock.json (site/demos.lock.json)."

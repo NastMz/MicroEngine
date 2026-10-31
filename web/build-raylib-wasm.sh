@@ -18,10 +18,15 @@ export EM_CACHE="$CACHE/emscripten/cache" EM_FROZEN_CACHE=1 PYTHONUTF8=1
 if [ -n "$PY" ]; then export EMSDK_PYTHON="$PY/python$EXE" PYTHONPATH="$PY" PYTHONHOME=; fi
 export PATH="$SDK/bin:$SDK/emscripten:$PATH"
 mkdir -p "$OUT/obj"
+# Keep build-machine paths out of the library: assertion messages embed source file names (__FILE__).
+prefix_maps=(-ffile-prefix-map="$RAYLIB_SRC"=raylib)
+if command -v cygpath >/dev/null 2>&1; then
+  prefix_maps+=(-ffile-prefix-map="$(cygpath -m "$RAYLIB_SRC")"=raylib -ffile-prefix-map="$(cygpath -w "$RAYLIB_SRC")"=raylib)
+fi
 for m in rcore rshapes rtextures rtext rmodels raudio; do
   echo "emcc $m.c"
   "emcc$BAT" -c "$RAYLIB_SRC/src/$m.c" -o "$OUT/obj/$m.o" -Os -std=gnu99 -D_DEFAULT_SOURCE \
-    -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES2 -I"$RAYLIB_SRC/src" -I"$RAYLIB_SRC/src/external/glfw/include"
+    -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES2 -I"$RAYLIB_SRC/src" -I"$RAYLIB_SRC/src/external/glfw/include" "${prefix_maps[@]}"
 done
 rm -f "$OUT/raylib.a"
 "emar$BAT" rcs "$OUT/raylib.a" "$OUT"/obj/*.o

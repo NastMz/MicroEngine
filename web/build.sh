@@ -40,7 +40,17 @@ lib="$tools/raylib-web/raylib.a"
 ls -d "$tools"/dotnet/packs/Microsoft.NET.Runtime.Emscripten."$EMSCRIPTEN_VERSION".Sdk.* >/dev/null 2>&1 \
   || die "the wasm-tools workload (emscripten $EMSCRIPTEN_VERSION) is not installed in $tools/dotnet. Run web/setup.sh."
 [ -f "$lib" ] || die "raylib for the web is missing ($lib). Run web/setup.sh."
+runtime_pack="$tools/dotnet/packs/Microsoft.NETCore.App.Runtime.Mono.browser-wasm/$DOTNET_RUNTIME_VERSION"
+emscripten_license=$(ls "$tools"/dotnet/packs/Microsoft.NET.Runtime.Emscripten."$EMSCRIPTEN_VERSION".Sdk.*/*/tools/emscripten/LICENSE 2>/dev/null | head -1)
+for f in "$runtime_pack/LICENSE.TXT" "$runtime_pack/THIRD-PARTY-NOTICES.TXT" "$emscripten_license" "$tools/raylib-src/LICENSE" "$root/THIRD-PARTY-NOTICES.md"; do
+  [ -n "$f" ] && [ -f "$f" ] || die "licence file missing (${f:-emscripten LICENSE}). Run web/setup.sh."
+done
 export DOTNET_ROOT="$tools/dotnet" DOTNET_MULTILEVEL_LOOKUP=0 DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+# Packages are published: keep build-machine paths out of them. Native code the workload compiles embeds source
+# file names in assertion messages, and assemblies with debug information name their .pdb file.
+# (On Windows emcc is a native program: it gets the C:/ form, which also matches C:\ paths.)
+if [ "$windows" = 1 ]; then export EMCC_CFLAGS="-ffile-prefix-map=$(cygpath -m "$tools")=/web-tools"
+else export EMCC_CFLAGS="-ffile-prefix-map=$tools=/web-tools"; fi
 
 # Bytes of the files a browser downloads, and of the same files when the server sends the .br copies.
 sizes() {
@@ -56,13 +66,23 @@ mkdir -p "$out"
 for g in "${games[@]}"; do
   echo "== $g"
   staging="$here/obj/$g/package"
-  rm -rf "$staging"
+  # Native objects are compiled again every time, so path remapping (EMCC_CFLAGS) always applies.
+  rm -rf "$staging" "$here/Host/obj/$g/Release/net10.0/wasm"
   "$dotnet" publish "$(native "$here/Host/MicroEngine.Web.csproj")" -c Release -nologo -v:quiet \
-    -p:Game="$g" -p:WebDevHooks="$dev" -p:RaylibWasmLib="$(native "$lib")" -o "$(native "$staging")"
+    -p:Game="$g" -p:WebDevHooks="$dev" -p:RaylibWasmLib="$(native "$lib")" -p:MicroEngineWebPackage=true \
+    -o "$(native "$staging")"
   # Empty the folder rather than deleting it, so a local server serving it keeps working.
   mkdir -p "$out/$g"
   find "${out:?}/$g" -mindepth 1 -delete
   cp -R "$staging/wwwroot/." "$out/$g/"
+  # Third-party notices travel with every package: MicroEngine's list, plus the complete licence files of the .NET
+  # runtime, Emscripten and raylib that the package contains (THIRD-PARTY-NOTICES.md, "Browser builds").
+  cp "$root/THIRD-PARTY-NOTICES.md" "$out/$g/THIRD-PARTY-NOTICES.txt"
+  mkdir -p "$out/$g/licenses"
+  cp "$runtime_pack/LICENSE.TXT" "$out/$g/licenses/dotnet-LICENSE.txt"
+  cp "$runtime_pack/THIRD-PARTY-NOTICES.TXT" "$out/$g/licenses/dotnet-THIRD-PARTY-NOTICES.txt"
+  cp "$emscripten_license" "$out/$g/licenses/emscripten-LICENSE.txt"
+  cp "$tools/raylib-src/LICENSE" "$out/$g/licenses/raylib-LICENSE.txt"
   echo "$out/$g: $(sizes "$out/$g")"
 done
 echo "Serve locally with: node web/serve.mjs $out"

@@ -8,4 +8,16 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
+  <!-- Browser packages are published (web/build.sh passes MicroEngineWebPackage=true): the engine and games they
+       contain are compiled without debug information, so no build-machine path (.pdb location) ends up in them, and
+       into their own folders, so desktop builds keep their debug information. -->
+  <PropertyGroup Condition="'$(MicroEngineWebPackage)' == 'true'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MicroEngineWebPackage)' == 'true' and '$(MSBuildProjectName)' != 'MicroEngine.Web'">
+    <BaseIntermediateOutputPath>obj/web/</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin/web/</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+  </PropertyGroup>
 </Project>
