@@ -34,8 +34,7 @@ The following behaviors are unacceptable:
 In addition to behavioral standards, all contributions must adhere to:
 
 - The technical guidelines in `CONTRIBUTING.md`
-- The architectural principles in `docs/ARCHITECTURE.md`
-- The coding standards defined in `.github/copilot-instructions.md`
+- The architectural principles in `docs/architecture.md`
 
 ## Scope
 
@@ -53,8 +52,9 @@ This Code of Conduct applies to:
 
 Instances of unacceptable behavior may be reported to the project maintainers at:
 
-- **Email:** [project contact email]
-- **GitHub:** Open a confidential issue or contact maintainers directly
+- **Email:** CONDUCT-CONTACT-TO-BE-SET (the owner sets this address before the repository is made public)
+
+Do not report conduct problems in a public issue; GitHub has no confidential issues.
 
 All complaints will be reviewed and investigated promptly and fairly. All project maintainers are obligated to respect the privacy and security of the reporter.
 
@@ -83,5 +83,5 @@ If you have questions about this Code of Conduct, please open an issue or contac
 
 ---
 
-**Last Updated:** November 2025  
-**Version:** 1.0
+**Last Updated:** October 2026  
+**Version:** 1.1

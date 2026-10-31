@@ -64,6 +64,12 @@ not yet supported; macOS is under evaluation ([Platforms](docs/guide/platforms.m
 The previous tracer implementation and its process records are preserved at tag `reference/pre-rebuild`.
 See [ADR 0001](docs/decisions/0001-greenfield-rebuild.md) for why the project was rebuilt.
 
-## License
+## License and contributions
 
-Proprietary. All rights reserved; see [LICENSE](LICENSE). The SDK will ship under the MicroEngine SDK License, now in legal review ([draft](docs/legal/microengine-sdk-license-draft.md)). Third-party components: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+Proprietary. All rights reserved; see [LICENSE](LICENSE). MicroEngine is not open source. The SDK will ship under the
+MicroEngine SDK License, now in legal review ([draft](docs/legal/microengine-sdk-license-draft.md); the model for a
+public repository is in the [licensing proposal](docs/legal/source-available-proposal.md)). Third-party components:
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+Issues are welcome; code contributions need a contributor agreement first ([Contributing](CONTRIBUTING.md#contribution-status)).
+Security problems: [SECURITY.md](SECURITY.md).

@@ -1,0 +1,39 @@
+name: Bug report
+description: Something in the engine, a demo or the website does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problems go through **Security → Report a vulnerability**, never a public issue (SECURITY.md).
+        Please do not paste code you do not have the right to share.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Engine core, raylib desktop backend, Browser build or demo page, A demo game, Website or documentation, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Commands, an input script (`--script`), or the page and browser. A failing test is the best report.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit or demo release
+      placeholder: e.g. main at abc1234, or demo release v0.1.0
+  - type: input
+    id: system
+    attributes:
+      label: System
+      placeholder: e.g. Windows 11, .NET 10.0.100; or Firefox 140 on Linux

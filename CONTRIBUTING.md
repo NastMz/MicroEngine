@@ -1,5 +1,21 @@
 # Contributing to MicroEngine
 
+## Contribution status
+
+MicroEngine is **source-available, not open source**: the code is visible, but [LICENSE](LICENSE) reserves all
+rights until the MicroEngine licences are published (they are in legal review). What that means today:
+
+| You can | Not yet |
+| --- | --- |
+| Read the code and fork it on GitHub (GitHub's Terms of Service, section D.5) | Use, copy, modify or redistribute it outside GitHub without the owner's written permission |
+| Open issues: bug reports, questions, ideas ([templates](.github/ISSUE_TEMPLATE)) | Have a pull request merged without a signed contributor agreement |
+| Report security problems privately ([SECURITY.md](SECURITY.md)) | |
+
+**Code contributions.** Pull requests from people outside the project are not merged until a contributor agreement
+exists and you have signed it: it keeps the right to license MicroEngine (including the free SDK) in one place.
+Opening a pull request does not grant MicroEngine any right by itself, and a pull request that copies code or assets
+from elsewhere cannot be accepted. When the agreement is published this section will say how to sign it.
+
 ## Setup
 
 Install the .NET 10 SDK. From the repository root:
