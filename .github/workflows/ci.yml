@@ -180,11 +180,11 @@ jobs:
             echo "### CI result"; echo
             echo "| Check | Needed | Outcome |"; echo "| --- | --- | --- |"
             for check in dotnet windows native site; do
-              needed=$(echo "$NEEDED" | jq -r ".$check // false"); reused=$(echo "$REUSED" | jq -r ".$check // \"\"")
-              if [ "$needed" != true ]; then outcome="not needed for this change"
-              elif [ -n "$reused" ]; then outcome="already passed for identical inputs in [run $reused]($RUN_URL/$reused)"
+              is_needed=$(echo "$NEEDED" | jq -r ".$check // false"); proof=$(echo "$REUSED" | jq -r ".$check // \"\"")
+              if [ "$is_needed" != true ]; then outcome="not needed for this change"
+              elif [ -n "$proof" ]; then outcome="already passed for identical inputs in [run $proof]($RUN_URL/$proof)"
               else outcome="ran here: checks $CHECKS"; fi
-              echo "| $check | $needed | $outcome |"
+              echo "| $check | $is_needed | $outcome |"
             done
             echo; echo "Deployment: $WANTED ($DEPLOY). macOS, Android and iOS are not part of daily CI (validate.yml)."
           } >> "$GITHUB_STEP_SUMMARY"
