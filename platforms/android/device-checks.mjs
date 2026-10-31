@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { decodePng } from '../../web/tests/captures.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, '../..');
@@ -58,11 +59,34 @@ function screenshot(file) {
   return run.stdout;
 }
 
+// A device that just booted may be asleep or locked: the activity then never gets its window and raylib waits for it.
+function awake() {
+  adb('shell', 'svc', 'power', 'stayon', 'true');
+  adb('shell', 'input', 'keyevent', 'KEYCODE_WAKEUP');
+  adb('shell', 'wm', 'dismiss-keyguard');
+}
+
+// The screen once at least 5% of it is not black (the game has drawn), or the last attempt.
+async function picture(file, timeoutMs) {
+  let shot = Buffer.alloc(0);
+  for (const end = Date.now() + timeoutMs; Date.now() < end; await sleep(1000)) {
+    shot = screenshot(file);
+    try {
+      const { rgba } = decodePng(shot);
+      let lit = 0;
+      for (let i = 0; i < rgba.length; i += 4) if (rgba[i] + rgba[i + 1] + rgba[i + 2] > 24) lit++;
+      if (lit > rgba.length / 4 * 0.05) return shot;
+    } catch { /* not a complete PNG yet */ }
+  }
+  return shot;
+}
+
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 const install = adb('install', '-r', apk);
 record('installed', install.status === 0 && /Success/.test(install.out), install.out.trim().split('\n').pop());
 if (install.status !== 0) process.exit(1);
+awake();
 
 // Scripted runs: the same scenarios, environment and seed as desktop.mjs.
 const { scenarios } = JSON.parse(fs.readFileSync(path.join(repo, 'web/tests/scenarios.json'), 'utf8'));
@@ -86,7 +110,7 @@ for (const s of scenarios.filter(s => s.game === game)) {
   const pulled = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith('.png')).length : 0;
   const expected = (text.match(/microengine: capture /g) ?? []).length;
   runs.push({ name, ok: !!done && /microengine: exit 0/.test(text) && pulled === expected && expected > 0 && !crashed(text),
-    detail: done ? `${done[1]} updates, ${pulled}/${expected} captures pulled` : (text.match(/microengine: error: .*/)?.[0] ?? (crashed(text) ? 'crashed' : 'no result')) });
+    detail: done ? `${done[1]} updates, ${pulled}/${expected} captures pulled` : (text.match(/microengine: error: .*/)?.[0] ?? (crashed(text) ? 'crashed' : `no result after 240 s (${expected} captures by then)`)) });
 }
 record('started', started, started ? 'the .NET host logged its start' : 'no "microengine: start" in the log');
 record('rendered', runs.length > 0 && runs.every(r => r.ok), runs.map(r => `${r.name}: ${r.detail}`).join('; ') || `no scenario for ${game}`);
@@ -95,10 +119,11 @@ record('audio', audio === true, audio === null ? 'no run finished' : audio ? 'ra
 // Input and lifecycle: an interactive run, keys from the system, then background and foreground.
 adb('shell', 'am', 'force-stop', pkg);
 adb('logcat', '-c');
+awake();
 adb('shell', 'am', 'start', '-W', '-n', activity);
 await waitFor(/microengine: start/, 60_000);
-await sleep(6000);
-const before = screenshot(path.join(out, 'input-before.png'));
+const before = await picture(path.join(out, 'input-before.png'), 60_000);
+await sleep(2000);
 for (const key of ['KEYCODE_ENTER', 'KEYCODE_ENTER', 'KEYCODE_DPAD_RIGHT', 'KEYCODE_ENTER']) { adb('shell', 'input', 'keyevent', key); await sleep(700); }
 await sleep(2000);
 const after = screenshot(path.join(out, 'input-after.png'));

@@ -144,10 +144,11 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-      # The newest ios workload can require an Xcode the image does not have yet, so the job uses the SDK and workload
-      # set pinned for the web build (web/toolchain.env) and the Xcode whose version matches that ios workload.
+      # The newest ios workload can require an Xcode the image does not have yet, so the job pins the SDK
+      # (web/toolchain.env) and the workload set (platforms/ios/toolchain.env), and selects the Xcode that set's ios
+      # pack names.
       - name: Pinned versions
-        run: sed 's/[[:space:]]*#.*$//' web/toolchain.env | grep '=' >> "$GITHUB_ENV"
+        run: sed 's/[[:space:]]*#.*$//' web/toolchain.env platforms/ios/toolchain.env | grep '=' >> "$GITHUB_ENV"
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
@@ -157,7 +158,7 @@ jobs:
       - name: Toolchain (ios workload, Xcode)
         run: |
           echo "{ \"sdk\": { \"version\": \"$DOTNET_SDK_VERSION\", \"rollForward\": \"disable\" } }" > global.json
-          dotnet workload install ios --version "$DOTNET_WORKLOAD_SET" > /dev/null
+          dotnet workload install ios --version "$IOS_WORKLOAD_SET" > /dev/null
           ios=$(dotnet workload list | awk '$1 == "ios" { print $2 }' | cut -d/ -f1)
           xcode=$(ls -d /Applications/Xcode_"$(cut -d. -f1,2 <<< "$ios")"*.app | sort -V | tail -1)
           echo "ios workload $ios; Xcode on the image: $(ls -d /Applications/Xcode_*.app | xargs -n1 basename | paste -sd' ' -)"
