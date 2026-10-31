@@ -9,7 +9,7 @@ build. Items move off this list only when a change and its validation are record
 | Limitation | Evidence |
 | --- | --- |
 | No visual editor, level editor or asset tool; content is code or files loaded through `ContentFolder` | [ADR 0002](../decisions/0002-code-first-content.md), [ADR 0004](../decisions/0004-external-asset-files.md) |
-| Not distributed to external developers: no NuGet package, project templates (`dotnet new`), installers or versioned releases; all are planned | [Getting MicroEngine](../guide/getting-microengine.md) |
+| No NuGet package, project templates (`dotnet new`), installers or versioned engine releases yet: the engine is built from its public repository; all are planned | [Getting MicroEngine](../guide/getting-microengine.md) |
 | No dedicated touch controls in the demos | [Platforms](../guide/platforms.md#phones-and-tablets) |
 | No cloud saves; desktop saves are local files, browser saves are `localStorage` | [Persistence](../manual/persistence.md) |
 | No ECS; plain entities sized for a few hundred objects per scene | [ADR 0003](../decisions/0003-scenes-entities-runtime.md), [Architecture](../architecture.md) |

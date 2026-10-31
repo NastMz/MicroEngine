@@ -161,5 +161,4 @@ the contract. See [Architecture](../architecture.md) and [ADR 0003](../decisions
 ## Limitations
 
 - One real backend (raylib); no Android, iOS or console targets.
-- The engine is not distributed to external developers yet; NuGet packages are planned
-  ([Getting MicroEngine](../guide/getting-microengine.md)).
+- No NuGet packages yet: the engine is used from its repository ([Getting MicroEngine](../guide/getting-microengine.md)).

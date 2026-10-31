@@ -3,8 +3,8 @@
 // that turn a repository Markdown file into a page; the Astro loader at the bottom wires them into the build.
 //
 // A public page is any file listed in `pages`. Everything else (engine-development guides, ADRs, evaluations, game
-// READMEs, source files) is internal: the repository is private, so a link from a public page to an internal file
-// is published as its plain text, never as a link visitors cannot open.
+// READMEs, source files) stays in the repository: a link from a public page to such a file points to it in the public
+// repository on GitHub, and a link to a file that does not exist is published as its plain text.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -89,7 +89,10 @@ export function docImages(list = pages, root = repoRoot) {
   return [...found].sort();
 }
 
-/** Site URL of a public repository file, or undefined when the file is internal. */
+/** The public repository; links to files that are not site pages point into its default branch. */
+export const repositoryUrl = 'https://github.com/NastMz/MicroEngine';
+
+/** Site URL of a public repository file, or undefined when the file is not a site page. */
 export function pageUrl(source, list = pages) {
   const page = list.find(p => p.source === source);
   return page && `/${page.slug}/`;
@@ -97,8 +100,8 @@ export function pageUrl(source, list = pages) {
 
 /**
  * Where a link written in `source` (a repository-relative path) should point on the site: the page of a public
- * document, the converted image for a repository image, the link unchanged when it is external or an anchor, or
- * null for any other repository file: internal files are not reachable by visitors.
+ * document, the converted image for a repository image, the link unchanged when it is external or an anchor, the
+ * file or folder in the public repository for any other repository path, or null when that path does not exist.
  */
 export function resolveLink(source, target, { list = pages, root = repoRoot, image = false } = {}) {
   if (!target || target.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('//')) return target;
@@ -113,11 +116,12 @@ export function resolveLink(source, target, { list = pages, root = repoRoot, ima
   if (url) return url + anchor;
   const absolute = path.join(root, clean);
   if (image && imageExtensions.has(path.extname(clean).toLowerCase()) && fs.existsSync(absolute)) return docImageUrl(clean);
-  return null;
+  if (!fs.existsSync(absolute)) return null;
+  return `${repositoryUrl}/${fs.statSync(absolute).isDirectory() ? 'tree' : 'blob'}/main/${clean}${anchor}`;
 }
 
 // Rewrites inline link and image targets outside code (fenced blocks and `inline code` are left untouched). A link to
-// an internal file keeps its text and loses the link.
+// a missing file keeps its text and loses the link.
 export function rewriteLinks(source, markdown, options = {}) {
   let fence = null;
   return markdown.split('\n').map(line => {

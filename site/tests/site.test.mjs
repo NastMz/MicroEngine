@@ -70,19 +70,25 @@ test('vercel.json: hashed package files are immutable, /play/ is noindex, Git de
   assert.equal(headersFor(rules, '/docs/')['X-Content-Type-Options'], 'nosniff');
 });
 
-test('check-dist: private repository links, open source claims, internal files, secrets and user paths are refused', () => {
+test('check-dist: repository links and the MIT engine are fine; demo pages need their notice; internal files, secrets and user paths are refused', () => {
   const dist = fs.mkdtempSync(path.join(os.tmpdir(), 'dist-'));
   fs.writeFileSync(path.join(dist, 'index.html'), '<a href="https://github.com/NastMz/MicroEngine">Source</a> Open source, MIT licensed');
   fs.writeFileSync(path.join(dist, 'notes.md'), '# internal');
+  fs.mkdirSync(path.join(dist, 'demos', 'meadow-run'), { recursive: true });
+  fs.mkdirSync(path.join(dist, 'demos', 'neon-rift'), { recursive: true });
+  fs.writeFileSync(path.join(dist, 'demos', 'index.html'), 'All four demos');
+  fs.writeFileSync(path.join(dist, 'demos', 'meadow-run', 'index.html'), 'Meadow Run. The engine is MIT.');
+  fs.writeFileSync(path.join(dist, 'demos', 'neon-rift', 'index.html'), 'Neon Rift. Demo game: all rights reserved.');
   fs.mkdirSync(path.join(dist, 'play'));
   fs.writeFileSync(path.join(dist, 'play', 'x.js'), 'const t = "ghp_secretvalue123";');
   const problems = checkPublicContent(dist, { secrets: ['ghp_secretvalue123'] });
-  assert.ok(problems.includes('index.html contains a link to the private repository'));
-  assert.ok(problems.includes('index.html contains an "open source" claim'));
-  assert.ok(problems.includes('index.html contains an MIT licence claim'));
+  assert.ok(!problems.some(p => p.startsWith('index.html')), 'links to the public repository and MIT claims for the engine are allowed');
+  assert.ok(problems.includes('demos/meadow-run/index.html does not say the demo game is all rights reserved'));
+  assert.ok(!problems.some(p => p.startsWith('demos/neon-rift/') || p.startsWith('demos/index.html')));
   assert.ok(problems.includes('internal file published: notes.md'));
   assert.ok(problems.includes('a build secret appears in play/x.js'));
   assert.ok(!problems.some(p => p.includes('ghp_secretvalue123')), 'the secret itself is never printed');
+  fs.rmSync(path.join(dist, 'demos'), { recursive: true });
   fs.writeFileSync(path.join(dist, 'play', 'a.wasm'), Buffer.from('\0asm C:\\Users\\someone\\tools\\driver.c\0', 'latin1'));
   assert.ok(checkPublicContent(dist).includes("play/a.wasm contains a build machine's user folder path"));
   fs.writeFileSync(path.join(dist, 'play', 'a.wasm'), Buffer.from('\0asm /home/runner/work/x/obj/x.pdb\0', 'latin1'));

@@ -1,33 +1,38 @@
 # Licensing
 
-MicroEngine is proprietary software with private source code. When the SDK is released it will be free to use
-under the MicroEngine SDK License, which is being prepared and is not published yet; this page describes the model
-that licence will follow.
+MicroEngine is open source under the [MIT License](../../LICENSE). The four demo games built with it are not:
+they are published to play and to learn from, with all rights reserved ([demo games notice](../../games/LICENSE)).
 
-## The planned model
+## What is under which licence
 
-| | |
-| --- | --- |
-| Price | Free |
-| Use | Personal, educational and commercial |
-| Royalties | None, and no revenue limits |
-| Your games | Belong to you: code, art, audio, names and revenue |
-| Runtime | May be shipped as part of your games |
-| The SDK itself | May not be redistributed or resold on its own |
-| Attribution | "Made with MicroEngine" is optional |
-| Source code | Not distributed; the SDK ships in compiled form |
+| Part | Licence | You may |
+| --- | --- | --- |
+| The engine (`MicroEngine`, the raylib backend `MicroEngine.Raylib`), its tests, the browser host and tools | MIT | use, modify, fork, redistribute and sell it, keeping the copyright and licence notice |
+| The Hello Engine sample | MIT | copy it into your own games |
+| This documentation and website code | MIT | the same |
+| Meadow Run, Courtyard Key, Trail Duel, Neon Rift: code, levels, characters, names, art and music made for them | all rights reserved | read and build them to learn MicroEngine; reuse ideas, techniques and mechanics in original games. Not redistribute, sell, or republish them under another name |
+| Third-party art and audio in the demos | CC0 1.0, credited on each game's credits page | what CC0 allows (anything) |
+| Third-party libraries: raylib, Raylib-cs, the .NET runtime, Emscripten | zlib, MIT | see the [third-party notices](../../THIRD-PARTY-NOTICES.md) |
 
-This is a summary of an approved direction, not the licence. The licence text will be published with the SDK, and
-only that text will define the terms. Until then MicroEngine is not distributed to external developers; see
-[Getting MicroEngine](getting-microengine.md) and the [roadmap](/roadmap/).
+## Making and selling games
 
-## Third-party software
+Games you make with MicroEngine are yours: code, art, audio, names and revenue. There are no royalties, no revenue
+limits and nothing to register.
 
-The engine's runtime, the browser builds of the demos and this website include components by others under their own
-licences, such as raylib (zlib) and the .NET runtime (MIT). They are listed, with their licence texts, in the
-[third-party notices](../../THIRD-PARTY-NOTICES.md), and every browser package ships the same notices.
+When you ship a game, its build contains the engine's assemblies and raylib. The licences ask for one thing: keep
+their notices with your game.
 
-## The demo games
+- MicroEngine: include the MIT License text with its copyright line, for example in a `licenses` folder or on a
+  credits screen. You do not have to show "Made with MicroEngine" (it is welcome).
+- raylib, Raylib-cs, the .NET runtime and, for browser builds, Emscripten: include their notices. The
+  [third-party notices](../../THIRD-PARTY-NOTICES.md) list them, with their licence texts.
 
-The four demos are games made by MicroEngine's author with the engine. Their third-party art and audio are CC0
-packs credited on each game's credits page.
+## Forks and modified engines
+
+You may fork MicroEngine, change it, and distribute or sell your version, under the MIT License. Keep the original
+copyright notice and the licence text in your copies, and do not present the original code as entirely your own.
+The demo games are not part of that permission: a fork that includes them must leave them out of its releases.
+
+## Contributing
+
+Contributions are accepted under the MIT License: see the repository's contributing guide.

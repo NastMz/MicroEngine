@@ -27,10 +27,10 @@ export const completed: string[] = [
 
 export const next: RoadmapTrack[] = [
   {
-    title: 'SDK distribution',
+    title: 'Packages',
     status: 'planned',
-    summary: 'Make MicroEngine usable without access to its source code.',
-    items: ['NuGet packages', 'Templates for C# projects', 'Installation without cloning a repository', 'Versioning and releases'],
+    summary: 'Make MicroEngine easy to add to a game without building it from the repository.',
+    items: ['NuGet packages', 'Templates for C# projects', 'Installation without cloning the repository', 'Versioned engine releases'],
   },
   {
     title: 'Engine robustness',

@@ -15,9 +15,11 @@ sufficient without previous chats or agent memory.
   only through `release.yml`; merging never publishes them.
 - `site/` is the public site (Astro + Starlight): it publishes the Markdown listed in `site/src/lib/repo-docs.mjs`
   straight from `docs/` and `games/`, so edit those files, never a copy. See [publishing the site](docs/deployment.md).
-- The repository is private and MicroEngine is not open source: public pages must not link into the repository,
-  claim a licence, or require building from source (the site build enforces this). Licensing is pending the
-  owner's decision ([proposal](docs/legal/distribution-proposal.md)).
+- Licensing ([ADR 0015](docs/decisions/0015-mit-engine-reserved-demos.md)): the engine, samples, tools, site code and
+  docs are MIT (`LICENSE`); the four demo games, their tests and builds are all rights reserved (`games/LICENSE`),
+  except the third-party files listed in each game's `CREDITS.md`. Never describe a demo as MIT; every demo page
+  must carry its notice (the site build checks it). The repository is being prepared to go public
+  ([PUBLIC-1](docs/evaluations/public-1.md)); it stays private until the owner switches it.
 
 ## Working rules
 
