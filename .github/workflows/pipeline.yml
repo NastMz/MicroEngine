@@ -1,8 +1,11 @@
 # MicroEngine's one pipeline (docs/deployment.md, "Pipeline"):
-#   pull request   tests, builds any demo whose inputs changed, builds and checks the site, deploys a protected preview
-#                  (engine changes: .NET tests on Windows, Linux and macOS, plus native raylib checks on Linux)
-#   push to main   the same, then deploys production: merging an approved pull request publishes it
-#   manual run     a preview from any branch, or production from main
+#   pull request   the checks this change needs, any demo whose inputs changed, the site, a protected preview
+#   push to main   the same for what the merge changed, then deploys production: merging an approved pull request publishes it
+#   manual run     every check, then a preview from any branch, or production from main
+# Plan decides what runs (.github/scripts/changes.mjs, "What runs for a change" in docs/deployment.md), in three tiers:
+#   fast           the planner's own tests and the headless .NET tests on Linux; every later .NET job waits for them
+#   integration    .NET tests on Windows (and macOS, not blocking), raylib natively on Linux, demo builds, the browser
+#   full           platforms.yml: macOS diagnosis, Android emulator and iOS simulator; never part of a deployment
 # Demo packages are content-addressed (site/scripts/demos.mjs): each game's key hashes its inputs, so a package is
 # built once on Windows with the pinned toolchain, stored as an asset of the private `demo-artifacts` prerelease, and
 # reused until an input changes. The site is built by `vercel build` here and uploaded with `vercel deploy
@@ -31,6 +34,8 @@ concurrency:
 env:
   NODE_VERSION: 22
   VERCEL_CLI: vercel@64.3.1
+  DOTNET_NOLOGO: '1'
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
 
 jobs:
   plan:
@@ -38,7 +43,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       missing: ${{ steps.demos.outputs.missing }}
-      engine: ${{ steps.changes.outputs.engine }}
+      dotnet: ${{ steps.changes.outputs.dotnet }}
+      macos: ${{ steps.changes.outputs.macos }}
+      native: ${{ steps.changes.outputs.native }}
+      # Rebuilt packages are always played in the browser, whatever the changed paths say.
+      suites: >-
+        ${{ (steps.changes.outputs.browser == 'full' || steps.demos.outputs.missing != '[]') && 'layout,play,touch'
+        || steps.changes.outputs.browser == 'layout' && 'layout' || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,52 +59,103 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: site/package-lock.json
+      - name: Planner tests
+        run: node --test .github/scripts
+      - name: Checks for this change
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          case "$EVENT" in
+            pull_request) args=(--base "$PR_BASE" --head HEAD) ;;
+            push) args=(--base "$BEFORE" --head HEAD) ;;
+            *) args=(--all) ;;
+          esac
+          node .github/scripts/changes.mjs "${args[@]}" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
       - run: npm ci --prefix site
       - name: Demo keys
         id: demos
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node site/scripts/demos.mjs plan --github-output | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Engine changes
-        id: changes
-        run: |
-          if [ "${{ github.event_name }}" != pull_request ]; then echo "engine=true" >> "$GITHUB_OUTPUT"; exit 0; fi
-          if git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD" \
-            | grep -qE '^(src|games|tests|samples|web/tests)/|^\.github/(workflows|scripts)/|^(Directory\.Build\.props|global\.json|NuGet\.config|MicroEngine\.slnx)$'; then
-            echo "engine=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "engine=false" >> "$GITHUB_OUTPUT"
-          fi
 
-  # The engine and the four games' tests (headless simulation) on each desktop system. Native tests (a real window,
-  # keyboard or sound server) are filtered out here and run in native-linux. Tests that only apply to another system
-  # ([OSCondition]) are reported as skipped with their reason in the job summary, not as failures.
-  engine-tests:
-    name: .NET tests (${{ matrix.os }})
+  # Fast tier: the engine and the four games' tests (headless simulation) on Linux, the cheapest runner. Native tests
+  # (a real window, keyboard or sound server) are filtered out here and run in native-linux. Tests that only apply to
+  # another system ([OSCondition]) are reported as skipped with their reason in the job summary, not as failures.
+  dotnet-linux:
+    name: .NET tests (Linux)
     needs: plan
-    if: needs.plan.outputs.engine == 'true'
-    runs-on: ${{ matrix.os }}
-    # macOS is being evaluated: its results are recorded but do not block the pipeline yet (docs/guide/platforms.md).
-    continue-on-error: ${{ matrix.os == 'macos-latest' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+    if: needs.plan.outputs.dotnet == 'true'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json', 'NuGet.config') }}
       - run: dotnet test MicroEngine.slnx -c Release --filter "TestCategory!=Native" --logger trx --results-directory test-results
       - if: always()
-        run: node .github/scripts/test-summary.mjs test-results ".NET tests on ${{ runner.os }}"
+        run: node .github/scripts/test-summary.mjs test-results ".NET tests on Linux"
+
+  # Integration tier. Each job waits for the fast tier, so a broken change never occupies the Windows or macOS
+  # runners; a skipped fast tier (nothing .NET changed) lets a job that is still needed run.
+  dotnet-windows:
+    name: .NET tests (Windows)
+    needs: [plan, dotnet-linux]
+    if: >-
+      !cancelled() && needs.plan.outputs.dotnet == 'true'
+      && contains(fromJSON('["success", "skipped"]'), needs.dotnet-linux.result)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json', 'NuGet.config') }}
+      - run: dotnet test MicroEngine.slnx -c Release --filter "TestCategory!=Native" --logger trx --results-directory test-results
+      - if: always()
+        run: node .github/scripts/test-summary.mjs test-results ".NET tests on Windows"
+
+  # macOS is being evaluated: its results are recorded but never block a deployment (docs/guide/platforms.md). It runs
+  # for engine and backend changes; a change to a game alone is managed code that Linux and Windows already ran.
+  # Native rendering on macOS is diagnosed in platforms.yml: the hosted runner cannot open an OpenGL window.
+  dotnet-macos:
+    name: .NET tests (macOS, not blocking)
+    needs: [plan, dotnet-linux]
+    if: >-
+      !cancelled() && needs.plan.outputs.macos == 'true'
+      && contains(fromJSON('["success", "skipped"]'), needs.dotnet-linux.result)
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json', 'NuGet.config') }}
+      - run: dotnet test MicroEngine.slnx -c Release --filter "TestCategory!=Native" --logger trx --results-directory test-results
+      - if: always()
+        run: node .github/scripts/test-summary.mjs test-results ".NET tests on macOS"
 
   # The desktop backend for real on Linux: raylib with OpenGL (Mesa) in a virtual X display, the keyboard through the
   # X server, audio through a virtual PulseAudio sink, and the games' scripted runs compared with the Linux reference.
   native-linux:
     name: Native Linux (raylib, Xvfb)
-    needs: plan
-    if: needs.plan.outputs.engine == 'true'
+    needs: [plan, dotnet-linux]
+    if: >-
+      !cancelled() && needs.plan.outputs.native == 'true'
+      && contains(fromJSON('["success", "skipped"]'), needs.dotnet-linux.result)
     runs-on: ubuntu-latest
     env:
       MICROENGINE_NATIVE_TESTS: '1'
@@ -109,6 +171,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json', 'NuGet.config') }}
       - name: Virtual display and sound server
         run: |
           sudo apt-get update -q
@@ -132,39 +198,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-linux-captures
-          path: native-captures/desktop
-          retention-days: 7
-
-  # First steps on macOS: the native tests and scripted runs are attempted and recorded, never blocking. The captures
-  # are checked for completeness and size only (there is no macOS reference yet) and kept for review.
-  native-macos:
-    name: Native macOS (experimental)
-    needs: plan
-    if: needs.plan.outputs.engine == 'true'
-    runs-on: macos-latest
-    continue-on-error: true
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-      - run: dotnet build MicroEngine.slnx -c Release
-      - name: Native tests (audio device; the keyboard test is Linux-only)
-        run: dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
-      - if: always()
-        run: node .github/scripts/test-summary.mjs test-results "Native tests on macOS"
-      - name: Scripted captures (completeness and size against the Linux reference)
-        run: node web/tests/desktop.mjs --out native-captures --reference web/tests/reference/linux-x64.json --names-only | tee -a "$GITHUB_STEP_SUMMARY"
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-macos-captures
           path: native-captures/desktop
           retention-days: 7
 
@@ -206,11 +239,10 @@ jobs:
 
   site:
     name: Site
-    needs: [plan, engine-tests, native-linux, build-demos]
+    # The site does not wait for the .NET jobs: it only needs the packages. Deploy waits for everything.
+    needs: [plan, build-demos]
     if: >-
-      always() && needs.plan.result == 'success'
-      && contains(fromJSON('["success", "skipped"]'), needs.engine-tests.result)
-      && contains(fromJSON('["success", "skipped"]'), needs.native-linux.result)
+      !cancelled() && needs.plan.result == 'success'
       && contains(fromJSON('["success", "skipped"]'), needs.build-demos.result)
     runs-on: ubuntu-latest
     defaults:
@@ -230,14 +262,18 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: npm run build
       # Firefox needs a display for WebGL without a GPU: run under a virtual X server (Mesa software rendering).
+      # Suites from Plan: `layout` (every page at three widths) for documentation, all of them when a package was
+      # rebuilt or the web host or site changed, none when nothing published changed.
       - name: Browser checks (Chrome and Firefox)
+        if: needs.plan.outputs.suites != ''
         env:
           CHROME_PATH: /usr/bin/google-chrome
           HEADED: '1'
           BROWSERS: ${{ vars.BROWSER_CHECKS || 'chrome,firefox' }}
+          SUITES: ${{ needs.plan.outputs.suites }}
         run: |
           command -v xvfb-run > /dev/null || sudo apt-get install -y xvfb
-          xvfb-run -a node tests/browser.mjs --browsers "$BROWSERS"
+          xvfb-run -a node tests/browser.mjs --browsers "$BROWSERS" --suites "$SUITES"
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -247,13 +283,17 @@ jobs:
 
   deploy:
     name: Deploy
-    needs: site
-    # always(): without it GitHub adds success(), which also looks at Site's own needs, so a skipped demo build (no
-    # package to rebuild) would skip the deployment too. Site's result is checked explicitly instead.
+    needs: [site, dotnet-linux, dotnet-windows, native-linux]
+    # !cancelled(): without it GitHub adds success(), so a check this change did not need (skipped) would skip the
+    # deployment too. Each result is checked explicitly instead: skipped means not needed, anything else but success
+    # stops the deployment. macOS and platforms.yml are not listed: they never block a deployment.
     # Pull requests from forks never get deployment credentials.
     if: >-
-      always()
+      !cancelled()
       && needs.site.result == 'success'
+      && contains(fromJSON('["success", "skipped"]'), needs.dotnet-linux.result)
+      && contains(fromJSON('["success", "skipped"]'), needs.dotnet-windows.result)
+      && contains(fromJSON('["success", "skipped"]'), needs.native-linux.result)
       && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     environment:
