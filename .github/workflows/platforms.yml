@@ -1,0 +1,156 @@
+# Full tier (docs/deployment.md, "Platform workflow"): checks that need expensive runners or are not stable yet.
+# Never part of a deployment: pipeline.yml does not wait for this workflow, and its failures block nothing. Each job
+# writes what it proved, level by level, to the run summary (platforms/README.md, "Evidence levels").
+#   macOS     headless and native .NET tests; an OpenGL probe that explains whether raylib can open a window, and the
+#             scripted captures only when it can
+#   Android   raylib built with the NDK, the APK, and the game played on an x86_64 emulator (captures, keys, lifecycle)
+#   iOS       the iOS host in the simulator: the game's code on the headless platform (raylib has no iOS platform)
+name: platforms
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays, on main
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'platforms/**'
+      - '.github/workflows/platforms.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platforms-${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 22
+  DOTNET_NOLOGO: '1'
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+
+jobs:
+  macos:
+    name: macOS (tests, OpenGL diagnosis)
+    runs-on: macos-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: dotnet build MicroEngine.slnx -c Release
+      - name: .NET tests (headless, and native audio device; the keyboard test is Linux-only)
+        run: |
+          dotnet test MicroEngine.slnx -c Release --no-build --filter "TestCategory!=Native" --logger trx --results-directory test-results
+          dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
+      - if: always()
+        run: node .github/scripts/test-summary.mjs test-results ".NET tests on macOS"
+      - name: OpenGL probe
+        id: probe
+        run: |
+          clang -fobjc-arc -Wno-deprecated-declarations platforms/macos/gl-probe.m -framework OpenGL -framework Metal -framework Foundation -o "$RUNNER_TEMP/gl-probe"
+          "$RUNNER_TEMP/gl-probe" | tee probe.md | tee -a "$GITHUB_STEP_SUMMARY"
+          if grep -q "^| GLFW's: accelerated required | .*context created" probe.md; then echo "window=yes" >> "$GITHUB_OUTPUT"; else echo "window=no" >> "$GITHUB_OUTPUT"; fi
+      - name: Scripted captures (completeness and size against the Linux reference)
+        if: steps.probe.outputs.window == 'yes'
+        run: node web/tests/desktop.mjs --out native-captures --reference web/tests/reference/linux-x64.json --names-only | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Scripted captures not attempted
+        if: steps.probe.outputs.window != 'yes'
+        run: |
+          echo "::notice::No accelerated OpenGL renderer on this runner, so GLFW (raylib) cannot create a window; native captures skipped (see the probe in the summary)."
+          echo "Native captures skipped: no accelerated OpenGL renderer (GLFW requires one)." >> "$GITHUB_STEP_SUMMARY"
+      - if: always() && steps.probe.outputs.window == 'yes'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-captures
+          path: native-captures/desktop
+          retention-days: 7
+
+  android:
+    name: Android (emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: '21'
+      - name: Pinned versions
+        run: sed 's/[[:space:]]*#.*$//' platforms/android/toolchain.env | grep '=' >> "$GITHUB_ENV"
+      - name: Toolchain (NDK, android workload)
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" > /dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+          dotnet workload install android > /dev/null
+          { echo "### Android toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^android ' | tr -s ' ')"; echo "- NDK $NDK_VERSION, Java $(java -version 2>&1 | head -1)"; echo; } >> "$GITHUB_STEP_SUMMARY"
+      - run: platforms/android/build-raylib.sh
+      - name: APK
+        run: |
+          dotnet build platforms/android -c Release -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME"
+          apk=$(ls platforms/android/bin/MeadowRun/Release/net10.0-android/*-Signed.apk)
+          echo "APK=$apk" >> "$GITHUB_ENV"
+          echo "- APK: $(basename "$apk"), $(du -h "$apk" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Play on the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.EMULATOR_API }}
+          target: google_apis
+          arch: x86_64
+          emulator-options: -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+          disable-animations: true
+          script: |
+            node platforms/android/device-checks.mjs --apk "$APK" --out android-checks
+            node web/tests/desktop.mjs --skip-run --games MeadowRun --out android-checks --reference web/tests/reference/linux-x64.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-checks
+          path: android-checks
+          retention-days: 7
+
+  ios:
+    name: iOS (simulator)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Toolchain (ios workload, Xcode)
+        run: |
+          dotnet workload install ios > /dev/null
+          { echo "### iOS toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^ios ' | tr -s ' ')"; echo "- $(xcodebuild -version | tr '\n' ' ')"; echo; } >> "$GITHUB_STEP_SUMMARY"
+      - run: dotnet build games/MeadowRun -c Release
+      - name: App for the simulator
+        run: |
+          dotnet build platforms/ios -c Release
+          app=$(ls -d platforms/ios/bin/MeadowRun/Release/net10.0-ios/iossimulator-arm64/*.app)
+          echo "APP=$app" >> "$GITHUB_ENV"
+          echo "- App: $(basename "$app"), $(du -sh "$app" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+      - run: platforms/ios/simulator-checks.sh "$APP" MeadowRun

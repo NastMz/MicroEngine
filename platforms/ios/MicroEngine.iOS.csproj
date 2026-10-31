@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Experimental iOS host (platforms/README.md): runs the -p:Game=<Id> game (default MeadowRun) on the headless
+       platform in the iOS simulator. raylib 6.0 has no iOS platform, so nothing is drawn yet. Needs macOS, Xcode and
+       the ios workload. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MicroEngine.iOS</RootNamespace>
+    <ApplicationId>dev.microengine.$(Game.ToLowerInvariant())</ApplicationId>
+    <ApplicationTitle>$(GameTitle)</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">iossimulator-arm64</RuntimeIdentifier>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- No raylib library exists for iOS: keep the package's desktop builds out of the app. -->
+    <PackageReference Include="Raylib-cs" Version="[8.1.0]" ExcludeAssets="native" />
+    <BundleResource Include="$(GameDir)scripts/*.script" Link="scripts/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
