@@ -85,13 +85,19 @@ jobs:
             echo "::error::main moved while the release was being verified; nothing was deployed. Run the release again."
             exit 1
           fi
-      - name: Vercel configured?
+      - name: Vercel configured, demos released?
         id: configured
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
             echo "::notice::Vercel is not configured (VERCEL_TOKEN secret, VERCEL_ORG_ID and VERCEL_PROJECT_ID variables); nothing deployed."
             echo "ok=false" >> "$GITHUB_OUTPUT"
             [ -z "$RELEASE" ] || { echo "::error::A release cannot be published without a deployment."; exit 1; }
+          elif [ "$DEMOS_SOURCE" = release ] && ! gh api "repos/$GITHUB_REPOSITORY/releases/latest" --silent 2> /dev/null; then
+            # Before the first demo release, production keeps its current deployment: nothing to publish with.
+            echo "::warning::No demo release is published yet, so production was left unchanged. Publish the first one with the release workflow (docs/ci.md, \"First release\")."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
           else
             echo "ok=true" >> "$GITHUB_OUTPUT"
           fi
