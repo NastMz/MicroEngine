@@ -91,3 +91,6 @@ captures/
 
 # MicroEngine web packages (web/build.sh)
 dist/
+
+# Local demo artifact store (site/scripts/demos.mjs, DEMOS_STORE=dir:...)
+.demo-store/

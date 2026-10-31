@@ -23,6 +23,7 @@
     "tar": "7.5.22"
   },
   "devDependencies": {
+    "@vercel/routing-utils": "6.6.0",
     "puppeteer-core": "25.13.0"
   }
 }

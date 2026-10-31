@@ -1,10 +1,11 @@
 // A local stand-in for Vercel's static hosting, used by the browser checks: serves site/dist with the headers from
 // vercel.json, trailing-slash redirects, directory index files and the 404 page. It approximates the platform; it
-// is not Vercel (no edge compression, no CDN caching).
+// is not Vercel (no edge compression, no CDN caching), but its header rules are compiled by Vercel's own library.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getTransformedRoutes } from '@vercel/routing-utils';
 
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const types = {
@@ -14,14 +15,19 @@ const types = {
   '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.woff2': 'font/woff2', '.woff': 'font/woff', '.dat': 'application/octet-stream',
 };
 
-/** vercel.json `source` patterns as regular expressions (the subset this site uses: literals and regex groups). */
+/**
+ * The header rules of vercel.json as Vercel compiles them: `source` uses Vercel's own path syntax, not plain
+ * regular expressions, so the rules are converted by Vercel's routing library, the same one `vercel build` uses.
+ */
 export function headerRules(config) {
-  return (config.headers ?? []).map(rule => ({ pattern: new RegExp(`^${rule.source}$`), headers: rule.headers }));
+  const { routes, error } = getTransformedRoutes({ headers: config.headers ?? [] });
+  if (error) throw new Error(`vercel.json headers: ${error.message}`);
+  return routes.filter(route => route.headers && !route.status).map(route => ({ pattern: new RegExp(route.src), headers: route.headers }));
 }
 
 export function headersFor(rules, pathname) {
   const result = {};
-  for (const rule of rules) if (rule.pattern.test(pathname)) for (const { key, value } of rule.headers) result[key] = value;
+  for (const rule of rules) if (rule.pattern.test(pathname)) Object.assign(result, rule.headers);
   return result;
 }
 

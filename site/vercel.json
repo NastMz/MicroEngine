@@ -5,6 +5,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "trailingSlash": true,
+  "git": { "deploymentEnabled": false },
   "headers": [
     {
       "source": "/(.*)",
@@ -24,11 +25,11 @@
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     },
     {
-      "source": "/play/([A-Za-z]+)/_framework/(.+)[.]([a-z0-9]{10})[.](wasm|js)",
+      "source": "/play/([A-Za-z]+)/_framework/(.+)\\.([a-z0-9]{10})\\.(wasm|js)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     },
     {
-      "source": "/play/(.+)[.]wasm",
+      "source": "/play/(.+)\\.wasm",
       "headers": [{ "key": "Content-Type", "value": "application/wasm" }]
     }
   ]
