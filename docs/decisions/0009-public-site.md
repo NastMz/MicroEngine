@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted (WEB-2).
+Accepted (WEB-2). How demo packages are versioned and delivered is superseded by
+[ADR 0010](0010-delivery-pipeline.md).
 
 ## Context
 

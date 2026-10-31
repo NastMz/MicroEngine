@@ -110,3 +110,17 @@ parallelism. T3-T7 share the site's files and stay inline.
   packed and pinned (sha256 2ca15d76…). Evidence: dotnet test 279/279; npm test 20/20; browser suite 732 checks
   pass in Chrome and Firefox against the pinned archive; production-style build with a dummy token passes all
   exposure checks. Not done (owner): push, GitHub release, Vercel project, final licence text.
+- L12 (2026-10-31) Owner request: automated CI/CD with GitHub Actions and Vercel so that merging an approved PR builds,
+  validates and publishes without manual steps; rebuild demos only when engine, games or web infrastructure change;
+  reuse artifacts otherwise; new games through the registry; hashed manifest; exact demo versions per commit; never
+  deploy a site that references missing artifacts; previews and rollback; keep the repository private; evaluate
+  `vercel build` + `vercel deploy --prebuilt`; keep WEB-1 scripts as tools; no push or deployment yet.
+- L13 Done: per-game content keys (Git blob ids of inputs, line-ending independent), `demo-artifacts` prerelease as an
+  immutable store (archive + manifest with archive and per-file SHA-256), `plan`/`publish`/`fetch`/`key` commands,
+  lock file and tag releases removed; one `pipeline.yml` (plan, engine tests, demo build matrix from the registry,
+  site checks, prebuilt preview/production deploy) and `rollback.yml`; Git deployments disabled. Found: the
+  `vercel.json` header sources used `[.]`, which Vercel's path syntax treats as literal brackets, so the immutable
+  cache and wasm content-type rules would not have applied; fixed and now tested with Vercel's routing library.
+  Evidence: npm test 24/24; actionlint clean; plan outputs simulated; local dir-store publish/reuse/fetch and site
+  build; `vercel build` run locally with placeholder project settings. Not run: the workflows on GitHub, any Vercel
+  deployment.

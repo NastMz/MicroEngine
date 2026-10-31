@@ -184,3 +184,6 @@ captures byte for byte.
 3. `web/build.sh MyGame`, then `node web/serve.mjs dist/web` and play it.
 4. Add it to `games` and to the quitting script table in `web/tests/run.mjs`, add scenarios to
    `web/tests/scenarios.json` (and its save-folder variable to `desktop.mjs`), and run the tests.
+5. Give it a page: add its entry to `site/src/data/games.ts` (`npm test` in `site/` fails until the site and the
+   registry list the same games). On merge, the pipeline builds, stores and publishes its package
+   ([publishing the site](../docs/deployment.md)); no workflow changes.

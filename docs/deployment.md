@@ -1,136 +1,147 @@
 # Publishing the site
 
-How the public site (`site/`) is built and published: the landing page, one page per demo with the playable
-WebAssembly build, and the documentation generated from the repository's Markdown. The decisions behind it are
-in [ADR 0009](decisions/0009-public-site.md).
+How the public site (`site/`) is built, checked and published: the landing page, one page per demo with the
+playable WebAssembly build, and the documentation generated from the repository's Markdown. Decisions:
+[ADR 0009](decisions/0009-public-site.md) (the site) and [ADR 0010](decisions/0010-delivery-pipeline.md) (the
+pipeline).
+
+**Publishing an update needs no manual step:** open a pull request, get it approved, merge it. The pipeline builds
+whatever demo changed, checks everything, and deploys production. Local scripts stay as development tools.
 
 ## Pipeline
 
-The four steps are separate, so building the site never needs the .NET, emscripten and raylib toolchain.
+One workflow, [`.github/workflows/pipeline.yml`](../.github/workflows/pipeline.yml):
 
-| Step | What | Where it runs | Output |
-| --- | --- | --- | --- |
-| 1. Build the demos | `web/setup.sh`, `web/build.sh` | a developer machine or the `web demos` workflow (Windows) | `dist/web/<Game>/` |
-| 2. Pack and version | `node site/scripts/demos.mjs pack --version X.Y.Z` | same | `microengine-web-demos-X.Y.Z.tar.gz` and its SHA-256 |
-| 3. Build the site | `npm run build` in `site/` | Vercel, CI or locally (Node.js only) | `site/dist/` |
-| 4. Publish | Vercel deploys `site/dist/` | Vercel | the public site |
+| Job | Runs on | What it does |
+| --- | --- | --- |
+| Plan | every run | computes each game's key and lists the games whose package is not stored yet; detects engine changes |
+| Engine and game tests | engine, game or test changes (always on `main`) | `dotnet test MicroEngine.slnx -c Release` on Windows |
+| Build *Game* | one job per game whose key is not stored | `web/setup.sh` (cached), `web/build.sh <Game>`, then `demos.mjs publish` stores the package |
+| Site | every run, after the above succeed | unit tests, `npm run build` with the stored packages, browser checks in Chrome and Firefox |
+| Deploy | after Site succeeds | `vercel build` and `vercel deploy --prebuilt`: a preview for pull requests, production for `main` |
 
-Step 3 runs `scripts/demos.mjs fetch`, `astro build` and `scripts/check-dist.mjs`. `fetch` takes the demo packages
-from the first of these sources:
-
-| Source | Use |
+| Event | Result |
 | --- | --- |
-| `DEMOS_DIR=<folder>` | packages built locally with `web/build.sh` (development) |
-| `DEMOS_ARCHIVE=<file>` | an archive made by `pack` (checked against `site/demos.lock.json` when the names match) |
-| `site/demos.lock.json` | the pinned release asset: downloaded from GitHub and checked against its SHA-256 |
-| `SITE_DEMOS=none` | no demos (documentation work); demo pages say the games are not in the build. Refused when `VERCEL_ENV=production` |
+| Pull request (this repository) | everything above, then a **preview** deployment linked in a pull request comment |
+| Pull request from a fork | checks only; no credentials, no deployment |
+| Push to `main` (an approved, merged pull request) | everything above, then a **production** deployment |
+| Manual run (Actions → pipeline → Run workflow) | a preview of any branch, or production from `main` only |
 
-Packages are copied without their `.br`/`.gz` copies: Vercel compresses JavaScript, JSON and WebAssembly itself.
-`check-dist.mjs` then fails the build if a demo package, a file listed in a game's `content.txt`, a documentation
-page, the sitemap, the 404 page or the search index is missing. Nothing generated is committed: `site/dist/`,
-`site/public/play/` and `dist/` are ignored.
+### Demo packages are addressed by content
 
-## Publishing a new demo version
+Each game in the registry ([`web/games.props`](../web/games.props)) has a **key**: a hash of the Git blobs of
+everything its web package is built from (the engine under `src/`, the web host and toolchain files, the game's
+folder, its registry entry and `THIRD-PARTY-NOTICES.md`; Markdown files, screenshots and input scripts excluded).
+`node site/scripts/demos.mjs key <Game>` prints a key and its input files.
 
-1. Push a tag `demos-v<version>` (for example `demos-v0.1.0`). The `web demos` workflow
-   ([`.github/workflows/web-demos.yml`](../.github/workflows/web-demos.yml)) builds the four release packages on
-   Windows with the pinned toolchain, packs them and creates the GitHub release with the archive and a
-   `demos.lock.json`. A manual run (`workflow_dispatch`) builds and uploads the archive as a workflow artifact
-   without publishing a release.
-2. Copy the release's `demos.lock.json` to `site/demos.lock.json` and commit it. The site now builds with exactly
-   that archive; a different file fails the SHA-256 check.
+- A change to the engine or the web host changes every key; a change to one game changes only that game's key;
+  documentation and site changes change no key, so those pull requests reuse every stored package and build none.
+- Packages are stored as assets of the prerelease **`demo-artifacts`** of this private repository, one archive and
+  one manifest per game and key (`<Game>-<key>.tar.gz`, `<Game>-<key>.json`). The manifest records the archive's
+  SHA-256, every file's SHA-256, the commit that built it and the toolchain versions. Artifacts are never replaced.
+- `npm run build` fetches, for each game, the artifact of the key computed from the commit being built, checks the
+  archive's SHA-256 and then every extracted file against the manifest, and fails if anything is missing or
+  different. The site therefore always ships the packages built from exactly its own commit's inputs.
+- A new game needs its registry entry in `web/games.props` and its page data in `site/src/data/games.ts`; the plan
+  picks it up and builds it. No workflow changes (a unit test fails if the two lists differ).
 
-Without the workflow, the same steps by hand:
+### Why `vercel build` and `vercel deploy --prebuilt`
 
-```bash
-web/build.sh
-node site/scripts/demos.mjs pack --version 0.1.0 --lock   # writes dist/web-release/ and site/demos.lock.json
-gh release create demos-v0.1.0 dist/web-release/microengine-web-demos-0.1.0.tar.gz
-```
+The site is built inside the pipeline by `vercel build` (which runs `npm ci` and `npm run build` with Vercel's
+project settings and turns `vercel.json` into Vercel's routing configuration), then the output is uploaded with
+`vercel deploy --prebuilt`. Consequences:
 
-If the workflow later runs for a tag whose release already exists, it leaves that release untouched.
+- Vercel never reads the repository: it needs no access to it, and no source file is ever uploaded, only
+  `.vercel/output`. Git deployments are disabled in `site/vercel.json`.
+- A deployment can only exist after every check passed in the same run: missing or altered demo packages fail
+  `npm run build` before anything is uploaded, so production can never reference packages that do not exist.
+- The demo store is read with the run's own `GITHUB_TOKEN`; no GitHub token is stored in Vercel.
 
-### First release: demos-v0.1.0
+### Previews, production and rollback
 
-`demos-v0.1.0` was built and packed by hand (Windows, pinned toolchain) and is the archive the browser tests ran
-against; `site/demos.lock.json` already pins it. To publish it, from the repository root on the machine that holds
-`dist/web-release/`:
+- **Previews** are protected by Vercel's Deployment Protection (on by default for preview deployments), so
+  unapproved changes are not public.
+- **Production** comes only from `main`, so only merged pull requests reach it. To require a person to approve each
+  production deployment as well, add required reviewers to the `production` environment (GitHub → Settings →
+  Environments). Production deployments run one at a time.
+- **Rollback:** Actions → rollback → Run workflow, with the URL or ID of an earlier production deployment
+  (Vercel dashboard → Deployments). It switches production back without building anything
+  ([`.github/workflows/rollback.yml`](../.github/workflows/rollback.yml)); Vercel's dashboard "Instant Rollback"
+  does the same. On the Hobby plan Vercel only allows rolling back to the previous production deployment. To
+  publish an older version of the code, revert the change on `main`: its stored packages are reused.
 
-```bash
-sha256sum dist/web-release/microengine-web-demos-0.1.0.tar.gz   # must equal sha256 in site/demos.lock.json
-gh release create demos-v0.1.0 dist/web-release/microengine-web-demos-0.1.0.tar.gz site/demos.lock.json --target feat/web-site --title "Web demos 0.1.0" --notes "Web packages of the four demos. Pinned by site/demos.lock.json."
-```
+## One-time setup
 
-Use `--target main` instead once `feat/web-site` is merged. If the archive is no longer available, rebuild it
-with the workflow (push the tag) and commit the release's own `demos.lock.json`, since a rebuilt archive has a
-different SHA-256.
+Nothing below has been run yet. These are the values the pipeline needs.
+
+**GitHub** (repository → Settings):
+
+| Where | Name | Value |
+| --- | --- | --- |
+| Secrets and variables → Actions → Secrets | `VERCEL_TOKEN` | a Vercel access token (Vercel → Account Settings → Tokens), scoped to the team that owns the project |
+| Secrets and variables → Actions → Variables | `VERCEL_ORG_ID` | the team or account ID (`orgId` in `site/.vercel/project.json` after `vercel link`) |
+| Secrets and variables → Actions → Variables | `VERCEL_PROJECT_ID` | the project ID (`projectId` in the same file) |
+| Secrets and variables → Actions → Variables (optional) | `BROWSER_CHECKS` | `chrome` to skip Firefox in CI if needed; default `chrome,firefox` |
+| Environments | `preview`, `production` | created automatically on first use; add required reviewers to `production` if wanted |
+| Actions → General → Workflow permissions | | default (read); the workflow asks for `contents: write` only in the jobs that store demo packages |
+
+`GITHUB_TOKEN` is provided by Actions; no personal GitHub token is needed.
+
+**Vercel:**
+
+1. Create the project without connecting a Git repository: in `site/`, run `npx vercel@64.3.1 link` and create a new
+   project. Framework Astro; leave Root Directory empty (the CLI runs inside `site/`).
+2. Optional: environment variable `SITE_URL` with the canonical address if a custom domain is used (the build
+   otherwise uses `VERCEL_PROJECT_PRODUCTION_URL`).
+3. Keep Deployment Protection on for preview deployments (Settings → Deployment Protection).
+4. Copy `orgId` and `projectId` from `site/.vercel/project.json` into the GitHub variables above. `.vercel/` is
+   ignored by Git.
+
+After that, the first push to `main` builds the four packages (one Windows job each; the toolchain is downloaded
+once and then cached), stores them, and deploys production.
+
+## What the build checks before anything is published
+
+`check-dist.mjs` (the last step of `npm run build`) fails when any of these is true:
+
+- a demo package, a file listed in a game's `content.txt`, a licence notice, a documentation page, the roadmap, the
+  sitemap, the 404 page or the search index is missing;
+- a package still carries `.br`/`.gz` copies, or the home page references `/play/` (demos must load on demand);
+- a published page links to `github.com/NastMz`, says `git clone`, names the solution file, or claims open source or
+  an MIT licence;
+- an internal file type is published (`.md`, `.cs`, `.csproj`, `.props`, `.targets`, `.pdb`, `.map`, `.sh`);
+- a package names a user profile folder (build-machine paths), or the value of `DEMOS_TOKEN` or `GITHUB_TOKEN`
+  appears in any file.
+
+The site publishes only the Markdown files listed in `site/src/lib/repo-docs.mjs`; a link from them to any other
+repository file is published as plain text.
 
 ### What a package may contain
 
 Packages are public files. `web/build.sh` compiles them without build-machine paths (no debug information in the
 assemblies, `-ffile-prefix-map` for native code) and adds the third-party notices (`THIRD-PARTY-NOTICES.txt` and
 `licenses/`). Emscripten still writes the location of one .NET runtime file into `dotnet.native.*.js` as a comment,
-so keep the toolchain folder (`MICROENGINE_WEB_TOOLS`) outside your user profile for release builds;
-`check-dist.mjs` fails the site build if a package names a user profile folder.
+so the toolchain folder must be outside any user profile: the pipeline keeps it in the runner's temporary folder.
 
-## Building the site locally
+## Local tools
 
-Requires Node.js 22.23.4 or later.
+The WEB-1 scripts stay for development and diagnosis; publishing never requires them. Node.js 22.23.4 or later.
 
 ```bash
-cd site
-npm ci
-DEMOS_DIR=../dist/web npm run build     # or DEMOS_ARCHIVE=..., or SITE_DEMOS=none
-npm run preview                         # http://localhost:4321/
-npm test                                # documentation loader, capability checks, packaging, vercel.json
-npm run test:browser                    # Chrome and Firefox: layouts, demos, touch emulation (needs a build with demos)
+web/setup.sh && web/build.sh NeonRift                       # build one package locally
+cd site && npm ci
+DEMOS_DIR=../dist/web npm run build                          # site with local packages (not checked against keys)
+SITE_DEMOS=none npm run build                                # documentation only
+DEMOS_STORE=dir:../.demo-store node scripts/demos.mjs publish NeonRift --from ../dist/web   # a local store
+DEMOS_STORE=dir:../.demo-store npm run build                 # the pipeline's verified path, offline
+node scripts/demos.mjs plan                                  # keys (and, with DEMOS_STORE, what is stored)
+npm run preview                                              # http://localhost:4321/
+npm test                                                     # loader, capability rules, keys, store, vercel.json
+npm run test:browser                                         # Chrome and Firefox (needs a build with demos)
 ```
 
-`npm run dev` serves the site with live reload; editing a published Markdown file reloads its page.
-
-## Connecting Vercel
-
-The site has not been deployed yet. The repository is private and stays private; these are the exact steps for
-the owner. Nothing here has been run against Vercel or GitHub yet.
-
-1. **Publish the first demo release** (once): push the tag `demos-v0.1.0` (or run the steps by hand, above), wait
-   for the `web demos` workflow, then commit the release's `demos.lock.json` as `site/demos.lock.json`. Until this
-   file holds a version and SHA-256, every Vercel build fails with "no demo release is pinned".
-2. **Create the token.** GitHub → Settings → Developer settings → Fine-grained personal access tokens:
-   - Resource owner: `NastMz`; Repository access: **Only select repositories** → `MicroEngine`.
-   - Repository permissions: **Contents: Read-only** (Metadata: Read-only is added automatically). Nothing else.
-   - An expiry date you will renew; a new token only needs updating in Vercel.
-3. **Import the project.** Vercel → Add New → Project → import `NastMz/MicroEngine`. The Vercel GitHub app must be
-   allowed to read this private repository (GitHub → Settings → Applications → Vercel → Repository access).
-4. **Root Directory:** `site`. Keep "Include files outside the root directory in the Build Step" enabled: the site
-   reads `docs/`, the games' `CREDITS.md` and screenshots and `samples/HelloEngine` at build time.
-5. The framework (Astro), install command (`npm ci`), build command (`npm run build`) and output directory
-   (`dist`) come from [`site/vercel.json`](../site/vercel.json). Node.js: 22.x or later (`engines` in
-   `site/package.json` asks for 22.23.4 or later).
-6. **Environment variables** (Project → Settings → Environment Variables):
-   - `DEMOS_TOKEN` = the token from step 2, marked **Sensitive**, for Production and Preview. It is read only by
-     `scripts/demos.mjs` during the build, sent only to `api.github.com` (never to the storage host the download
-     redirects to), and never printed. It has no `PUBLIC_` prefix, so Astro cannot put it in pages, and
-     `check-dist.mjs` fails the build if its value appears in any published file.
-   - `SITE_URL` (optional): the canonical address when a custom domain is used. Without it the build uses
-     Vercel's production domain (`VERCEL_PROJECT_PRODUCTION_URL`) for the sitemap, canonical links and social cards.
-7. **Deploy.** A production build fails, rather than publishing a site without games, if the release cannot be
-   downloaded or its SHA-256 differs from the lock file.
-
-### What the build checks before anything is published
-
-`check-dist.mjs` fails the build when any of these is true:
-
-- a demo package, a file listed in a game's `content.txt`, a documentation page, the roadmap, the sitemap, the
-  404 page or the search index is missing;
-- a package still carries `.br`/`.gz` copies, or the home page references `/play/` (demos must load on demand);
-- a published page links to `github.com/NastMz`, says `git clone`, names the solution file, or claims open source or
-  an MIT licence;
-- an internal file type is published (`.md`, `.cs`, `.csproj`, `.props`, `.targets`, `.pdb`, `.map`, `.sh`);
-- the value of `DEMOS_TOKEN` or `GITHUB_TOKEN` appears in any file.
-
-The site publishes only the Markdown files listed in `site/src/lib/repo-docs.mjs`; a link from them to any other
-repository file is published as plain text.
+To read the real store from a workstation, set `DEMOS_STORE=github` and `GITHUB_TOKEN` to a token that can read the
+repository's contents.
 
 ## What Vercel serves
 
@@ -139,25 +150,25 @@ repository file is published as plain text.
 | `/`, `/demos/<game>/`, `/docs/...` | static HTML; URLs end in `/` (`trailingSlash`), so `/docs` redirects to `/docs/` |
 | unknown paths | `404.html` with status 404 |
 | `/_astro/*` | fingerprinted CSS, JavaScript and images: cached for a year (`immutable`) |
-| `/play/<Game>/_framework/*.<hash>.wasm|js` | fingerprinted runtime and assemblies: cached for a year |
+| `/play/<Game>/_framework/*.<hash>.wasm` or `.js` | fingerprinted runtime and assemblies: cached for a year |
 | `/play/<Game>/` (other files) | revalidated on every visit (Vercel's default), `X-Robots-Tag: noindex` |
 | `.wasm` | `Content-Type: application/wasm`; compressed by Vercel (Brotli or gzip) like JS and JSON |
 | `/sitemap-index.xml`, `/og.png` | sitemap of every page; social card image made from a game screenshot at build time |
 
-Every response also carries `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options: SAMEORIGIN` and
-a restrictive `Permissions-Policy`. The demos are embedded from the same origin, so `SAMEORIGIN` allows them.
+`source` patterns in `vercel.json` use Vercel's path syntax, not plain regular expressions (a literal dot is
+`\\.`); the tests compile them with Vercel's own routing library, the one `vercel build` uses. Every response also
+carries `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options: SAMEORIGIN` and a restrictive
+`Permissions-Policy`. The demos are embedded from the same origin, so `SAMEORIGIN` allows them.
 
 Limits to know: a deployment holds about 44 MB of files, about 36 MB of them the four demo packages (Neon Rift's
-OGG music is most of it and is not compressed further). WAV and OGG files are served as they are; Vercel only
-compresses text and WebAssembly types.
+OGG music is most of it). WAV and OGG files are served as they are; Vercel only compresses text and WebAssembly.
 
-## Checks before publishing
+## Not verified yet
 
-- `npm test` and `npm run test:browser` pass (the browser suite also writes full-page screenshots to
-  `site/test-results/` for review).
-- After the first deployment, open each demo page on the deployed site, press Play and check the response headers
-  of a `.wasm` file (`content-type`, `content-encoding`, `cache-control`). These have only been checked against the
-  local stand-in server (`site/tests/serve-dist.mjs`), not on Vercel.
-- Third-party notices: the web packages ship the .NET runtime and Emscripten code (MIT) and the site ships OFL fonts;
-  a notices page or file is recommended before the public launch ([licensing proposal](legal/distribution-proposal.md),
-  section 4).
+- The workflows have not run on GitHub (only linted with actionlint and simulated locally): in particular
+  `web/setup.sh` on a hosted Windows runner, Firefox WebGL on the Linux runner, and the first `demo-artifacts`
+  upload.
+- No deployment exists: `vercel build` was run locally with placeholder project settings (no account), and
+  `vercel deploy`, previews and rollback need the credentials above.
+- After the first deployment, check on the real domain the headers of a `.wasm` file (`content-type`,
+  `content-encoding`, `cache-control`).
