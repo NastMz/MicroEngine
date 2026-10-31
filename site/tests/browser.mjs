@@ -44,8 +44,9 @@ async function launch(name) {
   if (!executablePath) throw new Error(`${name} not found; set ${name.toUpperCase()}_PATH.`);
   return puppeteer.launch(name === 'chrome'
     ? { browser: 'chrome', executablePath, headless: true, args: ['--no-first-run', '--autoplay-policy=user-gesture-required'] }
-    // Without a GPU (CI runners), Firefox only offers WebGL when told to accept software rendering.
-    : { browser: 'firefox', executablePath, headless: true,
+    // Without a GPU (CI runners), Firefox only offers WebGL when told to accept software rendering, and on Linux only
+    // with a display: CI runs the checks under xvfb-run with HEADED=1.
+    : { browser: 'firefox', executablePath, headless: process.env.HEADED !== '1',
         extraPrefsFirefox: { 'webgl.force-enabled': true, 'webgl.disable-fail-if-major-performance-caveat': true } });
 }
 

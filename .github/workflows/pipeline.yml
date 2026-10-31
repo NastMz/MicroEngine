@@ -136,10 +136,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: npm run build
+      # Firefox needs a display for WebGL without a GPU: run under a virtual X server (Mesa software rendering).
       - name: Browser checks (Chrome and Firefox)
         env:
           CHROME_PATH: /usr/bin/google-chrome
-        run: node tests/browser.mjs --browsers "${{ vars.BROWSER_CHECKS || 'chrome,firefox' }}"
+          HEADED: '1'
+          BROWSERS: ${{ vars.BROWSER_CHECKS || 'chrome,firefox' }}
+        run: |
+          command -v xvfb-run > /dev/null || sudo apt-get install -y xvfb
+          xvfb-run -a node tests/browser.mjs --browsers "$BROWSERS"
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
