@@ -96,6 +96,11 @@ jobs:
   draft:
     name: Draft ${{ needs.preflight.outputs.tag }}
     needs: [preflight, build]
+    # When every package of this commit is already stored, the build has nothing to do and is skipped; that is the
+    # normal case for a release of main, so a skipped build must not skip the release.
+    if: >-
+      !cancelled() && needs.preflight.result == 'success'
+      && contains(fromJSON('["success", "skipped"]'), needs.build.result)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -183,6 +188,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
       TAG: ${{ needs.preflight.outputs.tag }}
       PUBLISHED: ${{ needs.publish.result == 'success' }}
+      DRY_RUN: ${{ inputs.dry-run }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -202,3 +208,5 @@ jobs:
         run: |
           node site/scripts/demos.mjs release-discard --tag "$TAG" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "Production and the latest release are unchanged." >> "$GITHUB_STEP_SUMMARY"
+          # A run that was meant to publish and did not must not look green.
+          if [ "$DRY_RUN" != true ]; then echo "::error::$TAG was not published: a step failed or was skipped."; exit 1; fi
