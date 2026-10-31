@@ -44,7 +44,9 @@ async function launch(name) {
   if (!executablePath) throw new Error(`${name} not found; set ${name.toUpperCase()}_PATH.`);
   return puppeteer.launch(name === 'chrome'
     ? { browser: 'chrome', executablePath, headless: true, args: ['--no-first-run', '--autoplay-policy=user-gesture-required'] }
-    : { browser: 'firefox', executablePath, headless: true });
+    // Without a GPU (CI runners), Firefox only offers WebGL when told to accept software rendering.
+    : { browser: 'firefox', executablePath, headless: true,
+        extraPrefsFirefox: { 'webgl.force-enabled': true, 'webgl.disable-fail-if-major-performance-caveat': true } });
 }
 
 async function openPage(browser, label, url, viewport) {
@@ -125,7 +127,10 @@ async function play(browser, label, base) {
     const { page, context, requests, errors } = await openPage(browser, label, `${base}/demos/${slug}/`, viewports.desktop);
     const where = `${label} desktop ${slug}`;
     try {
-      check(`${where}: desktop offers Play`, await stateOf(page) === 'desktop');
+      // Headless browsers on a server may report no mouse; a desktop visitor's key press is the product's own
+      // signal for "keyboard present" (capability.mjs), so the check uses it when needed.
+      if (await stateOf(page) === 'unvalidated') await page.keyboard.press('Shift');
+      check(`${where}: desktop offers Play`, await stateOf(page) === 'desktop', await stateOf(page));
       const idleControls = await page.$$eval('.toolbar .button', buttons => buttons.filter(b => b.getClientRects().length).map(b => b.textContent));
       check(`${where}: game controls stay hidden until a game is loaded`, idleControls.length === 0, idleControls.join(', '));
       check(`${where}: nothing from the package before Play`, !requests.some(p => p.startsWith(`/play/`)));
