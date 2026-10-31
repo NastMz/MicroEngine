@@ -64,13 +64,13 @@ releases), `actionlint` (workflows). Delivery strategy: ask-on-risk; work-unit c
 
 | ID | Specs | Route | Status | Commit |
 | --- | --- | --- | --- | --- |
-| T1 | S1, S9 | inline | done: audit from runs of 2026-10-31 (Log L2) | — |
-| T2 | S2, S6, S7 | inline | pending: planner checks (windows split, site, advisory macOS/mobile) | |
-| T3 | S2, S6 | inline | pending: evidence keys and lookup (`evidence.mjs`) | |
-| T4 | S4, S5 | inline | pending: demo releases, candidate/release sources (`demos.mjs`) | |
-| T5 | S2–S8 | inline | pending: workflows (ci, checks, deploy-site, validate, release, platforms) | |
-| T6 | S9 | inline | pending: `ci-cost.mjs` measure and estimate | |
-| T7 | S1, S9–S13 | inline | pending: ADR 0013, evaluation, deployment and operations docs | |
+| T1 | S1, S9 | inline | done: audit from runs of 2026-10-31 (Log L2, L4) | — |
+| T2 | S2, S6, S7 | inline | done: planner checks (windows split, advisory macOS/mobile, workflows lint); 17 tests | 73d057c |
+| T3 | S2, S6 | inline | done: evidence keys and lookup (`evidence.mjs`); 4 tests | 73d057c |
+| T4 | S4, S5 | inline | done: demo releases, keys/candidates/release sources, ci build policy; 5 new tests (12 in file) | 870eeed |
+| T5 | S2–S8 | inline | done: ci, checks, deploy-site, validate, release, platforms (monthly); actionlint clean; not run on GitHub | 0f6bd2f, 1d954a0 |
+| T6 | S9 | inline | done: `ci-cost.mjs` measure and estimate; 6 tests | 75fdf90 |
+| T7 | S1, S9–S13 | inline | done: docs/ci.md, ADR 0013, evaluation, deployment, platforms guide, AGENTS.md | see Log L5 |
 
 ## Log
 
@@ -90,3 +90,15 @@ releases), `actionlint` (workflows). Delivery strategy: ask-on-risk; work-unit c
   latest published release is what production serves; candidates (integration store) only in CI and previews;
   engine-wide changes build one canary game in daily CI, every game in validation and releases; macOS leaves daily
   CI; Windows .NET tests only for engine, backend and build changes; `platforms.yml` monthly plus manual.
+- L4 Measurement correction: job lists with `filter=all` repeat jobs copied into a re-run attempt; counting each
+  executed job once gives $5.17 for the 27 runs (not $5.33). Linux 210 min $1.26, Windows 124 min $1.24, macOS 43 min
+  $2.67 (52 %). The timing API returns zero for this account. Per job: iOS $1.36, macOS probe $0.68, demo builds
+  $0.85, Android $0.53. Bootstrap deadlock found in self-review (main's ci would fail deploying with no release, and
+  a release needs main's ci to pass): production deploys are skipped with a warning until a release exists.
+  Least privilege: draft releases need push access to read, so the release workflow verifies its draft in its own
+  job; deploy-site inherits the caller's permissions (ci: contents read).
+- L5 Verification: `node --test .github/scripts/*.test.mjs` 27 pass; `npm test` in site 30 pass; actionlint v1.7.7
+  clean on all workflows; `demos.mjs plan` read-only against the real store (four keys stored, no release);
+  `ci-cost.mjs estimate` (engine −66 %, game tests −78 %, docs ±0 %; assumed month $9.32 → $4.45). Not run: any new
+  workflow on GitHub (no push authorised); the indispensable runs are listed in docs/evaluations/infra-1.md §4.
+  Next step for the owner: review, push and open a pull request when they choose; after merge, release 0.1.0.

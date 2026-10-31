@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Web demo artifacts for the site, addressed by content (docs/deployment.md, "Pipeline").
+// Web demo artifacts for the site, addressed by content (docs/deployment.md, "Demo packages are addressed by content").
 //
 // Every game in the registry (web/games.props) has a key: a hash of the Git blobs of everything its web package is
 // built from (engine, web host and toolchain files, the game's folder, its registry entry, the third-party
@@ -221,7 +221,7 @@ function githubStore({ repository, token, apiBase = 'https://api.github.com', up
       if (!release) {
         const created = await fetch(`${apiBase}/repos/${repository}/releases`, {
           method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tag_name: releaseTag, name: 'Demo artifacts', prerelease: true, body: 'Web packages of the demos, one per game and input key. Written by the pipeline; do not edit by hand (docs/deployment.md).' }),
+          body: JSON.stringify({ tag_name: releaseTag, name: 'Demo artifacts', prerelease: true, body: 'Web packages of the demos, one per game and input key. Written by CI; do not edit by hand (docs/ci.md).' }),
         });
         if (created.status === 422) await load(); // created meanwhile by another job
         else if (!created.ok) fail(`creating release ${releaseTag}: HTTP ${created.status}.`);

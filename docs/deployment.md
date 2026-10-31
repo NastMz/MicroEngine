@@ -2,75 +2,26 @@
 
 How the public site (`site/`) is built, checked and published: the landing page, one page per demo with the
 playable WebAssembly build, and the documentation generated from the repository's Markdown. Decisions:
-[ADR 0009](decisions/0009-public-site.md) (the site) and [ADR 0010](decisions/0010-delivery-pipeline.md) (the
-pipeline).
+[ADR 0009](decisions/0009-public-site.md) (the site), [ADR 0010](decisions/0010-delivery-pipeline.md) (the
+pipeline) and [ADR 0013](decisions/0013-ci-cost-and-manual-releases.md) (manual releases).
 
-**Publishing an update needs no manual step:** open a pull request, get it approved, merge it. The pipeline builds
-whatever demo changed, checks everything, and deploys production. Local scripts stay as development tools.
+**Publishing is a decision, not a side effect of merging.** Merged documentation and site changes reach production
+on their own, with the demos of the latest release; new demo packages reach it only through the release workflow.
+How CI, full validation and releases work, and what they cost: [CI, validation and releases](ci.md).
 
 ## Pipeline
 
-One workflow, [`.github/workflows/pipeline.yml`](../.github/workflows/pipeline.yml), runs only the checks a change
-needs (see [What runs for a change](#what-runs-for-a-change)), in tiers: the fast tier first, so a broken change never
-occupies a Windows or macOS runner, then the integration tier. The expensive, experimental platforms (macOS native
-rendering, Android, iOS) are a separate workflow, [`platforms.yml`](../.github/workflows/platforms.yml), that never
-takes part in a deployment ([Platform workflow](#platform-workflow)).
+| Event | Site | Demos |
+| --- | --- | --- |
+| Pull request that changes the site or a demo | protected **preview** after its checks (none for forks) | the pull request's packages where built, else the released ones |
+| Push to `main` that changes the published site | **production**, after every needed check passed | the latest release |
+| Push to `main` that only changes code | nothing deployed | nothing published |
+| Release workflow (manual) | **production**, staged, verified file by file, then promoted | the new release, published as the latest |
 
-| Job | Tier | Runs when | What it does |
-| --- | --- | --- | --- |
-| Plan | fast | every run | tests the change planner, decides the checks from the changed paths, computes each game's key and lists the games whose package is not stored yet |
-| .NET tests (Linux) | fast | `dotnet` | `dotnet test MicroEngine.slnx -c Release` without the native tests; skipped tests listed with their reason |
-| .NET tests (Windows) | integration | `dotnet`, after Linux passed | the same on Windows |
-| .NET tests (macOS) | integration | `macos`, after Linux passed | the same on macOS; never blocks a deployment |
-| Native Linux | integration | `native`, after Linux passed | under Xvfb and a PulseAudio null sink: the native keyboard and audio tests, and the 15 scripted scenarios compared with the Linux visual reference |
-| Build *Game* | integration | the game's key is not stored | `web/setup.sh` (cached), `web/build.sh <Game>`, then `demos.mjs publish` stores the package |
-| Site | integration | every run, after the builds | unit tests, `npm run build` with the stored packages, then the browser suites Plan chose, in Chrome and Firefox |
-| Deploy | — | Site passed and no needed check failed | `vercel build` and `vercel deploy --prebuilt`: a preview for pull requests, production for `main` |
-
-A job the change does not need is skipped, and a skipped check never stops a deployment; a failed one always does,
-except macOS. The NuGet package folder is cached per system, keyed on the project files.
-
-| Event | Result |
-| --- | --- |
-| Pull request (this repository) | the checks for the files it changes, then a **preview** deployment linked in a pull request comment |
-| Pull request from a fork | checks only; no credentials, no deployment |
-| Push to `main` (an approved, merged pull request) | the checks for what the push changed since the previous `main`, then a **production** deployment |
-| Manual run (Actions → pipeline → Run workflow) | every check, then a preview of any branch, or production from `main` only |
-
-### What runs for a change
-
-[`.github/scripts/changes.mjs`](../.github/scripts/changes.mjs) maps each changed path to the checks that can catch
-a regression in it; its rules are tested (`node --test .github/scripts/*.test.mjs`). A path no rule knows runs everything, so a
-new folder is never skipped by accident. Manual runs and a missing comparison base also run everything.
-
-| Change | .NET Linux, Windows | .NET macOS | Native Linux | Demo builds | Browser suites | Platform workflow |
-| --- | --- | --- | --- | --- | --- | --- |
-| Engine core (`src/MicroEngine`) | yes | yes | yes | every game (keys change) | all (packages rebuilt) | — |
-| raylib backend (`src/MicroEngine.Raylib`) | yes | yes | yes | every game | all | weekly or manual |
-| One game's code (`games/<Name>`) | yes | — | yes | that game | all | — |
-| A game's Markdown (`games/**/*.md`) | — | — | — | — | layout | — |
-| Engine tests (`tests/MicroEngine.Tests`) | yes | yes | — | — | — | — |
-| Backend tests (`tests/MicroEngine.Raylib.Tests`) | yes | yes | yes | — | — | — |
-| Game tests, samples | yes | — | — | — | — | — |
-| Desktop capture scripts (`web/tests`) | — | — | yes | — | — | — |
-| Web host or toolchain (`web/`) | — | — | — | every game | all | — |
-| Site (`site/`) | — | — | — | — | all | — |
-| Documentation (`docs/`, other Markdown) | — | — | — | — | layout | — |
-| Mobile hosts (`platforms/`, `platforms.yml`) | — | — | — | — | — | on the pull request |
-| Task records, experiments (`odd/`, `experiments/`) | — | — | — | — | — | — |
-| The pipeline, its scripts, build settings | everything | everything | everything | as keys say | all | — |
-
-Browser suites (`site/tests/browser.mjs --suites`): `layout` opens every page at desktop, tablet and phone widths
-and checks the diagrams; `play` loads, plays, restarts and exits each demo; `touch` checks the emulated phone and
-tablet panels. A rebuilt package is always played, whatever the paths say: demo keys, not paths, decide that.
-
-### Platform workflow
-
-[`.github/workflows/platforms.yml`](../.github/workflows/platforms.yml) is the full tier: checks that need expensive
-runners or are not stable yet. It runs every Monday on `main`, on demand (Actions → platforms → Run workflow), and on
-pull requests that change the mobile hosts. A failure there is shown and diagnosed in the run's summary but never
-blocks the pipeline or a deployment. Its jobs and what each one proves are listed in
-[Platforms: what CI proves](guide/platforms.md#what-ci-proves).
+The site deployed by `ci.yml` and `release.yml` is built in [`deploy-site.yml`](../.github/workflows/deploy-site.yml).
+Production refuses anything but released packages (`DEMOS_SOURCE=release`), and it is always staged with
+`--skip-domain` and then made public with `vercel promote`, which also re-enables domain assignment after a
+rollback.
 
 ### Demo packages are addressed by content
 
@@ -81,14 +32,18 @@ folder, its registry entry and `THIRD-PARTY-NOTICES.md`; Markdown files, screens
 
 - A change to the engine or the web host changes every key; a change to one game changes only that game's key;
   documentation and site changes change no key, so those pull requests reuse every stored package and build none.
-- Packages are stored as assets of the prerelease **`demo-artifacts`** of this private repository, one archive and
-  one manifest per game and key (`<Game>-<key>.tar.gz`, `<Game>-<key>.json`). The manifest records the archive's
-  SHA-256, every file's SHA-256, the commit that built it and the toolchain versions. Artifacts are never replaced.
-- `npm run build` fetches, for each game, the artifact of the key computed from the commit being built, checks the
-  archive's SHA-256 and then every extracted file against the manifest, and fails if anything is missing or
-  different. The site therefore always ships the packages built from exactly its own commit's inputs.
+- Integration packages are stored as assets of the prerelease **`demo-artifacts`** of this private repository, one
+  archive and one manifest per game and key (`<Game>-<key>.tar.gz`, `<Game>-<key>.json`). The manifest records the
+  archive's SHA-256, every file's SHA-256, the commit that built it and the toolchain versions. Artifacts are never
+  replaced. A release copies the approved ones into release `v<version>` ([Releases](ci.md#releases)).
+- `npm run build` fetches each game's package from the source `DEMOS_SOURCE` names: `keys` (the package of the
+  key computed from the commit being built; the default for local work), `candidates` (that package when stored,
+  else the released one; CI checks and previews) or `release[:<tag>]` (production). It checks the archive's
+  SHA-256 and then every extracted file against the manifest, and fails if anything is missing or different.
+  `/play/demos.json` records where each package came from.
 - A new game needs its registry entry in `web/games.props` and its page data in `site/src/data/games.ts`; the plan
-  picks it up and builds it. No workflow changes (a unit test fails if the two lists differ).
+  picks it up and builds it; production shows it after the next release. No workflow changes (a unit test fails if
+  the two lists differ).
 
 ### Why `vercel build` and `vercel deploy --prebuilt`
 
@@ -98,26 +53,29 @@ project settings and turns `vercel.json` into Vercel's routing configuration), t
 
 - Vercel never reads the repository: it needs no access to it, and no source file is ever uploaded, only
   `.vercel/output`. Git deployments are disabled in `site/vercel.json`.
-- A deployment can only exist after every check passed in the same run: missing or altered demo packages fail
-  `npm run build` before anything is uploaded, so production can never reference packages that do not exist.
+- A deployment can only exist after every needed check passed (in the same run, or for identical inputs in an
+  earlier one): missing or altered demo packages fail `npm run build` before anything is uploaded, so production
+  can never reference packages that do not exist.
 - The demo store is read with the run's own `GITHUB_TOKEN`; no GitHub token is stored in Vercel.
 
 ### Previews, production and rollback
 
 - **Previews** are protected by Vercel's Deployment Protection (on by default for preview deployments), so
   unapproved changes are not public.
-- **Production** comes only from `main`, so only merged pull requests reach it. To require a person to approve each
+- **Production** comes only from `main` (and from the release workflow, which also deploys `main`'s site), so only
+  merged pull requests reach it. To require a person to approve each
   production deployment as well, add required reviewers to the `production` environment (GitHub → Settings →
   Environments). Production deployments run one at a time.
 - **Rollback:** Actions → rollback → Run workflow, with the URL or ID of an earlier production deployment
   (Vercel dashboard → Deployments). It switches production back without building anything
   ([`.github/workflows/rollback.yml`](../.github/workflows/rollback.yml)); Vercel's dashboard "Instant Rollback"
-  does the same. On the Hobby plan Vercel only allows rolling back to the previous production deployment. To
-  publish an older version of the code, revert the change on `main`: its stored packages are reused.
+  does the same. On the Hobby plan Vercel only allows rolling back to the previous production deployment. Demo
+  releases roll back separately ([Rolling back](ci.md#rolling-back)).
 
 ## One-time setup
 
-Nothing below has been run yet. These are the values the pipeline needs.
+Done for this repository in October 2026 (production deployments ran from the previous pipeline); kept for a new
+project or a rebuild. These are the values the workflows need.
 
 **GitHub** (repository → Settings):
 
@@ -142,8 +100,9 @@ Nothing below has been run yet. These are the values the pipeline needs.
 4. Copy `orgId` and `projectId` from `site/.vercel/project.json` into the GitHub variables above. `.vercel/` is
    ignored by Git.
 
-After that, the first push to `main` builds the four packages (one Windows job each; the toolchain is downloaded
-once and then cached), stores them, and deploys production.
+After that, the first pull request builds any missing package (one Windows job each; the toolchain is downloaded
+once and then cached) and stores it; run the release workflow once ([First release](ci.md#first-release)), since
+production deployments from `main` are skipped until a demo release exists.
 
 ## What the build checks before anything is published
 
@@ -221,10 +180,10 @@ OGG music is most of it). WAV and OGG files are served as they are; Vercel only 
 
 ## Not verified yet
 
-- The workflows have not run on GitHub (only linted with actionlint and simulated locally): in particular
-  `web/setup.sh` on a hosted Windows runner, Firefox WebGL on the Linux runner, and the first `demo-artifacts`
-  upload.
-- No deployment exists: `vercel build` was run locally with placeholder project settings (no account), and
-  `vercel deploy`, previews and rollback need the credentials above.
-- After the first deployment, check on the real domain the headers of a `.wasm` file (`content-type`,
-  `content-encoding`, `cache-control`).
+- The previous pipeline (`pipeline.yml`, until INFRA-1) ran on GitHub: Windows toolchain setup, `demo-artifacts`
+  uploads, Firefox WebGL on Linux and production deployments all worked there.
+- The INFRA-1 workflows (`ci.yml`, `checks.yml`, `deploy-site.yml`, `validate.yml`, `release.yml`) have only been
+  linted with actionlint and their scripts tested locally: evidence lookup through the artifacts API, production
+  staged with `--skip-domain` then `vercel promote`, the rollback after a failed publication, and draft releases
+  through the GitHub API have not run yet ([INFRA-1 evaluation](evaluations/infra-1.md#what-was-not-run)).
+- Check on the real domain the headers of a `.wasm` file (`content-type`, `content-encoding`, `cache-control`).
