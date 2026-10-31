@@ -229,8 +229,8 @@ jobs:
         run: |
           only=(); [ "$GAMES" = all ] || only=(--games "$GAMES")
           xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --out native-captures --reference web/tests/reference/linux-x64.json "${only[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
-          # The default desktop platform, SDL (OpenGL on Mesa here), against the reference all SDL GPU renderers share.
-          xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --backend sdl --out native-captures/sdl --reference web/tests/reference/sdl.json "${only[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+          # The default desktop platform, SDL (OpenGL on Mesa llvmpipe), against its Linux reference.
+          xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --backend sdl --out native-captures/sdl --reference web/tests/reference/sdl-linux-x64.json "${only[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
       - if: failure()
         uses: actions/upload-artifact@v4
         with:

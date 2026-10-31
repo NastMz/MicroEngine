@@ -6,6 +6,7 @@ using MicroEngine.Graphics;
 using MicroEngine.Raylib;
 using MicroEngine.Scenes;
 using MicroEngine.Sdl;
+using System.Diagnostics;
 
 [assembly: DoNotParallelize]
 
@@ -79,16 +80,28 @@ public sealed class PlatformEquivalenceTests
     private static PlatformRequest Request(ProbeGame game) => new(game.Settings) { Hidden = true, FixedStep = true, Mute = true, CaptureScale = 1 };
 
     /// <summary>Runs the probe on a platform and returns the captured frame, or skips when the platform cannot open here.</summary>
-    private static PixelImage Capture(PlatformProfile profile, Func<ProbeGame, PlatformRequest>? request = null)
+    private static PixelImage Capture(PlatformProfile profile) =>
+        TryCapture(profile, out var frame, out var why) ? frame : throw Skip($"{profile.Name} cannot open a window here: {why}");
+
+    private static Exception Skip(string why)
+    {
+        Native.Require(false, why);
+        return new UnreachableException();
+    }
+
+    /// <summary>False, with the reason, when the platform cannot open here (no display, a render driver this system lacks).</summary>
+    private static bool TryCapture(PlatformProfile profile, out PixelImage frame, out string why)
     {
         var game = new ProbeGame();
         IPlatform platform;
-        try { platform = profile.Create((request ?? Request)(game)); }
+        frame = null!;
+        try { platform = profile.Create(Request(game)); }
         catch (InvalidOperationException e)
         {
-            Native.Require(false, $"{profile.Name} cannot open a window here: {e.Message}");
-            throw;
+            why = e.Message;
+            return false;
         }
+        why = "";
         string dir = Path.Combine(Path.GetTempPath(), "microengine-probe-" + Guid.NewGuid().ToString("N"));
         try
         {
@@ -97,7 +110,8 @@ public sealed class PlatformEquivalenceTests
                 var result = GameRunner.Run(game, platform, new RunOptions { Script = new InputScript().Capture(1, "probe.png").QuitAfter(2), CaptureDirectory = dir });
                 Assert.IsNull(result.Error, result.Error?.ToString());
             }
-            return PixelImage.Load(Path.Combine(dir, "probe.png"));
+            frame = PixelImage.Load(Path.Combine(dir, "probe.png"));
+            return true;
         }
         finally { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
     }
@@ -154,15 +168,15 @@ public sealed class PlatformEquivalenceTests
     {
         var reference = Capture(SdlPlatform.Profile);
         var tried = new List<string>();
+        var unavailable = new List<string>();
+        // SDL lists every driver it was built with; the ones this system cannot start are skipped.
         foreach (var driver in SdlPlatform.RenderDrivers.Where(d => d is not ("software" or "gpu")))
         {
-            PixelImage frame;
-            try { frame = Capture(SdlPlatform.CreateProfile(driver)); }
-            catch (AssertInconclusiveException) { continue; }
+            if (!TryCapture(SdlPlatform.CreateProfile(driver), out var frame, out _)) { unavailable.Add(driver); continue; }
             AssertSameColours(reference, frame, $"sdl-{driver}");
             tried.Add(driver);
         }
-        Native.Require(tried.Count >= 2, $"fewer than two GPU drivers could open here ({string.Join(", ", tried)})");
+        Native.Require(tried.Count >= 2, $"fewer than two GPU drivers could open here (opened: {string.Join(", ", tried)}; unavailable: {string.Join(", ", unavailable)})");
     }
 
     [TestMethod]
