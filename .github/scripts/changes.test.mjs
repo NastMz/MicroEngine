@@ -31,6 +31,12 @@ test('the raylib backend also recommends the mobile hosts, which never run autom
   assert.equal(checks.macos, true);
 });
 
+test('the SDL backend and the desktop launcher check the desktops natively and recommend the mobile hosts', () => {
+  for (const file of ['src/MicroEngine.Sdl/SdlPlatform.cs', 'src/MicroEngine.Desktop/DesktopLauncher.cs'])
+    assert.deepEqual(plan([file]), { ...none, dotnet: true, windows: true, native: true, macos: true, mobile: true });
+  assert.deepEqual(plan(['tests/MicroEngine.Desktop.Tests/PlatformEquivalenceTests.cs']), { ...none, dotnet: true, windows: true, native: true, macos: true });
+});
+
 test('tests of one game only run the Linux .NET tests', () => {
   assert.deepEqual(plan(['tests/TrailDuel.Tests/BattleTests.cs']), { ...none, dotnet: true });
   assert.deepEqual(plan(['samples/HelloEngine/Program.cs']), { ...none, dotnet: true });

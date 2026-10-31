@@ -17,6 +17,7 @@ namespace MicroEngine.Desktop.Tests;
 /// These tests open real windows and devices; without a display they are skipped (failed under MICROENGINE_NATIVE_TESTS=1).
 /// </summary>
 [TestClass]
+[TestCategory("Native")]
 public sealed class PlatformEquivalenceTests
 {
     private static readonly Color Background = new(10, 20, 30);

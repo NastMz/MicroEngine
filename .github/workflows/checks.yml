@@ -177,7 +177,7 @@ jobs:
   # The desktop backend for real on Linux: raylib with OpenGL (Mesa) in a virtual X display, the keyboard through the
   # X server, audio through a virtual PulseAudio sink, and the games' scripted runs compared with the Linux reference.
   native-linux:
-    name: Native Linux (raylib, Xvfb)
+    name: Native Linux (SDL and raylib, Xvfb)
     needs: dotnet-linux
     if: >-
       !cancelled() && inputs.native
@@ -217,21 +217,25 @@ jobs:
           pactl set-default-sink microengine
       - run: dotnet build MicroEngine.slnx -c Release
       - name: Keyboard and audio (native tests)
-        run: xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
+        run: |
+          xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
+          xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Desktop.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results "Native tests on Linux"
-      - name: Scripted captures against the Linux reference (${{ inputs.games }})
+      - name: Scripted captures against the Linux and SDL references (${{ inputs.games }})
         if: inputs.games != ''
         env:
           GAMES: ${{ inputs.games }}
         run: |
           only=(); [ "$GAMES" = all ] || only=(--games "$GAMES")
           xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --out native-captures --reference web/tests/reference/linux-x64.json "${only[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+          # The default desktop platform, SDL (OpenGL on Mesa here), against the reference all SDL GPU renderers share.
+          xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --backend sdl --out native-captures/sdl --reference web/tests/reference/sdl.json "${only[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: native-linux-captures
-          path: native-captures/desktop
+          path: native-captures
           retention-days: 7
       - if: inputs.evidence
         run: node .github/scripts/evidence.mjs record native "${{ fromJSON(inputs.keys).native }}" evidence.json
