@@ -48,6 +48,31 @@ node site/scripts/demos.mjs pack --version 0.1.0 --lock   # writes dist/web-rele
 gh release create demos-v0.1.0 dist/web-release/microengine-web-demos-0.1.0.tar.gz
 ```
 
+If the workflow later runs for a tag whose release already exists, it leaves that release untouched.
+
+### First release: demos-v0.1.0
+
+`demos-v0.1.0` was built and packed by hand (Windows, pinned toolchain) and is the archive the browser tests ran
+against; `site/demos.lock.json` already pins it. To publish it, from the repository root on the machine that holds
+`dist/web-release/`:
+
+```bash
+sha256sum dist/web-release/microengine-web-demos-0.1.0.tar.gz   # must equal sha256 in site/demos.lock.json
+gh release create demos-v0.1.0 dist/web-release/microengine-web-demos-0.1.0.tar.gz site/demos.lock.json --target feat/web-site --title "Web demos 0.1.0" --notes "Web packages of the four demos. Pinned by site/demos.lock.json."
+```
+
+Use `--target main` instead once `feat/web-site` is merged. If the archive is no longer available, rebuild it
+with the workflow (push the tag) and commit the release's own `demos.lock.json`, since a rebuilt archive has a
+different SHA-256.
+
+### What a package may contain
+
+Packages are public files. `web/build.sh` compiles them without build-machine paths (no debug information in the
+assemblies, `-ffile-prefix-map` for native code) and adds the third-party notices (`THIRD-PARTY-NOTICES.txt` and
+`licenses/`). Emscripten still writes the location of one .NET runtime file into `dotnet.native.*.js` as a comment,
+so keep the toolchain folder (`MICROENGINE_WEB_TOOLS`) outside your user profile for release builds;
+`check-dist.mjs` fails the site build if a package names a user profile folder.
+
 ## Building the site locally
 
 Requires Node.js 22.23.4 or later.
