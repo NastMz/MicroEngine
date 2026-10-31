@@ -41,8 +41,8 @@ change; "recorded" means it was run and its result kept, once.
 
 Linux checks run on Ubuntu 24.04 x64 under Xvfb; the reference was recorded with Mesa 25.2.8 (llvmpipe) and the
 hosted CI runner reproduced all 138 captures pixel for pixel. On macOS the hosted runner (macOS 26, arm64) builds and
-passes the headless tests, but GLFW cannot create a window there, so native rendering and input on macOS have no
-evidence yet. Wayland
+passes the headless tests, but GLFW finds no suitable OpenGL pixel format on that virtual machine and cannot create a
+window, so native rendering and input on macOS have no evidence yet; they need a Mac with a GPU. Wayland
 sessions, real GPUs and drivers, gamepads, F11 and Alt+Enter fullscreen and high-DPI screens remain to be checked by
 hand before Linux is called supported.
 
