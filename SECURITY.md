@@ -20,5 +20,5 @@ version; the report is credited unless you ask otherwise. There is no bug bounty
 
 ## Supported versions
 
-MicroEngine has not released an SDK yet. Only the latest commit of `main` and the latest demo release receive
+MicroEngine has no versioned engine releases yet. Only the latest commit of `main` and the latest demo release receive
 security fixes.

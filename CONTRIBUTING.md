@@ -1,20 +1,22 @@
 # Contributing to MicroEngine
 
-## Contribution status
+## How contributions work
 
-MicroEngine is **source-available, not open source**: the code is visible, but [LICENSE](LICENSE) reserves all
-rights until the MicroEngine licences are published (they are in legal review). What that means today:
+MicroEngine is open source under the [MIT License](LICENSE). Issues, ideas and pull requests are welcome.
 
-| You can | Not yet |
-| --- | --- |
-| Read the code and fork it on GitHub (GitHub's Terms of Service, section D.5) | Use, copy, modify or redistribute it outside GitHub without the owner's written permission |
-| Open issues: bug reports, questions, ideas ([templates](.github/ISSUE_TEMPLATE)) | Have a pull request merged without a signed contributor agreement |
-| Report security problems privately ([SECURITY.md](SECURITY.md)) | |
-
-**Code contributions.** Pull requests from people outside the project are not merged until a contributor agreement
-exists and you have signed it: it keeps the right to license MicroEngine (including the free SDK) in one place.
-Opening a pull request does not grant MicroEngine any right by itself, and a pull request that copies code or assets
-from elsewhere cannot be accepted. When the agreement is published this section will say how to sign it.
+- **Licence of your contribution.** What you contribute is licensed under the MIT License, the same as the project
+  (inbound = outbound, as GitHub's Terms of Service, section D.6, describe). There is no contributor licence
+  agreement to sign. By opening a pull request you confirm that you wrote the change or have the right to submit it
+  under the MIT License, and that it copies no code or assets under incompatible terms.
+- **Demo games.** `games/` and the games' test projects are not MIT ([games/LICENSE](games/LICENSE)). Fixes to them
+  are welcome; your change is still yours under the MIT License, and the games as a whole stay all rights reserved.
+  New third-party assets need a licence that allows public redistribution (CC0 preferred) and an entry in the
+  game's `CREDITS.md`.
+- **Review.** Maintainers review every pull request and decide what is merged. CI must pass (**CI result**); pull
+  requests from forks run without secrets and need a maintainer's approval to start.
+- **Commits and branches.** Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `ci:`), branches
+  `feat/<topic>`, `fix/<topic>`, `docs/<topic>`. Keep a change focused; tests and documentation travel with it.
+- **Security problems** go through [SECURITY.md](SECURITY.md), never a public issue.
 
 ## Setup
 
