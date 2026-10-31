@@ -12,10 +12,18 @@
 //              node site/scripts/demos.mjs publish MeadowRun [NeonRift ...] [--from dist/web]
 //   fetch    before `astro build`: puts every game's package in site/public/play/<Game>/, from
 //              DEMOS_DIR=<dir>     packages built locally (development; not verified against keys)
-//              the store           the artifact for the game's current key, checked against its manifest
-//                                  (archive SHA-256, then every file's SHA-256)
+//              DEMOS_SOURCE=keys   (default) the integration store's artifact for each game's current key
+//              DEMOS_SOURCE=release[:<tag>]  a demo release (default: the latest published); production only
+//                                  accepts this
+//              DEMOS_SOURCE=candidates       the current key's artifact when stored, else the latest release's
+//            every package is checked against its manifest (archive SHA-256, then every file's SHA-256).
 //            SITE_DEMOS=none builds the site without demos (documentation work); production builds refuse it.
 //   key      prints one game's key and the files it was computed from (diagnosis)
+//   release-*  create, verify, publish, discard or show a demo release (docs/ci.md, "Releases")
+//
+// Two kinds of artifact: integration packages (the store below, filled by daily CI and validation, keyed by
+// content) and approved packages (releases `v<version>`, copies made by the release workflow). Production serves
+// the latest published release only, so merging code never publishes a demo.
 //
 // Stores (DEMOS_STORE): "github" (default in GitHub Actions): assets of the prerelease `demo-artifacts` in this
 // private repository, read and written with GITHUB_TOKEN; "dir:<path>": a local folder (tests, offline work).
@@ -98,8 +106,18 @@ export function demoKey(id, { root = repoRoot } = {}) {
     .filter(({ file }) => !notAnInput(file))
     .sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
   if (!listing.some(({ file }) => file.startsWith(`${game.dir}/`))) fail(`${id}: no files tracked in ${game.dir}.`);
-  const text = ['microengine-demo-key 1', `game ${id}`, `entry ${game.entry}`, ...listing.map(({ blob, file }) => `${blob} ${file}`)].join('\n');
-  return { id, key: sha256(text).slice(0, 16), inputs: listing.map(({ file }) => file) };
+  const lines = listing.map(({ blob, file }) => `${blob} ${file}`);
+  const text = ['microengine-demo-key 1', `game ${id}`, `entry ${game.entry}`, ...lines].join('\n');
+  // The two halves of the key: what every game shares (engine, web host, toolchain) and what is the game's own (its
+  // folder and registry entry). Daily CI uses them to tell an engine-wide change from a change to one game.
+  const own = line => line.slice(41).startsWith(`${game.dir}/`);
+  return {
+    id,
+    key: sha256(text).slice(0, 16),
+    shared: sha256(['shared', ...lines.filter(line => !own(line))].join('\n')).slice(0, 16),
+    own: sha256(['own', game.entry, ...lines.filter(own)].join('\n')).slice(0, 16),
+    inputs: listing.map(({ file }) => file),
+  };
 }
 
 const artifactName = (id, key) => `${id}-${key}`;
@@ -221,30 +239,167 @@ function githubStore({ repository, token, apiBase = 'https://api.github.com', up
   };
 }
 
+// Demo releases (docs/ci.md, "Releases"): a release `v<version>` holds copies of the approved archives and manifests
+// plus release.json, so it never depends on the integration store keeping them. A release is created as a draft,
+// verified, and published only by the release workflow; the latest published release is what production serves.
+// Both kinds of release store give the same handle: { tag, draft, target, has(name), read(name), upload(name, data) }.
+
+/** Releases kept in <dir>/releases/<tag>/ (tests, offline work). */
+function dirReleases(dir) {
+  const root = path.join(dir, 'releases');
+  const stateFile = tag => path.join(root, tag, 'release-state.json');
+  const handle = tag => {
+    const folder = path.join(root, tag);
+    const state = JSON.parse(fs.readFileSync(stateFile(tag), 'utf8'));
+    return {
+      tag, draft: state.draft, target: state.target,
+      has: async name => fs.existsSync(path.join(folder, name)),
+      read: async name => fs.existsSync(path.join(folder, name)) ? fs.readFileSync(path.join(folder, name)) : fail(`${name} is not in release ${tag}.`),
+      upload: async (name, data) => fsp.writeFile(path.join(folder, name), data),
+    };
+  };
+  const exists = tag => fs.existsSync(stateFile(tag));
+  return {
+    describe: `folder ${root}`,
+    latest: async () => {
+      const file = path.join(root, 'LATEST');
+      return fs.existsSync(file) ? handle(fs.readFileSync(file, 'utf8').trim()) : null;
+    },
+    get: async tag => (exists(tag) ? handle(tag) : null),
+    createDraft: async (tag, target) => {
+      if (exists(tag)) fail(`release ${tag} already exists.`);
+      await fsp.mkdir(path.join(root, tag), { recursive: true });
+      await fsp.writeFile(stateFile(tag), JSON.stringify({ draft: true, target }));
+      return handle(tag);
+    },
+    publish: async tag => {
+      const state = JSON.parse(fs.readFileSync(stateFile(tag), 'utf8'));
+      await fsp.writeFile(stateFile(tag), JSON.stringify({ ...state, draft: false }));
+      await fsp.writeFile(path.join(root, 'LATEST'), tag);
+      return handle(tag);
+    },
+    discard: async tag => {
+      if (!exists(tag)) return false;
+      if (!handle(tag).draft) fail(`release ${tag} is published; only drafts are discarded.`);
+      await fsp.rm(path.join(root, tag), { recursive: true, force: true });
+      return true;
+    },
+  };
+}
+
+/** Releases of a (private) GitHub repository. Drafts are found by listing, since they have no tag yet. */
+function githubReleases({ repository, token, apiBase = 'https://api.github.com', uploadBase }) {
+  uploadBase ??= apiBase === 'https://api.github.com' ? 'https://uploads.github.com' : apiBase;
+  const headers = { 'User-Agent': 'microengine-site', Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+  const call = async (method, url, body) => {
+    const response = await fetch(`${apiBase}/repos/${repository}${url}`, { method, headers: { ...headers, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
+    if (!response.ok && response.status !== 404) fail(`GitHub ${method} ${url}: HTTP ${response.status}.`);
+    return response.status === 404 ? null : response.status === 204 ? {} : response.json();
+  };
+  const handle = async release => {
+    const assets = new Map();
+    for (let page = 1; ; page++) {
+      const list = await call('GET', `/releases/${release.id}/assets?per_page=100&page=${page}`);
+      for (const asset of list ?? []) assets.set(asset.name, asset);
+      if (!list || list.length < 100) break;
+    }
+    return {
+      tag: release.tag_name, draft: release.draft, target: release.target_commitish, id: release.id,
+      has: async name => assets.has(name),
+      read: async name => {
+        const asset = assets.get(name) ?? fail(`${name} is not in release ${release.tag_name}.`);
+        const response = await get(asset.url, { ...headers, Accept: 'application/octet-stream' });
+        if (!response.ok) fail(`downloading ${name} from ${release.tag_name}: HTTP ${response.status}.`);
+        return Buffer.from(await response.arrayBuffer());
+      },
+      upload: async (name, data) => {
+        const type = name.endsWith('.json') ? 'application/json' : 'application/gzip';
+        const response = await fetch(`${uploadBase}/repos/${repository}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`, {
+          method: 'POST', headers: { ...headers, 'Content-Type': type }, body: data,
+        });
+        if (!response.ok) fail(`uploading ${name} to ${release.tag_name}: HTTP ${response.status}.`);
+        assets.set(name, await response.json());
+      },
+    };
+  };
+  const find = async tag => {
+    for (let page = 1; ; page++) {
+      const list = await call('GET', `/releases?per_page=100&page=${page}`) ?? [];
+      const found = list.find(r => r.tag_name === tag);
+      if (found || list.length < 100) return found ?? null;
+    }
+  };
+  return {
+    describe: `releases of ${repository}`,
+    latest: async () => { const release = await call('GET', '/releases/latest'); return release && handle(release); },
+    get: async tag => { const release = await find(tag); return release && handle(release); },
+    createDraft: async (tag, target, body = '') => {
+      if (await find(tag)) fail(`release ${tag} already exists.`);
+      return handle(await call('POST', '/releases', { tag_name: tag, target_commitish: target, name: tag, body, draft: true, prerelease: false, make_latest: 'false' }));
+    },
+    publish: async tag => {
+      const release = await find(tag) ?? fail(`release ${tag} does not exist.`);
+      return handle(await call('PATCH', `/releases/${release.id}`, { draft: false, make_latest: 'true' }));
+    },
+    discard: async tag => {
+      const release = await find(tag);
+      if (!release) return false;
+      if (!release.draft) fail(`release ${tag} is published; only drafts are discarded.`);
+      await call('DELETE', `/releases/${release.id}`);
+      return true;
+    },
+  };
+}
+
 /** The artifact store selected by the environment (DEMOS_STORE), or null when none is configured. */
 export function openStore(env = process.env) {
   const choice = env.DEMOS_STORE ?? (env.GITHUB_ACTIONS === 'true' ? 'github' : '');
   if (!choice) return null;
-  if (choice.startsWith('dir:')) return dirStore(path.resolve(choice.slice(4)));
+  if (choice.startsWith('dir:')) {
+    const dir = path.resolve(choice.slice(4));
+    return { ...dirStore(dir), releases: dirReleases(dir) };
+  }
   if (choice === 'github') {
-    return githubStore({
+    const options = {
       repository: env.DEMOS_REPOSITORY ?? env.GITHUB_REPOSITORY ?? 'NastMz/MicroEngine',
       token: env.DEMOS_TOKEN ?? env.GITHUB_TOKEN,
       apiBase: env.GITHUB_API_URL,
       uploadBase: env.DEMOS_UPLOAD_URL,
-    });
+    };
+    return { ...githubStore(options), releases: githubReleases(options) };
   }
   fail(`DEMOS_STORE must be "github" or "dir:<path>", not "${choice}".`);
 }
 
-/** Each registry game with its key and whether its artifact is already stored. */
-export async function plan(store, { root = repoRoot } = {}) {
+/** release.json of a release handle, or null without one. */
+export async function releaseRecord(release) {
+  return release ? JSON.parse((await release.read('release.json')).toString('utf8')) : null;
+}
+
+/**
+ * Each registry game with its key, whether its artifact is stored, what the latest release holds for it, and
+ * whether this run should build it. Policies: "all" builds every missing package (validation, releases); "ci"
+ * builds a missing package only when the game's own inputs differ from its released package, plus the canary game
+ * when the shared inputs (engine, web host, toolchain) differ: one build proves an engine-wide change still compiles
+ * to WebAssembly, and the other games are built by the next validation or release. Without a release, "ci" builds
+ * every missing package.
+ */
+export async function plan(store, { root = repoRoot, policy = 'all', canary } = {}) {
+  const released = (await releaseRecord(store?.releases ? await store.releases.latest() : null))?.games;
   const games = [];
   for (const game of registry(root)) {
-    const { key } = demoKey(game.id, { root });
-    games.push({ id: game.id, key, stored: store ? await store.has(`${artifactName(game.id, key)}.json`) : false });
+    const { key, shared, own } = demoKey(game.id, { root });
+    const stored = store ? await store.has(`${artifactName(game.id, key)}.json`) : false;
+    const was = released?.[game.id] ?? null;
+    const build = !stored && (policy === 'all' || !was || was.own !== own || (game.id === canary && was.shared !== shared));
+    games.push({ id: game.id, key, shared, own, stored, released: was, build });
   }
   return games;
+}
+
+/** The package each game gets in a "candidates" build: its current key when stored or being built, else the release's. */
+export function candidatePackages(games) {
+  return Object.fromEntries(games.map(g => [g.id, g.stored || g.build ? `candidate:${g.key}` : g.released ? `release:${g.released.key}` : 'missing']));
 }
 
 /** Packs the built package of each game and adds it to the store under the game's current key. */
@@ -281,38 +436,63 @@ export async function publish(ids, store, { from = path.join(repoRoot, 'dist', '
   return results;
 }
 
-/** Downloads, verifies and extracts one game's artifact for its current key into `target`. */
-async function fetchArtifact(store, id, key, target) {
+/** Downloads, verifies and extracts one game's artifact for `key` from `source` (a store or a release) into `target`. */
+async function fetchArtifact(source, id, key, target, { describe = source.describe, sha256: expectedSha } = {}) {
   const name = artifactName(id, key);
-  if (!(await store.has(`${name}.json`))) {
-    fail(`no web package of ${id} for key ${key} in ${store.describe}. The pipeline's build-demos job builds it; locally, build with web/build.sh and set DEMOS_DIR.`);
+  if (!(await source.has(`${name}.json`))) {
+    fail(`no web package of ${id} for key ${key} in ${describe}. Daily CI or a release builds it; locally, build with web/build.sh and set DEMOS_DIR.`);
   }
-  const manifest = JSON.parse((await store.read(`${name}.json`)).toString('utf8'));
+  const manifest = JSON.parse((await source.read(`${name}.json`)).toString('utf8'));
   if (manifest.game !== id || manifest.key !== key) fail(`${name}.json describes ${manifest.game} ${manifest.key}, not ${id} ${key}.`);
+  if (expectedSha && manifest.sha256 !== expectedSha) fail(`${name}.json says SHA-256 ${manifest.sha256}, the release records ${expectedSha}.`);
   await fsp.mkdir(cacheDir, { recursive: true });
   const cached = path.join(cacheDir, `${manifest.sha256}.tar.gz`);
   if (!(fs.existsSync(cached) && sha256File(cached) === manifest.sha256)) {
-    const data = await store.read(manifest.archive);
+    const data = await source.read(manifest.archive);
     if (sha256(data) !== manifest.sha256) fail(`${manifest.archive}: SHA-256 is ${sha256(data)}, its manifest says ${manifest.sha256}.`);
     await fsp.writeFile(cached, data);
   }
   await tar.extract({ file: cached, cwd: target, strict: true });
-  const folder = path.join(target, id);
-  const extracted = walk(folder).sort();
-  const expected = Object.keys(manifest.files).sort();
-  if (extracted.join('\n') !== expected.join('\n')) fail(`${id}: the archive's files differ from its manifest.`);
-  for (const file of expected) {
-    if (sha256File(path.join(folder, file)) !== manifest.files[file]) fail(`${id}: ${file} does not match its manifest's SHA-256.`);
-  }
+  verifyFolder(path.join(target, id), manifest);
   return manifest;
 }
 
+/** Fails unless `folder` holds exactly the files of `manifest`, each with its SHA-256. */
+export function verifyFolder(folder, manifest) {
+  const id = manifest.game;
+  const found = fs.existsSync(folder) ? walk(folder).sort() : [];
+  const expected = Object.keys(manifest.files).sort();
+  if (found.join('\n') !== expected.join('\n')) fail(`${id}: the files differ from its manifest.`);
+  for (const file of expected) {
+    if (sha256File(path.join(folder, file)) !== manifest.files[file]) fail(`${id}: ${file} does not match its manifest's SHA-256.`);
+  }
+}
+
+/** A release by tag, or the latest published one for "latest"; fails when it does not exist. */
+async function openRelease(store, tag) {
+  const release = tag === 'latest' ? await store.releases.latest() : await store.releases.get(tag);
+  return release ?? fail(tag === 'latest'
+    ? `no published demo release in ${store.releases.describe}. Publish one with the release workflow (docs/ci.md, "Releases").`
+    : `release ${tag} does not exist in ${store.releases.describe}.`);
+}
+
+/**
+ * Puts every game's package in site/public/play/ from the source DEMOS_SOURCE names:
+ *   keys (default)   the integration store's package for each game's current key
+ *   release[:<tag>]  the packages of a release (default: the latest published); production accepts only this
+ *   candidates       the current key's package when the integration store has it, else the latest release's
+ */
 export async function fetchDemos(env = process.env, { store = openStore(env), root = repoRoot } = {}) {
+  const source = env.DEMOS_SOURCE ?? 'keys';
   if (env.SITE_DEMOS === 'none') {
     if (env.VERCEL_ENV === 'production') fail('SITE_DEMOS=none is not allowed for a production deployment.');
     await fsp.rm(playDir, { recursive: true, force: true });
     return { skipped: true };
   }
+  if (env.VERCEL_ENV === 'production' && (env.DEMOS_DIR || !/^release(:|$)/.test(source))) {
+    fail('production serves released demo packages only: DEMOS_SOURCE=release or release:<tag>.');
+  }
+  if (!['keys', 'candidates'].includes(source) && !/^release(:[\w.+-]+)?$/.test(source)) fail(`DEMOS_SOURCE must be keys, candidates, release or release:<tag>, not "${source}".`);
   const games = registry(root);
   const ids = games.map(g => g.id);
   await fsp.rm(playDir, { recursive: true, force: true });
@@ -326,11 +506,23 @@ export async function fetchDemos(env = process.env, { store = openStore(env), ro
     for (const game of games) record.games[game.id] = { title: game.title, key: 'local' };
   } else {
     if (!store) fail('no demo packages: set DEMOS_DIR to packages built with web/build.sh, DEMOS_STORE to an artifact store, or SITE_DEMOS=none.');
-    record.source = store.describe;
+    let release = null, released = null;
+    if (source !== 'keys') {
+      release = source === 'candidates' ? await store.releases.latest() : await openRelease(store, source.split(':')[1] ?? 'latest');
+      released = await releaseRecord(release);
+      if (release) record.release = release.tag;
+    }
+    record.source = source === 'keys' ? store.describe : source === 'candidates' ? `${store.describe}, else release ${release?.tag ?? '(none)'}` : `release ${release.tag}`;
     for (const game of games) {
       const { key } = demoKey(game.id, { root });
-      const manifest = await fetchArtifact(store, game.id, key, playDir);
-      record.games[game.id] = { title: game.title, key, sha256: manifest.sha256, commit: manifest.commit };
+      const fromStore = source === 'keys' || (source === 'candidates' && await store.has(`${artifactName(game.id, key)}.json`));
+      let manifest;
+      if (fromStore) manifest = await fetchArtifact(store, game.id, key, playDir);
+      else {
+        const entry = released?.games?.[game.id] ?? fail(`${game.id} is not in ${release ? `release ${release.tag}` : 'any published release'} and its current package is not stored.`);
+        manifest = await fetchArtifact(release, game.id, entry.key, playDir, { describe: `release ${release.tag}`, sha256: entry.sha256 });
+      }
+      record.games[game.id] = { title: game.title, key: manifest.key, sha256: manifest.sha256, commit: manifest.commit, from: !fromStore ? `release ${release.tag}` : source === 'keys' ? 'store' : 'candidate' };
     }
   }
   checkPackages(playDir, ids);
@@ -339,17 +531,98 @@ export async function fetchDemos(env = process.env, { store = openStore(env), ro
   return record;
 }
 
+/** `1.2.0` or `v1.2.0` → `v1.2.0`; anything else fails. */
+export function versionTag(version) {
+  const match = /^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/.exec(String(version ?? '').trim());
+  return match ? `v${match[1]}` : fail(`"${version}" is not a version (1.2.0, v1.2.0 or 1.2.0-rc.1).`);
+}
+
+/**
+ * Creates the draft release `tag` for the commit checked out at `root`: every game's package for that commit's key,
+ * copied from the integration store after checking the archive against its manifest, plus release.json. Fails,
+ * leaving no draft behind, when a package is missing or altered or the tag already belongs to a published release;
+ * an earlier draft with the same tag (a failed attempt) is replaced.
+ */
+export async function createRelease(store, tag, { root = repoRoot, commit = gitCommit(root) } = {}) {
+  const existing = await store.releases.get(tag);
+  if (existing && !existing.draft) fail(`release ${tag} is already published; choose a new version.`);
+  if (existing) await store.releases.discard(tag);
+  const games = {}, files = [];
+  for (const game of registry(root)) {
+    const { key, shared, own } = demoKey(game.id, { root });
+    const name = artifactName(game.id, key);
+    if (!(await store.has(`${name}.json`))) fail(`${game.id}: no package for key ${key} in ${store.describe}; build it first.`);
+    const manifestData = await store.read(`${name}.json`);
+    const manifest = JSON.parse(manifestData.toString('utf8'));
+    if (manifest.game !== game.id || manifest.key !== key) fail(`${name}.json describes ${manifest.game} ${manifest.key}.`);
+    const archive = await store.read(manifest.archive);
+    if (sha256(archive) !== manifest.sha256) fail(`${manifest.archive}: SHA-256 is ${sha256(archive)}, its manifest says ${manifest.sha256}.`);
+    games[game.id] = { title: game.title, key, shared, own, archive: manifest.archive, sha256: manifest.sha256, built: manifest.commit, toolchain: manifest.toolchain };
+    files.push([manifest.archive, archive], [`${name}.json`, manifestData]);
+  }
+  const record = { schema: 1, tag, commit, created: new Date().toISOString(), games };
+  const body = [`Demo packages of ${commit}, published by the release workflow (docs/ci.md).`, '', '| Game | Key | Archive SHA-256 |', '| --- | --- | --- |',
+    ...Object.entries(games).map(([id, g]) => `| ${id} | \`${g.key}\` | \`${g.sha256}\` |`)].join('\n');
+  const draft = await store.releases.createDraft(tag, commit, body);
+  try {
+    for (const [name, data] of files) await draft.upload(name, data);
+    await draft.upload('release.json', Buffer.from(`${JSON.stringify(record, null, 2)}\n`));
+  } catch (error) {
+    await store.releases.discard(tag).catch(() => {});
+    throw error;
+  }
+  return record;
+}
+
+/** Checks a built site's play/ folder against a release: every game, every file, every SHA-256. */
+export async function verifyRelease(store, tag, playFolder) {
+  const release = await openRelease(store, tag);
+  const record = await releaseRecord(release);
+  for (const [id, entry] of Object.entries(record.games)) {
+    const manifest = JSON.parse((await release.read(`${artifactName(id, entry.key)}.json`)).toString('utf8'));
+    if (manifest.sha256 !== entry.sha256) fail(`${id}: its manifest says ${manifest.sha256}, release.json ${entry.sha256}.`);
+    verifyFolder(path.join(playFolder, id), manifest);
+  }
+  return record;
+}
+
 async function main(argv) {
   const [command, ...rest] = argv;
   const option = name => { const i = rest.indexOf(`--${name}`); return i >= 0 ? rest[i + 1] : undefined; };
   const store = openStore();
   if (command === 'plan') {
-    const games = await plan(store);
-    for (const g of games) console.log(`${g.id.padEnd(14)} ${g.key}  ${g.stored ? 'stored' : 'to build'}`);
-    if (rest.includes('--github-output')) {
-      const missing = games.filter(g => !g.stored).map(g => g.id);
-      fs.appendFileSync(process.env.GITHUB_OUTPUT, `missing=${JSON.stringify(missing)}\nkeys=${JSON.stringify(Object.fromEntries(games.map(g => [g.id, g.key])))}\n`);
+    const policy = option('policy') ?? 'all';
+    if (!['all', 'ci'].includes(policy)) fail(`--policy must be all or ci, not "${policy}".`);
+    const games = await plan(store, { policy, canary: option('canary') });
+    const latest = store?.releases ? await store.releases.latest() : null;
+    console.log(`| Game | Key | Integration store | Latest release (${latest?.tag ?? 'none'}) | This run |\n| --- | --- | --- | --- | --- |`);
+    for (const g of games) {
+      const why = g.build ? 'builds it' : g.stored ? 'reuses it' : `uses the released package (${policy} policy)`;
+      console.log(`| ${g.id} | \`${g.key}\` | ${g.stored ? 'stored' : 'missing'} | ${g.released ? (g.released.key === g.key ? 'same key' : `\`${g.released.key}\``) : '—'} | ${why} |`);
     }
+    if (rest.includes('--github-output')) {
+      const ids = filter => JSON.stringify(games.filter(filter).map(g => g.id));
+      const packages = Object.entries(candidatePackages(games)).map(([id, p]) => `${id}=${p}`).join(' ');
+      fs.appendFileSync(process.env.GITHUB_OUTPUT, [`missing=${ids(g => !g.stored)}`, `build=${ids(g => g.build)}`,
+        `keys=${JSON.stringify(Object.fromEntries(games.map(g => [g.id, g.key])))}`, `release=${latest?.tag ?? ''}`,
+        `packages=${packages}`, `changed=${games.some(g => g.released?.key !== g.key)}`].join('\n') + '\n');
+    }
+  } else if (command === 'release-create') {
+    const tag = versionTag(option('version'));
+    const record = await createRelease(store ?? fail('release-create needs DEMOS_STORE (or GitHub Actions).'), tag);
+    console.log(`Draft release ${tag} of ${record.commit}:`);
+    for (const [id, g] of Object.entries(record.games)) console.log(`- ${id}: key ${g.key}, sha256 ${g.sha256}`);
+    if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `tag=${tag}\n`);
+  } else if (command === 'release-verify') {
+    const record = await verifyRelease(store, option('tag') ?? 'latest', path.resolve(option('dir') ?? playDir));
+    console.log(`${option('dir') ?? playDir} matches release ${record.tag}: ${Object.keys(record.games).join(', ')}, every file checked.`);
+  } else if (command === 'release-publish') {
+    const release = await store.releases.publish(versionTag(option('tag')));
+    console.log(`Published ${release.tag}: it is now the latest release, the one production serves.`);
+  } else if (command === 'release-discard') {
+    console.log((await store.releases.discard(versionTag(option('tag')))) ? `Draft ${option('tag')} discarded.` : `No draft ${option('tag')}.`);
+  } else if (command === 'release-show') {
+    console.log(JSON.stringify(await releaseRecord(await openRelease(store, option('tag') ?? 'latest')), null, 2));
   } else if (command === 'publish') {
     if (!store) fail('publish needs DEMOS_STORE (or GitHub Actions).');
     const ids = rest.filter(a => !a.startsWith('--') && a !== option('from'));
@@ -365,7 +638,16 @@ async function main(argv) {
     const { key, inputs } = demoKey(rest[0] ?? fail('key needs a game id.'));
     console.log(`${key}\n${inputs.length} input files:\n${inputs.join('\n')}`);
   } else {
-    console.log('usage: node site/scripts/demos.mjs plan [--github-output] | publish <Game...> [--from DIR] | fetch | key <Game>');
+    console.log(['usage: node site/scripts/demos.mjs <command>',
+      '  plan [--policy all|ci] [--canary <Game>] [--github-output]   keys, stored packages, what to build',
+      '  publish <Game...> [--from DIR]                               add built packages to the integration store',
+      '  fetch                                                        packages for the site build (DEMOS_SOURCE)',
+      '  key <Game>                                                   one key and its input files',
+      '  release-create --version <1.2.0>                             draft release of this commit\'s packages',
+      '  release-verify [--tag <v1.2.0>|latest] [--dir <play folder>] check built files against a release',
+      '  release-publish --tag <v1.2.0>                               publish a draft; it becomes the latest',
+      '  release-discard --tag <v1.2.0>                               delete a draft',
+      '  release-show [--tag <v1.2.0>|latest]                         print release.json'].join('\n'));
     process.exitCode = command ? 1 : 0;
   }
 }
