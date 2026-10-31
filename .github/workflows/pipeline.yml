@@ -153,11 +153,14 @@ jobs:
           retention-days: 7
 
   deploy:
-    name: Deploy ${{ (github.event_name == 'push' || inputs.target == 'production') && 'production' || 'preview' }}
+    name: Deploy
     needs: site
+    # always(): without it GitHub adds success(), which also looks at Site's own needs, so a skipped demo build (no
+    # package to rebuild) would skip the deployment too. Site's result is checked explicitly instead.
     # Pull requests from forks never get deployment credentials.
     if: >-
-      needs.site.result == 'success'
+      always()
+      && needs.site.result == 'success'
       && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     environment:
