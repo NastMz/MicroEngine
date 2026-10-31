@@ -3,7 +3,9 @@
 ## Status
 
 Accepted (WEB-2). How demo packages are versioned and delivered is superseded by
-[ADR 0010](0010-delivery-pipeline.md).
+[ADR 0010](0010-delivery-pipeline.md). The repository became public on 2026-10-31
+([ADR 0015](0015-mit-engine-reserved-demos.md)): the statements below about a private repository and internal links
+describe the situation when this record was written.
 
 ## Context
 

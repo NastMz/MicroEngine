@@ -4,6 +4,11 @@ Internal record. Date: 2026-10-31. Branch `feat/public-1` (from `feat/ci-cost`, 
 [odd/tasks/public-1.md](../../odd/tasks/public-1.md). Decisions: [ADR 0014](../decisions/0014-public-repository-ci.md)
 (public CI), [ADR 0015](../decisions/0015-mit-engine-reserved-demos.md) (licensing).
 
+**Outcome (2026-10-31).** The owner chose a new public repository instead of rewriting this one: the old
+repository was archived privately, `NastMz/MicroEngine` was recreated public with the history rebuilt from
+`71115bc` (the two grafts of section 3), configured as in section 14, and release `v0.1.0` was published. Sections 3
+and 15 record the analysis that led there; the hashes they quote belong to the archived history.
+
 **Measured** means read from Git or the GitHub API in this study. **Not verified** names evidence that could not be
 obtained here. Nothing in this study changed the repository's visibility, settings, releases or history.
 

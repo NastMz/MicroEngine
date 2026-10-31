@@ -26,7 +26,7 @@
 // the latest published release only, so merging code never publishes a demo.
 //
 // Stores (DEMOS_STORE): "github" (default in GitHub Actions): assets of the prerelease `demo-artifacts` in this
-// private repository, read and written with GITHUB_TOKEN; "dir:<path>": a local folder (tests, offline work).
+// repository, read and written with GITHUB_TOKEN; "dir:<path>": a local folder (tests, offline work).
 // Each artifact is <Game>-<key>.tar.gz plus <Game>-<key>.json, written in that order: the manifest marks a
 // complete artifact. Artifacts are never replaced.
 // DEMOS_OVERLAY=<dir>: a folder of artifacts read before the store and never written through it. A fork pull request
