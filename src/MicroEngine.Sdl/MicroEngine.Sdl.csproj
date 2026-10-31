@@ -9,6 +9,5 @@
     <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
     <!-- OGG Vorbis decoding in managed code, so music streams on every platform without another native library. -->
     <PackageReference Include="NVorbis" Version="[0.10.5]" />
-    <InternalsVisibleTo Include="MicroEngine.Sdl.Tests" />
   </ItemGroup>
 </Project>

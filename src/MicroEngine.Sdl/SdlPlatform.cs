@@ -34,7 +34,8 @@ public sealed unsafe class SdlPlatform : IPlatform
     private long _frames;
     private bool _closeRequested, _suspended, _disposed;
     // Written by the lifecycle watch on the thread the system uses to send the event.
-    private volatile bool _background, _wentToBackground;
+    private volatile bool _background;
+    private int _wentToBackground; // 1 after a trip to the background the loop has not seen; exchanged atomically
     private GCHandle _self;
 
     /// <summary>The SDL3 platform as a catalog entry. SDL3 is packaged for Windows, Linux, macOS, Android and iOS, not for browsers.</summary>
@@ -143,7 +144,8 @@ public sealed unsafe class SdlPlatform : IPlatform
         {
             case SDL_EventType.SDL_EVENT_WILL_ENTER_BACKGROUND:
             case SDL_EventType.SDL_EVENT_DID_ENTER_BACKGROUND:
-                platform._background = platform._wentToBackground = true;
+                platform._background = true;
+                Interlocked.Exchange(ref platform._wentToBackground, 1);
                 break;
             case SDL_EventType.SDL_EVENT_DID_ENTER_FOREGROUND:
                 platform._background = false;
@@ -159,8 +161,7 @@ public sealed unsafe class SdlPlatform : IPlatform
         _frames++;
         _input.BeginFrame();
         _touch.BeginFrame();
-        bool suspended = _background || _wentToBackground;
-        _wentToBackground = false;
+        bool suspended = Interlocked.Exchange(ref _wentToBackground, 0) == 1 || _background;
         // Fingers and keys held when the app left are never released by the system.
         if (suspended && !_suspended) _input.ReleaseAll();
         _suspended = suspended;

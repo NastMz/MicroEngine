@@ -35,7 +35,7 @@ on:
         type: string
         default: all
       native:
-        description: raylib on Linux under Xvfb, native tests and scripted captures
+        description: SDL and raylib on Linux under Xvfb, native tests and scripted captures
         type: boolean
         default: false
       build:
@@ -174,8 +174,8 @@ jobs:
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results ".NET tests on macOS (informative)"
 
-  # The desktop backend for real on Linux: raylib with OpenGL (Mesa) in a virtual X display, the keyboard through the
-  # X server, audio through a virtual PulseAudio sink, and the games' scripted runs compared with the Linux reference.
+  # The desktop backends for real on Linux: SDL and raylib with OpenGL (Mesa) in a virtual X display, the keyboard through the
+  # X server, audio through a virtual PulseAudio sink, and the games' scripted runs compared with each backend's Linux reference.
   native-linux:
     name: Native Linux (SDL and raylib, Xvfb)
     needs: dotnet-linux

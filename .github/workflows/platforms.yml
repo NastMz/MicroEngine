@@ -169,7 +169,7 @@ jobs:
           disk-size: 4G
           # The action runs each line on its own, so the loop stays on one line.
           script: |
-            status=0; for game in MeadowRun NeonRift; do apk=$(ls platforms/android/bin/$game/Release/net10.0-android/*-Signed.apk); node platforms/android/device-checks.mjs --apk "$apk" --game $game --out android-checks/$game || status=1; node web/tests/desktop.mjs --skip-run --games $game --out android-checks/$game --reference web/tests/reference/sdl.json | tee -a "$GITHUB_STEP_SUMMARY" || status=1; done; exit $status
+            set -o pipefail; status=0; for game in MeadowRun NeonRift; do apk=$(ls platforms/android/bin/$game/Release/net10.0-android/*-Signed.apk); node platforms/android/device-checks.mjs --apk "$apk" --game $game --out android-checks/$game || status=1; node web/tests/desktop.mjs --skip-run --games $game --out android-checks/$game --reference web/tests/reference/sdl.json | tee -a "$GITHUB_STEP_SUMMARY" || status=1; done; exit $status
       - if: always()
         uses: actions/upload-artifact@v4
         with:

@@ -10,7 +10,7 @@
 // Checks (docs/ci.md, "What runs for a change"):
 //   dotnet     headless .NET tests on Linux, the fast tier every later .NET job waits for
 //   windows    the same tests on Windows: engine, backend and build changes (games are managed code Linux already ran)
-//   native     raylib on Linux under Xvfb: native tests and scripted captures against the Linux reference
+//   native     SDL and raylib on Linux under Xvfb: native tests and scripted captures against their Linux references
 //   browser    none | layout: every page at three widths | full: layout plus playing each demo; anything but none
 //              also means the published site changed, so main deploys it
 //   workflows  actionlint over every workflow

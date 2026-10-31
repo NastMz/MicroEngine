@@ -191,6 +191,25 @@ public sealed class PlatformCompositionTests
     }
 
     [TestMethod]
+    public void ResumingKeepsMusicTheGamePausedItself()
+    {
+        var audio = new RecordingAudio();
+        var platform = new SuspendablePlatform(audio);
+        var game = new CountingGame();
+        var loop = new GameLoop(game, platform);
+        Assert.IsTrue(loop.Start());
+        loop.Tick();
+        game.Audio.PauseMusic(true);
+        platform.Suspended = true;
+        loop.Tick();
+        platform.Suspended = false;
+        loop.Tick();
+        CollectionAssert.AreEqual(new[] { true }, audio.Pauses, "the game's own pause stands after resuming");
+        Assert.IsTrue(game.Audio.MusicPaused);
+        loop.Finish();
+    }
+
+    [TestMethod]
     public void PlatformsAreActiveByDefault()
     {
         IPlatform platform = new HeadlessPlatform();

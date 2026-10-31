@@ -211,7 +211,14 @@ public sealed class AudioMixer
         _fadeSpeed = -1f / fadeSeconds;
     }
 
-    public void PauseMusic(bool paused) => _device.PauseMusic(paused);
+    public void PauseMusic(bool paused)
+    {
+        MusicPaused = paused;
+        _device.PauseMusic(paused);
+    }
+
+    /// <summary>Whether music was paused with <see cref="PauseMusic"/>.</summary>
+    public bool MusicPaused { get; private set; }
 
     private void StartMusic(string name)
     {

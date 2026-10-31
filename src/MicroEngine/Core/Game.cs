@@ -97,16 +97,21 @@ public abstract class Game
         AchievementToasts?.Draw(renderer, Font);
     }
 
+    private bool _pausedMusicForSuspension;
+
     internal void Suspend()
     {
-        Audio.PauseMusic(true);
+        // Music the game paused itself stays paused after resuming.
+        _pausedMusicForSuspension = !Audio.MusicPaused;
+        if (_pausedMusicForSuspension) Audio.PauseMusic(true);
         _achievements?.Flush();
         OnSuspended();
     }
 
     internal void Resume()
     {
-        Audio.PauseMusic(false);
+        if (_pausedMusicForSuspension) Audio.PauseMusic(false);
+        _pausedMusicForSuspension = false;
         OnResumed();
     }
 
