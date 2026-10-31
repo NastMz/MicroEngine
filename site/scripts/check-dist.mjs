@@ -57,7 +57,8 @@ const forbiddenText = [
 ];
 const internalFile = /\.(md|cs|csproj|props|targets|pdb|map|sh)$/i;
 // A user profile folder compiled into a package (debug paths, assertion file names) names the build machine's user.
-const userPath = /[A-Za-z]:[\\/]Users[\\/][^\\/\s"]+[\\/]|\/home\/[^/\s"]+\/|\/Users\/[^/\s"]+\//;
+// Hosted CI accounts (runner, runneradmin) are public: third-party assemblies such as Raylib-cs carry them.
+const userPath = /[A-Za-z]:[\\/]Users[\\/](?!runneradmin[\\/])[^\\/\s"]+[\\/]|\/home\/(?!runner\/)[^/\s"]+\/|\/Users\/(?!runner\/)[^/\s"]+\//;
 const textFile = /\.(html|js|mjs|css|json|xml|txt|svg)$/i;
 
 export function checkPublicContent(dist, { secrets = [] } = {}) {
