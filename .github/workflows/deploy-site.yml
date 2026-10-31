@@ -4,10 +4,10 @@
 #   1. `vercel build` (npm ci and npm run build) with DEMOS_SOURCE; production accepts only released packages
 #   2. for release packages: every file in the output checked against the release's SHA-256 values
 #   3. `vercel deploy --prebuilt`; production is staged (--skip-domain), so nothing public changes yet
-#   4. production: `vercel promote` makes the staged deployment public (and re-enables domain assignment after a
-#      rollback); with `publish-release`, that draft release is then published and becomes the latest. If publishing
-#      fails after the switch, production is rolled back to the previous deployment, so the site never serves a demo
-#      release that is not the latest one.
+#   4. production: the staged deployment is promoted (.github/scripts/vercel-promote.sh, Vercel's REST API; this also
+#      re-enables domain assignment after a rollback); with `publish-release`, that draft release is then published
+#      and becomes the latest. If publishing fails after the switch, production is promoted back to the deployment it
+#      served before, so the site never serves a demo release that is not the latest one.
 # Vercel never builds from the repository and no source is uploaded, only .vercel/output.
 name: deploy-site
 
@@ -129,7 +129,10 @@ jobs:
       - name: Make it public
         id: promote
         if: steps.configured.outputs.ok == 'true' && inputs.target == 'production'
-        run: npx --yes "$VERCEL_CLI" promote "${{ steps.deploy.outputs.url }}" --yes --timeout=5m --token="$VERCEL_TOKEN"
+        working-directory: .
+        run: |
+          echo "previous=$(.github/scripts/vercel-promote.sh current)" >> "$GITHUB_OUTPUT"
+          .github/scripts/vercel-promote.sh promote "${{ steps.deploy.outputs.url }}"
       - name: Publish the demo release
         id: publish
         if: steps.configured.outputs.ok == 'true' && inputs.publish-release != ''
@@ -137,8 +140,12 @@ jobs:
         run: node scripts/demos.mjs release-publish --tag "$RELEASE" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Undo the switch (the release was not published)
         if: failure() && steps.promote.outcome == 'success' && inputs.publish-release != ''
+        working-directory: .
+        env:
+          PREVIOUS: ${{ steps.promote.outputs.previous }}
         run: |
-          npx --yes "$VERCEL_CLI" rollback --timeout=5m --token="$VERCEL_TOKEN"
+          if [ -n "$PREVIOUS" ]; then .github/scripts/vercel-promote.sh promote "$PREVIOUS"
+          else echo "::error::No earlier production deployment to return to."; fi
           echo "::error::Release $RELEASE was not published, so production was rolled back to the previous deployment." >> "$GITHUB_STEP_SUMMARY"
       - name: Link the preview on the pull request
         if: steps.configured.outputs.ok == 'true' && github.event_name == 'pull_request'

@@ -26,7 +26,10 @@ jobs:
       VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
       DEPLOYMENT: ${{ inputs.deployment }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
       - name: Roll back production
         run: |
-          npx --yes vercel@64.3.1 rollback "$DEPLOYMENT" --yes --token="$VERCEL_TOKEN"
+          .github/scripts/vercel-promote.sh promote "$DEPLOYMENT"
           echo "Production restored to $DEPLOYMENT" >> "$GITHUB_STEP_SUMMARY"
