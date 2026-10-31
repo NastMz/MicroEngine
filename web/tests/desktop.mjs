@@ -3,13 +3,18 @@
 // the same input, seed and starting point.
 //
 //   node web/tests/desktop.mjs [--out DIR] [--games A,B] [--skip-run]
+//                              [--reference FILE [--names-only]] [--write-reference FILE]
 //
-// Needs the desktop games built (dotnet build MicroEngine.slnx -c Release).
+// --reference also checks the native captures against a platform's visual reference (captures.mjs): every capture
+// present, same size, no visible change. --names-only checks completeness and sizes only, for a platform without
+// its own reference yet. --write-reference records a new reference from this run's captures.
+// On Linux without a display, run it under xvfb-run. Needs the desktop games built (dotnet build MicroEngine.slnx -c Release).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { compare, grid, summarise, tolerance } from './captures.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, '../..');
@@ -18,6 +23,8 @@ const option = (name, fallback) => { const i = args.indexOf(name); return i >= 0
 const out = path.resolve(option('--out', path.join(repo, 'dist/web-tests')));
 const only = option('--games', '');
 const skipRun = args.includes('--skip-run');
+const referenceFile = option('--reference', '');
+const writeReference = option('--write-reference', '');
 const saveDirVariable = { MeadowRun: 'MEADOW_SAVE_DIR', CourtyardKey: 'COURTYARD_SAVE_DIR', TrailDuel: 'TRAIL_SAVE_DIR', NeonRift: 'RIFT_SAVE_DIR' };
 
 const { scenarios } = JSON.parse(fs.readFileSync(path.join(here, 'scenarios.json'), 'utf8'));
@@ -45,6 +52,35 @@ for (const s of scenarios.filter(s => !only || only.split(',').includes(s.game))
     const ok = desktop.length > 0 && captures.length === desktop.length && differing.length === 0;
     if (!ok) failures++;
     console.log(`${ok ? 'PASS' : 'FAIL'} ${browser} ${s.game} ${s.script}: ${desktop.length - differing.length}/${desktop.length} captures identical to desktop${differing.length ? ` (differ: ${differing.slice(0, 5).join(', ')})` : ''}`);
+  }
+}
+if (referenceFile || writeReference) {
+  const summaries = {};
+  for (const s of scenarios.filter(s => !only || only.split(',').includes(s.game))) {
+    const name = path.basename(s.script, '.script');
+    const dir = path.join(out, 'desktop', s.game, name);
+    if (!fs.existsSync(dir)) continue;
+    for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.png')).sort()) summaries[`${s.game}/${name}/${file}`] = summarise(path.join(dir, file));
+  }
+  if (writeReference) {
+    const reference = {
+      $comment: 'Visual reference of the native desktop captures (web/tests/captures.mjs); regenerate with desktop.mjs --write-reference after an intended visual change.',
+      platform: option('--platform', `${process.platform}-${process.arch}`),
+      grid, tolerance,
+      captures: summaries,
+    };
+    fs.writeFileSync(writeReference, JSON.stringify(reference, null, 1) + '\n');
+    console.log(`reference: ${Object.keys(summaries).length} captures written to ${writeReference}`);
+  }
+  if (referenceFile) {
+    const reference = JSON.parse(fs.readFileSync(referenceFile, 'utf8'));
+    const result = compare(summaries, reference, { namesOnly: args.includes('--names-only') });
+    for (const note of result.notes) console.log(`note ${note}`);
+    for (const problem of result.problems) console.log(`FAIL ${problem}`);
+    failures += result.problems.length;
+    const expected = Object.keys(reference.captures).length;
+    console.log(`${result.problems.length ? 'FAIL' : 'PASS'} reference ${reference.platform}: ${result.total}/${expected} captures, `
+      + `${result.identical} pixel-identical, ${result.notes.length} within ${args.includes('--names-only') ? 'names-only check' : `tolerance ${reference.tolerance}`}`);
   }
 }
 process.exit(failures ? 1 : 0);
