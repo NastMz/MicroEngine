@@ -23,15 +23,19 @@ A build is not compatibility. Each level is claimed only when it was run and its
 
 | Level | Android (x86_64 emulator) | iOS (simulator) |
 | --- | --- | --- |
-| Toolchain configured | NDK r27d, .NET 10 android workload | .NET 10 ios workload with the Xcode it names |
+| Toolchain configured | NDK r27d, .NET 10 android workload | .NET 10 ios workload (set 10.0.401) and Xcode 26.6 |
 | Project compiled | yes | yes |
 | Package generated | APK (x86_64, arm64-v8a) | `.app` for `iossimulator-arm64` |
-| App installed | yes | see the evaluation |
-| App started | yes | see the evaluation |
+| App installed | yes | yes (iPhone 17 Pro simulator) |
+| App started | yes | yes |
 | Rendering checked | 13 scripted captures of Meadow Run within the Linux reference's tolerance, 11 byte-identical to the Windows build | no: nothing is drawn |
-| Input checked | system key events (`adb shell input keyevent`) drive the menus; no touch controls | no |
+| Input checked | system key events (`adb shell input keyevent`) move the game from the title into a level; no touch controls | no |
 | Audio checked | raylib's audio device opens; output not listened to | no |
-| Real game run | Meadow Run, four scripted runs and an interactive one; background and resume | Meadow Run's code, headless, compared with the desktop build |
+
+Known problem: raylib's `CloseAudioDevice` can abort the app at exit (an audio callback locks the mutex it already
+destroyed); it ended 3 of about 37 scripted runs, so the Android job is sometimes red for it
+([evaluation](../docs/evaluations/platform-2.md#5-android)).
+| Real game run | Meadow Run, four scripted runs and an interactive one; background and resume | Meadow Run's code only, headless: 4/4 scripted runs identical to the desktop build |
 
 ## Android
 

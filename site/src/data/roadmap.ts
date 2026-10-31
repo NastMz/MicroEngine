@@ -42,13 +42,18 @@ export const next: RoadmapTrack[] = [
     title: 'Platform compatibility',
     status: 'planned',
     summary: 'Verify platforms the technology should already reach.',
-    items: ['Validation on Linux and macOS', 'Validation in Safari', 'Research into additional backends (exploring)'],
+    items: ['Validation on Linux and macOS (macOS rendering needs a Mac with a GPU)', 'Validation in Safari', 'Research into additional backends (exploring)'],
   },
   {
     title: 'Mobile experience',
     status: 'exploring',
     summary: 'Find out what playing MicroEngine games on touch screens needs.',
-    items: ['Touch control research', 'Virtual joysticks and buttons', 'Integration with the engine’s action-based input', 'Adapting and validating the demos on mobile devices'],
+    items: [
+      'Experimental Android app: one demo runs on an emulator with the same backend (keys only, no touch yet)',
+      'iOS: needs a new platform layer, because raylib has no iOS support; game code already runs in the simulator',
+      'Touch control research', 'Virtual joysticks and buttons', 'Integration with the engine’s action-based input',
+      'Adapting and validating the demos on real phones and tablets',
+    ],
   },
 ];
 

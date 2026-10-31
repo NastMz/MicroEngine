@@ -17,6 +17,8 @@ page lists each target and exactly how far it has been validated.
 | Other Chromium-based browsers (for example Edge) | Same | Not claimed: they share Chrome's engine, but they are not covered by the tests |
 | Safari | Same | Not tested |
 | Phones and tablets | Same | Not validated on real mobile devices; the demos have no dedicated touch controls |
+| Android app | `RaylibPlatform` (raylib built for Android) | Experimental, not supported: one demo runs on an emulator ([Phones and tablets](#phones-and-tablets)) |
+| iOS app | — | Not available: raylib has no iOS platform; the game code runs headless in the simulator |
 | Headless (tests, CI) | `HeadlessPlatform` | Validated: used by every test project; `--headless` launcher flag |
 
 "Validated" and "verified" mean the configuration was run and its results recorded. Anything else is a statement
@@ -42,7 +44,8 @@ change; "recorded" means it was run and its result kept, once.
 Linux checks run on Ubuntu 24.04 x64 under Xvfb; the reference was recorded with Mesa 25.2.8 (llvmpipe) and the
 hosted CI runner reproduced all 138 captures pixel for pixel. On macOS the hosted runner (macOS 26, arm64) builds and
 passes the headless tests, but GLFW finds no suitable OpenGL pixel format on that virtual machine and cannot create a
-window, so native rendering and input on macOS have no evidence yet; they need a Mac with a GPU. Wayland
+window, so native rendering and input on macOS have no evidence yet; they need a Mac with a GPU. A probe on the runner
+shows why: its only OpenGL renderer is Apple's software renderer, and GLFW always asks for a hardware-accelerated one. Wayland
 sessions, real GPUs and drivers, gamepads, F11 and Alt+Enter fullscreen and high-DPI screens remain to be checked by
 hand before Linux is called supported.
 
@@ -57,6 +60,30 @@ with the controller that was tested. No claim is made for other controllers or o
 The website works on phones and tablets. The demos have no dedicated touch controls and were not validated on real
 mobile devices; the site lets visitors try them at their own risk. Research into mobile and touch input is on the
 [roadmap](/roadmap/).
+
+Native mobile apps are experiments, not supported platforms:
+
+- **Android**: an experimental app runs Meadow Run with the same raylib backend on an Android emulator (x86_64). Its
+  scripted runs draw the same frames as the desktop build, within the visual reference's tolerance, and keys sent by
+  the system reach the game. There are no touch controls, it was not tried on a real device, and raylib can still
+  crash it when the game closes its audio.
+- **iOS**: raylib has no iOS platform, so nothing can be drawn on iOS with the current backend. An experimental app
+  runs Meadow Run's code without graphics in the iOS simulator, with the same results as the desktop build.
+
+## What CI proves
+
+Every change runs only the checks it needs; the expensive platforms run every week and on demand, and never decide
+whether the site is published.
+
+| Check | Runs | Proves |
+| --- | --- | --- |
+| .NET tests on Linux, then Windows | engine, game or test changes | the engine and the four games' rules and headless playthroughs |
+| .NET tests on macOS | engine and backend changes; weekly | the same on macOS; not blocking |
+| Native Linux | engine, game and capture changes | raylib draws the 138 scripted frames like the Linux reference; keyboard and audio through the system |
+| Browser suites | site, web host and rebuilt demos (all suites); documentation (page layout only) | pages at three widths, and each demo loaded, played, restarted and closed in Chrome and Firefox |
+| macOS OpenGL probe | weekly | why raylib can or cannot open a window on the CI Mac |
+| Android emulator | weekly | the experimental app installs, starts, draws, plays and resumes |
+| iOS simulator | weekly | the experimental app installs, starts and simulates like the desktop build |
 
 ## Desktop
 
