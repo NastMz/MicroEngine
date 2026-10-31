@@ -94,3 +94,7 @@ dist/
 
 # Local demo artifact store (site/scripts/demos.mjs, DEMOS_STORE=dir:...)
 .demo-store/
+
+## Experimental mobile hosts (platforms/)
+
+platforms/android/native/out/
