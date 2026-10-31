@@ -9,9 +9,15 @@ public sealed class ContentFolder
 {
     public string Root { get; }
 
+    /// <summary>
+    /// Root used when a game passes none. Null means the <c>Content</c> folder next to the executable; a host whose
+    /// files live elsewhere (a phone app unpacking its package) sets it before the game is built.
+    /// </summary>
+    public static string? DefaultRoot { get; set; }
+
     public ContentFolder(string? root = null)
     {
-        Root = Path.GetFullPath(root ?? Path.Combine(AppContext.BaseDirectory, "Content"));
+        Root = Path.GetFullPath(root ?? DefaultRoot ?? Path.Combine(AppContext.BaseDirectory, "Content"));
         if (!Directory.Exists(Root)) throw new DirectoryNotFoundException($"Content folder not found: {Root}");
     }
 

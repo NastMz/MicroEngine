@@ -226,4 +226,39 @@ public sealed class ContentLoadingTests
         new ParallaxLayer(texture) { RepeatX = false }.Draw(renderer, Vector2.Zero);
         Assert.AreEqual(1, renderer.DrawCalls);
     }
+
+    [TestMethod]
+    public void AHostCanMoveTheDefaultContentFolder()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "microengine-content-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            ContentFolder.DefaultRoot = root;
+            Assert.AreEqual(Path.GetFullPath(root), new ContentFolder().Root);
+            Assert.AreEqual(Path.GetFullPath(AppContext.BaseDirectory), new ContentFolder(AppContext.BaseDirectory).Root, "an explicit root still wins");
+        }
+        finally
+        {
+            ContentFolder.DefaultRoot = null;
+            Directory.Delete(root, recursive: true);
+        }
+        var e = Assert.ThrowsExactly<DirectoryNotFoundException>(() => new ContentFolder());
+        StringAssert.Contains(e.Message, Path.Combine(AppContext.BaseDirectory, "Content"));
+    }
+
+    [TestMethod]
+    public void EncodedPngsDecodeToTheSamePixelsAtEveryScale()
+    {
+        var rgba = new byte[3 * 2 * 4];
+        for (int i = 0; i < rgba.Length; i++) rgba[i] = (byte)(i * 11);
+        var image = PixelImage.FromPng(PngEncoder.Encode(rgba, 3, 2));
+        Assert.AreEqual(3, image.Width);
+        CollectionAssert.AreEqual(rgba, image.ToRgba());
+        var big = PixelImage.FromPng(PngEncoder.Encode(rgba, 3, 2, scale: 3));
+        Assert.AreEqual(9, big.Width);
+        Assert.AreEqual(6, big.Height);
+        Assert.AreEqual(image[2, 1], big[8, 5]);
+        Assert.AreEqual(image[1, 0], big[3, 2]);
+    }
 }

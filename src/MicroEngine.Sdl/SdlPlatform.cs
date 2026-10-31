@@ -33,6 +33,9 @@ public sealed unsafe class SdlPlatform : IPlatform
     private readonly ulong _start;
     private long _frames;
     private bool _closeRequested, _suspended, _disposed;
+    // Written by the lifecycle watch on the thread the system uses to send the event.
+    private volatile bool _background, _wentToBackground;
+    private GCHandle _self;
 
     /// <summary>The SDL3 platform as a catalog entry. SDL3 is packaged for Windows, Linux, macOS, Android and iOS, not for browsers.</summary>
     public static PlatformProfile Profile { get; } = CreateProfile();
@@ -74,6 +77,16 @@ public sealed unsafe class SdlPlatform : IPlatform
         // Mobile systems deliver input to the game's thread through the event queue; keep mouse and touch apart.
         SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
         SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
+        // By default SDL on Android blocks inside event polling while the app is paused and sends the background and
+        // foreground events together on resume, so the loop would never see the suspension (music on, progress unsaved).
+        SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
+        // Diagnostics: SDL logs every event it delivers (1 = without motion, 2 = all). Read through .NET, because on
+        // mobile hosts .NET's environment variables never reach the native environment SDL reads its hints from.
+        if (Environment.GetEnvironmentVariable("MICROENGINE_SDL_EVENT_LOGGING") is { Length: > 0 } logging)
+            SDL_SetHint(SDL_HINT_EVENT_LOGGING, logging);
+        _touch.Visible = OperatingSystem.IsAndroid() || OperatingSystem.IsIOS();
+        // Pixel-art games are wide; without this SDL lets a phone turn the window to portrait.
+        if (_touch.Visible) SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
         if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO | SDL_InitFlags.SDL_INIT_GAMEPAD))
             throw new InvalidOperationException($"SDL could not start its video subsystem: {SDL_GetError()}");
         int scale = request.Scale ?? _settings.Scale;
@@ -101,6 +114,8 @@ public sealed unsafe class SdlPlatform : IPlatform
         _renderer = new SdlRenderer(_sdl, _settings.VirtualWidth, _settings.VirtualHeight);
         _input = new SdlInput(_touch);
         _audio = request.OpensOwnAudio ? SdlAudioDevice.TryCreate() : new SilentAudioDevice();
+        _self = GCHandle.Alloc(this);
+        SDL_AddEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
         _start = SDL_GetTicksNS();
         RendererName = SDL_GetRendererName(_sdl) ?? "unknown";
     }
@@ -115,12 +130,40 @@ public sealed unsafe class SdlPlatform : IPlatform
     public bool RealTime => !_fixedStep;
     public bool Suspended => _suspended;
 
+    /// <summary>
+    /// Phones announce backgrounding from their own thread and may stop the game thread soon after, so SDL asks for
+    /// these events to be handled as they are sent (an event watch) rather than when the loop next polls. A trip to
+    /// the background is latched until the loop has seen it, even if the app came back before it polled.
+    /// </summary>
+    [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+    private static SDLBool WatchLifecycle(IntPtr self, SDL_Event* e)
+    {
+        if (GCHandle.FromIntPtr(self).Target is not SdlPlatform platform) return true;
+        switch ((SDL_EventType)e->type)
+        {
+            case SDL_EventType.SDL_EVENT_WILL_ENTER_BACKGROUND:
+            case SDL_EventType.SDL_EVENT_DID_ENTER_BACKGROUND:
+                platform._background = platform._wentToBackground = true;
+                break;
+            case SDL_EventType.SDL_EVENT_DID_ENTER_FOREGROUND:
+                platform._background = false;
+                break;
+        }
+        return true;
+    }
+
     private static InvalidOperationException Fail(string what) => new($"{what}: {SDL_GetError()}");
 
     public void PollEvents()
     {
         _frames++;
         _input.BeginFrame();
+        _touch.BeginFrame();
+        bool suspended = _background || _wentToBackground;
+        _wentToBackground = false;
+        // Fingers and keys held when the app left are never released by the system.
+        if (suspended && !_suspended) _input.ReleaseAll();
+        _suspended = suspended;
         SDL_Event e;
         while (SDL_PollEvent(&e))
         {
@@ -130,14 +173,6 @@ public sealed unsafe class SdlPlatform : IPlatform
                 case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED:
                 case SDL_EventType.SDL_EVENT_TERMINATING:
                     _closeRequested = true;
-                    break;
-                case SDL_EventType.SDL_EVENT_WILL_ENTER_BACKGROUND:
-                case SDL_EventType.SDL_EVENT_DID_ENTER_BACKGROUND:
-                    _suspended = true;
-                    _input.ReleaseAll();
-                    break;
-                case SDL_EventType.SDL_EVENT_DID_ENTER_FOREGROUND:
-                    _suspended = false;
                     break;
                 case SDL_EventType.SDL_EVENT_KEY_DOWN:
                     if (!e.key.repeat && (e.key.scancode == SDL_Scancode.SDL_SCANCODE_F11
@@ -161,6 +196,8 @@ public sealed unsafe class SdlPlatform : IPlatform
                     break;
             }
         }
+        // A suspended app draws nothing (a phone may have taken its surface away); wait instead of spinning.
+        if (_suspended) SDL_Delay(50);
     }
 
     private float OutputAspect()
@@ -239,6 +276,11 @@ public sealed unsafe class SdlPlatform : IPlatform
     {
         if (_disposed) return;
         _disposed = true;
+        if (_self.IsAllocated)
+        {
+            SDL_RemoveEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
+            _self.Free();
+        }
         (_audio as IDisposable)?.Dispose();
         _graphics?.Dispose();
         _input?.Dispose();

@@ -20,6 +20,7 @@ public sealed class TouchPadTests
         Assert.IsTrue(pad.IsDown(PadButton.A));
         Assert.IsFalse(pad.IsDown(PadButton.B));
         pad.Release(1);
+        pad.BeginFrame();
         Assert.IsFalse(pad.IsDown(PadButton.A));
     }
 
@@ -31,12 +32,32 @@ public sealed class TouchPadTests
         pad.Set(2, CenterOf(pad, PadButton.A), Aspect);
         Assert.IsTrue(pad.IsDown(PadButton.DPadRight) && pad.IsDown(PadButton.A), "move and jump at once");
         pad.Set(1, CenterOf(pad, PadButton.DPadLeft), Aspect);
+        pad.BeginFrame();
         Assert.IsFalse(pad.IsDown(PadButton.DPadRight));
         Assert.IsTrue(pad.IsDown(PadButton.DPadLeft));
         pad.Set(1, new Vector2(0.5f, 0.5f), Aspect);
+        pad.BeginFrame();
         Assert.IsFalse(pad.IsDown(PadButton.DPadLeft), "the middle of the screen is no control");
         pad.ReleaseAll();
         Assert.IsFalse(pad.IsDown(PadButton.A));
+    }
+
+    [TestMethod]
+    public void AQuickTapCountsUntilAStepHasReadIt()
+    {
+        var pad = new TouchPad();
+        pad.BeginFrame();
+        pad.Set(1, CenterOf(pad, PadButton.A), Aspect);
+        pad.Release(1);
+        pad.BeginFrame();
+        Assert.IsTrue(pad.IsDown(PadButton.A), "pressed and lifted between two frames");
+        pad.BeginFrame();
+        Assert.IsFalse(pad.IsDown(PadButton.A), "read once, then gone");
+
+        pad.Set(2, CenterOf(pad, PadButton.B), Aspect);
+        pad.Release(2);
+        for (int i = 0; i < 8; i++) pad.BeginFrame();
+        Assert.IsFalse(pad.IsDown(PadButton.B), "an unread tap expires");
     }
 
     [TestMethod]

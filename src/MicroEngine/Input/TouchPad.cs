@@ -49,14 +49,44 @@ public sealed class TouchPad
             if (distance <= c.Radius * 1.35f && distance < best) (hit, best) = (c.Button, distance);
         }
         if (hit == PadButton.None) _fingers.Remove(finger);
-        else _fingers[finger] = hit;
+        else
+        {
+            if (!_fingers.TryGetValue(finger, out var previous) || previous != hit) _taps[hit] = TapFrames;
+            _fingers[finger] = hit;
+        }
     }
 
     public void Release(ulong finger) => _fingers.Remove(finger);
-    public void ReleaseAll() => _fingers.Clear();
+
+    public void ReleaseAll()
+    {
+        _fingers.Clear();
+        _taps.Clear();
+    }
+
+    private const int TapFrames = 8;
+    private readonly Dictionary<PadButton, int> _taps = [];
+    private readonly HashSet<PadButton> _sampled = [];
+
+    /// <summary>
+    /// Called by the backend once per polled frame. As with keys, a button pressed and released between two frames (a
+    /// quick tap) counts as down until a simulation step has read it; unread taps expire after a few frames.
+    /// </summary>
+    public void BeginFrame()
+    {
+        foreach (var b in _sampled) _taps.Remove(b);
+        _sampled.Clear();
+        foreach (var b in _taps.Keys.ToList())
+            if (--_taps[b] <= 0) _taps.Remove(b);
+    }
 
     public bool IsDown(PadButton button)
     {
+        if (_taps.ContainsKey(button))
+        {
+            _sampled.Add(button);
+            return true;
+        }
         foreach (var b in _fingers.Values) if (b == button) return true;
         return false;
     }

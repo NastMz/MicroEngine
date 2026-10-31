@@ -4,9 +4,10 @@
 //   started     the activity starts and the .NET host logs "microengine: start"
 //   rendered    each scripted run of the game (web/tests/scenarios.json) ends with all its captures; they are pulled
 //               to --out/desktop/<Game>/<script> so `web/tests/desktop.mjs --skip-run` compares them with a reference
-//   audio       the raylib audio device opened (not listened to)
+//   audio       the audio device opened (not listened to)
 //   input       keys sent by the system (adb input keyevent) change what the game shows
-//   lifecycle   the game survives going to the background and back, then stops cleanly
+//   touch       taps on the on-screen A button (adb input tap) take the game past its first scene
+//   lifecycle   going to the background suspends the game and coming back resumes it
 //
 //   node platforms/android/device-checks.mjs --apk FILE [--serial ID] [--game MeadowRun] [--out DIR]
 // Needs adb on PATH or in $ANDROID_HOME/platform-tools. Exit code 1 if any level failed.
@@ -36,7 +37,7 @@ function adb(...a) {
   return { status: run.status, out: `${run.stdout}${run.stderr}` };
 }
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-const log = () => adb('logcat', '-d', '-v', 'brief', 'MicroEngine:I', 'raylib:W', 'AndroidRuntime:E', 'DEBUG:F', 'mono-rt:F', '*:S').out;
+const log = () => adb('logcat', '-d', '-v', 'brief', 'MicroEngine:I', 'AndroidRuntime:E', 'DEBUG:F', 'mono-rt:F', 'SDL:W', '*:S').out;
 const crashed = text => /FATAL EXCEPTION|Fatal signal|FATAL UNHANDLED|Abort message/.test(text);
 
 const results = [];
@@ -59,7 +60,7 @@ function screenshot(file) {
   return run.stdout;
 }
 
-// A device that just booted may be asleep or locked: the activity then never gets its window and raylib waits for it.
+// A device that just booted may be asleep or locked: the activity then never gets its window and SDL waits for it.
 function awake() {
   adb('shell', 'svc', 'power', 'stayon', 'true');
   adb('shell', 'input', 'keyevent', 'KEYCODE_WAKEUP');
@@ -114,7 +115,7 @@ for (const s of scenarios.filter(s => s.game === game)) {
 }
 record('started', started, started ? 'the .NET host logged its start' : 'no "microengine: start" in the log');
 record('rendered', runs.length > 0 && runs.every(r => r.ok), runs.map(r => `${r.name}: ${r.detail}`).join('; ') || `no scenario for ${game}`);
-record('audio', audio === true, audio === null ? 'no run finished' : audio ? 'raylib opened the audio device in every run' : 'no audio device (silent run)');
+record('audio', audio === true, audio === null ? 'no run finished' : audio ? 'SDL opened the audio device in every run' : 'no audio device (silent run)');
 
 // Input and lifecycle: an interactive run, keys from the system, then background and foreground.
 adb('shell', 'am', 'force-stop', pkg);
@@ -140,8 +141,27 @@ const alive = adb('shell', 'pidof', pkg).out.trim();
 const resumed = screenshot(path.join(out, 'resumed.png'));
 const lifecycleLog = log();
 fs.writeFileSync(path.join(out, 'interactive.log'), lifecycleLog);
-record('lifecycle', alive.length > 0 && !crashed(lifecycleLog) && resumed.length > 0,
-  alive ? 'still running after Home and relaunch (resumed.png)' : 'the process is gone after Home and relaunch');
+const suspendedThenResumed = /microengine: suspended[\s\S]*microengine: resumed/.test(lifecycleLog);
+record('lifecycle', alive.length > 0 && suspendedThenResumed && !crashed(lifecycleLog) && resumed.length > 0,
+  !alive ? 'the process is gone after Home and relaunch'
+    : suspendedThenResumed ? 'Home suspended the game, relaunching resumed it (resumed.png)' : 'still running, but no suspended/resumed pair in the log');
+adb('shell', 'am', 'force-stop', pkg);
+
+// Touch: a fresh interactive run; taps on the on-screen A button (MicroEngine.Input.TouchPad's layout) must confirm
+// the first menu, as Enter does.
+adb('logcat', '-c');
+adb('shell', 'am', 'start', '-W', '-n', activity);
+const firstTouch = scenes(await waitFor(/microengine: scene /, 120_000))[0];
+await sleep(2000);
+const [w, h] = (adb('shell', 'wm', 'size').out.match(/(\d+)x(\d+)\s*$/m) ?? []).slice(1).map(Number).sort((a, b) => b - a);
+const aspect = w / h, tap = [Math.round((1 - 0.22 / aspect) * w), Math.round((0.74 + 0.12) * h)];
+for (let i = 0; i < 3; i++) { adb('shell', 'input', 'tap', String(tap[0]), String(tap[1])); await sleep(1500); }
+await sleep(2000);
+screenshot(path.join(out, 'touch-after.png'));
+const touched = scenes(log());
+record('touch', !!firstTouch && touched.length > 1 && !crashed(log()),
+  firstTouch ? `scenes after three taps at ${tap.join(',')} on a ${w}x${h} screen: ${touched.join(' → ')}` : 'the game logged no scene');
+fs.writeFileSync(path.join(out, 'touch.log'), log());
 adb('shell', 'am', 'force-stop', pkg);
 
 const summary = ['### Android device checks', '', `Game ${game}, APK \`${path.basename(apk)}\`.`, '', '| Level | Result | Detail |', '| --- | --- | --- |',
