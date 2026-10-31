@@ -1,0 +1,203 @@
+# Daily CI (docs/ci.md): pull requests and pushes to main run the checks a change needs, once per content.
+#   Plan       planner tests; changed paths decide the checks (.github/scripts/changes.mjs); evidence skips any check
+#              that already passed for identical inputs (.github/scripts/evidence.mjs); demo keys decide the builds
+#              (site/scripts/demos.mjs, ci policy: a changed game, or one canary game for an engine-wide change)
+#   checks     .NET on Linux, then Windows and native Linux; demo builds; the site and its browser suites
+#              (.github/workflows/checks.yml)
+#   deploy     a preview for pull requests that change the site or a demo; production when main changes the
+#              published site, always with the latest released demos: merging never publishes a demo
+#   CI result  the one check to require: fails if anything needed failed, was cancelled or did not run
+# Never here: macOS, the Android emulator, the iOS simulator (validate.yml, platforms.yml), releases (release.yml).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: 22
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read # evidence of passed checks (artifacts)
+    outputs:
+      dotnet: ${{ steps.decide.outputs.dotnet }}
+      windows: ${{ steps.decide.outputs.windows }}
+      native: ${{ steps.decide.outputs.native }}
+      site: ${{ steps.decide.outputs.site }}
+      suites: ${{ steps.decide.outputs.suites }}
+      build: ${{ steps.demos.outputs.build }}
+      keys: ${{ steps.decide.outputs.keys }}
+      reused: ${{ steps.decide.outputs.reused }}
+      deploy: ${{ steps.decide.outputs.deploy }}
+      needed: ${{ steps.decide.outputs.needed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Planner tests
+        run: node --test .github/scripts/*.test.mjs
+      - name: Checks for this change
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          case "$EVENT" in
+            pull_request) args=(--base "$PR_BASE" --head HEAD) ;;
+            *) args=(--base "$BEFORE" --head HEAD) ;;
+          esac
+          node .github/scripts/changes.mjs "${args[@]}" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Lint the workflows
+        if: steps.changes.outputs.workflows == 'true'
+        run: |
+          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
+          ./actionlint -color
+      - run: npm ci --prefix site
+      - name: Demo packages
+        id: demos
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CANARY: ${{ vars.DEMO_CANARY || 'NeonRift' }}
+        run: node site/scripts/demos.mjs plan --policy ci --canary "$CANARY" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Decide
+        id: decide
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+          DOTNET: ${{ steps.changes.outputs.dotnet }}
+          WINDOWS: ${{ steps.changes.outputs.windows }}
+          NATIVE: ${{ steps.changes.outputs.native }}
+          BROWSER: ${{ steps.changes.outputs.browser }}
+          BUILD: ${{ steps.demos.outputs.build }}
+          PACKAGES: ${{ steps.demos.outputs.packages }}
+        run: |
+          # Rebuilt packages are always played; documentation needs the page layouts; otherwise no browser.
+          if [ "$BROWSER" = full ] || [ "$BUILD" != '[]' ]; then suites=layout,play,touch
+          elif [ "$BROWSER" = layout ]; then suites=layout
+          else suites=; fi
+          site=$([ -n "$suites" ] && echo true || echo false)
+          evidence=$(mktemp)
+          GITHUB_OUTPUT="$evidence" node .github/scripts/evidence.mjs plan --checks dotnet,windows,native,site \
+            --site-extra "suites=$suites $PACKAGES" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+          get() { grep "^$1=" "$evidence" | cut -d= -f2-; }
+          run() { [ "$1" = true ] && [ -z "$(get "reused_$2")" ] && echo true || echo false; }
+          if [ "$EVENT" = push ]; then
+            deploy=$([ "$BROWSER" != none ] && echo production || echo none)
+          elif [ "$FORK" = true ]; then deploy=none
+          else deploy=$([ "$BROWSER" != none ] || [ "$BUILD" != '[]' ] && echo preview || echo none); fi
+          {
+            echo "dotnet=$(run "$DOTNET" dotnet)"
+            echo "windows=$(run "$WINDOWS" windows)"
+            echo "native=$(run "$NATIVE" native)"
+            echo "site=$(run "$site" site)"
+            echo "suites=$suites"
+            echo "deploy=$deploy"
+            echo "keys={\"dotnet\":\"$(get key_dotnet)\",\"windows\":\"$(get key_windows)\",\"native\":\"$(get key_native)\",\"site\":\"$(get key_site)\"}"
+            echo "reused={\"dotnet\":\"$(get reused_dotnet)\",\"windows\":\"$(get reused_windows)\",\"native\":\"$(get reused_native)\",\"site\":\"$(get reused_site)\"}"
+            echo "needed={\"dotnet\":$DOTNET,\"windows\":$WINDOWS,\"native\":$NATIVE,\"site\":$site}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Deployment: $deploy" >> "$GITHUB_STEP_SUMMARY"
+
+  checks:
+    name: Checks
+    needs: plan
+    uses: ./.github/workflows/checks.yml
+    permissions:
+      contents: write # storing demo packages
+    with:
+      ref: ${{ github.sha }}
+      dotnet: ${{ needs.plan.outputs.dotnet == 'true' }}
+      windows: ${{ needs.plan.outputs.windows == 'true' }}
+      native: ${{ needs.plan.outputs.native == 'true' }}
+      build: ${{ needs.plan.outputs.build }}
+      site: ${{ needs.plan.outputs.site == 'true' }}
+      demo-source: candidates
+      suites: ${{ needs.plan.outputs.suites }}
+      evidence: true
+      keys: ${{ needs.plan.outputs.keys }}
+
+  deploy:
+    name: Site
+    needs: [plan, checks]
+    # Only after every needed check passed in this run or already passed for these inputs.
+    if: >-
+      !cancelled() && needs.plan.result == 'success' && needs.checks.result == 'success'
+      && needs.plan.outputs.deploy != 'none'
+    uses: ./.github/workflows/deploy-site.yml
+    permissions:
+      contents: read
+      pull-requests: write
+    with:
+      ref: ${{ github.sha }}
+      target: ${{ needs.plan.outputs.deploy }}
+      demo-source: ${{ needs.plan.outputs.deploy == 'production' && 'release' || 'candidates' }}
+    secrets:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+  # GitHub Free cannot require checks on a private repository (branch protection returns 403), so this job is the
+  # gate to look at, and the one to require if the plan changes: it passes only when every needed check passed here
+  # or already passed for identical inputs, and the deployment (if any) succeeded.
+  result:
+    name: CI result
+    needs: [plan, checks, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Summary
+        env:
+          PLAN: ${{ needs.plan.result }}
+          CHECKS: ${{ needs.checks.result }}
+          DEPLOY: ${{ needs.deploy.result }}
+          WANTED: ${{ needs.plan.outputs.deploy }}
+          NEEDED: ${{ needs.plan.outputs.needed }}
+          REUSED: ${{ needs.plan.outputs.reused }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs
+        run: |
+          {
+            echo "### CI result"; echo
+            echo "| Check | Needed | Outcome |"; echo "| --- | --- | --- |"
+            for check in dotnet windows native site; do
+              needed=$(echo "$NEEDED" | jq -r ".$check // false"); reused=$(echo "$REUSED" | jq -r ".$check // \"\"")
+              if [ "$needed" != true ]; then outcome="not needed for this change"
+              elif [ -n "$reused" ]; then outcome="already passed for identical inputs in [run $reused]($RUN_URL/$reused)"
+              else outcome="ran here: checks $CHECKS"; fi
+              echo "| $check | $needed | $outcome |"
+            done
+            echo; echo "Deployment: $WANTED ($DEPLOY). macOS, Android and iOS are not part of daily CI (validate.yml)."
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ "$PLAN" = success ] || { echo "::error::Plan $PLAN."; exit 1; }
+          [ "$CHECKS" = success ] || { echo "::error::Checks $CHECKS."; exit 1; }
+          if [ "$WANTED" != none ] && [ "$DEPLOY" != success ]; then echo "::error::Deployment $DEPLOY."; exit 1; fi
+      - uses: actions/checkout@v4
+        if: always()
+        with:
+          sparse-checkout: .github/scripts
+      - name: Cost of this run
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/ci-cost.mjs measure "$GITHUB_RUN_ID" --exclude "CI result" >> "$GITHUB_STEP_SUMMARY"

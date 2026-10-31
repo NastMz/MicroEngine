@@ -1,0 +1,204 @@
+# Publishing a demo release (docs/ci.md, "Releases"): Actions → release → Run workflow, with a version and the source
+# ref. The only way a new demo reaches the public site; no push, merge or schedule starts it.
+#   Preflight  the version is new; the ref is on main and its ci run passed; current main's ci run passed (its site is
+#              what gets deployed); every package missing for the ref's keys is listed
+#   Build      only those packages, into the integration store (checks.yml)
+#   Draft      draft release v<version>: each package copied from the store after its archive matched its manifest's
+#              SHA-256, plus release.json (keys, hashes, commit). A draft is not public and not "latest"
+#   Verify     the site of current main built with the draft's packages, every file checked against the release, unit
+#              tests, check-dist, and every browser suite (layout, play, touch) on exactly those packages
+#   Publish    deploy-site.yml: the same build staged on Vercel, verified file by file, promoted, then the draft is
+#              published as the latest release; if publishing fails after the switch, production is rolled back
+#   Clean up   any failure, cancellation or dry run discards the draft: the public site and the latest release are
+#              left exactly as they were
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish (1.2.0 or v1.2.0); must not exist yet
+        type: string
+        required: true
+      ref:
+        description: Commit, branch or tag whose demo packages are released (on main, with a passed ci run)
+        type: string
+        default: main
+      dry-run:
+        description: Everything except the deployment and the publication; the draft is discarded at the end
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.check.outputs.sha }}
+      main: ${{ steps.check.outputs.main }}
+      tag: ${{ steps.check.outputs.tag }}
+      build: ${{ steps.demos.outputs.build }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci --prefix site
+      - name: Is this state fit to publish?
+        id: check
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          error() { echo "::error::$1"; echo "Release refused: $1" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
+          tag=$(node --input-type=module -e "import { versionTag } from './site/scripts/demos.mjs'; console.log(versionTag(process.env.VERSION))") || error "\"$VERSION\" is not a version."
+          sha=$(git rev-parse HEAD); main=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$sha" origin/main || error "$sha is not on main: only merged, reviewed code is released."
+          passed() { gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$1&event=push&status=success&per_page=1" --jq .total_count; }
+          [ "$(passed "$sha")" -ge 1 ] || error "ci has no passed run on main for $sha (choose a commit that main's ci ran, such as a merge commit)."
+          [ "$(passed "$main")" -ge 1 ] || error "ci has not passed (yet) for current main $main, whose site would be deployed."
+          state=$(gh release view "$tag" --json isDraft --jq .isDraft 2> /dev/null || echo none)
+          [ "$state" != false ] || error "$tag is already published; choose a new version."
+          { echo "sha=$sha"; echo "main=$main"; echo "tag=$tag"; } >> "$GITHUB_OUTPUT"
+          { echo "### Release $tag"; echo; echo "- Demo packages from \`$sha\` (${{ inputs.ref }})"; echo "- Site from main \`$main\`"
+            echo "- Dry run: ${{ inputs.dry-run }}"; echo; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Packages to build (anything missing for this commit's keys)
+        id: demos
+        run: node site/scripts/demos.mjs plan --policy all --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Build
+    needs: preflight
+    uses: ./.github/workflows/checks.yml
+    permissions:
+      contents: write
+    with:
+      ref: ${{ needs.preflight.outputs.sha }}
+      build: ${{ needs.preflight.outputs.build }}
+
+  draft:
+    name: Draft ${{ needs.preflight.outputs.tag }}
+    needs: [preflight, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preflight.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci --prefix site
+      - name: Copy the approved packages into a draft release
+        shell: bash
+        run: node site/scripts/demos.mjs release-create --version "${{ needs.preflight.outputs.tag }}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  verify:
+    name: Verify the packages to publish (Chrome and Firefox)
+    needs: [preflight, draft]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # a draft release is only readable with push access
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      DEMOS_SOURCE: release:${{ needs.preflight.outputs.tag }}
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preflight.outputs.main }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Built packages are the release's, file by file
+        run: node scripts/demos.mjs release-verify --tag "${{ needs.preflight.outputs.tag }}" --dir dist/play
+      - name: Every browser suite on these packages
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          HEADED: '1'
+          BROWSERS: ${{ vars.BROWSER_CHECKS || 'chrome,firefox' }}
+        run: |
+          command -v xvfb-run > /dev/null || sudo apt-get install -y xvfb
+          xvfb-run -a node tests/browser.mjs --browsers "$BROWSERS" --suites layout,play,touch
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-browser-screenshots
+          path: site/test-results
+          retention-days: 7
+
+  publish:
+    name: Publish
+    needs: [preflight, verify]
+    if: ${{ !inputs.dry-run }}
+    uses: ./.github/workflows/deploy-site.yml
+    permissions:
+      contents: write
+    with:
+      ref: ${{ needs.preflight.outputs.main }}
+      target: production
+      demo-source: release:${{ needs.preflight.outputs.tag }}
+      publish-release: ${{ needs.preflight.outputs.tag }}
+      expect-main: ${{ needs.preflight.outputs.main }}
+    secrets:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+  finish:
+    name: Record or clean up
+    needs: [preflight, draft, verify, publish]
+    if: always() && needs.preflight.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.preflight.outputs.tag }}
+      PUBLISHED: ${{ needs.publish.result == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preflight.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci --prefix site
+      - name: Published release
+        if: env.PUBLISHED == 'true'
+        run: |
+          { echo "### Published $TAG"; echo; echo '```json'; node site/scripts/demos.mjs release-show --tag "$TAG"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Discard the draft (nothing public changed)
+        if: env.PUBLISHED != 'true'
+        run: |
+          node site/scripts/demos.mjs release-discard --tag "$TAG" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Production and the latest release are unchanged." >> "$GITHUB_STEP_SUMMARY"
