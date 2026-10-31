@@ -1,0 +1,4 @@
+# Debug start "ruins" at low health: wander into enemies until falling.
+10 hold left 600
+700 capture gameover.png
+720 quit

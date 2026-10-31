@@ -1,0 +1,53 @@
+---
+import { Image } from 'astro:assets';
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import { demoGames } from '../../data/games';
+import { playManifest, megabytes } from '../../lib/play-manifest.mjs';
+
+const manifest = playManifest();
+---
+<SiteLayout title="Demos" description="Play the four MicroEngine demo games in a desktop browser: a platformer, an action adventure, a creature-collecting RPG and a run & gun." current="demos">
+  <div class="wrap page">
+    <header class="page-head">
+      <h1>The demos</h1>
+      <p class="lede">Four complete games built with MicroEngine, compiled to WebAssembly from the same game code as their desktop versions. Each page loads its game only when you press Play.</p>
+      <p class="notice"><span class="status partial">Desktop only</span> The games need a keyboard. They were verified in Chrome and Firefox on desktop; phones and tablets can browse the screenshots and guides.</p>
+    </header>
+    <ol class="list">
+      {demoGames.map((game, i) => (
+        <li style={`--game: var(${game.colorToken})`}>
+          <a href={`/demos/${game.slug}/`} class="row">
+            <Image src={game.shots[1]?.src ?? game.shots[0].src} alt="" widths={[480, 720]} sizes="(min-width: 48rem) 22rem, 100vw" loading={i < 2 ? 'eager' : 'lazy'} />
+            <span class="row-text">
+              <span class="label">{game.genre}</span>
+              <span class="row-title">{game.title}</span>
+              <span class="muted">{game.tagline}</span>
+              <span class="mono small">{game.content.kind}{manifest?.games?.[game.id] && ` · about ${megabytes(manifest.games[game.id].transfer)}`}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </div>
+</SiteLayout>
+
+<style>
+  .page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); padding-top: var(--space-3xl); }
+  .page-head { display: grid; gap: var(--space-md); }
+  .notice { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: baseline; color: var(--color-ink-2); font-size: var(--text-sm); max-width: var(--measure); }
+  .list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-lg); }
+  .row { display: grid; gap: var(--space-md); grid-template-columns: minmax(0, 1fr); color: inherit; text-decoration: none;
+    border: var(--rule-thin) solid var(--color-rule); border-left: 4px solid var(--game); background: var(--color-paper-2);
+    transition: border-color var(--dur-mid) var(--ease-out); }
+  .row:hover { border-color: var(--game); }
+  .row img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; image-rendering: pixelated; }
+  .row-text { display: grid; gap: var(--space-xs); align-content: center; padding: 0 var(--space-lg) var(--space-lg); }
+  .row-text .label { color: var(--game); }
+  .row-title { font-family: var(--font-display); font-size: var(--text-2xl); color: var(--color-ink); }
+  .row:hover .row-title { color: var(--game); }
+  .small { font-size: var(--text-sm); color: var(--color-ink-2); }
+  @media (min-width: 48rem) {
+    .row { grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); }
+    .row-text { padding: var(--space-lg); }
+  }
+</style>

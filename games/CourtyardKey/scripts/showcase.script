@@ -1,0 +1,6 @@
+# Used with COURTYARD_START=blocks: the Hall of Weights, then the pause map.
+40 hold left 30
+80 capture showcase_blocks.png
+100 press pause
+130 capture showcase_pause.png
+140 quit

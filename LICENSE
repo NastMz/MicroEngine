@@ -1,0 +1,16 @@
+MicroEngine
+
+Copyright (c) 2025-2026 Kevin Martinez. All rights reserved.
+
+MicroEngine is proprietary software. Its source code is private and is not licensed for use, copying,
+modification or distribution.
+
+The SDK will be distributed in compiled form under the MicroEngine SDK License, which is being prepared and is
+pending legal review (draft: docs/legal/microengine-sdk-license-draft.md). Until that licence is published, no
+licence is granted to this software except by the copyright holder's written permission.
+
+Earlier versions: versions of the previous implementation of MicroEngine that were published while the repository
+was public were released under the MIT License. Copies obtained under those terms keep the rights the MIT License
+granted. The current implementation is a separate rewrite and has never been published as source.
+
+Third-party components are listed with their licences in THIRD-PARTY-NOTICES.md.

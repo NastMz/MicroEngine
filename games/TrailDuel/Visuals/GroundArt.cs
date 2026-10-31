@@ -1,0 +1,184 @@
+using MicroEngine;
+using MicroEngine.Graphics;
+using TrailDuel.World;
+
+namespace TrailDuel.Visuals;
+
+/// <summary>
+/// One baked image per map, drawn over the ground tiles and under every object. Outdoors it adds
+/// soft tone patches, clover, pebbles and wild flowers that ignore the tile grid; everywhere it adds
+/// the shadows that buildings, trees, rocks, signs and furniture cast toward the bottom-right.
+/// Shadows are a single union mask, so overlapping shadows never stack darker.
+/// </summary>
+internal static class GroundArt
+{
+    private static readonly Color ShadowColor = Pal.Ink.WithAlpha(0.24f);
+
+    public static PixelImage Build(MapDef map)
+    {
+        int w = map.Width * 16, h = map.Height * 16;
+        var img = new PixelImage(w, h);
+        var shadow = new bool[w * h];
+        if (!map.Indoor)
+        {
+            Patches(img, map);
+            Specks(img, map);
+            TallGrassFringe(img, map);
+        }
+        CastShadows(map, shadow, w, h);
+        for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++)
+        {
+            if (!shadow[y * w + x]) continue;
+            var c = img[x, y];
+            img[x, y] = c.A == 255 ? c.Shade(0.74f) : ShadowColor;
+        }
+        return img;
+    }
+
+    private static bool IsGrass(MapDef map, int tx, int ty) => map.KindAt(tx, ty) == TileKind.Grass;
+
+    /// <summary>Large patches of shadier and sunnier grass from world-space noise, as translucent tone over the tile texture.</summary>
+    private static void Patches(PixelImage img, MapDef map)
+    {
+        var dark = Pal.Grass[0];
+        var sun = Pal.Grass[3];
+        int seed = map.Id.Length * 7 + map.Id[0];
+        for (int y = 0; y < img.Height; y++)
+        for (int x = 0; x < img.Width; x++)
+        {
+            if (!IsGrass(map, x / 16, y / 16)) continue;
+            float n = Art.ValueNoise(x, y, 30, seed) * 0.8f + Art.ValueNoise(x, y, 8, seed + 1) * 0.2f;
+            if (n > 0.7f) img[x, y] = dark.WithAlpha(0.12f);
+            else if (n < 0.24f) img[x, y] = sun.WithAlpha(0.1f);
+        }
+    }
+
+    /// <summary>Clover sprigs, pebbles and tiny flowers scattered at sub-tile offsets.</summary>
+    private static void Specks(PixelImage img, MapDef map)
+    {
+        var g = Pal.Grass;
+        for (int ty = 0; ty < map.Height; ty++)
+        for (int tx = 0; tx < map.Width; tx++)
+        {
+            if (!IsGrass(map, tx, ty)) continue;
+            float roll = Art.Hash(tx, ty, 91);
+            int x = tx * 16 + 3 + (int)(Art.Hash(tx, ty, 92) * 10), y = ty * 16 + 4 + (int)(Art.Hash(tx, ty, 93) * 9);
+            if (roll < 0.18f)
+            {
+                // Clover: three dark leaves around a bright centre.
+                img[x, y] = g[3]; img[x - 1, y] = g[0]; img[x + 1, y] = g[0]; img[x, y - 1] = g[0]; img[x, y + 1] = g[1];
+            }
+            else if (roll < 0.28f)
+            {
+                img[x, y] = Pal.Stone[2]; img[x + 1, y] = Pal.Stone[1]; img[x, y + 1] = Pal.Stone[0]; img[x - 1, y] = Pal.Stone[3];
+            }
+            else if (roll < 0.36f)
+            {
+                var petal = Pal.FlowerColors[(int)(Art.Hash(tx, ty, 94) * 4)];
+                img[x, y] = petal; img[x, y + 1] = g[0];
+            }
+            else if (roll < 0.5f)
+            {
+                // A taller tuft of blades.
+                img[x, y] = g[0]; img[x, y - 1] = g[1]; img[x, y - 2] = g[3]; img[x + 1, y] = g[0]; img[x + 1, y - 1] = g[2]; img[x - 1, y - 1] = g[3];
+            }
+        }
+    }
+
+    /// <summary>Short blades spilling out of tall-grass patches onto the plain grass beside them, so patches have no ruler edges.</summary>
+    private static void TallGrassFringe(PixelImage img, MapDef map)
+    {
+        var c = Pal.TallGrass;
+        (int Dx, int Dy)[] sides = [(0, -1), (1, 0), (0, 1), (-1, 0)];
+        for (int ty = 0; ty < map.Height; ty++)
+        for (int tx = 0; tx < map.Width; tx++)
+        {
+            if (!IsGrass(map, tx, ty)) continue;
+            foreach (var (dx, dy) in sides)
+            {
+                if (map.KindAt(tx + dx, ty + dy) != TileKind.TallGrass) continue;
+                for (int i = 1; i < 15; i += 2)
+                {
+                    float roll = Art.Hash(tx * 16 + i, ty * 16 + dx * 3 + dy * 7, 120);
+                    if (roll > 0.6f) continue;
+                    int len = 1 + (int)(roll * 5);
+                    for (int k = 0; k < len; k++)
+                    {
+                        // Distance from the shared edge into this tile.
+                        int depth = k;
+                        int x = dx switch { 1 => tx * 16 + 15 - depth, -1 => tx * 16 + depth, _ => tx * 16 + i };
+                        int y = dy switch { 1 => ty * 16 + 15 - depth, -1 => ty * 16 + depth, _ => ty * 16 + i };
+                        if (dy == 0) y += k % 2;
+                        img[x, y] = k == len - 1 ? c[3] : k == 0 ? c[1] : c[2];
+                    }
+                }
+            }
+        }
+    }
+
+    private static void CastShadows(MapDef map, bool[] mask, int w, int h)
+    {
+        void Ellipse(float cx, float cy, float rx, float ry)
+        {
+            for (int y = (int)(cy - ry); y <= (int)(cy + ry) + 1; y++)
+            for (int x = (int)(cx - rx); x <= (int)(cx + rx) + 1; x++)
+            {
+                if (x < 0 || y < 0 || x >= w || y >= h) continue;
+                float dx = (x + 0.5f - cx) / rx, dy = (y + 0.5f - cy) / ry;
+                if (dx * dx + dy * dy <= 1) mask[y * w + x] = true;
+            }
+        }
+        void Rect(int x0, int y0, int rw, int rh)
+        {
+            for (int y = Math.Max(0, y0); y < Math.Min(h, y0 + rh); y++)
+            for (int x = Math.Max(0, x0); x < Math.Min(w, x0 + rw); x++)
+                mask[y * w + x] = true;
+        }
+
+        for (int ty = 0; ty < map.Height; ty++)
+        for (int tx = 0; tx < map.Width; tx++)
+        {
+            float px = tx * 16, py = ty * 16;
+            switch (map.KindAt(tx, ty))
+            {
+                case TileKind.Tree: Ellipse(px + 10, py + 14, 8.5f, 3.6f); break;
+                case TileKind.Pine: Ellipse(px + 10, py + 14.5f, 6.5f, 2.8f); break;
+                case TileKind.Rock: Ellipse(px + 10, py + 14, 6.5f, 2.6f); break;
+                case TileKind.Bush: Ellipse(px + 10, py + 14, 6.5f, 2.6f); break;
+                case TileKind.Fence: Rect(tx * 16 + 2, ty * 16 + 13, 16, 2); break;
+                case TileKind.Ledge: Rect(tx * 16, ty * 16 + 14, 16, 2); break;
+                case TileKind.Statue: Ellipse(px + 10, py + 14.5f, 7, 2.6f); break;
+                case TileKind.Bookshelf or TileKind.Shelf or TileKind.Machine or TileKind.Kitchen:
+                    Rect(tx * 16 + 2, ty * 16 + 15, 16, 2);
+                    if (map.KindAt(tx + 1, ty) is TileKind.Floor or TileKind.Mat or TileKind.Rug or TileKind.Carpet) Rect(tx * 16 + 16, ty * 16 - 2, 3, 18);
+                    break;
+                case TileKind.Bed:
+                    if (map.KindAt(tx, ty + 1) != TileKind.Bed) Rect(tx * 16 + 2, ty * 16 + 15, 15, 2);
+                    break;
+                case TileKind.Table or TileKind.Pedestal or TileKind.Counter or TileKind.Altar or TileKind.Tv:
+                    if (map.KindAt(tx, ty + 1) is not (TileKind.Table or TileKind.Pedestal or TileKind.Counter)) Rect(tx * 16 + 1, ty * 16 + 15, 16, 2);
+                    break;
+                case TileKind.Plant: Ellipse(px + 9.5f, py + 14.5f, 5.5f, 2.2f); break;
+                case TileKind.Wall:
+                    // Walls darken the floor strip right below them.
+                    if (map.KindAt(tx, ty + 1) is not (TileKind.Wall or TileKind.Void)) Rect(tx * 16, ty * 16 + 16, 16, 3);
+                    break;
+            }
+        }
+        foreach (var s in map.Signs) Ellipse(s.X * 16 + 10, s.Y * 16 + 14.5f, 5, 2);
+        foreach (var b in map.Buildings)
+        {
+            int x0 = b.X * 16, right = (b.X + b.W) * 16, top = b.Y * 16, bottom = (b.Y + b.H) * 16;
+            // Cast shadow off the right wall: a band that starts below the eave and slants down.
+            for (int y = top + 2; y < bottom + 3; y++)
+            {
+                int reach = Math.Min(5, (y - top - 2) / 3 + 2);
+                for (int x = right - 2; x < right + reach; x++)
+                    if (x >= 0 && x < w && y >= 0 && y < h) mask[y * w + x] = true;
+            }
+            // Contact shadow along the base, shifted right.
+            Rect(x0 + 4, bottom + 1, right - x0, 3);
+        }
+    }
+}

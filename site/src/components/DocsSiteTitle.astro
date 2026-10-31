@@ -1,0 +1,21 @@
+---
+// Documentation header title: the site mark and wordmark, linking back to the landing page (not the docs root).
+import mark from '../assets/mark.svg?url';
+---
+<a href="/" class="docs-title">
+  <img src={mark} alt="" width="28" height="28" />
+  <span>MicroEngine</span>
+</a>
+<a href="/demos/" class="docs-section">Demos</a>
+<a href="/roadmap/" class="docs-section">Roadmap</a>
+
+<style>
+  .docs-title { display: inline-flex; align-items: center; gap: var(--space-xs); text-decoration: none;
+    color: var(--sl-color-white); font-family: var(--font-display); font-size: var(--text-lg); font-weight: 500;
+    min-height: var(--tap); white-space: nowrap; }
+  .docs-title img { image-rendering: pixelated; }
+  .docs-section { margin-inline-start: var(--space-sm); color: var(--sl-color-gray-3); text-decoration: none;
+    font-family: var(--font-mono); font-size: var(--text-sm); white-space: nowrap; }
+  .docs-section:hover, .docs-title:hover span { color: var(--sl-color-accent); }
+  @media (max-width: 30rem) { .docs-section { display: none; } }
+</style>

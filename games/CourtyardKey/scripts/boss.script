@@ -1,0 +1,12 @@
+# Debug start "boss": the Warden's intro, telegraphs and attacks; throw the boomerang.
+30 hold up 30
+70 capture boss_intro.png
+130 capture boss_tell.png
+160 press action
+170 capture boss_boomerang.png
+200 capture boss_b.png
+260 capture boss_c.png
+320 capture boss_d.png
+400 capture boss_e.png
+500 capture boss_f.png
+520 quit

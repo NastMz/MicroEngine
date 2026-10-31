@@ -1,0 +1,18 @@
+# Aiming poses close-up (RIFT_GOD=1): up, up-diagonal planted, running diagonal, kneel, idle fire.
+40 hold fire 400
+40 hold up 30
+65 capture pose-up.png
+80 hold up 30
+80 hold right 30
+80 hold lock 30
+105 capture pose-diag.png
+120 hold right 30
+120 hold down 30
+145 capture pose-rundown.png
+160 hold down 30
+185 capture pose-kneel.png
+200 hold right 30
+200 hold up 30
+222 capture pose-runup.png
+240 capture pose-fire.png
+260 quit

@@ -1,0 +1,16 @@
+550 press right
+560 press confirm
+590 capture c_bag.png
+600 press down
+610 press down
+620 press confirm
+650 capture c_throw.png
+685 capture c_open.png
+740 capture c_ground.png
+820 capture c_shake.png
+1000 capture c_end.png
+1100 capture c_end2.png
+1200 press confirm
+1260 press confirm
+1300 capture c_end3.png
+1310 quit

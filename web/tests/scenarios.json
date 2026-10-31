@@ -1,0 +1,20 @@
+{
+  "$comment": "Existing game scripts replayed in browsers (run.mjs scripts) and on desktop (desktop.mjs) with the same environment and seed, so their captures can be compared; keyboard: true also replays the script through the browser keyboard (run.mjs keyboard). env holds the games' desktop developer shortcuts.",
+  "scenarios": [
+    { "game": "MeadowRun", "script": "menus.script", "keyboard": true, "env": {} },
+    { "game": "MeadowRun", "script": "smoke.script", "keyboard": true, "env": {} },
+    { "game": "MeadowRun", "script": "showcase.script", "env": { "MEADOW_START": "level", "MEADOW_FORM": "bloom" } },
+    { "game": "MeadowRun", "script": "end.script", "env": { "MEADOW_START": "credits" } },
+    { "game": "CourtyardKey", "script": "title.script", "env": {} },
+    { "game": "CourtyardKey", "script": "opening.script", "keyboard": true, "env": {} },
+    { "game": "CourtyardKey", "script": "fight.script", "keyboard": true, "env": { "COURTYARD_START": "road" } },
+    { "game": "CourtyardKey", "script": "boss.script", "env": { "COURTYARD_START": "boss" } },
+    { "game": "CourtyardKey", "script": "ending.script", "env": { "COURTYARD_START": "ending" } },
+    { "game": "TrailDuel", "script": "title.script", "env": {} },
+    { "game": "TrailDuel", "script": "newgame.script", "keyboard": true, "env": {} },
+    { "game": "TrailDuel", "script": "master-battle.script", "env": { "TRAIL_DEBUG": "trainer" } },
+    { "game": "NeonRift", "script": "menus.script", "env": {} },
+    { "game": "NeonRift", "script": "stage1.script", "keyboard": true, "env": { "RIFT_START": "stage" } },
+    { "game": "NeonRift", "script": "ending.script", "env": { "RIFT_START": "ending" } }
+  ]
+}

@@ -1,0 +1,14 @@
+# Title screen, controls panel, then a new game and the opening village.
+90 capture title.png
+100 press down
+110 press down
+120 press confirm
+150 capture controls.png
+160 press confirm
+180 press up
+190 press up
+200 press confirm
+320 capture village.png
+330 hold right 40
+380 capture village_walk.png
+400 quit

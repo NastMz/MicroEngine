@@ -1,0 +1,13 @@
+# Debug start "dungeon": swing at a pot in each direction, then throw nothing.
+30 hold left 50
+85 press confirm
+88 capture sw_a.png
+91 capture sw_b.png
+95 capture sw_c.png
+130 hold up 10
+150 press confirm
+154 capture sw_up.png
+180 hold down 10
+200 press confirm
+204 capture sw_down.png
+260 quit

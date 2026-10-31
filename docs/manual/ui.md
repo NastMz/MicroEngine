@@ -1,0 +1,135 @@
+# UI widgets
+
+The `MicroEngine.UI` namespace provides a small set of pixel-art widgets that games compose inside their own
+scenes: a `Typewriter` for revealing text, a paged `DialogueBox`, a keyboard-driven `SelectionList`, a `UiTheme`
+record that lets each game keep its own look, and the achievement banners and list screen. Widgets read input
+through actions and draw with the built-in `BitmapFont`; there is no layout system or retained widget tree.
+
+## Overview
+
+| Type | Purpose |
+| --- | --- |
+| `UiTheme` | Panel style plus text, shadow, accent and muted colours shared by the widgets |
+| `Typewriter` | Reveals a string character by character; raises `Revealed` for blip sounds |
+| `DialogueBox` | Queue of pages in a panel with a typewriter and an optional speaker tag |
+| `SelectionList` | Vertical menu navigated with up/down and chosen with confirm |
+| `AchievementToasts` | Unlock banners drawn above every scene ([Achievements](achievements.md)) |
+| `AchievementsScene` | Overlay listing a game's achievements ([Achievements](achievements.md)) |
+
+Source: [`src/MicroEngine/UI/Widgets.cs`](../../src/MicroEngine/UI/Widgets.cs),
+[`src/MicroEngine/UI/AchievementViews.cs`](../../src/MicroEngine/UI/AchievementViews.cs)
+
+## `UiTheme`
+
+```csharp
+public sealed record UiTheme(PanelStyle Panel, Color Text, Color TextShadow, Color Accent, Color Muted)
+{
+    public static readonly UiTheme Default = new(
+        new PanelStyle(Color.Hex("1c1b2e"), Color.Hex("f4f1de"), Color.Hex("3a3a5c"), Color.Hex("00000080")),
+        Color.Hex("f4f1de"), Color.Hex("0a0a14"), Color.Hex("f2cc60"), Color.Hex("8a8aa8"));
+}
+```
+
+Source: [`src/MicroEngine/UI/Widgets.cs`](../../src/MicroEngine/UI/Widgets.cs)
+
+`PanelStyle(Fill, Border, Highlight, Shadow, InnerBorder)` is drawn by the `r.Panel(rect, style)` renderer
+extension ([Rendering](rendering.md#irenderer)). Each sample game defines one theme and passes it to its widgets
+and to `UseAchievements`.
+
+## `Typewriter`
+
+| Member | Behaviour |
+| --- | --- |
+| `Start(text)` | Resets and starts revealing `text` |
+| `Update(dt)` | Reveals `CharactersPerSecond` characters per second (default 45) |
+| `Finish()` | Reveals everything at once |
+| `Visible`, `VisibleCount`, `Complete` | Current state |
+| `Revealed` event | Raised for each newly revealed non-whitespace character |
+
+## `DialogueBox`
+
+`Show(speaker, params pages)` queues pages (and opens the box if it was closed). `Update(dt, input, confirm =
+"confirm")` advances the typewriter; confirm first completes the current page, then moves to the next. It returns
+`true` while the box is active, so a scene can skip its own input handling. `Draw(r, font, area)` wraps text to
+the area, shows up to `Lines` lines (default 3), a speaker name tag and a blinking arrow when the page is complete.
+Events: `Blip` (per revealed character) and `Closed` (after the last page).
+
+Courtyard Key wraps the box in an overlay scene that freezes the world:
+
+```csharp
+public sealed class DialogueScene : Scene
+{
+    private readonly DialogueBox _box = new() { Theme = UiStyle.Theme, Lines = 3 };
+    // ...
+    public override bool IsOverlay => true;
+
+    public override void Enter()
+    {
+        _box.Blip += _ => { if (_blips++ % 2 == 0) Audio.Play("blip", 0.6f, 1f, 0.04f); };
+        _box.Closed += () => _done = true;
+        _box.Show(_speaker, _pages);
+    }
+
+    public override void Update(float dt)
+    {
+        if (_done) return;
+        _box.Update(dt, Input);
+        if (_done)
+        {
+            Game.Scenes.Pop();
+            _closed?.Invoke();
+        }
+    }
+
+    public override void Draw(IRenderer r)
+    {
+        var area = new RectF(10, 128, 300, 46);
+        _box.Draw(r, Font, area);
+    }
+}
+```
+
+Source: [`games/CourtyardKey/Scenes/DialogueScene.cs`](../../games/CourtyardKey/Scenes/DialogueScene.cs)
+
+Text longer than `Lines` lines is cut, not scrolled: split long text into several pages.
+
+## `SelectionList`
+
+`new SelectionList(params options)` needs at least one option. `Update(input, up, down, confirm)` moves the
+highlight (wrapping when `Wrap` is true, the default) and returns the chosen index on confirm, otherwise `null`.
+`SetEnabled(index, false)` greys an option out and makes it unselectable; `SetOptions` replaces the list. The
+`Moved` event fires when the highlight changes. `Draw(r, font, position, theme, time, lineHeight = 12)` draws the
+list with a bobbing cursor.
+
+```csharp
+private readonly SelectionList _menu = new("RESUME", "QUIT TO TITLE");
+// ...
+public override void Enter() => _menu.Moved += () => game.Sfx("menu-move", 0.6f);
+
+public override void Update(float dt)
+{
+    if (Input.Pressed("pause")) { Close(); return; }
+    if (_menu.Update(Input) is { } choice)
+    {
+        game.Sfx("menu-select", 0.7f);
+        if (choice == 0) Close();
+        else Game.Scenes.Reset(new TitleScene(game), Transition.Fade(0.6f));
+    }
+}
+```
+
+Source: [`games/NeonRift/Scenes/PlayScene.cs`](../../games/NeonRift/Scenes/PlayScene.cs)
+
+Games can keep the list for its logic and draw it their own way: Neon Rift passes `_menu` to its own `Ui.Menu`
+helper instead of calling `SelectionList.Draw`.
+
+## Achievement views
+
+`AchievementToasts` and `AchievementsScene` are documented with the rest of the system in
+[Achievements](achievements.md#banners).
+
+## Limitations
+
+- Keyboard and gamepad navigation only; widgets do not respond to mouse or touch.
+- Text uses the single built-in font; there is no rich text, right-to-left text or localisation support.
+- Layout is manual (rectangles and positions in virtual pixels).

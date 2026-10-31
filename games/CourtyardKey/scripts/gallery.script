@@ -1,0 +1,10 @@
+# Debug start "channel": cross the Flooded Gallery and strike the crystal with the boomerang.
+30 hold down 20
+52 hold right 154
+208 hold up 4
+214 press action
+226 capture gallery_throw.png
+300 capture gallery_solved.png
+320 press pause
+350 capture gallery_pause.png
+360 quit

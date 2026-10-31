@@ -1,0 +1,17 @@
+# Debug start "road": approach the slime near the sign and fight it.
+30 hold right 30
+62 hold up 40
+104 press confirm
+108 capture swing1.png
+112 capture swing2.png
+130 press confirm
+160 press confirm
+190 press confirm
+200 capture fight3.png
+230 press confirm
+260 press confirm
+262 capture fight4.png
+300 press pause
+330 capture pause.png
+340 press pause
+360 quit

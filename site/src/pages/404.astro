@@ -1,0 +1,20 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import PixelSprite from '../components/PixelSprite.astro';
+---
+<SiteLayout title="Page not found" description="This page does not exist." noindex>
+  <div class="wrap lost">
+    <PixelSprite file="samples/HelloEngine/Program.cs" scale={12} label="A lone star sprite" />
+    <h1>Off the map.</h1>
+    <p class="lede">There is no page at this address. It may have moved when the documentation was reorganised.</p>
+    <div class="actions">
+      <a class="button" href="/">Back to the start</a>
+      <a class="button secondary" href="/docs/">Documentation</a>
+      <a class="button secondary" href="/demos/">Demos</a>
+    </div>
+  </div>
+</SiteLayout>
+
+<style>
+  .lost { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); justify-items: start; padding-top: var(--space-4xl); }
+</style>

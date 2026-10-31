@@ -1,0 +1,201 @@
+---
+// Plays one demo inside the page. Nothing from the game package is requested until the visitor asks: the button
+// creates an iframe on /play/<Game>/ (the WEB-1 host page), and the host's messages
+// ({ source: 'microengine', game, state, detail }) drive the status line and the controls.
+import { Image } from 'astro:assets';
+import type { DemoGame } from '../data/games';
+import { playManifest, megabytes } from '../lib/play-manifest.mjs';
+
+interface Props { game: DemoGame }
+const { game } = Astro.props;
+const packaged = playManifest()?.games?.[game.id];
+const download = packaged ? `about ${megabytes(packaged.transfer)}` : '';
+---
+<section class="player" data-player data-game={game.id} data-title={game.title} data-src={`/play/${game.id}/`}
+  data-state={packaged ? 'checking' : 'missing'} aria-label={`${game.title} player`} style={`--game: var(${game.colorToken})`}>
+  <div class="stage" data-stage>
+    <Image class="poster" src={game.shots[0].src} alt="" widths={[640, 960, 1440]} sizes="(min-width: 76rem) 72rem, 100vw" loading="eager" />
+    <div class="panel" data-panel="checking">
+      <p>Checking this browser…</p>
+      <noscript><p>The demos need JavaScript and WebAssembly. Screenshots and controls are below.</p></noscript>
+    </div>
+    <div class="panel" data-panel="desktop">
+      <button type="button" class="button" data-action="load">Play {game.title}</button>
+      <p class="panel-note">Loads the game in this page: {download}. Keyboard required.</p>
+    </div>
+    <div class="panel" data-panel="unvalidated">
+      <h2 class="panel-title">Made for a keyboard</h2>
+      <p data-reason="touch">This device does not seem to have a keyboard and mouse. The demos have no touch controls and have not been tested on phones or tablets.</p>
+      <p data-reason="small-screen">This window is smaller than the demos were tested at.</p>
+      <div class="actions">
+        <a class="button" href="#screenshots">See screenshots</a>
+        <a class="button secondary" href="/docs/">Read the documentation</a>
+      </div>
+      <p class="panel-note">Have a keyboard connected? <button type="button" class="link-button" data-action="load">Try anyway</button> ({download}; this setup is not validated).</p>
+    </div>
+    <div class="panel" data-panel="unsupported">
+      <h2 class="panel-title">This browser cannot run the demos</h2>
+      <p>The games need WebAssembly and WebGL, which this browser does not offer. They were verified in Chrome and Firefox on desktop.</p>
+      <div class="actions"><a class="button" href="#screenshots">See screenshots</a></div>
+    </div>
+    <div class="panel" data-panel="failed">
+      <h2 class="panel-title">The game stopped</h2>
+      <p data-error-text>Something went wrong while loading or running the game.</p>
+      <pre class="error-detail" data-error-detail hidden></pre>
+      <div class="actions">
+        <button type="button" class="button" data-action="restart">Reload the game</button>
+        <button type="button" class="button secondary" data-action="exit">Close</button>
+      </div>
+    </div>
+    <div class="panel" data-panel="missing">
+      <h2 class="panel-title">Not included in this build</h2>
+      <p>This copy of the site was built without the web packages. Screenshots and controls are below.</p>
+    </div>
+  </div>
+  <div class="toolbar">
+    <p class="player-status" role="status" aria-live="polite" data-status>{packaged ? '' : 'Game package not included.'}</p>
+    <div class="toolbar-actions">
+      <button type="button" class="button small secondary" data-action="fullscreen" hidden>Fullscreen</button>
+      <button type="button" class="button small secondary" data-action="restart" hidden>Restart</button>
+      <button type="button" class="button small secondary" data-action="exit" hidden>Exit</button>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { classify, probe } from '../lib/capability.mjs';
+
+  const messages: Record<string, string> = {
+    loading: 'Loading the engine and the game…',
+    ready: 'Ready. Click the game or press any key to start.',
+    starting: 'Starting…',
+    playing: 'Playing. To leave the game with the keyboard, press F6 or click outside it.',
+    ended: 'The game has ended. Use “Play again” in the game, Restart, or Exit.',
+    failed: 'The game stopped because of an error.',
+  };
+
+  for (const player of document.querySelectorAll<HTMLElement>('[data-player]')) setUp(player);
+
+  function setUp(player: HTMLElement) {
+    if (player.dataset.state === 'missing') return;
+    const stage = player.querySelector<HTMLElement>('[data-stage]')!;
+    const status = player.querySelector<HTMLElement>('[data-status]')!;
+    const button = (action: string) => [...player.querySelectorAll<HTMLButtonElement>(`[data-action="${action}"]`)];
+    const [fullscreen] = button('fullscreen');
+    let frame: HTMLIFrameElement | null = null;
+    let keyboardSeen = false;
+
+    const show = (state: string, text = messages[state] ?? '') => {
+      player.dataset.state = state;
+      status.textContent = text;
+    };
+
+    // Recommendation only: an "unvalidated" device keeps a "Try anyway" button, and a hardware key press upgrades it.
+    const evaluate = () => {
+      if (frame) return;
+      const { verdict, reasons } = classify(probe(window, keyboardSeen));
+      for (const p of player.querySelectorAll<HTMLElement>('[data-reason]')) p.hidden = !reasons.includes(p.dataset.reason!);
+      show(verdict, verdict === 'desktop' ? '' : verdict === 'unvalidated' ? 'Optimised for desktop browsers with a keyboard.' : 'This browser cannot run the demos.');
+    };
+    evaluate();
+    window.addEventListener('keydown', event => { if (!keyboardSeen && event.isTrusted && !frame) { keyboardSeen = true; evaluate(); } });
+    window.addEventListener('resize', () => evaluate());
+
+    const setControls = (on: boolean) => {
+      fullscreen.hidden = !on || !document.fullscreenEnabled;
+      for (const b of [...button('restart'), ...button('exit')]) if (b.closest('.toolbar')) b.hidden = !on;
+    };
+
+    const load = () => {
+      if (frame) return;
+      frame = document.createElement('iframe');
+      frame.src = player.dataset.src!;
+      frame.title = `${player.dataset.title} (game)`;
+      frame.allow = 'fullscreen; autoplay';
+      frame.className = 'game-frame';
+      stage.append(frame);
+      setControls(true);
+      show('loading');
+    };
+
+    const exit = () => {
+      if (!frame) return;
+      if (document.fullscreenElement === stage) document.exitFullscreen();
+      // Navigating the frame away first lets the host end the run properly (it saves on pagehide).
+      const old = frame;
+      frame = null;
+      old.src = 'about:blank';
+      setTimeout(() => old.remove(), 50);
+      setControls(false);
+      evaluate();
+      player.querySelector<HTMLButtonElement>('[data-panel="desktop"] [data-action="load"]')?.focus();
+    };
+
+    const restart = () => {
+      if (!frame) return load();
+      show('loading');
+      frame.contentWindow?.location.reload();
+    };
+
+    for (const b of button('load')) b.addEventListener('click', load);
+    for (const b of button('exit')) b.addEventListener('click', exit);
+    for (const b of button('restart')) b.addEventListener('click', restart);
+    fullscreen.addEventListener('click', () => {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else stage.requestFullscreen().then(() => frame?.focus()).catch(() => { status.textContent = 'Fullscreen is not allowed here.'; });
+    });
+    document.addEventListener('fullscreenchange', () => {
+      fullscreen.textContent = document.fullscreenElement === stage ? 'Exit fullscreen' : 'Fullscreen';
+    });
+
+    window.addEventListener('message', event => {
+      const data = event.data;
+      if (!frame || event.origin !== location.origin || event.source !== frame.contentWindow) return;
+      if (data?.source !== 'microengine' || data.game !== player.dataset.game) return;
+      if (data.state === 'failed') {
+        const detail = player.querySelector<HTMLElement>('[data-error-detail]')!;
+        detail.textContent = String(data.detail ?? '');
+        detail.hidden = !data.detail;
+        show('failed');
+        return;
+      }
+      show(data.state);
+      if (data.state === 'ready') frame.focus();
+    });
+  }
+</script>
+
+<style>
+  .player { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-sm); }
+  .stage { position: relative; aspect-ratio: 16 / 9; background: var(--color-paper); border: var(--rule-pixel) solid var(--color-rule);
+    border-top: 4px solid var(--game); overflow: hidden; }
+  .stage:fullscreen { border: 0; aspect-ratio: auto; width: 100vw; height: 100vh; background: black; }
+  .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+  .panel { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: var(--space-md); padding: var(--space-lg); text-align: center; background: var(--color-scrim); overflow-y: auto; }
+  .player[data-state='checking'] [data-panel='checking'],
+  .player[data-state='desktop'] [data-panel='desktop'],
+  .player[data-state='unvalidated'] [data-panel='unvalidated'],
+  .player[data-state='unsupported'] [data-panel='unsupported'],
+  .player[data-state='failed'] [data-panel='failed'],
+  .player[data-state='missing'] [data-panel='missing'] { display: flex; }
+  .player[data-state='desktop'] [data-panel='desktop'] { background: linear-gradient(transparent 40%, var(--color-scrim)); justify-content: flex-end; }
+  .panel p { max-width: 36rem; color: var(--color-ink); }
+  .panel-title { font-family: var(--font-display); font-weight: 500; font-size: var(--text-xl); }
+  .panel-note { font-size: var(--text-sm); color: var(--color-ink-2) !important; }
+  .panel .actions { justify-content: center; }
+  .link-button { display: inline; min-height: var(--tap); padding: 0 var(--space-2xs); border: 0; background: none; color: var(--color-accent);
+    font: inherit; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; }
+  .link-button:hover { color: var(--color-accent-strong); }
+  .error-detail { max-width: 100%; max-height: 8rem; overflow: auto; margin: 0; padding: var(--space-xs); text-align: left;
+    font-size: var(--text-xs); color: var(--color-no); background: var(--color-paper); white-space: pre-wrap; }
+  .stage :global(.game-frame) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: black; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; justify-content: space-between; min-height: var(--tap); }
+  .toolbar .player-status { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-ink-2); }
+  .toolbar-actions { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+  @media (max-width: 40rem) {
+    /* On a narrow screen the message panels need more room than a 16:9 box gives them. */
+    .player:not([data-state='desktop']):not([data-state='loading']):not([data-state='ready']):not([data-state='starting']):not([data-state='playing']):not([data-state='ended']) .stage { aspect-ratio: auto; min-height: 22rem; }
+    .panel { justify-content: center; }
+  }
+</style>

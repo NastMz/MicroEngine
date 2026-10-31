@@ -1,0 +1,28 @@
+{
+  "name": "microengine-site",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "demos": "node scripts/demos.mjs fetch",
+    "dev": "astro dev",
+    "build": "node scripts/demos.mjs fetch && astro build && node scripts/check-dist.mjs",
+    "preview": "astro preview",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.42.8",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@fontsource/pixelify-sans": "5.3.0",
+    "astro": "7.4.4",
+    "sharp": "0.35.5",
+    "tar": "7.5.22"
+  },
+  "devDependencies": {
+    "puppeteer-core": "25.13.0"
+  }
+}

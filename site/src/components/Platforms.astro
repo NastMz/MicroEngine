@@ -1,0 +1,32 @@
+---
+// Platform status, limited to what has been run: automated browser tests and manual checks (WEB-1, WEB-2) and the
+// desktop validation on Windows. Keep it in step with docs/guide/platforms.md when a platform is validated.
+const rows = [
+  { platform: 'Windows desktop', state: 'ok', label: 'Validated', note: 'Native build with raylib; all tests and scripted playthroughs run here.' },
+  { platform: 'Chrome and Firefox on desktop', state: 'ok', label: 'Verified', note: 'The four demos, by automated tests in Chromium and Firefox and by manual play: keyboard, audio, saves and fullscreen.' },
+  { platform: 'Gamepad in the browser', state: 'ok', label: 'Manually tested', note: 'One controller, validated by hand in a Chromium-based browser. Other controllers and browsers are untested.' },
+  { platform: 'Linux and macOS desktop', state: 'partial', label: 'Not verified', note: '.NET and raylib run there, so they may work; no build has been verified and they are not supported yet.' },
+  { platform: 'Safari and other browsers', state: 'partial', label: 'Not tested', note: 'Safari has not been tested. Other Chromium-based browsers, such as Edge, are not claimed.' },
+  { platform: 'Phones and tablets', state: 'no', label: 'Not supported', note: 'This site works on them. The demos have no touch controls and are not validated on real devices.' },
+];
+---
+<div class="table-scroll">
+  <table class="plain">
+    <thead><tr><th scope="col">Platform</th><th scope="col">Status</th><th scope="col">Notes</th></tr></thead>
+    <tbody>
+      {rows.map(row => (
+        <tr><th scope="row">{row.platform}</th><td><span class={`status ${row.state}`}>{row.label}</span></td><td class="muted">{row.note}</td></tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  tbody th { font-family: var(--font-body); font-size: var(--text-sm); text-transform: none; letter-spacing: 0; color: var(--color-ink); font-weight: 600; }
+  @media (max-width: 40rem) {
+    table, tbody, tr, th, td { display: block; }
+    thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    tr { padding-block: var(--space-sm); border-bottom: var(--rule-thin) solid var(--color-rule); }
+    tbody th, td { border: 0 !important; padding: var(--space-2xs) 0 !important; }
+  }
+</style>

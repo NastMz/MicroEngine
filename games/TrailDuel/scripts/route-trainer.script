@@ -1,0 +1,15 @@
+30 hold up 62
+96 capture tr_bubble.png
+140 capture tr_walk.png
+200 press confirm
+260 capture tr_intro.png
+@+40 press confirm
+@+80 capture tr_battle1.png
+@+60 press confirm
+@+60 press confirm
+@+60 capture tr_battle2.png
+@+60 press confirm
+@+60 press confirm
+@+60 press confirm
+@+60 capture tr_battle3.png
+@+5 quit

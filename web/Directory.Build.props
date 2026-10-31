@@ -1,0 +1,36 @@
+<Project>
+  <!-- Browser builds need a .NET SDK with the wasm-tools workload and raylib rebuilt with its emscripten;
+       web/setup.sh prepares both and web/build.sh runs the build (see web/README.md). -->
+  <Import Project="../Directory.Build.props" />
+  <Import Project="games.props" />
+  <PropertyGroup>
+    <!-- One host project serves every game, so each game builds into its own folders. -->
+    <BaseIntermediateOutputPath>obj/$(Game)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin/$(Game)/</BaseOutputPath>
+    <!-- The SDK only excludes the current game's folders from the default item globs. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <OutputType>Exe</OutputType>
+    <WasmBuildNative>true</WasmBuildNative>
+    <!-- The host references the desktop game project (an executable) only for its gameplay assembly. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <!-- SaveStore serializes game types with reflection-based System.Text.Json. Trim only framework
+         assemblies and keep reflection on. The trimmer's warnings about those two calls (IL2026/IL3050) are
+         known and documented (docs/evaluations/web-support.md), so they are not repeated in every build. -->
+    <TrimMode>partial</TrimMode>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <NoWarn>$(NoWarn);IL2026;IL3050</NoWarn>
+    <!-- The games format only digits and never depend on the visitor's culture; without ICU data the framework
+         download drops from 2.7 MB to 1.7 MB (Brotli), and output no longer varies with the browser language. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- raylib rebuilt by web/setup.sh; override with -p:RaylibWasmLib=<path>. -->
+    <WebTools Condition="'$(WebTools)' == ''">$(MICROENGINE_WEB_TOOLS)</WebTools>
+    <WebTools Condition="'$(WebTools)' == ''">$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))/.microengine/web-tools</WebTools>
+    <RaylibWasmLib Condition="'$(RaylibWasmLib)' == ''">$(WebTools)/raylib-web/raylib.a</RaylibWasmLib>
+    <GameDir>$(MSBuildThisFileDirectory)../games/$([System.IO.Path]::GetDirectoryName('$(GameProject)'))/</GameDir>
+    <GameContentDir Condition="Exists('$(GameDir)Content')">$(GameDir)Content/</GameContentDir>
+    <!-- Development packages (-p:WebDevHooks=true) also ship the game's input scripts and honour URL
+         parameters (environment variables, ?script=); release packages ignore them. -->
+    <WebDevHooks Condition="'$(WebDevHooks)' == ''">false</WebDevHooks>
+  </PropertyGroup>
+</Project>

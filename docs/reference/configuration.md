@@ -1,0 +1,120 @@
+# Configuration and extensibility
+
+This page collects every setting MicroEngine and its games read: the `GameSettings` a game declares, the
+desktop launcher's command-line flags, the environment variables the four games use as developer shortcuts, the
+browser packages' options, and the points where a game or a backend plugs its own behaviour into the engine.
+
+## GameSettings
+
+Declared by every game in `Settings`
+([`src/MicroEngine/Core/Platform.cs`](../../src/MicroEngine/Core/Platform.cs)):
+
+```csharp
+public sealed record GameSettings(string Title, int VirtualWidth = 320, int VirtualHeight = 180, int Scale = 4)
+{
+    /// <summary>Fixed simulation rate in updates per second.</summary>
+    public int UpdateRate { get; init; } = 60;
+    public Color Background { get; init; } = Color.Black;
+}
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `Title` | required | Window and page title |
+| `VirtualWidth`, `VirtualHeight` | 320, 180 | The pixel-art canvas every scene draws into; the backend scales it by whole factors and letterboxes it |
+| `Scale` | 4 | Initial window scale on the desktop (overridden by `--scale N`) |
+| `UpdateRate` | 60 | Fixed simulation steps per second; `dt` is `1 / UpdateRate` |
+| `Background` | black | Clear colour of every frame |
+
+Neon Rift, for example, draws at 480x270 ([web support](../evaluations/web-support.md#lifecycle-and-presentation)).
+
+## Command-line flags
+
+Parsed by `DesktopLauncher.Run`
+([`src/MicroEngine.Raylib/DesktopLauncher.cs`](../../src/MicroEngine.Raylib/DesktopLauncher.cs)). A game that
+starts through `DesktopLauncher` accepts them on its command line.
+
+| Flag | Effect |
+| --- | --- |
+| `--script FILE` | Plays scripted input ([format](../examples/testing.md#level-3-input-scripts-and-captures)); implies a fixed step and seed 1 unless `--seed` is given |
+| `--captures DIR` | Directory for script `capture` commands (default `captures`) |
+| `--hidden` | Renders in a hidden window with a fixed step; captures still work |
+| `--headless` | Runs on `HeadlessPlatform`, without a window; no capture files are written |
+| `--frames N` | Stops after N updates |
+| `--seed N` | Seed for `Game.Random` (otherwise random, or 1 under a script) |
+| `--scale N` | Window scale |
+| `--mute` | Sets sound-effect and music volume to zero |
+
+Exit codes: 0 success, 1 game error, 2 bad arguments. An unknown argument is an error, which is why games take
+developer options from environment variables instead.
+
+## Environment variables
+
+### Games
+
+Read by each game's `Program.cs` or launch options.
+
+| Game | Variable | Effect |
+| --- | --- | --- |
+| Meadow Run | `MEADOW_START` | `title`, `map`, `level`, `credits`, `gameover` or `sheet` |
+| | `MEADOW_LEVEL` | Level number (1 to 5) |
+| | `MEADOW_CHECKPOINT` | Checkpoint to start from |
+| | `MEADOW_FORM` | `sprout`, `bloom` or `ember` |
+| | `MEADOW_SAVE_DIR` | Separate save folder |
+| Courtyard Key | `COURTYARD_START` | Checkpoint: `village`, `town`, `road`, `woods`, `bridge`, `ruins`, `dungeon`, `blocks`, `trial`, `channel`, `boss`, `ending` |
+| | `COURTYARD_SAVE_DIR` | Separate save folder |
+| Trail Duel | `TRAIL_DEBUG` | Jump to a screen or situation (`trainer`, `battle`, `evolve`, `credits` and others) |
+| | `TRAIL_EVOLVE` | Species id that evolves under `TRAIL_DEBUG=evolve` |
+| | `TRAIL_SAVE_DIR` | Separate folder for saves and achievements |
+| Neon Rift | `RIFT_START` | `title`, `stage`, `card`, `gameover`, `ending` |
+| | `RIFT_STAGE` | Stage number (1 to 3) for `stage`/`card` |
+| | `RIFT_CHECKPOINT` | Start at checkpoint N |
+| | `RIFT_WEAPON` | `Pulse`, `Spread`, `Lance` or `Rapid` |
+| | `RIFT_GOD=1` | Shots and contact do not kill |
+| | `RIFT_AUTO=1` | The test autopilot plays |
+| | `RIFT_SAVE_DIR` | Separate folder for achievements |
+
+The engine itself reads no environment variables.
+
+## Browser packages
+
+Producing browser packages is not available to external developers yet, so the build toolchain and its settings
+are internal. What a package exposes to the page that serves or embeds it:
+
+| Setting | Effect |
+| --- | --- |
+| URL parameters | Ignored by release packages. Internal development packages read `UPPER_CASE=value` environment variables, `script=<name>` and `autostart=1` from the URL |
+| iframe `allow="fullscreen; autoplay"` | Enables the package's Fullscreen button and Alt+Enter inside an iframe ([Embedding](../examples/embedding.md#the-iframe)) |
+
+The browser host builds each game with the same constructor expression as its desktop `Program.cs`, for example
+`new NeonRift.RiftGame(NeonRift.LaunchOptions.FromEnvironment())`. The browser build uses invariant globalization,
+partial trimming and reflection-based JSON for `SaveStore`.
+
+## Default input actions
+
+From `InputMap.CreateDefault()` in [`src/MicroEngine/Input/Input.cs`](../../src/MicroEngine/Input/Input.cs):
+
+| Action | Keys | Pad |
+| --- | --- | --- |
+| `left` / `right` / `up` / `down` | Arrows, A / D / W / S | D-pad, left stick |
+| `confirm` | Z, Space, Enter, J | A |
+| `cancel` | X, Backspace, K | B |
+| `action` | C, L | X |
+| `pause` | Escape, P | Start |
+
+## Extensibility points
+
+| Point | How | Example |
+| --- | --- | --- |
+| Input bindings | Override `Game.CreateInput()` and call `Bind` | Meadow Run adds `jump` and `run` ([patterns](../examples/patterns.md#actions-never-keys)) |
+| Scenes and overlays | Subclass `Scene`; override `IsOverlay`, `BlocksUpdateBelow`, `Enter`, `Exit`, `Resume` | Pause menus in every game |
+| Transitions | Subclass `Transition(float duration)` and implement `Draw` | Built-ins: `Fade`, `Iris`, `Diamonds`, `Wipe` |
+| Entities | Subclass `Entity`; override `Update`, `Draw`, `Depth`, `Removed` | Courtyard Key's `Actor` |
+| UI style | Pass a `UiTheme` to `UseAchievements`, `AchievementsScene` and widgets | Each game's theme |
+| Achievements | `Achievement.Icon`; `AchievementToasts.Top` and `Heading`; `AchievementsScene` `Title`, `CloseActions`, `Moved`, `Closed` | Neon Rift closes its list with `fire` too |
+| Lighting | `new LightMap(device, glowImage)` with your own glow image | Meadow Run's banded halos |
+| Content location | `new ContentFolder(root)` (default `<exe dir>/Content`) | Tests can point at another folder |
+| Save medium | Implement `ISaveStorage`; pass it to `SaveStore`, or set `SaveStore.DefaultStorage` before games are built | `BrowserSaveStorage` |
+| Save location | `new SaveStore(gameId, directory)` | Every game's `*_SAVE_DIR` variable |
+| Backend | Implement `IPlatform` and its device interfaces | `RaylibPlatform`, `HeadlessPlatform` ([backends](../manual/backends.md)) |
+| Host loop | Drive `GameLoop` or `GameSession` yourself, one `Tick` per frame | The browser host |

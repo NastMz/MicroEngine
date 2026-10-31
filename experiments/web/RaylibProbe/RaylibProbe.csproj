@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!-- Feasibility probe: does Raylib-cs's browser-wasm raylib.a link and run under .NET's emscripten? -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <WasmBuildNative>true</WasmBuildNative>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Raylib-cs" Version="[8.1.0]" />
+  </ItemGroup>
+  <!-- Swap the package raylib.a (built by a newer emscripten) for one rebuilt by web/build-raylib-wasm.sh. -->
+  <Target Name="_UseRebuiltRaylib" BeforeTargets="_PrepareForBrowserWasmBuildNative" Condition="'$(RaylibWasmLib)' != ''">
+    <ItemGroup>
+      <NativeFileReference Remove="@(NativeFileReference)" Condition="'%(Filename)' == 'raylib'" />
+      <NativeFileReference Include="$(RaylibWasmLib)" />
+    </ItemGroup>
+  </Target>
+</Project>

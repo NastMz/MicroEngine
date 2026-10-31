@@ -1,0 +1,35 @@
+# Level 1 direct: hold right, hop periodically, capture along the way.
+10 hold right 3000
+40 press jump
+100 down jump
+125 up jump
+130 capture l1_a.png
+180 down jump
+215 up jump
+220 capture l1_b.png
+260 down jump
+300 up jump
+340 down jump
+380 up jump
+381 capture l1_c.png
+420 down jump
+460 up jump
+500 down jump
+540 up jump
+560 capture l1_d.png
+600 down jump
+640 up jump
+680 down jump
+720 up jump
+740 capture l1_e.png
+760 down jump
+800 up jump
+840 down jump
+880 up jump
+900 capture l1_f.png
+920 down jump
+960 up jump
+1000 down jump
+1040 up jump
+1080 capture l1_g.png
+1200 quit

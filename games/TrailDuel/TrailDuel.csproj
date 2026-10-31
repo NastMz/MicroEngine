@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>TrailDuel</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="Content/**" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="TrailDuel.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
+  </ItemGroup>
+</Project>

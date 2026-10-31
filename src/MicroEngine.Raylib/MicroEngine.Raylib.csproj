@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Raylib</RootNamespace>
+    <Description>Desktop backend for MicroEngine built on raylib.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
+    <PackageReference Include="Raylib-cs" Version="[8.1.0]" />
+  </ItemGroup>
+</Project>

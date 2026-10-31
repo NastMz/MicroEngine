@@ -1,0 +1,16 @@
+# Title -> map -> level 1, walking and jumping.
+90 capture title.png
+100 press confirm
+200 capture map.png
+210 press confirm
+260 capture card.png
+420 capture level_start.png
+430 hold right 200
+470 press jump
+520 down jump
+560 up jump
+600 capture level_run.png
+640 hold right 120
+640 hold run 120
+700 capture level_run2.png
+760 quit

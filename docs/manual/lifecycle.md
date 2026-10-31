@@ -1,0 +1,175 @@
+# Game lifecycle
+
+A MicroEngine game is a subclass of `Game` that declares its settings, builds its content once in `Load` and
+pushes a first scene. A launcher pairs it with a platform and runs a fixed-step loop: input is sampled and the
+simulation advanced in exact steps of `1 / UpdateRate` seconds (60 Hz by default), then the frame is rendered once. This page describes that contract;
+the step-by-step tutorial is in [Making a game](../making-a-game.md).
+
+## The `Game` class
+
+| Member | Purpose |
+| --- | --- |
+| `Settings` (abstract) | `GameSettings`: title, virtual canvas size, window scale, update rate, background colour |
+| `Load()` (abstract) | Runs once after the platform exists: build atlases, sounds, music, push the first scene |
+| `Unload()` | Runs once before the platform is disposed: release textures you created |
+| `CreateInput()` | Returns the `InputMap`; default is `InputMap.CreateDefault()` (see [Input](input.md)) |
+| `Graphics`, `Audio`, `Input`, `Scenes`, `Font` | Services available from `Load` on |
+| `Time`, `UpdateCount` | Simulated seconds and fixed updates since start |
+| `Random` | Per-run `Random`, seeded by the launcher (`RunOptions.Seed`) |
+| `Width`, `Height` | The virtual canvas size from `Settings` |
+| `Quit()` / `QuitRequested` | Asks the loop to stop after the current frame |
+| `UseAchievements(...)`, `Achievements` | Optional achievements (see [Achievements](achievements.md)) |
+
+```csharp
+public abstract GameSettings Settings { get; }
+public IGraphicsDevice Graphics => Platform.Graphics;
+public AudioMixer Audio { get; private set; } = null!;
+public InputMap Input { get; private set; } = null!;
+public SceneManager Scenes { get; private set; } = null!;
+public BitmapFont Font { get; private set; } = null!;
+// ...
+/// <summary>Called once after the platform exists. Create atlases, sounds and push the first scene.</summary>
+protected abstract void Load();
+/// <summary>Called once before the platform is disposed.</summary>
+protected virtual void Unload() { }
+/// <summary>Override to change bindings; the default suits most games.</summary>
+protected virtual InputMap CreateInput() => InputMap.CreateDefault();
+```
+
+Source: [`src/MicroEngine/Core/Game.cs`](../../src/MicroEngine/Core/Game.cs)
+
+## `GameSettings`
+
+```csharp
+public sealed record GameSettings(string Title, int VirtualWidth = 320, int VirtualHeight = 180, int Scale = 4)
+{
+    /// <summary>Fixed simulation rate in updates per second.</summary>
+    public int UpdateRate { get; init; } = 60;
+    public Color Background { get; init; } = Color.Black;
+}
+```
+
+Source: [`src/MicroEngine/Core/Platform.cs`](../../src/MicroEngine/Core/Platform.cs)
+
+`VirtualWidth`/`VirtualHeight` define the pixel-art canvas every scene draws into ([Rendering](rendering.md));
+`Scale` is only the initial window size on desktop. Neon Rift uses a larger canvas:
+
+```csharp
+public override GameSettings Settings { get; } = new("Neon Rift", 480, 270, 3) { Background = Color.Hex("0d0b1a") };
+```
+
+Source: [`games/NeonRift/RiftGame.cs`](../../games/NeonRift/RiftGame.cs)
+
+## Start-up order
+
+`Game.Initialize` (called by the loop) sets services up in a fixed order, then runs `Load` and applies the scene
+changes `Load` requested:
+
+```csharp
+internal void Initialize(IPlatform platform, int seed)
+{
+    _platform = platform;
+    Random = new Random(seed);
+    Input = CreateInput();
+    Audio = new AudioMixer(platform.Audio);
+    Font = BitmapFont.CreateDefault(platform.Graphics);
+    Scenes = new SceneManager(this);
+    Load();
+    Scenes.ApplyPending();
+}
+```
+
+Source: [`src/MicroEngine/Core/Game.cs`](../../src/MicroEngine/Core/Game.cs)
+
+Build every texture, sound and song in `Load`, never per frame: textures need the platform's graphics device,
+and synthesis is too slow to repeat each update.
+
+## Loop, runner and session
+
+| Type | Role |
+| --- | --- |
+| `GameLoop` | One frame per `Tick()`. Captures errors instead of throwing; `Finish()` shuts the game down once and returns a `RunResult` |
+| `GameRunner.Run(game, platform, options)` | Ticks a `GameLoop` in a blocking loop; used by desktop and headless runs |
+| `GameSession` | For hosts that drive frames themselves and outlive a run (a browser page): `Start`, `Tick`, `Stop`, `Result` |
+| `RunOptions` | `Script`, `CaptureDirectory`, `MaxUpdates`, `Seed`, `Mute` |
+| `RunResult` | `Updates`, `Frames`, `Captures`, `Error` |
+
+```csharp
+public static RunResult Run(Game game, IPlatform platform, RunOptions? options = null)
+{
+    var loop = new GameLoop(game, platform, options);
+    if (loop.Start())
+        while (loop.Tick()) { }
+    return loop.Finish();
+}
+```
+
+Source: [`src/MicroEngine/Core/GameRunner.cs`](../../src/MicroEngine/Core/GameRunner.cs)
+
+`GameSession` builds a fresh game and platform on every `Start`, and when a run ends (quit, error or `Stop`)
+it calls `Finish` and disposes the platform, so the host can show its own screen and start again. See
+[Backends](backends.md) for how the desktop and browser launchers use these types.
+
+## Fixed step and frame order
+
+Each `Tick` runs one frame:
+
+1. `platform.PollEvents()`.
+2. Accumulate time. Real-time platforms add wall-clock time (capped at 0.25 s per frame); headless and
+   fixed-step platforms add exactly one step.
+3. Run fixed steps of `1 / UpdateRate` seconds, **at most five per frame**. Each step applies the input script,
+   samples devices into the `InputMap`, then `Game.Step` updates scenes, the audio mixer and achievement banners,
+   flushes achievement progress about once a second, and advances input edge detection.
+4. Render once: clear to `Settings.Background`, draw the scene stack and any transition, draw achievement banners.
+5. If the script asked for a capture at this update, save a PNG of the virtual frame.
+
+```csharp
+while (_accumulator >= _step - 1e-9 && steps < 5)
+{
+    script?.Apply(_game.UpdateCount, _game.Input);
+    _game.Input.Sample(_platform.Input);
+    _game.Step((float)_step);
+    _accumulator -= _step;
+    steps++;
+    // ...
+}
+if (steps == 5) _accumulator = Math.Min(_accumulator, _step);
+```
+
+Source: [`src/MicroEngine/Core/GameRunner.cs`](../../src/MicroEngine/Core/GameRunner.cs)
+
+When the machine falls behind, the cap drops the backlog instead of spiralling, so the game slows down rather
+than freezing. Because simulation only ever advances in whole steps, scripted runs on headless or fixed-step
+platforms are deterministic ([ADR 0003](../decisions/0003-scenes-entities-runtime.md)).
+
+## Quitting and shutdown
+
+A run ends when `Game.Quit()` was called, the platform reports `CloseRequested` (the desktop window was closed),
+`RunOptions.MaxUpdates` was reached, an input script's `quit` update arrived, or an exception escaped. In every
+case `GameLoop.Finish` calls `Game.Shutdown`:
+
+```csharp
+internal void Shutdown()
+{
+    Scenes.Clear();
+    _achievements?.Flush();
+    Unload();
+    Font.Dispose();
+}
+```
+
+Source: [`src/MicroEngine/Core/Game.cs`](../../src/MicroEngine/Core/Game.cs)
+
+`Scenes.Clear()` pops every scene (so each one's `Exit` runs), pending achievement progress is written, then
+your `Unload` runs. Errors are reported in `RunResult.Error`; `DesktopLauncher.Run` turns them into exit code 1.
+
+## Testing hooks
+
+`InitializeForTest(platform, seed)` and `StepForTest()` initialise a game and advance single steps without the
+loop, which suits unit tests over a `HeadlessPlatform` (see [Backends](backends.md#headless-platform)).
+
+## Related
+
+- [Scenes](scenes.md): what runs inside `Scenes.Update` and `Scenes.Draw`
+- [Architecture](../architecture.md): layers and module map
+- [ADR 0003](../decisions/0003-scenes-entities-runtime.md): why a scene stack and a fixed-step runner

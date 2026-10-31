@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8" shape-rendering="crispEdges" role="img" aria-label="MicroEngine">
+  <rect width="8" height="8" fill="#15171c"/>
+  <path fill="#f4c04a" d="M1 1h1v6H1zM6 1h1v6H6zM2 2h1v1H2zM5 2h1v1H5zM3 3h2v1H3z"/>
+  <path fill="#7fd36e" d="M3 6h2v1H3z"/>
+</svg>

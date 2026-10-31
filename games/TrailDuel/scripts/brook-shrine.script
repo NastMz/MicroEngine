@@ -1,0 +1,23 @@
+40 press pause
+60 capture m_start.png
+70 press down
+80 press down
+90 press confirm
+110 capture m_log.png
+120 press cancel
+130 press cancel
+150 hold up 16
+180 hold left 125
+320 hold up 40
+400 capture sh_in.png
+410 hold up 30
+460 press confirm
+520 press confirm
+580 capture sh_ask.png
+590 press confirm
+650 press confirm
+700 capture sh_glow.png
+800 capture sh_glow2.png
+1000 press confirm
+1060 capture sh_done.png
+1070 quit

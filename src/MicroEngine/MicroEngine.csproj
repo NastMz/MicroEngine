@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>MicroEngine</RootNamespace>
+    <Description>Backend-independent core of the MicroEngine 2D framework.</Description>
+  </PropertyGroup>
+</Project>

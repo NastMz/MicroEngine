@@ -1,0 +1,106 @@
+---
+import { Image } from 'astro:assets';
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import DemoPlayer from '../../components/DemoPlayer.astro';
+import { demoGames, type DemoGame } from '../../data/games';
+import { playManifest, megabytes } from '../../lib/play-manifest.mjs';
+
+export function getStaticPaths() {
+  return demoGames.map(game => ({ params: { game: game.slug }, props: { game } }));
+}
+
+interface Props { game: DemoGame }
+const { game } = Astro.props;
+const manifest = playManifest();
+const packaged = manifest?.games?.[game.id];
+const others = demoGames.filter(g => g.id !== game.id);
+---
+<SiteLayout title={game.title} description={`${game.title}, a ${game.genre.toLowerCase()} built with MicroEngine. ${game.tagline} Play it in a desktop browser.`} current="demos">
+  <div class="wrap demo-page" style={`--game: var(${game.colorToken})`}>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/demos/">Demos</a> <span aria-hidden="true">/</span> <span aria-current="page">{game.title}</span></nav>
+    <header class="demo-head">
+      <p class="label">{game.genre}</p>
+      <h1>{game.title}</h1>
+      <p class="lede">{game.tagline}</p>
+    </header>
+
+    <DemoPlayer game={game} />
+
+    <div class="demo-body">
+      <section aria-labelledby="about-title" class="about">
+        <h2 id="about-title">About the game</h2>
+        {game.summary.map(p => <p>{p}</p>)}
+        <p class="links">{game.credits ? <a href={game.credits}>Third-party asset credits</a> : 'No third-party assets: everything is generated in code.'} · <a href="/docs/making-a-game/">How a game is built</a></p>
+      </section>
+
+      <section aria-labelledby="controls-title">
+        <h2 id="controls-title">Controls</h2>
+        <div class="table-scroll">
+          <table class="plain">
+            <thead><tr><th scope="col">Action</th><th scope="col">Keys</th></tr></thead>
+            <tbody>{game.controls.map(([action, keys]) => <tr><td>{action}</td><td class="mono">{keys}</td></tr>)}</tbody>
+          </table>
+        </div>
+        <p class="muted small">In the browser, <kbd>Alt</kbd>+<kbd>Enter</kbd> or the Fullscreen button toggles fullscreen. A gamepad was validated by hand in a Chromium-based browser with one controller; other controllers are untested.</p>
+      </section>
+
+      <section aria-labelledby="compat-title">
+        <h2 id="compat-title">Compatibility</h2>
+        <ul class="compat">
+          <li><span class="status ok">Verified</span> Chrome and Firefox on desktop, with a keyboard (automated tests and manual play)</li>
+          <li><span class="status ok">Manually tested</span> One gamepad in a Chromium-based browser</li>
+          <li><span class="status partial">Not tested</span> Safari; other browsers are not claimed</li>
+          <li><span class="status no">Not supported</span> Phones and tablets: no touch controls, not validated on devices</li>
+        </ul>
+        <dl class="facts">
+          <div><dt>Download</dt><dd>{packaged ? `about ${megabytes(packaged.transfer)}, only when you press Play` : 'not included in this build'}</dd></div>
+          <div><dt>Content</dt><dd>{game.content.kind}: {game.content.detail}</dd></div>
+          <div><dt>Saves</dt><dd>Kept in this browser’s storage for this site, separately for each game. Clearing site data or a private window removes them.</dd></div>
+          {manifest && <div><dt>Build</dt><dd class="mono">{manifest.version} · {String(manifest.commit).slice(0, 7)}</dd></div>}
+        </dl>
+      </section>
+    </div>
+
+    <section aria-labelledby="shots-title" id="screenshots" class="shots-section">
+      <h2 id="shots-title">Screenshots</h2>
+      <ul class="shots">
+        {game.shots.map(shot => (
+          <li><figure class="shot"><Image src={shot.src} alt={shot.alt} widths={[480, 960]} sizes="(min-width: 64rem) 36rem, 100vw" loading="lazy" /></figure></li>
+        ))}
+      </ul>
+      <p class="muted small">Captured from scripted playthroughs of the desktop build, at 3× scale.</p>
+    </section>
+
+    <nav class="others" aria-labelledby="others-title">
+      <h2 id="others-title">Other demos</h2>
+      <ul>
+        {others.map(other => <li style={`--game: var(${other.colorToken})`}><a href={`/demos/${other.slug}/`}>{other.title}</a> <span class="muted">{other.genre}</span></li>)}
+      </ul>
+    </nav>
+  </div>
+</SiteLayout>
+
+<style>
+  .demo-page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); padding-top: var(--space-xl); }
+  .crumbs { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-ink-2); }
+  .crumbs a { display: inline-flex; align-items: center; min-height: var(--tap); }
+  .demo-head { display: grid; gap: var(--space-xs); }
+  .demo-head .label { color: var(--game); }
+  .demo-body { display: grid; gap: var(--space-2xl); grid-template-columns: minmax(0, 1fr); }
+  .demo-body section { display: grid; gap: var(--space-md); align-content: start; min-width: 0; }
+  .about p { max-width: var(--measure); color: var(--color-ink-2); }
+  .about .links { color: var(--color-ink); }
+  .small { font-size: var(--text-sm); }
+  .compat { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-xs); font-size: var(--text-sm); }
+  .compat li { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: var(--space-sm); align-items: baseline; }
+  .facts { margin: 0; display: grid; gap: var(--space-sm); font-size: var(--text-sm); }
+  .facts dt { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-ink-2); }
+  .facts dd { margin: 0; }
+  .shots-section { display: grid; gap: var(--space-md); }
+  .shots { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-md); grid-template-columns: minmax(0, 1fr); }
+  .others ul { list-style: none; margin: var(--space-sm) 0 0; padding: 0; display: grid; gap: var(--space-2xs); }
+  .others li { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: baseline; padding-left: var(--space-md); border-left: 4px solid var(--game); }
+  .others a { display: inline-flex; align-items: center; min-height: var(--tap); font-weight: 600; }
+  @media (min-width: 48rem) { .shots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 64rem) { .demo-body { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); } }
+</style>

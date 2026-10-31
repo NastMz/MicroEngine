@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.astro/
+# Demo packages fetched by scripts/demos.mjs
+public/play/
+.vercel/
+test-results/

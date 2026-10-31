@@ -1,0 +1,22 @@
+# Capture tour for autopilot runs (RIFT_AUTO=1 RIFT_GOD=1): one capture every 250 updates.
+250 capture auto0250.png
+500 capture auto0500.png
+750 capture auto0750.png
+1000 capture auto1000.png
+1250 capture auto1250.png
+1500 capture auto1500.png
+1750 capture auto1750.png
+2000 capture auto2000.png
+2250 capture auto2250.png
+2500 capture auto2500.png
+2750 capture auto2750.png
+3000 capture auto3000.png
+3250 capture auto3250.png
+3500 capture auto3500.png
+3750 capture auto3750.png
+4000 capture auto4000.png
+4250 capture auto4250.png
+4500 capture auto4500.png
+4750 capture auto4750.png
+5000 capture auto5000.png
+5000 quit

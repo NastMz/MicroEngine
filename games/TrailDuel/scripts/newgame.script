@@ -1,0 +1,19 @@
+30 press confirm
+50 press confirm
+150 capture home1.png
+@+30 press confirm
+@+50 press confirm
+@+50 press confirm
+@+50 press confirm
+@+50 press confirm
+@+50 press confirm
+@+40 capture home2.png
+@+10 hold down 44
+@+50 hold left 30
+@+40 hold down 16
+@+60 capture town1.png
+@+10 hold down 14
+@+20 hold right 176
+@+180 hold up 16
+@+70 capture lab1.png
+@+5 quit

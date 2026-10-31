@@ -1,0 +1,88 @@
+# Tour: run right firing and hopping; captures every 150 updates (use RIFT_GOD=1).
+10 hold fire 3990
+10 hold right 2400
+40 hold jump 22
+82 hold jump 22
+124 hold jump 22
+166 hold jump 22
+208 hold jump 22
+250 hold jump 22
+292 hold jump 22
+334 hold jump 22
+376 hold jump 22
+418 hold jump 22
+460 hold jump 22
+502 hold jump 22
+544 hold jump 22
+586 hold jump 22
+628 hold jump 22
+670 hold jump 22
+712 hold jump 22
+754 hold jump 22
+796 hold jump 22
+838 hold jump 22
+880 hold jump 22
+922 hold jump 22
+964 hold jump 22
+1006 hold jump 22
+1048 hold jump 22
+1090 hold jump 22
+1132 hold jump 22
+1174 hold jump 22
+1216 hold jump 22
+1258 hold jump 22
+1300 hold jump 22
+1342 hold jump 22
+1384 hold jump 22
+1426 hold jump 22
+1468 hold jump 22
+1510 hold jump 22
+1552 hold jump 22
+1594 hold jump 22
+1636 hold jump 22
+1678 hold jump 22
+1720 hold jump 22
+1762 hold jump 22
+1804 hold jump 22
+1846 hold jump 22
+1888 hold jump 22
+1930 hold jump 22
+1972 hold jump 22
+2014 hold jump 22
+2056 hold jump 22
+2098 hold jump 22
+2140 hold jump 22
+2182 hold jump 22
+2224 hold jump 22
+2266 hold jump 22
+2308 hold jump 22
+2350 hold jump 22
+2392 hold jump 22
+150 capture tour0150.png
+300 capture tour0300.png
+450 capture tour0450.png
+600 capture tour0600.png
+750 capture tour0750.png
+900 capture tour0900.png
+1050 capture tour1050.png
+1200 capture tour1200.png
+1350 capture tour1350.png
+1500 capture tour1500.png
+1650 capture tour1650.png
+1800 capture tour1800.png
+1950 capture tour1950.png
+2100 capture tour2100.png
+2250 capture tour2250.png
+2400 capture tour2400.png
+2550 capture tour2550.png
+2700 capture tour2700.png
+2850 capture tour2850.png
+3000 capture tour3000.png
+3150 capture tour3150.png
+3300 capture tour3300.png
+3450 capture tour3450.png
+3600 capture tour3600.png
+3750 capture tour3750.png
+3900 capture tour3900.png
+2500 hold up 1500
+4000 quit

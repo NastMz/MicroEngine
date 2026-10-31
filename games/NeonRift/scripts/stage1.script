@@ -1,0 +1,17 @@
+# Stage 1 opening: stand, run, aim up, jump, fire.
+20 capture s1-start.png
+30 hold fire 400
+30 hold right 90
+120 capture s1-run.png
+130 hold up 40
+150 capture s1-aimup.png
+175 hold right 60
+175 hold up 60
+200 capture s1-diag.png
+240 press jump
+250 capture s1-jump.png
+270 hold down 30
+290 capture s1-kneel.png
+300 hold right 200
+360 capture s1-later.png
+430 quit

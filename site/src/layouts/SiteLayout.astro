@@ -1,0 +1,76 @@
+---
+// Shell for the landing and demo pages: metadata, header, footer. Documentation pages use Starlight's own shell
+// with the same tokens and fonts.
+import '../styles/fonts.css';
+import '../styles/tokens.css';
+import '../styles/site.css';
+import mark from '../assets/mark.svg?url';
+
+interface Props { title: string; description: string; image?: string; noindex?: boolean; current?: 'home' | 'demos' | 'roadmap' }
+const { title, description, image = '/og.png', noindex = false, current } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const fullTitle = title === 'MicroEngine' ? 'MicroEngine — a code-first 2D game engine for C#' : `${title} · MicroEngine`;
+const nav = [
+  { href: '/demos/', label: 'Demos', key: 'demos' },
+  { href: '/docs/', label: 'Docs', key: 'docs' },
+  { href: '/roadmap/', label: 'Roadmap', key: 'roadmap' },
+];
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{fullTitle}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  {noindex && <meta name="robots" content="noindex" />}
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="sitemap" href="/sitemap-index.xml" />
+  <meta name="theme-color" content="#15171c" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="MicroEngine" />
+  <meta property="og:title" content={fullTitle} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={new URL(image, Astro.site)} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <slot name="head" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a href="/" class="wordmark" aria-label="MicroEngine home">
+        <img src={mark} alt="" width="28" height="28" />
+        <span>MicroEngine</span>
+      </a>
+      <nav aria-label="Main">
+        <ul>
+          {nav.map(item => (
+            <li><a href={item.href} aria-current={current === item.key ? 'page' : undefined}>{item.label}</a></li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <slot />
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <p class="footer-statement">Small engine. Finished games. Pixel art written in C#.</p>
+      <nav aria-label="Footer">
+        <ul>
+          <li><a href="/demos/">Play the demos</a></li>
+          <li><a href="/docs/">Documentation</a></li>
+          <li><a href="/docs/manual/lifecycle/">Engine manual</a></li>
+          <li><a href="/roadmap/">Roadmap</a></li>
+          <li><a href="/docs/status/">Status and limitations</a></li>
+        </ul>
+      </nav>
+      <p class="footer-meta">Third-party art and music in the demos are CC0 packs, credited on each demo’s page. The site’s fonts are Pixelify Sans and IBM Plex (SIL Open Font License).</p>
+    </div>
+  </footer>
+</body>
+</html>

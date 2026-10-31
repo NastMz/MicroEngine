@@ -1,0 +1,23 @@
+# New game: talk to the elder, receive the sword, swing it, head north.
+60 press confirm
+200 hold right 40
+250 press up
+260 press confirm
+300 capture dialogue.png
+310 press confirm
+340 press confirm
+420 press confirm
+450 press confirm
+520 press confirm
+560 press confirm
+600 capture itemget.png
+660 press confirm
+700 press confirm
+740 press confirm
+780 press confirm
+800 capture after.png
+820 press confirm
+830 capture swing.png
+860 hold up 200
+1000 capture road.png
+1100 quit

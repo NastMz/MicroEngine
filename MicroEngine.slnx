@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MicroEngine/MicroEngine.csproj" />
+    <Project Path="src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
+  </Folder>
+  <Folder Name="/games/">
+    <Project Path="games/CourtyardKey/CourtyardKey.csproj" />
+    <Project Path="games/MeadowRun/MeadowRun.csproj" />
+    <Project Path="games/NeonRift/NeonRift.csproj" />
+    <Project Path="games/TrailDuel/TrailDuel.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/HelloEngine/HelloEngine.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MicroEngine.Tests/MicroEngine.Tests.csproj" />
+    <Project Path="tests/CourtyardKey.Tests/CourtyardKey.Tests.csproj" />
+    <Project Path="tests/MeadowRun.Tests/MeadowRun.Tests.csproj" />
+    <Project Path="tests/NeonRift.Tests/NeonRift.Tests.csproj" />
+    <Project Path="tests/TrailDuel.Tests/TrailDuel.Tests.csproj" />
+  </Folder>
+</Solution>

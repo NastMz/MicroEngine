@@ -1,0 +1,8 @@
+# Level 1 with a Bloom Pip: block bumps, coins, stomp.
+10 hold right 260
+70 down jump
+95 up jump
+150 capture meadow.png
+180 down jump
+200 up jump
+300 quit

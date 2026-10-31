@@ -1,0 +1,24 @@
+20 capture lab0.png
+30 press confirm
+@+50 capture lab1.png
+@+10 press confirm
+@+30 press confirm
+@+20 capture lab2.png
+@+60 press down
+@+40 press confirm
+@+60 press confirm
+@+40 press confirm
+@+60 capture lab3.png
+@+20 press confirm
+@+60 press confirm
+@+60 press confirm
+@+60 press confirm
+@+60 press confirm
+@+60 capture lab4.png
+@+60 press confirm
+@+80 capture battle1.png
+@+60 press confirm
+@+60 press confirm
+@+60 press confirm
+@+60 capture battle2.png
+@+20 quit

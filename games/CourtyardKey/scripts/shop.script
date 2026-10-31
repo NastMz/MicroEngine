@@ -1,0 +1,11 @@
+# Village with the sword: visit Marla's shop, buy a tonic.
+30 hold right 62
+152 hold up 6
+160 press confirm
+200 press confirm
+230 press confirm
+260 capture shop.png
+270 press confirm
+290 capture shop_buy.png
+300 press cancel
+320 quit

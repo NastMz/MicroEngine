@@ -1,0 +1,69 @@
+# MicroEngine
+
+A compact, code-first 2D game framework for C#/.NET 10, with four complete pixel-art games built on it.
+
+| Game | Genre | Run |
+| --- | --- | --- |
+| [Meadow Run](games/MeadowRun/README.md) | Side-scrolling platformer | `dotnet run --project games/MeadowRun -c Release` |
+| [Courtyard Key](games/CourtyardKey/README.md) | Top-down action adventure | `dotnet run --project games/CourtyardKey -c Release` |
+| [Trail Duel](games/TrailDuel/README.md) | Creature-collecting RPG | `dotnet run --project games/TrailDuel -c Release` |
+| [Neon Rift](games/NeonRift/README.md) | Run & gun | `dotnet run --project games/NeonRift -c Release` |
+
+The four games cover the range of content approaches. Meadow Run is fully procedural: every sprite,
+tile, sound effect and song is generated in code at startup. Courtyard Key and Trail Duel are hybrids
+([ADR 0005](docs/decisions/0005-hybrid-content.md)): Courtyard Key keeps a procedural world, cast and
+boss and imports one crafted enemy; Trail Duel casts its creatures and trainers from hand-drawn CC0
+sprites, adds crafted battle effects, and paints its world, stages and music in code to match.
+Neon Rift is built from CC0 sprite sheets, tilesets, WAV effects and OGG music loaded through the
+engine's file loaders ([ADR 0004](docs/decisions/0004-external-asset-files.md)). Controls are shared: arrows/WASD to move, Z/Space to confirm, X to cancel, C for the
+secondary action, Esc/P to pause, F11 for fullscreen; gamepads work too.
+
+## Engine at a glance
+
+- Fixed-step runner, scene stack with overlays and transitions, coroutines and tweens
+- Action-based input (keyboard + gamepad), scripted input playback for tests and captures
+- Procedural pixel art (`PixelImage`, palettes, noise, dithering), sprite atlases, animation, particles,
+  camera with dead zone/bounds/shake, parallax layers, built-in proportional pixel font
+- Managed PNG and WAV loading, grid sprite-sheet slicing, streamed OGG/MP3 music, a content folder
+- Tile layers, swept tile collision with one-way platforms, autotiling, plain entities
+- Retro sound synthesizer and step-sequencer music, mixer with music fades
+- Dialogue boxes, menus, JSON saves, headless platform for deterministic tests
+- Achievements: per-game catalogs, immediate and progressive goals, saved progress, unlock banners and a
+  list screen (every game ships five)
+- raylib desktop backend behind a small `IPlatform` boundary
+
+## Documentation
+
+- [Introduction](docs/guide/introduction.md) — what MicroEngine is, who it is for, the four games, design principles
+- [Getting started](docs/guide/getting-started.md) — requirements, build, test, run a demo
+- [Engine manual](docs/manual/lifecycle.md) — lifecycle, scenes, rendering, input, audio, assets, UI, persistence, achievements, backends
+- [Contracts](docs/reference/contracts.md) — the public types games and backends depend on, with signatures
+- [Architecture](docs/architecture.md) — layers, frame, modules, design rationale
+- [Making a game](docs/making-a-game.md) — step-by-step guide with code
+- [Decisions](docs/decisions/README.md) — architecture decision records
+- [Run & gun evaluation](docs/evaluations/neon-rift.md) — what building Neon Rift showed about the engine
+- [Web builds](web/README.md) — the four games as browser packages: setup, build, run, embed
+- [Public site](docs/deployment.md) — the landing, demo pages and documentation site in `site/`: pipeline, Vercel setup
+- [Web support evaluation](docs/evaluations/web-support.md) — what was verified in Chrome and Firefox, sizes, limits
+- [WebAssembly feasibility](docs/evaluations/web-feasibility.md) — the WEB-0 experiment that preceded it
+- [Visual excellence evaluation](docs/evaluations/visual-excellence.md) — procedural, hybrid and external content across the four games
+- [Contributing](CONTRIBUTING.md) — build, test and capture commands
+
+## Build and test
+
+```bash
+dotnet build MicroEngine.slnx -c Release
+dotnet test MicroEngine.slnx -c Release
+```
+
+Requires the .NET 10 SDK. Validated on Windows 11; raylib also supports Linux and macOS, which are
+untested here.
+
+## History
+
+The previous tracer implementation and its process records are preserved at tag `reference/pre-rebuild`.
+See [ADR 0001](docs/decisions/0001-greenfield-rebuild.md) for why the project was rebuilt.
+
+## License
+
+Proprietary. All rights reserved; see [LICENSE](LICENSE). The SDK will ship under the MicroEngine SDK License, now in legal review ([draft](docs/legal/microengine-sdk-license-draft.md)). Third-party components: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

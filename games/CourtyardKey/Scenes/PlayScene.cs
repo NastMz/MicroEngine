@@ -1,0 +1,229 @@
+using System.Numerics;
+using CourtyardKey.Content;
+using CourtyardKey.Entities;
+using CourtyardKey.Model;
+using CourtyardKey.UI;
+using CourtyardKey.Visuals;
+using CourtyardKey.World;
+using MicroEngine;
+using MicroEngine.Graphics;
+using MicroEngine.Scenes;
+using MicroEngine.World;
+
+namespace CourtyardKey.Scenes;
+
+public enum PlayMode { Play, Scroll, Cutscene }
+
+/// <summary>
+/// The adventure itself: the current room, its actors, room-to-room scrolling, combat resolution,
+/// puzzles, treasure and the HUD. Split across partial files by concern.
+/// </summary>
+public sealed partial class PlayScene : Scene
+{
+    public const int HudHeight = 20;
+    public static readonly RectF WorldView = new(0, HudHeight, AreaDef.RoomPixelWidth, AreaDef.RoomPixelHeight);
+
+    private readonly List<RectF> _solids = [];
+    private readonly List<Actor> _drawList = [];
+    private readonly List<Actor> _pending = [];
+    private EntityList<Actor> _actors = new();
+    private EntityList<Actor> _leaving = new();
+    private RoomRenderer _tiles = null!;
+    private Hud _hud = null!;
+    private float _hitstop, _lowHealthTimer, _ambientTimer;
+    private float _fade;
+    private Color _fadeColor = Color.Black;
+
+    public PlayScene(CourtyardKeyGame game, Progress progress)
+    {
+        G = game;
+        Progress = progress;
+        Rng = new Random(1234 + progress.Deaths);
+    }
+
+    public CourtyardKeyGame G { get; }
+    public Sprites Art => G.Art;
+    public Progress Progress { get; }
+    public Random Rng { get; }
+    public Hero Hero { get; private set; } = null!;
+    public PlayMode Mode { get; private set; }
+    public Room Room { get; private set; } = null!;
+    public AreaMap Area { get; private set; } = null!;
+    public AreaMap OverworldMap { get; private set; } = null!;
+    public AreaMap DungeonMap { get; private set; } = null!;
+    public EntityList<Actor> Actors => _actors;
+    public ParticleSystem Particles { get; } = new(1024, 11);
+    public ParticleSystem Glows { get; } = new(512, 12) { Additive = true };
+    public ParticleSystem Ambient { get; } = new(256, 13);
+    public Camera2D Camera { get; } = new(AreaDef.RoomPixelWidth, AreaDef.RoomPixelHeight + HudHeight) { MaxShake = 4 };
+    public LightMap Light { get; private set; } = null!;
+    public Boomerang? ActiveBoomerang => _actors.OfType<Boomerang>().FirstOrDefault();
+    /// <summary>The Warden while it is in the room (drives the boss health bar).</summary>
+    public Warden? Boss { get; private set; }
+
+    public override void Enter()
+    {
+        G.Play = this;
+        Light = new LightMap(G.Graphics) { Shade = Visuals.Pal.DungeonDark };
+        _tiles = new RoomRenderer(Art);
+        _hud = new Hud(this);
+        OverworldMap = new AreaMap(Overworld.Create());
+        DungeonMap = new AreaMap(Content.Dungeon.Create());
+        Hero = new Hero(this, new Health(Progress.MaxHealth, Math.Max(2, Progress.Health)));
+        PlaceAtCheckpoint(Progress.Entrance);
+        Coroutines.Start(FadeIn(0.5f));
+    }
+
+    public override void Exit()
+    {
+        if (G.Play == this) G.Play = null;
+        Light.Dispose();
+    }
+
+    public override void Resume() => Input.Reset();
+
+    public override void Update(float dt)
+    {
+        Progress.PlaySeconds += dt;
+        Camera.Update(dt);
+        Particles.Update(dt);
+        Glows.Update(dt);
+        Ambient.Update(dt);
+        UpdateAmbience(dt);
+        if (Mode == PlayMode.Play && Input.Pressed("pause") && !Hero.Health.IsDead)
+        {
+            Audio.Play("pause");
+            Game.Scenes.Push(new PauseScene(this));
+            return;
+        }
+        if (_hitstop > 0) { _hitstop -= dt; return; }
+        switch (Mode)
+        {
+            case PlayMode.Play: UpdatePlay(dt); break;
+            case PlayMode.Scroll: UpdateScroll(dt); break;
+            case PlayMode.Cutscene:
+                foreach (var e in _actors.OfType<Effect>()) e.Update(dt);
+                FlushSpawns();
+                break;
+        }
+        _hud.Update(dt);
+    }
+
+    private void UpdatePlay(float dt)
+    {
+        Hero.Update(dt);
+        FlushSpawns();
+        _actors.Update(dt);
+        FlushSpawns();
+        ResolveCombat();
+        FlushSpawns();
+        UpdateRoomRules(dt);
+        if (Mode == PlayMode.Play) CheckExits();
+        // A soft heartbeat when one heart or less remains.
+        if (Hero.Health.Current <= 2 && !Hero.Health.IsDead && (_lowHealthTimer -= dt) <= 0)
+        {
+            _lowHealthTimer = 0.9f;
+            Audio.Play("low_health", 0.6f);
+        }
+    }
+
+    // ------------------------------------------------------------------ movement services for actors
+
+    /// <summary>Moves an actor through the room's tiles and every other solid actor.</summary>
+    public MoveResult MoveActor(Actor actor, Vector2 delta, bool flying, bool throughActors = false)
+    {
+        _solids.Clear();
+        if (!throughActors)
+            foreach (var a in _actors)
+                if (a.IsSolid && a != actor) _solids.Add(a.SolidBox);
+        var grid = new RoomGrid(Room, (x, y) => Area.Pristine(x, y), flying);
+        var result = TileMotion.Move(actor.Bounds, delta, grid, _solids);
+        actor.Position += result.Position - actor.Bounds.Position;
+        return result;
+    }
+
+    /// <summary>Queues an actor; it joins the room after the current update phase (safe during iteration).</summary>
+    public T Spawn<T>(T actor) where T : Actor
+    {
+        _pending.Add(actor);
+        return actor;
+    }
+
+    private void FlushSpawns()
+    {
+        foreach (var a in _pending) _actors.Add(a);
+        _pending.Clear();
+        _actors.Flush();
+    }
+
+    public void Burst(Vector2 at, ParticleSpec spec, int count, bool additive = false)
+        => (additive ? Glows : Particles).Emit(at, spec, count);
+
+    public void Puff(Vector2 at, bool big = false)
+    {
+        Spawn(new Effect(this, at, Art.Frames("puff"), 14));
+        if (big)
+            for (int i = 0; i < 4; i++)
+                Spawn(new Effect(this, at + MathX.FromAngle(i * MathF.PI / 2, 10), Art.Frames("puff"), 10));
+    }
+
+    public void ShakeCamera(float trauma) => Camera.Shake(trauma);
+    public void Hitstop(float seconds) => _hitstop = MathF.Max(_hitstop, seconds);
+
+    /// <summary>Rolls a drop with the given chance. Hearts are favoured when the hero is hurt.</summary>
+    public void DropLoot(Vector2 at, float chance)
+    {
+        if (Rng.NextDouble() >= chance) return;
+        double roll = Rng.NextDouble();
+        bool hurt = Hero.Health.Current < Hero.Health.Max;
+        PickupKind kind = hurt && roll < 0.4 ? PickupKind.Heart
+            : roll < 0.8 ? PickupKind.Gem
+            : roll < 0.96 ? PickupKind.BlueGem
+            : PickupKind.RedGem;
+        Spawn(new Pickup(this, at, kind));
+    }
+
+    private void UpdateAmbience(float dt)
+    {
+        if (Room is null) return;
+        _ambientTimer -= dt;
+        if (_ambientTimer > 0) return;
+        var view = Room.Bounds;
+        var at = new Vector2(view.X + (float)Rng.NextDouble() * view.Width, view.Y + (float)Rng.NextDouble() * view.Height);
+        switch (Room.Def.Ambience)
+        {
+            case Ambience.Pollen: _ambientTimer = 0.18f; Ambient.Emit(at, Fx.Pollen); break;
+            case Ambience.Leaves: _ambientTimer = 0.35f; Ambient.Emit(at with { Y = view.Y }, Fx.FallingLeaf); break;
+            case Ambience.Fireflies: _ambientTimer = 0.22f; Glows.Emit(at, Fx.Firefly); break;
+            case Ambience.Dust: _ambientTimer = 0.2f; Ambient.Emit(at, Fx.Mote); break;
+            case Ambience.Spray: _ambientTimer = 0.25f; Ambient.Emit(at, Fx.Pollen); if (Rng.NextDouble() < 0.5) Ambient.Emit(at, Fx.Spray); break;
+            default: _ambientTimer = 1; break;
+        }
+    }
+
+    // ------------------------------------------------------------------ fades
+
+    private IEnumerator<object?> FadeIn(float seconds, Color? color = null)
+    {
+        _fadeColor = color ?? Color.Black;
+        _fade = 1;
+        for (float t = 0; t < seconds; t += 1 / 60f) { _fade = 1 - t / seconds; yield return null; }
+        _fade = 0;
+    }
+
+    private IEnumerator<object?> FadeOut(float seconds, Color? color = null)
+    {
+        _fadeColor = color ?? Color.Black;
+        for (float t = 0; t < seconds; t += 1 / 60f) { _fade = t / seconds; yield return null; }
+        _fade = 1;
+    }
+
+    /// <summary>Copies live hero health into the progress and writes the save slot.</summary>
+    public void SaveGame(bool toast = true)
+    {
+        Progress.Health = Hero.Health.Current;
+        Progress.MaxHealth = Hero.Health.Max;
+        G.Saves.Save(Progress);
+        if (toast) _hud.Toast("Progress saved");
+    }
+}
