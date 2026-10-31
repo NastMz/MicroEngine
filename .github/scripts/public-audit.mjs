@@ -30,6 +30,8 @@ export const secretPatterns = [
 // References to secret stores are not secrets.
 const reference = /\$\{\{|secrets\.|process\.env|\benv\.|\$env:|example|placeholder|dummy|test-token|wrong-token/i;
 
+// This audit's own tests hold fake secrets on purpose, to prove they are found.
+export const fixtureFiles = new Set(['.github/scripts/public-audit.test.mjs']);
 export const credentialFile = /(^|\/)(\.env(\..+)?|id_(rsa|dsa|ecdsa|ed25519)|.+\.(pfx|p12|pem|key|keystore|jks|mobileprovision|snk)|.+\.(csproj|sln)\.user|\.vercel\/.+|appsettings\.(Development|Local)\.json)$/i;
 const media = /\.(png|jpe?g|gif|bmp|mp3|ogg|wav|flac|ttf|otf|aseprite|psd)$/i;
 const notice = /(^|\/)(NOTICE|LICEN[CS]E|CREDITS|provenance)[^/]*$/i;
@@ -53,7 +55,7 @@ export function audit({ root = process.cwd(), legacy, rebuild } = {}) {
   for (const line of git(['log', '--all', '-p', '--no-color', '-U0', '--format=commit %H'], root).split('\n')) {
     if (line.startsWith('commit ')) commit = line.slice(7, 19);
     else if (line.startsWith('+++ b/')) file = line.slice(6);
-    else if (line.startsWith('+') && !line.startsWith('+++')) {
+    else if (line.startsWith('+') && !line.startsWith('+++') && !fixtureFiles.has(file)) {
       for (const kind of secretKinds(line)) result.secrets.push({ commit, file, kind });
     }
   }

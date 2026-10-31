@@ -35,6 +35,7 @@ test('audit: history is read, MIT commits are split by implementation, values ne
   git('tag', 'legacy');
   const secret = `password = "${'s3cr3t'.repeat(3)}"`;
   write('config.txt', secret);
+  write('.github/scripts/public-audit.test.mjs', secret);
   commit('new with MIT still');
   const rebuild = git('rev-parse', 'HEAD');
   write('LICENSE', 'All rights reserved.');
@@ -50,7 +51,7 @@ test('audit: history is read, MIT commits are split by implementation, values ne
   assert.equal(result.licence.current, 1, 'the commit of the new implementation that still said MIT');
   assert.equal(result.licence.head, 'not MIT');
   assert.equal(result.secrets.length, 1);
-  assert.equal(result.secrets[0].file, 'config.txt');
+  assert.equal(result.secrets[0].file, 'config.txt'); // the audit's own fixture file is not reported
   assert.deepEqual(result.media.folders, [{ dir: 'assets/music', files: 1, notice: false }]);
   const text = report(result);
   assert.ok(!text.includes('s3cr3t'), 'the report never shows the value');
