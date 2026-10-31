@@ -44,6 +44,9 @@ public sealed class RaylibPlatform : IPlatform
         Rl.SetConfigFlags(flags);
         int scale = options.Scale ?? settings.Scale;
         Rl.InitWindow(settings.VirtualWidth * scale, settings.VirtualHeight * scale, settings.Title);
+        // Without a window raylib keeps going, and the next window call aborts the process from inside GLFW.
+        if (!Rl.IsWindowReady())
+            throw new InvalidOperationException("raylib could not open a window: no display, or no usable OpenGL (raylib's warnings above give the reason).");
         // A page may be smaller than the virtual canvas (a small iframe); the canvas then scales down instead of being cropped.
         if (!OperatingSystem.IsBrowser()) Rl.SetWindowMinSize(settings.VirtualWidth, settings.VirtualHeight);
         Rl.SetExitKey(Raylib_cs.KeyboardKey.Null);

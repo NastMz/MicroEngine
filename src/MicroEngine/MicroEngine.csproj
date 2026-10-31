@@ -3,4 +3,7 @@
     <RootNamespace>MicroEngine</RootNamespace>
     <Description>Backend-independent core of the MicroEngine 2D framework.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
 </Project>

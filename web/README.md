@@ -165,7 +165,8 @@ they are elsewhere) with autoplay blocked until a gesture. Suites: `platform` (l
 restart), `scripts` (the games' own scripts listed in `scenarios.json`, captures stored in `dist/web-tests`),
 `keyboard` (the same scripts typed through the browser keyboard), `framerate` and `autopilot` (Neon Rift's
 autopilot clears all three stages). `desktop.mjs` replays the scenarios on the desktop build and compares the
-captures byte for byte.
+captures byte for byte. With `--reference reference/linux-x64.json` it also checks the native captures against the
+Linux visual reference (`captures.mjs`), as the pipeline's native Linux job does under Xvfb.
 
 ## Adding a fifth game
 
@@ -183,7 +184,8 @@ captures byte for byte.
 
 3. `web/build.sh MyGame`, then `node web/serve.mjs dist/web` and play it.
 4. Add it to `games` and to the quitting script table in `web/tests/run.mjs`, add scenarios to
-   `web/tests/scenarios.json` (and its save-folder variable to `desktop.mjs`), and run the tests.
+   `web/tests/scenarios.json` (and its save-folder variable to `desktop.mjs`), and run the tests. New scenarios add
+   captures: regenerate the Linux reference with `desktop.mjs --write-reference` under Xvfb.
 5. Give it a page: add its entry to `site/src/data/games.ts` (`npm test` in `site/` fails until the site and the
    registry list the same games). On merge, the pipeline builds, stores and publishes its package
    ([publishing the site](../docs/deployment.md)); no workflow changes.

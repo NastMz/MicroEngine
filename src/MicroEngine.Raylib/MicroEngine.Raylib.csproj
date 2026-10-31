@@ -6,5 +6,6 @@
   <ItemGroup>
     <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
     <PackageReference Include="Raylib-cs" Version="[8.1.0]" />
+    <InternalsVisibleTo Include="MicroEngine.Raylib.Tests" />
   </ItemGroup>
 </Project>

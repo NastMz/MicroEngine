@@ -1,5 +1,6 @@
 # MicroEngine's one pipeline (docs/deployment.md, "Pipeline"):
 #   pull request   tests, builds any demo whose inputs changed, builds and checks the site, deploys a protected preview
+#                  (engine changes: .NET tests on Windows, Linux and macOS, plus native raylib checks on Linux)
 #   push to main   the same, then deploys production: merging an approved pull request publishes it
 #   manual run     a preview from any branch, or production from main
 # Demo packages are content-addressed (site/scripts/demos.mjs): each game's key hashes its inputs, so a package is
@@ -58,23 +59,114 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" != pull_request ]; then echo "engine=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           if git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD" \
-            | grep -qE '^(src|games|tests|samples)/|^(Directory\.Build\.props|global\.json|NuGet\.config|MicroEngine\.slnx)$'; then
+            | grep -qE '^(src|games|tests|samples|web/tests)/|^\.github/(workflows|scripts)/|^(Directory\.Build\.props|global\.json|NuGet\.config|MicroEngine\.slnx)$'; then
             echo "engine=true" >> "$GITHUB_OUTPUT"
           else
             echo "engine=false" >> "$GITHUB_OUTPUT"
           fi
 
+  # The engine and the four games' tests (headless simulation) on each desktop system. Native tests (a real window,
+  # keyboard or sound server) are filtered out here and run in native-linux. Tests that only apply to another system
+  # ([OSCondition]) are reported as skipped with their reason in the job summary, not as failures.
   engine-tests:
-    name: Engine and game tests
+    name: .NET tests (${{ matrix.os }})
     needs: plan
     if: needs.plan.outputs.engine == 'true'
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    # macOS is being evaluated: its results are recorded but do not block the pipeline yet (docs/guide/platforms.md).
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
-      - run: dotnet test MicroEngine.slnx -c Release
+      - run: dotnet test MicroEngine.slnx -c Release --filter "TestCategory!=Native" --logger trx --results-directory test-results
+      - if: always()
+        run: node .github/scripts/test-summary.mjs test-results ".NET tests on ${{ runner.os }}"
+
+  # The desktop backend for real on Linux: raylib with OpenGL (Mesa) in a virtual X display, the keyboard through the
+  # X server, audio through a virtual PulseAudio sink, and the games' scripted runs compared with the Linux reference.
+  native-linux:
+    name: Native Linux (raylib, Xvfb)
+    needs: plan
+    if: needs.plan.outputs.engine == 'true'
+    runs-on: ubuntu-latest
+    env:
+      MICROENGINE_NATIVE_TESTS: '1'
+      MICROENGINE_AUDIO_MONITOR: microengine.monitor
+    defaults:
+      run:
+        shell: bash # with pipefail, so `| tee` keeps a failure
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Virtual display and sound server
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1 libglx-mesa0 libgl1-mesa-dri libxtst6 pulseaudio pulseaudio-utils
+          export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$RUNNER_TEMP/xdg}"
+          mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+          echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
+          pulseaudio --start --exit-idle-time=-1
+          # An idle null sink is suspended and its monitor goes quiet; keep it running for the recording test.
+          pactl unload-module module-suspend-on-idle || true
+          pactl load-module module-null-sink sink_name=microengine
+          pactl set-default-sink microengine
+      - run: dotnet build MicroEngine.slnx -c Release
+      - name: Keyboard and audio (native tests)
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
+      - if: always()
+        run: node .github/scripts/test-summary.mjs test-results "Native tests on Linux"
+      - name: Scripted captures against the Linux reference
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --out native-captures --reference web/tests/reference/linux-x64.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-linux-captures
+          path: native-captures/desktop
+          retention-days: 7
+
+  # First steps on macOS: the native tests and scripted runs are attempted and recorded, never blocking. The captures
+  # are checked for completeness and size only (there is no macOS reference yet) and kept for review.
+  native-macos:
+    name: Native macOS (experimental)
+    needs: plan
+    if: needs.plan.outputs.engine == 'true'
+    runs-on: macos-latest
+    continue-on-error: true
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: dotnet build MicroEngine.slnx -c Release
+      - name: Native tests (audio device; the keyboard test is Linux-only)
+        run: dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
+      - if: always()
+        run: node .github/scripts/test-summary.mjs test-results "Native tests on macOS"
+      - name: Scripted captures (completeness and size against the Linux reference)
+        run: node web/tests/desktop.mjs --out native-captures --reference web/tests/reference/linux-x64.json --names-only | tee -a "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-macos-captures
+          path: native-captures/desktop
+          retention-days: 7
 
   build-demos:
     name: Build ${{ matrix.game }}
@@ -114,10 +206,11 @@ jobs:
 
   site:
     name: Site
-    needs: [plan, engine-tests, build-demos]
+    needs: [plan, engine-tests, native-linux, build-demos]
     if: >-
       always() && needs.plan.result == 'success'
       && contains(fromJSON('["success", "skipped"]'), needs.engine-tests.result)
+      && contains(fromJSON('["success", "skipped"]'), needs.native-linux.result)
       && contains(fromJSON('["success", "skipped"]'), needs.build-demos.result)
     runs-on: ubuntu-latest
     defaults:

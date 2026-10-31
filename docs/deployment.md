@@ -15,7 +15,9 @@ One workflow, [`.github/workflows/pipeline.yml`](../.github/workflows/pipeline.y
 | Job | Runs on | What it does |
 | --- | --- | --- |
 | Plan | every run | computes each game's key and lists the games whose package is not stored yet; detects engine changes |
-| Engine and game tests | engine, game or test changes (always on `main`) | `dotnet test MicroEngine.slnx -c Release` on Windows |
+| .NET tests | engine, game or test changes (always on `main`) | `dotnet test MicroEngine.slnx -c Release` on Windows, Linux and macOS (macOS does not block yet); native tests excluded, skipped tests listed with their reason |
+| Native Linux | same | under Xvfb and a PulseAudio null sink: the native keyboard and audio tests, and the 15 scripted scenarios compared with the Linux visual reference |
+| Native macOS | same | experimental, never blocks: native tests and the scripted scenarios (completeness and size only); captures kept as an artifact |
 | Build *Game* | one job per game whose key is not stored | `web/setup.sh` (cached), `web/build.sh <Game>`, then `demos.mjs publish` stores the package |
 | Site | every run, after the above succeed | unit tests, `npm run build` with the stored packages, browser checks in Chrome and Firefox |
 | Deploy | after Site succeeds | `vercel build` and `vercel deploy --prebuilt`: a preview for pull requests, production for `main` |

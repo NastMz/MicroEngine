@@ -19,7 +19,10 @@ build. Items move off this list only when a change and its validation are record
 
 | Limitation | Evidence |
 | --- | --- |
-| Linux and macOS desktop: potentially compatible thanks to .NET and raylib, but not verified and not officially supported | [Platforms](../guide/platforms.md#support-table) |
+| Linux desktop: automated checks pass (build, tests, native rendering, keyboard, audio output on virtual devices), but manual play on real hardware is pending, so it is not supported yet | [Platforms](../guide/platforms.md#desktop-validation) |
+| macOS desktop: under evaluation, not supported | [Platforms](../guide/platforms.md#desktop-validation) |
+| Linux on ARM: no native raylib library in `Raylib-cs` | [Platforms](../guide/platforms.md#support-table) |
+| Gamepads on Linux and macOS: not covered by any check | [Platforms](../guide/platforms.md#desktop-validation) |
 | Safari not tested | [Platforms](../guide/platforms.md#support-table) |
 | Chromium-based browsers other than Chrome (for example Edge) not claimed; automated browser tests cover Chrome and Firefox only | [Platforms](../guide/platforms.md#support-table) |
 | Phones and tablets: the demos are not validated on real mobile devices | [Platforms](../guide/platforms.md#phones-and-tablets) |

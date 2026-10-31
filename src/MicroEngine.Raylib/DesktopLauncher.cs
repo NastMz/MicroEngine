@@ -37,9 +37,19 @@ public static class DesktopLauncher
             Seed = parsed.Seed,
             Mute = parsed.Mute,
         };
-        using IPlatform platform = parsed.Headless
-            ? HeadlessPlatform.For(game.Settings)
-            : new RaylibPlatform(game.Settings, new DesktopOptions(parsed.Scale, parsed.Hidden, FixedStep: parsed.ScriptPath is not null || parsed.Hidden, parsed.Mute));
+        IPlatform platform;
+        try
+        {
+            platform = parsed.Headless
+                ? HeadlessPlatform.For(game.Settings)
+                : new RaylibPlatform(game.Settings, new DesktopOptions(parsed.Scale, parsed.Hidden, FixedStep: parsed.ScriptPath is not null || parsed.Hidden, parsed.Mute));
+        }
+        catch (InvalidOperationException e)
+        {
+            Console.Error.WriteLine($"error: {e.Message}");
+            return 1;
+        }
+        using var owned = platform;
         var result = GameRunner.Run(game, platform, options);
         foreach (var capture in result.Captures) Console.WriteLine($"capture: {capture}");
         if (result.Error is { } error)

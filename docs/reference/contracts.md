@@ -223,6 +223,7 @@ public sealed class SaveStore
     public string Directory => _storage.Location;
     public SaveStore(string gameId, string? directory = null)
     public SaveStore(ISaveStorage storage)
+    public static string DefaultDirectory(string gameId)
     public T? Load<T>(string slot) where T : class
     public bool Save<T>(string slot, T data)
     public bool Exists(string slot) => _storage.Exists(slot);
@@ -245,7 +246,7 @@ public interface ISaveStorage
 | Missing or corrupt slot | `Load` returns null; corrupt data is set aside (`<slot>.corrupt.json` for files) |
 | Unreadable slot (I/O or access error) | `Load` returns null and that store never writes the slot |
 | Refused write | `Save` returns false; the game keeps running |
-| Where | Files under local application data by default; `localStorage` in the browser via `DefaultStorage` |
+| Where | Files under `DefaultDirectory(gameId)` by default (local application data on Windows and macOS, the XDG data folder on Linux); `localStorage` in the browser via `DefaultStorage` |
 
 Implementations: `FileSaveStorage` (core), `BrowserSaveStorage` (`MicroEngine.Raylib`). See
 [Persistence](../manual/persistence.md).

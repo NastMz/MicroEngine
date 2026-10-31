@@ -338,5 +338,78 @@ public sealed class AudioTests
         StringAssert.EndsWith(new SaveStore("game").Directory, Path.Combine("MicroEngine", "game"), "Without a launcher choice saves go to local app data.");
     }
 
+    [TestMethod]
+    public void The_default_save_folder_is_absolute_on_every_system()
+    {
+        var dir = SaveStore.DefaultDirectory("game");
+        Assert.IsTrue(Path.IsPathFullyQualified(dir), $"Saves must never depend on the working directory: {dir}");
+        StringAssert.EndsWith(dir, Path.Combine("MicroEngine", "game"));
+        Assert.AreEqual(dir, new SaveStore("game").Directory);
+    }
+
+    [TestMethod]
+    public void Linux_user_data_follows_the_XDG_base_directory_rule()
+    {
+        Assert.AreEqual("/data/me", SaveStore.XdgDataHome("/data/me/", "/home/me"), "An absolute XDG_DATA_HOME wins.");
+        Assert.AreEqual("/home/me/.local/share", SaveStore.XdgDataHome(null, "/home/me"), "Unset: the XDG default.");
+        Assert.AreEqual("/home/me/.local/share", SaveStore.XdgDataHome("", "/home/me/"), "Empty counts as unset.");
+        Assert.AreEqual("/home/me/.local/share", SaveStore.XdgDataHome("relative/data", "/home/me"), "A relative value is invalid and ignored.");
+        Assert.IsNull(SaveStore.XdgDataHome(null, null), "No home: the caller picks a fallback, never the working directory.");
+        Assert.IsNull(SaveStore.XdgDataHome("data", "home"));
+    }
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Linux)]
+    [DoNotParallelize]
+    public void On_Linux_saves_reach_a_data_folder_that_does_not_exist_yet()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "microengine-tests-" + Guid.NewGuid().ToString("N"));
+        var (home, cwd) = (Path.Combine(root, "home"), Path.Combine(root, "cwd"));
+        Directory.CreateDirectory(home);
+        Directory.CreateDirectory(cwd);
+        var saved = (Xdg: Environment.GetEnvironmentVariable("XDG_DATA_HOME"), Home: Environment.GetEnvironmentVariable("HOME"), Cwd: Environment.CurrentDirectory);
+        try
+        {
+            Environment.CurrentDirectory = cwd;
+            Environment.SetEnvironmentVariable("HOME", home);
+            Environment.SetEnvironmentVariable("XDG_DATA_HOME", Path.Combine(root, "xdg", "data"));
+            Assert.IsTrue(new SaveStore("game").Save("slot", new Progress { Level = 4 }));
+            Assert.IsTrue(File.Exists(Path.Combine(root, "xdg", "data", "MicroEngine", "game", "slot.json")), "Missing parent folders are created.");
+            Assert.AreEqual(4, new SaveStore("game").Load<Progress>("slot")!.Level, "The next session finds the save.");
+
+            Environment.SetEnvironmentVariable("XDG_DATA_HOME", "relative-data");
+            Assert.IsTrue(new SaveStore("game").Save("slot", new Progress { Level = 5 }));
+            Assert.IsTrue(File.Exists(Path.Combine(home, ".local", "share", "MicroEngine", "game", "slot.json")), "~/.local/share is created when absent.");
+            Assert.AreEqual(0, Directory.GetFileSystemEntries(cwd).Length, "Nothing is written to the working directory.");
+        }
+        finally
+        {
+            Environment.CurrentDirectory = saved.Cwd;
+            Environment.SetEnvironmentVariable("HOME", saved.Home);
+            Environment.SetEnvironmentVariable("XDG_DATA_HOME", saved.Xdg);
+            Directory.Delete(root, true);
+        }
+    }
+
+    [TestMethod]
+    public void A_save_folder_blocked_by_a_file_fails_softly_and_recovers()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "microengine-tests-" + Guid.NewGuid().ToString("N"));
+        var blocker = Path.Combine(root, "saves");
+        Directory.CreateDirectory(root);
+        File.WriteAllText(blocker, "not a folder");
+        try
+        {
+            var store = new SaveStore("game", Path.Combine(blocker, "game"));
+            Assert.IsFalse(store.Save("slot", new Progress { Level = 2 }), "The game keeps running with progress in memory.");
+            Assert.IsNull(store.Load<Progress>("slot"));
+            Assert.IsFalse(store.Exists("slot"));
+            File.Delete(blocker);
+            Assert.IsTrue(store.Save("slot", new Progress { Level = 2 }), "Once the path is usable the next save succeeds.");
+            Assert.AreEqual(2, new SaveStore("game", Path.Combine(blocker, "game")).Load<Progress>("slot")!.Level);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     public sealed class Progress { public int Level { get; set; } public string Name { get; set; } = ""; }
 }

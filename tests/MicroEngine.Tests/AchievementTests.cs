@@ -221,9 +221,9 @@ public sealed class AchievementTests
     }
 
     [TestMethod]
+    [OSCondition(OperatingSystems.Windows, IgnoreMessage = "Exclusive file locks are only enforced on Windows.")]
     public void An_unreadable_file_is_never_overwritten()
     {
-        if (!OperatingSystem.IsWindows()) Assert.Inconclusive("Exclusive file locks are only enforced on Windows.");
         var first = new AchievementTracker(Catalog, Store());
         first.Unlock("first");
         string file = Path.Combine(Store().Directory, AchievementTracker.SaveSlot + ".json");

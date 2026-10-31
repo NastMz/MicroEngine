@@ -8,9 +8,10 @@ page lists each target and exactly how far it has been validated.
 
 | Target | Backend | Status |
 | --- | --- | --- |
-| Windows desktop | `RaylibPlatform` through `DesktopLauncher` | Validated: builds, all tests and scripted captures |
-| Linux desktop | `RaylibPlatform` | Potentially compatible thanks to .NET and raylib; not verified and not officially supported |
-| macOS desktop | `RaylibPlatform` | Potentially compatible thanks to .NET and raylib; not verified and not officially supported |
+| Windows desktop (x64) | `RaylibPlatform` through `DesktopLauncher` | Supported: builds, all tests and scripted captures, manual play |
+| Linux desktop (x64) | `RaylibPlatform` through `DesktopLauncher` | Automatically checked, not yet supported: see [Desktop validation](#desktop-validation); manual validation pending |
+| macOS desktop | `RaylibPlatform` | Under evaluation, not supported: builds and passes the headless tests in CI (not blocking yet); raylib cannot open a window on the hosted CI runner, so nothing native is shown |
+| Linux on ARM (arm64) | — | Not available: the `Raylib-cs` package has no native raylib library for it |
 | Chrome (Chromium) on desktop | `RaylibPlatform` in WebAssembly through `BrowserLauncher` | The four demos are verified with automated tests, plus manual validation in the browser |
 | Firefox on desktop | Same | The four demos are verified with automated tests, plus manual validation in the browser |
 | Other Chromium-based browsers (for example Edge) | Same | Not claimed: they share Chrome's engine, but they are not covered by the tests |
@@ -19,7 +20,31 @@ page lists each target and exactly how far it has been validated.
 | Headless (tests, CI) | `HeadlessPlatform` | Validated: used by every test project; `--headless` launcher flag |
 
 "Validated" and "verified" mean the configuration was run and its results recorded. Anything else is a statement
-about .NET, raylib or the browser, not about MicroEngine.
+about .NET, raylib or the browser, not about MicroEngine. An automated check proves what it exercises and nothing
+more: a desktop system is called supported only once a person has also played on it.
+
+## Desktop validation
+
+What has been shown on each desktop system, level by level. "Automated" means a check that runs on every engine
+change; "recorded" means it was run and its result kept, once.
+
+| Level | Windows x64 | Linux x64 | macOS |
+| --- | --- | --- | --- |
+| Build of the engine, the four games and the tests | Automated | Automated | Automated, not blocking; passing (macOS 26, arm64) |
+| Simulation: engine tests and the four games' headless playthroughs | Automated | Automated | Automated, not blocking; passing |
+| Native rendering: raylib and OpenGL draw the 15 scripted scenarios (138 captures) | Recorded: the same captures, compared byte for byte with the browser builds | Automated under a virtual display with software OpenGL (Mesa), compared with a Linux reference | Attempted automatically, not blocking: raylib cannot open a window on the hosted runner, so no capture is produced yet |
+| Native keyboard: keys from the system reach the game through raylib | Manual play | Automated: pressed, held, released, a tap shorter than a frame, two keys at once | Not covered |
+| Audio device opens | Manual play | Automated on a virtual sound server (PulseAudio) | Automated, not blocking: opens on the hosted runner |
+| Audio output carries the sound played | Manual play | Automated: a played tone is recorded from the virtual sound server and recognised; not listened to | Not covered |
+| Gamepad | Supported by the backend | Not covered | Not covered |
+| Manual play on real hardware (GPU, speakers, fullscreen, window manager) | Done | Pending | Pending |
+
+Linux checks run on Ubuntu 24.04 x64 under Xvfb; the reference was recorded with Mesa 25.2.8 (llvmpipe) and the
+hosted CI runner reproduced all 138 captures pixel for pixel. On macOS the hosted runner (macOS 26, arm64) builds and
+passes the headless tests, but GLFW finds no suitable OpenGL pixel format on that virtual machine and cannot create a
+window, so native rendering and input on macOS have no evidence yet; they need a Mac with a GPU. Wayland
+sessions, real GPUs and drivers, gamepads, F11 and Alt+Enter fullscreen and high-DPI screens remain to be checked by
+hand before Linux is called supported.
 
 ## Gamepads
 
@@ -37,11 +62,14 @@ mobile devices; the site lets visitors try them at their own risk. Research into
 
 `DesktopLauncher.Run(game, args)` opens a raylib window, scales the virtual canvas by the largest whole factor
 that fits and letterboxes it. F11 toggles fullscreen. Keyboard and gamepad bindings are defined by the game's
-`InputMap` (see [Input](../manual/input.md)). Saves go to the user's local application data folder
-(`%LOCALAPPDATA%/MicroEngine/<GameId>` on Windows).
+`InputMap` (see [Input](../manual/input.md)). Saves go to the user's data folder: `%LOCALAPPDATA%/MicroEngine/<GameId>`
+on Windows, `$XDG_DATA_HOME/MicroEngine/<GameId>` (by default `~/.local/share`) on Linux and
+`~/Library/Application Support/MicroEngine/<GameId>` on macOS (see [Persistence](../manual/persistence.md#where-saves-live)).
 
 Games target .NET 10. The raylib native library arrives with the `Raylib-cs` 8.1.0 NuGet package that the backend
-depends on.
+depends on, for Windows (x64, x86), Linux (x64) and macOS (x64, arm64). On Linux, raylib opens its window through X11
+(GLFW) and needs OpenGL (Mesa or a GPU driver); a Wayland session runs it through XWayland, which has not been
+checked yet.
 
 ## Browser
 
