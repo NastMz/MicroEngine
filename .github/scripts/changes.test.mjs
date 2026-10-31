@@ -1,4 +1,4 @@
-// Tests for the change planner: node --test .github/scripts
+// Tests for the change planner: node --test .github/scripts/*.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { planChecks, everything } from './changes.mjs';

@@ -60,7 +60,7 @@ jobs:
           cache: npm
           cache-dependency-path: site/package-lock.json
       - name: Planner tests
-        run: node --test .github/scripts
+        run: node --test .github/scripts/*.test.mjs
       - name: Checks for this change
         id: changes
         env:

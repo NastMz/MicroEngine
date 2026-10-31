@@ -40,7 +40,7 @@ except macOS. The NuGet package folder is cached per system, keyed on the projec
 ### What runs for a change
 
 [`.github/scripts/changes.mjs`](../.github/scripts/changes.mjs) maps each changed path to the checks that can catch
-a regression in it; its rules are tested (`node --test .github/scripts`). A path no rule knows runs everything, so a
+a regression in it; its rules are tested (`node --test .github/scripts/*.test.mjs`). A path no rule knows runs everything, so a
 new folder is never skipped by accident. Manual runs and a missing comparison base also run everything.
 
 | Change | .NET Linux, Windows | .NET macOS | Native Linux | Demo builds | Browser suites | Platform workflow |

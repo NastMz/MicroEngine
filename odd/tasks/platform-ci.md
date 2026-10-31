@@ -3,7 +3,7 @@
 Objective: run only the checks a change needs, and gather reproducible evidence for macOS, Android and iOS.
 Branch `feat/platform-ci` (from `origin/main` after PLATFORM-1, #12). No push of this branch, no PR, no merge; runner
 experiments go through the throwaway branch `experiment/platform-2` (owner approval, L2).
-Test runners: `dotnet test MicroEngine.slnx -c Release`; `node --test .github/scripts` for the change planner.
+Test runners: `dotnet test MicroEngine.slnx -c Release`; `node --test .github/scripts/*.test.mjs` for the change planner.
 
 ## Specs
 
@@ -42,7 +42,7 @@ Test runners: `dotnet test MicroEngine.slnx -c Release`; `node --test .github/sc
 | ID | Specs | Route | Status | Evidence |
 | --- | --- | --- | --- | --- |
 | T1 | S1 | inline | done | docs/evaluations/platform-2.md section 1 (run data 2026-10-31) |
-| T2 | S2 | inline | done | 248a982; planner tests 16/16; actionlint clean; layout suite measured 86 s |
+| T2 | S2 | inline | done | 248a982; planner tests 15/15; actionlint clean; layout suite measured 86 s |
 | T3 | S3 | inline | done | 999fcbc; OpenGL probe in runs 1–8 (only a non-accelerated renderer) |
 | T4 | S4, S6, S7 | inline | done | 142c99e, e1e1c22; local emulator and run 41211812862/41213988975: all levels pass |
 | T5 | S5, S6, S7 | inline | done | 999fcbc…0776abe; run 41213988975: 4/4 runs match desktop |
