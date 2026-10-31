@@ -5,8 +5,12 @@
 // whose key is the same (a pull request that only changed documentation since, or the merge of an up-to-date pull
 // request into main) finds it and skips the check instead of repeating it.
 //
-//   node .github/scripts/evidence.mjs plan --checks dotnet,windows,native [--site-extra <text>] [--github-output]
-//       prints each check's key and the run that already passed it; outputs key_<check> and reused_<check>
+//   node .github/scripts/evidence.mjs plan --checks dotnet,windows,native [--extra <check>=<text> ...]
+//                                          [--site-extra <text>] [--github-output]
+//       prints each check's key and the run that already passed it; outputs key_<check> and reused_<check>.
+//       --extra adds text to one check's key: what the check covers beyond its input files (the test projects and
+//       games the project graph selected, the demo packages and browser suites of the site), so evidence of a
+//       narrower run is never taken for a wider one
 //   node .github/scripts/evidence.mjs record <check> <key> <file>
 //       writes the evidence file the job uploads as artifact evidence-<check>-<key>
 //
@@ -89,10 +93,17 @@ async function main([command, ...args]) {
   const value = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
   if (command === 'plan') {
     const checks = (value('--checks') ?? '').split(',').filter(Boolean);
+    const extras = { site: value('--site-extra') ?? '' };
+    args.forEach((arg, i) => {
+      if (arg !== '--extra') return;
+      const [check, ...text] = (args[i + 1] ?? '').split('=');
+      if (!check || !text.length) fail(`--extra needs <check>=<text>, not "${args[i + 1]}".`);
+      extras[check] = text.join('=');
+    });
     const api = process.env.GITHUB_TOKEN && process.env.GITHUB_REPOSITORY ? githubApi() : async () => ({ artifacts: [] });
     const out = [], lines = ['### Evidence of passed checks', '', '| Check | Key | Already passed in |', '| --- | --- | --- |'];
     for (const check of checks) {
-      const key = checkKey(check, { extra: check === 'site' ? value('--site-extra') ?? '' : '' });
+      const key = checkKey(check, { extra: extras[check] ?? '' });
       const found = await findEvidence(check, key, { api });
       out.push(`key_${check}=${key}`, `reused_${check}=${found ? found.run : ''}`);
       lines.push(`| ${check} | \`${key}\` | ${found ? `run ${found.run} (${found.commit.slice(0, 12)})` : 'not yet: runs if needed'} |`);
