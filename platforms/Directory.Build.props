@@ -17,7 +17,9 @@
     <!-- SaveStore serializes game types with reflection-based System.Text.Json, as in the browser host. -->
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
     <TrimMode>partial</TrimMode>
-    <NoWarn>$(NoWarn);IL2026;IL3050</NoWarn>
+    <!-- IL2104: framework assemblies (System.Text.Json, Microsoft.iOS) report their own trim warnings in a trimmed
+         device build; with TreatWarningsAsErrors the iOS build would stop on them. -->
+    <NoWarn>$(NoWarn);IL2026;IL3050;IL2104</NoWarn>
     <InvariantGlobalization>true</InvariantGlobalization>
     <GameDir>$(MSBuildThisFileDirectory)../games/$([System.IO.Path]::GetDirectoryName('$(GameProject)'))/</GameDir>
   </PropertyGroup>
