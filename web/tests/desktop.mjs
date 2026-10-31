@@ -41,7 +41,13 @@ for (const s of scenarios.filter(s => !only || only.split(',').includes(s.game))
     const run = spawnSync(exe, ['--script', path.join(repo, 'games', s.game, 'scripts', s.script), '--hidden', '--mute', '--captures', dir],
       { env: { ...process.env, ...s.env, [saveDirVariable[s.game]]: saves }, encoding: 'utf8' });
     fs.rmSync(saves, { recursive: true, force: true });
-    if (run.status !== 0) { failures++; console.log(`FAIL desktop ${s.game} ${s.script}: exit ${run.status} ${run.stderr.slice(0, 300)}`); continue; }
+    if (run.status !== 0) {
+      failures++;
+      // raylib prints its warnings (the reason a window failed) on stdout, the launcher its error on stderr.
+      const output = `${run.stdout}\n${run.stderr}`.split('\n').filter(l => /WARNING|ERROR|error|Assertion/.test(l)).slice(0, 6).join(' | ');
+      console.log(`FAIL desktop ${s.game} ${s.script}: exit ${run.status ?? run.signal} ${output.slice(0, 600)}`);
+      continue;
+    }
   }
   const desktop = fs.readdirSync(dir).filter(f => f.endsWith('.png')).sort();
   for (const browser of ['chrome', 'firefox']) {
