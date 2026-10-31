@@ -1,22 +1,21 @@
-# Experimental platform hosts
+# Platform hosts
 
-Hosts and probes from PLATFORM-2 ([evaluation](../docs/evaluations/platform-2.md)). **None of these platforms is
-supported.** They exist to gather evidence, and they run in the
-[platform workflow](../docs/ci.md#platform-workflow) (monthly, manual, or from full validation), never in daily CI or
-a release.
+Phone hosts and probes. They run in the [platform workflow](../docs/ci.md#platform-workflow) (monthly, manual, or from
+full validation), never in daily CI or a release. Decisions: [ADR 0016](../docs/decisions/0016-platform-profiles.md),
+[ADR 0017](../docs/decisions/0017-sdl3-native-platform.md); evidence: [PLATFORM-3](../docs/evaluations/platform-3.md).
 
-Like the browser host, each mobile host runs one game chosen with `-p:Game=<Id>` from
-[`web/games.props`](../web/games.props) (default `MeadowRun`): no game is copied and no gameplay code changes. A game
-with files in its `Content` folder is refused at build time: the mobile hosts do not ship content files yet.
-These projects are not in `MicroEngine.slnx`, because they need the `android` or `ios` workload.
+Like the browser host, each phone host runs one game chosen with `-p:Game=<Id>` from [`web/games.props`](../web/games.props)
+(default `MeadowRun`): no game is copied and no gameplay code changes. Both run the game on the same SDL platform as
+the desktop (`src/MicroEngine.Sdl`), with on-screen touch controls, suspension in the background, and the game's
+`Content` files. These projects are not in `MicroEngine.slnx`, because they need the `android` or `ios` workload.
 
 | Folder | What it is |
 | --- | --- |
-| [`Shared/`](Shared/) | `MobileRun`: one run of the game with `DesktopLauncher --script` semantics (fixed step, seed 1, captures), logging `microengine:` lines |
-| [`android/`](android/) | .NET for Android host: a `NativeActivity` whose native library is raylib built with the NDK |
-| [`ios/`](ios/) | .NET for iOS host: the game on the headless platform in the simulator (raylib has no iOS platform) |
-| [`macos/`](macos/) | `gl-probe.m`: why GLFW cannot open an OpenGL window on a Mac without a GPU |
-| [`software/`](software/) | the raylib software-renderer experiment (`PLATFORM_MEMORY` + rlsw), kept to reproduce its result |
+| [`Shared/`](Shared/) | `MobileRun`: one run of the game with `DesktopLauncher --script` semantics (fixed step, seed 1, captures), logging `microengine:` lines (start, scenes, suspended/resumed, captures, done, exit) |
+| [`android/`](android/) | .NET for Android host: an `SDLActivity` whose `Main` runs the game; content files as APK assets, unpacked once per install |
+| [`ios/`](ios/) | .NET for iOS host: `SDL_RunApp` hands the app to SDL, which calls back into .NET to run the game (Metal) |
+| [`macos/`](macos/) | `gl-probe.m`: why GLFW (raylib) cannot open an OpenGL window on a Mac without a GPU |
+| [`software/`](software/) | the raylib software-renderer experiment of PLATFORM-2, kept to reproduce its result |
 
 ## Evidence levels
 
@@ -24,46 +23,40 @@ A build is not compatibility. Each level is claimed only when it was run and its
 
 | Level | Android (x86_64 emulator) | iOS (simulator) |
 | --- | --- | --- |
-| Toolchain configured | NDK r27d, .NET 10 android workload | .NET 10 ios workload (set 10.0.401) and Xcode 26.6 |
-| Project compiled | yes | yes |
-| Package generated | APK (x86_64, arm64-v8a) | `.app` for `iossimulator-arm64` |
-| App installed | yes | yes (iPhone 17 Pro simulator) |
-| App started | yes | yes |
-| Rendering checked | 13 scripted captures of Meadow Run within the Linux reference's tolerance, 11 byte-identical to the Windows build | no: nothing is drawn |
-| Input checked | system key events (`adb shell input keyevent`) move the game from the title into a level; no touch controls | no |
-| Audio checked | raylib's audio device opens; output not listened to | no |
-
-Known problem: raylib's `CloseAudioDevice` can abort the app at exit (an audio callback locks the mutex it already
-destroyed); it ended 3 of about 37 scripted runs, so the Android job is sometimes red for it
-([evaluation](../docs/evaluations/platform-2.md#5-android)).
-| Real game run | Meadow Run, four scripted runs and an interactive one; background and resume | Meadow Run's code only, headless: 4/4 scripted runs identical to the desktop build |
+| Toolchain configured | .NET 10 android workload, Java 21; no NDK | .NET 10 ios workload (set 10.0.401) and the Xcode it requires |
+| Project compiled | yes | yes (on Windows, C# only) |
+| Package generated | APK (x86_64, arm64-v8a) with SDL 3.5 | not yet run (needs macOS) |
+| App installed, started | yes (emulator API 36.1, locally) | not yet run |
+| Rendering checked | Meadow Run 13/13 and Neon Rift 12/12 captures pixel-identical to the Windows SDL reference | not yet run |
+| Input checked | system keys and taps on the on-screen controls move each game from its title into play | not yet run; the simulator cannot send touches |
+| Audio checked | SDL's audio device opens; output not listened to | not yet run |
+| Lifecycle | Home suspends the game, relaunching resumes it | not yet run |
+| Content files | Neon Rift's PNG, WAV and OGG files load from the APK | not yet run |
+| Real device | not tried (no arm64 device) | not tried |
 
 ## Android
 
-Needs the .NET 10 `android` workload, an Android SDK (`ANDROID_HOME`), the NDK pinned in
-[`android/toolchain.env`](android/toolchain.env) (`sdkmanager "ndk;27.3.13750724"`) and Java 17 or later.
+Needs the .NET 10 `android` workload, an Android SDK (`ANDROID_HOME`) and Java 17 or later. SDL for every ABI comes
+from the `ppy.SDL3-CS` package.
 
 ```bash
-platforms/android/build-raylib.sh                    # libraylib.so for x86_64 and arm64-v8a, into android/native/out
-dotnet build platforms/android -c Release -p:AndroidSdkDirectory="$ANDROID_HOME"
-node platforms/android/device-checks.mjs --apk platforms/android/bin/MeadowRun/Release/net10.0-android/dev.microengine.meadowrun-Signed.apk --out dist/android-checks
-node web/tests/desktop.mjs --skip-run --games MeadowRun --out dist/android-checks --reference web/tests/reference/linux-x64.json
+dotnet build platforms/android -c Release -p:Game=NeonRift -p:AndroidSdkDirectory="$ANDROID_HOME"
+node platforms/android/device-checks.mjs --apk platforms/android/bin/NeonRift/Release/net10.0-android/dev.microengine.neonrift-Signed.apk --game NeonRift --out dist/android-checks
+node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/android-checks --reference web/tests/reference/sdl.json
 ```
 
-`device-checks.mjs` needs a running emulator or device and prints one line per evidence level. How it works:
+`device-checks.mjs` needs a running emulator or device and prints one line per level (installed, started, rendered,
+audio, input, lifecycle, touch). How it works:
 
-- raylib's Android platform (`rcore_android.c`) owns the activity: its `android_main` creates the window and EGL
-  context, then calls `main()`. [`native/microengine_main.c`](android/native/microengine_main.c) is that `main()`: it
-  calls `GameActivity.runGame()` through JNI, so the .NET game loop runs on the native-activity thread, which is where
-  raylib must be called.
-- `GameActivity` runs the game on `RaylibPlatform`, as on desktop. Launch extras select a script (`--es script
-  smoke.script`) and environment variables (`--es env 'MEADOW_START=level;MEADOW_FORM=bloom'`). Saves go to the
-  app's private files folder (`XDG_DATA_HOME`).
-- Native libraries are extracted (`extractNativeLibs`), so .NET's P/Invoke and `NativeActivity` load the same
-  `libraylib.so` file and share the one raylib instance.
-- The `Raylib-cs` package's native files are excluded: `android-x64` falls back to `linux-x64` in the runtime graph,
-  and the package's glibc `libraylib.so` would otherwise replace the NDK build (`dlopen failed: library "libc.so.6"
-  not found`).
+- `GameActivity` is SDL's `SDLActivity`; it loads only `libSDL3.so` and overrides `Main`, which SDL calls on its own
+  thread once the surface exists. The game runs there on `SdlPlatform`.
+- Launch extras select a script (`--es script smoke.script`) and environment variables (`--es env 'MEADOW_START=level'`),
+  read by .NET only: .NET's environment never reaches the native one, so SDL hints are set from code
+  (`MICROENGINE_SDL_EVENT_LOGGING=1` turns on SDL's event log).
+- Saves go to the app's private files folder (`XDG_DATA_HOME`); content files are copied from the APK to
+  `files/content` when the install changes.
+- The `Raylib-cs` package's native files are excluded: the games reference raylib through the desktop launcher, and
+  `android-x64` would pick up its glibc build.
 
 ## iOS
 
@@ -71,12 +64,12 @@ Needs macOS, the .NET 10 `ios` workload and the Xcode version that workload requ
 workload set from `web/toolchain.env` and selects the matching Xcode).
 
 ```bash
-dotnet build games/MeadowRun -c Release
-dotnet build platforms/ios -c Release
-platforms/ios/simulator-checks.sh platforms/ios/bin/MeadowRun/Release/net10.0-ios/iossimulator-arm64/MicroEngine.iOS.app MeadowRun
+dotnet build platforms/ios -c Release -p:Game=NeonRift
+platforms/ios/simulator-checks.sh platforms/ios/bin/NeonRift/Release/net10.0-ios/iossimulator-arm64/MicroEngine.iOS.app NeonRift dist/ios-checks/NeonRift
+node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/ios-checks/NeonRift --reference web/tests/reference/sdl.json
 ```
 
 The app reads `--script` and `--env` after its own arguments (`xcrun simctl launch --console-pty <device>
-dev.microengine.meadowrun --script smoke.script --env ''`), runs the game on `HeadlessPlatform`, prints `microengine:`
-lines and exits after a scripted run. The check compares updates, frames and captures with the desktop build's
-`--headless` run of the same script.
+dev.microengine.neonrift --script smoke.script --env ''`), prints `microengine:` lines, writes captures to
+`Library/Caches/captures/<script>` and exits after a scripted run. The check copies the captures out of the app's
+container and sends the app to the background by opening Settings.

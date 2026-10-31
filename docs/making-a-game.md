@@ -15,7 +15,7 @@ planned. The rest of this guide shows the real API and does not depend on how th
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
+    <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
   </ItemGroup>
 </Project>
 ```
@@ -24,7 +24,7 @@ In the engine's repository a shared `Directory.Build.props` sets .NET 10, nullab
 
 ```csharp
 // Program.cs
-return MicroEngine.Raylib.DesktopLauncher.Run(new MyGame(), args);
+return MicroEngine.Desktop.DesktopLauncher.Run(new MyGame(), args);
 ```
 
 ## 2. The game class
@@ -232,7 +232,7 @@ For end-to-end checks write an input script and play it through the real game:
 
 A game started through `DesktopLauncher` plays the script when given `--script scripts/smoke.script`; adding
 `--hidden --mute --captures captures` runs it without a visible window or sound and writes the captures to
-`captures/` ([Backends](manual/backends.md#desktop-raylib)).
+`captures/` ([Backends](manual/backends.md#choosing-a-platform)).
 
 Look at the captures. Passing tests are necessary, not sufficient.
 

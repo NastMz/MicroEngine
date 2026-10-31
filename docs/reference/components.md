@@ -9,15 +9,18 @@ the backend, a game, or the browser host.
 | Project | Kind | Responsibility | References |
 | --- | --- | --- | --- |
 | `src/MicroEngine` | Library | Backend-independent core: loop, scenes, input, graphics model, world, audio synthesis, UI, saves, achievements, headless platform | Nothing outside the .NET base library |
-| `src/MicroEngine.Raylib` | Library | raylib backend (`RaylibPlatform`, `RaylibAudioDevice`), `DesktopLauncher`, `BrowserLauncher`, `BrowserSaveStorage` | `MicroEngine`, NuGet `Raylib-cs` 8.1.0 |
-| `games/MeadowRun`, `games/CourtyardKey`, `games/TrailDuel`, `games/NeonRift` | Executable | One complete game each: rules, scenes, art, audio, content | `MicroEngine.Raylib` |
-| `samples/HelloEngine` | Executable | Minimal example game | `MicroEngine.Raylib` |
+| `src/MicroEngine.Sdl` | Library | SDL 3 backend (`SdlPlatform`, `SdlAudioDevice`): the default on Windows, Linux, macOS, Android and iOS | `MicroEngine`, NuGet `ppy.SDL3-CS`, `NVorbis` |
+| `src/MicroEngine.Raylib` | Library | raylib backend (`RaylibPlatform`, `RaylibAudioDevice`), a raylib-only `DesktopLauncher`, `BrowserLauncher`, `BrowserSaveStorage` | `MicroEngine`, NuGet `Raylib-cs` 8.1.0 |
+| `src/MicroEngine.Desktop` | Library | `DesktopLauncher` with the official desktop catalog (`sdl`, `raylib`, `sdl-software`, `headless`) | `MicroEngine.Sdl`, `MicroEngine.Raylib` |
+| `games/MeadowRun`, `games/CourtyardKey`, `games/TrailDuel`, `games/NeonRift` | Executable | One complete game each: rules, scenes, art, audio, content | `MicroEngine.Desktop` |
+| `samples/HelloEngine` | Executable | Minimal example game | `MicroEngine.Desktop` |
 | `tests/MicroEngine.Tests` | MSTest | Engine contracts | `MicroEngine` |
+| `tests/MicroEngine.Desktop.Tests` | MSTest (native) | SDL and raylib draw the same frames; replacing audio; platform errors | `MicroEngine.Desktop` |
 | `tests/<Game>.Tests` | MSTest | Game rules, headless playthroughs, content checks | The game project |
-| `web/Host` (`MicroEngine.Web.csproj`) | WebAssembly executable, built by internal tooling | The page bridge (`WebHost`) and page files; builds one selected game per package | The selected game project, and through it `MicroEngine.Raylib` |
+| `web/Host` (`MicroEngine.Web.csproj`) | WebAssembly executable, built by internal tooling | The page bridge (`WebHost`) and page files; builds one selected game per package | The selected game project, and through it the desktop platforms; it runs on `MicroEngine.Raylib` |
 | `experiments/web/RaylibProbe` | Experiment, outside the build | WEB-0 feasibility record | — |
 
-The core never references raylib. Games reference only the backend project, which brings the core with it.
+The core references no backend library. Games reference only `MicroEngine.Desktop`, which brings the backends and the core with it. The phone hosts in `platforms/` are outside the solution.
 
 ## Core namespaces
 
@@ -43,7 +46,10 @@ The manual covers each area: [lifecycle](../manual/lifecycle.md), [scenes](../ma
 | --- | --- |
 | `RaylibPlatform` | `IPlatform` over raylib: window, scaled and letterboxed canvas, renderer, texture creation, keyboard and gamepad, captures, F11 and Alt+Enter fullscreen on desktop. In a browser it leaves fullscreen and minimum size to the page |
 | `RaylibAudioDevice` | `IAudioDevice` over raylib audio, including streamed OGG/MP3 music |
-| `DesktopLauncher` | Parses launcher flags, builds `RunOptions`, picks `RaylibPlatform` or `HeadlessPlatform`, calls `GameRunner.Run`, returns an exit code |
+| `SdlPlatform` | `IPlatform` over SDL 3: window (full screen on phones), SDL renderer into a virtual-size texture, keyboard, gamepad, touch controls, lifecycle events, captures; `CreateProfile(renderer)` fixes a render driver |
+| `SdlAudioDevice` | `IAudioDevice` over SDL audio streams; WAV and OGG (NVorbis) music; usable with another platform |
+| `GameLauncher` (core) | Parses launcher flags, builds `RunOptions` and a `PlatformRequest`, resolves a profile from a `PlatformCatalog`, calls `GameRunner.Run`, returns an exit code |
+| `DesktopLauncher` | `GameLauncher` with the official desktop catalog (in `MicroEngine.Desktop`) or with raylib only (in `MicroEngine.Raylib`) |
 | `BrowserLauncher` | Sets `SaveStore.DefaultStorage` to `BrowserSaveStorage` and returns a `GameSession` that creates a `RaylibPlatform` per run |
 | `BrowserSaveStorage` | `ISaveStorage` over `localStorage`, keys `microengine/<Game>/<slot>` |
 
@@ -54,10 +60,10 @@ The manual covers each area: [lifecycle](../manual/lifecycle.md), [scenes](../ma
 ```mermaid
 flowchart TB
   accTitle: Desktop launch
-  accDescr: Program.cs calls DesktopLauncher.Run, which parses the arguments into RunOptions, creates the platform and calls GameRunner.Run.
-  program["Program.cs"] --> launcher["DesktopLauncher.Run(game, args)"]
+  accDescr: Program.cs calls DesktopLauncher.Run, which parses the arguments into RunOptions, resolves a platform profile from the catalog, creates the platform and calls GameRunner.Run.
+  program["Program.cs"] --> launcher["DesktopLauncher.Run(game, args) <br/> → GameLauncher.Run"]
   launcher --> parse["LaunchArguments.Parse"] --> options["RunOptions <br/> (script, captures, <br/> seed, limits, mute)"]
-  launcher --> platform["new RaylibPlatform( <br/> settings, options) <br/> or <br/> HeadlessPlatform.For( <br/> settings)"]
+  launcher --> platform["catalog.Resolve(--platform) <br/> .Create(PlatformRequest) <br/> (SDL, raylib or headless)"]
   launcher --> runner["GameRunner.Run( <br/> game, platform, options)"]
 ```
 

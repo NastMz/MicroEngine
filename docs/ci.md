@@ -139,8 +139,18 @@ about ten times Linux minutes.
 
 [`platforms.yml`](../.github/workflows/platforms.yml) runs macOS, Android and iOS: from validate, manually (each
 platform separately), and on the 1st of each month on `main`, to notice runner image and toolchain drift (Xcode,
-workloads, NDK). It no longer runs weekly or on pull requests: a full run costs about $0.36, of which the iOS job's
-macOS minutes are half. Run it after changing `platforms/` or the raylib backend.
+workloads). It no longer runs weekly or on pull requests: a full run cost about $0.36 before PLATFORM-3, of which the
+iOS job's macOS minutes were half; it now builds and plays two games per phone platform, so expect more (not yet
+measured). Run it after changing `platforms/`, the SDL or raylib backends, or the desktop launcher.
+
+| Job | Proves |
+| --- | --- |
+| macOS | build and tests; the 15 scenarios on SDL (Metal) against `sdl.json`; why raylib can or cannot open a window, and raylib captures when it can |
+| Android | APKs on SDL for Meadow Run (code-first) and Neon Rift (content files) installed, started, drawn (captures against `sdl.json`), audio device, keys, taps on the touch controls, background and back |
+| iOS | the same two games on SDL in the simulator: installed, started, drawn (captures against `sdl.json`), audio device, background and back |
+
+Native Linux in daily CI checks both desktop platforms: raylib against `linux-x64.json` and SDL (OpenGL on Mesa
+llvmpipe) against `sdl-linux-x64.json`, plus the SDL platform tests (`tests/MicroEngine.Desktop.Tests`).
 
 ## Releases
 

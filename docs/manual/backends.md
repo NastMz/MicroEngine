@@ -1,10 +1,17 @@
 # Backends
 
 The engine core (`src/MicroEngine`) never references a windowing, graphics or audio library. Everything
-platform-specific sits behind `IPlatform` and four small interfaces. Three implementations exist: the raylib
-backend (`src/MicroEngine.Raylib`) for desktop windows, the same raylib backend compiled to WebAssembly for
-browsers, and `HeadlessPlatform` in the core for tests and CI. A game is an ordinary .NET program and does not
-change between them.
+platform-specific sits behind `IPlatform` and four small interfaces. The official implementations:
+
+| Platform | Project | Used for |
+| --- | --- | --- |
+| SDL 3 | `src/MicroEngine.Sdl` | The default on Windows, Linux, macOS, Android and iOS |
+| raylib | `src/MicroEngine.Raylib` | Browsers (WebAssembly), and an alternative desktop platform |
+| Headless | `src/MicroEngine` (`HeadlessPlatform`) | Tests and CI |
+
+A game is an ordinary .NET program and does not change between them. Which platform runs is the host's choice
+(a command-line argument, an environment variable, the phone app), never the game's. The decisions are recorded in
+[ADR 0016](../decisions/0016-platform-profiles.md) and [ADR 0017](../decisions/0017-sdl3-native-platform.md).
 
 ## `IPlatform`
 
@@ -19,6 +26,8 @@ public interface IPlatform : IDisposable
     double Now { get; }
     /// <summary>Whether time advances with the wall clock (desktop) or one step per frame (headless).</summary>
     bool RealTime { get; }
+    /// <summary>Whether the system took the game away (a phone app sent to the background) ...</summary>
+    bool Suspended => false;
     void PollEvents();
     IRenderer BeginFrame();
     void EndFrame();
@@ -30,24 +39,19 @@ public interface IPlatform : IDisposable
 
 Source: [`src/MicroEngine/Core/Platform.cs`](../../src/MicroEngine/Core/Platform.cs)
 
-| Interface | Responsibility | raylib | Headless |
-| --- | --- | --- | --- |
-| `IRenderer` | Immediate-mode drawing into the virtual canvas ([Rendering](rendering.md#irenderer)) | `RaylibRenderer` | `HeadlessRenderer` (counts draw calls, checks camera balance) |
-| `IGraphicsDevice` | `CreateTexture(PixelImage)` | `RaylibGraphicsDevice` | `HeadlessGraphicsDevice` |
-| `IAudioDevice` | Load and play PCM sounds, looping and streamed music ([Audio](audio.md)) | `RaylibAudioDevice` | `SilentAudioDevice` |
-| `IInputSource` | Raw key, pad button and left-stick state ([Input](input.md)) | `RaylibInput` | `HeadlessInput` |
+| Interface | Responsibility | SDL | raylib | Headless |
+| --- | --- | --- | --- | --- |
+| `IRenderer` | Immediate-mode drawing into the virtual canvas ([Rendering](rendering.md#irenderer)) | `SdlRenderer` | `RaylibRenderer` | `HeadlessRenderer` |
+| `IGraphicsDevice` | `CreateTexture(PixelImage)` | `SdlGraphicsDevice` | `RaylibGraphicsDevice` | `HeadlessGraphicsDevice` |
+| `IAudioDevice` | Sounds, looping and streamed music ([Audio](audio.md)) | `SdlAudioDevice` | `RaylibAudioDevice` | `SilentAudioDevice` |
+| `IInputSource` | Key, pad button and left-stick state ([Input](input.md)) | `SdlInput` (with `TouchPad`) | `RaylibInput` | `HeadlessInput` |
 
-The loop calls `PollEvents`, `BeginFrame`, `EndFrame` and `SaveScreenshot` in the order described in
-[Lifecycle](lifecycle.md#fixed-step-and-frame-order).
+While `Suspended` is true the loop neither simulates nor renders, pauses music, saves achievement progress and calls
+the game's `OnSuspended`/`OnResumed`. See [Lifecycle](lifecycle.md#fixed-step-and-frame-order) for the frame order.
 
-## Desktop: raylib
+## Choosing a platform
 
-`RaylibPlatform` opens a resizable window of `VirtualWidth × Scale` by `VirtualHeight × Scale`, draws into a
-render texture of the virtual size and scales it by whole factors with letterboxing. Esc is not raylib's exit
-key (games use it for pause); F11 and Alt+Enter toggle borderless fullscreen. Audio falls back to silence when no
-device is available. The backend uses [Raylib-cs](https://github.com/ChrisDill/Raylib-cs).
-
-Games start through `DesktopLauncher.Run`, which parses arguments, picks a platform and returns an exit code:
+Desktop games start through `MicroEngine.Desktop.DesktopLauncher`:
 
 ```csharp
 var saveDir = Environment.GetEnvironmentVariable("RIFT_SAVE_DIR");
@@ -56,27 +60,85 @@ return DesktopLauncher.Run(new RiftGame(LaunchOptions.FromEnvironment(), saveDir
 
 Source: [`games/NeonRift/Program.cs`](../../games/NeonRift/Program.cs)
 
+Its catalog offers, in order of preference: `sdl`, `raylib`, `sdl-software` and `headless`. The first that can run
+is the default; `--platform NAME` or the `MICROENGINE_PLATFORM` variable picks another, and `--list-platforms` prints
+them:
+
+```text
+$ MeadowRun --list-platforms
+sdl: SDL 3: window, 2D renderer (Direct3D, Metal, OpenGL, Vulkan or software), input, touch and audio
+raylib: raylib 6.0: GLFW window, OpenGL renderer, input and miniaudio sound
+sdl-software: SDL 3 with its software renderer
+headless: no window, devices or sound; one step per frame, for tests and CI
+```
+
 | Argument | Effect |
 | --- | --- |
+| `--platform NAME` | Run on that platform of the catalog |
+| `--list-platforms` | Print the catalog, with the reason a platform cannot run here, and exit |
 | `--script FILE` | Play an [input script](input.md#scripted-input); implies a fixed step |
 | `--captures DIR` | Where script captures go (default `./captures`); saved at 3× scale |
-| `--headless` | Run on `HeadlessPlatform`, no window (captures are recorded but not written) |
+| `--headless` | The same as `--platform headless` (captures are recorded but not written) |
 | `--hidden` | Render in a hidden window (captures still work); implies a fixed step |
 | `--frames N` | Stop after N updates |
 | `--seed N`, `--scale N`, `--mute` | Random seed, window scale, silence |
 
-Exit codes: 0 success, 1 game error, 2 bad arguments. Unknown arguments are rejected, which is why the games read
-developer shortcuts from environment variables. Source:
-[`src/MicroEngine.Raylib/DesktopLauncher.cs`](../../src/MicroEngine.Raylib/DesktopLauncher.cs)
+Exit codes: 0 success, 1 game or platform error (an unknown or unavailable platform, no display), 2 bad arguments.
+Unknown arguments are rejected, which is why the games read developer shortcuts from environment variables. Sources:
+[`src/MicroEngine/Core/GameLauncher.cs`](../../src/MicroEngine/Core/GameLauncher.cs),
+[`src/MicroEngine.Desktop/DesktopLauncher.cs`](../../src/MicroEngine.Desktop/DesktopLauncher.cs).
+`MicroEngine.Raylib.DesktopLauncher` is the same launcher with only `raylib` and `headless`.
 
-Validated on Windows. On Linux x64 the backend is checked automatically (a real raylib window under a virtual
-display, keyboard events from the X server, a virtual sound server), but it is not supported until it has been played
-on real hardware; macOS is under evaluation. See [Platforms](../guide/platforms.md#desktop-validation).
+## Replacing a part
 
-## Browser: WebAssembly
+A profile says which parts a host may supply itself. The official profiles allow the **audio device** and **extra
+input sources**; the window, renderer, graphics device and frame presentation share one graphics context, so they are
+replaced together by choosing another profile.
 
-The same raylib backend is compiled to WebAssembly and linked into the .NET browser runtime. A page cannot block
-its only thread in a game loop, so the browser launcher returns a `GameSession` that the page drives:
+```csharp
+// raylib's window and renderer with SDL's audio device instead of raylib's.
+return DesktopLauncher.Run(game, args, DesktopLauncher.CreateCatalog(),
+    request => request with { Audio = SdlAudioDevice.TryCreate });
+
+// An extra input source (a network peer, an accessibility switch) read together with the keyboard and gamepad.
+return DesktopLauncher.Run(game, args, DesktopLauncher.CreateCatalog(),
+    request => request with { ExtraInput = [myInput] });
+```
+
+When audio is supplied the backend does not open its own device, and the platform disposes the replacement. A request
+the profile cannot honour fails with `PlatformConfigurationException` (for example "Platform 'browser' does not allow
+replacing its audio device."). Source: [`src/MicroEngine/Core/PlatformProfiles.cs`](../../src/MicroEngine/Core/PlatformProfiles.cs)
+
+To offer a platform of your own, wrap it in a profile and add it to the catalog:
+
+```csharp
+var catalog = DesktopLauncher.CreateCatalog()
+    .Add(new PlatformProfile("console", "my console SDK", request => new ConsolePlatform(request))
+    {
+        CheckSupport = () => ConsoleSdk.IsAvailable ? null : "the console SDK is not installed",
+        Replaceable = PlatformParts.Input,
+    });
+return DesktopLauncher.Run(game, args, catalog);   // --platform console
+```
+
+## SDL 3
+
+`SdlPlatform` opens a resizable window of `VirtualWidth × Scale` by `VirtualHeight × Scale` (full screen on phones),
+draws through SDL's renderer into a texture of the virtual size and scales it by whole factors with letterboxing.
+SDL chooses the graphics API for the system; `SdlPlatform.CreateProfile("vulkan")` (or `direct3d11`, `direct3d12`,
+`metal`, `opengl`, `opengles2`, `software`) fixes one, and `SdlPlatform.RenderDrivers` lists what this build offers.
+Keyboard, the first gamepad and touch are read; F11 and Alt+Enter toggle fullscreen on desktops. Audio uses SDL audio
+streams: wav and ogg music, silence when no device exists. On touch screens `TouchPad` draws a d-pad, A, B, X, a
+shoulder button and Start over the frame (never into captures); they press the gamepad buttons games already bind.
+`MICROENGINE_SDL_EVENT_LOGGING=1` makes SDL log the events it delivers. The package is
+[ppy.SDL3-CS](https://github.com/ppy/SDL3-CS) with SDL 3.5.
+
+## raylib and browsers
+
+`RaylibPlatform` behaves like the SDL platform on desktops (the `raylib` profile). raylib cannot run on iOS, and on
+macOS it needs a GPU with accelerated OpenGL. Its main role is the browser: the same backend compiled to WebAssembly
+and linked into the .NET browser runtime. A page cannot block its only thread in a game loop, so the browser launcher
+returns a `GameSession` that the page drives:
 
 ```csharp
 public static GameSession CreateSession(Func<Game> createGame)
@@ -89,28 +151,15 @@ public static GameSession CreateSession(Func<Game> createGame)
 
 Source: [`src/MicroEngine.Raylib/BrowserLauncher.cs`](../../src/MicroEngine.Raylib/BrowserLauncher.cs)
 
-The shared web host exports `Start`, `Frame`, `Outcome` and `Stop` to the page; `main.js` calls `Frame` once per
-`requestAnimationFrame`:
+The shared web host calls `Frame` once per `requestAnimationFrame`. In a browser the window never reports
+`CloseRequested`, the page paces frames and owns fullscreen, and saves go to `localStorage`
+([Persistence](persistence.md)). Embedding a package is described in [Embedding](../examples/embedding.md).
 
-```csharp
-private static readonly GameSession Session = BrowserLauncher.CreateSession(GameEntry.Create);
-// ...
-/// <summary>Runs one frame; false once the run has ended (then see <see cref="Outcome"/>).</summary>
-[JSExport]
-public static bool Frame() => Session.Tick();
-```
+## Phones
 
-Source: [`web/Host/Program.cs`](../../web/Host/Program.cs)
-
-Browser-specific behaviour inside `RaylibPlatform`: the window never reports `CloseRequested`, raylib's frame
-limiter is off (the page paces frames), F11 belongs to the browser and the page owns fullscreen, and the canvas
-may be smaller than the virtual size. Saves go to `localStorage` ([Persistence](persistence.md)). Embedding a
-package and the page's messages are described in [Embedding](../examples/embedding.md); producing browser packages
-is not available to external developers yet.
-
-The browser build targets desktop browsers with a keyboard or gamepad. The four demos are verified with automated
-tests in Chrome and Firefox on desktop, plus manual validation; there are no dedicated touch controls, and phones
-and tablets are not validated ([Platforms](../guide/platforms.md)).
+The hosts in `platforms/android` and `platforms/ios` run one game each on the SDL platform with touch controls,
+suspend it in the background and ship its `Content` files (unpacked from the APK on Android, bundle resources on
+iOS, both through `ContentFolder.DefaultRoot`). See [`platforms/README.md`](../../platforms/README.md).
 
 ## Headless platform
 
@@ -145,20 +194,22 @@ paths requested), `HeadlessGraphicsDevice.TexturesCreated`, and `CloseRequested`
 
 ## Writing a new backend
 
-A backend for another library (SDL, MonoGame, a native console SDK) would:
+A backend for another library would:
 
 1. Implement `IRenderer` over the library's 2D drawing, honouring `DrawOptions` (flip, rotation, origin, scale),
    blend modes, clipping and the camera offset stack, and drawing into a virtual-size target.
 2. Implement `IGraphicsDevice.CreateTexture` from `PixelImage.ToRgba()` (point filtering keeps pixels crisp).
-3. Implement `IAudioDevice`, becoming silent rather than failing when no hardware is present.
+3. Implement `IAudioDevice`, becoming silent rather than failing when no hardware is present, and opening nothing
+   when the request supplies a device (`PlatformRequest.OpensOwnAudio`).
 4. Map the library's key and pad codes onto `Key` and `PadButton` in an `IInputSource`.
-5. Implement `IPlatform` (time, events, frame begin/end, screenshots, fullscreen) and a launcher that calls
-   `GameRunner.Run` (blocking hosts) or drives a `GameSession` (hosts that own the frame loop).
+5. Implement `IPlatform` (time, events, frame begin/end, screenshots, fullscreen, and `Suspended` if the system
+   can take the app away) and expose it as a `PlatformProfile`.
 
-No game code changes. Only the raylib backend exists today; the headless renderer is the smallest reference for
-the contract. See [Architecture](../architecture.md) and [ADR 0003](../decisions/0003-scenes-entities-runtime.md).
+`tests/MicroEngine.Desktop.Tests` shows how to check a backend against the others: one probe frame exercising every
+renderer operation, compared pixel by pixel.
 
 ## Limitations
 
-- One real backend (raylib); no Android, iOS or console targets.
+- The on-screen controls are one layout for every game, without labels.
 - No NuGet packages yet: the engine is used from its repository ([Getting MicroEngine](../guide/getting-microengine.md)).
+- What each platform has been shown to do: [Platforms](../guide/platforms.md).

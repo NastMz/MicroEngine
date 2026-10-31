@@ -44,7 +44,7 @@ Source: [`games/NeonRift/RiftGame.cs`](../../games/NeonRift/RiftGame.cs)
 
 The `Key` enum covers letters, digits, arrows, Space, Enter, Escape, Backspace, Tab, Shift, left Control and
 F1-F5, F11, F12. `PadButton` uses Xbox names (`A`, `B`, `X`, `Y`, `Start`, `Back`, shoulders, d-pad). A stick
-direction counts as down beyond half deflection. Only the first gamepad is read by the raylib backend.
+direction counts as down beyond half deflection. Only the first gamepad is read by the SDL and raylib backends.
 
 ## Querying actions
 
@@ -77,9 +77,9 @@ Source: [`samples/HelloEngine/Program.cs`](../../samples/HelloEngine/Program.cs)
 - `Reset()` runs on every scene push and pop: held actions count as already held, so the key that opened a menu
   does not immediately press its first option.
 
-The raylib backend adds one more guarantee: a key pressed and released between two frames is reported as down
+Both desktop backends add one more guarantee: a key pressed and released between two frames is reported as down
 until a simulation step has read it (see `RaylibInput.CollectTaps` in
-[`RaylibPlatform.cs`](../../src/MicroEngine.Raylib/RaylibPlatform.cs)).
+[`RaylibPlatform.cs`](../../src/MicroEngine.Raylib/RaylibPlatform.cs) and `SdlInput` in [`SdlPlatform.cs`](../../src/MicroEngine.Sdl/SdlPlatform.cs)); taps on the on-screen touch controls are kept the same way.
 
 ## Scripted input
 
@@ -111,7 +111,7 @@ directly. In code the same script can be built with `Press`, `Hold`, `Capture` a
 
 On the desktop, a game started through `DesktopLauncher` plays a script when it is given
 `--script FILE`; `--hidden`, `--mute` and `--captures DIR` run it without a visible window or sound and choose
-where captures go ([Backends](backends.md#desktop-raylib)).
+where captures go ([Backends](backends.md#choosing-a-platform)).
 
 On desktop a script implies a fixed step (one update per frame) and seed 1 unless `--seed` is given, so the run and its captures are reproducible.
 

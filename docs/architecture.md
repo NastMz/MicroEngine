@@ -1,39 +1,50 @@
 # MicroEngine architecture
 
 MicroEngine is a small, code-first 2D framework for pixel-art games in C#/.NET 10. It is
-deliberately compact: one backend-independent core library, one desktop backend, and games that
-are ordinary .NET programs. This document explains how the pieces fit and why.
+deliberately compact: one backend-independent core library, two platform backends (SDL 3 for Windows, Linux, macOS,
+Android and iOS; raylib for browsers and as a desktop alternative), and games that are ordinary .NET programs. This
+document explains how the pieces fit and why.
 
 ## Layers
 
 ```mermaid
 flowchart TB
   accTitle: Layers
-  accDescr: Games and samples use the desktop backend, which implements the core.
+  accDescr: Games and samples start through the desktop launcher, which offers the SDL and raylib backends; both implement the core's platform contract.
   games["<b> games/* </b> <br/> Game rules, content, art and music <br/> (MeadowRun, CourtyardKey, TrailDuel, NeonRift)"]
   samples["<b> samples/* </b> <br/> Minimal examples (HelloEngine)"]
-  raylib["<b> src/MicroEngine.Raylib </b> <br/> Desktop backend: window, renderer, audio device, input, launcher"]
-  core["<b> src/MicroEngine </b> <br/> Core: loop, scenes, input, graphics model, world, audio synthesis, UI"]
-  games -- uses --> raylib
-  samples -- uses --> raylib
+  hosts["<b> src/MicroEngine.Desktop, platforms/*, web/Host </b> <br/> Hosts: choose a platform profile, run the game"]
+  sdl["<b> src/MicroEngine.Sdl </b> <br/> SDL 3: window, 2D renderer, input, touch, audio, lifecycle"]
+  raylib["<b> src/MicroEngine.Raylib </b> <br/> raylib: window, renderer, audio, input; WebAssembly"]
+  core["<b> src/MicroEngine </b> <br/> Core: loop, scenes, input, graphics model, world, audio synthesis, UI, platform contract"]
+  games -- started by --> hosts
+  samples -- started by --> hosts
+  hosts -- choose --> sdl
+  hosts -- choose --> raylib
+  sdl -- implements --> core
   raylib -- implements --> core
+  games -- use --> core
 ```
 
-The core never references raylib. Everything platform-specific sits behind four interfaces in
-`MicroEngine.Core.IPlatform`:
+The core references no backend library. Everything platform-specific sits behind `MicroEngine.Core.IPlatform` and
+four device interfaces:
 
 | Interface | Responsibility | Implementations |
 | --- | --- | --- |
-| `IRenderer` | Immediate-mode drawing into the virtual canvas | `RaylibRenderer`, `HeadlessRenderer` |
-| `IGraphicsDevice` | Turning `PixelImage`s into textures | raylib, headless |
-| `IAudioDevice` | Loading/playing PCM sounds and looping music | raylib, `SilentAudioDevice` |
-| `IInputSource` | Raw key/gamepad state | raylib, `HeadlessInput` |
+| `IRenderer` | Immediate-mode drawing into the virtual canvas | `SdlRenderer`, `RaylibRenderer`, `HeadlessRenderer` |
+| `IGraphicsDevice` | Turning `PixelImage`s into textures | SDL, raylib, headless |
+| `IAudioDevice` | Loading/playing PCM sounds and looping music | SDL, raylib, `SilentAudioDevice` |
+| `IInputSource` | Raw key/gamepad state (and touch controls on SDL) | SDL, raylib, `HeadlessInput` |
 
-A new backend (another windowing library) implements `IPlatform`; no game code changes. The raylib backend
-also runs in a browser (raylib compiled to WebAssembly): `BrowserLauncher` returns a `GameSession` that the page
-starts, ticks from `requestAnimationFrame` and restarts, and keeps saves in `localStorage`. One host project
-builds any game into a static package ([ADR 0007](decisions/0007-browser-host.md),
-[ADR 0008](decisions/0008-web-packages.md), [web/](../web/README.md)).
+Hosts choose a platform through a `PlatformCatalog` of named `PlatformProfile`s (`sdl`, `raylib`, `sdl-software`,
+`headless`, or one of the developer's own) and may supply an audio device or extra input sources of their own; window,
+renderer and graphics device stay together because they share a graphics context
+([ADR 0016](decisions/0016-platform-profiles.md), [Backends](manual/backends.md)). SDL is the default on the native
+systems ([ADR 0017](decisions/0017-sdl3-native-platform.md)). The raylib backend also runs in a browser (raylib
+compiled to WebAssembly): `BrowserLauncher` returns a `GameSession` that the page starts, ticks from
+`requestAnimationFrame` and restarts, and keeps saves in `localStorage`. One host project builds any game into a
+static package ([ADR 0007](decisions/0007-browser-host.md), [ADR 0008](decisions/0008-web-packages.md),
+[web/](../web/README.md)).
 
 ## The frame
 
@@ -41,7 +52,8 @@ builds any game into a static package ([ADR 0007](decisions/0007-browser-host.md
 ends. Hosts that outlive a run (a browser page) use `GameSession`, which builds the game and platform, ticks the
 loop from `requestAnimationFrame` and releases the platform when the run ends. Each frame:
 
-1. Poll platform events.
+1. Poll platform events. While the platform is suspended (a phone app in the background) the frame stops here:
+   no simulation and no rendering; on the way out of suspension the clock restarts, so the time away is not simulated.
 2. Accumulate wall-clock time (headless: exactly one step per frame).
 3. For each fixed step (60 Hz, at most five per frame): apply scripted input, sample devices into the
    `InputMap`, update scenes, update the audio mixer and achievement banners (flushing achievement

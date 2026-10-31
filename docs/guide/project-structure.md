@@ -9,7 +9,10 @@ real games as the reference.
 | Path | Contents |
 | --- | --- |
 | `src/MicroEngine/` | Backend-independent core: loop, scenes, input, graphics model, world, audio synthesis, UI, saves, achievements. No native dependencies |
-| `src/MicroEngine.Raylib/` | raylib backend: `RaylibPlatform`, `RaylibAudioDevice`, `DesktopLauncher`, `BrowserLauncher`, `BrowserSaveStorage` |
+| `src/MicroEngine.Sdl/` | SDL 3 backend: `SdlPlatform`, `SdlAudioDevice` |
+| `src/MicroEngine.Raylib/` | raylib backend: `RaylibPlatform`, `RaylibAudioDevice`, `BrowserLauncher`, `BrowserSaveStorage` |
+| `src/MicroEngine.Desktop/` | `DesktopLauncher` and the official desktop platforms; what games reference |
+| `platforms/` | Android and iOS hosts ([README](../../platforms/README.md)) |
 | `games/<Name>/` | A complete game: code, procedural art and audio, optional asset files, input scripts, README |
 | `samples/HelloEngine/` | The smallest complete game ([walkthrough](../examples/hello-engine.md)) |
 | `tests/MicroEngine.Tests/` | Engine contract tests (MSTest) |
@@ -46,7 +49,7 @@ The smallest game is one project file and one source file:
 
 ```text
 samples/HelloEngine/
-  HelloEngine.csproj     references src/MicroEngine.Raylib
+  HelloEngine.csproj     references src/MicroEngine.Desktop
   Program.cs             entry point, Game subclass, one scene
   hello.script           input script for a smoke run
 ```
@@ -59,7 +62,7 @@ samples/HelloEngine/
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
+    <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
   </ItemGroup>
 </Project>
 ```

@@ -163,6 +163,24 @@ Source: [`src/MicroEngine/Core/Game.cs`](../../src/MicroEngine/Core/Game.cs)
 `Scenes.Clear()` pops every scene (so each one's `Exit` runs), pending achievement progress is written, then
 your `Unload` runs. Errors are reported in `RunResult.Error`; `DesktopLauncher.Run` turns them into exit code 1.
 
+## Suspension
+
+A phone sends an app to the background when the player switches away or takes a call; the platform then reports
+`Suspended` ([Backends](backends.md#iplatform)). The loop reacts once on each change:
+
+- **Going away**: music pauses, pending achievement progress is written, then `OnSuspended()` runs. No update and no
+  frame happens while suspended.
+- **Coming back**: music resumes, the clock restarts (the time away is not simulated), then `OnResumed()` runs before
+  the next update.
+
+```csharp
+protected override void OnSuspended() => Scenes.Push(new PauseScene(this));   // for example
+```
+
+Both hooks are optional; on desktops and in browsers they never run. Save anything the player would hate to lose in
+`OnSuspended`: a phone may end a background app without warning. Source:
+[`src/MicroEngine/Core/GameRunner.cs`](../../src/MicroEngine/Core/GameRunner.cs)
+
 ## Testing hooks
 
 `InitializeForTest(platform, seed)` and `StepForTest()` initialise a game and advance single steps without the

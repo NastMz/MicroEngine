@@ -21,14 +21,14 @@ using MicroEngine;
 using MicroEngine.Audio;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
-using MicroEngine.Raylib;
+using MicroEngine.Desktop;
 using MicroEngine.Scenes;
 
 return DesktopLauncher.Run(new HelloGame(), args);
 ```
 
 The program is a top-level statement. `DesktopLauncher.Run` parses the launcher flags (`--script`, `--hidden`,
-`--captures`, ...), creates a raylib window sized from the game's settings, runs the loop and returns a process
+`--captures`, ...), creates a window on the default platform (SDL) sized from the game's settings, runs the loop and returns a process
 exit code: 0 on success, 1 on a game error, 2 on bad arguments.
 
 ## 2. The game class

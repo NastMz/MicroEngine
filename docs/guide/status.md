@@ -9,7 +9,9 @@ validated, so you can judge whether it would fit your project.
 | Area | State | Evidence |
 | --- | --- | --- |
 | Core engine (`src/MicroEngine`) | Loop, scenes, input, graphics model, tile world, audio synthesis, UI, saves, achievements | [Architecture](../architecture.md), the engine's test project |
-| Desktop backend (`src/MicroEngine.Raylib`) | raylib window, renderer, audio, keyboard and gamepad input, `DesktopLauncher` | Validated on Windows |
+| Desktop and phone backend (`src/MicroEngine.Sdl`) | SDL 3: window, 2D renderer (Direct3D, Metal, OpenGL, OpenGL ES, Vulkan or software), audio, keyboard, gamepad, touch controls, phone lifecycle; the default through `DesktopLauncher` | Scripted captures on Windows, on Linux (Mesa) and on an Android emulator; macOS and iOS checks not yet run ([Platforms](platforms.md)) |
+| raylib backend (`src/MicroEngine.Raylib`) | raylib window, renderer, audio, keyboard and gamepad input; the browser platform and a desktop alternative (`--platform raylib`) | Validated on Windows |
+| Platform selection | `PlatformCatalog` of named profiles, `--platform`, replaceable audio and extra input sources | [Backends](../manual/backends.md#choosing-a-platform) |
 | Browser backend | Same raylib backend compiled to WebAssembly; `BrowserLauncher`, `localStorage` saves, one shared host | Automated browser tests and manual validation ([Platforms](platforms.md)) |
 | Games | Meadow Run, Courtyard Key, Trail Duel, Neon Rift, each with five achievements and saves | Each game's test project; playable on the [demos page](/demos/) |
 | Sample | Hello Engine, the smallest complete game | [Hello Engine walkthrough](../examples/hello-engine.md) |
@@ -24,7 +26,7 @@ These are not implemented. Do not plan around them.
 | --- | --- |
 | NuGet packages, project templates (`dotnet new`), installers, versioned engine releases | Planned; today the engine is built from its repository ([Getting MicroEngine](getting-microengine.md)) |
 | Visual editor, level editor or asset pipeline tool | Content is authored in code (`PixelImage.FromMap`, `TileLayer.Parse` over ASCII rows) or loaded through `ContentFolder`. A visual editor is only a long-term vision on the roadmap |
-| Touch controls | The demos have no dedicated touch controls |
+| Touch controls in the browser | The web demos have no touch controls; the Android and iOS apps have on-screen controls |
 | An ECS, physics engine, networking, scripting language or 3D | Not part of the engine's design ([Architecture](../architecture.md)). 3D is only a long-term vision on the roadmap |
 | Cloud saves | Saves stay on the machine (files) or in the browser (`localStorage`) |
 
@@ -34,7 +36,9 @@ These are not implemented. Do not plan around them.
 | --- | --- |
 | Windows desktop | Validated: builds, tests, games and scripted captures |
 | Linux desktop (x64) | Checked automatically on every engine change (build, tests, native rendering, keyboard and audio output under a virtual display and sound server); not yet supported: manual play on real hardware pending ([Platforms](platforms.md#desktop-validation)) |
-| macOS desktop | Under evaluation, not supported: builds and passes the headless tests in CI without blocking; native rendering not shown yet (no window on the hosted runner) |
+| macOS desktop | Implemented on SDL (Metal), not validated: builds and passes the headless tests in CI; the SDL rendering check has not run yet |
+| Android app | Implemented on SDL: two demos checked on an emulator (captures identical to the desktop SDL build, keys, touch, background and back, content files); no real device yet |
+| iOS app | Implemented on SDL (Metal), not validated: compiles; the simulator check has not run yet |
 | Browsers | The four demos are verified with automated tests in Chromium (Chrome) and Firefox on desktop, plus manual validation in the browser |
 | Safari | Not tested |
 | Other Chromium-based browsers (for example Edge) | They share Chrome's engine, but no claim is made for them |

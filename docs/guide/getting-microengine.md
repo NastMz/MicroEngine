@@ -28,7 +28,7 @@ A game is a .NET console project that references the engine and its desktop back
 
 ```xml
 <ItemGroup>
-  <ProjectReference Include="path/to/MicroEngine/src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
+  <ProjectReference Include="path/to/MicroEngine/src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
 </ItemGroup>
 ```
 

@@ -20,3 +20,5 @@ maintainer's archive, not in the public history.
 | [0013](0013-ci-cost-and-manual-releases.md) | Content evidence in daily CI, manual full validation, and demo releases (amends 0010, 0012) | Accepted |
 | [0014](0014-public-repository-ci.md) | Project-graph check selection and fork-safe CI for a public repository (amends 0013) | Accepted |
 | [0015](0015-mit-engine-reserved-demos.md) | MIT engine, all-rights-reserved demo games | Accepted |
+| [0016](0016-platform-profiles.md) | Platform profiles, replaceable subsystems and suspension | Accepted |
+| [0017](0017-sdl3-native-platform.md) | SDL 3 as the native platform; raylib for browsers (amends 0011, 0012) | Accepted |

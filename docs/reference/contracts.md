@@ -115,6 +115,7 @@ public interface IPlatform : IDisposable
     bool CloseRequested { get; }
     double Now { get; }
     bool RealTime { get; }
+    bool Suspended => false;
     void PollEvents();
     IRenderer BeginFrame();
     void EndFrame();
@@ -124,7 +125,22 @@ public interface IPlatform : IDisposable
 ```
 
 `RealTime` is true when time follows the wall clock (desktop, browser) and false when the loop advances one step
-per frame (headless). Implementations: `RaylibPlatform`, `HeadlessPlatform`.
+per frame (headless). `Suspended` is true while the system has taken the app away (a phone app in the background);
+the loop then pauses. Implementations: `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform`.
+
+### Platform profiles
+
+[`src/MicroEngine/Core/PlatformProfiles.cs`](../../src/MicroEngine/Core/PlatformProfiles.cs). How a host chooses and
+assembles a platform ([Backends](../manual/backends.md#choosing-a-platform), [ADR 0016](../decisions/0016-platform-profiles.md)).
+
+| Type | Role |
+| --- | --- |
+| `PlatformProfile(name, description, create)` | A named way to build an `IPlatform`; `CheckSupport` says why it cannot run here; `Replaceable` lists the `PlatformParts` a host may supply |
+| `PlatformCatalog` | Profiles in order of preference; `Default` is the first that can run, `Resolve(name)` finds one or throws |
+| `PlatformRequest(settings)` | Window options (`Scale`, `Hidden`, `FixedStep`, `Mute`, `CaptureScale`), an optional `Audio` factory and `ExtraInput` sources; `OpensOwnAudio` tells a backend whether to open its device |
+| `PlatformConfigurationException` | An unknown or unavailable profile, or a replacement the profile does not allow |
+| `CompositeInput` | Several input sources read as one |
+| `GameLauncher.Run(game, args, catalog, configure)` | The desktop command line over any catalog |
 
 ### Device interfaces
 
