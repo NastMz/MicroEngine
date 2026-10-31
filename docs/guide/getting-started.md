@@ -11,7 +11,7 @@ pinned toolchain and are covered by [web/README.md](../../web/README.md).
 | --- | --- | --- |
 | .NET SDK | 10 (`global.json` asks for 10.0.100 or a later feature band) | The only requirement for desktop builds and tests |
 | Git | any recent | To clone the repository |
-| OS | Windows 11 validated | Linux and macOS are potentially compatible through .NET and raylib but not verified ([Platforms](platforms.md)) |
+| OS | Windows 11 validated | Linux x64 is checked automatically but not yet supported; macOS is under evaluation ([Platforms](platforms.md#desktop-validation)) |
 | Node.js | 18 or later | Only for serving and testing browser packages |
 
 The raylib native library comes with the `Raylib-cs` NuGet package that `src/MicroEngine.Raylib` references; no

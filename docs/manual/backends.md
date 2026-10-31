@@ -69,8 +69,9 @@ Exit codes: 0 success, 1 game error, 2 bad arguments. Unknown arguments are reje
 developer shortcuts from environment variables. Source:
 [`src/MicroEngine.Raylib/DesktopLauncher.cs`](../../src/MicroEngine.Raylib/DesktopLauncher.cs)
 
-Validated on Windows. Linux and macOS are potentially compatible thanks to .NET and raylib, but not verified and
-not officially supported.
+Validated on Windows. On Linux x64 the backend is checked automatically (a real raylib window under a virtual
+display, keyboard events from the X server, a virtual sound server), but it is not supported until it has been played
+on real hardware; macOS is under evaluation. See [Platforms](../guide/platforms.md#desktop-validation).
 
 ## Browser: WebAssembly
 

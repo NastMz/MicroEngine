@@ -56,8 +56,8 @@ dotnet build MicroEngine.slnx -c Release
 dotnet test MicroEngine.slnx -c Release
 ```
 
-Requires the .NET 10 SDK. Validated on Windows 11; raylib also supports Linux and macOS, which are
-untested here.
+Requires the .NET 10 SDK. Validated on Windows 11. Linux x64 is checked automatically on every engine change but
+not yet supported; macOS is under evaluation ([Platforms](docs/guide/platforms.md#desktop-validation)).
 
 ## History
 

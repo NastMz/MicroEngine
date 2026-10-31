@@ -38,4 +38,22 @@ dotnet run --project games/MeadowRun -c Release -- --script games/MeadowRun/scri
 Launcher flags: `--script FILE`, `--captures DIR`, `--hidden`, `--headless`, `--frames N`, `--seed N`,
 `--scale N`, `--mute`. The script format is documented on `InputScript` in `src/MicroEngine/Core/GameRunner.cs`.
 
+## Native desktop checks (Linux)
+
+`dotnet test` skips the native tests (`tests/MicroEngine.Raylib.Tests`, category `Native`) when there is no display
+or sound server. To run them, and the scripted scenarios against the Linux visual reference, as CI does (needs
+`xvfb`, `libxtst6`, `pulseaudio` and `pulseaudio-utils`):
+
+```bash
+pulseaudio --start --exit-idle-time=-1 && pactl unload-module module-suspend-on-idle
+pactl load-module module-null-sink sink_name=microengine && pactl set-default-sink microengine
+export MICROENGINE_NATIVE_TESTS=1 MICROENGINE_AUDIO_MONITOR=microengine.monitor
+dotnet build MicroEngine.slnx -c Release
+xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter TestCategory=Native
+xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --reference web/tests/reference/linux-x64.json
+```
+
+After an intended visual change, regenerate the reference with `--write-reference web/tests/reference/linux-x64.json`
+(in the same environment) and look at the captures before committing it.
+
 Follow the [Code of Conduct](CODE_OF_CONDUCT.md).

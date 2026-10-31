@@ -10,13 +10,14 @@ refused writes return `false`.
 
 | Member | Behaviour |
 | --- | --- |
-| `new SaveStore(gameId, directory = null)` | Files under `directory`, or the launcher's default storage, or local app data |
+| `new SaveStore(gameId, directory = null)` | Files under `directory`, or the launcher's default storage, or `DefaultDirectory(gameId)` |
 | `new SaveStore(ISaveStorage storage)` | Any storage implementation |
 | `Save<T>(slot, data)` | Serialises `data` to indented JSON and writes the slot whole; `false` if refused |
 | `Load<T>(slot)` | The object, or `null` when missing, corrupt or unreadable |
 | `Exists(slot)`, `Delete(slot)` | Slot management |
 | `Directory` | The folder (file storage) or a description of the medium |
 | `SaveStore.DefaultStorage` | Static factory chosen by a launcher before any game is built |
+| `SaveStore.DefaultDirectory(gameId)` | The user's save folder for a game on this system (see below) |
 
 Courtyard Key keeps its adventure in one slot:
 
@@ -45,7 +46,7 @@ public SaveStore(string gameId, string? directory = null)
     ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
     _storage = directory is null && DefaultStorage is { } create
         ? create(gameId)
-        : new FileSaveStorage(directory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MicroEngine", gameId));
+        : new FileSaveStorage(directory ?? DefaultDirectory(gameId));
 }
 ```
 
@@ -53,9 +54,15 @@ Source: [`src/MicroEngine/Core/SaveStore.cs`](../../src/MicroEngine/Core/SaveSto
 
 | Platform | Storage | Location |
 | --- | --- | --- |
-| Desktop (default) | `FileSaveStorage` | `<LocalApplicationData>/MicroEngine/<gameId>/<slot>.json` |
+| Windows (default) | `FileSaveStorage` | `%LOCALAPPDATA%\MicroEngine\<gameId>\<slot>.json` |
+| Linux and other Unix systems (default) | `FileSaveStorage` | `$XDG_DATA_HOME/MicroEngine/<gameId>/<slot>.json`, or `~/.local/share/...` when `XDG_DATA_HOME` is unset or not an absolute path |
+| macOS (default) | `FileSaveStorage` | `~/Library/Application Support/MicroEngine/<gameId>/<slot>.json` |
 | Explicit directory (tests, dev tools) | `FileSaveStorage` | `<directory>/<slot>.json` |
 | Browser | `BrowserSaveStorage` | `localStorage` key `microengine/<gameId>/<slot>` |
+
+`SaveStore.DefaultDirectory(gameId)` returns that folder. It is always an absolute path, also on a new account
+where the data folder does not exist yet: the first save creates it, so saves never land in the working directory.
+Only a system with no home folder at all falls back to the temporary folder.
 
 `FileSaveStorage` writes a temporary file and moves it over the slot, so a crash never leaves a half-written save.
 `BrowserLauncher.CreateSession` sets `SaveStore.DefaultStorage` to `BrowserSaveStorage` before any game is built, so
