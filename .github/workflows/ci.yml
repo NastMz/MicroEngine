@@ -177,9 +177,8 @@ jobs:
     secrets:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
-  # GitHub Free cannot require checks on a private repository (branch protection returns 403), so this job is the
-  # gate to look at, and the one to require if the plan changes: it passes only when every needed check passed here
-  # or already passed for identical inputs, and the deployment (if any) succeeded.
+  # The one required check (ruleset "main"): it passes only when every needed check passed here or already passed for
+  # identical inputs, and the deployment (if any) succeeded.
   result:
     name: CI result
     needs: [plan, checks, deploy]

@@ -1,7 +1,7 @@
 # Architecture decisions
 
-Records for the rebuilt engine (2026-10-29 onward). Decisions of the previous implementation remain
-available at tag `reference/pre-rebuild` under `docs/engineering/decisions/`.
+Records for the rebuilt engine (2026-10-29 onward). Decisions of the previous implementation are kept in the
+maintainer's archive, not in the public history.
 
 | ID | Decision | Status |
 | --- | --- | --- |

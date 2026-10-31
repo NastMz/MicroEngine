@@ -2,8 +2,8 @@
 
 ## Status
 
-Accepted for the CI changes; the repository itself stays private until the owner decides (see
-[PUBLIC-1](../evaluations/public-1.md)). Amends [ADR 0013](0013-ci-cost-and-manual-releases.md) (scope of the .NET
+Accepted. The repository has been public since 2026-10-31, with `PUBLIC_RUNNERS=true`
+(see [PUBLIC-1](../evaluations/public-1.md)). Amends [ADR 0013](0013-ci-cost-and-manual-releases.md) (scope of the .NET
 and native checks, macOS on public runners). Operation: [CI](../ci.md).
 
 ## Context

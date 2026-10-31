@@ -27,5 +27,10 @@
   "devDependencies": {
     "@vercel/routing-utils": "6.6.0",
     "puppeteer-core": "25.13.0"
+  },
+  "overrides": {
+    "@vercel/routing-utils": {
+      "path-to-regexp": "6.3.0"
+    }
   }
 }

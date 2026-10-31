@@ -6,8 +6,9 @@ sufficient without previous chats or agent memory.
 
 ## Current state
 
-- Branch `feat/engine-rebuild` holds the rebuilt engine (`src/`) and three games (`games/`).
-  The previous implementation is preserved at tag `reference/pre-rebuild`; do not restore it over active work.
+- `main` holds the rebuilt engine (`src/`) and four demo games (`games/`). The public history starts on 2026-10-30;
+  the previous implementation and the first days of the rebuild live only in the maintainer's archive, so commit
+  hashes and Actions run IDs quoted in older records point there. Never push branches from an old clone.
 - The active rebuild record (specs, tasks, log) is [`odd/tasks/engine-rebuild.md`](odd/tasks/engine-rebuild.md).
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence);
   `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual macOS, Android and iOS
@@ -18,8 +19,9 @@ sufficient without previous chats or agent memory.
 - Licensing ([ADR 0015](docs/decisions/0015-mit-engine-reserved-demos.md)): the engine, samples, tools, site code and
   docs are MIT (`LICENSE`); the four demo games, their tests and builds are all rights reserved (`games/LICENSE`),
   except the third-party files listed in each game's `CREDITS.md`. Never describe a demo as MIT; every demo page
-  must carry its notice (the site build checks it). The repository is being prepared to go public
-  ([PUBLIC-1](docs/evaluations/public-1.md)); it stays private until the owner switches it.
+  must carry its notice (the site build checks it). The repository is public ([PUBLIC-1](docs/evaluations/public-1.md)):
+  `main` is protected by a ruleset (pull request and the **CI result** check), and pull requests from forks are
+  untrusted code (ADR 0014).
 
 ## Working rules
 

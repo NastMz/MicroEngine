@@ -62,8 +62,9 @@ not yet supported; macOS is under evaluation ([Platforms](docs/guide/platforms.m
 ## History
 
 MicroEngine was rebuilt from a clean slate in October 2026 ([ADR 0001](docs/decisions/0001-greenfield-rebuild.md)).
-The previous implementation and the first days of the rebuild are kept in the maintainer's archive (tag
-`reference/pre-rebuild` there), not in the public history.
+The previous implementation and the first days of the rebuild are kept in the maintainer's archive, not in the
+public history, which starts on 2026-10-30. Commit hashes and Actions run IDs quoted in evaluations and task records
+written before 2026-10-31 refer to that archived history.
 
 ## License
 

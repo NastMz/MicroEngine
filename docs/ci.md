@@ -193,7 +193,8 @@ production deployment stays. After this workflow reaches `main` and its `ci` run
 
 ## Gates and required checks
 
-GitHub Free cannot protect branches or require checks on a private repository (the API answers HTTP 403), so the
+`main` is protected by the repository ruleset **main**: changes arrive through pull requests, the **CI result**
+check is required, force pushes and deletion are blocked (repository admins can bypass). Within a run, the
 workflows are the gate:
 
 | Kind | Examples | Effect |
@@ -203,8 +204,8 @@ workflows are the gate:
 | Informative | the Plan's advisory platforms, the cost summary | never blocks |
 | Experimental | macOS, Android, iOS | reported per platform, never a gate |
 
-If the repository moves to a plan with branch protection, require only **CI result**: it always runs and is green
-only when everything needed passed, so skipped jobs never block a merge.
+Only **CI result** is required: it always runs and is green only when everything needed passed, so skipped jobs
+never block a merge.
 
 ## Public repository
 
