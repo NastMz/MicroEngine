@@ -6,7 +6,10 @@ import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import { execFileSync } from 'node:child_process';
-import { registry, demoKey, publish, plan, fetchDemos, openStore, noticeFiles, playDir, cacheDir } from '../scripts/demos.mjs';
+import {
+  registry, demoKey, publish, plan, fetchDemos, openStore, noticeFiles, playDir, cacheDir, createRelease, verifyRelease,
+  versionTag, candidatePackages, releaseRecord,
+} from '../scripts/demos.mjs';
 
 const git = (root, ...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' });
 const write = (root, file, text) => {
@@ -231,4 +234,114 @@ test('GitHub store: artifacts go to the demo-artifacts prerelease; the token nev
   const record = await fetchDemos({}, { store: openStore(env), root });
   assert.equal(record.games.Beta.key, demoKey('Beta', { root }).key);
   assert.ok(github.seen.storageAuth.length > 0 && github.seen.storageAuth.every(a => a === null), 'the storage host received no Authorization header');
+});
+
+// Releases (docs/ci.md, "Releases"): what production serves, separate from the integration store daily CI fills.
+const dirStoreEnv = () => ({ DEMOS_STORE: `dir:${fs.mkdtempSync(path.join(os.tmpdir(), 'store-'))}` });
+
+test('release: a draft of the stored packages, published only on request, then served as the latest', async t => {
+  keepPlayDir(t);
+  const root = fixtureRepo();
+  const store = openStore(dirStoreEnv());
+  await publish(['Alpha', 'Beta'], store, { from: builtPackages(root), root });
+
+  const record = await createRelease(store, versionTag('1.0.0'), { root, commit: 'c0ffee' });
+  assert.equal(record.tag, 'v1.0.0');
+  assert.deepEqual(Object.keys(record.games), ['Alpha', 'Beta']);
+  assert.equal(record.games.Alpha.key, demoKey('Alpha', { root }).key);
+  assert.equal((await store.releases.get('v1.0.0')).draft, true);
+  assert.equal(await store.releases.latest(), null, 'a draft is not what production serves');
+  await assert.rejects(fetchDemos({ DEMOS_SOURCE: 'release' }, { store, root }), /no published demo release/);
+
+  // The release workflow tests the draft's own packages before publishing it.
+  const draft = await fetchDemos({ DEMOS_SOURCE: 'release:v1.0.0' }, { store, root });
+  assert.equal(draft.release, 'v1.0.0');
+  await verifyRelease(store, 'v1.0.0', playDir);
+
+  await store.releases.publish('v1.0.0');
+  const served = await fetchDemos({ DEMOS_SOURCE: 'release', VERCEL_ENV: 'production' }, { store, root });
+  assert.equal(served.games.Beta.from, 'release v1.0.0');
+  assert.equal(served.games.Beta.sha256, record.games.Beta.sha256);
+  await assert.rejects(createRelease(store, 'v1.0.0', { root }), /already published; choose a new version/);
+});
+
+test('release: a failed release leaves no draft and the public version unchanged', async t => {
+  keepPlayDir(t);
+  const root = fixtureRepo();
+  const env = dirStoreEnv();
+  const store = openStore(env);
+  await publish(['Alpha', 'Beta'], store, { from: builtPackages(root), root });
+  await createRelease(store, 'v1.0.0', { root });
+  await store.releases.publish('v1.0.0');
+
+  change(root, 'games/Beta/Game.cs', 'class Beta { int unbuilt; }');
+  await assert.rejects(createRelease(store, 'v1.1.0', { root }), /Beta: no package for key [0-9a-f]{16}/);
+  assert.equal(await store.releases.get('v1.1.0'), null, 'no draft left behind');
+  assert.equal((await store.releases.latest()).tag, 'v1.0.0');
+
+  // An altered archive in the integration store is refused before anything is copied.
+  await publish(['Beta'], store, { from: builtPackages(root, ['Beta']), root });
+  const dir = env.DEMOS_STORE.slice(4);
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir, `Beta-${demoKey('Beta', { root }).key}.json`), 'utf8'));
+  fs.appendFileSync(path.join(dir, manifest.archive), 'x');
+  await assert.rejects(createRelease(store, 'v1.1.0', { root }), /SHA-256 is .*its manifest says/);
+  assert.equal(await store.releases.get('v1.1.0'), null);
+
+  // A deployed file that differs from the release is caught before publishing.
+  await fetchDemos({ DEMOS_SOURCE: 'release' }, { store, root });
+  fs.appendFileSync(path.join(playDir, 'Alpha', 'main.js'), '// changed');
+  await assert.rejects(verifyRelease(store, 'latest', playDir), /Alpha: main.js does not match/);
+});
+
+test('sources: candidates use a stored current package, else the released one; production refuses them', async t => {
+  keepPlayDir(t);
+  const root = fixtureRepo();
+  const store = openStore(dirStoreEnv());
+  await publish(['Alpha', 'Beta'], store, { from: builtPackages(root), root });
+  await createRelease(store, 'v1.0.0', { root });
+  await store.releases.publish('v1.0.0');
+
+  change(root, 'games/Beta/Game.cs', 'class Beta { int next; }');
+  let record = await fetchDemos({ DEMOS_SOURCE: 'candidates' }, { store, root });
+  assert.equal(record.games.Alpha.from, 'candidate', 'same key as released: the stored package');
+  assert.equal(record.games.Beta.from, 'release v1.0.0', 'not built yet: the approved package, under its own key');
+  assert.notEqual(record.games.Beta.key, demoKey('Beta', { root }).key);
+
+  await publish(['Beta'], store, { from: builtPackages(root, ['Beta']), root });
+  record = await fetchDemos({ DEMOS_SOURCE: 'candidates' }, { store, root });
+  assert.equal(record.games.Beta.from, 'candidate');
+  assert.equal(record.games.Beta.key, demoKey('Beta', { root }).key);
+
+  for (const DEMOS_SOURCE of ['keys', 'candidates']) {
+    await assert.rejects(fetchDemos({ DEMOS_SOURCE, VERCEL_ENV: 'production' }, { store, root }), /production serves released demo packages only/);
+  }
+  await assert.rejects(fetchDemos({ DEMOS_SOURCE: 'nightly' }, { store, root }), /DEMOS_SOURCE must be/);
+});
+
+test('plan, ci policy: a game change builds that game, an engine change builds the canary only', async () => {
+  const root = fixtureRepo();
+  const store = openStore(dirStoreEnv());
+  const builds = async options => (await plan(store, { root, ...options })).filter(g => g.build).map(g => g.id);
+
+  assert.deepEqual(await builds({ policy: 'ci', canary: 'Beta' }), ['Alpha', 'Beta'], 'no release yet: build everything missing');
+  await publish(['Alpha', 'Beta'], store, { from: builtPackages(root), root });
+  await createRelease(store, 'v1.0.0', { root });
+  await store.releases.publish('v1.0.0');
+  assert.deepEqual(await builds({ policy: 'ci', canary: 'Beta' }), [], 'everything released and stored');
+
+  change(root, 'games/Alpha/Game.cs', 'class Alpha { int x; }');
+  assert.deepEqual(await builds({ policy: 'ci', canary: 'Beta' }), ['Alpha']);
+  change(root, 'src/Engine.cs', 'class Engine { int y; }');
+  assert.deepEqual(await builds({ policy: 'ci', canary: 'Beta' }), ['Alpha', 'Beta'], 'Alpha changed itself, Beta is the canary');
+  assert.deepEqual(await builds({ policy: 'ci', canary: 'Alpha' }), ['Alpha']);
+  assert.deepEqual(await builds({ policy: 'all' }), ['Alpha', 'Beta'], 'validation and releases build every missing package');
+  assert.deepEqual(candidatePackages(await plan(store, { root, policy: 'ci', canary: 'Alpha' })),
+    { Alpha: `candidate:${demoKey('Alpha', { root }).key}`, Beta: `release:${(await releaseRecord(await store.releases.latest())).games.Beta.key}` });
+});
+
+test('versions: 1.2.0, v1.2.0 and pre-releases are accepted, anything else refused', () => {
+  assert.equal(versionTag('1.2.0'), 'v1.2.0');
+  assert.equal(versionTag(' v1.2.0 '), 'v1.2.0');
+  assert.equal(versionTag('1.2.0-rc.1'), 'v1.2.0-rc.1');
+  for (const bad of ['1.2', 'latest', 'v1.2.0;rm', '', undefined]) assert.throws(() => versionTag(bad), /is not a version/);
 });

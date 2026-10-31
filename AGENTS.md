@@ -9,8 +9,10 @@ sufficient without previous chats or agent memory.
 - Branch `feat/engine-rebuild` holds the rebuilt engine (`src/`) and three games (`games/`).
   The previous implementation is preserved at tag `reference/pre-rebuild`; do not restore it over active work.
 - The active rebuild record (specs, tasks, log) is [`odd/tasks/engine-rebuild.md`](odd/tasks/engine-rebuild.md).
-- CI runs only the checks a change needs (`.github/scripts/changes.mjs`, ADR 0012); `platforms.yml` holds the weekly
-  macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms.
+- CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence);
+  `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual macOS, Android and iOS
+  experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos reach the public site
+  only through `release.yml`; merging never publishes them.
 - `site/` is the public site (Astro + Starlight): it publishes the Markdown listed in `site/src/lib/repo-docs.mjs`
   straight from `docs/` and `games/`, so edit those files, never a copy. See [publishing the site](docs/deployment.md).
 - The repository is private and MicroEngine is not open source: public pages must not link into the repository,

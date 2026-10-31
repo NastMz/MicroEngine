@@ -17,3 +17,4 @@ available at tag `reference/pre-rebuild` under `docs/engineering/decisions/`.
 | [0010](0010-delivery-pipeline.md) | Content-addressed demo packages and a prebuilt Vercel deployment pipeline (amends 0009) | Accepted |
 | [0011](0011-desktop-platform-validation.md) | Desktop platform validation: Windows, Linux and macOS test matrix, native Linux checks, per-system visual references | Accepted |
 | [0012](0012-tiered-ci-and-platform-experiments.md) | Tiered CI driven by changed paths, and a separate platform workflow (amends 0010, 0011) | Accepted |
+| [0013](0013-ci-cost-and-manual-releases.md) | Content evidence in daily CI, manual full validation, and demo releases (amends 0010, 0012) | Accepted |

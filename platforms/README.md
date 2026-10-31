@@ -1,8 +1,9 @@
 # Experimental platform hosts
 
 Hosts and probes from PLATFORM-2 ([evaluation](../docs/evaluations/platform-2.md)). **None of these platforms is
-supported.** They exist to gather evidence, and they run in the weekly
-[platform workflow](../docs/deployment.md#platform-workflow), never in the publishing pipeline.
+supported.** They exist to gather evidence, and they run in the
+[platform workflow](../docs/ci.md#platform-workflow) (monthly, manual, or from full validation), never in daily CI or
+a release.
 
 Like the browser host, each mobile host runs one game chosen with `-p:Game=<Id>` from
 [`web/games.props`](../web/games.props) (default `MeadowRun`): no game is copied and no gameplay code changes. A game

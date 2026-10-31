@@ -72,18 +72,19 @@ Native mobile apps are experiments, not supported platforms:
 
 ## What CI proves
 
-Every change runs only the checks it needs; the expensive platforms run every week and on demand, and never decide
-whether the site is published.
+Every change runs only the checks it needs, once per content; full validation runs every check on demand, and the
+experimental platforms also run once a month. Experimental platforms never decide whether anything is published,
+and new demo builds reach this site only through an explicit release.
 
 | Check | Runs | Proves |
 | --- | --- | --- |
-| .NET tests on Linux, then Windows | engine, game or test changes | the engine and the four games' rules and headless playthroughs |
-| .NET tests on macOS | engine and backend changes; weekly | the same on macOS; not blocking |
-| Native Linux | engine, game and capture changes | raylib draws the 138 scripted frames like the Linux reference; keyboard and audio through the system |
-| Browser suites | site, web host and rebuilt demos (all suites); documentation (page layout only) | pages at three widths, and each demo loaded, played, restarted and closed in Chrome and Firefox |
-| macOS OpenGL probe | weekly | why raylib can or cannot open a window on the CI Mac |
-| Android emulator | weekly | the experimental app installs, starts, draws, plays and resumes |
-| iOS simulator | weekly | the experimental app installs, starts and simulates like the desktop build |
+| .NET tests on Linux | engine, game or test changes; full validation | the engine and the four games' rules and headless playthroughs |
+| .NET tests on Windows | engine, backend and build changes; full validation | the same on Windows |
+| Native Linux | engine, game and capture changes; full validation | raylib draws the 138 scripted frames like the Linux reference; keyboard and audio through the system |
+| Browser suites | site, web host and rebuilt demos (all suites); documentation (page layout only); every release | pages at three widths, and each demo loaded, played, restarted and closed in Chrome and Firefox |
+| .NET tests on macOS, OpenGL probe | full validation; monthly | the same tests on macOS (not blocking), and why raylib can or cannot open a window on the CI Mac |
+| Android emulator | full validation; monthly | the experimental app installs, starts, draws, plays and resumes |
+| iOS simulator | full validation; monthly | the experimental app installs, starts and simulates like the desktop build |
 
 ## Desktop
 

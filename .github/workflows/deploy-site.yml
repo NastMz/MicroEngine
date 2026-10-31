@@ -1,0 +1,151 @@
+# Builds and deploys the site (docs/ci.md, "Deploying the site"). Called by ci.yml (previews, and production when
+# main changes the published site) and release.yml (production with a new demo release). One job does everything,
+# so it holds the production lock from the build to the switch:
+#   1. `vercel build` (npm ci and npm run build) with DEMOS_SOURCE; production accepts only released packages
+#   2. for release packages: every file in the output checked against the release's SHA-256 values
+#   3. `vercel deploy --prebuilt`; production is staged (--skip-domain), so nothing public changes yet
+#   4. production: `vercel promote` makes the staged deployment public (and re-enables domain assignment after a
+#      rollback); with `publish-release`, that draft release is then published and becomes the latest. If publishing
+#      fails after the switch, production is rolled back to the previous deployment, so the site never serves a demo
+#      release that is not the latest one.
+# Vercel never builds from the repository and no source is uploaded, only .vercel/output.
+name: deploy-site
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit whose site is deployed
+        type: string
+        required: true
+      target:
+        description: preview or production
+        type: string
+        required: true
+      demo-source:
+        description: DEMOS_SOURCE (production needs release or release:<tag>)
+        type: string
+        required: true
+      publish-release:
+        description: Draft release to publish once production serves it (release workflow only)
+        type: string
+        default: ''
+      expect-main:
+        description: Refuse to deploy if origin/main is no longer this commit (release workflow only)
+        type: string
+        default: ''
+    secrets:
+      VERCEL_TOKEN:
+        required: false
+    outputs:
+      url:
+        description: Deployment URL
+        value: ${{ jobs.deploy.outputs.url }}
+
+# No permissions here: the job gets the caller's. ci.yml grants contents read (and pull-requests write for the
+# preview link), so the build of a pull request never holds a token that can write to the repository; only
+# release.yml grants contents write, which publishing a release needs.
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target }}
+      url: ${{ steps.deploy.outputs.url }}
+    concurrency:
+      group: deploy-${{ inputs.target == 'production' && 'production' || github.ref }}
+      cancel-in-progress: false
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      TARGET: ${{ inputs.target }}
+      VERCEL_CLI: vercel@64.3.1
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      GITHUB_TOKEN: ${{ github.token }}
+      DEMOS_SOURCE: ${{ inputs.demo-source }}
+      RELEASE: ${{ inputs.publish-release }}
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - name: Production only from main, with released demos
+        run: |
+          if [ "$TARGET" = production ]; then
+            git merge-base --is-ancestor "${{ inputs.ref }}" origin/main || { echo "::error::Production is deployed from main only."; exit 1; }
+            case "$DEMOS_SOURCE" in release|release:*) ;; *) echo "::error::Production serves released demo packages only (DEMOS_SOURCE=$DEMOS_SOURCE)."; exit 1 ;; esac
+          fi
+          if [ -n "${{ inputs.expect-main }}" ] && [ "$(git rev-parse origin/main)" != "${{ inputs.expect-main }}" ]; then
+            echo "::error::main moved while the release was being verified; nothing was deployed. Run the release again."
+            exit 1
+          fi
+      - name: Vercel configured, demos released?
+        id: configured
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::notice::Vercel is not configured (VERCEL_TOKEN secret, VERCEL_ORG_ID and VERCEL_PROJECT_ID variables); nothing deployed."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            [ -z "$RELEASE" ] || { echo "::error::A release cannot be published without a deployment."; exit 1; }
+          elif [ "$DEMOS_SOURCE" = release ] && ! gh api "repos/$GITHUB_REPOSITORY/releases/latest" --silent 2> /dev/null; then
+            # Before the first demo release, production keeps its current deployment: nothing to publish with.
+            echo "::warning::No demo release is published yet, so production was left unchanged. Publish the first one with the release workflow (docs/ci.md, \"First release\")."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.configured.outputs.ok == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Pull project settings
+        if: steps.configured.outputs.ok == 'true'
+        run: npx --yes "$VERCEL_CLI" pull --yes --environment="$TARGET" --token="$VERCEL_TOKEN"
+      # npm run build fetches and verifies the demo packages, then check-dist; a missing or altered package fails here.
+      - name: Build
+        if: steps.configured.outputs.ok == 'true'
+        run: npx --yes "$VERCEL_CLI" build ${{ inputs.target == 'production' && '--prod' || '' }} --token="$VERCEL_TOKEN"
+      - name: Deployed packages are the release's, file by file
+        if: steps.configured.outputs.ok == 'true' && startsWith(inputs.demo-source, 'release')
+        run: |
+          tag="${DEMOS_SOURCE#release}"; tag="${tag#:}"
+          node scripts/demos.mjs release-verify --tag "${tag:-latest}" --dir .vercel/output/static/play
+      - name: Deploy the prebuilt output
+        id: deploy
+        if: steps.configured.outputs.ok == 'true'
+        run: |
+          url=$(npx --yes "$VERCEL_CLI" deploy --prebuilt ${{ inputs.target == 'production' && '--prod --skip-domain' || '' }} --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed $TARGET ($DEMOS_SOURCE demos): $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Make it public
+        id: promote
+        if: steps.configured.outputs.ok == 'true' && inputs.target == 'production'
+        run: npx --yes "$VERCEL_CLI" promote "${{ steps.deploy.outputs.url }}" --yes --timeout=5m --token="$VERCEL_TOKEN"
+      - name: Publish the demo release
+        id: publish
+        if: steps.configured.outputs.ok == 'true' && inputs.publish-release != ''
+        shell: bash # with pipefail, so `| tee` keeps a failure
+        run: node scripts/demos.mjs release-publish --tag "$RELEASE" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Undo the switch (the release was not published)
+        if: failure() && steps.promote.outcome == 'success' && inputs.publish-release != ''
+        run: |
+          npx --yes "$VERCEL_CLI" rollback --timeout=5m --token="$VERCEL_TOKEN"
+          echo "::error::Release $RELEASE was not published, so production was rolled back to the previous deployment." >> "$GITHUB_STEP_SUMMARY"
+      - name: Link the preview on the pull request
+        if: steps.configured.outputs.ok == 'true' && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          gh pr comment "$PR" --edit-last --create-if-none --body "Preview of $SHA ($DEMOS_SOURCE demos): $URL"

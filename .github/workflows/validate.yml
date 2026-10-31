@@ -1,0 +1,128 @@
+# Full validation on demand (docs/ci.md, "Full validation"): Actions → validate → Run workflow, for any commit,
+# branch or tag. Every selected check runs, whatever changed and whatever evidence exists; nothing is deployed or
+# released. Each job names its platform, and the report at the end lists the outcome and cost per platform, with the
+# experimental ones (macOS, Android, iOS) marked as such: a failure there is not a failure of a supported platform.
+# Untick what is not needed to save runner minutes; a full run is estimated at about $1 (docs/evaluations/infra-1.md).
+name: validate
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit, branch or tag to validate
+        type: string
+        default: main
+      dotnet:
+        description: .NET tests on Linux and Windows (supported)
+        type: boolean
+        default: true
+      native:
+        description: Native Linux rendering, keyboard and audio, scripted captures (supported)
+        type: boolean
+        default: true
+      web:
+        description: Build every missing demo package, then the site and all browser suites (supported)
+        type: boolean
+        default: true
+      macos:
+        description: macOS tests and OpenGL diagnosis (experimental)
+        type: boolean
+        default: true
+      android:
+        description: Android emulator (experimental)
+        type: boolean
+        default: true
+      ios:
+        description: iOS simulator (experimental)
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: Resolve ${{ inputs.ref }}
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.ref.outputs.sha }}
+      build: ${{ steps.demos.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - id: ref
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "Validating \`${{ inputs.ref }}\` at $(git rev-parse HEAD)." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-node@v4
+        if: inputs.web
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - if: inputs.web
+        run: npm ci --prefix site
+      - name: Demo packages (every missing one is built)
+        id: demos
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          WEB: ${{ inputs.web }}
+        run: |
+          if [ "$WEB" = true ]; then node site/scripts/demos.mjs plan --policy all --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+          else echo "build=[]" >> "$GITHUB_OUTPUT"; fi
+
+  checks:
+    name: Supported
+    needs: resolve
+    uses: ./.github/workflows/checks.yml
+    permissions:
+      contents: write # storing demo packages
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+      dotnet: ${{ inputs.dotnet }}
+      windows: ${{ inputs.dotnet }}
+      native: ${{ inputs.native }}
+      build: ${{ needs.resolve.outputs.build }}
+      site: ${{ inputs.web }}
+      demo-source: keys
+      suites: layout,play,touch
+
+  platforms:
+    name: Experimental
+    needs: resolve
+    if: inputs.macos || inputs.android || inputs.ios
+    uses: ./.github/workflows/platforms.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+      macos: ${{ inputs.macos }}
+      android: ${{ inputs.android }}
+      ios: ${{ inputs.ios }}
+
+  report:
+    name: Report by platform
+    needs: [resolve, checks, platforms]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Outcome and cost per platform
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/ci-cost.mjs measure "$GITHUB_RUN_ID" --exclude "Report by platform" --by-platform >> "$GITHUB_STEP_SUMMARY"
+      - name: Supported checks must pass
+        env:
+          SUPPORTED: ${{ needs.checks.result }}
+          EXPERIMENTAL: ${{ needs.platforms.result }}
+        run: |
+          echo "Experimental platforms: $EXPERIMENTAL (informative; never a release gate)." >> "$GITHUB_STEP_SUMMARY"
+          [ "$SUPPORTED" = success ] || { echo "::error::Supported checks: $SUPPORTED."; exit 1; }
