@@ -17,7 +17,15 @@ namespace MicroEngine.iOS;
 /// </summary>
 public static unsafe class Program
 {
-    private static void Main(string[] args) => SDL_RunApp(0, null, &RunGame, IntPtr.Zero);
+    private static void Main(string[] args)
+    {
+        // On iOS SDL is a framework inside the app (Frameworks/SDL3.framework), not a library .NET finds by the name
+        // "SDL3", so the bindings' imports are pointed at it before the first SDL call.
+        string sdl = Path.Combine(NSBundle.MainBundle.PrivateFrameworksPath!, "SDL3.framework", "SDL3");
+        NativeLibrary.SetDllImportResolver(typeof(SDL.SDL3).Assembly,
+            (name, assembly, path) => name == "SDL3" ? NativeLibrary.Load(sdl) : IntPtr.Zero);
+        SDL_RunApp(0, null, &RunGame, IntPtr.Zero);
+    }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
     private static int RunGame(int argc, byte** argv)

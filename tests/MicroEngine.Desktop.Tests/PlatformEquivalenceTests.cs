@@ -22,6 +22,17 @@ namespace MicroEngine.Desktop.Tests;
 public sealed class PlatformEquivalenceTests
 {
     private static readonly Color Background = new(10, 20, 30);
+
+    /// <summary>
+    /// macOS only lets the main thread create windows and read their events, and test runners run tests on other
+    /// threads: a window opened here would block forever. On macOS the platforms are checked by running the games
+    /// themselves (web/tests/desktop.mjs), not by these tests.
+    /// </summary>
+    [TestInitialize]
+    public void NotOnMacOS()
+    {
+        if (OperatingSystem.IsMacOS()) Assert.Inconclusive("windows can only be opened on the main thread on macOS; see web/tests/desktop.mjs");
+    }
     private static readonly Color Red = new(255, 0, 0);
 
     /// <summary>One frame exercising every <see cref="IRenderer"/> operation, captured at update 1.</summary>

@@ -68,6 +68,7 @@ jobs:
     name: macOS (SDL with Metal; raylib OpenGL diagnosis)
     if: github.event_name == 'schedule' || inputs.macos
     runs-on: macos-latest
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
@@ -82,11 +83,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: dotnet build MicroEngine.slnx -c Release
-      - name: .NET tests (headless; native audio device; SDL and raylib in a window when one opens)
+      - name: .NET tests (headless; native audio device)
+        # tests/MicroEngine.Desktop.Tests open windows from a test thread, which Cocoa forbids; SDL on macOS is checked
+        # below by running the games themselves.
         run: |
           dotnet test MicroEngine.slnx -c Release --no-build --filter "TestCategory!=Native" --logger trx --results-directory test-results
           dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
-          dotnet test tests/MicroEngine.Desktop.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results ".NET tests on macOS"
       - name: Scripted captures on SDL (the default platform) against the SDL reference
@@ -167,9 +169,9 @@ jobs:
           emulator-options: -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           disable-animations: true
           disk-size: 4G
-          # The action runs each line on its own, so the loop stays on one line.
+          # The action runs each script line with sh, so the loop lives in a bash script.
           script: |
-            set -o pipefail; status=0; for game in MeadowRun NeonRift; do apk=$(ls platforms/android/bin/$game/Release/net10.0-android/*-Signed.apk); node platforms/android/device-checks.mjs --apk "$apk" --game $game --out android-checks/$game || status=1; node web/tests/desktop.mjs --skip-run --games $game --out android-checks/$game --reference web/tests/reference/sdl.json | tee -a "$GITHUB_STEP_SUMMARY" || status=1; done; exit $status
+            bash platforms/android/ci-play.sh android-checks MeadowRun NeonRift
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -219,7 +221,7 @@ jobs:
           dotnet build platforms/ios -c Release -p:Game=NeonRift
           { echo "### iOS toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^ios ' | tr -s ' ')"
             echo "- $(xcodebuild -version | paste -sd' ' -)"
-            for app in platforms/ios/bin/*/Release/net10.0-ios/iossimulator-arm64/*.app; do echo "- App: $app, $(du -sh "$app" | cut -f1)"; done; echo; } >> "$GITHUB_STEP_SUMMARY"
+            for app in platforms/ios/bin/*/Release/net10.0-ios/iossimulator-arm64/*.app; do echo "- App: $app, $(du -sh "$app" | cut -f1); Frameworks: $(ls "$app/Frameworks" 2>/dev/null | paste -sd" " - || echo none)"; done; echo; } >> "$GITHUB_STEP_SUMMARY"
       - name: Play in the simulator
         run: |
           status=0
