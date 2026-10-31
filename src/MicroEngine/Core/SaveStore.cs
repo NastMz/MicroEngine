@@ -3,8 +3,8 @@ using System.Text.Json;
 namespace MicroEngine.Core;
 
 /// <summary>
-/// Small JSON persistence for settings and progress. Files live under the user's local
-/// application data folder unless a directory is supplied (tests use a temporary one) or a launcher
+/// Small JSON persistence for settings and progress. Files live under the user's data folder
+/// (<see cref="DefaultDirectory"/>) unless a directory is supplied (tests use a temporary one) or a launcher
 /// chose another medium through <see cref="DefaultStorage"/> (the browser keeps saves in localStorage).
 /// Corrupt or missing data yields null instead of crashing the game; corrupt data is set aside
 /// ("&lt;slot&gt;.corrupt.json" for files) so the next save cannot destroy it. A slot that exists but could not be
@@ -32,7 +32,41 @@ public sealed class SaveStore
         ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
         _storage = directory is null && DefaultStorage is { } create
             ? create(gameId)
-            : new FileSaveStorage(directory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MicroEngine", gameId));
+            : new FileSaveStorage(directory ?? DefaultDirectory(gameId));
+    }
+
+    /// <summary>
+    /// The save folder used when neither a directory nor <see cref="DefaultStorage"/> is given:
+    /// <c>%LOCALAPPDATA%\MicroEngine\&lt;gameId&gt;</c> on Windows, <c>~/Library/Application Support/MicroEngine/&lt;gameId&gt;</c>
+    /// on macOS, and <c>$XDG_DATA_HOME/MicroEngine/&lt;gameId&gt;</c> (by default <c>~/.local/share</c>) on Linux and other
+    /// Unix systems. Always absolute, also when the folder does not exist yet: the first save creates it.
+    /// </summary>
+    public static string DefaultDirectory(string gameId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
+        return Path.Combine(UserDataFolder(), "MicroEngine", gameId);
+    }
+
+    private static string UserDataFolder()
+    {
+        if (OperatingSystem.IsWindows()) return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        // Without DoNotVerify, .NET answers "" when the folder does not exist yet (a new account, a container, CI),
+        // and the saves would land in the working directory.
+        if (OperatingSystem.IsMacOS()) return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify);
+        return XdgDataHome(Environment.GetEnvironmentVariable("XDG_DATA_HOME"),
+                   Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify))
+            ?? Path.GetTempPath(); // no home folder at all: saves last only as long as the temporary folder
+    }
+
+    /// <summary>
+    /// The XDG base directory rule for user data: <c>$XDG_DATA_HOME</c> when it is an absolute path (a relative value is
+    /// invalid and ignored), otherwise <c>&lt;home&gt;/.local/share</c>; null when there is no absolute home either.
+    /// </summary>
+    internal static string? XdgDataHome(string? xdgDataHome, string? home)
+    {
+        if (xdgDataHome is { Length: > 1 } && xdgDataHome[0] == '/') return xdgDataHome.TrimEnd('/');
+        if (home is { Length: > 0 } && home[0] == '/') return home.TrimEnd('/') + "/.local/share";
+        return null;
     }
 
     public SaveStore(ISaveStorage storage) => _storage = storage ?? throw new ArgumentNullException(nameof(storage));
