@@ -30,8 +30,10 @@ dir="$repo/games/$game/bin/Release/net10.0"
 exe="$dir/$game"
 while IFS=$'\t' read -r script env; do
   name=${script%.script}
-  out=$(timeout 300 xcrun simctl launch --console-pty --terminate-running-process "$device" "$bundle" --script "$script" --env "$env" 2>&1 | tr -d '\r')
-  echo "$out" | grep microengine: | sed "s/^/  ios $name: /"
+  # macOS has no `timeout`; perl's alarm ends a launch that never exits.
+  out=$(perl -e 'alarm shift; exec @ARGV' 300 xcrun simctl launch --console-pty --terminate-running-process "$device" "$bundle" --script "$script" --env "$env" 2>&1 | tr -d '\r')
+  if grep -q microengine: <<< "$out"; then grep microengine: <<< "$out" | sed "s/^/  ios $name: /"
+  else echo "  ios $name: no microengine line; launch output:"; head -20 <<< "$out" | sed 's/^/    /'; fi
   grep -q "microengine: start" <<< "$out" && started=1
   ios=$(grep -o 'microengine: done [0-9]* updates, [0-9]* frames, [0-9]* captures' <<< "$out" | sed 's/microengine: done //')
   # The same script on the desktop build, headless, with the same environment.
