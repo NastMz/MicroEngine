@@ -4,6 +4,9 @@ MicroEngine and the software built with it include components made by others. Th
 licences and the notices those licences ask to keep. It covers the engine's runtime (desktop and browser), the
 browser builds of the demo games, the demo games' art and audio, and this website.
 
+MicroEngine's own code is under the MIT License (`LICENSE` in the repository); the four demo games are not, and
+keep all rights reserved (`games/LICENSE`). Both notices also ship in every browser package of the demos.
+
 ## Engine runtime: every game, desktop and browser
 
 | Component | Use | Licence | Copyright |

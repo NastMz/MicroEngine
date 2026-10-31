@@ -42,7 +42,7 @@ ls -d "$tools"/dotnet/packs/Microsoft.NET.Runtime.Emscripten."$EMSCRIPTEN_VERSIO
 [ -f "$lib" ] || die "raylib for the web is missing ($lib). Run web/setup.sh."
 runtime_pack="$tools/dotnet/packs/Microsoft.NETCore.App.Runtime.Mono.browser-wasm/$DOTNET_RUNTIME_VERSION"
 emscripten_license=$(ls "$tools"/dotnet/packs/Microsoft.NET.Runtime.Emscripten."$EMSCRIPTEN_VERSION".Sdk.*/*/tools/emscripten/LICENSE 2>/dev/null | head -1)
-for f in "$runtime_pack/LICENSE.TXT" "$runtime_pack/THIRD-PARTY-NOTICES.TXT" "$emscripten_license" "$tools/raylib-src/LICENSE" "$root/THIRD-PARTY-NOTICES.md"; do
+for f in "$runtime_pack/LICENSE.TXT" "$runtime_pack/THIRD-PARTY-NOTICES.TXT" "$emscripten_license" "$tools/raylib-src/LICENSE" "$root/THIRD-PARTY-NOTICES.md" "$root/LICENSE" "$root/games/LICENSE"; do
   [ -n "$f" ] && [ -f "$f" ] || die "licence file missing (${f:-emscripten LICENSE}). Run web/setup.sh."
 done
 export DOTNET_ROOT="$tools/dotnet" DOTNET_MULTILEVEL_LOOKUP=0 DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
@@ -75,10 +75,13 @@ for g in "${games[@]}"; do
   mkdir -p "$out/$g"
   find "${out:?}/$g" -mindepth 1 -delete
   cp -R "$staging/wwwroot/." "$out/$g/"
-  # Third-party notices travel with every package: MicroEngine's list, plus the complete licence files of the .NET
-  # runtime, Emscripten and raylib that the package contains (THIRD-PARTY-NOTICES.md, "Browser builds").
+  # Licences travel with every package: the game's own notice (games/LICENSE: the demos are not MIT), MicroEngine's
+  # MIT licence for the engine inside it, MicroEngine's third-party list, plus the complete licence files of the
+  # .NET runtime, Emscripten and raylib that the package contains (THIRD-PARTY-NOTICES.md, "Browser builds").
+  cp "$root/games/LICENSE" "$out/$g/LICENSE.txt"
   cp "$root/THIRD-PARTY-NOTICES.md" "$out/$g/THIRD-PARTY-NOTICES.txt"
   mkdir -p "$out/$g/licenses"
+  cp "$root/LICENSE" "$out/$g/licenses/microengine-LICENSE.txt"
   cp "$runtime_pack/LICENSE.TXT" "$out/$g/licenses/dotnet-LICENSE.txt"
   cp "$runtime_pack/THIRD-PARTY-NOTICES.TXT" "$out/$g/licenses/dotnet-THIRD-PARTY-NOTICES.txt"
   cp "$emscripten_license" "$out/$g/licenses/emscripten-LICENSE.txt"

@@ -105,3 +105,8 @@ test('scope: the project graph narrows the .NET tests and native captures to wha
   assert.deepEqual(scope(['newfolder/thing.txt']), { tests: 'all', games: 'all' }, 'unknown paths stay conservative');
   assert.deepEqual(scope(['docs/guide/platforms.md']), { tests: [], games: [] });
 });
+
+test('licence files are published and packaged, not tested: their pages are checked, demo keys rebuild packages', () => {
+  assert.deepEqual(plan(['LICENSE']), { ...none, browser: 'layout' });
+  assert.deepEqual(plan(['games/LICENSE']), { ...none, browser: 'layout' });
+});

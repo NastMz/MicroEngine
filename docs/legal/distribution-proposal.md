@@ -1,5 +1,8 @@
 # Distribution and licensing proposal (for owner review)
 
+> **Superseded (2026-10-31).** The owner chose the MIT License for the engine and all-rights-reserved demo games
+> ([ADR 0015](../decisions/0015-mit-engine-reserved-demos.md)). This document is kept as a record and is not in force.
+
 Internal document, not published on the site.
 
 > **Status (2026-10-30): model approved by the owner.** Proprietary and private source; free personal, educational

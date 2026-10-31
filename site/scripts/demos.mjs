@@ -46,8 +46,9 @@ import * as tar from 'tar';
 
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const repoRoot = path.dirname(siteRoot);
-// Licence notices web/build.sh puts in every package; a package without them must not be published.
-export const noticeFiles = ['THIRD-PARTY-NOTICES.txt', 'licenses/dotnet-LICENSE.txt', 'licenses/dotnet-THIRD-PARTY-NOTICES.txt', 'licenses/emscripten-LICENSE.txt', 'licenses/raylib-LICENSE.txt'];
+// Licence notices web/build.sh puts in every package (the game's notice, MicroEngine's MIT licence, third-party
+// licences); a package without them must not be published.
+export const noticeFiles = ['LICENSE.txt', 'licenses/microengine-LICENSE.txt', 'THIRD-PARTY-NOTICES.txt', 'licenses/dotnet-LICENSE.txt', 'licenses/dotnet-THIRD-PARTY-NOTICES.txt', 'licenses/emscripten-LICENSE.txt', 'licenses/raylib-LICENSE.txt'];
 export const playDir = path.join(siteRoot, 'public', 'play');
 export const cacheDir = path.join(siteRoot, 'node_modules', '.cache', 'microengine-demos');
 const compressible = new Set(['.wasm', '.js', '.mjs', '.json', '.txt', '.css', '.html', '.svg']);
@@ -58,6 +59,7 @@ export const releaseTag = 'demo-artifacts';
 const sharedInputs = [
   'src', 'web/Host', 'web/Directory.Build.props', 'web/Directory.Build.targets', 'web/build.sh', 'web/build-raylib-wasm.sh',
   'web/setup.sh', 'web/toolchain.env', 'Directory.Build.props', 'global.json', 'NuGet.config', 'THIRD-PARTY-NOTICES.md',
+  'LICENSE', 'games/LICENSE',
 ];
 // Files inside those paths that never reach a release package.
 const notAnInput = file => (/\.md$/i.test(file) && file !== 'THIRD-PARTY-NOTICES.md') || /(^|\/)(screenshots|scripts)\//.test(file);

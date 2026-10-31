@@ -1,0 +1,50 @@
+MicroEngine demo games
+
+Copyright (c) 2025-2026 Kevin Martinez. All rights reserved.
+
+This notice covers the four demo games and only them: Meadow Run, Courtyard Key,
+Trail Duel and Neon Rift. They are NOT covered by the MIT License in the root
+LICENSE file, which applies to the MicroEngine engine, its tools and samples.
+
+Covered (the "Demo Games"):
+
+  - games/MeadowRun/, games/CourtyardKey/, games/TrailDuel/, games/NeonRift/:
+    source code, levels, maps, dialogue, characters, names, procedural art and
+    music written in code, scripts, screenshots and documentation;
+  - tests/MeadowRun.Tests/, tests/CourtyardKey.Tests/, tests/TrailDuel.Tests/,
+    tests/NeonRift.Tests/;
+  - the builds of those games, including the browser packages served on the
+    MicroEngine website;
+
+except the third-party files listed in each game's CREDITS.md (the image and
+audio files under games/<Name>/Content/). Those files belong to their authors
+and are distributed under their own licences, stated in CREDITS.md; this
+notice claims no rights in them.
+
+What you may do:
+
+  - Read and study the Demo Games' code to learn how MicroEngine works, and
+    view it and fork it on GitHub as GitHub's Terms of Service allow.
+  - Build and run them on your own computer to learn and to test MicroEngine.
+  - Play the published demos.
+  - Use the concepts, techniques and general ideas they show in your own,
+    original games. Ideas, genres and game mechanics are not owned by anyone.
+  - Propose changes to them through pull requests to the MicroEngine
+    repository.
+
+What you may not do without written permission from the copyright holder:
+
+  - Redistribute the Demo Games, whole or in substantial part, in source or
+    built form, outside GitHub's fork feature.
+  - Sell or otherwise commercialise them, or publish a game that is
+    substantially the same as one of them under another name.
+  - Reuse their characters, names, levels, story or original art and music in
+    another game.
+
+The MicroEngine engine code that the Demo Games use stays under the MIT
+License, and the third-party files keep their own licences: this notice does
+not restrict them.
+
+THE DEMO GAMES ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. IN NO EVENT
+SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY
+ARISING FROM THEM OR THEIR USE.

@@ -64,12 +64,26 @@ not yet supported; macOS is under evaluation ([Platforms](docs/guide/platforms.m
 The previous tracer implementation and its process records are preserved at tag `reference/pre-rebuild`.
 See [ADR 0001](docs/decisions/0001-greenfield-rebuild.md) for why the project was rebuilt.
 
-## License and contributions
+## License
 
-Proprietary. All rights reserved; see [LICENSE](LICENSE). MicroEngine is not open source. The SDK will ship under the
-MicroEngine SDK License, now in legal review ([draft](docs/legal/microengine-sdk-license-draft.md); the model for a
-public repository is in the [licensing proposal](docs/legal/source-available-proposal.md)). Third-party components:
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+MicroEngine is open source under the [MIT License](LICENSE). The four demo games are not: they are published to
+play and to learn from, with all rights reserved.
 
-Issues are welcome; code contributions need a contributor agreement first ([Contributing](CONTRIBUTING.md#contribution-status)).
-Security problems: [SECURITY.md](SECURITY.md).
+| Part | Paths | Licence | You may |
+| --- | --- | --- | --- |
+| Engine and backend | `src/` | [MIT](LICENSE) | use, modify, fork, redistribute and sell, keeping the copyright and licence notice |
+| Engine tests, CI, web host, site code, docs | `tests/MicroEngine*.Tests/`, `.github/`, `web/`, `site/`, `docs/`, `platforms/` | [MIT](LICENSE) | the same |
+| Samples | `samples/` (HelloEngine) | [MIT](LICENSE) | copy them into your own games |
+| Demo games | `games/<Name>/`, `tests/<Name>.Tests/`, their builds and browser packages | [all rights reserved](games/LICENSE) | read, build and run them to learn; reuse ideas and techniques in original games. Not redistribute, sell or republish them under another name |
+| Third-party art and audio of the demos | the files listed in each game's `CREDITS.md` | their own licences (CC0 1.0) | what their licence allows |
+| Third-party libraries | raylib, Raylib-cs, .NET, Emscripten, site packages and fonts | see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) | what their licences allow |
+
+**Games you make are yours.** Commercial games built with MicroEngine need no royalty or permission. Ship the
+engine's assemblies inside your game and include MicroEngine's MIT notice (the [LICENSE](LICENSE) text) and the
+third-party notices with it, for example in a licences file or credits screen. Forks are welcome under the same
+terms: keep the original copyright notice.
+
+## Contributing
+
+Contributions are welcome under the MIT License: see [CONTRIBUTING.md](CONTRIBUTING.md). Security problems:
+[SECURITY.md](SECURITY.md). Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).

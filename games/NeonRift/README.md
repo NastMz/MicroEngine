@@ -91,3 +91,8 @@ RIFT_START=stage RIFT_STAGE=2 RIFT_AUTO=1 RIFT_GOD=1 dotnet run --project games/
 
 Tests live in `tests/NeonRift.Tests`: movement and aiming, weapons, lives and continues, enemy rules,
 stage sanity, asset loading, and an autopilot that must clear every stage without falling.
+
+## License
+
+This game is a MicroEngine demo, **not** covered by the engine's MIT License: all rights reserved
+([games/LICENSE](../LICENSE)). Read and build it to learn MicroEngine; do not redistribute or sell it. The image and audio files under `Content/` are third-party CC0 works listed in [CREDITS.md](CREDITS.md); they keep their own licence.

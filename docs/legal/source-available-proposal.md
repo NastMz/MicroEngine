@@ -1,5 +1,8 @@
 # Licensing for a public repository (proposal for legal review)
 
+> **Superseded (2026-10-31).** The owner chose the MIT License for the engine and all-rights-reserved demo games
+> ([ADR 0015](../decisions/0015-mit-engine-reserved-demos.md)). This document is kept as a record and is not in force.
+
 Internal document, not published on the site. **Draft for counsel: not legal advice, not approved, not a licence.**
 Nothing here grants rights; [LICENSE](../../LICENSE) remains the only notice in force. It extends the approved SDK
 model ([distribution proposal](distribution-proposal.md), [SDK licence draft](microengine-sdk-license-draft.md)) to a

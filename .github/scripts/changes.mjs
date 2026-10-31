@@ -42,6 +42,7 @@ export const rules = [
   { pattern: /^\.github\//, checks: [], why: 'other repository settings' },
   { pattern: /^src\/MicroEngine\.Raylib\//, checks: ['dotnet', 'windows', 'native', 'macos', 'mobile'], why: 'raylib backend' },
   { pattern: /^src\//, checks: ['dotnet', 'windows', 'native', 'macos'], why: 'engine' },
+  { pattern: /^games\/LICENSE$/, checks: ['layout'], why: 'demo games licence (packaged: demo keys rebuild)' },
   { pattern: /^games\/.*\.md$/i, checks: ['layout'], why: 'published game page' },
   { pattern: /^games\/[^/]+\/screenshots\//, checks: ['layout'], why: 'screenshots on the site' },
   { pattern: /^games\//, checks: ['dotnet', 'native'], why: 'game' },
