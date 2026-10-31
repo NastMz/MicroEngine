@@ -50,6 +50,11 @@ on:
         description: 'JSON object of evidence keys: {"dotnet": "...", "windows": "...", "native": "...", "site": "..."}'
         type: string
         default: '{}'
+      fork:
+        description: A pull request from a fork (read-only token, untrusted code) keeps the packages it builds out of
+          the shared store and hands them to the site job as workflow artifacts
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -223,9 +228,21 @@ jobs:
       - run: web/setup.sh
       - run: web/build.sh "${{ matrix.game }}"
       - name: Store the package
+        if: ${{ !inputs.fork }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node site/scripts/demos.mjs publish "${{ matrix.game }}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Keep the package for this run only (fork pull request)
+        if: inputs.fork
+        env:
+          DEMOS_STORE: dir:demo-overlay
+        run: node site/scripts/demos.mjs publish "${{ matrix.game }}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - if: inputs.fork
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-package-${{ matrix.game }}
+          path: demo-overlay
+          retention-days: 3
 
   site:
     name: Site (Chrome and Firefox)
@@ -249,10 +266,17 @@ jobs:
           cache-dependency-path: site/package-lock.json
       - run: npm ci
       - run: npm test
+      - if: inputs.fork && inputs.build != '[]'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: demo-package-*
+          merge-multiple: true
+          path: site/demo-overlay
       - name: Build with ${{ inputs.demo-source }} demo packages
         env:
           GITHUB_TOKEN: ${{ github.token }}
           DEMOS_SOURCE: ${{ inputs.demo-source }}
+          DEMOS_OVERLAY: ${{ inputs.fork && inputs.build != '[]' && 'demo-overlay' || '' }}
         run: npm run build
       # Firefox needs a display for WebGL without a GPU: run under a virtual X server (Mesa software rendering).
       - name: Browser checks (${{ inputs.suites }})

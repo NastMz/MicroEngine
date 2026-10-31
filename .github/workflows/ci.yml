@@ -43,6 +43,7 @@ jobs:
       reused: ${{ steps.decide.outputs.reused }}
       deploy: ${{ steps.decide.outputs.deploy }}
       needed: ${{ steps.decide.outputs.needed }}
+      fork: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -133,8 +134,10 @@ jobs:
       site: ${{ needs.plan.outputs.site == 'true' }}
       demo-source: candidates
       suites: ${{ needs.plan.outputs.suites }}
-      evidence: true
+      # A fork's runs are never trusted as evidence (evidence.mjs ignores them), so they do not record any.
+      evidence: ${{ needs.plan.outputs.fork != 'true' }}
       keys: ${{ needs.plan.outputs.keys }}
+      fork: ${{ needs.plan.outputs.fork == 'true' }}
 
   deploy:
     name: Site

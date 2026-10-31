@@ -61,7 +61,7 @@ test('site keys include the demo packages the build uses', () => {
   assert.notEqual(keyAfter(root, 'site', 'docs/guide.md', '# docs', 'Alpha=1111 suites=layout'), site);
 });
 
-test('evidence: accepted only when unexpired and produced with the same workflows', async () => {
+test('evidence: accepted only when unexpired, produced by this repository and with the same workflows', async () => {
   const root = repo();
   const produced = git(root, 'rev-parse', 'HEAD');
   write(root, 'docs/guide.md', '# later docs');
@@ -74,12 +74,14 @@ test('evidence: accepted only when unexpired and produced with the same workflow
     assert.ok(url.includes(`name=${artifactName('dotnet', key)}`));
     return { artifacts };
   };
-  const artifact = (sha, expired = false) => ({ expired, workflow_run: { id: 42, head_sha: sha } });
+  const artifact = (sha, expired = false, headRepository = 7) => ({ expired, workflow_run: { id: 42, head_sha: sha, repository_id: 7, head_repository_id: headRepository } });
 
   assert.deepEqual(await findEvidence('dotnet', key, { root, api: listing([artifact(produced)]) }), { run: 42, commit: produced });
   assert.equal(await findEvidence('dotnet', key, { root, api: listing([artifact(produced, true)]) }), null, 'expired');
   assert.equal(await findEvidence('dotnet', key, { root, api: listing([artifact(otherWorkflows)]) }), null, 'another workflow version');
   assert.equal(await findEvidence('dotnet', key, { root, api: listing([artifact('0'.repeat(40))]) }), null, 'unknown commit');
+  assert.equal(await findEvidence('dotnet', key, { root, api: listing([artifact(produced, false, 99)]) }), null, 'a run of a fork pull request');
+  assert.equal(await findEvidence('dotnet', key, { root, api: listing([{ expired: false, workflow_run: { id: 42, head_sha: produced } }]) }), null, 'a run whose repository is unknown');
   assert.equal(await findEvidence('dotnet', key, { root, api: listing([]) }), null);
   assert.equal(await findEvidence('dotnet', key, { root, api: async () => { throw new Error('HTTP 500'); } }), null, 'an API failure runs the check');
 });

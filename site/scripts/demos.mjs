@@ -29,6 +29,9 @@
 // private repository, read and written with GITHUB_TOKEN; "dir:<path>": a local folder (tests, offline work).
 // Each artifact is <Game>-<key>.tar.gz plus <Game>-<key>.json, written in that order: the manifest marks a
 // complete artifact. Artifacts are never replaced.
+// DEMOS_OVERLAY=<dir>: a folder of artifacts read before the store and never written through it. A fork pull request
+// has a read-only token, so it stores the packages it built in a folder (DEMOS_STORE=dir:<dir>), passes them to the
+// site job as a workflow artifact and reads them back through the overlay; the shared store is never touched.
 //
 // Packages are stored without their .br/.gz copies: Vercel compresses JavaScript, JSON and WebAssembly itself.
 import fs from 'node:fs';
@@ -351,8 +354,25 @@ function githubReleases({ repository, token, apiBase = 'https://api.github.com',
   };
 }
 
-/** The artifact store selected by the environment (DEMOS_STORE), or null when none is configured. */
+/** `base` with the artifacts of the folder `dir` read first; writing through it is refused. */
+function overlayStore(dir, base) {
+  const top = dirStore(dir);
+  return {
+    ...base,
+    describe: `${top.describe} over ${base.describe}`,
+    has: async name => (await top.has(name)) || base.has(name),
+    read: async name => ((await top.has(name)) ? top.read(name) : base.read(name)),
+    write: async () => fail('the overlay store is read-only: store packages in DEMOS_STORE=dir:<dir> instead.'),
+  };
+}
+
+/** The artifact store selected by the environment (DEMOS_STORE, DEMOS_OVERLAY), or null when none is configured. */
 export function openStore(env = process.env) {
+  const store = baseStore(env);
+  return store && env.DEMOS_OVERLAY ? overlayStore(path.resolve(env.DEMOS_OVERLAY), store) : store;
+}
+
+function baseStore(env) {
   const choice = env.DEMOS_STORE ?? (env.GITHUB_ACTIONS === 'true' ? 'github' : '');
   if (!choice) return null;
   if (choice.startsWith('dir:')) {

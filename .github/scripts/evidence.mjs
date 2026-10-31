@@ -10,9 +10,10 @@
 //   node .github/scripts/evidence.mjs record <check> <key> <file>
 //       writes the evidence file the job uploads as artifact evidence-<check>-<key>
 //
-// Evidence is accepted only when it is unexpired and was produced by a commit whose .github folder is identical to
-// this one: the key covers .github too, so evidence from another version of the workflows can never be used. Any
-// failure to look it up (API error, unknown commit) runs the check.
+// Evidence is accepted only when it is unexpired, was produced by a run of this repository's own code (never a fork
+// pull request, whose workflows and tests are untrusted and could upload an artifact under any name) and by a commit
+// whose .github folder is identical to this one: the key covers .github too, so evidence from another version of the
+// workflows can never be used. Any failure to look it up (API error, unknown commit or repository) runs the check.
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -66,8 +67,10 @@ export async function findEvidence(check, key, { root = process.cwd(), api }) {
   catch { return null; }
   const ours = workflowsTree('HEAD', root);
   for (const artifact of listing?.artifacts ?? []) {
-    const sha = artifact.workflow_run?.head_sha;
+    const run = artifact.workflow_run ?? {};
+    const sha = run.head_sha;
     if (artifact.expired || !sha || !ours) continue;
+    if (!run.repository_id || run.head_repository_id !== run.repository_id) continue;
     if (workflowsTree(sha, root) === ours) return { run: artifact.workflow_run.id, commit: sha };
   }
   return null;
