@@ -94,7 +94,8 @@ jobs:
         run: sed 's/[[:space:]]*#.*$//' platforms/android/toolchain.env | grep '=' >> "$GITHUB_ENV"
       - name: Toolchain (NDK, android workload)
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" > /dev/null
+          # Licence prompts answered from a process substitution: `yes |` would die of SIGPIPE under pipefail.
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" < <(yes) > /dev/null
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
           dotnet workload install android > /dev/null
           { echo "### Android toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^android ' | tr -s ' ')"; echo "- NDK $NDK_VERSION, Java $(java -version 2>&1 | head -1)"; echo; } >> "$GITHUB_STEP_SUMMARY"
@@ -142,8 +143,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+      # The ios workload names the Xcode it needs; the newest Xcode on the image is selected (all are listed).
       - name: Toolchain (ios workload, Xcode)
         run: |
+          ls -d /Applications/Xcode*.app
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
           dotnet workload install ios > /dev/null
           { echo "### iOS toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^ios ' | tr -s ' ')"; echo "- $(xcodebuild -version | tr '\n' ' ')"; echo; } >> "$GITHUB_STEP_SUMMARY"
       - run: dotnet build games/MeadowRun -c Release
