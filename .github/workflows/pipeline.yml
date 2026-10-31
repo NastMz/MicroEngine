@@ -1,0 +1,222 @@
+# MicroEngine's one pipeline (docs/deployment.md, "Pipeline"):
+#   pull request   tests, builds any demo whose inputs changed, builds and checks the site, deploys a protected preview
+#   push to main   the same, then deploys production: merging an approved pull request publishes it
+#   manual run     a preview from any branch, or production from main
+# Demo packages are content-addressed (site/scripts/demos.mjs): each game's key hashes its inputs, so a package is
+# built once on Windows with the pinned toolchain, stored as an asset of the private `demo-artifacts` prerelease, and
+# reused until an input changes. The site is built by `vercel build` here and uploaded with `vercel deploy
+# --prebuilt`: Vercel never builds from the repository, and a deployment exists only after every check passed.
+name: pipeline
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deployment to create
+        type: choice
+        options: [preview, production]
+        default: preview
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pipeline-${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: 22
+  VERCEL_CLI: vercel@64.3.1
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      missing: ${{ steps.demos.outputs.missing }}
+      engine: ${{ steps.changes.outputs.engine }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci --prefix site
+      - name: Demo keys
+        id: demos
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node site/scripts/demos.mjs plan --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Engine changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" != pull_request ]; then echo "engine=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD" \
+            | grep -qE '^(src|games|tests|samples)/|^(Directory\.Build\.props|global\.json|NuGet\.config|MicroEngine\.slnx)$'; then
+            echo "engine=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "engine=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  engine-tests:
+    name: Engine and game tests
+    needs: plan
+    if: needs.plan.outputs.engine == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet test MicroEngine.slnx -c Release
+
+  build-demos:
+    name: Build ${{ matrix.game }}
+    needs: plan
+    if: needs.plan.outputs.missing != '[]'
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        game: ${{ fromJSON(needs.plan.outputs.missing) }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      # The toolchain lives outside the runner's user profile, so no profile path is compiled into a package.
+      - name: Toolchain folder
+        run: echo "MICROENGINE_WEB_TOOLS=$(cygpath -u '${{ runner.temp }}')/web-tools" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/web-tools
+          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh') }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci --prefix site
+      - run: web/setup.sh
+      - run: web/build.sh "${{ matrix.game }}"
+      - name: Store the package
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node site/scripts/demos.mjs publish "${{ matrix.game }}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  site:
+    name: Site
+    needs: [plan, engine-tests, build-demos]
+    if: >-
+      always() && needs.plan.result == 'success'
+      && contains(fromJSON('["success", "skipped"]'), needs.engine-tests.result)
+      && contains(fromJSON('["success", "skipped"]'), needs.build-demos.result)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Build with the stored demo packages
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run build
+      - name: Browser checks (Chrome and Firefox)
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tests/browser.mjs --browsers "${{ vars.BROWSER_CHECKS || 'chrome,firefox' }}"
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-screenshots
+          path: site/test-results
+          retention-days: 7
+
+  deploy:
+    name: Deploy ${{ (github.event_name == 'push' || inputs.target == 'production') && 'production' || 'preview' }}
+    needs: site
+    # Pull requests from forks never get deployment credentials.
+    if: >-
+      needs.site.result == 'success'
+      && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ (github.event_name == 'push' || inputs.target == 'production') && 'production' || 'preview' }}
+      url: ${{ steps.deploy.outputs.url }}
+    concurrency:
+      group: deploy-${{ (github.event_name == 'push' || inputs.target == 'production') && 'production' || github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      TARGET: ${{ (github.event_name == 'push' || inputs.target == 'production') && 'production' || 'preview' }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - name: Production only from main
+        if: env.TARGET == 'production' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Production deployments are made from main only."
+          exit 1
+      - name: Vercel configured?
+        id: configured
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::notice::Vercel is not configured (VERCEL_TOKEN secret, VERCEL_ORG_ID and VERCEL_PROJECT_ID variables); nothing deployed."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.configured.outputs.ok == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Pull project settings
+        if: steps.configured.outputs.ok == 'true'
+        run: npx --yes "$VERCEL_CLI" pull --yes --environment="$TARGET" --token="$VERCEL_TOKEN"
+      # vercel build runs `npm ci` and `npm run build`: demo packages for this commit's keys, verified, then
+      # check-dist. A missing or altered package fails here, before anything is uploaded.
+      - name: Build
+        if: steps.configured.outputs.ok == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npx --yes "$VERCEL_CLI" build ${{ env.TARGET == 'production' && '--prod' || '' }} --token="$VERCEL_TOKEN"
+      - name: Deploy the prebuilt output
+        id: deploy
+        if: steps.configured.outputs.ok == 'true'
+        run: |
+          url=$(npx --yes "$VERCEL_CLI" deploy --prebuilt ${{ env.TARGET == 'production' && '--prod' || '' }} --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed $TARGET: $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Link the preview on the pull request
+        if: steps.configured.outputs.ok == 'true' && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          gh pr comment "$PR" --edit-last --create-if-none --body "Preview of $SHA: $URL"

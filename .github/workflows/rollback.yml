@@ -1,0 +1,32 @@
+# Restores an earlier production deployment of the site (docs/deployment.md, "Rollback"). Deployments are
+# immutable prebuilt outputs, so a rollback switches production back to one of them without building anything.
+name: rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment:
+        description: URL or ID of the earlier production deployment to restore
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      DEPLOYMENT: ${{ inputs.deployment }}
+    steps:
+      - name: Roll back production
+        run: |
+          npx --yes vercel@64.3.1 rollback "$DEPLOYMENT" --yes --token="$VERCEL_TOKEN"
+          echo "Production restored to $DEPLOYMENT" >> "$GITHUB_STEP_SUMMARY"
