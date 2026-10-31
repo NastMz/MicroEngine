@@ -92,6 +92,12 @@ jobs:
           java-version: '21'
       - name: Pinned versions
         run: sed 's/[[:space:]]*#.*$//' platforms/android/toolchain.env | grep '=' >> "$GITHUB_ENV"
+      # The emulator's data partition needs several GB the image does not leave free; remove toolchains this job never uses.
+      - name: Free disk space
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/local/.ghcup /opt/ghc /usr/share/swift /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/julia* /usr/local/share/chromium
+          df -h / | tail -1
       - name: Toolchain (NDK, android workload)
         run: |
           # Licence prompts answered from a process substitution: `yes |` would die of SIGPIPE under pipefail.
@@ -118,6 +124,7 @@ jobs:
           arch: x86_64
           emulator-options: -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           disable-animations: true
+          disk-size: 4G
           script: |
             node platforms/android/device-checks.mjs --apk "$APK" --out android-checks
             node web/tests/desktop.mjs --skip-run --games MeadowRun --out android-checks --reference web/tests/reference/linux-x64.json | tee -a "$GITHUB_STEP_SUMMARY"
@@ -137,18 +144,24 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+      # The newest ios workload can require an Xcode the image does not have yet, so the job uses the SDK and workload
+      # set pinned for the web build (web/toolchain.env) and the Xcode whose version matches that ios workload.
+      - name: Pinned versions
+        run: sed 's/[[:space:]]*#.*$//' web/toolchain.env | grep '=' >> "$GITHUB_ENV"
       - uses: actions/setup-dotnet@v4
         with:
-          global-json-file: global.json
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      # The ios workload names the Xcode it needs; the newest Xcode on the image is selected (all are listed).
       - name: Toolchain (ios workload, Xcode)
         run: |
-          ls -d /Applications/Xcode*.app
-          sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
-          dotnet workload install ios > /dev/null
+          echo "{ \"sdk\": { \"version\": \"$DOTNET_SDK_VERSION\", \"rollForward\": \"disable\" } }" > global.json
+          dotnet workload install ios --version "$DOTNET_WORKLOAD_SET" > /dev/null
+          ios=$(dotnet workload list | awk '$1 == "ios" { print $2 }' | cut -d/ -f1)
+          xcode=$(ls -d /Applications/Xcode_"$(cut -d. -f1,2 <<< "$ios")"*.app | sort -V | tail -1)
+          echo "ios workload $ios; Xcode on the image: $(ls -d /Applications/Xcode_*.app | xargs -n1 basename | paste -sd' ' -)"
+          sudo xcode-select -s "$xcode"
           { echo "### iOS toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^ios ' | tr -s ' ')"; echo "- $(xcodebuild -version | tr '\n' ' ')"; echo; } >> "$GITHUB_STEP_SUMMARY"
       - run: dotnet build games/MeadowRun -c Release
       - name: App for the simulator
