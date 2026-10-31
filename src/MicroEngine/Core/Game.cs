@@ -41,6 +41,10 @@ public abstract class Game
     protected abstract void Load();
     /// <summary>Called once before the platform is disposed.</summary>
     protected virtual void Unload() { }
+    /// <summary>Called when the platform suspends the game (sent to the background), after music paused and achievements were saved.</summary>
+    protected virtual void OnSuspended() { }
+    /// <summary>Called when a suspended game comes back, before its next update.</summary>
+    protected virtual void OnResumed() { }
     /// <summary>Override to change bindings; the default suits most games.</summary>
     protected virtual InputMap CreateInput() => InputMap.CreateDefault();
 
@@ -91,6 +95,19 @@ public abstract class Game
         renderer.Clear(Settings.Background);
         Scenes.Draw(renderer);
         AchievementToasts?.Draw(renderer, Font);
+    }
+
+    internal void Suspend()
+    {
+        Audio.PauseMusic(true);
+        _achievements?.Flush();
+        OnSuspended();
+    }
+
+    internal void Resume()
+    {
+        Audio.PauseMusic(false);
+        OnResumed();
     }
 
     internal void Shutdown()

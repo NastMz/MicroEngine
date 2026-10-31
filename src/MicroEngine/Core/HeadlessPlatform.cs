@@ -28,6 +28,9 @@ public sealed class HeadlessPlatform : IPlatform
 
     public static HeadlessPlatform For(GameSettings settings) => new(settings.VirtualWidth, settings.VirtualHeight);
 
+    /// <summary>The headless platform as a catalog entry (<c>--platform headless</c>, <c>--headless</c>).</summary>
+    public static PlatformProfile Profile { get; } = new("headless", "no window, devices or sound; one step per frame, for tests and CI", request => For(request.Settings));
+
     public void PollEvents() => _frames++;
     public IRenderer BeginFrame() { _renderer.Reset(); return _renderer; }
     public void EndFrame() { }
