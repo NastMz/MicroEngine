@@ -56,10 +56,11 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
 | --- | --- | --- | --- | --- | --- | --- |
 | Engine core (`src/MicroEngine`) | yes | yes | yes | the canary game | all | preview |
 | raylib backend (`src/MicroEngine.Raylib`) | yes | yes | yes | the canary game | all | preview |
-| One game's code (`games/<Name>`) | yes | — | yes | that game | all | preview |
+| One game's code (`games/<Name>`) | that game's tests | — | that game's captures | that game | all | preview |
 | A game's Markdown or screenshots | — | — | — | — | layout | preview, production |
-| Engine or backend tests | yes | yes | backend tests only | — | — | — |
-| Game tests, samples | yes | — | — | — | — | — |
+| Engine or backend tests | those tests | yes | backend tests only | — | — | — |
+| One game's tests | those tests | — | — | — | — | — |
+| Samples | compile only | — | — | — | — | — |
 | Desktop capture scripts (`web/tests`) | — | — | yes | — | — | — |
 | Web host or toolchain (`web/`) | — | — | — | the canary game | all | preview, production |
 | Site (`site/`) | — | — | — | — | all | preview, production |
@@ -70,8 +71,13 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
 | Task records, experiments (`odd/`, `experiments/`) | — | — | — | — | — | — |
 | A path no rule knows | everything | everything | everything | as keys say | all | preview, production |
 
-- **Advisory** means the Plan summary recommends running macOS, Android or iOS; daily CI never starts a macOS
-  runner, an emulator or a simulator.
+- **Scope** comes from the project graph ([`projects.mjs`](../.github/scripts/projects.mjs), ADR 0014): the .NET jobs
+  run the test projects that reference the changed project, directly or not, and native Linux compares the captures
+  of the games it reaches. The engine core reaches everything; the raylib backend reaches every game and the backend
+  tests but not the core tests. A file outside every project (build settings, `web/tests`, a new folder) runs
+  everything. The Plan summary prints the scope; evidence keys include it.
+- **Advisory** means the Plan summary recommends running macOS, Android or iOS. Daily CI never starts an emulator or
+  a simulator; it starts a macOS runner only on public runners (below).
 - **Windows** runs for the engine, the backend, their tests and build settings. A game is managed code the Linux
   tests already ran; Windows-only behaviour lives in the engine. Every full validation runs the games' tests on
   Windows, and every demo build compiles them there.
@@ -199,6 +205,24 @@ workflows are the gate:
 
 If the repository moves to a plan with branch protection, require only **CI result**: it always runs and is green
 only when everything needed passed, so skipped jobs never block a merge.
+
+## Public repository
+
+What changes when the repository is public (decision: ADR 0014; publication steps: [PUBLIC-1](evaluations/public-1.md)):
+
+- **Runners.** Standard GitHub-hosted runners are free for public repositories; larger runners are not. Set the
+  repository variable `PUBLIC_RUNNERS=true` and daily CI also runs the headless .NET tests on macOS when the engine
+  or backend changes: informative, `continue-on-error`, never evidence. Android and iOS stay in `platforms.yml`.
+- **Fork pull requests are untrusted code.** They run under `pull_request` with a read-only token and no secrets;
+  no workflow uses `pull_request_target`, and no self-hosted runner exists. Their runs are never accepted as evidence
+  and record none; their demo packages stay in the run (workflow artifacts read through `DEMOS_OVERLAY`), never in
+  the shared store; they get no preview deployment.
+- **Settings to apply at publication:** Actions → General → "Require approval for all external contributors";
+  workflow permissions read-only (already); a ruleset on `main` requiring pull requests and the **CI result**
+  check, no force pushes or deletions; private vulnerability reporting and secret scanning with push protection on;
+  environments `preview` and `production` limited to `main` and branches of this repository.
+- **The demo store becomes public.** Assets of the `demo-artifacts` prerelease are downloadable by anyone, including
+  packages of unreleased commits. They carry the third-party notices; production still serves only releases.
 
 ## Measuring cost
 
