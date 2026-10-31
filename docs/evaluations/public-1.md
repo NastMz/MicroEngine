@@ -23,7 +23,7 @@ describes the final state; the earlier licensing analysis survives only as the s
 | Which checks does each change run? | Path rules choose the kind of check, the project graph chooses which test projects and games (section 8). |
 | How do public runners stay fast and reliable? | Evidence by content, cancellation of superseded PR runs, Linux first, per-project scope; on public runners every changed demo key is built and played, and macOS runs as an informative job (section 9). |
 | How do releases stay selective, safe and reproducible? | Manual `release.yml`: packages copied by content key, hash-checked, the exact files browser-tested, staged, then promoted; unchanged games reuse their approved package (section 10). |
-| What must hold before "Make public"? | The checklist in section 14. Real blockers left: the owner's authorisation for the history rebuild and GitHub Support's removal of the PR refs, the code of conduct contact, and the repository settings (section 13). |
+| What must hold before "Make public"? | The checklist in section 14. Real blockers left: the owner's authorisation for the history rebuild and GitHub Support's removal of the PR refs, and the repository settings (section 13). The code of conduct has no contact address by the owner's decision. |
 
 ## 1. Audit of what would be exposed
 
@@ -284,7 +284,7 @@ because the licence files changed every key); a real fork pull request (possible
 
 1. Authorise the history rebuild in this repository (section 15) and file the GitHub Support request for the 14 PR
    refs; publication waits for Support's confirmation.
-2. Set the code of conduct contact (`CONDUCT-CONTACT-TO-BE-SET` in `CODE_OF_CONDUCT.md`).
+2. (Resolved) The code of conduct has no contact address by the owner's decision; maintainers moderate.
 3. Apply the repository settings P6-P11 (secrets, environments, fork approval, actions, ruleset, security
    features).
 
@@ -309,7 +309,7 @@ the site's code is MIT while game screenshots on it are reserved (stated in the 
 | P11 | Security features | private vulnerability reporting, secret scanning and push protection on |
 | P12 | Public runners | variable `PUBLIC_RUNNERS=true`; weekly `validate.yml` schedule if wanted |
 | P13 | Internal records | owner's list of files to keep or remove applied (task logs, cost studies, legal drafts) |
-| P14 | Contacts | code of conduct contact set; `SECURITY.md` reachable |
+| P14 | Contacts | no placeholder left in `CODE_OF_CONDUCT.md` (no contact by decision); `SECURITY.md` reachable |
 | P15 | Collaborators | only intended people have write or admin access (today: the owner) |
 | P16 | Validation | `validate.yml` passes on the commit being published |
 | P17 | Site | after publication, the production site is redeployed from the public `main` (its links point to the public repository) |

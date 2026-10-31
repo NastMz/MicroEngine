@@ -48,15 +48,10 @@ This Code of Conduct applies to:
 
 ## Enforcement
 
-### Reporting
+### Moderation
 
-Instances of unacceptable behavior may be reported to the project maintainers at:
-
-- **Email:** CONDUCT-CONTACT-TO-BE-SET (the owner sets this address before the repository is made public)
-
-Do not report conduct problems in a public issue; GitHub has no confidential issues.
-
-All complaints will be reviewed and investigated promptly and fairly. All project maintainers are obligated to respect the privacy and security of the reporter.
+Project maintainers moderate issues, pull requests and other project spaces, and act on behavior that breaks this
+Code of Conduct. Security problems are reported privately as described in `SECURITY.md`.
 
 ### Consequences
 

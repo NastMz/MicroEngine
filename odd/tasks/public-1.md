@@ -121,3 +121,7 @@ Commits are recorded in `## Log`.
   games/LICENSE, pack 42.8 to 14.1 MiB, tests scripts 41 / site 31 / .NET 282 passed, audit exit 0. Only blocker:
   refs/pull/* are read-only and need GitHub Support. Report sections 3 and 15 now recommend the rebuild in this
   repository.
+- L13 (2026-10-31) User decision: "El código de conducta no va a tener contacto, quita eso" and "este repo, créalo, de
+  una vez público" ... "dale adelante. Cuando termines me avisas para ir a crear la variable que no puedes crear tú y
+  borrar el otro repo." Executed: new public repository NastMz/MicroEngine with history from 71115bc; the old one
+  renamed NastMz/MicroEngine-archive for the owner to delete; VERCEL_TOKEN left for the owner.
