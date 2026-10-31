@@ -18,3 +18,5 @@ available at tag `reference/pre-rebuild` under `docs/engineering/decisions/`.
 | [0011](0011-desktop-platform-validation.md) | Desktop platform validation: Windows, Linux and macOS test matrix, native Linux checks, per-system visual references | Accepted |
 | [0012](0012-tiered-ci-and-platform-experiments.md) | Tiered CI driven by changed paths, and a separate platform workflow (amends 0010, 0011) | Accepted |
 | [0013](0013-ci-cost-and-manual-releases.md) | Content evidence in daily CI, manual full validation, and demo releases (amends 0010, 0012) | Accepted |
+| [0014](0014-public-repository-ci.md) | Project-graph check selection and fork-safe CI for a public repository (amends 0013) | Accepted |
+| [0015](0015-mit-engine-reserved-demos.md) | MIT engine, all-rights-reserved demo games | Accepted |

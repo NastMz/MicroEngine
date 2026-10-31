@@ -1,7 +1,8 @@
 // Tests for the change planner: node --test .github/scripts/*.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planChecks, everything } from './changes.mjs';
+import { planChecks, planScope, everything } from './changes.mjs';
+import { readGraph } from './projects.mjs';
 
 const plan = files => planChecks(files);
 const none = { dotnet: false, windows: false, native: false, browser: 'none', workflows: false, macos: false, mobile: false };
@@ -90,4 +91,22 @@ test('Markdown inside a game folder is published: its pages are checked too', ()
 
 test('no changed files runs nothing', () => {
   assert.deepEqual(plan([]), none);
+});
+
+test('scope: the project graph narrows the .NET tests and native captures to what the change can affect', () => {
+  const graph = readGraph();
+  const scope = files => planScope(files, graph);
+  assert.deepEqual(scope(['games/NeonRift/Stages/Stage1.cs']), { tests: ['tests/NeonRift.Tests/NeonRift.Tests.csproj'], games: ['NeonRift'] });
+  assert.deepEqual(scope(['games/NeonRift/Stages/Stage1.cs', 'docs/guide/platforms.md']),
+    { tests: ['tests/NeonRift.Tests/NeonRift.Tests.csproj'], games: ['NeonRift'] }, 'documentation does not widen the scope');
+  assert.deepEqual(scope(['src/MicroEngine/Core/GameRunner.cs']), { tests: 'all', games: 'all' });
+  assert.deepEqual(scope(['web/tests/scenarios.json']), { tests: 'all', games: 'all' }, 'a file outside every project');
+  assert.deepEqual(scope(['Directory.Build.props']), { tests: 'all', games: 'all' });
+  assert.deepEqual(scope(['newfolder/thing.txt']), { tests: 'all', games: 'all' }, 'unknown paths stay conservative');
+  assert.deepEqual(scope(['docs/guide/platforms.md']), { tests: [], games: [] });
+});
+
+test('licence files are published and packaged, not tested: their pages are checked, demo keys rebuild packages', () => {
+  assert.deepEqual(plan(['LICENSE']), { ...none, browser: 'layout' });
+  assert.deepEqual(plan(['games/LICENSE']), { ...none, browser: 'layout' });
 });

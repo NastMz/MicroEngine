@@ -1,0 +1,23 @@
+name: Idea or feature request
+description: Suggest a change to the engine, the demos or the documentation.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        MicroEngine keeps the engine genre-neutral: rules that belong to one kind of game live in that game.
+        Ideas are welcome; whether and how one is built is decided by the maintainer.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem it solves
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you propose
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do today instead

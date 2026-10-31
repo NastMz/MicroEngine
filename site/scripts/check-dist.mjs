@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Last step of `npm run build`: checks that site/dist is complete and safe to publish. A missing demo package,
-// documentation page, sitemap or error page, a link into the private repository, an internal file or a build secret
-// fails the build instead of reaching Vercel.
+// documentation page, sitemap or error page, a demo page without the demo games' licence notice, an internal file or
+// a build secret fails the build instead of reaching Vercel.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -57,19 +57,11 @@ export function checkDiagrams(dist, { list = pages, root = repoRoot } = {}) {
   return problems;
 }
 
-// What must never be published: links into the private repository, statements that MicroEngine is open source or
-// MIT licensed, repository-only instructions, internal source files, and the value of any build secret. Claims are
-// looked for in the site's own pages only: bundled third-party code (Pagefind) keeps its licence notices, as it must.
-// The licensing and third-party notices pages name other projects' licences (and MicroEngine's earlier MIT
-// versions) on purpose.
-const ownPages = /^(?!docs\/(third-party-notices|licensing)\/).*\.(html|xml)$/;
-const forbiddenText = [
-  [/github\.com\/NastMz/i, 'a link to the private repository', /./],
-  [/\bgit clone\b/i, 'a "git clone" instruction', /./],
-  [/MicroEngine\.slnx/, 'a reference to the private solution file', /./],
-  [/\bopen[- ]source\b/i, 'an "open source" claim', ownPages],
-  [/\bMIT[- ]licen[cs]/i, 'an MIT licence claim', ownPages],
-];
+// The engine is MIT and its repository is public, so links to it and "open source" are fine. The demo games are
+// not MIT (games/LICENSE): every demo page must say they are all rights reserved, so no page presents a demo as
+// open source software by omission.
+const demoPage = /^demos\/[^/]+\/index\.html$/;
+const reservedNotice = /all rights reserved/i;
 const internalFile = /\.(md|cs|csproj|props|targets|pdb|map|sh)$/i;
 // A user profile folder compiled into a package (debug paths, assertion file names) names the build machine's user.
 // Hosted CI accounts (runner, runneradmin) are public: third-party assemblies such as Raylib-cs carry them.
@@ -90,7 +82,7 @@ export function checkPublicContent(dist, { secrets = [] } = {}) {
     for (const secret of secrets) if (secret && content.includes(secret)) problems.push(`a build secret appears in ${rel}`);
     if (userPath.test(content)) problems.push(`${rel} contains a build machine's user folder path`);
     if (inPackage || !isText) continue;
-    for (const [pattern, what, files] of forbiddenText) if (files.test(rel) && pattern.test(content)) problems.push(`${rel} contains ${what}`);
+    if (demoPage.test(rel) && !reservedNotice.test(content)) problems.push(`${rel} does not say the demo game is all rights reserved`);
   }
   return problems;
 }

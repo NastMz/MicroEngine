@@ -4,6 +4,7 @@ import SiteLayout from '../../layouts/SiteLayout.astro';
 import DemoPlayer from '../../components/DemoPlayer.astro';
 import { demoGames, type DemoGame } from '../../data/games';
 import { playManifest, megabytes } from '../../lib/play-manifest.mjs';
+import { repositoryUrl } from '../../lib/repo-docs.mjs';
 
 export function getStaticPaths() {
   return demoGames.map(game => ({ params: { game: game.slug }, props: { game } }));
@@ -55,7 +56,7 @@ const others = demoGames.filter(g => g.id !== game.id);
         <dl class="facts">
           <div><dt>Download</dt><dd>{packaged ? `about ${megabytes(packaged.transfer)}, only when you press Play` : 'not included in this build'}</dd></div>
           <div><dt>Content</dt><dd>{game.content.kind}: {game.content.detail}</dd></div>
-          <div><dt>Licences</dt><dd>The package includes the <a href="/docs/third-party-notices/">third-party notices</a> of the .NET runtime, Emscripten and raylib.</dd></div>
+          <div><dt>Licence</dt><dd>Demo game: all rights reserved (<a href={`${repositoryUrl}/blob/main/games/LICENSE`}>notice</a>). Read its code to learn MicroEngine; do not redistribute or sell it. The engine that runs it is <a href="/docs/licensing/">MIT licensed</a>{game.credits && ', and its third-party art and audio keep their own licences'}. The package includes these notices and the <a href="/docs/third-party-notices/">third-party notices</a>.</dd></div>
           <div><dt>Saves</dt><dd>Kept in this browser’s storage for this site, separately for each game. Clearing site data or a private window removes them.</dd></div>
           {packaged?.key && <div><dt>Build</dt><dd class="mono">{packaged.key}{packaged.commit && ` · ${String(packaged.commit).slice(0, 7)}`}</dd></div>}
         </dl>

@@ -7,7 +7,10 @@
 #   deploy     a preview for pull requests that change the site or a demo; production when main changes the
 #              published site, always with the latest released demos: merging never publishes a demo
 #   CI result  the one check to require: fails if anything needed failed, was cancelled or did not run
-# Never here: macOS, the Android emulator, the iOS simulator (validate.yml, platforms.yml), releases (release.yml).
+#   project graph  .NET tests and native captures are narrowed to the test projects and games that depend on the
+#              changed files (.github/scripts/projects.mjs); a file outside every project runs them all
+# macOS: headless tests, informative only, when the repository variable PUBLIC_RUNNERS is true (free public runners).
+# Never here: the Android emulator, the iOS simulator (validate.yml, platforms.yml), releases (release.yml).
 name: ci
 
 on:
@@ -36,6 +39,9 @@ jobs:
       dotnet: ${{ steps.decide.outputs.dotnet }}
       windows: ${{ steps.decide.outputs.windows }}
       native: ${{ steps.decide.outputs.native }}
+      macos: ${{ steps.decide.outputs.macos }}
+      tests: ${{ steps.changes.outputs.tests }}
+      games: ${{ steps.changes.outputs.games }}
       site: ${{ steps.decide.outputs.site }}
       suites: ${{ steps.decide.outputs.suites }}
       build: ${{ steps.demos.outputs.build }}
@@ -43,6 +49,7 @@ jobs:
       reused: ${{ steps.decide.outputs.reused }}
       deploy: ${{ steps.decide.outputs.deploy }}
       needed: ${{ steps.decide.outputs.needed }}
+      fork: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -77,7 +84,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CANARY: ${{ vars.DEMO_CANARY || 'NeonRift' }}
-        run: node site/scripts/demos.mjs plan --policy ci --canary "$CANARY" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+          # Public runners are free: build every game whose key changed (an engine change rebuilds and plays all four,
+          # and the release then finds every package stored). Private: one canary game for engine-wide changes.
+          POLICY: ${{ vars.PUBLIC_RUNNERS == 'true' && 'all' || 'ci' }}
+        run: node site/scripts/demos.mjs plan --policy "$POLICY" --canary "$CANARY" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Decide
         id: decide
         env:
@@ -87,6 +97,10 @@ jobs:
           DOTNET: ${{ steps.changes.outputs.dotnet }}
           WINDOWS: ${{ steps.changes.outputs.windows }}
           NATIVE: ${{ steps.changes.outputs.native }}
+          MACOS: ${{ steps.changes.outputs.macos }}
+          PUBLIC_RUNNERS: ${{ vars.PUBLIC_RUNNERS }}
+          TESTS: ${{ steps.changes.outputs.tests }}
+          GAMES: ${{ steps.changes.outputs.games }}
           BROWSER: ${{ steps.changes.outputs.browser }}
           BUILD: ${{ steps.demos.outputs.build }}
           PACKAGES: ${{ steps.demos.outputs.packages }}
@@ -98,6 +112,7 @@ jobs:
           site=$([ -n "$suites" ] && echo true || echo false)
           evidence=$(mktemp)
           GITHUB_OUTPUT="$evidence" node .github/scripts/evidence.mjs plan --checks dotnet,windows,native,site \
+            --extra "dotnet=tests=$TESTS" --extra "windows=tests=$TESTS" --extra "native=games=$GAMES" \
             --site-extra "suites=$suites $PACKAGES" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
           get() { grep "^$1=" "$evidence" | cut -d= -f2-; }
           run() { [ "$1" = true ] && [ -z "$(get "reused_$2")" ] && echo true || echo false; }
@@ -109,6 +124,8 @@ jobs:
             echo "dotnet=$(run "$DOTNET" dotnet)"
             echo "windows=$(run "$WINDOWS" windows)"
             echo "native=$(run "$NATIVE" native)"
+            # Informative and free only on a public repository's standard runners; never evidence, never a gate.
+            echo "macos=$([ "$MACOS" = true ] && [ "$PUBLIC_RUNNERS" = true ] && echo true || echo false)"
             echo "site=$(run "$site" site)"
             echo "suites=$suites"
             echo "deploy=$deploy"
@@ -129,12 +146,17 @@ jobs:
       dotnet: ${{ needs.plan.outputs.dotnet == 'true' }}
       windows: ${{ needs.plan.outputs.windows == 'true' }}
       native: ${{ needs.plan.outputs.native == 'true' }}
+      macos: ${{ needs.plan.outputs.macos == 'true' }}
+      tests: ${{ needs.plan.outputs.tests }}
+      games: ${{ needs.plan.outputs.games }}
       build: ${{ needs.plan.outputs.build }}
       site: ${{ needs.plan.outputs.site == 'true' }}
       demo-source: candidates
       suites: ${{ needs.plan.outputs.suites }}
-      evidence: true
+      # A fork's runs are never trusted as evidence (evidence.mjs ignores them), so they do not record any.
+      evidence: ${{ needs.plan.outputs.fork != 'true' }}
       keys: ${{ needs.plan.outputs.keys }}
+      fork: ${{ needs.plan.outputs.fork == 'true' }}
 
   deploy:
     name: Site
@@ -174,6 +196,9 @@ jobs:
           WANTED: ${{ needs.plan.outputs.deploy }}
           NEEDED: ${{ needs.plan.outputs.needed }}
           REUSED: ${{ needs.plan.outputs.reused }}
+          TESTS: ${{ needs.plan.outputs.tests }}
+          GAMES: ${{ needs.plan.outputs.games }}
+          MACOS: ${{ needs.plan.outputs.macos }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs
         run: |
           {
@@ -186,7 +211,9 @@ jobs:
               else outcome="ran here: checks $CHECKS"; fi
               echo "| $check | $is_needed | $outcome |"
             done
-            echo; echo "Deployment: $WANTED ($DEPLOY). macOS, Android and iOS are not part of daily CI (validate.yml)."
+            echo; echo "Deployment: $WANTED ($DEPLOY). .NET tests: $TESTS; native captures: ${GAMES:-none}."
+            if [ "$MACOS" = true ]; then echo "macOS ran as an informative check (see its job); it never gates."
+            else echo "macOS, Android and iOS are not part of this run (validate.yml, platforms.yml)."; fi
           } >> "$GITHUB_STEP_SUMMARY"
           [ "$PLAN" = success ] || { echo "::error::Plan $PLAN."; exit 1; }
           [ "$CHECKS" = success ] || { echo "::error::Checks $CHECKS."; exit 1; }

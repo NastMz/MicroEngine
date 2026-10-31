@@ -153,3 +153,8 @@ crit rates, XP/level-ups/move learning/evolution, capture bounds, statuses, part
 trainer AI, save/load, shop, map integrity, ledges and trainer sight, difficulty simulations, and
 headless playthroughs (new game to starter, rival duel and a wild victory; the forest rival ambush;
 the hall, Master and credits).
+
+## License
+
+This game is a MicroEngine demo, **not** covered by the engine's MIT License: all rights reserved
+([games/LICENSE](../LICENSE)). Read and build it to learn MicroEngine; do not redistribute or sell it. The image and audio files under `Content/` are third-party CC0 works listed in [CREDITS.md](CREDITS.md); they keep their own licence.

@@ -1,5 +1,8 @@
 # MicroEngine SDK License — DRAFT
 
+> **Superseded (2026-10-31).** The owner chose the MIT License for the engine and all-rights-reserved demo games
+> ([ADR 0015](../decisions/0015-mit-engine-reserved-demos.md)). This document is kept as a record and is not in force.
+
 > **Draft for legal review. Not in force and not published.** This text puts the distribution model the owner
 > approved on 2026-10-30 into licence form so that counsel has a concrete starting point. Bracketed items
 > `[TO CONFIRM: ...]` are open. Until counsel approves a final text and the owner publishes it with the SDK, no

@@ -345,3 +345,24 @@ test('versions: 1.2.0, v1.2.0 and pre-releases are accepted, anything else refus
   assert.equal(versionTag('1.2.0-rc.1'), 'v1.2.0-rc.1');
   for (const bad of ['1.2', 'latest', 'v1.2.0;rm', '', undefined]) assert.throws(() => versionTag(bad), /is not a version/);
 });
+
+test('overlay: a fork pull request plays the packages it built without writing to the shared store', async t => {
+  keepPlayDir(t);
+  const root = fixtureRepo();
+  const shared = dirStoreEnv().DEMOS_STORE;
+  await publish(['Alpha', 'Beta'], openStore({ DEMOS_STORE: shared }), { from: builtPackages(root), root });
+
+  change(root, 'games/Beta/Game.cs', 'class Beta { int forked; }');
+  const overlay = fs.mkdtempSync(path.join(os.tmpdir(), 'overlay-'));
+  await publish(['Beta'], openStore({ DEMOS_STORE: `dir:${overlay}` }), { from: builtPackages(root, ['Beta']), root });
+
+  const store = openStore({ DEMOS_STORE: shared, DEMOS_OVERLAY: overlay });
+  assert.match(store.describe, /over/);
+  const record = await fetchDemos({ DEMOS_SOURCE: 'keys' }, { store, root });
+  assert.equal(record.games.Beta.key, demoKey('Beta', { root }).key, 'the fork build, from the overlay');
+  assert.equal(record.games.Alpha.key, demoKey('Alpha', { root }).key, 'unchanged games, from the shared store');
+  const sharedDir = shared.slice(4);
+  assert.equal(fs.readdirSync(sharedDir).some(name => name.includes(demoKey('Beta', { root }).key)), false, 'the shared store is untouched');
+  change(root, 'games/Beta/Game.cs', 'class Beta { int again; }');
+  await assert.rejects(publish(['Beta'], store, { from: builtPackages(root, ['Beta']), root }), /read-only/);
+});

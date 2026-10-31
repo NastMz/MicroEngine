@@ -21,6 +21,19 @@ on:
         description: The same tests on Windows (after Linux passed)
         type: boolean
         default: false
+      macos:
+        description: The same headless tests on macOS (after Linux passed); informative, never fails the checks
+        type: boolean
+        default: false
+      tests:
+        description: Test projects for the .NET jobs, from the project graph (projects.mjs) - all, a comma-separated
+          list, or empty to only compile the solution
+        type: string
+        default: all
+      games:
+        description: Games whose scripted captures the native job compares - all, a comma-separated list, or empty
+        type: string
+        default: all
       native:
         description: raylib on Linux under Xvfb, native tests and scripted captures
         type: boolean
@@ -50,6 +63,11 @@ on:
         description: 'JSON object of evidence keys: {"dotnet": "...", "windows": "...", "native": "...", "site": "..."}'
         type: string
         default: '{}'
+      fork:
+        description: A pull request from a fork (read-only token, untrusted code) keeps the packages it builds out of
+          the shared store and hands them to the site job as workflow artifacts
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -78,7 +96,8 @@ jobs:
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json', 'NuGet.config') }}
-      - run: dotnet test MicroEngine.slnx -c Release --filter "TestCategory!=Native" --logger trx --results-directory test-results
+      - name: Tests (${{ inputs.tests }})
+        run: .github/scripts/dotnet-test.sh "${{ inputs.tests }}" "TestCategory!=Native" test-results
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results ".NET tests on Linux"
       - if: inputs.evidence
@@ -111,7 +130,9 @@ jobs:
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json', 'NuGet.config') }}
-      - run: dotnet test MicroEngine.slnx -c Release --filter "TestCategory!=Native" --logger trx --results-directory test-results
+      - name: Tests (${{ inputs.tests }})
+        shell: bash
+        run: .github/scripts/dotnet-test.sh "${{ inputs.tests }}" "TestCategory!=Native" test-results
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results ".NET tests on Windows"
       - if: inputs.evidence
@@ -123,6 +144,35 @@ jobs:
           path: evidence.json
           retention-days: 30
           overwrite: true
+
+  # Informative tier, only when the repository runs on free public runners (ci.yml, PUBLIC_RUNNERS): the headless tests
+  # on macOS. macOS stays experimental (ADR 0012): a failure is reported, never a gate, and no evidence is recorded.
+  dotnet-macos:
+    name: .NET tests (macOS, informative)
+    needs: dotnet-linux
+    if: >-
+      !cancelled() && inputs.macos
+      && contains(fromJSON('["success", "skipped"]'), needs.dotnet-linux.result)
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json', 'NuGet.config') }}
+      - name: Tests (${{ inputs.tests }})
+        run: .github/scripts/dotnet-test.sh "${{ inputs.tests }}" "TestCategory!=Native" test-results
+      - if: always()
+        run: node .github/scripts/test-summary.mjs test-results ".NET tests on macOS (informative)"
 
   # The desktop backend for real on Linux: raylib with OpenGL (Mesa) in a virtual X display, the keyboard through the
   # X server, audio through a virtual PulseAudio sink, and the games' scripted runs compared with the Linux reference.
@@ -170,8 +220,13 @@ jobs:
         run: xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results "Native tests on Linux"
-      - name: Scripted captures against the Linux reference
-        run: xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --out native-captures --reference web/tests/reference/linux-x64.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Scripted captures against the Linux reference (${{ inputs.games }})
+        if: inputs.games != ''
+        env:
+          GAMES: ${{ inputs.games }}
+        run: |
+          only=(); [ "$GAMES" = all ] || only=(--games "$GAMES")
+          xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --out native-captures --reference web/tests/reference/linux-x64.json "${only[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -223,9 +278,21 @@ jobs:
       - run: web/setup.sh
       - run: web/build.sh "${{ matrix.game }}"
       - name: Store the package
+        if: ${{ !inputs.fork }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node site/scripts/demos.mjs publish "${{ matrix.game }}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Keep the package for this run only (fork pull request)
+        if: inputs.fork
+        env:
+          DEMOS_STORE: dir:demo-overlay
+        run: node site/scripts/demos.mjs publish "${{ matrix.game }}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - if: inputs.fork
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-package-${{ matrix.game }}
+          path: demo-overlay
+          retention-days: 3
 
   site:
     name: Site (Chrome and Firefox)
@@ -249,10 +316,17 @@ jobs:
           cache-dependency-path: site/package-lock.json
       - run: npm ci
       - run: npm test
+      - if: inputs.fork && inputs.build != '[]'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: demo-package-*
+          merge-multiple: true
+          path: site/demo-overlay
       - name: Build with ${{ inputs.demo-source }} demo packages
         env:
           GITHUB_TOKEN: ${{ github.token }}
           DEMOS_SOURCE: ${{ inputs.demo-source }}
+          DEMOS_OVERLAY: ${{ inputs.fork && inputs.build != '[]' && 'demo-overlay' || '' }}
         run: npm run build
       # Firefox needs a display for WebGL without a GPU: run under a virtual X server (Mesa software rendering).
       - name: Browser checks (${{ inputs.suites }})

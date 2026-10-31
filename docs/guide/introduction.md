@@ -14,8 +14,8 @@ backend that runs on the desktop and, compiled to WebAssembly, in desktop browse
 - Teams that want deterministic, testable games: every game built with it so far is played end to end by
   headless tests and scripted input.
 
-MicroEngine is not distributed to external developers yet: there is no package or template to install today.
-NuGet packages, project templates and versioned releases are planned; see
+MicroEngine is open source under the MIT License. There is no package or template to install yet: games use the
+engine from its public repository, and NuGet packages, project templates and versioned releases are planned; see
 [Getting MicroEngine](getting-microengine.md) and the [roadmap](/roadmap/).
 
 ## The four games

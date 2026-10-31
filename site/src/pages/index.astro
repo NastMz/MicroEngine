@@ -136,7 +136,7 @@ const capabilities = [
           {distribution.available
             ? <a class="button" href={distribution.startHref}>Get started</a>
             : <a class="button" href="/roadmap/">See the roadmap</a>}
-          <a class="button secondary" href="/docs/getting-started/">Distribution status</a>
+          <a class="button secondary" href="/docs/licensing/">Licensing</a>
         </div>
       </div>
       {distribution.available
@@ -144,8 +144,8 @@ const capabilities = [
         : <ol class="steps">
             <li><span class="label">Today</span><span>Play the four demos in a desktop browser.</span></li>
             <li><span class="label">Today</span><span>Read the manual, the examples and the API reference: they show the engine’s real code.</span></li>
-            <li><span class="label">Planned</span><span>NuGet packages and C# project templates, installed without access to the source.</span></li>
-            <li><span class="label">Planned</span><span>Free under the MicroEngine SDK License: commercial games allowed, no royalties, your games stay yours. <a href="/docs/licensing/">Licensing</a></span></li>
+            <li><span class="label">Planned</span><span>NuGet packages and C# project templates.</span></li>
+            <li><span class="label">Licence</span><span>MIT for the engine; the demo games are all rights reserved. <a href="/docs/licensing/">Licensing</a></span></li>
           </ol>}
     </div>
   </section>
@@ -156,7 +156,7 @@ const capabilities = [
       <p>Things MicroEngine does not have today, so nobody has to find out the hard way.</p>
     </div>
     <ul class="not-yet">
-      <li><strong>No public SDK yet.</strong> NuGet packages and project templates are planned, not published.</li>
+      <li><strong>No packages yet.</strong> The engine is used from its repository; NuGet packages and project templates are planned.</li>
       <li><strong>No visual editor.</strong> Content is code, or files loaded from a content folder.</li>
       <li><strong>No touch controls.</strong> The browser demos need a keyboard or a gamepad; phones and tablets are not validated.</li>
       <li><strong>Desktop validated on Windows only.</strong> Linux and macOS may work through .NET and raylib, but have not been verified.</li>

@@ -1,16 +1,21 @@
-MicroEngine
+MIT License
 
-Copyright (c) 2025-2026 Kevin Martinez. All rights reserved.
+Copyright (c) 2025-2026 Kevin Martinez
 
-MicroEngine is proprietary software. Its source code is private and is not licensed for use, copying,
-modification or distribution.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-The SDK will be distributed in compiled form under the MicroEngine SDK License, which is being prepared and is
-pending legal review (draft: docs/legal/microengine-sdk-license-draft.md). Until that licence is published, no
-licence is granted to this software except by the copyright holder's written permission.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-Earlier versions: versions of the previous implementation of MicroEngine that were published while the repository
-was public were released under the MIT License. Copies obtained under those terms keep the rights the MIT License
-granted. The current implementation is a separate rewrite and has never been published as source.
-
-Third-party components are listed with their licences in THIRD-PARTY-NOTICES.md.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

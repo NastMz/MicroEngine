@@ -9,8 +9,9 @@ Source: [`samples/HelloEngine/Program.cs`](../../samples/HelloEngine/Program.cs)
 
 ## Controls
 
-Arrows (or WASD) move the star; Z or Space plays a sound and bursts particles. The sample is part of the engine's
-own sources and is not distributed separately; this page shows its code in full.
+Arrows (or WASD) move the star; Z or Space plays a sound and bursts particles. The sample lives in the engine's repository
+(`samples/HelloEngine`), is MIT licensed like the engine, and may be copied into your own games; this page shows its
+code in full.
 
 ## 1. Entry point
 

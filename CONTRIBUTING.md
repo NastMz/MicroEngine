@@ -1,5 +1,23 @@
 # Contributing to MicroEngine
 
+## How contributions work
+
+MicroEngine is open source under the [MIT License](LICENSE). Issues, ideas and pull requests are welcome.
+
+- **Licence of your contribution.** What you contribute is licensed under the MIT License, the same as the project
+  (inbound = outbound, as GitHub's Terms of Service, section D.6, describe). There is no contributor licence
+  agreement to sign. By opening a pull request you confirm that you wrote the change or have the right to submit it
+  under the MIT License, and that it copies no code or assets under incompatible terms.
+- **Demo games.** `games/` and the games' test projects are not MIT ([games/LICENSE](games/LICENSE)). Fixes to them
+  are welcome; your change is still yours under the MIT License, and the games as a whole stay all rights reserved.
+  New third-party assets need a licence that allows public redistribution (CC0 preferred) and an entry in the
+  game's `CREDITS.md`.
+- **Review.** Maintainers review every pull request and decide what is merged. CI must pass (**CI result**); pull
+  requests from forks run without secrets and need a maintainer's approval to start.
+- **Commits and branches.** Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `ci:`), branches
+  `feat/<topic>`, `fix/<topic>`, `docs/<topic>`. Keep a change focused; tests and documentation travel with it.
+- **Security problems** go through [SECURITY.md](SECURITY.md), never a public issue.
+
 ## Setup
 
 Install the .NET 10 SDK. From the repository root:

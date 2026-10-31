@@ -1,7 +1,7 @@
 # Status and limitations
 
-MicroEngine is a working framework with four complete games and a browser build. It is not distributed to
-external developers yet. This page states plainly what exists today, what does not, and what has and has not been
+MicroEngine is a working framework with four complete games and a browser build, open source under the MIT
+License and used from its public repository (no packages yet). This page states plainly what exists today, what does not, and what has and has not been
 validated, so you can judge whether it would fit your project.
 
 ## What exists
@@ -22,8 +22,7 @@ These are not implemented. Do not plan around them.
 
 | Missing | Notes |
 | --- | --- |
-| Distribution to external developers: NuGet packages, project templates (`dotnet new`), installers, versioned releases | Planned; see [Getting MicroEngine](getting-microengine.md) |
-| A published licence | The MicroEngine SDK License (free, commercial use, no royalties) is being prepared; see [Licensing](licensing.md) |
+| NuGet packages, project templates (`dotnet new`), installers, versioned engine releases | Planned; today the engine is built from its repository ([Getting MicroEngine](getting-microengine.md)) |
 | Visual editor, level editor or asset pipeline tool | Content is authored in code (`PixelImage.FromMap`, `TileLayer.Parse` over ASCII rows) or loaded through `ContentFolder`. A visual editor is only a long-term vision on the roadmap |
 | Touch controls | The demos have no dedicated touch controls |
 | An ECS, physics engine, networking, scripting language or 3D | Not part of the engine's design ([Architecture](../architecture.md)). 3D is only a long-term vision on the roadmap |

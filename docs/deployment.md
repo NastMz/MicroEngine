@@ -27,12 +27,12 @@ rollback.
 
 Each game in the registry ([`web/games.props`](../web/games.props)) has a **key**: a hash of the Git blobs of
 everything its web package is built from (the engine under `src/`, the web host and toolchain files, the game's
-folder, its registry entry and `THIRD-PARTY-NOTICES.md`; Markdown files, screenshots and input scripts excluded).
+folder, its registry entry, `THIRD-PARTY-NOTICES.md`, `LICENSE` and `games/LICENSE`; Markdown files, screenshots and input scripts excluded).
 `node site/scripts/demos.mjs key <Game>` prints a key and its input files.
 
 - A change to the engine or the web host changes every key; a change to one game changes only that game's key;
   documentation and site changes change no key, so those pull requests reuse every stored package and build none.
-- Integration packages are stored as assets of the prerelease **`demo-artifacts`** of this private repository, one
+- Integration packages are stored as assets of the prerelease **`demo-artifacts`** of this repository (public downloads once the repository is public), one
   archive and one manifest per game and key (`<Game>-<key>.tar.gz`, `<Game>-<key>.json`). The manifest records the
   archive's SHA-256, every file's SHA-256, the commit that built it and the toolchain versions. Artifacts are never
   replaced. A release copies the approved ones into release `v<version>` ([Releases](ci.md#releases)).
@@ -111,8 +111,7 @@ production deployments from `main` are skipped until a demo release exists.
 - a demo package, a file listed in a game's `content.txt`, a licence notice, a documentation page, the roadmap, the
   sitemap, the 404 page or the search index is missing;
 - a package still carries `.br`/`.gz` copies, or the home page references `/play/` (demos must load on demand);
-- a published page links to `github.com/NastMz`, says `git clone`, names the solution file, or claims open source or
-  an MIT licence;
+- a demo page does not say its game is all rights reserved (the engine is MIT, the demos are not: ADR 0015);
 - a ` ```mermaid ` block of a public page did not become a diagram;
 - an internal file type is published (`.md`, `.cs`, `.csproj`, `.props`, `.targets`, `.pdb`, `.map`, `.sh`);
 - a package names a user profile folder (build-machine paths), or the value of `DEMOS_TOKEN` or `GITHUB_TOKEN`

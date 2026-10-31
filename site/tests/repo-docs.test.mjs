@@ -42,17 +42,19 @@ test('title comes from the first H1 and the description from the first paragraph
   assert.throws(() => parseDocument('no heading'), /no "# Title"/);
 });
 
-test('links to public documents become site URLs; internal repository files are not linked', () => {
+test('links to public documents become site URLs; other repository files link to the public repository', () => {
   const root = fixture({ 'docs/decisions/0007.md': '# ADR', 'src/Engine/Game.cs': '', 'web/README.md': '# Web' });
   const opts = { list, root };
+  const repo = 'https://github.com/NastMz/MicroEngine';
   assert.equal(resolveLink('docs/guide/intro.md', '../manual/scenes.md#stack', opts), '/docs/manual/scenes/#stack');
   assert.equal(resolveLink('docs/guide/intro.md', '../../web/README.md', opts), '/docs/manual/web-builds/');
-  assert.equal(resolveLink('docs/guide/intro.md', '../decisions/0007.md', opts), null);
-  assert.equal(resolveLink('docs/guide/intro.md', '../../src/Engine', opts), null);
+  assert.equal(resolveLink('docs/guide/intro.md', '../decisions/0007.md', opts), `${repo}/blob/main/docs/decisions/0007.md`);
+  assert.equal(resolveLink('docs/guide/intro.md', '../../src/Engine', opts), `${repo}/tree/main/src/Engine`);
+  assert.equal(resolveLink('docs/guide/intro.md', '../../src/Missing.cs', opts), null, 'a file that does not exist is not linked');
   assert.equal(resolveLink('docs/guide/intro.md', 'https://example.com/a.md', opts), 'https://example.com/a.md');
   assert.equal(resolveLink('docs/guide/intro.md', '#local', opts), '#local');
-  const markdown = 'See [ADR 0007](../decisions/0007.md) and [`src/Engine/Game.cs`](../../src/Engine/Game.cs).';
-  assert.equal(rewriteLinks('docs/guide/intro.md', markdown, opts), 'See ADR 0007 and `src/Engine/Game.cs`.');
+  const markdown = 'See [ADR 0007](../decisions/0007.md) and [gone](../../src/Gone.cs).';
+  assert.equal(rewriteLinks('docs/guide/intro.md', markdown, opts), `See [ADR 0007](${repo}/blob/main/docs/decisions/0007.md) and gone.`);
 });
 
 test('links inside code are left alone', () => {
@@ -78,7 +80,7 @@ test('editing a source file changes the published page (single source)', () => {
   const entry = buildEntry(page, { root, list });
   assert.equal(entry.data.title, 'Scene stack');
   assert.match(entry.body, /\]\(\/docs\/\)/);
-  assert.equal(entry.data.editUrl, false, 'no "edit page" link into the private repository');
+  assert.equal(entry.data.editUrl, false, 'no "edit page" link: pages are edited through pull requests');
 });
 
 test('a listed page that is missing fails loudly', () => {

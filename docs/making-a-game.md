@@ -6,10 +6,9 @@ every system at full scale.
 
 ## 1. Project
 
-MicroEngine is not distributed to external developers yet. Today a game project references the engine's projects
-directly, as below, which is only possible inside the engine's own repository. Package-based setup (NuGet packages
-and project templates) is planned; see [Getting MicroEngine](guide/getting-microengine.md). The rest of this guide
-shows the real API and does not depend on how the project is set up.
+A game project references the engine's projects directly, as below, from a copy of the engine's repository
+([Getting MicroEngine](guide/getting-microengine.md)). Package-based setup (NuGet packages and project templates) is
+planned. The rest of this guide shows the real API and does not depend on how the project is set up.
 
 ```xml
 <!-- games/MyGame/MyGame.csproj -->

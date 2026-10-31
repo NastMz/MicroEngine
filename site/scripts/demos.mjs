@@ -29,6 +29,9 @@
 // private repository, read and written with GITHUB_TOKEN; "dir:<path>": a local folder (tests, offline work).
 // Each artifact is <Game>-<key>.tar.gz plus <Game>-<key>.json, written in that order: the manifest marks a
 // complete artifact. Artifacts are never replaced.
+// DEMOS_OVERLAY=<dir>: a folder of artifacts read before the store and never written through it. A fork pull request
+// has a read-only token, so it stores the packages it built in a folder (DEMOS_STORE=dir:<dir>), passes them to the
+// site job as a workflow artifact and reads them back through the overlay; the shared store is never touched.
 //
 // Packages are stored without their .br/.gz copies: Vercel compresses JavaScript, JSON and WebAssembly itself.
 import fs from 'node:fs';
@@ -43,8 +46,9 @@ import * as tar from 'tar';
 
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const repoRoot = path.dirname(siteRoot);
-// Licence notices web/build.sh puts in every package; a package without them must not be published.
-export const noticeFiles = ['THIRD-PARTY-NOTICES.txt', 'licenses/dotnet-LICENSE.txt', 'licenses/dotnet-THIRD-PARTY-NOTICES.txt', 'licenses/emscripten-LICENSE.txt', 'licenses/raylib-LICENSE.txt'];
+// Licence notices web/build.sh puts in every package (the game's notice, MicroEngine's MIT licence, third-party
+// licences); a package without them must not be published.
+export const noticeFiles = ['LICENSE.txt', 'licenses/microengine-LICENSE.txt', 'THIRD-PARTY-NOTICES.txt', 'licenses/dotnet-LICENSE.txt', 'licenses/dotnet-THIRD-PARTY-NOTICES.txt', 'licenses/emscripten-LICENSE.txt', 'licenses/raylib-LICENSE.txt'];
 export const playDir = path.join(siteRoot, 'public', 'play');
 export const cacheDir = path.join(siteRoot, 'node_modules', '.cache', 'microengine-demos');
 const compressible = new Set(['.wasm', '.js', '.mjs', '.json', '.txt', '.css', '.html', '.svg']);
@@ -55,6 +59,7 @@ export const releaseTag = 'demo-artifacts';
 const sharedInputs = [
   'src', 'web/Host', 'web/Directory.Build.props', 'web/Directory.Build.targets', 'web/build.sh', 'web/build-raylib-wasm.sh',
   'web/setup.sh', 'web/toolchain.env', 'Directory.Build.props', 'global.json', 'NuGet.config', 'THIRD-PARTY-NOTICES.md',
+  'LICENSE', 'games/LICENSE',
 ];
 // Files inside those paths that never reach a release package.
 const notAnInput = file => (/\.md$/i.test(file) && file !== 'THIRD-PARTY-NOTICES.md') || /(^|\/)(screenshots|scripts)\//.test(file);
@@ -351,8 +356,25 @@ function githubReleases({ repository, token, apiBase = 'https://api.github.com',
   };
 }
 
-/** The artifact store selected by the environment (DEMOS_STORE), or null when none is configured. */
+/** `base` with the artifacts of the folder `dir` read first; writing through it is refused. */
+function overlayStore(dir, base) {
+  const top = dirStore(dir);
+  return {
+    ...base,
+    describe: `${top.describe} over ${base.describe}`,
+    has: async name => (await top.has(name)) || base.has(name),
+    read: async name => ((await top.has(name)) ? top.read(name) : base.read(name)),
+    write: async () => fail('the overlay store is read-only: store packages in DEMOS_STORE=dir:<dir> instead.'),
+  };
+}
+
+/** The artifact store selected by the environment (DEMOS_STORE, DEMOS_OVERLAY), or null when none is configured. */
 export function openStore(env = process.env) {
+  const store = baseStore(env);
+  return store && env.DEMOS_OVERLAY ? overlayStore(path.resolve(env.DEMOS_OVERLAY), store) : store;
+}
+
+function baseStore(env) {
   const choice = env.DEMOS_STORE ?? (env.GITHUB_ACTIONS === 'true' ? 'github' : '');
   if (!choice) return null;
   if (choice.startsWith('dir:')) {

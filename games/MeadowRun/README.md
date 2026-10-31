@@ -141,3 +141,8 @@ The tests cover:
   traversable. It plans jumps by simulating a cloned `Player` and predicting platforms.
 - A boss fight to victory, and a full headless run: title, new game, map, level 1, tally, map,
   with progress persisted to disk and no missing sounds.
+
+## License
+
+This game is a MicroEngine demo, **not** covered by the engine's MIT License: all rights reserved
+([games/LICENSE](../LICENSE)). Read and build it to learn MicroEngine; do not redistribute or sell it. Every sprite, tile, sound and song is generated in code, so the whole game is covered.

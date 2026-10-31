@@ -94,7 +94,7 @@ async function layout(browser, label, base) {
         check(`${where}: diagrams use the documentation's colours`, diagrams.every(d => d.themed), JSON.stringify(diagrams));
       }
       const { scroll, width, clipped, missingAlt, smallTargets, repoLinks, roadmapLink } = await page.evaluate(() => ({
-        repoLinks: [...document.querySelectorAll('a[href]')].map(a => a.href).filter(h => /github\.com/i.test(h)),
+        repoLinks: [...document.querySelectorAll('a[href]')].map(a => a.href).filter(h => /github\.com/i.test(h) && !/^https:\/\/github\.com\/NastMz\/MicroEngine(\/|$)/.test(h)),
         roadmapLink: !!document.querySelector('header a[href="/roadmap/"], .sidebar-content a[href="/roadmap/"], #starlight__sidebar a[href="/roadmap/"], a.docs-section[href="/roadmap/"]'),
         scroll: document.documentElement.scrollWidth,
         width: window.innerWidth,
@@ -118,7 +118,7 @@ async function layout(browser, label, base) {
       check(`${where}: no horizontal scroll`, scroll <= width, `${scroll} > ${width}`);
       check(`${where}: no content cut off at the right edge`, clipped.length === 0, clipped.join(' | '));
       check(`${where}: every image has alt text`, missingAlt.length === 0, missingAlt.join(', '));
-      check(`${where}: no links to GitHub (the repository is private)`, repoLinks.length === 0, repoLinks.slice(0, 3).join(', '));
+      check(`${where}: GitHub links go to the MicroEngine repository only`, repoLinks.length === 0, repoLinks.slice(0, 3).join(', '));
       check(`${where}: the roadmap is reachable from the navigation`, roadmapLink);
       check(`${where}: controls at least 24px`, smallTargets.length === 0, smallTargets.join(' | '));
       check(`${where}: no demo package requested`, !requests.some(p => p.startsWith('/play/')), requests.filter(p => p.startsWith('/play/')).slice(0, 3).join(', '));

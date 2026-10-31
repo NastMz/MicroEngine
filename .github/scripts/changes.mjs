@@ -14,11 +14,18 @@
 //   browser    none | layout: every page at three widths | full: layout plus playing each demo; anything but none
 //              also means the published site changed, so main deploys it
 //   workflows  actionlint over every workflow
-//   macos, mobile  advisory only: printed as a recommendation to run platforms.yml or validate.yml; daily CI never
-//              starts a macOS runner, an Android emulator or an iOS simulator
+//   macos      the headless .NET tests on macOS: informative (never a gate), and only started when the repository
+//              uses free public runners (repository variable PUBLIC_RUNNERS=true); otherwise advisory
+//   mobile     advisory only: printed as a recommendation to run platforms.yml or validate.yml; daily CI never
+//              starts an Android emulator or an iOS simulator
+//
+// Scope (projects.mjs): the .NET project graph narrows `dotnet`, `windows` and `macos` to the test projects that
+// depend on the changed files (output `tests`), and the native captures to the affected games (output `games`).
+// Either is 'all' when a file is outside every project, so an unknown dependency never narrows a check.
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { readGraph, affectedScope, scopeText } from './projects.mjs';
 
 const levels = ['none', 'layout', 'full'];
 export const everything = Object.freeze({ dotnet: true, windows: true, native: true, browser: 'full', workflows: true, macos: true, mobile: true });
@@ -35,6 +42,7 @@ export const rules = [
   { pattern: /^\.github\//, checks: [], why: 'other repository settings' },
   { pattern: /^src\/MicroEngine\.Raylib\//, checks: ['dotnet', 'windows', 'native', 'macos', 'mobile'], why: 'raylib backend' },
   { pattern: /^src\//, checks: ['dotnet', 'windows', 'native', 'macos'], why: 'engine' },
+  { pattern: /^games\/LICENSE$/, checks: ['layout'], why: 'demo games licence (packaged: demo keys rebuild)' },
   { pattern: /^games\/.*\.md$/i, checks: ['layout'], why: 'published game page' },
   { pattern: /^games\/[^/]+\/screenshots\//, checks: ['layout'], why: 'screenshots on the site' },
   { pattern: /^games\//, checks: ['dotnet', 'native'], why: 'game' },
@@ -68,6 +76,15 @@ export function planChecks(files) {
   return checks;
 }
 
+/** The test projects and games a change can affect, from the files whose rules need .NET or native checks. */
+export function planScope(files, graph) {
+  const relevant = files.filter(file => {
+    const rule = ruleFor(file);
+    return !rule || rule.checks === 'all' || rule.checks.includes('dotnet') || rule.checks.includes('native');
+  });
+  return affectedScope(graph, relevant);
+}
+
 function changedFiles(base, head) {
   const out = execFileSync('git', ['diff', '--name-only', '--no-renames', `${base}...${head}`], { encoding: 'utf8' });
   return out.split('\n').filter(Boolean);
@@ -84,6 +101,7 @@ function main(args) {
     catch (error) { reason = `cannot compare with ${base} (${error.message.split('\n')[0]})`; }
   }
   const checks = files ? planChecks(files) : { ...everything };
+  const scope = files ? planScope(files, readGraph()) : { tests: 'all', games: 'all' };
   const lines = ['### Checks for this change', ''];
   if (files) {
     lines.push(`${files.length} changed file(s) since \`${base.slice(0, 12)}\`.`, '', '| Path | Rule |', '| --- | --- |');
@@ -91,11 +109,13 @@ function main(args) {
     if (files.length > 50) lines.push(`| … | ${files.length - 50} more |`);
   } else lines.push(`Everything runs: ${reason}.`);
   lines.push('', '| Check | Runs |', '| --- | --- |', ...Object.entries(checks).map(([name, on]) => `| ${name} | ${on === true ? 'yes' : on === false ? 'no' : on} |`), '');
+  const describe = value => (value === 'all' ? 'all' : value.length ? value.map(v => `\`${v}\``).join(', ') : 'none');
+  lines.push(`Project graph: .NET tests ${describe(scope.tests)}; native captures ${describe(scope.games)}.`, '');
   const advisory = [checks.macos && 'macOS', checks.mobile && 'Android and iOS'].filter(Boolean);
-  if (advisory.length) lines.push(`Advisory: this change concerns ${advisory.join(', ')}. Daily CI does not run them; run the platforms or validate workflow when it matters.`, '');
+  if (advisory.length) lines.push(`Advisory: this change concerns ${advisory.join(', ')}. Daily CI runs macOS tests only on public runners (informative); run the platforms or validate workflow when it matters.`, '');
   console.log(lines.join('\n'));
   if (args.includes('--github-output')) {
-    const output = Object.entries(checks).map(([name, on]) => `${name}=${on}`).join('\n') + '\n';
+    const output = [...Object.entries(checks).map(([name, on]) => `${name}=${on}`), `tests=${scopeText(scope.tests)}`, `games=${scopeText(scope.games)}`].join('\n') + '\n';
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, output);
     else process.stdout.write(output);
   }
