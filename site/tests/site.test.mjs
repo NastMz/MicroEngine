@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classify } from '../src/lib/capability.mjs';
 import { gameIds } from '../scripts/demos.mjs';
-import { checkDist, checkPublicContent } from '../scripts/check-dist.mjs';
+import { checkDiagrams, checkDist, checkPublicContent } from '../scripts/check-dist.mjs';
 import { headerRules, headersFor } from './serve-dist.mjs';
 
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -41,6 +41,18 @@ test('check-dist: reports a missing package file', () => {
   assert.ok(problems.includes('missing index.html'));
   assert.ok(problems.includes('missing play/NeonRift/_framework/dotnet.js'));
   assert.ok(!checkDist(dist, { demos: false }).some(p => p.includes('play/')));
+});
+
+test('check-dist: every mermaid block of a public page is published as a diagram', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'repo-'));
+  const dist = fs.mkdtempSync(path.join(os.tmpdir(), 'dist-'));
+  fs.writeFileSync(path.join(root, 'a.md'), '# A\n\n```mermaid\nflowchart TB\n  a --> b\n```\n\n```text\nnot a diagram\n```\n');
+  fs.mkdirSync(path.join(dist, 'docs', 'a'), { recursive: true });
+  const list = [{ source: 'a.md', slug: 'docs/a' }];
+  fs.writeFileSync(path.join(dist, 'docs', 'a', 'index.html'), '<pre data-language="mermaid"><code>flowchart TB</code></pre>');
+  assert.deepEqual(checkDiagrams(dist, { list, root }), ['docs/a/index.html has 0 of the 1 diagram(s) in a.md']);
+  fs.writeFileSync(path.join(dist, 'docs', 'a', 'index.html'), '<pre class="mermaid">flowchart TB\n  a --&gt; b</pre>');
+  assert.deepEqual(checkDiagrams(dist, { list, root }), []);
 });
 
 test('vercel.json: hashed package files are immutable, /play/ is noindex, Git deployments are off', () => {
