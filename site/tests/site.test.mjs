@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classify } from '../src/lib/capability.mjs';
-import { pack, fetchDemos, checkPackages, gameIds, playDir, sha256File } from '../scripts/demos.mjs';
+import { pack, fetchDemos, checkPackages, gameIds, noticeFiles, playDir, sha256File } from '../scripts/demos.mjs';
 import http from 'node:http';
 import { checkDist, checkPublicContent } from '../scripts/check-dist.mjs';
 import { headerRules, headersFor } from './serve-dist.mjs';
@@ -38,6 +38,7 @@ function fakePackages({ dev = false } = {}) {
       'index.html': '<!doctype html>', 'main.js': '', 'host.css': '', 'game.json': JSON.stringify({ id, title: id, dev }),
       '_framework/dotnet.js': '', '_framework/game.abcdefghij.wasm': 'wasm', '_framework/game.abcdefghij.wasm.br': 'br',
       'content.txt': 'music/theme.ogg\n', 'Content/music/theme.ogg': 'ogg',
+      ...Object.fromEntries(noticeFiles.map(file => [file, 'notice'])),
     };
     for (const [file, text] of Object.entries(files)) {
       fs.mkdirSync(path.dirname(path.join(dir, id, file)), { recursive: true });
@@ -76,6 +77,9 @@ test('packaging: development packages and incomplete folders are refused', async
   fs.rmSync(path.join(broken, 'TrailDuel', '_framework', 'dotnet.js'));
   await assert.rejects(pack({ version: '1.0.0', from: broken, out: os.tmpdir() }), /TrailDuel: _framework\/dotnet.js is missing/);
   await assert.rejects(pack({ version: 'latest', from: fakePackages(), out: os.tmpdir() }), /--version/);
+  const unlicensed = fakePackages();
+  fs.rmSync(path.join(unlicensed, 'NeonRift', 'licenses', 'dotnet-LICENSE.txt'));
+  await assert.rejects(pack({ version: '1.0.0', from: unlicensed, out: os.tmpdir() }), /NeonRift: licenses\/dotnet-LICENSE.txt is missing/);
 });
 
 test('fetch: production refuses to build without demos', async () => {
@@ -116,6 +120,8 @@ test('check-dist: private repository links, open source claims, internal files a
   assert.ok(problems.includes('internal file published: notes.md'));
   assert.ok(problems.includes('a build secret appears in play/x.js'));
   assert.ok(!problems.some(p => p.includes('ghp_secretvalue123')), 'the secret itself is never printed');
+  fs.writeFileSync(path.join(dist, 'play', 'a.wasm'), Buffer.from('\0asm C:\\Users\\someone\\tools\\driver.c\0', 'latin1'));
+  assert.ok(checkPublicContent(dist).includes("play/a.wasm contains a build machine's user folder path"));
 });
 
 // A stand-in for the GitHub API of a private repository: the release lookup and the asset download need the token,

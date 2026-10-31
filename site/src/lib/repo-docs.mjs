@@ -30,6 +30,7 @@ export const groups = [
   { id: 'examples', label: 'Examples' },
   { id: 'reference', label: 'Reference' },
   { id: 'credits', label: 'Demo asset credits' },
+  { id: 'legal', label: 'Legal' },
 ];
 
 export const pages = [
@@ -60,6 +61,8 @@ export const pages = [
   { source: 'games/CourtyardKey/CREDITS.md', slug: 'docs/credits/courtyard-key', group: 'credits', label: 'Courtyard Key' },
   { source: 'games/TrailDuel/CREDITS.md', slug: 'docs/credits/trail-duel', group: 'credits', label: 'Trail Duel' },
   { source: 'games/NeonRift/CREDITS.md', slug: 'docs/credits/neon-rift', group: 'credits', label: 'Neon Rift' },
+  { source: 'docs/guide/licensing.md', slug: 'docs/licensing', group: 'legal', label: 'Licensing' },
+  { source: 'THIRD-PARTY-NOTICES.md', slug: 'docs/third-party-notices', group: 'legal', label: 'Third-party notices' },
 ];
 
 // Site pages outside the documentation that the sidebar also lists (label, URL, group).

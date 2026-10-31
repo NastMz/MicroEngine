@@ -26,6 +26,8 @@ import * as tar from 'tar';
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.dirname(siteRoot);
 export const gameIds = ['MeadowRun', 'CourtyardKey', 'TrailDuel', 'NeonRift'];
+// Licence notices web/build.sh puts in every package; a package without them must not be published.
+export const noticeFiles = ['THIRD-PARTY-NOTICES.txt', 'licenses/dotnet-LICENSE.txt', 'licenses/dotnet-THIRD-PARTY-NOTICES.txt', 'licenses/emscripten-LICENSE.txt', 'licenses/raylib-LICENSE.txt'];
 export const lockPath = path.join(siteRoot, 'demos.lock.json');
 export const playDir = path.join(siteRoot, 'public', 'play');
 const cacheDir = path.join(siteRoot, 'node_modules', '.cache', 'microengine-demos');
@@ -49,7 +51,7 @@ export function checkPackages(dir) {
   if (!fs.existsSync(dir)) fail(`${dir} does not exist. Build the packages with web/build.sh first.`);
   return gameIds.map(id => {
     const folder = path.join(dir, id);
-    const required = ['index.html', 'main.js', 'host.css', 'game.json', '_framework/dotnet.js'];
+    const required = ['index.html', 'main.js', 'host.css', 'game.json', '_framework/dotnet.js', ...noticeFiles];
     for (const file of required) if (!fs.existsSync(path.join(folder, file))) fail(`${id}: ${file} is missing in ${folder}.`);
     const game = JSON.parse(fs.readFileSync(path.join(folder, 'game.json'), 'utf8'));
     if (game.id !== id) fail(`${id}: game.json names "${game.id}".`);

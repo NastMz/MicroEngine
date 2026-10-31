@@ -15,7 +15,7 @@ export interface Distribution {
 
 export const distribution: Distribution = {
   available: false,
-  status: 'MicroEngine is not distributed to external developers yet: there is no package to install today. NuGet packages and project templates are planned.',
+  status: 'MicroEngine is not distributed to external developers yet: there is no package to install today. NuGet packages and project templates are planned, free for personal, educational and commercial games, with no royalties.',
   install: [],
   startHref: '/docs/getting-started/',
 };

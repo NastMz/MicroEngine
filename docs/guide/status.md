@@ -23,6 +23,7 @@ These are not implemented. Do not plan around them.
 | Missing | Notes |
 | --- | --- |
 | Distribution to external developers: NuGet packages, project templates (`dotnet new`), installers, versioned releases | Planned; see [Getting MicroEngine](getting-microengine.md) |
+| A published licence | The MicroEngine SDK License (free, commercial use, no royalties) is being prepared; see [Licensing](licensing.md) |
 | Visual editor, level editor or asset pipeline tool | Content is authored in code (`PixelImage.FromMap`, `TileLayer.Parse` over ASCII rows) or loaded through `ContentFolder`. A visual editor is only a long-term vision on the roadmap |
 | Touch controls | The demos have no dedicated touch controls |
 | An ECS, physics engine, networking, scripting language or 3D | Not part of the engine's design ([Architecture](../architecture.md)). 3D is only a long-term vision on the roadmap |

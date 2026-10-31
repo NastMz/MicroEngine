@@ -25,6 +25,12 @@ With those in place, starting a game is planned to work like any other .NET proj
 template, reference the engine packages, write the game class and run it. The commands and package names will be
 documented when they exist.
 
+## Licence
+
+MicroEngine is proprietary. When the SDK ships it is planned to be free for personal, educational and commercial
+games, with no royalties, under the MicroEngine SDK License; your games stay yours. The licence is not published
+yet. See [Licensing](licensing.md) for the planned model.
+
 ## What you can do now
 
 - Play the four demos in a desktop browser on the [demos page](/demos/). See [Platforms](platforms.md) for the

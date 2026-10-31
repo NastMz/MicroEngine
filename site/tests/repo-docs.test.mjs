@@ -89,6 +89,6 @@ test('a listed page that is missing fails loudly', () => {
 test('the sidebar keeps every page once, grouped in order, and links the roadmap', () => {
   const items = sidebar().flatMap(group => group.items);
   assert.equal(items.filter(i => i.slug).length, pages.length);
-  assert.deepEqual(sidebar().map(g => g.label), ['Introduction', 'Getting started', 'Engine manual', 'Examples', 'Reference', 'Demo asset credits']);
+  assert.deepEqual(sidebar().map(g => g.label), ['Introduction', 'Getting started', 'Engine manual', 'Examples', 'Reference', 'Demo asset credits', 'Legal']);
   assert.ok(sidebar()[0].items.some(i => i.link === '/roadmap/'));
 });

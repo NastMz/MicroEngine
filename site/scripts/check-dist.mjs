@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pages } from '../src/lib/repo-docs.mjs';
-import { gameIds } from './demos.mjs';
+import { gameIds, noticeFiles } from './demos.mjs';
 
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -20,7 +20,7 @@ export function checkDist(dist, { demos = true, secrets = [] } = {}) {
   if (demos) {
     need('play/demos.json');
     for (const id of gameIds) {
-      for (const file of ['index.html', 'main.js', 'host.css', 'game.json', '_framework/dotnet.js']) need(`play/${id}/${file}`);
+      for (const file of ['index.html', 'main.js', 'host.css', 'game.json', '_framework/dotnet.js', ...noticeFiles]) need(`play/${id}/${file}`);
       const framework = path.join(dist, 'play', id, '_framework');
       if (fs.existsSync(framework)) {
         const files = fs.readdirSync(framework);
@@ -45,7 +45,9 @@ export function checkDist(dist, { demos = true, secrets = [] } = {}) {
 // What must never be published: links into the private repository, statements that MicroEngine is open source or
 // MIT licensed, repository-only instructions, internal source files, and the value of any build secret. Claims are
 // looked for in the site's own pages only: bundled third-party code (Pagefind) keeps its licence notices, as it must.
-const ownPages = /\.(html|xml)$/;
+// The licensing and third-party notices pages name other projects' licences (and MicroEngine's earlier MIT
+// versions) on purpose.
+const ownPages = /^(?!docs\/(third-party-notices|licensing)\/).*\.(html|xml)$/;
 const forbiddenText = [
   [/github\.com\/NastMz/i, 'a link to the private repository', /./],
   [/\bgit clone\b/i, 'a "git clone" instruction', /./],
@@ -54,6 +56,8 @@ const forbiddenText = [
   [/\bMIT[- ]licen[cs]/i, 'an MIT licence claim', ownPages],
 ];
 const internalFile = /\.(md|cs|csproj|props|targets|pdb|map|sh)$/i;
+// A user profile folder compiled into a package (debug paths, assertion file names) names the build machine's user.
+const userPath = /[A-Za-z]:[\\/]Users[\\/][^\\/\s"]+[\\/]|\/home\/[^/\s"]+\/|\/Users\/[^/\s"]+\//;
 const textFile = /\.(html|js|mjs|css|json|xml|txt|svg)$/i;
 
 export function checkPublicContent(dist, { secrets = [] } = {}) {
@@ -62,12 +66,13 @@ export function checkPublicContent(dist, { secrets = [] } = {}) {
   for (const file of walk(dist)) {
     const rel = path.relative(dist, file).split(path.sep).join('/');
     if (internalFile.test(rel)) problems.push(`internal file published: ${rel}`);
-    // Game packages are built by the engine's own pipeline; their binaries are checked for secrets only.
+    // Game packages are built by the engine's own pipeline: their files are checked for secrets and build paths.
     const inPackage = rel.startsWith('play/') && rel !== 'play/demos.json';
     const isText = textFile.test(rel);
-    if (!isText && !secrets.length) continue;
+    if (!isText && !secrets.length && !inPackage) continue;
     const content = fs.readFileSync(file, isText ? 'utf8' : 'latin1');
     for (const secret of secrets) if (secret && content.includes(secret)) problems.push(`a build secret appears in ${rel}`);
+    if (userPath.test(content)) problems.push(`${rel} contains a build machine's user folder path`);
     if (inPackage || !isText) continue;
     for (const [pattern, what, files] of forbiddenText) if (files.test(rel) && pattern.test(content)) problems.push(`${rel} contains ${what}`);
   }

@@ -55,6 +55,7 @@ const others = demoGames.filter(g => g.id !== game.id);
         <dl class="facts">
           <div><dt>Download</dt><dd>{packaged ? `about ${megabytes(packaged.transfer)}, only when you press Play` : 'not included in this build'}</dd></div>
           <div><dt>Content</dt><dd>{game.content.kind}: {game.content.detail}</dd></div>
+          <div><dt>Licences</dt><dd>The package includes the <a href="/docs/third-party-notices/">third-party notices</a> of the .NET runtime, Emscripten and raylib.</dd></div>
           <div><dt>Saves</dt><dd>Kept in this browser’s storage for this site, separately for each game. Clearing site data or a private window removes them.</dd></div>
           {manifest && <div><dt>Build</dt><dd class="mono">{manifest.version} · {String(manifest.commit).slice(0, 7)}</dd></div>}
         </dl>
