@@ -110,3 +110,14 @@ Commits are recorded in `## Log`.
   `public-audit.mjs` exit 0 after excluding its own fixtures (61f24f3). Play and touch suites not run: they need
   the demo packages, whose keys all changed with the licence files.
 - L10 Blockers for the owner: authorise option B; code of conduct contact; repository settings P6-P11.
+- L11 (2026-10-31) User request: "reconsideres la recomendación de crear un repositorio nuevo. Mi opción preferida es
+  conservar el repositorio actual de GitHub, reconstruir su historial Git desde un punto limpio y hacer force push"
+  (full text in session); "No ejecutes force push, no elimines referencias remotas y no cambies la visibilidad
+  todavía."
+- L12 Evidence: 14 merged PRs, owner-authored, all greenfield; 43 refs (27 branches, 2 tags, 14 refs/pull/N/head),
+  every one reaches the 24 Mixkit commits. PR #14 is merged into main (d0b59ef, tree equal to dbeaf67). The cut needs
+  two grafts: 71115bc as root and 1d4facd without its first parent 87be497 (an ancestor of 71115bc). Simulation in an
+  isolated bare clone: trees of main and feat/public-1 identical, 60 commits, one root, 0 Mixkit, 0 MIT without
+  games/LICENSE, pack 42.8 to 14.1 MiB, tests scripts 41 / site 31 / .NET 282 passed, audit exit 0. Only blocker:
+  refs/pull/* are read-only and need GitHub Support. Report sections 3 and 15 now recommend the rebuild in this
+  repository.

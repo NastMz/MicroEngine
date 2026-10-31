@@ -41,4 +41,4 @@ finished products whose names, content and code the owner wants to keep.
   engine's licence, but it does contradict the demos': all four games first appear in those commits (Meadow Run
   9c6f14d, Courtyard Key 9e231da, Trail Duel 08bd6a8, Neon Rift e57d28a) with only the MIT file at the root and no
   `games/LICENSE`. Publishing those snapshots would show the demos next to an MIT grant; PUBLIC-1 therefore
-  recommends a public history that starts after `71115bc`.
+  rebuilds the public history from `71115bc` in this repository (PUBLIC-1, section 3).

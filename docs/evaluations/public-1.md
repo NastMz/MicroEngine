@@ -17,13 +17,13 @@ describes the final state; the earlier licensing analysis survives only as the s
 | Question | Answer |
 | --- | --- |
 | Which licence, granting what? | The standard **MIT License** (root `LICENSE`, text unmodified) for the engine, backend, engine tests, tools, CI, web host, site code, docs and the HelloEngine sample: use, modify, fork, redistribute and sell, keeping the notice. The four demo games, their tests and builds are **all rights reserved** (`games/LICENSE`): read, build and run them to learn, reuse ideas; no redistribution, sale or renamed copies. Third-party files keep their licences (CC0 art and audio listed in `CREDITS.md`; libraries in `THIRD-PARTY-NOTICES.md`). |
-| Can the existing history be published with reasonable safety? | **No; publish a new repository whose history starts at `71115bc`** (option B, section 3). MIT removes the engine contradiction, but the existing history still contains four Mixkit files whose terms forbid making them available, and 68 snapshots where the demos sit next to an MIT grant with no `games/LICENSE`. |
-| What must be withdrawn or kept private? | The old history before `71115bc` (stays in the private archive); the unused `NUGET_API_KEY` secret. Owner decisions: the personal e-mail address in commit metadata (can be mapped to the GitHub no-reply address while creating the new history), and whether internal records (cost studies, legal drafts, `odd/` logs) go public. |
+| Can the existing history be published with reasonable safety? | **Not as is; rebuild it in this repository from `71115bc`** (section 3, simulated). The existing history contains four Mixkit files whose terms forbid making them available, and snapshots where the demos sit next to an MIT grant. The rebuild keeps every tree identical and removes both; GitHub Support must then remove the 14 read-only PR refs. |
+| What must be withdrawn or kept private? | The history before `71115bc` (kept in an offline backup bundle); the unused `NUGET_API_KEY` secret. Owner decisions: the personal e-mail address in commit metadata (can be mapped to the GitHub no-reply address while creating the new history), and whether internal records (cost studies, legal drafts, `odd/` logs) go public. |
 | How are contributions received? | Under MIT, inbound = outbound, no CLA; the pull request template asks for the origin and licence of the change; maintainers review and merge; fork runs need approval and get no secrets (section 6). |
 | Which checks does each change run? | Path rules choose the kind of check, the project graph chooses which test projects and games (section 8). |
 | How do public runners stay fast and reliable? | Evidence by content, cancellation of superseded PR runs, Linux first, per-project scope; on public runners every changed demo key is built and played, and macOS runs as an informative job (section 9). |
 | How do releases stay selective, safe and reproducible? | Manual `release.yml`: packages copied by content key, hash-checked, the exact files browser-tested, staged, then promoted; unchanged games reuse their approved package (section 10). |
-| What must hold before "Make public"? | The checklist in section 14. Real blockers left: the owner's authorisation for option B, the code of conduct contact, and the repository settings (section 13). |
+| What must hold before "Make public"? | The checklist in section 14. Real blockers left: the owner's authorisation for the history rebuild and GitHub Support's removal of the PR refs, the code of conduct contact, and the repository settings (section 13). |
 
 ## 1. Audit of what would be exposed
 
@@ -35,16 +35,16 @@ GitHub API.
 | Item | Measured | Verdict |
 | --- | --- | --- |
 | Commits | 446 on all refs before this branch (2025-11-17 to 2026-10-31); 69 local branches, 36 on origin; tags `legacy-final`, `reference/pre-rebuild`, `demo-artifacts` | Existing history: not publishable as is (section 3) |
-| Commit metadata | one personal address (422 commits); GitHub no-reply addresses (15); an AI agent address authors 9 commits and appears in 9 `Co-Authored-By` trailers | **Owner decision.** In option B the personal address can be replaced by the GitHub no-reply address at no extra cost |
+| Commit metadata | one personal address (422 commits); GitHub no-reply addresses (15); an AI agent address authors 9 commits and appears in 9 `Co-Authored-By` trailers | **Owner decision.** The rebuild keeps the 43 post-rebuild commits by this address; an optional `--env-filter` in the same rewrite can map it to the GitHub no-reply address |
 | Secrets in history | none (tokens, private keys, assigned passwords); the audit's own test fixtures are excluded by design | Pass |
 | Credential or machine files ever committed | none (`.env`, keys, keystores, `.user`, `.vercel/`) | Pass |
-| Local paths | three Windows scratch paths with a user name, only in old task records (none in any tree from `71115bc` on) | Acceptable; absent in option B |
+| Local paths | three Windows scratch paths with a user name, only in old task records (none in any tree from `71115bc` on) | Acceptable; absent after the rebuild |
 | Repository secrets | `VERCEL_TOKEN` (deploy, rollback); `NUGET_API_KEY` (2025-11-20, **unused**; no package exists on nuget.org under the old project names) | Delete `NUGET_API_KEY`; scope `VERCEL_TOKEN` to environments |
 | Releases | one prerelease `demo-artifacts` (content-addressed demo store) | Becomes public downloads, including unreleased builds; every package ships the licence notices (now including `games/LICENSE` and the engine's MIT text) |
-| Actions history | 47 runs (17 of the old implementation, 30 of 2026-10-31); 14 artifacts | Stays with the private archive in option B |
-| Pull requests and issues | 14 pull requests, no plain issues | Stay with the private archive in option B |
+| Actions history | 47 runs (17 of the old implementation, 30 of 2026-10-31); 14 artifacts | Deleted in procedure step 5 (they only reference old hashes) |
+| Pull requests and issues | 14 pull requests, no plain issues | Stay (conversations are harmless); their read-only refs need GitHub Support (section 3) |
 | Third-party content, current tree | 129 files in three games, each named in its game's `CREDITS.md` (CC0 1.0, checked file by file); libraries and fonts in `THIRD-PARTY-NOTICES.md` | Pass: CC0 allows public redistribution |
-| Third-party content, history only | 101 media files no longer in the tree. Notices for the old `examples/*/Assets` (CC0). **No notice:** `assets/audio` (four Mixkit files and two unattributed WAVs), `assets/textures` (15 PNGs, origin not recorded), `docs/engineering/evidence` (captures of the owner's own games) | Mixkit: **real blocker** for publishing that history (section 3). Textures and WAVs: owner to confirm; moot in option B |
+| Third-party content, history only | 101 media files no longer in the tree. Notices for the old `examples/*/Assets` (CC0). **No notice:** `assets/audio` (four Mixkit files and two unattributed WAVs), `assets/textures` (15 PNGs, origin not recorded), `docs/engineering/evidence` (captures of the owner's own games) | Mixkit: **real blocker** for publishing that history (section 3). Textures and WAVs: owner to confirm; all removed by the rebuild |
 | Internal documents in the tree | ADRs, evaluations (costs), superseded legal drafts, `odd/` logs quoting the owner's requests, `AGENTS.md` | **Owner decision**, not a blocker: no secrets, but they reveal process and cost |
 | Names and inspirations | records call Neon Rift "Contra-inspired"; Trail Duel is a creature-collecting RPG with original art | Low risk; keep public wording to genres |
 
@@ -84,21 +84,72 @@ un-leaks a value.
    were never distributed, so the argument is weak, but publishing them creates it.
 3. **Unattributed assets** (`assets/textures`, two WAVs) and old process records ride along with the old history.
 
-| | A. Publish the existing repository | B. New public repository, history from `71115bc` |
-| --- | --- | --- |
-| Mixkit files | public | absent (kept only in the private archive) |
-| Demo snapshots beside MIT | public (68 commits) | absent |
-| Engine provenance | complete | from 2026-10-30 22:18; earlier history in the private archive, referenced from the README |
-| Old implementation (MIT) | public | private (it may be published separately later; it is MIT) |
-| Personal e-mail in metadata | public | can be mapped to the no-reply address while creating the history |
-| Pull requests, issues, stars, Actions history | kept | start empty; the 14 PRs stay in the archive |
-| Demo store, evidence | kept | recreated: the first CI run builds the four packages (once per key) |
-| Work | settings only | one graft and push, secrets/variables/environments copied, the old repository renamed and archived |
-| Making A safe instead | needs a history rewrite of this repository (removing four files from 24 commits and the 68-commit problem), which changes every hash, breaks tags and PR links and is not recommended | — |
+### Rebuilding the history in this repository (recommended)
 
-**Recommendation: B.** The cost is a shorter public history (57 commits instead of 446) and a fresh issue tracker;
-the gain is a history with no third-party file under restrictive terms and no ambiguous demo licence. This study
-created no repository and rewrote nothing; the procedure is in section 15 and needs the owner's authorisation.
+The owner prefers to keep `NastMz/MicroEngine`. A rebuild was simulated in an isolated bare clone of a full
+mirror (`git clone --mirror`, which also fetches GitHub's `refs/pull/*`); nothing was pushed.
+
+**Pull requests.** All 14 are merged, authored by the owner, and belong to the greenfield rebuild (#1 merged the
+rebuild over `reference/pre-rebuild`); none is open, none came from a fork. GitHub keeps one read-only
+`refs/pull/N/head` per PR (no `merge` refs remain).
+
+| PR | Branch | Merged (UTC) | Commits | Kept in the new history | Commits with demos beside MIT |
+| --- | --- | --- | --- | --- | --- |
+| #1 | feat/engine-rebuild | 2026-10-30 13:48 | 10 | 0 | 7 |
+| #2 | feat/engine-rebuild | 2026-10-30 14:51 | 2 | 0 | 2 |
+| #3 | feat/run-and-gun | 2026-10-30 16:16 | 6 | 0 | 6 |
+| #4 | feat/visual-excellence | 2026-10-30 19:30 | 16 | 0 | 16 |
+| #5 | feat/evolution-lines | 2026-10-30 20:14 | 3 | 0 | 3 |
+| #6 | fix/prize-money | 2026-10-30 20:18 | 1 | 0 | 1 |
+| #7 | feat/achievements | 2026-10-30 21:24 | 3 | 0 | 3 |
+| #8 | feat/web-support | 2026-10-31 02:05 | 13 | 0 | 13 |
+| #9 | feat/web-site | 2026-10-31 04:28 | 17 | 11 (from `71115bc`) | 6 |
+| #10 | fix/pipeline-deploy | 2026-10-31 04:44 | 1 | 1 | 0 |
+| #11 | claude/mermaid-microengine-diagrams-zufo8v | 2026-10-31 05:43 | 1 | 1 | 0 |
+| #12 | feat/platform-linux-macos | 2026-10-31 12:37 | 8 | 8 | 0 |
+| #13 | feat/platform-ci | 2026-10-31 16:16 | 13 | 13 | 0 |
+| #14 | feat/ci-cost | 2026-10-31 17:36 | 7 | 7 | 0 |
+
+**References today** (mirror of 2026-10-31): 27 branches, 2 tags (`demo-artifacts` on `87be497`,
+`reference/pre-rebuild`), 14 `refs/pull/N/head`, 1 release (`demo-artifacts`). **Every one of the 43 refs reaches
+the 24 commits that contain the Mixkit files**; `main`, five branches, the `demo-artifacts` tag and PRs #1-#14 also
+reach the commits with demos beside an MIT grant (up to 65).
+
+**The cut.** `71115bc` alone is not enough: the merge of PR #9 (`1d4facd`) has `87be497` as first parent, which
+leads back into the old history. Two grafts are needed: `71115bc` becomes a root, and `1d4facd` keeps only its second
+parent (`9bc055e`). `87be497` is an ancestor of `71115bc`, so no change is lost, and trees are never altered. No other
+commit after `71115bc` reaches older history (all 46 are on its ancestry path).
+
+**Simulation results** (`git replace --graft` twice, then `git filter-branch -- main feat/public-1`; `git filter-repo`
+is not installed and is not needed for two grafts):
+
+| Check | Result |
+| --- | --- |
+| Tree of `main` | identical (`34f8212`) |
+| Tree of `feat/public-1` | identical (`073b3a3`) |
+| Commits | 60: the root, the 46 commits after it, the 13 PUBLIC-1 commits; one root (the licence change of 2026-10-30) |
+| Commits with Mixkit / with MIT but no `games/LICENSE` | 0 / 0 |
+| Pack size | 42.8 MiB → 14.1 MiB |
+| Authors, dates, messages | unchanged; only hashes change. The 6 GitHub-signed merge commits lose their signature |
+| Tests on the rewritten history | scripts 41 passed; site 31 passed; .NET 282 passed (headless); site build passed; actionlint clean |
+| `public-audit.mjs` on the rewritten history | exit 0; no media only in history; 6 commits with MIT, all with `games/LICENSE` |
+
+**What can be fixed and what cannot.**
+
+| Kind | Items | How |
+| --- | --- | --- |
+| Git refs we can replace by force push | `main`, `feat/public-1` (rewritten); tag `demo-artifacts` (moved to the new `main`; its release follows the tag name) | `git push --force` |
+| Git refs we can delete | 26 other branches, tag `reference/pre-rebuild` (all old or merged) | `git push --delete` |
+| GitHub data we can delete | 47 Actions runs and their logs and artifacts, 17 caches, 10 deployments (they reference old hashes; none holds Mixkit content) | REST API |
+| GitHub refs we cannot modify | `refs/pull/1-14/head`: read-only, each reaches the full old history including the Mixkit files | **GitHub Support**: "dereference or delete" the PRs, garbage collection, purge cached views (their documented procedure for rewritten history) |
+| Old content still reachable after the force push | through the PR refs until Support acts; by old hash in cached views (hashes appear in PR pages, the activity log, run pages); in local clones | Support's garbage collection; re-clone every local copy |
+| Real publication risk | the four Mixkit files and the demos-beside-MIT snapshots, reachable only through the PR refs and cached hashes | resolved by Support before the visibility switch |
+| Harmless historical references | commit messages ("Merge pull request #9"), old hashes quoted in docs, release manifests' `commit` fields, the PR conversations themselves | no action; docs that quote old hashes are updated after the rebuild |
+
+**The one dependency.** GitHub states it removes PR refs when every other ref is clean and no fork holds the data
+(forks: 0), but also that it acts on "sensitive data". Whether it accepts restrictively licensed third-party media is
+the only open point. The repository stays private until Support confirms; if Support declines, the remaining
+choices are to accept that the four Mixkit files stay fetchable through `refs/pull/*` once public, or a new repository.
 
 ## 4. Licence choice
 
@@ -231,12 +282,13 @@ because the licence files changed every key); a real fork pull request (possible
 
 **Real blockers (must be resolved by the owner before "Make public"):**
 
-1. Authorise option B (or accept A's risks in writing): create the new repository from `71115bc`.
+1. Authorise the history rebuild in this repository (section 15) and file the GitHub Support request for the 14 PR
+   refs; publication waits for Support's confirmation.
 2. Set the code of conduct contact (`CONDUCT-CONTACT-TO-BE-SET` in `CODE_OF_CONDUCT.md`).
 3. Apply the repository settings P6-P11 (secrets, environments, fork approval, actions, ruleset, security
    features).
 
-**Acceptable warnings:** the personal e-mail address in metadata (mappable in option B); internal records in the
+**Acceptable warnings:** the personal e-mail address in metadata (mappable during the rebuild); internal records in the
 tree (owner's choice); macOS only informative; Linux native is software rendering; builds not byte-reproducible;
 the site's code is MIT while game screenshots on it are reserved (stated in the footer and demo pages).
 
@@ -245,7 +297,7 @@ the site's code is MIT while game screenshots on it are reserved (stated in the 
 | # | Item | Pass condition |
 | --- | --- | --- |
 | P1 | No secrets | `node .github/scripts/public-audit.mjs` exits 0 on the history being published |
-| P2 | History | the public repository's history starts at `71115bc` (option B), or the owner accepted option A in writing |
+| P2 | History | every ref except `refs/pull/*` has one root (the rebuilt `71115bc`); GitHub Support confirmed the PR refs are dereferenced and garbage collected |
 | P3 | Third-party files | no Mixkit or unattributed media in the published history (`public-audit.mjs` lists no "no: review" folder) |
 | P4 | Licences | `LICENSE` is the standard MIT text; `games/LICENSE` exists; every demo README has its "License" section; `check-dist` passes |
 | P5 | Contributions | `CONTRIBUTING.md` states MIT inbound = outbound; PR template present |
@@ -262,29 +314,81 @@ the site's code is MIT while game screenshots on it are reserved (stated in the 
 | P16 | Validation | `validate.yml` passes on the commit being published |
 | P17 | Site | after publication, the production site is redeployed from the public `main` (its links point to the public repository) |
 
-## 15. Publication procedure (option B) and rollback
+## 15. Publication procedure (history rebuilt in this repository) and rollback
 
-1. Merge `feat/ci-cost` and `feat/public-1` into `main` through pull requests in the private repository; run
-   `validate.yml` on `main` (P16). Production does not change yet (no demo release is created).
-2. Rename the private repository (for example `MicroEngine-archive`) so the public one can take the name
-   `NastMz/MicroEngine` that the site and docs link to; GitHub redirects the old name until it is reused.
-3. Create an empty **private** repository `NastMz/MicroEngine`.
-4. In a fresh clone, make `71115bc` a root commit (`git replace --graft 71115bc` then `git filter-repo --force`, or
-   an equivalent), optionally map the personal address to the no-reply address (`--mailmap`), keep only `main`, no
-   tags, and push. Run `public-audit.mjs` on that clone (P1, P3).
-5. Copy secrets (only `VERCEL_TOKEN`, as environment secrets), variables (`VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`,
-   `PUBLIC_RUNNERS=true`) and environments; apply P8-P11; check P15.
-6. Run `ci.yml` (a push to `main`): it rebuilds the four demo packages into the new store. Run `release.yml` with
-   `0.1.0` to publish them; production then serves them.
-7. Settings → Change visibility → Public. Apply the ruleset (P10) if it needed a public repository. Open a test pull
-   request from another account: it must run only after approval, without secrets, deploy nothing and record no
-   evidence.
-8. Add to the README of the archive: "Archived history; the public repository is NastMz/MicroEngine". Archive it.
+Each step names its check. Nothing here has been run; it needs the owner's go-ahead.
 
-**Rollback.** Before step 7 everything is private and reversible (delete the new repository, rename the archive
-back). After step 7, switching back to private does not recall forks, clones or caches made meanwhile; the
-operational rollback is to make it private again, rotate `VERCEL_TOKEN`, set `PUBLIC_RUNNERS` off and roll the site
-back with `rollback.yml`. That is why every blocker is resolved before step 7.
+**0. Preconditions.** No open pull requests (today: 0), no forks (today: 0), no Actions run in progress, no one else
+pushing. Variables: `REPO=https://github.com/NastMz/MicroEngine.git`, `PUBLIC1=<path of the feat/public-1 checkout>`.
+
+**1. Backup (keep it outside GitHub, it holds the old history).**
+
+```bash
+git clone --mirror "$REPO" MicroEngine-archive.git
+git -C MicroEngine-archive.git bundle create ../MicroEngine-archive-2026-10-31.bundle --all
+git bundle verify MicroEngine-archive-2026-10-31.bundle
+```
+
+**2. Rebuild in a fresh bare clone.**
+
+```bash
+git clone --bare "$REPO" rewrite.git && cd rewrite.git
+git fetch "$PUBLIC1" feat/public-1:feat/public-1
+for b in $(git for-each-ref --format='%(refname:short)' refs/heads | grep -vx -e main -e feat/public-1); do git branch -D "$b"; done
+git tag -d $(git tag)
+git replace --graft 71115bc
+git replace --graft 1d4facd "$(git rev-parse 1d4facd^2)"
+FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -- main feat/public-1
+git replace -d $(git replace -l); rm -rf refs/original
+git reflog expire --expire=now --all && git gc --prune=now
+```
+
+**3. Verify before pushing** (all must hold; the simulation met them): the trees of `main` and `feat/public-1` equal
+the originals (`git rev-parse main^{tree}` against the mirror); `git rev-list --max-parents=0 --all` prints one
+commit; `node .github/scripts/public-audit.mjs` in a checkout of `feat/public-1` exits 0 and lists no media only in
+history; `git rev-list --objects --all | grep -ci mixkit` prints 0.
+
+**4. Replace and delete the Git refs.**
+
+```bash
+git push --force "$REPO" main feat/public-1
+git push --force "$REPO" main:refs/tags/demo-artifacts
+git push "$REPO" --delete refs/tags/reference/pre-rebuild $(git ls-remote --heads "$REPO" | awk '{print $2}' | grep -vx -e refs/heads/main -e refs/heads/feat/public-1)
+```
+
+Check: a new `git clone --mirror` shows only `main`, `feat/public-1`, tag `demo-artifacts` and `refs/pull/*`; every
+ref except `refs/pull/*` passes step 3.
+
+**5. Delete GitHub data that references the old hashes** (owner's token): the 47 workflow runs
+(`gh api -X DELETE repos/NastMz/MicroEngine/actions/runs/<id>`), the 17 caches (`gh cache delete --all`), the 10
+deployments (mark inactive, then delete), and the `NUGET_API_KEY` secret.
+
+**6. GitHub Support ticket** (Support portal → "Removing sensitive data"): owner and repository; "14 pull requests
+(#1-#14) reference history removed by a rewrite; please dereference or delete them, run garbage collection and purge
+cached views"; first changed commit `71115bc` (and the merge `1d4facd`); reason: third-party audio files whose licence
+forbids redistribution, and demo snapshots under a superseded licence; state that no forks exist and all other refs
+are clean. Wait for confirmation; then a fresh mirror shows no `refs/pull/*` reaching the old history, and old hashes
+return 404.
+
+**7. Local copies.** Re-clone or reset every checkout (`C:\Proyectos\MicroEngine`, the `infra-2` and `public-1`
+worktrees): their 70 local branches still hold the old history and must never be pushed. Delete or keep them only in
+the backup.
+
+**8. Merge PUBLIC-1 on the clean history.** Open a pull request `feat/public-1` → `main` (its ref is clean), let CI
+run (it compares with a base that exists; the first push of the rebuild has an unknown base and runs everything),
+merge. Then update docs that quote pre-rebuild hashes to call them archived.
+
+**9. Publish.** Apply checklist P6-P15, run `validate.yml` (P16), set `PUBLIC_RUNNERS=true`, run `release.yml`
+`0.1.0`, switch the visibility, apply the ruleset (P10) and test a fork pull request.
+
+**Rollback.** Until step 4 nothing has changed on GitHub. After step 4 and before step 6, the old history can be
+restored from the bundle (`git push --force --mirror` from `MicroEngine-archive.git`, except `refs/pull/*`, which
+never changed). After Support's garbage collection the old objects exist only in the bundle and local clones. After
+the visibility switch, making the repository private again does not recall forks or clones made meanwhile; the
+operational rollback is then: private again, rotate `VERCEL_TOKEN`, `PUBLIC_RUNNERS` off, `rollback.yml` for the site.
+
+**When a new repository would still be needed:** only if GitHub Support declines to remove the PR refs and the owner
+does not accept that the four Mixkit files stay fetchable through them.
 
 ## Public documentation for DOCS-2
 
