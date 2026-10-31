@@ -61,8 +61,9 @@ not yet supported; macOS is under evaluation ([Platforms](docs/guide/platforms.m
 
 ## History
 
-The previous tracer implementation and its process records are preserved at tag `reference/pre-rebuild`.
-See [ADR 0001](docs/decisions/0001-greenfield-rebuild.md) for why the project was rebuilt.
+MicroEngine was rebuilt from a clean slate in October 2026 ([ADR 0001](docs/decisions/0001-greenfield-rebuild.md)).
+The previous implementation and the first days of the rebuild are kept in the maintainer's archive (tag
+`reference/pre-rebuild` there), not in the public history.
 
 ## License
 

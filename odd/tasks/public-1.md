@@ -38,6 +38,29 @@ Test runners: `node --test .github/scripts/*.test.mjs`, `npm test --prefix site`
   publiques una nueva licencia definitiva. No crees releases de producción." Reuse INFRA-1; do not implement INFRA-2's
   local-first proposals.
 
+- S11 (L6, supersedes S2's model) Engine under MIT: "Aplicar la licencia MIT oficial al código del motor." "La licencia
+  MIT debe utilizar su texto estándar sin modificaciones." "No añadas restricciones adicionales a MIT."
+- S12 Demos reserved: "no concedemos autorización general para redistribuir o comercializar los juegos completos, ni
+  para vender versiones prácticamente idénticas con otro nombre." "Sus códigos pueden consultarse públicamente para
+  aprender cómo funciona MicroEngine." "Delimita cuidadosamente qué archivos de `games/` quedan bajo derechos
+  reservados, cuáles pertenecen a terceros y cuáles tienen otras licencias." "No apliques indiscriminadamente un aviso
+  de copyright propio a recursos de terceros." Samples: "Los ejemplos pequeños, como HelloEngine, deben ser
+  reutilizables bajo MIT."
+- S13 Structure: "Implementa una estructura inequívoca para que ningún desarrollador interprete que el MIT de la raíz
+  autoriza automáticamente la redistribución comercial de los cuatro juegos." "Comprueba que los avisos no se
+  contradigan."
+- S14 History: compare A (publish existing) and B (clean-history repository); "Determina si realmente necesitamos la
+  alternativa B teniendo en cuenta que hemos elegido MIT." "No reescribas historial ni crees repositorios nuevos sin
+  autorización."
+- S15 Contributions under MIT: "No impongas automáticamente un CLA complejo si no existe una necesidad concreta."
+  "Mantén la revisión y aceptación de cambios bajo control de los mantenedores."
+- S16 Public CI: keep INFRA-1/PUBLIC-1; "El objetivo ya no es minimizar el consumo de minutos gratuitos a cualquier
+  coste, sino conseguir un CI rápido, confiable y escalable."
+- S17 Public docs: "Actualizar todas las referencias que todavía indiquen que MicroEngine es propietario o que su
+  código fuente es privado." "La documentación no debe presentar las demos como software MIT cuando no lo son."
+- S18 Final audit and delivery: run the auditor; "Distingue bloqueos reales de advertencias aceptables." "No cambies
+  todavía la visibilidad del repositorio. No hagas push ni merge sin autorización."
+
 ## Tasks
 
 | ID | Specs | Route | Status | Commit |
@@ -48,7 +71,12 @@ Test runners: `node --test .github/scripts/*.test.mjs`, `npm test --prefix site`
 | T4 | S4 | inline | done | a1ddacf: SECURITY, templates, contribution status, code of conduct fixes |
 | T5 | S2, S3, S4 | inline | done | 8a21583: licensing proposal with contributor agreement (CLA) terms |
 | T6 | S5, S6 | inline | done | 3e04bac: ADR 0014, docs/ci.md public section |
-| T7 | S1-S9 | inline | done | `docs/evaluations/public-1.md` report |
+| T7 | S1-S9 | inline | done | 767878d: `docs/evaluations/public-1.md` report |
+| T8 | S11-S13 | inline | done | c472e23: MIT `LICENSE`, `games/LICENSE`, notices in packages, ADR 0015 |
+| T9 | S17 | inline | done | 3804c47: site, docs and check-dist for MIT engine and reserved demos |
+| T10 | S15 | inline | done | e668acd: contributions under MIT (inbound = outbound, no CLA) |
+| T11 | S16 | inline | done | 39fff89: public CI: every changed demo key built on public runners |
+| T12 | S14, S18 | inline | done | audit rerun, history options, report and final checklist |
 
 Commits are recorded in `## Log`.
 
@@ -68,3 +96,17 @@ Commits are recorded in `## Log`.
   `planScope`; `projects.mjs` tests were written alongside it. No hosted workflow was run.
 - L5 Blockers left for the owner: counsel on the 68 MIT-tree commits (or option C), the Mixkit files in history,
   the code of conduct contact, the site's "source not distributed" page at publication time.
+- L6 (2026-10-31) User decision, verbatim title: "MicroEngine — PUBLIC-1: Finalización de licencias y preparación de
+  publicación" (full text in session): "MicroEngine será un proyecto open source bajo MIT, con demos protegidas
+  mediante licencias independientes. No queremos una licencia propietaria personalizada, source-available,
+  PolyForm, Defold ni un contrato restrictivo propio." Supersedes S2's licensing model and the CLA proposal.
+- L7 Mixkit: their published terms (mixkit.co/llm-info, read 2026-10-31) forbid making items available to third
+  parties and reselling them unaltered; 24 commits on `origin/main`'s ancestry contain the four files. No commit from
+  the rebuild (1de4c1c) onward does.
+- L8 Found while applying MIT: all four demos first appear in the 68 MIT-tree commits (9c6f14d, 9e231da, 08bd6a8,
+  e57d28a), so option B (public history from `71115bc`) stays recommended even with an MIT engine.
+- L9 Checks (round 2): script tests 41 passed; site tests 31 passed; actionlint clean; `SITE_DEMOS=none npm run build`
+  passed; layout browser suite passed in Chrome and Firefox (a 320 px overflow from a long button label was fixed);
+  `public-audit.mjs` exit 0 after excluding its own fixtures (61f24f3). Play and touch suites not run: they need
+  the demo packages, whose keys all changed with the licence files.
+- L10 Blockers for the owner: authorise option B; code of conduct contact; repository settings P6-P11.
