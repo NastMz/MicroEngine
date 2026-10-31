@@ -109,12 +109,23 @@ once and then cached), stores them, and deploys production.
 - a package still carries `.br`/`.gz` copies, or the home page references `/play/` (demos must load on demand);
 - a published page links to `github.com/NastMz`, says `git clone`, names the solution file, or claims open source or
   an MIT licence;
+- a ` ```mermaid ` block of a public page did not become a diagram;
 - an internal file type is published (`.md`, `.cs`, `.csproj`, `.props`, `.targets`, `.pdb`, `.map`, `.sh`);
 - a package names a user profile folder (build-machine paths), or the value of `DEMOS_TOKEN` or `GITHUB_TOKEN`
   appears in any file.
 
 The site publishes only the Markdown files listed in `site/src/lib/repo-docs.mjs`; a link from them to any other
 repository file is published as plain text.
+
+### Diagrams
+
+Architecture, flow, sequence and relationship diagrams are written as ` ```mermaid ` blocks in the Markdown itself
+(GitHub shows them too); file trees, console output and input scripts stay ` ```text `. On the site,
+`astro-mermaid` turns each block into a diagram drawn in the browser: mermaid.js (about 200 KB compressed, flowcharts
+with the dagre layout) loads only on pages that have one, after the page itself. Colours come from the documentation
+theme in `site/src/styles/starlight.css`, so diagrams follow the light/dark switch. Keep a diagram under about 700 px
+wide (short labels, `<br/>` with a space on each side so search still sees the words, `accTitle`/`accDescr` for
+screen readers): wider ones scroll sideways on phones and shrink on desktop.
 
 ### What a package may contain
 

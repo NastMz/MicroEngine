@@ -6,7 +6,8 @@
 // - each demo page on desktop: Play creates the iframe, the host's messages drive the status (ready, playing),
 //   Restart reloads, Exit removes the game; the size shown before loading is honoured;
 // - phone and tablet with touch (Chrome device emulation, not a real device): the "Made for a keyboard" panel shows
-//   instead of the Play button, "Try anyway" still loads the game.
+//   instead of the Play button, "Try anyway" still loads the game;
+// - pages with diagrams: every diagram is drawn (an SVG, no Mermaid error) in the documentation's colours.
 import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
@@ -25,7 +26,7 @@ const executables = {
 const games = [
   ['meadow-run', 'MeadowRun'], ['courtyard-key', 'CourtyardKey'], ['trail-duel', 'TrailDuel'], ['neon-rift', 'NeonRift'],
 ];
-const pages = ['/', '/demos/', ...games.map(([slug]) => `/demos/${slug}/`), '/roadmap/', '/docs/', '/docs/getting-started/', '/docs/manual/scenes/', '/docs/reference/contracts/', '/docs/credits/neon-rift/', '/no-such-page/'];
+const pages = ['/', '/demos/', ...games.map(([slug]) => `/demos/${slug}/`), '/roadmap/', '/docs/', '/docs/getting-started/', '/docs/architecture/', '/docs/manual/scenes/', '/docs/reference/components/', '/docs/reference/contracts/', '/docs/credits/neon-rift/', '/no-such-page/'];
 const viewports = {
   desktop: { width: 1280, height: 800 },
   tablet: { width: 768, height: 1024, isMobile: true, hasTouch: true },
@@ -70,6 +71,25 @@ async function layout(browser, label, base) {
       const { page, context, requests, errors, response } = await openPage(browser, label, base + route, viewports[size]);
       const where = `${label} ${size} ${route}`;
       if (route === '/no-such-page/') check(`${where}: unknown route answers 404 with the site page`, response.status() === 404 && (await page.title()).includes('not found'));
+      if (await page.$('pre.mermaid')) {
+        const drawn = await page.waitForFunction(() => [...document.querySelectorAll('pre.mermaid')].every(p => p.dataset.processed), { timeout: 20_000 })
+          .then(() => true, () => false);
+        const diagrams = await page.evaluate(() => {
+          // A node's fill must be the theme's diagram colour, not Mermaid's own palette.
+          const probe = document.createElement('div');
+          probe.style.color = 'var(--diagram-node)';
+          document.body.append(probe);
+          const expected = getComputedStyle(probe).color;
+          probe.remove();
+          return [...document.querySelectorAll('pre.mermaid')].map(p => {
+            const node = p.querySelector('.node rect, .node polygon');
+            return { svg: !!p.querySelector('svg'), error: /error/i.test(p.textContent) && !p.querySelector('svg'),
+              themed: !!node && getComputedStyle(node).fill === expected };
+          });
+        });
+        check(`${where}: every diagram is drawn`, drawn && diagrams.every(d => d.svg && !d.error), JSON.stringify(diagrams));
+        check(`${where}: diagrams use the documentation's colours`, diagrams.every(d => d.themed), JSON.stringify(diagrams));
+      }
       const { scroll, width, clipped, missingAlt, smallTargets, repoLinks, roadmapLink } = await page.evaluate(() => ({
         repoLinks: [...document.querySelectorAll('a[href]')].map(a => a.href).filter(h => /github\.com/i.test(h)),
         roadmapLink: !!document.querySelector('header a[href="/roadmap/"], .sidebar-content a[href="/roadmap/"], #starlight__sidebar a[href="/roadmap/"], a.docs-section[href="/roadmap/"]'),

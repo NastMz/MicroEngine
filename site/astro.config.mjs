@@ -2,6 +2,7 @@
 // the documentation is Starlight, fed directly from the repository's Markdown (src/lib/repo-docs.mjs).
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import mermaid from 'astro-mermaid';
 import { sidebar } from './src/lib/repo-docs.mjs';
 
 // The canonical URL feeds the sitemap, canonical links and Open Graph tags. Vercel exposes the production domain
@@ -16,6 +17,21 @@ export default defineConfig({
   // The site reads Markdown and screenshots from the rest of the repository (docs/, web/, games/).
   vite: { server: { fs: { allow: ['..'] } } },
   integrations: [
+    // ```mermaid blocks in the repository's Markdown become diagrams, rendered in the browser. mermaid.js loads only
+    // on pages that have one; colours follow the documentation theme (starlight.css), so both schemes match.
+    // Registered before Starlight so the blocks are diagrams, not code samples.
+    mermaid({
+      theme: 'dark',
+      enableLog: false,
+      mermaidConfig: {
+        // Mermaid 12 defaults to the ELK layout, a 1.4 MB download; the classic dagre layout suits these diagrams.
+        layout: 'dagre',
+        fontFamily: "'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace",
+        themeVariables: { fontSize: '13px' },
+        // Natural size: wide diagrams scroll sideways on small screens instead of shrinking to unreadable text.
+        flowchart: { useMaxWidth: false, wrappingWidth: 420, padding: 12, nodeSpacing: 28, rankSpacing: 36 },
+      },
+    }),
     starlight({
       title: 'MicroEngine',
       description: 'A compact, code-first 2D game engine for C#/.NET, with four complete pixel-art games that also run in desktop browsers.',

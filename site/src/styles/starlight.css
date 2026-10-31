@@ -42,3 +42,68 @@
 .sl-markdown-content img { image-rendering: pixelated; border: var(--rule-thin) solid var(--sl-color-gray-5); }
 
 :focus-visible { outline: 3px solid var(--sl-color-accent); outline-offset: 2px; }
+
+/* Diagrams (```mermaid blocks, drawn in the browser by astro-mermaid). Mermaid's own palette is replaced by the
+   documentation's, so a diagram follows the light/dark switch without being redrawn. Wide diagrams keep their natural
+   size and scroll sideways on narrow screens (pinch zoom still works); on wider screens they shrink to the column, but
+   never below 36rem, so a wide diagram's text stays readable. */
+:root {
+  --diagram-surface: var(--sl-color-gray-6);
+  --diagram-node: var(--color-paper-3);
+}
+:root[data-theme='light'] {
+  --diagram-node: var(--sl-color-black);
+}
+
+.sl-markdown-content pre.mermaid {
+  display: block;
+  min-height: 0;
+  margin-inline: 0;
+  padding: var(--space-md);
+  overflow-x: auto;
+  border: var(--rule-thin) solid var(--sl-color-gray-5);
+  border-radius: var(--radius-md);
+  background: var(--diagram-surface);
+  color: var(--sl-color-gray-3);
+  font-family: var(--sl-font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  text-align: center;
+  animation: none;
+}
+/* Until the diagram is drawn the block holds its source; it shows only when scripts are off. */
+.sl-markdown-content pre.mermaid:not([data-processed]) { text-align: start; white-space: pre; }
+@media (scripting: enabled) {
+  .sl-markdown-content pre.mermaid:not([data-processed]) { color: transparent; }
+}
+.sl-markdown-content pre.mermaid svg { display: block; margin-inline: auto; max-width: max(100%, 36rem); height: auto; }
+@media (max-width: 50rem) {
+  .sl-markdown-content pre.mermaid svg { max-width: none; }
+}
+
+.sl-markdown-content pre.mermaid svg :is(.node, .cluster) :is(rect, polygon, circle, ellipse, path) {
+  fill: var(--diagram-node) !important;
+  stroke: var(--sl-color-gray-4) !important;
+  filter: none !important;
+}
+.sl-markdown-content pre.mermaid svg .cluster rect {
+  fill: transparent !important;
+  stroke: var(--sl-color-gray-5) !important;
+  stroke-dasharray: 4 3;
+}
+.sl-markdown-content pre.mermaid svg :is(span, p, text) {
+  color: var(--sl-color-white) !important;
+  fill: var(--sl-color-white) !important;
+}
+.sl-markdown-content pre.mermaid svg .cluster-label :is(span, p, text) {
+  color: var(--sl-color-accent-high) !important;
+  fill: var(--sl-color-accent-high) !important;
+}
+.sl-markdown-content pre.mermaid svg :is(.flowchart-link, .edgePaths .path) { stroke: var(--sl-color-gray-3) !important; }
+.sl-markdown-content pre.mermaid svg :is(.marker, .arrowMarkerPath, .arrowheadPath) {
+  fill: var(--sl-color-gray-3) !important;
+  stroke: var(--sl-color-gray-3) !important;
+}
+.sl-markdown-content pre.mermaid svg :is(.edgeLabel, .labelBkg, .edgeLabel p) { background-color: var(--diagram-surface) !important; }
+.sl-markdown-content pre.mermaid svg .edgeLabel :is(span, p) { color: var(--sl-color-gray-2) !important; }
+.sl-markdown-content pre.mermaid svg .edgeLabel rect { fill: var(--diagram-surface) !important; opacity: 1 !important; }

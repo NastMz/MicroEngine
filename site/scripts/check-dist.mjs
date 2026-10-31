@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pages } from '../src/lib/repo-docs.mjs';
+import { pages, repoRoot } from '../src/lib/repo-docs.mjs';
 import { gameIds, noticeFiles } from './demos.mjs';
 
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -38,7 +38,22 @@ export function checkDist(dist, { demos = true, secrets = [] } = {}) {
   // No page may link to a demo package directly: packages load only from the player, on demand.
   const home = fs.existsSync(path.join(dist, 'index.html')) ? fs.readFileSync(path.join(dist, 'index.html'), 'utf8') : '';
   if (/["']\/play\//.test(home)) problems.push('the home page references /play/ (demo packages must load on demand)');
+  problems.push(...checkDiagrams(dist));
   problems.push(...checkPublicContent(dist, { secrets }));
+  return problems;
+}
+
+/** Each ```mermaid block of a public page must reach the page as a diagram, not as a code sample. */
+export function checkDiagrams(dist, { list = pages, root = repoRoot } = {}) {
+  const problems = [];
+  for (const page of list) {
+    const source = path.join(root, page.source);
+    const built = path.join(dist, page.slug, 'index.html');
+    if (!fs.existsSync(source) || !fs.existsSync(built)) continue;
+    const expected = fs.readFileSync(source, 'utf8').match(/^ {0,3}(`{3,}|~{3,})\s*mermaid\s*$/gm)?.length ?? 0;
+    const found = fs.readFileSync(built, 'utf8').match(/<pre class="mermaid">/g)?.length ?? 0;
+    if (found !== expected) problems.push(`${page.slug}/index.html has ${found} of the ${expected} diagram(s) in ${page.source}`);
+  }
   return problems;
 }
 

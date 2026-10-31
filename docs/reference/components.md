@@ -51,27 +51,57 @@ The manual covers each area: [lifecycle](../manual/lifecycle.md), [scenes](../ma
 
 ### Desktop
 
-```text
-Program.cs ──► DesktopLauncher.Run(game, args)
-                 ├─ LaunchArguments.Parse ──► RunOptions (script, captures, seed, limits, mute)
-                 ├─ new RaylibPlatform(settings, options)   or   HeadlessPlatform.For(settings)
-                 └─ GameRunner.Run(game, platform, options)
-                       └─ GameLoop: Start ──► Game.Load ──► Scenes.Push(first scene)
-                                    Tick (repeat) ──► per fixed step:
-                                         InputScript.Apply ──► InputMap.Sample ──► Scenes.Update
-                                         ──► AudioMixer.Update ──► achievement banners and flush
-                                       ──► once per frame: Clear ──► Scenes.Draw ──► banners ──► capture
-                                    Finish ──► Game.Unload, achievements flushed
+```mermaid
+flowchart TB
+  accTitle: Desktop launch
+  accDescr: Program.cs calls DesktopLauncher.Run, which parses the arguments into RunOptions, creates the platform and calls GameRunner.Run.
+  program["Program.cs"] --> launcher["DesktopLauncher.Run(game, args)"]
+  launcher --> parse["LaunchArguments.Parse"] --> options["RunOptions <br/> (script, captures, <br/> seed, limits, mute)"]
+  launcher --> platform["new RaylibPlatform( <br/> settings, options) <br/> or <br/> HeadlessPlatform.For( <br/> settings)"]
+  launcher --> runner["GameRunner.Run( <br/> game, platform, options)"]
+```
+
+```mermaid
+flowchart TB
+  accTitle: Desktop game loop
+  accDescr: GameRunner.Run drives the GameLoop: Start loads the game and pushes the first scene; each Tick runs the fixed steps and then draws the frame; Finish unloads the game.
+  runner["GameRunner.Run(game, platform, options)"] --> loop
+  subgraph loop["GameLoop"]
+    direction TB
+    subgraph start["Start"]
+      direction LR
+      load["Game.Load"] --> push["Scenes.Push(first scene)"]
+    end
+    subgraph tick["Tick (repeat)"]
+      direction LR
+      subgraph step["per fixed step"]
+        direction TB
+        apply["InputScript.Apply"] --> sample["InputMap.Sample"] --> update["Scenes.Update"] --> mixer["AudioMixer.Update"] --> flush["achievement <br/> banners and flush"]
+      end
+      subgraph frame["once per frame"]
+        direction TB
+        clear["Clear"] --> draw["Scenes.Draw"] --> banners["banners"] --> capture["capture"]
+      end
+      step --> frame
+    end
+    subgraph finish["Finish"]
+      unload["Game.Unload, <br/> achievements flushed"]
+    end
+    start --> tick --> finish
+  end
 ```
 
 ### Browser
 
-```text
-main.js ──► WebHost.Start/Frame/Outcome/Stop   (web/Host/Program.cs, [JSExport])
-              └─ GameSession from BrowserLauncher.CreateSession(GameEntry.Create)
-                    Start ──► new game + new RaylibPlatform ──► GameLoop.Start
-                    Tick  ──► GameLoop.Tick   (one per requestAnimationFrame)
-                    end   ──► GameLoop.Finish ──► platform disposed
+```mermaid
+flowchart TB
+  accTitle: Browser call flow
+  accDescr: main.js calls WebHost, which uses a GameSession from BrowserLauncher.CreateSession; the session starts, ticks and ends the game loop.
+  main["main.js"] --> host["WebHost.Start/Frame/Outcome/Stop <br/> (web/Host/Program.cs, [JSExport])"]
+  host --> session["GameSession from <br/> BrowserLauncher.CreateSession(GameEntry.Create)"]
+  session --> start["Start"] --> create["new game + <br/> new RaylibPlatform"] --> loopStart["GameLoop.Start"]
+  session --> tick["Tick"] --> loopTick["GameLoop.Tick <br/> (one per <br/> requestAnimationFrame)"]
+  session --> stop["end"] --> finish["GameLoop.Finish"] --> disposed["platform disposed"]
 ```
 
 `GameEntry` is generated at build time from the game's entry in the browser build configuration, so the browser
@@ -79,10 +109,12 @@ builds the game with the same constructor expression as its desktop `Program.cs`
 
 ### Tests
 
-```text
-test ──► new MyGame(tempDir) ──► game.InitializeForTest(new HeadlessPlatform())
-     ──► game.StepForTest()   (InputMap.Sample + one fixed step)
-or   ──► GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { Script = ... })
+```mermaid
+flowchart TB
+  accTitle: Test call flow
+  accDescr: A test creates the game, initializes it with a HeadlessPlatform and steps it, or runs it with GameRunner.Run.
+  test["test"] --> create["new MyGame(tempDir)"] --> init["game.InitializeForTest( <br/> new HeadlessPlatform())"] --> step["game.StepForTest() <br/> (InputMap.Sample + one fixed step)"]
+  test -- or --> run["GameRunner.Run(game, <br/> new HeadlessPlatform(), <br/> new RunOptions { <br/> Script = ... })"]
 ```
 
 ## Where a change belongs

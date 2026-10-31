@@ -6,13 +6,17 @@ are ordinary .NET programs. This document explains how the pieces fit and why.
 
 ## Layers
 
-```text
-games/*            Game rules, content, art and music (MeadowRun, CourtyardKey, TrailDuel, NeonRift)
-samples/*          Minimal examples (HelloEngine)
-   │ uses
-src/MicroEngine.Raylib   Desktop backend: window, renderer, audio device, input, launcher
-   │ implements
-src/MicroEngine          Core: loop, scenes, input, graphics model, world, audio synthesis, UI
+```mermaid
+flowchart TB
+  accTitle: Layers
+  accDescr: Games and samples use the desktop backend, which implements the core.
+  games["<b> games/* </b> <br/> Game rules, content, art and music <br/> (MeadowRun, CourtyardKey, TrailDuel, NeonRift)"]
+  samples["<b> samples/* </b> <br/> Minimal examples (HelloEngine)"]
+  raylib["<b> src/MicroEngine.Raylib </b> <br/> Desktop backend: window, renderer, audio device, input, launcher"]
+  core["<b> src/MicroEngine </b> <br/> Core: loop, scenes, input, graphics model, world, audio synthesis, UI"]
+  games -- uses --> raylib
+  samples -- uses --> raylib
+  raylib -- implements --> core
 ```
 
 The core never references raylib. Everything platform-specific sits behind four interfaces in
