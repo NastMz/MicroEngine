@@ -34,6 +34,8 @@ public static unsafe class Program
         string? Option(string name) { int i = Array.IndexOf(args, name); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
         int code = Run(Option("--script"), Option("--env"));
         Console.WriteLine($"microengine: exit {code}");
+        // SDL keeps the app alive after this function returns; a scripted run ends the process so the test sees it end.
+        if (Option("--script") is not null) Environment.Exit(code);
         return code;
     }
 

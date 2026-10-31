@@ -91,8 +91,8 @@ jobs:
           dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results ".NET tests on macOS"
-      - name: Scripted captures on SDL (the default platform) against the SDL reference
-        run: node web/tests/desktop.mjs --backend sdl --out sdl-captures --reference web/tests/reference/sdl.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Scripted captures on SDL (the default platform) against the macOS SDL reference
+        run: node web/tests/desktop.mjs --backend sdl --out sdl-captures --reference web/tests/reference/sdl-macos-arm64.json | tee -a "$GITHUB_STEP_SUMMARY"
       - if: always()
         uses: actions/upload-artifact@v4
         with:
