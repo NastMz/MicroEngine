@@ -35,7 +35,7 @@ These are not implemented. Do not plan around them.
 | --- | --- |
 | Windows desktop | Validated: builds, tests, games and scripted captures |
 | Linux desktop (x64) | Checked automatically on every engine change (build, tests, native rendering, keyboard and audio output under a virtual display and sound server); not yet supported: manual play on real hardware pending ([Platforms](platforms.md#desktop-validation)) |
-| macOS desktop | Under evaluation: build, tests and native runs are attempted automatically without blocking; not supported |
+| macOS desktop | Under evaluation, not supported: builds and passes the headless tests in CI without blocking; native rendering not shown yet (no window on the hosted runner) |
 | Browsers | The four demos are verified with automated tests in Chromium (Chrome) and Firefox on desktop, plus manual validation in the browser |
 | Safari | Not tested |
 | Other Chromium-based browsers (for example Edge) | They share Chrome's engine, but no claim is made for them |

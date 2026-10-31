@@ -10,7 +10,7 @@ page lists each target and exactly how far it has been validated.
 | --- | --- | --- |
 | Windows desktop (x64) | `RaylibPlatform` through `DesktopLauncher` | Supported: builds, all tests and scripted captures, manual play |
 | Linux desktop (x64) | `RaylibPlatform` through `DesktopLauncher` | Automatically checked, not yet supported: see [Desktop validation](#desktop-validation); manual validation pending |
-| macOS desktop | `RaylibPlatform` | Under evaluation, not supported: automated checks run but do not block, results not yet recorded |
+| macOS desktop | `RaylibPlatform` | Under evaluation, not supported: builds and passes the headless tests in CI (not blocking yet); raylib cannot open a window on the hosted CI runner, so nothing native is shown |
 | Linux on ARM (arm64) | — | Not available: the `Raylib-cs` package has no native raylib library for it |
 | Chrome (Chromium) on desktop | `RaylibPlatform` in WebAssembly through `BrowserLauncher` | The four demos are verified with automated tests, plus manual validation in the browser |
 | Firefox on desktop | Same | The four demos are verified with automated tests, plus manual validation in the browser |
@@ -30,16 +30,19 @@ change; "recorded" means it was run and its result kept, once.
 
 | Level | Windows x64 | Linux x64 | macOS |
 | --- | --- | --- | --- |
-| Build of the engine, the four games and the tests | Automated | Automated | Automated, not blocking; first results pending |
-| Simulation: engine tests and the four games' headless playthroughs | Automated | Automated | Automated, not blocking; first results pending |
-| Native rendering: raylib and OpenGL draw the 15 scripted scenarios (138 captures) | Recorded: the same captures, compared byte for byte with the browser builds | Automated under a virtual display with software OpenGL (Mesa), compared with a Linux reference | Attempted automatically, not blocking: completeness and size only, no reference yet |
+| Build of the engine, the four games and the tests | Automated | Automated | Automated, not blocking; passing (macOS 26, arm64) |
+| Simulation: engine tests and the four games' headless playthroughs | Automated | Automated | Automated, not blocking; passing |
+| Native rendering: raylib and OpenGL draw the 15 scripted scenarios (138 captures) | Recorded: the same captures, compared byte for byte with the browser builds | Automated under a virtual display with software OpenGL (Mesa), compared with a Linux reference | Attempted automatically, not blocking: raylib cannot open a window on the hosted runner, so no capture is produced yet |
 | Native keyboard: keys from the system reach the game through raylib | Manual play | Automated: pressed, held, released, a tap shorter than a frame, two keys at once | Not covered |
-| Audio device opens | Manual play | Automated on a virtual sound server (PulseAudio) | Attempted automatically, not blocking |
+| Audio device opens | Manual play | Automated on a virtual sound server (PulseAudio) | Automated, not blocking: opens on the hosted runner |
 | Audio output carries the sound played | Manual play | Automated: a played tone is recorded from the virtual sound server and recognised; not listened to | Not covered |
 | Gamepad | Supported by the backend | Not covered | Not covered |
 | Manual play on real hardware (GPU, speakers, fullscreen, window manager) | Done | Pending | Pending |
 
-Linux checks run on Ubuntu 24.04 x64; they were first recorded with Mesa 25.2.8 (llvmpipe) under Xvfb. Wayland
+Linux checks run on Ubuntu 24.04 x64 under Xvfb; the reference was recorded with Mesa 25.2.8 (llvmpipe) and the
+hosted CI runner reproduced all 138 captures pixel for pixel. On macOS the hosted runner (macOS 26, arm64) builds and
+passes the headless tests, but GLFW cannot create a window there, so native rendering and input on macOS have no
+evidence yet. Wayland
 sessions, real GPUs and drivers, gamepads, F11 and Alt+Enter fullscreen and high-DPI screens remain to be checked by
 hand before Linux is called supported.
 
