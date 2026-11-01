@@ -1,6 +1,6 @@
 # INPUT-1: unified input and the mobile experience
 
-Date: 2026-11-01. Branch `claude/trusting-cannon-wb6k7z` (from `main` at 6115a70). Task record:
+Date: 2026-11-01. Branch `feat/input-1` (from `main` at 6115a70). Task record:
 [`odd/tasks/input-1.md`](../../odd/tasks/input-1.md). Decision: [ADR 0020](../decisions/0020-unified-input-and-touch-controls.md).
 Manual: [Input](../manual/input.md).
 

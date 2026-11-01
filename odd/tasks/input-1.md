@@ -2,8 +2,8 @@
 
 Objective: one public input system for digital and analog actions on the six official platforms, engine-owned touch
 controls (d-pad, joystick, buttons) with clear feedback, and the four demos comfortable to play on desktops, phones
-and mobile browsers. Branch `claude/trusting-cannon-wb6k7z` (the session's designated branch; the brief asked for
-`feat/input-1`), from `main` at 6115a70. Delivery: autonomous, no PR or release without the owner. Test runner:
+and mobile browsers. Branch `feat/input-1`, from `main`
+at 6115a70. Delivery: autonomous, no PR or release without the owner. Test runner:
 `dotnet test MicroEngine.slnx -c Release`; browser: `node web/tests/mobile.mjs`.
 Evaluation: [`docs/evaluations/input-1.md`](../../docs/evaluations/input-1.md). Decision: [ADR 0020](../../docs/decisions/0020-unified-input-and-touch-controls.md).
 
