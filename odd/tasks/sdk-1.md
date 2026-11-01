@@ -115,3 +115,10 @@ unit is independent enough for a parallel writer; long builds and CI runs go to 
   restore, microengine.dll vs MicroEngine.dll, escaped Android RIDs.
 - L5 Next: push, PR, CI (ci.yml, sdk.yml); macOS and iOS evidence comes from CI. Pending owner decisions: merge,
   NUGET_API_KEY secret and nuget environment, running sdk-release.yml.
+- L6 (2026-11-01) Owner: "prefiero NuGet Trusted Publishing mediante GitHub OIDC y la acción oficial NuGet/login, en
+  lugar de mantener una NUGET_API_KEY de larga duración." "No publiques todavía". sdk-release.yml now logs in with
+  NuGet/login v1.2.0 (pinned) in the `nuget` environment and publishes the reviewed draft from the same main commit
+  (PR 10). Main 5c5260f: ci and sdk green (external project on Windows, Linux, macOS). sdk-release run 41342119443
+  (publish off) drafted sdk-v0.4.0-alpha.1: six packages + four symbol packages, SHA256SUMS verified, packages.mjs
+  passed, external project from the draft's files passed (windows, linux, android); the six ids are free on nuget.org,
+  third-party dependencies exist there. Nothing pushed. After PR 10 merges, main moves: delete that draft and prepare again.
