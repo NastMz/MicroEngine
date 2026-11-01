@@ -19,6 +19,7 @@ public enum PadButton { None, A, B, X, Y, Start, Back, LeftShoulder, RightShould
 public enum PadAxis { LeftX, LeftY, RightX, RightY, LeftTrigger, RightTrigger }
 
 /// <summary>The kind of device that last pressed an action (see <see cref="InputMap.LastDevice"/>).</summary>
+/// <remarks><c>Other</c> covers scripted input and custom <see cref="IActionSource"/>s.</remarks>
 public enum InputDevice { None, Keyboard, Gamepad, Touch, Other }
 
 /// <summary>How a 2D stick turns into the four direction actions.</summary>
@@ -38,7 +39,9 @@ public readonly record struct PointerState(bool Present, Vector2 Position, bool 
 /// <summary>The raw device state a backend reports once per polled frame.</summary>
 public interface IInputSource
 {
+    /// <summary>Whether <paramref name="key"/> is held.</summary>
     bool IsKeyDown(Key key);
+    /// <summary>Whether <paramref name="button"/> is held on the gamepad.</summary>
     bool IsPadDown(PadButton button);
     /// <summary>Left stick, each axis in -1..1.</summary>
     Vector2 LeftStick { get; }
@@ -83,6 +86,17 @@ public sealed record ActionBindings(IReadOnlyList<Key> Keys, IReadOnlyList<PadBu
 /// virtual joystick gives the deflection beyond its dead zone.
 /// Edge states (pressed/released) are computed per fixed update, so a tap is never lost or doubled.
 /// </summary>
+/// <example>
+/// <code>
+/// // In a Game subclass: keep the defaults and add a "dash" action.
+/// protected override InputMap CreateInput() => InputMap.CreateDefault()
+///     .Bind("dash", [Key.LeftShift, Key.N], [PadButton.RightShoulder]);
+///
+/// // In a scene's Update:
+/// var move = Input.Vector("left", "right", "up", "down");
+/// if (Input.Pressed("confirm")) Audio.Play("select");
+/// </code>
+/// </example>
 public sealed class InputMap
 {
     private sealed class Binding
@@ -102,6 +116,11 @@ public sealed class InputMap
     private readonly List<IActionSource> _sources = [];
     private PointerState _pointer;
 
+    /// <summary>
+    /// The direction of the left stick an action is bound to (<c>None</c>, <c>Left</c>, <c>Right</c>, <c>Up</c>,
+    /// <c>Down</c>). The action is down when the stick points that way beyond <see cref="StickThreshold"/>, and its
+    /// <see cref="Value"/> is the deflection along that direction.
+    /// </summary>
     public enum StickDirection { None, Left, Right, Up, Down }
 
     /// <summary>Radial dead zone of the left stick, as a fraction of full deflection (default 0.2). Values beyond it are rescaled to 0..1.</summary>
@@ -121,8 +140,20 @@ public sealed class InputMap
     /// <summary>The action sources read with the devices (<see cref="AddSource"/>).</summary>
     public IReadOnlyList<IActionSource> Sources => _sources;
 
+    /// <summary>Binds keys to <paramref name="action"/>, adding to its existing bindings.</summary>
+    /// <param name="action">The action name (case-sensitive, not empty).</param>
+    /// <param name="keys">Keys that press the action.</param>
+    /// <returns>This map, for chaining.</returns>
+    /// <exception cref="ArgumentException"><paramref name="action"/> is empty.</exception>
     public InputMap Bind(string action, params Key[] keys) => Bind(action, keys, [], StickDirection.None);
 
+    /// <summary>Binds keys, gamepad buttons and optionally a left-stick direction to <paramref name="action"/>, adding to its existing bindings (use <see cref="Unbind"/> first to replace them).</summary>
+    /// <param name="action">The action name (case-sensitive, not empty).</param>
+    /// <param name="keys">Keys that press the action.</param>
+    /// <param name="buttons">Gamepad buttons that press the action.</param>
+    /// <param name="stick">A left-stick direction that presses the action; <c>None</c> keeps the current one.</param>
+    /// <returns>This map, for chaining.</returns>
+    /// <exception cref="ArgumentException"><paramref name="action"/> is empty.</exception>
     public InputMap Bind(string action, Key[] keys, PadButton[] buttons, StickDirection stick = StickDirection.None)
     {
         var b = Get(action);
@@ -162,6 +193,7 @@ public sealed class InputMap
         return b;
     }
 
+    /// <summary>The names of every bound action (including actions unbound with <see cref="Unbind"/>).</summary>
     public IEnumerable<string> Actions => _bindings.Keys;
 
     /// <summary>Adds an action source read with the devices at every sample. Its actions need no binding, but unbound names are listed in <see cref="Actions"/> only once bound.</summary>
@@ -172,6 +204,7 @@ public sealed class InputMap
         return this;
     }
 
+    /// <summary>Stops reading <paramref name="source"/>; returns false when it was not added.</summary>
     public bool RemoveSource(IActionSource source) => _sources.Remove(source);
 
     /// <summary>Samples devices and action sources. Called by the runner before each fixed update.</summary>
@@ -250,9 +283,11 @@ public sealed class InputMap
         _latched.Clear();
     }
 
+    /// <summary>Whether the action is held in this update. Also true for a press that started and ended within the last frame, so a quick tap is never missed. Unknown actions are never down.</summary>
     public bool Down(string action) => _down.Contains(action) || _latched.Contains(action);
     /// <summary>True during the first update after the action went down, even if it was released within the same frame.</summary>
     public bool Pressed(string action) => _latched.Contains(action) || (_down.Contains(action) && !_previous.Contains(action));
+    /// <summary>True during the first update after the action was let go. A tap that started and ended within the same frame reports <see cref="Pressed"/> but not <see cref="Released"/>.</summary>
     public bool Released(string action) => !_down.Contains(action) && _previous.Contains(action);
 
     /// <summary>

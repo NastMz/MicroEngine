@@ -87,7 +87,7 @@ Open the PNGs in `captures/` and look at them. For visual changes, passing tests
 3. Follow [Making a game](../making-a-game.md) for art, scenes, input, worlds, sound, achievements and tests.
 4. Optionally add the project to `MicroEngine.slnx` so `dotnet build MicroEngine.slnx` includes it.
 
-There is no `dotnet new` template and no NuGet package yet ([Status](status.md)).
+Games outside this repository use the NuGet packages and the `dotnet new` template instead ([Install the SDK](getting-microengine.md)).
 
 ## Optional: browser build
 

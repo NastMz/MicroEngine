@@ -3,10 +3,17 @@ using System.Globalization;
 namespace MicroEngine;
 
 /// <summary>An 8-bit-per-channel, non-premultiplied RGBA color.</summary>
+/// <param name="R">Red, 0..255.</param>
+/// <param name="G">Green, 0..255.</param>
+/// <param name="B">Blue, 0..255.</param>
+/// <param name="A">Opacity, 0 (transparent) to 255 (opaque, the default).</param>
 public readonly record struct Color(byte R, byte G, byte B, byte A = 255)
 {
+    /// <summary>Fully transparent black (0, 0, 0, 0).</summary>
     public static readonly Color Transparent = new(0, 0, 0, 0);
+    /// <summary>Opaque white. As a tint it leaves a texture unchanged.</summary>
     public static readonly Color White = new(255, 255, 255);
+    /// <summary>Opaque black.</summary>
     public static readonly Color Black = new(0, 0, 0);
 
     /// <summary>Parses "#RRGGBB" or "#RRGGBBAA" (the leading '#' is optional).</summary>
@@ -19,7 +26,9 @@ public readonly record struct Color(byte R, byte G, byte B, byte A = 255)
         return new Color(Part(0), Part(2), Part(4), digits.Length == 8 ? Part(6) : (byte)255);
     }
 
+    /// <summary>The same colour with opacity <paramref name="alpha"/> (0..255).</summary>
     public Color WithAlpha(byte alpha) => this with { A = alpha };
+    /// <summary>The same colour with opacity <paramref name="alpha"/> given as 0..1 (clamped; fractions of a step are truncated).</summary>
     public Color WithAlpha(float alpha) => this with { A = (byte)Math.Clamp(alpha * 255f, 0f, 255f) };
 
     /// <summary>Linear interpolation of every channel.</summary>
@@ -37,5 +46,6 @@ public readonly record struct Color(byte R, byte G, byte B, byte A = 255)
         return new Color(S(R, factor), S(G, factor), S(B, factor), A);
     }
 
+    /// <summary>The colour as "#RRGGBBAA", readable by <see cref="Hex"/>.</summary>
     public override string ToString() => $"#{R:X2}{G:X2}{B:X2}{A:X2}";
 }

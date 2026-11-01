@@ -4,12 +4,21 @@ namespace MicroEngine.Graphics;
 /// A CPU-side RGBA image. Games author procedural art with it and hand it to
 /// <see cref="IGraphicsDevice.CreateTexture"/>; it also backs the built-in font.
 /// </summary>
+/// <remarks>
+/// Drawing methods change this image and return it, so calls chain; methods that build a new image (<see cref="Clone"/>,
+/// <see cref="FlipX"/>, <see cref="Crop"/>...) leave it unchanged. Coordinates outside the image are ignored when
+/// writing and read as transparent. Drawing methods alpha-blend unless they say otherwise.
+/// </remarks>
 public sealed class PixelImage
 {
     private readonly Color[] _pixels;
+    /// <summary>Width in pixels.</summary>
     public int Width { get; }
+    /// <summary>Height in pixels.</summary>
     public int Height { get; }
 
+    /// <summary>Creates a fully transparent image.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> or <paramref name="height"/> is not positive.</exception>
     public PixelImage(int width, int height)
     {
         if (width <= 0 || height <= 0) throw new ArgumentOutOfRangeException(nameof(width), "Image size must be positive.");
@@ -18,14 +27,17 @@ public sealed class PixelImage
         _pixels = new Color[width * height];
     }
 
+    /// <summary>The pixels, row by row from the top-left.</summary>
     public ReadOnlySpan<Color> Pixels => _pixels;
 
+    /// <summary>The pixel at (<paramref name="x"/>, <paramref name="y"/>). Reading outside the image returns <see cref="Color.Transparent"/>; writing outside does nothing. Writing replaces the pixel without blending.</summary>
     public Color this[int x, int y]
     {
         get => InBounds(x, y) ? _pixels[y * Width + x] : Color.Transparent;
         set { if (InBounds(x, y)) _pixels[y * Width + x] = value; }
     }
 
+    /// <summary>Whether (<paramref name="x"/>, <paramref name="y"/>) is inside the image.</summary>
     public bool InBounds(int x, int y) => x >= 0 && y >= 0 && x < Width && y < Height;
 
     /// <summary>Alpha-blends <paramref name="color"/> over the existing pixel.</summary>
@@ -40,8 +52,10 @@ public sealed class PixelImage
         _pixels[y * Width + x] = new Color(Mix(color.R, dst.R), Mix(color.G, dst.G), Mix(color.B, dst.B), (byte)MathF.Round(outA * 255));
     }
 
+    /// <summary>Sets every pixel to <paramref name="color"/>, without blending.</summary>
     public PixelImage Clear(Color color) { Array.Fill(_pixels, color); return this; }
 
+    /// <summary>Blends <paramref name="color"/> over a <paramref name="w"/> × <paramref name="h"/> rectangle whose top-left is (<paramref name="x"/>, <paramref name="y"/>).</summary>
     public PixelImage FillRect(int x, int y, int w, int h, Color color)
     {
         for (int j = y; j < y + h; j++)
@@ -50,6 +64,7 @@ public sealed class PixelImage
         return this;
     }
 
+    /// <summary>Draws the one-pixel outline of a rectangle.</summary>
     public PixelImage DrawRect(int x, int y, int w, int h, Color color)
     {
         for (int i = x; i < x + w; i++) { Blend(i, y, color); Blend(i, y + h - 1, color); }
@@ -57,6 +72,7 @@ public sealed class PixelImage
         return this;
     }
 
+    /// <summary>Draws a one-pixel line between two pixels, both included.</summary>
     public PixelImage Line(int x0, int y0, int x1, int y1, Color color)
     {
         int dx = Math.Abs(x1 - x0), sx = x0 < x1 ? 1 : -1, dy = -Math.Abs(y1 - y0), sy = y0 < y1 ? 1 : -1, err = dx + dy;
@@ -86,6 +102,7 @@ public sealed class PixelImage
         return this;
     }
 
+    /// <summary>Fills an ellipse centred on (<paramref name="cx"/>, <paramref name="cy"/>) with radii <paramref name="rx"/> and <paramref name="ry"/>.</summary>
     public PixelImage FillEllipse(float cx, float cy, float rx, float ry, Color color)
     {
         for (int y = (int)MathF.Floor(cy - ry); y <= (int)MathF.Ceiling(cy + ry); y++)
@@ -107,6 +124,7 @@ public sealed class PixelImage
         return this;
     }
 
+    /// <summary>Blends the <paramref name="w"/> × <paramref name="h"/> region of <paramref name="source"/> at (<paramref name="sx"/>, <paramref name="sy"/>) onto this image at (<paramref name="dx"/>, <paramref name="dy"/>).</summary>
     public PixelImage Blit(PixelImage source, int sx, int sy, int w, int h, int dx, int dy)
     {
         for (int y = 0; y < h; y++)
@@ -158,6 +176,7 @@ public sealed class PixelImage
         return this;
     }
 
+    /// <summary>Replaces each pixel with <c>transform(x, y, pixel)</c>.</summary>
     public PixelImage Map(Func<int, int, Color, Color> transform)
     {
         for (int y = 0; y < Height; y++)
@@ -166,6 +185,7 @@ public sealed class PixelImage
         return this;
     }
 
+    /// <summary>Returns an independent copy.</summary>
     public PixelImage Clone()
     {
         var copy = new PixelImage(Width, Height);
@@ -173,6 +193,7 @@ public sealed class PixelImage
         return copy;
     }
 
+    /// <summary>Returns a copy mirrored horizontally.</summary>
     public PixelImage FlipX()
     {
         var copy = new PixelImage(Width, Height);
@@ -182,6 +203,7 @@ public sealed class PixelImage
         return copy;
     }
 
+    /// <summary>Returns a copy mirrored vertically.</summary>
     public PixelImage FlipY()
     {
         var copy = new PixelImage(Width, Height);
@@ -232,9 +254,13 @@ public sealed class PixelImage
     }
 
     /// <summary>Decodes a PNG (8-bit grey/RGB/RGBA or paletted, non-interlaced).</summary>
+    /// <exception cref="InvalidDataException">The data is not a valid PNG.</exception>
+    /// <exception cref="NotSupportedException">The PNG uses a format the decoder does not support.</exception>
     public static PixelImage FromPng(ReadOnlySpan<byte> data) => PngDecoder.Decode(data);
 
     /// <summary>Loads a PNG file; the message names the path when decoding fails.</summary>
+    /// <exception cref="FileNotFoundException">The file does not exist.</exception>
+    /// <exception cref="InvalidDataException">The file is not a PNG the decoder supports.</exception>
     public static PixelImage Load(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);

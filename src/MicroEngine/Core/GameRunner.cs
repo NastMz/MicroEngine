@@ -7,15 +7,23 @@ namespace MicroEngine.Core;
 /// <summary>Options shared by every launcher: scripted input, captures and run limits.</summary>
 public sealed record RunOptions
 {
+    /// <summary>Scripted input to play, or null for none.</summary>
     public InputScript? Script { get; init; }
     /// <summary>Directory where script "capture" commands write PNGs.</summary>
     public string CaptureDirectory { get; init; } = "captures";
     /// <summary>Stops after this many updates (0 = unlimited).</summary>
     public long MaxUpdates { get; init; }
+    /// <summary>Seed for <see cref="Game.Random"/> (1 by default).</summary>
     public int Seed { get; init; } = 1;
+    /// <summary>Sets the sound effect and music volumes to 0 after <c>Load</c>.</summary>
     public bool Mute { get; init; }
 }
 
+/// <summary>How a run ended.</summary>
+/// <param name="Updates">Fixed updates simulated.</param>
+/// <param name="Frames">Frames rendered.</param>
+/// <param name="Captures">Paths of the screenshots written by the script, in order.</param>
+/// <param name="Error">The exception that stopped the run, or null when it ended normally.</param>
 public sealed record RunResult(long Updates, long Frames, IReadOnlyList<string> Captures, Exception? Error);
 
 /// <summary>
@@ -24,6 +32,8 @@ public sealed record RunResult(long Updates, long Frames, IReadOnlyList<string> 
 /// </summary>
 public static class GameRunner
 {
+    /// <summary>Starts <paramref name="game"/> on <paramref name="platform"/>, runs frames until it stops, then shuts it down. Never throws for errors raised by the game: they are in <see cref="RunResult.Error"/>.</summary>
+    /// <remarks>The platform is not disposed; its owner does that.</remarks>
     public static RunResult Run(Game game, IPlatform platform, RunOptions? options = null)
     {
         var loop = new GameLoop(game, platform, options);
@@ -53,6 +63,8 @@ public sealed class GameLoop
     private Exception? _error;
     private RunResult? _result;
 
+    /// <summary>Prepares a loop; nothing runs until <see cref="Start"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="game"/> or <paramref name="platform"/> is null.</exception>
     public GameLoop(Game game, IPlatform platform, RunOptions? options = null)
     {
         _game = game ?? throw new ArgumentNullException(nameof(game));
@@ -200,6 +212,8 @@ public sealed class InputScript
     private readonly List<(long Update, int Finger, string? Target, Vector2 Offset, bool Lift)> _touches = [];
     private long? _quit;
 
+    /// <summary>Parses the text format described above.</summary>
+    /// <exception cref="FormatException">A line is invalid; the message names its line number.</exception>
     public static InputScript Parse(string text)
     {
         var script = new InputScript();
@@ -255,6 +269,7 @@ public sealed class InputScript
         return this;
     }
 
+    /// <summary>Lifts finger <paramref name="finger"/> at update <paramref name="at"/>.</summary>
     public InputScript Lift(long at, int finger)
     {
         _touches.Add((at, finger, null, default, true));
@@ -277,6 +292,7 @@ public sealed class InputScript
         }
     }
 
+    /// <summary>Holds <paramref name="action"/> down from update <paramref name="at"/> for <paramref name="duration"/> updates (at least 1).</summary>
     public InputScript Hold(long at, string action, long duration)
     {
         _edges.Add((at, action, true));
@@ -284,8 +300,11 @@ public sealed class InputScript
         return this;
     }
 
+    /// <summary>Presses <paramref name="action"/> at update <paramref name="at"/> for 2 updates.</summary>
     public InputScript Press(long at, string action) => Hold(at, action, 2);
+    /// <summary>Saves a screenshot named <paramref name="fileName"/> after update <paramref name="at"/>.</summary>
     public InputScript Capture(long at, string fileName) { _captures[at] = fileName; return this; }
+    /// <summary>Stops the run after update <paramref name="at"/>.</summary>
     public InputScript QuitAfter(long at) { _quit = at; return this; }
 
     /// <summary>Applies every edge scheduled for the update about to run.</summary>
@@ -295,8 +314,11 @@ public sealed class InputScript
             if (at == update) input.SetForced(action, down);
     }
 
+    /// <summary>The screenshot file name scheduled after <paramref name="update"/>, or null.</summary>
     public string? CaptureAt(long update) => _captures.TryGetValue(update, out var name) ? name : null;
+    /// <summary>Whether the run must stop after <paramref name="update"/>.</summary>
     public bool QuitAt(long update) => _quit is { } q && update >= q;
+    /// <summary>The update after which the script stops the run, or null.</summary>
     public long? QuitUpdate => _quit;
 }
 
@@ -304,5 +326,6 @@ public sealed class InputScript
 public sealed class MonotonicClock
 {
     private readonly Stopwatch _watch = Stopwatch.StartNew();
+    /// <summary>Seconds since the clock was created.</summary>
     public double Seconds => _watch.Elapsed.TotalSeconds;
 }

@@ -12,18 +12,23 @@ namespace MicroEngine.UI;
 /// </summary>
 public sealed class AchievementToasts
 {
+    /// <summary>Seconds each banner stays (3.4), and seconds it takes to slide in and out (0.25).</summary>
     public const float ShowTime = 3.4f, SlideTime = 0.25f;
     private readonly Queue<Achievement> _queue = new();
     private float _time;
 
+    /// <summary>Colours of the banners.</summary>
     public UiTheme Theme { get; set; } = UiTheme.Default;
+    /// <summary>The first line of every banner ("ACHIEVEMENT UNLOCKED" by default).</summary>
     public string Heading { get; set; } = "ACHIEVEMENT UNLOCKED";
     /// <summary>Distance from the top edge when fully shown.</summary>
     public float Top { get; set; } = 4;
     /// <summary>The banner on screen, or null.</summary>
     public Achievement? Current { get; private set; }
+    /// <summary>Banners waiting behind the current one.</summary>
     public int Pending => _queue.Count;
 
+    /// <summary>Queues a banner for <paramref name="achievement"/>; it shows at once when no other is on screen.</summary>
     public void Show(Achievement achievement)
     {
         ArgumentNullException.ThrowIfNull(achievement);
@@ -31,6 +36,7 @@ public sealed class AchievementToasts
         if (Current is null) Next();
     }
 
+    /// <summary>Advances the current banner; the game calls it every update.</summary>
     public void Update(float dt)
     {
         if (Current is null) return;
@@ -44,6 +50,7 @@ public sealed class AchievementToasts
         _time = 0;
     }
 
+    /// <summary>Draws the current banner centred at the top of the screen; the game calls it after the scenes.</summary>
     public void Draw(IRenderer r, BitmapFont font)
     {
         if (Current is not { } a) return;
@@ -73,20 +80,27 @@ public sealed class AchievementsScene(AchievementTracker tracker, UiTheme theme)
 {
     private int _scroll;
 
+    /// <summary>The heading of the list ("ACHIEVEMENTS" by default).</summary>
     public string Title { get; init; } = "ACHIEVEMENTS";
+    /// <summary>Actions that close the screen (cancel, pause and confirm by default). The cursor moves with the "up" and "down" actions.</summary>
     public string[] CloseActions { get; init; } = ["cancel", "pause", "confirm"];
     /// <summary>Screen tint drawn over the scene below.</summary>
     public Color Dim { get; init; } = Color.Black.WithAlpha(0.55f);
+    /// <summary>Text shown for locked achievements.</summary>
     public string LockedLabel { get; init; } = "LOCKED";
+    /// <summary>Text shown for unlocked achievements.</summary>
     public string UnlockedLabel { get; init; } = "UNLOCKED";
+    /// <summary>Index of the highlighted achievement in catalog order.</summary>
     public int Selected { get; private set; }
     /// <summary>Raised when the cursor moves (for a sound).</summary>
     public event Action? Moved;
     /// <summary>Raised when the screen closes (for a sound).</summary>
     public event Action? Closed;
 
+    /// <summary>Always true: the scene below stays visible, dimmed by <see cref="Dim"/>.</summary>
     public override bool IsOverlay => true;
 
+    /// <summary>Moves the cursor, or pops the scene when a close action is pressed.</summary>
     public override void Update(float dt)
     {
         if (CloseActions.Any(Input.Pressed))
@@ -100,6 +114,7 @@ public sealed class AchievementsScene(AchievementTracker tracker, UiTheme theme)
         if (next != Selected) { Selected = next; Moved?.Invoke(); }
     }
 
+    /// <summary>Draws the dimmed backdrop, the panel and the visible part of the list.</summary>
     public override void Draw(IRenderer r)
     {
         r.FillRect(new RectF(0, 0, r.Width, r.Height), Dim);

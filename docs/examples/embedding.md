@@ -1,12 +1,24 @@
-# Embedding a web package
+# Publishing on the web
 
-A MicroEngine browser package is a self-contained static folder that runs one game in a shared host page. It is
-served as static files and embedded with an iframe, and it reports its lifecycle to the parent page through
-`postMessage`. This page describes the package, the iframe, the message protocol and a minimal listener, as used
-by the demos on this site.
+A MicroEngine browser package is a self-contained static folder that runs one game in a host page. It is served as
+static files, can be embedded in another page with an iframe, and reports its lifecycle to that page through
+`postMessage`. This page builds one, then describes the package, the iframe, the message protocol and a minimal
+listener. The demos on this site are published exactly this way.
 
-Producing browser packages is not available to external developers yet; this page documents how the browser host
-behaves so the demos and the planned SDK can be understood.
+## Building a package
+
+```bash
+dotnet workload install wasm-tools
+microengine package web
+```
+
+The first command installs .NET's WebAssembly build tools, once per machine. `package web` writes
+`dist/<Game>-<version>-web/` and a ZIP of the same files. Every game that references `MicroEngine.Desktop` or
+`MicroEngine.Raylib` can be packaged: in browsers the game runs on the raylib platform, compiled to WebAssembly, with no
+code change. A game that references only `MicroEngine.Sdl` cannot, because SDL is not built for browsers.
+
+`microengine package web --dev` builds a development package that also ships the game's input scripts
+(`MicroEngineScriptsDir`) and reads developer options from the URL (see [the iframe](#the-iframe)); never publish one.
 
 ## The package
 
@@ -19,8 +31,10 @@ A package for one game contains:
 | `_framework/` | .NET runtime, raylib and the game assemblies, with `.br` and `.gz` copies |
 | `content.txt`, `Content/` | The game's asset files and their list (absent for fully procedural games) |
 
-Serve it from any static server that sends `.wasm` as `application/wasm`. Opening `index.html` from disk does not
-work, because browsers block the runtime's requests from `file://`.
+Upload the folder to any static host (GitHub Pages, Netlify, itch.io as an HTML game, an S3 bucket, nginx). The server
+must send `.wasm` as `application/wasm`; files are also pre-compressed (`.br`, `.gz`) for servers that can serve them.
+Opening `index.html` from disk does not work, because browsers block the runtime's requests from `file://`: test the
+package through a local web server.
 
 ## The iframe
 
@@ -36,8 +50,8 @@ work, because browsers block the runtime's requests from `file://`.
   audio play under browsers' autoplay policies; the starting key never reaches the game.
 - While playing, keys that would scroll the page (arrows, Space, Tab, `/`, `'`) are kept from the browser, so the
   parent page does not scroll under the game. Ctrl/Cmd shortcuts and function keys stay with the browser.
-- Release packages ignore URL parameters. Internal development packages read developer options from the URL and
-  are never embedded publicly.
+- Release packages ignore URL parameters. Development packages (`--dev`) read `UPPER_CASE=value` environment
+  variables, `script=<name>` and `autostart=1` from the URL; they are for testing and are never embedded publicly.
 
 ## Message protocol
 

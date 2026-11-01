@@ -18,6 +18,7 @@ namespace MicroEngine.Core;
 /// </summary>
 public static class GameLauncher
 {
+    /// <summary>The one-line usage text printed after an argument error.</summary>
     public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--frames N] [--seed N] [--scale N] [--mute] [--report]";
 
     /// <param name="configure">Changes the platform request before the platform is built: an audio device or input
@@ -106,14 +107,26 @@ public static class GameLauncher
     }
 }
 
+/// <summary>The parsed launcher command line (see <see cref="GameLauncher"/>).</summary>
+/// <param name="ScriptPath"><c>--script</c>: the input script file, or null.</param>
+/// <param name="CaptureDirectory"><c>--captures</c>: where script captures are written ("captures" by default).</param>
+/// <param name="Headless"><c>--headless</c>: run without a window.</param>
+/// <param name="Hidden"><c>--hidden</c>: render into a hidden window.</param>
+/// <param name="Frames"><c>--frames</c>: stop after this many updates; 0 runs until the game quits.</param>
+/// <param name="Seed"><c>--seed</c>: the seed of <see cref="Game.Random"/>. Without it, a run with a script uses 1 and any other run a clock-based seed.</param>
+/// <param name="Scale"><c>--scale</c>: the window scale, or null for <see cref="GameSettings.Scale"/>.</param>
+/// <param name="Mute"><c>--mute</c>: no sound.</param>
 public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory, bool Headless, bool Hidden, long Frames, int Seed, int? Scale, bool Mute)
 {
     /// <summary>The platform named with <c>--platform</c>, or null for the default.</summary>
     public string? Platform { get; init; }
+    /// <summary><c>--list-platforms</c>: print the catalog and exit.</summary>
     public bool ListPlatforms { get; init; }
     /// <summary><c>--report</c>: print the platform and its audio state before running.</summary>
     public bool Report { get; init; }
 
+    /// <summary>Parses command-line arguments.</summary>
+    /// <exception cref="FormatException">An argument is unknown, misses its value or has an invalid one, <c>--headless</c> contradicts <c>--platform</c>, or the script file does not exist.</exception>
     public static LaunchArguments Parse(IReadOnlyList<string> args)
     {
         string? script = null, captures = "captures", platform = null;

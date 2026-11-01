@@ -3,7 +3,7 @@
 MicroEngine audio has two halves. The core synthesizes sound effects (`Synth`) and step-sequenced music (`Song`)
 into `AudioClip`s, and decodes PCM WAV files. The game-facing `AudioMixer` (`Game.Audio`) keeps a bank of named
 sounds and music, plays them by name, and fades music in and out. Playback itself is done by the backend's
-`IAudioDevice`, which also streams compressed OGG and MP3 music.
+`IAudioDevice`, which also streams compressed music: OGG on every platform, MP3 on raylib only.
 
 ## Pieces
 
@@ -14,7 +14,7 @@ sounds and music, plays them by name, and fades music in and out. Playback itsel
 | `Synth.Layer`, `Synth.NoteFrequency` | Mix clips at time offsets; note name to Hz (`"C5"`, `"F#3"`) |
 | `Instrument`, `Song` | Tracker-style voices and a step sequencer rendered to a looping stereo clip |
 | `AudioMixer` | Named sound bank, music with fades, volumes |
-| `IAudioDevice` | Backend: `RaylibAudioDevice` on desktop and web, `SilentAudioDevice` headless or without hardware |
+| `IAudioDevice` | The platform's device: SDL audio streams on the SDL platform (the default on desktops and phones), raylib's audio on the raylib platform (desktops and browsers), `SilentAudioDevice` headless or without hardware |
 
 Source: [`src/MicroEngine/Audio/`](../../src/MicroEngine/Audio/)
 
@@ -100,15 +100,16 @@ Source: [`games/NeonRift/Art/Sounds.cs`](../../games/NeonRift/Art/Sounds.cs)
 | Format | Support |
 | --- | --- |
 | WAV | PCM 8, 16 or 24-bit, mono or stereo, decoded in managed code (`AudioClip.FromWav`); other WAV encodings throw `NotSupportedException` |
-| OGG, MP3 | Music only, through `AddMusicFile`; the raylib device decodes and streams them |
+| OGG | Music only, through `AddMusicFile`; streamed by the SDL device (decoded in managed code with NVorbis) and by raylib |
+| MP3 | Music only, and **raylib only**: the SDL device, the default on desktops and phones, throws `NotSupportedException` for it. Use OGG for music that plays everywhere |
 
 Where content files live and how they are located is covered in [Assets](assets.md).
 
 ## Devices and silence
 
-`RaylibAudioDevice.TryCreate()` falls back to `SilentAudioDevice` when no audio device is available, so a machine
-without sound still runs the game. Each sound keeps four voices so rapid repeats overlap instead of cutting each
-other off. `--mute` on desktop (or `RunOptions.Mute`) sets both volumes to zero and uses the silent device.
+Both platforms fall back to `SilentAudioDevice` when no audio device is available (they print `audio: ...,
+continuing silently`), so a machine without sound still runs the game. Each sound keeps several voices so rapid
+repeats overlap instead of cutting each other off. `--mute` on desktop (or `RunOptions.Mute`) sets both volumes to zero and uses the silent device.
 `HeadlessPlatform` exposes its `SilentAudioDevice`, whose `Played` list lets tests assert which cues fired.
 
 ## In the browser

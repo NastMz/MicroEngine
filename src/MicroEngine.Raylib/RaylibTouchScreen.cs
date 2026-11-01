@@ -16,8 +16,10 @@ public sealed class RaylibTouchScreen : ITouchScreen
     internal static readonly TouchFeed Feed = new();
     private readonly RaylibOverlayCanvas _canvas = new();
 
+    /// <inheritdoc/>
     public Vector2 Size => new(Rl.GetRenderWidth(), Rl.GetRenderHeight());
 
+    /// <inheritdoc/>
     public RectF SafeArea
     {
         get
@@ -29,11 +31,17 @@ public sealed class RaylibTouchScreen : ITouchScreen
         }
     }
 
+    /// <inheritdoc/>
     public float PixelsPerDp => Feed.PixelsPerDp > 0 ? Feed.PixelsPerDp : OperatingSystem.IsBrowser() ? 1 : Math.Max(1, Rl.GetWindowScaleDPI().X);
+    /// <inheritdoc/>
     public bool TouchFirst => Feed.TouchFirst;
+    /// <inheritdoc/>
     public ITouchOverlay? Overlay { get; set; }
+    /// <inheritdoc/>
     public bool CanVibrate => Feed.Vibrator is not null && Feed.TouchFirst;
+    /// <inheritdoc/>
     public bool Vibrate(float strength, int milliseconds) => CanVibrate && Feed.Vibrator!(Math.Max(1, milliseconds));
+    /// <inheritdoc/>
     public void ReadTouches(List<TouchEvent> events) => Feed.Drain(events);
     internal void DrawOverlay() => Overlay?.Draw(_canvas);
 }

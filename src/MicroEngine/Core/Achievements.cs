@@ -16,8 +16,11 @@ public sealed record Achievement(string Id, string Name, string Description, int
 /// <summary>A snapshot of one achievement: its definition, accumulated progress and whether it is unlocked.</summary>
 public readonly record struct AchievementStatus(Achievement Definition, int Progress, bool Unlocked)
 {
+    /// <summary>The achievement's id.</summary>
     public string Id => Definition.Id;
+    /// <summary>The progress needed to unlock it.</summary>
     public int Goal => Definition.Goal;
+    /// <summary>Whether the goal is larger than 1, so the achievement shows progress.</summary>
     public bool IsProgressive => Definition.Goal > 1;
     /// <summary>0..1 for drawing progress bars.</summary>
     public float Fraction => Unlocked ? 1f : Math.Clamp(Progress / (float)Goal, 0f, 1f);
@@ -26,13 +29,18 @@ public readonly record struct AchievementStatus(Achievement Definition, int Prog
 /// <summary>What is written to the save slot. Entries are keyed by achievement id.</summary>
 public sealed class AchievementSaveData
 {
+    /// <summary>Format version of the saved data.</summary>
     public int Version { get; set; } = 1;
+    /// <summary>Saved state per achievement id.</summary>
     public Dictionary<string, AchievementRecord>? Entries { get; set; } = [];
 }
 
+/// <summary>The saved state of one achievement.</summary>
 public sealed class AchievementRecord
 {
+    /// <summary>Accumulated progress.</summary>
     public int Progress { get; set; }
+    /// <summary>Whether the achievement is unlocked.</summary>
     public bool Unlocked { get; set; }
 }
 
@@ -51,6 +59,7 @@ public sealed class AchievementRecord
 /// </remarks>
 public sealed class AchievementTracker
 {
+    /// <summary>The <see cref="SaveStore"/> slot that holds achievement state: "achievements".</summary>
     public const string SaveSlot = "achievements";
 
     private readonly List<Achievement> _catalog;
@@ -80,8 +89,11 @@ public sealed class AchievementTracker
         _storeUnreadable = !Load();
     }
 
+    /// <summary>The achievements in display order.</summary>
     public IReadOnlyList<Achievement> Catalog => _catalog;
+    /// <summary>Number of achievements in the catalog.</summary>
     public int Count => _catalog.Count;
+    /// <summary>Number of unlocked achievements in the catalog.</summary>
     public int UnlockedCount => _catalog.Count(a => IsUnlocked(a.Id));
     /// <summary>True when progress changed since the last successful save.</summary>
     public bool HasUnsavedChanges { get; private set; }
@@ -89,6 +101,8 @@ public sealed class AchievementTracker
     /// <summary>Every achievement in catalog order.</summary>
     public IReadOnlyList<AchievementStatus> All => [.. _catalog.Select(a => Get(a.Id))];
 
+    /// <summary>The current state of one achievement; progress is capped at its goal.</summary>
+    /// <exception cref="KeyNotFoundException"><paramref name="id"/> is not in the catalog.</exception>
     public AchievementStatus Get(string id)
     {
         var a = Find(id);
@@ -96,7 +110,11 @@ public sealed class AchievementTracker
         return new AchievementStatus(a, Math.Min(rec?.Progress ?? 0, a.Goal), rec?.Unlocked ?? false);
     }
 
+    /// <summary>Whether the achievement is unlocked.</summary>
+    /// <exception cref="KeyNotFoundException"><paramref name="id"/> is not in the catalog.</exception>
     public bool IsUnlocked(string id) => Get(id).Unlocked;
+    /// <summary>The achievement's progress, from 0 to its goal.</summary>
+    /// <exception cref="KeyNotFoundException"><paramref name="id"/> is not in the catalog.</exception>
     public int Progress(string id) => Get(id).Progress;
 
     /// <summary>Unlocks an achievement now. Returns true only the first time.</summary>

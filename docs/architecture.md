@@ -85,7 +85,7 @@ In short:
 
 - **Code-first content by default, files when a game wants them.** Sprites, tiles and fonts can be
   authored as code (`PixelImage`, char maps, palettes, noise) and sounds synthesized, so a game can ship
-  no binary assets. Games that use existing packs load PNG and WAV in managed code and stream OGG/MP3
+  no binary assets. Games that use existing packs load PNG and WAV in managed code and stream OGG (or MP3 on raylib)
   through the audio device; Neon Rift does this with CC0 assets listed in its `CREDITS.md`.
   Games can also mix both per element: Courtyard Key and Trail Duel load a few crafted
   pieces and keep the rest procedural, repainting imported sprites with their own palette at load.

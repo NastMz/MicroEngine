@@ -39,5 +39,11 @@ licence. The demo games are not in any package: they stay in the repository unde
 - SDK releases are published on GitHub as `sdk-v<version>`; the demo games have releases of their own (`v0.1.0`,
   `v0.2.0`...), with unrelated numbers.
 
-**Upgrading** a game: change the `MicroEngine.*` package versions in its project, `dotnet tool update -g
-MicroEngine.Cli --prerelease`, then read the [migration notes](../migrations.md) from your version up.
+**Upgrading** a game: update the tool, set the `MicroEngine.*` package versions in its project, and read the
+[migration notes](../migrations.md) from your version up ([Updating the SDK](updating.md)).
+
+## Published version and development
+
+The documentation describes the published SDK, **0.4.0-alpha.1**, and every code sample on this site is built against
+the packages on nuget.org. Work merged into the engine's repository after a release reaches the documentation's
+examples only when it is published; until then a page that mentions it says it is not in a published version yet.

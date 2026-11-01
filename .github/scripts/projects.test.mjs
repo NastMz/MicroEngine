@@ -58,4 +58,6 @@ test("this repository's graph: a game change stays inside that game, an engine c
   const backend = affectedScope(real, ['src/MicroEngine.Raylib/RaylibPlatform.cs']);
   assert.equal(backend.games, 'all');
   assert.ok(!backend.tests.includes('tests/MicroEngine.Tests/MicroEngine.Tests.csproj'), 'core tests do not reference the backend');
+  assert.ok(backend.tests.includes('tests/Samples.Tests/Samples.Tests.csproj'), 'the documented samples reach the engine through samples/Directory.Build.targets');
+  assert.deepEqual(affectedScope(real, ['samples/GemGarden/part4-complete/World/Player.cs']).tests, ['tests/Samples.Tests/Samples.Tests.csproj']);
 });

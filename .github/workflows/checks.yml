@@ -114,6 +114,15 @@ jobs:
         run: .github/scripts/dotnet-test.sh "${{ inputs.tests }}" "TestCategory!=Native" test-results
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results ".NET tests on Linux"
+      # The API reference pages (docs/api) are generated from the engine's XML comments and committed; they must match.
+      - name: API reference is up to date
+        if: inputs.tests == 'all' || contains(inputs.tests, 'MicroEngine')
+        run: dotnet tool restore && node site/scripts/api-reference.mjs --check
+      # The documentation's samples, copied outside the repository and built with nuget.org only: what readers copy
+      # works with the SDK version the documentation presents as published.
+      - name: Documented samples build against the published SDK
+        if: inputs.tests == 'all' || contains(inputs.tests, 'Samples.Tests')
+        run: node sdk/tests/docs.mjs
       - if: inputs.evidence
         run: node .github/scripts/evidence.mjs record dotnet "${{ fromJSON(inputs.keys).dotnet }}" evidence.json
       - if: inputs.evidence

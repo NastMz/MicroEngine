@@ -30,7 +30,7 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 | 2D only; no 3D, physics engine, networking or scripting language | [Architecture](../architecture.md) |
 | No visual editor, level editor or asset tool: content is code, or files loaded through `ContentFolder` | [Assets](../manual/assets.md) |
 | No ECS: plain entities, sized for a few hundred objects per scene | [Architecture](../architecture.md) |
-| Text uses the built-in pixel font (`Game.Font`); loading other fonts (TrueType or bitmap sheets) is not supported yet | [Rendering](../manual/rendering.md#text-bitmapfont) |
+| Text uses the built-in pixel font (`Game.Font`); loading other fonts (TrueType or bitmap sheets) is not supported yet | [Text](../manual/text.md) |
 | Below 12 drawn frames per second the game slows down instead of skipping updates (at most five steps per frame) | [Architecture](../architecture.md#the-frame) |
 
 ## Input
@@ -71,7 +71,7 @@ When storage is full or blocked, the game keeps running and the page says progre
 | Windows executables are not code-signed by the tool, so SmartScreen may warn until you sign them | [Signing](../guide/signing.md#windows) |
 | macOS apps without a Developer ID signature and notarization need Open Anyway in Privacy & Security on first launch | [Signing](../guide/signing.md#macos) |
 | iOS device builds and App Store distribution need an Apple Developer account | [Signing](../guide/signing.md#ios) |
-| Desktop packages include raylib next to SDL (for `--platform raylib`); a game that references only `MicroEngine.Sdl` ships SDL alone | [Getting MicroEngine](../guide/getting-microengine.md#only-sdl) |
+| Desktop packages include raylib next to SDL (for `--platform raylib`); a game that references only `MicroEngine.Sdl` ships SDL alone | [Install the SDK](../guide/getting-microengine.md#adding-microengine-to-an-existing-project) |
 
 ## API stability
 

@@ -15,6 +15,7 @@ public sealed class GameSession(Func<Game> createGame, Func<Game, IPlatform> cre
 
     /// <summary>The game of the current or last run.</summary>
     public Game? Game { get; private set; }
+    /// <summary>Whether a run is in progress.</summary>
     public bool IsRunning => _loop?.IsRunning == true;
     /// <summary>Frames rendered by the current or last run.</summary>
     public long Frames => _loop?.Frames ?? Result?.Frames ?? 0;

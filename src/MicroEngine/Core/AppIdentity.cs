@@ -6,8 +6,11 @@ namespace MicroEngine.Core;
 /// <summary>Screen orientations a game allows on phones (<c>MicroEngineOrientation</c> in its project).</summary>
 public enum AppOrientation
 {
+    /// <summary>Wider than tall (the default).</summary>
     Landscape,
+    /// <summary>Taller than wide.</summary>
     Portrait,
+    /// <summary>Follows the device.</summary>
     Any,
 }
 

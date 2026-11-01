@@ -14,6 +14,19 @@
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/HelloEngine/HelloEngine.csproj" />
+    <Project Path="samples/Examples/Examples.csproj" />
+  </Folder>
+  <Folder Name="/samples/GemGarden/part1-scenes/">
+    <Project Path="samples/GemGarden/part1-scenes/GemGarden.csproj" />
+  </Folder>
+  <Folder Name="/samples/GemGarden/part2-hero/">
+    <Project Path="samples/GemGarden/part2-hero/GemGarden.csproj" />
+  </Folder>
+  <Folder Name="/samples/GemGarden/part3-garden/">
+    <Project Path="samples/GemGarden/part3-garden/GemGarden.csproj" />
+  </Folder>
+  <Folder Name="/samples/GemGarden/part4-complete/">
+    <Project Path="samples/GemGarden/part4-complete/GemGarden.csproj" />
   </Folder>
   <Folder Name="/templates/">
     <Project Path="templates/MicroEngine.Templates/MicroEngine.Templates.csproj" />
@@ -26,5 +39,6 @@
     <Project Path="tests/MeadowRun.Tests/MeadowRun.Tests.csproj" />
     <Project Path="tests/NeonRift.Tests/NeonRift.Tests.csproj" />
     <Project Path="tests/TrailDuel.Tests/TrailDuel.Tests.csproj" />
+    <Project Path="tests/Samples.Tests/Samples.Tests.csproj" />
   </Folder>
 </Solution>

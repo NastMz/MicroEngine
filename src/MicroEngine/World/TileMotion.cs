@@ -3,9 +3,17 @@ using System.Numerics;
 namespace MicroEngine.World;
 
 /// <summary>What happened during a <see cref="TileMotion.Move"/>.</summary>
+/// <param name="Bounds">The box after the move.</param>
+/// <param name="HitLeft">Movement to the left was stopped.</param>
+/// <param name="HitRight">Movement to the right was stopped.</param>
+/// <param name="HitCeiling">Upward movement was stopped.</param>
+/// <param name="HitFloor">Downward movement was stopped (the body landed).</param>
+/// <param name="Touched">Flags of every tile the box overlaps at the end (hazards, water...).</param>
 public readonly record struct MoveResult(RectF Bounds, bool HitLeft, bool HitRight, bool HitCeiling, bool HitFloor, TileFlags Touched)
 {
+    /// <summary>Whether horizontal movement was stopped on either side.</summary>
     public bool HitWall => HitLeft || HitRight;
+    /// <summary>The top-left of <see cref="Bounds"/>.</summary>
     public Vector2 Position => Bounds.Position;
 }
 
@@ -16,6 +24,14 @@ public readonly record struct MoveResult(RectF Bounds, bool HitLeft, bool HitRig
 /// </summary>
 public static class TileMotion
 {
+    /// <summary>Moves <paramref name="box"/> by <paramref name="delta"/>, stopping flush against solid tiles, one-way tiles (from above) and <paramref name="solids"/>.</summary>
+    /// <param name="box">The body's hitbox in world pixels.</param>
+    /// <param name="delta">Movement in pixels for this step (velocity × dt).</param>
+    /// <param name="grid">The tiles to collide with.</param>
+    /// <param name="solids">Extra solid rectangles; one the box already overlaps before moving is ignored, so a body is never trapped inside it.</param>
+    /// <param name="ignoreOneWay">Passes through one-way tiles (dropping down through a platform).</param>
+    /// <returns>The new box and what it hit. On a hit, movement along that axis stops for the rest of this step.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="delta"/> is not finite.</exception>
     public static MoveResult Move(RectF box, Vector2 delta, ICollisionGrid grid, IReadOnlyList<RectF>? solids = null, bool ignoreOneWay = false)
     {
         ArgumentNullException.ThrowIfNull(grid);
@@ -70,6 +86,7 @@ public static class TileMotion
         return flags;
     }
 
+    /// <summary>Whether the tile under <paramref name="point"/> (world pixels) is solid. One-way tiles do not count.</summary>
     public static bool IsSolidAt(Vector2 point, ICollisionGrid grid)
         => (grid.FlagsAt((int)MathF.Floor(point.X / grid.TileSize), (int)MathF.Floor(point.Y / grid.TileSize)) & TileFlags.Solid) != 0;
 

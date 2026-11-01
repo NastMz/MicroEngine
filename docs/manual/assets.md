@@ -2,8 +2,8 @@
 
 MicroEngine is code-first: sprites, tiles, fonts, sounds and music can all be generated in C# at start-up, so a
 game can ship without a single binary file. When a game wants existing art or audio, it keeps the files under its
-own `Content/` folder and loads them through `ContentFolder` with managed PNG and WAV decoders, while OGG and MP3
-music is streamed by the backend. Both approaches can be mixed per element, and every shipped file is credited in
+own `Content/` folder and loads them through `ContentFolder` with managed PNG and WAV decoders, while OGG music (and
+MP3 on the raylib platform) is streamed by the backend. Both approaches can be mixed per element, and every shipped file is credited in
 the game's `CREDITS.md`.
 
 ## Choosing an approach
@@ -101,7 +101,7 @@ Source: [`games/CourtyardKey/Visuals/MonsterArt.cs`](../../games/CourtyardKey/Vi
 ## Audio files
 
 `AudioMixer.AddSoundFile` decodes PCM WAV (8/16/24-bit, mono or stereo). `AddMusicFile` decodes WAV the same way
-and hands any other extension, such as `.ogg` or `.mp3`, to the device to stream. See
+and hands any other extension to the device to stream: `.ogg` everywhere, `.mp3` on the raylib platform only. See
 [Audio](audio.md#sound-and-music-files).
 
 ## Credits convention
@@ -115,5 +115,5 @@ ships no files and has no credits file.
 ## Limitations
 
 - No asset pipeline, hot reload or content packing: files are read directly at load time.
-- Supported formats are PNG (images), WAV (sounds and music), and OGG/MP3 (music only).
+- Supported formats are PNG (images), WAV (sounds and music), OGG (music) and MP3 (music, raylib platform only).
 - No importers for map editors, Aseprite files or texture packer layouts; slicing is grid-based or done in code.

@@ -43,14 +43,14 @@ Each game has five achievements and saves its progress, and is packaged for desk
 
 | Principle | In practice | More |
 | --- | --- | --- |
-| Code-first content, files when wanted | `PixelImage`, palettes, noise and `Synth` build assets in code; `ContentFolder` loads PNG, WAV, OGG and MP3 | [Assets](../manual/assets.md) |
+| Code-first content, files when wanted | `PixelImage`, palettes, noise and `Synth` build assets in code; `ContentFolder` loads PNG and WAV, and music streams from OGG | [Assets](../manual/assets.md) |
 | Scenes on a stack | Pause menus, dialogue and inventories are overlay scenes; transitions swap scenes at their midpoint | [Scenes](../manual/scenes.md) |
 | Plain entities, not an ECS | Small classes with `Update`/`Draw` in an `EntityList<T>` with deferred add and remove | [Architecture](../architecture.md) |
 | Actions, never keys | Games ask for `"jump"` or `"confirm"`; scripts and tests force the same actions | [Architecture](../architecture.md) |
 | Fixed-step simulation | 60 updates per second, rendering once per frame; headless runs are deterministic | [Architecture](../architecture.md) |
 | Integrate, do not reinvent | Platforms are profiles over existing libraries (SDL 3, raylib); the core references none of them, and a host can replace a subsystem or register its own platform | [Backends and platforms](../manual/backends.md) |
 | The engine keeps score, the game decides | `AchievementTracker` owns progress and persistence; games call `Unlock`/`AddProgress`/`SetProgress` | [Achievements](../manual/achievements.md) |
-| Genre-neutral engine | The engine holds no game rules: platformers, adventures and RPGs are built from the same parts | [Making a game](../making-a-game.md) |
+| Genre-neutral engine | The engine holds no game rules: platformers, adventures and RPGs are built from the same parts | [Tutorial](../tutorial/README.md) |
 
 ## What the engine provides
 
@@ -58,7 +58,7 @@ Each game has five achievements and saves its progress, and is packaged for desk
 - Action-based input (keyboard, gamepad and on-screen touch controls, digital and analog) and scripted input playback.
 - Procedural pixel art (`PixelImage`, palettes, noise, dithering), sprite atlases, animation, particles,
   camera, parallax layers, a light map and a built-in pixel font.
-- Managed PNG and WAV loading, grid sprite-sheet slicing, streamed OGG/MP3 music.
+- Managed PNG and WAV loading, grid sprite-sheet slicing, streamed OGG music (and MP3 on raylib).
 - Tile layers, swept tile collision with one-way platforms, autotiling, plain entities.
 - A retro sound synthesizer, step-sequencer music and a mixer that fades between tracks.
 - Dialogue boxes, selection menus, JSON saves, achievements with banners and a list screen.
@@ -76,9 +76,10 @@ long-term vision; they are neither available nor committed.
 
 | If you want to | Read |
 | --- | --- |
-| Install the SDK | [Getting MicroEngine](getting-microengine.md) |
-| Write your first game | [Hello Engine walkthrough](../examples/hello-engine.md), then [Making a game](../making-a-game.md) |
+| Install the SDK | [Install the SDK](getting-microengine.md), then [Your first game](first-game.md) |
+| Learn by building a game | [Tutorial: Gem Garden](../tutorial/README.md) |
+| Find a quick answer | [How do I...?](../howto.md) and the [focused examples](../examples/focused.md) |
 | Learn each subsystem | [Engine manual](../manual/lifecycle.md) |
-| Look up signatures | [Contracts](../reference/contracts.md) |
+| Look up a type or method | [API reference](../api/README.md) |
 | Check where it runs | [Platforms](platforms.md) and [Requirements and limitations](../reference/limitations.md) |
 | Understand the design | [Architecture](../architecture.md) |

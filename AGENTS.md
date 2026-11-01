@@ -17,8 +17,8 @@ sufficient without previous chats or agent memory.
   the previous implementation and the first days of the rebuild live only in the maintainer's archive, so commit
   hashes and Actions run IDs quoted in older records point there. Never push branches from an old clone.
 - The active rebuild record (specs, tasks, log) is [`odd/tasks/engine-rebuild.md`](odd/tasks/engine-rebuild.md); the latest
-  feature records are [`odd/tasks/sdk-1.md`](odd/tasks/sdk-1.md), [`odd/tasks/input-1.md`](odd/tasks/input-1.md) and
-  [`odd/tasks/product-1.md`](odd/tasks/product-1.md).
+  feature records are [`odd/tasks/docs-1.md`](odd/tasks/docs-1.md), [`odd/tasks/sdk-1.md`](odd/tasks/sdk-1.md),
+  [`odd/tasks/input-1.md`](odd/tasks/input-1.md) and [`odd/tasks/product-1.md`](odd/tasks/product-1.md).
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence);
   `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual macOS, Android and iOS
   experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos reach the public site
@@ -45,5 +45,11 @@ sufficient without previous chats or agent memory.
   repository and are never published, linked or quoted on public pages (`site/src/lib/repo-docs.mjs` refuses such
   links, `site/scripts/check-dist.mjs` refuses such content). Public pages state capabilities and functional limits,
   not how they were tested.
+- Public documentation describes the published SDK. Its code is quoted from samples (`samples/GemGarden`,
+  `samples/Examples`, `samples/HelloEngine`), which reference the published packages and build against the source in the
+  repository; a fenced block after `<!-- code: path#region -->` must equal that file region (the site build checks it;
+  `node site/scripts/snippets.mjs --write` refreshes them). `docs/api` is generated from the XML comments by
+  `node site/scripts/api-reference.mjs`; never edit it by hand. A capability merged but not yet published is labelled
+  as such on any page that mentions it.
 - Technical artifacts in English. Conventional Commits, no AI attribution lines.
 - Branch names: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`. No force-push, PR or release without the owner asking.

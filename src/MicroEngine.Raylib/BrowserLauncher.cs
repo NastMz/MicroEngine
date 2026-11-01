@@ -13,6 +13,7 @@ namespace MicroEngine.Raylib;
 [SupportedOSPlatform("browser")]
 public static class BrowserLauncher
 {
+    /// <summary>Creates the session a browser page drives; each start builds a new game with <paramref name="createGame"/> on the raylib platform.</summary>
     public static GameSession CreateSession(Func<Game> createGame)
     {
         ArgumentNullException.ThrowIfNull(createGame);

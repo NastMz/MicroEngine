@@ -37,10 +37,14 @@ public sealed class LightMap : IDisposable
     public Color Shade { get; set; } = Color.Hex("101020");
     /// <summary>Multiplier applied to every glow's alpha (e.g. fade halos with the darkness).</summary>
     public float GlowIntensity { get; set; } = 1f;
+    /// <summary>Size of a brightness cell in pixels (4 by default); larger cells are cheaper and blockier.</summary>
     public int CellSize { get; set; } = 4;
+    /// <summary>Number of brightness bands (12 by default); fewer bands give a more stylised look.</summary>
     public int Levels { get; set; } = 12;
+    /// <summary>Number of lights added since the last <see cref="Clear"/>.</summary>
     public int LightCount => _lights.Count;
 
+    /// <summary>Removes every light; call it at the start of each frame before adding lights.</summary>
     public void Clear() => _lights.Clear();
 
     /// <summary>
@@ -139,5 +143,6 @@ public sealed class LightMap : IDisposable
         return image;
     }
 
+    /// <summary>Releases the halo texture.</summary>
     public void Dispose() => _glow?.Dispose();
 }

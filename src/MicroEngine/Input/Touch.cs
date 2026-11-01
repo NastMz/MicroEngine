@@ -2,6 +2,10 @@ using System.Numerics;
 
 namespace MicroEngine.Input;
 
+/// <summary>
+/// What happened to a finger in a <see cref="TouchEvent"/>: it touched the screen (<c>Began</c>), moved (<c>Moved</c>),
+/// was lifted (<c>Ended</c>), or the system took it away, for example when the game left the screen (<c>Canceled</c>).
+/// </summary>
 public enum TouchPhase { Began, Moved, Ended, Canceled }
 
 /// <summary>One change of one finger, in the touch screen's pixels (<see cref="ITouchScreen.Size"/>).</summary>
@@ -38,6 +42,7 @@ public interface ITouchScreen
 /// <summary>Something drawn over the game on the touch screen, such as <see cref="VirtualControls"/>.</summary>
 public interface ITouchOverlay
 {
+    /// <summary>Draws the overlay in screen pixels.</summary>
     void Draw(IOverlayCanvas canvas);
 
     /// <summary>
@@ -51,10 +56,13 @@ public interface ITouchOverlay
 /// <summary>Primitive drawing in screen pixels, implemented by each backend for <see cref="ITouchOverlay"/>.</summary>
 public interface IOverlayCanvas
 {
+    /// <summary>Fills a circle.</summary>
     void FillCircle(Vector2 center, float radius, Color color);
     /// <summary>A circle outline of the given thickness, drawn inward from <paramref name="radius"/>.</summary>
     void Ring(Vector2 center, float radius, float thickness, Color color);
+    /// <summary>Fills a triangle.</summary>
     void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color);
+    /// <summary>Fills a rectangle.</summary>
     void FillRect(RectF rect, Color color);
     /// <summary>Short text centred on <paramref name="center"/>, about <paramref name="height"/> pixels tall.</summary>
     void Text(string text, Vector2 center, float height, Color color);

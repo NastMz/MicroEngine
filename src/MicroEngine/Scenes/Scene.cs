@@ -11,14 +11,34 @@ namespace MicroEngine.Scenes;
 /// an overlay scene (dialogue, pause) draws on top of the scene below and can freeze it.
 /// Each scene owns its coroutines and tweens, which stop when it leaves the stack.
 /// </summary>
+/// <example>
+/// <code>
+/// public sealed class TitleScene : Scene
+/// {
+///     public override void Update(float dt)
+///     {
+///         if (Input.Pressed("confirm")) Game.Scenes.Replace(new LevelScene(), Transition.Fade());
+///     }
+///
+///     public override void Draw(IRenderer renderer) =>
+///         Font.DrawCentered(renderer, "PRESS START", new Vector2(Game.Width / 2f, Game.Height / 2f), Color.White);
+/// }
+/// </code>
+/// </example>
 public abstract class Scene
 {
     private Game? _game;
+    /// <summary>The game this scene belongs to. Set when the scene is pushed; throws <see cref="InvalidOperationException"/> before that (for example in the scene's constructor).</summary>
     public Game Game => _game ?? throw new InvalidOperationException("Scene is not attached to a game.");
+    /// <summary>The game's input actions (<see cref="Core.Game.Input"/>).</summary>
     public InputMap Input => Game.Input;
+    /// <summary>The game's audio mixer (<see cref="Core.Game.Audio"/>).</summary>
     public AudioMixer Audio => Game.Audio;
+    /// <summary>The game's built-in font (<see cref="Core.Game.Font"/>).</summary>
     public BitmapFont Font => Game.Font;
+    /// <summary>Coroutines owned by this scene. They advance before <see cref="Update"/> while the scene is updated and stop when it leaves the stack.</summary>
     public CoroutineRunner Coroutines { get; } = new();
+    /// <summary>Tweens owned by this scene. They advance before <see cref="Update"/> while the scene is updated and are cleared when it leaves the stack.</summary>
     public Tweener Tweens { get; } = new();
     /// <summary>Seconds this scene has been updated.</summary>
     public float Age { get; private set; }
@@ -30,7 +50,9 @@ public abstract class Scene
 
     internal void Attach(Game game) => _game = game;
 
+    /// <summary>Called when the scene is pushed onto the stack, after <see cref="Game"/> is set and input was reset.</summary>
     public virtual void Enter() { }
+    /// <summary>Called when the scene leaves the stack (popped, replaced or cleared), after its coroutines and tweens stopped.</summary>
     public virtual void Exit() { }
     /// <summary>Called when a scene pushed above this one is popped.</summary>
     public virtual void Resume() { }
@@ -45,7 +67,11 @@ public abstract class Scene
     /// the buttons that confirm and cancel stay. Read every frame, so a scene may change it with its own state.
     /// </summary>
     public virtual IReadOnlyCollection<string>? TouchActions => null;
+    /// <summary>Advances the scene by one fixed step. Not called while a blocking overlay is above, nor during the covering half of a transition.</summary>
+    /// <param name="dt">Step length in seconds (<c>1 / UpdateRate</c>).</param>
     public abstract void Update(float dt);
+    /// <summary>Draws the scene once per frame into the virtual canvas. Scenes below an overlay are drawn first.</summary>
+    /// <param name="renderer">The renderer of the current frame.</param>
     public abstract void Draw(IRenderer renderer);
 
     internal void Tick(float dt)
@@ -69,12 +95,25 @@ public sealed class SceneManager
 
     internal SceneManager(Game game) => _game = game;
 
+    /// <summary>The top scene, or null when the stack is empty.</summary>
     public Scene? Current => _stack.Count > 0 ? _stack[^1] : null;
+    /// <summary>Number of scenes on the stack.</summary>
     public int Count => _stack.Count;
+    /// <summary>Whether a transition is playing.</summary>
     public bool InTransition => _transition is not null;
+    /// <summary>The scenes from bottom (index 0) to top.</summary>
     public IReadOnlyList<Scene> Stack => _stack;
 
+    /// <summary>
+    /// Puts <paramref name="scene"/> on top of the stack. The change is deferred: it applies before the next update (or
+    /// after <see cref="Core.Game"/>'s <c>Load</c>), or halfway through <paramref name="transition"/> when one is given.
+    /// </summary>
+    /// <remarks>
+    /// A change requested while a transition plays drops its own transition and applies like a change without one, even
+    /// before the playing transition swaps its scenes.
+    /// </remarks>
     public void Push(Scene scene, Transition? transition = null) => Schedule(() => PushNow(scene), transition);
+    /// <summary>Removes the top scene, deferred like <see cref="Push"/>. The scene below receives <see cref="Scene.Resume"/>. Does nothing on an empty stack.</summary>
     public void Pop(Transition? transition = null) => Schedule(PopNow, transition);
     /// <summary>Replaces the top scene.</summary>
     public void Replace(Scene scene, Transition? transition = null) => Schedule(() => { PopNow(); PushNow(scene); }, transition);
@@ -160,18 +199,36 @@ public sealed class SceneManager
 /// </summary>
 public abstract class Transition(float duration)
 {
+    /// <summary>Length of the transition in seconds (at least 0.02).</summary>
     public float Duration { get; } = Math.Max(duration, 0.02f);
+    /// <summary>Seconds played so far.</summary>
     public float Elapsed { get; private set; }
+    /// <summary>Elapsed time as a fraction of <see cref="Duration"/>, from 0 to 1. The scenes swap at 0.5.</summary>
     public float Progress => Math.Clamp(Elapsed / Duration, 0, 1);
+    /// <summary>Whether the transition has played to the end.</summary>
     public bool Finished => Elapsed >= Duration;
     /// <summary>0 = nothing covered, 1 = fully covered.</summary>
     public float Cover => Progress < 0.5f ? Ease.InOutQuad(Progress * 2) : Ease.InOutQuad((1 - Progress) * 2);
     internal void Advance(float dt) => Elapsed += dt;
+    /// <summary>Draws the effect over the scenes, using <see cref="Cover"/>.</summary>
     public abstract void Draw(IRenderer renderer);
 
+    /// <summary>Fades to <paramref name="color"/> (black by default) and back.</summary>
+    /// <param name="duration">Total length in seconds.</param>
+    /// <param name="color">Cover colour; null for black.</param>
     public static Transition Fade(float duration = 0.5f, Color? color = null) => new FadeTransition(duration, color ?? Color.Black);
+    /// <summary>A circle closes on <paramref name="center"/> (virtual pixels) and opens again.</summary>
+    /// <param name="center">Centre of the circle in virtual pixels.</param>
+    /// <param name="duration">Total length in seconds.</param>
+    /// <param name="color">Cover colour; null for black.</param>
     public static Transition Iris(Vector2 center, float duration = 0.8f, Color? color = null) => new IrisTransition(duration, center, color ?? Color.Black);
+    /// <summary>Growing diamonds sweep diagonally across the screen and shrink away.</summary>
+    /// <param name="duration">Total length in seconds.</param>
+    /// <param name="color">Cover colour; null for black.</param>
     public static Transition Diamonds(float duration = 0.7f, Color? color = null) => new DiamondTransition(duration, color ?? Color.Black);
+    /// <summary>A panel slides in from the left, then leaves to the right.</summary>
+    /// <param name="duration">Total length in seconds.</param>
+    /// <param name="color">Cover colour; null for black.</param>
     public static Transition Wipe(float duration = 0.6f, Color? color = null) => new WipeTransition(duration, color ?? Color.Black);
 }
 

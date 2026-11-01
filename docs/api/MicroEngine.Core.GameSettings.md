@@ -1,0 +1,236 @@
+# Class GameSettings
+
+<div data-pagefind-weight="0.3">
+
+Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
+Assembly: MicroEngine.dll  
+Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+
+Window/backbuffer settings a game declares. The virtual size is the pixel-art canvas.
+
+```csharp
+public sealed record GameSettings : IEquatable<GameSettings>
+```
+
+#### Inheritance
+
+[object](https://learn.microsoft.com/dotnet/api/system.object) ← 
+[GameSettings](MicroEngine.Core.GameSettings.md)
+
+#### Implements
+
+[IEquatable<GameSettings\>](https://learn.microsoft.com/dotnet/api/system.iequatable\-1)
+
+## Constructors
+
+### <a id="MicroEngine_Core_GameSettings__ctor_System_String_System_Int32_System_Int32_System_Int32_"></a> GameSettings\(string, int, int, int\)
+
+Window/backbuffer settings a game declares. The virtual size is the pixel-art canvas.
+
+```csharp
+public GameSettings(string Title, int VirtualWidth = 320, int VirtualHeight = 180, int Scale = 4)
+```
+
+#### Parameters
+
+`Title` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+Window title and application name shown by the system.
+
+`VirtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+Width of the virtual canvas in pixels (320 by default). Everything is drawn in these pixels and scaled to the window.
+
+`VirtualHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+Height of the virtual canvas in pixels (180 by default).
+
+`Scale` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+Initial window size as a multiple of the virtual size on desktop (4 by default); the launcher's <code>--scale</code> overrides it.
+
+## Properties
+
+### <a id="MicroEngine_Core_GameSettings_Background"></a> Background
+
+Colour the canvas is cleared to before the scenes draw each frame (black by default).
+
+```csharp
+public Color Background { get; init; }
+```
+
+#### Property Value
+
+ [Color](MicroEngine.Color.md)
+
+### <a id="MicroEngine_Core_GameSettings_Scale"></a> Scale
+
+Initial window size as a multiple of the virtual size on desktop (4 by default); the launcher's <code>--scale</code> overrides it.
+
+```csharp
+public int Scale { get; init; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_GameSettings_Title"></a> Title
+
+Window title and application name shown by the system.
+
+```csharp
+public string Title { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+### <a id="MicroEngine_Core_GameSettings_UpdateRate"></a> UpdateRate
+
+Fixed simulation rate in updates per second.
+
+```csharp
+public int UpdateRate { get; init; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_GameSettings_VirtualHeight"></a> VirtualHeight
+
+Height of the virtual canvas in pixels (180 by default).
+
+```csharp
+public int VirtualHeight { get; init; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_GameSettings_VirtualWidth"></a> VirtualWidth
+
+Width of the virtual canvas in pixels (320 by default). Everything is drawn in these pixels and scaled to the window.
+
+```csharp
+public int VirtualWidth { get; init; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+## Methods
+
+### <a id="MicroEngine_Core_GameSettings__Clone__"></a> <Clone\>$\(\)
+
+```csharp
+public GameSettings <Clone>$()
+```
+
+#### Returns
+
+ [GameSettings](MicroEngine.Core.GameSettings.md)
+
+### <a id="MicroEngine_Core_GameSettings_Deconstruct_System_String__System_Int32__System_Int32__System_Int32__"></a> Deconstruct\(out string, out int, out int, out int\)
+
+```csharp
+public void Deconstruct(out string Title, out int VirtualWidth, out int VirtualHeight, out int Scale)
+```
+
+#### Parameters
+
+`Title` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`VirtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`VirtualHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`Scale` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_GameSettings_Equals_System_Object_"></a> Equals\(object?\)
+
+```csharp
+public override bool Equals(object? obj)
+```
+
+#### Parameters
+
+`obj` [object](https://learn.microsoft.com/dotnet/api/system.object)?
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_GameSettings_Equals_MicroEngine_Core_GameSettings_"></a> Equals\(GameSettings?\)
+
+```csharp
+public bool Equals(GameSettings? other)
+```
+
+#### Parameters
+
+`other` [GameSettings](MicroEngine.Core.GameSettings.md)?
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_GameSettings_GetHashCode"></a> GetHashCode\(\)
+
+```csharp
+public override int GetHashCode()
+```
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_GameSettings_ToString"></a> ToString\(\)
+
+```csharp
+public override string ToString()
+```
+
+#### Returns
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+## Operators
+
+### <a id="MicroEngine_Core_GameSettings_op_Equality_MicroEngine_Core_GameSettings_MicroEngine_Core_GameSettings_"></a> operator ==\(GameSettings?, GameSettings?\)
+
+```csharp
+public static bool operator ==(GameSettings? left, GameSettings? right)
+```
+
+#### Parameters
+
+`left` [GameSettings](MicroEngine.Core.GameSettings.md)?
+
+`right` [GameSettings](MicroEngine.Core.GameSettings.md)?
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_GameSettings_op_Inequality_MicroEngine_Core_GameSettings_MicroEngine_Core_GameSettings_"></a> operator \!=\(GameSettings?, GameSettings?\)
+
+```csharp
+public static bool operator !=(GameSettings? left, GameSettings? right)
+```
+
+#### Parameters
+
+`left` [GameSettings](MicroEngine.Core.GameSettings.md)?
+
+`right` [GameSettings](MicroEngine.Core.GameSettings.md)?
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

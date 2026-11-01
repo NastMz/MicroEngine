@@ -1,5 +1,10 @@
 namespace MicroEngine.Audio;
 
+/// <summary>
+/// Oscillator waveforms for <see cref="SfxParams"/> and <see cref="Instrument"/>: <c>Square</c>, <c>Triangle</c>, <c>Saw</c>,
+/// <c>Sine</c>, <c>Noise</c> (a random value held for each cycle, so its frequency sets the colour of the noise), and the
+/// thinner pulse waves <c>Pulse25</c> and <c>Pulse12</c> (25% and 12.5% duty cycle).
+/// </summary>
 public enum Wave { Square, Triangle, Saw, Sine, Noise, Pulse25, Pulse12 }
 
 /// <summary>
@@ -8,19 +13,27 @@ public enum Wave { Square, Triangle, Saw, Sine, Noise, Pulse25, Pulse12 }
 /// </summary>
 public sealed record SfxParams
 {
+    /// <summary>The oscillator waveform (square by default).</summary>
     public Wave Wave { get; init; } = Wave.Square;
     /// <summary>Start frequency in Hz.</summary>
     public float Frequency { get; init; } = 440f;
     /// <summary>Frequency at the end of the sound (exponential slide). Null keeps it constant.</summary>
     public float? EndFrequency { get; init; }
+    /// <summary>Seconds to rise from silence to full volume.</summary>
     public float Attack { get; init; } = 0.005f;
+    /// <summary>Seconds held at full volume after the attack.</summary>
     public float Sustain { get; init; } = 0.08f;
+    /// <summary>Seconds to fade to silence after the sustain. The sound lasts <c>Attack + Sustain + Decay</c> seconds.</summary>
     public float Decay { get; init; } = 0.12f;
+    /// <summary>Peak amplitude, 0..1 (default 0.5).</summary>
     public float Volume { get; init; } = 0.5f;
+    /// <summary>Vibrato depth as a fraction of the frequency (0 disables; 0.02 is a light wobble).</summary>
     public float VibratoDepth { get; init; }
+    /// <summary>Vibrato speed in Hz (default 8).</summary>
     public float VibratoRate { get; init; } = 8f;
     /// <summary>Optional arpeggio: frequency multipliers stepped every <see cref="ArpeggioStep"/> seconds.</summary>
     public float[]? Arpeggio { get; init; }
+    /// <summary>Seconds each <see cref="Arpeggio"/> multiplier lasts (default 0.05).</summary>
     public float ArpeggioStep { get; init; } = 0.05f;
     /// <summary>Simple one-pole low-pass in Hz (0 disables). Softens harsh square/noise sounds.</summary>
     public float LowPass { get; init; }
@@ -31,6 +44,10 @@ public sealed record SfxParams
 /// <summary>Deterministic waveform synthesis for sound effects and music voices.</summary>
 public static class Synth
 {
+    /// <summary>Synthesizes a mono sound effect. The same parameters always produce the same samples.</summary>
+    /// <param name="p">The sound description.</param>
+    /// <param name="sampleRate">Samples per second of the result.</param>
+    /// <returns>A mono clip, ready for <see cref="AudioMixer.AddSound"/>.</returns>
     public static AudioClip Render(SfxParams p, int sampleRate = AudioClip.DefaultSampleRate)
     {
         ArgumentNullException.ThrowIfNull(p);
@@ -61,6 +78,10 @@ public static class Synth
         return new AudioClip(samples, sampleRate);
     }
 
+    /// <summary>The value of <paramref name="wave"/> at <paramref name="phase"/>, in -1..1.</summary>
+    /// <param name="wave">The waveform.</param>
+    /// <param name="phase">Position in the cycle, 0..1.</param>
+    /// <param name="noise">The value returned for <see cref="Wave.Noise"/>.</param>
     public static float Oscillator(Wave wave, float phase, float noise) => wave switch
     {
         Wave.Square => phase < 0.5f ? 1f : -1f,
@@ -73,6 +94,7 @@ public static class Synth
         _ => 0f,
     };
 
+    /// <summary>A linear attack-sustain-decay envelope: 0..1 at <paramref name="t"/> seconds.</summary>
     public static float Envelope(float t, float attack, float sustain, float decay)
     {
         if (t < attack) return attack <= 0 ? 1 : t / attack;

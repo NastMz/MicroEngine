@@ -3,8 +3,17 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+  <!-- Samples that the documentation quotes (the tutorial checkpoints, the examples) are written exactly as a developer's
+       project: they reference the published packages (<PackageReference Include="MicroEngine.Desktop" Version="..." />),
+       so a copy outside this repository builds against nuget.org (sdk/tests/docs.mjs checks it). Inside the repository
+       they build against the engine's source instead, so a change to the engine that breaks them fails here first.
+       MicroEngineUsePackages=true keeps the package reference (the published SDK) inside the repository too. -->
+  <ItemGroup Condition="'$(MicroEngineUsePackages)' != 'true'">
+    <PackageReference Remove="MicroEngine.Desktop" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
+  </ItemGroup>
   <!-- The samples use the same application-identity targets as any game built on the SDK packages
        (src/MicroEngine/build/MicroEngine.targets): a package reference imports them automatically, a project
        reference does not, so this file does. -->
-  <Import Project="../src/MicroEngine/build/MicroEngine.targets" />
+  <Import Project="../src/MicroEngine/build/MicroEngine.targets" Condition="'$(MicroEngineUsePackages)' != 'true'" />
 </Project>

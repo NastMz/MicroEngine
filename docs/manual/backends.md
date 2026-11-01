@@ -182,7 +182,7 @@ platform.Keys.Set(Key.Right, true);
 for (int i = 0; i < 60; i++) game.StepForTest();
 ```
 
-Source: [Making a game](../making-a-game.md#9-testing-and-captures)
+More in [Testing your game](../examples/testing.md).
 
 Running the real loop for a fixed number of updates:
 
