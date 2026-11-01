@@ -41,7 +41,7 @@ public SelectionList(params string[] options)
 
 ### <a id="MicroEngine_UI_SelectionList_Index"></a> Index
 
-The highlighted option. Setting it is not range-checked; keep it within [Options](MicroEngine.UI.SelectionList.md#MicroEngine_UI_SelectionList_Options).
+The highlighted option; a value outside the options is clamped to the first or the last.
 
 ```csharp
 public int Index { get; set; }
@@ -152,6 +152,12 @@ public void SetOptions(IEnumerable<string> options)
 #### Parameters
 
 `options` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">options</code> is empty.
 
 ### <a id="MicroEngine_UI_SelectionList_Update_MicroEngine_Input_InputMap_System_String_System_String_System_String_"></a> Update\(InputMap, string, string, string\)
 

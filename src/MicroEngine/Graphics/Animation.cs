@@ -47,8 +47,14 @@ public sealed class Animator
     public AnimationClip? Current { get; private set; }
     /// <summary>Seconds played in the current clip, scaled by <see cref="Speed"/>; reset to 0 when another clip starts.</summary>
     public float Time { get; private set; }
-    /// <summary>Playback speed multiplier (1 by default). Keep it at 0 or above.</summary>
-    public float Speed { get; set; } = 1f;
+    /// <summary>Playback speed multiplier: 1 by default, 0 pauses, 2 plays twice as fast.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">Set to a negative value or NaN (clips do not play backwards).</exception>
+    public float Speed
+    {
+        get => _speed;
+        set => _speed = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Animation speed must be 0 or more.");
+    }
+    private float _speed = 1f;
     /// <summary>Whether a non-looping clip has reached its end. Always false for looping clips.</summary>
     public bool Finished => Current is { Loop: false } c && Time >= c.Duration;
 

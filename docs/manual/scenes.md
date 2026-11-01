@@ -104,8 +104,9 @@ not updated; during the reveal the new scene already updates, so it is alive whe
 | `Transition.Wipe(duration, color?)` | 0.6 s | Horizontal wipe |
 
 The colour defaults to black. A custom effect subclasses `Transition` and draws using `Cover` (0 clear, 1 fully
-covered). If a change with a transition is requested while another transition runs, it is queued as an
-immediate change instead.
+covered). If a change with a transition is requested while another transition runs, its own transition is dropped
+and it applies as a change without one. In 0.4.0-alpha.1 such a change could apply before the playing transition
+swapped its scenes; in the next version (not yet published) every change waits for that swap and keeps its order.
 
 ```csharp
 Game.Scenes.Replace(new PlayScene(_game, progress), Transition.Iris(new Vector2(160, 70), 1.0f));

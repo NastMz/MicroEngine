@@ -137,7 +137,12 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
         for (int i = 0; i < args.Count; i++)
         {
             string Next() => i + 1 < args.Count ? args[++i] : throw new FormatException($"Missing value for {args[i]}.");
-            int Int() => int.TryParse(Next(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) && v > 0 ? v : throw new FormatException($"{args[i]} needs a positive integer.");
+            int Int()
+            {
+                string option = args[i], value = Next();
+                return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) && v > 0 ? v
+                    : throw new FormatException($"{option} needs a positive integer, not '{value}'.");
+            }
             switch (args[i])
             {
                 case "--script": script = Next(); break;

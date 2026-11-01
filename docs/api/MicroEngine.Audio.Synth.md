@@ -57,6 +57,12 @@ public static AudioClip Layer(params (AudioClip Clip, float Offset)[] parts)
 
  [AudioClip](MicroEngine.Audio.AudioClip.md)
 
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+A clip is not mono or not at [DefaultSampleRate](MicroEngine.Audio.AudioClip.md#MicroEngine_Audio_AudioClip_DefaultSampleRate).
+
 ### <a id="MicroEngine_Audio_Synth_NoteFrequency_System_String_"></a> NoteFrequency\(string\)
 
 Frequency of a note name such as "C4", "F#3" or "Bb5" (A4 = 440 Hz).

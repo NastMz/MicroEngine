@@ -69,8 +69,10 @@ Rendering happens on the CPU at load time; long songs add to start-up time, so r
 | `HasSound`, `HasMusic`, `CurrentMusic` | Queries |
 
 **Music changes are fade-out then fade-in, not an overlapping crossfade.** With a fade, the current track fades to
-silence over `fadeSeconds`, then the new one starts and rises to full volume in about a quarter of a second. With
-`fadeSeconds` 0, or when nothing is playing, the new track starts at once. Only one music track plays at a time.
+silence over `fadeSeconds`, then the new one starts and rises to full volume in about a quarter of a second. When
+nothing is playing, the new track starts at once and rises in about a quarter of a second. With `fadeSeconds` 0 it starts
+immediately; in 0.4.0-alpha.1 it still rises over that quarter of a second, and starts at full volume from the next
+version (not yet published). Only one music track plays at a time.
 
 Neon Rift wraps the mixer so missing cues are recorded for its tests instead of crashing:
 

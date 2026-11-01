@@ -83,7 +83,7 @@ No clip was added.
 
 ### <a id="MicroEngine_Graphics_Animator_Speed"></a> Speed
 
-Playback speed multiplier (1 by default). Keep it at 0 or above.
+Playback speed multiplier: 1 by default, 0 pauses, 2 plays twice as fast.
 
 ```csharp
 public float Speed { get; set; }
@@ -92,6 +92,12 @@ public float Speed { get; set; }
 #### Property Value
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+Set to a negative value or NaN (clips do not play backwards).
 
 ### <a id="MicroEngine_Graphics_Animator_Time"></a> Time
 

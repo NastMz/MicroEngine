@@ -274,13 +274,14 @@ public sealed class AudioMixer
     }
 
     /// <summary>Switches music. With a fade, the current track fades out before the new one starts.</summary>
-    /// <remarks>Music starting from silence always fades in over about a quarter of a second. Asking for the music that is already playing does nothing.</remarks>
+    /// <remarks>With a fade, music starting from silence rises over about a quarter of a second; with <paramref name="fadeSeconds"/> 0 or less it starts at full volume at once. Asking for the music that is already playing does nothing.</remarks>
     /// <exception cref="KeyNotFoundException">No music is registered under <paramref name="name"/>.</exception>
     public void PlayMusic(string name, float fadeSeconds = 0.4f)
     {
         if (!_music.ContainsKey(name)) throw new KeyNotFoundException($"Music '{name}' is not registered.");
         if (_device.CurrentMusic?.Name == name && _pendingMusic is null) return;
-        if (_device.CurrentMusic is null || fadeSeconds <= 0) { StartMusic(name); return; }
+        if (fadeSeconds <= 0) { StartMusic(name, fadeIn: false); return; }
+        if (_device.CurrentMusic is null) { StartMusic(name); return; }
         _pendingMusic = name;
         _fadeSpeed = -1f / fadeSeconds;
     }
@@ -303,11 +304,11 @@ public sealed class AudioMixer
     /// <summary>Whether music was paused with <see cref="PauseMusic"/>.</summary>
     public bool MusicPaused { get; private set; }
 
-    private void StartMusic(string name)
+    private void StartMusic(string name, bool fadeIn = true)
     {
         _pendingMusic = null;
-        _fade = 0.05f;
-        _fadeSpeed = 4f;
+        _fade = fadeIn ? 0.05f : 1f;
+        _fadeSpeed = fadeIn ? 4f : 0f;
         _device.PlayMusic(_music[name], _musicVolume * _fade);
     }
 

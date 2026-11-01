@@ -4,6 +4,17 @@ One section per SDK version, newest first. The SDK is in Alpha: a version may ch
 every such change is in the [migration notes](../migrations.md). Releases are tagged `sdk-v<version>`; the demo
 releases (`v0.1.0`, `v0.2.0`...) are separate.
 
+## Next version (not yet published)
+
+Not on nuget.org yet; the documentation's examples use 0.4.0-alpha.1. **Fixed**: scene changes requested during a
+transition keep their order; `CoroutineRunner.StopAll` stops coroutines that had not run yet; a tap shorter than a
+frame reports `Released`; `PlayMusic` with no fade starts at full volume; `Animator.Speed` refuses negative values;
+`Synth.Render` gives no NaN samples for a sound of length 0; `Synth.Layer` refuses clips it would mix wrongly;
+`ContentFolder.Exists` stays inside its folder and `PathOf` no longer accepts a sibling folder with the same prefix;
+`SaveStore.Delete` lets an unreadable slot be saved again; launcher errors name the option with the wrong number;
+`SelectionList` keeps its index valid; the template's first scene describes `CreateInput` correctly. Behaviour changes
+are in the [migration notes](../migrations.md).
+
 ## 0.4.0-alpha.1
 
 Published 2026-11-01 on nuget.org (GitHub release `sdk-v0.4.0-alpha.1`). The first public SDK: MicroEngine can be

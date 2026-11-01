@@ -140,8 +140,15 @@ public sealed class SaveStore
 
     /// <summary>Whether the slot has saved data.</summary>
     public bool Exists(string slot) => _storage.Exists(slot);
-    /// <summary>Removes the slot's data; does nothing when it does not exist.</summary>
-    public void Delete(string slot) => _storage.Delete(slot);
+    /// <summary>
+    /// Removes the slot's data; does nothing when it does not exist. A slot that could not be read can be saved again
+    /// after it is deleted: deleting is the game's explicit choice to start over.
+    /// </summary>
+    public void Delete(string slot)
+    {
+        _storage.Delete(slot);
+        _unreadable.Remove(slot);
+    }
 }
 
 /// <summary>

@@ -145,8 +145,9 @@ public sealed class SelectionList
 {
     private readonly List<string> _options;
     private readonly HashSet<int> _disabled = [];
-    /// <summary>The highlighted option. Setting it is not range-checked; keep it within <see cref="Options"/>.</summary>
-    public int Index { get; set; }
+    /// <summary>The highlighted option; a value outside the options is clamped to the first or the last.</summary>
+    public int Index { get => _index; set => _index = Math.Clamp(value, 0, _options.Count - 1); }
+    private int _index;
     /// <summary>Whether moving past either end jumps to the other (true by default).</summary>
     public bool Wrap { get; set; } = true;
     /// <summary>The option labels, top to bottom.</summary>
@@ -163,11 +164,14 @@ public sealed class SelectionList
     }
 
     /// <summary>Replaces the labels, keeping <see cref="Index"/> within range. Disabled indices stay disabled.</summary>
+    /// <exception cref="ArgumentException"><paramref name="options"/> is empty.</exception>
     public void SetOptions(IEnumerable<string> options)
     {
+        var list = options?.ToList() ?? throw new ArgumentNullException(nameof(options));
+        if (list.Count == 0) throw new ArgumentException("At least one option is required.", nameof(options));
         _options.Clear();
-        _options.AddRange(options);
-        Index = Math.Clamp(Index, 0, Math.Max(0, _options.Count - 1));
+        _options.AddRange(list);
+        _index = Math.Clamp(_index, 0, _options.Count - 1);
     }
 
     /// <summary>Enables or disables an option. A disabled option can be highlighted but not chosen, and is drawn in <see cref="UiTheme.Muted"/>.</summary>

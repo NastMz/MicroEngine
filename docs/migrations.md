@@ -4,6 +4,21 @@ What changes between SDK versions and how to update a game. MicroEngine is in Al
 a version may change public APIs incompatibly, and when it does, the change is listed here with the version that makes
 it. Newest first.
 
+## Next version (not yet published)
+
+Fixes that change behaviour a game may rely on:
+
+- `Animator.Speed` refuses a negative value or NaN with `ArgumentOutOfRangeException` (it used to make `Frame` throw
+  later). Use 0 to pause.
+- `SelectionList.SetOptions` refuses an empty list with `ArgumentException`, like the constructor; `Index` is clamped
+  to the options.
+- `Synth.Layer` refuses clips that are not mono at 44.1 kHz with `ArgumentException` (it used to mix them wrongly).
+- A tap that starts and ends within one frame now reports `Released` in the next update.
+- Scene changes requested while a transition plays apply after its swap, in the order requested.
+- `AudioMixer.PlayMusic(name, 0)` starts the music at full volume; `CoroutineRunner.StopAll` finishes coroutines that
+  had not run yet; `SaveStore.Delete` lets an unreadable slot be saved again; `ContentFolder` refuses paths outside its
+  folder in `Exists` too.
+
 ## 0.4.0-alpha.1
 
 The first public SDK. Game code builds and behaves as before;

@@ -98,8 +98,8 @@ public void Push(Scene scene, Transition? transition = null)
 
 #### Remarks
 
-A change requested while a transition plays drops its own transition and applies like a change without one, even
-before the playing transition swaps its scenes.
+Changes keep the order they were requested in. A change requested while a transition plays drops its own
+transition; until the playing transition has swapped its scenes, it waits and applies right after the swap.
 
 ### <a id="MicroEngine_Scenes_SceneManager_Replace_MicroEngine_Scenes_Scene_MicroEngine_Scenes_Transition_"></a> Replace\(Scene, Transition?\)
 

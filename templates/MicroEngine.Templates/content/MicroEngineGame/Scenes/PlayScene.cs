@@ -7,8 +7,8 @@ namespace MyGame.Scenes;
 
 /// <summary>
 /// Move the hero with the arrow keys, a gamepad or the on-screen controls, and collect coins. Input is read as actions
-/// ("left", "confirm"...), never as keys, so every device works the same; the game's own actions are bound in
-/// MainGame.CreateInput.
+/// ("left", "confirm"...), never as keys, so every device works the same. These are the default actions; a game adds
+/// its own by overriding CreateInput in MainGame.
 /// </summary>
 public sealed class PlayScene(MainGame game) : Scene
 {

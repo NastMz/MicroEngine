@@ -72,7 +72,7 @@ public string Root { get; }
 
 ### <a id="MicroEngine_Core_ContentFolder_Exists_System_String_"></a> Exists\(string\)
 
-Whether a file exists at <code class="paramref">relative</code> (relative to [Root](MicroEngine.Core.ContentFolder.md#MicroEngine_Core_ContentFolder_Root), '/' separators). Never throws for a missing file.
+Whether a file exists at <code class="paramref">relative</code> (relative to [Root](MicroEngine.Core.ContentFolder.md#MicroEngine_Core_ContentFolder_Root), '/' separators). False for a missing file and for a path outside the folder.
 
 ```csharp
 public bool Exists(string relative)
