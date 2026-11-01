@@ -95,14 +95,14 @@ export const platforms: PlatformRow[] = [
   },
   {
     id: 'browser', name: 'Browsers (WebAssembly)', platform: 'raylib compiled to WebAssembly',
-    status: { label: 'Played in Chrome, Firefox and Edge', tone: 'ok' },
+    status: { label: 'Played in Chrome, Firefox, Edge and Safari', tone: 'ok' },
     build: { level: 'virtual', note: 'Pinned toolchain on a hosted runner' },
     tests: { level: 'na', note: 'Same game code as the desktop' },
     rendering: { level: 'virtual', note: '138 captures byte-identical to desktop raylib, Chrome and Firefox' },
-    input: { level: 'person', note: 'Keyboard (automated and by hand); gamepads by hand in Edge on the desktop (Xbox) and Chrome on an Android phone (PlayStation, Bluetooth); touch played in Chrome on an Android phone and checked with real multi-touch in emulated mobile Chrome' },
+    input: { level: 'person', note: 'Keyboard (automated and by hand); gamepads by hand in Edge on the desktop (Xbox) and Chrome on an Android phone (PlayStation, Bluetooth); touch played in Chrome on an Android phone and Safari on an iPhone, and checked with real multi-touch in emulated mobile Chrome' },
     audio: { level: 'person', note: 'After the first click or key; stops in a hidden tab' },
     lifecycle: { level: 'virtual', note: 'Saves persist; a hidden page suspends the game' },
-    hardware: { level: 'person', note: 'Desktop Chrome and Firefox; Edge on the desktop and Chrome on an Android 16 phone played by hand; Safari not validated' },
+    hardware: { level: 'person', note: 'Desktop Chrome and Firefox; Edge on the desktop, Chrome on an Android 16 phone and Safari on a Mac and an iPhone 13 (BrowserStack) played by hand' },
     download: { none: 'Plays on the demo pages; nothing to install' },
   },
 ];

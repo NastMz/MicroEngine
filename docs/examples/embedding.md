@@ -113,5 +113,4 @@ different origin than the parent page keeps the parent's storage separate. Detai
 ## What was validated
 
 The packages are verified with automated tests in Chrome and Firefox on desktop, plus manual validation in the
-browser. Safari was not tested, other Chromium-based browsers are not claimed, and the games have no dedicated touch
-controls; see [Platforms](../guide/platforms.md) for the full list.
+browser. Edge and Safari (Mac and iPhone) were played by hand; other Chromium-based browsers are not claimed; see [Platforms](../guide/platforms.md) for the full list.

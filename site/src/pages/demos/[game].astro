@@ -96,12 +96,12 @@ const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'u
         <h2 id="compat-title">Compatibility</h2>
         <ul class="compat">
           <li><span class="status ok">Verified</span> In the browser: Chrome and Firefox on desktop, with a keyboard (automated tests and manual play)</li>
-          <li><span class="status ok">Manually tested</span> One gamepad in a Chromium-based browser</li>
+          <li><span class="status ok">Manually tested</span> Safari on a Mac and an iPhone, and Edge on the desktop</li>
+          <li><span class="status ok">Manually tested</span> Gamepads in Edge (Xbox controller) and Chrome on Android (PlayStation controller)</li>
           {touch
-            ? <li><span class="status partial">Emulated phones</span> Browsers on phones and tablets: on-screen touch controls, played with real multi-touch in emulated mobile Chrome; no physical phone yet</li>
+            ? <li><span class="status ok">Manually tested</span> Browsers on phones: on-screen touch controls, played in Chrome on an Android phone and Safari on an iPhone</li>
             : <li><span class="status partial">Not tested</span> Browsers on phones (this version of the web build has no touch controls)</li>}
-          <li><span class="status partial">Not tested</span> Safari and other browsers</li>
-          <li><span class="status partial">Emulator only</span> The Android app: on-screen touch controls; no physical phone has run it</li>
+          <li><span class="status ok">Manually tested</span> The Android app on a phone: on-screen touch controls and a Bluetooth gamepad</li>
         </ul>
         <dl class="facts">
           <div><dt>Version</dt><dd>{game.title} {version}, MicroEngine {engine}</dd></div>

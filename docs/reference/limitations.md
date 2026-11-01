@@ -25,9 +25,8 @@ build. Items move off this list only when a change and its validation are record
 | iOS: games checked in the simulator only; touch checked with scripted touches on the simulator's layout, not system touches; no iPhone or iPad | [Platforms](../guide/platforms.md#phones-and-tablets) |
 | Linux on ARM: no native raylib library in `Raylib-cs` | [Platforms](../guide/platforms.md#support-table) |
 | Gamepads on Linux and macOS: not covered by any check | [Platforms](../guide/platforms.md#desktop-validation) |
-| Safari not tested | [Platforms](../guide/platforms.md#support-table) |
 | Chromium-based browsers other than Chrome: Edge played by hand on the desktop, others not claimed; automated browser tests cover Chrome and Firefox only | [Platforms](../guide/platforms.md#support-table) |
-| Browsers on phones and tablets: played by hand in Chrome on one Android phone, checked with real multi-touch in emulated mobile Chrome (four devices); Safari not run, no tablet | [Platforms](../guide/platforms.md#phones-and-tablets) |
+| Browsers on phones and tablets: played by hand in Chrome on one Android phone and Safari on an iPhone 13, checked with real multi-touch in emulated mobile Chrome (four devices); no tablet | [Platforms](../guide/platforms.md#phones-and-tablets) |
 | Gamepad in the browser validated by hand in Edge (desktop, Xbox controller) and Chrome on Android (PlayStation controller over Bluetooth) only; no claim for other controllers, Firefox or Safari | [Platforms](../guide/platforms.md#gamepads) |
 | Blocked site storage tested in Firefox only, not Chrome | [Web support](../evaluations/web-support.md#persistence) |
 | Producing browser packages is not available to external developers yet | [Getting MicroEngine](../guide/getting-microengine.md) |

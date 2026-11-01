@@ -165,15 +165,18 @@ On 2026-11-01 the owner played the four demos by hand from the INPUT-1 builds (t
 | Ubuntu 24.04.4 LTS under WSL2 (WSLg) on Windows 11 | The four `.tar.gz` downloads (SDL), shown through WSLg's Wayland compositor and drawn through Windows' GPU driver; not a native Linux machine |
 | Debian 13.7, stock desktop install (GNOME, which starts a Wayland session by default), in a virtual machine | The four `.tar.gz` downloads (SDL); keyboard and an Xbox controller |
 | Microsoft Edge on the desktop | The four web demos, with keyboard and the Xbox controller |
+| Safari on a Mac, through BrowserStack | The four web demos |
+| Safari on an iPhone 13, through BrowserStack | The four web demos with touch |
 
-No iPhone or Mac was used, and Safari was not run.
+The Safari versions were not shown. The native macOS and iOS builds were not played: the iOS app cannot be installed
+without Apple signing.
 
 ## 8. Remaining limitations
 
 - One Android phone was played by hand (§7b); the automated checks still use emulated Chrome and the Android emulator,
   where real taps and held fingers are single-pointer (`adb input`) and two thumbs are scripted. The iOS simulator
-  cannot receive scripted system touches, so iOS touch is scripted only. **No iPhone was used and Safari was not
-  run**; [§7](#7-checking-on-a-real-phone) lists the steps.
+  cannot receive scripted system touches, so the iOS app's touch is scripted only; Safari on an iPhone 13 was played
+  by hand through BrowserStack (§7b).
 - On screens near 16:9 the game frame is smaller while the touch controls are shown, so that no control covers it
   (about 60 % of the largest frame for Meadow Run on a 16:9 phone, 75 % on 20:9; §4b); a keyboard or gamepad gives it
   its full size back.

@@ -18,8 +18,8 @@ evidence cell by cell, and [Downloads](downloads.md) what a player can install.
 | Chrome (Chromium) on desktop | `raylib` in WebAssembly through `BrowserLauncher` | The four demos are verified with automated tests, plus manual validation in the browser |
 | Firefox on desktop | Same | The four demos are verified with automated tests, plus manual validation in the browser |
 | Microsoft Edge and other Chromium-based browsers | Same | Edge: the four demos played by hand on the desktop ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)), not covered by the automated tests; other Chromium-based browsers not claimed |
-| Safari | Same | Not tested |
-| Phones and tablets in a browser | Same | On-screen touch controls; the four demos played by hand in Chrome on an Android 16 phone, and checked with real multi-touch in emulated mobile Chrome on four devices; Safari not run |
+| Safari | Same | The four demos played by hand on a Mac and on an iPhone 13 through BrowserStack ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)); not covered by the automated tests |
+| Phones and tablets in a browser | Same | On-screen touch controls; the four demos played by hand in Chrome on an Android 16 phone and in Safari on an iPhone 13, and checked with real multi-touch in emulated mobile Chrome on four devices |
 | Android app | `sdl` (the Android host) | Checked on the x86_64 emulator: all four demos install from their release APK, draw, open audio, take keys and touch, and survive the background ([Phones and tablets](#phones-and-tablets)); the four APKs played by hand on a Redmi Note 14 Pro (arm64, Android 16), with touch and a Bluetooth PlayStation controller |
 | iOS app | `sdl` (the iOS host) | Checked in Apple's simulator only: the demos draw (captures within the SDL reference), open audio, respond to scripted touches and survive the background; no iPhone, and no installable download ([why](downloads.md#ios)) |
 | Headless (tests, CI) | `HeadlessPlatform` | Validated: used by every test project; `--headless` launcher flag |
@@ -62,7 +62,7 @@ Both desktop backends read the first gamepad, and the same bindings apply in the
 [Input](../manual/input.md)). In the browser, gamepad play was validated by hand in Edge on the desktop with an Xbox
 controller and in Chrome on an Android phone with a PlayStation controller over Bluetooth. With SDL, the downloads were played with an Xbox controller on the desktop and
 the Android apps with a PlayStation controller over Bluetooth ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)).
-No claim is made for other controllers, or for gamepads in Firefox or Safari.
+No claim is made for other controllers, or for gamepads in Firefox or Safari (Safari was played with touch and keyboard).
 
 ## Phones and tablets
 
@@ -72,8 +72,7 @@ the browser they were played with real multi-touch on four emulated devices in C
 viewport, small portrait phone, tablet): walking, jumping while holding a direction, aiming and firing at once, analog
 walking, menus, focus loss, rotation, pinch and long press ([INPUT-1](../evaluations/input-1.md#6-mobile-web-evidence)).
 The four web demos were also played by hand in Chrome on an Android phone (Redmi Note 14 Pro, Android 16,
-[INPUT-1](../evaluations/input-1.md#7b-played-by-hand)). Safari was not run; [the evaluation](../evaluations/input-1.md#7-checking-on-a-real-phone)
-lists the steps to check on an iPhone.
+[INPUT-1](../evaluations/input-1.md#7b-played-by-hand)) and in Safari on an iPhone 13 through BrowserStack.
 
 The native apps run on the SDL platform with the same controls:
 
