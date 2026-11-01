@@ -61,7 +61,7 @@ public static class Synth
         for (int i = 0; i < count; i++)
         {
             float t = i / (float)sampleRate;
-            float progress = t / duration;
+            float progress = duration > 0 ? t / duration : 0;
             float freq = p.EndFrequency is { } end ? p.Frequency * MathF.Pow(end / p.Frequency, progress) : p.Frequency;
             if (p.Arpeggio is { Length: > 0 } arp) freq *= arp[Math.Min(arp.Length - 1, (int)(t / p.ArpeggioStep)) % arp.Length];
             if (p.VibratoDepth > 0) freq *= 1 + MathF.Sin(t * p.VibratoRate * MathF.Tau) * p.VibratoDepth;
@@ -105,9 +105,13 @@ public static class Synth
     }
 
     /// <summary>Mixes several clips (mono) starting at given offsets in seconds.</summary>
+    /// <exception cref="ArgumentException">A clip is not mono or not at <see cref="AudioClip.DefaultSampleRate"/>.</exception>
     public static AudioClip Layer(params (AudioClip Clip, float Offset)[] parts)
     {
         int rate = AudioClip.DefaultSampleRate;
+        foreach (var (clip, _) in parts)
+            if (clip.Channels != 1 || clip.SampleRate != rate)
+                throw new ArgumentException($"Layer mixes mono clips at {rate} Hz; got {clip.Channels} channel(s) at {clip.SampleRate} Hz.", nameof(parts));
         int length = parts.Max(p => (int)(p.Offset * rate) + p.Clip.Samples.Length);
         var mix = new float[length];
         foreach (var (clip, offset) in parts)

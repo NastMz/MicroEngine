@@ -404,7 +404,7 @@ public bool Pressed(string action)
 
 ### <a id="MicroEngine_Input_InputMap_Released_System_String_"></a> Released\(string\)
 
-True during the first update after the action was let go. A tap that started and ended within the same frame reports [Pressed](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Pressed_System_String_) but not [Released](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Released_System_String_).
+True during the first update after the action was let go. A tap that started and ended within one frame reports [Pressed](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Pressed_System_String_) in its update and [Released](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Released_System_String_) in the next one.
 
 ```csharp
 public bool Released(string action)

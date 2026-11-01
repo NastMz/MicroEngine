@@ -55,6 +55,7 @@ public sealed class CoroutineRunner
     public void StopAll()
     {
         foreach (var r in _routines) r.Cancelled = true;
+        foreach (var r in _added) r.Cancelled = true;
         _added.Clear();
     }
 

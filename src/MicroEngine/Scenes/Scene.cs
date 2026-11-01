@@ -89,6 +89,7 @@ public sealed class SceneManager
     private readonly Game _game;
     private readonly List<Scene> _stack = [];
     private readonly Queue<Action> _pending = new();
+    private readonly Queue<Action> _afterSwap = new();
     private Transition? _transition;
     private Action? _transitionSwap;
     private bool _swapped;
@@ -109,8 +110,8 @@ public sealed class SceneManager
     /// after <see cref="Core.Game"/>'s <c>Load</c>), or halfway through <paramref name="transition"/> when one is given.
     /// </summary>
     /// <remarks>
-    /// A change requested while a transition plays drops its own transition and applies like a change without one, even
-    /// before the playing transition swaps its scenes.
+    /// Changes keep the order they were requested in. A change requested while a transition plays drops its own
+    /// transition; until the playing transition has swapped its scenes, it waits and applies right after the swap.
     /// </remarks>
     public void Push(Scene scene, Transition? transition = null) => Schedule(() => PushNow(scene), transition);
     /// <summary>Removes the top scene, deferred like <see cref="Push"/>. The scene below receives <see cref="Scene.Resume"/>. Does nothing on an empty stack.</summary>
@@ -122,6 +123,8 @@ public sealed class SceneManager
 
     private void Schedule(Action change, Transition? transition)
     {
+        // A transition that has not swapped yet owns the next change; later requests follow it.
+        if (_transition is not null && !_swapped) { _afterSwap.Enqueue(change); return; }
         if (transition is null) { _pending.Enqueue(change); return; }
         if (_transition is not null) { _pending.Enqueue(change); return; }
         _transition = transition;
@@ -166,6 +169,7 @@ public sealed class SceneManager
                 _swapped = true;
                 _transitionSwap?.Invoke();
                 _transitionSwap = null;
+                while (_afterSwap.Count > 0) _afterSwap.Dequeue()();
             }
             if (t.Finished) _transition = null;
             // Scenes keep animating during the "in" half so the new scene is alive when revealed.
@@ -190,6 +194,7 @@ public sealed class SceneManager
         while (_stack.Count > 0) PopNow();
         _transition = null;
         _pending.Clear();
+        _afterSwap.Clear();
     }
 }
 

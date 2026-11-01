@@ -280,6 +280,8 @@ public sealed class InputMap
     {
         _previous.Clear();
         foreach (var a in _down) _previous.Add(a);
+        // A tap latched this update counted as down: the next update reports its release.
+        foreach (var a in _latched) _previous.Add(a);
         _latched.Clear();
     }
 
@@ -287,7 +289,7 @@ public sealed class InputMap
     public bool Down(string action) => _down.Contains(action) || _latched.Contains(action);
     /// <summary>True during the first update after the action went down, even if it was released within the same frame.</summary>
     public bool Pressed(string action) => _latched.Contains(action) || (_down.Contains(action) && !_previous.Contains(action));
-    /// <summary>True during the first update after the action was let go. A tap that started and ended within the same frame reports <see cref="Pressed"/> but not <see cref="Released"/>.</summary>
+    /// <summary>True during the first update after the action was let go. A tap that started and ended within one frame reports <see cref="Pressed"/> in its update and <see cref="Released"/> in the next one.</summary>
     public bool Released(string action) => !_down.Contains(action) && _previous.Contains(action);
 
     /// <summary>

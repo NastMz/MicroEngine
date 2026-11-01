@@ -134,7 +134,8 @@ public static string DefaultDirectory(string gameId)
 
 ### <a id="MicroEngine_Core_SaveStore_Delete_System_String_"></a> Delete\(string\)
 
-Removes the slot's data; does nothing when it does not exist.
+Removes the slot's data; does nothing when it does not exist. A slot that could not be read can be saved again
+after it is deleted: deleting is the game's explicit choice to start over.
 
 ```csharp
 public void Delete(string slot)
