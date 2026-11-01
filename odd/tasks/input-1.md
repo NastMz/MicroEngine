@@ -46,7 +46,7 @@ Evaluation: [`docs/evaluations/input-1.md`](../../docs/evaluations/input-1.md). 
 | T4 SDL touch screen (safe area, density, haptics, focus, pad reconnection) | S3 S4 S5 | inline | done | b964d3f; Android/iOS CI levels |
 | T5 Demo layouts and behavioural tests | S7 | inline | done | 1462c83; `TouchTests` in each game (10) |
 | T6 Browser: Pointer Events, safe areas, gestures, focus, visibility, haptics | S6 | inline | done | 6bef9d7; `mobile.mjs` 256/256 |
-| T7 Phone checks: logged layout, real taps and drags, scripted two thumbs | S8 | inline | see evaluation | 80e2e98; platform workflow run |
+| T7 Phone checks: logged layout, real taps and held fingers, scripted two thumbs | S8 | inline | done (input); rendering gap noted | 80e2e98, 122fdd2, 0805e93; platform run 41278826494: every input level passes on Android and iOS for all four games |
 | T8 Docs, ADR, migration, CI job | S9 | inline | done | ed7ea4a and later |
 
 ## Log
@@ -58,3 +58,9 @@ Evaluation: [`docs/evaluations/input-1.md`](../../docs/evaluations/input-1.md). 
 - L3 First browser run showed Neon Rift's 480×270 frame at 1× on a 412-pixel-high phone browser (a third of the screen
   empty) and the joystick arrow hidden under its knob: frame scales fractionally when whole factors fill under 80 %,
   arrow drawn beyond the knob, labels never above the asked height.
+- L4 First platform run with all four games: two-thumb scripts too short for the probe; iOS compared with the wrong
+  reference (its captures equal the macOS Metal reference); a swipe never held a joystick. All three fixed. Android
+  Courtyard Key and Trail Duel still differ from the Windows reference on the emulator's GPU (rendering, not input;
+  never checked in CI before): left for an owner-recorded emulator reference.
+- L5 The public demo page told touch devices the demos had no touch controls. Packages now declare `"touch": true`
+  and the page offers Play to touch devices only when the served package declares it (no change before a release).
