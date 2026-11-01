@@ -36,7 +36,7 @@ statements that had become false.
 | Windows x64 | ZIP: single-file exe, `SDL3.dll`, `raylib.dll`, Content, notices | run, CI | all four: 138/138 captures pixel-identical to the GPU reference, Direct3D 11, audio device opened | all four on WARP: 138 captures against the WARP reference; no sound device on the runner |
 | Linux x64 | tar.gz, modes fixed (0755 for the executable and libraries) | run (cross-built), CI | WSLg: Neon Rift scripted run; Docker: Ubuntu 22.04 138/138 identical, Debian 12 138/138 (135 identical), Fedora 41 138/138 identical, audio device opened in each; Debian 11 refuses with a glibc error | all four under Xvfb (138 identical) and in the same four containers |
 | macOS arm64 | ZIP of an ad-hoc signed `.app` | CI only (codesign needs a Mac) | — | all four: `codesign --verify --deep --strict` passed; 138/138 captures pixel-identical to the macOS reference on Metal; audio device opened; Gatekeeper: `rejected` (not notarized, as documented) |
-| Android | APK, `arm64-v8a` + `x86_64`, signed | run with a throwaway test key and the debug key; CI path ready, needs the owner's key | all four on the emulator (API 36.1): installed, started, every scripted scenario, audio device, system keys, taps on the on-screen controls, background and back; 138 captures recorded as the emulator reference | not yet: the release key is not configured |
+| Android | APK, `arm64-v8a` + `x86_64`, signed with the release key (certificate SHA-256 `5e6bd22a12087818…`) | run (throwaway key), CI (release key) | all four on the emulator (API 36.1): installed, started, every scripted scenario, audio device, system keys, taps on the on-screen controls, background and back; 138 captures recorded as the emulator reference | all four on the CI emulator (API 34): signature, version code, the same levels, 138 captures pixel-identical to the reference (runs 41268351218, 41270106861) |
 | iOS | none | — | — | — |
 
 Measured: Neon Rift's Windows ZIP is 44 MB, its Linux archive 46 MB, Meadow Run's APK 17 MB. Executables need glibc 2.27,
@@ -52,6 +52,9 @@ SDL 2.34, raylib 2.38 (`objdump -T`).
 - **False evidence caught.** The first Debian 11 run "passed" because the package manager failed and the game never
   ran; the check now needs the glibc error itself. The first path scan flagged `/home/runner` inside SDL and .NET
   binaries (their own build machines); it now looks for this machine's paths only.
+- **State between scripted runs on Android.** A save left by one scenario changed the next one (Courtyard Key's title
+  offers Continue): the CI emulator showed it, and the first local Android reference had absorbed it. The device checks
+  now clear the app's data before each scenario, as desktop runs start from an empty save folder.
 - **Renderers.** Courtyard Key's half-pixel HUD and Trail Duel's rotated translucent sprites differ by a texel on the
   Android emulator and on WARP, as on Mesa and Metal: both got their own recorded references.
 
@@ -74,7 +77,8 @@ built, played and stored the twelve desktop packages; full validation 4126650643
 packages, browser suites, the twelve packages, macOS, Android and iOS) passed on the final branch. Unit tests: `site/tests/native.test.mjs` (keys per target, store
 refusals, release completeness, site download list).
 
-Not run yet: a release with downloads (it needs the merge to `main`), and Android in CI (it needs the signing key).
+Not run yet: a release with downloads (it needs the merge to `main`). With the owner's signing key, the four APKs were
+built, played and stored in CI; the branch head has all sixteen native and four web packages stored.
 
 ## 4. SDK
 
