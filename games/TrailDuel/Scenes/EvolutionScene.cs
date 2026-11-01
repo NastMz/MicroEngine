@@ -12,6 +12,9 @@ namespace TrailDuel.Scenes;
 /// <summary>Evolution: the old and new silhouettes trade places ever faster, a flash, then the reveal.</summary>
 internal sealed class EvolutionScene(TrailDuelGame game, Creature creature, Action onDone) : Scene
 {
+    /// <summary>A narration: on touch screens only A and B.</summary>
+    public override IReadOnlyCollection<string>? TouchActions => OverworldScene.TextActions;
+
     private readonly ParticleSystem _sparkles = new(300, 51) { Additive = true };
     private TextPanel _text = null!;
     private string _shownSpecies = "";

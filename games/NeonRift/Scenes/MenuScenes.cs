@@ -59,7 +59,20 @@ internal sealed class TitleScene(RiftGame game) : Scene
         if (_controls)
         {
             r.Panel(new RectF(110, 118, 260, 120), new PanelStyle(Ui.Ink.WithAlpha(0.92f), Ui.Magenta, Ui.Magenta.WithAlpha(0.4f)));
-            (string Action, string Keys)[] lines =
+            // On a touch screen the on-screen controls are explained instead of the keys.
+            (string Action, string Keys)[] lines = Game.Touch.Shown
+            ?
+            [
+                ("MOVE / AIM", "STICK, 8 DIRECTIONS"),
+                ("JUMP", "JUMP"),
+                ("FIRE", "FIRE (HOLD), AIM WITH STICK"),
+                ("FIRE + JUMP", "SLIDE THUMB FROM FIRE"),
+                ("KNEEL", "STICK DOWN ON THE GROUND"),
+                ("DROP DOWN", "STICK DOWN + JUMP"),
+                ("PLANT FEET", "LOCK (TAP ON, TAP OFF)"),
+                ("PAUSE", "II"),
+            ]
+            :
             [
                 ("MOVE", "ARROWS / WASD / D-PAD"),
                 ("JUMP", "Z / SPACE / A"),

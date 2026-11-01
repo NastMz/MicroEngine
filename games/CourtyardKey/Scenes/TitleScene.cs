@@ -120,13 +120,22 @@ public sealed class TitleScene : Scene
     {
         var panel = new RectF(56, 112, 208, 64);
         UiStyle.Frame(r, panel);
-        (string Key, string What)[] rows =
-        [
-            ("Arrows/WASD", "Move"),
-            ("Z / Space", "Sword, talk, read, open"),
-            ("C / X", "Throw the boomerang"),
-            ("Esc / P", "Pause, map and inventory"),
-        ];
+        // On a touch screen the on-screen controls are explained instead of the keys.
+        (string Key, string What)[] rows = Game.Touch.Shown
+            ?
+            [
+                ("Stick", "Move; push less, go slow"),
+                ("A", "Sword, talk, read, open"),
+                ("C", "Throw the boomerang"),
+                ("II", "Pause, map, inventory"),
+            ]
+            :
+            [
+                ("Arrows/WASD", "Move"),
+                ("Z / Space", "Sword, talk, read, open"),
+                ("C / X", "Throw the boomerang"),
+                ("Esc / P", "Pause, map and inventory"),
+            ];
         for (int i = 0; i < rows.Length; i++)
         {
             UiStyle.KeyCap(r, Font, rows[i].Key, new Vector2(panel.X + 10, panel.Y + 8 + i * 13));

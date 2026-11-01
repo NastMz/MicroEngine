@@ -81,7 +81,7 @@ public static partial class WebHost
 
     /// <summary>
     /// Development diagnostics: the touch controls as last laid out, one per line, "id x y radius visible" in canvas
-    /// pixels.
+    /// pixels, then "frame x y width height shown": where the game frame was drawn.
     /// </summary>
     [JSExport]
     public static string Controls()
@@ -94,6 +94,8 @@ public static partial class WebHost
             var (c, r) = touch.Geometry(control.Id);
             lines.Add(FormattableString.Invariant($"{control.Id} {c.X:0.#} {c.Y:0.#} {r:0.#} {(touch.IsVisible(control.Id) ? 1 : 0)}"));
         }
+        var f = touch.LastFrame;
+        lines.Add(FormattableString.Invariant($"frame {f.X:0.#} {f.Y:0.#} {f.Width:0.#} {f.Height:0.#} {(touch.Shown ? 1 : 0)}"));
         return string.Join('\n', lines);
     }
 
