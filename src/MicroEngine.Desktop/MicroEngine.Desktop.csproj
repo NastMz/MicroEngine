@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Desktop</RootNamespace>
+    <Description>The official desktop platforms of MicroEngine (SDL3 by default, raylib, headless) and the launcher that chooses between them.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
+    <ProjectReference Include="../MicroEngine.Sdl/MicroEngine.Sdl.csproj" />
+    <ProjectReference Include="../MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
+  </ItemGroup>
+</Project>

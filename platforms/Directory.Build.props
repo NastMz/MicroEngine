@@ -23,4 +23,9 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <GameDir>$(MSBuildThisFileDirectory)../games/$([System.IO.Path]::GetDirectoryName('$(GameProject)'))/</GameDir>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- The game's content files (code-first games have none), packaged by each host in its own way: APK assets on
+         Android, bundle resources on iOS. Content code (*.cs) is part of the game assembly. -->
+    <MobileGameContent Include="$(GameDir)Content/**" Exclude="$(GameDir)Content/**/*.cs" />
+  </ItemGroup>
 </Project>

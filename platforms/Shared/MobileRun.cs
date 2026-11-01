@@ -58,10 +58,12 @@ internal static class MobileRun
         // The active scene, logged when it changes, so a test can tell that input sent by the system reached the game
         // without depending on a screenshot. A diagnostic read from a timer thread: only a reference is read.
         string? scene = null;
+        bool suspended = false;
         using var watch = new Timer(_ =>
         {
             string? now = game.Scenes?.Current?.GetType().Name;
             if (now is not null && now != scene) log($"microengine: scene {scene = now}");
+            if (platform.Suspended != suspended) log($"microengine: {((suspended = !suspended) ? "suspended" : "resumed")}");
         }, null, 0, 250);
         using (platform)
         {

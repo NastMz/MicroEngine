@@ -1,5 +1,5 @@
 using NeonRift;
-using MicroEngine.Raylib;
+using MicroEngine.Desktop;
 
 // Developer shortcuts come from environment variables (RIFT_START, RIFT_STAGE, RIFT_CHECKPOINT,
 // RIFT_WEAPON, RIFT_GOD=1 for invulnerable capture runs,

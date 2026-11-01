@@ -10,6 +10,6 @@
     <InternalsVisibleTo Include="TrailDuel.Tests" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
+    <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
   </ItemGroup>
 </Project>

@@ -30,7 +30,7 @@ secondary action, Esc/P to pause, F11 for fullscreen; gamepads work too.
 - Dialogue boxes, menus, JSON saves, headless platform for deterministic tests
 - Achievements: per-game catalogs, immediate and progressive goals, saved progress, unlock banners and a
   list screen (every game ships five)
-- raylib desktop backend behind a small `IPlatform` boundary
+- SDL 3 platform for Windows, Linux, macOS, Android and iOS, and raylib for browsers, behind a small `IPlatform` boundary with named, replaceable platform profiles
 
 ## Documentation
 

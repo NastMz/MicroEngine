@@ -10,7 +10,7 @@
 // Checks (docs/ci.md, "What runs for a change"):
 //   dotnet     headless .NET tests on Linux, the fast tier every later .NET job waits for
 //   windows    the same tests on Windows: engine, backend and build changes (games are managed code Linux already ran)
-//   native     raylib on Linux under Xvfb: native tests and scripted captures against the Linux reference
+//   native     SDL and raylib on Linux under Xvfb: native tests and scripted captures against their Linux references
 //   browser    none | layout: every page at three widths | full: layout plus playing each demo; anything but none
 //              also means the published site changed, so main deploys it
 //   workflows  actionlint over every workflow
@@ -41,12 +41,13 @@ export const rules = [
   { pattern: /^platforms\//, checks: ['mobile'], why: 'mobile hosts' },
   { pattern: /^\.github\//, checks: [], why: 'other repository settings' },
   { pattern: /^src\/MicroEngine\.Raylib\//, checks: ['dotnet', 'windows', 'native', 'macos', 'mobile'], why: 'raylib backend' },
+  { pattern: /^src\/MicroEngine\.(Sdl|Desktop)\//, checks: ['dotnet', 'windows', 'native', 'macos', 'mobile'], why: 'SDL backend and desktop platforms' },
   { pattern: /^src\//, checks: ['dotnet', 'windows', 'native', 'macos'], why: 'engine' },
   { pattern: /^games\/LICENSE$/, checks: ['layout'], why: 'demo games licence (packaged: demo keys rebuild)' },
   { pattern: /^games\/.*\.md$/i, checks: ['layout'], why: 'published game page' },
   { pattern: /^games\/[^/]+\/screenshots\//, checks: ['layout'], why: 'screenshots on the site' },
   { pattern: /^games\//, checks: ['dotnet', 'native'], why: 'game' },
-  { pattern: /^tests\/MicroEngine\.Raylib\.Tests\//, checks: ['dotnet', 'windows', 'native', 'macos'], why: 'backend tests' },
+  { pattern: /^tests\/MicroEngine\.(Raylib|Desktop)\.Tests\//, checks: ['dotnet', 'windows', 'native', 'macos'], why: 'backend tests' },
   { pattern: /^tests\/MicroEngine\.Tests\//, checks: ['dotnet', 'windows', 'macos'], why: 'engine tests' },
   { pattern: /^(tests|samples)\//, checks: ['dotnet'], why: 'game tests and samples' },
   { pattern: /^web\/tests\//, checks: ['native'], why: 'desktop capture scripts' },

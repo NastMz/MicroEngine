@@ -2,6 +2,8 @@
   <Folder Name="/src/">
     <Project Path="src/MicroEngine/MicroEngine.csproj" />
     <Project Path="src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
+    <Project Path="src/MicroEngine.Sdl/MicroEngine.Sdl.csproj" />
+    <Project Path="src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
   </Folder>
   <Folder Name="/games/">
     <Project Path="games/CourtyardKey/CourtyardKey.csproj" />
@@ -15,6 +17,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/MicroEngine.Tests/MicroEngine.Tests.csproj" />
     <Project Path="tests/MicroEngine.Raylib.Tests/MicroEngine.Raylib.Tests.csproj" />
+    <Project Path="tests/MicroEngine.Desktop.Tests/MicroEngine.Desktop.Tests.csproj" />
     <Project Path="tests/CourtyardKey.Tests/CourtyardKey.Tests.csproj" />
     <Project Path="tests/MeadowRun.Tests/MeadowRun.Tests.csproj" />
     <Project Path="tests/NeonRift.Tests/NeonRift.Tests.csproj" />

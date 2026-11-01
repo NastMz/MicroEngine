@@ -30,22 +30,24 @@ Neon Rift, for example, draws at 480x270 ([web support](../evaluations/web-suppo
 
 ## Command-line flags
 
-Parsed by `DesktopLauncher.Run`
-([`src/MicroEngine.Raylib/DesktopLauncher.cs`](../../src/MicroEngine.Raylib/DesktopLauncher.cs)). A game that
+Parsed by `GameLauncher.Run`, which `DesktopLauncher.Run` calls
+([`src/MicroEngine/Core/GameLauncher.cs`](../../src/MicroEngine/Core/GameLauncher.cs)). A game that
 starts through `DesktopLauncher` accepts them on its command line.
 
 | Flag | Effect |
 | --- | --- |
 | `--script FILE` | Plays scripted input ([format](../examples/testing.md#level-3-input-scripts-and-captures)); implies a fixed step and seed 1 unless `--seed` is given |
 | `--captures DIR` | Directory for script `capture` commands (default `captures`) |
+| `--platform NAME` | Runs on that platform of the catalog (`sdl`, `raylib`, `sdl-software`, `headless`); default: `MICROENGINE_PLATFORM`, else the first that can run here |
+| `--list-platforms` | Prints the catalog, with the reason a platform cannot run here, and exits |
 | `--hidden` | Renders in a hidden window with a fixed step; captures still work |
-| `--headless` | Runs on `HeadlessPlatform`, without a window; no capture files are written |
+| `--headless` | Runs on `HeadlessPlatform`, without a window; no capture files are written; the same as `--platform headless` |
 | `--frames N` | Stops after N updates |
 | `--seed N` | Seed for `Game.Random` (otherwise random, or 1 under a script) |
 | `--scale N` | Window scale |
 | `--mute` | Sets sound-effect and music volume to zero |
 
-Exit codes: 0 success, 1 game error, 2 bad arguments. An unknown argument is an error, which is why games take
+Exit codes: 0 success, 1 game or platform error (unknown or unavailable platform, no display), 2 bad arguments. An unknown argument is an error, which is why games take
 developer options from environment variables instead.
 
 ## Environment variables
@@ -116,5 +118,5 @@ From `InputMap.CreateDefault()` in [`src/MicroEngine/Input/Input.cs`](../../src/
 | Content location | `new ContentFolder(root)` (default `<exe dir>/Content`) | Tests can point at another folder |
 | Save medium | Implement `ISaveStorage`; pass it to `SaveStore`, or set `SaveStore.DefaultStorage` before games are built | `BrowserSaveStorage` |
 | Save location | `new SaveStore(gameId, directory)` | Every game's `*_SAVE_DIR` variable |
-| Backend | Implement `IPlatform` and its device interfaces | `RaylibPlatform`, `HeadlessPlatform` ([backends](../manual/backends.md)) |
+| Backend | Implement `IPlatform` and its device interfaces, offered as a `PlatformProfile` | `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform` ([backends](../manual/backends.md)) |
 | Host loop | Drive `GameLoop` or `GameSession` yourself, one `Tick` per frame | The browser host |

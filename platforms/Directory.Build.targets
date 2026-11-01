@@ -1,14 +1,12 @@
 <Project InitialTargets="_CheckMobileGame">
   <Target Name="_CheckMobileGame">
     <Error Condition="'$(GameFactory)' == ''" Text="Unknown game '$(Game)'. Known games are the entries in web/games.props." />
-    <Error Condition="'@(_MobileGameContent)' != ''" Text="$(Game) has files in its Content folder; the mobile hosts do not ship content files yet (platforms/README.md)." />
   </Target>
 
   <ItemGroup>
     <!-- The game is an ordinary net10.0 library build: no device runtime identifier, shared with desktop builds. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)../games/$(GameProject)" GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
     <Compile Include="$(MSBuildThisFileDirectory)Shared/*.cs" Link="Shared/%(Filename)%(Extension)" />
-    <_MobileGameContent Include="$(GameDir)Content/**" Exclude="$(GameDir)Content/**/*.cs" />
   </ItemGroup>
 
   <!-- The selected game's entry point, generated from web/games.props as the browser host does. -->

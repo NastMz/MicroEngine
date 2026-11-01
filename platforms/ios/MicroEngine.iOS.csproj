@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Experimental iOS host (platforms/README.md): runs the -p:Game=<Id> game (default MeadowRun) on the headless
-       platform in the iOS simulator. raylib 6.0 has no iOS platform, so nothing is drawn yet. Needs macOS, Xcode and
-       the ios workload. -->
+  <!-- iOS host (platforms/README.md): runs the -p:Game=<Id> game (default MeadowRun) on SDL3 with Metal. SDL3 comes as an
+       xcframework (device and simulator) from the ppy.SDL3-CS package. Needs macOS, Xcode and the ios workload. -->
   <PropertyGroup>
     <TargetFramework>net10.0-ios</TargetFramework>
     <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
@@ -14,8 +13,9 @@
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">iossimulator-arm64</RuntimeIdentifier>
   </PropertyGroup>
   <ItemGroup>
-    <!-- No raylib library exists for iOS: keep the package's desktop builds out of the app. -->
+    <!-- The games reference the desktop platforms, raylib among them; raylib has no iOS build and is not used here. -->
     <PackageReference Include="Raylib-cs" Version="[8.1.0]" ExcludeAssets="native" />
     <BundleResource Include="$(GameDir)scripts/*.script" Link="scripts/%(Filename)%(Extension)" />
+    <BundleResource Include="@(MobileGameContent)" Link="Content/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

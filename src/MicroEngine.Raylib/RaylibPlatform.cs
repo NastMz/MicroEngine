@@ -32,6 +32,16 @@ public sealed class RaylibPlatform : IPlatform
     private long _frames;
     private bool _disposed;
 
+    /// <summary>
+    /// The raylib platform as a catalog entry. raylib has no iOS platform; its own audio device is not opened when the
+    /// request supplies another one.
+    /// </summary>
+    public static PlatformProfile Profile { get; } = new("raylib", "raylib 6.0: GLFW window, OpenGL renderer, input and miniaudio sound",
+        request => new RaylibPlatform(request.Settings, new DesktopOptions(request.Scale, request.Hidden, request.FixedStep, !request.OpensOwnAudio, request.CaptureScale)))
+    {
+        CheckSupport = () => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ? "raylib 6.0 has no iOS platform" : null,
+    };
+
     public RaylibPlatform(GameSettings settings, DesktopOptions options)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));

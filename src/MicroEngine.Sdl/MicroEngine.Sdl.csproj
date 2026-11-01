@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Sdl</RootNamespace>
+    <Description>MicroEngine backend built on SDL3: window, 2D renderer, input, touch and audio on Windows, Linux, macOS, Android and iOS.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
+    <!-- SDL3 bindings and native SDL3 3.5.0 for every desktop and mobile runtime (osu!'s maintained package, MIT). -->
+    <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
+    <!-- OGG Vorbis decoding in managed code, so music streams on every platform without another native library. -->
+    <PackageReference Include="NVorbis" Version="[0.10.5]" />
+  </ItemGroup>
+</Project>

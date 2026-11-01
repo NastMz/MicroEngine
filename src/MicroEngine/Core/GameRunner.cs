@@ -48,6 +48,7 @@ public sealed class GameLoop
     private double _step, _accumulator, _last;
     private long _frames;
     private bool _running;
+    private bool _suspended;
     private Exception? _error;
     private RunResult? _result;
 
@@ -104,6 +105,19 @@ public sealed class GameLoop
     private bool Frame()
     {
         _platform.PollEvents();
+        if (_platform.Suspended != _suspended)
+        {
+            _suspended = !_suspended;
+            if (_suspended) _game.Suspend();
+            else
+            {
+                // The time spent away is not simulated.
+                _last = _platform.Now;
+                _accumulator = 0;
+                _game.Resume();
+            }
+        }
+        if (_suspended) return _platform.CloseRequested || _game.QuitRequested;
         if (_platform.RealTime)
         {
             double now = _platform.Now;

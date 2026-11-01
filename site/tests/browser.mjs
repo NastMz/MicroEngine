@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Browser checks for the built site (site/dist, with demo packages), in the installed Chrome and Firefox:
-//   node tests/browser.mjs [--browsers chrome,firefox] [--suites layout,play,touch] [--out test-results]
+//   node tests/browser.mjs [--browsers chrome,firefox] [--suites layout,play,touch] [--out test-results] [--concurrency 4]
+// Browsers run at the same time; layout checks up to --concurrency pages at once in Chrome (one at a time in Firefox).
 // Suites (all by default; CI runs only `layout` when a change touches documentation alone):
 // - layout: every page at desktop, tablet and phone widths: no horizontal scroll, images with alt text, no request to a
 //   demo package (/play/) until Play is pressed; full-page screenshots are written to --out for review;
@@ -67,78 +68,95 @@ async function openPage(browser, label, url, viewport) {
   return { page, context, requests, errors, response };
 }
 
+/** Runs fn over the items with at most `limit` at a time. */
+async function pool(items, limit, fn) {
+  const queue = [...items];
+  await Promise.all(Array.from({ length: Math.min(limit, queue.length) }, async () => {
+    while (queue.length) await fn(queue.shift());
+  }));
+}
+
+// Pages are independent browser contexts, so several are checked at once. Checks that press keys need the window's
+// focus and run afterwards, one at a time.
+const concurrency = Number(option('--concurrency', '4'));
+const usesKeyboard = (size, route) => size === 'desktop' && (route === '/' || route === '/demos/neon-rift/');
+
 async function layout(browser, label, base) {
   const sizes = label === 'chrome' ? Object.keys(viewports) : ['desktop', 'phone'];
-  for (const size of sizes) {
-    for (const route of pages) {
-      const { page, context, requests, errors, response } = await openPage(browser, label, base + route, viewports[size]);
-      const where = `${label} ${size} ${route}`;
-      if (route === '/no-such-page/') check(`${where}: unknown route answers 404 with the site page`, response.status() === 404 && (await page.title()).includes('not found'));
-      if (await page.$('pre.mermaid')) {
-        const drawn = await page.waitForFunction(() => [...document.querySelectorAll('pre.mermaid')].every(p => p.dataset.processed), { timeout: 20_000 })
-          .then(() => true, () => false);
-        const diagrams = await page.evaluate(() => {
-          // A node's fill must be the theme's diagram colour, not Mermaid's own palette.
-          const probe = document.createElement('div');
-          probe.style.color = 'var(--diagram-node)';
-          document.body.append(probe);
-          const expected = getComputedStyle(probe).color;
-          probe.remove();
-          return [...document.querySelectorAll('pre.mermaid')].map(p => {
-            const node = p.querySelector('.node rect, .node polygon');
-            return { svg: !!p.querySelector('svg'), error: /error/i.test(p.textContent) && !p.querySelector('svg'),
-              themed: !!node && getComputedStyle(node).fill === expected };
-          });
-        });
-        check(`${where}: every diagram is drawn`, drawn && diagrams.every(d => d.svg && !d.error), JSON.stringify(diagrams));
-        check(`${where}: diagrams use the documentation's colours`, diagrams.every(d => d.themed), JSON.stringify(diagrams));
-      }
-      const { scroll, width, clipped, missingAlt, smallTargets, repoLinks, roadmapLink } = await page.evaluate(() => ({
-        repoLinks: [...document.querySelectorAll('a[href]')].map(a => a.href).filter(h => /github\.com/i.test(h) && !/^https:\/\/github\.com\/NastMz\/MicroEngine(\/|$)/.test(h)),
-        roadmapLink: !!document.querySelector('header a[href="/roadmap/"], .sidebar-content a[href="/roadmap/"], #starlight__sidebar a[href="/roadmap/"], a.docs-section[href="/roadmap/"]'),
-        scroll: document.documentElement.scrollWidth,
-        width: window.innerWidth,
-        // overflow-x: clip on the page hides overflow instead of scrolling, so look for content that ends past the
-        // viewport edge, outside elements that scroll horizontally on purpose (code blocks, wide tables).
-        clipped: [...document.body.querySelectorAll('*')].filter(el => {
-          const rect = el.getBoundingClientRect();
-          if (!rect.width || rect.right <= window.innerWidth + 1) return false;
-          for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
-            if (/auto|scroll|hidden/.test(getComputedStyle(p).overflowX)) return false;
-          }
-          return getComputedStyle(el).position !== 'fixed';
-        }).slice(0, 3).map(el => `${el.tagName.toLowerCase()}.${el.className}`.slice(0, 60)),
-        missingAlt: [...document.images].filter(img => !img.hasAttribute('alt')).map(img => img.src),
-        // Visible links and buttons in the page's own chrome and controls that are smaller than 24px on a side.
-        smallTargets: [...document.querySelectorAll('header a, footer a, .button, button')]
-          .filter(el => el.offsetParent && el.getClientRects().length)
-          .map(el => [el.textContent.trim().slice(0, 30), el.getBoundingClientRect()])
-          .filter(([, r]) => r.height < 24 || r.width < 24).map(([t]) => t),
-      }));
-      check(`${where}: no horizontal scroll`, scroll <= width, `${scroll} > ${width}`);
-      check(`${where}: no content cut off at the right edge`, clipped.length === 0, clipped.join(' | '));
-      check(`${where}: every image has alt text`, missingAlt.length === 0, missingAlt.join(', '));
-      check(`${where}: GitHub links go to the MicroEngine repository only`, repoLinks.length === 0, repoLinks.slice(0, 3).join(', '));
-      check(`${where}: the roadmap is reachable from the navigation`, roadmapLink);
-      check(`${where}: controls at least 24px`, smallTargets.length === 0, smallTargets.join(' | '));
-      check(`${where}: no demo package requested`, !requests.some(p => p.startsWith('/play/')), requests.filter(p => p.startsWith('/play/')).slice(0, 3).join(', '));
-      check(`${where}: no script errors`, errors.length === 0, errors.join(' | '));
-      if (size === 'desktop' && (route === '/' || route === '/demos/neon-rift/')) {
-        await page.keyboard.press('Tab');
-        const skip = await page.evaluate(() => {
-          const el = document.activeElement;
-          return { skip: el?.classList.contains('skip'), outline: getComputedStyle(el).outlineStyle, top: el.getBoundingClientRect().top };
-        });
-        check(`${where}: Tab reaches a visible skip link first`, skip.skip && skip.outline !== 'none' && skip.top >= 0, JSON.stringify(skip));
-        await page.keyboard.press('Enter');
-        await page.keyboard.press('Tab');
-        const next = await page.evaluate(() => document.activeElement?.closest('main') !== null);
-        check(`${where}: the skip link moves focus into the main content`, next);
-      }
-      if (size !== 'tablet') await page.screenshot({ path: path.join(out, `${label}-${size}-${route.replace(/\W+/g, '_') || 'home'}.png`), fullPage: true });
-      await context.close();
-    }
+  const items = sizes.flatMap(size => pages.map(route => [size, route]));
+  // Firefox, driven over WebDriver BiDi, loses browsing contexts created at the same time: one page at a time there.
+  const limit = label === 'firefox' ? 1 : concurrency;
+  await pool(items.filter(([size, route]) => !usesKeyboard(size, route)), limit, item => layoutPage(browser, label, base, ...item));
+  for (const item of items.filter(([size, route]) => usesKeyboard(size, route))) await layoutPage(browser, label, base, ...item);
+}
+
+async function layoutPage(browser, label, base, size, route) {
+  const { page, context, requests, errors, response } = await openPage(browser, label, base + route, viewports[size]);
+  const where = `${label} ${size} ${route}`;
+  if (route === '/no-such-page/') check(`${where}: unknown route answers 404 with the site page`, response.status() === 404 && (await page.title()).includes('not found'));
+  if (await page.$('pre.mermaid')) {
+    const drawn = await page.waitForFunction(() => [...document.querySelectorAll('pre.mermaid')].every(p => p.dataset.processed), { timeout: 20_000 })
+      .then(() => true, () => false);
+    const diagrams = await page.evaluate(() => {
+      // A node's fill must be the theme's diagram colour, not Mermaid's own palette.
+      const probe = document.createElement('div');
+      probe.style.color = 'var(--diagram-node)';
+      document.body.append(probe);
+      const expected = getComputedStyle(probe).color;
+      probe.remove();
+      return [...document.querySelectorAll('pre.mermaid')].map(p => {
+        const node = p.querySelector('.node rect, .node polygon');
+        return { svg: !!p.querySelector('svg'), error: /error/i.test(p.textContent) && !p.querySelector('svg'),
+          themed: !!node && getComputedStyle(node).fill === expected };
+      });
+    });
+    check(`${where}: every diagram is drawn`, drawn && diagrams.every(d => d.svg && !d.error), JSON.stringify(diagrams));
+    check(`${where}: diagrams use the documentation's colours`, diagrams.every(d => d.themed), JSON.stringify(diagrams));
   }
+  const { scroll, width, clipped, missingAlt, smallTargets, repoLinks, roadmapLink } = await page.evaluate(() => ({
+    repoLinks: [...document.querySelectorAll('a[href]')].map(a => a.href).filter(h => /github\.com/i.test(h) && !/^https:\/\/github\.com\/NastMz\/MicroEngine(\/|$)/.test(h)),
+    roadmapLink: !!document.querySelector('header a[href="/roadmap/"], .sidebar-content a[href="/roadmap/"], #starlight__sidebar a[href="/roadmap/"], a.docs-section[href="/roadmap/"]'),
+    scroll: document.documentElement.scrollWidth,
+    width: window.innerWidth,
+    // overflow-x: clip on the page hides overflow instead of scrolling, so look for content that ends past the
+    // viewport edge, outside elements that scroll horizontally on purpose (code blocks, wide tables).
+    clipped: [...document.body.querySelectorAll('*')].filter(el => {
+      const rect = el.getBoundingClientRect();
+      if (!rect.width || rect.right <= window.innerWidth + 1) return false;
+      for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+        if (/auto|scroll|hidden/.test(getComputedStyle(p).overflowX)) return false;
+      }
+      return getComputedStyle(el).position !== 'fixed';
+    }).slice(0, 3).map(el => `${el.tagName.toLowerCase()}.${el.className}`.slice(0, 60)),
+    missingAlt: [...document.images].filter(img => !img.hasAttribute('alt')).map(img => img.src),
+    // Visible links and buttons in the page's own chrome and controls that are smaller than 24px on a side.
+    smallTargets: [...document.querySelectorAll('header a, footer a, .button, button')]
+      .filter(el => el.offsetParent && el.getClientRects().length)
+      .map(el => [el.textContent.trim().slice(0, 30), el.getBoundingClientRect()])
+      .filter(([, r]) => r.height < 24 || r.width < 24).map(([t]) => t),
+  }));
+  check(`${where}: no horizontal scroll`, scroll <= width, `${scroll} > ${width}`);
+  check(`${where}: no content cut off at the right edge`, clipped.length === 0, clipped.join(' | '));
+  check(`${where}: every image has alt text`, missingAlt.length === 0, missingAlt.join(', '));
+  check(`${where}: GitHub links go to the MicroEngine repository only`, repoLinks.length === 0, repoLinks.slice(0, 3).join(', '));
+  check(`${where}: the roadmap is reachable from the navigation`, roadmapLink);
+  check(`${where}: controls at least 24px`, smallTargets.length === 0, smallTargets.join(' | '));
+  check(`${where}: no demo package requested`, !requests.some(p => p.startsWith('/play/')), requests.filter(p => p.startsWith('/play/')).slice(0, 3).join(', '));
+  check(`${where}: no script errors`, errors.length === 0, errors.join(' | '));
+  if (usesKeyboard(size, route)) {
+    await page.keyboard.press('Tab');
+    const skip = await page.evaluate(() => {
+      const el = document.activeElement;
+      return { skip: el?.classList.contains('skip'), outline: getComputedStyle(el).outlineStyle, top: el.getBoundingClientRect().top };
+    });
+    check(`${where}: Tab reaches a visible skip link first`, skip.skip && skip.outline !== 'none' && skip.top >= 0, JSON.stringify(skip));
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Tab');
+    const next = await page.evaluate(() => document.activeElement?.closest('main') !== null);
+    check(`${where}: the skip link moves focus into the main content`, next);
+  }
+  if (size !== 'tablet') await page.screenshot({ path: path.join(out, `${label}-${size}-${route.replace(/\W+/g, '_') || 'home'}.png`), fullPage: true });
+  await context.close();
 }
 
 const stateOf = page => page.$eval('[data-player]', el => el.dataset.state);
@@ -201,7 +219,8 @@ async function touch(browser, base) {
 const server = await serve();
 console.log(`site served at ${server.url}; screenshots in ${out}`);
 try {
-  for (const label of browsers) {
+  // The browsers are independent processes reading the same local server: they run at the same time.
+  await Promise.all(browsers.map(async label => {
     const browser = await launch(label);
     try {
       if (suites.has('layout')) await layout(browser, label, server.url);
@@ -210,7 +229,7 @@ try {
     } finally {
       await browser.close();
     }
-  }
+  }));
 } finally {
   await server.close();
 }

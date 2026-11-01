@@ -2,9 +2,12 @@
 // the browser runs stored (run.mjs scripts). Equal files mean the browser build produced the same frames from
 // the same input, seed and starting point.
 //
-//   node web/tests/desktop.mjs [--out DIR] [--games A,B] [--skip-run]
+//   node web/tests/desktop.mjs [--out DIR] [--games A,B] [--skip-run] [--backend NAME] [--jobs N]
 //                              [--reference FILE [--names-only]] [--write-reference FILE]
 //
+// --backend runs the games on another desktop platform (sdl, sdl-software; the games' --platform); the default stays
+// raylib, the platform the browser build shares, because the browser comparison is byte for byte on the PNG files.
+// --platform labels a new reference (--write-reference). --jobs runs that many scenarios at once (default: up to 4).
 // --skip-run compares captures already in --out/desktop/<Game>/<script> (for example pulled from a device).
 //
 // --reference also checks the native captures against a platform's visual reference (captures.mjs): every capture
@@ -14,7 +17,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { compare, grid, summarise, tolerance } from './captures.mjs';
 
@@ -27,22 +30,51 @@ const only = option('--games', '');
 const skipRun = args.includes('--skip-run');
 const referenceFile = option('--reference', '');
 const writeReference = option('--write-reference', '');
+const backend = option('--backend', 'raylib');
+// Scripted runs are deterministic (fixed step, seed 1), so they run side by side; results print in scenario order.
+const jobs = Math.max(1, Number(option('--jobs', String(Math.min(4, os.availableParallelism())))));
 const saveDirVariable = { MeadowRun: 'MEADOW_SAVE_DIR', CourtyardKey: 'COURTYARD_SAVE_DIR', TrailDuel: 'TRAIL_SAVE_DIR', NeonRift: 'RIFT_SAVE_DIR' };
 
 const { scenarios } = JSON.parse(fs.readFileSync(path.join(here, 'scenarios.json'), 'utf8'));
+const selected = scenarios.filter(s => !only || only.split(',').includes(s.game));
+
+/** Plays one scenario into its capture folder; resolves to { status, signal, stdout, stderr }. */
+function play(s) {
+  const name = path.basename(s.script, '.script');
+  const dir = path.join(out, 'desktop', s.game, name);
+  const exe = path.join(repo, 'games', s.game, 'bin/Release/net10.0', s.game + (process.platform === 'win32' ? '.exe' : ''));
+  if (!fs.existsSync(exe)) throw new Error(`${exe} is missing; run dotnet build MicroEngine.slnx -c Release.`);
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir, { recursive: true });
+  const saves = fs.mkdtempSync(path.join(os.tmpdir(), 'microengine-saves-'));
+  return new Promise(resolve => {
+    const child = spawn(exe, ['--script', path.join(repo, 'games', s.game, 'scripts', s.script), '--hidden', '--mute', '--platform', backend, '--captures', dir],
+      { env: { ...process.env, ...s.env, [saveDirVariable[s.game]]: saves } });
+    let stdout = '', stderr = '';
+    child.stdout.on('data', d => stdout += d);
+    child.stderr.on('data', d => stderr += d);
+    child.on('error', error => { stderr += String(error); });
+    child.on('close', (status, signal) => {
+      fs.rmSync(saves, { recursive: true, force: true });
+      resolve({ status, signal, stdout, stderr });
+    });
+  });
+}
+
+const runs = new Map();
+if (!skipRun) {
+  const queue = [...selected];
+  await Promise.all(Array.from({ length: Math.min(jobs, queue.length) }, async () => {
+    for (let s; (s = queue.shift());) runs.set(s, await play(s));
+  }));
+}
+
 let failures = 0;
-for (const s of scenarios.filter(s => !only || only.split(',').includes(s.game))) {
+for (const s of selected) {
   const name = path.basename(s.script, '.script');
   const dir = path.join(out, 'desktop', s.game, name);
   if (!skipRun) {
-    const exe = path.join(repo, 'games', s.game, 'bin/Release/net10.0', s.game + (process.platform === 'win32' ? '.exe' : ''));
-    if (!fs.existsSync(exe)) throw new Error(`${exe} is missing; run dotnet build MicroEngine.slnx -c Release.`);
-    fs.rmSync(dir, { recursive: true, force: true });
-    fs.mkdirSync(dir, { recursive: true });
-    const saves = fs.mkdtempSync(path.join(os.tmpdir(), 'microengine-saves-'));
-    const run = spawnSync(exe, ['--script', path.join(repo, 'games', s.game, 'scripts', s.script), '--hidden', '--mute', '--captures', dir],
-      { env: { ...process.env, ...s.env, [saveDirVariable[s.game]]: saves }, encoding: 'utf8' });
-    fs.rmSync(saves, { recursive: true, force: true });
+    const run = runs.get(s);
     if (run.status !== 0) {
       failures++;
       // raylib prints its warnings (the reason a window failed) on stdout, the launcher its error on stderr.

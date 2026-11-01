@@ -1,11 +1,11 @@
-# Experimental platforms (docs/ci.md, "Platform workflow"): checks that need expensive runners or are not stable yet.
-# None of them is a supported platform, and none takes part in a deployment or a release: their failures are shown
-# and diagnosed but block nothing. Each job writes what it proved, level by level, to the run summary
-# (platforms/README.md, "Evidence levels").
-#   macOS     headless and native .NET tests; an OpenGL probe that explains whether raylib can open a window, and the
-#             scripted captures only when it can
-#   Android   raylib built with the NDK, the APK, and the game played on an x86_64 emulator (captures, keys, lifecycle)
-#   iOS       the iOS host in the simulator: the game's code on the headless platform (raylib has no iOS platform)
+# Platform workflow (docs/ci.md, "Platform workflow"): the checks that need macOS runners, an emulator or a simulator.
+# None takes part in a deployment or a release: their failures are shown and diagnosed but block nothing. Each job
+# writes what it proved, level by level, to the run summary (platforms/README.md, "Evidence levels").
+#   macOS     headless and native .NET tests, the games on SDL (Metal) against the SDL reference; an OpenGL probe that
+#             explains whether raylib can open a window, and raylib captures only when it can
+#   Android   APKs on SDL for a code-first and a content game, played on an x86_64 emulator (captures, keys, touch,
+#             lifecycle) and compared with the SDL reference
+#   iOS       the same two games on SDL (Metal) in the simulator (captures, audio device, lifecycle)
 # Runs: manually (any ref, any subset of platforms), from validate.yml, and once a month on main to catch runner
 # image and toolchain drift. Never on pull requests: emulators and simulators do not run automatically. A full run
 # measured 9 Linux and 5 macOS billable minutes, about $0.36 (docs/evaluations/infra-1.md).
@@ -65,9 +65,10 @@ env:
 
 jobs:
   macos:
-    name: macOS (experimental; tests, OpenGL diagnosis)
+    name: macOS (SDL with Metal; raylib OpenGL diagnosis)
     if: github.event_name == 'schedule' || inputs.macos
     runs-on: macos-latest
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
@@ -82,38 +83,47 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: dotnet build MicroEngine.slnx -c Release
-      - name: .NET tests (headless, and native audio device; the keyboard test is Linux-only)
+      - name: .NET tests (headless; native audio device)
+        # tests/MicroEngine.Desktop.Tests open windows from a test thread, which Cocoa forbids; SDL on macOS is checked
+        # below by running the games themselves.
         run: |
           dotnet test MicroEngine.slnx -c Release --no-build --filter "TestCategory!=Native" --logger trx --results-directory test-results
           dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results ".NET tests on macOS"
-      - name: OpenGL probe
+      - name: Scripted captures on SDL (the default platform) against the macOS SDL reference
+        run: node web/tests/desktop.mjs --backend sdl --jobs 3 --out sdl-captures --reference web/tests/reference/sdl-macos-arm64.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-sdl-captures
+          path: sdl-captures/desktop
+          retention-days: 7
+      - name: OpenGL probe (raylib)
         id: probe
         run: |
           clang -fobjc-arc -Wno-deprecated-declarations platforms/macos/gl-probe.m -framework OpenGL -framework Metal -framework Foundation -o "$RUNNER_TEMP/gl-probe"
           "$RUNNER_TEMP/gl-probe" | tee probe.md | tee -a "$GITHUB_STEP_SUMMARY"
           if grep -q "^| GLFW's: accelerated required | .*context created" probe.md; then echo "window=yes" >> "$GITHUB_OUTPUT"; else echo "window=no" >> "$GITHUB_OUTPUT"; fi
-      - name: Scripted captures (completeness and size against the Linux reference)
+      - name: Scripted captures on raylib (completeness and size against the Linux reference)
         if: steps.probe.outputs.window == 'yes'
         run: node web/tests/desktop.mjs --out native-captures --reference web/tests/reference/linux-x64.json --names-only | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Scripted captures not attempted
+      - name: raylib captures not attempted
         if: steps.probe.outputs.window != 'yes'
         run: |
-          echo "::notice::No accelerated OpenGL renderer on this runner, so GLFW (raylib) cannot create a window; native captures skipped (see the probe in the summary)."
-          echo "Native captures skipped: no accelerated OpenGL renderer (GLFW requires one)." >> "$GITHUB_STEP_SUMMARY"
-      - if: always() && steps.probe.outputs.window == 'yes'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-captures
-          path: native-captures/desktop
-          retention-days: 7
+          echo "::notice::No accelerated OpenGL renderer on this runner, so GLFW (raylib) cannot create a window; raylib captures skipped (see the probe in the summary)."
+          echo "raylib captures skipped: no accelerated OpenGL renderer (GLFW requires one)." >> "$GITHUB_STEP_SUMMARY"
 
+  # One job per game, in parallel: Meadow Run is code-first, Neon Rift ships PNG, WAV and OGG content files.
   android:
-    name: Android (experimental; emulator)
+    name: Android ${{ matrix.game }} (SDL; emulator)
     if: github.event_name == 'schedule' || inputs.android
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        game: [MeadowRun, NeonRift]
     defaults:
       run:
         shell: bash
@@ -131,6 +141,10 @@ jobs:
         with:
           distribution: microsoft
           java-version: '21'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-android-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json', 'NuGet.config') }}
       - name: Pinned versions
         run: sed 's/[[:space:]]*#.*$//' platforms/android/toolchain.env | grep '=' >> "$GITHUB_ENV"
       # The emulator's data partition needs several GB the image does not leave free; remove toolchains this job never uses.
@@ -139,19 +153,14 @@ jobs:
           df -h / | tail -1
           sudo rm -rf /usr/local/.ghcup /opt/ghc /usr/share/swift /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/julia* /usr/local/share/chromium
           df -h / | tail -1
-      - name: Toolchain (NDK, android workload)
+      - name: Toolchain (android workload)
         run: |
-          # Licence prompts answered from a process substitution: `yes |` would die of SIGPIPE under pipefail.
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" < <(yes) > /dev/null
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
           dotnet workload install android > /dev/null
-          { echo "### Android toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^android ' | tr -s ' ')"; echo "- NDK $NDK_VERSION, Java $(java -version 2>&1 | head -1)"; echo; } >> "$GITHUB_STEP_SUMMARY"
-      - run: platforms/android/build-raylib.sh
+          { echo "### Android toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^android ' | tr -s ' ')"; echo "- Java $(java -version 2>&1 | head -1)"; echo; } >> "$GITHUB_STEP_SUMMARY"
       - name: APK
         run: |
-          dotnet build platforms/android -c Release -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME"
-          apk=$(ls platforms/android/bin/MeadowRun/Release/net10.0-android/*-Signed.apk)
-          echo "APK=$apk" >> "$GITHUB_ENV"
+          dotnet build platforms/android -c Release -p:Game=${{ matrix.game }} -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME"
+          apk=$(ls platforms/android/bin/${{ matrix.game }}/Release/net10.0-android/*-Signed.apk)
           echo "- APK: $(basename "$apk"), $(du -h "$apk" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
       - name: Enable KVM
         run: |
@@ -166,21 +175,25 @@ jobs:
           emulator-options: -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           disable-animations: true
           disk-size: 4G
+          # The action runs each script line with sh, so the checks live in a bash script.
           script: |
-            node platforms/android/device-checks.mjs --apk "$APK" --out android-checks
-            node web/tests/desktop.mjs --skip-run --games MeadowRun --out android-checks --reference web/tests/reference/linux-x64.json | tee -a "$GITHUB_STEP_SUMMARY"
+            bash platforms/android/ci-play.sh android-checks ${{ matrix.game }}
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: android-checks
+          name: android-checks-${{ matrix.game }}
           path: android-checks
           retention-days: 7
 
   ios:
-    name: iOS (experimental; simulator)
+    name: iOS ${{ matrix.game }} (SDL with Metal; simulator)
     if: github.event_name == 'schedule' || inputs.ios
     runs-on: macos-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        game: [MeadowRun, NeonRift]
     defaults:
       run:
         shell: bash
@@ -189,35 +202,58 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.sha }}
       # The newest ios workload can require an Xcode the image does not have yet, so the job pins the SDK
-      # (web/toolchain.env) and the workload set (platforms/ios/toolchain.env).
+      # (web/toolchain.env), the workload set and the Xcode it requires (platforms/ios/toolchain.env).
       - name: Pinned versions
         run: sed 's/[[:space:]]*#.*$//' web/toolchain.env platforms/ios/toolchain.env | grep '=' >> "$GITHUB_ENV"
+      - name: Select Xcode
+        run: |
+          echo "Xcode on the image: $(for app in /Applications/Xcode_*.app; do basename "$app"; done | paste -sd' ' -)"
+          for candidate in /Applications/Xcode_"$IOS_XCODE".app /Applications/Xcode_"$IOS_XCODE".0.app; do
+            [ -d "$candidate" ] && { sudo xcode-select -s "$candidate"; break; }
+          done
+          xcodebuild -version | paste -sd' ' -
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-ios-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'web/toolchain.env', 'NuGet.config') }}
       - name: Toolchain (ios workload)
         run: |
           echo "{ \"sdk\": { \"version\": \"$DOTNET_SDK_VERSION\", \"rollForward\": \"disable\" } }" > global.json
           dotnet workload install ios --version "$IOS_WORKLOAD_SET" > /dev/null
-          echo "Xcode on the image: $(for app in /Applications/Xcode_*.app; do basename "$app"; done | paste -sd' ' -)"
-      - run: dotnet build games/MeadowRun -c Release
-      # The ios pack checks the Xcode version and names the one it needs; that Xcode is selected and the build repeated.
+      # If the pinned Xcode is not the one the ios pack asks for, the build names it; that Xcode is selected and the
+      # build repeated (then update IOS_XCODE).
       - name: App for the simulator
         run: |
-          if ! dotnet build platforms/ios -c Release > ios-build.log 2>&1; then
+          if ! dotnet build platforms/ios -c Release -p:Game=${{ matrix.game }} > ios-build.log 2>&1; then
             grep -E ' error |error :' ios-build.log | sort -u | head -20 || true
             need=$(grep -oE 'requires Xcode [0-9]+(.[0-9]+)+' ios-build.log | head -1 | cut -d' ' -f3 || true)
             [ -n "$need" ] || { tail -40 ios-build.log; exit 1; }
+            echo "::warning::IOS_XCODE=$IOS_XCODE, but the ios workload requires Xcode $need; update platforms/ios/toolchain.env."
             xcode=; for candidate in /Applications/Xcode_"$need".app /Applications/Xcode_"$need".0.app; do [ -d "$candidate" ] && { xcode=$candidate; break; }; done
             [ -n "$xcode" ] || { echo "::error::The ios workload needs Xcode $need, which this image does not have."; exit 1; }
             sudo xcode-select -s "$xcode"
-            dotnet build platforms/ios -c Release
+            dotnet build platforms/ios -c Release -p:Game=${{ matrix.game }}
           fi
-          app=$(ls -d platforms/ios/bin/MeadowRun/Release/net10.0-ios/iossimulator-arm64/*.app)
+          app=$(ls -d platforms/ios/bin/${{ matrix.game }}/Release/net10.0-ios/iossimulator-arm64/*.app)
           echo "APP=$app" >> "$GITHUB_ENV"
           { echo "### iOS toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^ios ' | tr -s ' ')"
-            echo "- $(xcodebuild -version | paste -sd' ' -)"; echo "- App: $(basename "$app"), $(du -sh "$app" | cut -f1)"; echo; } >> "$GITHUB_STEP_SUMMARY"
-      - run: platforms/ios/simulator-checks.sh "$APP" MeadowRun
+            echo "- $(xcodebuild -version | paste -sd' ' -)"
+            echo "- App: $app, $(du -sh "$app" | cut -f1); Frameworks: $(find "$app/Frameworks" -mindepth 1 -maxdepth 1 -exec basename {} \; 2>/dev/null | paste -sd' ' - || echo none)"; echo; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Play in the simulator
+        run: |
+          status=0
+          platforms/ios/simulator-checks.sh "$APP" ${{ matrix.game }} ios-checks/${{ matrix.game }} || status=1
+          node web/tests/desktop.mjs --skip-run --games ${{ matrix.game }} --out ios-checks/${{ matrix.game }} --reference web/tests/reference/sdl.json | tee -a "$GITHUB_STEP_SUMMARY" || status=1
+          exit $status
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-checks-${{ matrix.game }}
+          path: ios-checks
+          retention-days: 7

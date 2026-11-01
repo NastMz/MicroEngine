@@ -1,29 +1,31 @@
 # Platforms
 
-MicroEngine games run wherever an `IPlatform` implementation runs. Today there are two: the raylib backend,
-used on the desktop and, compiled to WebAssembly, in browsers; and the headless platform used by tests. This
-page lists each target and exactly how far it has been validated.
+MicroEngine games run wherever an `IPlatform` implementation runs. The official ones: the SDL 3 platform, the default
+on Windows, Linux, macOS, Android and iOS; the raylib platform, used in browsers (compiled to WebAssembly) and as an
+alternative on desktops; and the headless platform used by tests ([Backends](../manual/backends.md)). This page lists
+each target and exactly how far it has been validated.
 
 ## Support table
 
-| Target | Backend | Status |
+| Target | Platform | Status |
 | --- | --- | --- |
-| Windows desktop (x64) | `RaylibPlatform` through `DesktopLauncher` | Supported: builds, all tests and scripted captures, manual play |
-| Linux desktop (x64) | `RaylibPlatform` through `DesktopLauncher` | Automatically checked, not yet supported: see [Desktop validation](#desktop-validation); manual validation pending |
-| macOS desktop | `RaylibPlatform` | Under evaluation, not supported: builds and passes the headless tests in CI (not blocking yet); raylib cannot open a window on the hosted CI runner, so nothing native is shown |
-| Linux on ARM (arm64) | — | Not available: the `Raylib-cs` package has no native raylib library for it |
-| Chrome (Chromium) on desktop | `RaylibPlatform` in WebAssembly through `BrowserLauncher` | The four demos are verified with automated tests, plus manual validation in the browser |
+| Windows desktop (x64) | `sdl` (default), `raylib`, `sdl-software` through `DesktopLauncher` | Supported with raylib (builds, tests, scripted captures, manual play). SDL: the 15 scripted scenarios drawn and compared with raylib, real-time runs; manual play pending |
+| Linux desktop (x64) | `sdl` (default), `raylib`, `sdl-software` | Automatically checked, not yet supported: see [Desktop validation](#desktop-validation); manual validation pending |
+| macOS desktop | `sdl` (default); `raylib` needs a GPU | Checked automatically, not yet supported: on the hosted CI Mac (arm64) SDL draws the 15 scripted scenarios, compared with a macOS reference; manual play pending |
+| Linux on ARM (arm64) | `sdl` | Not checked: the SDL package has an arm64 library, but nothing has run on it |
+| Chrome (Chromium) on desktop | `raylib` in WebAssembly through `BrowserLauncher` | The four demos are verified with automated tests, plus manual validation in the browser |
 | Firefox on desktop | Same | The four demos are verified with automated tests, plus manual validation in the browser |
 | Other Chromium-based browsers (for example Edge) | Same | Not claimed: they share Chrome's engine, but they are not covered by the tests |
 | Safari | Same | Not tested |
-| Phones and tablets | Same | Not validated on real mobile devices; the demos have no dedicated touch controls |
-| Android app | `RaylibPlatform` (raylib built for Android) | Experimental, not supported: one demo runs on an emulator ([Phones and tablets](#phones-and-tablets)) |
-| iOS app | — | Not available: raylib has no iOS platform; the game code runs headless in the simulator |
+| Phones and tablets in a browser | Same | Not validated on real mobile devices; the web demos have no touch controls |
+| Android app | `sdl` (the Android host) | Implemented and checked on an emulator: two demos draw, play, take keys and touch, and survive the background ([Phones and tablets](#phones-and-tablets)); no real device yet |
+| iOS app | `sdl` (the iOS host) | Checked in the simulator: two demos draw (captures within the SDL reference), open audio and survive the background; touch not checked by script, no real device yet |
 | Headless (tests, CI) | `HeadlessPlatform` | Validated: used by every test project; `--headless` launcher flag |
 
 "Validated" and "verified" mean the configuration was run and its results recorded. Anything else is a statement
-about .NET, raylib or the browser, not about MicroEngine. An automated check proves what it exercises and nothing
-more: a desktop system is called supported only once a person has also played on it.
+about .NET, SDL, raylib or the browser, not about MicroEngine. An automated check proves what it exercises and nothing
+more: a system is called supported only once a person has also played on it. Evidence for this page:
+[PLATFORM-3](../evaluations/platform-3.md).
 
 ## Desktop validation
 
@@ -34,70 +36,75 @@ change; "recorded" means it was run and its result kept, once.
 | --- | --- | --- | --- |
 | Build of the engine, the four games and the tests | Automated | Automated | Automated, not blocking; passing (macOS 26, arm64) |
 | Simulation: engine tests and the four games' headless playthroughs | Automated | Automated | Automated, not blocking; passing |
-| Native rendering: raylib and OpenGL draw the 15 scripted scenarios (138 captures) | Recorded: the same captures, compared byte for byte with the browser builds | Automated under a virtual display with software OpenGL (Mesa), compared with a Linux reference | Attempted automatically, not blocking: raylib cannot open a window on the hosted runner, so no capture is produced yet |
-| Native keyboard: keys from the system reach the game through raylib | Manual play | Automated: pressed, held, released, a tap shorter than a frame, two keys at once | Not covered |
-| Audio device opens | Manual play | Automated on a virtual sound server (PulseAudio) | Automated, not blocking: opens on the hosted runner |
-| Audio output carries the sound played | Manual play | Automated: a played tone is recorded from the virtual sound server and recognised; not listened to | Not covered |
-| Gamepad | Supported by the backend | Not covered | Not covered |
-| Manual play on real hardware (GPU, speakers, fullscreen, window manager) | Done | Pending | Pending |
+| Native rendering, raylib: the 15 scripted scenarios (138 captures) | Recorded: compared byte for byte with the browser builds | Automated under a virtual display with software OpenGL (Mesa), compared with a Linux reference | Attempted, not blocking: raylib cannot open a window on the hosted runner |
+| Native rendering, SDL: the same 138 captures | Recorded: Direct3D 11, OpenGL and Vulkan draw identical frames, kept as the SDL reference | Automated on Mesa (llvmpipe) against its own SDL reference | Automated in the platform workflow against a macOS reference (reproduced pixel for pixel by a second run) |
+| SDL and raylib draw the same probe frame | Recorded | Recorded (local Linux) | Not yet run |
+| Native keyboard: keys from the system reach the game | Manual play (raylib) | Automated with raylib: pressed, held, released, a tap shorter than a frame, two keys at once | Not covered |
+| Audio device opens | Manual play (raylib); SDL's device opened and played sounds | Automated on a virtual sound server (PulseAudio) | Automated, not blocking: opens on the hosted runner |
+| Audio output carries the sound played | Manual play (raylib) | Automated with raylib: a played tone is recorded from the virtual sound server and recognised; not listened to | Not covered |
+| Gamepad | Supported by both backends; not tried with SDL | Not covered | Not covered |
+| Manual play on real hardware (GPU, speakers, fullscreen, window manager) | Done with raylib; pending with SDL | Pending | Pending |
 
-Linux checks run on Ubuntu 24.04 x64 under Xvfb; the reference was recorded with Mesa 25.2.8 (llvmpipe) and the
-hosted CI runner reproduced all 138 captures pixel for pixel. On macOS the hosted runner (macOS 26, arm64) builds and
-passes the headless tests, but GLFW finds no suitable OpenGL pixel format on that virtual machine and cannot create a
-window, so native rendering and input on macOS have no evidence yet; they need a Mac with a GPU. A probe on the runner
-shows why: its only OpenGL renderer is Apple's software renderer, and GLFW always asks for a hardware-accelerated one. Wayland
-sessions, real GPUs and drivers, gamepads, F11 and Alt+Enter fullscreen and high-DPI screens remain to be checked by
-hand before Linux is called supported.
+Linux checks run on Ubuntu 24.04 x64 under Xvfb; the raylib reference was recorded with Mesa 25.2.8 (llvmpipe) and the
+hosted CI runner reproduced all 138 captures pixel for pixel. On Mesa's software rasterizer, SDL draws a few rotated
+and translucent sprites one texel or one blend level apart from GPU drivers, so Linux keeps its own SDL reference. On
+macOS the hosted runner builds and passes the headless tests; GLFW (raylib) finds no accelerated OpenGL there and
+cannot create a window, while SDL draws through Metal, which that runner offers. Wayland sessions, real GPUs and
+drivers, gamepads, F11 and Alt+Enter fullscreen and high-DPI screens remain to be checked by hand before Linux is
+called supported.
 
 ## Gamepads
 
-The engine's desktop backend reads gamepads through raylib, and the same bindings apply in the browser (see
+Both desktop backends read the first gamepad, and the same bindings apply in the browser (see
 [Input](../manual/input.md)). In the browser, gamepad play was validated manually in one Chromium-based browser
-with the controller that was tested. No claim is made for other controllers or other browsers.
+with the controller that was tested. No claim is made for other controllers or other browsers, and SDL's gamepad
+support has not been tried with a physical controller.
 
 ## Phones and tablets
 
-The website works on phones and tablets. The demos have no dedicated touch controls and were not validated on real
-mobile devices; the site lets visitors try them at their own risk. Research into mobile and touch input is on the
-[roadmap](/roadmap/).
+The website works on phones and tablets. The web demos have no touch controls and were not validated on real mobile
+devices; the site lets visitors try them at their own risk.
 
-Native mobile apps are experiments, not supported platforms:
+The native apps run on the SDL platform, with on-screen controls (a d-pad, A, B, X, a shoulder button and Start)
+that press the gamepad buttons each game already binds:
 
-- **Android**: an experimental app runs Meadow Run with the same raylib backend on an Android emulator (x86_64). Its
-  scripted runs draw the same frames as the desktop build, within the visual reference's tolerance, and keys sent by
-  the system reach the game. There are no touch controls, it was not tried on a real device, and raylib can still
-  crash it when the game closes its audio.
-- **iOS**: raylib has no iOS platform, so nothing can be drawn on iOS with the current backend. An experimental app
-  runs Meadow Run's code without graphics in the iOS simulator, with the same results as the desktop build.
+- **Android**: Meadow Run and Neon Rift run on an Android emulator (x86_64). Their 25 scripted captures are
+  pixel-identical to the Windows SDL build; keys and taps on the on-screen controls take each game from its title into
+  play; Home suspends the game (music paused, progress saved) and relaunching resumes it; Neon Rift's image and sound
+  files load from the app package. Not tried on a real device.
+- **iOS**: Meadow Run and Neon Rift run in the iOS simulator; their 25 scripted captures are within the SDL reference,
+  the audio device opens, and opening another app suspends the game until it is brought back. Touch cannot be checked
+  in the simulator by script, and no iPhone was used.
 
 ## What CI proves
 
 Every change runs only the checks it needs, once per content; full validation runs every check on demand, and the
-experimental platforms also run once a month. Experimental platforms never decide whether anything is published,
-and new demo builds reach this site only through an explicit release.
+platform workflow also runs once a month. It never decides whether anything is published, and new demo builds reach
+this site only through an explicit release.
 
 | Check | Runs | Proves |
 | --- | --- | --- |
 | .NET tests on Linux | engine, game or test changes; full validation | the engine and the four games' rules and headless playthroughs |
 | .NET tests on Windows | engine, backend and build changes; full validation | the same on Windows |
-| Native Linux | engine, game and capture changes; full validation | raylib draws the 138 scripted frames like the Linux reference; keyboard and audio through the system |
+| Native Linux | engine, game and capture changes; full validation | raylib and SDL draw the 138 scripted frames like their Linux references; SDL and raylib draw the same probe frame; keyboard and audio through the system |
 | Browser suites | site, web host and rebuilt demos (all suites); documentation (page layout only); every release | pages at three widths, and each demo loaded, played, restarted and closed in Chrome and Firefox |
-| .NET tests on macOS, OpenGL probe | full validation; monthly | the same tests on macOS (not blocking), and why raylib can or cannot open a window on the CI Mac |
-| Android emulator | full validation; monthly | the experimental app installs, starts, draws, plays and resumes |
-| iOS simulator | full validation; monthly | the experimental app installs, starts and simulates like the desktop build |
+| macOS | full validation; monthly | the same tests on macOS, the 138 frames on SDL (Metal) against the SDL reference, and why raylib can or cannot open a window |
+| Android emulator | full validation; monthly | two games install, start, draw like the SDL reference, take keys and touch, and resume |
+| iOS simulator | full validation; monthly | two games install, start, draw like the SDL reference and resume |
 
 ## Desktop
 
-`DesktopLauncher.Run(game, args)` opens a raylib window, scales the virtual canvas by the largest whole factor
-that fits and letterboxes it. F11 toggles fullscreen. Keyboard and gamepad bindings are defined by the game's
+`DesktopLauncher.Run(game, args)` opens a window on the default platform (SDL; `--platform raylib` or
+`MICROENGINE_PLATFORM=raylib` for the other), scales the virtual canvas by the largest whole factor that fits and
+letterboxes it. F11 and Alt+Enter toggle fullscreen. Keyboard and gamepad bindings are defined by the game's
 `InputMap` (see [Input](../manual/input.md)). Saves go to the user's data folder: `%LOCALAPPDATA%/MicroEngine/<GameId>`
 on Windows, `$XDG_DATA_HOME/MicroEngine/<GameId>` (by default `~/.local/share`) on Linux and
 `~/Library/Application Support/MicroEngine/<GameId>` on macOS (see [Persistence](../manual/persistence.md#where-saves-live)).
 
-Games target .NET 10. The raylib native library arrives with the `Raylib-cs` 8.1.0 NuGet package that the backend
-depends on, for Windows (x64, x86), Linux (x64) and macOS (x64, arm64). On Linux, raylib opens its window through X11
-(GLFW) and needs OpenGL (Mesa or a GPU driver); a Wayland session runs it through XWayland, which has not been
-checked yet.
+Games target .NET 10. Native libraries arrive with NuGet packages: SDL 3.5 with `ppy.SDL3-CS` (Windows x64, x86,
+arm64; Linux x64, x86, arm64, arm; macOS x64, arm64; Android; iOS) and raylib with `Raylib-cs` 8.1.0 (Windows x64,
+x86; Linux x64; macOS x64, arm64). On Linux both open X11 windows (SDL also speaks Wayland) and need OpenGL from Mesa or
+a GPU driver; Wayland sessions have not been checked yet.
 
 ## Browser
 

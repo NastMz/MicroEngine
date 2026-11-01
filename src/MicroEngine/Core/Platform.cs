@@ -26,6 +26,12 @@ public interface IPlatform : IDisposable
     double Now { get; }
     /// <summary>Whether time advances with the wall clock (desktop) or one step per frame (headless).</summary>
     bool RealTime { get; }
+    /// <summary>
+    /// Whether the system took the game away (a phone app sent to the background): while true the loop neither
+    /// simulates nor renders, music is paused and the game is told through <c>OnSuspended</c>/<c>OnResumed</c>.
+    /// Platforms without such a state keep the default.
+    /// </summary>
+    bool Suspended => false;
     void PollEvents();
     IRenderer BeginFrame();
     void EndFrame();
