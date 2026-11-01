@@ -678,17 +678,19 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
                     canvas.FillCircle(origin, r, tint.WithAlpha((0.12f * op + 0.06f * g) * idle));
                     canvas.Ring(origin, r, line, outline.WithAlpha(outline.A / 255f * idle));
                     if (stick.DeadZone > 0) canvas.Ring(origin, r * stick.DeadZone, Math.Max(1, line * 0.6f), tint.WithAlpha(0.3f * op * idle));
+                    var knob = origin + p.Raw * r;
+                    canvas.FillCircle(knob, r * 0.46f, Color.Lerp(tint.WithAlpha((0.35f * op + 0.1f) * idle), _layout.PressedTint.WithAlpha(0.95f), held ? 0.4f + 0.6f * p.Analog.Length() : 0));
+                    canvas.Ring(knob, r * 0.46f, line, (held ? Color.White : tint).WithAlpha((0.6f * op + 0.3f) * idle));
+                    // Direction and intensity: an arrow beyond the knob, more opaque the further the stick is pushed.
                     float intensity = p.Analog.Length();
                     if (intensity > 0.01f)
                     {
                         var dir = Vector2.Normalize(p.Raw);
                         var side = new Vector2(-dir.Y, dir.X);
-                        canvas.FillTriangle(origin + dir * r * 1.32f, origin + (dir * 1.08f + side * 0.2f) * r, origin + (dir * 1.08f - side * 0.2f) * r,
+                        var tip = origin + dir * r * 1.78f;
+                        canvas.FillTriangle(tip, origin + (dir * 1.5f + side * 0.22f) * r, origin + (dir * 1.5f - side * 0.22f) * r,
                             _layout.PressedTint.WithAlpha(0.35f + 0.65f * intensity));
                     }
-                    var knob = origin + p.Raw * r;
-                    canvas.FillCircle(knob, r * 0.46f, Color.Lerp(tint.WithAlpha((0.35f * op + 0.1f) * idle), _layout.PressedTint.WithAlpha(0.95f), held ? 0.4f + 0.6f * intensity : 0));
-                    canvas.Ring(knob, r * 0.46f, line, (held ? Color.White : tint).WithAlpha((0.6f * op + 0.3f) * idle));
                     break;
                 }
             }

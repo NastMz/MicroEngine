@@ -34,6 +34,11 @@ public abstract class Scene
     public virtual void Exit() { }
     /// <summary>Called when a scene pushed above this one is popped.</summary>
     public virtual void Resume() { }
+    /// <summary>
+    /// A short description of the scene's state for development probes and tests (the web host's trace, for example
+    /// "x=120 y=88 grounded"); null by default. Never shown to players.
+    /// </summary>
+    public virtual string? Describe() => null;
     public abstract void Update(float dt);
     public abstract void Draw(IRenderer renderer);
 

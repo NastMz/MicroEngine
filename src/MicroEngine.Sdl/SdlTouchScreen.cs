@@ -190,7 +190,7 @@ internal sealed unsafe class SdlOverlayCanvas(SDL_Renderer* sdl) : IOverlayCanva
     {
         if (string.IsNullOrEmpty(text) || color.A == 0) return;
         // SDL's debug font has 8×8 glyphs; drawing it under a render scale keeps the pixels square.
-        float scale = Math.Max(1, MathF.Round(height / 8));
+        float scale = Math.Max(1, MathF.Floor(height / 8));
         SDL_SetRenderScale(sdl, scale, scale);
         SDL_SetRenderDrawColor(sdl, color.R, color.G, color.B, color.A);
         float x = center.X / scale - text.Length * 4, y = center.Y / scale - 4;

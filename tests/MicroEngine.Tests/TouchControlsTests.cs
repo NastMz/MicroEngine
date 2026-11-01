@@ -493,6 +493,10 @@ public sealed class TouchControlsTests
         var portrait = FrameLayout.Fit(new Vector2(1080, 2400), new RectF(0, 100, 1080, 2250), 320, 180);
         Assert.AreEqual(100, portrait.Y, "top of the safe area, leaving room below for the controls");
         Assert.AreEqual(new Vector2(160, 90), FrameLayout.ToCanvas(landscape.Center, landscape, 320, 180));
+        var phone = FrameLayout.Fit(new Vector2(915, 412), new RectF(0, 0, 915, 412), 480, 270);
+        Assert.AreEqual(412, phone.Height, 0.5f, "a 1× frame would leave a third of a phone browser empty: scale fractionally");
+        var desktop = FrameLayout.Fit(new Vector2(1000, 560), new RectF(0, 0, 1000, 560), 320, 180);
+        Assert.AreEqual(540, desktop.Height, "3× of a possible 3.1×: whole pixels win");
     }
 
     // Whole-loop behaviour: the platform's touch screen, focus loss and suspension.

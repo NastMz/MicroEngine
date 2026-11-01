@@ -48,6 +48,7 @@ internal sealed partial class OverworldScene : Scene
     private GameState State => _game.State;
     public MapRuntime Map => _map;
     public Actor Player => _player;
+    public override string? Describe() => _player is null ? null : FormattableString.Invariant($"x={_player.X} y={_player.Y}");
     public bool Busy => _busy > 0;
     public TextPanel Text => _text;
 
