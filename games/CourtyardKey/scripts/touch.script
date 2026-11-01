@@ -1,0 +1,11 @@
+# On-screen controls on the platform's own layout (COURTYARD_START=road): the joystick walks down at full push, then
+# at a light push, then A swings. Touches go through the same hit testing as fingers (InputScript "touch"); used by
+# the phone checks.
+100 capture touch_start.png
+110 touch 1 stick 0 1
+150 lift 1
+170 touch 1 stick 0 -0.45
+210 lift 1
+220 tap 2 confirm
+240 capture touch_end.png
+260 quit

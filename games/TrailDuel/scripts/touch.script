@@ -1,0 +1,11 @@
+# On-screen controls on the platform's own layout (TRAIL_DEBUG=town): the d-pad walks down the grid, MENU opens the
+# start menu and B closes it. Touches go through the same hit testing as fingers (InputScript "touch"); used by the
+# phone checks.
+100 capture touch_start.png
+110 touch 1 dpad 0 0.8
+150 lift 1
+180 tap 2 pause
+220 capture touch_menu.png
+240 tap 3 cancel
+280 capture touch_end.png
+300 quit

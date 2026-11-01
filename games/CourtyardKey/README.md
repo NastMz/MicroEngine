@@ -27,6 +27,10 @@ heart-trap is a hand-drawn CC0 monster repainted in the game's palette (see [CRE
 | Walk into a locked door | Use a small key (or the Warden's Key on the great door) |
 | Lean on a stone block | Push it one tile |
 
+On a phone or tablet the game shows on-screen controls: a joystick that appears under the left thumb (push lightly to
+walk slowly, fully to walk at full speed), **A** (sword, talk, confirm), **C** (boomerang) and **B** (back) on the
+right, and **II** (pause) at the top centre, clear of the hearts and item slots.
+
 ## Achievements
 
 Listed from the title menu ("Achievements"), announced with a banner when earned, saved with the
