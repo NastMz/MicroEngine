@@ -74,6 +74,8 @@ is the developer's step, not the tool's.
 
 ## In MicroEngine's own CI
 
-The demos' release key lives in the repository's secrets (`ANDROID_KEYSTORE_BASE64` and the passwords); the SDK's
-nuget.org key is the `NUGET_API_KEY` secret, used only by `sdk-release.yml` behind the `nuget` environment's approval.
+The demos' release key lives in the repository's secrets (`ANDROID_KEYSTORE_BASE64` and the passwords). The SDK has
+no stored nuget.org key: `sdk-release.yml` obtains a one-hour key through Trusted Publishing (GitHub OIDC, the
+`NuGet/login` action), only in the `nuget` environment after its reviewers approve
+([Publishing a release](sdk.md#publishing-a-release)).
 Pull requests from forks never see either ([ADR 0014](../decisions/0014-public-repository-ci.md)).
