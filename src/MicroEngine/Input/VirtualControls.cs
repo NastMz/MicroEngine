@@ -287,8 +287,8 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
 
     /// <summary>
     /// Where the backend draws the game frame. Without shown controls it is <see cref="FrameLayout.Fit"/>. With shown
-    /// controls that would cover the largest frame, the frame moves to the top of the safe area (horizontally centred)
-    /// and takes the largest size at which no control of the layout overlaps it, never below
+    /// controls that would cover the largest frame, the frame moves to the top of the safe area, or just below a control
+    /// anchored at the top (horizontally centred), and takes the largest size at which no control of the layout overlaps it, never below
     /// <see cref="MinimumFrameFraction"/>; a whole-number scale is kept when it is within 90 % of that size, so pixels
     /// stay even when it costs little. Controls hidden by context still count, so a dialogue does not resize the game.
     /// </summary>
@@ -302,22 +302,38 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
         var obstacles = _controls.Where(p => p.Control.Visible && p.Manual).Select(p => (p.Center, R: p.Radius + margin)).ToList();
         bool Clear(RectF f) => obstacles.All(o => !Overlaps(f, o.Center, o.R));
         if (Clear(full)) return full;
-        RectF Place(float scale)
+        // Candidate tops: the top of the safe area, or just below a control anchored at the top (a pause button), so a
+        // small corner button does not cost the frame its width.
+        var tops = new List<float> { safe.Y };
+        foreach (var p in _controls)
+            if (p.Control.Visible && p.Manual && p.Control.Anchor is TouchAnchor.TopLeft or TouchAnchor.TopRight or TouchAnchor.TopCenter)
+                tops.Add(MathF.Ceiling(p.Center.Y + p.Radius + margin));
+        tops.Sort();
+        RectF Place(float scale, float top)
         {
             float w = virtualWidth * scale, h = virtualHeight * scale;
-            return new RectF(MathF.Floor(safe.X + (safe.Width - w) / 2), safe.Y, w, h);
+            return new RectF(MathF.Floor(safe.X + (safe.Width - w) / 2), top, w, h);
+        }
+        RectF? Fits(float scale)
+        {
+            foreach (float top in tops)
+            {
+                var f = Place(scale, top);
+                if (f.Bottom <= safe.Bottom + 0.5f && Clear(f)) return f;
+            }
+            return null;
         }
         float fullScale = full.Width / virtualWidth, lo = 0, hi = fullScale;
         for (int i = 0; i < 30; i++)
         {
             float mid = (lo + hi) / 2;
-            if (Clear(Place(mid))) lo = mid; else hi = mid;
+            if (Fits(mid) is not null) lo = mid; else hi = mid;
         }
         float minimum = fullScale * MinimumFrameFraction, chosen = Math.Max(lo, minimum);
         // A whole-number scale keeps pixels even; take it when it costs little and stays above the minimum.
         float whole = MathF.Floor(chosen);
         if (whole >= 1 && whole >= chosen * 0.9f && whole >= minimum) chosen = whole;
-        return LastFrame = Place(chosen);
+        return LastFrame = Fits(chosen) ?? Place(chosen, safe.Y);
     }
 
     private static bool Overlaps(RectF r, Vector2 c, float radius)
