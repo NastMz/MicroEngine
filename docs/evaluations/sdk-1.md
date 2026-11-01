@@ -43,4 +43,5 @@ left as is.
   runners (`sdk.yml`, `platforms.yml`); notarization and iOS device builds need an Apple developer account, which CI
   does not have: their code paths are written to Apple's documented commands but have not run.
 - Android App Bundles are not built. Windows executables are not code-signed by the tool.
-- Nothing was published: no package is on nuget.org and no `sdk-v*` release exists.
+- At the end of SDK-1 nothing was published. 0.4.0-alpha.1 was published afterwards, on 2026-11-01, through
+  `sdk-release.yml` with Trusted Publishing; the external test then passed from nuget.org alone (`--public`).

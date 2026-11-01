@@ -184,10 +184,10 @@ const layers = [
         </div>
       </div>
       <ul class="not-yet">
-        <li><strong>Not on nuget.org yet.</strong> The packages, the microengine tool and the template are ready and checked; until the first release, they are built from the repository.</li>
+        <li><strong>Alpha API.</strong> Public APIs may change between 0.x versions; every change is in the migration notes.</li>
         <li><strong>No visual editor.</strong> MicroEngine is code-first; content is code, or files in a content folder.</li>
-        <li><strong>No physical phone has run it.</strong> Android is checked on an emulator, iOS in the simulator only.</li>
-        <li><strong>Linux and macOS are not hand-played yet.</strong> Both are checked automatically on hosted runners and in containers.</li>
+        <li><strong>No iPhone has run a native build.</strong> iOS is checked in Apple's simulator; Android was played on a phone.</li>
+        <li><strong>macOS downloads are not hand-played yet.</strong> They are checked automatically on hosted Mac runners.</li>
       </ul>
     </div>
   </section>
@@ -195,10 +195,11 @@ const layers = [
   <section class="section wrap" aria-labelledby="start-title">
     <div class="split">
       <div class="section-head">
-        <h2 id="start-title">Start in three commands</h2>
+        <h2 id="start-title">Start in four commands</h2>
         <p>{distribution.status}</p>
         <div class="actions">
           <a class="button" href={distribution.startHref}>Get started</a>
+          <a class="button secondary" href={distribution.nuget}>On nuget.org</a>
           <a class="button secondary" href="/docs/licensing/">Licensing</a>
         </div>
       </div>

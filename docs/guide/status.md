@@ -27,7 +27,6 @@ These are not implemented. Do not plan around them.
 
 | Missing | Notes |
 | --- | --- |
-| Packages on nuget.org | The SDK 0.4.0-alpha.1 packages, the `microengine` tool and the `dotnet new` template are built and checked, not yet published: install them from a local build ([Getting MicroEngine](getting-microengine.md)) |
 | Android App Bundles (`.aab`) for Google Play | `microengine package android` builds APKs ([Packaging](packaging.md)) |
 | Visual editor, level editor or asset pipeline tool | MicroEngine is code-first: content is authored in code (`PixelImage.FromMap`, `TileLayer.Parse` over ASCII rows) or loaded through `ContentFolder`. A visual editor is only a long-term vision on the roadmap |
 | An iOS download | Distributing to iPhones needs Apple signing ([Downloads](downloads.md#ios)) |
@@ -61,7 +60,7 @@ The full list with evidence is in [Known limitations](../reference/limitations.m
 
 ## Planned work
 
-The [roadmap](/roadmap/) lists planned work without dates: publishing the SDK (SDK-1),
+The [roadmap](/roadmap/) lists planned work without dates: the SDK's next steps (App Bundles, Apple signing exercised),
 validation on real devices, engine robustness and research into the mobile experience. A visual editor and 3D appear
 there only as a long-term vision, not as available or committed features.
 

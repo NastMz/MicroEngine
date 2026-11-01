@@ -24,17 +24,17 @@ export const completed: string[] = [
   'On-screen touch controls and suspend/resume on phones',
   'Analog input and per-game touch controls (d-pad, joystick, buttons) on phones and in mobile browsers',
   'Native demo downloads, checked as downloaded',
-  'SDK packages, the microengine tool and a dotnet new template, checked from a project outside the repository',
+  'SDK 0.4.0-alpha.1 on nuget.org: engine packages, the microengine tool and a dotnet new template',
   'Per-game name, id, version and icon on every platform',
   'This site and its documentation',
 ];
 
 export const next: RoadmapTrack[] = [
   {
-    title: 'SDK-1: first public release',
+    title: 'SDK distribution',
     status: 'planned',
-    summary: 'Built and checked: packages, the microengine tool, a template and per-game identity; the demos use them. What remains is publishing (docs/guide/sdk.md).',
-    items: ['Publish 0.4.0-alpha.1 to nuget.org', 'Android App Bundles for Google Play', 'Notarized macOS and signed iOS builds exercised with a real Apple account'],
+    summary: 'The next steps after the first public SDK (0.4.0-alpha.1 on nuget.org).',
+    items: ['Android App Bundles for Google Play', 'Notarized macOS and signed iOS builds exercised with a real Apple account', 'Windows code signing in microengine package'],
   },
   {
     title: 'Real devices',

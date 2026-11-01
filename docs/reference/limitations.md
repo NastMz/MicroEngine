@@ -9,7 +9,6 @@ build. Items move off this list only when a change and its validation are record
 | Limitation | Evidence |
 | --- | --- |
 | No visual editor, level editor or asset tool; content is code or files loaded through `ContentFolder` | [ADR 0002](../decisions/0002-code-first-content.md), [ADR 0004](../decisions/0004-external-asset-files.md) |
-| The SDK packages, tool and template are not on nuget.org yet: they are built from the repository into a local feed | [SDK status](../guide/sdk.md) |
 | `microengine package` builds APKs, not Android App Bundles; iOS device builds and macOS notarization need the developer's Apple account and are not exercised in CI; Windows executables are not code-signed by the tool | [Packaging](../guide/packaging.md), [Signing](../guide/signing.md) |
 | No layout editor or in-game rebinding screen: bindings and touch layouts are code | [Input](../manual/input.md#limitations) |
 | No cloud saves; desktop saves are local files, browser saves are `localStorage` | [Persistence](../manual/persistence.md) |

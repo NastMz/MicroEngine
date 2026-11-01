@@ -6,7 +6,13 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## 0.4.0-alpha.1
 
-The first public SDK: MicroEngine can be installed, and a game created, run and distributed, with public tools.
+Published 2026-11-01 on nuget.org (GitHub release `sdk-v0.4.0-alpha.1`). The first public SDK: MicroEngine can be
+installed, and a game created, run and distributed, with public tools.
+
+```bash
+dotnet tool install -g MicroEngine.Cli --prerelease
+microengine new MyGame
+```
 
 **Packages** (all at 0.4.0-alpha.1, MIT, .NET 10):
 

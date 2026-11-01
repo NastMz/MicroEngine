@@ -13,8 +13,10 @@ Two things are true at once:
   makes it. There is no 1.0 and no promise of backward compatibility yet. The types the four demos depend on are listed
   in [Contracts](../reference/contracts.md): the most likely to stay, not guaranteed to.
 
-> **Publication.** 0.4.0-alpha.1 is prepared, checked and ready to release, but **not yet on nuget.org**.
-> [Getting MicroEngine](getting-microengine.md) shows how to install from a local build until then.
+**Available on nuget.org**: [`MicroEngine.Cli`](https://www.nuget.org/packages/MicroEngine.Cli) and the other five packages, version
+0.4.0-alpha.1 ([release notes](release-notes.md), GitHub release
+[`sdk-v0.4.0-alpha.1`](https://github.com/NastMz/MicroEngine/releases/tag/sdk-v0.4.0-alpha.1)).
+[Getting MicroEngine](getting-microengine.md) shows how to install it.
 
 ## Packages
 
@@ -89,8 +91,9 @@ For every release:
    in with Trusted Publishing, pushes exactly the draft's files (verified against `SHA256SUMS`), engine packages
    first, and publishes the GitHub release. The packages are never rebuilt: if `main` has moved on since the draft
    (its commit must still be in `main`'s history), the run lists the commits in between in its summary.
-4. When nuget.org lists the packages, update [Getting MicroEngine](getting-microengine.md) and the site so they no
-   longer say "not yet on nuget.org".
+4. When nuget.org serves the packages, run `node sdk/tests/external.mjs --public --version <version>`: it creates,
+   builds, runs and packages a game from nuget.org alone. Then update the version in
+   [Getting MicroEngine](getting-microengine.md), this page and the [release notes](release-notes.md).
 
 A policy for a repository nuget.org has not yet seen publish from can start as temporarily active for 7 days; the
 first successful publish makes it permanent.

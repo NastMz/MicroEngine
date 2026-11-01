@@ -11,7 +11,9 @@ sufficient without previous chats or agent memory.
   template (`templates/`) and four demo games (`games/`), playable in browsers and as native downloads built by
   `microengine package` and checked by [`packaging/`](packaging/README.md). A game's name, id, version and icon live
   only in its project file ([application identity](docs/guide/app-identity.md)); `sdk/tests/` checks the SDK from a
-  project outside the repository. Nothing is on nuget.org until the owner runs `sdk-release.yml` with `publish`. The public history starts on 2026-10-30;
+  project outside the repository. SDK 0.4.0-alpha.1 is on nuget.org (tag `sdk-v0.4.0-alpha.1`); a release is published
+  only by the owner, through `sdk-release.yml` (Trusted Publishing, `nuget` environment). SDK tags `sdk-v*` and demo
+  releases `v*` are separate series. The public history starts on 2026-10-30;
   the previous implementation and the first days of the rebuild live only in the maintainer's archive, so commit
   hashes and Actions run IDs quoted in older records point there. Never push branches from an old clone.
 - The active rebuild record (specs, tasks, log) is [`odd/tasks/engine-rebuild.md`](odd/tasks/engine-rebuild.md); the latest
