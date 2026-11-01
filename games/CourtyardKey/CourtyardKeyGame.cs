@@ -33,6 +33,18 @@ public sealed class CourtyardKeyGame : Game
 
     protected override InputMap CreateInput() => InputMap.CreateDefault().Bind("action", Key.X);
 
+    /// <summary>
+    /// Touch: a floating joystick, because the hero walks in any direction and a light push walks slowly (precise
+    /// steps next to pits and blocks); A swings and talks, C throws the boomerang, B closes menus. Pause sits at the
+    /// top centre, clear of the hearts and the item slots.
+    /// </summary>
+    protected override TouchLayout CreateTouchLayout() => TouchLayout.Of(
+        new TouchStick { Offset = new(104, 100) },
+        new TouchButton("confirm", "confirm", "A") { Anchor = TouchAnchor.BottomRight, Offset = new(72, 92), Radius = 40 },
+        new TouchButton("action", "action", "C") { Anchor = TouchAnchor.BottomRight, Offset = new(164, 64), Radius = 34 },
+        new TouchButton("cancel", "cancel", "B") { Anchor = TouchAnchor.BottomRight, Offset = new(150, 156), Radius = 26 },
+        new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopCenter, Offset = new(0, 28), Radius = 20 });
+
     protected override void Load()
     {
         Art = Sprites.Build(Graphics, new MicroEngine.Core.ContentFolder());

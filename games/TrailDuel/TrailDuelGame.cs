@@ -1,6 +1,7 @@
 using MicroEngine;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
+using MicroEngine.Input;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Scenes;
@@ -29,6 +30,28 @@ public sealed class TrailDuelGame : Game
     internal SaveStore Saves { get; private set; } = null!;
     /// <summary>The adventure in progress (null on the title screen before starting).</summary>
     public GameState State { get; internal set; } = GameState.NewGame();
+
+    /// <summary>
+    /// The default actions; the stick moves in four sectors, because the overworld is a grid and menus are lists, so
+    /// a slightly diagonal push must not step sideways.
+    /// </summary>
+    protected override InputMap CreateInput()
+    {
+        var input = InputMap.CreateDefault();
+        input.StickMode = StickDirections.Four;
+        return input;
+    }
+
+    /// <summary>
+    /// Touch: a four-way d-pad for grid steps, menus and the battle grid; A confirms, B cancels and runs while held, C
+    /// shows move details in battle, MENU opens the start menu.
+    /// </summary>
+    protected override TouchLayout CreateTouchLayout() => TouchLayout.Of(
+        new TouchDPad { Offset = new(104, 100), Diagonals = false },
+        new TouchButton("confirm", "confirm", "A") { Anchor = TouchAnchor.BottomRight, Offset = new(72, 92), Radius = 40 },
+        new TouchButton("cancel", "cancel", "B") { Anchor = TouchAnchor.BottomRight, Offset = new(164, 62), Radius = 34 },
+        new TouchButton("action", "action", "C") { Anchor = TouchAnchor.BottomRight, Offset = new(150, 156), Radius = 26 },
+        new TouchButton("pause", "pause", "MENU") { Anchor = TouchAnchor.TopRight, Offset = new(40, 30), Radius = 26 });
 
     protected override void Load()
     {
