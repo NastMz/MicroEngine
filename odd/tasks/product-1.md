@@ -96,3 +96,8 @@ Release`, `npm test` in `site/`, `node --test packaging/tests`.
 - L8 Full validation 41266506438 of 6707fcb green, 27 jobs: .NET tests (Linux, Windows), native Linux, four web packages,
   browser suites (layout, play, touch) in Chrome and Firefox, the 12 desktop packages built, played and stored, macOS,
   Android and iOS platform jobs. The stored packages match the branch head, so a release of it builds no desktop package.
+- L9 (2026-11-01) Owner: "Ya generé la clave persistente de firmado Android y configuré los secretos correspondientes en GitHub
+  Actions." Run 41268351218: Meadow Run, Neon Rift and Trail Duel APKs release-signed (certificate 5e6bd22a…), played on
+  the CI emulator (API 34) and stored. Courtyard Key failed: a save left by the previous scenario changed the next one, and
+  the local Android reference had been recorded with such saves. device-checks.mjs now clears app data before each
+  scenario; Courtyard Key on a clean emulator matches the macOS reference exactly; the reference was recorded again.
