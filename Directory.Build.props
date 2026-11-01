@@ -9,7 +9,7 @@
     <NuGetAudit>false</NuGetAudit>
     <!-- The SDK version (docs/guide/sdk.md): Alpha, 0.x; incompatible API changes may happen between Alpha versions.
          Engine assemblies carry it and every demo package records it. Games set their own <Version>. -->
-    <MicroEngineVersion>0.4.0-alpha.1</MicroEngineVersion>
+    <MicroEngineVersion>0.4.0-alpha.2</MicroEngineVersion>
     <Version>$(MicroEngineVersion)</Version>
   </PropertyGroup>
   <!-- Browser packages are published (web/build.sh passes MicroEngineWebPackage=true): the engine and games they

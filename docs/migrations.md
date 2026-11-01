@@ -4,7 +4,7 @@ What changes between SDK versions and how to update a game. MicroEngine is in Al
 a version may change public APIs incompatibly, and when it does, the change is listed here with the version that makes
 it. Newest first.
 
-## Next version (not yet published)
+## 0.4.0-alpha.2
 
 Fixes that change behaviour a game may rely on:
 
