@@ -30,3 +30,24 @@ public static class BrowserTouch
         set => RaylibTouchScreen.Feed.Vibrator = value;
     }
 }
+
+/// <summary>The page's vibration (navigator.vibrate through the "microengine" module), used for touch-control haptics.</summary>
+[System.Runtime.Versioning.SupportedOSPlatform("browser")]
+internal static partial class BrowserHaptics
+{
+    [System.Runtime.InteropServices.JavaScript.JSImport("haptics.vibrate", "microengine")]
+    public static partial bool Vibrate(int milliseconds);
+}
+
+/// <summary>The page's visibility: a hidden page (another tab, the phone locked or switched away) suspends the game.</summary>
+public static class BrowserLifecycle
+{
+    private static volatile bool _hidden;
+
+    /// <summary>Set by the page from <c>visibilitychange</c>; the raylib platform reports it as <see cref="Core.IPlatform.Suspended"/>.</summary>
+    public static bool Hidden
+    {
+        get => _hidden;
+        set => _hidden = value;
+    }
+}

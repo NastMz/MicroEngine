@@ -8,7 +8,8 @@
 set -euo pipefail
 DOTNET_ROOT_DIR=${1:?dotnet root}; RAYLIB_SRC=${2:?raylib src}; OUT=${3:?output dir}
 PACKS="$DOTNET_ROOT_DIR/packs"
-pack() { ls -d "$PACKS"/Microsoft.NET.Runtime.Emscripten.*."$1".*/*/tools 2>/dev/null | head -1; }
+# A missing pack is not an error here (only Windows has a Python pack); `|| true` keeps pipefail from ending the script.
+pack() { ls -d "$PACKS"/Microsoft.NET.Runtime.Emscripten.*."$1".*/*/tools 2>/dev/null | head -1 || true; }
 SDK=$(pack Sdk); PY=$(pack Python); NODE=$(pack Node); CACHE=$(pack Cache)
 [ -n "$SDK" ] && [ -n "$NODE" ] && [ -n "$CACHE" ] || { echo "error: no emscripten packs under $PACKS (is the wasm-tools workload installed?)" >&2; exit 1; }
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) EXE=.exe; BAT=.bat ;; *) EXE=; BAT= ;; esac

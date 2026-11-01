@@ -18,6 +18,8 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
     private int _coinsAtStart, _scoreAtStart;
 
     public Stage Stage => _stage;
+    public override string? Describe() => _stage is null ? null
+        : FormattableString.Invariant($"x={_stage.Player.Position.X:0} y={_stage.Player.Position.Y:0}{(_stage.Player.Grounded ? " grounded" : "")}");
     public int LevelIndex => levelIndex;
     public LevelDef Def => Levels.All[levelIndex];
 

@@ -78,6 +78,8 @@ public sealed class RaylibPlatform : IPlatform
     public double Now => _fixedStep ? _frames / (double)_settings.UpdateRate : Rl.GetTime();
     public bool RealTime => !_fixedStep;
     public ITouchScreen Touch => _touch;
+    /// <summary>In a browser, a hidden page (<see cref="BrowserLifecycle.Hidden"/>); a desktop window never suspends.</summary>
+    public bool Suspended => OperatingSystem.IsBrowser() && BrowserLifecycle.Hidden;
 
     public void PollEvents()
     {

@@ -100,8 +100,8 @@ internal sealed class RaylibOverlayCanvas : IOverlayCanvas
     public void Text(string text, Vector2 center, float height, Color color)
     {
         if (string.IsNullOrEmpty(text) || color.A == 0) return;
-        // raylib's default font is 10 pixels tall at size 10; whole multiples keep it crisp.
-        int size = Math.Max(10, (int)MathF.Round(height / 10) * 10);
+        // raylib's default font is 10 pixels tall at size 10; whole multiples (never above the asked height) keep it crisp.
+        int size = Math.Max(10, (int)MathF.Floor(height / 10) * 10);
         int width = Rl.MeasureText(text, size);
         Rl.DrawText(text, (int)(center.X - width / 2f), (int)(center.Y - size / 2f), size, C(color));
     }

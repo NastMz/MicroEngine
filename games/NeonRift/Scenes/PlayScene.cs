@@ -17,6 +17,8 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
     private int _deathsAtStart;
 
     public Stage Stage => _stage;
+    public override string? Describe() => _stage is null ? null
+        : FormattableString.Invariant($"x={_stage.Player.Position.X:0} y={_stage.Player.Position.Y:0} shots={_stage.PlayerShots.Count()} aim={string.Join('/', _stage.PlayerShots.Select(s => $"{MathF.Sign(s.Velocity.X)},{MathF.Sign(s.Velocity.Y)}").Distinct())}");
     public int StageIndex => stageIndex;
 
     public override void Enter()

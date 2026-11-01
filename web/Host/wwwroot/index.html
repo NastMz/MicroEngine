@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>MicroEngine</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="host.css">
@@ -21,6 +23,7 @@
     <button id="sound" type="button" tabindex="-1" hidden>Sound is blocked: click to enable</button>
     <button id="fullscreen" type="button" tabindex="-1" title="Fullscreen (Alt+Enter)" hidden>Fullscreen</button>
   </div>
+  <div id="safe" aria-hidden="true"></div>
   <noscript><p id="noscript">This game needs JavaScript and WebAssembly.</p></noscript>
   <script type="module" src="main.js"></script>
 </body>
