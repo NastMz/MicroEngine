@@ -13,10 +13,15 @@ public sealed record Instrument(
     float VibratoRate = 5f,
     float LowPass = 0f)
 {
+    /// <summary>A bright 25% pulse with light vibrato, for melodies.</summary>
     public static readonly Instrument Lead = new(Wave.Pulse25, 0.22f, 0.01f, 0.1f, 0.55f, 0.08f, 0.45f, 0.004f, 5.5f, 5000);
+    /// <summary>A round triangle wave, for bass lines.</summary>
     public static readonly Instrument Bass = new(Wave.Triangle, 0.42f, 0.004f, 0.05f, 0.8f, 0.04f, 0.5f);
+    /// <summary>A soft, filtered saw with slow attack and release, for chords.</summary>
     public static readonly Instrument Pad = new(Wave.Saw, 0.1f, 0.08f, 0.3f, 0.6f, 0.25f, 0.55f, 0.003f, 4f, 1800);
+    /// <summary>A short, filtered square, for arpeggios and accompaniment.</summary>
     public static readonly Instrument Pluck = new(Wave.Square, 0.16f, 0.002f, 0.12f, 0.15f, 0.05f, 0.6f, 0, 5, 3500);
+    /// <summary>A sine with a long decay, for chimes.</summary>
     public static readonly Instrument Bell = new(Wave.Sine, 0.28f, 0.002f, 0.4f, 0.1f, 0.3f, 0.55f, 0.002f, 6f);
 }
 
@@ -30,13 +35,21 @@ public sealed class Song
 {
     private readonly List<(Instrument Instrument, string[] Steps)> _tracks = [];
     private readonly List<string[]> _drums = [];
+    /// <summary>Tempo in beats per minute.</summary>
     public float Bpm { get; }
+    /// <summary>Pattern steps per beat (4 by default: each step is a sixteenth note in 4/4).</summary>
     public int StepsPerBeat { get; }
+    /// <summary>Volume of the drum tracks (default 0.5).</summary>
     public float DrumVolume { get; set; } = 0.5f;
     /// <summary>Feedback echo mix (0 disables). Adds space to otherwise dry chip voices.</summary>
     public float Echo { get; set; } = 0.18f;
+    /// <summary>Delay of the echo in beats (default 0.75).</summary>
     public float EchoDelayBeats { get; set; } = 0.75f;
 
+    /// <summary>Creates an empty song.</summary>
+    /// <param name="bpm">Tempo in beats per minute; must be positive.</param>
+    /// <param name="stepsPerBeat">Pattern steps per beat; must be positive.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="bpm"/> or <paramref name="stepsPerBeat"/> is not positive.</exception>
     public Song(float bpm, int stepsPerBeat = 4)
     {
         if (bpm <= 0) throw new ArgumentOutOfRangeException(nameof(bpm));
@@ -45,8 +58,13 @@ public sealed class Song
         StepsPerBeat = stepsPerBeat;
     }
 
+    /// <summary>Length of one step in seconds.</summary>
     public float StepSeconds => 60f / Bpm / StepsPerBeat;
 
+    /// <summary>Adds a melodic track. The patterns are joined in order into one sequence of steps.</summary>
+    /// <param name="instrument">The voice that plays the notes.</param>
+    /// <param name="patterns">Note patterns (see the class remarks for the token format).</param>
+    /// <returns>This song, for chaining.</returns>
     public Song Track(Instrument instrument, params string[] patterns)
     {
         ArgumentNullException.ThrowIfNull(instrument);
@@ -54,12 +72,15 @@ public sealed class Song
         return this;
     }
 
+    /// <summary>Adds a drum track of "k", "s", "h", "o" and "." tokens; the patterns are joined in order.</summary>
+    /// <returns>This song, for chaining.</returns>
     public Song Drums(params string[] patterns)
     {
         _drums.Add(Tokenize(patterns));
         return this;
     }
 
+    /// <summary>Number of steps in the longest track; the rendered song is this long.</summary>
     public int LengthInSteps => Math.Max(_tracks.Select(t => t.Steps.Length).DefaultIfEmpty(0).Max(), _drums.Select(d => d.Length).DefaultIfEmpty(0).Max());
 
     private static string[] Tokenize(string[] patterns) => patterns

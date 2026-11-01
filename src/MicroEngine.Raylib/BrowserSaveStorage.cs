@@ -14,16 +14,22 @@ public sealed partial class BrowserSaveStorage(string gameId) : ISaveStorage
 {
     private readonly string _prefix = $"microengine/{gameId}/";
 
+    /// <summary>"localStorage:" followed by the key prefix of this game's slots.</summary>
     public string Location => "localStorage:" + _prefix;
 
+    /// <inheritdoc/>
     public string? Read(string slot) => Call(() => GetItem(_prefix + slot));
 
+    /// <inheritdoc/>
     public void Write(string slot, string text) => Call(() => { SetItem(_prefix + slot, text); return 0; });
 
+    /// <inheritdoc/>
     public bool Exists(string slot) => Read(slot) is not null;
 
+    /// <inheritdoc/>
     public void Delete(string slot) => Call(() => { RemoveItem(_prefix + slot); return 0; });
 
+    /// <inheritdoc/>
     public void SetAside(string slot)
     {
         try

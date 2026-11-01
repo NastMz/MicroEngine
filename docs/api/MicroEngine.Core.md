@@ -1,0 +1,210 @@
+# Namespace MicroEngine.Core
+
+The game and its loop: `Game`, settings, runners and sessions, launchers and platform composition, scripted input, saves, content files, achievements, application identity, the headless platform.
+
+Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+
+### Classes
+
+ [Achievement](MicroEngine.Core.Achievement.md)
+
+One entry of a game's achievement catalog. [Id](MicroEngine.Core.Achievement.md#MicroEngine_Core_Achievement_Id) is the stable key stored in saves, so
+names and descriptions can change freely. [Goal](MicroEngine.Core.Achievement.md#MicroEngine_Core_Achievement_Goal) of 1 is an immediate achievement;
+larger goals are progressive ("win 10 battles").
+
+ [AchievementRecord](MicroEngine.Core.AchievementRecord.md)
+
+The saved state of one achievement.
+
+ [AchievementSaveData](MicroEngine.Core.AchievementSaveData.md)
+
+What is written to the save slot. Entries are keyed by achievement id.
+
+ [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
+
+Owns a game's achievements: the catalog, progress, unlocking and persistence. Games decide when
+something happened and report it with [Unlock](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_Unlock_System_String_), [AddProgress](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_AddProgress_System_String_System_Int32_) or
+[SetProgress](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_SetProgress_System_String_System_Int32_); the tracker guarantees that an achievement unlocks (and raises
+[Unlocked](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_Unlocked)) exactly once, across sessions.
+
+ [AppIdentity](MicroEngine.Core.AppIdentity.md)
+
+The application identity a game declares once, in its project file (docs/guide/app-identity.md):
+<code>ApplicationTitle</code>, <code>ApplicationId</code>, <code>Version</code>, <code>MicroEngineIcon</code> and
+<code>MicroEngineOrientation</code>. The MicroEngine build targets write it into the game assembly; packaging turns it into
+each system's metadata, and platforms read it at run time (application name, window icon, phone orientation).
+
+ [CompositeInput](MicroEngine.Core.CompositeInput.md)
+
+Several input sources read as one: a key or button is down when any source has it down; the stick or axis with the largest deflection wins.
+
+ [ContentFolder](MicroEngine.Core.ContentFolder.md)
+
+Locates a game's asset files. By default the root is the <code>Content</code> folder next to the
+executable (games copy it there at build time). Missing files fail with the full path so a
+broken install or a typo is obvious.
+
+ [FileSaveStorage](MicroEngine.Core.FileSaveStorage.md)
+
+One JSON file per slot in a directory (desktop and tests).
+
+ [Game](MicroEngine.Core.Game.md)
+
+Base class for a game. Subclasses declare [Settings](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Settings), build content in
+[Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) and push the first scene. The runner owns the loop.
+
+ [GameLauncher](MicroEngine.Core.GameLauncher.md)
+
+The command line every desktop game accepts, on any backend. Supported arguments:
+
+<ul><li><code>--script FILE</code> play scripted input (see [InputScript](MicroEngine.Core.InputScript.md)); implies a fixed step.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
+first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>.</li><li><code>--hidden</code> render in a hidden window (captures still work).</li><li><code>--frames N</code> stop after N updates; <code>--seed N</code>; <code>--scale N</code>; <code>--mute</code>.</li><li><code>--report</code> print the platform that runs and whether it has audio before the game starts (package checks).</li></ul>
+
+Returns a process exit code: 0 on success, 1 on a game or platform error, 2 on bad arguments.
+
+ [GameLoop](MicroEngine.Core.GameLoop.md)
+
+The fixed-timestep loop, one frame per [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick): input is sampled once per step, the
+simulation advances in exact steps (at most five per frame to avoid a spiral of death), and
+rendering happens once per frame. Headless platforms advance exactly one step per frame, which
+makes scripted runs fully deterministic. Hosts that cannot block, such as a browser driving frames
+from <code>requestAnimationFrame</code>, call [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick) themselves; errors are captured, never thrown.
+
+ [GameRunner](MicroEngine.Core.GameRunner.md)
+
+Runs a game to completion on platforms that own their thread (desktop, headless):
+[GameLoop](MicroEngine.Core.GameLoop.md) ticked in a blocking loop.
+
+ [GameSession](MicroEngine.Core.GameSession.md)
+
+Runs one game at a time for hosts that drive frames themselves and outlive a run, such as a browser
+page: each [Start](MicroEngine.Core.GameSession.md#MicroEngine_Core_GameSession_Start_MicroEngine_Core_RunOptions_) builds a fresh game and platform, [Tick](MicroEngine.Core.GameSession.md#MicroEngine_Core_GameSession_Tick) runs one frame, and
+the end of a run (quit, error, [Stop](MicroEngine.Core.GameSession.md#MicroEngine_Core_GameSession_Stop)) shuts the game down and releases the platform, so the
+host can show its own screen and start again without reloading.
+
+ [GameSettings](MicroEngine.Core.GameSettings.md)
+
+Window/backbuffer settings a game declares. The virtual size is the pixel-art canvas.
+
+ [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md)
+
+A graphics device for tests: textures keep their size but hold no pixels, and creations are counted.
+
+ [HeadlessInput](MicroEngine.Core.HeadlessInput.md)
+
+Keys, a gamepad and a pointer that tests set by hand.
+
+ [HeadlessPlatform](MicroEngine.Core.HeadlessPlatform.md)
+
+A windowless platform: deterministic time, no devices, and a renderer that only counts
+calls. Used by automated tests and CI to play whole games through scripts.
+
+ [HeadlessRenderer](MicroEngine.Core.HeadlessRenderer.md)
+
+Counts draw calls and tracks camera balance so tests can assert rendering ran correctly.
+
+ [HeadlessTouchScreen](MicroEngine.Core.HeadlessTouchScreen.md)
+
+A touch screen for tests: fingers go down, move and lift by hand, the size, safe area and density can change (a
+rotation, a notch), vibrations are counted, and [DrawOverlay](MicroEngine.Core.HeadlessTouchScreen.md#MicroEngine_Core_HeadlessTouchScreen_DrawOverlay) records what the overlay draws.
+
+ [InputScript](MicroEngine.Core.InputScript.md)
+
+A deterministic input script, keyed by update number. Text format, one command per line:
+
+<pre><code class="lang-csharp"># comment
+30 press confirm          # down for 2 updates
+60 hold right 90          # down for 90 updates
+60 down jump / 75 up jump # explicit edges
+200 capture title.png
+240 touch 1 dpad 1 0      # finger 1 down on the d-pad, one radius to the right (or moves there)
+250 tap 2 jump            # finger 2 taps the "jump" control (lifted 2 updates later)
+260 touch 3 0.5,0.5       # finger 3 at the middle of the screen (fractions of its size)
+300 lift 1
+900 quit</code></pre>
+
+"@+N" instead of an absolute number means N updates after the previous command. Touch commands go through the
+game's [VirtualControls](MicroEngine.Input.VirtualControls.md) with the same hit testing as real fingers.
+
+ [LaunchArguments](MicroEngine.Core.LaunchArguments.md)
+
+The parsed launcher command line (see [GameLauncher](MicroEngine.Core.GameLauncher.md)).
+
+ [MonotonicClock](MicroEngine.Core.MonotonicClock.md)
+
+Measures wall-clock time for desktop platforms.
+
+ [PlatformCatalog](MicroEngine.Core.PlatformCatalog.md)
+
+The platforms a host can choose from, in order of preference: the first one that can run here is the default.
+Hosts select by name (a <code>--platform</code> argument, a setting), never game code.
+
+ [PlatformConfigurationException](MicroEngine.Core.PlatformConfigurationException.md)
+
+A platform request that cannot be met: unknown or unsupported profile, or a part the profile does not let a host replace.
+
+ [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
+
+A named way to build an [IPlatform](MicroEngine.Core.IPlatform.md): an official backend ("sdl", "raylib", "headless") or one a
+developer registers. The profile decides which parts a host may replace ([Replaceable](MicroEngine.Core.PlatformProfile.md#MicroEngine_Core_PlatformProfile_Replaceable)), because some
+subsystems share state with the window and cannot be swapped independently.
+
+ [PlatformRequest](MicroEngine.Core.PlatformRequest.md)
+
+What a host asks of a platform: the game's settings, window options and any subsystem it supplies itself.
+A backend reads the window options and must not open its own audio device when [OpensOwnAudio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_OpensOwnAudio) is false.
+
+ [RecordingOverlayCanvas](MicroEngine.Core.RecordingOverlayCanvas.md)
+
+An [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md) that keeps a list of the shapes drawn, for tests.
+
+ [RunOptions](MicroEngine.Core.RunOptions.md)
+
+Options shared by every launcher: scripted input, captures and run limits.
+
+ [RunResult](MicroEngine.Core.RunResult.md)
+
+How a run ended.
+
+ [SaveStore](MicroEngine.Core.SaveStore.md)
+
+Small JSON persistence for settings and progress. Files live under the user's data folder
+([DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_)) unless a directory is supplied (tests use a temporary one) or a launcher
+chose another medium through [DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage) (the browser keeps saves in localStorage).
+Corrupt or missing data yields null instead of crashing the game; corrupt data is set aside
+("&lt;slot&gt;.corrupt.json" for files) so the next save cannot destroy it. A slot that exists but could not be
+read (locked file, blocked browser storage) is never written by this store, because the game is then
+running with fresh progress that would replace the real one. Failed writes return false instead of
+throwing, so a full disk or browser storage quota leaves the game running with its progress in memory.
+
+### Structs
+
+ [AchievementStatus](MicroEngine.Core.AchievementStatus.md)
+
+A snapshot of one achievement: its definition, accumulated progress and whether it is unlocked.
+
+ [RecordingOverlayCanvas.Shape](MicroEngine.Core.RecordingOverlayCanvas.Shape.md)
+
+One recorded drawing call.
+
+### Interfaces
+
+ [IPlatform](MicroEngine.Core.IPlatform.md)
+
+Everything a backend provides: a window (or nothing, headless), input devices, audio,
+texture creation and a renderer that draws into the virtual canvas.
+
+ [ISaveStorage](MicroEngine.Core.ISaveStorage.md)
+
+Where a [SaveStore](MicroEngine.Core.SaveStore.md) keeps its slots: named texts that are written whole. Failures surface
+as `IOException` or `UnauthorizedAccessException`.
+
+### Enums
+
+ [AppOrientation](MicroEngine.Core.AppOrientation.md)
+
+Screen orientations a game allows on phones (<code>MicroEngineOrientation</code> in its project).
+
+ [PlatformParts](MicroEngine.Core.PlatformParts.md)
+
+The subsystems a host may supply to a profile instead of the profile's own.

@@ -7,6 +7,7 @@ namespace MicroEngine.Core;
 /// </summary>
 public sealed class ContentFolder
 {
+    /// <summary>The absolute path of the content folder.</summary>
     public string Root { get; }
 
     /// <summary>
@@ -15,6 +16,9 @@ public sealed class ContentFolder
     /// </summary>
     public static string? DefaultRoot { get; set; }
 
+    /// <summary>Opens a content folder.</summary>
+    /// <param name="root">The folder, absolute or relative to the working directory; null uses <see cref="DefaultRoot"/> or the <c>Content</c> folder next to the executable.</param>
+    /// <exception cref="DirectoryNotFoundException">The folder does not exist.</exception>
     public ContentFolder(string? root = null)
     {
         Root = Path.GetFullPath(root ?? DefaultRoot ?? Path.Combine(AppContext.BaseDirectory, "Content"));
@@ -31,7 +35,12 @@ public sealed class ContentFolder
         return path;
     }
 
+    /// <summary>Whether a file exists at <paramref name="relative"/> (relative to <see cref="Root"/>, '/' separators). Never throws for a missing file.</summary>
     public bool Exists(string relative) => File.Exists(Path.Combine(Root, relative.Replace('/', Path.DirectorySeparatorChar)));
+    /// <summary>Reads a whole file.</summary>
+    /// <exception cref="FileNotFoundException">The file does not exist.</exception>
     public byte[] ReadBytes(string relative) => File.ReadAllBytes(PathOf(relative));
+    /// <summary>Decodes a PNG file into an image (see <see cref="Graphics.PixelImage.Load"/>).</summary>
+    /// <exception cref="FileNotFoundException">The file does not exist.</exception>
     public Graphics.PixelImage Image(string relative) => Graphics.PixelImage.Load(PathOf(relative));
 }

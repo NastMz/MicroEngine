@@ -20,6 +20,10 @@ public static class DesktopLauncher
         .Add(SdlPlatform.CreateProfile("software"))
         .Add(HeadlessPlatform.Profile);
 
+    /// <summary>Runs <paramref name="game"/> with the arguments of <see cref="GameLauncher"/> on the official desktop platforms; call it from <c>Program.cs</c>.</summary>
+    /// <param name="game">The game to run.</param>
+    /// <param name="args">The process arguments.</param>
+    /// <returns>The process exit code: 0 on success, 1 on a game or platform error, 2 on bad arguments.</returns>
     public static int Run(Game game, string[] args) => Run(game, args, CreateCatalog());
 
     /// <summary>Runs with a catalog and request changes of the host's own (a custom platform, another audio device).</summary>

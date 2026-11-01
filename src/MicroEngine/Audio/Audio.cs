@@ -3,12 +3,23 @@ namespace MicroEngine.Audio;
 /// <summary>Uncompressed audio: interleaved float samples in -1..1.</summary>
 public sealed class AudioClip
 {
+    /// <summary>Sample rate used by the synthesizer and by default for new clips: 44100 Hz.</summary>
     public const int DefaultSampleRate = 44100;
+    /// <summary>The samples, interleaved by channel (left, right, left... for stereo), each in -1..1. The array is not copied.</summary>
     public float[] Samples { get; }
+    /// <summary>Samples per second per channel.</summary>
     public int SampleRate { get; }
+    /// <summary>1 (mono) or 2 (stereo).</summary>
     public int Channels { get; }
+    /// <summary>Length of the clip in seconds.</summary>
     public double Duration => Samples.Length / (double)(SampleRate * Channels);
 
+    /// <summary>Wraps existing samples in a clip without copying them.</summary>
+    /// <param name="samples">Interleaved samples in -1..1; the length must be a multiple of <paramref name="channels"/>.</param>
+    /// <param name="sampleRate">Samples per second per channel; must be positive.</param>
+    /// <param name="channels">1 or 2.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sampleRate"/> is not positive or <paramref name="channels"/> is not 1 or 2.</exception>
+    /// <exception cref="ArgumentException">The sample count is not a multiple of the channel count.</exception>
     public AudioClip(float[] samples, int sampleRate = DefaultSampleRate, int channels = 1)
     {
         ArgumentNullException.ThrowIfNull(samples);
@@ -20,6 +31,7 @@ public sealed class AudioClip
         Channels = channels;
     }
 
+    /// <summary>The largest absolute sample value (0 for an empty clip). Computed on every read.</summary>
     public float Peak => Samples.Length == 0 ? 0 : Samples.Max(MathF.Abs);
 
     /// <summary>Decodes an uncompressed PCM WAV (8, 16 or 24-bit, mono or stereo).</summary>
@@ -88,30 +100,51 @@ public sealed class AudioClip
 /// <summary>An opaque handle to a loaded sound effect.</summary>
 public sealed class SoundHandle(int id, string name)
 {
+    /// <summary>Identifier assigned by the audio device that loaded the sound.</summary>
     public int Id { get; } = id;
+    /// <summary>The name the sound was registered under.</summary>
     public string Name { get; } = name;
 }
 
 /// <summary>An opaque handle to loaded, loopable music.</summary>
 public sealed class MusicHandle(int id, string name)
 {
+    /// <summary>Identifier assigned by the audio device that loaded the music.</summary>
     public int Id { get; } = id;
+    /// <summary>The name the music was registered under.</summary>
     public string Name { get; } = name;
 }
 
 /// <summary>Backend audio device. Implementations must tolerate missing hardware by becoming silent.</summary>
 public interface IAudioDevice
 {
+    /// <summary>Whether sound actually reaches a speaker. False for a silent device (no hardware, headless, muted host).</summary>
     bool IsAvailable { get; }
+    /// <summary>Uploads a sound effect and returns its handle.</summary>
     SoundHandle LoadSound(string name, AudioClip clip);
+    /// <summary>Uploads decoded music and returns its handle.</summary>
+    /// <param name="name">Name reported by <see cref="MusicHandle.Name"/>.</param>
+    /// <param name="clip">The music samples.</param>
+    /// <param name="loop">Whether the music restarts when it reaches its end.</param>
     MusicHandle LoadMusic(string name, AudioClip clip, bool loop = true);
     /// <summary>Streams compressed music (e.g. "ogg", "mp3", "wav") that the device decodes itself.</summary>
+    /// <remarks>Formats depend on the device: the SDL device streams wav and ogg; the raylib device also decodes mp3.</remarks>
     MusicHandle LoadMusicStream(string name, byte[] encoded, string format, bool loop = true);
+    /// <summary>Plays a sound effect once, mixed with any sounds already playing.</summary>
+    /// <param name="sound">A handle from <see cref="LoadSound"/>.</param>
+    /// <param name="volume">Volume, 0..1.</param>
+    /// <param name="pitch">Playback speed factor; 1 is the original pitch.</param>
+    /// <param name="pan">Stereo position, 0 (left) to 1 (right); 0.5 is centred.</param>
     void Play(SoundHandle sound, float volume = 1f, float pitch = 1f, float pan = 0.5f);
+    /// <summary>Starts <paramref name="music"/> from the beginning, replacing the music that was playing.</summary>
     void PlayMusic(MusicHandle music, float volume = 1f);
+    /// <summary>Stops the music immediately.</summary>
     void StopMusic();
+    /// <summary>Sets the volume of the current music, 0..1.</summary>
     void SetMusicVolume(float volume);
+    /// <summary>Pauses (true) or resumes (false) the current music.</summary>
     void PauseMusic(bool paused);
+    /// <summary>The music started last and not stopped, or null.</summary>
     MusicHandle? CurrentMusic { get; }
     /// <summary>Called once per frame so streaming music keeps playing.</summary>
     void Update();
@@ -121,17 +154,29 @@ public interface IAudioDevice
 public sealed class SilentAudioDevice : IAudioDevice
 {
     private int _next;
+    /// <summary>Always false: nothing is heard.</summary>
     public bool IsAvailable => false;
+    /// <summary>Names of the sounds played, in order, for checks in tests.</summary>
     public List<string> Played { get; } = [];
+    /// <inheritdoc/>
     public MusicHandle? CurrentMusic { get; private set; }
+    /// <inheritdoc/>
     public SoundHandle LoadSound(string name, AudioClip clip) => new(_next++, name);
+    /// <inheritdoc/>
     public MusicHandle LoadMusic(string name, AudioClip clip, bool loop = true) => new(_next++, name);
+    /// <inheritdoc/>
     public MusicHandle LoadMusicStream(string name, byte[] encoded, string format, bool loop = true) => new(_next++, name);
+    /// <summary>Records the sound's name in <see cref="Played"/>.</summary>
     public void Play(SoundHandle sound, float volume = 1f, float pitch = 1f, float pan = 0.5f) => Played.Add(sound.Name);
+    /// <inheritdoc/>
     public void PlayMusic(MusicHandle music, float volume = 1f) => CurrentMusic = music;
+    /// <inheritdoc/>
     public void StopMusic() => CurrentMusic = null;
+    /// <inheritdoc/>
     public void SetMusicVolume(float volume) { }
+    /// <inheritdoc/>
     public void PauseMusic(bool paused) { }
+    /// <inheritdoc/>
     public void Update() { }
 }
 
@@ -139,6 +184,22 @@ public sealed class SilentAudioDevice : IAudioDevice
 /// Game-facing audio: a sound bank keyed by name plus music with fades.
 /// Games register synthesized clips once and then call <see cref="Play"/> by name.
 /// </summary>
+/// <remarks>
+/// Every game has one in <see cref="Core.Game.Audio"/>. Sounds and music are registered under names that are compared
+/// ordinally (case-sensitive); registering a name again replaces it. On a device without hardware every call still works
+/// and nothing is heard.
+/// </remarks>
+/// <example>
+/// <code>
+/// // In Game.Load:
+/// Audio.AddSound("jump", Synth.Render(new SfxParams { Wave = Wave.Square, Frequency = 520, EndFrequency = 880 }));
+/// Audio.AddMusicFile("theme", "Content/theme.ogg");
+/// Audio.PlayMusic("theme");
+///
+/// // In a scene's Update:
+/// if (Input.Pressed("jump")) Audio.Play("jump", pitchJitter: 0.05f);
+/// </code>
+/// </example>
 public sealed class AudioMixer
 {
     private readonly IAudioDevice _device;
@@ -150,22 +211,39 @@ public sealed class AudioMixer
     private string? _pendingMusic;
     private long _frame;
 
+    /// <summary>Creates a mixer over <paramref name="device"/>. Games use the one in <see cref="Core.Game.Audio"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="device"/> is null.</exception>
     public AudioMixer(IAudioDevice device) => _device = device ?? throw new ArgumentNullException(nameof(device));
 
+    /// <summary>The audio device the mixer plays through.</summary>
     public IAudioDevice Device => _device;
+    /// <summary>Volume multiplier for sound effects, 0..1 (default 0.8). Each played volume is multiplied by it and clamped to 0..1.</summary>
     public float SfxVolume { get; set; } = 0.8f;
+    /// <summary>Music volume, clamped to 0..1 (default 1). Applies immediately to the playing music, combined with any fade.</summary>
     public float MusicVolume { get => _musicVolume; set { _musicVolume = Math.Clamp(value, 0, 1); Apply(); } }
+    /// <summary>Name of the music the device is playing (also while it fades out), or null.</summary>
     public string? CurrentMusic => _device.CurrentMusic?.Name;
 
+    /// <summary>Registers <paramref name="clip"/> as the sound effect <paramref name="name"/>, replacing any sound with that name.</summary>
     public void AddSound(string name, AudioClip clip) => _sounds[name] = _device.LoadSound(name, clip);
+    /// <summary>Registers decoded music, such as a rendered <see cref="Song"/>, under <paramref name="name"/>.</summary>
+    /// <param name="name">Name used by <see cref="PlayMusic"/>.</param>
+    /// <param name="clip">The music samples.</param>
+    /// <param name="loop">Whether the music restarts when it reaches its end.</param>
     public void AddMusic(string name, AudioClip clip, bool loop = true) => _music[name] = _device.LoadMusic(name, clip, loop);
+    /// <summary>Whether a sound effect is registered under <paramref name="name"/>.</summary>
     public bool HasSound(string name) => _sounds.ContainsKey(name);
+    /// <summary>Whether music is registered under <paramref name="name"/>.</summary>
     public bool HasMusic(string name) => _music.ContainsKey(name);
 
     /// <summary>Registers a WAV file as a sound effect.</summary>
+    /// <exception cref="FileNotFoundException">The file does not exist.</exception>
+    /// <exception cref="NotSupportedException">The WAV is not 8, 16 or 24-bit PCM, mono or stereo.</exception>
     public void AddSoundFile(string name, string path) => AddSound(name, AudioClip.FromWav(File.ReadAllBytes(path)));
 
     /// <summary>Registers a music file. WAV is decoded here; other formats are streamed by the device.</summary>
+    /// <remarks>Formats other than wav depend on the audio device: the SDL device streams ogg; the raylib device also decodes mp3.</remarks>
+    /// <exception cref="FileNotFoundException">The file does not exist.</exception>
     public void AddMusicFile(string name, string path, bool loop = true)
     {
         var bytes = File.ReadAllBytes(path);
@@ -177,6 +255,7 @@ public sealed class AudioMixer
 
     /// <summary>Plays a sound. <paramref name="pitchJitter"/> randomizes pitch (+/-) to avoid repetition fatigue.
     /// The same sound is not retriggered within one frame, preventing volume spikes.</summary>
+    /// <exception cref="KeyNotFoundException">No sound is registered under <paramref name="name"/>; use <see cref="TryPlay"/> for optional sounds.</exception>
     public void Play(string name, float volume = 1f, float pitch = 1f, float pitchJitter = 0f, float pan = 0.5f)
     {
         if (!_sounds.TryGetValue(name, out var handle)) throw new KeyNotFoundException($"Sound '{name}' is not registered.");
@@ -195,6 +274,8 @@ public sealed class AudioMixer
     }
 
     /// <summary>Switches music. With a fade, the current track fades out before the new one starts.</summary>
+    /// <remarks>Music starting from silence always fades in over about a quarter of a second. Asking for the music that is already playing does nothing.</remarks>
+    /// <exception cref="KeyNotFoundException">No music is registered under <paramref name="name"/>.</exception>
     public void PlayMusic(string name, float fadeSeconds = 0.4f)
     {
         if (!_music.ContainsKey(name)) throw new KeyNotFoundException($"Music '{name}' is not registered.");
@@ -204,6 +285,7 @@ public sealed class AudioMixer
         _fadeSpeed = -1f / fadeSeconds;
     }
 
+    /// <summary>Stops the music, fading it out over <paramref name="fadeSeconds"/>; 0 or less stops it at once.</summary>
     public void StopMusic(float fadeSeconds = 0.4f)
     {
         if (fadeSeconds <= 0) { _device.StopMusic(); _pendingMusic = null; return; }
@@ -211,6 +293,7 @@ public sealed class AudioMixer
         _fadeSpeed = -1f / fadeSeconds;
     }
 
+    /// <summary>Pauses (true) or resumes (false) the music and records the state in <see cref="MusicPaused"/>.</summary>
     public void PauseMusic(bool paused)
     {
         MusicPaused = paused;
@@ -230,6 +313,8 @@ public sealed class AudioMixer
 
     private void Apply() => _device.SetMusicVolume(_musicVolume * _fade);
 
+    /// <summary>Advances music fades and lets the device stream. The game calls it once per update; call it yourself only for a mixer you created.</summary>
+    /// <param name="dt">Elapsed time in seconds.</param>
     public void Update(float dt)
     {
         _frame++;

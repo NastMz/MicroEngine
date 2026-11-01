@@ -47,6 +47,7 @@ public sealed class RaylibPlatform : IPlatform
         CheckSupport = () => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ? "raylib 6.0 has no iOS platform" : null,
     };
 
+    /// <summary>Opens the raylib window (and audio device unless the options say otherwise) for <paramref name="settings"/>. Hosts usually go through <see cref="Profile"/> instead.</summary>
     public RaylibPlatform(GameSettings settings, DesktopOptions options)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -76,16 +77,24 @@ public sealed class RaylibPlatform : IPlatform
         _audio = options.Mute ? new SilentAudioDevice() : RaylibAudioDevice.TryCreate();
     }
 
+    /// <inheritdoc/>
     public IGraphicsDevice Graphics => _graphics;
+    /// <inheritdoc/>
     public IAudioDevice Audio => _audio;
+    /// <inheritdoc/>
     public IInputSource Input => _input;
+    /// <inheritdoc/>
     public bool CloseRequested => !OperatingSystem.IsBrowser() && Rl.WindowShouldClose();
+    /// <inheritdoc/>
     public double Now => _fixedStep ? _frames / (double)_settings.UpdateRate : Rl.GetTime();
+    /// <inheritdoc/>
     public bool RealTime => !_fixedStep;
+    /// <inheritdoc/>
     public ITouchScreen Touch => _touch;
     /// <summary>In a browser, a hidden page (<see cref="BrowserLifecycle.Hidden"/>); a desktop window never suspends.</summary>
     public bool Suspended => OperatingSystem.IsBrowser() && BrowserLifecycle.Hidden;
 
+    /// <inheritdoc/>
     public void PollEvents()
     {
         _frames++;
@@ -97,6 +106,7 @@ public sealed class RaylibPlatform : IPlatform
             ToggleFullscreen();
     }
 
+    /// <inheritdoc/>
     public IRenderer BeginFrame()
     {
         Rl.BeginTextureMode(_target);
@@ -104,6 +114,7 @@ public sealed class RaylibPlatform : IPlatform
         return _renderer;
     }
 
+    /// <inheritdoc/>
     public void EndFrame()
     {
         _renderer.End();
@@ -122,6 +133,7 @@ public sealed class RaylibPlatform : IPlatform
     private RectF FrameRect() => _touch.Overlay?.Frame(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight)
         ?? FrameLayout.Fit(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
 
+    /// <inheritdoc/>
     public void SaveScreenshot(string path)
     {
         var image = Rl.LoadImageFromTexture(_target.Texture);
@@ -131,6 +143,7 @@ public sealed class RaylibPlatform : IPlatform
         Rl.UnloadImage(image);
     }
 
+    /// <summary>Switches between the window and a borderless full-screen window.</summary>
     public void ToggleFullscreen() => Rl.ToggleBorderlessWindowed();
 
     private static unsafe void SetWindowIcon(PixelImage icon)
@@ -143,6 +156,7 @@ public sealed class RaylibPlatform : IPlatform
         }
     }
 
+    /// <summary>Closes the window and the audio device the platform opened.</summary>
     public void Dispose()
     {
         if (_disposed) return;

@@ -69,6 +69,9 @@ public sealed unsafe class SdlPlatform : IPlatform
         }
     }
 
+    /// <summary>Opens the SDL window, renderer and (unless the request says otherwise) audio for <paramref name="request"/>. Hosts usually go through <see cref="Profile"/> or <see cref="CreateProfile"/> instead.</summary>
+    /// <param name="request">The game's settings and window options.</param>
+    /// <param name="renderer">An SDL render driver name (see <see cref="RenderDrivers"/>), or null to let SDL choose.</param>
     public SdlPlatform(PlatformRequest request, string? renderer = null)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -134,14 +137,23 @@ public sealed unsafe class SdlPlatform : IPlatform
 
     /// <summary>The graphics API SDL chose ("direct3d11", "metal", "opengl", "software"...), for logs and tests.</summary>
     public string RendererName { get; }
+    /// <summary>"SDL renderer" followed by the name of the render driver in use.</summary>
     public override string ToString() => $"SDL renderer {RendererName}";
+    /// <inheritdoc/>
     public IGraphicsDevice Graphics => _graphics;
+    /// <inheritdoc/>
     public IAudioDevice Audio => _audio;
+    /// <inheritdoc/>
     public IInputSource Input => _input;
+    /// <inheritdoc/>
     public bool CloseRequested => _closeRequested;
+    /// <inheritdoc/>
     public double Now => _fixedStep ? _frames / (double)_settings.UpdateRate : (SDL_GetTicksNS() - _start) / 1e9;
+    /// <inheritdoc/>
     public bool RealTime => !_fixedStep;
+    /// <inheritdoc/>
     public bool Suspended => _suspended;
+    /// <inheritdoc/>
     public ITouchScreen Touch => _touch;
 
     /// <summary>
@@ -182,6 +194,7 @@ public sealed unsafe class SdlPlatform : IPlatform
         }
     }
 
+    /// <inheritdoc/>
     public void PollEvents()
     {
         _frames++;
@@ -257,6 +270,7 @@ public sealed unsafe class SdlPlatform : IPlatform
         return FrameLayout.ToCanvas(new Vector2(x, y) * (density > 0 ? density : 1), FrameRect(), _settings.VirtualWidth, _settings.VirtualHeight);
     }
 
+    /// <inheritdoc/>
     public IRenderer BeginFrame()
     {
         SDL_SetRenderTarget(_sdl, _target);
@@ -264,6 +278,7 @@ public sealed unsafe class SdlPlatform : IPlatform
         return _renderer;
     }
 
+    /// <inheritdoc/>
     public void EndFrame()
     {
         _renderer.End();
@@ -278,6 +293,7 @@ public sealed unsafe class SdlPlatform : IPlatform
         SDL_RenderPresent(_sdl);
     }
 
+    /// <inheritdoc/>
     public void SaveScreenshot(string path)
     {
         SDL_SetRenderTarget(_sdl, _target);
@@ -300,6 +316,7 @@ public sealed unsafe class SdlPlatform : IPlatform
         finally { SDL_DestroySurface(rgba); }
     }
 
+    /// <inheritdoc/>
     public void ToggleFullscreen()
     {
         if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS()) return;
@@ -307,6 +324,7 @@ public sealed unsafe class SdlPlatform : IPlatform
         SDL_SetWindowFullscreen(_window, !full);
     }
 
+    /// <summary>Closes the window, the renderer and the audio device the platform opened.</summary>
     public void Dispose()
     {
         if (_disposed) return;

@@ -153,6 +153,8 @@ ${namespaces.map(n => `| [${n}](${n}.md) | ${namespaceSummaries[n] ?? ''} | ${gu
   that may be null.
 - **Records** (\`GameSettings\`, \`SfxParams\`, \`TouchLayout\`...) are configured with object initialisers and copied with
   \`with\`: \`new GameSettings("My Game") { Background = Color.Hex("1a1c2c") }\`.
+- **Examples** on type pages are short fragments that name your own classes (\`TitleScene\`, \`player\`); complete programs
+  that compile and run are in the [focused examples](../examples/focused.md) and the [tutorial](../tutorial/README.md).
 - **Platform types** (\`SdlPlatform\`, \`RaylibPlatform\`, \`HeadlessPlatform\`) implement the same \`IPlatform\` contract; a game
   never names them, its launcher does ([Backends and platforms](../manual/backends.md)).
 - The SDK is in Alpha: these APIs may change between 0.x versions, and every such change is listed in the

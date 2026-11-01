@@ -10,33 +10,60 @@ namespace MicroEngine.Core;
 /// Base class for a game. Subclasses declare <see cref="Settings"/>, build content in
 /// <see cref="Load"/> and push the first scene. The runner owns the loop.
 /// </summary>
+/// <remarks>
+/// The engine services (<see cref="Graphics"/>, <see cref="Audio"/>, <see cref="Input"/>, <see cref="Scenes"/>,
+/// <see cref="Font"/>) exist from <see cref="Load"/> on; reading them in the constructor fails. The simulation advances in
+/// fixed steps of <c>1 / UpdateRate</c> seconds; drawing happens once per frame.
+/// </remarks>
+/// <example>
+/// <code>
+/// public sealed class MyGame : Game
+/// {
+///     public override GameSettings Settings { get; } = new("My Game", 320, 180);
+///
+///     protected override void Load() => Scenes.Push(new TitleScene());
+/// }
+/// </code>
+/// </example>
 public abstract class Game
 {
     private IPlatform? _platform;
     private float _achievementFlush;
 
+    /// <summary>The title, virtual canvas size, window scale, update rate and background colour of the game. Read once when the game starts; keep it constant.</summary>
     public abstract GameSettings Settings { get; }
+    /// <summary>Creates textures from images (<see cref="PixelImage"/>, atlases, fonts). Available from <see cref="Load"/> on; throws <see cref="InvalidOperationException"/> before.</summary>
     public IGraphicsDevice Graphics => Platform.Graphics;
+    /// <summary>The mixer that loads and plays sound effects and music. Created before <see cref="Load"/>.</summary>
     public AudioMixer Audio { get; private set; } = null!;
+    /// <summary>The input actions, built by <see cref="CreateInput"/> before <see cref="Load"/> and sampled once per update.</summary>
     public InputMap Input { get; private set; } = null!;
     /// <summary>The on-screen touch controls (<see cref="CreateTouchLayout"/>), drawn and read wherever the platform has a touch screen.</summary>
     public VirtualControls Touch { get; private set; } = null!;
+    /// <summary>The scene stack. Push the first scene from <see cref="Load"/>.</summary>
     public SceneManager Scenes { get; private set; } = null!;
+    /// <summary>The built-in pixel font, created before <see cref="Load"/> and disposed by the engine when the game shuts down.</summary>
     public BitmapFont Font { get; private set; } = null!;
     /// <summary>Seconds of simulated time since start.</summary>
     public float Time { get; private set; }
+    /// <summary>Number of fixed updates simulated since start (0 during <see cref="Load"/>).</summary>
     public long UpdateCount { get; private set; }
     /// <summary>Deterministic per-run randomness; seeded by the launcher.</summary>
     public Random Random { get; private set; } = new(1);
+    /// <summary>True after <see cref="Quit"/>; the loop stops at the end of the current frame.</summary>
     public bool QuitRequested { get; private set; }
+    /// <summary>Width of the virtual canvas in pixels (<see cref="GameSettings.VirtualWidth"/>).</summary>
     public int Width => Settings.VirtualWidth;
+    /// <summary>Height of the virtual canvas in pixels (<see cref="GameSettings.VirtualHeight"/>).</summary>
     public int Height => Settings.VirtualHeight;
     private AchievementTracker? _achievements;
     /// <summary>The game's achievements; available after <see cref="UseAchievements"/>.</summary>
     public AchievementTracker Achievements => _achievements ?? throw new InvalidOperationException("Achievements are off: call UseAchievements in Load.");
+    /// <summary>Whether <see cref="UseAchievements"/> was called, so <see cref="Achievements"/> can be read without throwing.</summary>
     public bool HasAchievements => _achievements is not null;
     /// <summary>Unlock banners drawn above every scene (null without achievements).</summary>
     public AchievementToasts? AchievementToasts { get; private set; }
+    /// <summary>The platform running the game (window, audio, input). Throws <see cref="InvalidOperationException"/> before the game starts.</summary>
     protected IPlatform Platform => _platform ?? throw new InvalidOperationException("Game is not running.");
 
     /// <summary>Called once after the platform exists. Create atlases, sounds and push the first scene.</summary>
@@ -55,6 +82,7 @@ public abstract class Game
     /// </summary>
     protected virtual TouchLayout CreateTouchLayout() => TouchLayout.CreateDefault();
 
+    /// <summary>Asks the loop to stop. The current frame finishes, then every scene exits and <see cref="Unload"/> runs.</summary>
     public void Quit() => QuitRequested = true;
 
     /// <summary>

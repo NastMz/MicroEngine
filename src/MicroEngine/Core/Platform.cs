@@ -5,10 +5,15 @@ using MicroEngine.Input;
 namespace MicroEngine.Core;
 
 /// <summary>Window/backbuffer settings a game declares. The virtual size is the pixel-art canvas.</summary>
+/// <param name="Title">Window title and application name shown by the system.</param>
+/// <param name="VirtualWidth">Width of the virtual canvas in pixels (320 by default). Everything is drawn in these pixels and scaled to the window.</param>
+/// <param name="VirtualHeight">Height of the virtual canvas in pixels (180 by default).</param>
+/// <param name="Scale">Initial window size as a multiple of the virtual size on desktop (4 by default); the launcher's <c>--scale</c> overrides it.</param>
 public sealed record GameSettings(string Title, int VirtualWidth = 320, int VirtualHeight = 180, int Scale = 4)
 {
     /// <summary>Fixed simulation rate in updates per second.</summary>
     public int UpdateRate { get; init; } = 60;
+    /// <summary>Colour the canvas is cleared to before the scenes draw each frame (black by default).</summary>
     public Color Background { get; init; } = Color.Black;
 }
 
@@ -18,9 +23,13 @@ public sealed record GameSettings(string Title, int VirtualWidth = 320, int Virt
 /// </summary>
 public interface IPlatform : IDisposable
 {
+    /// <summary>Creates textures.</summary>
     IGraphicsDevice Graphics { get; }
+    /// <summary>Plays sound; a silent device when there is no audio.</summary>
     IAudioDevice Audio { get; }
+    /// <summary>Keyboard, gamepad and pointer state, read once per update.</summary>
     IInputSource Input { get; }
+    /// <summary>Whether the user closed the window; the loop stops at the next frame.</summary>
     bool CloseRequested { get; }
     /// <summary>Monotonic time in seconds.</summary>
     double Now { get; }
@@ -37,10 +46,14 @@ public interface IPlatform : IDisposable
     /// drawn over the frame. Platforms without touch keep the default (null).
     /// </summary>
     ITouchScreen? Touch => null;
+    /// <summary>Processes pending system events (window, keyboard, gamepad, touch). Called at the start of every frame.</summary>
     void PollEvents();
+    /// <summary>Starts a frame and returns the renderer that draws into the virtual canvas.</summary>
     IRenderer BeginFrame();
+    /// <summary>Finishes the frame and presents it.</summary>
     void EndFrame();
     /// <summary>Writes the most recently completed virtual frame as a PNG.</summary>
     void SaveScreenshot(string path);
+    /// <summary>Switches between window and full screen where the platform has a window; does nothing elsewhere.</summary>
     void ToggleFullscreen();
 }

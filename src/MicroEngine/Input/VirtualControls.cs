@@ -3,6 +3,7 @@ using System.Numerics;
 namespace MicroEngine.Input;
 
 /// <summary>Which corner or edge of the safe area a touch control is placed from.</summary>
+/// <remarks>Offsets point into the screen from the anchor, so the same offset mirrors between left and right anchors.</remarks>
 public enum TouchAnchor { BottomLeft, BottomRight, TopLeft, TopRight, BottomCenter, TopCenter }
 
 /// <summary>When on-screen controls are drawn.</summary>
@@ -10,6 +11,7 @@ public enum TouchVisibility
 {
     /// <summary>On touch-first screens, and elsewhere after the first touch; hidden while a keyboard or gamepad plays, back on the next touch.</summary>
     Auto,
+    /// <summary>Drawn on every screen with touch, whatever device plays.</summary>
     Always,
     /// <summary>Never drawn, and touches are ignored.</summary>
     Never,
@@ -73,6 +75,7 @@ public sealed record TouchDPad(string Id = "dpad", string Left = "left", string 
 /// </summary>
 public sealed record TouchStick(string Id = "stick", string Left = "left", string Right = "right", string Up = "up", string Down = "down") : TouchControl(Id)
 {
+    /// <summary>Whether the stick stays at its anchored position or appears under the thumb (floating, the default).</summary>
     public StickPlacement Placement { get; init; } = StickPlacement.Floating;
     /// <summary>For a floating stick, where a thumb may start it, as fractions (0..1) of the safe area. Default: the lower left.</summary>
     public RectF Zone { get; init; } = new(0, 0.3f, 0.45f, 0.7f);
@@ -80,6 +83,7 @@ public sealed record TouchStick(string Id = "stick", string Left = "left", strin
     public float DeadZone { get; init; } = 0.15f;
     /// <summary>Deflection beyond the dead zone at which direction actions go down.</summary>
     public float Threshold { get; init; } = 0.4f;
+    /// <summary>Whether the stick presses directions in eight sectors (the default) or four.</summary>
     public StickDirections Directions { get; init; } = StickDirections.Eight;
     internal override float DefaultRadius => 56;
     internal override IEnumerable<string> ActionNames => [Left, Right, Up, Down];
@@ -89,6 +93,7 @@ public sealed record TouchStick(string Id = "stick", string Left = "left", strin
 /// <param name="Label">Short text drawn on it ("A", "JUMP"); null draws none.</param>
 public sealed record TouchButton(string Id, string Action, string? Label = null) : TouchControl(Id)
 {
+    /// <summary>Whether the action is down while held (the default) or toggled by each tap.</summary>
     public TouchButtonMode Mode { get; init; } = TouchButtonMode.Hold;
     /// <summary>Further actions the button presses with <see cref="TouchButton.Action"/>, like a key bound to several actions.</summary>
     public IReadOnlyList<string> Also { get; init; } = [];
@@ -102,6 +107,7 @@ public sealed record TouchButton(string Id, string Action, string? Label = null)
 /// </summary>
 public sealed record TouchLayout
 {
+    /// <summary>The controls, drawn in order; ids must be unique.</summary>
     public IReadOnlyList<TouchControl> Controls { get; init; } = [];
     /// <summary>Opacity of idle controls, 0..1. Pressed controls are always more opaque.</summary>
     public float Opacity { get; init; } = 0.6f;
@@ -115,6 +121,7 @@ public sealed record TouchLayout
     public bool SlideBetweenButtons { get; init; }
     /// <summary>A short vibration on each press where the device can vibrate.</summary>
     public bool Haptics { get; init; } = true;
+    /// <summary>When the controls are drawn (automatic by default).</summary>
     public TouchVisibility Visibility { get; init; } = TouchVisibility.Auto;
     /// <summary>Colour of outlines and labels.</summary>
     public Color Tint { get; init; } = new(240, 244, 255);
@@ -195,6 +202,8 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
     private bool _touchedSinceOtherDevice, _touchFirst, _laidOut;
     private ITouchScreen? _screen;
 
+    /// <summary>Creates the controls for <paramref name="layout"/> (null: <see cref="TouchLayout.CreateDefault"/>). Games use the instance in <see cref="Core.Game.Touch"/>.</summary>
+    /// <exception cref="ArgumentException">Two controls share an id.</exception>
     public VirtualControls(TouchLayout? layout = null)
     {
         _layout = layout ?? TouchLayout.CreateDefault();
@@ -214,7 +223,9 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
         }
     }
 
+    /// <summary>Always <see cref="InputDevice.Touch"/>.</summary>
     public InputDevice Device => InputDevice.Touch;
+    /// <summary>Every action a control of the layout can press.</summary>
     public IEnumerable<string> Actions => _layout.Controls.SelectMany(c => c.ActionNames).Distinct(StringComparer.Ordinal);
     /// <summary>Whether the controls are drawn this frame.</summary>
     public bool Shown { get; private set; }
@@ -249,6 +260,8 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
         RecomputeActions();
     }
 
+    /// <summary>Whether the control <paramref name="id"/> is shown and touchable, after <see cref="SetVisible"/> and the scene's context.</summary>
+    /// <exception cref="ArgumentException">No control has that id.</exception>
     public bool IsVisible(string id) => Find(id).Visible;
 
     /// <summary>
@@ -359,6 +372,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
 
     private Placed Find(string id) => _controls.Find(p => p.Control.Id == id) ?? throw new ArgumentException($"No touch control is named '{id}'.", nameof(id));
 
+    /// <summary>Whether a control holds <paramref name="action"/> down; a tap shorter than an update still counts once.</summary>
     public bool IsDown(string action)
     {
         if (_taps.ContainsKey(action))
@@ -369,6 +383,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
         return _held.Contains(action);
     }
 
+    /// <summary>The action's strength, 0..1: a joystick's deflection, 1 for a pressed button or d-pad direction.</summary>
     public float Value(string action) => _values.TryGetValue(action, out var v) ? v : IsDown(action) ? 1 : 0;
 
     /// <summary>

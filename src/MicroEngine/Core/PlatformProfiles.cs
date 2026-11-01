@@ -9,6 +9,7 @@ namespace MicroEngine.Core;
 [Flags]
 public enum PlatformParts
 {
+    /// <summary>The host may replace nothing.</summary>
     None = 0,
     /// <summary>Replace the audio device (<see cref="PlatformRequest.Audio"/>).</summary>
     Audio = 1,
@@ -24,9 +25,11 @@ public sealed record PlatformRequest(GameSettings Settings)
 {
     /// <summary>Window scale; null uses <see cref="GameSettings.Scale"/>.</summary>
     public int? Scale { get; init; }
+    /// <summary>Renders into a hidden window (captures still work).</summary>
     public bool Hidden { get; init; }
     /// <summary>One simulation step per frame instead of wall-clock time (scripted runs).</summary>
     public bool FixedStep { get; init; }
+    /// <summary>No sound: the backend opens no audio device.</summary>
     public bool Mute { get; init; }
     /// <summary>Size factor of the PNGs written by <see cref="IPlatform.SaveScreenshot"/>.</summary>
     public int CaptureScale { get; init; } = 3;
@@ -50,6 +53,12 @@ public sealed class PlatformProfile
 {
     private readonly Func<PlatformRequest, IPlatform> _create;
 
+    /// <summary>Creates a profile.</summary>
+    /// <param name="name">The name hosts select it by, case-insensitive; must not be empty.</param>
+    /// <param name="description">One line shown by <c>--list-platforms</c>.</param>
+    /// <param name="create">Builds the platform for a request.</param>
+    /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="create"/> is null.</exception>
     public PlatformProfile(string name, string description, Func<PlatformRequest, IPlatform> create)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -58,12 +67,16 @@ public sealed class PlatformProfile
         _create = create ?? throw new ArgumentNullException(nameof(create));
     }
 
+    /// <summary>The name hosts select the profile by (compared case-insensitively).</summary>
     public string Name { get; }
+    /// <summary>A one-line description for listings.</summary>
     public string Description { get; }
+    /// <summary>The parts a host may supply in its request (audio and input by default).</summary>
     public PlatformParts Replaceable { get; init; } = PlatformParts.Audio | PlatformParts.Input;
     /// <summary>Returns why the profile cannot run in this process (system, missing library), or null when it can.</summary>
     public Func<string?> CheckSupport { get; init; } = () => null;
 
+    /// <summary>Why the profile cannot run in this process, or null when it can; evaluates <see cref="CheckSupport"/> on each read.</summary>
     public string? UnsupportedReason => CheckSupport();
 
     /// <summary>Builds the platform, applying the request's replacements; throws <see cref="PlatformConfigurationException"/> for a request the profile cannot honour.</summary>
@@ -91,6 +104,7 @@ public sealed class PlatformProfile
         }
     }
 
+    /// <summary>The profile's <see cref="Name"/>.</summary>
     public override string ToString() => Name;
 }
 
@@ -102,8 +116,12 @@ public sealed class PlatformCatalog
 {
     private readonly List<PlatformProfile> _profiles = [];
 
+    /// <summary>The registered profiles in order of preference.</summary>
     public IReadOnlyList<PlatformProfile> Profiles => _profiles;
 
+    /// <summary>Registers a profile after the existing ones.</summary>
+    /// <returns>This catalog, for chaining.</returns>
+    /// <exception cref="ArgumentException">A profile with the same name (ignoring case) is already registered.</exception>
     public PlatformCatalog Add(PlatformProfile profile)
     {
         ArgumentNullException.ThrowIfNull(profile);
@@ -112,6 +130,7 @@ public sealed class PlatformCatalog
         return this;
     }
 
+    /// <summary>The profile named <paramref name="name"/> (ignoring case), or null.</summary>
     public PlatformProfile? Find(string name) => _profiles.Find(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>The first registered profile that can run in this process.</summary>
@@ -174,18 +193,21 @@ public sealed class CompositeInput(IReadOnlyList<IInputSource> sources) : IInput
 {
     private readonly IInputSource[] _sources = [.. sources ?? throw new ArgumentNullException(nameof(sources))];
 
+    /// <inheritdoc/>
     public bool IsKeyDown(Key key)
     {
         foreach (var s in _sources) if (s.IsKeyDown(key)) return true;
         return false;
     }
 
+    /// <inheritdoc/>
     public bool IsPadDown(PadButton button)
     {
         foreach (var s in _sources) if (s.IsPadDown(button)) return true;
         return false;
     }
 
+    /// <inheritdoc/>
     public float GetPadAxis(PadAxis axis)
     {
         float best = 0;
@@ -197,10 +219,13 @@ public sealed class CompositeInput(IReadOnlyList<IInputSource> sources) : IInput
         return best;
     }
 
+    /// <inheritdoc/>
     public bool PadConnected => _sources.Any(s => s.PadConnected);
 
+    /// <summary>The pointer of the first source whose pointer is present.</summary>
     public PointerState Pointer => _sources.Select(s => s.Pointer).FirstOrDefault(p => p.Present);
 
+    /// <inheritdoc/>
     public Vector2 LeftStick
     {
         get

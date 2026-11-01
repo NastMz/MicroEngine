@@ -2,8 +2,15 @@ using System.Numerics;
 
 namespace MicroEngine.Graphics;
 
+/// <summary>Drawing helpers built on <see cref="IRenderer"/>: sprites, outlines, ellipses, gradients and panels.</summary>
 public static class RendererExtensions
 {
+    /// <summary>Draws a sprite so its <see cref="Sprite.Origin"/> lands on <paramref name="position"/>.</summary>
+    /// <param name="r">The renderer.</param>
+    /// <param name="sprite">The sprite.</param>
+    /// <param name="position">Where the sprite's origin goes, in virtual (or camera world) pixels.</param>
+    /// <param name="tint">Colour multiplier; null for white (unchanged).</param>
+    /// <param name="flipX">Mirrors the sprite horizontally; the origin is mirrored too, so the sprite turns around its anchor.</param>
     public static void Draw(this IRenderer r, Sprite sprite, Vector2 position, Color? tint = null, bool flipX = false)
         => r.Draw(sprite.Texture, sprite.Source, position - (flipX ? new Vector2(sprite.Source.Width - sprite.Origin.X, sprite.Origin.Y) : sprite.Origin),
             tint ?? Color.White, new DrawOptions(FlipX: flipX));
@@ -31,9 +38,11 @@ public static class RendererExtensions
         }
     }
 
+    /// <summary>Draws a whole texture with its top-left at <paramref name="position"/>.</summary>
     public static void Draw(this IRenderer r, Texture texture, Vector2 position, Color? tint = null)
         => r.Draw(texture, texture.Bounds, position, tint ?? Color.White);
 
+    /// <summary>Draws the outline of <paramref name="rect"/>, <paramref name="thickness"/> pixels wide, inside the rectangle.</summary>
     public static void DrawRect(this IRenderer r, RectF rect, Color color, float thickness = 1f)
     {
         r.FillRect(new RectF(rect.X, rect.Y, rect.Width, thickness), color);
@@ -64,4 +73,10 @@ public static class RendererExtensions
     }
 }
 
+/// <summary>Colours of a panel drawn with <see cref="RendererExtensions.Panel"/>.</summary>
+/// <param name="Fill">Inside colour.</param>
+/// <param name="Border">One-pixel outer border with cut corners.</param>
+/// <param name="Highlight">A one-pixel line along the top inside edge; transparent (the default) draws none.</param>
+/// <param name="Shadow">A drop shadow offset by 2 pixels; transparent draws none.</param>
+/// <param name="InnerBorder">A second outline 2 pixels inside the border; transparent draws none.</param>
 public readonly record struct PanelStyle(Color Fill, Color Border, Color Highlight = default, Color Shadow = default, Color InnerBorder = default);

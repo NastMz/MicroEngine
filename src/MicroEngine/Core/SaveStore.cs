@@ -12,6 +12,20 @@ namespace MicroEngine.Core;
 /// running with fresh progress that would replace the real one. Failed writes return false instead of
 /// throwing, so a full disk or browser storage quota leaves the game running with its progress in memory.
 /// </summary>
+/// <remarks>
+/// A slot is a name such as "settings" or "progress"; with file storage it becomes <c>&lt;slot&gt;.json</c> in
+/// <see cref="Directory"/>. Values are serialized with <see cref="System.Text.Json.JsonSerializer"/> (public properties).
+/// </remarks>
+/// <example>
+/// <code>
+/// public sealed class Progress { public int Level { get; set; } = 1; }
+///
+/// var store = new SaveStore("com.example.mygame");
+/// var progress = store.Load&lt;Progress&gt;("progress") ?? new Progress();
+/// progress.Level++;
+/// store.Save("progress", progress);
+/// </code>
+/// </example>
 public sealed class SaveStore
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
@@ -27,6 +41,10 @@ public sealed class SaveStore
     /// <summary>The save folder for file storage; otherwise a description of where saves live.</summary>
     public string Directory => _storage.Location;
 
+    /// <summary>Creates a store for a game.</summary>
+    /// <param name="gameId">The game's id, which names its save folder; must not be empty.</param>
+    /// <param name="directory">The folder for the slot files; null uses <see cref="DefaultStorage"/> when a launcher set it, otherwise <see cref="DefaultDirectory"/>.</param>
+    /// <exception cref="ArgumentException"><paramref name="gameId"/> is null, empty or white space.</exception>
     public SaveStore(string gameId, string? directory = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
@@ -69,8 +87,17 @@ public sealed class SaveStore
         return null;
     }
 
+    /// <summary>Creates a store over a custom storage medium.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="storage"/> is null.</exception>
     public SaveStore(ISaveStorage storage) => _storage = storage ?? throw new ArgumentNullException(nameof(storage));
 
+    /// <summary>Reads and deserializes a slot.</summary>
+    /// <typeparam name="T">The saved type.</typeparam>
+    /// <param name="slot">The slot name.</param>
+    /// <returns>
+    /// The saved value, or null when the slot does not exist, holds invalid JSON (the data is set aside) or could not be read
+    /// (the slot is then protected from <see cref="Save"/> for the life of this store).
+    /// </returns>
     public T? Load<T>(string slot) where T : class
     {
         try
@@ -111,7 +138,9 @@ public sealed class SaveStore
         }
     }
 
+    /// <summary>Whether the slot has saved data.</summary>
     public bool Exists(string slot) => _storage.Exists(slot);
+    /// <summary>Removes the slot's data; does nothing when it does not exist.</summary>
     public void Delete(string slot) => _storage.Delete(slot);
 }
 
@@ -127,7 +156,9 @@ public interface ISaveStorage
     string? Read(string slot);
     /// <summary>Replaces the slot atomically.</summary>
     void Write(string slot, string text);
+    /// <summary>Whether the slot has data.</summary>
     bool Exists(string slot);
+    /// <summary>Removes the slot; does nothing when it does not exist.</summary>
     void Delete(string slot);
     /// <summary>Moves unreadable data out of the slot, keeping a copy; best effort, never throws.</summary>
     void SetAside(string slot);
@@ -136,10 +167,12 @@ public interface ISaveStorage
 /// <summary>One JSON file per slot in a directory (desktop and tests).</summary>
 public sealed class FileSaveStorage(string directory) : ISaveStorage
 {
+    /// <summary>The directory that holds the slot files.</summary>
     public string Location { get; } = directory ?? throw new ArgumentNullException(nameof(directory));
 
     private string PathFor(string slot) => Path.Combine(Location, slot + ".json");
 
+    /// <inheritdoc/>
     public string? Read(string slot)
     {
         var path = PathFor(slot);
@@ -156,9 +189,12 @@ public sealed class FileSaveStorage(string directory) : ISaveStorage
         File.Move(temp, path, overwrite: true);
     }
 
+    /// <inheritdoc/>
     public bool Exists(string slot) => File.Exists(PathFor(slot));
+    /// <inheritdoc/>
     public void Delete(string slot) { if (File.Exists(PathFor(slot))) File.Delete(PathFor(slot)); }
 
+    /// <summary>Renames <c>&lt;slot&gt;.json</c> to <c>&lt;slot&gt;.corrupt.json</c>, replacing an earlier copy; leaves the file in place if that fails.</summary>
     public void SetAside(string slot)
     {
         var path = PathFor(slot);

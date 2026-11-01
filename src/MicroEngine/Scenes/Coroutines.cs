@@ -5,11 +5,17 @@ namespace MicroEngine.Scenes;
 /// <summary>Yield instructions understood by <see cref="CoroutineRunner"/>.</summary>
 public static class Wait
 {
+    /// <summary>Pauses the coroutine for <paramref name="seconds"/> of update time.</summary>
     public static WaitSeconds Seconds(float seconds) => new(seconds);
+    /// <summary>Pauses the coroutine until <paramref name="condition"/> returns true; checked once per update.</summary>
     public static WaitUntil Until(Func<bool> condition) => new(condition);
 }
 
+/// <summary>Yield instruction that pauses a coroutine for a number of seconds; create it with <see cref="Wait.Seconds"/>.</summary>
+/// <param name="Seconds">Update time to wait, in seconds.</param>
 public sealed record WaitSeconds(float Seconds);
+/// <summary>Yield instruction that pauses a coroutine until a condition holds; create it with <see cref="Wait.Until"/>.</summary>
+/// <param name="Condition">Checked once per update; the coroutine resumes in the update it first returns true.</param>
 public sealed record WaitUntil(Func<bool> Condition);
 
 /// <summary>
@@ -30,8 +36,13 @@ public sealed class CoroutineRunner
     private readonly List<Routine> _routines = [];
     private readonly List<Routine> _added = [];
 
+    /// <summary>Number of coroutines that are running or waiting to start.</summary>
     public int Count => _routines.Count(r => !r.Cancelled) + _added.Count;
 
+    /// <summary>Starts a coroutine. Its first step runs on the next <see cref="Update"/>, not immediately.</summary>
+    /// <param name="routine">The iterator, usually from a method that uses <c>yield return</c>.</param>
+    /// <returns>A handle to cancel the coroutine or check whether it finished.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="routine"/> is null.</exception>
     public CoroutineHandle Start(IEnumerator routine)
     {
         ArgumentNullException.ThrowIfNull(routine);
@@ -40,12 +51,16 @@ public sealed class CoroutineRunner
         return new CoroutineHandle(() => r.Cancelled = true, () => r.Cancelled || r.Stack.Count == 0);
     }
 
+    /// <summary>Stops every coroutine, including those started but not yet run.</summary>
     public void StopAll()
     {
         foreach (var r in _routines) r.Cancelled = true;
         _added.Clear();
     }
 
+    /// <summary>Advances every coroutine by one step. A scene calls this for its own <see cref="Scene.Coroutines"/>; call it yourself only for a runner you created.</summary>
+    /// <param name="dt">Elapsed time in seconds, consumed by <see cref="Wait.Seconds"/>.</param>
+    /// <exception cref="InvalidOperationException">A coroutine yielded a value other than null, a wait instruction or an <see cref="IEnumerator"/>.</exception>
     public void Update(float dt)
     {
         _routines.AddRange(_added);
@@ -74,9 +89,12 @@ public sealed class CoroutineRunner
     }
 }
 
+/// <summary>Controls a coroutine started with <see cref="CoroutineRunner.Start"/>.</summary>
 public sealed class CoroutineHandle(Action cancel, Func<bool> finished)
 {
+    /// <summary>Whether the coroutine ran to its end or was cancelled.</summary>
     public bool IsFinished => finished();
+    /// <summary>Stops the coroutine; it does not run another step. Safe to call more than once.</summary>
     public void Cancel() => cancel();
 }
 
@@ -95,6 +113,7 @@ public sealed class Tweener
 
     private readonly List<Tween> _tweens = [];
 
+    /// <summary>Number of tweens playing or waiting for their delay.</summary>
     public int Count => _tweens.Count;
 
     /// <summary>Calls <paramref name="apply"/> with eased progress 0..1 every update for <paramref name="duration"/> seconds.</summary>
@@ -104,6 +123,7 @@ public sealed class Tweener
         _tweens.Add(new Tween { Duration = Math.Max(duration, 1e-4f), Ease = ease ?? MicroEngine.Ease.OutQuad, Apply = apply, Done = done, Delay = delay });
     }
 
+    /// <summary>Advances every tween by <paramref name="dt"/> seconds and calls the <c>done</c> callback of those that ended. A scene calls this for its own <see cref="Scene.Tweens"/>.</summary>
     public void Update(float dt)
     {
         for (int i = 0; i < _tweens.Count; i++)
@@ -120,5 +140,6 @@ public sealed class Tweener
         }
     }
 
+    /// <summary>Removes every tween without applying its final value or calling its <c>done</c> callback.</summary>
     public void Clear() => _tweens.Clear();
 }

@@ -9,7 +9,9 @@ namespace MicroEngine.Raylib;
 /// </summary>
 public static class DesktopLauncher
 {
+    /// <summary>A new catalog with the <c>raylib</c> and <c>headless</c> platforms.</summary>
     public static PlatformCatalog CreateCatalog() => new PlatformCatalog().Add(RaylibPlatform.Profile).Add(HeadlessPlatform.Profile);
 
+    /// <summary>Runs <paramref name="game"/> with the arguments of <see cref="GameLauncher"/>; returns the process exit code.</summary>
     public static int Run(Game game, string[] args) => GameLauncher.Run(game, args, CreateCatalog());
 }

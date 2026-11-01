@@ -57,7 +57,9 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         }
     }
 
+    /// <summary>Always true: a device that could not open is replaced by a silent one in <see cref="TryCreate"/>.</summary>
     public bool IsAvailable => true;
+    /// <inheritdoc/>
     public MusicHandle? CurrentMusic { get; private set; }
 
     private SDL_AudioStream* Bind(int channels, int rate)
@@ -69,6 +71,7 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         return stream;
     }
 
+    /// <inheritdoc/>
     public SoundHandle LoadSound(string name, AudioClip clip)
     {
         ArgumentNullException.ThrowIfNull(clip);
@@ -76,6 +79,7 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         return new SoundHandle(_sounds.Count - 1, name);
     }
 
+    /// <inheritdoc/>
     public MusicHandle LoadMusic(string name, AudioClip clip, bool loop = true)
     {
         ArgumentNullException.ThrowIfNull(clip);
@@ -83,6 +87,8 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         return new MusicHandle(_music.Count - 1, name);
     }
 
+    /// <summary>Loads compressed music for streaming. The SDL device decodes "wav" (PCM) and "ogg" (Vorbis).</summary>
+    /// <exception cref="NotSupportedException">Any other format, such as mp3.</exception>
     public MusicHandle LoadMusicStream(string name, byte[] encoded, string format, bool loop = true)
     {
         ArgumentNullException.ThrowIfNull(encoded);
@@ -104,6 +110,7 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         }
     }
 
+    /// <inheritdoc/>
     public void Play(SoundHandle sound, float volume = 1, float pitch = 1, float pan = 0.5f)
     {
         var clip = _sounds[sound.Id];
@@ -135,6 +142,7 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         return stereo;
     }
 
+    /// <inheritdoc/>
     public void PlayMusic(MusicHandle music, float volume = 1)
     {
         StopMusic();
@@ -147,6 +155,7 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         Update();
     }
 
+    /// <inheritdoc/>
     public void StopMusic()
     {
         if (_musicStream != null) SDL_DestroyAudioStream(_musicStream);
@@ -156,12 +165,14 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         CurrentMusic = null;
     }
 
+    /// <inheritdoc/>
     public void SetMusicVolume(float volume)
     {
         _musicVolume = volume;
         if (_musicStream != null) SDL_SetAudioStreamGain(_musicStream, volume);
     }
 
+    /// <inheritdoc/>
     public void PauseMusic(bool paused)
     {
         if (_musicStream == null || paused == _paused) return;
@@ -186,6 +197,7 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         }
     }
 
+    /// <summary>Stops playback and closes the audio device.</summary>
     public void Dispose()
     {
         StopMusic();

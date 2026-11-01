@@ -10,15 +10,25 @@ namespace MicroEngine.Graphics;
 /// </summary>
 public sealed class ParallaxLayer(Texture texture)
 {
+    /// <summary>The image; the layer does not dispose it.</summary>
     public Texture Texture { get; } = texture ?? throw new ArgumentNullException(nameof(texture));
+    /// <summary>Horizontal scroll relative to the camera: 0 stays fixed, 1 moves with the world (0.5 by default).</summary>
     public float Factor { get; init; } = 0.5f;
+    /// <summary>Vertical scroll relative to the camera (0 by default: the layer stays at <see cref="Y"/>).</summary>
     public float VerticalFactor { get; init; }
+    /// <summary>Screen row of the image's top edge when the camera is at Y = 0.</summary>
     public float Y { get; init; }
     /// <summary>Extra horizontal offset in screen pixels per second (drifting clouds, traffic).</summary>
     public float Drift { get; init; }
+    /// <summary>Whether the image repeats to cover the screen width (true by default).</summary>
     public bool RepeatX { get; init; } = true;
+    /// <summary>Colour multiplier (white by default).</summary>
     public Color Tint { get; init; } = Color.White;
 
+    /// <summary>Draws the layer in screen space.</summary>
+    /// <param name="r">The renderer, with no camera pushed.</param>
+    /// <param name="cameraPosition">The camera's <see cref="Camera2D.Position"/>.</param>
+    /// <param name="time">Seconds used by <see cref="Drift"/>, for example <see cref="Core.Game.Time"/>.</param>
     public void Draw(IRenderer r, Vector2 cameraPosition, float time = 0)
     {
         ArgumentNullException.ThrowIfNull(r);

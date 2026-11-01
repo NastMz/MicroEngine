@@ -6,6 +6,7 @@ namespace MicroEngine.World;
 [Flags]
 public enum TileFlags
 {
+    /// <summary>No collision meaning: the tile is empty space.</summary>
     None = 0,
     /// <summary>Blocks movement from every side.</summary>
     Solid = 1,
@@ -15,9 +16,13 @@ public enum TileFlags
     Hazard = 4,
     /// <summary>Liquid; does not block.</summary>
     Water = 8,
+    /// <summary>Free for the game's own meaning (ladders, ice, triggers...).</summary>
     Custom1 = 16,
+    /// <summary>Free for the game's own meaning.</summary>
     Custom2 = 32,
+    /// <summary>Free for the game's own meaning.</summary>
     Custom3 = 64,
+    /// <summary>Free for the game's own meaning.</summary>
     Custom4 = 128,
 }
 
@@ -25,9 +30,13 @@ public enum TileFlags
 public sealed class TileLayer
 {
     private readonly int[] _tiles;
+    /// <summary>Width in tiles.</summary>
     public int Width { get; }
+    /// <summary>Height in tiles.</summary>
     public int Height { get; }
 
+    /// <summary>Creates a layer filled with 0.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> or <paramref name="height"/> is not positive.</exception>
     public TileLayer(int width, int height)
     {
         if (width <= 0 || height <= 0) throw new ArgumentOutOfRangeException(nameof(width));
@@ -36,10 +45,12 @@ public sealed class TileLayer
         _tiles = new int[width * height];
     }
 
+    /// <summary>Whether tile (<paramref name="x"/>, <paramref name="y"/>) is inside the layer.</summary>
     public bool InBounds(int x, int y) => x >= 0 && y >= 0 && x < Width && y < Height;
 
     /// <summary>Out-of-bounds reads return <paramref name="outside"/> so edges can act as walls.</summary>
     public int Get(int x, int y, int outside = 0) => InBounds(x, y) ? _tiles[y * Width + x] : outside;
+    /// <summary>The tile id at (<paramref name="x"/>, <paramref name="y"/>), in tiles. Reading outside returns 0; writing outside does nothing.</summary>
     public int this[int x, int y]
     {
         get => Get(x, y);
@@ -73,7 +84,9 @@ public sealed class TileLayer
 /// <summary>Answers collision queries for <see cref="TileMotion"/>.</summary>
 public interface ICollisionGrid
 {
+    /// <summary>Size of a square tile in pixels.</summary>
     int TileSize { get; }
+    /// <summary>The flags of the tile at (<paramref name="tileX"/>, <paramref name="tileY"/>), in tiles; any coordinate, inside the map or not.</summary>
     TileFlags FlagsAt(int tileX, int tileY);
 }
 
@@ -84,12 +97,20 @@ public interface ICollisionGrid
 public sealed class TileGrid : ICollisionGrid
 {
     private readonly Dictionary<int, TileFlags> _flags;
+    /// <summary>The tile ids the grid reads. Changing a tile in the layer changes collisions at once.</summary>
     public TileLayer Layer { get; }
+    /// <summary>Size of a square tile in pixels.</summary>
     public int TileSize { get; }
+    /// <summary>Flags of every cell outside the map when <see cref="OutsideRule"/> gives none (solid by default).</summary>
     public TileFlags OutsideFlags { get; set; } = TileFlags.Solid;
     /// <summary>Optional override for open edges, e.g. a platformer's bottom pit must not be solid.</summary>
     public Func<int, int, TileFlags?>? OutsideRule { get; set; }
 
+    /// <summary>Creates a grid; ids missing from <paramref name="flags"/> have no flags (empty).</summary>
+    /// <param name="layer">The tile ids.</param>
+    /// <param name="tileSize">Tile size in pixels; must be positive.</param>
+    /// <param name="flags">Flags per tile id; copied.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="tileSize"/> is not positive.</exception>
     public TileGrid(TileLayer layer, int tileSize, IReadOnlyDictionary<int, TileFlags> flags)
     {
         Layer = layer ?? throw new ArgumentNullException(nameof(layer));
@@ -98,15 +119,19 @@ public sealed class TileGrid : ICollisionGrid
         _flags = new Dictionary<int, TileFlags>(flags);
     }
 
+    /// <summary>Width of the map in pixels.</summary>
     public int PixelWidth => Layer.Width * TileSize;
+    /// <summary>Height of the map in pixels.</summary>
     public int PixelHeight => Layer.Height * TileSize;
 
+    /// <summary>The flags of the tile at (<paramref name="tileX"/>, <paramref name="tileY"/>); outside the map, <see cref="OutsideRule"/> or <see cref="OutsideFlags"/>.</summary>
     public TileFlags FlagsAt(int tileX, int tileY)
     {
         if (!Layer.InBounds(tileX, tileY)) return OutsideRule?.Invoke(tileX, tileY) ?? OutsideFlags;
         return _flags.TryGetValue(Layer[tileX, tileY], out var f) ? f : TileFlags.None;
     }
 
+    /// <summary>Sets the flags of every tile with id <paramref name="id"/>.</summary>
     public void SetFlags(int id, TileFlags flags) => _flags[id] = flags;
 }
 
@@ -124,6 +149,12 @@ public static class Autotile
 /// <summary>Draws the visible part of a layer, asking the game which sprite each tile uses.</summary>
 public static class TileRenderer
 {
+    /// <summary>Draws the non-zero tiles that can be seen, each at its tile position minus its sprite's origin.</summary>
+    /// <param name="renderer">The renderer; push <paramref name="camera"/> on it first when there is one.</param>
+    /// <param name="layer">The tile ids; 0 is never drawn.</param>
+    /// <param name="tileSize">Tile size in pixels.</param>
+    /// <param name="camera">The camera, used only to skip tiles outside its view; null draws the tiles over the screen area.</param>
+    /// <param name="spriteFor">Returns the sprite for a tile id at tile (x, y), or null to draw nothing.</param>
     public static void Draw(IRenderer renderer, TileLayer layer, int tileSize, Camera2D? camera, Func<int, int, int, Sprite?> spriteFor)
     {
         ArgumentNullException.ThrowIfNull(renderer);

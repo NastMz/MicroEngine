@@ -8,12 +8,18 @@ namespace MicroEngine.Graphics;
 /// has crisp, license-free text without loading files. Glyph widths are derived by trimming
 /// empty columns, so narrow letters like 'i' take less space.
 /// </summary>
+/// <remarks>
+/// Every game has the built-in face in <see cref="Core.Game.Font"/>. Text is drawn in white glyphs multiplied by the
+/// colour given, so any colour works. Characters without a glyph are drawn as '?'; '\n' starts a new line.
+/// </remarks>
 public sealed class BitmapFont : IDisposable
 {
     private readonly Dictionary<char, Glyph> _glyphs;
     private readonly Texture? _texture;
 
+    /// <summary>Distance between the tops of two lines, in pixels (10 for the built-in face).</summary>
     public int LineHeight { get; }
+    /// <summary>Pixels between two characters (1).</summary>
     public int Spacing { get; } = 1;
     /// <summary>Height of capital letters above the baseline.</summary>
     public int CapHeight { get; } = 7;
@@ -51,6 +57,7 @@ public sealed class BitmapFont : IDisposable
         return new BitmapFont(glyphs, texture, 10);
     }
 
+    /// <summary>Horizontal distance from <paramref name="c"/> to the next character, spacing included, in unscaled pixels.</summary>
     public int Advance(char c) => (_glyphs.TryGetValue(c, out var g) ? g.Advance : _glyphs['?'].Advance) + Spacing;
 
     /// <summary>Width in pixels of the widest line (unscaled).</summary>
@@ -65,6 +72,7 @@ public sealed class BitmapFont : IDisposable
         return Math.Max(best, current) - (text.Length > 0 ? Spacing : 0);
     }
 
+    /// <summary>Size of <paramref name="text"/> in pixels at <paramref name="scale"/>: the widest line by the height of its lines (8 pixels for one line at scale 1).</summary>
     public Vector2 Measure(string text, float scale = 1f)
     {
         int lines = 1 + text.Count(c => c == '\n');
@@ -93,6 +101,13 @@ public sealed class BitmapFont : IDisposable
         return result;
     }
 
+    /// <summary>Draws <paramref name="text"/> with its top-left at <paramref name="position"/>.</summary>
+    /// <param name="renderer">The renderer.</param>
+    /// <param name="text">The text; '\n' starts a new line.</param>
+    /// <param name="position">Top-left of the first line, in virtual (or camera world) pixels.</param>
+    /// <param name="color">Text colour.</param>
+    /// <param name="scale">Size multiplier; whole numbers keep the pixels crisp.</param>
+    /// <exception cref="InvalidOperationException">The font was created without a graphics device.</exception>
     public void Draw(IRenderer renderer, string text, Vector2 position, Color color, float scale = 1f)
     {
         if (_texture is null) throw new InvalidOperationException("This font was created without a graphics device.");
@@ -123,6 +138,7 @@ public sealed class BitmapFont : IDisposable
         Draw(renderer, text, position, color, scale);
     }
 
+    /// <summary>Draws <paramref name="text"/> centred on <paramref name="center"/>, rounded to whole pixels, with an optional 1px drop shadow.</summary>
     public void DrawCentered(IRenderer renderer, string text, Vector2 center, Color color, float scale = 1f, Color? shadow = null)
     {
         var size = Measure(text, scale);
@@ -131,5 +147,6 @@ public sealed class BitmapFont : IDisposable
         else Draw(renderer, text, pos, color, scale);
     }
 
+    /// <summary>Releases the font's texture. The engine disposes <see cref="Core.Game.Font"/> itself.</summary>
     public void Dispose() => _texture?.Dispose();
 }
