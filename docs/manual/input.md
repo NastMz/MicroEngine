@@ -123,7 +123,8 @@ Details: [Embedding](../examples/embedding.md#the-iframe).
 
 ## Limitations
 
-- Keyboard and gamepad only. There is no mouse or pointer API, and no touch input or on-screen controls.
+- Keyboard, gamepad and, on the SDL platform, on-screen touch controls that press gamepad buttons. There is no mouse,
+  pointer or touch API a game can read directly.
 - No runtime rebinding UI; bindings are code.
 - One gamepad (index 0), left stick only, digital thresholds; no triggers or analog values exposed to games.
 - In the browser, gamepad play was validated manually in one Chromium-based browser with the controller that was

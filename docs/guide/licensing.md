@@ -7,24 +7,25 @@ they are published to play and to learn from, with all rights reserved ([demo ga
 
 | Part | Licence | You may |
 | --- | --- | --- |
-| The engine (`MicroEngine`, the raylib backend `MicroEngine.Raylib`), its tests, the browser host and tools | MIT | use, modify, fork, redistribute and sell it, keeping the copyright and licence notice |
+| The engine (`MicroEngine`, its SDL 3 and raylib platforms, the desktop launcher), its tests, the browser and phone hosts, the packaging scripts and tools | MIT | use, modify, fork, redistribute and sell it, keeping the copyright and licence notice |
 | The Hello Engine sample | MIT | copy it into your own games |
 | This documentation and website code | MIT | the same |
-| Meadow Run, Courtyard Key, Trail Duel, Neon Rift: code, levels, characters, names, art and music made for them | all rights reserved | read and build them to learn MicroEngine; reuse ideas, techniques and mechanics in original games. Not redistribute, sell, or republish them under another name |
+| Meadow Run, Courtyard Key, Trail Duel, Neon Rift: code, levels, characters, names, art and music made for them, and their browser builds and downloads | all rights reserved | play them, keep the copy you downloaded; read and build them to learn MicroEngine; reuse ideas, techniques and mechanics in original games. Not redistribute, sell, or republish them under another name |
 | Third-party art and audio in the demos | CC0 1.0, credited on each game's credits page | what CC0 allows (anything) |
-| Third-party libraries: raylib, Raylib-cs, the .NET runtime, Emscripten | zlib, MIT | see the [third-party notices](../../THIRD-PARTY-NOTICES.md) |
+| Third-party libraries: SDL 3, ppy.SDL3-CS, NVorbis, raylib, Raylib-cs, the .NET runtime, Emscripten | zlib, MIT | see the [third-party notices](../../THIRD-PARTY-NOTICES.md) |
 
 ## Making and selling games
 
 Games you make with MicroEngine are yours: code, art, audio, names and revenue. There are no royalties, no revenue
 limits and nothing to register.
 
-When you ship a game, its build contains the engine's assemblies and raylib. The licences ask for one thing: keep
-their notices with your game.
+When you ship a game, its build contains the engine's assemblies and the native libraries of the platforms it uses
+(SDL 3, raylib). The licences ask for one thing: keep their notices with your game. The demo downloads show one way:
+`LICENSE.txt`, `THIRD-PARTY-NOTICES.txt` and a `licenses/` folder next to the executable ([packaging](../../packaging/README.md)).
 
 - MicroEngine: include the MIT License text with its copyright line, for example in a `licenses` folder or on a
   credits screen. You do not have to show "Made with MicroEngine" (it is welcome).
-- raylib, Raylib-cs, the .NET runtime and, for browser builds, Emscripten: include their notices. The
+- SDL 3, ppy.SDL3-CS, NVorbis, raylib, Raylib-cs, the .NET runtime and, for browser builds, Emscripten: include their notices. The
   [third-party notices](../../THIRD-PARTY-NOTICES.md) list them, with their licence texts.
 
 ## Forks and modified engines

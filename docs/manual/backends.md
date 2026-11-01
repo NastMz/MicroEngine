@@ -131,7 +131,10 @@ Keyboard, the first gamepad and touch are read; F11 and Alt+Enter toggle fullscr
 streams: wav and ogg music, silence when no device exists. On touch screens `TouchPad` draws a d-pad, A, B, X, a
 shoulder button and Start over the frame (never into captures); they press the gamepad buttons games already bind.
 `MICROENGINE_SDL_EVENT_LOGGING=1` makes SDL log the events it delivers. The package is
-[ppy.SDL3-CS](https://github.com/ppy/SDL3-CS) with SDL 3.5.
+[ppy.SDL3-CS](https://github.com/ppy/SDL3-CS) with SDL 3.5. If the system cannot load SDL (on Linux, a glibc older
+than 2.34), the launcher ends with `error: platform 'sdl' could not load its native library` and the loader's reason,
+exit code 1. A desktop game run from a macOS application bundle reads its content from `Contents/Resources/Content`
+(`DesktopLauncher.BundleContentRoot`), so a signed bundle keeps only code in `Contents/MacOS`.
 
 ## raylib and browsers
 
@@ -211,5 +214,8 @@ renderer operation, compared pixel by pixel.
 ## Limitations
 
 - The on-screen controls are one layout for every game, without labels.
-- No NuGet packages yet: the engine is used from its repository ([Getting MicroEngine](../guide/getting-microengine.md)).
+- No published NuGet packages yet: the engine is used from its repository; one package per backend is prepared
+  ([SDK status](../guide/sdk.md)).
+- Packaging a game for players is documented for the four demos ([packaging](../../packaging/README.md)), not yet as a
+  tool for any game.
 - What each platform has been shown to do: [Platforms](../guide/platforms.md).

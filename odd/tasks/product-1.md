@@ -1,4 +1,4 @@
-# PRODUCT-1 + DIST-1: product experience, documentation and multiplatform distribution
+| T7 | S10 S14 | inline | partial | desktop packages in CI done; release with downloads and production publication need the merge and the owner || T6 | S1 S4 S11 S12 S13 | inline | done | docs commit; ADR 0018, 0019; evaluation product-1.md; dotnet pack + local-feed consumer || T5 | S2 S3 S5 S7 S14 | inline | done | 4a4eab1; layout suite Chrome and Firefox passed with /platforms/, /docs/downloads/, /docs/sdk/ || T4 | S9 | inline | done | c3c...; native.test.mjs 4 tests; validate runs 41265125306 (found bugs), 41265744009 (green) || T3 | S6 S8 S10 | inline | partial | b449047; four APKs played on the local emulator with a throwaway release key; CI needs the owner's signing secrets || T2 | S6 S8 S10 | inline | done | b449047 + fixes; Windows 4/4 local (138 captures), Linux 4 distros, CI run 41265744009 (12 packages) || T1 | S7 S15 | inline | done | 2fb8255, b449047; MicroEngineVersion 0.2.0-alpha, games 1.0.0; GameLauncherTests RED/GREEN |# PRODUCT-1 + DIST-1: product experience, documentation and multiplatform distribution
 
 Objective: a public product that matches the engine after PLATFORM-3 (landing, docs, compatibility evidence), the four
 demos downloadable as native packages next to their web builds, and the SDK Alpha presentation with SDK-1 prepared.
@@ -60,13 +60,13 @@ Release`, `npm test` in `site/`, `node --test packaging/tests`.
 
 | ID | Specs | Route | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| T1 | S7 S15 | inline | pending | engine and game versions in one place, build info in every package |
-| T2 | S6 S8 S10 | inline | pending | `packaging/`: desktop packages (Windows, Linux, macOS) and their checks |
-| T3 | S6 S8 S10 | inline | pending | Android release APKs, signing from secrets, checks on the emulator |
-| T4 | S9 | inline | pending | native packages in the content-addressed store, the release and the site build |
-| T5 | S2 S3 S5 S7 S14 | inline | pending | landing, demo pages with downloads, compatibility page |
-| T6 | S1 S4 S11 S12 S13 | inline | pending | docs audit and updates, install guide, SDK Alpha, SDK-1 plan, ADRs |
-| T7 | S10 S14 | inline | pending | CI evidence on GitHub runners, site checks, evaluation |
+| T1 | S7 S15 | inline | done | 2fb8255, b449047: `MicroEngineVersion` 0.2.0-alpha, games 1.0.0, build-info.json; GameLauncherTests RED then GREEN |
+| T2 | S6 S8 S10 | inline | done | b449047, 6934df9, 262eedd: Windows 4/4 on this PC, Linux in four distributions, CI run 41265744009 (12 packages) |
+| T3 | S6 S8 S10 | inline | partial | b449047: four APKs played on the local emulator, release path tested with a throwaway key; CI needs the owner's signing secrets |
+| T4 | S9 | inline | done | b449047, 4416e87: `native.test.mjs`; validation runs 41265125306 and 41265442417 (bugs found), 41265744009 green |
+| T5 | S2 S3 S5 S7 S14 | inline | done | 4a4eab1: layout suite in Chrome and Firefox passed, new pages included; 375/1280 px screenshots without overflow |
+| T6 | S1 S4 S11 S12 S13 | inline | done | docs commit: audit in docs/evaluations/product-1.md, downloads, SDK, migrations, ADR 0018 and 0019 |
+| T7 | S10 S14 | inline | partial | desktop packages in CI done; a release with downloads and the production site need the merge and the owner |
 
 ## Log
 
@@ -79,3 +79,17 @@ Release`, `npm test` in `site/`, `node --test packaging/tests`.
   the Android APK is signed with the machine's debug key and `ApplicationVersion` is fixed at 1. The landing still
   shows raylib as the desktop backend, "Desktop validated on Windows only" and "No touch controls"; the roadmap's
   mobile track predates the SDL hosts.
+- L3 Local evidence: Windows packages of all four games verified on this PC (138 captures pixel-identical, audio available);
+  Linux packages in Docker: Ubuntu 22.04, Debian 12, Fedora 41 138/138, Debian 11 refuses (glibc). Found: ICU dependency
+  (fixed: invariant globalization), unhandled DllNotFoundException (fixed, test), Content/*.cs copied (fixed), a false
+  Debian 11 pass (check now needs the glibc error). Android: four APKs on the emulator, Courtyard Key and Trail Duel differ
+  from the GPU reference by a texel (half-pixel HUD, rotated sprites) as on Mesa/Metal: recorded sdl-android-x86_64.json.
+- L4 CI: validate 41265125306 failed on path false positives (/home/runner inside SDL and .NET binaries) and WARP rendering
+  on Windows runners; 41265442417 failed on a regex broken by a shell edit; 41265744009 green: 12 desktop packages built,
+  played and stored. WARP reference recorded locally with SDL_RENDER_DIRECT3D11_WARP=1 and reproduced by CI.
+- L5 Facts checked on the web (2026-11-01): Android developer verification enforced since 2026-09-30 in Brazil, Indonesia,
+  Singapore and Thailand (advanced flow or adb for unregistered developers; worldwide 2027); macOS 15+ removed the
+  Control-click bypass (Privacy & Security, Open Anyway). Commit 262eedd (WARP reference) also carried site work in progress.
+- L6 SDK: dotnet pack produces the four packages at 0.2.0-alpha; consumed from a local feed outside the repo (full desktop,
+  and SDL only without raylib). Site test files now run one at a time (two files wrote public/play concurrently).
+- L7 Pending, owner decisions: Android signing secrets; push/PR/merge to main; the release that publishes downloads and the site.

@@ -9,26 +9,43 @@ build. Items move off this list only when a change and its validation are record
 | Limitation | Evidence |
 | --- | --- |
 | No visual editor, level editor or asset tool; content is code or files loaded through `ContentFolder` | [ADR 0002](../decisions/0002-code-first-content.md), [ADR 0004](../decisions/0004-external-asset-files.md) |
-| No NuGet package, project templates (`dotnet new`), installers or versioned engine releases yet: the engine is built from its public repository; all are planned | [Getting MicroEngine](../guide/getting-microengine.md) |
-| No dedicated touch controls in the demos | [Platforms](../guide/platforms.md#phones-and-tablets) |
+| No published NuGet packages or project templates (`dotnet new`) yet: the engine is built from its public repository. `dotnet pack` already produces the four packages (SDK-1 is prepared, not published) | [SDK status](../guide/sdk.md) |
+| Touch exists only as the SDL platform's generic on-screen controls (they press gamepad buttons); no per-game layouts, no touch in the browser builds | [Backends](../manual/backends.md#sdl-3) |
 | No cloud saves; desktop saves are local files, browser saves are `localStorage` | [Persistence](../manual/persistence.md) |
 | No ECS; plain entities sized for a few hundred objects per scene | [ADR 0003](../decisions/0003-scenes-entities-runtime.md), [Architecture](../architecture.md) |
-| Input devices limited to keyboard, gamepad buttons and the left stick (`IInputSource`); no mouse or touch input in the engine | [`src/MicroEngine/Input/Input.cs`](../../src/MicroEngine/Input/Input.cs) |
+| Input devices limited to keyboard, gamepad buttons and the left stick (`IInputSource`); no mouse, pointer or touch API for games (taps reach them as gamepad buttons) | [`src/MicroEngine/Input/Input.cs`](../../src/MicroEngine/Input/Input.cs) |
 
 ## Platforms not validated
 
 | Limitation | Evidence |
 | --- | --- |
-| Linux desktop: automated checks pass (build, tests, native rendering, keyboard, audio output on virtual devices), but manual play on real hardware is pending, so it is not supported yet | [Platforms](../guide/platforms.md#desktop-validation) |
-| macOS desktop: under evaluation, not supported | [Platforms](../guide/platforms.md#desktop-validation) |
+| Windows: the SDL builds (now the default) have not been played by hand; their rendering and audio device were checked on real hardware | [Platforms](../guide/platforms.md#desktop-validation) |
+| Linux desktop: checked on hosted runners and in Ubuntu 22.04, Debian 12 and Fedora 41 containers (software rendering, virtual display and sound server); no real GPU, Wayland session or person yet | [Platforms](../guide/platforms.md#desktop-validation) |
+| macOS: checked on hosted runners (paravirtual GPU, Metal); no person has played on a Mac, no system keyboard check | [Platforms](../guide/platforms.md#desktop-validation) |
+| Android: all four games checked on the x86_64 emulator only; no phone or tablet, arm64 never run | [Platforms](../guide/platforms.md#phones-and-tablets) |
+| iOS: two games checked in the simulator only; touch not checked; no iPhone or iPad | [Platforms](../guide/platforms.md#phones-and-tablets) |
 | Linux on ARM: no native raylib library in `Raylib-cs` | [Platforms](../guide/platforms.md#support-table) |
 | Gamepads on Linux and macOS: not covered by any check | [Platforms](../guide/platforms.md#desktop-validation) |
 | Safari not tested | [Platforms](../guide/platforms.md#support-table) |
 | Chromium-based browsers other than Chrome (for example Edge) not claimed; automated browser tests cover Chrome and Firefox only | [Platforms](../guide/platforms.md#support-table) |
-| Phones and tablets: the demos are not validated on real mobile devices | [Platforms](../guide/platforms.md#phones-and-tablets) |
+| Browsers on phones and tablets: the web demos are not validated there and have no touch controls | [Platforms](../guide/platforms.md#phones-and-tablets) |
 | Gamepad in the browser validated manually in one Chromium-based browser with one controller only; no claim for other controllers or browsers | [Platforms](../guide/platforms.md#gamepads) |
 | Blocked site storage tested in Firefox only, not Chrome | [Web support](../evaluations/web-support.md#persistence) |
 | Producing browser packages is not available to external developers yet | [Getting MicroEngine](../guide/getting-microengine.md) |
+
+## Distribution of the demos
+
+| Limitation | Evidence |
+| --- | --- |
+| No iOS download: a public iPhone build needs Apple signing (a paid Apple Developer membership); a simulator build cannot run on a device | [Downloads](../guide/downloads.md#ios) |
+| macOS packages are signed ad hoc, not notarized: macOS blocks the first launch until **Open Anyway** is chosen in Privacy & Security | [Downloads](../guide/downloads.md#macos) |
+| Windows packages are not code-signed: SmartScreen may warn about an unknown publisher | [Downloads](../guide/downloads.md#windows) |
+| Linux packages need glibc 2.34 or later (raylib alternative: 2.38) | [packaging/README.md](../../packaging/README.md#linux-distributions) |
+| Android: the demo publisher is not registered with Google; in Brazil, Indonesia, Singapore and Thailand certified devices install the APK only through the advanced flow for unverified developers or `adb` (worldwide from 2027, as announced) | [Downloads](../guide/downloads.md#android) |
+| Android APKs are offered only once the release signing key is configured as repository secrets | [packaging/README.md](../../packaging/README.md#android-signing) |
+| No Intel Mac, 32-bit or ARM Linux packages | [packaging/targets.json](../../packaging/targets.json) |
+| Hosted Windows runners have no sound device and no GPU: the CI check of a Windows package proves start, rendering on WARP and exit; audio was checked on real hardware | [PRODUCT-1](../evaluations/product-1.md) |
+| Desktop packages carry about 150 KB of unused code in browser builds and the raylib library in native ones (`--platform raylib`) | [PLATFORM-3](../evaluations/platform-3.md#6-remaining-limitations) |
 
 ## Not yet done by a person
 
@@ -65,7 +82,7 @@ not be kept; `SaveStore` never overwrites a slot it could not read
 
 | Limitation | Evidence |
 | --- | --- |
-| No versioned or published API; contracts may change, through recorded design decisions | [Contracts](contracts.md) |
+| SDK Alpha (0.x): public APIs may change incompatibly between Alpha versions; changes are recorded in decisions and [migration notes](../migrations.md) | [SDK status](../guide/sdk.md) |
 
 See also [Status and limitations](../guide/status.md) for a shorter summary and [Platforms](../guide/platforms.md)
 for the support table.

@@ -46,8 +46,10 @@ starts through `DesktopLauncher` accepts them on its command line.
 | `--seed N` | Seed for `Game.Random` (otherwise random, or 1 under a script) |
 | `--scale N` | Window scale |
 | `--mute` | Sets sound-effect and music volume to zero |
+| `--report` | Before the game starts, prints `platform: <name>` (with SDL's renderer, for example `sdl (SDL renderer metal)`) and `audio: available` or `unavailable`; used by the package checks |
 
-Exit codes: 0 success, 1 game or platform error (unknown or unavailable platform, no display), 2 bad arguments. An unknown argument is an error, which is why games take
+Exit codes: 0 success, 1 game or platform error (unknown or unavailable platform, no display, a native library the
+system cannot load, such as SDL on a Linux with glibc older than 2.34), 2 bad arguments. An unknown argument is an error, which is why games take
 developer options from environment variables instead.
 
 ## Environment variables

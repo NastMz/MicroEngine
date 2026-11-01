@@ -2,30 +2,32 @@
 
 MicroEngine games run wherever an `IPlatform` implementation runs. The official ones: the SDL 3 platform, the default
 on Windows, Linux, macOS, Android and iOS; the raylib platform, used in browsers (compiled to WebAssembly) and as an
-alternative on desktops; and the headless platform used by tests ([Backends](../manual/backends.md)). This page lists
-each target and exactly how far it has been validated.
+alternative on desktops; and the headless platform used by tests ([Backends](../manual/backends.md)). All six systems
+(Windows, Linux, macOS, Android, iOS and browsers) are official targets; they are not equally proven. This page lists
+each target and exactly how far it has been validated. The site's [compatibility matrix](/platforms/) shows the same
+evidence cell by cell, and [Downloads](downloads.md) what a player can install.
 
 ## Support table
 
 | Target | Platform | Status |
 | --- | --- | --- |
-| Windows desktop (x64) | `sdl` (default), `raylib`, `sdl-software` through `DesktopLauncher` | Supported with raylib (builds, tests, scripted captures, manual play). SDL: the 15 scripted scenarios drawn and compared with raylib, real-time runs; manual play pending |
-| Linux desktop (x64) | `sdl` (default), `raylib`, `sdl-software` | Automatically checked, not yet supported: see [Desktop validation](#desktop-validation); manual validation pending |
-| macOS desktop | `sdl` (default); `raylib` needs a GPU | Checked automatically, not yet supported: on the hosted CI Mac (arm64) SDL draws the 15 scripted scenarios, compared with a macOS reference; manual play pending |
+| Windows desktop (x64) | `sdl` (default), `raylib`, `sdl-software` through `DesktopLauncher` | Played by hand with raylib (builds, tests, scripted captures, manual play). SDL: the 15 scripted scenarios on real hardware, identical on Direct3D 11, OpenGL and Vulkan; the four downloadable ZIPs reproduce them; manual play on SDL pending |
+| Linux desktop (x64) | `sdl` (default), `raylib`, `sdl-software` | Checked automatically on hosted runners, and the downloadable package in Ubuntu 22.04, Debian 12 and Fedora 41 containers ([Desktop validation](#desktop-validation)); no real GPU or person yet |
+| macOS desktop (Apple silicon) | `sdl` (default); `raylib` needs a GPU | Checked automatically: on the hosted Mac (arm64, Metal) SDL draws the 15 scripted scenarios against a macOS reference, and so does each downloadable app; no person has played on a Mac |
 | Linux on ARM (arm64) | `sdl` | Not checked: the SDL package has an arm64 library, but nothing has run on it |
 | Chrome (Chromium) on desktop | `raylib` in WebAssembly through `BrowserLauncher` | The four demos are verified with automated tests, plus manual validation in the browser |
 | Firefox on desktop | Same | The four demos are verified with automated tests, plus manual validation in the browser |
 | Other Chromium-based browsers (for example Edge) | Same | Not claimed: they share Chrome's engine, but they are not covered by the tests |
 | Safari | Same | Not tested |
 | Phones and tablets in a browser | Same | Not validated on real mobile devices; the web demos have no touch controls |
-| Android app | `sdl` (the Android host) | Implemented and checked on an emulator: two demos draw, play, take keys and touch, and survive the background ([Phones and tablets](#phones-and-tablets)); no real device yet |
-| iOS app | `sdl` (the iOS host) | Checked in the simulator: two demos draw (captures within the SDL reference), open audio and survive the background; touch not checked by script, no real device yet |
+| Android app | `sdl` (the Android host) | Checked on the x86_64 emulator: all four demos install from their release APK, draw, open audio, take keys and touch, and survive the background ([Phones and tablets](#phones-and-tablets)); no physical device yet |
+| iOS app | `sdl` (the iOS host) | Checked in Apple's simulator only: two demos draw (captures within the SDL reference), open audio and survive the background; touch not checked by script; no iPhone, and no installable download ([why](downloads.md#ios)) |
 | Headless (tests, CI) | `HeadlessPlatform` | Validated: used by every test project; `--headless` launcher flag |
 
 "Validated" and "verified" mean the configuration was run and its results recorded. Anything else is a statement
 about .NET, SDL, raylib or the browser, not about MicroEngine. An automated check proves what it exercises and nothing
-more: a system is called supported only once a person has also played on it. Evidence for this page:
-[PLATFORM-3](../evaluations/platform-3.md).
+more: a capture on a CI runner is not a person playing, an emulator is not a phone, and the iOS simulator is not an iPhone.
+Evidence for this page: [PLATFORM-3](../evaluations/platform-3.md) and [PRODUCT-1](../evaluations/product-1.md).
 
 ## Desktop validation
 
@@ -38,6 +40,7 @@ change; "recorded" means it was run and its result kept, once.
 | Simulation: engine tests and the four games' headless playthroughs | Automated | Automated | Automated, not blocking; passing |
 | Native rendering, raylib: the 15 scripted scenarios (138 captures) | Recorded: compared byte for byte with the browser builds | Automated under a virtual display with software OpenGL (Mesa), compared with a Linux reference | Attempted, not blocking: raylib cannot open a window on the hosted runner |
 | Native rendering, SDL: the same 138 captures | Recorded: Direct3D 11, OpenGL and Vulkan draw identical frames, kept as the SDL reference | Automated on Mesa (llvmpipe) against its own SDL reference | Automated in the platform workflow against a macOS reference (reproduced pixel for pixel by a second run) |
+| The downloadable package, played (structure, start, 138 captures, audio device) | Recorded on real hardware (Direct3D 11, sound device); in CI on WARP without a sound device | In CI under Xvfb, and in Ubuntu 22.04, Debian 12 and Fedora 41 containers; Debian 11 refuses with a clear glibc error | In CI (Metal, ad-hoc signature verified) |
 | SDL and raylib draw the same probe frame | Recorded | Recorded (local Linux) | Not yet run |
 | Native keyboard: keys from the system reach the game | Manual play (raylib) | Automated with raylib: pressed, held, released, a tap shorter than a frame, two keys at once | Not covered |
 | Audio device opens | Manual play (raylib); SDL's device opened and played sounds | Automated on a virtual sound server (PulseAudio) | Automated, not blocking: opens on the hosted runner |
@@ -68,10 +71,12 @@ devices; the site lets visitors try them at their own risk.
 The native apps run on the SDL platform, with on-screen controls (a d-pad, A, B, X, a shoulder button and Start)
 that press the gamepad buttons each game already binds:
 
-- **Android**: Meadow Run and Neon Rift run on an Android emulator (x86_64). Their 25 scripted captures are
-  pixel-identical to the Windows SDL build; keys and taps on the on-screen controls take each game from its title into
-  play; Home suspends the game (music paused, progress saved) and relaunching resumes it; Neon Rift's image and sound
-  files load from the app package. Not tried on a real device.
+- **Android**: the four demos run on an Android emulator (x86_64) from their release APKs. Their 138 scripted captures
+  match the emulator's own SDL reference (Meadow Run and Neon Rift are pixel-identical to Windows; Courtyard Key's
+  half-pixel HUD and Trail Duel's rotated translucent sprites differ by a texel, as on Mesa and Metal); keys and taps on
+  the on-screen controls take each game from its title into play; Home suspends the game (music paused, progress
+  saved) and relaunching resumes it; content files load from the app package. Not tried on a real device; the arm64
+  code in the APK has never run.
 - **iOS**: Meadow Run and Neon Rift run in the iOS simulator; their 25 scripted captures are within the SDL reference,
   the audio device opens, and opening another app suspends the game until it is brought back. Touch cannot be checked
   in the simulator by script, and no iPhone was used.
@@ -91,6 +96,7 @@ this site only through an explicit release.
 | macOS | full validation; monthly | the same tests on macOS, the 138 frames on SDL (Metal) against the SDL reference, and why raylib can or cannot open a window |
 | Android emulator | full validation; monthly | two games install, start, draw like the SDL reference, take keys and touch, and resume |
 | iOS simulator | full validation; monthly | two games install, start, draw like the SDL reference and resume |
+| Native packages | full validation (missing ones); every release (missing ones) | each game's download for Windows, Linux, macOS and Android, checked as the file a player gets: structure, dependencies, then played on its own system against that system's reference ([packaging](../../packaging/README.md#what-a-package-check-proves)); Linux also in other distributions' containers |
 
 ## Desktop
 

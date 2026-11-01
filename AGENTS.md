@@ -6,10 +6,12 @@ sufficient without previous chats or agent memory.
 
 ## Current state
 
-- `main` holds the rebuilt engine (`src/`) and four demo games (`games/`). The public history starts on 2026-10-30;
+- `main` holds the rebuilt engine (`src/`, SDK Alpha: `MicroEngineVersion` in `Directory.Build.props`, [SDK status](docs/guide/sdk.md))
+  and four demo games (`games/`), playable in browsers and as native downloads built and checked by [`packaging/`](packaging/README.md). The public history starts on 2026-10-30;
   the previous implementation and the first days of the rebuild live only in the maintainer's archive, so commit
   hashes and Actions run IDs quoted in older records point there. Never push branches from an old clone.
-- The active rebuild record (specs, tasks, log) is [`odd/tasks/engine-rebuild.md`](odd/tasks/engine-rebuild.md).
+- The active rebuild record (specs, tasks, log) is [`odd/tasks/engine-rebuild.md`](odd/tasks/engine-rebuild.md); the latest
+  feature records are [`odd/tasks/platform-3.md`](odd/tasks/platform-3.md) and [`odd/tasks/product-1.md`](odd/tasks/product-1.md).
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence);
   `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual macOS, Android and iOS
   experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos reach the public site

@@ -46,6 +46,16 @@ complete licence files are shipped inside every package, in its `licenses/` fold
 | .NET runtime and libraries (Microsoft) | MIT; components listed in `licenses/dotnet-THIRD-PARTY-NOTICES.txt` | Copyright (c) .NET Foundation and Contributors |
 | Emscripten runtime code | MIT or University of Illinois/NCSA | Copyright (c) 2010-2014 Emscripten authors |
 
+## Native downloads of the demos
+
+Each desktop download (Windows, Linux, macOS) contains the .NET runtime, SDL 3 and raylib; each Android APK contains the
+.NET runtime for Android and SDL 3. The engine runtime libraries are listed above; the .NET runtime's complete licence
+and third-party notices are shipped inside every package, in its `licenses/` folder (`assets/licenses/` in an APK).
+
+| Component | Licence | Copyright |
+| --- | --- | --- |
+| .NET runtime and libraries (Microsoft) | MIT; components listed in `licenses/dotnet-THIRD-PARTY-NOTICES.txt` | Copyright (c) .NET Foundation and Contributors |
+
 ## Demo game art and audio
 
 Courtyard Key, Trail Duel and Neon Rift use art and audio released under CC0 1.0 (public domain dedication).
