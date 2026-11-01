@@ -187,11 +187,17 @@ any control overlapping it, keeping a whole-number scale when that costs less th
 `MinimumFrameFraction` (half the largest frame); `KeepFrameClear = false` turns this off. Context changes do not resize
 the frame; a keyboard or gamepad hiding the controls gives the frame its full size back.
 
-| Screen (dp density) | Meadow Run frame | Controls over the game |
-| --- | --- | --- |
-| 20:9 phone, 2400×1080 (2.75) | about 78 % of the largest | none |
-| 16:9 phone, 1920×1080 (2.75) | about 53 % | none |
-| 4:3 tablet, 1024×768 (1) | 100 % (the frame at the top leaves room below) | none |
+Measured in mobile Chrome (`web/tests/mobile.mjs`, CSS pixels; no control covers the frame on any of them):
+
+| Device (viewport) | Meadow Run | Courtyard Key | Trail Duel | Neon Rift (480×270) |
+| --- | --- | --- | --- | --- |
+| Android phone, landscape (915×412) | 560×315 | 556×313 | 556×313 | 552×311 |
+| Notched iPhone, landscape (844×390, insets 47/47/21) | 424×239 | 401×226 | 401×226 | 403×226 |
+| Small phone, portrait (360×640) | 320×180, below the pause button | 320×180 | 320×180 | 360×203 |
+| Tablet (1024×768) | 960×540 | 939×528 | 928×522 | 935×526 |
+
+Headless, with Meadow Run's layout at a phone density (2.75 px/dp): a 2532×1170 screen keeps 83 % of the largest
+frame, a 2400×1080 (20:9) screen 75 %, a 1920×1080 (16:9) screen 60 %.
 
 ### How touches are handled
 

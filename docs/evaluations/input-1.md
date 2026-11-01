@@ -66,6 +66,32 @@ drawing five primitives.
 No game rule changed. Courtyard Key reads `Input.Vector` instead of `Axis` + normalise (identical for keys); each
 playing scene got a `Describe()` for probes.
 
+## 4b. Layout and context (follow-up review)
+
+After the first report the owner asked for three things before the pull request; each is now in the engine and checked.
+
+- **Controls never cover the game.** `VirtualControls.Frame` (through `ITouchOverlay.Frame`) fits the frame around
+  shown controls: at the top of the safe area or just below a top corner button, at the largest size no control
+  overlaps, never below half. The browser checks fail when any control covers the frame; all 16 device/game
+  combinations pass, with the frame sizes listed in [Input](../manual/input.md#keeping-the-game-visible) (for example
+  Meadow Run 560×315 in a 915×412 Android browser, 320×180 at the top of a portrait phone). Headless tests cover 16:9
+  and 20:9 phones, a 4:3 tablet, portrait with a corner button, hidden controls and the switch to turn it off.
+- **Controls follow the context.** `Scene.TouchActions` limits the shown controls to the actions the top scene needs:
+  Courtyard Key's dialogues and Trail Duel's text, battle narration and evolution keep A and B; Trail Duel's questions
+  keep the d-pad. Tests: the elder's warning hides the joystick and brings it back afterwards; battle narration hides
+  the d-pad and the action menu brings it back; a context change never resizes the frame.
+- **Help screens explain touch.** Each game's Controls screen lists the touch controls while they are on screen (the
+  keyboard view is unchanged, so no desktop reference changed). Captured on SDL (offscreen software renderer), on the
+  Android emulator and in the iOS simulator; text fits each panel.
+
+The rendering references were handled as follows. On Android, Courtyard Key's and Trail Duel's captures differ from
+the Windows reference only in blended pixels (shadow ellipses, a fading banner, rotated additive particles: 97 % of
+differing pixels by one or two levels, inspected side by side with a local SDL render); they match the existing
+emulator reference (`sdl-android-x86_64.json`, recorded in PRODUCT-1) pixel for pixel, which the job now uses. The only
+entries re-recorded are the three Controls screens, whose touch view is intended, on Android (in the emulator
+reference) and iOS (a new `sdl-ios-simulator-arm64.json`: the macOS Metal reference, which the simulator matches
+exactly, with those three screens from the simulator).
+
 ## 5. Results per platform
 
 | Target | Means | Result |
@@ -131,7 +157,8 @@ The same steps apply to the Android APKs. Record the phone, OS and browser versi
   simulator cannot receive scripted system touches, so iOS touch is scripted only. **Safari was not run.** These need
   hardware this work had no access to; [§7](#7-checking-on-a-real-phone) lists the steps.
 - On screens near 16:9 the game frame is smaller while the touch controls are shown, so that no control covers it
-  (§4b); a keyboard or gamepad gives it its full size back.
+  (about 60 % of the largest frame for Meadow Run on a 16:9 phone, 75 % on 20:9; §4b); a keyboard or gamepad gives it
+  its full size back.
 - No haptics on iOS; no gamepad rumble.
 - One gamepad at a time; the mouse is readable but not bindable; rebinding is code (no screen); layouts are code.
 - Labels use the backends' built-in fonts (SDL's 8×8 debug font, raylib's default font).
