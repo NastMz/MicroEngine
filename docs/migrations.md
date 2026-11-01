@@ -30,9 +30,12 @@ only bind actions and read `Down`/`Pressed`/`Released`/`Axis` build and behave a
   `LastDevice`, `PadConnected`, `Pointer`; `PadAxis`, `PadButton.LeftStick`/`RightStick`; `IActionSource`;
   `IInputSource.GetPadAxis`/`PadConnected`/`Pointer` and `IPlatform.Touch` with default implementations (existing
   implementations compile unchanged); `Scene.Describe()` for diagnostics; input script commands `touch`, `tap`, `lift`;
-  `HeadlessPlatform.TouchScreen`.
+  `HeadlessPlatform.TouchScreen`; `Scene.TouchActions` and `VirtualControls.SetContext` (controls by context);
+  `ITouchOverlay.Frame`, `VirtualControls.KeepFrameClear` and `MinimumFrameFraction` (the frame fitted around shown
+  controls). An `ITouchOverlay` of your own keeps the plain letterbox through the default `Frame`.
 - **Frame placement.** Backends fit the frame inside the window's safe area, place it at the top on portrait screens,
-  and scale fractionally when whole factors would fill less than 80 % of the space (`FrameLayout.Fit`). Captures are
+  and scale fractionally when whole factors would fill less than 80 % of the space (`FrameLayout.Fit`). While touch
+  controls are shown and would cover it, the frame moves to the top and shrinks until none does. Captures are
   unchanged; on a phone the picture may sit differently than before.
 
 ## 0.2.0-alpha

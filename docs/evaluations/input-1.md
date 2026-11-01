@@ -126,16 +126,12 @@ The same steps apply to the Android APKs. Record the phone, OS and browser versi
 
 ## 8. Remaining limitations
 
-- The Android CI emulator draws Courtyard Key's HUD and 7 of Trail Duel's battle frames slightly differently from the
-  Windows reference; their Android jobs stay red until an emulator reference is recorded (§5).
 - No physical phone was used: system-level multi-touch was exercised in emulated Chrome; on the Android emulator real
-  taps and drags are single-pointer (`adb input`), and two thumbs were scripted through the controls; the iOS simulator
-  cannot receive scripted system touches, so iOS touch is scripted only. Safari was not run.
+  taps and held fingers are single-pointer (`adb input`), and two thumbs were scripted through the controls; the iOS
+  simulator cannot receive scripted system touches, so iOS touch is scripted only. **Safari was not run.** These need
+  hardware this work had no access to; [§7](#7-checking-on-a-real-phone) lists the steps.
+- On screens near 16:9 the game frame is smaller while the touch controls are shown, so that no control covers it
+  (§4b); a keyboard or gamepad gives it its full size back.
 - No haptics on iOS; no gamepad rumble.
 - One gamepad at a time; the mouse is readable but not bindable; rebinding is code (no screen); layouts are code.
-- Touch controls overlap the game on screens near 16:9 (the letterbox bars hold them only on wider phones); dialogs at
-  the bottom of Courtyard Key and Trail Duel can sit under the lower corners' controls at reduced opacity. Games can hide
-  controls per context with `Touch.SetVisible`; the demos do not yet.
-- The in-game "Controls" screens of the demos describe keyboard and gamepad only; the touch controls are described in
-  each game's README.
 - Labels use the backends' built-in fonts (SDL's 8×8 debug font, raylib's default font).

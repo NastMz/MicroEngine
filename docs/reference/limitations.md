@@ -14,7 +14,7 @@ build. Items move off this list only when a change and its validation are record
 | No cloud saves; desktop saves are local files, browser saves are `localStorage` | [Persistence](../manual/persistence.md) |
 | No ECS; plain entities sized for a few hundred objects per scene | [ADR 0003](../decisions/0003-scenes-entities-runtime.md), [Architecture](../architecture.md) |
 | One gamepad at a time; no rumble; the mouse can be read (`Input.Pointer`) but not bound to actions; no haptics on iOS | [Input](../manual/input.md#limitations) |
-| Touch controls overlap the game on screens near 16:9; the demos do not yet hide controls during dialogues | [INPUT-1](../evaluations/input-1.md#8-remaining-limitations) |
+| On screens near 16:9 the game frame shrinks while touch controls are shown, so none covers it (about half size at phone densities) | [Input](../manual/input.md#keeping-the-game-visible) |
 
 ## Platforms not validated
 

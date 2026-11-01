@@ -39,6 +39,13 @@ Courtyard Key and Trail Duel all got the same pad.
   The browser page forwards **Pointer Events** (with pointer capture and coalesced moves), CSS
   `env(safe-area-inset-*)` and `navigator.vibrate` to the raylib platform. The frame itself is fitted inside the safe
   area, and placed at the top in portrait so the controls get the space below (`FrameLayout`).
+- **The game stays visible and the controls follow the context.** While the controls are shown, the backend asks
+  them where to draw the frame (`ITouchOverlay.Frame`): when a control would cover the largest frame (screens near
+  16:9), the frame moves to the top of the safe area at the largest size no control overlaps, never below half. A
+  scene names the actions it needs (`Scene.TouchActions`); only controls that press them are shown, so a dialogue
+  keeps A and B and loses the movement control over its text. Help screens read `Touch.Shown` to explain the touch
+  controls. Chosen over shrinking the controls (they would fall under a comfortable thumb size) and over fixed
+  per-game frame insets (wrong on every other aspect ratio).
 - **Scripts can touch** (`touch`, `tap`, `lift`): scripted fingers go through the same hit testing on the platform's
   real layout, which is how the phone checks exercise two thumbs at once.
 
