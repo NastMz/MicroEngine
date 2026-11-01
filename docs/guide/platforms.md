@@ -19,9 +19,9 @@ evidence cell by cell, and [Downloads](downloads.md) what a player can install.
 | Firefox on desktop | Same | The four demos are verified with automated tests, plus manual validation in the browser |
 | Other Chromium-based browsers (for example Edge) | Same | Not claimed: they share Chrome's engine, but they are not covered by the tests |
 | Safari | Same | Not tested |
-| Phones and tablets in a browser | Same | Not validated on real mobile devices; the web demos have no touch controls |
+| Phones and tablets in a browser | Same | On-screen touch controls; played with real multi-touch in emulated mobile Chrome on four devices; no physical phone, Safari not run |
 | Android app | `sdl` (the Android host) | Checked on the x86_64 emulator: all four demos install from their release APK, draw, open audio, take keys and touch, and survive the background ([Phones and tablets](#phones-and-tablets)); no physical device yet |
-| iOS app | `sdl` (the iOS host) | Checked in Apple's simulator only: two demos draw (captures within the SDL reference), open audio and survive the background; touch not checked by script; no iPhone, and no installable download ([why](downloads.md#ios)) |
+| iOS app | `sdl` (the iOS host) | Checked in Apple's simulator only: the demos draw (captures within the SDL reference), open audio, respond to scripted touches and survive the background; no iPhone, and no installable download ([why](downloads.md#ios)) |
 | Headless (tests, CI) | `HeadlessPlatform` | Validated: used by every test project; `--headless` launcher flag |
 
 "Validated" and "verified" mean the configuration was run and its results recorded. Anything else is a statement
@@ -65,21 +65,28 @@ support has not been tried with a physical controller.
 
 ## Phones and tablets
 
-The website works on phones and tablets. The web demos have no touch controls and were not validated on real mobile
-devices; the site lets visitors try them at their own risk.
+The website works on phones and tablets, and so do the web demos: each game has its own on-screen controls (a d-pad
+or a joystick and labelled buttons, [Input](../manual/input.md#touch-controls)) in the browser and in the apps. In
+the browser they were played with real multi-touch on four emulated devices in Chrome (Android phone, notched iPhone
+viewport, small portrait phone, tablet): walking, jumping while holding a direction, aiming and firing at once, analog
+walking, menus, focus loss, rotation, pinch and long press ([INPUT-1](../evaluations/input-1.md#6-mobile-web-evidence)).
+No physical phone was used and Safari was not run; [the evaluation](../evaluations/input-1.md#7-checking-on-a-real-phone)
+lists the steps to check on one.
 
-The native apps run on the SDL platform, with on-screen controls (a d-pad, A, B, X, a shoulder button and Start)
-that press the gamepad buttons each game already binds:
+The native apps run on the SDL platform with the same controls:
 
 - **Android**: the four demos run on an Android emulator (x86_64) from their release APKs. Their 138 scripted captures
   match the emulator's own SDL reference (Meadow Run and Neon Rift are pixel-identical to Windows; Courtyard Key's
   half-pixel HUD and Trail Duel's rotated translucent sprites differ by a texel, as on Mesa and Metal); keys and taps on
-  the on-screen controls take each game from its title into play; Home suspends the game (music paused, progress
+  the on-screen controls (at the positions the game logs for that screen) take each game from its title into play; a
+  held drag on the movement control moves the player, and a scripted two-thumb run holds movement and a second
+  control together; Home suspends the game (music paused, progress
   saved) and relaunching resumes it; content files load from the app package. Not tried on a real device; the arm64
   code in the APK has never run.
-- **iOS**: Meadow Run and Neon Rift run in the iOS simulator; their 25 scripted captures are within the SDL reference,
-  the audio device opens, and opening another app suspends the game until it is brought back. Touch cannot be checked
-  in the simulator by script, and no iPhone was used.
+- **iOS**: the demos run in the iOS simulator; their scripted captures are within the SDL reference, the audio device
+  opens, and opening another app suspends the game until it is brought back. The simulator cannot be sent system
+  touches by script, so touch is checked with scripted touches on the simulator's own control layout (two controls
+  held at once, the player moving); no iPhone was used.
 
 ## What CI proves
 
@@ -94,8 +101,9 @@ this site only through an explicit release.
 | Native Linux | engine, game and capture changes; full validation | raylib and SDL draw the 138 scripted frames like their Linux references; SDL and raylib draw the same probe frame; keyboard and audio through the system |
 | Browser suites | site, web host and rebuilt demos (all suites); documentation (page layout only); every release | pages at three widths, and each demo loaded, played, restarted and closed in Chrome and Firefox |
 | macOS | full validation; monthly | the same tests on macOS, the 138 frames on SDL (Metal) against the SDL reference, and why raylib can or cannot open a window |
-| Android emulator | full validation; monthly | two games install, start, draw like the SDL reference, take keys and touch, and resume |
-| iOS simulator | full validation; monthly | two games install, start, draw like the SDL reference and resume |
+| Android emulator | full validation; monthly | two games (all four on request) install, start, draw like the SDL reference, take keys, taps, drags and two scripted thumbs, and resume |
+| iOS simulator | full validation; monthly | two games (all four on request) install, start, draw like the SDL reference, respond to scripted touches and resume |
+| Web on mobile | full validation; monthly | the four web demos played with real multi-touch on four emulated phones and tablets in Chrome |
 | Native packages | full validation (missing ones); every release (missing ones) | each game's download for Windows, Linux, macOS and Android, checked as the file a player gets: structure, dependencies, then played on its own system against that system's reference ([packaging](../../packaging/README.md#what-a-package-check-proves)); Linux also in other distributions' containers |
 
 ## Desktop

@@ -137,7 +137,7 @@ about ten times Linux minutes.
 
 ## Platform workflow
 
-[`platforms.yml`](../.github/workflows/platforms.yml) runs macOS, Android and iOS: from validate, manually (each
+[`platforms.yml`](../.github/workflows/platforms.yml) runs macOS, Android, iOS and the web demos on mobile: from validate, manually (each
 platform separately), and on the 1st of each month on `main`, to notice runner image and toolchain drift (Xcode,
 workloads). It no longer runs weekly or on pull requests: a full run cost about $0.36 before PLATFORM-3, of which the
 iOS job's macOS minutes were half. The repository is public now, so hosted runners cost nothing; jobs are tuned for
@@ -146,8 +146,9 @@ wall-clock time instead (below). Run it after changing `platforms/`, the SDL or 
 | Job | Proves |
 | --- | --- |
 | macOS | build and tests; the 15 scenarios on SDL (Metal) against `sdl.json`; why raylib can or cannot open a window, and raylib captures when it can |
-| Android | APKs on SDL for Meadow Run (code-first) and Neon Rift (content files) installed, started, drawn (captures against `sdl.json`), audio device, keys, taps on the touch controls, background and back |
-| iOS | the same two games on SDL in the simulator: installed, started, drawn (captures against `sdl.json`), audio device, background and back |
+| Android | APKs on SDL for Meadow Run (code-first) and Neon Rift (content files), or the games listed in the `games` input: installed, started, drawn (captures against `sdl.json`), audio device, keys, system taps on the confirm control and a held drag on the movement control at the positions the game logs, a scripted two-thumb run, background and back |
+| iOS | the same games on SDL in the simulator: installed, started, drawn (captures against `sdl.json`), audio device, scripted touches on the simulator's layout, background and back |
+| Web mobile | the four web demos (development packages) on four emulated phones and tablets in Chrome with real multi-touch (`web/tests/mobile.mjs`); screenshots as an artifact |
 
 Time goes to waiting, not to the checks, so they run side by side wherever results cannot depend on it (PLATFORM-3,
 validation runs 41257531549 and 41258648571; the repository is public, so runner minutes are not the constraint):
