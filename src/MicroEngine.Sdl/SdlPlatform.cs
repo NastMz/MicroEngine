@@ -223,7 +223,9 @@ public sealed unsafe class SdlPlatform : IPlatform
     {
         int sw, sh;
         SDL_GetCurrentRenderOutputSize(_sdl, &sw, &sh);
-        return FrameLayout.Fit(new Vector2(sw, sh), _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
+        var window = new Vector2(sw, sh);
+        return _touch.Overlay?.Frame(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight)
+            ?? FrameLayout.Fit(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
     }
 
     /// <summary>A window position in SDL's window coordinates as virtual canvas pixels.</summary>

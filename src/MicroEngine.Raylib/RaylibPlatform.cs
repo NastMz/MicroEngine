@@ -114,7 +114,8 @@ public sealed class RaylibPlatform : IPlatform
         Rl.EndDrawing();
     }
 
-    private RectF FrameRect() => FrameLayout.Fit(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
+    private RectF FrameRect() => _touch.Overlay?.Frame(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight)
+        ?? FrameLayout.Fit(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
 
     public void SaveScreenshot(string path)
     {

@@ -39,6 +39,12 @@ public abstract class Scene
     /// "x=120 y=88 grounded"); null by default. Never shown to players.
     /// </summary>
     public virtual string? Describe() => null;
+    /// <summary>
+    /// The actions this scene needs from the on-screen touch controls while it is on top, or null for all of them (the
+    /// default). A dialogue returns <c>["confirm", "cancel"]</c>: the movement control disappears from over its text and
+    /// the buttons that confirm and cancel stay. Read every frame, so a scene may change it with its own state.
+    /// </summary>
+    public virtual IReadOnlyCollection<string>? TouchActions => null;
     public abstract void Update(float dt);
     public abstract void Draw(IRenderer renderer);
 

@@ -499,6 +499,125 @@ public sealed class TouchControlsTests
         Assert.AreEqual(540, desktop.Height, "3× of a possible 3.1×: whole pixels win");
     }
 
+    private static bool Covers(RectF frame, (Vector2 Center, float Radius) c)
+    {
+        float x = Math.Clamp(c.Center.X, frame.X, frame.Right), y = Math.Clamp(c.Center.Y, frame.Y, frame.Bottom);
+        return Vector2.Distance(new Vector2(x, y), c.Center) < c.Radius;
+    }
+
+    [TestMethod]
+    public void OnA16By9ScreenTheFrameShrinksSoNoControlCoversIt()
+    {
+        var rig = new Rig(Layout with { Controls = [.. Layout.Controls, new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(30, 30), Radius = 20 }] });
+        rig.Screen.Size = new Vector2(1920, 1080);
+        rig.Screen.PixelsPerDp = 2.75f;
+        rig.Step();
+        var full = FrameLayout.Fit(rig.Screen.Size, rig.Screen.SafeArea, 320, 180);
+        var frame = rig.Controls.Frame(rig.Screen.Size, rig.Screen.SafeArea, 320, 180);
+        foreach (var id in new[] { "dpad", "jump", "fire", "pause" })
+            Assert.IsFalse(Covers(frame, rig.Controls.Geometry(id)), $"{id} covers the frame {frame}");
+        Assert.IsTrue(frame.Width < full.Width && frame.Width >= full.Width * 0.5f, $"{frame} against {full}");
+        Assert.AreEqual(0, frame.Y, "moved to the top, so the controls get the space below");
+        Assert.AreEqual(1920 / 2f, frame.Center.X, 1, "centred");
+        Assert.AreEqual(16 / 9f, frame.Width / frame.Height, 0.01f, "aspect kept");
+    }
+
+    [TestMethod]
+    public void OnAWidePhoneTheBarsHoldMostOfTheControlsAndTheFrameShrinksLittle()
+    {
+        var rig = new Rig();
+        rig.Screen.Size = new Vector2(2400, 1080);
+        rig.Screen.PixelsPerDp = 2.75f;
+        rig.Step();
+        var full = FrameLayout.Fit(rig.Screen.Size, rig.Screen.SafeArea, 320, 180);
+        var frame = rig.Controls.Frame(rig.Screen.Size, rig.Screen.SafeArea, 320, 180);
+        foreach (var id in new[] { "dpad", "jump", "fire" }) Assert.IsFalse(Covers(frame, rig.Controls.Geometry(id)), id);
+        Assert.IsTrue(frame.Width >= full.Width * 0.75f, $"20:9: {frame} against {full}");
+
+        var tablet = new Rig();
+        tablet.Screen.Size = new Vector2(1024, 768);
+        tablet.Step();
+        Assert.AreEqual(FrameLayout.Fit(tablet.Screen.Size, tablet.Screen.SafeArea, 320, 180).Size, tablet.Controls.Frame(tablet.Screen.Size, tablet.Screen.SafeArea, 320, 180).Size,
+            "4:3: the frame at the top leaves room below for the controls at full size");
+    }
+
+    [TestMethod]
+    public void HiddenControlsLeaveTheFrameAsLargeAsItCanBe()
+    {
+        var rig = new Rig();
+        rig.Screen.TouchFirst = false;
+        rig.Step();
+        Assert.IsFalse(rig.Controls.Shown);
+        Assert.AreEqual(FrameLayout.Fit(new Vector2(1280, 720), new RectF(0, 0, 1280, 720), 320, 180), rig.Controls.Frame(new Vector2(1280, 720), new RectF(0, 0, 1280, 720), 320, 180));
+        var off = new Rig();
+        off.Controls.KeepFrameClear = false;
+        Assert.AreEqual(FrameLayout.Fit(off.Screen.Size, off.Screen.SafeArea, 320, 180), off.Controls.Frame(off.Screen.Size, off.Screen.SafeArea, 320, 180));
+    }
+
+    [TestMethod]
+    public void TheContextShowsOnlyTheControlsItsActionsNeed()
+    {
+        var rig = new Rig();
+        rig.Screen.Down(1, rig.At("dpad", 1, 0));
+        rig.Step();
+        Assert.IsTrue(rig.Map.Down("right"));
+        var frameBefore = rig.Controls.Frame(rig.Screen.Size, rig.Screen.SafeArea, 320, 180);
+        rig.Controls.SetContext(["jump"]);
+        rig.Step();
+        Assert.IsFalse(rig.Controls.IsVisible("dpad") || rig.Controls.IsVisible("fire"), "a dialogue hides what it does not use");
+        Assert.IsTrue(rig.Controls.IsVisible("jump"));
+        Assert.IsFalse(rig.Map.Down("right"), "the hidden d-pad released its finger");
+        Assert.AreEqual(frameBefore, rig.Controls.Frame(rig.Screen.Size, rig.Screen.SafeArea, 320, 180), "the game does not change size with the context");
+        rig.Screen.Down(2, rig.At("jump"));
+        rig.Step();
+        Assert.IsTrue(rig.Map.Down("jump"));
+        rig.Controls.SetContext(null);
+        rig.Step();
+        Assert.IsTrue(rig.Controls.IsVisible("dpad"));
+        rig.Controls.SetVisible("fire", false);
+        rig.Controls.SetContext(["fire"]);
+        Assert.IsFalse(rig.Controls.IsVisible("fire"), "a control the game hid stays hidden whatever the context");
+    }
+
+    private sealed class DialogueGame : Game
+    {
+        public override GameSettings Settings { get; } = new("dialogue");
+        protected override TouchLayout CreateTouchLayout() => Layout;
+        protected override void Load() => Scenes.Push(new Field());
+        private sealed class Field : Scene
+        {
+            public override void Update(float dt) { if (Input.Pressed("confirm")) Game.Scenes.Push(new Talk()); }
+            public override void Draw(IRenderer renderer) { }
+        }
+        private sealed class Talk : Scene
+        {
+            public override IReadOnlyCollection<string>? TouchActions { get; } = ["jump"];
+            public override bool IsOverlay => true;
+            public override void Update(float dt) { if (Input.Pressed("cancel")) Game.Scenes.Pop(); }
+            public override void Draw(IRenderer renderer) { }
+        }
+    }
+
+    [TestMethod]
+    public void TheTopScenesTouchActionsApplyEveryFrame()
+    {
+        var game = new DialogueGame();
+        var platform = new HeadlessPlatform();
+        game.InitializeForTest(platform);
+        game.StepForTest();
+        Assert.IsTrue(game.Touch.IsVisible("dpad"));
+        game.Input.SetForced("confirm", true);
+        game.StepForTest();
+        game.Input.SetForced("confirm", false);
+        game.StepForTest();
+        Assert.IsFalse(game.Touch.IsVisible("dpad"), "the dialogue on top hides the d-pad");
+        game.Input.SetForced("cancel", true);
+        game.StepForTest();
+        game.Input.SetForced("cancel", false);
+        game.StepForTest();
+        Assert.IsTrue(game.Touch.IsVisible("dpad"), "back after the dialogue closes");
+    }
+
     // Whole-loop behaviour: the platform's touch screen, focus loss and suspension.
 
     private sealed class TouchGame : Game
