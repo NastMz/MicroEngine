@@ -409,7 +409,7 @@ jobs:
           emulator-options: -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           disable-animations: true
           disk-size: 4G
-          script: node packaging/verify.mjs "$PACKAGE" --game "$GAME" --target "$TARGET" --record dist/verification.json
+          script: node packaging/verify.mjs "$PACKAGE" --game "$GAME" --target "$TARGET" --record dist/verification.json --keep-captures dist/captures
       - name: Store the checked package
         env:
           GITHUB_TOKEN: ${{ github.token }}
