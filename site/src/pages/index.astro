@@ -210,6 +210,8 @@ const layers = [
 <style>
   .hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); padding-block: var(--space-3xl) var(--space-xl); align-items: center; }
   .hero-copy { display: grid; gap: var(--space-lg); min-width: 0; }
+  /* The longest word ("orchestrates,") must fit a 320 px screen whole: a smaller ceiling than --text-display. */
+  .hero-copy h1 { font-size: var(--text-hero); overflow-wrap: normal; }
   .sdk-chip { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: baseline; font-size: var(--text-sm); color: var(--color-ink-2); }
   .hero-note { font-size: var(--text-sm); }
   .hero-figure { margin: 0; display: grid; gap: var(--space-sm); min-width: 0; }
