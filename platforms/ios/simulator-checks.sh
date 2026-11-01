@@ -8,8 +8,26 @@
 #   lifecycle   opening another app suspends the game and bringing it back resumes it
 #
 # Usage: platforms/ios/simulator-checks.sh <app-dir> [game] [out]   (on macOS with Xcode; the app built for iossimulator-arm64)
-# Exit code 1 if any level failed. Touch is not checked: simctl cannot send touches.
+#        platforms/ios/simulator-checks.sh --boot                    starts booting an iPhone simulator and prints its id
+# With SIMULATOR=<id> the checks use that simulator (booted earlier, for example while the app was building) and leave
+# it running. Exit code 1 if any level failed. Touch is not checked: simctl cannot send touches.
 set -uo pipefail
+
+newest_iphone() {
+  xcrun simctl list devices available -j | node -e '
+    const d = JSON.parse(require("fs").readFileSync(0, "utf8")).devices;
+    const ios = Object.keys(d).filter(k => k.includes("iOS")).sort().reverse();
+    for (const k of ios) { const p = d[k].find(x => x.name.startsWith("iPhone")); if (p) { console.log(p.udid); break; } }'
+}
+
+if [ "${1:-}" = --boot ]; then
+  device=$(newest_iphone)
+  [ -n "$device" ] || { echo "no iPhone simulator available" >&2; exit 1; }
+  xcrun simctl boot "$device" 2>/dev/null
+  echo "$device"
+  exit 0
+fi
+
 app=${1:?path to the .app}; game=${2:-MeadowRun}; out=${3:-dist/ios-checks}
 repo=$(cd "$(dirname "$0")/../.." && pwd)
 bundle=dev.microengine.$(echo "$game" | tr '[:upper:]' '[:lower:]')
@@ -19,10 +37,7 @@ report() { echo "$1 $2: $3"; echo "| $2 | $([ "$1" = PASS ] && echo pass || echo
 printf '### iOS simulator checks\n\n| Level | Result | Detail |\n| --- | --- | --- |\n' >> "$summary"
 rm -rf "$out"; mkdir -p "$out"
 
-device=$(xcrun simctl list devices available -j | node -e '
-  const d = JSON.parse(require("fs").readFileSync(0, "utf8")).devices;
-  const ios = Object.keys(d).filter(k => k.includes("iOS")).sort().reverse();
-  for (const k of ios) { const p = d[k].find(x => x.name.startsWith("iPhone")); if (p) { console.log(p.udid); break; } }')
+device=${SIMULATOR:-$(newest_iphone)}
 [ -n "$device" ] || { report FAIL simulator "no iPhone simulator available"; exit 1; }
 xcrun simctl boot "$device" 2>/dev/null; xcrun simctl bootstatus "$device" -b > /dev/null
 echo "simulator: $(xcrun simctl list devices | grep "$device" | sed 's/^ *//')"
@@ -62,12 +77,14 @@ done < <(node -e '
 lifelog="$out/interactive.log"
 xcrun simctl launch --console-pty --terminate-running-process "$device" "$bundle" > "$lifelog" 2>&1 &
 console=$!
-sleep 12
-xcrun simctl launch "$device" com.apple.Preferences > /dev/null 2>&1; sleep 5
-xcrun simctl launch "$device" "$bundle" > /dev/null 2>&1; sleep 5
+# Each step waits for the game's own log line rather than a fixed time.
+await_line() { for _ in $(seq 1 "$2"); do grep -q "$1" "$lifelog" && return 0; sleep 0.5; done; return 1; }
+await_line 'microengine: scene' 120
+xcrun simctl launch "$device" com.apple.Preferences > /dev/null 2>&1; await_line 'microengine: suspended' 40
+xcrun simctl launch "$device" "$bundle" > /dev/null 2>&1; await_line 'microengine: resumed' 40
 xcrun simctl io "$device" screenshot "$out/resumed.png" > /dev/null 2>&1
 xcrun simctl terminate "$device" "$bundle" > /dev/null 2>&1; sleep 1; kill $console 2>/dev/null
 if grep -q "microengine: suspended" "$lifelog" && grep -q "microengine: resumed" "$lifelog"; then report PASS lifecycle "another app suspended the game, relaunching resumed it (resumed.png)"
 else report FAIL lifecycle "no suspended/resumed pair: $(grep microengine: "$lifelog" | tr '\r\n' '  ' | cut -c1-300)"; fi
-xcrun simctl shutdown "$device" > /dev/null 2>&1
+[ -n "${SIMULATOR:-}" ] || xcrun simctl shutdown "$device" > /dev/null 2>&1
 exit $failed
