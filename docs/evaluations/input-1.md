@@ -5,8 +5,8 @@ Date: 2026-11-01. Branch `claude/trusting-cannon-wb6k7z` (from `main` at 6115a70
 Manual: [Input](../manual/input.md).
 
 Evidence words are used strictly: **run** means executed in the development container and its output read; **CI**
-means it ran on GitHub-hosted runners from this branch (platform workflow runs 41275968161 and the re-run listed in
-§5, validate run 41275980931); **desk** means judged from documentation or source without a prototype.
+means it ran on GitHub-hosted runners from this branch (platform workflow runs 41275968161, 41277814363 and
+41278826494, validate run 41275980931); **desk** means judged from documentation or source without a prototype.
 
 ## 1. Audit before this work
 
@@ -75,10 +75,20 @@ playing scene got a `Describe()` for probes.
 | Windows x64 | validate run 41275980931 (CI): .NET tests | Pass. Not played by hand |
 | macOS | platform run 41275968161 (CI): tests and SDL captures against the macOS reference | Pass |
 | Web, mobile emulation | `mobile.mjs`, run (Chromium 153) and CI (Google Chrome) | 256/256 checks, 4 devices × 4 games, before and after the last visual fixes |
-| Android (x86_64 emulator, API 34) | platform runs (CI) | Neon Rift: every level passed in 41275968161. All games: real system taps on the confirm control pass the title; a real held drag on the movement control presses the direction and moves the player (Meadow Run x 50→96, Trail Duel y 9→16, Courtyard Key moved); the scripted two-thumb level first failed for three games because the scripts pressed the second control too briefly for the 100 ms probe at ~125 updates/s, fixed in 122fdd2 (see the re-run below) |
-| iOS (simulator) | platform runs (CI) | Captures, audio, lifecycle as before; scripted touches on the simulator's layout walk and jump (Meadow Run x 50→164 with a jump to y 115); same two-thumb script fix |
+| Android (x86_64 emulator, API 34) | platform run 41278826494 (CI), all four games | Every input level passes for all four: keys, real system taps on the confirm control past the title (`touch`), a real finger held on the movement control (`touch-drag`: Meadow Run walks, Courtyard Key `down` in 26 probes and y 280→448, Trail Duel y 9→16), two thumbs scripted (`touch-two-thumbs`), lifecycle, audio. Meadow Run and Neon Rift jobs are green. Courtyard Key and Trail Duel jobs fail only their rendering comparison with the Windows reference `sdl.json` on the emulator's software GPU (Courtyard Key's HUD by a texel; 7 of Trail Duel's 87 battle frames) |
+| iOS (simulator) | platform run 41278826494 (CI), all four games | All green: captures (now compared with the Metal reference, see below), audio, lifecycle, `touch-script` (two controls held together, the player moving: Meadow Run x 50→164 with a jump to y 115, Courtyard Key `down` with `confirm`, 10 player states) |
+| macOS, web mobile | platform run 41278826494 (CI) | Green (web mobile: the 256 checks in Google Chrome on the runner) |
 
-Re-run after 122fdd2: _filled in below when it finishes._
+How the platform runs got there: the first run (41275968161, all four games for the first time) passed Neon Rift on
+both phones; three games failed `touch-two-thumbs` because their scripts pressed the second control for fewer updates
+than the 100 ms probe can see at ~125 updates/s (fixed in 122fdd2), and iOS Courtyard Key and Trail Duel failed their
+capture comparison. Their iOS captures are pixel-identical to the macOS Metal reference (Courtyard Key 26/26, run
+locally on the downloaded artifact), so the iOS job now compares with `sdl-macos-arm64.json` (0805e93); it had only ever
+run Meadow Run and Neon Rift, which match both. On Android a swipe on a joystick reached the threshold only as it ended,
+so `touch-drag` now holds the finger with `input motionevent` (0805e93). The Android rendering differences of Courtyard
+Key and Trail Duel are not caused by this work (captures are the virtual canvas, which INPUT-1 does not change) and
+predate it: the job ran only Meadow Run and Neon Rift until now. They need an emulator reference recorded by the owner
+(`desktop.mjs --write-reference`), which this mission does not do.
 
 ## 6. Mobile web evidence
 
@@ -116,6 +126,8 @@ The same steps apply to the Android APKs. Record the phone, OS and browser versi
 
 ## 8. Remaining limitations
 
+- The Android CI emulator draws Courtyard Key's HUD and 7 of Trail Duel's battle frames slightly differently from the
+  Windows reference; their Android jobs stay red until an emulator reference is recorded (§5).
 - No physical phone was used: system-level multi-touch was exercised in emulated Chrome; on the Android emulator real
   taps and drags are single-pointer (`adb input`), and two thumbs were scripted through the controls; the iOS simulator
   cannot receive scripted system touches, so iOS touch is scripted only. Safari was not run.
