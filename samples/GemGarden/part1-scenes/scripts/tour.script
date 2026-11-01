@@ -1,0 +1,6 @@
+# Title, then the play scene, then back to the title.
+20 capture part1-title.png
+30 press confirm
+120 capture part1-play.png
+130 press cancel
+180 quit

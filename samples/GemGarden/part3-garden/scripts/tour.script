@@ -1,0 +1,8 @@
+# Into the garden: pick up the first gem to the right, then walk on as the camera follows.
+30 press confirm
+70 hold right 60
+125 capture part3-gem.png
+130 hold down 70
+130 hold right 140
+260 capture part3-camera.png
+280 quit

@@ -1,0 +1,13 @@
+# The tutorial's checkpoint run: title menu, a few moves through the garden, pause, results.
+20 capture title.png
+30 press confirm
+90 hold right 50
+140 hold down 40
+185 capture play.png
+200 press pause
+215 capture pause.png
+230 press pause
+240 hold right 200
+260 capture run.png
+3900 capture results.png
+3910 quit

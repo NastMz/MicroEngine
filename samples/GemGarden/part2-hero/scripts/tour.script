@@ -1,0 +1,9 @@
+# The hero walks right and down, then runs left.
+30 press confirm
+70 hold right 40
+110 hold down 20
+125 capture part2-walk.png
+140 hold left 30
+140 hold run 30
+165 capture part2-run.png
+180 quit

@@ -1,0 +1,81 @@
+# Opens every example from the list, plays with it a little, captures it and goes back.
+20 capture menu.png
+40 press confirm
+60 press confirm
+60 hold right 40
+110 capture 01-shapes.png
+116 press pause
+130 press down
+140 press confirm
+160 press confirm
+160 hold right 40
+210 capture 02-sprites.png
+216 press pause
+230 press down
+240 press confirm
+260 press confirm
+260 hold right 40
+310 capture 03-animation.png
+316 press pause
+330 press down
+340 press confirm
+360 press confirm
+360 hold right 40
+410 capture 04-gamepad.png
+416 press pause
+430 press down
+440 press confirm
+460 press confirm
+460 hold right 40
+510 capture 05-touch.png
+516 press pause
+530 press down
+540 press confirm
+560 press confirm
+560 hold right 40
+610 capture 06-sound.png
+616 press pause
+630 press down
+640 press confirm
+660 press confirm
+660 hold right 40
+710 capture 07-text.png
+716 press pause
+730 press down
+740 press confirm
+760 press confirm
+760 hold right 40
+810 capture 08-saving.png
+816 press pause
+830 press down
+840 press confirm
+860 press confirm
+860 hold right 40
+910 capture 09-camera.png
+916 press pause
+930 press down
+940 press confirm
+960 press confirm
+960 hold right 40
+1010 capture 10-particles.png
+1016 press pause
+1030 press down
+1040 press confirm
+1060 press confirm
+1060 hold right 40
+1110 capture 11-tweens.png
+1116 press pause
+1130 press down
+1140 press confirm
+1160 press confirm
+1160 hold right 40
+1210 capture 12-dialogue.png
+1216 press pause
+1230 press down
+1240 press confirm
+1260 press confirm
+1260 hold right 40
+1310 capture 13-source.png
+1316 press pause
+1330 press down
+1340 quit
