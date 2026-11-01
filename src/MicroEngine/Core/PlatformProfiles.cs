@@ -153,6 +153,7 @@ internal sealed class ComposedPlatform : IPlatform
     public double Now => _inner.Now;
     public bool RealTime => _inner.RealTime;
     public bool Suspended => _inner.Suspended;
+    public ITouchScreen? Touch => _inner.Touch;
     public void PollEvents() => _inner.PollEvents();
     public IRenderer BeginFrame() => _inner.BeginFrame();
     public void EndFrame() => _inner.EndFrame();
@@ -166,7 +167,7 @@ internal sealed class ComposedPlatform : IPlatform
     }
 }
 
-/// <summary>Several input sources read as one: a key or button is down when any source has it down; the stick with the largest deflection wins.</summary>
+/// <summary>Several input sources read as one: a key or button is down when any source has it down; the stick or axis with the largest deflection wins.</summary>
 public sealed class CompositeInput(IReadOnlyList<IInputSource> sources) : IInputSource
 {
     private readonly IInputSource[] _sources = [.. sources ?? throw new ArgumentNullException(nameof(sources))];
@@ -182,6 +183,21 @@ public sealed class CompositeInput(IReadOnlyList<IInputSource> sources) : IInput
         foreach (var s in _sources) if (s.IsPadDown(button)) return true;
         return false;
     }
+
+    public float GetPadAxis(PadAxis axis)
+    {
+        float best = 0;
+        foreach (var s in _sources)
+        {
+            float v = s.GetPadAxis(axis);
+            if (MathF.Abs(v) > MathF.Abs(best)) best = v;
+        }
+        return best;
+    }
+
+    public bool PadConnected => _sources.Any(s => s.PadConnected);
+
+    public PointerState Pointer => _sources.Select(s => s.Pointer).FirstOrDefault(p => p.Present);
 
     public Vector2 LeftStick
     {

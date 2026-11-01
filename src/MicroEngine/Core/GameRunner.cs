@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Numerics;
 
 namespace MicroEngine.Core;
 
@@ -45,7 +46,7 @@ public sealed class GameLoop
     private readonly IPlatform _platform;
     private readonly RunOptions _options;
     private readonly List<string> _captures = [];
-    private double _step, _accumulator, _last;
+    private double _step, _accumulator, _last, _lastTouch;
     private long _frames;
     private bool _running;
     private bool _suspended;
@@ -125,6 +126,9 @@ public sealed class GameLoop
             _last = now;
         }
         else _accumulator += _step;
+        _options.Script?.ApplyTouches(_game.UpdateCount, _game.Touch);
+        _game.UpdateTouch(_platform.Touch, (float)Math.Clamp(_platform.Now - _lastTouch, 0, 0.25));
+        _lastTouch = _platform.Now;
 
         int steps = 0;
         string? capture = null;
@@ -180,14 +184,20 @@ public sealed class GameLoop
 /// 60 hold right 90          # down for 90 updates
 /// 60 down jump / 75 up jump # explicit edges
 /// 200 capture title.png
+/// 240 touch 1 dpad 1 0      # finger 1 down on the d-pad, one radius to the right (or moves there)
+/// 250 tap 2 jump            # finger 2 taps the "jump" control (lifted 2 updates later)
+/// 260 touch 3 0.5,0.5       # finger 3 at the middle of the screen (fractions of its size)
+/// 300 lift 1
 /// 900 quit
 /// </code>
-/// "@+N" instead of an absolute number means N updates after the previous command.
+/// "@+N" instead of an absolute number means N updates after the previous command. Touch commands go through the
+/// game's <see cref="Input.VirtualControls"/> with the same hit testing as real fingers.
 /// </summary>
 public sealed class InputScript
 {
     private readonly List<(long Update, string Action, bool Down)> _edges = [];
     private readonly Dictionary<long, string> _captures = [];
+    private readonly List<(long Update, int Finger, string? Target, Vector2 Offset, bool Lift)> _touches = [];
     private long? _quit;
 
     public static InputScript Parse(string text)
@@ -215,6 +225,12 @@ public sealed class InputScript
                     case "up": script._edges.Add((at, parts[2], false)); break;
                     case "capture": script._captures[at] = parts[2]; break;
                     case "quit": script._quit = at; break;
+                    case "touch": script._touches.Add((at, ParseFinger(parts[2]), parts[3], Offset(parts), false)); break;
+                    case "tap":
+                        script._touches.Add((at, ParseFinger(parts[2]), parts[3], Offset(parts), false));
+                        script._touches.Add((at + 2, ParseFinger(parts[2]), null, default, true));
+                        break;
+                    case "lift": script._touches.Add((at, ParseFinger(parts[2]), null, default, true)); break;
                     default: throw new FormatException($"Unknown command '{parts[1]}'.");
                 }
             }
@@ -224,6 +240,41 @@ public sealed class InputScript
             }
         }
         return script;
+    }
+
+    private static int ParseFinger(string text) => int.Parse(text, CultureInfo.InvariantCulture);
+
+    private static Vector2 Offset(string[] parts) => parts.Length >= 6
+        ? new Vector2(float.Parse(parts[4], CultureInfo.InvariantCulture), float.Parse(parts[5], CultureInfo.InvariantCulture))
+        : default;
+
+    /// <summary>Puts finger <paramref name="finger"/> on a touch control (offset in its radii) at update <paramref name="at"/>, or moves it there.</summary>
+    public InputScript Touch(long at, int finger, string control, Vector2 offset = default)
+    {
+        _touches.Add((at, finger, control, offset, false));
+        return this;
+    }
+
+    public InputScript Lift(long at, int finger)
+    {
+        _touches.Add((at, finger, null, default, true));
+        return this;
+    }
+
+    /// <summary>Hands the touches scheduled for the update about to run to the game's touch controls.</summary>
+    public void ApplyTouches(long update, Input.VirtualControls controls)
+    {
+        foreach (var (at, finger, target, offset, lift) in _touches)
+        {
+            if (at != update) continue;
+            if (lift) controls.ScriptLift(finger);
+            else if (target!.Contains(','))
+            {
+                var xy = target.Split(',');
+                controls.ScriptTouchAt(finger, new Vector2(float.Parse(xy[0], CultureInfo.InvariantCulture), float.Parse(xy[1], CultureInfo.InvariantCulture)));
+            }
+            else controls.ScriptTouch(finger, target, offset);
+        }
     }
 
     public InputScript Hold(long at, string action, long duration)

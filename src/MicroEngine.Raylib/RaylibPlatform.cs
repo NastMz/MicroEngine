@@ -26,9 +26,10 @@ public sealed class RaylibPlatform : IPlatform
     private readonly int _captureScale;
     private readonly Raylib_cs.RenderTexture2D _target;
     private readonly RaylibRenderer _renderer;
-    private readonly RaylibInput _input = new();
+    private readonly RaylibInput _input;
     private readonly RaylibGraphicsDevice _graphics = new();
     private readonly IAudioDevice _audio;
+    private readonly RaylibTouchScreen _touch = new();
     private long _frames;
     private bool _disposed;
 
@@ -45,6 +46,7 @@ public sealed class RaylibPlatform : IPlatform
     public RaylibPlatform(GameSettings settings, DesktopOptions options)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _input = new RaylibInput { CanvasWidth = settings.VirtualWidth, CanvasHeight = settings.VirtualHeight };
         ArgumentNullException.ThrowIfNull(options);
         _fixedStep = options.FixedStep;
         _captureScale = Math.Max(1, options.CaptureScale);
@@ -75,11 +77,13 @@ public sealed class RaylibPlatform : IPlatform
     public bool CloseRequested => !OperatingSystem.IsBrowser() && Rl.WindowShouldClose();
     public double Now => _fixedStep ? _frames / (double)_settings.UpdateRate : Rl.GetTime();
     public bool RealTime => !_fixedStep;
+    public ITouchScreen Touch => _touch;
 
     public void PollEvents()
     {
         _frames++;
         _input.CollectTaps();
+        _input.Frame = FrameRect();
         // In a browser, fullscreen needs a user gesture, so the page handles it (F11 belongs to the browser).
         if (OperatingSystem.IsBrowser()) return;
         if (Rl.IsKeyPressed(Raylib_cs.KeyboardKey.F11) || (Rl.IsKeyDown(Raylib_cs.KeyboardKey.LeftAlt) && Rl.IsKeyPressed(Raylib_cs.KeyboardKey.Enter)))
@@ -99,15 +103,16 @@ public sealed class RaylibPlatform : IPlatform
         Rl.EndTextureMode();
         Rl.BeginDrawing();
         Rl.ClearBackground(new RlColor(0, 0, 0, 255));
-        int sw = Rl.GetRenderWidth(), sh = Rl.GetRenderHeight();
-        float scale = MathF.Min(sw / (float)_settings.VirtualWidth, sh / (float)_settings.VirtualHeight);
-        if (scale >= 1) scale = MathF.Floor(scale);
-        float w = _settings.VirtualWidth * scale, h = _settings.VirtualHeight * scale;
+        var frame = FrameRect();
         var src = new RlRect(0, 0, _settings.VirtualWidth, -_settings.VirtualHeight);
-        var dst = new RlRect(MathF.Floor((sw - w) / 2), MathF.Floor((sh - h) / 2), w, h);
+        var dst = new RlRect(frame.X, frame.Y, frame.Width, frame.Height);
         Rl.DrawTexturePro(_target.Texture, src, dst, Vector2.Zero, 0, new RlColor(255, 255, 255, 255));
+        // The on-screen controls, over the letterboxed frame in render pixels (never in captures).
+        _touch.DrawOverlay();
         Rl.EndDrawing();
     }
+
+    private RectF FrameRect() => FrameLayout.Fit(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
 
     public void SaveScreenshot(string path)
     {
@@ -127,6 +132,7 @@ public sealed class RaylibPlatform : IPlatform
         (_audio as IDisposable)?.Dispose();
         _graphics.Dispose();
         Rl.UnloadRenderTexture(_target);
+        RaylibTouchScreen.Feed.Clear();
         Rl.CloseWindow();
     }
 }
@@ -318,12 +324,38 @@ internal sealed class RaylibInput : IInputSource
             PadButton.DPadDown => Raylib_cs.GamepadButton.LeftFaceDown,
             PadButton.DPadLeft => Raylib_cs.GamepadButton.LeftFaceLeft,
             PadButton.DPadRight => Raylib_cs.GamepadButton.LeftFaceRight,
+            PadButton.LeftStick => Raylib_cs.GamepadButton.LeftThumb,
+            PadButton.RightStick => Raylib_cs.GamepadButton.RightThumb,
             _ => Raylib_cs.GamepadButton.Unknown,
         };
         return b != Raylib_cs.GamepadButton.Unknown && Rl.IsGamepadButtonDown(0, b);
     }
 
-    public Vector2 LeftStick => Rl.IsGamepadAvailable(0)
-        ? new Vector2(Rl.GetGamepadAxisMovement(0, Raylib_cs.GamepadAxis.LeftX), Rl.GetGamepadAxisMovement(0, Raylib_cs.GamepadAxis.LeftY))
-        : Vector2.Zero;
+    public Vector2 LeftStick => new(GetPadAxis(PadAxis.LeftX), GetPadAxis(PadAxis.LeftY));
+
+    public float GetPadAxis(PadAxis axis)
+    {
+        if (!Rl.IsGamepadAvailable(0)) return 0;
+        float v = Rl.GetGamepadAxisMovement(0, axis switch
+        {
+            PadAxis.LeftX => Raylib_cs.GamepadAxis.LeftX,
+            PadAxis.LeftY => Raylib_cs.GamepadAxis.LeftY,
+            PadAxis.RightX => Raylib_cs.GamepadAxis.RightX,
+            PadAxis.RightY => Raylib_cs.GamepadAxis.RightY,
+            PadAxis.LeftTrigger => Raylib_cs.GamepadAxis.LeftTrigger,
+            _ => Raylib_cs.GamepadAxis.RightTrigger,
+        });
+        // raylib reports triggers as -1 (released) .. 1 (pulled).
+        return axis is PadAxis.LeftTrigger or PadAxis.RightTrigger ? (v + 1) / 2 : Math.Clamp(v, -1, 1);
+    }
+
+    public bool PadConnected => Rl.IsGamepadAvailable(0);
+
+    /// <summary>Where the frame was drawn, set by the platform each frame to map the mouse onto the canvas.</summary>
+    public RectF Frame { get; set; }
+    public int CanvasWidth { get; init; } = 320;
+    public int CanvasHeight { get; init; } = 180;
+
+    public PointerState Pointer => new(Rl.IsCursorOnScreen(), FrameLayout.ToCanvas(Rl.GetMousePosition(), Frame, CanvasWidth, CanvasHeight),
+        Rl.IsMouseButtonDown(Raylib_cs.MouseButton.Left), Rl.IsMouseButtonDown(Raylib_cs.MouseButton.Right), Rl.IsMouseButtonDown(Raylib_cs.MouseButton.Middle));
 }
