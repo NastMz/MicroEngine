@@ -22,6 +22,7 @@ export const completed: string[] = [
   'raylib in WebAssembly for browsers, and as a desktop alternative',
   'Named platform profiles and replaceable subsystems behind IPlatform',
   'On-screen touch controls and suspend/resume on phones',
+  'Analog input and per-game touch controls (d-pad, joystick, buttons) on phones and in mobile browsers',
   'Native demo downloads, checked as downloaded',
   'This site and its documentation',
 ];
@@ -48,8 +49,8 @@ export const next: RoadmapTrack[] = [
   {
     title: 'Mobile experience',
     status: 'exploring',
-    summary: 'The phone hosts run the games with generic on-screen controls; what a good touch experience needs is still open.',
-    items: ['Control layouts per game', 'Screen safe areas (notches)', 'Text input, haptics', 'Touch controls in the browser builds'],
+    summary: 'Each game has its own touch controls with safe areas and feedback; what remains is mostly polish and real devices.',
+    items: ['Hide controls during dialogues', 'Haptics on iOS', 'Text input', 'A player setting for control size and opacity'],
   },
 ];
 

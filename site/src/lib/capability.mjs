@@ -1,10 +1,11 @@
-// Decides whether a visitor's device can be offered a demo directly. The games need WebAssembly, WebGL and a
-// keyboard, and they were only verified on desktop browsers. The decision uses what the browser reports about its
+// Decides whether a visitor's device can be offered a demo directly. The games need WebAssembly and WebGL. Packages
+// built with on-screen touch controls (game.json "touch": true, INPUT-1) are offered to touch devices and small
+// screens too; older packages need a keyboard and were only verified on desktop browsers. The decision uses what the browser reports about its
 // input devices and viewport, never the User-Agent, and it is a recommendation: "unvalidated" devices can still
 // try at their own risk, and pressing a hardware key upgrades the device to "desktop".
 
 /**
- * @param {{ wasm: boolean, webgl: boolean, finePointer: boolean, hover: boolean, width: number, height: number, keyboardSeen?: boolean }} env
+ * @param {{ wasm: boolean, webgl: boolean, finePointer: boolean, hover: boolean, width: number, height: number, keyboardSeen?: boolean, touchControls?: boolean }} env
  * @returns {{ verdict: 'desktop' | 'unvalidated' | 'unsupported', reasons: string[] }}
  */
 export function classify(env) {
@@ -12,7 +13,7 @@ export function classify(env) {
   if (!env.wasm) missing.push('webassembly');
   if (!env.webgl) missing.push('webgl');
   if (missing.length) return { verdict: 'unsupported', reasons: missing };
-  if (env.keyboardSeen) return { verdict: 'desktop', reasons: [] };
+  if (env.keyboardSeen || env.touchControls) return { verdict: 'desktop', reasons: [] };
   const reasons = [];
   if (!env.finePointer || !env.hover) reasons.push('touch');
   if (env.width < 720 || env.height < 400) reasons.push('small-screen');
@@ -20,7 +21,7 @@ export function classify(env) {
 }
 
 /** Reads the environment from a browser window. */
-export function probe(win = window, keyboardSeen = false) {
+export function probe(win = window, keyboardSeen = false, touchControls = false) {
   let webgl = false;
   try {
     const canvas = win.document.createElement('canvas');
@@ -34,5 +35,6 @@ export function probe(win = window, keyboardSeen = false) {
     width: win.innerWidth,
     height: win.innerHeight,
     keyboardSeen,
+    touchControls,
   };
 }
