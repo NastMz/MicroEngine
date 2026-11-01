@@ -2,7 +2,9 @@
 
 All four games run in a browser from the same game assemblies as their desktop builds: raylib is compiled to
 WebAssembly and linked into the .NET WebAssembly runtime, and one shared host turns any game into a static
-package. What was verified, in which browsers, and what is still open: [the WEB-1 evaluation](../docs/evaluations/web-support.md).
+package. The host is part of the SDK: `microengine package web` builds it for any game
+([Packaging](../docs/guide/packaging.md#web)), and this folder builds the four demos with it, using a pinned private
+toolchain. What was verified, in which browsers, and what is still open: [the WEB-1 evaluation](../docs/evaluations/web-support.md).
 Decisions: [ADR 0007](../docs/decisions/0007-browser-host.md) and [ADR 0008](../docs/decisions/0008-web-packages.md).
 
 | Path | Purpose |
@@ -11,13 +13,11 @@ Decisions: [ADR 0007](../docs/decisions/0007-browser-host.md) and [ADR 0008](../
 | `setup.sh` | Installs that toolchain in a private folder and rebuilds raylib with its emscripten |
 | `build.sh` | Builds one or all games into `dist/web/<Game>/` |
 | `serve.mjs` | Local static server (Brotli, correct MIME types) |
-| `games.props` | The games the host can build: everything that differs between games |
-| `Host/` | The one host project: `Program.cs` (page bridge) and `wwwroot/` (page, styles, page glue) |
-| `Directory.Build.props` / `.targets` | Browser build settings, game selection, rebuilt raylib, content manifest |
+| [`../src/MicroEngine.Cli/Hosts/web`](../src/MicroEngine.Cli/Hosts/web) | The host template: `Host.csproj` (browser build settings, the game, rebuilt raylib), `Program.cs` (page bridge) and `wwwroot/` (page, styles, page glue) |
 | `build-raylib-wasm.sh` | Compiles raylib for the web (called by `setup.sh`) |
 | `tests/` | Browser checks in Chrome and Firefox (`run.mjs`), touch checks on emulated phones and tablets (`mobile.mjs`) and the desktop comparison (`desktop.mjs`) |
 
-The browser projects are outside `MicroEngine.slnx`: they need a toolchain the normal build does not.
+The host is not in `MicroEngine.slnx`: it needs a toolchain the normal build does not, and `microengine` generates its project per game.
 
 ## Requirements
 
@@ -100,10 +100,10 @@ The page posts its state to the parent: `{ source: 'microengine', game, state, d
 
 ## How the host works
 
-- `games.props` maps `-p:Game=<Id>` to a title, the game project and the expression that builds the game (the
-  same one the desktop `Program.cs` passes to `DesktopLauncher`, minus the save folder). The build generates
-  `GameEntry` (the entry point), `content.txt` and `game.json` from it. Each game builds into
-  `web/Host/obj/<Game>/` and `bin/<Game>/`.
+- `microengine package web` copies the host template into the game's `obj/microengine/web` folder and writes what is
+  the game's, from its project's [identity](../docs/guide/app-identity.md): `GameEntry` (the entry point, from
+  `MicroEngineGameFactory`, the same expression the desktop `Program.cs` passes to `DesktopLauncher`), `content.txt`,
+  `game.json`, the page title and the favicon (`MicroEngineIcon`).
 - `Program.cs` (`WebHost`) is the page's bridge: `Start`, `Frame` (one frame per `requestAnimationFrame`),
   `Outcome`, `Stop` and diagnostics. It drives a `GameSession` from `BrowserLauncher.CreateSession`, which picks
   `localStorage` saves before any game is built and creates a fresh raylib platform per run.
@@ -192,14 +192,14 @@ to `dist/web-mobile`.
 
 1. Make sure the game reads files through `ContentFolder` and saves through `SaveStore` (no direct file IO), and
    keeps its desktop `Program.cs` minimal: build the game, call `DesktopLauncher.Run`.
-2. Add an entry to `web/games.props`:
+2. Give its project (`games/MyGame/MyGame.csproj`) its [identity](../docs/guide/app-identity.md): `ApplicationTitle`,
+   `ApplicationId`, `MicroEngineIcon` and `MicroEngineGameFactory`:
 
    ```xml
-   <PropertyGroup Condition="'$(Game)' == 'MyGame'">
-     <GameTitle>My Game</GameTitle>
-     <GameProject>MyGame/MyGame.csproj</GameProject>
-     <GameFactory>new MyGame.MyGameClass()</GameFactory>
-   </PropertyGroup>
+   <ApplicationTitle>My Game</ApplicationTitle>
+   <ApplicationId>dev.microengine.mygame</ApplicationId>
+   <MicroEngineIcon>icon.png</MicroEngineIcon>
+   <MicroEngineGameFactory>new MyGame.MyGameClass()</MicroEngineGameFactory>
    ```
 
 3. `web/build.sh MyGame`, then `node web/serve.mjs dist/web` and play it.

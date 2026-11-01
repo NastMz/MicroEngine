@@ -6,7 +6,7 @@ namespace MicroEngine.Raylib;
 /// <summary>
 /// The browser page's way into the raylib platform's touch screen (<see cref="RaylibTouchScreen"/>): the page listens to
 /// Pointer Events on the canvas and forwards touch and pen pointers here, in canvas pixels, with the page's safe-area
-/// insets (CSS <c>env(safe-area-inset-*)</c>) and density. The web host (web/Host) calls these from its JS exports.
+/// insets (CSS <c>env(safe-area-inset-*)</c>) and density. The browser host (src/MicroEngine.Cli/Hosts/web) calls these from its JS exports.
 /// </summary>
 public static class BrowserTouch
 {

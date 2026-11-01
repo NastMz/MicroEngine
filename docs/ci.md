@@ -167,6 +167,17 @@ plus the AOT build (about 2.7 minutes).
 Native Linux in daily CI checks both desktop platforms: raylib against `linux-x64.json` and SDL (OpenGL on Mesa
 llvmpipe) against `sdl-linux-x64.json`, plus the SDL platform tests (`tests/MicroEngine.Desktop.Tests`).
 
+## SDK checks and releases
+
+The SDK has its own workflows, apart from the demos' ([SDK status](guide/sdk.md#how-the-sdk-is-checked)):
+
+| Workflow | When | What |
+| --- | --- | --- |
+| `sdk.yml` | pull requests and pushes that change `src/`, `templates/`, `sdk/` or the build settings; manual; called by `sdk-release.yml` | packs every SDK package (with the web raylib), checks them (`sdk/tests/packages.mjs`), then on Windows, Linux and macOS installs the tool and template from that feed into a folder outside the repository and creates, builds, runs and packages a game (`sdk/tests/external.mjs`) |
+| `sdk-release.yml` | by hand only | checks the version is new, runs `sdk.yml`, drafts the GitHub prerelease `sdk-v<version>`; with `publish` on, pushes the draft's packages to nuget.org after the `nuget` environment's approval |
+
+`sdk.yml` is not a required check: the **CI result** check stays the one gate. Nothing in daily CI publishes a package.
+
 ## Releases
 
 A demo release `v<version>` is a GitHub release holding copies of the approved packages (`<Game>-<key>.tar.gz`

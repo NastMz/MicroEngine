@@ -25,9 +25,9 @@ rollback.
 
 ### Demo packages are addressed by content
 
-Each game in the registry ([`web/games.props`](../web/games.props)) has a **key**: a hash of the Git blobs of
-everything its web package is built from (the engine under `src/`, the web host and toolchain files, the game's
-folder, its registry entry, `THIRD-PARTY-NOTICES.md`, `LICENSE` and `games/LICENSE`; Markdown files, screenshots and input scripts excluded).
+Each game in the registry (`games/<Id>/<Id>.csproj`) has a **key**: a hash of the Git blobs of
+everything its web package is built from (the engine and the `microengine` tool with its browser host under `src/`,
+the web toolchain files, the game's folder (its project holds its identity), `THIRD-PARTY-NOTICES.md`, `LICENSE` and `games/LICENSE`; Markdown files, screenshots and input scripts excluded).
 `node site/scripts/demos.mjs key <Game>` prints a key and its input files.
 
 - A change to the engine or the web host changes every key; a change to one game changes only that game's key;
@@ -41,7 +41,7 @@ folder, its registry entry, `THIRD-PARTY-NOTICES.md`, `LICENSE` and `games/LICEN
   else the released one; CI checks and previews) or `release[:<tag>]` (production). It checks the archive's
   SHA-256 and then every extracted file against the manifest, and fails if anything is missing or different.
   `/play/demos.json` records where each package came from.
-- A new game needs its registry entry in `web/games.props` and its page data in `site/src/data/games.ts`; the plan
+- A new game needs its project (`games/<Id>/<Id>.csproj`, with its identity) and its page data in `site/src/data/games.ts`; the plan
   picks it up and builds it; production shows it after the next release. No workflow changes (a unit test fails if
   the two lists differ).
 - Native downloads use the same store under `<Game>-<target>-<key>` ([packaging](../packaging/README.md),

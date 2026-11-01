@@ -27,7 +27,8 @@ These are not implemented. Do not plan around them.
 
 | Missing | Notes |
 | --- | --- |
-| Published NuGet packages, project templates (`dotnet new`), an installer | Prepared for SDK-1: `dotnet pack` produces the packages, nothing is published ([SDK status](sdk.md)) |
+| Packages on nuget.org | The SDK 0.4.0-alpha.1 packages, the `microengine` tool and the `dotnet new` template are built and checked, not yet published: install them from a local build ([Getting MicroEngine](getting-microengine.md)) |
+| Android App Bundles (`.aab`) for Google Play | `microengine package android` builds APKs ([Packaging](packaging.md)) |
 | Visual editor, level editor or asset pipeline tool | MicroEngine is code-first: content is authored in code (`PixelImage.FromMap`, `TileLayer.Parse` over ASCII rows) or loaded through `ContentFolder`. A visual editor is only a long-term vision on the roadmap |
 | An iOS download | Distributing to iPhones needs Apple signing ([Downloads](downloads.md#ios)) |
 | An ECS, physics engine, networking, scripting language or 3D | Not part of the engine's design ([Architecture](../architecture.md)). 3D is only a long-term vision on the roadmap |
@@ -60,7 +61,7 @@ The full list with evidence is in [Known limitations](../reference/limitations.m
 
 ## Planned work
 
-The [roadmap](/roadmap/) lists planned work without dates: SDK-1 (NuGet packages, templates, versioned SDK releases),
+The [roadmap](/roadmap/) lists planned work without dates: publishing the SDK (SDK-1),
 validation on real devices, engine robustness and research into the mobile experience. A visual editor and 3D appear
 there only as a long-term vision, not as available or committed features.
 

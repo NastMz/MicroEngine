@@ -41,7 +41,8 @@ secondary action, Esc/P to pause, F11 for fullscreen; gamepads work too.
 
 - [Introduction](docs/guide/introduction.md) — what MicroEngine is, who it is for, the four games, design principles
 - [Getting MicroEngine](docs/guide/getting-microengine.md) — use the engine in a game
-- [SDK status](docs/guide/sdk.md) — what Alpha means, and the prepared SDK-1 packages
+- [SDK status](docs/guide/sdk.md) — what Alpha means, the SDK packages and how a release is published
+- [The microengine tool](docs/guide/cli.md) and [packaging](docs/guide/packaging.md) — create, run and distribute a game
 - [Downloads](docs/guide/downloads.md) — install the demos on Windows, Linux, macOS and Android
 - [Engine development setup](docs/guide/getting-started.md) — requirements, build, test, run a demo
 - [Engine manual](docs/manual/lifecycle.md) — lifecycle, scenes, rendering, input, audio, assets, UI, persistence, achievements, backends

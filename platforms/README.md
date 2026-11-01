@@ -4,16 +4,20 @@ Phone hosts and probes. They run in the [platform workflow](../docs/ci.md#platfo
 full validation), never in daily CI or a release. Decisions: [ADR 0016](../docs/decisions/0016-platform-profiles.md),
 [ADR 0017](../docs/decisions/0017-sdl3-native-platform.md); evidence: [PLATFORM-3](../docs/evaluations/platform-3.md).
 
-Like the browser host, each phone host runs one game chosen with `-p:Game=<Id>` from [`web/games.props`](../web/games.props)
-(default `MeadowRun`): no game is copied and no gameplay code changes. Both run the game on the same SDL platform as
+The phone hosts themselves are part of the SDK: `microengine package android` and `ios-simulator` (or `ios`) build
+them for any game ([Packaging](../docs/guide/packaging.md)), from the templates in
+[`src/MicroEngine.Cli/Hosts`](../src/MicroEngine.Cli/Hosts); this folder holds the checks that play the demos' builds
+and the probes of earlier experiments. No game is copied and no gameplay code changes. Both run the game on the same SDL platform as
 the desktop (`src/MicroEngine.Sdl`), with on-screen touch controls, suspension in the background, and the game's
-`Content` files. These projects are not in `MicroEngine.slnx`, because they need the `android` or `ios` workload.
+`Content` files. The hosts are not in `MicroEngine.slnx`, because they need the `android` or `ios` workload.
 
 | Folder | What it is |
 | --- | --- |
-| [`Shared/`](Shared/) | `MobileRun`: one run of the game with `DesktopLauncher --script` semantics (fixed step, seed 1, captures), logging `microengine:` lines (start, scenes, suspended/resumed, captures, done, exit) |
-| [`android/`](android/) | .NET for Android host: an `SDLActivity` whose `Main` runs the game; content files as APK assets, unpacked once per install |
-| [`ios/`](ios/) | .NET for iOS host: `SDL_RunApp` hands the app to SDL, which calls back into .NET to run the game (Metal) |
+| [`Hosts/mobile`](../src/MicroEngine.Cli/Hosts/mobile) | `MobileRun`: one run of the game with `DesktopLauncher --script` semantics (fixed step, seed 1, captures), logging `microengine:` lines (start, scenes, suspended/resumed, captures, done, exit) |
+| [`Hosts/android`](../src/MicroEngine.Cli/Hosts/android) | .NET for Android host: an `SDLActivity` whose `Main` runs the game; content files as APK assets, unpacked once per install |
+| [`Hosts/ios`](../src/MicroEngine.Cli/Hosts/ios) | .NET for iOS host: `SDL_RunApp` hands the app to SDL, which calls back into .NET to run the game (Metal) |
+| [`android/`](android/) | `device-checks.mjs` (plays an APK on an emulator or device), `ci-play.sh`, pinned versions |
+| [`ios/`](ios/) | `simulator-checks.sh` (plays a simulator app), pinned versions |
 | [`macos/`](macos/) | `gl-probe.m`: why GLFW (raylib) cannot open an OpenGL window on a Mac without a GPU |
 | [`software/`](software/) | the raylib software-renderer experiment of PLATFORM-2, kept to reproduce its result |
 
@@ -41,8 +45,8 @@ Needs the .NET 10 `android` workload, an Android SDK (`ANDROID_HOME`) and Java 1
 from the `ppy.SDL3-CS` package.
 
 ```bash
-dotnet build platforms/android -c Release -p:Game=NeonRift -p:AndroidSdkDirectory="$ANDROID_HOME"
-node platforms/android/device-checks.mjs --apk platforms/android/bin/NeonRift/Release/net10.0-android/dev.microengine.neonrift-Signed.apk --game NeonRift --out dist/android-checks
+dotnet run --project src/MicroEngine.Cli -c Release -- package android --project games/NeonRift/NeonRift.csproj --debug-key --out dist/android
+node platforms/android/device-checks.mjs --apk dist/android/NeonRift-1.0.0-android.apk --game NeonRift --out dist/android-checks
 node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/android-checks --reference web/tests/reference/sdl-android-x86_64.json
 ```
 
@@ -65,8 +69,9 @@ Needs macOS, the .NET 10 `ios` workload and the Xcode version that workload requ
 workload set from `web/toolchain.env` and selects the matching Xcode).
 
 ```bash
-dotnet build platforms/ios -c Release -p:Game=NeonRift
-platforms/ios/simulator-checks.sh platforms/ios/bin/NeonRift/Release/net10.0-ios/iossimulator-arm64/MicroEngine.iOS.app NeonRift dist/ios-checks/NeonRift
+dotnet run --project src/MicroEngine.Cli -c Release -- package ios-simulator --project games/NeonRift/NeonRift.csproj --out dist/ios
+ditto -x -k dist/ios/NeonRift-1.0.0-ios-simulator.zip dist/ios/extracted
+platforms/ios/simulator-checks.sh "dist/ios/extracted/NeonRift/NeonRift.app" NeonRift dist/ios-checks/NeonRift
 node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/ios-checks/NeonRift --reference web/tests/reference/sdl-ios-simulator-arm64.json
 ```
 

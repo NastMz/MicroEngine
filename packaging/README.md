@@ -1,7 +1,9 @@
 # Native demo packages
 
 The four demos as files a player downloads and runs without .NET or the repository: a portable ZIP for Windows, a
-portable archive for Linux, an application for macOS and an APK for Android. Players' instructions are in
+portable archive for Linux, an application for macOS and an APK for Android. They are built by the SDK's own tool,
+`microengine package` ([Packaging](../docs/guide/packaging.md)), exactly as any game made with MicroEngine; this folder
+adds what the demos' release pipeline needs: content keys, the verification that plays each package, and the store. Players' instructions are in
 [Downloads](../docs/guide/downloads.md); the decision is [ADR 0018](../docs/decisions/0018-native-demo-distribution.md).
 iOS has no download: see [Why there is no iOS download](../docs/guide/downloads.md#ios).
 
@@ -9,7 +11,7 @@ iOS has no download: see [Why there is no iOS download](../docs/guide/downloads.
 | --- | --- |
 | [`targets.json`](targets.json) | The downloadable targets: runtime, runner, archive format, the SDL reference its captures are compared with, requirements and install steps. Every script, the store, the release and the site read it |
 | [`targets.mjs`](targets.mjs) | Rules shared by everything that touches a package: file names, the layout, `build-info.json`, Android's version code |
-| [`package.mjs`](package.mjs) | Builds one package: `node packaging/package.mjs <Game> --target <id>` |
+| [`package.mjs`](package.mjs) | Builds one package with `microengine package`, records its content key: `node packaging/package.mjs <Game> --target <id>` |
 | [`verify.mjs`](verify.mjs) | Checks the archive itself, level by level, and runs it: `node packaging/verify.mjs <file> --game <Game> --target <id>` |
 | [`linux-distros.mjs`](linux-distros.mjs) | Plays the Linux packages in containers of other distributions (Docker) |
 
@@ -34,10 +36,13 @@ NeonRift/
   LICENSE.txt                      the demo's notice: all rights reserved (games/LICENSE)
   THIRD-PARTY-NOTICES.txt          MicroEngine's third-party list (SDL, raylib, NVorbis, CC0 assets...)
   licenses/                        MicroEngine's MIT licence, the .NET runtime's licence and notices
+  icon.png, dev.microengine.neonrift.desktop    Linux only: the icon and a desktop entry
 ```
 
-On macOS the executable and both libraries are in `Neon Rift.app/Contents/MacOS`, the content files in
-`Contents/Resources/Content` (the desktop launcher finds them there), and the bundle is signed ad hoc. The APK holds
+The Windows executable carries the game's icon, name and version; the name, id and icon come from each demo's project
+file ([Application identity](../docs/guide/app-identity.md)). On macOS the executable and both libraries are in
+`Neon Rift.app/Contents/MacOS`, the content files and `AppIcon.icns` in `Contents/Resources` (the desktop launcher
+finds the content there), and the bundle is signed ad hoc. The APK holds
 SDL for `arm64-v8a` and `x86_64`, the content files and input scripts as assets, and the same notices under
 `assets/licenses/`.
 

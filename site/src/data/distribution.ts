@@ -1,6 +1,7 @@
-// How visitors can get MicroEngine and what state it is in. The engine is open source (MIT) and used from its public
-// repository; NuGet packages and `dotnet new` templates are prepared for SDK-1 (docs/guide/sdk.md) but not
-// published: when they are, replace `install` with their commands. The version is read from the build.
+// How visitors can get MicroEngine and what state it is in. The SDK (packages, the microengine tool, the template) is
+// prepared and checked but not on nuget.org yet (docs/guide/sdk.md): `install` builds it into a local feed. When the
+// owner publishes a release, replace `install` with `dotnet tool install -g MicroEngine.Cli --prerelease` and
+// `microengine new`, and drop the "not on nuget.org" wording. The version is read from the build.
 import { sdkVersion } from '../lib/versions.mjs';
 
 export interface InstallStep { label: string; command: string }
@@ -12,11 +13,13 @@ export const sdk = {
 };
 
 export const distribution = {
-  status: 'Open source under the MIT License: free for personal and commercial games, no royalties. There are no NuGet packages yet; build it from the public repository with the .NET 10 SDK.',
+  status: 'Open source under the MIT License: free for personal and commercial games, no royalties. The SDK (NuGet packages, the microengine tool and a dotnet new template) is ready but not on nuget.org yet: build it from the public repository with the .NET 10 SDK.',
   install: [
     { label: 'Clone', command: 'git clone https://github.com/NastMz/MicroEngine.git' },
-    { label: 'Build and test', command: 'dotnet test MicroEngine.slnx -c Release' },
-    { label: 'Run the sample', command: 'dotnet run --project samples/HelloEngine -c Release' },
+    { label: 'Build the SDK packages', command: 'dotnet pack MicroEngine/MicroEngine.slnx -c Release -o ~/microengine-feed' },
+    { label: 'Use them as a package source', command: 'dotnet nuget add source ~/microengine-feed --name microengine-local' },
+    { label: 'Install the tool', command: 'dotnet tool install -g MicroEngine.Cli --prerelease' },
+    { label: 'Create and run a game', command: 'microengine new MyGame && cd MyGame && microengine run' },
   ] satisfies InstallStep[],
   startHref: '/docs/getting-started/',
   repository: 'https://github.com/NastMz/MicroEngine',

@@ -25,3 +25,4 @@ maintainer's archive, not in the public history.
 | [0018](0018-native-demo-distribution.md) | Native demo downloads through the existing release pipeline (amends 0010, 0013) | Accepted |
 | [0019](0019-sdk-packages.md) | SDK Alpha versioning and one package per backend | Accepted |
 | [0020](0020-unified-input-and-touch-controls.md) | Unified digital and analog input; engine-owned touch controls on every platform (amends 0017) | Accepted |
+| [0021](0021-sdk-toolchain.md) | The SDK toolchain: identity in the game's project, one `microengine` tool, demos as its consumers (amends 0018, 0019) | Accepted |

@@ -1,70 +1,81 @@
 # SDK status: Alpha
 
-**MicroEngine SDK — Alpha, 0.x.** The current version is set in one place, `MicroEngineVersion` in
-[`Directory.Build.props`](../../Directory.Build.props), and every engine assembly and demo package carries it.
+**MicroEngine SDK 0.4.0-alpha.1 — Alpha.** The version is set in one place, `MicroEngineVersion` in
+[`Directory.Build.props`](../../Directory.Build.props); every package, the tool and every package built with it carry it.
 
-The engine is functional: four complete games run on it, and it is checked on Windows, Linux, macOS, Android, iOS and in
-browsers ([Platforms](/platforms/)). Its contracts, subsystems and tools are still evolving, so:
+Two things are true at once:
 
-- public APIs may change incompatibly between Alpha versions (0.2 → 0.3), and a change is recorded in a decision
-  record and in the migration notes of the version that makes it;
-- there is no 1.0 and no promise of backward compatibility yet;
-- the types the four games depend on are listed in [Contracts](../reference/contracts.md); they are the ones most likely
-  to stay, not guaranteed to.
+- **The engine works and is tested on six platforms.** Four complete games run on it on Windows, Linux, macOS,
+  Android, iOS and in browsers ([Platforms](platforms.md)), and the SDK's own test builds, runs and packages a new
+  game from the published packages on Windows, Linux and macOS.
+- **Its public API is still evolving.** Between Alpha versions (0.4 → 0.5) public APIs may change incompatibly; every
+  such change is recorded in a decision record and in the [migration notes](../migrations.md) of the version that
+  makes it. There is no 1.0 and no promise of backward compatibility yet. The types the four demos depend on are listed
+  in [Contracts](../reference/contracts.md): the most likely to stay, not guaranteed to.
 
-## How you use it today
+> **Publication.** 0.4.0-alpha.1 is prepared, checked and ready to release, but **not yet on nuget.org**.
+> [Getting MicroEngine](getting-microengine.md) shows how to install from a local build until then.
 
-From the public repository, with the .NET 10 SDK: reference `src/MicroEngine.Desktop` (or a single backend) from your
-game's project. [Getting MicroEngine](getting-microengine.md) has the commands.
+## Packages
 
-## SDK-1: what is prepared
+| Package | Contains | Depends on |
+| --- | --- | --- |
+| `MicroEngine` | the core (loop, scenes, input actions, graphics model, world, audio synthesis, UI, saves, achievements, headless platform) and the [identity](app-identity.md) build targets | .NET only |
+| `MicroEngine.Sdl` | the SDL 3 platform (desktop and phones) | `MicroEngine`, `ppy.SDL3-CS`, `NVorbis` |
+| `MicroEngine.Raylib` | the raylib platform (desktop; browsers through WebAssembly), with raylib built for .NET's `wasm-tools` | `MicroEngine`, `Raylib-cs` |
+| `MicroEngine.Desktop` | `DesktopLauncher` and the official desktop catalog (`sdl`, `raylib`, `sdl-software`, `headless`) | `MicroEngine.Sdl`, `MicroEngine.Raylib` |
+| `MicroEngine.Cli` | the [`microengine` tool](cli.md) and the browser, Android and iOS hosts it builds with | — |
+| `MicroEngine.Templates` | `dotnet new microengine-game` | — |
 
-SDK-1 is the next stage on the [roadmap](/roadmap/): installing MicroEngine without cloning it. Its structure is decided
-([ADR 0019](../decisions/0019-sdk-packages.md)) and partly working; nothing is published yet.
+A game installs only what it uses: one that ships SDL only references `MicroEngine.Sdl` and gets no raylib file.
+Packages carry symbols (`.snupkg`, with Source Link to the commit), XML documentation, a README and the MIT
+licence. The demo games are not in any package: they stay in the repository under their own terms
+([Licensing](licensing.md)).
 
-### Packages
+## Versioning and compatibility
 
-One NuGet package per project in `src/`, so a game installs only the backends it uses:
+- SemVer with numbered pre-releases while in Alpha: `0.4.0-alpha.1`, `0.4.0-alpha.2`... A new minor (0.5) marks
+  incompatible changes; numbered Alphas of one minor are for fixes and additions.
+- All six packages share one version, and the tool builds games with the hosts of its own version: use the same
+  version for the tool and the engine packages (the template does).
+- A game's own version is its own (`<Version>` in its project), independent of the SDK's.
+- SDK releases are tagged `sdk-v<version>`; the demo releases (`v0.1.0`, `v0.2.0`...) are a separate series.
 
-| Package | Contains | Depends on | Native libraries |
-| --- | --- | --- | --- |
-| `MicroEngine` | the core: loop, scenes, input, graphics model, world, audio synthesis, UI, saves, achievements, headless platform | .NET only | none |
-| `MicroEngine.Sdl` | the SDL 3 platform (desktop and phones) | `MicroEngine`, `ppy.SDL3-CS`, `NVorbis` | SDL 3 for Windows, Linux, macOS, Android, iOS |
-| `MicroEngine.Raylib` | the raylib platform (desktop; the browser build compiles it to WebAssembly) | `MicroEngine`, `Raylib-cs` | raylib for Windows, Linux, macOS |
-| `MicroEngine.Desktop` | `DesktopLauncher` with the official desktop catalog (`sdl`, `raylib`, `sdl-software`, `headless`) | `MicroEngine.Sdl`, `MicroEngine.Raylib` | both |
+**Upgrading** a game: change the `MicroEngine.*` package versions in its project, `dotnet tool update -g
+MicroEngine.Cli --prerelease`, then read the [migration notes](../migrations.md) from your version up.
 
-`dotnet pack` already produces these four packages at the SDK version (`0.3.0-alpha`), with the MIT licence expression
-and repository metadata (`src/Directory.Build.props`). They were consumed from a local feed by a new project, outside
-the repository:
+## How the SDK is checked
 
-- referencing `MicroEngine.Desktop`, the Hello Engine sample ran headless and listed all four platforms;
-- referencing only `MicroEngine.Sdl`, with its own catalog, it listed `sdl` and `headless`, and no raylib file was
-  copied to its output. A game does not have to install every backend.
+`sdk.yml` runs on every change to the engine, the tool, the template or these checks:
 
-```csharp
-// A game that ships SDL only: its own catalog instead of DesktopLauncher's.
-return GameLauncher.Run(new HelloGame(), args, new PlatformCatalog().Add(SdlPlatform.Profile).Add(HeadlessPlatform.Profile));
-```
+1. **Packages** (`sdk/tests/packages.mjs`): one version everywhere, MIT, README and repository metadata, exactly the
+   dependencies each package should have (no raylib in `MicroEngine.Sdl`), the files that make each one work (the
+   identity targets, raylib for WebAssembly, the hosts, the template), no build-machine path, no demo file.
+2. **An external project** (`sdk/tests/external.mjs`) on Windows, Linux and macOS: in a folder outside the
+   repository, with only the package feed and nuget.org, it installs `microengine`, creates a game with
+   `microengine new`, gives it its own name, id, version and icon, builds it, runs it with scripted input (the
+   captures before and after must differ: input, drawing and a sprite from Content), packages it for each target the
+   runner can build (Windows, Linux, macOS, Android, web), checks each package's files and metadata, runs the desktop
+   package, plays the web package in Chrome, and checks the failures a developer meets (invalid id, missing or invalid
+   icon, missing signing key, a target the system cannot build, a missing workload).
 
-### Default platform
+The four demos are packaged by the same tool; their packages are also verified level by level and played scenario by
+scenario on each system ([packaging/](../../packaging/README.md)).
 
-Choosing a platform stays the host's business ([Backends](../manual/backends.md#choosing-a-platform)): the first profile
-of the catalog that can run on the machine is the default. With `MicroEngine.Desktop` that is SDL 3 on every desktop
-system; `--platform` and `MICROENGINE_PLATFORM` select another. A game that references one backend gets that backend.
+## Publishing a release
 
-### Still to build for SDK-1
+Only the repository owner publishes. The procedure:
 
-| Piece | Plan |
-| --- | --- |
-| Publishing | Packages pushed to NuGet by the release workflow, from the same commit as a demo release, after the same checks; the version must equal `MicroEngineVersion` |
-| Templates | A `MicroEngine.Templates` package with `dotnet new microengine-game` (a Hello Engine copy referencing `MicroEngine.Desktop`) and `microengine-game-sdl` (SDL only) |
-| Samples | `samples/` stays the source of the templates; the template content is generated from it, so the sample and the template cannot drift |
-| Phone and browser hosts | Not packages yet: the Android and iOS hosts (`platforms/`) and the browser host (`web/`) build one of this repository's games. Making them consumable (an MSBuild SDK or a template per host) is after SDK-1 |
-| Migration notes | One section per version in `docs/migrations.md`, written with the change that breaks something: what changed, why, how to update |
-| Versioning | SemVer with an `-alpha` suffix while 0.x; all engine packages share one version; a game's own version is its own (`<Version>` in its project, as the demos do) |
+1. Set `MicroEngineVersion` to the new version and add its section to [release notes](release-notes.md) (and to the
+   [migration notes](../migrations.md) when something breaks); merge to `main`.
+2. Create the nuget.org API key (scoped to push the `MicroEngine*` packages) as the `NUGET_API_KEY` secret, and a
+   `nuget` environment whose required reviewer is the owner (once).
+3. Run **sdk-release** (Actions → sdk-release → Run workflow) with `publish` off: it checks the version is new, runs
+   `sdk.yml` on that commit and drafts the GitHub prerelease `sdk-v<version>` with the checked packages and
+   `SHA256SUMS`. Review the draft.
+4. Run it again with `publish` on: after the `nuget` environment's approval it pushes exactly the draft's files
+   (verified against `SHA256SUMS`) to nuget.org, engine packages first, then publishes the GitHub release.
+5. When nuget.org lists the packages, update [Getting MicroEngine](getting-microengine.md) and the site so they no
+   longer say "not yet on nuget.org".
 
-### Distribution of games made with it
-
-A game built with MicroEngine is packaged like the demos ([packaging](../../packaging/README.md)): a self-contained
-.NET publish with SDL next to it. SDK-1 may turn `packaging/package.mjs` into a documented tool for any game; today it
-packages the four demos only.
+Decisions: [ADR 0019](../decisions/0019-sdk-packages.md), [ADR 0021](../decisions/0021-sdk-toolchain.md).
