@@ -95,7 +95,7 @@ export const platforms: PlatformRow[] = [
   },
   {
     id: 'browser', name: 'Browsers (WebAssembly)', platform: 'raylib compiled to WebAssembly',
-    status: { label: 'Played in Chrome, Firefox, Edge and Safari', tone: 'ok' },
+    status: { label: 'Played in four browsers', tone: 'ok' },
     build: { level: 'virtual', note: 'Pinned toolchain on a hosted runner' },
     tests: { level: 'na', note: 'Same game code as the desktop' },
     rendering: { level: 'virtual', note: '138 captures byte-identical to desktop raylib, Chrome and Firefox' },
