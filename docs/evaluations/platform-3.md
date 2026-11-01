@@ -4,8 +4,8 @@ Date: 2026-10-31. Branch `feat/platform-3` (from `main`). Task record: [`odd/tas
 Decisions: [ADR 0016](../decisions/0016-platform-profiles.md) (contracts) and [ADR 0017](../decisions/0017-sdl3-native-platform.md)
 (technology).
 
-Evidence words are used strictly: **run** means executed here and its output read; **CI only** means the check exists
-in a workflow but has not run yet (this branch has not been pushed); **desk** means judged from documentation or
+Evidence words are used strictly: **run** means executed here and its output read; **CI** means it ran on GitHub-hosted runners from the
+throwaway branch `experiment/platform-3` (platform workflow runs 41251471415 and 41253809116); **desk** means judged from documentation or
 package contents without a prototype.
 
 ## 1. Inventory before this work
@@ -24,7 +24,7 @@ package contents without a prototype.
 | Candidate | What it is | Platforms (for .NET) | Evidence |
 | --- | --- | --- | --- |
 | raylib 6.0 + Raylib-cs 8.1.0 (zlib) | Window, GL renderer, input, miniaudio | Windows, Linux, macOS (GPU required), browser (our wasm build), Android (our NDK build); no iOS | Run in PLATFORM-1/2 and again here |
-| SDL 3.5 + ppy.SDL3-CS 2026.1002.1 (zlib; bindings MIT) | Window, events, 2D renderer over Direct3D 11/12, Metal, OpenGL, OpenGL ES, Vulkan or a CPU renderer; audio streams; gamepads; touch; mobile lifecycle | Package ships natives for win-x64/x86/arm64, linux-x64/x86/arm64/arm, osx-x64/arm64, android (4 ABIs, with the `SDLActivity` Java classes) and an iOS xcframework (device and simulator) | Run here: Windows, Linux, Android; macOS and iOS CI only |
+| SDL 3.5 + ppy.SDL3-CS 2026.1002.1 (zlib; bindings MIT) | Window, events, 2D renderer over Direct3D 11/12, Metal, OpenGL, OpenGL ES, Vulkan or a CPU renderer; audio streams; gamepads; touch; mobile lifecycle | Package ships natives for win-x64/x86/arm64, linux-x64/x86/arm64/arm, osx-x64/arm64, android (4 ABIs, with the `SDLActivity` Java classes) and an iOS xcframework (device and simulator) | Run here: Windows, Linux, Android; CI: macOS, iOS simulator, Android emulator |
 | MonoGame | Complete framework with its own `Game` loop and content pipeline | Desktop, Android, iOS; browser not official | Desk: adopting it would replace the engine's loop and identity rather than serve one subsystem |
 | Silk.NET (GLFW/SDL windowing + raw GL/Vulkan) | Bindings, no 2D renderer | GLFW has no iOS; its SDL path is SDL itself | Desk: we would write and maintain a renderer per graphics API |
 | Direct Metal / Vulkan / WebGPU renderer | Graphics APIs | One per system | Desk: rejected by the reuse rule; SDL's renderer already targets them |
@@ -71,11 +71,19 @@ Two Android-specific defects were found and fixed on the way: SDL turned the win
 orientation hint), and with SDL's default blocking pause the game never observed the background (fixed with an event
 watch). The raylib audio-teardown abort no longer applies: raylib is not used on Android.
 
-### macOS and iOS
+### macOS and iOS (CI, GitHub-hosted macOS 26 arm64)
 
-Not run: there is no Mac here, and the branch has not been pushed. The iOS host compiles on Windows and restores the
-SDL3 xcframework. The platform workflow will run both: SDL with Metal on the hosted macOS runner (whose GPU is a
-paravirtual Metal device), and the two games in the iOS simulator with captures compared to the SDL reference.
+| Run | Result |
+| --- | --- |
+| macOS, 15 scenarios on SDL | 138/138 captures. Against the GPU SDL reference: 28 pixel-identical, 85 within tolerance, 25 beyond it in the half-pixel HUD (Courtyard Key) and rotated translucent sprites (Trail Duel), as on Mesa; recorded as `sdl-macos-arm64.json`, which the next run reproduced 138/138 pixel for pixel. Which SDL renderer ran (Metal expected) was not logged |
+| macOS, window tests in `MicroEngine.Desktop.Tests` | Blocked forever (first run, cancelled after about 45 minutes): macOS only lets the main thread open windows. They are skipped on macOS; the games themselves are the check |
+| iOS simulator (iPhone 17 Pro), Meadow Run | installed, started; 4 scripted runs with the desktop's update counts; 13/13 captures within the SDL reference (9 pixel-identical); audio device; another app suspended the game and relaunching resumed it |
+| iOS simulator, Neon Rift (content files) | the same levels; 12/12 captures within the SDL reference (8 pixel-identical) |
+| Android emulator in CI (API 34, SwiftShader) | both games: all 7 levels pass; captures within the SDL reference (Meadow Run 11/13 and Neon Rift 8/12 pixel-identical) |
+
+Three defects were found by these runs and fixed: iOS could not find SDL (it is a framework inside the app; the host
+now loads it from there), SDL keeps an iOS app alive after the game returns (scripted runs now end the process), and
+the window tests above. Touch was not checked on iOS: the simulator cannot be sent touches by script.
 
 ### Browser
 
@@ -108,14 +116,13 @@ browser, where SDL3 has no package, and as a desktop alternative that also docum
 | Windows x64 | raylib | run | run | run (138) | as before (PLATFORM-1) | as before | n/a | four games | yes (earlier) |
 | Linux x64 | sdl | run (WSL) | run | run on llvmpipe (138); CI under Xvfb | not run | not run (no backend in WSL) | n/a | four games scripted | pending |
 | Linux x64 | raylib | run | run | reference reproduced | CI (XTEST) | CI (PulseAudio) | n/a | four games | pending |
-| macOS | sdl | CI only | CI only | CI only (Metal) | — | CI only | n/a | CI only | pending |
-| Android x86_64 | sdl | run | — | run (25 captures, two games) | keys and touch run | device opens | run | two games, emulator | arm64 device pending |
-| iOS | sdl | compiled (Windows) | — | CI only | — | CI only | CI only | CI only | pending |
+| macOS arm64 | sdl | CI | CI (headless) | CI (138 captures, own reference) | — | — | n/a | four games scripted | pending |
+| Android x86_64 | sdl | run, CI | — | run, CI (25 captures, two games) | keys and touch run, CI | device opens | run, CI | two games, emulator | arm64 device pending |
+| iOS (simulator) | sdl | CI | — | CI (25 captures, two games) | not checked (no scripted touch) | device opens (CI) | CI | two games scripted | pending |
 | Browser | raylib (wasm) | run | Chrome scripts run | run (25 identical) | earlier suites | earlier suites | n/a | two games here, four earlier | earlier manual play |
 
 ## 6. Remaining limitations
 
-- macOS and iOS have no run yet; their first evidence comes from the platform workflow on GitHub runners.
 - No arm64 Android device and no iPhone were used; no person has played on Linux, macOS, Android or iOS.
 - The on-screen controls are plain circles without labels, drawn over the frame; layouts per game do not exist.
 - Text input, mouse and pointer input, haptics and screen safe areas (notches) are not handled.

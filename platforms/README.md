@@ -24,14 +24,14 @@ A build is not compatibility. Each level is claimed only when it was run and its
 | Level | Android (x86_64 emulator) | iOS (simulator) |
 | --- | --- | --- |
 | Toolchain configured | .NET 10 android workload, Java 21; no NDK | .NET 10 ios workload (set 10.0.401) and the Xcode it requires |
-| Project compiled | yes | yes (on Windows, C# only) |
-| Package generated | APK (x86_64, arm64-v8a) with SDL 3.5 | not yet run (needs macOS) |
-| App installed, started | yes (emulator API 36.1, locally) | not yet run |
-| Rendering checked | Meadow Run 13/13 and Neon Rift 12/12 captures pixel-identical to the Windows SDL reference | not yet run |
-| Input checked | system keys and taps on the on-screen controls move each game from its title into play | not yet run; the simulator cannot send touches |
-| Audio checked | SDL's audio device opens; output not listened to | not yet run |
-| Lifecycle | Home suspends the game, relaunching resumes it | not yet run |
-| Content files | Neon Rift's PNG, WAV and OGG files load from the APK | not yet run |
+| Project compiled | yes | yes |
+| Package generated | APK (x86_64, arm64-v8a) with SDL 3.5 | `.app` for `iossimulator-arm64` with `SDL3.framework` |
+| App installed, started | yes (emulator API 36.1 locally, API 34 in CI) | yes (iPhone 17 Pro simulator, CI) |
+| Rendering checked | Meadow Run 13/13 and Neon Rift 12/12 captures pixel-identical to the Windows SDL reference (locally), within it in CI | Meadow Run 13/13 and Neon Rift 12/12 captures within the SDL reference |
+| Input checked | system keys and taps on the on-screen controls move each game from its title into play | not checked: the simulator cannot be sent touches by script |
+| Audio checked | SDL's audio device opens; output not listened to | SDL's audio device opens; output not listened to |
+| Lifecycle | Home suspends the game, relaunching resumes it | opening Settings suspends the game, relaunching resumes it |
+| Content files | Neon Rift's PNG, WAV and OGG files load from the APK | Neon Rift's files load from the app bundle |
 | Real device | not tried (no arm64 device) | not tried |
 
 ## Android

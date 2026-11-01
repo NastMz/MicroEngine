@@ -11,7 +11,7 @@ each target and exactly how far it has been validated.
 | --- | --- | --- |
 | Windows desktop (x64) | `sdl` (default), `raylib`, `sdl-software` through `DesktopLauncher` | Supported with raylib (builds, tests, scripted captures, manual play). SDL: the 15 scripted scenarios drawn and compared with raylib, real-time runs; manual play pending |
 | Linux desktop (x64) | `sdl` (default), `raylib`, `sdl-software` | Automatically checked, not yet supported: see [Desktop validation](#desktop-validation); manual validation pending |
-| macOS desktop | `sdl` (default); `raylib` needs a GPU | Implemented, not validated: builds and passes the headless tests in CI; SDL rendering on the CI Mac is checked by the platform workflow, which has not run it yet |
+| macOS desktop | `sdl` (default); `raylib` needs a GPU | Checked automatically, not yet supported: on the hosted CI Mac (arm64) SDL draws the 15 scripted scenarios, compared with a macOS reference; manual play pending |
 | Linux on ARM (arm64) | `sdl` | Not checked: the SDL package has an arm64 library, but nothing has run on it |
 | Chrome (Chromium) on desktop | `raylib` in WebAssembly through `BrowserLauncher` | The four demos are verified with automated tests, plus manual validation in the browser |
 | Firefox on desktop | Same | The four demos are verified with automated tests, plus manual validation in the browser |
@@ -19,7 +19,7 @@ each target and exactly how far it has been validated.
 | Safari | Same | Not tested |
 | Phones and tablets in a browser | Same | Not validated on real mobile devices; the web demos have no touch controls |
 | Android app | `sdl` (the Android host) | Implemented and checked on an emulator: two demos draw, play, take keys and touch, and survive the background ([Phones and tablets](#phones-and-tablets)); no real device yet |
-| iOS app | `sdl` (the iOS host, Metal) | Implemented, not validated: compiles; its simulator check has not run yet |
+| iOS app | `sdl` (the iOS host) | Checked in the simulator: two demos draw (captures within the SDL reference), open audio and survive the background; touch not checked by script, no real device yet |
 | Headless (tests, CI) | `HeadlessPlatform` | Validated: used by every test project; `--headless` launcher flag |
 
 "Validated" and "verified" mean the configuration was run and its results recorded. Anything else is a statement
@@ -37,7 +37,7 @@ change; "recorded" means it was run and its result kept, once.
 | Build of the engine, the four games and the tests | Automated | Automated | Automated, not blocking; passing (macOS 26, arm64) |
 | Simulation: engine tests and the four games' headless playthroughs | Automated | Automated | Automated, not blocking; passing |
 | Native rendering, raylib: the 15 scripted scenarios (138 captures) | Recorded: compared byte for byte with the browser builds | Automated under a virtual display with software OpenGL (Mesa), compared with a Linux reference | Attempted, not blocking: raylib cannot open a window on the hosted runner |
-| Native rendering, SDL: the same 138 captures | Recorded: Direct3D 11, OpenGL and Vulkan draw identical frames, kept as the SDL reference | Automated on Mesa (llvmpipe) against its own SDL reference (recorded once on a local Linux; CI not yet run) | Checked by the platform workflow (Metal); not yet run |
+| Native rendering, SDL: the same 138 captures | Recorded: Direct3D 11, OpenGL and Vulkan draw identical frames, kept as the SDL reference | Automated on Mesa (llvmpipe) against its own SDL reference | Automated in the platform workflow against a macOS reference (reproduced pixel for pixel by a second run) |
 | SDL and raylib draw the same probe frame | Recorded | Recorded (local Linux) | Not yet run |
 | Native keyboard: keys from the system reach the game | Manual play (raylib) | Automated with raylib: pressed, held, released, a tap shorter than a frame, two keys at once | Not covered |
 | Audio device opens | Manual play (raylib); SDL's device opened and played sounds | Automated on a virtual sound server (PulseAudio) | Automated, not blocking: opens on the hosted runner |
@@ -72,8 +72,9 @@ that press the gamepad buttons each game already binds:
   pixel-identical to the Windows SDL build; keys and taps on the on-screen controls take each game from its title into
   play; Home suspends the game (music paused, progress saved) and relaunching resumes it; Neon Rift's image and sound
   files load from the app package. Not tried on a real device.
-- **iOS**: the same host design (SDL with Metal) compiles; its simulator check (captures, audio device, background and
-  back) is part of the platform workflow and has not run yet. Touch cannot be checked in the simulator by script.
+- **iOS**: Meadow Run and Neon Rift run in the iOS simulator; their 25 scripted captures are within the SDL reference,
+  the audio device opens, and opening another app suspends the game until it is brought back. Touch cannot be checked
+  in the simulator by script, and no iPhone was used.
 
 ## What CI proves
 

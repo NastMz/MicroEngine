@@ -25,7 +25,7 @@ accelerated OpenGL renderer on macOS, needs our own NDK build on Android and can
 - **`sdl-software`** (SDL's CPU renderer) is an official desktop alternative for machines without a usable GPU.
 - **References per platform and backend.** SDL's GPU renderers drew identical frames on Direct3D 11, OpenGL, Vulkan
   and Android's OpenGL ES (`web/tests/reference/sdl.json`); Mesa llvmpipe differs slightly and has its own
-  (`sdl-linux-x64.json`). The raylib references are unchanged.
+  (`sdl-linux-x64.json`), as does the hosted Mac (`sdl-macos-arm64.json`). The raylib references are unchanged.
 
 ## Alternatives considered
 
@@ -39,5 +39,6 @@ accelerated OpenGL renderer on macOS, needs our own NDK build on Android and can
 
 - One native backend for five systems; the Android NDK build and its toolchain pin are gone.
 - Two backends to maintain (SDL native, raylib web), each with tests and references.
-- macOS and iOS evidence depends on the platform workflow; until it has run they are implemented, not validated.
+- macOS and iOS are checked only by the platform workflow (hosted runners and the iOS simulator); window tests cannot run
+  inside a test runner on macOS, so the games themselves are the check there.
 - Browser packages carry about 150 KB (Brotli) of SDL code they never call.

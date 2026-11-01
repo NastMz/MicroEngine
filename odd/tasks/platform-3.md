@@ -54,8 +54,8 @@ that let a host replace a platform or one of its subsystems without touching gam
 | T3 | S6 S7 | inline | done | 93ebf12; `--platform`, `--list-platforms` run |
 | T4 | S7 S9 | inline | done | 93ebf12, fd29e65; `PlatformEquivalenceTests` 5/5 Windows, 4/5 Linux (no audio backend in WSL) |
 | T5 | S1 S9 | inline | done | a89ce95; emulator: 7/7 levels for Meadow Run and Neon Rift |
-| T6 | S1 S9 | inline | pending proof | bd1ff48; compiles; simulator run needs the platform workflow |
-| T7 | S1 S10 | inline | pending proof | dccaed1, fd29e65; macOS and new CI jobs not yet run (branch not pushed) |
+| T6 | S1 S9 | inline | done | bd1ff48 and fixes; simulator: 2 games, 5/5 levels (run 41253809116) |
+| T7 | S1 S10 | inline | done | dccaed1 and fixes; macOS and platform jobs green (run 41253809116), Native Linux green (run 41248136986) |
 | T8 | S10 S11 S12 | inline | done | docs commit; site build and tests pass |
 
 - T1 Core contracts: platform profiles, catalog, request with subsystem overrides, composite input, lifecycle
@@ -95,3 +95,10 @@ that let a host replace a platform or one of its subsystems without touching gam
 - L7 Browser: dev packages for Meadow Run and Neon Rift built from the branch; Chrome replayed 7 scripts, 25/25
   captures byte-identical to desktop raylib. Packages carry about 150 KB (Brotli) of unused SDL code.
 - L8 Open: macOS and iOS runs and the new CI jobs need GitHub runners; this branch is not pushed (owner decision).
+- L9 (2026-10-31) Owner: "Push experiment branch". Pushed `experiment/platform-3` (throwaway). Validate run 41248136986:
+  Linux and Windows .NET and Native Linux (SDL and raylib references) passed; macOS hung 45 min in window tests
+  (Cocoa main thread), Android failed (`set -o pipefail` under sh), iOS `DllNotFoundException: SDL3`. Fixed.
+- L10 Owner: iOS ran 30 min. Cause: SDL keeps the app alive after the game returns; each launch hit its 300 s limit.
+  Fixed (scripted runs exit). macOS SDL: 138 captures, 25 beyond the GPU reference (half-pixel HUD, rotated sprites);
+  recorded `sdl-macos-arm64.json`. Platform run 41253809116: macOS, Android and iOS all green; macOS reproduced its
+  reference 138/138; iOS Meadow Run 13/13 and Neon Rift 12/12 within the SDL reference, audio, lifecycle.
