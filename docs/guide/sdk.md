@@ -33,7 +33,7 @@ One NuGet package per project in `src/`, so a game installs only the backends it
 | `MicroEngine.Raylib` | the raylib platform (desktop; the browser build compiles it to WebAssembly) | `MicroEngine`, `Raylib-cs` | raylib for Windows, Linux, macOS |
 | `MicroEngine.Desktop` | `DesktopLauncher` with the official desktop catalog (`sdl`, `raylib`, `sdl-software`, `headless`) | `MicroEngine.Sdl`, `MicroEngine.Raylib` | both |
 
-`dotnet pack` already produces these four packages at the SDK version (`0.2.0-alpha`), with the MIT licence expression
+`dotnet pack` already produces these four packages at the SDK version (`0.3.0-alpha`), with the MIT licence expression
 and repository metadata (`src/Directory.Build.props`). They were consumed from a local feed by a new project, outside
 the repository:
 
