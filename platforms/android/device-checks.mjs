@@ -160,7 +160,7 @@ const touchSetup = {
   MeadowRun: { env: 'MEADOW_START=level', confirm: 'jump', move: 'dpad', push: [0.8, 0], action: 'right', second: 'jump' },
   NeonRift: { env: 'RIFT_START=stage;RIFT_GOD=1', confirm: 'jump', move: 'stick', push: [0.7, -0.7], action: 'up', second: 'fire' },
   CourtyardKey: { env: 'COURTYARD_START=road', confirm: 'confirm', move: 'stick', push: [0, 1], action: 'down', second: 'confirm' },
-  TrailDuel: { env: 'TRAIL_DEBUG=town', confirm: 'confirm', move: 'dpad', push: [0, 0.8], action: 'down', second: 'pause' },
+  TrailDuel: { env: 'TRAIL_DEBUG=town', confirm: 'confirm', move: 'dpad', push: [0, 0.8], action: 'down', second: 'cancel' },
 }[game];
 const controlsIn = text => Object.fromEntries([...text.matchAll(/microengine: control (\S+) (-?\d+) (-?\d+) (\d+)/g)].map(m => [m[1], { x: +m[2], y: +m[3], r: +m[4] }]));
 const probes = text => [...text.matchAll(/microengine: probe (\S+) \[([^\]]*)\] ?(.*)/g)].map(m => ({ scene: m[1], actions: m[2].split(',').filter(Boolean), description: m[3],
