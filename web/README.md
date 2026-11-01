@@ -15,7 +15,7 @@ Decisions: [ADR 0007](../docs/decisions/0007-browser-host.md) and [ADR 0008](../
 | `Host/` | The one host project: `Program.cs` (page bridge) and `wwwroot/` (page, styles, page glue) |
 | `Directory.Build.props` / `.targets` | Browser build settings, game selection, rebuilt raylib, content manifest |
 | `build-raylib-wasm.sh` | Compiles raylib for the web (called by `setup.sh`) |
-| `tests/` | Browser checks in Chrome and Firefox (`run.mjs`) and the desktop comparison (`desktop.mjs`) |
+| `tests/` | Browser checks in Chrome and Firefox (`run.mjs`), touch checks on emulated phones and tablets (`mobile.mjs`) and the desktop comparison (`desktop.mjs`) |
 
 The browser projects are outside `MicroEngine.slnx`: they need a toolchain the normal build does not.
 
@@ -25,8 +25,8 @@ The browser projects are outside `MicroEngine.slnx`: they need a toolchain the n
 - About 2.5 GB of disk for the private toolchain (default `~/.microengine/web-tools`, or `$MICROENGINE_WEB_TOOLS`).
 - Node.js 18 or later to serve packages locally and to run the browser tests.
 
-`setup.sh` and `build.sh` were run on Windows 11 (Git Bash). The Linux and macOS branches (the `.sh` installer,
-no `.exe`/`.bat` suffixes, system `python3` for emscripten) are written but were not run.
+`setup.sh` and `build.sh` were run on Windows 11 (Git Bash) and on Linux x64 (INPUT-1, which fixed
+`build-raylib-wasm.sh` ending silently where no Python pack exists). The macOS branch is written but was not run.
 
 ## Set up the toolchain (once)
 
@@ -118,6 +118,16 @@ The page posts its state to the parent: `{ source: 'microengine', game, state, d
   fullscreen, which also works because the canvas fills the page). Alt+Enter and the Fullscreen button use the
   Fullscreen API. raylib releases held keys when the window loses focus. Very short presses (within one frame)
   are kept until the game has read them.
+- Touch ([Input: touch controls](../docs/manual/input.md#touch-controls), ADR 0020): `main.js` forwards touch and pen
+  Pointer Events on the canvas (with pointer capture and coalesced moves) to `WebHost.Pointer`, which hands them to the
+  raylib platform's touch screen and so to the game's on-screen controls, drawn by raylib over the frame. The mouse stays
+  with raylib. `index.html` asks for `viewport-fit=cover`; the page reads the CSS `env(safe-area-inset-*)` insets, the
+  canvas density and whether touch is the main input (`pointer: coarse`) and sends them with `WebHost.Screen` on start,
+  resize, rotation and browser-bar changes. While playing the page blocks scrolling, pinch and double-tap zoom, text
+  selection, the long-press callout and context menu (`touch-action: none` and event handlers); losing focus, rotating
+  or hiding the page releases every finger, and a hidden page suspends the game (`WebHost.Visibility`). Haptics use
+  `navigator.vibrate` where it exists (Android browsers, not Safari). On touch screens the page's buttons sit at the
+  bottom centre, away from the controls in the corners, and the start screen says "Tap to play".
 - If the browser still holds audio suspended, a "Sound is blocked" button appears; any key or click resumes it.
 
 ## Saves in the browser
@@ -156,6 +166,7 @@ web/build.sh --dev --out dist/web-dev
 cd web/tests && npm ci && cd ../..
 node web/tests/run.mjs                       # platform and scripts suites, Chrome and Firefox
 node web/tests/run.mjs keyboard framerate autopilot
+node web/tests/mobile.mjs                    # touch on emulated Android, iPhone, portrait phone and tablet
 dotnet build MicroEngine.slnx -c Release && node web/tests/desktop.mjs   # compare script captures with desktop
 ```
 
@@ -167,6 +178,15 @@ restart), `scripts` (the games' own scripts listed in `scenarios.json`, captures
 autopilot clears all three stages). `desktop.mjs` replays the scenarios on the desktop build and compares the
 captures byte for byte. With `--reference reference/linux-x64.json` it also checks the native captures against the
 Linux visual reference (`captures.mjs`), as the pipeline's native Linux job does under Xvfb.
+
+`mobile.mjs` emulates four devices in Chrome (Android phone and notched iPhone in landscape, a small phone in
+portrait, a tablet; the iPhone is Chromium with an iOS user agent and safe-area insets, not Safari) and sends real
+multi-touch through DevTools (`Input.dispatchTouchEvent`), which the browser delivers as touch and Pointer Events. Per
+game it taps through the title, then plays with two or three fingers and checks the game's response from the
+development trace (actions down, touch-control state and the scene's `Describe()`, such as the player's position):
+walking, jumping while a direction is held, aiming and firing, analog walking speed, grid steps and menus, a finger
+sliding off a button, a very short tap, focus loss, rotation with a finger down, pinch and long press. Screenshots go
+to `dist/web-mobile`.
 
 ## Adding a fifth game
 
