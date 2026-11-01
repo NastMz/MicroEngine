@@ -147,7 +147,7 @@ wall-clock time instead (below). Run it after changing `platforms/`, the SDL or 
 | --- | --- |
 | macOS | build and tests; the 15 scenarios on SDL (Metal) against `sdl.json`; why raylib can or cannot open a window, and raylib captures when it can |
 | Android | APKs on SDL for Meadow Run (code-first) and Neon Rift (content files), or the games listed in the `games` input: installed, started, drawn (captures against the emulator reference `sdl-android-x86_64.json`), audio device, keys, system taps on the confirm control and a finger held on the movement control at the positions the game logs, a scripted two-thumb run, background and back |
-| iOS | the same games on SDL in the simulator: installed, started, drawn (captures against the Metal reference `sdl-macos-arm64.json`, which the simulator matches pixel for pixel), audio device, scripted touches on the simulator's layout, background and back |
+| iOS | the same games on SDL in the simulator: installed, started, drawn (captures against `sdl-ios-simulator-arm64.json`: the macOS Metal reference, which the simulator matches pixel for pixel, with its own touch-first Controls screens), audio device, scripted touches on the simulator's layout, background and back |
 | Web mobile | the four web demos (development packages) on four emulated phones and tablets in Chrome with real multi-touch (`web/tests/mobile.mjs`); screenshots as an artifact |
 
 Time goes to waiting, not to the checks, so they run side by side wherever results cannot depend on it (PLATFORM-3,
