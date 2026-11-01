@@ -8,7 +8,10 @@
 #   lifecycle   opening another app suspends the game and bringing it back resumes it
 #
 # Usage: platforms/ios/simulator-checks.sh <app-dir> [game] [out]   (on macOS with Xcode; the app built for iossimulator-arm64)
-# Exit code 1 if any level failed. Touch is not checked: simctl cannot send touches.
+#   touch-script  touch.script, scripted touches on the simulator's own control layout (safe area, density): movement and
+#               a second control held at once, and the player moved. simctl cannot send real touches, so this checks
+#               the controls on this screen and the game's response, not iOS's delivery of fingers.
+# Exit code 1 if any level failed.
 set -uo pipefail
 
 newest_iphone() {
@@ -62,6 +65,23 @@ done < <(node -e '
 [ $started = 1 ] && report PASS started "the .NET host logged its start" || report FAIL started "no \"microengine: start\" on the console"
 [ $runs -gt 0 ] && [ $rendered = $runs ] && report PASS rendered "$details" || report FAIL rendered "$rendered/$runs runs complete: $details"
 [ $runs -gt 0 ] && [ $audio = 1 ] && report PASS audio "SDL opened the audio device in every run" || report FAIL audio "no audio device in at least one run"
+
+# Touch: the game's touch.script with the gameplay shortcut each game needs, probing actions and the player's position.
+case "$game" in
+  MeadowRun) tenv="MEADOW_START=level"; pair="right jump" ;;
+  NeonRift) tenv="RIFT_START=stage;RIFT_GOD=1"; pair="up fire" ;;
+  CourtyardKey) tenv="COURTYARD_START=road"; pair="down down" ;;
+  *) tenv="TRAIL_DEBUG=town"; pair="down down" ;;
+esac
+tlog=$(perl -e 'alarm shift; exec @ARGV' 300 xcrun simctl launch --console-pty --terminate-running-process "$device" "$bundle" --script touch.script --env "$tenv;MICROENGINE_PROBE=1" 2>&1 | tr -d '\r')
+echo "$tlog" > "$out/touch-script.log"
+read -r first second <<< "$pair"
+together=$(grep 'microengine: probe' <<< "$tlog" | grep -E "\[([^]]*,)?$first(,[^]]*)?\]" | grep -cE "[[,]$second[],]")
+states=$(grep 'microengine: probe' <<< "$tlog" | sed 's/.*\] //' | sort -u | wc -l | tr -d ' ')
+controls=$(grep -c 'microengine: control' <<< "$tlog")
+if grep -q "microengine: exit 0" <<< "$tlog" && [ "$together" -gt 0 ] && [ "$states" -gt 2 ]; then
+  report PASS touch-script "$controls controls laid out; '$first' with '$second' in $together probes; $states distinct player states (scripted touches)"
+else report FAIL touch-script "exit: $(grep -o 'microengine: exit [0-9]*' <<< "$tlog"); together $together; states $states; controls $controls"; fi
 
 # Lifecycle: an interactive run sent to the background by another app, then brought back.
 lifelog="$out/interactive.log"

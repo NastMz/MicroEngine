@@ -26,6 +26,11 @@ in Brookhaven's hall.
 | C | In the battle move menu: show or hide the full move card |
 | F11 | Fullscreen |
 
+On a phone or tablet the game shows on-screen controls: a four-way d-pad on the left for grid steps, menus and the
+battle grid; **A** (confirm), **B** (back; hold while walking to run) and **C** (move card) on the right; **MENU** (start
+menu) at the top right. A gamepad stick also moves in four directions only, so a slightly diagonal push never steps
+sideways.
+
 ## Features
 
 - **Overworld**: 16 px grid movement with a three-frame walk cycle, turn-in-place, bump sound and

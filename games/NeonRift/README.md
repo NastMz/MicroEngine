@@ -36,6 +36,11 @@ dotnet run --project games/NeonRift -c Release
 | Pause | Esc, P | Start |
 | Fullscreen | F11 | |
 
+On a phone or tablet the game shows on-screen controls: a joystick that appears under the left thumb to run and aim in
+eight directions; **FIRE** and **JUMP** on the right (the thumb can roll from one onto the other, or use a second
+finger); **LOCK**, a toggle that plants your feet to aim in place, so no third finger is needed; **II** (pause) at the
+top right. Aim, fire and jump work at the same time.
+
 ## Game
 
 - **Three stages**, each ending in a locked boss arena: Neon Rooftops (Hauler GX-9 gunship),

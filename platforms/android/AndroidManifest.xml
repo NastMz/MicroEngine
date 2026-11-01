@@ -3,5 +3,8 @@
      libraylib.so file, and both see the one raylib instance android_main initialized. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+  <!-- Haptic ticks of the on-screen controls (SDL's haptic API drives the device vibrator). -->
+  <uses-permission android:name="android.permission.VIBRATE" />
+  <uses-feature android:name="android.hardware.touchscreen.multitouch.distinct" android:required="false" />
   <application android:extractNativeLibs="true" android:hasCode="true" android:allowBackup="false" />
 </manifest>
