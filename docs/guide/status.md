@@ -43,7 +43,7 @@ These are not implemented. Do not plan around them.
 | Android | All four demos checked on the x86_64 emulator from their release APKs (captures, audio device, keys, touch, background and back); the four APKs played by hand on a Redmi Note 14 Pro (Android 16), with touch and a Bluetooth PlayStation controller |
 | iOS | Demos checked in Apple's simulator (captures, audio device, background and back, scripted touches); no iPhone, no download |
 | Browsers | The four demos verified with automated tests in Chrome and Firefox on desktop, plus manual validation; on phones and tablets played with real multi-touch in emulated mobile Chrome ([INPUT-1](../evaluations/input-1.md)) and played by hand in Chrome on an Android 16 phone; Edge on the desktop played by hand; Safari not tested |
-| Gamepads | Validated by hand in one Chromium-based browser with one controller, with raylib on Windows, and with SDL: an Xbox controller on the desktop and a PlayStation controller over Bluetooth on Android |
+| Gamepads | Validated by hand in the browser (Edge on the desktop with an Xbox controller, Chrome on Android with a PlayStation controller over Bluetooth), with raylib on Windows, and with SDL: an Xbox controller on the desktop and a PlayStation controller over Bluetooth on Android |
 
 Details per target: [Platforms](platforms.md) and the site's [compatibility matrix](/platforms/).
 

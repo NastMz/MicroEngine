@@ -59,10 +59,10 @@ drivers, gamepads on Linux, F11 and Alt+Enter fullscreen and high-DPI screens ha
 ## Gamepads
 
 Both desktop backends read the first gamepad, and the same bindings apply in the browser (see
-[Input](../manual/input.md)). In the browser, gamepad play was validated manually in one Chromium-based browser
-with the controller that was tested. With SDL, the downloads were played with an Xbox controller on the desktop and
+[Input](../manual/input.md)). In the browser, gamepad play was validated by hand in Edge on the desktop with an Xbox
+controller and in Chrome on an Android phone with a PlayStation controller over Bluetooth. With SDL, the downloads were played with an Xbox controller on the desktop and
 the Android apps with a PlayStation controller over Bluetooth ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)).
-No claim is made for other controllers or other browsers.
+No claim is made for other controllers, or for gamepads in Firefox or Safari.
 
 ## Phones and tablets
 
