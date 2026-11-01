@@ -21,6 +21,11 @@
 //   key      prints one game's key and the files it was computed from (diagnosis)
 //   release-*  create, verify, publish, discard or show a demo release (docs/ci.md, "Releases")
 //
+// Native packages (packaging/README.md) share the store and the releases: one per game and target of
+// packaging/targets.json, keyed over what a native build reads (nativeKey), stored only after packaging/verify.mjs
+// played them (publish-native), copied into a release under player-facing names (release-create --targets) and
+// listed in /play/demos.json as the site's downloads.
+//
 // Two kinds of artifact: integration packages (the store below, filled by daily CI and validation, keyed by
 // content) and approved packages (releases `v<version>`, copies made by the release workflow). Production serves
 // the latest published release only, so merging code never publishes a demo.
@@ -43,6 +48,10 @@ import zlib from 'node:zlib';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as tar from 'tar';
+import { targets as nativeTargets, target as nativeTarget, downloadName } from '../../packaging/targets.mjs';
+
+// tar for packaging/package.mjs, which has no node_modules of its own.
+export { nativeTargets, tar };
 
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const repoRoot = path.dirname(siteRoot);
@@ -125,7 +134,36 @@ export function demoKey(id, { root = repoRoot } = {}) {
   };
 }
 
+// Native packages (packaging/README.md): one per game and target of packaging/targets.json, keyed like web packages
+// but over what a native build reads. Desktop targets share the engine, the packaging scripts and the build settings;
+// Android adds its host, which also ships the game's input scripts.
+const nativeShared = ['src', 'packaging', 'Directory.Build.props', 'global.json', 'NuGet.config', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'games/LICENSE'];
+const nativeExtra = { android: ['platforms/android', 'platforms/Shared', 'platforms/Directory.Build.props', 'platforms/Directory.Build.targets', 'web/games.props'] };
+const notANativeInput = (file, t) => (/\.md$/i.test(file) && file !== 'THIRD-PARTY-NOTICES.md') || /(^|\/)screenshots\//.test(file)
+  || file.startsWith('packaging/tests/') || /^platforms\/android\/[^/]+\.(mjs|sh)$/.test(file)
+  || (t.os !== 'android' && /(^|\/)scripts\//.test(file));
+
+/** The key of one game's native package for a target of packaging/targets.json, computed like {@link demoKey}. */
+export function nativeKey(id, targetId, { root = repoRoot } = {}) {
+  const t = nativeTarget(targetId);
+  const game = registry(root).find(g => g.id === id) ?? fail(`unknown game "${id}" (web/games.props).`);
+  const listing = git(['ls-files', '-s', '-z', '--', ...nativeShared, ...(nativeExtra[t.id] ?? []), game.dir], root)
+    .split('\0').filter(Boolean)
+    .map(line => { const [meta, file] = line.split('\t'); return { blob: meta.split(' ')[1], file }; })
+    .filter(({ file }) => !notANativeInput(file, t))
+    .sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
+  if (!listing.some(({ file }) => file.startsWith(`${game.dir}/`))) fail(`${id}: no files tracked in ${game.dir}.`);
+  const lines = listing.map(({ blob, file }) => `${blob} ${file}`);
+  const text = ['microengine-native-key 1', `game ${id}`, `target ${JSON.stringify(t)}`, `entry ${game.entry}`, ...lines].join('\n');
+  return { id, target: t.id, key: sha256(text).slice(0, 16), inputs: listing.map(({ file }) => file) };
+}
+
 const artifactName = (id, key) => `${id}-${key}`;
+/** Store name of a native package: `<Game>-<target>-<key>`, then `.json` (manifest) or the archive's extension. */
+export const nativeArtifactName = (id, targetId, key) => `${id}-${targetId}-${key}`;
+
+const contentTypes = { '.json': 'application/json', '.gz': 'application/gzip', '.zip': 'application/zip', '.apk': 'application/vnd.android.package-archive' };
+const contentType = name => contentTypes[path.extname(name)] ?? 'application/octet-stream';
 
 /** Checks that `dir` holds release packages for the given games; returns their game.json contents. */
 export function checkPackages(dir, ids = gameIds) {
@@ -232,7 +270,7 @@ function githubStore({ repository, token, apiBase = 'https://api.github.com', up
         else if (!created.ok) fail(`creating release ${releaseTag}: HTTP ${created.status}.`);
         else release = await created.json();
       }
-      const type = name.endsWith('.json') ? 'application/json' : 'application/gzip';
+      const type = contentType(name);
       const response = await fetch(`${uploadBase}/repos/${repository}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`, {
         method: 'POST', headers: { ...headers, 'Content-Type': type }, body: data,
       });
@@ -261,6 +299,8 @@ function dirReleases(dir) {
       has: async name => fs.existsSync(path.join(folder, name)),
       read: async name => fs.existsSync(path.join(folder, name)) ? fs.readFileSync(path.join(folder, name)) : fail(`${name} is not in release ${tag}.`),
       upload: async (name, data) => fsp.writeFile(path.join(folder, name), data),
+      // A folder release is never public: its packages have no address a player could download from.
+      downloadUrl: () => null,
     };
   };
   const exists = tag => fs.existsSync(stateFile(tag));
@@ -318,13 +358,15 @@ function githubReleases({ repository, token, apiBase = 'https://api.github.com',
         return Buffer.from(await response.arrayBuffer());
       },
       upload: async (name, data) => {
-        const type = name.endsWith('.json') ? 'application/json' : 'application/gzip';
+        const type = contentType(name);
         const response = await fetch(`${uploadBase}/repos/${repository}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`, {
           method: 'POST', headers: { ...headers, 'Content-Type': type }, body: data,
         });
         if (!response.ok) fail(`uploading ${name} to ${release.tag_name}: HTTP ${response.status}.`);
         assets.set(name, await response.json());
       },
+      // The address GitHub serves a release asset at once the release is published (a draft's assets stay private).
+      downloadUrl: name => `https://github.com/${repository}/releases/download/${encodeURIComponent(release.tag_name)}/${encodeURIComponent(name)}`,
     };
   };
   const find = async tag => {
@@ -417,6 +459,53 @@ export async function plan(store, { root = repoRoot, policy = 'all', canary } = 
     games.push({ id: game.id, key, shared, own, stored, released: was, build });
   }
   return games;
+}
+
+/**
+ * Each game's native package for each target of `targetIds` (default every target): its key, whether the store holds
+ * it, and the runner that builds and checks it. A missing package is built by validation or a release; a stored one
+ * passed its checks when it was stored, so it is reused for as long as its key does not change.
+ */
+export async function planNative(store, { root = repoRoot, targetIds = nativeTargets.map(t => t.id) } = {}) {
+  const packages = [];
+  for (const game of registry(root)) {
+    for (const targetId of targetIds) {
+      const t = nativeTarget(targetId);
+      const { key } = nativeKey(game.id, t.id, { root });
+      const stored = store ? await store.has(`${nativeArtifactName(game.id, t.id, key)}.json`) : false;
+      packages.push({ game: game.id, target: t.id, key, stored, runner: t.runner });
+    }
+  }
+  return packages;
+}
+
+/**
+ * Adds one checked native package to the store: the archive, then its manifest (SHA-256, size, build-info.json and
+ * the result of packaging/verify.mjs). Refuses a package whose check failed, did not run it, or that was checked for
+ * another game, target or key, and an APK signed with a debug key: only packages a player could be given are stored.
+ */
+export async function publishNative(store, { file, verification, root = repoRoot }) {
+  const record = typeof verification === 'string' ? JSON.parse(fs.readFileSync(verification, 'utf8')) : verification;
+  const t = nativeTarget(record?.target ?? fail('the verification record names no target.'));
+  const { key } = nativeKey(record.game, t.id, { root });
+  const data = fs.readFileSync(file);
+  if (record.failed) fail(`${record.game} ${t.id}: its check failed; it is not stored.`);
+  const ran = t.os === 'android' ? ['device', 'rendered'] : ['platforms', 'report', 'rendered'];
+  const notRun = ran.filter(level => !record.levels?.[level]?.ok);
+  if (notRun.length) fail(`${record.game} ${t.id}: the check did not run ${notRun.join(', ')}; a package is stored only after it was played.`);
+  if (record.sha256 !== sha256(data)) fail(`${path.basename(file)} is not the file that was checked (SHA-256 differs).`);
+  if (record.buildInfo?.key !== key) fail(`${record.game} ${t.id} was built for key ${record.buildInfo?.key}, the current key is ${key}.`);
+  if (t.signing === 'release' && record.buildInfo.signing !== 'release') fail(`${record.game} ${t.id} is signed with a ${record.buildInfo.signing} key; only release-signed packages are stored.`);
+  const name = nativeArtifactName(record.game, t.id, key);
+  if (await store.has(`${name}.json`)) return { game: record.game, target: t.id, key, stored: false };
+  const manifest = {
+    schema: 1, kind: 'native', game: record.game, target: t.id, key, archive: `${name}.${t.archive}`,
+    sha256: record.sha256, size: data.length, buildInfo: record.buildInfo,
+    verification: { checkedOn: record.checkedOn, levels: Object.fromEntries(Object.entries(record.levels).map(([k, v]) => [k, v.detail])), ...(record.certificate && { certificate: record.certificate }), ...(record.glibc && { glibc: record.glibc }), ...(record.gatekeeper && { gatekeeper: record.gatekeeper }) },
+  };
+  await store.write(manifest.archive, data);
+  const stored = await store.write(`${name}.json`, Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`));
+  return { game: record.game, target: t.id, key, stored, sha256: manifest.sha256 };
 }
 
 /** The package each game gets in a "candidates" build: its current key when stored or being built, else the release's. */
@@ -546,6 +635,8 @@ export async function fetchDemos(env = process.env, { store = openStore(env), ro
       }
       record.games[game.id] = { title: game.title, key: manifest.key, sha256: manifest.sha256, commit: manifest.commit, from: !fromStore ? `release ${release.tag}` : source === 'keys' ? 'store' : 'candidate' };
     }
+    // What a visitor can download: the native packages of the release this build reads, never unreleased ones.
+    if (release && released?.downloads) record.downloads = downloadsOf(release, released);
   }
   checkPackages(playDir, ids);
   for (const id of ids) Object.assign(record.games[id], measure(path.join(playDir, id)));
@@ -565,12 +656,28 @@ export function versionTag(version) {
  * leaving no draft behind, when a package is missing or altered or the tag already belongs to a published release;
  * an earlier draft with the same tag (a failed attempt) is replaced.
  */
-export async function createRelease(store, tag, { root = repoRoot, commit = gitCommit(root) } = {}) {
+export async function createRelease(store, tag, { root = repoRoot, commit = gitCommit(root), targets = [] } = {}) {
   const existing = await store.releases.get(tag);
   if (existing && !existing.draft) fail(`release ${tag} is already published; choose a new version.`);
   if (existing) await store.releases.discard(tag);
-  const games = {}, files = [];
+  const games = {}, files = [], downloads = {};
   for (const game of registry(root)) {
+    // Native packages of the targets this release offers: every game must have each, or the release is refused.
+    for (const targetId of targets) {
+      const t = nativeTarget(targetId);
+      const { key } = nativeKey(game.id, t.id, { root });
+      const name = nativeArtifactName(game.id, t.id, key);
+      if (!(await store.has(`${name}.json`))) fail(`${game.id}: no ${t.id} package for key ${key} in ${store.describe}; build and check it first.`);
+      const manifest = JSON.parse((await store.read(`${name}.json`)).toString('utf8'));
+      if (manifest.game !== game.id || manifest.target !== t.id || manifest.key !== key) fail(`${name}.json describes ${manifest.game} ${manifest.target} ${manifest.key}.`);
+      if (t.signing === 'release' && manifest.buildInfo.signing !== 'release') fail(`${name} is not release-signed.`);
+      const data = await store.read(manifest.archive);
+      if (sha256(data) !== manifest.sha256) fail(`${manifest.archive}: SHA-256 is ${sha256(data)}, its manifest says ${manifest.sha256}.`);
+      const file = downloadName(game.id, manifest.buildInfo.gameVersion, t);
+      const { gameVersion, engineVersion, commit: built, dotnet, signing } = manifest.buildInfo;
+      (downloads[game.id] ??= {})[t.id] = { file, key, sha256: manifest.sha256, size: manifest.size, gameVersion, engineVersion, built, dotnet, signing, checkedOn: manifest.verification.checkedOn, checks: Object.keys(manifest.verification.levels) };
+      files.push([file, data]);
+    }
     const { key, shared, own } = demoKey(game.id, { root });
     const name = artifactName(game.id, key);
     if (!(await store.has(`${name}.json`))) fail(`${game.id}: no package for key ${key} in ${store.describe}; build it first.`);
@@ -582,8 +689,13 @@ export async function createRelease(store, tag, { root = repoRoot, commit = gitC
     games[game.id] = { title: game.title, key, shared, own, archive: manifest.archive, sha256: manifest.sha256, built: manifest.commit, toolchain: manifest.toolchain };
     files.push([manifest.archive, archive], [`${name}.json`, manifestData]);
   }
-  const record = { schema: 1, tag, commit, created: new Date().toISOString(), games };
-  const body = [`Demo packages of ${commit}, published by the release workflow (docs/ci.md).`, '', '| Game | Key | Archive SHA-256 |', '| --- | --- | --- |',
+  const record = { schema: 1, tag, commit, created: new Date().toISOString(), games, ...(targets.length && { downloads }) };
+  const body = [`Demo packages of ${commit}, published by the release workflow (docs/ci.md).`, '',
+    ...(targets.length ? ['The demos are all rights reserved (games/LICENSE); MicroEngine is MIT. Install steps for each system: docs/guide/downloads.md.', '',
+      '| Download | Game version | Engine | SHA-256 |', '| --- | --- | --- | --- |',
+      ...Object.values(downloads).flatMap(byTarget => Object.values(byTarget).map(d => `| \`${d.file}\` | ${d.gameVersion} | ${d.engineVersion} | \`${d.sha256}\` |`)), '',
+      'Browser packages (used by the site):', ''] : []),
+    '| Game | Key | Archive SHA-256 |', '| --- | --- | --- |',
     ...Object.entries(games).map(([id, g]) => `| ${id} | \`${g.key}\` | \`${g.sha256}\` |`)].join('\n');
   const draft = await store.releases.createDraft(tag, commit, body);
   try {
@@ -608,6 +720,44 @@ export async function verifyRelease(store, tag, playFolder) {
   return record;
 }
 
+/** The downloads of a release for the site: each file with its public address (null for a folder release). */
+export function downloadsOf(release, record) {
+  return Object.fromEntries(Object.entries(record.downloads ?? {}).map(([id, byTarget]) => [id, Object.fromEntries(Object.entries(byTarget)
+    .map(([targetId, d]) => [targetId, { ...d, release: release.tag, url: release.downloadUrl(d.file) }]))]));
+}
+
+/**
+ * Downloads every native package of a release (a draft through the API, or a published one) and checks each file's
+ * size and SHA-256 against release.json: what players get is exactly what was checked.
+ */
+export async function verifyDownloads(store, tag) {
+  const release = await openRelease(store, tag);
+  const record = await releaseRecord(release);
+  const checked = [];
+  for (const byTarget of Object.values(record.downloads ?? {})) {
+    for (const d of Object.values(byTarget)) {
+      const data = await release.read(d.file);
+      if (data.length !== d.size || sha256(data) !== d.sha256) fail(`${d.file} in release ${tag}: ${data.length} bytes, SHA-256 ${sha256(data)}; release.json says ${d.size} and ${d.sha256}.`);
+      checked.push(d.file);
+    }
+  }
+  return { record, checked };
+}
+
+/** After publication: each download's public address answers (following GitHub's redirect to its storage). */
+export async function checkPublicDownloads(store, tag) {
+  const release = await openRelease(store, tag);
+  const results = [];
+  for (const d of Object.values(downloadsOf(release, await releaseRecord(release))).flatMap(Object.values)) {
+    if (!d.url) fail(`${d.file} has no public address (${store.releases.describe}).`);
+    const response = await fetch(d.url, { method: 'HEAD', redirect: 'follow' });
+    const size = Number(response.headers.get('content-length'));
+    if (!response.ok || size !== d.size) fail(`${d.url}: HTTP ${response.status}, ${size} bytes (expected ${d.size}).`);
+    results.push(d.url);
+  }
+  return results;
+}
+
 async function main(argv) {
   const [command, ...rest] = argv;
   const option = name => { const i = rest.indexOf(`--${name}`); return i >= 0 ? rest[i + 1] : undefined; };
@@ -629,15 +779,39 @@ async function main(argv) {
         `keys=${JSON.stringify(Object.fromEntries(games.map(g => [g.id, g.key])))}`, `release=${latest?.tag ?? ''}`,
         `packages=${packages}`, `changed=${games.some(g => g.released?.key !== g.key)}`].join('\n') + '\n');
     }
+    // --native <ids|all>: the native packages too (validation and releases build the missing ones).
+    if (option('native')) {
+      const targetIds = option('native') === 'all' ? nativeTargets.map(t => t.id) : option('native').split(',').filter(Boolean);
+      const packages = await planNative(store, { targetIds });
+      console.log(`\n| Game | Target | Key | Integration store | This run |\n| --- | --- | --- | --- | --- |`);
+      for (const p of packages) console.log(`| ${p.game} | ${p.target} | \`${p.key}\` | ${p.stored ? 'stored' : 'missing'} | ${p.stored ? 'reuses it' : `builds and checks it (${p.runner})`} |`);
+      if (rest.includes('--github-output')) {
+        const missing = packages.filter(p => !p.stored).map(({ game, target, runner }) => ({ game, target, runner }));
+        fs.appendFileSync(process.env.GITHUB_OUTPUT, `native=${JSON.stringify(missing)}\nnative-targets=${targetIds.join(',')}\n`);
+      }
+    }
   } else if (command === 'release-create') {
     const tag = versionTag(option('version'));
-    const record = await createRelease(store ?? fail('release-create needs DEMOS_STORE (or GitHub Actions).'), tag);
+    const targets = (option('targets') ?? '').split(',').filter(Boolean);
+    const record = await createRelease(store ?? fail('release-create needs DEMOS_STORE (or GitHub Actions).'), tag, { targets });
     console.log(`Draft release ${tag} of ${record.commit}:`);
     for (const [id, g] of Object.entries(record.games)) console.log(`- ${id}: key ${g.key}, sha256 ${g.sha256}`);
+    for (const d of Object.values(record.downloads ?? {}).flatMap(Object.values)) console.log(`- ${d.file}: ${d.size} bytes, sha256 ${d.sha256}`);
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `tag=${tag}\n`);
   } else if (command === 'release-verify') {
     const record = await verifyRelease(store, option('tag') ?? 'latest', path.resolve(option('dir') ?? playDir));
     console.log(`${option('dir') ?? playDir} matches release ${record.tag}: ${Object.keys(record.games).join(', ')}, every file checked.`);
+    if (rest.includes('--downloads')) {
+      const { checked } = await verifyDownloads(store, option('tag') ?? 'latest');
+      console.log(`${checked.length} downloads match release.json (size and SHA-256)${checked.length ? `: ${checked.join(', ')}` : ''}.`);
+    }
+  } else if (command === 'release-downloads') {
+    const urls = await checkPublicDownloads(store, versionTag(option('tag')));
+    console.log(`${urls.length} public downloads answer with their recorded size${urls.length ? `:\n${urls.join('\n')}` : '.'}`);
+  } else if (command === 'publish-native') {
+    if (!store) fail('publish-native needs DEMOS_STORE (or GitHub Actions).');
+    const r = await publishNative(store, { file: path.resolve(option('file') ?? fail('publish-native needs --file.')), verification: path.resolve(option('verification') ?? fail('publish-native needs --verification (packaging/verify.mjs --record).')) });
+    console.log(`${r.game} ${r.target} ${r.key}: ${r.stored ? `stored (sha256 ${r.sha256})` : 'already in the store'}`);
   } else if (command === 'release-publish') {
     const release = await store.releases.publish(versionTag(option('tag')));
     console.log(`Published ${release.tag}: it is now the latest release, the one production serves.`);
@@ -661,12 +835,14 @@ async function main(argv) {
     console.log(`${key}\n${inputs.length} input files:\n${inputs.join('\n')}`);
   } else {
     console.log(['usage: node site/scripts/demos.mjs <command>',
-      '  plan [--policy all|ci] [--canary <Game>] [--github-output]   keys, stored packages, what to build',
+      '  plan [--policy all|ci] [--canary <Game>] [--native all|<ids>] [--github-output]   keys, stored packages, what to build',
       '  publish <Game...> [--from DIR]                               add built packages to the integration store',
+      '  publish-native --file F --verification V                     add a checked native package (packaging/verify.mjs --record)',
       '  fetch                                                        packages for the site build (DEMOS_SOURCE)',
       '  key <Game>                                                   one key and its input files',
-      '  release-create --version <1.2.0>                             draft release of this commit\'s packages',
-      '  release-verify [--tag <v1.2.0>|latest] [--dir <play folder>] check built files against a release',
+      '  release-create --version <1.2.0> [--targets <ids>]           draft release of this commit\'s packages (and native downloads)',
+      '  release-verify [--tag <v1.2.0>|latest] [--dir <play folder>] [--downloads]   check built files (and downloads) against a release',
+      '  release-downloads --tag <v1.2.0>                             the published downloads answer at their public addresses',
       '  release-publish --tag <v1.2.0>                               publish a draft; it becomes the latest',
       '  release-discard --tag <v1.2.0>                               delete a draft',
       '  release-show [--tag <v1.2.0>|latest]                         print release.json'].join('\n'));
