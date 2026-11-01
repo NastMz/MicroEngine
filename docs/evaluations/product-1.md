@@ -70,7 +70,8 @@ Native packages share the content-addressed store and releases ([ADR 0018](../de
 `demos.mjs plan --native` lists missing packages per game and target, `checks.yml` builds and plays each on its own
 runner and stores it only after a passing check, `release.yml` copies them into the draft under player-facing names,
 hashes every download again before publishing, and checks their public addresses after. Validation run 41265744009
-built, played and stored the twelve desktop packages. Unit tests: `site/tests/native.test.mjs` (keys per target, store
+built, played and stored the twelve desktop packages; full validation 41266506438 (27 jobs: tests, native Linux, web
+packages, browser suites, the twelve packages, macOS, Android and iOS) passed on the final branch. Unit tests: `site/tests/native.test.mjs` (keys per target, store
 refusals, release completeness, site download list).
 
 Not run yet: a release with downloads (it needs the merge to `main`), and Android in CI (it needs the signing key).

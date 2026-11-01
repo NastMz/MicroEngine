@@ -93,3 +93,6 @@ Release`, `npm test` in `site/`, `node --test packaging/tests`.
 - L6 SDK: dotnet pack produces the four packages at 0.2.0-alpha; consumed from a local feed outside the repo (full desktop,
   and SDL only without raylib). Site test files now run one at a time (two files wrote public/play concurrently).
 - L7 Pending, owner decisions: Android signing secrets; push/PR/merge to main; the release that publishes downloads and the site.
+- L8 Full validation 41266506438 of 6707fcb green, 27 jobs: .NET tests (Linux, Windows), native Linux, four web packages,
+  browser suites (layout, play, touch) in Chrome and Firefox, the 12 desktop packages built, played and stored, macOS,
+  Android and iOS platform jobs. The stored packages match the branch head, so a release of it builds no desktop package.
