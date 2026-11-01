@@ -85,10 +85,10 @@ For every release:
 2. Run **sdk-release** on `main` (Actions → sdk-release → Run workflow) with `publish` off: it checks the version is
    new, runs `sdk.yml` on that commit and drafts the GitHub prerelease `sdk-v<version>` with the checked packages and
    `SHA256SUMS`. Review the draft.
-3. Run it again on the same commit with `publish` on: it finds the draft, waits for the `nuget` environment's
-   approval, logs in with Trusted Publishing, pushes exactly the draft's files (verified against `SHA256SUMS`),
-   engine packages first, and publishes the GitHub release. A new commit on `main` in between means deleting the
-   draft and starting again.
+3. Run it again on `main` with `publish` on: it finds the draft, waits for the `nuget` environment's approval, logs
+   in with Trusted Publishing, pushes exactly the draft's files (verified against `SHA256SUMS`), engine packages
+   first, and publishes the GitHub release. The packages are never rebuilt: if `main` has moved on since the draft
+   (its commit must still be in `main`'s history), the run lists the commits in between in its summary.
 4. When nuget.org lists the packages, update [Getting MicroEngine](getting-microengine.md) and the site so they no
    longer say "not yet on nuget.org".
 
