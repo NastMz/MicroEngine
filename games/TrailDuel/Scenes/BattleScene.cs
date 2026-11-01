@@ -48,6 +48,8 @@ internal sealed partial class BattleScene : Scene
 
     public Battle Battle => _battle;
     public bool AwaitingChoice => _mode != Mode.Busy;
+    /// <summary>On touch screens: while the battle narrates, only A and B; menus get every control.</summary>
+    public override IReadOnlyCollection<string>? TouchActions => _mode == Mode.Busy && _choice is null ? OverworldScene.TextActions : null;
     internal bool InMoveMenu => _mode == Mode.Moves;
     internal int MoveCursor => _moveIndex;
     internal bool MoveInfoOpen => _moveInfo;

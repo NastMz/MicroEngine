@@ -3,9 +3,13 @@
 # writes what it proved, level by level, to the run summary (platforms/README.md, "Evidence levels").
 #   macOS     headless and native .NET tests, the games on SDL (Metal) against the SDL reference; an OpenGL probe that
 #             explains whether raylib can open a window, and raylib captures only when it can
-#   Android   APKs on SDL for a code-first and a content game, played on an x86_64 emulator (captures, keys, touch,
-#             lifecycle) and compared with the SDL reference
-#   iOS       the same two games on SDL (Metal) in the simulator (captures, audio device, lifecycle)
+#   Android   APKs on SDL for a code-first and a content game, played on an x86_64 emulator (captures, keys, touch
+#             taps and drags at the controls' logged positions, scripted two-thumb play, lifecycle) and compared with
+#             the SDL reference
+#   iOS       the same two games on SDL (Metal) in the simulator (captures, audio device, lifecycle, scripted touch)
+#   Web mobile the four web demos on emulated phones and tablets in Chrome, played with real multi-touch events
+#             (web/tests/mobile.mjs)
+# Android and iOS check Meadow Run and Neon Rift unless the games input lists others.
 # Runs: manually (any ref, any subset of platforms), from validate.yml, and once a month on main to catch runner
 # image and toolchain drift. Never on pull requests: emulators and simulators do not run automatically. A full run
 # measured 9 Linux and 5 macOS billable minutes, about $0.36 (docs/evaluations/infra-1.md).
@@ -32,6 +36,14 @@ on:
         description: iOS (simulator)
         type: boolean
         default: true
+      web-mobile:
+        description: Web demos on emulated phones and tablets (real multi-touch in Chrome)
+        type: boolean
+        default: true
+      games:
+        description: Games for the Android and iOS jobs, as a JSON list (all four, or a subset)
+        type: string
+        default: '["MeadowRun", "NeonRift"]'
   workflow_call:
     inputs:
       ref:
@@ -50,6 +62,14 @@ on:
         description: iOS (simulator)
         type: boolean
         default: true
+      web-mobile:
+        description: Web demos on emulated phones and tablets (real multi-touch in Chrome)
+        type: boolean
+        default: true
+      games:
+        description: Games for the Android and iOS jobs, as a JSON list (all four, or a subset)
+        type: string
+        default: '["MeadowRun", "NeonRift"]'
 
 permissions:
   contents: read
@@ -123,7 +143,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        game: [MeadowRun, NeonRift]
+        game: ${{ fromJSON(inputs.games || '["MeadowRun", "NeonRift"]') }}
     defaults:
       run:
         shell: bash
@@ -193,7 +213,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        game: [MeadowRun, NeonRift]
+        game: ${{ fromJSON(inputs.games || '["MeadowRun", "NeonRift"]') }}
     defaults:
       run:
         shell: bash
@@ -249,11 +269,51 @@ jobs:
         run: |
           status=0
           platforms/ios/simulator-checks.sh "$APP" ${{ matrix.game }} ios-checks/${{ matrix.game }} || status=1
-          node web/tests/desktop.mjs --skip-run --games ${{ matrix.game }} --out ios-checks/${{ matrix.game }} --reference web/tests/reference/sdl.json | tee -a "$GITHUB_STEP_SUMMARY" || status=1
+          node web/tests/desktop.mjs --skip-run --games ${{ matrix.game }} --out ios-checks/${{ matrix.game }} --reference web/tests/reference/sdl-ios-simulator-arm64.json | tee -a "$GITHUB_STEP_SUMMARY" || status=1
           exit $status
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-checks-${{ matrix.game }}
           path: ios-checks
+          retention-days: 7
+
+  web-mobile:
+    name: Web demos on mobile (emulated devices, multi-touch)
+    if: github.event_name == 'schedule' || inputs.web-mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - name: Toolchain folder
+        run: echo "MICROENGINE_WEB_TOOLS=${{ runner.temp }}/web-tools" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/web-tools
+          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh') }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/tests/package-lock.json
+      - run: bash web/setup.sh
+      - name: Development packages
+        run: bash web/build.sh --dev --out dist/web-dev
+      - run: npm ci --prefix web/tests
+      - name: Touch on emulated phones and tablets
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          { echo "- $(google-chrome --version)"; echo; } >> "$GITHUB_STEP_SUMMARY"
+          node web/tests/mobile.mjs --out web-mobile
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-mobile
+          path: web-mobile
           retention-days: 7

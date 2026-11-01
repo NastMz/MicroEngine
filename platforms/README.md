@@ -28,11 +28,12 @@ A build is not compatibility. Each level is claimed only when it was run and its
 | Package generated | APK (x86_64, arm64-v8a) with SDL 3.5 | `.app` for `iossimulator-arm64` with `SDL3.framework` |
 | App installed, started | yes (emulator API 36.1 locally, API 34 in CI) | yes (iPhone 17 Pro simulator, CI) |
 | Rendering checked | Meadow Run 13/13 and Neon Rift 12/12 captures pixel-identical to the Windows SDL reference (locally), within it in CI | Meadow Run 13/13 and Neon Rift 12/12 captures within the SDL reference |
-| Input checked | system keys and taps on the on-screen controls move each game from its title into play | not checked: the simulator cannot be sent touches by script |
+| Input checked | system keys and taps on the on-screen controls move each game from its title into play; a held system drag on the movement control moves the player | keys not checked |
+| Touch checked | taps and drags at the positions the game logs (`MICROENGINE_PROBE=1`); two thumbs scripted (`touch.script`), since `adb input` has one pointer | scripted touches on the simulator's layout (`touch.script`); the simulator cannot be sent system touches by script |
 | Audio checked | SDL's audio device opens; output not listened to | SDL's audio device opens; output not listened to |
 | Lifecycle | Home suspends the game, relaunching resumes it | opening Settings suspends the game, relaunching resumes it |
 | Content files | Neon Rift's PNG, WAV and OGG files load from the APK | Neon Rift's files load from the app bundle |
-| Real device | not tried (no arm64 device) | not tried |
+| Real device | the four APKs played by hand on a Redmi Note 14 Pro (arm64, Android 16), touch and a Bluetooth PlayStation controller | not tried |
 
 ## Android
 
@@ -42,11 +43,11 @@ from the `ppy.SDL3-CS` package.
 ```bash
 dotnet build platforms/android -c Release -p:Game=NeonRift -p:AndroidSdkDirectory="$ANDROID_HOME"
 node platforms/android/device-checks.mjs --apk platforms/android/bin/NeonRift/Release/net10.0-android/dev.microengine.neonrift-Signed.apk --game NeonRift --out dist/android-checks
-node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/android-checks --reference web/tests/reference/sdl.json
+node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/android-checks --reference web/tests/reference/sdl-android-x86_64.json
 ```
 
 `device-checks.mjs` needs a running emulator or device and prints one line per level (installed, started, rendered,
-audio, input, lifecycle, touch). How it works:
+audio, input, lifecycle, touch, touch-drag, touch-two-thumbs). How it works:
 
 - `GameActivity` is SDL's `SDLActivity`; it loads only `libSDL3.so` and overrides `Main`, which SDL calls on its own
   thread once the surface exists. The game runs there on `SdlPlatform`.
@@ -66,7 +67,7 @@ workload set from `web/toolchain.env` and selects the matching Xcode).
 ```bash
 dotnet build platforms/ios -c Release -p:Game=NeonRift
 platforms/ios/simulator-checks.sh platforms/ios/bin/NeonRift/Release/net10.0-ios/iossimulator-arm64/MicroEngine.iOS.app NeonRift dist/ios-checks/NeonRift
-node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/ios-checks/NeonRift --reference web/tests/reference/sdl.json
+node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/ios-checks/NeonRift --reference web/tests/reference/sdl-ios-simulator-arm64.json
 ```
 
 The app reads `--script` and `--env` after its own arguments (`xcrun simctl launch --console-pty <device>

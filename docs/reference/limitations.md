@@ -10,26 +10,24 @@ build. Items move off this list only when a change and its validation are record
 | --- | --- |
 | No visual editor, level editor or asset tool; content is code or files loaded through `ContentFolder` | [ADR 0002](../decisions/0002-code-first-content.md), [ADR 0004](../decisions/0004-external-asset-files.md) |
 | No published NuGet packages or project templates (`dotnet new`) yet: the engine is built from its public repository. `dotnet pack` already produces the four packages (SDK-1 is prepared, not published) | [SDK status](../guide/sdk.md) |
-| Touch exists only as the SDL platform's generic on-screen controls (they press gamepad buttons); no per-game layouts, no touch in the browser builds | [Backends](../manual/backends.md#sdl-3) |
+| No layout editor or in-game rebinding screen: bindings and touch layouts are code | [Input](../manual/input.md#limitations) |
 | No cloud saves; desktop saves are local files, browser saves are `localStorage` | [Persistence](../manual/persistence.md) |
 | No ECS; plain entities sized for a few hundred objects per scene | [ADR 0003](../decisions/0003-scenes-entities-runtime.md), [Architecture](../architecture.md) |
-| Input devices limited to keyboard, gamepad buttons and the left stick (`IInputSource`); no mouse, pointer or touch API for games (taps reach them as gamepad buttons) | [`src/MicroEngine/Input/Input.cs`](../../src/MicroEngine/Input/Input.cs) |
+| One gamepad at a time; no rumble; the mouse can be read (`Input.Pointer`) but not bound to actions; no haptics on iOS | [Input](../manual/input.md#limitations) |
+| On screens near 16:9 the game frame shrinks while touch controls are shown, so none covers it (about 60 % of its largest size on a 16:9 phone) | [Input](../manual/input.md#keeping-the-game-visible) |
 
 ## Platforms not validated
 
 | Limitation | Evidence |
 | --- | --- |
-| Windows: the SDL builds (now the default) have not been played by hand; their rendering and audio device were checked on real hardware | [Platforms](../guide/platforms.md#desktop-validation) |
-| Linux desktop: checked on hosted runners and in Ubuntu 22.04, Debian 12 and Fedora 41 containers (software rendering, virtual display and sound server); no real GPU, Wayland session or person yet | [Platforms](../guide/platforms.md#desktop-validation) |
 | macOS: checked on hosted runners (paravirtual GPU, Metal); no person has played on a Mac, no system keyboard check | [Platforms](../guide/platforms.md#desktop-validation) |
-| Android: all four games checked on the x86_64 emulator only; no phone or tablet, arm64 never run | [Platforms](../guide/platforms.md#phones-and-tablets) |
-| iOS: two games checked in the simulator only; touch not checked; no iPhone or iPad | [Platforms](../guide/platforms.md#phones-and-tablets) |
+| Android: played by hand on one phone (Redmi Note 14 Pro, Android 16); automated checks on the x86_64 emulator only; no tablet | [Platforms](../guide/platforms.md#phones-and-tablets) |
+| iOS: games checked in the simulator only; touch checked with scripted touches on the simulator's layout, not system touches; no iPhone or iPad | [Platforms](../guide/platforms.md#phones-and-tablets) |
 | Linux on ARM: no native raylib library in `Raylib-cs` | [Platforms](../guide/platforms.md#support-table) |
 | Gamepads on Linux and macOS: not covered by any check | [Platforms](../guide/platforms.md#desktop-validation) |
-| Safari not tested | [Platforms](../guide/platforms.md#support-table) |
-| Chromium-based browsers other than Chrome (for example Edge) not claimed; automated browser tests cover Chrome and Firefox only | [Platforms](../guide/platforms.md#support-table) |
-| Browsers on phones and tablets: the web demos are not validated there and have no touch controls | [Platforms](../guide/platforms.md#phones-and-tablets) |
-| Gamepad in the browser validated manually in one Chromium-based browser with one controller only; no claim for other controllers or browsers | [Platforms](../guide/platforms.md#gamepads) |
+| Chromium-based browsers other than Chrome: Edge played by hand on the desktop, others not claimed; automated browser tests cover Chrome and Firefox only | [Platforms](../guide/platforms.md#support-table) |
+| Browsers on phones and tablets: played by hand in Chrome on one Android phone and Safari on an iPhone 13, checked with real multi-touch in emulated mobile Chrome (four devices); no tablet | [Platforms](../guide/platforms.md#phones-and-tablets) |
+| Gamepad in the browser validated by hand in Edge (desktop, Xbox controller) and Chrome on Android (PlayStation controller over Bluetooth) only; no claim for other controllers, Firefox or Safari | [Platforms](../guide/platforms.md#gamepads) |
 | Blocked site storage tested in Firefox only, not Chrome | [Web support](../evaluations/web-support.md#persistence) |
 | Producing browser packages is not available to external developers yet | [Getting MicroEngine](../guide/getting-microengine.md) |
 

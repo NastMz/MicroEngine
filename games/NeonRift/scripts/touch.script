@@ -1,0 +1,13 @@
+# On-screen controls on the platform's own layout (RIFT_START=stage): the joystick aims up-right while FIRE is held,
+# and a third finger jumps. Touches go through the same hit testing as fingers (InputScript "touch"); used by the
+# phone checks.
+120 capture touch_start.png
+130 touch 1 stick 0.7 -0.7
+135 touch 2 fire
+170 touch 3 jump
+180 capture touch_aim.png
+230 lift 3
+240 lift 2
+240 lift 1
+260 capture touch_end.png
+280 quit

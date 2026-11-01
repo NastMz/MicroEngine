@@ -32,6 +32,11 @@ public interface IPlatform : IDisposable
     /// Platforms without such a state keep the default.
     /// </summary>
     bool Suspended => false;
+    /// <summary>
+    /// The touch screen, if the platform has one: touches for <see cref="VirtualControls"/>, the safe area and a layer
+    /// drawn over the frame. Platforms without touch keep the default (null).
+    /// </summary>
+    ITouchScreen? Touch => null;
     void PollEvents();
     IRenderer BeginFrame();
     void EndFrame();

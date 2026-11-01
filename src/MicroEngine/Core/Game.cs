@@ -19,6 +19,8 @@ public abstract class Game
     public IGraphicsDevice Graphics => Platform.Graphics;
     public AudioMixer Audio { get; private set; } = null!;
     public InputMap Input { get; private set; } = null!;
+    /// <summary>The on-screen touch controls (<see cref="CreateTouchLayout"/>), drawn and read wherever the platform has a touch screen.</summary>
+    public VirtualControls Touch { get; private set; } = null!;
     public SceneManager Scenes { get; private set; } = null!;
     public BitmapFont Font { get; private set; } = null!;
     /// <summary>Seconds of simulated time since start.</summary>
@@ -47,6 +49,11 @@ public abstract class Game
     protected virtual void OnResumed() { }
     /// <summary>Override to change bindings; the default suits most games.</summary>
     protected virtual InputMap CreateInput() => InputMap.CreateDefault();
+    /// <summary>
+    /// Override to choose the on-screen controls for touch screens: which d-pad, joystick and buttons press which actions,
+    /// and where. The default (<see cref="TouchLayout.CreateDefault"/>) matches <see cref="InputMap.CreateDefault"/>.
+    /// </summary>
+    protected virtual TouchLayout CreateTouchLayout() => TouchLayout.CreateDefault();
 
     public void Quit() => QuitRequested = true;
 
@@ -68,11 +75,20 @@ public abstract class Game
         _platform = platform;
         Random = new Random(seed);
         Input = CreateInput();
+        Touch = new VirtualControls(CreateTouchLayout());
+        Input.AddSource(Touch);
+        if (platform.Touch is { } screen) screen.Overlay = Touch;
         Audio = new AudioMixer(platform.Audio);
         Font = BitmapFont.CreateDefault(platform.Graphics);
         Scenes = new SceneManager(this);
         Load();
         Scenes.ApplyPending();
+    }
+
+    internal void UpdateTouch(ITouchScreen? screen, float dt)
+    {
+        Touch.SetContext(Scenes.Current?.TouchActions);
+        Touch.Update(screen, dt, Input.LastDevice);
     }
 
     internal void Step(float dt)
@@ -105,6 +121,8 @@ public abstract class Game
         _pausedMusicForSuspension = !Audio.MusicPaused;
         if (_pausedMusicForSuspension) Audio.PauseMusic(true);
         _achievements?.Flush();
+        // The system never lifts fingers that were down when the game left.
+        Touch.CancelAll();
         OnSuspended();
     }
 
@@ -128,6 +146,7 @@ public abstract class Game
     /// <summary>Test hook: advances one fixed step after sampling input.</summary>
     public void StepForTest()
     {
+        UpdateTouch(Platform.Touch, 1f / Settings.UpdateRate);
         Input.Sample(Platform.Input);
         Step(1f / Settings.UpdateRate);
     }

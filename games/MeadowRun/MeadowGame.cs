@@ -52,6 +52,17 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
         .Bind("jump", [Key.Z, Key.Space, Key.J], [PadButton.A])
         .Bind("run", [Key.X, Key.C, Key.K, Key.L, Key.LeftShift], [PadButton.X, PadButton.B]);
 
+    /// <summary>
+    /// Touch: a four-way d-pad, because a platformer needs exact presses (a thumb rolling onto a diagonal must not
+    /// crouch or drop through a platform); A jumps and confirms, B runs (and fires seeds) and cancels, like Z and X on a
+    /// keyboard. The thumb may roll from B onto A to jump while running.
+    /// </summary>
+    protected override TouchLayout CreateTouchLayout() => TouchLayout.Of(
+        new TouchDPad { Offset = new(104, 100), Diagonals = false },
+        new TouchButton("jump", "jump", "A") { Anchor = TouchAnchor.BottomRight, Offset = new(70, 92), Radius = 40, Also = ["confirm"] },
+        new TouchButton("run", "run", "B") { Anchor = TouchAnchor.BottomRight, Offset = new(164, 62), Radius = 34, Also = ["cancel"] },
+        new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(30, 30), Radius = 20 }) with { SlideBetweenButtons = true };
+
     protected override void Load()
     {
         Art = new Assets(Graphics);

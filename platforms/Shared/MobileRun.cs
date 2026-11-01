@@ -57,14 +57,35 @@ internal static class MobileRun
         bool audio;
         // The active scene, logged when it changes, so a test can tell that input sent by the system reached the game
         // without depending on a screenshot. A diagnostic read from a timer thread: only a reference is read.
-        string? scene = null;
-        bool suspended = false;
+        string? scene = null, probe = null;
+        bool suspended = false, controlsLogged = false;
+        // MICROENGINE_PROBE=1 (a test's --env) also logs where the touch controls are on this screen, once, and the
+        // actions down with the scene's own description whenever they change, so a check can tell that touches moved
+        // the player rather than only that a scene changed.
+        bool probing = Environment.GetEnvironmentVariable("MICROENGINE_PROBE") == "1";
         using var watch = new Timer(_ =>
         {
             string? now = game.Scenes?.Current?.GetType().Name;
             if (now is not null && now != scene) log($"microengine: scene {scene = now}");
             if (platform.Suspended != suspended) log($"microengine: {((suspended = !suspended) ? "suspended" : "resumed")}");
-        }, null, 0, 250);
+            if (!probing || game.Touch is not { } touch || game.Input is not { } input) return;
+            try
+            {
+                if (!controlsLogged && touch.PixelsPerDp > 0 && touch.Layout.Controls.Count > 0 && touch.Geometry(touch.Layout.Controls[0].Id).Radius > 0)
+                {
+                    controlsLogged = true;
+                    foreach (var c in touch.Layout.Controls)
+                    {
+                        var (center, radius) = touch.Geometry(c.Id);
+                        log(FormattableString.Invariant($"microengine: control {c.Id} {center.X:0} {center.Y:0} {radius:0}"));
+                    }
+                }
+                var down = string.Join(',', input.Actions.Concat(touch.Actions).Distinct().Where(input.Down));
+                string line = $"{now} [{down}] {game.Scenes?.Current?.Describe()}";
+                if (line != probe) log($"microengine: probe {probe = line}");
+            }
+            catch (InvalidOperationException) { /* collections changed under the diagnostic read; next tick */ }
+        }, null, 0, 100);
         using (platform)
         {
             audio = platform.Audio.IsAvailable;

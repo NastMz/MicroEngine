@@ -106,7 +106,19 @@ internal sealed class ControlsScene : Scene
         var box = new RectF(30, 18, 260, 144);
         UiKit.Box(r, box);
         UiKit.Text(r, Font, "CONTROLS", box.X + 12, box.Y + 10, Pal.Coral);
-        (string Key, string What)[] rows =
+        // On a touch screen the on-screen controls are explained instead of the keys.
+        (string Key, string What)[] rows = Game.Touch.Shown
+        ?
+        [
+            ("D-pad", "Walk, move cursor"),
+            ("A", "Confirm, talk, read"),
+            ("B", "Back. Hold to run"),
+            ("MENU", "Open the menu"),
+            ("Tap a direction", "Turn in place"),
+            ("C", "Move details in battle"),
+            ("Keyboard, gamepad", "Work too"),
+        ]
+        :
         [
             ("Arrows / WASD", "Walk, move cursor"),
             ("Z / Space / Enter", "Confirm, talk, read"),

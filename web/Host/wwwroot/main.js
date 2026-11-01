@@ -127,6 +127,80 @@ window.addEventListener('keydown', e => {
 window.addEventListener('keyup', e => { if (state !== 'playing') e.stopImmediatePropagation(); }, true);
 canvas.addEventListener('pointerdown', () => { canvas.focus(); resumeAudio(); });
 play.onclick = () => begin();
+
+// Touch. Fingers (and pens) on the canvas reach the game's on-screen controls (MicroEngine.Input.VirtualControls)
+// through Pointer Events, which every current mobile browser has (Chrome on Android, Safari on iOS 13+): each pointer
+// keeps its id from down to up, so two thumbs are tracked separately, and pointer capture keeps delivering a finger
+// that slides off the canvas. Positions are sent in canvas pixels, the unit raylib draws in. The mouse stays with
+// raylib. While playing the page never scrolls, zooms, selects text or opens a context menu (touch-action: none in
+// host.css does most of it; Safari's pinch "gesture" events and long-press menus are stopped here).
+const touchFirst = () => matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && !matchMedia('(any-pointer: fine)').matches);
+const fingers = new Set();
+function canvasPoint(e) {
+  const r = canvas.getBoundingClientRect();
+  return [(e.clientX - r.left) * canvas.width / Math.max(1, r.width), (e.clientY - r.top) * canvas.height / Math.max(1, r.height)];
+}
+function sendPointer(e, phase) {
+  const [x, y] = canvasPoint(e);
+  try { exports.WebHost.Pointer(e.pointerId, phase, x, y); } catch (error) { console.error(error); }
+}
+canvas.addEventListener('pointerdown', e => {
+  if (state !== 'playing' || e.pointerType === 'mouse') return;
+  e.preventDefault();
+  try { canvas.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+  fingers.add(e.pointerId);
+  sendPointer(e, 0);
+});
+canvas.addEventListener('pointermove', e => {
+  if (!fingers.has(e.pointerId)) return;
+  e.preventDefault();
+  // Every intermediate position, so a quick flick across the d-pad is not seen as a jump.
+  for (const sample of e.getCoalescedEvents?.() ?? [e]) sendPointer(sample, 1);
+});
+for (const [type, phase] of [['pointerup', 2], ['pointercancel', 3], ['lostpointercapture', 3]]) {
+  canvas.addEventListener(type, e => {
+    if (!fingers.delete(e.pointerId)) return;
+    sendPointer(e, phase);
+  });
+}
+// The browser takes fingers away when the page loses focus (a notification, the app switcher, a system gesture) and
+// may never send their pointerup: release them, so no control stays pressed.
+function releaseFingers() {
+  for (const id of fingers) try { exports.WebHost.Pointer(id, 3, 0, 0); } catch { /* not running */ }
+  fingers.clear();
+}
+window.addEventListener('blur', releaseFingers);
+for (const type of ['gesturestart', 'gesturechange', 'dblclick']) document.addEventListener(type, e => { if (state === 'playing') e.preventDefault(); }, { passive: false });
+document.addEventListener('contextmenu', e => { if (state === 'playing' || e.target === canvas) e.preventDefault(); });
+document.addEventListener('touchmove', e => { if (state === 'playing') e.preventDefault(); }, { passive: false });
+
+// The screen as the game's touch controls need it: the safe area (notches, rounded corners, home indicator) from the
+// CSS env(safe-area-inset-*) values (index.html asks for viewport-fit=cover), in canvas pixels; canvas pixels per CSS
+// pixel; and whether touch is the main input. Sent again on every resize, rotation and browser-bar change.
+const safeProbe = document.getElementById('safe');
+function sendScreen() {
+  if (!exports) return;
+  const style = getComputedStyle(safeProbe), r = canvas.getBoundingClientRect();
+  const scale = canvas.width / Math.max(1, r.width);
+  const inset = side => (parseFloat(style.getPropertyValue(`padding-${side}`)) || 0) * scale;
+  try { exports.WebHost.Screen(inset('left'), inset('top'), inset('right'), inset('bottom'), scale, touchFirst()); } catch (error) { console.error(error); }
+}
+window.addEventListener('resize', sendScreen);
+window.addEventListener('orientationchange', () => { releaseFingers(); setTimeout(sendScreen, 250); });
+window.visualViewport?.addEventListener('resize', sendScreen);
+window.screen.orientation?.addEventListener?.('change', sendScreen);
+
+// A hidden page (another tab, the phone locked or switched to another app) suspends the game: the next frame sees it,
+// pauses the music and releases fingers. Animation frames stop while hidden, so one frame is run here to apply it.
+document.addEventListener('visibilitychange', () => {
+  if (!exports) return;
+  const hidden = document.visibilityState === 'hidden';
+  if (hidden) releaseFingers();
+  try {
+    exports.WebHost.Visibility(hidden);
+    if (state === 'playing') exports.WebHost.Frame();
+  } catch (error) { console.error(error); }
+});
 screen.addEventListener('click', e => { if (e.target !== play) begin(); });
 
 function begin() {
@@ -140,6 +214,7 @@ function begin() {
   catch (e) { error = e; }
   if (error) return fail(`${game.title} could not start.`, error);
   setState('playing');
+  sendScreen();
   updateSound();
   requestAnimationFrame(frame);
 }
@@ -158,10 +233,10 @@ function ended() {
   const error = exports.WebHost.Outcome();
   if (error) return fail(`${game.title} stopped because of an error.`, error);
   if (document.fullscreenElement) document.exitFullscreen();
+  fingers.clear();
   setState('ended');
   showScreen(`Thanks for playing ${game.title}.`, { button: 'Play again' });
   play.onclick = () => begin();
-screen.addEventListener('click', e => { if (e.target !== play) begin(); });
 }
 
 // Closing or reloading the page ends the run properly, so progress the game writes on shutdown (achievements)
@@ -186,6 +261,7 @@ window.microengine = {
   audio: () => audioContexts().map(c => c.state),
   captures: () => exports?.WebHost.Captures() ?? [],
   capture: name => exports?.WebHost.CaptureData(name) ?? '',
+  controls: () => exports?.WebHost.Controls() ?? '',
 };
 
 async function load() {
@@ -210,7 +286,11 @@ async function load() {
     .withModuleConfig({ canvas, onDownloadResourceProgress: (done, total) => setProgress(done, total) })
     .withEnvironmentVariables(environment)
     .create();
-  runtime.setModuleImports('microengine', { storage: storageImports });
+  runtime.setModuleImports('microengine', {
+    storage: storageImports,
+    // Touch-control haptics. Android browsers vibrate; Safari on iOS has no Vibration API, so this returns false there.
+    haptics: { vibrate: ms => !!navigator.vibrate?.(ms) },
+  });
 
   // Copy the game's files into the virtual file system so ContentFolder finds /Content as on desktop.
   const list = await fetch('content.txt').then(r => r.ok ? r.text() : '');
@@ -231,7 +311,8 @@ async function load() {
   exports = await runtime.getAssemblyExports(runtime.getConfig().mainAssemblyName);
   await runtime.runMain();
   setState('ready');
-  showScreen('Press any key or click to play.', { button: 'Play' });
+  sendScreen();
+  showScreen(touchFirst() ? 'Tap to play. Landscape gives the largest view.' : 'Press any key or click to play.', { button: 'Play' });
   if (params.get('autostart') === '1') begin();
 }
 

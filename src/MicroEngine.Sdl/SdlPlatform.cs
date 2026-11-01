@@ -14,8 +14,9 @@ namespace MicroEngine.Sdl;
 /// the window by the largest integer factor that fits (letterboxed), as on the raylib platform. SDL chooses the
 /// graphics API per system (Direct3D, Metal, OpenGL, OpenGL ES, Vulkan, or its software renderer); the
 /// <c>SDL_RENDER_DRIVER</c> environment variable forces one (for example <c>software</c> on a machine without a GPU).
-/// Touch screens get on-screen controls (<see cref="TouchPad"/>); a system that sends the app to the background
-/// suspends it (<see cref="IPlatform.Suspended"/>).
+/// Fingers go to the game's on-screen controls through <see cref="ITouchScreen"/> (<see cref="SdlTouchScreen"/>), which
+/// also reports the window's safe area and density; a system that sends the app to the background suspends it
+/// (<see cref="IPlatform.Suspended"/>).
 /// </summary>
 public sealed unsafe class SdlPlatform : IPlatform
 {
@@ -29,7 +30,7 @@ public sealed unsafe class SdlPlatform : IPlatform
     private readonly SdlGraphicsDevice _graphics;
     private readonly SdlInput _input;
     private readonly IAudioDevice _audio;
-    private readonly TouchPad _touch = new();
+    private readonly SdlTouchScreen _touch;
     private readonly ulong _start;
     private long _frames;
     private bool _closeRequested, _suspended, _disposed;
@@ -85,9 +86,9 @@ public sealed unsafe class SdlPlatform : IPlatform
         // mobile hosts .NET's environment variables never reach the native environment SDL reads its hints from.
         if (Environment.GetEnvironmentVariable("MICROENGINE_SDL_EVENT_LOGGING") is { Length: > 0 } logging)
             SDL_SetHint(SDL_HINT_EVENT_LOGGING, logging);
-        _touch.Visible = OperatingSystem.IsAndroid() || OperatingSystem.IsIOS();
+        bool mobile = OperatingSystem.IsAndroid() || OperatingSystem.IsIOS();
         // Pixel-art games are wide; without this SDL lets a phone turn the window to portrait.
-        if (_touch.Visible) SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+        if (mobile) SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
         if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO | SDL_InitFlags.SDL_INIT_GAMEPAD))
             throw new InvalidOperationException($"SDL could not start its video subsystem: {SDL_GetError()}");
         int scale = request.Scale ?? _settings.Scale;
@@ -113,7 +114,8 @@ public sealed unsafe class SdlPlatform : IPlatform
         SDL_SetTextureScaleMode(_target, SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
         _graphics = new SdlGraphicsDevice(_sdl);
         _renderer = new SdlRenderer(_sdl, _settings.VirtualWidth, _settings.VirtualHeight);
-        _input = new SdlInput(_touch);
+        _touch = new SdlTouchScreen(_window, _sdl, mobile);
+        _input = new SdlInput(this);
         _audio = request.OpensOwnAudio ? SdlAudioDevice.TryCreate() : new SilentAudioDevice();
         _self = GCHandle.Alloc(this);
         SDL_AddEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
@@ -131,6 +133,7 @@ public sealed unsafe class SdlPlatform : IPlatform
     public double Now => _fixedStep ? _frames / (double)_settings.UpdateRate : (SDL_GetTicksNS() - _start) / 1e9;
     public bool RealTime => !_fixedStep;
     public bool Suspended => _suspended;
+    public ITouchScreen Touch => _touch;
 
     /// <summary>
     /// Phones announce backgrounding from their own thread and may stop the game thread soon after, so SDL asks for
@@ -161,10 +164,9 @@ public sealed unsafe class SdlPlatform : IPlatform
     {
         _frames++;
         _input.BeginFrame();
-        _touch.BeginFrame();
         bool suspended = Interlocked.Exchange(ref _wentToBackground, 0) == 1 || _background;
         // Fingers and keys held when the app left are never released by the system.
-        if (suspended && !_suspended) _input.ReleaseAll();
+        if (suspended && !_suspended) ReleaseAll();
         _suspended = suspended;
         SDL_Event e;
         while (SDL_PollEvent(&e))
@@ -189,12 +191,20 @@ public sealed unsafe class SdlPlatform : IPlatform
                     _input.GamepadRemoved(e.gdevice.which);
                     break;
                 case SDL_EventType.SDL_EVENT_FINGER_DOWN:
+                    _touch.Finger(e.tfinger, TouchPhase.Began);
+                    break;
                 case SDL_EventType.SDL_EVENT_FINGER_MOTION:
-                    _touch.Set((ulong)e.tfinger.fingerID, new Vector2(e.tfinger.x, e.tfinger.y), OutputAspect());
+                    _touch.Finger(e.tfinger, TouchPhase.Moved);
                     break;
                 case SDL_EventType.SDL_EVENT_FINGER_UP:
+                    _touch.Finger(e.tfinger, TouchPhase.Ended);
+                    break;
                 case SDL_EventType.SDL_EVENT_FINGER_CANCELED:
-                    _touch.Release((ulong)e.tfinger.fingerID);
+                    _touch.Finger(e.tfinger, TouchPhase.Canceled);
+                    break;
+                case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_LOST:
+                    // Keys and fingers held while another window takes over would never be released to the game.
+                    ReleaseAll();
                     break;
             }
         }
@@ -202,11 +212,27 @@ public sealed unsafe class SdlPlatform : IPlatform
         if (_suspended) SDL_Delay(50);
     }
 
-    private float OutputAspect()
+    private void ReleaseAll()
     {
-        int w, h;
-        SDL_GetCurrentRenderOutputSize(_sdl, &w, &h);
-        return h > 0 ? w / (float)h : 16f / 9f;
+        _input.ReleaseAll();
+        _touch.CancelAll();
+    }
+
+    /// <summary>Where the frame is drawn in the window, in render pixels (the shared letterbox rule).</summary>
+    internal RectF FrameRect()
+    {
+        int sw, sh;
+        SDL_GetCurrentRenderOutputSize(_sdl, &sw, &sh);
+        var window = new Vector2(sw, sh);
+        return _touch.Overlay?.Frame(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight)
+            ?? FrameLayout.Fit(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
+    }
+
+    /// <summary>A window position in SDL's window coordinates as virtual canvas pixels.</summary>
+    internal Vector2 ToCanvas(float x, float y)
+    {
+        float density = SDL_GetWindowPixelDensity(_window);
+        return FrameLayout.ToCanvas(new Vector2(x, y) * (density > 0 ? density : 1), FrameRect(), _settings.VirtualWidth, _settings.VirtualHeight);
     }
 
     public IRenderer BeginFrame()
@@ -222,27 +248,12 @@ public sealed unsafe class SdlPlatform : IPlatform
         SDL_SetRenderTarget(_sdl, null);
         SDL_SetRenderDrawColor(_sdl, 0, 0, 0, 255);
         SDL_RenderClear(_sdl);
-        int sw, sh;
-        SDL_GetCurrentRenderOutputSize(_sdl, &sw, &sh);
-        float scale = MathF.Min(sw / (float)_settings.VirtualWidth, sh / (float)_settings.VirtualHeight);
-        if (scale >= 1) scale = MathF.Floor(scale);
-        float w = _settings.VirtualWidth * scale, h = _settings.VirtualHeight * scale;
-        var dst = new SDL_FRect { x = MathF.Floor((sw - w) / 2), y = MathF.Floor((sh - h) / 2), w = w, h = h };
+        var frame = FrameRect();
+        var dst = new SDL_FRect { x = frame.X, y = frame.Y, w = frame.Width, h = frame.Height };
         SDL_RenderTexture(_sdl, _target, null, &dst);
-        if (_touch.Visible) DrawTouchPad(sw, sh);
+        // The on-screen controls, over the letterboxed frame in window pixels (never in captures).
+        _touch.Overlay?.Draw(_touch.Canvas);
         SDL_RenderPresent(_sdl);
-    }
-
-    /// <summary>The on-screen controls, drawn over the letterboxed frame in window pixels (never in captures).</summary>
-    private void DrawTouchPad(int width, int height)
-    {
-        SDL_SetRenderDrawBlendMode(_sdl, SDL_BlendMode.SDL_BLENDMODE_BLEND);
-        foreach (var control in _touch.Controls(width / (float)height))
-        {
-            byte alpha = (byte)(_touch.IsDown(control.Button) ? 150 : 70);
-            var center = new Vector2(control.Center.X * width, control.Center.Y * height);
-            SdlRenderer.FillCircle(_sdl, center, control.Radius * height, new SDL_FColor { r = 1, g = 1, b = 1, a = alpha / 255f });
-        }
     }
 
     public void SaveScreenshot(string path)
@@ -286,11 +297,14 @@ public sealed unsafe class SdlPlatform : IPlatform
         (_audio as IDisposable)?.Dispose();
         _graphics?.Dispose();
         _input?.Dispose();
+        _touch?.Dispose();
         if (_target != null) SDL_DestroyTexture(_target);
         if (_sdl != null) SDL_DestroyRenderer(_sdl);
         if (_window != null) SDL_DestroyWindow(_window);
         SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO | SDL_InitFlags.SDL_INIT_GAMEPAD);
     }
+
+    internal SDL_Window* Window => _window;
 }
 
 internal sealed unsafe class SdlGraphicsDevice(SDL_Renderer* renderer) : IGraphicsDevice, IDisposable
@@ -463,112 +477,3 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
     }
 }
 
-/// <summary>Keyboard, the first gamepad and the on-screen touch controls.</summary>
-internal sealed unsafe class SdlInput(TouchPad touch) : IInputSource, IDisposable
-{
-    private static readonly Dictionary<Key, SDL_Scancode> Keys = BuildKeys();
-    private readonly Dictionary<SDL_Scancode, int> _taps = [];
-    private readonly HashSet<SDL_Scancode> _sampled = [];
-    private SDL_Gamepad* _pad;
-    private SDL_JoystickID _padId;
-
-    /// <summary>
-    /// Like the raylib input: a key pressed and released between two frames still counts as down until a simulation
-    /// step has sampled it, so a quick tap during a long frame is not lost; unread taps expire after a few frames.
-    /// </summary>
-    public void BeginFrame()
-    {
-        foreach (var key in _sampled) _taps.Remove(key);
-        _sampled.Clear();
-        foreach (var key in _taps.Keys.ToList())
-            if (--_taps[key] <= 0) _taps.Remove(key);
-    }
-
-    public void KeyDown(SDL_Scancode code) => _taps[code] = 8;
-
-    public void ReleaseAll()
-    {
-        _taps.Clear();
-        touch.ReleaseAll();
-    }
-
-    public void GamepadAdded(SDL_JoystickID id)
-    {
-        if (_pad != null) return;
-        _pad = SDL_OpenGamepad(id);
-        _padId = id;
-    }
-
-    public void GamepadRemoved(SDL_JoystickID id)
-    {
-        if (_pad == null || id != _padId) return;
-        SDL_CloseGamepad(_pad);
-        _pad = null;
-    }
-
-    private static Dictionary<Key, SDL_Scancode> BuildKeys()
-    {
-        var map = new Dictionary<Key, SDL_Scancode>
-        {
-            [Key.Space] = SDL_Scancode.SDL_SCANCODE_SPACE, [Key.Enter] = SDL_Scancode.SDL_SCANCODE_RETURN,
-            [Key.Escape] = SDL_Scancode.SDL_SCANCODE_ESCAPE, [Key.Backspace] = SDL_Scancode.SDL_SCANCODE_BACKSPACE,
-            [Key.Tab] = SDL_Scancode.SDL_SCANCODE_TAB, [Key.LeftShift] = SDL_Scancode.SDL_SCANCODE_LSHIFT,
-            [Key.RightShift] = SDL_Scancode.SDL_SCANCODE_RSHIFT, [Key.LeftControl] = SDL_Scancode.SDL_SCANCODE_LCTRL,
-            [Key.Left] = SDL_Scancode.SDL_SCANCODE_LEFT, [Key.Right] = SDL_Scancode.SDL_SCANCODE_RIGHT,
-            [Key.Up] = SDL_Scancode.SDL_SCANCODE_UP, [Key.Down] = SDL_Scancode.SDL_SCANCODE_DOWN,
-            [Key.F1] = SDL_Scancode.SDL_SCANCODE_F1, [Key.F2] = SDL_Scancode.SDL_SCANCODE_F2, [Key.F3] = SDL_Scancode.SDL_SCANCODE_F3,
-            [Key.F4] = SDL_Scancode.SDL_SCANCODE_F4, [Key.F5] = SDL_Scancode.SDL_SCANCODE_F5,
-            [Key.F11] = SDL_Scancode.SDL_SCANCODE_F11, [Key.F12] = SDL_Scancode.SDL_SCANCODE_F12,
-            [Key.D0] = SDL_Scancode.SDL_SCANCODE_0,
-        };
-        for (int i = 0; i < 26; i++) map[Key.A + i] = SDL_Scancode.SDL_SCANCODE_A + i;
-        for (int i = 1; i < 10; i++) map[Key.D0 + i] = SDL_Scancode.SDL_SCANCODE_1 + (i - 1);
-        return map;
-    }
-
-    public bool IsKeyDown(Key key)
-    {
-        if (!Keys.TryGetValue(key, out var code)) return false;
-        if (_taps.ContainsKey(code))
-        {
-            _sampled.Add(code);
-            return true;
-        }
-        int count;
-        var state = SDL_GetKeyboardState(&count);
-        return (int)code < count && state[(int)code];
-    }
-
-    public bool IsPadDown(PadButton button)
-    {
-        if (touch.IsDown(button)) return true;
-        if (_pad == null) return false;
-        var b = button switch
-        {
-            PadButton.A => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_SOUTH,
-            PadButton.B => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_EAST,
-            PadButton.X => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_WEST,
-            PadButton.Y => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_NORTH,
-            PadButton.Start => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_START,
-            PadButton.Back => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_BACK,
-            PadButton.LeftShoulder => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,
-            PadButton.RightShoulder => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER,
-            PadButton.DPadUp => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_DPAD_UP,
-            PadButton.DPadDown => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_DPAD_DOWN,
-            PadButton.DPadLeft => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_DPAD_LEFT,
-            PadButton.DPadRight => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_DPAD_RIGHT,
-            _ => SDL_GamepadButton.SDL_GAMEPAD_BUTTON_INVALID,
-        };
-        return b != SDL_GamepadButton.SDL_GAMEPAD_BUTTON_INVALID && SDL_GetGamepadButton(_pad, b);
-    }
-
-    public Vector2 LeftStick => _pad == null ? Vector2.Zero : new Vector2(
-        Math.Max(-1f, SDL_GetGamepadAxis(_pad, SDL_GamepadAxis.SDL_GAMEPAD_AXIS_LEFTX) / 32767f),
-        Math.Max(-1f, SDL_GetGamepadAxis(_pad, SDL_GamepadAxis.SDL_GAMEPAD_AXIS_LEFTY) / 32767f));
-
-    public void Dispose()
-    {
-        if (_pad != null) SDL_CloseGamepad(_pad);
-        _pad = null;
-    }
-}

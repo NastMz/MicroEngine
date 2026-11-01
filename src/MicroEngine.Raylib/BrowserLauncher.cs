@@ -17,6 +17,11 @@ public static class BrowserLauncher
     {
         ArgumentNullException.ThrowIfNull(createGame);
         SaveStore.DefaultStorage = gameId => new BrowserSaveStorage(gameId);
+        BrowserTouch.Vibrator = ms =>
+        {
+            try { return BrowserHaptics.Vibrate(ms); }
+            catch (System.Runtime.InteropServices.JavaScript.JSException) { return false; }
+        };
         return new GameSession(createGame, game => new RaylibPlatform(game.Settings, new DesktopOptions()));
     }
 }

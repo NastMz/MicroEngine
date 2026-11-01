@@ -71,7 +71,8 @@ developers registered with Google, and Google plans to extend this worldwide in 
 registered: in those countries the APK installs through Android's advanced installation flow for unverified developers,
 or with `adb install` from a computer. Elsewhere, nothing changes yet.
 
-The Android app has been run on the Android emulator only, not on a physical phone ([Platforms](/platforms/)).
+The Android app has been played on one phone (Redmi Note 14 Pro, Android 16) and is checked automatically on the Android emulator
+([Platforms](/platforms/)).
 
 ## iOS
 

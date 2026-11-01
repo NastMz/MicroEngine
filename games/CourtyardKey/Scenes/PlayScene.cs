@@ -46,6 +46,7 @@ public sealed partial class PlayScene : Scene
     public Progress Progress { get; }
     public Random Rng { get; }
     public Hero Hero { get; private set; } = null!;
+    public override string? Describe() => Hero is null ? null : FormattableString.Invariant($"x={Hero.Position.X:0} y={Hero.Position.Y:0}");
     public PlayMode Mode { get; private set; }
     public Room Room { get; private set; } = null!;
     public AreaMap Area { get; private set; } = null!;

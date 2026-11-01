@@ -6,7 +6,10 @@
 //               to --out/desktop/<Game>/<script> so `web/tests/desktop.mjs --skip-run` compares them with a reference
 //   audio       the audio device opened (not listened to)
 //   input       keys sent by the system (adb input keyevent) change what the game shows
-//   touch       taps on the on-screen A button (adb input tap) take the game past its first scene
+//   touch       taps (adb input tap) on the control that confirms menus, at the position the game logs for this screen,
+//               take the game past its first scene
+//   touch-drag  a finger held on the movement control (adb input motionevent) presses the direction and moves the player
+//   touch-two-thumbs  touch.script holds movement and a second control at once on the device's layout
 //   lifecycle   going to the background suspends the game and coming back resumes it
 //
 //   node platforms/android/device-checks.mjs --apk FILE [--serial ID] [--game MeadowRun] [--out DIR]
@@ -101,7 +104,19 @@ for (const s of scenarios.filter(s => s.game === game)) {
   adb('logcat', '-c');
   const env = Object.entries(s.env).map(([k, v]) => `${k}=${v}`).join(';');
   // One command line for the device shell, which would otherwise split the env extra at its ';'.
-  adb('shell', `am start -W -n ${activity} --es script '${s.script}'${env ? ` --es env '${env}'` : ''}`);
+  const launch = () => adb('shell', `am start -W -n ${activity} --es script '${s.script}'${env ? ` --es env '${env}'` : ''}`);
+  launch();
+  // On a freshly booted emulator the first launch is sometimes lost (the activity never starts and nothing is logged,
+  // not even a crash). A run that has not started after 90 s is launched once more, from cleared data again; the log
+  // says so, and the run is judged by its result as usual.
+  if (!/microengine: start/.test(await waitFor(/microengine: start/, 90_000))) {
+    console.log(`note ${name}: no start after 90 s; launching it again`);
+    adb('shell', 'am', 'force-stop', pkg);
+    adb('shell', 'pm', 'clear', pkg);
+    adb('logcat', '-c');
+    awake();
+    launch();
+  }
   const text = await waitFor(/microengine: exit/, 240_000);
   fs.writeFileSync(path.join(out, `${name}.log`), text);
   if (/microengine: start/.test(text)) started = true;
@@ -149,21 +164,90 @@ record('lifecycle', alive.length > 0 && suspendedThenResumed && !crashed(lifecyc
     : suspendedThenResumed ? 'Home suspended the game, relaunching resumed it (resumed.png)' : 'still running, but no suspended/resumed pair in the log');
 adb('shell', 'am', 'force-stop', pkg);
 
-// Touch: a fresh interactive run; taps on the on-screen A button (MicroEngine.Input.TouchPad's layout) must confirm
-// the first menu, as Enter does.
-adb('logcat', '-c');
-adb('shell', 'am', 'start', '-W', '-n', activity);
-const firstTouch = scenes(await waitFor(/microengine: scene /, 120_000))[0];
-await sleep(2000);
-const [w, h] = (adb('shell', 'wm', 'size').out.match(/(\d+)x(\d+)\s*$/m) ?? []).slice(1).map(Number).sort((a, b) => b - a);
-const aspect = w / h, tap = [Math.round((1 - 0.22 / aspect) * w), Math.round((0.74 + 0.12) * h)];
-for (let i = 0; i < 3; i++) { adb('shell', 'input', 'tap', String(tap[0]), String(tap[1])); await sleep(1500); }
-await sleep(2000);
-screenshot(path.join(out, 'touch-after.png'));
-const touched = scenes(log());
-record('touch', !!firstTouch && touched.length > 1 && !crashed(log()),
-  firstTouch ? `scenes after three taps at ${tap.join(',')} on a ${w}x${h} screen: ${touched.join(' → ')}` : 'the game logged no scene');
-fs.writeFileSync(path.join(out, 'touch.log'), log());
+// Touch. The host logs where the game's on-screen controls are on this screen (MICROENGINE_PROBE=1) and, whenever they
+// change, the actions down with the scene's description (the player's position). Each game: how its gameplay checks
+// start, the control that confirms its menus, the movement control and the direction a push to its right (or down)
+// presses.
+const touchSetup = {
+  MeadowRun: { env: 'MEADOW_START=level', confirm: 'jump', move: 'dpad', push: [0.8, 0], action: 'right', second: 'jump' },
+  NeonRift: { env: 'RIFT_START=stage;RIFT_GOD=1', confirm: 'jump', move: 'stick', push: [0.7, -0.7], action: 'up', second: 'fire' },
+  CourtyardKey: { env: 'COURTYARD_START=road', confirm: 'confirm', move: 'stick', push: [0, 1], action: 'down', second: 'confirm' },
+  TrailDuel: { env: 'TRAIL_DEBUG=town', confirm: 'confirm', move: 'dpad', push: [0, 0.8], action: 'down', second: 'cancel' },
+}[game];
+const controlsIn = text => Object.fromEntries([...text.matchAll(/microengine: control (\S+) (-?\d+) (-?\d+) (\d+)/g)].map(m => [m[1], { x: +m[2], y: +m[3], r: +m[4] }]));
+const probes = text => [...text.matchAll(/microengine: probe (\S+) \[([^\]]*)\] ?(.*)/g)].map(m => ({ scene: m[1], actions: m[2].split(',').filter(Boolean), description: m[3],
+  x: Number(m[3].match(/x=(-?\d+)/)?.[1]), y: Number(m[3].match(/y=(-?\d+)/)?.[1]) }));
+async function interactive(env) {
+  adb('shell', 'am', 'force-stop', pkg);
+  adb('shell', 'pm', 'clear', pkg);
+  adb('logcat', '-c');
+  awake();
+  adb('shell', `am start -W -n ${activity} --es env '${env}'`);
+  await waitFor(/microengine: control /, 120_000);
+  await sleep(2500);
+  return controlsIn(log());
+}
+
+// Real system taps (adb input tap) on the control that confirms menus must take the game past its title.
+{
+  const controls = await interactive('MICROENGINE_PROBE=1');
+  const confirm = controls[touchSetup.confirm];
+  const first = scenes(log())[0];
+  if (confirm) for (let i = 0; i < 3 && scenes(log()).length < 2; i++) { adb('shell', 'input', 'tap', String(confirm.x), String(confirm.y)); await sleep(1500); }
+  await sleep(1500);
+  screenshot(path.join(out, 'touch-after.png'));
+  const touched = scenes(log());
+  record('touch', !!confirm && touched.length > 1 && !crashed(log()),
+    confirm ? `taps on '${touchSetup.confirm}' at ${confirm.x},${confirm.y} (radius ${confirm.r} px): ${touched.join(' → ')}` : `no control layout in the log (first scene ${first})`);
+  fs.writeFileSync(path.join(out, 'touch.log'), log());
+}
+
+// A real system touch held on the movement control must press the direction and move the player. `input motionevent`
+// (Android 10+) puts the finger down, pushes it to the edge of the control and keeps it there: a swipe would move it
+// linearly for its whole duration and lift it on arrival, which on a joystick is a slowly growing push that only
+// reaches the direction threshold as it ends.
+{
+  const controls = await interactive(`${touchSetup.env};MICROENGINE_PROBE=1`);
+  const move = controls[touchSetup.move];
+  let detail = 'no control layout in the log';
+  let ok = false;
+  if (move) {
+    const before = probes(log()).at(-1);
+    const to = [Math.round(move.x + touchSetup.push[0] * move.r), Math.round(move.y + touchSetup.push[1] * move.r)];
+    adb('shell', 'input', 'motionevent', 'DOWN', String(move.x), String(move.y));
+    for (let i = 1; i <= 4; i++)
+      adb('shell', 'input', 'motionevent', 'MOVE', String(Math.round(move.x + (to[0] - move.x) * i / 4)), String(Math.round(move.y + (to[1] - move.y) * i / 4)));
+    await sleep(2500);
+    adb('shell', 'input', 'motionevent', 'UP', String(to[0]), String(to[1]));
+    await sleep(1000);
+    const seen = probes(log());
+    const pushed = seen.filter(p => p.actions.includes(touchSetup.action));
+    const last = seen.at(-1);
+    const moved = before && last && (before.x !== last.x || before.y !== last.y);
+    ok = pushed.length > 0 && !!moved && !crashed(log());
+    detail = `finger down at ${move.x},${move.y}, pushed to ${to.join(',')} and held 2.5 s: '${touchSetup.action}' in ${pushed.length} probes, ${before?.description ?? '?'} → ${last?.description ?? '?'}`;
+  }
+  screenshot(path.join(out, 'touch-drag.png'));
+  record('touch-drag', ok, detail);
+  fs.writeFileSync(path.join(out, 'touch-drag.log'), log());
+}
+
+// Two thumbs at once, scripted on the device's own layout (touch.script, through the same hit testing as fingers):
+// adb's input command has one pointer only, so this level shows the controls' multitouch on this screen, not the
+// system's delivery of two fingers.
+{
+  adb('shell', 'am', 'force-stop', pkg);
+  adb('shell', 'pm', 'clear', pkg);
+  adb('logcat', '-c');
+  adb('shell', `am start -W -n ${activity} --es script 'touch.script' --es env '${touchSetup.env};MICROENGINE_PROBE=1'`);
+  const text = await waitFor(/microengine: exit/, 240_000);
+  fs.writeFileSync(path.join(out, 'touch-script.log'), text);
+  const seen = probes(text);
+  const both = seen.some(p => p.actions.includes(touchSetup.action) && p.actions.includes(touchSetup.second));
+  const positions = new Set(seen.map(p => p.description)).size;
+  record('touch-two-thumbs', /microengine: exit 0/.test(text) && both && positions > 2,
+    `'${touchSetup.action}' and '${touchSetup.second}' down together: ${both}; ${positions} distinct states`);
+}
 adb('shell', 'am', 'force-stop', pkg);
 
 const summary = ['### Android device checks', '', `Game ${game}, APK \`${path.basename(apk)}\`.`, '', '| Level | Result | Detail |', '| --- | --- | --- |',
