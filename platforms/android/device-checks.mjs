@@ -104,7 +104,19 @@ for (const s of scenarios.filter(s => s.game === game)) {
   adb('logcat', '-c');
   const env = Object.entries(s.env).map(([k, v]) => `${k}=${v}`).join(';');
   // One command line for the device shell, which would otherwise split the env extra at its ';'.
-  adb('shell', `am start -W -n ${activity} --es script '${s.script}'${env ? ` --es env '${env}'` : ''}`);
+  const launch = () => adb('shell', `am start -W -n ${activity} --es script '${s.script}'${env ? ` --es env '${env}'` : ''}`);
+  launch();
+  // On a freshly booted emulator the first launch is sometimes lost (the activity never starts and nothing is logged,
+  // not even a crash). A run that has not started after 90 s is launched once more, from cleared data again; the log
+  // says so, and the run is judged by its result as usual.
+  if (!/microengine: start/.test(await waitFor(/microengine: start/, 90_000))) {
+    console.log(`note ${name}: no start after 90 s; launching it again`);
+    adb('shell', 'am', 'force-stop', pkg);
+    adb('shell', 'pm', 'clear', pkg);
+    adb('logcat', '-c');
+    awake();
+    launch();
+  }
   const text = await waitFor(/microengine: exit/, 240_000);
   fs.writeFileSync(path.join(out, `${name}.log`), text);
   if (/microengine: start/.test(text)) started = true;
