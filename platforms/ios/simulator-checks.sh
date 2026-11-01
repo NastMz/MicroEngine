@@ -70,8 +70,8 @@ done < <(node -e '
 case "$game" in
   MeadowRun) tenv="MEADOW_START=level"; pair="right jump" ;;
   NeonRift) tenv="RIFT_START=stage;RIFT_GOD=1"; pair="up fire" ;;
-  CourtyardKey) tenv="COURTYARD_START=road"; pair="down down" ;;
-  *) tenv="TRAIL_DEBUG=town"; pair="down down" ;;
+  CourtyardKey) tenv="COURTYARD_START=road"; pair="down confirm" ;;
+  *) tenv="TRAIL_DEBUG=town"; pair="down cancel" ;;
 esac
 tlog=$(perl -e 'alarm shift; exec @ARGV' 300 xcrun simctl launch --console-pty --terminate-running-process "$device" "$bundle" --script touch.script --env "$tenv;MICROENGINE_PROBE=1" 2>&1 | tr -d '\r')
 echo "$tlog" > "$out/touch-script.log"

@@ -6,8 +6,8 @@
 135 touch 2 fire
 170 touch 3 jump
 180 capture touch_aim.png
-185 lift 3
-230 lift 2
-230 lift 1
+230 lift 3
+240 lift 2
+240 lift 1
 260 capture touch_end.png
 280 quit

@@ -1,11 +1,11 @@
 # On-screen controls on the platform's own layout (MEADOW_START=level): one thumb holds the d-pad right while the
-# other presses A to jump. Touches go through the same hit testing as fingers (InputScript "touch"); used by the
-# phone checks.
+# other holds A to jump. Touches go through the same hit testing as fingers (InputScript "touch"); used by the phone
+# checks, which need both held together for a while (scripted runs on a device step faster than real time).
 120 capture touch_start.png
 130 touch 1 dpad 0.8 0
 170 touch 2 jump
-185 lift 2
 190 capture touch_jump.png
-240 lift 1
-270 capture touch_end.png
-290 quit
+230 lift 2
+260 lift 1
+280 capture touch_end.png
+300 quit
