@@ -31,6 +31,21 @@ public sealed class TouchTests
     }
 
     [TestMethod]
+    public void BattleNarrationHidesTheDPadAndMenusBringItBack()
+    {
+        using var h = new Harness("battle");
+        h.Step(5);
+        var battle = (BattleScene)h.Game.Scenes.Current!;
+        Assert.IsFalse(battle.AwaitingChoice, "the battle opens with narration");
+        Assert.IsFalse(h.Game.Touch.IsVisible("dpad"), "no d-pad over the narration");
+        Assert.IsTrue(h.Game.Touch.IsVisible("confirm"));
+        for (int i = 0; i < 2000 && !battle.AwaitingChoice; i++) h.Step();
+        Assert.IsTrue(battle.AwaitingChoice, "the action menu");
+        h.Step();
+        Assert.IsTrue(h.Game.Touch.IsVisible("dpad"), "menus get the d-pad back");
+    }
+
+    [TestMethod]
     public void AGamepadStickNeverStepsDiagonally()
     {
         using var h = new Harness("town");

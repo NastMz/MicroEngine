@@ -39,6 +39,13 @@ public interface ITouchScreen
 public interface ITouchOverlay
 {
     void Draw(IOverlayCanvas canvas);
+
+    /// <summary>
+    /// Where the backend should draw the game frame in this window, so the overlay does not cover it. The default is
+    /// the plain letterbox rule (<see cref="FrameLayout.Fit"/>); <see cref="VirtualControls"/> fits the frame around
+    /// its controls.
+    /// </summary>
+    RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight) => FrameLayout.Fit(window, safeArea, virtualWidth, virtualHeight);
 }
 
 /// <summary>Primitive drawing in screen pixels, implemented by each backend for <see cref="ITouchOverlay"/>.</summary>

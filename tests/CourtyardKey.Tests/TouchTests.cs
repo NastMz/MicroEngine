@@ -40,6 +40,24 @@ public sealed class TouchTests
     }
 
     [TestMethod]
+    public void ADialogueKeepsOnlyTheButtonsItUses()
+    {
+        using var h = new Harness("village");
+        h.Step(40);
+        h.WalkToTile(1, 4.8f);
+        h.Platform.Keys.Set(Key.Left, true);
+        h.WaitUntil(() => h.DialogueOpen, 300, "the elder's warning");
+        h.Platform.Keys.Set(Key.Left, false);
+        h.Step();
+        Assert.IsFalse(h.Game.Touch.IsVisible("stick"), "no joystick over the dialogue text");
+        Assert.IsFalse(h.Game.Touch.IsVisible("action") || h.Game.Touch.IsVisible("pause"));
+        Assert.IsTrue(h.Game.Touch.IsVisible("confirm") && h.Game.Touch.IsVisible("cancel"), "A advances, B stays");
+        h.ClearDialogue();
+        h.Step();
+        Assert.IsTrue(h.Game.Touch.IsVisible("stick"), "the joystick is back once the dialogue closes");
+    }
+
+    [TestMethod]
     public void ButtonsAndPauseAreReachable()
     {
         using var h = new Harness("road");

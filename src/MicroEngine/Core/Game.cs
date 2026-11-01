@@ -85,7 +85,11 @@ public abstract class Game
         Scenes.ApplyPending();
     }
 
-    internal void UpdateTouch(ITouchScreen? screen, float dt) => Touch.Update(screen, dt, Input.LastDevice);
+    internal void UpdateTouch(ITouchScreen? screen, float dt)
+    {
+        Touch.SetContext(Scenes.Current?.TouchActions);
+        Touch.Update(screen, dt, Input.LastDevice);
+    }
 
     internal void Step(float dt)
     {

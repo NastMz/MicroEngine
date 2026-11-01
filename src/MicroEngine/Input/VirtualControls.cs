@@ -152,7 +152,9 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
         public TouchControl Control { get; } = control;
         public Vector2 Center;
         public float Radius;
-        public bool Visible = control.Visible;
+        public bool Manual = control.Visible;   // SetVisible
+        public bool InContext = true;           // the scene needs one of its actions (SetContext)
+        public bool Visible => Manual && InContext;
         // Live state.
         public long? Finger;
         public Vector2 Origin;      // stick base while held
@@ -241,13 +243,88 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
     public void SetVisible(string id, bool visible)
     {
         var p = Find(id);
-        if (p.Visible == visible) return;
-        p.Visible = visible;
+        if (p.Manual == visible) return;
+        p.Manual = visible;
         if (!visible) Release(p);
         RecomputeActions();
     }
 
     public bool IsVisible(string id) => Find(id).Visible;
+
+    /// <summary>
+    /// The actions the current context needs (the top scene's <see cref="Scenes.Scene.TouchActions"/>, set by the game
+    /// every frame): only controls that press at least one of them are shown and touchable; null shows them all. A
+    /// dialogue that only advances with "confirm" hides the d-pad over its text, keeps the button that confirms, and
+    /// the hidden controls release their fingers. The game frame does not change size with the context.
+    /// </summary>
+    public void SetContext(IEnumerable<string>? actions)
+    {
+        var needed = actions is null ? null : new HashSet<string>(actions, StringComparer.Ordinal);
+        bool changed = false;
+        foreach (var p in _controls)
+        {
+            bool inContext = needed is null || p.Control.ActionNames.Any(needed.Contains);
+            if (inContext == p.InContext) continue;
+            p.InContext = inContext;
+            if (!inContext) Release(p);
+            changed = true;
+        }
+        if (changed) RecomputeActions();
+    }
+
+    /// <summary>
+    /// Whether the game frame is fitted around the controls while they are shown (default true): on screens close to
+    /// 16:9, where the letterbox bars cannot hold them, the frame is made as large as it can be without any control
+    /// covering it (see <see cref="Frame"/>).
+    /// </summary>
+    public bool KeepFrameClear { get; set; } = true;
+
+    /// <summary>The smallest frame, as a fraction of the largest, that <see cref="KeepFrameClear"/> may choose; below it controls overlap the edge of the frame instead.</summary>
+    public float MinimumFrameFraction { get; set; } = 0.5f;
+
+    /// <summary>The frame chosen by the last <see cref="Frame"/> call, in screen pixels (tests and diagnostics).</summary>
+    public RectF LastFrame { get; private set; }
+
+    /// <summary>
+    /// Where the backend draws the game frame. Without shown controls it is <see cref="FrameLayout.Fit"/>. With shown
+    /// controls that would cover the largest frame, the frame moves to the top of the safe area (horizontally centred)
+    /// and takes the largest size at which no control of the layout overlaps it, never below
+    /// <see cref="MinimumFrameFraction"/>; a whole-number scale is kept when it is within 90 % of that size, so pixels
+    /// stay even when it costs little. Controls hidden by context still count, so a dialogue does not resize the game.
+    /// </summary>
+    public RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight)
+    {
+        var full = FrameLayout.Fit(window, safeArea, virtualWidth, virtualHeight);
+        LastFrame = full;
+        if (!Shown || !KeepFrameClear || !_laidOut || virtualWidth <= 0 || virtualHeight <= 0) return full;
+        var safe = safeArea.Width > 0 && safeArea.Height > 0 ? safeArea : new RectF(0, 0, window.X, window.Y);
+        float margin = 4 * PixelsPerDp;
+        var obstacles = _controls.Where(p => p.Control.Visible && p.Manual).Select(p => (p.Center, R: p.Radius + margin)).ToList();
+        bool Clear(RectF f) => obstacles.All(o => !Overlaps(f, o.Center, o.R));
+        if (Clear(full)) return full;
+        RectF Place(float scale)
+        {
+            float w = virtualWidth * scale, h = virtualHeight * scale;
+            return new RectF(MathF.Floor(safe.X + (safe.Width - w) / 2), safe.Y, w, h);
+        }
+        float fullScale = full.Width / virtualWidth, lo = 0, hi = fullScale;
+        for (int i = 0; i < 30; i++)
+        {
+            float mid = (lo + hi) / 2;
+            if (Clear(Place(mid))) lo = mid; else hi = mid;
+        }
+        float minimum = fullScale * MinimumFrameFraction, chosen = Math.Max(lo, minimum);
+        // A whole-number scale keeps pixels even; take it when it costs little and stays above the minimum.
+        float whole = MathF.Floor(chosen);
+        if (whole >= 1 && whole >= chosen * 0.9f && whole >= minimum) chosen = whole;
+        return LastFrame = Place(chosen);
+    }
+
+    private static bool Overlaps(RectF r, Vector2 c, float radius)
+    {
+        float x = Math.Clamp(c.X, r.X, r.Right), y = Math.Clamp(c.Y, r.Y, r.Bottom);
+        return (c.X - x) * (c.X - x) + (c.Y - y) * (c.Y - y) < radius * radius;
+    }
     /// <summary>Whether the control is pressed (a button held or toggled on, a d-pad or stick pushed).</summary>
     public bool IsPressed(string id) => Find(id).Pressed;
     /// <summary>A stick's value after its dead zone, or a d-pad's direction, each axis -1..1.</summary>
