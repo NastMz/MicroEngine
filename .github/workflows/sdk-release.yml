@@ -1,0 +1,108 @@
+# Releases the SDK (docs/guide/sdk.md, "Publishing a release"): run by hand, from the commit to release.
+#   preflight  the version (MicroEngineVersion) is not released yet: no sdk-v<version> tag, no such package on nuget.org
+#   check      sdk.yml on this commit: pack every package, check them, and build, run and package a new game from them
+#              on Windows, Linux and macOS
+#   draft      a draft GitHub prerelease sdk-v<version> holding the checked packages and the version's release notes
+#              (docs/guide/release-notes.md); nothing is public yet
+#   publish    only when the `publish` input is on: pushes those same files to nuget.org with the NUGET_API_KEY secret,
+#              after the `nuget` environment's reviewers approve, then publishes the GitHub release
+# SDK tags are sdk-v<version>, apart from the demo releases (v0.1.0, v0.2.0...), which release.yml makes.
+name: sdk-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Push the packages to nuget.org (needs the NUGET_API_KEY secret and the nuget environment's approval). Off builds, checks and drafts only.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-release
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -n 's:.*<MicroEngineVersion>\(.*\)</MicroEngineVersion>.*:\1:p' Directory.Build.props)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "sdk-v$version" > /dev/null 2>&1; then echo "::error::sdk-v$version is already released; raise MicroEngineVersion."; exit 1; fi
+          code=$(curl -s -o /dev/null -w '%{http_code}' "https://api.nuget.org/v3-flatcontainer/microengine/$version/microengine.$version.nupkg")
+          if [ "$code" = 200 ]; then echo "::error::MicroEngine $version is already on nuget.org; raise MicroEngineVersion."; exit 1; fi
+          grep -q "^## $version" docs/guide/release-notes.md || { echo "::error::docs/guide/release-notes.md has no '## $version' section."; exit 1; }
+          echo "SDK $version from ${GITHUB_SHA::12}" >> "$GITHUB_STEP_SUMMARY"
+
+  check:
+    name: Check
+    needs: preflight
+    uses: ./.github/workflows/sdk.yml
+    with:
+      ref: ${{ github.sha }}
+
+  draft:
+    name: Draft release
+    needs: [preflight, check]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdk-feed
+          path: sdk-feed
+      - name: Draft
+        run: |
+          # The version's section of the release notes, up to the next version.
+          awk -v v="## $VERSION" '$0 ~ "^## " { on = index($0, v) == 1 } on' docs/guide/release-notes.md > notes.md
+          ( cd sdk-feed && sha256sum ./*.nupkg ./*.snupkg > SHA256SUMS )
+          gh release create "sdk-v$VERSION" --draft --prerelease --target "$GITHUB_SHA" --title "MicroEngine SDK $VERSION (Alpha)" --notes-file notes.md sdk-feed/*
+          echo "Draft: sdk-v$VERSION with $(find sdk-feed -name '*.nupkg' | wc -l) packages" >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    name: Publish to nuget.org
+    if: inputs.publish
+    needs: [preflight, draft]
+    runs-on: ubuntu-latest
+    environment: nuget
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      # The very files the draft holds, which the check job built and tested.
+      - name: Packages from the draft
+        run: gh release download "sdk-v$VERSION" --repo "$GITHUB_REPOSITORY" --dir sdk-feed --pattern '*.nupkg' --pattern '*.snupkg' --pattern SHA256SUMS
+      - name: Verify
+        run: cd sdk-feed && sha256sum -c SHA256SUMS
+      - name: Push
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          [ -n "$NUGET_API_KEY" ] || { echo "::error::The NUGET_API_KEY secret is not set."; exit 1; }
+          # Engine packages first, so the tool and the template never point at a version nuget.org does not have yet.
+          for id in MicroEngine MicroEngine.Sdl MicroEngine.Raylib MicroEngine.Desktop MicroEngine.Cli MicroEngine.Templates; do
+            dotnet nuget push "sdk-feed/$id.$VERSION.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+      - name: Publish the GitHub release
+        run: gh release edit "sdk-v$VERSION" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease

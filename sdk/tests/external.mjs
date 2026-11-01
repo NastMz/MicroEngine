@@ -32,6 +32,7 @@ const targets = (option('targets') ?? [host, 'linux', ...(hasWasm ? ['web'] : []
 const exe = process.platform === 'win32' ? '.exe' : '';
 
 let failed = 0;
+const webPlays = [];
 const check = (name, ok, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'} ${name}${detail ? `: ${detail}` : ''}`);
   if (!ok) failed++;
@@ -162,6 +163,7 @@ try {
   if (!/^\s*wasm-tools\s/m.test(workloads)) expectFailure('web package without the wasm-tools workload', null, ['package', 'web'], /wasm-tools/);
   const outside = run(me, ['build'], { cwd: work });
   check('fails clearly: no project in the folder', outside.code === 2 && /no game project/.test(outside.out), tail(outside.out));
+  for (const folder of webPlays) await playInBrowser(folder);
 } catch (e) {
   if (e.message !== 'stop') { console.error(e); failed++; }
 } finally {
@@ -209,6 +211,7 @@ function checkPackage(target, file, dist) {
     const meta = JSON.parse(fs.readFileSync(path.join(folder, 'game.json'), 'utf8'));
     check('web: page title, favicon, game.json and content', /<title>Sample Game<\/title>/.test(index) && /rel="icon" href="icon.png"/.test(index) && meta.title === 'Sample Game'
       && fs.existsSync(path.join(folder, 'icon.png')) && fs.existsSync(path.join(folder, 'Content', 'hero.png')) && fs.existsSync(path.join(folder, '_framework')));
+    webPlays.push(folder);
   } else if (target === 'android') {
     const sdk = process.env.ANDROID_HOME;
     const tools = sdk && path.join(sdk, 'build-tools');
@@ -226,5 +229,42 @@ function checkPackage(target, file, dist) {
       check('android: the APK installs and the game starts on the device', installed.code === 0 && /microengine: start Sample/.test(log) && !/microengine: error/.test(log), tail(log));
       run(adb, ['uninstall', 'com.example.sample']);
     }
+  }
+}
+
+/**
+ * Serves the web package like any static host (web/serve.mjs) and plays it in Chrome: the page loads, the game starts
+ * on the player's gesture and keeps updating without errors. Skipped when Chrome or puppeteer-core is not installed.
+ */
+async function playInBrowser(folder) {
+  const chrome = [process.env.CHROME_PATH, 'C:/Program Files/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find(p => p && fs.existsSync(p));
+  let puppeteer;
+  try {
+    const { createRequire } = await import('node:module');
+    const loaded = createRequire(path.join(repo, 'web', 'tests', 'package.json'))('puppeteer-core');
+    puppeteer = loaded.default ?? loaded;
+  } catch { puppeteer = null; }
+  if (!chrome || !puppeteer) return console.log('skip web: the page is not played (needs Chrome and npm ci in web/tests)');
+  const root = path.dirname(folder), port = 8800 + Math.floor(Math.random() * 100);
+  const { spawn } = await import('node:child_process');
+  const server = spawn(process.execPath, [path.join(repo, 'web', 'serve.mjs'), root, String(port)], { stdio: 'ignore' });
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--autoplay-policy=no-user-gesture-required'] });
+  try {
+    await new Promise(r => setTimeout(r, 1000));
+    const page = await browser.newPage();
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.goto(`http://localhost:${port}/${path.basename(folder)}/`);
+    const state = async () => page.evaluate(() => window.microengine?.state ?? 'loading');
+    const until = async (want, ms) => { const end = Date.now() + ms; while (Date.now() < end) { if (want.includes(await state())) return true; await new Promise(r => setTimeout(r, 200)); } return false; };
+    const ready = await until(['ready'], 60_000);
+    if (ready) await page.click('#play');
+    const playing = ready && await until(['playing'], 30_000);
+    await new Promise(r => setTimeout(r, 2000));
+    const title = await page.title();
+    check('web: the page loads in Chrome and the game plays', playing && (await state()) === 'playing' && title === 'Sample Game' && errors.length === 0, `${await state()}; title ${title}; ${errors.join(' | ') || 'no page errors'}`);
+  } finally {
+    await browser.close();
+    server.kill();
   }
 }

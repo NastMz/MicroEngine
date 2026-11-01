@@ -177,10 +177,11 @@ jobs:
         run: |
           dotnet workload install android > /dev/null
           { echo "### Android toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^android ' | tr -s ' ')"; echo "- Java $(java -version 2>&1 | head -1)"; echo; } >> "$GITHUB_STEP_SUMMARY"
+      # The APK is built as any game's: by `microengine package android` (a test build, signed with the debug key).
       - name: APK
         run: |
-          dotnet build platforms/android -c Release -p:Game=${{ matrix.game }} -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME"
-          apk=$(ls platforms/android/bin/${{ matrix.game }}/Release/net10.0-android/*-Signed.apk)
+          dotnet run --project src/MicroEngine.Cli -c Release -- package android --project games/${{ matrix.game }}/${{ matrix.game }}.csproj --debug-key --out dist/android
+          apk=$(ls dist/android/${{ matrix.game }}-*-android.apk)
           echo "- APK: $(basename "$apk"), $(du -h "$apk" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
       - name: Enable KVM
         run: |
@@ -250,7 +251,8 @@ jobs:
       # build repeated (then update IOS_XCODE).
       - name: App for the simulator
         run: |
-          if ! dotnet build platforms/ios -c Release -p:Game=${{ matrix.game }} > ios-build.log 2>&1; then
+          package() { dotnet run --project src/MicroEngine.Cli -c Release -- package ios-simulator --project games/${{ matrix.game }}/${{ matrix.game }}.csproj --out dist/ios; }
+          if ! package > ios-build.log 2>&1; then
             grep -E ' error |error :' ios-build.log | sort -u | head -20 || true
             need=$(grep -oE 'requires Xcode [0-9]+(.[0-9]+)+' ios-build.log | head -1 | cut -d' ' -f3 || true)
             [ -n "$need" ] || { tail -40 ios-build.log; exit 1; }
@@ -258,9 +260,11 @@ jobs:
             xcode=; for candidate in /Applications/Xcode_"$need".app /Applications/Xcode_"$need".0.app; do [ -d "$candidate" ] && { xcode=$candidate; break; }; done
             [ -n "$xcode" ] || { echo "::error::The ios workload needs Xcode $need, which this image does not have."; exit 1; }
             sudo xcode-select -s "$xcode"
-            dotnet build platforms/ios -c Release -p:Game=${{ matrix.game }}
+            package
           fi
-          app=$(ls -d platforms/ios/bin/${{ matrix.game }}/Release/net10.0-ios/iossimulator-arm64/*.app)
+          # The app is checked from the package itself, as a developer receives it.
+          ditto -x -k dist/ios/${{ matrix.game }}-*-ios-simulator.zip dist/ios/extracted
+          app=$(ls -d dist/ios/extracted/${{ matrix.game }}/*.app)
           echo "APP=$app" >> "$GITHUB_ENV"
           { echo "### iOS toolchain"; echo; echo "- .NET $(dotnet --version), $(dotnet workload list | grep -E '^ios ' | tr -s ' ')"
             echo "- $(xcodebuild -version | paste -sd' ' -)"

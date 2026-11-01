@@ -49,7 +49,7 @@ test('engine and backend tests run on Windows too; backend tests natively on Lin
 
 test('site sources and the web host need the full browser checks', () => {
   assert.equal(plan(['site/src/components/Player.astro']).browser, 'full');
-  assert.equal(plan(['web/Host/main.js']).browser, 'full');
+  assert.equal(plan(['src/MicroEngine.Cli/Hosts/web/wwwroot/main.js']).browser, 'full');
   assert.equal(plan(['web/README.md']).browser, 'layout');
 });
 

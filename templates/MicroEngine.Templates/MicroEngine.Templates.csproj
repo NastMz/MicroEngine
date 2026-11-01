@@ -16,7 +16,6 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="content/**" Exclude="content/**/bin/**;content/**/obj/**;content/**/dist/**;content/MicroEngineGame/MyGame.csproj" Pack="true" PackagePath="content/" />
-    <None Include="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
   <!-- The template's project references this SDK version. -->
   <Target Name="_VersionedTemplateProject" BeforeTargets="_GetPackageFiles">

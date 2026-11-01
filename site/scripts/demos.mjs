@@ -71,7 +71,8 @@ const sharedInputs = [
   'NuGet.config', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'games/LICENSE', 'games/Directory.Build.targets',
 ];
 // Files inside those paths that never reach a release package.
-const notAnInput = file => (/\.md$/i.test(file) && file !== 'THIRD-PARTY-NOTICES.md') || /(^|\/)(screenshots|scripts)\//.test(file);
+const notAnInput = file => (/\.md$/i.test(file) && file !== 'THIRD-PARTY-NOTICES.md') || /(^|\/)(screenshots|scripts)\//.test(file)
+  || /^src\/MicroEngine\.Cli\/Hosts\/(android|ios|mobile)\//.test(file);
 
 class DemoError extends Error {}
 const fail = message => { throw new DemoError(message); };
@@ -146,7 +147,9 @@ const nativeShared = ['src', 'packaging', 'Directory.Build.props', 'global.json'
 const nativeExtra = {};
 const notANativeInput = (file, t) => (/\.md$/i.test(file) && file !== 'THIRD-PARTY-NOTICES.md') || /(^|\/)screenshots\//.test(file)
   || file.startsWith('packaging/tests/') || /^platforms\/android\/[^/]+\.(mjs|sh)$/.test(file)
-  || (t.os !== 'android' && /(^|\/)scripts\//.test(file));
+  || (t.os !== 'android' && /(^|\/)scripts\//.test(file))
+  // Hosts of other targets: the browser and iOS hosts never reach a native package, the phone hosts never a desktop one.
+  || /^src\/MicroEngine\.Cli\/Hosts\/(web|ios)\//.test(file) || (t.os !== 'android' && /^src\/MicroEngine\.Cli\/Hosts\/(android|mobile)\//.test(file));
 
 /** The key of one game's native package for a target of packaging/targets.json, computed like {@link demoKey}. */
 export function nativeKey(id, targetId, { root = repoRoot } = {}) {

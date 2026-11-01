@@ -23,23 +23,15 @@ const sha256 = data => crypto.createHash('sha256').update(data).digest('hex');
 
 function fixtureRepo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'native-repo-'));
-  write(root, 'web/games.props', `<Project>
-  <PropertyGroup Condition="'$(Game)' == 'Alpha'">
-    <GameTitle>Alpha</GameTitle>
-    <GameProject>Alpha/Alpha.csproj</GameProject>
-    <GameFactory>new Alpha.Game()</GameFactory>
-  </PropertyGroup>
-</Project>
-`);
   write(root, 'web/toolchain.env', 'DOTNET_SDK_VERSION=10.0.403\n');
-  write(root, 'web/Host/Host.cs', 'class Host {}');
+  write(root, 'src/MicroEngine.Cli/Hosts/web/Program.cs', 'class Host {}');
   write(root, 'src/Engine.cs', 'class Engine {}');
   write(root, 'packaging/package.mjs', '// packager');
   write(root, 'packaging/tests/x.test.mjs', '// test');
-  write(root, 'platforms/android/GameActivity.cs', 'class Activity {}');
+  write(root, 'src/MicroEngine.Cli/Hosts/android/GameActivity.cs', 'class Activity {}');
   write(root, 'platforms/android/device-checks.mjs', '// device checks');
   write(root, 'THIRD-PARTY-NOTICES.md', '# notices');
-  write(root, 'games/Alpha/Alpha.csproj', '<Project />');
+  write(root, 'games/Alpha/Alpha.csproj', '<Project><PropertyGroup><ApplicationTitle>Alpha</ApplicationTitle><ApplicationId>dev.example.alpha</ApplicationId></PropertyGroup></Project>');
   write(root, 'games/Alpha/Game.cs', 'class Alpha {}');
   write(root, 'games/Alpha/README.md', '# Alpha');
   write(root, 'games/Alpha/scripts/run.script', 'wait 1');
@@ -101,10 +93,10 @@ test('native keys: one per target, changed only by what that target is built fro
   assert.equal(nativeKey('Alpha', 'windows-x64', { root }).key, windows, 'desktop packages do not ship input scripts');
   assert.notEqual(nativeKey('Alpha', 'android', { root }).key, android, 'the APK ships them');
 
-  change(root, 'platforms/android/GameActivity.cs', 'class Activity { }');
+  change(root, 'src/MicroEngine.Cli/Hosts/android/GameActivity.cs', 'class Activity { }');
   assert.equal(nativeKey('Alpha', 'windows-x64', { root }).key, windows, 'the Android host is not a desktop input');
 
-  change(root, 'web/Host/Host.cs', 'class Host { }');
+  change(root, 'src/MicroEngine.Cli/Hosts/web/Program.cs', 'class Host { }');
   assert.equal(nativeKey('Alpha', 'windows-x64', { root }).key, windows, 'the web host is not a native input');
   assert.notEqual(demoKey('Alpha', { root }).key, web, 'but it is a web input');
 

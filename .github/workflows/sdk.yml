@@ -1,0 +1,121 @@
+# The SDK as an outside developer gets it (docs/guide/sdk.md, "How the SDK is checked"):
+#   pack      every SDK package (dotnet pack MicroEngine.slnx), MicroEngine.Raylib with the web raylib; the feed is an artifact
+#   external  sdk/tests/external.mjs on Windows, Linux and macOS: install microengine and the template from that feed into
+#             a folder outside the repository, create, build, run and package a game, check expected failures
+# Runs when the engine, the tool, the template or this test change; sdk-release.yml calls it before a release.
+# It never publishes anything.
+name: sdk
+
+on:
+  pull_request:
+    paths: ['src/**', 'templates/**', 'sdk/**', 'Directory.Build.props', 'global.json', 'NuGet.config', 'THIRD-PARTY-NOTICES.md', 'web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh', '.github/workflows/sdk.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'templates/**', 'sdk/**', 'Directory.Build.props', 'global.json', 'NuGet.config', 'THIRD-PARTY-NOTICES.md', 'web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh', '.github/workflows/sdk.yml']
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to check out
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-${{ github.ref }}-${{ inputs.ref || github.sha }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 22
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
+jobs:
+  pack:
+    name: Pack the SDK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    outputs:
+      version: ${{ steps.pack.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      # raylib for browser builds, compiled by the pinned web toolchain; MicroEngine.Raylib carries it.
+      - name: Toolchain folder
+        run: echo "MICROENGINE_WEB_TOOLS=${{ runner.temp }}/web-tools" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/web-tools
+          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh') }}
+      - run: web/setup.sh
+      - name: Pack
+        id: pack
+        run: |
+          dotnet pack MicroEngine.slnx -c Release -o sdk-feed -p:MicroEngineRequireWebRaylib=true -p:MicroEngineRelease=true
+          version=$(sed -n 's:.*<MicroEngineVersion>\(.*\)</MicroEngineVersion>.*:\1:p' Directory.Build.props)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          node sdk/tests/packages.mjs sdk-feed | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdk-feed
+          path: sdk-feed
+          retention-days: 14
+
+  external:
+    name: External project (${{ matrix.os }})
+    needs: pack
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: Windows
+            runner: windows-latest
+            targets: windows,linux
+          - os: Linux
+            runner: ubuntu-latest
+            targets: linux,web,android
+          - os: macOS
+            runner: macos-latest
+            targets: macos,linux
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdk-feed
+          path: sdk-feed
+      - name: Workloads (the ones a developer installs for these targets)
+        if: matrix.os == 'Linux'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb > /dev/null
+          dotnet workload install wasm-tools android > /dev/null
+          npm ci --prefix web/tests > /dev/null
+      - uses: actions/setup-java@v4
+        if: matrix.os == 'Linux'
+        with:
+          distribution: microsoft
+          java-version: '21'
+      - name: External project
+        run: |
+          run=(node sdk/tests/external.mjs --feed "$PWD/sdk-feed" --targets "${{ matrix.targets }}")
+          # A display for the game's window (SDL's CPU renderer) on Linux.
+          if [ "${{ matrix.os }}" = Linux ]; then xvfb-run -a "${run[@]}"; else "${run[@]}"; fi | tee external.log
+          { echo "### External project on ${{ matrix.os }}"; echo '```'; grep -E '^(PASS|FAIL|skip)' external.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

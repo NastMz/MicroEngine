@@ -1,0 +1,4 @@
+<Project>
+  <!-- Template packages carry the same package metadata as the engine packages. -->
+  <Import Project="../src/Directory.Build.props" />
+</Project>
