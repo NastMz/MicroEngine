@@ -269,7 +269,7 @@ jobs:
         run: |
           status=0
           platforms/ios/simulator-checks.sh "$APP" ${{ matrix.game }} ios-checks/${{ matrix.game }} || status=1
-          node web/tests/desktop.mjs --skip-run --games ${{ matrix.game }} --out ios-checks/${{ matrix.game }} --reference web/tests/reference/sdl.json | tee -a "$GITHUB_STEP_SUMMARY" || status=1
+          node web/tests/desktop.mjs --skip-run --games ${{ matrix.game }} --out ios-checks/${{ matrix.game }} --reference web/tests/reference/sdl-macos-arm64.json | tee -a "$GITHUB_STEP_SUMMARY" || status=1
           exit $status
       - if: always()
         uses: actions/upload-artifact@v4

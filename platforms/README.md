@@ -67,7 +67,7 @@ workload set from `web/toolchain.env` and selects the matching Xcode).
 ```bash
 dotnet build platforms/ios -c Release -p:Game=NeonRift
 platforms/ios/simulator-checks.sh platforms/ios/bin/NeonRift/Release/net10.0-ios/iossimulator-arm64/MicroEngine.iOS.app NeonRift dist/ios-checks/NeonRift
-node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/ios-checks/NeonRift --reference web/tests/reference/sdl.json
+node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/ios-checks/NeonRift --reference web/tests/reference/sdl-macos-arm64.json
 ```
 
 The app reads `--script` and `--env` after its own arguments (`xcrun simctl launch --console-pty <device>
