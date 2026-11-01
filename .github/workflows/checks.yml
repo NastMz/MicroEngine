@@ -390,10 +390,12 @@ jobs:
       - name: Check the package on ${{ matrix.target }}
         if: matrix.target != 'android'
         run: |
-          # Hosted Windows runners have no sound device: audio is recorded there as not verified.
-          audio=(); [ "$TARGET" = windows-x64 ] && audio=(--audio optional)
+          # Hosted Windows runners have no sound device (audio is recorded there as not verified) and no GPU: Direct3D 11
+          # runs on WARP, which rasterizes half-pixel and rotated sprites like other software renderers, so the runner
+          # has its own reference (the GPU one is checked on real hardware, docs/evaluations/product-1.md).
+          extra=(); [ "$TARGET" = windows-x64 ] && extra=(--audio optional --reference web/tests/reference/sdl-windows-ci.json)
           run=(); [ "$TARGET" = linux-x64 ] && run=(xvfb-run -a -s "-screen 0 1920x1080x24")
-          "${run[@]}" node packaging/verify.mjs "$PACKAGE" --game "$GAME" --target "$TARGET" --record dist/verification.json "${audio[@]}"
+          "${run[@]}" node packaging/verify.mjs "$PACKAGE" --game "$GAME" --target "$TARGET" --record dist/verification.json --keep-captures dist/captures "${extra[@]}"
       - name: Linux distributions (Ubuntu 22.04, Debian 12, Fedora 41; Debian 11 must refuse)
         if: matrix.target == 'linux-x64'
         run: node packaging/linux-distros.mjs --packages dist/packages --out dist/linux-distros
@@ -420,6 +422,7 @@ jobs:
           name: native-${{ matrix.game }}-${{ matrix.target }}
           path: |
             dist/verification.json
+            dist/captures
             dist/linux-distros
           retention-days: 7
 

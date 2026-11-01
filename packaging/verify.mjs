@@ -3,7 +3,7 @@
 // not the build folder it came from. Prints one line per level and writes the result as JSON (--record), which
 // site/scripts/demos.mjs stores in the package's manifest.
 //
-//   node packaging/verify.mjs <archive> --game <Game> --target <id> [--key K] [--record FILE] [--no-run] [--audio optional]
+//   node packaging/verify.mjs <archive> --game <Game> --target <id> [--key K] [--record FILE] [--no-run] [--audio optional] [--reference FILE] [--keep-captures DIR]
 //
 // Levels: integrity (SHA-256 and size), structure (every file a package needs, nothing unexpected, the content
 // files of the game, no build-machine path), build-info (game, target, key, versions), dependencies (glibc on Linux,
@@ -50,7 +50,9 @@ function listZip(file) {
  * their own build machines, which say nothing about ours, so generic runner prefixes are not searched.
  */
 function machinePaths() {
-  const paths = [os.homedir(), repoRoot, process.env.GITHUB_WORKSPACE, process.env.RUNNER_TEMP].filter(p => p && p.length > 3);
+  // A CI runner's home (/home/runner, /Users/runner) is also where SDL and .NET were built by their own projects.
+  const home = process.env.GITHUB_ACTIONS === 'true' ? null : os.homedir();
+  const paths = [home, repoRoot, process.env.GITHUB_WORKSPACE, process.env.RUNNER_TEMP].filter(p => p && p.length > 3);
   return [...new Set(paths.flatMap(p => [p, p.replace(/\\/g, '/')]))];
 }
 
@@ -62,10 +64,12 @@ function scanForPaths(folder, files) {
   });
 }
 
-export async function verifyPackage(file, { game: gameId, target: targetId, key, run = true, audioOptional = false, log = console.log } = {}) {
+export async function verifyPackage(file, { game: gameId, target: targetId, key, run = true, audioOptional = false, reference, keepCaptures, log = console.log } = {}) {
   const t = target(targetId);
+  // The target's reference, or one recorded for the machine that checks (a hosted runner without a GPU).
+  const referenceFile = path.resolve(repoRoot, reference ?? t.reference);
   const game = registry().find(g => g.id === gameId) ?? fail(`unknown game "${gameId}".`);
-  const record = { game: gameId, target: t.id, file: path.basename(file), checkedOn: `${process.platform}-${process.arch}`, levels: {} };
+  const record = { game: gameId, target: t.id, file: path.basename(file), checkedOn: `${process.platform}-${process.arch}${process.env.GITHUB_ACTIONS === 'true' ? ' (GitHub-hosted runner)' : ''}`, reference: path.relative(repoRoot, referenceFile).split(path.sep).join('/'), levels: {} };
   const level = (name, ok, detail) => {
     record.levels[name] = { ok, detail };
     log(`${ok ? 'PASS' : 'FAIL'} ${name}: ${detail}`);
@@ -110,9 +114,10 @@ export async function verifyPackage(file, { game: gameId, target: targetId, key,
       const device = spawnSync('node', [path.join(repoRoot, 'platforms/android/device-checks.mjs'), '--apk', file, '--game', gameId, '--out', out], { encoding: 'utf8' });
       log(device.stdout.trim());
       level('device', device.status === 0, device.status === 0 ? 'installed, started, rendered, input, touch and lifecycle on the device (lines above)' : `device-checks failed: ${device.stderr.trim().split('\n').pop()}`);
-      const compared = spawnSync('node', [path.join(repoRoot, 'web/tests/desktop.mjs'), '--skip-run', '--games', gameId, '--out', out, '--reference', path.join(repoRoot, t.reference)], { encoding: 'utf8' });
+      const compared = spawnSync('node', [path.join(repoRoot, 'web/tests/desktop.mjs'), '--skip-run', '--games', gameId, '--out', out, '--reference', referenceFile], { encoding: 'utf8' });
       log(compared.stdout.trim());
       level('rendered', compared.status === 0, compared.stdout.trim().split('\n').pop());
+      if (keepCaptures) fs.cpSync(out, keepCaptures, { recursive: true });
       fs.rmSync(out, { recursive: true, force: true });
     }
     return record;
@@ -149,7 +154,9 @@ export async function verifyPackage(file, { game: gameId, target: targetId, key,
     } else if (t.os === 'macos') {
       const verified = spawnSync('codesign', ['--verify', '--deep', '--strict', path.join(top, `${game.title}.app`)], { encoding: 'utf8' });
       const gatekeeper = spawnSync('spctl', ['--assess', '--type', 'execute', path.join(top, `${game.title}.app`)], { encoding: 'utf8' });
-      record.gatekeeper = (gatekeeper.stderr || gatekeeper.stdout).trim();
+      // spctl prints "<path>: <verdict>" and its reason; the verdict and reason are what matter.
+      record.gatekeeper = (gatekeeper.stderr || gatekeeper.stdout).trim().split(path.join(top, `${game.title}.app`)).join(`${game.title}.app`).replace(/
+/g, '; ');
       level('dependencies', verified.status === 0, `codesign --verify --deep --strict ${verified.status === 0 ? 'passed (ad-hoc signature)' : `failed: ${verified.stderr.trim()}`}; Gatekeeper: ${record.gatekeeper || 'accepted'}`);
     } else {
       level('dependencies', true, `self-contained .NET ${info.dotnet}; ${nativeLibraries(t).join(', ')} next to the executable`);
@@ -173,9 +180,10 @@ export async function verifyPackage(file, { game: gameId, target: targetId, key,
           : `exit ${report.status ?? report.signal}: ${report.stderr.trim().split('\n').pop()}`);
       fs.rmSync(saves, { recursive: true, force: true });
       const out = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'microengine-verify-captures-'));
-      const compared = spawnSync('node', [path.join(repoRoot, 'web/tests/desktop.mjs'), '--packages', dir, '--backend', 'sdl', '--games', gameId, '--out', out, '--reference', path.join(repoRoot, t.reference)], { encoding: 'utf8' });
+      const compared = spawnSync('node', [path.join(repoRoot, 'web/tests/desktop.mjs'), '--packages', dir, '--backend', 'sdl', '--games', gameId, '--out', out, '--reference', referenceFile], { encoding: 'utf8' });
       log(compared.stdout.trim());
       level('rendered', compared.status === 0, compared.stdout.trim().split('\n').pop() ?? `exit ${compared.status}`);
+      if (keepCaptures) fs.cpSync(out, keepCaptures, { recursive: true });
       fs.rmSync(out, { recursive: true, force: true });
     }
   } finally {
@@ -188,10 +196,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const args = process.argv.slice(2);
   const option = name => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : undefined; };
   if (!args[0] || args[0].startsWith('--') || !option('game') || !option('target')) {
-    console.log('usage: node packaging/verify.mjs <archive> --game <Game> --target <id> [--key K] [--record FILE] [--no-run] [--audio optional]');
+    console.log('usage: node packaging/verify.mjs <archive> --game <Game> --target <id> [--key K] [--record FILE] [--no-run] [--audio optional] [--reference FILE] [--keep-captures DIR]');
     process.exit(args[0] ? 1 : 0);
   }
-  verifyPackage(path.resolve(args[0]), { game: option('game'), target: option('target'), key: option('key'), run: !args.includes('--no-run'), audioOptional: option('audio') === 'optional' })
+  verifyPackage(path.resolve(args[0]), { game: option('game'), target: option('target'), key: option('key'), run: !args.includes('--no-run'), audioOptional: option('audio') === 'optional', reference: option('reference'), keepCaptures: option('keep-captures') && path.resolve(option('keep-captures')) })
     .then(record => {
       if (option('record')) fs.writeFileSync(option('record'), `${JSON.stringify(record, null, 2)}\n`);
       if (process.env.GITHUB_STEP_SUMMARY) {
