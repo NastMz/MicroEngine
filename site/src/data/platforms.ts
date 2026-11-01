@@ -54,7 +54,7 @@ export const platforms: PlatformRow[] = [
     input: { level: 'virtual', note: 'System keyboard through the X server (raylib); scripted input on SDL' },
     audio: { level: 'virtual', note: 'Virtual PulseAudio: a played tone recorded and recognised (raylib); SDL’s device opens' },
     lifecycle: { level: 'na', note: 'Desktop windows are not suspended' },
-    hardware: { level: 'person', note: 'Ubuntu PC: the four downloads played by hand; Wayland not identified' },
+    hardware: { level: 'person', note: 'Ubuntu 24.04.4 LTS PC: the four downloads played by hand; Wayland not identified' },
     download: { target: 'linux-x64' },
   },
   {

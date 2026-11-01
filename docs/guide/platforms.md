@@ -12,7 +12,7 @@ evidence cell by cell, and [Downloads](downloads.md) what a player can install.
 | Target | Platform | Status |
 | --- | --- | --- |
 | Windows desktop (x64) | `sdl` (default), `raylib`, `sdl-software` through `DesktopLauncher` | Played by hand with raylib (builds, tests, scripted captures, manual play). SDL: the 15 scripted scenarios on real hardware, identical on Direct3D 11, OpenGL and Vulkan; the four downloadable ZIPs reproduce them and were played by hand on Windows 11, with keyboard and an Xbox controller ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)) |
-| Linux desktop (x64) | `sdl` (default), `raylib`, `sdl-software` | Checked automatically on hosted runners, and the downloadable package in Ubuntu 22.04, Debian 12 and Fedora 41 containers ([Desktop validation](#desktop-validation)); the four downloads played by hand on an Ubuntu PC ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)) |
+| Linux desktop (x64) | `sdl` (default), `raylib`, `sdl-software` | Checked automatically on hosted runners, and the downloadable package in Ubuntu 22.04, Debian 12 and Fedora 41 containers ([Desktop validation](#desktop-validation)); the four downloads played by hand on an Ubuntu 24.04.4 LTS PC ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)) |
 | macOS desktop (Apple silicon) | `sdl` (default); `raylib` needs a GPU | Checked automatically: on the hosted Mac (arm64, Metal) SDL draws the 15 scripted scenarios against a macOS reference, and so does each downloadable app; no person has played on a Mac |
 | Linux on ARM (arm64) | `sdl` | Not checked: the SDL package has an arm64 library, but nothing has run on it |
 | Chrome (Chromium) on desktop | `raylib` in WebAssembly through `BrowserLauncher` | The four demos are verified with automated tests, plus manual validation in the browser |
@@ -46,14 +46,14 @@ change; "recorded" means it was run and its result kept, once.
 | Audio device opens | Manual play (raylib); SDL's device opened and played sounds | Automated on a virtual sound server (PulseAudio) | Automated, not blocking: opens on the hosted runner |
 | Audio output carries the sound played | Manual play (raylib) | Automated with raylib: a played tone is recorded from the virtual sound server and recognised; not listened to | Not covered |
 | Gamepad | Played by hand with an Xbox controller | Not covered | Not covered |
-| Manual play on real hardware (GPU, speakers, fullscreen, window manager) | Done with raylib and with the SDL downloads | The four downloads played on an Ubuntu PC | Pending |
+| Manual play on real hardware (GPU, speakers, fullscreen, window manager) | Done with raylib and with the SDL downloads | The four downloads played on an Ubuntu 24.04.4 LTS PC | Pending |
 
 Linux checks run on Ubuntu 24.04 x64 under Xvfb; the raylib reference was recorded with Mesa 25.2.8 (llvmpipe) and the
 hosted CI runner reproduced all 138 captures pixel for pixel. On Mesa's software rasterizer, SDL draws a few rotated
 and translucent sprites one texel or one blend level apart from GPU drivers, so Linux keeps its own SDL reference. On
 macOS the hosted runner builds and passes the headless tests; GLFW (raylib) finds no accelerated OpenGL there and
 cannot create a window, while SDL draws through Metal, which that runner offers. The four Linux downloads were played
-by hand on an Ubuntu PC ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)); Wayland sessions, other distributions'
+by hand on an Ubuntu 24.04.4 LTS PC ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)); Wayland sessions, other distributions'
 drivers, gamepads on Linux, F11 and Alt+Enter fullscreen and high-DPI screens have not been checked one by one.
 
 ## Gamepads

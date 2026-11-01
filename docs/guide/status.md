@@ -38,7 +38,7 @@ These are not implemented. Do not plan around them.
 | Target | Status |
 | --- | --- |
 | Windows x64 | Played by hand with raylib; SDL (the default) checked on real hardware: 138 captures, audio device, the four downloads, also played by hand (keyboard and an Xbox controller) |
-| Linux x64 | Checked automatically on every engine change (build, tests, rendering, keyboard and audio under a virtual display and sound server) and the download in Ubuntu 22.04, Debian 12 and Fedora 41 containers; the four downloads played by hand on an Ubuntu PC |
+| Linux x64 | Checked automatically on every engine change (build, tests, rendering, keyboard and audio under a virtual display and sound server) and the download in Ubuntu 22.04, Debian 12 and Fedora 41 containers; the four downloads played by hand on an Ubuntu 24.04.4 LTS PC |
 | macOS (Apple silicon) | Checked automatically on hosted Macs (tests, 138 captures on Metal, the downloadable apps); no person has played on a Mac |
 | Android | All four demos checked on the x86_64 emulator from their release APKs (captures, audio device, keys, touch, background and back); the four APKs played by hand on a Redmi Note 14 Pro (Android 16), with touch and a Bluetooth PlayStation controller |
 | iOS | Demos checked in Apple's simulator (captures, audio device, background and back, scripted touches); no iPhone, no download |

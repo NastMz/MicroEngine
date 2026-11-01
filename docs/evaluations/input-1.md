@@ -162,10 +162,10 @@ On 2026-11-01 the owner played the four demos by hand from the INPUT-1 builds (t
 | Android app, Redmi Note 14 Pro (arm64, Android 16) | The four APKs: touch controls, and a PlayStation controller over Bluetooth |
 | Google Chrome on that phone | The four web demos with touch, and with the PlayStation controller |
 | Windows 11 PC | The four ZIP downloads (SDL); keyboard and an Xbox controller |
-| Ubuntu PC | The four `.tar.gz` downloads (SDL) |
+| Ubuntu 24.04.4 LTS PC | The four `.tar.gz` downloads (SDL) |
 | Microsoft Edge on the desktop | The four web demos, with keyboard and the Xbox controller |
 
-Not recorded: the Ubuntu version and whether it ran X11 or Wayland, the browsers' versions, and each step of §7 one by
+Not recorded: whether Ubuntu ran X11 or Wayland, the browsers' versions, and each step of §7 one by
 one. No iPhone, Mac or tablet was used, and Safari was not run.
 
 ## 8. Remaining limitations
