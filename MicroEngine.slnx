@@ -15,6 +15,9 @@
   <Folder Name="/samples/">
     <Project Path="samples/HelloEngine/HelloEngine.csproj" />
   </Folder>
+  <Folder Name="/templates/">
+    <Project Path="templates/MicroEngine.Templates/MicroEngine.Templates.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MicroEngine.Tests/MicroEngine.Tests.csproj" />
     <Project Path="tests/MicroEngine.Raylib.Tests/MicroEngine.Raylib.Tests.csproj" />

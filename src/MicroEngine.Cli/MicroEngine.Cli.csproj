@@ -6,7 +6,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>MicroEngine.Cli</RootNamespace>
-    <AssemblyName>microengine</AssemblyName>
+    <!-- Not "microengine": next to MicroEngine.dll that name collides on case-insensitive file systems. -->
+    <AssemblyName>MicroEngine.Cli</AssemblyName>
     <PackageId>MicroEngine.Cli</PackageId>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>microengine</ToolCommandName>

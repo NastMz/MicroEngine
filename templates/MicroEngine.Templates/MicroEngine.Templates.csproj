@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The `dotnet new` templates of the SDK (docs/guide/cli.md): `dotnet new install MicroEngine.Templates`, then
+       `dotnet new microengine-game -n MyGame` (or `microengine new MyGame`). The template is a complete game folder
+       (content/MicroEngineGame); its project references the engine packages of this same version. -->
+  <PropertyGroup>
+    <PackageId>MicroEngine.Templates</PackageId>
+    <PackageType>Template</PackageType>
+    <Description>Project templates for MicroEngine, the code-first 2D game engine: dotnet new microengine-game.</Description>
+    <PackageTags>$(PackageTags);dotnet-new;templates</PackageTags>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeSymbols>false</IncludeSymbols>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <NoDefaultExcludes>true</NoDefaultExcludes>
+    <!-- A template package has no assembly for the lib folder. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="content/**" Exclude="content/**/bin/**;content/**/obj/**;content/**/dist/**;content/MicroEngineGame/MyGame.csproj" Pack="true" PackagePath="content/" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+  <!-- The template's project references this SDK version. -->
+  <Target Name="_VersionedTemplateProject" BeforeTargets="_GetPackageFiles">
+    <PropertyGroup>
+      <_TemplateProject>$(IntermediateOutputPath)MyGame.csproj</_TemplateProject>
+      <_TemplateText>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/content/MicroEngineGame/MyGame.csproj').Replace('MICROENGINE_VERSION', '$(Version)'))</_TemplateText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_TemplateProject)" Lines="$([MSBuild]::Escape($(_TemplateText)))" Overwrite="true" />
+    <ItemGroup>
+      <None Include="$(_TemplateProject)" Pack="true" PackagePath="content/MicroEngineGame/MyGame.csproj" />
+    </ItemGroup>
+  </Target>
+</Project>

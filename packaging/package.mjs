@@ -32,7 +32,7 @@ let tool;
 export function microengine(args, options = {}) {
   if (!tool) {
     run('dotnet', ['build', 'src/MicroEngine.Cli', '-c', 'Release', '-nologo', '-v', 'quiet'], { stdio: ['ignore', 'pipe', 'inherit'] });
-    tool = path.join(repoRoot, 'src', 'MicroEngine.Cli', 'bin', 'Release', 'net10.0', 'microengine.dll');
+    tool = path.join(repoRoot, 'src', 'MicroEngine.Cli', 'bin', 'Release', 'net10.0', 'MicroEngine.Cli.dll');
   }
   return run('dotnet', [tool, ...args], { stdio: ['ignore', 'pipe', 'inherit'], ...options });
 }

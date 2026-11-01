@@ -14,7 +14,7 @@
     <ApplicationTitle>$(GameTitle)</ApplicationTitle>
     <ApplicationVersion>$(GameVersionCode)</ApplicationVersion>
     <ApplicationDisplayVersion>$(GameVersion)</ApplicationDisplayVersion>
-    <RuntimeIdentifiers>$(GameAndroidRuntimes)</RuntimeIdentifiers>
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

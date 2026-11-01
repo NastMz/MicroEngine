@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>MyGame</RootNamespace>
+  </PropertyGroup>
+
+  <!-- The game's identity: every package `microengine package` builds (Windows, Linux, macOS, Android, iOS, web) takes
+       its name, id, version and icon from here. https://github.com/NastMz/MicroEngine/blob/main/docs/guide/app-identity.md -->
+  <PropertyGroup>
+    <ApplicationTitle>MyGameTitle</ApplicationTitle>
+    <ApplicationId>com.example.mygameid</ApplicationId>
+    <Version>0.1.0</Version>
+    <Description>A game made with MicroEngine.</Description>
+    <MicroEngineIcon>icon.png</MicroEngineIcon>
+    <MicroEngineOrientation>landscape</MicroEngineOrientation>
+    <MicroEngineGameFactory>new MyGame.MainGame()</MicroEngineGameFactory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The engine with the desktop platforms (SDL 3 by default, raylib). A game that ships SDL only can reference
+         MicroEngine.Sdl instead. -->
+    <PackageReference Include="MicroEngine.Desktop" Version="MICROENGINE_VERSION" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Asset files, copied next to the executable (ContentFolder reads them there). -->
+    <None Include="Content/**" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />
+  </ItemGroup>
+</Project>

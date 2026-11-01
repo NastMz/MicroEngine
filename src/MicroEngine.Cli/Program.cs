@@ -129,8 +129,11 @@ namespace MicroEngine.Cli
             string? title = o.Get("title");
             o.RejectUnknown("new");
             if (Directory.Exists(output) && Directory.EnumerateFileSystemEntries(output).Any()) throw new CliException($"{Path.GetFullPath(output)} already exists and is not empty.", 2);
-            var list = Tool.Run(Tool.Dotnet, ["new", "list", "microengine-game"], what: "dotnet new list");
-            if (!list.Contains("microengine-game", StringComparison.Ordinal))
+            // `dotnet new list` fails (exit code 103) when no template matches.
+            bool installed;
+            try { installed = Tool.Run(Tool.Dotnet, ["new", "list", "microengine-game"], what: "dotnet new list").Contains("microengine-game", StringComparison.Ordinal); }
+            catch (CliException) { installed = false; }
+            if (!installed)
             {
                 Console.WriteLine($"Installing the MicroEngine.Templates {Tool.Version} template package...");
                 Tool.Run(Tool.Dotnet, ["new", "install", $"MicroEngine.Templates::{Tool.Version}"], what: "dotnet new install MicroEngine.Templates");

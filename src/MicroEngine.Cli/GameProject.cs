@@ -86,6 +86,22 @@ public sealed partial class GameProject
     /// <summary>Reads the project's properties as MSBuild evaluates them in <paramref name="configuration"/>.</summary>
     public static GameProject Load(string path, string configuration = "Release")
     {
+        var project = Read(path, configuration);
+        // Package references import the engine's build targets only after a restore.
+        if (project["MicroEngineAppTargets"] != "true")
+        {
+            Tool.Run(Tool.Dotnet, ["restore", path], System.IO.Path.GetDirectoryName(path), "dotnet restore");
+            project = Read(path, configuration);
+        }
+        if (project["MicroEngineAppTargets"] != "true")
+            throw new CliException($"{System.IO.Path.GetFileName(path)} does not reference MicroEngine. Add a package (dotnet add package MicroEngine.Desktop --prerelease) or start from 'microengine new'.");
+        if (project["OutputType"] is not ("Exe" or "WinExe"))
+            throw new CliException($"{System.IO.Path.GetFileName(path)} is a library (OutputType {project["OutputType"]}); a game project is an executable (<OutputType>Exe</OutputType>).");
+        return project;
+    }
+
+    private static GameProject Read(string path, string configuration)
+    {
         string json = Tool.Run(Tool.Dotnet, ["msbuild", path, $"-p:Configuration={configuration}", .. Names.Select(n => $"-getProperty:{n}")],
             System.IO.Path.GetDirectoryName(path), "reading the project with MSBuild");
         Dictionary<string, string> values;
@@ -98,12 +114,7 @@ public sealed partial class GameProject
         {
             throw new CliException($"could not read the properties of {path}: MSBuild printed something unexpected ({e.Message}).");
         }
-        var project = new GameProject(path, values);
-        if (project["MicroEngineAppTargets"] != "true")
-            throw new CliException($"{System.IO.Path.GetFileName(path)} does not reference MicroEngine. Add a package (dotnet add package MicroEngine.Desktop --prerelease) or start from 'microengine new'.");
-        if (project["OutputType"] is not ("Exe" or "WinExe"))
-            throw new CliException($"{System.IO.Path.GetFileName(path)} is a library (OutputType {project["OutputType"]}); a game project is an executable (<OutputType>Exe</OutputType>).");
-        return project;
+        return new GameProject(path, values);
     }
 
     [GeneratedRegex(@"^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$")]

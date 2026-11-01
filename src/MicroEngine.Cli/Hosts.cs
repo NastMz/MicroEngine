@@ -92,7 +92,6 @@ public static class Hosts
         string host = Stage("android", game, new()
         {
             ["GameAndroidMinApi"] = game.AndroidMinApi,
-            ["GameAndroidRuntimes"] = "android-arm64;android-x64",
             ["GameVersionCode"] = versionCode.ToString(System.Globalization.CultureInfo.InvariantCulture),
         }, $"    public const global::Android.Content.PM.ScreenOrientation ScreenOrientation = global::Android.Content.PM.ScreenOrientation.{game.Orientation switch { "portrait" => "SensorPortrait", "any" => "FullSensor", _ => "SensorLandscape" }};");
         Directory.CreateDirectory(Path.Combine(host, "Resources", "values"));

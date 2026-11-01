@@ -61,7 +61,7 @@ sizes() {
 
 # The tool itself, built and run with the pinned SDK, which it also uses for the games (MICROENGINE_DOTNET).
 "$dotnet" build "$(native "$root/src/MicroEngine.Cli/MicroEngine.Cli.csproj")" -c Release -nologo -v:quiet
-tool="$root/src/MicroEngine.Cli/bin/Release/net10.0/microengine.dll"
+tool="$root/src/MicroEngine.Cli/bin/Release/net10.0/MicroEngine.Cli.dll"
 export MICROENGINE_DOTNET="$dotnet"
 dev_flag=(); [ "$dev" = true ] && dev_flag=(--dev)
 staging="$here/obj/packages"

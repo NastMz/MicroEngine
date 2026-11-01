@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "MicroEngine contributors",
+  "classifications": [ "Game", "MicroEngine", "2D" ],
+  "identity": "MicroEngine.Templates.Game",
+  "name": "MicroEngine game",
+  "shortName": "microengine-game",
+  "description": "A 2D game on MicroEngine: a scene that draws a sprite loaded from Content, reads input actions (keyboard, gamepad, touch) and plays a sound, ready to run and to package with microengine.",
+  "tags": { "language": "C#", "type": "project" },
+  "sourceName": "MyGame",
+  "preferNameDirectory": true,
+  "symbols": {
+    "title": {
+      "type": "parameter",
+      "datatype": "string",
+      "description": "The name players see (ApplicationTitle). Default: the project name.",
+      "defaultValue": ""
+    },
+    "titleOrName": {
+      "type": "generated",
+      "generator": "coalesce",
+      "parameters": { "sourceVariableName": "title", "fallbackVariableName": "name" },
+      "replaces": "MyGameTitle"
+    },
+    "app-id": {
+      "type": "parameter",
+      "datatype": "string",
+      "description": "The application id (ApplicationId), reverse-domain: com.yourstudio.yourgame. Default: com.example.<name in lower case>.",
+      "defaultValue": ""
+    },
+    "nameLower": {
+      "type": "generated",
+      "generator": "casing",
+      "parameters": { "source": "name", "toLower": true }
+    },
+    "defaultAppId": {
+      "type": "generated",
+      "generator": "join",
+      "parameters": { "symbols": [ { "type": "const", "value": "com.example." }, { "type": "ref", "value": "nameLower" } ], "separator": "" }
+    },
+    "appId": {
+      "type": "generated",
+      "generator": "coalesce",
+      "parameters": { "sourceVariableName": "app-id", "fallbackVariableName": "defaultAppId" },
+      "replaces": "com.example.mygameid"
+    }
+  },
+  "sources": [ { "modifiers": [ { "exclude": [ "bin/**", "obj/**", "dist/**" ] } ] } ],
+  "postActions": []
+}
