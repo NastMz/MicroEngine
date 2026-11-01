@@ -1,6 +1,6 @@
 # Versions and compatibility
 
-**MicroEngine SDK 0.4.0-alpha.1 — Alpha.** It is on nuget.org: [`MicroEngine.Cli`](https://www.nuget.org/packages/MicroEngine.Cli)
+**MicroEngine SDK 0.4.0-alpha.2 — Alpha.** It is on nuget.org: [`MicroEngine.Cli`](https://www.nuget.org/packages/MicroEngine.Cli)
 and the five other packages below ([release notes](release-notes.md)). [Getting MicroEngine](getting-microengine.md)
 shows how to install it.
 
@@ -44,6 +44,6 @@ licence. The demo games are not in any package: they stay in the repository unde
 
 ## Published version and development
 
-The documentation describes the published SDK, **0.4.0-alpha.1**, and every code sample on this site is built against
+The documentation describes the published SDK, **0.4.0-alpha.2**, and every code sample on this site is built against
 the packages on nuget.org. Work merged into the engine's repository after a release reaches the documentation's
 examples only when it is published; until then a page that mentions it says it is not in a published version yet.

@@ -35,7 +35,7 @@ it by) comes from the second group of the project file. For the release, set the
   <ItemGroup>
     <!-- The engine with the desktop platforms (SDL 3 by default, raylib). A game that ships SDL only can reference
          MicroEngine.Sdl instead. -->
-    <PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.1" />
+    <PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -70,7 +70,7 @@ Orientation  landscape
 Factory      new GemGarden.MainGame()
 Content      ...\GemGarden\Content\
 Licence      (none)
-Engine       MicroEngine 0.4.0-alpha.1, .NET 10.0.14
+Engine       MicroEngine 0.4.0-alpha.2, .NET 10.0.14
 ```
 
 `Licence (none)`: a `LICENSE`, `LICENSE.txt` or `LICENSE.md` file next to the project is shipped in every package as

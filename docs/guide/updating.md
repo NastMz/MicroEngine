@@ -17,10 +17,10 @@ The [release notes](release-notes.md) say what each version adds, changes and fi
 
 ```bash
 dotnet tool update -g MicroEngine.Cli --prerelease
-dotnet new install MicroEngine.Templates::0.4.0-alpha.1
+dotnet new install MicroEngine.Templates::0.4.0-alpha.2
 ```
 
-Replace `0.4.0-alpha.1` with the version you are moving to. The template only matters for new projects:
+Replace `0.4.0-alpha.2` with the version you are moving to. The template only matters for new projects:
 `microengine new` installs the template of the tool's version when it is missing.
 
 ## 3. Update the game's packages
@@ -28,13 +28,13 @@ Replace `0.4.0-alpha.1` with the version you are moving to. The template only ma
 In the game's project file, set every `MicroEngine.*` package to the same version as the tool:
 
 ```xml
-<PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.1" />
+<PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.2" />
 ```
 
 or let `dotnet` edit the file:
 
 ```bash
-dotnet add package MicroEngine.Desktop --version 0.4.0-alpha.1
+dotnet add package MicroEngine.Desktop --version 0.4.0-alpha.2
 ```
 
 ## 4. Read the migration notes, build and test
@@ -57,7 +57,7 @@ for that game only, as a local tool:
 
 ```bash
 dotnet new tool-manifest
-dotnet tool install MicroEngine.Cli --version 0.4.0-alpha.1
+dotnet tool install MicroEngine.Cli --version 0.4.0-alpha.2
 dotnet tool run microengine version
 ```
 
