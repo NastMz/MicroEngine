@@ -3,7 +3,7 @@
 A MicroEngine game is a subclass of `Game` that declares its settings, builds its content once in `Load` and
 pushes a first scene. A launcher pairs it with a platform and runs a fixed-step loop: input is sampled and the
 simulation advanced in exact steps of `1 / UpdateRate` seconds (60 Hz by default), then the frame is rendered once. This page describes that contract;
-the step-by-step tutorial is in [Making a game](../making-a-game.md).
+the step-by-step tutorial is [Gem Garden](../tutorial/README.md).
 
 ## The `Game` class
 

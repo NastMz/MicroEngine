@@ -111,8 +111,9 @@ const closingPages = [
 export function apiPages(root = repoRoot) {
   const dir = path.join(root, 'docs', 'api');
   if (!fs.existsSync(dir)) return [];
-  const entries = fs.readdirSync(dir).filter(f => f.endsWith('.md')).sort().map(f => {
-    const name = f.slice(0, -3);
+  const names = fs.readdirSync(dir).filter(f => f.endsWith('.md')).map(f => f.slice(0, -3)).sort();
+  const entries = names.map(name => {
+    const f = `${name}.md`;
     const isIndex = name === 'README';
     const isNamespace = /^#\s+Namespace\b/m.test(fs.readFileSync(path.join(dir, f), 'utf8').slice(0, 200));
     return {

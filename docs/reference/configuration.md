@@ -82,16 +82,16 @@ The engine itself reads no environment variables.
 
 ## Browser packages
 
-Producing browser packages is not available to external developers yet, so the build toolchain and its settings
-are internal. What a package exposes to the page that serves or embeds it:
+`microengine package web` builds them ([Publishing on the web](../examples/embedding.md)); `--dev` builds a development
+package. What a package exposes to the page that serves or embeds it:
 
 | Setting | Effect |
 | --- | --- |
-| URL parameters | Ignored by release packages. Internal development packages read `UPPER_CASE=value` environment variables, `script=<name>` and `autostart=1` from the URL |
+| URL parameters | Ignored by release packages. Development packages (`--dev`) read `UPPER_CASE=value` environment variables, `script=<name>` and `autostart=1` from the URL |
 | iframe `allow="fullscreen; autoplay"` | Enables the package's Fullscreen button and Alt+Enter inside an iframe ([Embedding](../examples/embedding.md#the-iframe)) |
 
-The browser host builds each game with the same constructor expression as its desktop `Program.cs`, for example
-`new NeonRift.RiftGame(NeonRift.LaunchOptions.FromEnvironment())`. The browser build uses invariant globalization,
+The browser host builds the game with the project's `MicroEngineGameFactory` expression, which should match its
+desktop `Program.cs` ([Name, id, version and icon](../guide/app-identity.md)). The browser build uses invariant globalization,
 partial trimming and reflection-based JSON for `SaveStore`.
 
 ## Default input actions

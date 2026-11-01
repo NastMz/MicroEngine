@@ -11,7 +11,27 @@ Source: [`samples/HelloEngine/Program.cs`](../../samples/HelloEngine/Program.cs)
 
 Arrows (or WASD) move the star; Z or Space plays a sound and bursts particles. The sample lives in the engine's repository
 (`samples/HelloEngine`), is MIT licensed like the engine, and may be copied into your own games; this page shows its
-code in full.
+code in full. Its project file is a plain console project that references the `MicroEngine.Desktop` package, so the
+folder builds anywhere:
+
+<!-- code: samples/HelloEngine/HelloEngine.csproj -->
+```xml title="HelloEngine.csproj"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.1" />
+  </ItemGroup>
+</Project>
+```
+
+```bash
+microengine run --project samples/HelloEngine
+```
 
 ## 1. Entry point
 
@@ -159,6 +179,6 @@ reads. See [Testing](testing.md).
 
 ## Where next
 
-- [Making a game](../making-a-game.md) grows this into a full game step by step.
+- [The tutorial](../tutorial/README.md) builds a complete game step by step.
 - [Usage patterns](patterns.md) shows how the four games organise the same pieces at scale.
 - [Lifecycle](../manual/lifecycle.md) and [Scenes](../manual/scenes.md) explain the loop and the stack.

@@ -12,6 +12,7 @@ namespace Samples.Tests;
 /// The tutorial's finished game (Gem Garden) and the focused examples, played headlessly through their public API:
 /// what the documentation says they do is what they do.
 /// </summary>
+#region gem-garden-tests
 [TestClass]
 public sealed class GemGardenTests
 {
@@ -56,6 +57,7 @@ public sealed class GemGardenTests
         Assert.AreEqual(1, play.Gems, "the gem five tiles to the right of the start");
         Directory.Delete(saves, true);
     }
+    #endregion
 
     [TestMethod]
     public void PauseFreezesTheRoundAndResumes()
@@ -180,5 +182,39 @@ public sealed class ExtendingTests
         Assert.AreEqual("headless-counted", profile.Name);
         int exit = GameLauncher.Run(new ExamplesGame(), ["--platform", "headless-counted", "--frames", "30"], catalog);
         Assert.AreEqual(0, exit);
+    }
+}
+
+[TestClass]
+public sealed class PlatformerExampleTests
+{
+    private static void Hold(Game game, string action, int steps)
+    {
+        game.Input.SetForced(action, true);
+        for (int i = 0; i < steps; i++) game.StepForTest();
+        game.Input.SetForced(action, false);
+        game.StepForTest();
+    }
+
+    [TestMethod]
+    public void JumpsUpThroughAOneWayPlatformLandsOnItAndDropsBack()
+    {
+        var game = new ExamplesGame(Path.GetTempPath());
+        game.InitializeForTest(new HeadlessPlatform());
+        var scene = new PlatformerExample();
+        game.Scenes.Push(scene);
+        for (int i = 0; i < 60; i++) game.StepForTest();
+        Assert.AreEqual(160, scene.Player.Bottom, "lands on the solid floor");
+
+        Hold(game, "right", 30);                     // under the one-way ledge (x 64..112, top 112)
+        Hold(game, "confirm", 2);
+        for (int i = 0; i < 60; i++) game.StepForTest();
+        Assert.AreEqual(112, scene.Player.Bottom, "jumped up through the ledge and stands on it");
+
+        game.Input.SetForced("down", true);
+        Hold(game, "confirm", 2);
+        game.Input.SetForced("down", false);
+        for (int i = 0; i < 60; i++) game.StepForTest();
+        Assert.AreEqual(160, scene.Player.Bottom, "down + jump drops through it to the floor");
     }
 }

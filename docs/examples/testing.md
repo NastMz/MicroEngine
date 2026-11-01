@@ -1,4 +1,4 @@
-# Testing games
+# Testing your game
 
 MicroEngine games are tested headlessly: `HeadlessPlatform` replaces the window, audio and input, the fixed-step
 loop advances exactly one update per call, and the same game code runs as on the desktop. On top of unit tests
@@ -6,11 +6,79 @@ for rules, every game built with the engine has playthrough tests that drive the
 actions, and input scripts that replay play sessions for captures. This page shows the three levels with real
 code from `tests/` and `games/*/scripts`.
 
-## The test projects
+## A test project for your game
 
-The engine and each game have their own test project, written with MSTest; they are ordinary .NET test projects
-run by the standard .NET test tooling (`dotnet test`). A game's tests can do the same: reference the game project
-and drive it on `HeadlessPlatform`.
+A game's tests are an ordinary .NET test project that references the game. With MSTest:
+
+```bash
+dotnet new mstest -n GemGarden.Tests
+dotnet add GemGarden.Tests reference GemGarden/GemGarden.csproj
+dotnet test GemGarden.Tests
+```
+
+A test builds the game with a temporary save folder, initialises it on `HeadlessPlatform` (no window, no sound, one
+update per call), presses actions with `InputMap.SetForced` and checks what the game exposes. These tests play the
+tutorial's game:
+
+<!-- code: tests/Samples.Tests/SampleTests.cs#gem-garden-tests -->
+```csharp title="GemGardenTests.cs"
+[TestClass]
+public sealed class GemGardenTests
+{
+    private static (MainGame Game, string Saves) Start()
+    {
+        var saves = Directory.CreateTempSubdirectory("gemgarden-").FullName;
+        var game = new MainGame(saves);
+        game.InitializeForTest(new HeadlessPlatform());
+        return (game, saves);
+    }
+
+    private static void Hold(Game game, string action, int steps)
+    {
+        game.Input.SetForced(action, true);
+        Step(game, steps);
+        game.Input.SetForced(action, false);
+        Step(game, 1);
+    }
+
+    private static void Step(Game game, int steps)
+    {
+        for (int i = 0; i < steps; i++) game.StepForTest();
+    }
+
+    /// <summary>From the title, PLAY (the first option) starts a round once the fade is over.</summary>
+    private static PlayScene Play(MainGame game)
+    {
+        Assert.IsInstanceOfType<TitleScene>(game.Scenes.Current);
+        Hold(game, "confirm", 2);
+        Step(game, 60);
+        return (PlayScene)game.Scenes.Current!;
+    }
+
+    [TestMethod]
+    public void WalkingRightPicksUpTheFirstGem()
+    {
+        var (game, saves) = Start();
+        var play = Play(game);
+        Assert.AreEqual(0, play.Gems);
+        Assert.AreEqual(24, play.TotalGems);
+        Hold(game, "right", 70);
+        Assert.AreEqual(1, play.Gems, "the gem five tiles to the right of the start");
+        Directory.Delete(saves, true);
+    }
+```
+
+Three things make such tests reliable:
+
+- **Fixed steps.** `StepForTest()` advances exactly one update of `1 / UpdateRate` seconds, so "70 steps holding right"
+  always moves the hero the same distance.
+- **Actions, not keys.** `SetForced("right", true)` presses the action the game reads, whatever device would press
+  it.
+- **Isolated saves.** The game takes a save directory (`new MainGame(saves)`), so tests never touch the player's
+  saves and never depend on each other.
+
+The rest of this page goes deeper: the engine's own contract tests, step-by-step tests of a full game, and input
+scripts that replay play sessions and capture screenshots.
 
 ## Level 1: engine contracts
 
@@ -149,39 +217,6 @@ Developer environment variables start later in a game. Neon Rift, for example, i
 second stage while the script takes captures.
 
 The variables of each game are listed in [Configuration](../reference/configuration.md#environment-variables).
-
-## Native desktop checks
-
-Scripts force actions on `InputMap` and headless tests never open a window, so neither proves that the desktop
-backend works on a given system. The native checks do, and on Linux they run under a virtual display (Xvfb) and a
-virtual sound server (PulseAudio):
-
-| Check | What it shows | Where it runs |
-| --- | --- | --- |
-| Scripted scenarios on the desktop build | raylib and OpenGL draw the 15 browser-test scenarios (138 captures), compared with a per-system visual reference | Linux automatically; macOS attempted, completeness only |
-| Keyboard | Key events from the X server reach the game through raylib: a held key gives one press, stays down and gives one release; a tap shorter than a frame is still seen; two keys are independent | Linux |
-| Audio device | The raylib audio device opens on the sound server instead of falling back to silence | Linux; macOS attempted |
-| Audio output | A 440 Hz tone played through the engine is recorded from the virtual sink and recognised by level and frequency | Linux |
-
-The visual reference keeps, for each capture, its size, a hash of its exact pixels and the mean colour of each cell of
-a 32 × 18 grid. A run passes when every capture is there with its size and no cell moved by more than 3 out of 255:
-another driver may round blending differently without failing, while a missing sprite, a wrong frame or a changed
-HUD digit fails. Exact pixel equality is reported. Windows and Linux are not expected to produce identical pixels,
-so each system gets its own reference. Gamepads are covered by none of these checks.
-
-## Browser tests
-
-The same scripts are replayed in Chrome and Firefox on desktop against development packages, and their captures
-are compared byte for byte with the desktop build. Each scenario names a game, a script and its environment; from
-the browser test scenarios:
-
-```json
-{ "game": "MeadowRun", "script": "smoke.script", "keyboard": true, "env": {} },
-{ "game": "CourtyardKey", "script": "boss.script", "env": { "COURTYARD_START": "boss" } },
-```
-
-Browser packages and these browser tests are internal tooling; producing packages is not available to external
-developers yet.
 
 ## Guidelines
 

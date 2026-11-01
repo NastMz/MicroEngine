@@ -1,4 +1,4 @@
-# Rendering
+# Graphics
 
 Scenes draw in immediate mode into a fixed-size virtual canvas (320×180 by default) through the `IRenderer`
 interface. Art is prepared once on the CPU as `PixelImage`s, packed into textures with `SpriteAtlasBuilder`,
@@ -9,10 +9,12 @@ and `MicroEngine.World` namespaces and never references the backend.
 ## The virtual canvas
 
 Games draw in virtual pixels: `GameSettings.VirtualWidth × VirtualHeight` ([Lifecycle](lifecycle.md#gamesettings)).
-The raylib backend renders into a texture of exactly that size, then scales it to the window by the largest
+Both platforms (SDL 3 and raylib) render into a texture of exactly that size, then scales it to the window by the largest
 whole factor that fits and letterboxes the rest, so pixels stay square. When the window or browser iframe is
 smaller than the canvas it scales down (never crops). On desktop F11 or Alt+Enter toggles borderless
 fullscreen; in a browser the page owns fullscreen ([Embedding](../examples/embedding.md#the-iframe)).
+
+The raylib platform's scaling, for example:
 
 ```csharp
 int sw = Rl.GetRenderWidth(), sh = Rl.GetRenderHeight();
@@ -191,6 +193,8 @@ with an optional `scale`. Unknown characters render as `?`.
 Limitation: `BitmapFont.CreateDefault` is the only constructor; loading other fonts (TTF or bitmap sheets) is not
 supported today.
 
+Characters, measuring, wrapping and limits: [Text](text.md).
+
 ## Tile maps
 
 `TileLayer` is a grid of integer ids (`Parse(rows, legend)` builds one from ASCII rows); `Autotile.Mask4` computes
@@ -203,7 +207,7 @@ TileRenderer.Draw(r, layer, Tiles.Size, cam, (_, x, y) => Tiles.For(art, theme, 
 
 Source: [`games/NeonRift/Scenes/StageView.cs`](../../games/NeonRift/Scenes/StageView.cs)
 
-Collision over the same layers (`TileGrid`, `TileMotion`) is described in [Making a game](../making-a-game.md#6-worlds-and-collision).
+Collision over the same layers (`TileGrid`, `TileMotion`) is described in [Tile maps and collision](world.md).
 
 ## Limitations
 

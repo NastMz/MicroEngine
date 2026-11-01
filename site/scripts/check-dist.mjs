@@ -39,8 +39,42 @@ export function checkDist(dist, { demos = true, secrets = [] } = {}) {
   const home = fs.existsSync(path.join(dist, 'index.html')) ? fs.readFileSync(path.join(dist, 'index.html'), 'utf8') : '';
   if (/["']\/play\//.test(home)) problems.push('the home page references /play/ (demo packages must load on demand)');
   problems.push(...checkDiagrams(dist));
+  problems.push(...checkLinks(dist));
   problems.push(...checkPublicContent(dist, { secrets }));
   return problems;
+}
+
+/**
+ * Every link of a page to another page of the site must reach a built page, and every #anchor an element with that id.
+ * Demo packages (/play/) are checked by checkDist itself; external links are not followed.
+ */
+export function checkLinks(dist) {
+  const problems = [];
+  const walk = dir => fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]) : [];
+  const html = walk(dist).filter(f => f.endsWith('.html') && !path.relative(dist, f).startsWith('play'));
+  const ids = new Map();
+  const idsOf = file => {
+    if (!ids.has(file)) ids.set(file, new Set([...fs.readFileSync(file, 'utf8').matchAll(/\sid="([^"]+)"/g)].map(m => m[1])));
+    return ids.get(file);
+  };
+  for (const file of html) {
+    const rel = path.relative(dist, file).split(path.sep).join('/');
+    const text = fs.readFileSync(file, 'utf8');
+    for (const [, href] of text.matchAll(/<a\b[^>]*\shref="([^"]+)"/g)) {
+      if (/^[a-z][a-z0-9+.-]*:|^\/\//i.test(href) || href.startsWith('/play/')) continue;
+      const [rawPath, hash] = href.split('#');
+      let target = file;
+      if (rawPath) {
+        if (!rawPath.startsWith('/')) continue;
+        const clean = decodeURIComponent(rawPath).replace(/^\//, '');
+        const candidates = [path.join(dist, clean), path.join(dist, clean, 'index.html')];
+        target = candidates.find(c => fs.existsSync(c) && fs.statSync(c).isFile());
+        if (!target) { problems.push(`${rel} links to ${href}, which is not a page of the site`); continue; }
+      }
+      if (hash && target.endsWith('.html') && !idsOf(target).has(decodeURIComponent(hash))) problems.push(`${rel} links to ${href}, but that page has no #${hash}`);
+    }
+  }
+  return [...new Set(problems)];
 }
 
 /** Each ```mermaid block of a public page must reach the page as a diagram, not as a code sample. */

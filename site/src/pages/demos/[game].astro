@@ -78,7 +78,7 @@ const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'u
       <section aria-labelledby="about-title" class="about">
         <h2 id="about-title">About the game</h2>
         {game.summary.map(p => <p>{p}</p>)}
-        <p class="links">{game.credits ? <a href={game.credits}>Third-party asset credits</a> : 'No third-party assets: everything is generated in code.'} · <a href="/docs/making-a-game/">How a game is built</a></p>
+        <p class="links">{game.credits ? <a href={game.credits}>Third-party asset credits</a> : 'No third-party assets: everything is generated in code.'} · <a href="/docs/tutorial/">Build a game like this</a></p>
       </section>
 
       <section aria-labelledby="controls-title">

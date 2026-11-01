@@ -29,7 +29,7 @@ secondary action, Esc/P to pause, F11 for fullscreen; gamepads work too.
 - Action-based input (keyboard + gamepad), scripted input playback for tests and captures
 - Procedural pixel art (`PixelImage`, palettes, noise, dithering), sprite atlases, animation, particles,
   camera with dead zone/bounds/shake, parallax layers, built-in proportional pixel font
-- Managed PNG and WAV loading, grid sprite-sheet slicing, streamed OGG/MP3 music, a content folder
+- Managed PNG and WAV loading, grid sprite-sheet slicing, streamed OGG music (MP3 on raylib), a content folder
 - Tile layers, swept tile collision with one-way platforms, autotiling, plain entities
 - Retro sound synthesizer and step-sequencer music, mixer with music fades
 - Dialogue boxes, menus, JSON saves, headless platform for deterministic tests
@@ -40,16 +40,18 @@ secondary action, Esc/P to pause, F11 for fullscreen; gamepads work too.
 ## Documentation
 
 - [Introduction](docs/guide/introduction.md) — what MicroEngine is, who it is for, the four games, design principles
-- [Getting MicroEngine](docs/guide/getting-microengine.md) — use the engine in a game
-- [Getting MicroEngine](docs/guide/getting-microengine.md) — `dotnet tool install -g MicroEngine.Cli --prerelease`, then `microengine new`
+- [Install the SDK](docs/guide/getting-microengine.md) — `dotnet tool install -g MicroEngine.Cli --prerelease`, then `microengine new`
+- [Your first game](docs/guide/first-game.md) — create, run and understand a project
+- [Tutorial: Gem Garden](docs/tutorial/README.md) — build a complete small game step by step
+- [How do I...?](docs/howto.md) and [focused examples](docs/examples/focused.md) — short answers and one example per topic
+- [API reference](docs/api/README.md) — every public type, generated from the source
 - [SDK status](docs/guide/sdk.md) — what Alpha means, the SDK packages and how a release is published
 - [The microengine tool](docs/guide/cli.md) and [packaging](docs/guide/packaging.md) — create, run and distribute a game
 - [Downloads](docs/guide/downloads.md) — install the demos on Windows, Linux, macOS and Android
 - [Engine development setup](docs/guide/getting-started.md) — requirements, build, test, run a demo
-- [Engine manual](docs/manual/lifecycle.md) — lifecycle, scenes, rendering, input, audio, assets, UI, persistence, achievements, backends
+- [Engine manual](docs/manual/lifecycle.md) — lifecycle, scenes, graphics, text, input, audio, assets, tiles and collision, UI, saves, achievements, testing
 - [Contracts](docs/reference/contracts.md) — the public types games and backends depend on, with signatures
 - [Architecture](docs/architecture.md) — layers, frame, modules, design rationale
-- [Making a game](docs/making-a-game.md) — step-by-step guide with code
 - [Decisions](docs/decisions/README.md) — architecture decision records
 - [Run & gun evaluation](docs/evaluations/neon-rift.md) — what building Neon Rift showed about the engine
 - [Web builds](web/README.md) — the four games as browser packages: setup, build, run, embed
