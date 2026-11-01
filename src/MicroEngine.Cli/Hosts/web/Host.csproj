@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!-- Browser host of `microengine package web` (docs/guide/packaging.md): the game runs on raylib compiled to
+       WebAssembly; wwwroot/main.js is the page bridge. `microengine` copies this folder into the game's obj folder and
+       writes Game.props, GameEntry.cs, game.json and content.txt. Needs the wasm-tools workload. -->
+  <Import Project="Game.props" />
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>$(GameId).Web</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <WasmBuildNative>true</WasmBuildNative>
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <!-- SaveStore serializes game types with reflection-based System.Text.Json: trim only framework assemblies. The
+         trimmer's warnings about those two calls (IL2026/IL3050) are known (docs/evaluations/web-support.md). -->
+    <TrimMode>partial</TrimMode>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <NoWarn>$(NoWarn);IL2026;IL3050</NoWarn>
+    <!-- No ICU data: a smaller download, and output that never depends on the visitor's language. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(GameProject)" />
+    <!-- Game files served next to the page: the page copies Content into the runtime's file system at /Content before
+         the game starts, so ContentFolder reads them exactly as on desktop. -->
+    <Content Include="$(GameContentDir)**" Exclude="$(GameContentDir)**/*.cs" Link="wwwroot/Content/%(RecursiveDir)%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" Condition="'$(GameContentDir)' != ''" />
+    <Content Include="$(GameScriptsDir)*.script" Link="wwwroot/scripts/%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" Condition="'$(GameScriptsDir)' != '' and '$(WebDevHooks)' == 'true'" />
+  </ItemGroup>
+  <!-- Raylib-cs ships a browser raylib.a built by a newer emscripten than .NET's (wasm-opt rejects it), so link the copy
+       built with the workload's own emscripten: from the MicroEngine.Raylib package, or web/setup.sh's. -->
+  <Target Name="_UseWorkloadRaylib" BeforeTargets="_PrepareForBrowserWasmBuildNative">
+    <Error Condition="!Exists('$(RaylibWasmLib)')" Text="raylib for the web is missing ($(RaylibWasmLib)). It comes with the MicroEngine.Raylib package; in a MicroEngine checkout run web/setup.sh, or pass --raylib-wasm &lt;path&gt;." />
+    <ItemGroup>
+      <NativeFileReference Remove="@(NativeFileReference)" Condition="'%(Filename)' == 'raylib'" />
+      <NativeFileReference Include="$(RaylibWasmLib)" />
+    </ItemGroup>
+  </Target>
+</Project>

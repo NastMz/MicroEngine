@@ -1,9 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>MicroEngine</RootNamespace>
-    <Description>Backend-independent core of the MicroEngine 2D framework.</Description>
+    <Description>Backend-independent core of the MicroEngine 2D game engine: loop, scenes, input actions, graphics model, audio synthesis, UI, saves, achievements, a headless platform, and the build targets that give a game its application identity.</Description>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="MicroEngine.Tests" />
   </ItemGroup>
+  <!-- The application-identity targets (build/MicroEngine.targets) apply to every game that references the package,
+       directly or through a backend package. -->
+  <ItemGroup>
+    <None Include="build/MicroEngine.targets" Pack="true" PackagePath="build/;buildTransitive/" />
+  </ItemGroup>
+  <!-- The package also says which SDK version it is, for `microengine` and for build-info files. -->
+  <Target Name="_MicroEngineVersionProps" BeforeTargets="_GetPackageFiles">
+    <PropertyGroup>
+      <_MicroEngineVersionProps>$(IntermediateOutputPath)MicroEngine.props</_MicroEngineVersionProps>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_MicroEngineVersionProps)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Lines="&lt;Project&gt;&lt;PropertyGroup&gt;&lt;MicroEngineVersion Condition=&quot;'%24(MicroEngineVersion)' == ''&quot;&gt;$(Version)&lt;/MicroEngineVersion&gt;&lt;/PropertyGroup&gt;&lt;/Project&gt;" />
+    <ItemGroup>
+      <None Include="$(_MicroEngineVersionProps)" Pack="true" PackagePath="build/;buildTransitive/" />
+    </ItemGroup>
+  </Target>
 </Project>

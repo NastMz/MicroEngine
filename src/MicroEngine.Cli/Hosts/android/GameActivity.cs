@@ -14,8 +14,8 @@ namespace MicroEngine.Android;
 /// <para>Launch extras (for tests, as <c>adb shell am start</c> passes them): <c>script</c> (a file in assets/scripts),
 /// <c>env</c> ("NAME=value;..."). Captures go to the app's external files folder, <c>captures/&lt;script&gt;</c>.</para>
 /// </summary>
-[Activity(Name = "dev.microengine.GameActivity", Label = "@string/app_name", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTask,
-    ScreenOrientation = ScreenOrientation.SensorLandscape, Theme = "@android:style/Theme.NoTitleBar.Fullscreen",
+[Activity(Name = "dev.microengine.GameActivity", Label = "@string/app_name", Icon = "@mipmap/appicon", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTask,
+    ScreenOrientation = GameEntry.ScreenOrientation, Theme = "@android:style/Theme.NoTitleBar.Fullscreen",
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.ScreenLayout | ConfigChanges.KeyboardHidden
         | ConfigChanges.Keyboard | ConfigChanges.Navigation | ConfigChanges.UiMode)]
 public sealed class GameActivity : SDLActivity
@@ -41,7 +41,7 @@ public sealed class GameActivity : SDLActivity
         // Saves go to the app's private files folder (SaveStore's Linux rule under XDG_DATA_HOME).
         System.Environment.SetEnvironmentVariable("XDG_DATA_HOME", FilesDir!.AbsolutePath);
         int code = MobileRun.Run(launch,
-            (game, scripted) => SdlPlatform.Profile.Create(new PlatformRequest(game.Settings) { FixedStep = scripted }),
+            (game, scripted) => SdlPlatform.Profile.Create(new PlatformRequest(game.Settings) { FixedStep = scripted, Identity = AppIdentity.Of(game) }),
             line => Log.Info(Tag, line));
         Log.Info(Tag, $"microengine: exit {code}");
     }

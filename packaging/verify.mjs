@@ -128,7 +128,7 @@ export async function verifyPackage(file, { game: gameId, target: targetId, key,
     await extract(file, t, dir);
     const top = path.join(dir, gameId);
     const files = fs.existsSync(top) ? walk(top).sort() : [];
-    const required = requiredFiles({ game: gameId, title: game.title, content }, t);
+    const required = requiredFiles({ game: gameId, title: game.title, applicationId: game.applicationId, content }, t);
     const missing = required.filter(f => !files.includes(f));
     const allowed = new Set(required);
     // macOS adds the signature's own files inside the bundle.

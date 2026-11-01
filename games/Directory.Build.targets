@@ -1,0 +1,14 @@
+<Project>
+  <!-- What the four demos share for packaging (docs/guide/app-identity.md): their licence (all rights reserved,
+       games/LICENSE), MicroEngine's third-party list, which also credits their CC0 files, and the input scripts their
+       phone and browser checks replay. Each demo's own identity is in its project file. -->
+  <PropertyGroup>
+    <MicroEngineLicenseFile Condition="'$(MicroEngineLicenseFile)' == ''">../LICENSE</MicroEngineLicenseFile>
+    <MicroEngineThirdPartyNotices Condition="'$(MicroEngineThirdPartyNotices)' == ''">../../THIRD-PARTY-NOTICES.md</MicroEngineThirdPartyNotices>
+    <MicroEngineScriptsDir Condition="'$(MicroEngineScriptsDir)' == ''">scripts/</MicroEngineScriptsDir>
+  </PropertyGroup>
+  <!-- The same application-identity targets as any game built on the SDK packages
+       (src/MicroEngine/build/MicroEngine.targets): a package reference imports them automatically, a project reference
+       does not, so this file does. -->
+  <Import Project="../src/MicroEngine/build/MicroEngine.targets" />
+</Project>

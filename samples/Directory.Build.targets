@@ -1,0 +1,6 @@
+<Project>
+  <!-- The samples use the same application-identity targets as any game built on the SDK packages
+       (src/MicroEngine/build/MicroEngine.targets): a package reference imports them automatically, a project
+       reference does not, so this file does. -->
+  <Import Project="../src/MicroEngine/build/MicroEngine.targets" />
+</Project>

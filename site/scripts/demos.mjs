@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Web demo artifacts for the site, addressed by content (docs/deployment.md, "Demo packages are addressed by content").
 //
-// Every game in the registry (web/games.props) has a key: a hash of the Git blobs of everything its web package is
+// Every game in the registry (games/<Id>/<Id>.csproj) has a key: a hash of the Git blobs of everything its web package is
 // built from (engine, web host and toolchain files, the game's folder, its registry entry, the third-party
 // notices). The same inputs give the same key, so a package is built once and reused until one of its inputs
 // changes; documentation and site edits never change a key.
@@ -65,10 +65,10 @@ const skipped = file => /\.(br|gz)$/.test(file);
 export const releaseTag = 'demo-artifacts';
 
 // Inputs shared by every game's web package. Paths are Git pathspecs relative to the repository root.
+// The browser host and the tool that builds it (`microengine package web`) live in src/MicroEngine.Cli.
 const sharedInputs = [
-  'src', 'web/Host', 'web/Directory.Build.props', 'web/Directory.Build.targets', 'web/build.sh', 'web/build-raylib-wasm.sh',
-  'web/setup.sh', 'web/toolchain.env', 'Directory.Build.props', 'global.json', 'NuGet.config', 'THIRD-PARTY-NOTICES.md',
-  'LICENSE', 'games/LICENSE',
+  'src', 'web/build.sh', 'web/build-raylib-wasm.sh', 'web/setup.sh', 'web/toolchain.env', 'Directory.Build.props', 'global.json',
+  'NuGet.config', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'games/LICENSE', 'games/Directory.Build.targets',
 ];
 // Files inside those paths that never reach a release package.
 const notAnInput = file => (/\.md$/i.test(file) && file !== 'THIRD-PARTY-NOTICES.md') || /(^|\/)(screenshots|scripts)\//.test(file);
@@ -86,18 +86,23 @@ function walk(dir, base = dir) {
 export const sha256 = data => crypto.createHash('sha256').update(data).digest('hex');
 export const sha256File = file => sha256(fs.readFileSync(file));
 
-/** The games the web host can build, read from web/games.props: id, title, game folder and registry entry. */
+// The demos in the order the site lists them; any other game folder with a project follows, alphabetically.
+const demoOrder = ['MeadowRun', 'CourtyardKey', 'TrailDuel', 'NeonRift'];
+
+/**
+ * The demo games: every games/<Id>/<Id>.csproj, with the title its project declares (ApplicationTitle, the same
+ * identity `microengine package` reads: docs/guide/app-identity.md), its folder and its registry entry.
+ */
 export function registry(root = repoRoot) {
-  const text = fs.readFileSync(path.join(root, 'web', 'games.props'), 'utf8').replace(/\r\n/g, '\n');
-  return [...text.matchAll(/<PropertyGroup Condition="'\$\(Game\)' == '([A-Za-z0-9_]+)'">([\s\S]*?)<\/PropertyGroup>/g)].map(([entry, id, body]) => {
-    const project = body.match(/<GameProject>([^<]+)<\/GameProject>/)?.[1];
-    if (!project) fail(`web/games.props: ${id} has no <GameProject>.`);
-    return {
-      id,
-      title: body.match(/<GameTitle>([^<]+)<\/GameTitle>/)?.[1] ?? id,
-      dir: `games/${path.posix.dirname(project)}`,
-      entry: entry.replace(/\s+/g, ' ').trim(),
-    };
+  const dir = path.join(root, 'games');
+  const ids = fs.readdirSync(dir, { withFileTypes: true })
+    .filter(e => e.isDirectory() && fs.existsSync(path.join(dir, e.name, `${e.name}.csproj`))).map(e => e.name)
+    .sort((a, b) => ((demoOrder.indexOf(a) + 1 || 99) - (demoOrder.indexOf(b) + 1 || 99)) || (a < b ? -1 : 1));
+  return ids.map(id => {
+    const project = fs.readFileSync(path.join(dir, id, `${id}.csproj`), 'utf8');
+    const title = project.match(/<ApplicationTitle>([^<]+)<\/ApplicationTitle>/)?.[1] ?? fail(`games/${id}/${id}.csproj declares no <ApplicationTitle>.`);
+    const applicationId = project.match(/<ApplicationId>([^<]+)<\/ApplicationId>/)?.[1];
+    return { id, title, applicationId, dir: `games/${id}`, project: `games/${id}/${id}.csproj`, entry: `project games/${id}/${id}.csproj` };
   });
 }
 
@@ -113,7 +118,7 @@ function git(args, root) {
  * agree. Uncommitted changes count only once staged.
  */
 export function demoKey(id, { root = repoRoot } = {}) {
-  const game = registry(root).find(g => g.id === id) ?? fail(`unknown game "${id}" (web/games.props).`);
+  const game = registry(root).find(g => g.id === id) ?? fail(`unknown game "${id}" (games/<Id>/<Id>.csproj).`);
   const listing = git(['ls-files', '-s', '-z', '--', ...sharedInputs, game.dir], root)
     .split('\0').filter(Boolean)
     .map(line => { const [meta, file] = line.split('\t'); return { blob: meta.split(' ')[1], file }; })
@@ -135,10 +140,10 @@ export function demoKey(id, { root = repoRoot } = {}) {
 }
 
 // Native packages (packaging/README.md): one per game and target of packaging/targets.json, keyed like web packages
-// but over what a native build reads. Desktop targets share the engine, the packaging scripts and the build settings;
-// Android adds its host, which also ships the game's input scripts.
-const nativeShared = ['src', 'packaging', 'Directory.Build.props', 'global.json', 'NuGet.config', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'games/LICENSE'];
-const nativeExtra = { android: ['platforms/android', 'platforms/Shared', 'platforms/Directory.Build.props', 'platforms/Directory.Build.targets', 'web/games.props'] };
+// but over what a native build reads: the engine and `microengine` (src, which holds the Android host), the packaging
+// scripts and the build settings. Android packages also ship the game's input scripts.
+const nativeShared = ['src', 'packaging', 'Directory.Build.props', 'global.json', 'NuGet.config', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'games/LICENSE', 'games/Directory.Build.targets'];
+const nativeExtra = {};
 const notANativeInput = (file, t) => (/\.md$/i.test(file) && file !== 'THIRD-PARTY-NOTICES.md') || /(^|\/)screenshots\//.test(file)
   || file.startsWith('packaging/tests/') || /^platforms\/android\/[^/]+\.(mjs|sh)$/.test(file)
   || (t.os !== 'android' && /(^|\/)scripts\//.test(file));
@@ -146,7 +151,7 @@ const notANativeInput = (file, t) => (/\.md$/i.test(file) && file !== 'THIRD-PAR
 /** The key of one game's native package for a target of packaging/targets.json, computed like {@link demoKey}. */
 export function nativeKey(id, targetId, { root = repoRoot } = {}) {
   const t = nativeTarget(targetId);
-  const game = registry(root).find(g => g.id === id) ?? fail(`unknown game "${id}" (web/games.props).`);
+  const game = registry(root).find(g => g.id === id) ?? fail(`unknown game "${id}" (games/<Id>/<Id>.csproj).`);
   const listing = git(['ls-files', '-s', '-z', '--', ...nativeShared, ...(nativeExtra[t.id] ?? []), game.dir], root)
     .split('\0').filter(Boolean)
     .map(line => { const [meta, file] = line.split('\t'); return { blob: meta.split(' ')[1], file }; })

@@ -10,7 +10,7 @@ Console.WriteLine($"{GameEntry.Title}: ready");
 
 /// <summary>
 /// The page's bridge to the game (wwwroot/main.js): start a run, one frame per animation frame, and how the run
-/// ended. The game is whichever web/games.props entry this package was built for (<see cref="GameEntry"/>).
+/// ended. The game is the one `microengine package web` built this package for (<see cref="GameEntry"/>).
 /// </summary>
 public static partial class WebHost
 {

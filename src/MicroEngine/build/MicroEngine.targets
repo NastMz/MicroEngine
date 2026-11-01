@@ -1,0 +1,105 @@
+<Project>
+  <!-- A game's application identity (docs/guide/app-identity.md), declared once in its project file:
+
+         <ApplicationTitle>   name players see (window, launcher, Dock, browser tab); default: the assembly name
+         <ApplicationId>      reverse-domain id (com.example.mygame): Android package, Apple bundle id, Linux desktop id
+         <Version>            the game's own version
+         <Description>        one sentence, used in package metadata
+         <MicroEngineIcon>    a square PNG of 256, 512 or 1024 pixels, relative to the project
+         <MicroEngineOrientation>  landscape (default), portrait or any: phones only
+         <MicroEngineGameFactory>  C# expression that creates the game, for hosts that build it themselves
+                                   (browser, Android, iOS); default: new <RootNamespace>.<AssemblyName>Game()
+
+       Packed into the MicroEngine package (build/ and buildTransitive/), so every game that references the engine
+       gets it; the repository's games import this same file. These targets write the identity into the game assembly,
+       give the Windows executable its icon and check the values; `microengine package` reads the same properties to
+       write each system's metadata. -->
+  <PropertyGroup>
+    <MicroEngineAppTargets>true</MicroEngineAppTargets>
+    <ApplicationTitle Condition="'$(ApplicationTitle)' == ''">$(AssemblyName)</ApplicationTitle>
+    <MicroEngineOrientation Condition="'$(MicroEngineOrientation)' == ''">landscape</MicroEngineOrientation>
+    <MicroEngineGameFactory Condition="'$(MicroEngineGameFactory)' == ''">new $(RootNamespace).$(AssemblyName)Game()</MicroEngineGameFactory>
+    <MicroEngineContentDir Condition="'$(MicroEngineContentDir)' == ''">$(MSBuildProjectDirectory)/Content/</MicroEngineContentDir>
+    <_MicroEngineGame Condition="'$(OutputType)' == 'Exe' or '$(OutputType)' == 'WinExe'">true</_MicroEngineGame>
+    <_MicroEngineIconPath Condition="'$(MicroEngineIcon)' != ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(MicroEngineIcon)'))</_MicroEngineIconPath>
+    <_MicroEngineIco Condition="'$(_MicroEngineIconPath)' != ''">$(BaseIntermediateOutputPath)microengine/app.ico</_MicroEngineIco>
+    <ApplicationIcon Condition="'$(ApplicationIcon)' == '' and '$(_MicroEngineGame)' == 'true' and '$(_MicroEngineIco)' != ''">$(_MicroEngineIco)</ApplicationIcon>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(_MicroEngineGame)' == 'true'">
+    <!-- Windows shows these as the executable's product name and file description. -->
+    <Product>$(ApplicationTitle)</Product>
+    <AssemblyTitle>$(ApplicationTitle)</AssemblyTitle>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(_MicroEngineGame)' == 'true'">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>MicroEngine.ApplicationTitle</_Parameter1>
+      <_Parameter2>$(ApplicationTitle)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>MicroEngine.ApplicationId</_Parameter1>
+      <_Parameter2>$(ApplicationId)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>MicroEngine.Version</_Parameter1>
+      <_Parameter2>$(Version)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>MicroEngine.Orientation</_Parameter1>
+      <_Parameter2>$(MicroEngineOrientation)</_Parameter2>
+    </AssemblyAttribute>
+    <EmbeddedResource Include="$(_MicroEngineIconPath)" LogicalName="MicroEngine.AppIcon.png" Condition="'$(_MicroEngineIconPath)' != '' and Exists('$(_MicroEngineIconPath)')" />
+  </ItemGroup>
+
+  <Target Name="MicroEngineCheckIdentity" BeforeTargets="CoreCompile;PrepareResources" Condition="'$(_MicroEngineGame)' == 'true'">
+    <Error Code="ME0001" Condition="'$(ApplicationId)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(ApplicationId)', '^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$'))"
+           Text="ApplicationId '$(ApplicationId)' is not a valid application id: use two or more dot-separated parts, each starting with a letter and made of letters, digits and underscores, for example com.example.mygame (Android and Apple reject anything else)." />
+    <Error Code="ME0002" Condition="'$(MicroEngineOrientation)' != 'landscape' and '$(MicroEngineOrientation)' != 'portrait' and '$(MicroEngineOrientation)' != 'any'"
+           Text="MicroEngineOrientation '$(MicroEngineOrientation)' is not one of landscape, portrait or any." />
+    <Error Code="ME0003" Condition="'$(_MicroEngineIconPath)' != '' and !Exists('$(_MicroEngineIconPath)')"
+           Text="MicroEngineIcon '$(MicroEngineIcon)' does not exist (looked for $(_MicroEngineIconPath))." />
+    <MicroEngineWriteIcon Condition="'$(_MicroEngineIco)' != ''" Source="$(_MicroEngineIconPath)" Ico="$(_MicroEngineIco)" />
+    <ItemGroup Condition="'$(_MicroEngineIco)' != ''">
+      <FileWrites Include="$(_MicroEngineIco)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Checks the icon (PNG, square, 256, 512 or 1024 pixels) and wraps it in a Windows .ico: an icon directory whose single
+       entry is the PNG itself, which Windows has read since Vista. No image library is needed. -->
+  <UsingTask TaskName="MicroEngineWriteIcon" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Source ParameterType="System.String" Required="true" />
+      <Ico ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        byte[] png = File.ReadAllBytes(Source);
+        byte[] signature = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+        bool isPng = png.Length >= 33 && png[12] == (byte)'I' && png[13] == (byte)'H' && png[14] == (byte)'D' && png[15] == (byte)'R';
+        for (int i = 0; isPng && i < 8; i++) isPng = png[i] == signature[i];
+        if (!isPng) { Log.LogError(null, "ME0004", null, Source, 0, 0, 0, 0, "MicroEngineIcon {0} is not a PNG file.", Source); return false; }
+        int width = (png[16] << 24) | (png[17] << 16) | (png[18] << 8) | png[19];
+        int height = (png[20] << 24) | (png[21] << 16) | (png[22] << 8) | png[23];
+        if (width != height || (width != 256 && width != 512 && width != 1024))
+        {
+          Log.LogError(null, "ME0005", null, Source, 0, 0, 0, 0, "MicroEngineIcon {0} is {1}x{2} pixels; it must be square: 256x256, 512x512 or 1024x1024 (1024x1024 is best: iOS asks for that size).", Source, width, height);
+          return false;
+        }
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(Ico)));
+        using (var stream = new MemoryStream())
+        using (var w = new BinaryWriter(stream))
+        {
+          w.Write((ushort)0); w.Write((ushort)1); w.Write((ushort)1);
+          w.Write((byte)0); w.Write((byte)0); w.Write((byte)0); w.Write((byte)0);
+          w.Write((ushort)1); w.Write((ushort)32); w.Write(png.Length); w.Write(22);
+          w.Write(png);
+          w.Flush();
+          byte[] ico = stream.ToArray();
+          if (!File.Exists(Ico) || !System.Linq.Enumerable.SequenceEqual(File.ReadAllBytes(Ico), ico)) File.WriteAllBytes(Ico, ico);
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+</Project>

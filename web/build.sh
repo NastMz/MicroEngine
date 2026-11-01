@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Builds MicroEngine web packages: one static folder per game, ready to serve or to embed in an iframe.
+# Builds the demos' web packages: one static folder per game, ready to serve or to embed in an iframe. Each is built by
+# `microengine package web` (src/MicroEngine.Cli, docs/guide/packaging.md), as any game made with the SDK, with the
+# pinned toolchain of web/setup.sh.
 #
 # Usage: web/build.sh [--dev] [--out DIR] [Game ...]
-#   Game     ids from web/games.props (MeadowRun, CourtyardKey, TrailDuel, NeonRift); none means all of them
+#   Game     demo ids (games/<Id>/<Id>.csproj: MeadowRun, CourtyardKey, TrailDuel, NeonRift); none means all of them
 #   --dev    development package: ships the game's input scripts and honours URL parameters (web/README.md)
 #   --out    where packages go (default dist/web); each game ends up in DIR/<Game>/
 # Needs the toolchain from web/setup.sh (same MICROENGINE_WEB_TOOLS folder).
@@ -27,10 +29,10 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-mapfile -t known < <(sed -n "s/.*'\$(Game)' == '\([A-Za-z0-9_]*\)'.*/\1/p" "$here/games.props")
+mapfile -t known < <(cd "$root/games" && for d in */; do d=${d%/}; [ -f "$d/$d.csproj" ] && echo "$d"; done)
 [ ${#games[@]} -gt 0 ] || games=("${known[@]}")
 for g in "${games[@]}"; do
-  printf '%s\n' "${known[@]}" | grep -qx "$g" || die "unknown game '$g'. Known games: ${known[*]} (web/games.props)."
+  printf '%s\n' "${known[@]}" | grep -qx "$g" || die "unknown game '$g'. Known games: ${known[*]} (games/<Id>/<Id>.csproj)."
 done
 
 dotnet="$tools/dotnet/dotnet$exe"
@@ -40,11 +42,6 @@ lib="$tools/raylib-web/raylib.a"
 ls -d "$tools"/dotnet/packs/Microsoft.NET.Runtime.Emscripten."$EMSCRIPTEN_VERSION".Sdk.* >/dev/null 2>&1 \
   || die "the wasm-tools workload (emscripten $EMSCRIPTEN_VERSION) is not installed in $tools/dotnet. Run web/setup.sh."
 [ -f "$lib" ] || die "raylib for the web is missing ($lib). Run web/setup.sh."
-runtime_pack="$tools/dotnet/packs/Microsoft.NETCore.App.Runtime.Mono.browser-wasm/$DOTNET_RUNTIME_VERSION"
-emscripten_license=$(ls "$tools"/dotnet/packs/Microsoft.NET.Runtime.Emscripten."$EMSCRIPTEN_VERSION".Sdk.*/*/tools/emscripten/LICENSE 2>/dev/null | head -1)
-for f in "$runtime_pack/LICENSE.TXT" "$runtime_pack/THIRD-PARTY-NOTICES.TXT" "$emscripten_license" "$tools/raylib-src/LICENSE" "$root/THIRD-PARTY-NOTICES.md" "$root/LICENSE" "$root/games/LICENSE"; do
-  [ -n "$f" ] && [ -f "$f" ] || die "licence file missing (${f:-emscripten LICENSE}). Run web/setup.sh."
-done
 export DOTNET_ROOT="$tools/dotnet" DOTNET_MULTILEVEL_LOOKUP=0 DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 # Packages are published: keep build-machine paths out of them. Native code the workload compiles embeds source
 # file names in assertion messages, and assemblies with debug information name their .pdb file.
@@ -62,30 +59,24 @@ sizes() {
   awk -v r="$raw" -v b="$br" 'BEGIN { printf "%.1f MB, %.1f MB with Brotli", r / 1048576, b / 1048576 }'
 }
 
+# The tool itself, built and run with the pinned SDK, which it also uses for the games (MICROENGINE_DOTNET).
+"$dotnet" build "$(native "$root/src/MicroEngine.Cli/MicroEngine.Cli.csproj")" -c Release -nologo -v:quiet
+tool="$root/src/MicroEngine.Cli/bin/Release/net10.0/microengine.dll"
+export MICROENGINE_DOTNET="$dotnet"
+dev_flag=(); [ "$dev" = true ] && dev_flag=(--dev)
+staging="$here/obj/packages"
 mkdir -p "$out"
 for g in "${games[@]}"; do
   echo "== $g"
-  staging="$here/obj/$g/package"
-  # Native objects are compiled again every time, so path remapping (EMCC_CFLAGS) always applies.
-  rm -rf "$staging" "$here/Host/obj/$g/Release/net10.0/wasm"
-  "$dotnet" publish "$(native "$here/Host/MicroEngine.Web.csproj")" -c Release -nologo -v:quiet \
-    -p:Game="$g" -p:WebDevHooks="$dev" -p:RaylibWasmLib="$(native "$lib")" -p:MicroEngineWebPackage=true \
-    -o "$(native "$staging")"
+  rm -rf "$staging"
+  # The package carries its licences: the game's own notice (games/LICENSE: the demos are not MIT), MicroEngine's
+  # MIT licence and third-party list, and the licence files of the .NET runtime, Emscripten and raylib inside it.
+  "$dotnet" "$(native "$tool")" package web --project "$(native "$root/games/$g/$g.csproj")" --out "$(native "$staging")"     --raylib-wasm "$(native "$lib")" "${dev_flag[@]}"
   # Empty the folder rather than deleting it, so a local server serving it keeps working.
   mkdir -p "$out/$g"
   find "${out:?}/$g" -mindepth 1 -delete
-  cp -R "$staging/wwwroot/." "$out/$g/"
-  # Licences travel with every package: the game's own notice (games/LICENSE: the demos are not MIT), MicroEngine's
-  # MIT licence for the engine inside it, MicroEngine's third-party list, plus the complete licence files of the
-  # .NET runtime, Emscripten and raylib that the package contains (THIRD-PARTY-NOTICES.md, "Browser builds").
-  cp "$root/games/LICENSE" "$out/$g/LICENSE.txt"
-  cp "$root/THIRD-PARTY-NOTICES.md" "$out/$g/THIRD-PARTY-NOTICES.txt"
-  mkdir -p "$out/$g/licenses"
-  cp "$root/LICENSE" "$out/$g/licenses/microengine-LICENSE.txt"
-  cp "$runtime_pack/LICENSE.TXT" "$out/$g/licenses/dotnet-LICENSE.txt"
-  cp "$runtime_pack/THIRD-PARTY-NOTICES.TXT" "$out/$g/licenses/dotnet-THIRD-PARTY-NOTICES.txt"
-  cp "$emscripten_license" "$out/$g/licenses/emscripten-LICENSE.txt"
-  cp "$tools/raylib-src/LICENSE" "$out/$g/licenses/raylib-LICENSE.txt"
+  cp -R "$staging"/"$g"-*-web/. "$out/$g/"
   echo "$out/$g: $(sizes "$out/$g")"
 done
+rm -rf "$staging"
 echo "Serve locally with: node web/serve.mjs $out"

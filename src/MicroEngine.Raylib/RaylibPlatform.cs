@@ -10,7 +10,11 @@ using RlRect = Raylib_cs.Rectangle;
 namespace MicroEngine.Raylib;
 
 /// <summary>Desktop window options decided by the launcher.</summary>
-public sealed record DesktopOptions(int? Scale = null, bool Hidden = false, bool FixedStep = false, bool Mute = false, int CaptureScale = 3);
+public sealed record DesktopOptions(int? Scale = null, bool Hidden = false, bool FixedStep = false, bool Mute = false, int CaptureScale = 3)
+{
+    /// <summary>The window's icon (the game's <see cref="AppIdentity.Icon"/>); ignored in browsers.</summary>
+    public PixelImage? Icon { get; init; }
+}
 
 /// <summary>
 /// raylib-backed platform. Games draw into a virtual-resolution render texture which is
@@ -38,7 +42,7 @@ public sealed class RaylibPlatform : IPlatform
     /// request supplies another one.
     /// </summary>
     public static PlatformProfile Profile { get; } = new("raylib", "raylib 6.0: GLFW window, OpenGL renderer, input and miniaudio sound",
-        request => new RaylibPlatform(request.Settings, new DesktopOptions(request.Scale, request.Hidden, request.FixedStep, !request.OpensOwnAudio, request.CaptureScale)))
+        request => new RaylibPlatform(request.Settings, new DesktopOptions(request.Scale, request.Hidden, request.FixedStep, !request.OpensOwnAudio, request.CaptureScale) { Icon = request.Identity?.Icon }))
     {
         CheckSupport = () => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ? "raylib 6.0 has no iOS platform" : null,
     };
@@ -62,6 +66,7 @@ public sealed class RaylibPlatform : IPlatform
         // A page may be smaller than the virtual canvas (a small iframe); the canvas then scales down instead of being cropped.
         if (!OperatingSystem.IsBrowser()) Rl.SetWindowMinSize(settings.VirtualWidth, settings.VirtualHeight);
         Rl.SetExitKey(Raylib_cs.KeyboardKey.Null);
+        if (options.Icon is { } icon && !OperatingSystem.IsBrowser()) SetWindowIcon(icon);
         // On Android raylib's GetCurrentMonitor detaches the calling thread from the JVM, which aborts a thread that is
         // running .NET code (the experimental host, platforms/android); the display's vsync paces frames there instead.
         if (!options.Hidden && !OperatingSystem.IsBrowser() && !OperatingSystem.IsAndroid()) Rl.SetTargetFPS(Math.Max(60, Rl.GetMonitorRefreshRate(Rl.GetCurrentMonitor())));
@@ -127,6 +132,16 @@ public sealed class RaylibPlatform : IPlatform
     }
 
     public void ToggleFullscreen() => Rl.ToggleBorderlessWindowed();
+
+    private static unsafe void SetWindowIcon(PixelImage icon)
+    {
+        byte[] rgba = icon.ToRgba();
+        fixed (byte* pixels = rgba)
+        {
+            // raylib copies the pixels into GLFW's icon; the image only borrows the managed buffer.
+            Rl.SetWindowIcon(new Raylib_cs.Image { Data = pixels, Width = icon.Width, Height = icon.Height, Mipmaps = 1, Format = Raylib_cs.PixelFormat.UncompressedR8G8B8A8 });
+        }
+    }
 
     public void Dispose()
     {

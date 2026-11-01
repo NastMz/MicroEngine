@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- `microengine`, the SDK's command-line tool (docs/guide/cli.md): creates, runs, builds and packages games for every
+       official target. Installed with `dotnet tool install -g MicroEngine.Cli`. It drives the .NET SDK and each system's
+       own tools; it holds the hosts that run a game on Android, iOS and in browsers (Hosts/), and the engine's notices
+       every package carries (Notices/). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MicroEngine.Cli</RootNamespace>
+    <AssemblyName>microengine</AssemblyName>
+    <PackageId>MicroEngine.Cli</PackageId>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>microengine</ToolCommandName>
+    <Description>The MicroEngine command-line tool: create, run, build and package MicroEngine games for Windows, Linux, macOS, Android, iOS and the web.</Description>
+    <PackageTags>$(PackageTags);dotnet-tool;cli;packaging</PackageTags>
+    <!-- A tool has no consumers of its symbols or API documentation. -->
+    <IncludeSymbols>false</IncludeSymbols>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Host templates: copied, never compiled here. -->
+    <Compile Remove="Hosts/**" />
+    <None Remove="Hosts/**" />
+    <Content Include="Hosts/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="false" />
+    <Content Include="Notices/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="false" />
+    <Content Include="../../LICENSE" Link="Notices/microengine-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="false" />
+    <Content Include="../../THIRD-PARTY-NOTICES.md" Link="Notices/THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="false" />
+    <InternalsVisibleTo Include="MicroEngine.Cli.Tests" />
+    <!-- PNG reading and writing for icons. -->
+    <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
+  </ItemGroup>
+</Project>
