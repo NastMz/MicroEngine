@@ -152,12 +152,28 @@ demo and, for each game:
 
 The same steps apply to the Android APKs. Record the phone, OS and browser version with the result.
 
+## 7b. Played by hand
+
+On 2026-11-01 the owner played the four demos by hand from the INPUT-1 builds (the site preview and the packages in
+`demo-artifacts` built from PR #7's head, before the toggle-slide fix) and reported every one working:
+
+| Where | What was played |
+| --- | --- |
+| Android app, Redmi Note 14 Pro (arm64) | The four APKs: touch controls, and a PlayStation controller over Bluetooth |
+| Browser on that phone | The four web demos with touch |
+| Windows 11 PC | The four ZIP downloads (SDL); keyboard and an Xbox controller |
+| Ubuntu PC | The four `.tar.gz` downloads (SDL) |
+| Desktop browser | The four web demos |
+
+Not recorded: the Android, Ubuntu and browser versions, whether Ubuntu ran X11 or Wayland, and each step of §7 one by
+one. No iPhone, Mac or tablet was used, and Safari was not run.
+
 ## 8. Remaining limitations
 
-- No physical phone was used: system-level multi-touch was exercised in emulated Chrome; on the Android emulator real
-  taps and held fingers are single-pointer (`adb input`), and two thumbs were scripted through the controls; the iOS
-  simulator cannot receive scripted system touches, so iOS touch is scripted only. **Safari was not run.** These need
-  hardware this work had no access to; [§7](#7-checking-on-a-real-phone) lists the steps.
+- One Android phone was played by hand (§7b); the automated checks still use emulated Chrome and the Android emulator,
+  where real taps and held fingers are single-pointer (`adb input`) and two thumbs are scripted. The iOS simulator
+  cannot receive scripted system touches, so iOS touch is scripted only. **No iPhone was used and Safari was not
+  run**; [§7](#7-checking-on-a-real-phone) lists the steps.
 - On screens near 16:9 the game frame is smaller while the touch controls are shown, so that no control covers it
   (about 60 % of the largest frame for Meadow Run on a 16:9 phone, 75 % on 20:9; §4b); a keyboard or gamepad gives it
   its full size back.

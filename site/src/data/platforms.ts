@@ -1,7 +1,8 @@
 // The public compatibility matrix: one row per official target, one cell per kind of evidence. A cell names where the
 // evidence came from, never more: "hardware" means a real machine of that kind, "virtual" a hosted CI runner or a
 // container (no real GPU, virtual display and sound server), "emulator" and "simulator" what they say. Sources:
-// docs/evaluations/platform-3.md and docs/evaluations/product-1.md. Update both together when a platform is validated.
+// docs/evaluations/platform-3.md, docs/evaluations/product-1.md and docs/evaluations/input-1.md (§7b, played by hand).
+// Update them together when a platform is validated.
 export type Evidence = 'person' | 'hardware' | 'virtual' | 'emulator' | 'simulator' | 'none' | 'na';
 
 export const evidenceLabels: Record<Evidence, { label: string; meaning: string }> = {
@@ -38,22 +39,22 @@ export const platforms: PlatformRow[] = [
     build: { level: 'virtual', note: 'Hosted Windows runner on engine changes; local builds' },
     tests: { level: 'virtual', note: 'Engine and four games, every engine change' },
     rendering: { level: 'hardware', note: '138 scripted captures; Direct3D 11, OpenGL and Vulkan identical; the four ZIP packages reproduce them' },
-    input: { level: 'person', note: 'Keyboard and one gamepad played with raylib; SDL driven by scripted input only' },
+    input: { level: 'person', note: 'Keyboard and gamepads played by hand with raylib and with the SDL downloads (an Xbox controller)' },
     audio: { level: 'person', note: 'Heard with raylib; SDL’s device opens and plays (packages included)' },
     lifecycle: { level: 'na', note: 'Desktop windows are not suspended' },
-    hardware: { level: 'person', note: 'Windows 11 PC with a GPU; hand play on SDL pending' },
+    hardware: { level: 'person', note: 'Windows 11 PC with a GPU; the four downloads played by hand' },
     download: { target: 'windows-x64' },
   },
   {
     id: 'linux', name: 'Linux x64', platform: 'SDL 3 (default) · raylib · SDL software',
-    status: { label: 'Checked, not yet played', tone: 'partial' },
+    status: { label: 'Runs on hardware', tone: 'ok' },
     build: { level: 'virtual', note: 'Ubuntu runner on every engine change' },
     tests: { level: 'virtual', note: 'Engine and four games, every engine change' },
     rendering: { level: 'virtual', note: '138 captures on Mesa (software) under Xvfb; the package reproduces them on Ubuntu 22.04, Debian 12 and Fedora 41' },
     input: { level: 'virtual', note: 'System keyboard through the X server (raylib); scripted input on SDL' },
     audio: { level: 'virtual', note: 'Virtual PulseAudio: a played tone recorded and recognised (raylib); SDL’s device opens' },
     lifecycle: { level: 'na', note: 'Desktop windows are not suspended' },
-    hardware: { level: 'none', note: 'No real GPU, Wayland session or person yet' },
+    hardware: { level: 'person', note: 'Ubuntu PC: the four downloads played by hand; Wayland not identified' },
     download: { target: 'linux-x64' },
   },
   {
@@ -70,14 +71,14 @@ export const platforms: PlatformRow[] = [
   },
   {
     id: 'android', name: 'Android', platform: 'SDL 3 (the Android host)',
-    status: { label: 'Emulator only', tone: 'partial' },
+    status: { label: 'Runs on a phone', tone: 'ok' },
     build: { level: 'virtual', note: 'APKs for arm64-v8a and x86_64' },
     tests: { level: 'na', note: 'Game rules are tested on the desktop' },
     rendering: { level: 'emulator', note: 'All four games, 138 captures (x86_64 emulator)' },
-    input: { level: 'emulator', note: 'System keys, taps and held drags on each game’s touch controls; two thumbs scripted' },
+    input: { level: 'person', note: 'Touch controls and a Bluetooth PlayStation controller played on a phone; taps, drags and two thumbs also checked on the emulator' },
     audio: { level: 'emulator', note: 'SDL’s device opens; not listened to' },
     lifecycle: { level: 'emulator', note: 'Home suspends the game, returning resumes it' },
-    hardware: { level: 'none', note: 'No phone or tablet yet (arm64 not run)' },
+    hardware: { level: 'person', note: 'Redmi Note 14 Pro (arm64): the four APKs played by hand; no tablet' },
     download: { target: 'android' },
   },
   {
@@ -98,10 +99,10 @@ export const platforms: PlatformRow[] = [
     build: { level: 'virtual', note: 'Pinned toolchain on a hosted runner' },
     tests: { level: 'na', note: 'Same game code as the desktop' },
     rendering: { level: 'virtual', note: '138 captures byte-identical to desktop raylib, Chrome and Firefox' },
-    input: { level: 'person', note: 'Keyboard (automated and by hand); one gamepad by hand in a Chromium browser; touch with real multi-touch in emulated mobile Chrome' },
+    input: { level: 'person', note: 'Keyboard (automated and by hand); one gamepad by hand in a Chromium browser; touch played on an Android phone and checked with real multi-touch in emulated mobile Chrome' },
     audio: { level: 'person', note: 'After the first click or key; stops in a hidden tab' },
     lifecycle: { level: 'virtual', note: 'Saves persist; a hidden page suspends the game' },
-    hardware: { level: 'person', note: 'Desktop Chrome and Firefox; Safari and phones not validated' },
+    hardware: { level: 'person', note: 'Desktop Chrome and Firefox; the four demos played on an Android phone; Safari not validated' },
     download: { none: 'Plays on the demo pages; nothing to install' },
   },
 ];

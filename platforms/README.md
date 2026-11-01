@@ -33,7 +33,7 @@ A build is not compatibility. Each level is claimed only when it was run and its
 | Audio checked | SDL's audio device opens; output not listened to | SDL's audio device opens; output not listened to |
 | Lifecycle | Home suspends the game, relaunching resumes it | opening Settings suspends the game, relaunching resumes it |
 | Content files | Neon Rift's PNG, WAV and OGG files load from the APK | Neon Rift's files load from the app bundle |
-| Real device | not tried (no arm64 device) | not tried |
+| Real device | the four APKs played by hand on a Redmi Note 14 Pro (arm64), touch and a Bluetooth PlayStation controller | not tried |
 
 ## Android
 

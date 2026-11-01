@@ -38,7 +38,7 @@ export const next: RoadmapTrack[] = [
     title: 'Real devices',
     status: 'planned',
     summary: 'Turn automated evidence into played evidence.',
-    items: ['Play the SDL builds by hand on Windows, Linux and a Mac', 'An arm64 Android phone', 'An iPhone, with Apple signing for a distributable build', 'Safari and browsers on phones'],
+    items: ['Play the SDL builds by hand on a Mac (Windows and Linux done)', 'More Android phones and a tablet (one arm64 phone done)', 'An iPhone, with Apple signing for a distributable build', 'Safari on iPhone and Mac'],
   },
   {
     title: 'Engine robustness',

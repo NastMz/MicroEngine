@@ -352,7 +352,7 @@ sound) move to the bottom centre, between the thumbs. Details: [Embedding](../ex
 - Touch controls are drawn in screen pixels with simple shapes and the backend's own font (SDL's 8×8 debug font,
   raylib's default font); there are no images or custom fonts on controls.
 - Two fingers at once were checked in emulated mobile Chrome (real multi-touch events), in headless tests and with
-  scripted touches on the Android emulator and the iOS simulator; system-level multi-touch on a physical phone needs a
-  person ([INPUT-1](../evaluations/input-1.md#checking-on-a-real-phone)).
+  scripted touches on the Android emulator and the iOS simulator, and by hand on an Android phone
+  ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)); not on an iPhone.
 - In the browser, gamepad play was validated manually in one Chromium-based browser with the controller that was
   tested; no claim is made for other controllers or browsers ([Platforms](../guide/platforms.md#gamepads)).

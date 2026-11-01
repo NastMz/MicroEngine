@@ -37,13 +37,13 @@ These are not implemented. Do not plan around them.
 
 | Target | Status |
 | --- | --- |
-| Windows x64 | Played by hand with raylib; SDL (the default) checked on real hardware: 138 captures, audio device, the four downloads; hand play on SDL pending |
-| Linux x64 | Checked automatically on every engine change (build, tests, rendering, keyboard and audio under a virtual display and sound server) and the download in Ubuntu 22.04, Debian 12 and Fedora 41 containers; no real GPU or person yet |
+| Windows x64 | Played by hand with raylib; SDL (the default) checked on real hardware: 138 captures, audio device, the four downloads, also played by hand (keyboard and an Xbox controller) |
+| Linux x64 | Checked automatically on every engine change (build, tests, rendering, keyboard and audio under a virtual display and sound server) and the download in Ubuntu 22.04, Debian 12 and Fedora 41 containers; the four downloads played by hand on an Ubuntu PC |
 | macOS (Apple silicon) | Checked automatically on hosted Macs (tests, 138 captures on Metal, the downloadable apps); no person has played on a Mac |
-| Android | All four demos checked on the x86_64 emulator from their release APKs (captures, audio device, keys, touch, background and back); no physical device |
+| Android | All four demos checked on the x86_64 emulator from their release APKs (captures, audio device, keys, touch, background and back); the four APKs played by hand on a Redmi Note 14 Pro, with touch and a Bluetooth PlayStation controller |
 | iOS | Demos checked in Apple's simulator (captures, audio device, background and back, scripted touches); no iPhone, no download |
-| Browsers | The four demos verified with automated tests in Chrome and Firefox on desktop, plus manual validation; on phones and tablets played with real multi-touch in emulated mobile Chrome ([INPUT-1](../evaluations/input-1.md)); Safari not tested; no physical phone |
-| Gamepads | Validated by hand in one Chromium-based browser with one controller, and with raylib on Windows; SDL's gamepad support not tried with a physical controller |
+| Browsers | The four demos verified with automated tests in Chrome and Firefox on desktop, plus manual validation; on phones and tablets played with real multi-touch in emulated mobile Chrome ([INPUT-1](../evaluations/input-1.md)) and played by hand on an Android phone; Safari not tested |
+| Gamepads | Validated by hand in one Chromium-based browser with one controller, with raylib on Windows, and with SDL: an Xbox controller on the desktop and a PlayStation controller over Bluetooth on Android |
 
 Details per target: [Platforms](platforms.md) and the site's [compatibility matrix](/platforms/).
 

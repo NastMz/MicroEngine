@@ -68,3 +68,8 @@ Evaluation: [`docs/evaluations/input-1.md`](../../docs/evaluations/input-1.md). 
   touch help screens; Android compared with the emulator reference (differences only in blended pixels, inspected),
   iOS with a simulator reference; the Controls screens re-recorded; lost first launches on the CI emulator relaunched.
   Final: platform 41310966157 and validate 41310968737 green on 6756b9f.
+- L7 2026-11-01 Recreated as PR #8 on `feat/input-1` (authorship and trailers corrected). Review fix: a finger never
+  slides onto a toggle button (Neon Rift's LOCK next to FIRE). The owner played the four demos by hand from the
+  INPUT-1 builds: Android APKs on a Redmi Note 14 Pro (touch, Bluetooth PlayStation controller), the phone's browser,
+  Windows 11 downloads (keyboard, Xbox controller), Ubuntu downloads and the desktop browser; all working. Recorded in
+  the evaluation (§7b), the platform matrix and the status, platforms and limitations pages.
