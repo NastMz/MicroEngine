@@ -78,7 +78,7 @@ export const platforms: PlatformRow[] = [
     input: { level: 'person', note: 'Touch controls and a Bluetooth PlayStation controller played on a phone; taps, drags and two thumbs also checked on the emulator' },
     audio: { level: 'emulator', note: 'SDL’s device opens; not listened to' },
     lifecycle: { level: 'emulator', note: 'Home suspends the game, returning resumes it' },
-    hardware: { level: 'person', note: 'Redmi Note 14 Pro (arm64): the four APKs played by hand; no tablet' },
+    hardware: { level: 'person', note: 'Redmi Note 14 Pro (arm64, Android 16): the four APKs played by hand; no tablet' },
     download: { target: 'android' },
   },
   {
@@ -95,14 +95,14 @@ export const platforms: PlatformRow[] = [
   },
   {
     id: 'browser', name: 'Browsers (WebAssembly)', platform: 'raylib compiled to WebAssembly',
-    status: { label: 'Played in Chrome and Firefox', tone: 'ok' },
+    status: { label: 'Played in Chrome, Firefox and Edge', tone: 'ok' },
     build: { level: 'virtual', note: 'Pinned toolchain on a hosted runner' },
     tests: { level: 'na', note: 'Same game code as the desktop' },
     rendering: { level: 'virtual', note: '138 captures byte-identical to desktop raylib, Chrome and Firefox' },
-    input: { level: 'person', note: 'Keyboard (automated and by hand); one gamepad by hand in a Chromium browser; touch played on an Android phone and checked with real multi-touch in emulated mobile Chrome' },
+    input: { level: 'person', note: 'Keyboard (automated and by hand); one gamepad by hand in a Chromium browser; touch played in Chrome on an Android phone and checked with real multi-touch in emulated mobile Chrome' },
     audio: { level: 'person', note: 'After the first click or key; stops in a hidden tab' },
     lifecycle: { level: 'virtual', note: 'Saves persist; a hidden page suspends the game' },
-    hardware: { level: 'person', note: 'Desktop Chrome and Firefox; the four demos played on an Android phone; Safari not validated' },
+    hardware: { level: 'person', note: 'Desktop Chrome and Firefox; Edge on the desktop and Chrome on an Android 16 phone played by hand; Safari not validated' },
     download: { none: 'Plays on the demo pages; nothing to install' },
   },
 ];

@@ -22,13 +22,13 @@ build. Items move off this list only when a change and its validation are record
 | --- | --- |
 | Linux desktop: checked on hosted runners and in Ubuntu 22.04, Debian 12 and Fedora 41 containers (software rendering, virtual display and sound server), and played by hand on one Ubuntu PC; Wayland sessions and other distributions not played | [Platforms](../guide/platforms.md#desktop-validation) |
 | macOS: checked on hosted runners (paravirtual GPU, Metal); no person has played on a Mac, no system keyboard check | [Platforms](../guide/platforms.md#desktop-validation) |
-| Android: played by hand on one phone (Redmi Note 14 Pro); automated checks on the x86_64 emulator only; no tablet | [Platforms](../guide/platforms.md#phones-and-tablets) |
+| Android: played by hand on one phone (Redmi Note 14 Pro, Android 16); automated checks on the x86_64 emulator only; no tablet | [Platforms](../guide/platforms.md#phones-and-tablets) |
 | iOS: games checked in the simulator only; touch checked with scripted touches on the simulator's layout, not system touches; no iPhone or iPad | [Platforms](../guide/platforms.md#phones-and-tablets) |
 | Linux on ARM: no native raylib library in `Raylib-cs` | [Platforms](../guide/platforms.md#support-table) |
 | Gamepads on Linux and macOS: not covered by any check | [Platforms](../guide/platforms.md#desktop-validation) |
 | Safari not tested | [Platforms](../guide/platforms.md#support-table) |
-| Chromium-based browsers other than Chrome (for example Edge) not claimed; automated browser tests cover Chrome and Firefox only | [Platforms](../guide/platforms.md#support-table) |
-| Browsers on phones and tablets: played by hand on one Android phone, checked with real multi-touch in emulated mobile Chrome (four devices); Safari not run, no tablet | [Platforms](../guide/platforms.md#phones-and-tablets) |
+| Chromium-based browsers other than Chrome: Edge played by hand on the desktop, others not claimed; automated browser tests cover Chrome and Firefox only | [Platforms](../guide/platforms.md#support-table) |
+| Browsers on phones and tablets: played by hand in Chrome on one Android phone, checked with real multi-touch in emulated mobile Chrome (four devices); Safari not run, no tablet | [Platforms](../guide/platforms.md#phones-and-tablets) |
 | Gamepad in the browser validated manually in one Chromium-based browser with one controller only; no claim for other controllers or browsers | [Platforms](../guide/platforms.md#gamepads) |
 | Blocked site storage tested in Firefox only, not Chrome | [Web support](../evaluations/web-support.md#persistence) |
 | Producing browser packages is not available to external developers yet | [Getting MicroEngine](../guide/getting-microengine.md) |

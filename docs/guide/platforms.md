@@ -17,10 +17,10 @@ evidence cell by cell, and [Downloads](downloads.md) what a player can install.
 | Linux on ARM (arm64) | `sdl` | Not checked: the SDL package has an arm64 library, but nothing has run on it |
 | Chrome (Chromium) on desktop | `raylib` in WebAssembly through `BrowserLauncher` | The four demos are verified with automated tests, plus manual validation in the browser |
 | Firefox on desktop | Same | The four demos are verified with automated tests, plus manual validation in the browser |
-| Other Chromium-based browsers (for example Edge) | Same | Not claimed: they share Chrome's engine, but they are not covered by the tests |
+| Microsoft Edge and other Chromium-based browsers | Same | Edge: the four demos played by hand on the desktop ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)), not covered by the automated tests; other Chromium-based browsers not claimed |
 | Safari | Same | Not tested |
-| Phones and tablets in a browser | Same | On-screen touch controls; the four demos played by hand on an Android phone, and checked with real multi-touch in emulated mobile Chrome on four devices; Safari not run |
-| Android app | `sdl` (the Android host) | Checked on the x86_64 emulator: all four demos install from their release APK, draw, open audio, take keys and touch, and survive the background ([Phones and tablets](#phones-and-tablets)); the four APKs played by hand on a Redmi Note 14 Pro (arm64), with touch and a Bluetooth PlayStation controller |
+| Phones and tablets in a browser | Same | On-screen touch controls; the four demos played by hand in Chrome on an Android 16 phone, and checked with real multi-touch in emulated mobile Chrome on four devices; Safari not run |
+| Android app | `sdl` (the Android host) | Checked on the x86_64 emulator: all four demos install from their release APK, draw, open audio, take keys and touch, and survive the background ([Phones and tablets](#phones-and-tablets)); the four APKs played by hand on a Redmi Note 14 Pro (arm64, Android 16), with touch and a Bluetooth PlayStation controller |
 | iOS app | `sdl` (the iOS host) | Checked in Apple's simulator only: the demos draw (captures within the SDL reference), open audio, respond to scripted touches and survive the background; no iPhone, and no installable download ([why](downloads.md#ios)) |
 | Headless (tests, CI) | `HeadlessPlatform` | Validated: used by every test project; `--headless` launcher flag |
 
@@ -71,7 +71,7 @@ or a joystick and labelled buttons, [Input](../manual/input.md#touch-controls)) 
 the browser they were played with real multi-touch on four emulated devices in Chrome (Android phone, notched iPhone
 viewport, small portrait phone, tablet): walking, jumping while holding a direction, aiming and firing at once, analog
 walking, menus, focus loss, rotation, pinch and long press ([INPUT-1](../evaluations/input-1.md#6-mobile-web-evidence)).
-The four web demos were also played by hand on an Android phone (Redmi Note 14 Pro,
+The four web demos were also played by hand in Chrome on an Android phone (Redmi Note 14 Pro, Android 16,
 [INPUT-1](../evaluations/input-1.md#7b-played-by-hand)). Safari was not run; [the evaluation](../evaluations/input-1.md#7-checking-on-a-real-phone)
 lists the steps to check on an iPhone.
 
@@ -84,7 +84,7 @@ The native apps run on the SDL platform with the same controls:
   held drag on the movement control moves the player, and a scripted two-thumb run holds movement and a second
   control together; Home suspends the game (music paused, progress
   saved) and relaunching resumes it; content files load from the app package. The four APKs were played by hand on a
-  Redmi Note 14 Pro (arm64), with touch and a PlayStation controller over Bluetooth; no tablet was used.
+  Redmi Note 14 Pro (arm64, Android 16), with touch and a PlayStation controller over Bluetooth; no tablet was used.
 - **iOS**: the demos run in the iOS simulator; their scripted captures are within the SDL reference, the audio device
   opens, and opening another app suspends the game until it is brought back. The simulator cannot be sent system
   touches by script, so touch is checked with scripted touches on the simulator's own control layout (two controls
