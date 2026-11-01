@@ -84,13 +84,13 @@ revisión"); nothing is published to a public feed. Tests: `dotnet test MicroEng
 
 | ID | Specs | Route | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| T1 | S7 S10 | inline | pending | identity properties, build targets, runtime metadata |
-| T2 | S5 S8 S9 S10 S11 | inline | pending | `microengine` tool, desktop/web/mobile packaging |
-| T3 | S6 | inline | pending | `MicroEngine.Templates` |
-| T4 | S7 S9 S13 | inline | pending | demos and CI on the CLI |
-| T5 | S12 S16 | inline | pending | external project test, CI job |
-| T6 | S4 S14 | inline | pending | SDK release workflow (not run) |
-| T7 | S14 S15 | inline | pending | docs, site, ADR 0021, migrations |
+| T1 | S7 S10 | inline | done | 6da2e39; AppIdentity tests RED/GREEN; Neon Rift exe icon and name checked |
+| T2 | S5 S8 S9 S10 S11 | inline | done | 6da2e39, 933520e; external test all targets this PC builds |
+| T3 | S6 | inline | done | 933520e; template instantiated from the feed, capture inspected |
+| T4 | S7 S9 S13 | inline | done | 6da2e39, fa241a2; demos verified through the tool (Windows, Linux distros, Android emulator, web) |
+| T5 | S12 S16 | inline | done | 933520e, fa241a2; sdk.yml runs it on three systems (CI result pending) |
+| T6 | S4 S14 | inline | done | fa241a2; sdk-release.yml written, not run (owner's decision) |
+| T7 | S14 S15 | inline | done | 6051569 + evaluation docs/evaluations/sdk-1.md |
 
 Route evidence: one coherent design shared by every unit (identity feeds the CLI, the CLI feeds demos and CI), so no
 unit is independent enough for a parallel writer; long builds and CI runs go to the background.
@@ -106,3 +106,12 @@ unit is independent enough for a parallel writer; long builds and CI runs go to 
   and macOS/Android/iOS ids are `dev.microengine.<game>` built in scripts. Native keys hash `packaging/` and web keys
   `web/` (`site/scripts/demos.mjs`), so moving hosts changes every key once. Tags `v0.1.0`/`v0.2.0` are demo releases,
   which collide with engine versions `0.2.0-alpha`/`0.3.0-alpha`.
+- L3 Decisions: identity as project properties read by MSBuild (ADR 0021); hosts as templates inside the tool; SDK
+  version 0.4.0-alpha.1 with tags sdk-v<version>; publishing only through sdk-release.yml with `publish` and the nuget
+  environment. Delivery switched to one PR for the whole feature, as the owner asked ("PR listo para revisión").
+- L4 Local evidence (docs/evaluations/sdk-1.md): all .NET, site and planner tests; package checks; external project on
+  Windows (windows, linux, android on the emulator, web in Chrome); demo packages through the tool verified on Windows,
+  three Linux distributions and the Android emulator. Bugs found and fixed: dotnet new list exit 103, read before
+  restore, microengine.dll vs MicroEngine.dll, escaped Android RIDs.
+- L5 Next: push, PR, CI (ci.yml, sdk.yml); macOS and iOS evidence comes from CI. Pending owner decisions: merge,
+  NUGET_API_KEY secret and nuget environment, running sdk-release.yml.
