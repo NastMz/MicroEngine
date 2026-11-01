@@ -8,7 +8,7 @@
 //   input       keys sent by the system (adb input keyevent) change what the game shows
 //   touch       taps (adb input tap) on the control that confirms menus, at the position the game logs for this screen,
 //               take the game past its first scene
-//   touch-drag  a held drag (adb input swipe) on the movement control presses the direction and moves the player
+//   touch-drag  a finger held on the movement control (adb input motionevent) presses the direction and moves the player
 //   touch-two-thumbs  touch.script holds movement and a second control at once on the device's layout
 //   lifecycle   going to the background suspends the game and coming back resumes it
 //
@@ -190,8 +190,10 @@ async function interactive(env) {
   fs.writeFileSync(path.join(out, 'touch.log'), log());
 }
 
-// A real system drag held on the movement control (adb input swipe with a duration keeps the finger down) must press
-// the direction and move the player.
+// A real system touch held on the movement control must press the direction and move the player. `input motionevent`
+// (Android 10+) puts the finger down, pushes it to the edge of the control and keeps it there: a swipe would move it
+// linearly for its whole duration and lift it on arrival, which on a joystick is a slowly growing push that only
+// reaches the direction threshold as it ends.
 {
   const controls = await interactive(`${touchSetup.env};MICROENGINE_PROBE=1`);
   const move = controls[touchSetup.move];
@@ -200,14 +202,18 @@ async function interactive(env) {
   if (move) {
     const before = probes(log()).at(-1);
     const to = [Math.round(move.x + touchSetup.push[0] * move.r), Math.round(move.y + touchSetup.push[1] * move.r)];
-    adb('shell', 'input', 'swipe', String(move.x), String(move.y), String(to[0]), String(to[1]), '2500');
-    await sleep(1500);
+    adb('shell', 'input', 'motionevent', 'DOWN', String(move.x), String(move.y));
+    for (let i = 1; i <= 4; i++)
+      adb('shell', 'input', 'motionevent', 'MOVE', String(Math.round(move.x + (to[0] - move.x) * i / 4)), String(Math.round(move.y + (to[1] - move.y) * i / 4)));
+    await sleep(2500);
+    adb('shell', 'input', 'motionevent', 'UP', String(to[0]), String(to[1]));
+    await sleep(1000);
     const seen = probes(log());
     const pushed = seen.filter(p => p.actions.includes(touchSetup.action));
     const last = seen.at(-1);
     const moved = before && last && (before.x !== last.x || before.y !== last.y);
     ok = pushed.length > 0 && !!moved && !crashed(log());
-    detail = `drag ${move.x},${move.y} → ${to.join(',')} held 2.5 s: '${touchSetup.action}' in ${pushed.length} probes, ${before?.description ?? '?'} → ${last?.description ?? '?'}`;
+    detail = `finger down at ${move.x},${move.y}, pushed to ${to.join(',')} and held 2.5 s: '${touchSetup.action}' in ${pushed.length} probes, ${before?.description ?? '?'} → ${last?.description ?? '?'}`;
   }
   screenshot(path.join(out, 'touch-drag.png'));
   record('touch-drag', ok, detail);
