@@ -128,20 +128,32 @@ internal sealed class TitleScene(MeadowGame game) : Scene
         var box = new RectF(48, 30, 224, 124);
         r.Panel(box, Ui.Card);
         Ui.Centered(r, Font, "CONTROLS", 160, 37, Pal.Butter);
-        (string Key, string What)[] rows =
-        [
-            ("← →  /  A D", "Walk"),
-            ("Z  Space  J", "Jump (hold for higher)"),
-            ("X  C  Shift", "Run  ·  throw seeds"),
-            ("↓ + Jump", "Drop through planks"),
-            ("Esc  P", "Pause"),
-            ("F11", "Fullscreen"),
-        ];
+        // On a touch screen the on-screen controls are explained instead of the keys.
+        bool touch = Game.Touch.Shown;
+        (string Key, string What)[] rows = touch
+            ?
+            [
+                ("D-pad ← →", "Walk"),
+                ("A", "Jump (hold for higher)"),
+                ("B", "Run  ·  throw seeds"),
+                ("D-pad ↓ + A", "Drop through planks"),
+                ("B, roll to A", "Jump while running"),
+                ("II", "Pause"),
+            ]
+            :
+            [
+                ("← →  /  A D", "Walk"),
+                ("Z  Space  J", "Jump (hold for higher)"),
+                ("X  C  Shift", "Run  ·  throw seeds"),
+                ("↓ + Jump", "Drop through planks"),
+                ("Esc  P", "Pause"),
+                ("F11", "Fullscreen"),
+            ];
         for (int i = 0; i < rows.Length; i++)
         {
             Ui.Text(r, Font, rows[i].Key, new Vector2(60, 54 + i * 13), Pal.Gold);
             Ui.Text(r, Font, rows[i].What, new Vector2(144, 54 + i * 13));
         }
-        Ui.Centered(r, Font, "Gamepad: A jump · X/B run · Start pause", 160, 136, Pal.Haze);
+        Ui.Centered(r, Font, touch ? "Keyboards and gamepads work too" : "Gamepad: A jump · X/B run · Start pause", 160, 136, Pal.Haze);
     }
 }

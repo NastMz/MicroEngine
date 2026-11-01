@@ -24,6 +24,8 @@ public sealed class DialogueScene : Scene
     }
 
     public override bool IsOverlay => true;
+    /// <summary>Only A (advance) and B on touch screens: the joystick and the other buttons leave the text.</summary>
+    public override IReadOnlyCollection<string>? TouchActions { get; } = ["confirm", "cancel"];
     public bool Active => _box.Active;
     public string? Speaker => _box.Speaker;
 

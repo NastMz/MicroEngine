@@ -100,6 +100,11 @@ async function controls(page) {
   });
   const map = {};
   for (const line of text.split('\n').filter(Boolean)) {
+    if (line.startsWith('frame ')) {
+      const [, x, y, w, h] = line.split(' ').map(Number);
+      map.frame = { x: left + x / scale, y: top + y / scale, w: w / scale, h: h / scale };
+      continue;
+    }
     const [id, x, y, r, visible] = line.split(' ');
     map[id] = { at: [left + Number(x) / scale, top + Number(y) / scale], r: Number(r) / scale, visible: visible === '1' };
   }
@@ -177,11 +182,19 @@ async function gameplay(browser, device, game) {
     await sleep(1500);
     const c = await controls(page);
     const size = await page.evaluate(() => [innerWidth, innerHeight]);
-    const inside = Object.values(c).filter(k => k.visible).every(k => k.at[0] - k.r >= -1 && k.at[0] + k.r <= size[0] + 1 && k.at[1] - k.r >= -1 && k.at[1] + k.r <= size[1] + 1);
+    const inside = Object.entries(c).filter(([id, k]) => id !== 'frame' && k.visible).map(([, k]) => k).every(k => k.at[0] - k.r >= -1 && k.at[0] + k.r <= size[0] + 1 && k.at[1] - k.r >= -1 && k.at[1] + k.r <= size[1] + 1);
     check(`${label}: every control is on screen`, inside);
+    // No control may cover the game: the frame is fitted around them (VirtualControls.Frame).
+    const { frame } = c;
+    const covering = Object.entries(c).filter(([id, k]) => id !== 'frame' && k.visible && (() => {
+      const nx = Math.max(frame.x, Math.min(k.at[0], frame.x + frame.w)), ny = Math.max(frame.y, Math.min(k.at[1], frame.y + frame.h));
+      return Math.hypot(k.at[0] - nx, k.at[1] - ny) < k.r - 1;
+    })()).map(([id]) => id);
+    check(`${label}: no control covers the game frame`, frame && covering.length === 0,
+      `frame ${Math.round(frame?.w)}×${Math.round(frame?.h)} at ${Math.round(frame?.x)},${Math.round(frame?.y)} in ${size.join('×')}${covering.length ? `; covered by ${covering.join(', ')}` : ''}`);
     if (devices[device].safeArea && o.safeArea === 'emulated') {
       const s = devices[device].safeArea;
-      const safe = Object.values(c).filter(k => k.visible).every(k => k.at[0] - k.r >= s.left - 1 && k.at[0] + k.r <= size[0] - s.right + 1 && k.at[1] + k.r <= size[1] - s.bottom + 1);
+      const safe = Object.entries(c).filter(([id, k]) => id !== 'frame' && k.visible).map(([, k]) => k).every(k => k.at[0] - k.r >= s.left - 1 && k.at[0] + k.r <= size[0] - s.right + 1 && k.at[1] + k.r <= size[1] - s.bottom + 1);
       check(`${label}: controls keep out of the notch and home-indicator insets`, safe, JSON.stringify(s));
     } else if (devices[device].safeArea) check(`${label}: safe-area emulation`, true, `skipped: ${o.safeArea}`);
 
