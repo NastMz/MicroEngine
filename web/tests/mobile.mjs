@@ -268,22 +268,22 @@ async function neon(page, fingers, c, label) {
 }
 
 async function courtyard(page, fingers, c, label) {
-  const a = await now(page);
-  await fingers.down(1, c.stick.at);
-  await fingers.slide(1, c.stick.at, offset(c.stick, 0, 1));
-  await sleep(500);
-  const b = await now(page);
-  await fingers.up(1);
-  await sleep(300);
-  const full = b.y - a.y;
-  const c0 = await now(page);
-  await fingers.down(2, c.stick.at);
-  await fingers.slide(2, c.stick.at, offset(c.stick, 0, -0.45));
-  await sleep(500);
-  const d = await now(page);
-  await fingers.up(2);
-  const half = c0.y - d.y;
-  check(`${label}: the joystick walks, slower when pushed less`, full > 15 && half > 2 && half < full * 0.75, `full ${full}, half ${half} pixels in 0.5 s`);
+  // Full push, then a light push, each held for a second after the thumb arrives; the light one must walk, slower.
+  // Horizontal: from the road start there is room to the right for a full second, then back to the left.
+  const walk = async (id, dx) => {
+    await fingers.down(id, c.stick.at);
+    await fingers.slide(id, c.stick.at, offset(c.stick, dx, 0));
+    await sleep(150);
+    const a = await now(page);
+    await sleep(1000);
+    const b = await now(page);
+    await fingers.up(id);
+    await sleep(300);
+    return Math.abs(b.x - a.x);
+  };
+  const full = await walk(1, 1);
+  const half = await walk(2, -0.45);
+  check(`${label}: the joystick walks, slower when pushed less`, full > 60 && half > full * 0.15 && half < full * 0.6, `full ${full}, light ${half} pixels in 1 s`);
   await screenshot(page, `${label.replace(' ', '-')}-stick`);
 }
 
