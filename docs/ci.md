@@ -140,14 +140,28 @@ about ten times Linux minutes.
 [`platforms.yml`](../.github/workflows/platforms.yml) runs macOS, Android and iOS: from validate, manually (each
 platform separately), and on the 1st of each month on `main`, to notice runner image and toolchain drift (Xcode,
 workloads). It no longer runs weekly or on pull requests: a full run cost about $0.36 before PLATFORM-3, of which the
-iOS job's macOS minutes were half; it now builds and plays two games per phone platform, so expect more (not yet
-measured). Run it after changing `platforms/`, the SDL or raylib backends, or the desktop launcher.
+iOS job's macOS minutes were half. The repository is public now, so hosted runners cost nothing; jobs are tuned for
+wall-clock time instead (below). Run it after changing `platforms/`, the SDL or raylib backends, or the desktop launcher.
 
 | Job | Proves |
 | --- | --- |
 | macOS | build and tests; the 15 scenarios on SDL (Metal) against `sdl.json`; why raylib can or cannot open a window, and raylib captures when it can |
 | Android | APKs on SDL for Meadow Run (code-first) and Neon Rift (content files) installed, started, drawn (captures against `sdl.json`), audio device, keys, taps on the touch controls, background and back |
 | iOS | the same two games on SDL in the simulator: installed, started, drawn (captures against `sdl.json`), audio device, background and back |
+
+Time goes to waiting, not to the checks, so they run side by side wherever results cannot depend on it (PLATFORM-3,
+validation runs 41257531549 and 41258648571; the repository is public, so runner minutes are not the constraint):
+
+| Where | How | Before → after |
+| --- | --- | --- |
+| Scripted captures (`desktop.mjs --jobs`, default up to 4) | Deterministic scripted runs side by side; results print in scenario order | macOS 197 s → 98 s; Native Linux, now with SDL as well as raylib, 148 s → 127 s |
+| Site browser checks (`browser.mjs`) | Chrome and Firefox at once; four layout pages at a time in Chrome (one in Firefox, whose WebDriver BiDi loses contexts opened together) | 186 s → 115 s |
+| Android, iOS | One job per game | Android 404 s → 258 s and 316 s; iOS 18 min → about 8.5 min each |
+| iOS | Xcode pinned (`IOS_XCODE`) instead of found by a failing build; the background check waits for the game's log lines | included above |
+
+Tried and reverted: booting the iOS simulator while the app builds. On the 3-core runner the two compete; the build and
+setup steps slowed by more than the boot (about 3.5 minutes) saved. The iOS job's floor is now the simulator boot
+plus the AOT build (about 2.7 minutes).
 
 Native Linux in daily CI checks both desktop platforms: raylib against `linux-x64.json` and SDL (OpenGL on Mesa
 llvmpipe) against `sdl-linux-x64.json`, plus the SDL platform tests (`tests/MicroEngine.Desktop.Tests`).

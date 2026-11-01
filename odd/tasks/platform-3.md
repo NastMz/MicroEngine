@@ -102,3 +102,11 @@ that let a host replace a platform or one of its subsystems without touching gam
   Fixed (scripted runs exit). macOS SDL: 138 captures, 25 beyond the GPU reference (half-pixel HUD, rotated sprites);
   recorded `sdl-macos-arm64.json`. Platform run 41253809116: macOS, Android and iOS all green; macOS reproduced its
   reference 138/138; iOS Meadow Run 13/13 and Neon Rift 12/12 within the SDL reference, audio, lifecycle.
+- L11 (2026-11-01) Owner: "el repo ya es público ... no limites las pipelines por ese tema ... todo lo que esté
+  perdiendo tiempo necesariamente hay que optimizarlo, no solo en iOS, sino también en Mac, en Windows, en Linux, en
+  Android, en navegador web". Measured every job, then: parallel scenario runs in `desktop.mjs`, parallel browsers and
+  Chrome layout pages in `browser.mjs`, one Android and iOS job per game, pinned Xcode, event-driven iOS waits.
+  Validation 41257531549 failed the site (Firefox BiDi lost concurrent contexts: Firefox back to one page) and showed
+  the iOS boot during the build slowed it (reverted). Run 41258648571 green: site checks 186 s → 115 s, iOS about
+  8.5 min per game (was 18 min for both serially); macOS 197 s → 98 s, Android 404 s → 258/316 s (run 41257531549).
+  Windows and Linux .NET tests (about 70-80 s, mostly the build) and cached web builds (about 2 min) left as they are.
