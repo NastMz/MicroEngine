@@ -542,6 +542,20 @@ public sealed class TouchControlsTests
     }
 
     [TestMethod]
+    public void InPortraitTheFrameSitsBelowACornerButtonAtFullWidth()
+    {
+        var rig = new Rig(TouchLayout.CreateDefault());
+        rig.Screen.Size = new Vector2(1080, 1920);
+        rig.Screen.PixelsPerDp = 3;
+        rig.Step();
+        var frame = rig.Controls.Frame(rig.Screen.Size, rig.Screen.SafeArea, 320, 180);
+        Assert.AreEqual(FrameLayout.Fit(rig.Screen.Size, rig.Screen.SafeArea, 320, 180).Width, frame.Width, 1, "full width");
+        var (pause, r) = rig.Controls.Geometry("pause");
+        Assert.IsTrue(frame.Y >= pause.Y + r, "below the pause button");
+        foreach (var c in rig.Controls.Layout.Controls) Assert.IsFalse(Covers(frame, rig.Controls.Geometry(c.Id)), c.Id);
+    }
+
+    [TestMethod]
     public void HiddenControlsLeaveTheFrameAsLargeAsItCanBe()
     {
         var rig = new Rig();
