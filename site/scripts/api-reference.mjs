@@ -93,7 +93,7 @@ fs.writeFileSync(path.join(work, 'docfx.json'), JSON.stringify(config, null, 2))
 run('dotnet', ['tool', 'run', 'docfx', 'metadata', path.join(work, 'docfx.json')]);
 
 // 2. Adapt each page.
-const generated = fs.readdirSync(path.join(work, 'md')).filter(f => f.endsWith('.md'));
+const generated = fs.readdirSync(path.join(work, 'md')).filter(f => f.endsWith('.md')).sort(); // listing order differs between systems
 const names = new Set(generated.map(f => f.slice(0, -3)));
 const pages = new Map();
 

@@ -16,12 +16,12 @@ with the [tutorial](../tutorial/README.md).
 | [MicroEngine.Desktop](MicroEngine.Desktop.md) | The desktop launcher with the official desktop platforms (SDL 3, raylib, SDL software, headless). | [Backends and platforms](../manual/backends.md) |
 | [MicroEngine.Graphics](MicroEngine.Graphics.md) | Drawing: the renderer contract, images in code and from PNG, sprites and atlases, animation, camera, parallax, particles, light, the pixel font. | [Graphics](../manual/rendering.md) |
 | [MicroEngine.Input](MicroEngine.Input.md) | Input actions over keyboard, gamepad, mouse and touch: bindings, analog values, on-screen controls, custom sources. | [Input](../manual/input.md) |
-| [MicroEngine](MicroEngine.md) | Basic value types: colours, rectangles, maths and easing helpers. | [Graphics](../manual/rendering.md) |
 | [MicroEngine.Raylib](MicroEngine.Raylib.md) | The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and browser storage. | [Backends and platforms](../manual/backends.md) |
 | [MicroEngine.Scenes](MicroEngine.Scenes.md) | The scene stack: scenes, transitions, coroutines and tweens. | [Scenes](../manual/scenes.md) |
 | [MicroEngine.Sdl](MicroEngine.Sdl.md) | The SDL 3 platform: Windows, Linux, macOS, Android and iOS. | [Backends and platforms](../manual/backends.md) |
 | [MicroEngine.UI](MicroEngine.UI.md) | Pixel-art widgets: dialogue boxes, menus, typewriter text, themes, achievement banners and list. | [UI widgets](../manual/ui.md) |
 | [MicroEngine.World](MicroEngine.World.md) | Tile layers, collision grids, swept movement against tiles, autotiling and plain entities. | [Tile maps and collision](../manual/world.md) |
+| [MicroEngine](MicroEngine.md) | Basic value types: colours, rectangles, maths and easing helpers. | [Graphics](../manual/rendering.md) |
 
 ## Reading a page
 
