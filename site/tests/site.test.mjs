@@ -21,6 +21,11 @@ test('capability: touch-only or small devices get a notice, not a block', () => 
   assert.deepEqual(classify({ ...desktop, width: 600 }), { verdict: 'unvalidated', reasons: ['small-screen'] });
 });
 
+test('capability: a package with touch controls is offered to phones and tablets', () => {
+  assert.deepEqual(classify({ ...desktop, finePointer: false, hover: false, width: 390, height: 844, touchControls: true }), { verdict: 'desktop', reasons: [] });
+  assert.equal(classify({ ...desktop, webgl: false, touchControls: true }).verdict, 'unsupported');
+});
+
 test('capability: a hardware key press upgrades a touch device (hybrids, tablets with keyboards)', () => {
   assert.equal(classify({ ...desktop, finePointer: false, hover: false, keyboardSeen: true }).verdict, 'desktop');
 });

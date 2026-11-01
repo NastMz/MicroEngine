@@ -4,15 +4,21 @@
 // ({ source: 'microengine', game, state, detail }) drive the status line and the controls.
 import { Image } from 'astro:assets';
 import type { DemoGame } from '../data/games';
+import fs from 'node:fs';
+import path from 'node:path';
 import { playManifest, megabytes } from '../lib/play-manifest.mjs';
+import { repoRoot } from '../lib/repo-docs.mjs';
 
 interface Props { game: DemoGame }
 const { game } = Astro.props;
 const packaged = playManifest()?.games?.[game.id];
 const download = packaged ? `about ${megabytes(packaged.transfer)}` : '';
+// Packages built with on-screen touch controls say so in their game.json (INPUT-1); the page offers them to phones.
+const gameJson = path.join(repoRoot, 'site', 'public', 'play', game.id, 'game.json');
+const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'utf8')).touch === true;
 ---
 <section class="player" data-player data-game={game.id} data-title={game.title} data-src={`/play/${game.id}/`}
-  data-state={packaged ? 'checking' : 'missing'} aria-label={`${game.title} player`} style={`--game: var(${game.colorToken})`}>
+  data-state={packaged ? 'checking' : 'missing'} data-touch={touch ? 'true' : 'false'} aria-label={`${game.title} player`} style={`--game: var(${game.colorToken})`}>
   <div class="stage" data-stage>
     <Image class="poster" src={game.shots[0].src} alt="" widths={[640, 960, 1440]} sizes="(min-width: 76rem) 72rem, 100vw" loading="eager" />
     <div class="panel" data-panel="checking">
@@ -21,11 +27,11 @@ const download = packaged ? `about ${megabytes(packaged.transfer)}` : '';
     </div>
     <div class="panel" data-panel="desktop">
       <button type="button" class="button" data-action="load">Play {game.title}</button>
-      <p class="panel-note">Loads the game in this page: {download}. Keyboard required.</p>
+      <p class="panel-note">Loads the game in this page: {download}. {touch ? 'Keyboard, gamepad or touch.' : 'Keyboard required.'}</p>
     </div>
     <div class="panel" data-panel="unvalidated">
       <h2 class="panel-title">Made for a keyboard</h2>
-      <p data-reason="touch">This device does not seem to have a keyboard and mouse. The demos have no touch controls and have not been tested on phones or tablets.</p>
+      <p data-reason="touch">This device does not seem to have a keyboard and mouse. This version of the demo has no touch controls and was not tested on phones or tablets.</p>
       <p data-reason="small-screen">This window is smaller than the demos were tested at.</p>
       <div class="actions">
         <a class="button" href="#screenshots">See screenshots</a>
@@ -67,7 +73,7 @@ const download = packaged ? `about ${megabytes(packaged.transfer)}` : '';
 
   const messages: Record<string, string> = {
     loading: 'Loading the engine and the game…',
-    ready: 'Ready. Click the game or press any key to start.',
+    ready: 'Ready. Click or tap the game, or press any key, to start.',
     starting: 'Starting…',
     playing: 'Playing. To leave the game with the keyboard, press F6 or click outside it.',
     ended: 'The game has ended. Use “Play again” in the game, Restart, or Exit.',
@@ -93,7 +99,7 @@ const download = packaged ? `about ${megabytes(packaged.transfer)}` : '';
     // Recommendation only: an "unvalidated" device keeps a "Try anyway" button, and a hardware key press upgrades it.
     const evaluate = () => {
       if (frame) return;
-      const { verdict, reasons } = classify(probe(window, keyboardSeen));
+      const { verdict, reasons } = classify(probe(window, keyboardSeen, player.dataset.touch === 'true'));
       for (const p of player.querySelectorAll<HTMLElement>('[data-reason]')) p.hidden = !reasons.includes(p.dataset.reason!);
       show(verdict, verdict === 'desktop' ? '' : verdict === 'unvalidated' ? 'Optimised for desktop browsers with a keyboard.' : 'This browser cannot run the demos.');
     };

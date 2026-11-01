@@ -4,7 +4,9 @@ import SiteLayout from '../../layouts/SiteLayout.astro';
 import DemoPlayer from '../../components/DemoPlayer.astro';
 import { demoGames, type DemoGame } from '../../data/games';
 import { playManifest, megabytes } from '../../lib/play-manifest.mjs';
-import { repositoryUrl } from '../../lib/repo-docs.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { repositoryUrl, repoRoot } from '../../lib/repo-docs.mjs';
 import { targets, gameVersion, sdkVersion, installSteps } from '../../lib/versions.mjs';
 
 export function getStaticPaths() {
@@ -23,6 +25,9 @@ const absent = targets.filter(t => !downloads[t.id]);
 const release = Object.values(downloads)[0]?.release;
 const version = gameVersion(game.id);
 const engine = Object.values(downloads)[0]?.engineVersion ?? sdkVersion;
+// Whether the browser package this build serves has on-screen touch controls (its game.json, INPUT-1).
+const gameJson = path.join(repoRoot, 'site', 'public', 'play', game.id, 'game.json');
+const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'utf8')).touch === true;
 ---
 <SiteLayout title={game.title} description={`${game.title}, a ${game.genre.toLowerCase()} built with MicroEngine. ${game.tagline} Play it in a desktop browser or download it for your system.`} current="demos">
   <div class="wrap demo-page" style={`--game: var(${game.colorToken})`}>
@@ -92,8 +97,11 @@ const engine = Object.values(downloads)[0]?.engineVersion ?? sdkVersion;
         <ul class="compat">
           <li><span class="status ok">Verified</span> In the browser: Chrome and Firefox on desktop, with a keyboard (automated tests and manual play)</li>
           <li><span class="status ok">Manually tested</span> One gamepad in a Chromium-based browser</li>
-          <li><span class="status partial">Not tested</span> Safari, other browsers, and browsers on phones (the web build has no touch controls)</li>
-          <li><span class="status partial">Emulator only</span> The Android app: generic on-screen controls (d-pad, A, B, X, shoulder, Start); no physical phone has run it</li>
+          {touch
+            ? <li><span class="status partial">Emulated phones</span> Browsers on phones and tablets: on-screen touch controls, played with real multi-touch in emulated mobile Chrome; no physical phone yet</li>
+            : <li><span class="status partial">Not tested</span> Browsers on phones (this version of the web build has no touch controls)</li>}
+          <li><span class="status partial">Not tested</span> Safari and other browsers</li>
+          <li><span class="status partial">Emulator only</span> The Android app: on-screen touch controls; no physical phone has run it</li>
         </ul>
         <dl class="facts">
           <div><dt>Version</dt><dd>{game.title} {version}, MicroEngine {engine}</dd></div>

@@ -7,8 +7,9 @@
 //   demo package (/play/) until Play is pressed; full-page screenshots are written to --out for review;
 // - play: each demo page on desktop: Play creates the iframe, the host's messages drive the status (ready, playing),
 //   Restart reloads, Exit removes the game; the size shown before loading is honoured;
-// - touch: phone and tablet with touch (Chrome device emulation, not a real device): the "Made for a keyboard" panel shows
-//   instead of the Play button, "Try anyway" still loads the game;
+// - touch: phone and tablet with touch (Chrome device emulation, not a real device): a package with on-screen touch
+//   controls (game.json "touch": true) gets the Play button and loads; an older one shows the "Made for a keyboard"
+//   panel instead, and "Try anyway" still loads the game;
 // - layout, pages with diagrams: every diagram is drawn (an SVG, no Mermaid error) in the documentation's colours.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -206,6 +207,16 @@ async function touch(browser, base) {
   for (const size of ['phone', 'tablet']) {
     const { page, context } = await openPage(browser, 'chrome', `${base}/demos/meadow-run/`, viewports[size]);
     const where = `chrome ${size} (emulated touch) meadow-run`;
+    // Packages with on-screen touch controls (game.json "touch": true) are offered to touch devices directly.
+    if (await page.$eval('[data-player]', el => el.dataset.touch) === 'true') {
+      check(`${where}: Play offered (the package has touch controls)`, await stateOf(page) === 'desktop');
+      await page.click('[data-panel="desktop"] [data-action="load"]');
+      await waitState(page, ['ready']).then(() => check(`${where}: Play loads the game`, true),
+        error => check(`${where}: Play loads the game`, false, error.message));
+      await page.screenshot({ path: path.join(out, `chrome-${size}-touch-play.png`) });
+      await context.close();
+      continue;
+    }
     check(`${where}: keyboard notice instead of Play`, await stateOf(page) === 'unvalidated');
     check(`${where}: alternatives offered`, await page.$eval('[data-panel="unvalidated"]', el => !!el.querySelector('a[href="#screenshots"]')));
     await page.click('[data-panel="unvalidated"] [data-action="load"]');
