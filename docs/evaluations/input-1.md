@@ -94,27 +94,29 @@ exactly, with those three screens from the simulator).
 
 ## 5. Results per platform
 
+Final validation on the branch head (6756b9f): platform run **41310966157** and validate run **41310968737**, both
+green.
+
 | Target | Means | Result |
 | --- | --- | --- |
-| Engine (all platforms) | `dotnet test`, run | 151 engine tests pass (28 touch, 9 analog), 10 new game touch tests; all game suites pass (Meadow Run 47, Courtyard Key 30, Trail Duel 87, Neon Rift 32) |
-| Linux x64 | validate run 41275980931 (CI): .NET tests and native rendering, keyboard and audio captures | Pass |
-| Windows x64 | validate run 41275980931 (CI): .NET tests | Pass. Not played by hand |
-| macOS | platform run 41275968161 (CI): tests and SDL captures against the macOS reference | Pass |
-| Web, mobile emulation | `mobile.mjs`, run (Chromium 153) and CI (Google Chrome) | 256/256 checks, 4 devices × 4 games, before and after the last visual fixes |
-| Android (x86_64 emulator, API 34) | platform run 41278826494 (CI), all four games | Every input level passes for all four: keys, real system taps on the confirm control past the title (`touch`), a real finger held on the movement control (`touch-drag`: Meadow Run walks, Courtyard Key `down` in 26 probes and y 280→448, Trail Duel y 9→16), two thumbs scripted (`touch-two-thumbs`), lifecycle, audio. Meadow Run and Neon Rift jobs are green. Courtyard Key and Trail Duel jobs fail only their rendering comparison with the Windows reference `sdl.json` on the emulator's software GPU (Courtyard Key's HUD by a texel; 7 of Trail Duel's 87 battle frames) |
-| iOS (simulator) | platform run 41278826494 (CI), all four games | All green: captures (now compared with the Metal reference, see below), audio, lifecycle, `touch-script` (two controls held together, the player moving: Meadow Run x 50→164 with a jump to y 115, Courtyard Key `down` with `confirm`, 10 player states) |
-| macOS, web mobile | platform run 41278826494 (CI) | Green (web mobile: the 256 checks in Google Chrome on the runner) |
+| Engine (all platforms) | `dotnet test`, run | 157 engine tests pass (34 touch and frame, 9 analog), 12 game touch tests; all game suites pass (Meadow Run 47, Courtyard Key 31, Trail Duel 88, Neon Rift 32) |
+| Linux x64 | validate 41310968737 (CI): .NET tests; native SDL and raylib rendering, keyboard and audio; packages in four distributions | Pass |
+| Windows x64 | validate 41310968737 (CI): .NET tests; the downloadable packages played on the runner | Pass. Not played by hand |
+| macOS | platform 41310966157 (CI): tests and SDL captures against the macOS reference; validate: the downloadable apps | Pass |
+| Browsers, desktop | validate 41310968737 (CI): site and all browser suites in Chrome and Firefox with the rebuilt demo packages | Pass |
+| Web, mobile emulation | `mobile.mjs` run locally (Chromium 153) and in platform 41310966157 (Google Chrome) | All checks pass, 4 devices × 4 games, including "no control covers the game frame" for all 16 |
+| Android (x86_64 emulator, API 34) | platform 41310966157, all four games; validate 41310968737, the four release-signed APKs | All green: keys, real system taps on the confirm control (`touch`), a real finger held on the movement control (`touch-drag`: Meadow Run x 50→171, Courtyard Key y 280→448, Trail Duel y 9→16), two thumbs scripted (`touch-two-thumbs`), lifecycle, audio, captures against the emulator reference |
+| iOS (simulator) | platform 41310966157, all four games | All green: captures against `sdl-ios-simulator-arm64.json` (138/138 pixel-identical), audio, lifecycle, `touch-script` (two controls held together, the player moving) |
 
-How the platform runs got there: the first run (41275968161, all four games for the first time) passed Neon Rift on
-both phones; three games failed `touch-two-thumbs` because their scripts pressed the second control for fewer updates
-than the 100 ms probe can see at ~125 updates/s (fixed in 122fdd2), and iOS Courtyard Key and Trail Duel failed their
-capture comparison. Their iOS captures are pixel-identical to the macOS Metal reference (Courtyard Key 26/26, run
-locally on the downloaded artifact), so the iOS job now compares with `sdl-macos-arm64.json` (0805e93); it had only ever
-run Meadow Run and Neon Rift, which match both. On Android a swipe on a joystick reached the threshold only as it ended,
-so `touch-drag` now holds the finger with `input motionevent` (0805e93). The Android rendering differences of Courtyard
-Key and Trail Duel are not caused by this work (captures are the virtual canvas, which INPUT-1 does not change) and
-predate it: the job ran only Meadow Run and Neon Rift until now. They need an emulator reference recorded by the owner
-(`desktop.mjs --write-reference`), which this mission does not do.
+How the platform runs got there: the first run with all four games (41275968161) passed Neon Rift on both phones; the
+others failed `touch-two-thumbs` because their scripts pressed the second control for fewer updates than the 100 ms
+probe can see at about 125 updates/s (fixed in 122fdd2); on Android a swipe reached a joystick's threshold only as it
+ended, so `touch-drag` now holds the finger (`input motionevent`, 0805e93). The capture comparisons of Courtyard Key
+and Trail Duel had never run on the phones: they were compared with the Windows reference, from which the emulator's
+and Metal's blending differs (§4b); they now use the emulator reference and an iOS simulator reference. The Controls
+screens' touch view was re-recorded in both (16a9bde, 92e8793). Twice the CI emulator lost the very first launch after
+booting (empty log, every later launch fine; re-runs 41309753392 and 41309755697 passed): the check now launches such a
+run once more (85f5ddf).
 
 ## 6. Mobile web evidence
 
