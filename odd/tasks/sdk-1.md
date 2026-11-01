@@ -122,3 +122,11 @@ unit is independent enough for a parallel writer; long builds and CI runs go to 
   (publish off) drafted sdk-v0.4.0-alpha.1: six packages + four symbol packages, SHA256SUMS verified, packages.mjs
   passed, external project from the draft's files passed (windows, linux, android); the six ids are free on nuget.org,
   third-party dependencies exist there. Nothing pushed. After PR 10 merges, main moves: delete that draft and prepare again.
+- L7 (2026-11-01) Owner: "Autorizo la publicación pública de MicroEngine SDK 0.4.0-alpha.1 en NuGet.org." The first
+  publish run (41346985998) stopped in preflight: its read-only token could not list draft releases; fixed in PR 11
+  (contents: write, a draft from an earlier commit of main may be published). Run 41347458774 published the draft of
+  4457312 with Trusted Publishing after the owner's approval: six packages and four symbol packages pushed, GitHub
+  release sdk-v0.4.0-alpha.1 public. nuget.org serves all six, signed, with contents identical file by file to the
+  draft. External test from nuget.org only (`--public`): windows, linux, android and web (played in Chrome) passed;
+  `dotnet add package MicroEngine.Desktop --prerelease` resolves 0.4.0-alpha.1. MicroEngine.Templates reached the
+  registration index minutes after the others, which made the first public run fail at `dotnet new install`.

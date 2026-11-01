@@ -4,7 +4,7 @@ The engine keeps score and the game decides what counts. A game declares a catal
 system on with `UseAchievements`, and reports events where they already happen. `AchievementTracker` owns
 progress, guarantees that each achievement unlocks exactly once across sessions, and persists through the game's
 `SaveStore`; `AchievementToasts` shows a banner for every unlock and `AchievementsScene` lists them all. Each of
-the four sample games ships five achievements ([ADR 0006](../decisions/0006-achievements.md)).
+the four sample games ships five achievements.
 
 ## Declaring a catalog
 

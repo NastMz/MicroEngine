@@ -1,20 +1,17 @@
-# SDK status: Alpha
+# Versions and compatibility
 
-**MicroEngine SDK 0.4.0-alpha.1 — Alpha.** The version is set in one place, `MicroEngineVersion` in
-[`Directory.Build.props`](../../Directory.Build.props); every package, the tool and every package built with it carry it.
+**MicroEngine SDK 0.4.0-alpha.1 — Alpha.** It is on nuget.org: [`MicroEngine.Cli`](https://www.nuget.org/packages/MicroEngine.Cli)
+and the five other packages below ([release notes](release-notes.md)). [Getting MicroEngine](getting-microengine.md)
+shows how to install it.
 
-Two things are true at once:
+Alpha means two things:
 
-- **The engine works and is tested on six platforms.** Four complete games run on it on Windows, Linux, macOS,
-  Android, iOS and in browsers ([Platforms](platforms.md)), and the SDK's own test builds, runs and packages a new
-  game from the published packages on Windows, Linux and macOS.
+- **The engine is complete enough to ship games.** Games built with it run on Windows, Linux, macOS, Android, iOS and
+  in browsers ([Platforms](platforms.md)); the four [demo games](/demos/) are built with it.
 - **Its public API is still evolving.** Between Alpha versions (0.4 → 0.5) public APIs may change incompatibly; every
-  such change is recorded in a decision record and in the [migration notes](../migrations.md) of the version that
-  makes it. There is no 1.0 and no promise of backward compatibility yet. The types the four demos depend on are listed
-  in [Contracts](../reference/contracts.md): the most likely to stay, not guaranteed to.
-
-> **Publication.** 0.4.0-alpha.1 is prepared, checked and ready to release, but **not yet on nuget.org**.
-> [Getting MicroEngine](getting-microengine.md) shows how to install from a local build until then.
+  such change is listed in the [migration notes](../migrations.md) of the version that makes it, with how to update.
+  There is no 1.0 and no promise of backward compatibility yet. The core types a game uses are listed in
+  [Contracts](../reference/contracts.md).
 
 ## Packages
 
@@ -39,60 +36,8 @@ licence. The demo games are not in any package: they stay in the repository unde
 - All six packages share one version, and the tool builds games with the hosts of its own version: use the same
   version for the tool and the engine packages (the template does).
 - A game's own version is its own (`<Version>` in its project), independent of the SDK's.
-- SDK releases are tagged `sdk-v<version>`; the demo releases (`v0.1.0`, `v0.2.0`...) are a separate series.
+- SDK releases are published on GitHub as `sdk-v<version>`; the demo games have releases of their own (`v0.1.0`,
+  `v0.2.0`...), with unrelated numbers.
 
 **Upgrading** a game: change the `MicroEngine.*` package versions in its project, `dotnet tool update -g
 MicroEngine.Cli --prerelease`, then read the [migration notes](../migrations.md) from your version up.
-
-## How the SDK is checked
-
-`sdk.yml` runs on every change to the engine, the tool, the template or these checks:
-
-1. **Packages** (`sdk/tests/packages.mjs`): one version everywhere, MIT, README and repository metadata, exactly the
-   dependencies each package should have (no raylib in `MicroEngine.Sdl`), the files that make each one work (the
-   identity targets, raylib for WebAssembly, the hosts, the template), no build-machine path, no demo file.
-2. **An external project** (`sdk/tests/external.mjs`) on Windows, Linux and macOS: in a folder outside the
-   repository, with only the package feed and nuget.org, it installs `microengine`, creates a game with
-   `microengine new`, gives it its own name, id, version and icon, builds it, runs it with scripted input (the
-   captures before and after must differ: input, drawing and a sprite from Content), packages it for each target the
-   runner can build (Windows, Linux, macOS, Android, web), checks each package's files and metadata, runs the desktop
-   package, plays the web package in Chrome, and checks the failures a developer meets (invalid id, missing or invalid
-   icon, missing signing key, a target the system cannot build, a missing workload).
-
-The four demos are packaged by the same tool; their packages are also verified level by level and played scenario by
-scenario on each system ([packaging/](../../packaging/README.md)).
-
-## Publishing a release
-
-Only the repository owner publishes. The procedure:
-
-Publishing uses nuget.org [Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing):
-the workflow exchanges a GitHub OIDC token for a nuget.org key that lives one hour. No long-lived nuget.org API key
-is created or stored.
-
-Once, before the first release:
-
-- On nuget.org (the account that will own the packages): **Trusted Publishing** → add a GitHub Actions policy with
-  repository owner `NastMz`, repository `MicroEngine`, workflow file `sdk-release.yml` (the file name only) and
-  environment `nuget`, allowed to push new packages and new versions of `MicroEngine*`.
-- On GitHub: the `nuget` environment (Settings → Environments) with the owner as required reviewer, deployments
-  limited to `main`, and the environment secret `NUGET_USER` holding that nuget.org profile name (not the e-mail).
-
-For every release:
-
-1. Set `MicroEngineVersion` to the new version and add its section to [release notes](release-notes.md) (and to the
-   [migration notes](../migrations.md) when something breaks); merge to `main`.
-2. Run **sdk-release** on `main` (Actions → sdk-release → Run workflow) with `publish` off: it checks the version is
-   new, runs `sdk.yml` on that commit and drafts the GitHub prerelease `sdk-v<version>` with the checked packages and
-   `SHA256SUMS`. Review the draft.
-3. Run it again on `main` with `publish` on: it finds the draft, waits for the `nuget` environment's approval, logs
-   in with Trusted Publishing, pushes exactly the draft's files (verified against `SHA256SUMS`), engine packages
-   first, and publishes the GitHub release. The packages are never rebuilt: if `main` has moved on since the draft
-   (its commit must still be in `main`'s history), the run lists the commits in between in its summary.
-4. When nuget.org lists the packages, update [Getting MicroEngine](getting-microengine.md) and the site so they no
-   longer say "not yet on nuget.org".
-
-A policy for a repository nuget.org has not yet seen publish from can start as temporarily active for 7 days; the
-first successful publish makes it permanent.
-
-Decisions: [ADR 0019](../decisions/0019-sdk-packages.md), [ADR 0021](../decisions/0021-sdk-toolchain.md).

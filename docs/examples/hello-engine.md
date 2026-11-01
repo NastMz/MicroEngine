@@ -144,7 +144,7 @@ to the window by whole factors and letterboxes it.
 person:
 
 ```text
-# Scripted smoke run used by docs and CI
+# Scripted run: move, burst, capture a screenshot, quit
 20 hold right 30
 60 press confirm
 64 capture hello.png

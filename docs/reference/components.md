@@ -20,9 +20,8 @@ the backend, a game, or the browser host.
 | `src/MicroEngine.Cli` (`microengine`) | .NET tool | Creates, runs, builds and packages games ([the microengine tool](../guide/cli.md)); holds the browser, Android and iOS host templates (`Hosts/`) | `MicroEngine` (icons) |
 | `src/MicroEngine.Cli/Hosts/web` | WebAssembly host template, built by `microengine package web` | The page bridge (`WebHost`) and page files; one package per game | The game project, and through it its platforms; it runs on `MicroEngine.Raylib` |
 | `templates/MicroEngine.Templates` | `dotnet new` template package | `microengine-game`: a complete starting game | `MicroEngine.Desktop` (package) |
-| `experiments/web/RaylibProbe` | Experiment, outside the build | WEB-0 feasibility record | — |
 
-The core references no backend library. Games reference only `MicroEngine.Desktop`, which brings the backends and the core with it. The phone hosts in `platforms/` are outside the solution.
+The core references no backend library. Games reference only `MicroEngine.Desktop`, which brings the backends and the core with it. The phone and browser hosts are templates inside `microengine`, built for each game by `microengine package`.
 
 ## Core namespaces
 

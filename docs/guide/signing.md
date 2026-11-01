@@ -71,11 +71,3 @@ in the Simulator.
 Packages are not code-signed by the tool; Windows SmartScreen may warn about an unknown publisher until a program has
 a reputation. To sign, run `signtool` (Windows SDK) with your certificate on the executable before distributing; this
 is the developer's step, not the tool's.
-
-## In MicroEngine's own CI
-
-The demos' release key lives in the repository's secrets (`ANDROID_KEYSTORE_BASE64` and the passwords). The SDK has
-no stored nuget.org key: `sdk-release.yml` obtains a one-hour key through Trusted Publishing (GitHub OIDC, the
-`NuGet/login` action), only in the `nuget` environment after its reviewers approve
-([Publishing a release](sdk.md#publishing-a-release)).
-Pull requests from forks never see either ([ADR 0014](../decisions/0014-public-repository-ci.md)).

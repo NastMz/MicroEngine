@@ -39,13 +39,11 @@ four device interfaces:
 
 Hosts choose a platform through a `PlatformCatalog` of named `PlatformProfile`s (`sdl`, `raylib`, `sdl-software`,
 `headless`, or one of the developer's own) and may supply an audio device or extra input sources of their own; window,
-renderer and graphics device stay together because they share a graphics context
-([ADR 0016](decisions/0016-platform-profiles.md), [Backends](manual/backends.md)). SDL is the default on the native
-systems ([ADR 0017](decisions/0017-sdl3-native-platform.md)). The raylib backend also runs in a browser (raylib
-compiled to WebAssembly): `BrowserLauncher` returns a `GameSession` that the page starts, ticks from
-`requestAnimationFrame` and restarts, and keeps saves in `localStorage`. One host project builds any game into a
-static package ([ADR 0007](decisions/0007-browser-host.md), [ADR 0008](decisions/0008-web-packages.md),
-[web/](../web/README.md)).
+renderer and graphics device stay together because they share a graphics context ([Backends](manual/backends.md)).
+SDL is the default on desktops and phones. The raylib backend also runs in a browser (raylib compiled to
+WebAssembly): `BrowserLauncher` returns a `GameSession` that the page starts, ticks from `requestAnimationFrame` and
+restarts, and keeps saves in `localStorage`. `microengine package web` builds any game into a static site
+([The browser host](examples/embedding.md)).
 
 ## The frame
 
@@ -83,35 +81,34 @@ scripted playthrough tests and reproducible screenshots possible.
 
 ## Key design decisions
 
-Each of these is recorded as a design decision. In short:
+In short:
 
 - **Code-first content by default, files when a game wants them.** Sprites, tiles and fonts can be
   authored as code (`PixelImage`, char maps, palettes, noise) and sounds synthesized, so a game can ship
   no binary assets. Games that use existing packs load PNG and WAV in managed code and stream OGG/MP3
-  through the audio device (ADR 0004); Neon Rift does this with CC0 assets listed in its `CREDITS.md`.
-  Games can also mix both per element (ADR 0005): Courtyard Key and Trail Duel load a few crafted
+  through the audio device; Neon Rift does this with CC0 assets listed in its `CREDITS.md`.
+  Games can also mix both per element: Courtyard Key and Trail Duel load a few crafted
   pieces and keep the rest procedural, repainting imported sprites with their own palette at load.
 - **Scenes on a stack, not a global state machine.** Pause menus, dialogue and inventories are overlay
   scenes that freeze (or not) the scene below; transitions swap scenes at their midpoint.
-- **Plain entities, not an ECS.** Each sample has at most a few hundred objects. Small classes with
+- **Plain entities, not an ECS.** A game of this kind has at most a few hundred objects. Small classes with
   `Update`/`Draw` and an `EntityList<T>` with deferred add/remove are easier to read and debug than
   component plumbing at this scale. Games that outgrow it can add their own systems on top.
 - **Actions, never keys.** Games query `"jump"` or `"confirm"` (and `Value`/`Vector` for analog strength); keys,
   gamepads, touch controls and custom sources all press the same actions, and scripts and tests force the same
-  actions or touch the same controls, so automated runs exercise exactly the code players do (ADR 0020).
+  actions or touch the same controls, so automated runs exercise exactly the code players do.
 - **Touch controls belong to the engine, layouts to the game.** Hit testing, finger tracking, feedback and drawing
   are core code; backends report touches, the safe area and density, and draw primitives. One `TouchLayout` per game
   works on phones, in mobile browsers and in headless tests.
 - **Achievements: the engine keeps score, the game decides.** `AchievementTracker` owns the catalog,
   progress, one-time unlocks and persistence (through `SaveStore`, so each game keeps its own file); games
-  only call `Unlock`/`AddProgress`/`SetProgress` where their events already happen (ADR 0006).
+  only call `Unlock`/`AddProgress`/`SetProgress` where their events already happen.
 - **Virtual canvas.** Games draw at 320×180 (configurable); the backend scales by the largest integer
   factor that fits the safe area and letterboxes, keeping pixels square at any window size (fractionally only when
   whole factors would waste a fifth of a small screen). F11 toggles fullscreen.
 
-## Validation tooling
+## Testing a game
 
-- `tests/MicroEngine.Tests` covers the engine contracts (motion, input edges, scenes, runner, audio).
-- Each game has its own test project with rule tests and headless scripted playthroughs.
-- Any game accepts `--script file --hidden --captures dir` to replay input deterministically and save
-  3× PNG captures, used for visual review and the screenshots in each game's README.
+- `HeadlessPlatform` runs a game without a window or sound, one step per frame, so tests are deterministic.
+- Any game accepts `--script file --hidden --captures dir` to replay input and save 3× PNG captures, for visual
+  review and screenshots ([Testing](examples/testing.md)).

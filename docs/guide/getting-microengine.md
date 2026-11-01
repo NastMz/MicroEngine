@@ -1,7 +1,7 @@
 # Getting MicroEngine
 
 MicroEngine is a code-first 2D game engine for .NET, open source under the MIT License
-([github.com/NastMz/MicroEngine](https://github.com/NastMz/MicroEngine)). It is in Alpha ([SDK status](sdk.md)): the
+([github.com/NastMz/MicroEngine](https://github.com/NastMz/MicroEngine)). It is in Alpha ([Versions](sdk.md)): the
 engine is tested on six platforms, and its public API may still change between 0.x versions.
 
 Only want to play the demos? They are on the [demo pages](/demos/), in the browser and as downloads ([Downloads](downloads.md)).
@@ -14,25 +14,20 @@ Only want to play the demos? They are on the [demo pages](/demos/), in the brows
 
 ## Install the tool
 
-The SDK is six NuGet packages: the engine (`MicroEngine`, `MicroEngine.Sdl`, `MicroEngine.Raylib`,
-`MicroEngine.Desktop`), the `microengine` tool (`MicroEngine.Cli`) and the project template (`MicroEngine.Templates`).
-
-> **Not on nuget.org yet.** Version 0.4.0-alpha.1 is prepared and checked, but not published. Until it is, build the
-> packages from the repository into a local folder and install from there; once it is published, the same commands
-> work without `--add-source`.
-
-```bash
-git clone https://github.com/NastMz/MicroEngine.git
-dotnet pack MicroEngine/MicroEngine.slnx -c Release -o ~/microengine-feed
-dotnet tool install -g MicroEngine.Cli --prerelease --add-source ~/microengine-feed
-dotnet nuget add source ~/microengine-feed --name microengine-local
-```
-
-(The last line lets new games find the engine packages in that folder.) After the release:
+The SDK is six packages on [nuget.org](https://www.nuget.org/packages/MicroEngine): the engine ([`MicroEngine`](https://www.nuget.org/packages/MicroEngine),
+[`MicroEngine.Sdl`](https://www.nuget.org/packages/MicroEngine.Sdl), [`MicroEngine.Raylib`](https://www.nuget.org/packages/MicroEngine.Raylib),
+[`MicroEngine.Desktop`](https://www.nuget.org/packages/MicroEngine.Desktop)), the `microengine` tool
+([`MicroEngine.Cli`](https://www.nuget.org/packages/MicroEngine.Cli)) and the project template
+([`MicroEngine.Templates`](https://www.nuget.org/packages/MicroEngine.Templates)). The current version is 0.4.0-alpha.1, an Alpha
+pre-release, so NuGet commands need `--prerelease` (or the exact version).
 
 ```bash
 dotnet tool install -g MicroEngine.Cli --prerelease
+microengine version
 ```
+
+`microengine new` installs the template at the tool's version the first time; to install it yourself:
+`dotnet new install MicroEngine.Templates::0.4.0-alpha.1`. To update later: `dotnet tool update -g MicroEngine.Cli --prerelease`.
 
 ## Your first game
 
@@ -68,6 +63,11 @@ microengine doctor                # what this machine can build
 
 Each target, what it produces and what it needs: [Packaging](packaging.md). Keys for Android, macOS and iOS:
 [Signing](signing.md). All commands: [the microengine tool](cli.md).
+
+## An existing project
+
+Add the engine to any .NET 10 console project with `dotnet add package MicroEngine.Desktop --prerelease`, then add
+the [identity](app-identity.md) properties and package it with `microengine package`.
 
 ## Only SDL
 

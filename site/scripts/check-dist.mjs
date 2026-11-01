@@ -68,6 +68,25 @@ const internalFile = /\.(md|cs|csproj|props|targets|pdb|map|sh)$/i;
 const userPath = /[A-Za-z]:[\\/]Users[\\/](?!runneradmin[\\/])[^\\/\s"]+[\\/]|\/home\/(?!runner\/)[^/\s"]+\/|\/Users\/(?!runner\/)[^/\s"]+\//;
 const textFile = /\.(html|js|mjs|css|json|xml|txt|svg)$/i;
 
+/**
+ * The site is product documentation for people making games: it never shows the project's engineering record. Finds
+ * project code names (PLATFORM-3, SDK-1...), decision records, evaluations, task records or CI reports, and
+ * "evidence"-style sections, in a built page.
+ */
+export function engineeringMaterial(html) {
+  const found = new Set();
+  const rules = [
+    [/\b(?:PLATFORM|PRODUCT|INPUT|SDK|WEB|INFRA|PUBLIC|DIST)-\d\b/g, m => `project code name ${m}`],
+    [/\bADRs?\s*\d{1,4}\b/g, m => `decision record ${m}`],
+    [/docs\/(?:decisions|evaluations)\/[\w./-]*/g, m => `link to ${m}`],
+    [/\bodd\/tasks\b[\w./-]*/g, m => `link to ${m}`],
+    [/docs\/(?:ci|deployment)\.md/g, m => `link to ${m}`],
+    [/<h[1-6][^>]*>[^<]*\b(?:Evidence|How we know|Validation history|What was validated)\b/gi, () => 'an evidence or validation-history section'],
+  ];
+  for (const [pattern, describe] of rules) for (const m of html.match(pattern) ?? []) found.add(describe(m));
+  return [...found];
+}
+
 export function checkPublicContent(dist, { secrets = [] } = {}) {
   const problems = [];
   const walk = dir => fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]) : [];
@@ -83,6 +102,7 @@ export function checkPublicContent(dist, { secrets = [] } = {}) {
     if (userPath.test(content)) problems.push(`${rel} contains a build machine's user folder path`);
     if (inPackage || !isText) continue;
     if (demoPage.test(rel) && !reservedNotice.test(content)) problems.push(`${rel} does not say the demo game is all rights reserved`);
+    if (rel.endsWith('.html')) for (const found of engineeringMaterial(content)) problems.push(`${rel} shows internal engineering material: ${found}`);
   }
   return problems;
 }

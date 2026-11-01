@@ -140,7 +140,7 @@ Source: [`src/MicroEngine/Core/GameRunner.cs`](../../src/MicroEngine/Core/GameRu
 
 When the machine falls behind, the cap drops the backlog instead of spiralling, so the game slows down rather
 than freezing. Because simulation only ever advances in whole steps, scripted runs on headless or fixed-step
-platforms are deterministic ([ADR 0003](../decisions/0003-scenes-entities-runtime.md)).
+platforms are deterministic.
 
 ## Quitting and shutdown
 
@@ -190,4 +190,3 @@ loop, which suits unit tests over a `HeadlessPlatform` (see [Backends](backends.
 
 - [Scenes](scenes.md): what runs inside `Scenes.Update` and `Scenes.Draw`
 - [Architecture](../architecture.md): layers and module map
-- [ADR 0003](../decisions/0003-scenes-entities-runtime.md): why a scene stack and a fixed-step runner

@@ -14,9 +14,7 @@ the game's `CREDITS.md`.
 | Hybrid | Courtyard Key, Trail Duel | Mostly code, plus a few CC0 sprites or jingles repainted or blended in |
 | File-based | Neon Rift | CC0 sprite sheets, tilesets, WAV effects and OGG music |
 
-The reasoning is recorded in [ADR 0002](../decisions/0002-code-first-content.md) (code-first default),
-[ADR 0004](../decisions/0004-external-asset-files.md) (external files) and
-[ADR 0005](../decisions/0005-hybrid-content.md) (hybrid games). Authoring art in code is covered in
+Authoring art in code is covered in
 [Rendering](rendering.md#art-in-code-pixelimage-and-art) and sound in [Audio](audio.md).
 
 ## Shipping a `Content` folder

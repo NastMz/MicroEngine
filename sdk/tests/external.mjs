@@ -3,6 +3,7 @@
 // makes one, in a folder outside this repository, from the packages a release would publish, and nothing else.
 //
 //   node sdk/tests/external.mjs --feed dist/sdk-feed [--targets windows,linux,web,android] [--device] [--keep]
+//   node sdk/tests/external.mjs --public [--version 0.4.0-alpha.1] ...   (nuget.org only: a published release)
 //
 // 1. installs `microengine` from the feed (dotnet tool install), into a private tool folder;
 // 2. creates a game with `microengine new` (which installs MicroEngine.Templates from the feed);
@@ -23,8 +24,10 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const args = process.argv.slice(2);
 const option = name => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : undefined; };
-const feed = path.resolve(option('feed') ?? path.join(repo, 'dist', 'sdk-feed'));
-const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
+// --public: everything comes from nuget.org, as for any developer after a release; no local package source exists.
+const fromPublic = args.includes('--public');
+const feed = fromPublic ? null : path.resolve(option('feed') ?? path.join(repo, 'dist', 'sdk-feed'));
+const version = option('version') ?? fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 const host = { win32: 'windows', linux: 'linux', darwin: 'macos' }[process.platform];
 // By default: this system's own desktop target, Linux (cross-built from anywhere) and the web when the workload is here.
 const hasWasm = /^\s*wasm-tools\s/m.test(spawnSync('dotnet', ['workload', 'list'], { encoding: 'utf8' }).stdout ?? '');
@@ -39,13 +42,13 @@ const check = (name, ok, detail = '') => {
   return ok;
 };
 
-if (!fs.existsSync(feed) || !fs.readdirSync(feed).some(f => f.startsWith(`MicroEngine.Cli.${version}.`))) {
+if (feed && !fs.existsSync(feed) || feed && !fs.readdirSync(feed).some(f => f.startsWith(`MicroEngine.Cli.${version}.`))) {
   console.error(`error: ${feed} holds no MicroEngine.Cli ${version} package; run: dotnet pack MicroEngine.slnx -c Release -o ${feed}`);
   process.exit(2);
 }
 const work = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'microengine-external-'));
 if (work.startsWith(repo)) throw new Error('the external project must live outside the repository');
-console.log(`external project in ${work}, SDK ${version} from ${feed}`);
+console.log(`external project in ${work}, SDK ${version} from ${feed ?? 'nuget.org only'}`);
 const env = { ...process.env, NUGET_PACKAGES: path.join(work, 'nuget'), DOTNET_CLI_HOME: path.join(work, 'home'), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' };
 for (const secret of ['ANDROID_KEYSTORE', 'ANDROID_KEYSTORE_PASSWORD', 'ANDROID_KEY_ALIAS', 'ANDROID_KEY_PASSWORD', 'MICROENGINE_IOS_CODESIGN_KEY', 'MICROENGINE_IOS_PROVISIONING_PROFILE']) delete env[secret];
 delete env.MICROENGINE_DOTNET;
@@ -53,8 +56,7 @@ fs.writeFileSync(path.join(work, 'NuGet.config'), `<?xml version="1.0" encoding=
 <configuration>
   <packageSources>
     <clear />
-    <add key="sdk-feed" value="${feed}" />
-    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+${feed ? `    <add key="sdk-feed" value="${feed}" />\n` : ''}    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
   </packageSources>
 </configuration>
 `);

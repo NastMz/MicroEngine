@@ -19,7 +19,7 @@ const legend = Object.entries(statusLabels) as [RoadmapStatus, { label: string; 
     <section aria-labelledby="done-title" class="stage-block">
       <div class="section-head">
         <h2 id="done-title">Available today</h2>
-        <p>Everything here runs in the four demos. <a href="/docs/status/">Status and limitations</a> lists what is missing.</p>
+        <p>Everything here runs in the four demos. <a href="/docs/reference/limitations/">Requirements and limitations</a> lists what is not included.</p>
       </div>
       <ul class="done-grid">
         {completed.map(item => <li><span class="badge done" aria-hidden="true"></span>{item}</li>)}

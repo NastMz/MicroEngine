@@ -6,7 +6,13 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## 0.4.0-alpha.1
 
-The first public SDK: MicroEngine can be installed, and a game created, run and distributed, with public tools.
+Published 2026-11-01 on nuget.org (GitHub release `sdk-v0.4.0-alpha.1`). The first public SDK: MicroEngine can be
+installed, and a game created, run and distributed, with public tools.
+
+```bash
+dotnet tool install -g MicroEngine.Cli --prerelease
+microengine new MyGame
+```
 
 **Packages** (all at 0.4.0-alpha.1, MIT, .NET 10):
 
@@ -29,10 +35,9 @@ The first public SDK: MicroEngine can be installed, and a game created, run and 
 
 **Changed**: hosts and demo packaging; see the [migration notes](../migrations.md#040-alpha1).
 
-**Known limitations**: Android App Bundles (`.aab`) are not built; iOS device builds and macOS notarization run only
-with the developer's Apple credentials and are not exercised in MicroEngine's CI; Windows executables are not
-code-signed by the tool; desktop packages are x64 (Windows, Linux) and arm64 (macOS) only. See
-[Status and limitations](status.md).
+**Known limitations**: Android App Bundles (`.aab`) are not built; iOS device builds and macOS notarization need the
+developer's Apple credentials; Windows executables are not code-signed by the tool; desktop packages are x64 (Windows, Linux) and arm64 (macOS) only. See
+[Requirements and limitations](../reference/limitations.md).
 
 **Upgrading** from a game that referenced the engine's projects: replace the `ProjectReference` with
 `<PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.1" />`, add the identity properties, and

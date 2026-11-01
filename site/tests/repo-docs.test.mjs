@@ -48,13 +48,17 @@ test('links to public documents become site URLs; other repository files link to
   const repo = 'https://github.com/NastMz/MicroEngine';
   assert.equal(resolveLink('docs/guide/intro.md', '../manual/scenes.md#stack', opts), '/docs/manual/scenes/#stack');
   assert.equal(resolveLink('docs/guide/intro.md', '../../web/README.md', opts), '/docs/manual/web-builds/');
-  assert.equal(resolveLink('docs/guide/intro.md', '../decisions/0007.md', opts), `${repo}/blob/main/docs/decisions/0007.md`);
+  assert.throws(() => resolveLink('docs/guide/intro.md', '../decisions/0007.md', opts), /internal engineering material/, 'decision records are never linked');
+  assert.throws(() => resolveLink('docs/guide/intro.md', '../evaluations/x.md', opts), /internal engineering material/);
+  assert.throws(() => resolveLink('docs/guide/intro.md', '../../odd/tasks/x.md', opts), /internal engineering material/);
+  assert.throws(() => resolveLink('docs/guide/intro.md', '../ci.md', opts), /internal engineering material/);
   assert.equal(resolveLink('docs/guide/intro.md', '../../src/Engine', opts), `${repo}/tree/main/src/Engine`);
   assert.equal(resolveLink('docs/guide/intro.md', '../../src/Missing.cs', opts), null, 'a file that does not exist is not linked');
   assert.equal(resolveLink('docs/guide/intro.md', 'https://example.com/a.md', opts), 'https://example.com/a.md');
   assert.equal(resolveLink('docs/guide/intro.md', '#local', opts), '#local');
-  const markdown = 'See [ADR 0007](../decisions/0007.md) and [gone](../../src/Gone.cs).';
-  assert.equal(rewriteLinks('docs/guide/intro.md', markdown, opts), `See [ADR 0007](${repo}/blob/main/docs/decisions/0007.md) and gone.`);
+  const markdown = 'See [the engine](../../src/Engine) and [gone](../../src/Gone.cs).';
+  assert.equal(rewriteLinks('docs/guide/intro.md', markdown, opts), `See [the engine](${repo}/tree/main/src/Engine) and gone.`);
+  assert.throws(() => rewriteLinks('docs/guide/intro.md', 'See [ADR 0007](../decisions/0007.md).', opts), /internal engineering material/);
 });
 
 test('links inside code are left alone', () => {

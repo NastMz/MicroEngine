@@ -1,87 +1,79 @@
-# Known limitations
+# Requirements and limitations
 
-This is the list of known limitations of MicroEngine and its games, each with the evidence it comes from. It
-covers missing features, configurations that were never validated, and measured weaknesses of the current
-build. Items move off this list only when a change and its validation are recorded.
+What a MicroEngine game needs, and the functional limits to plan around. For what each platform runs on, see
+[Platforms](../guide/platforms.md).
 
-## Missing features
+## Requirements
 
-| Limitation | Evidence |
+| To | You need |
 | --- | --- |
-| No visual editor, level editor or asset tool; content is code or files loaded through `ContentFolder` | [ADR 0002](../decisions/0002-code-first-content.md), [ADR 0004](../decisions/0004-external-asset-files.md) |
-| The SDK packages, tool and template are not on nuget.org yet: they are built from the repository into a local feed | [SDK status](../guide/sdk.md) |
-| `microengine package` builds APKs, not Android App Bundles; iOS device builds and macOS notarization need the developer's Apple account and are not exercised in CI; Windows executables are not code-signed by the tool | [Packaging](../guide/packaging.md), [Signing](../guide/signing.md) |
-| No layout editor or in-game rebinding screen: bindings and touch layouts are code | [Input](../manual/input.md#limitations) |
-| No cloud saves; desktop saves are local files, browser saves are `localStorage` | [Persistence](../manual/persistence.md) |
-| No ECS; plain entities sized for a few hundred objects per scene | [ADR 0003](../decisions/0003-scenes-entities-runtime.md), [Architecture](../architecture.md) |
-| One gamepad at a time; no rumble; the mouse can be read (`Input.Pointer`) but not bound to actions; no haptics on iOS | [Input](../manual/input.md#limitations) |
-| On screens near 16:9 the game frame shrinks while touch controls are shown, so none covers it (about 60 % of its largest size on a 16:9 phone) | [Input](../manual/input.md#keeping-the-game-visible) |
+| Develop | The .NET 10 SDK on Windows, Linux or macOS |
+| Package for Windows | A Windows machine |
+| Package for Linux | Any system |
+| Package for macOS, iOS | A Mac with Xcode; for iOS, the .NET `ios` workload |
+| Package for Android | The .NET `android` workload, an Android SDK, Java 17 or later |
+| Package for the web | The .NET `wasm-tools` workload |
 
-## Platforms not validated
-
-| Limitation | Evidence |
+| Players need | |
 | --- | --- |
-| macOS: checked on hosted runners (paravirtual GPU, Metal); no person has played on a Mac, no system keyboard check | [Platforms](../guide/platforms.md#desktop-validation) |
-| Android: played by hand on one phone (Redmi Note 14 Pro, Android 16); automated checks on the x86_64 emulator only; no tablet | [Platforms](../guide/platforms.md#phones-and-tablets) |
-| iOS: games checked in the simulator only; touch checked with scripted touches on the simulator's layout, not system touches; no iPhone or iPad | [Platforms](../guide/platforms.md#phones-and-tablets) |
-| Linux on ARM: no native raylib library in `Raylib-cs` | [Platforms](../guide/platforms.md#support-table) |
-| Gamepads on Linux and macOS: not covered by any check | [Platforms](../guide/platforms.md#desktop-validation) |
-| Chromium-based browsers other than Chrome: Edge played by hand on the desktop, others not claimed; automated browser tests cover Chrome and Firefox only | [Platforms](../guide/platforms.md#support-table) |
-| Browsers on phones and tablets: played by hand in Chrome on one Android phone and Safari on an iPhone 13, checked with real multi-touch in emulated mobile Chrome (four devices); no tablet | [Platforms](../guide/platforms.md#phones-and-tablets) |
-| Gamepad in the browser validated by hand in Edge (desktop, Xbox controller) and Chrome on Android (PlayStation controller over Bluetooth) only; no claim for other controllers, Firefox or Safari | [Platforms](../guide/platforms.md#gamepads) |
-| Blocked site storage tested in Firefox only, not Chrome | [Web support](../evaluations/web-support.md#persistence) |
-| Producing browser packages is not available to external developers yet | [Getting MicroEngine](../guide/getting-microengine.md) |
+| Windows | Windows 10 or 11, 64-bit, a GPU with Direct3D 11, OpenGL or Vulkan (or `--platform sdl-software`) |
+| Linux | x86_64, glibc 2.34 or later (2.38 for `--platform raylib`), X11 or Wayland with OpenGL, PulseAudio or PipeWire |
+| macOS | macOS 14 or later on Apple silicon |
+| Android | Android 7.0 (API 24) or later, 64-bit (arm64-v8a or x86_64) |
+| iOS | iOS 15 or later |
+| Web | A browser with WebAssembly and WebGL |
 
-## Distribution of the demos
+## Engine
 
-| Limitation | Evidence |
+| Limitation | More |
 | --- | --- |
-| No iOS download: a public iPhone build needs Apple signing (a paid Apple Developer membership); a simulator build cannot run on a device | [Downloads](../guide/downloads.md#ios) |
-| macOS packages are signed ad hoc, not notarized: macOS blocks the first launch until **Open Anyway** is chosen in Privacy & Security | [Downloads](../guide/downloads.md#macos) |
-| Windows packages are not code-signed: SmartScreen may warn about an unknown publisher | [Downloads](../guide/downloads.md#windows) |
-| Linux packages need glibc 2.34 or later (raylib alternative: 2.38) | [packaging/README.md](../../packaging/README.md#linux-distributions) |
-| Android: the demo publisher is not registered with Google; in Brazil, Indonesia, Singapore and Thailand certified devices install the APK only through the advanced flow for unverified developers or `adb` (worldwide from 2027, as announced) | [Downloads](../guide/downloads.md#android) |
-| Android APKs are offered only once the release signing key is configured as repository secrets | [packaging/README.md](../../packaging/README.md#android-signing) |
-| No Intel Mac, 32-bit or ARM Linux packages | [packaging/targets.json](../../packaging/targets.json) |
-| Hosted Windows runners have no sound device and no GPU: the CI check of a Windows package proves start, rendering on WARP and exit; audio was checked on real hardware | [PRODUCT-1](../evaluations/product-1.md) |
-| Desktop packages carry about 150 KB of unused code in browser builds and the raylib library in native ones (`--platform raylib`) | [PLATFORM-3](../evaluations/platform-3.md#6-remaining-limitations) |
+| 2D only; no 3D, physics engine, networking or scripting language | [Architecture](../architecture.md) |
+| No visual editor, level editor or asset tool: content is code, or files loaded through `ContentFolder` | [Assets](../manual/assets.md) |
+| No ECS: plain entities, sized for a few hundred objects per scene | [Architecture](../architecture.md) |
+| Text uses the built-in pixel font (`Game.Font`); loading other fonts (TrueType or bitmap sheets) is not supported yet | [Rendering](../manual/rendering.md#text-bitmapfont) |
+| Below 12 drawn frames per second the game slows down instead of skipping updates (at most five steps per frame) | [Architecture](../architecture.md#the-frame) |
 
-## Not yet done by a person
+## Input
 
-| Limitation | Evidence |
+| Limitation | More |
 | --- | --- |
-| Browser keyboard input in the automated tests comes from automation (CDP and WebDriver BiDi); the demos were also validated manually in the browser | [Platforms](../guide/platforms.md#browser) |
-| No continuous human playthrough to the end of each game in a browser; endings were reached by autopilot (Neon Rift) and developer checkpoints with scripts (the others) | [Web support](../evaluations/web-support.md#results-per-game) |
+| One gamepad at a time (the first connected; the next takes over when it is unplugged); no rumble | [Input](../manual/input.md#limitations) |
+| The mouse can be read (`Input.Pointer`) but not bound to actions | [Input](../manual/input.md#limitations) |
+| No in-game rebinding screen or layout editor: bindings and touch layouts are code | [Input](../manual/input.md#limitations) |
+| No haptics on iOS | [Input](../manual/input.md#limitations) |
+| On screens near 16:9 the game frame shrinks while touch controls are shown, so none covers it | [Input](../manual/input.md#keeping-the-game-visible) |
 
-Whole playthroughs from a new game to the credits are covered by the games' headless `PlaythroughTests`.
+## Saves
 
-## Measured weaknesses
-
-| Limitation | Evidence |
+| Limitation | More |
 | --- | --- |
-| Neon Rift's first browser download is 11.9 MB with Brotli (16.4 MB raw), mostly OGG music | [Web support](../evaluations/web-support.md#size-and-performance) |
-| raylib's web audio uses the deprecated `ScriptProcessorNode` (a console warning in Chrome); sound stops while the tab is hidden, and the game pauses with it | [Web support](../evaluations/web-support.md#audio) |
-| Below 12 drawn frames per second the five-steps-per-frame cap slows the game instead of skipping, on desktop and in browsers | [Web support](../evaluations/web-support.md#size-and-performance), [Architecture](../architecture.md#the-frame) |
-| One Firefox scripted-capture run under heavy machine load diverged from desktop in three games; repeated alone, all captures matched twice. Cause not found | [Web support](../evaluations/web-support.md#chrome-and-firefox) |
-| F11 cannot toggle the game's fullscreen in a browser (it stays the browser's own); use Alt+Enter or the Fullscreen button | [web/README.md](../../web/README.md#how-the-host-works) |
-| Chrome's audio-blocked path was not observed for real under automation (CDP navigation counts as user activation) | [Web support](../evaluations/web-support.md#audio) |
+| No cloud saves: files on desktops and phones, `localStorage` in browsers | [Persistence](../manual/persistence.md) |
+| `localStorage` holds about 5 MB per site, shared with everything on that site; browsers may evict it under storage pressure, private windows discard it, and Safari may delete it for sites not visited for seven days | [Persistence](../manual/persistence.md) |
 
-## Storage limits in browsers
+When storage is full or blocked, the game keeps running and the page says progress could not be saved;
+`SaveStore` never overwrites a slot it could not read.
 
-| Limitation | Evidence |
+## Browsers
+
+| Limitation | More |
 | --- | --- |
-| `localStorage` holds about 5 MB per origin, shared with everything on that origin | [web/README.md](../../web/README.md#saves-in-the-browser) |
-| Browsers may evict site data under storage pressure; private windows discard it; Safari may delete script-written storage of sites not visited for seven days | [web/README.md](../../web/README.md#saves-in-the-browser) |
+| Sound starts only after the player's first click, tap or key press, and stops while the tab is hidden (the game pauses with it) | [Platforms](../guide/platforms.md#web-browsers) |
+| F11 is the browser's own fullscreen; the game's fullscreen is Alt+Enter or the page's button | [The browser host](../examples/embedding.md) |
+| raylib's web audio uses `ScriptProcessorNode`, which Chrome reports as deprecated in its console | [Audio](../manual/audio.md) |
+| The download includes the .NET runtime: about 2 MB compressed for a small game, more with large music or art | [Platforms](../guide/platforms.md#web-browsers) |
 
-When storage is full or blocked, the game keeps running and the page says progress could not be saved or will
-not be kept; `SaveStore` never overwrites a slot it could not read
-([Persistence](../manual/persistence.md)).
+## Packaging and distribution
+
+| Limitation | More |
+| --- | --- |
+| Android packages are APKs; Google Play asks for Android App Bundles (`.aab`), which the tool does not build yet | [Packaging](../guide/packaging.md#android) |
+| Packages are x64 on Windows and Linux and arm64 on macOS: no Intel Mac, 32-bit or ARM Linux packages | [Packaging](../guide/packaging.md) |
+| Windows executables are not code-signed by the tool, so SmartScreen may warn until you sign them | [Signing](../guide/signing.md#windows) |
+| macOS apps without a Developer ID signature and notarization need Open Anyway in Privacy & Security on first launch | [Signing](../guide/signing.md#macos) |
+| iOS device builds and App Store distribution need an Apple Developer account | [Signing](../guide/signing.md#ios) |
+| Desktop packages include raylib next to SDL (for `--platform raylib`); a game that references only `MicroEngine.Sdl` ships SDL alone | [Getting MicroEngine](../guide/getting-microengine.md#only-sdl) |
 
 ## API stability
 
-| Limitation | Evidence |
-| --- | --- |
-| SDK Alpha (0.x): public APIs may change incompatibly between Alpha versions; changes are recorded in decisions and [migration notes](../migrations.md) | [SDK status](../guide/sdk.md) |
-
-See also [Status and limitations](../guide/status.md) for a shorter summary and [Platforms](../guide/platforms.md)
-for the support table.
+MicroEngine is in Alpha (0.x): public APIs may change incompatibly between versions, and every change is listed in
+the [migration notes](../migrations.md) ([Versions](../guide/sdk.md)).

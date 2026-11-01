@@ -1,72 +1,38 @@
-# Status and limitations
+# What MicroEngine offers today
 
-**MicroEngine SDK — Alpha, 0.x.** MicroEngine is a working engine with four complete games, open source under the MIT
-License and used from its public repository (no published packages yet). It runs on six official targets, each
-validated to a stated level. Public APIs may still change incompatibly between Alpha versions
-([SDK status](sdk.md)). This page states plainly what exists today, what does not, and what has and has not been
-validated, so you can judge whether it would fit your project.
+**MicroEngine SDK 0.4.0-alpha.1.** A working 2D engine for .NET 10, open source under the MIT License, installed from
+nuget.org ([Getting MicroEngine](getting-microengine.md)). Games built with it run on Windows, Linux, macOS, Android,
+iOS and in web browsers. It is in Alpha: public APIs may still change between 0.x versions ([Versions](sdk.md)).
 
-## What exists
+## What you get
 
-| Area | State | Evidence |
-| --- | --- | --- |
-| Core engine (`src/MicroEngine`) | Loop, scenes, input (digital and analog actions, per-game touch controls), graphics model, tile world, audio synthesis, UI, saves, achievements | [Architecture](../architecture.md), the engine's test project |
-| SDL 3 platform (`src/MicroEngine.Sdl`) | Window, 2D renderer (Direct3D, Metal, OpenGL, OpenGL ES, Vulkan or software), audio, keyboard, gamepad, on-screen touch controls, phone lifecycle; the default on Windows, Linux, macOS, Android and iOS | Scripted captures on real Windows hardware, Linux (Mesa), macOS (CI), the Android emulator and the iOS simulator ([Platforms](platforms.md)) |
-| raylib platform (`src/MicroEngine.Raylib`) | raylib window, renderer, audio, keyboard and gamepad; the browser platform and a desktop alternative (`--platform raylib`) | Played on Windows; browsers ([Platforms](platforms.md)) |
-| Platform selection | `PlatformCatalog` of named profiles, `--platform`, replaceable audio and extra input sources | [Backends](../manual/backends.md#choosing-a-platform) |
-| Browser builds | raylib compiled to WebAssembly; `BrowserLauncher`, `localStorage` saves, one shared host | Automated browser tests and manual validation ([Platforms](platforms.md)) |
-| Phone hosts (`platforms/`) | Android and iOS hosts running any of the games on SDL | Emulator and simulator runs ([Platforms](platforms.md#phones-and-tablets)) |
-| Demo downloads (`packaging/`) | Windows ZIP, Linux archive, macOS app, Android APK for each demo, each checked as the downloaded file and published with a release | [Downloads](downloads.md), [packaging](../../packaging/README.md) |
-| Games | Meadow Run, Courtyard Key, Trail Duel, Neon Rift, each with five achievements and saves | Each game's test project; playable on the [demos page](/demos/) |
-| Sample | Hello Engine, the smallest complete game | [Hello Engine walkthrough](../examples/hello-engine.md) |
-| Scripted runs and captures | `--script`, `--hidden`, `--captures` on every game; one visual reference per renderer kind | [Testing](../examples/testing.md) |
-
-## What does not exist
-
-These are not implemented. Do not plan around them.
-
-| Missing | Notes |
+| Area | What it does |
 | --- | --- |
-| Packages on nuget.org | The SDK 0.4.0-alpha.1 packages, the `microengine` tool and the `dotnet new` template are built and checked, not yet published: install them from a local build ([Getting MicroEngine](getting-microengine.md)) |
-| Android App Bundles (`.aab`) for Google Play | `microengine package android` builds APKs ([Packaging](packaging.md)) |
-| Visual editor, level editor or asset pipeline tool | MicroEngine is code-first: content is authored in code (`PixelImage.FromMap`, `TileLayer.Parse` over ASCII rows) or loaded through `ContentFolder`. A visual editor is only a long-term vision on the roadmap |
-| An iOS download | Distributing to iPhones needs Apple signing ([Downloads](downloads.md#ios)) |
-| An ECS, physics engine, networking, scripting language or 3D | Not part of the engine's design ([Architecture](../architecture.md)). 3D is only a long-term vision on the roadmap |
-| Cloud saves | Saves stay on the machine (files) or in the browser (`localStorage`) |
+| Engine core | Game loop with a fixed step, scene stack with overlays and transitions, coroutines and tweens, input actions (digital and analog) with per-game touch controls, pixel graphics and sprite atlases, tile worlds, cameras and parallax, particles and light, synthesized and file-based audio, UI widgets, saves, achievements |
+| Platforms | SDL 3 on Windows, Linux, macOS, Android and iOS; raylib on desktops and in browsers (WebAssembly); a headless platform for tests; your own platforms as profiles ([Platforms](platforms.md)) |
+| Tooling | The `microengine` tool: create a game from a template, run it, build it, and package it for every target ([The microengine tool](cli.md)) |
+| Distribution | Packages for players on each platform, with the game's own name, id, version and icon ([Packaging](packaging.md), [Application identity](app-identity.md)) |
+| Testing | Headless runs, scripted input and screenshot captures for automated tests of your game ([Testing](../examples/testing.md)) |
+| Examples | Hello Engine (the smallest complete game) and four complete demo games ([demos](/demos/)) |
 
-## Platforms and validation
+## What it does not do
 
-| Target | Status |
+| Not included | Notes |
 | --- | --- |
-| Windows x64 | Played by hand with raylib; SDL (the default) checked on real hardware: 138 captures, audio device, the four downloads, also played by hand (keyboard and an Xbox controller) |
-| Linux x64 | Checked automatically on every engine change (build, tests, rendering, keyboard and audio under a virtual display and sound server) and the download in Ubuntu 22.04, Debian 12 and Fedora 41 containers; the four downloads played by hand on Debian 13.7 and Ubuntu 24.04.4 LTS, with keyboard and an Xbox controller |
-| macOS (Apple silicon) | Checked automatically on hosted Macs (tests, 138 captures on Metal, the downloadable apps); no person has played on a Mac |
-| Android | All four demos checked on the x86_64 emulator from their release APKs (captures, audio device, keys, touch, background and back); the four APKs played by hand on a Redmi Note 14 Pro (Android 16), with touch and a Bluetooth PlayStation controller |
-| iOS | Demos checked in Apple's simulator (captures, audio device, background and back, scripted touches); no iPhone, no download |
-| Browsers | The four demos verified with automated tests in Chrome and Firefox on desktop, plus manual validation; on phones and tablets played with real multi-touch in emulated mobile Chrome ([INPUT-1](../evaluations/input-1.md)) and played by hand in Chrome on an Android 16 phone; Edge on the desktop and Safari on a Mac and an iPhone 13 (BrowserStack) played by hand |
-| Gamepads | Validated by hand in the browser (Edge on the desktop with an Xbox controller, Chrome on Android with a PlayStation controller over Bluetooth), with raylib on Windows, and with SDL: an Xbox controller on the desktop and a PlayStation controller over Bluetooth on Android |
+| A visual editor, level editor or asset tool | MicroEngine is code-first: content is code (`PixelImage.FromMap`, `TileLayer.Parse` over text rows) or files loaded through `ContentFolder`. A visual editor is a long-term vision on the [roadmap](/roadmap/) |
+| 3D, an ECS, a physics engine, networking or a scripting language | Not part of the engine's design ([Architecture](../architecture.md)); 3D is a long-term vision |
+| Cloud saves | Saves stay on the device (files) or in the browser (`localStorage`) |
+| Android App Bundles (`.aab`) for Google Play | `microengine package android` builds APKs |
 
-Details per target: [Platforms](platforms.md) and the site's [compatibility matrix](/platforms/).
-
-## Known open items
-
-- Neon Rift's browser download is 11.9 MB with Brotli, mostly OGG music.
-- raylib's web audio uses the deprecated `ScriptProcessorNode`; sound stops while the tab is hidden.
-- One Firefox scripted-capture run under heavy machine load diverged from desktop; repeated alone it matched.
-  The cause was not found.
-- Browser saves live in `localStorage` (about 5 MB per origin, evictable, discarded by private windows).
-- macOS downloads are not notarized and Windows downloads are not code-signed: both systems warn on first launch.
-
-The full list with evidence is in [Known limitations](../reference/limitations.md).
+The complete list, with requirements per platform: [Requirements and limitations](../reference/limitations.md).
 
 ## Planned work
 
-The [roadmap](/roadmap/) lists planned work without dates: publishing the SDK (SDK-1),
-validation on real devices, engine robustness and research into the mobile experience. A visual editor and 3D appear
-there only as a long-term vision, not as available or committed features.
+The [roadmap](/roadmap/) lists what comes next, without dates. A visual editor and 3D appear there only as a
+long-term vision, not as available or committed features.
 
 ## Stability of the API
 
-MicroEngine is in Alpha (0.x): there is no 1.0 and no backward-compatibility promise. Types documented in
-[Contracts](../reference/contracts.md) are the ones the four games depend on; changes to them go through recorded
-design decisions and are listed in the [migration notes](../migrations.md).
+There is no 1.0 and no backward-compatibility promise yet. The types in [Contracts](../reference/contracts.md) are
+the core ones a game uses; when one changes, the [migration notes](../migrations.md) say what changed and how to
+update.
