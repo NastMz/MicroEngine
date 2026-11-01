@@ -2,12 +2,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>NeonRift</RootNamespace>
+    <!-- The demo's own version, shown on its page and in its downloads (packaging/README.md). -->
+    <Version>1.0.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Content/**" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />
+    <None Include="Content/**" Exclude="Content/**/*.cs" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="NeonRift.Tests" />

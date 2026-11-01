@@ -1,0 +1,13 @@
+<Project>
+  <!-- The engine's own projects, the future SDK packages (docs/guide/sdk.md). `dotnet pack` already produces one
+       package per project at MicroEngineVersion; nothing is published until SDK-1. -->
+  <Import Project="../Directory.Build.props" />
+  <PropertyGroup>
+    <Authors>MicroEngine contributors</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/NastMz/MicroEngine</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/NastMz/MicroEngine</RepositoryUrl>
+    <PackageTags>game-engine;2d;pixel-art;sdl3;raylib;webassembly</PackageTags>
+    <PackageReleaseNotes>Alpha: public APIs may change incompatibly between 0.x versions (docs/guide/sdk.md).</PackageReleaseNotes>
+  </PropertyGroup>
+</Project>

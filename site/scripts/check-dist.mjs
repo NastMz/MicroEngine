@@ -14,7 +14,7 @@ const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 export function checkDist(dist, { demos = true, secrets = [] } = {}) {
   const problems = [];
   const need = file => { if (!fs.existsSync(path.join(dist, file))) problems.push(`missing ${file}`); };
-  for (const file of ['index.html', '404.html', 'sitemap-index.xml', 'og.png', 'favicon.svg', 'pagefind/pagefind.js', 'demos/index.html', 'roadmap/index.html']) need(file);
+  for (const file of ['index.html', '404.html', 'sitemap-index.xml', 'og.png', 'favicon.svg', 'pagefind/pagefind.js', 'demos/index.html', 'roadmap/index.html', 'platforms/index.html']) need(file);
   for (const page of pages) need(`${page.slug}/index.html`);
   for (const slug of ['meadow-run', 'courtyard-key', 'trail-duel', 'neon-rift']) need(`demos/${slug}/index.html`);
   if (demos) {

@@ -169,8 +169,10 @@ llvmpipe) against `sdl-linux-x64.json`, plus the SDL platform tests (`tests/Micr
 ## Releases
 
 A demo release `v<version>` is a GitHub release holding copies of the approved packages (`<Game>-<key>.tar.gz`
-with their manifests) and `release.json` (per game: key, archive SHA-256, the commit that built it, toolchain). The
-**latest published release is what production serves**; merging code never changes it.
+with their manifests), the native downloads (`<Game>-<game version>-<target>.<zip|tar.gz|apk>`, [packaging](../packaging/README.md))
+and `release.json` (per game: key, archive SHA-256, the commit that built it, toolchain; per download: file, size,
+SHA-256, versions, where it was checked). The **latest published release is what production serves**, and the demo
+pages offer exactly its downloads; merging code never changes it.
 
 Two kinds of artifact, never mixed up:
 
@@ -192,12 +194,12 @@ Actions → **release** → Run workflow:
 
 | Step | What it does | If it fails |
 | --- | --- | --- |
-| Preflight | version new; ref on `main` with a passed `ci` run; current `main` has a passed `ci` run (its site is deployed); lists missing packages | nothing happened |
-| Build | builds only the missing packages, into the integration store | nothing public changed |
-| Draft | copies every package after checking its archive against its manifest's SHA-256; writes `release.json` | the partial draft is deleted |
-| Verify | builds current `main`'s site with the draft's packages, checks every file against the release, runs unit tests, `check-dist` and every browser suite | the draft is discarded |
+| Preflight | version new; ref on `main` with a passed `ci` run; current `main` has a passed `ci` run (its site is deployed); chooses the downloadable targets (Android only with the signing key); lists missing packages | nothing happened |
+| Build | builds only the missing packages, into the integration store: web packages, and native packages each built, played on its own system and only then stored | nothing public changed |
+| Draft | copies every package after checking its archive against its manifest's SHA-256, native ones under player-facing names; writes `release.json`; refuses if any game lacks a package for an offered target | the partial draft is deleted |
+| Verify | builds current `main`'s site with the draft's packages, checks every file against the release, downloads and hashes every native package again, runs unit tests, `check-dist` and every browser suite | the draft is discarded |
 | Publish | `vercel build` with the draft's packages, every file checked again, staged production deployment, `vercel promote`, then the draft is published as latest | before the promote: nothing public changed; if publishing fails after it, production is rolled back |
-| Record or clean up | a published release is written to the summary; otherwise the draft is discarded | — |
+| Record or clean up | a published release is written to the summary and each download's public address is checked; otherwise the draft is discarded | the release stays published (site and release agree); the address problem is reported |
 
 Releases run one at a time, and the publish step holds the production lock from its build to the switch. If `main` moves while a release is
 verified, it stops before deploying: run it again.

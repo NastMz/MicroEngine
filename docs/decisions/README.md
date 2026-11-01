@@ -22,3 +22,5 @@ maintainer's archive, not in the public history.
 | [0015](0015-mit-engine-reserved-demos.md) | MIT engine, all-rights-reserved demo games | Accepted |
 | [0016](0016-platform-profiles.md) | Platform profiles, replaceable subsystems and suspension | Accepted |
 | [0017](0017-sdl3-native-platform.md) | SDL 3 as the native platform; raylib for browsers (amends 0011, 0012) | Accepted |
+| [0018](0018-native-demo-distribution.md) | Native demo downloads through the existing release pipeline (amends 0010, 0013) | Accepted |
+| [0019](0019-sdk-packages.md) | SDK Alpha versioning and one package per backend | Accepted |

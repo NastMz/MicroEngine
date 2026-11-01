@@ -1,4 +1,7 @@
 ---
+// Hallmark · macrostructure: Map / Diagram · nav: N1b · footer: Ft5 Statement · tone: technical, playful-precise
+// theme: custom "pixel workbench at night, cartridge amber" (tokens.css, unchanged) · enrichment: none (real code and
+// real captures) · pre-emit critique: P5 H4 E4 S5 R4 V4
 import { Image } from 'astro:assets';
 import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
@@ -6,36 +9,70 @@ import PixelSprite from '../components/PixelSprite.astro';
 import Platforms from '../components/Platforms.astro';
 import { demoGames } from '../data/games';
 import { excerpt } from '../lib/source.mjs';
-import { distribution } from '../data/distribution';
+import { distribution, sdk } from '../data/distribution';
+import { playManifest } from '../lib/play-manifest.mjs';
 
 const sample = 'samples/HelloEngine/Program.cs';
 const star = excerpt(sample, /var palette = Art\.Palette/, /Atlas = new SpriteAtlasBuilder/);
 const scene = excerpt(sample, /public override void Update\(float dt\)/, /_particles\.Update\(dt\)/);
+const catalog = excerpt('src/MicroEngine.Desktop/DesktopLauncher.cs', /public static PlatformCatalog CreateCatalog/, /public static int Run\(Game game, string\[\] args\) =>/);
+const downloads = playManifest()?.downloads ?? null;
+const downloadable = downloads ? [...new Set(Object.values(downloads).flatMap(byTarget => Object.keys(byTarget)))] : [];
 
-const capabilities = [
-  { title: 'Loop and scenes', text: 'Fixed 60 Hz simulation, a scene stack with overlays and transitions, coroutines and tweens.', href: '/docs/manual/lifecycle/' },
-  { title: 'Input', text: 'Named actions bound to keys, pad buttons and sticks; scripted input playback for tests and captures.', href: '/docs/manual/input/' },
-  { title: 'Pixel graphics', text: 'Procedural images, palettes, noise and dithering; sprite atlases, animation, particles, camera, parallax, light maps and a built-in pixel font.', href: '/docs/manual/rendering/' },
-  { title: 'Tile worlds', text: 'Tile layers, swept collision with one-way platforms, autotiling and plain entity lists.', href: '/docs/reference/components/' },
-  { title: 'Sound and music', text: 'A retro synthesizer, step-sequencer songs and a mixer, plus WAV effects and streamed OGG/MP3 music.', href: '/docs/manual/audio/' },
-  { title: 'Content', text: 'Art and audio as code by default; PNG, WAV and OGG files from a content folder when a game wants them.', href: '/docs/manual/assets/' },
-  { title: 'Interface and saves', text: 'Dialogue boxes, menus, JSON saves and achievements with banners and a list screen.', href: '/docs/manual/ui/' },
-  { title: 'Testing', text: 'A headless platform for deterministic tests and scripted playthroughs that save PNG captures.', href: '/docs/examples/testing/' },
+// The map: what MicroEngine writes (owned) and what it integrates (third-party), layer by layer, top to bottom.
+const layers = [
+  {
+    name: 'Your game', role: 'Rules, scenes and content, in plain C#. Never names a platform.',
+    nodes: demoGames.map(g => ({ label: g.title, href: `/demos/${g.slug}/`, kind: 'game', color: g.colorToken })),
+  },
+  {
+    name: 'Engine core', role: 'Runs the game the same way everywhere.',
+    nodes: [
+      { label: 'Game', href: '/docs/manual/lifecycle/', kind: 'owned' },
+      { label: 'GameRunner', href: '/docs/manual/lifecycle/', kind: 'owned', note: 'desktop, tests' },
+      { label: 'GameSession', href: '/docs/manual/lifecycle/', kind: 'owned', note: 'browser, phones' },
+      { label: 'Scenes', href: '/docs/manual/scenes/', kind: 'owned' },
+      { label: 'Input actions', href: '/docs/manual/input/', kind: 'owned' },
+      { label: 'Pixel graphics', href: '/docs/manual/rendering/', kind: 'owned' },
+      { label: 'Synth + mixer', href: '/docs/manual/audio/', kind: 'owned' },
+      { label: 'Saves', href: '/docs/manual/persistence/', kind: 'owned' },
+    ],
+  },
+  {
+    name: 'IPlatform', role: 'One contract: renderer, graphics device, audio, input, clock, lifecycle.',
+    nodes: [
+      { label: 'sdl', href: '/docs/manual/backends/', kind: 'owned', note: 'Windows · Linux · macOS · Android · iOS' },
+      { label: 'raylib', href: '/docs/manual/backends/', kind: 'owned', note: 'browsers · desktop' },
+      { label: 'sdl-software', href: '/docs/manual/backends/', kind: 'owned', note: 'no GPU' },
+      { label: 'headless', href: '/docs/examples/testing/', kind: 'owned', note: 'tests' },
+      { label: 'yours', href: '/docs/manual/backends/', kind: 'custom', note: 'register a profile' },
+    ],
+  },
+  {
+    name: 'Integrated technology', role: 'Mature libraries MicroEngine selects and coordinates instead of rewriting.',
+    nodes: [
+      { label: 'SDL 3', kind: 'third' }, { label: 'raylib 6', kind: 'third' }, { label: '.NET 10', kind: 'third' },
+      { label: 'WebAssembly', kind: 'third' }, { label: 'NVorbis', kind: 'third' },
+      { label: 'Direct3D · Metal · Vulkan · OpenGL', kind: 'third' },
+    ],
+  },
 ];
 ---
-<SiteLayout title="MicroEngine" description="A compact, code-first 2D game engine for C#/.NET 10. Four complete pixel-art games run on it, on the desktop and in desktop browsers." current="home">
+<SiteLayout title="MicroEngine" description="MicroEngine is a code-first 2D game engine for C#/.NET 10 that orchestrates proven technologies (SDL 3, raylib, WebAssembly) behind one contract. Four demo games run on Windows, Linux, macOS, Android, iOS and in browsers." current="home">
   <section class="hero wrap" aria-labelledby="hero-title">
     <div class="hero-copy">
-      <h1 id="hero-title">Pixel-art games, written in plain C#.</h1>
+      <p class="sdk-chip"><span class="status partial">SDK {sdk.stage}</span> <span class="mono">{sdk.version}</span> · <a href="/docs/sdk/">what Alpha means</a></p>
+      <h1 id="hero-title">A game engine that orchestrates, not reinvents.</h1>
       <p class="lede">
-        MicroEngine is a compact, code-first 2D engine for .NET 10. Sprites, sounds and scenes are ordinary code,
-        and four finished games run on it: on the desktop, and in desktop browsers from the same game code.
+        MicroEngine is a 2D game engine for C# that orchestrates subsystems and integrates existing technologies into one
+        coherent way of making games. You write scenes, rules and pixel art in plain code; SDL 3, raylib, .NET and
+        WebAssembly do what they already do well.
       </p>
       <div class="actions">
         <a class="button" href="/demos/">Play the demos</a>
         <a class="button secondary" href="/docs/">Read the docs</a>
       </div>
-      <p class="hero-note muted">{distribution.available ? <a href={distribution.startHref}>Get started</a> : <>Not available for download yet · <a href="/roadmap/">See the roadmap</a></>}</p>
+      <p class="hero-note muted">Open source, MIT · <a href={distribution.repository}>Source on GitHub</a> · <a href="/platforms/">Six platforms, and how each was checked</a></p>
     </div>
     <figure class="hero-figure">
       <div class="sprite-code">
@@ -46,16 +83,70 @@ const capabilities = [
         </div>
       </div>
       <figcaption class="muted">
-        A sprite is a palette and a string map. The code is from the engine’s Hello Engine sample, and the sprite is
-        drawn here by reading that same file. <a href="/docs/examples/hello-engine/">Walk through the sample</a>
+        Code-first: a sprite is a palette and a string map. This code is the Hello Engine sample, and the sprite is drawn
+        here by reading that same file. <a href="/docs/examples/hello-engine/">Walk through the sample</a>
       </figcaption>
     </figure>
   </section>
 
+  <section class="section wrap" id="architecture" aria-labelledby="map-title">
+    <div class="section-head">
+      <h2 id="map-title">Game → core → IPlatform → the libraries you already trust</h2>
+      <p>The same game assembly runs on every platform because nothing above the contract knows what is below it. Each layer links to its manual page.</p>
+    </div>
+    <ol class="map" aria-label="MicroEngine's layers, from your game down to the libraries it integrates">
+      {layers.map((layer, i) => (
+        <li class="layer" style={`--i: ${i}`}>
+          <div class="layer-head">
+            <h3>{layer.name}</h3>
+            <p class="muted">{layer.role}</p>
+          </div>
+          <ul class="nodes">
+            {layer.nodes.map(node => (
+              <li class={`node ${node.kind}`} style={node.color ? `--game: var(${node.color})` : undefined}>
+                {node.href ? <a href={node.href}>{node.label}</a> : <span>{node.label}</span>}
+                {node.note && <span class="node-note">{node.note}</span>}
+              </li>
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ol>
+    <dl class="legend">
+      <div><dt><span class="swatch owned" aria-hidden="true"></span>MicroEngine</dt><dd>code in this repository, MIT</dd></div>
+      <div><dt><span class="swatch third" aria-hidden="true"></span>Integrated</dt><dd>third-party libraries and APIs, used as they are</dd></div>
+      <div><dt><span class="swatch custom" aria-hidden="true"></span>Extension point</dt><dd>a platform profile of your own</dd></div>
+    </dl>
+    <p class="map-more"><a href="/docs/architecture/">Read the architecture</a> · <a href="/docs/manual/backends/">Backends and profiles</a> · <a href="/docs/reference/contracts/">Public contracts</a></p>
+  </section>
+
+  <section class="section wrap" aria-labelledby="extend-title">
+    <div class="split">
+      <div class="section-head">
+        <h2 id="extend-title">Platforms are profiles, chosen by the host</h2>
+        <p>Every official platform is a named profile in a catalog. The player or a test picks one with <code>--platform</code>; a host can replace the audio device, add input sources, or register a profile of its own. Game code never changes.</p>
+        <p>This is the desktop launcher’s real catalog, in order of preference: the first one that can run on the machine is the default.</p>
+        <p><a href="/docs/manual/backends/">Choosing, replacing and writing platforms</a></p>
+      </div>
+      <Code code={catalog.code} lang="csharp" theme="github-dark-dimmed" class="code-panel" />
+    </div>
+  </section>
+
+  <section class="section wrap" aria-labelledby="code-title">
+    <div class="split">
+      <div class="section-head">
+        <h2 id="code-title">Actions, not keys</h2>
+        <p>Scenes ask for named actions such as <code>confirm</code> or <code>left</code>. Keyboards, gamepads, on-screen touch controls and test scripts all drive the same actions, so an automated playthrough exercises exactly the code a player does.</p>
+        <p><a href="/docs/manual/input/">How input works</a></p>
+      </div>
+      <Code code={scene.code} lang="csharp" theme="github-dark-dimmed" class="code-panel" />
+    </div>
+  </section>
+
   <section class="section wrap" id="demos" aria-labelledby="demos-title">
     <div class="section-head">
-      <h2 id="demos-title">Four finished games, four genres</h2>
-      <p>Each one is a complete game with a title screen, an ending, saves and achievements. They prove what the engine builds today; each has a page with controls, screenshots and a playable browser build.</p>
+      <h2 id="demos-title">Four games, one engine, unchanged on every platform</h2>
+      <p>Each demo is a complete game with a title screen, an ending, saves and achievements. Play them in the browser, or download them{downloadable.length ? '' : ' once a release offers native packages'}. Screenshots are real captures from scripted playthroughs.</p>
     </div>
     <ul class="demo-grid">
       {demoGames.map((game, i) => (
@@ -66,114 +157,111 @@ const capabilities = [
             <h3><a href={`/demos/${game.slug}/`}>{game.title}</a></h3>
             <p class="muted">{game.tagline}</p>
             <p class="content-kind"><span class="mono">{game.content.kind}</span> · {game.content.detail}</p>
+            <p class="ways mono">Browser{downloads?.[game.id] && ` · ${Object.keys(downloads[game.id]).length} downloads`}</p>
           </div>
         </li>
       ))}
     </ul>
   </section>
 
-  <section class="section wrap" aria-labelledby="code-title">
-    <div class="split">
-      <div class="section-head">
-        <h2 id="code-title">Actions, not keys</h2>
-        <p>Scenes ask for named actions such as <code>confirm</code> or <code>left</code>. Keyboards, gamepads and test scripts all drive the same actions, so an automated playthrough exercises exactly the code a player does.</p>
-        <p><a href="/docs/manual/input/">How input works</a></p>
-      </div>
-      <Code code={scene.code} lang="csharp" theme="github-dark-dimmed" class="code-panel" />
-    </div>
-  </section>
-
-  <section class="section wrap" aria-labelledby="caps-title">
-    <div class="section-head">
-      <h2 id="caps-title">What is in the box</h2>
-      <p>One backend-independent core library and the systems a small 2D game needs. No editor and no component framework: plain classes you can read.</p>
-    </div>
-    <dl class="caps">
-      {capabilities.map(cap => (
-        <div>
-          <dt><a href={cap.href}>{cap.title}</a></dt>
-          <dd>{cap.text}</dd>
-        </div>
-      ))}
-    </dl>
-  </section>
-
-  <section class="section wrap" aria-labelledby="arch-title">
-    <div class="section-head">
-      <h2 id="arch-title">One game, several platforms</h2>
-      <p>The core never references a windowing library. Everything platform-specific sits behind <code>IPlatform</code>, so the same game assembly runs on the desktop, in a browser and in headless tests.</p>
-    </div>
-    <div class="arch" role="img" aria-label="Layers: games use the MicroEngine core; the core talks to platforms through IPlatform; implementations are raylib on the desktop, raylib compiled to WebAssembly in the browser, and a headless platform for tests.">
-      <div class="arch-row">
-        {demoGames.map(game => <span class="arch-box game" style={`--game: var(${game.colorToken})`}>{game.title}</span>)}
-      </div>
-      <div class="arch-link" aria-hidden="true">uses</div>
-      <div class="arch-row"><span class="arch-box core"><strong>MicroEngine</strong> core · loop, scenes, input, graphics, world, audio, UI</span></div>
-      <div class="arch-link" aria-hidden="true">IPlatform</div>
-      <div class="arch-row">
-        <span class="arch-box">raylib · desktop window</span>
-        <span class="arch-box">raylib · WebAssembly in the browser</span>
-        <span class="arch-box">Headless · tests and captures</span>
-      </div>
-    </div>
-    <p class="arch-more"><a href="/docs/architecture/">Read the architecture</a> · <a href="/docs/manual/backends/">Backends and platforms</a></p>
-  </section>
-
   <section class="section wrap" aria-labelledby="platforms-title">
     <div class="section-head">
-      <h2 id="platforms-title">Where it runs today</h2>
-      <p>Only what has been run is marked as working. Phones and tablets can read this site, but the games have no touch controls.</p>
+      <h2 id="platforms-title">Where it runs, and how we know</h2>
+      <p>All six are official targets. They are not equally proven: a capture on a CI runner is not a person playing on a phone, and a simulator is not an iPhone. The badge says which.</p>
     </div>
     <Platforms />
+    <p class="map-more"><a href="/platforms/">The full compatibility matrix</a> · <a href="/docs/downloads/">Downloads and installation</a></p>
+  </section>
+
+  <section class="section wrap" aria-labelledby="status-title">
+    <div class="split">
+      <div class="section-head">
+        <h2 id="status-title">SDK {sdk.stage} · {sdk.version}</h2>
+        <p>{sdk.summary}</p>
+        <div class="actions">
+          <a class="button secondary" href="/docs/sdk/">SDK status and SDK-1</a>
+          <a class="button secondary" href="/roadmap/">Roadmap</a>
+        </div>
+      </div>
+      <ul class="not-yet">
+        <li><strong>No NuGet packages or templates yet.</strong> They are prepared for SDK-1; today the engine is built from its repository.</li>
+        <li><strong>No visual editor.</strong> MicroEngine is code-first; content is code, or files in a content folder.</li>
+        <li><strong>No physical phone has run it.</strong> Android is checked on an emulator, iOS in the simulator only.</li>
+        <li><strong>Linux and macOS are not hand-played yet.</strong> Both are checked automatically on hosted runners and in containers.</li>
+      </ul>
+    </div>
   </section>
 
   <section class="section wrap" aria-labelledby="start-title">
     <div class="split">
       <div class="section-head">
-        <h2 id="start-title">Getting MicroEngine</h2>
+        <h2 id="start-title">Start in three commands</h2>
         <p>{distribution.status}</p>
         <div class="actions">
-          {distribution.available
-            ? <a class="button" href={distribution.startHref}>Get started</a>
-            : <a class="button" href="/roadmap/">See the roadmap</a>}
+          <a class="button" href={distribution.startHref}>Get started</a>
           <a class="button secondary" href="/docs/licensing/">Licensing</a>
         </div>
       </div>
-      {distribution.available
-        ? <ol class="steps">{distribution.install.map(step => <li><span class="label">{step.label}</span><code>{step.command}</code></li>)}</ol>
-        : <ol class="steps">
-            <li><span class="label">Today</span><span>Play the four demos in a desktop browser.</span></li>
-            <li><span class="label">Today</span><span>Read the manual, the examples and the API reference: they show the engine’s real code.</span></li>
-            <li><span class="label">Planned</span><span>NuGet packages and C# project templates.</span></li>
-            <li><span class="label">Licence</span><span>MIT for the engine; the demo games are all rights reserved. <a href="/docs/licensing/">Licensing</a></span></li>
-          </ol>}
+      <ol class="steps">{distribution.install.map(step => <li><span class="label">{step.label}</span><code>{step.command}</code></li>)}</ol>
     </div>
-  </section>
-
-  <section class="section wrap" aria-labelledby="next-title">
-    <div class="section-head">
-      <h2 id="next-title">Not there yet</h2>
-      <p>Things MicroEngine does not have today, so nobody has to find out the hard way.</p>
-    </div>
-    <ul class="not-yet">
-      <li><strong>No packages yet.</strong> The engine is used from its repository; NuGet packages and project templates are planned.</li>
-      <li><strong>No visual editor.</strong> Content is code, or files loaded from a content folder.</li>
-      <li><strong>No touch controls.</strong> The browser demos need a keyboard or a gamepad; phones and tablets are not validated.</li>
-      <li><strong>Desktop validated on Windows only.</strong> Linux and macOS may work through .NET and raylib, but have not been verified.</li>
-    </ul>
-    <p class="arch-more"><a href="/roadmap/">What comes next: the roadmap</a> · <a href="/docs/status/">Status and limitations</a></p>
   </section>
 </SiteLayout>
 
 <style>
   .hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); padding-block: var(--space-3xl) var(--space-xl); align-items: center; }
   .hero-copy { display: grid; gap: var(--space-lg); min-width: 0; }
+  /* The longest word ("orchestrates,") must fit a 320 px screen whole: a smaller ceiling than --text-display. */
+  .hero-copy h1 { font-size: var(--text-hero); overflow-wrap: normal; }
+  .sdk-chip { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: baseline; font-size: var(--text-sm); color: var(--color-ink-2); }
   .hero-note { font-size: var(--text-sm); }
   .hero-figure { margin: 0; display: grid; gap: var(--space-sm); min-width: 0; }
   .hero-figure figcaption { font-size: var(--text-sm); }
   .sprite-code { display: grid; gap: var(--space-md); border: var(--rule-thin) solid var(--color-rule); background: var(--color-paper-2); padding: var(--space-md); min-width: 0; }
   .sprite-code :global(pre) { margin: 0; overflow-x: auto; font-size: var(--text-xs); line-height: 1.45; background: transparent !important; }
   .sprite-out { display: flex; align-items: center; gap: var(--space-md); }
+
+  /* The map: four layers stacked like a cartridge's PCB, joined by a pixel bus on the left. */
+  .map { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-md); counter-reset: layer; }
+  .layer { position: relative; display: grid; gap: var(--space-sm); padding: var(--space-md) var(--space-md) var(--space-md) var(--space-xl);
+    border: var(--rule-thin) solid var(--color-rule); background: var(--color-paper-2); min-width: 0; }
+  .layer::before { content: ''; position: absolute; left: var(--space-sm); top: 0; bottom: 0; width: var(--rule-pixel);
+    background: repeating-linear-gradient(var(--color-accent) 0 6px, transparent 6px 10px); }
+  .layer:not(:last-child)::after { content: ''; position: absolute; left: calc(var(--space-sm) - 4px); bottom: calc(-1 * var(--space-md) / 2 - 5px);
+    width: 10px; height: 10px; background: var(--color-accent); z-index: 1; }
+  .layer-head { display: grid; gap: var(--space-2xs); }
+  .layer-head h3 { font-family: var(--font-display); font-weight: 500; font-size: var(--text-xl); }
+  .layer-head p { font-size: var(--text-sm); max-width: var(--measure); }
+  .nodes { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+  .node { display: inline-grid; gap: 2px; padding: var(--space-2xs) var(--space-sm); border: var(--rule-pixel) solid var(--color-rule);
+    font-family: var(--font-mono); font-size: var(--text-sm); background: var(--color-paper); min-width: 0; }
+  .node a, .node span:first-child { color: var(--color-ink); text-decoration: none; white-space: nowrap; }
+  .node a { display: inline-flex; align-items: center; min-height: 32px; }
+  .node a:hover { color: var(--color-accent); }
+  .node-note { font-size: var(--text-xs); color: var(--color-ink-3); }
+  .node.owned { border-color: var(--color-accent); }
+  .node.game { border-color: var(--game); }
+  .node.game a { color: var(--game); }
+  .node.third { border-style: dashed; background: transparent; }
+  .node.third span { color: var(--color-ink-2); white-space: normal; }
+  .node.custom { border-color: var(--color-exploring); border-style: dashed; }
+  .node.custom a { color: var(--color-exploring); }
+  .node:has(a:focus-visible) { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+  .node a:focus-visible { outline: none; }
+  .legend { margin: var(--space-md) 0 0; display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-xl); font-size: var(--text-sm); }
+  .legend div { display: flex; gap: var(--space-xs); align-items: center; }
+  .legend dt { display: inline-flex; gap: var(--space-xs); align-items: center; font-weight: 600; }
+  .legend dd { margin: 0; color: var(--color-ink-2); }
+  .swatch { width: 14px; height: 14px; border: var(--rule-pixel) solid var(--color-accent); }
+  .swatch.third { border-color: var(--color-rule); border-style: dashed; }
+  .swatch.custom { border-color: var(--color-exploring); border-style: dashed; }
+  .map-more { margin-top: var(--space-lg); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .layer { animation: ink-on linear both; animation-timeline: view(); animation-range: entry 0% entry 40%; }
+    }
+  }
+  @keyframes ink-on { from { opacity: 0.35; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
   .demo-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-lg); grid-template-columns: minmax(0, 1fr); }
   .demo-card { position: relative; display: grid; border: var(--rule-thin) solid var(--color-rule); border-top: 4px solid var(--game);
@@ -188,53 +276,32 @@ const capabilities = [
   .demo-card:has(a:focus-visible) { outline: 3px solid var(--color-focus); outline-offset: 3px; }
   .demo-card .label { color: var(--game); }
   .content-kind { font-size: var(--text-sm); color: var(--color-ink-2); }
+  .ways { font-size: var(--text-xs); color: var(--color-ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
 
   .split { display: grid; gap: var(--space-xl); align-items: start; }
   .split > * { min-width: 0; }
   .split .section-head { margin-bottom: 0; }
   :global(.code-panel) { margin: 0; padding: var(--space-md); overflow-x: auto; font-size: var(--text-xs); border: var(--rule-thin) solid var(--color-rule); }
 
-  .caps { display: grid; gap: var(--space-lg) var(--space-xl); grid-template-columns: minmax(0, 1fr); margin: 0; }
-  .caps > div { border-top: var(--rule-pixel) solid var(--color-rule); padding-top: var(--space-sm); }
-  .caps dt { font-weight: 600; margin-bottom: var(--space-2xs); }
-  .caps dt a { color: var(--color-ink); }
-  .caps dt a:hover { color: var(--color-accent); }
-  .caps dd { margin: 0; color: var(--color-ink-2); font-size: var(--text-sm); }
-
-  .arch { display: grid; gap: var(--space-xs); justify-items: stretch; }
-  .arch-row { display: grid; gap: var(--space-xs); grid-template-columns: minmax(0, 1fr); }
-  .arch-box { display: block; padding: var(--space-sm) var(--space-md); border: var(--rule-pixel) solid var(--color-rule); background: var(--color-paper-2);
-    font-family: var(--font-mono); font-size: var(--text-sm); text-align: center; }
-  .arch-box.game { border-color: var(--game); color: var(--game); }
-  .arch-box.core { border-color: var(--color-accent); color: var(--color-ink); }
-  .arch-box.core strong { color: var(--color-accent); font-weight: 500; }
-  .arch-link { justify-self: center; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2);
-    border-left: var(--rule-pixel) dashed var(--color-rule); padding: var(--space-2xs) 0 var(--space-2xs) var(--space-xs); }
-  .arch-more { margin-top: var(--space-lg); }
-
-  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-sm); counter-reset: step; }
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-sm); }
   .steps li { display: grid; gap: var(--space-2xs); padding: var(--space-sm) var(--space-md); border: var(--rule-thin) solid var(--color-rule);
     background: var(--color-paper-2); min-width: 0; }
   .steps code { overflow-x: auto; white-space: nowrap; font-size: var(--text-sm); padding-bottom: var(--space-2xs); }
-  .steps span:not(.label) { color: var(--color-ink-2); font-size: var(--text-sm); }
 
   .not-yet { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-sm); grid-template-columns: minmax(0, 1fr); }
   .not-yet li { padding-left: var(--space-lg); position: relative; color: var(--color-ink-2); max-width: var(--measure); }
-  .not-yet li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 8px; height: 8px; background: var(--color-no); }
+  .not-yet li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 8px; height: 8px; background: var(--color-partial); }
   .not-yet strong { color: var(--color-ink); font-weight: 600; }
 
   @media (min-width: 48rem) {
     .demo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .caps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .arch-row { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
-    .not-yet { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .layer { grid-template-columns: minmax(0, 14rem) minmax(0, 1fr); align-items: start; gap: var(--space-lg); padding-left: var(--space-2xl); }
   }
   @media (min-width: 64rem) {
     .hero { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); padding-top: var(--space-4xl); }
     .sprite-code { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
     .sprite-out { flex-direction: column; }
     .split { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
-    .caps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
   @media (prefers-reduced-motion: reduce) {
     .demo-card:hover, .demo-card:focus-within { transform: none; }

@@ -36,9 +36,11 @@ export const groups = [
 export const pages = [
   { source: 'docs/guide/introduction.md', slug: 'docs', group: 'intro', label: 'What is MicroEngine' },
   { source: 'docs/guide/status.md', slug: 'docs/status', group: 'intro', label: 'Status and limitations' },
+  { source: 'docs/guide/sdk.md', slug: 'docs/sdk', group: 'intro', label: 'SDK status (Alpha)' },
   { source: 'docs/architecture.md', slug: 'docs/architecture', group: 'intro', label: 'Architecture' },
   { source: 'docs/guide/platforms.md', slug: 'docs/platforms', group: 'intro', label: 'Platforms' },
   { source: 'docs/guide/getting-microengine.md', slug: 'docs/getting-started', group: 'start', label: 'Getting MicroEngine' },
+  { source: 'docs/guide/downloads.md', slug: 'docs/downloads', group: 'start', label: 'Downloading the demos' },
   { source: 'docs/making-a-game.md', slug: 'docs/making-a-game', group: 'start', label: 'Making a game' },
   { source: 'docs/manual/lifecycle.md', slug: 'docs/manual/lifecycle', group: 'manual', label: 'Game lifecycle' },
   { source: 'docs/manual/scenes.md', slug: 'docs/manual/scenes', group: 'manual', label: 'Scenes' },
@@ -58,6 +60,7 @@ export const pages = [
   { source: 'docs/reference/components.md', slug: 'docs/reference/components', group: 'reference', label: 'Components' },
   { source: 'docs/reference/configuration.md', slug: 'docs/reference/configuration', group: 'reference', label: 'Configuration' },
   { source: 'docs/reference/limitations.md', slug: 'docs/reference/limitations', group: 'reference', label: 'Known limitations' },
+  { source: 'docs/migrations.md', slug: 'docs/migrations', group: 'reference', label: 'Migration notes' },
   { source: 'games/CourtyardKey/CREDITS.md', slug: 'docs/credits/courtyard-key', group: 'credits', label: 'Courtyard Key' },
   { source: 'games/TrailDuel/CREDITS.md', slug: 'docs/credits/trail-duel', group: 'credits', label: 'Trail Duel' },
   { source: 'games/NeonRift/CREDITS.md', slug: 'docs/credits/neon-rift', group: 'credits', label: 'Neon Rift' },
@@ -66,7 +69,7 @@ export const pages = [
 ];
 
 // Site pages outside the documentation that the sidebar also lists (label, URL, group).
-export const extraLinks = [{ label: 'Roadmap', link: '/roadmap/', group: 'intro' }];
+export const extraLinks = [{ label: 'Platforms: compatibility matrix', link: '/platforms/', group: 'intro' }, { label: 'Roadmap', link: '/roadmap/', group: 'intro' }];
 
 const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif']);
 const toPosix = p => p.split(path.sep).join('/');

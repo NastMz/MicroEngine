@@ -20,5 +20,12 @@
     <!-- Input scripts, so a test can replay the same runs as desktop.mjs, and the game's content files. -->
     <AndroidAsset Include="$(GameDir)scripts/*.script" Link="scripts/%(Filename)%(Extension)" />
     <AndroidAsset Include="@(MobileGameContent)" Link="Content/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Notices that travel with every APK (packaging/README.md): the demo is all rights reserved, the engine MIT,
+         and the .NET runtime inside the APK comes with its licence and third-party notices. -->
+    <AndroidAsset Include="../../games/LICENSE" Link="licenses/LICENSE.txt" />
+    <AndroidAsset Include="../../LICENSE" Link="licenses/microengine-LICENSE.txt" />
+    <AndroidAsset Include="../../THIRD-PARTY-NOTICES.md" Link="licenses/THIRD-PARTY-NOTICES.txt" />
+    <AndroidAsset Include="$(NetCoreRoot)packs/Microsoft.NETCore.App.Runtime.Mono.android-arm64/$(BundledNETCoreAppPackageVersion)/LICENSE.TXT" Link="licenses/dotnet-LICENSE.txt" />
+    <AndroidAsset Include="$(NetCoreRoot)packs/Microsoft.NETCore.App.Runtime.Mono.android-arm64/$(BundledNETCoreAppPackageVersion)/THIRD-PARTY-NOTICES.TXT" Link="licenses/dotnet-THIRD-PARTY-NOTICES.txt" />
   </ItemGroup>
 </Project>

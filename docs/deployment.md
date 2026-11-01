@@ -44,6 +44,11 @@ folder, its registry entry, `THIRD-PARTY-NOTICES.md`, `LICENSE` and `games/LICEN
 - A new game needs its registry entry in `web/games.props` and its page data in `site/src/data/games.ts`; the plan
   picks it up and builds it; production shows it after the next release. No workflow changes (a unit test fails if
   the two lists differ).
+- Native downloads use the same store under `<Game>-<target>-<key>` ([packaging](../packaging/README.md),
+  [ADR 0018](decisions/0018-native-demo-distribution.md)). A site built from a release (`release`, `release:<tag>`,
+  and `candidates` with its latest release) writes that release's downloads into `/play/demos.json`; the demo pages,
+  the demos index and the platform summary read them, so a button exists only for a released package. Versions and
+  targets on the pages come from `Directory.Build.props`, the games' project files and `packaging/targets.json`.
 
 ### Why `vercel build` and `vercel deploy --prebuilt`
 

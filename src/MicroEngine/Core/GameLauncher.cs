@@ -12,12 +12,13 @@ namespace MicroEngine.Core;
 /// <item><c>--headless</c> run without a window (no captures are written); the same as <c>--platform headless</c>.</item>
 /// <item><c>--hidden</c> render in a hidden window (captures still work).</item>
 /// <item><c>--frames N</c> stop after N updates; <c>--seed N</c>; <c>--scale N</c>; <c>--mute</c>.</item>
+/// <item><c>--report</c> print the platform that runs and whether it has audio before the game starts (package checks).</item>
 /// </list>
 /// Returns a process exit code: 0 on success, 1 on a game or platform error, 2 on bad arguments.
 /// </summary>
 public static class GameLauncher
 {
-    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--frames N] [--seed N] [--scale N] [--mute]";
+    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--frames N] [--seed N] [--scale N] [--mute] [--report]";
 
     /// <param name="configure">Changes the platform request before the platform is built: an audio device or input
     /// sources of the host's own (see <see cref="PlatformRequest"/>).</param>
@@ -58,10 +59,11 @@ public static class GameLauncher
         };
         if (configure is not null) request = configure(request);
         IPlatform platform;
+        PlatformProfile? profile = null;
         try
         {
             string? name = parsed.Headless ? HeadlessPlatform.Profile.Name : parsed.Platform ?? Environment.GetEnvironmentVariable("MICROENGINE_PLATFORM");
-            var profile = parsed.Headless && catalog.Find(HeadlessPlatform.Profile.Name) is null ? HeadlessPlatform.Profile : catalog.Resolve(name);
+            profile = parsed.Headless && catalog.Find(HeadlessPlatform.Profile.Name) is null ? HeadlessPlatform.Profile : catalog.Resolve(name);
             platform = profile.Create(request);
         }
         catch (Exception e) when (e is InvalidOperationException or PlatformConfigurationException)
@@ -69,7 +71,15 @@ public static class GameLauncher
             Console.Error.WriteLine($"error: {e.Message}");
             return 1;
         }
+        // A backend's native library that this system cannot load (missing, or built for a newer C library): the
+        // loader's message names the cause, so it is reported instead of crashing.
+        catch (DllNotFoundException e)
+        {
+            Console.Error.WriteLine($"error: platform '{profile?.Name}' could not load its native library. {e.Message}");
+            return 1;
+        }
         using var owned = platform;
+        if (parsed.Report) foreach (var line in Report(profile, platform)) Console.WriteLine(line);
         var result = GameRunner.Run(game, platform, options);
         foreach (var capture in result.Captures) Console.WriteLine($"capture: {capture}");
         if (result.Error is { } error)
@@ -80,6 +90,19 @@ public static class GameLauncher
         Console.WriteLine($"done: {result.Updates} updates, {result.Frames} frames");
         return 0;
     }
+
+    /// <summary>
+    /// What <c>--report</c> prints: the profile that runs, with what the platform says about itself when it overrides
+    /// <see cref="object.ToString"/> (SDL names its graphics API), and whether an audio device is open.
+    /// </summary>
+    public static IReadOnlyList<string> Report(PlatformProfile profile, IPlatform platform)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(platform);
+        string? self = platform.ToString();
+        string detail = self is null || self == platform.GetType().ToString() ? "" : $" ({self})";
+        return [$"platform: {profile.Name}{detail}", $"audio: {(platform.Audio.IsAvailable ? "available" : "unavailable")}"];
+    }
 }
 
 public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory, bool Headless, bool Hidden, long Frames, int Seed, int? Scale, bool Mute)
@@ -87,11 +110,13 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
     /// <summary>The platform named with <c>--platform</c>, or null for the default.</summary>
     public string? Platform { get; init; }
     public bool ListPlatforms { get; init; }
+    /// <summary><c>--report</c>: print the platform and its audio state before running.</summary>
+    public bool Report { get; init; }
 
     public static LaunchArguments Parse(IReadOnlyList<string> args)
     {
         string? script = null, captures = "captures", platform = null;
-        bool headless = false, hidden = false, mute = false, list = false;
+        bool headless = false, hidden = false, mute = false, list = false, report = false;
         long frames = 0;
         int? seed = null;
         int? scale = null;
@@ -108,6 +133,7 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
                 case "--headless": headless = true; break;
                 case "--hidden": hidden = true; break;
                 case "--mute": mute = true; break;
+                case "--report": report = true; break;
                 case "--frames": frames = Int(); break;
                 case "--seed": seed = Int(); break;
                 case "--scale": scale = Int(); break;
@@ -121,6 +147,7 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
         {
             Platform = platform,
             ListPlatforms = list,
+            Report = report,
         };
     }
 }

@@ -123,6 +123,7 @@ public sealed unsafe class SdlPlatform : IPlatform
 
     /// <summary>The graphics API SDL chose ("direct3d11", "metal", "opengl", "software"...), for logs and tests.</summary>
     public string RendererName { get; }
+    public override string ToString() => $"SDL renderer {RendererName}";
     public IGraphicsDevice Graphics => _graphics;
     public IAudioDevice Audio => _audio;
     public IInputSource Input => _input;

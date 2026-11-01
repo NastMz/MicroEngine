@@ -95,7 +95,9 @@ let started = false, audio = null;
 const runs = [];
 for (const s of scenarios.filter(s => s.game === game)) {
   const name = path.basename(s.script, '.script');
-  adb('shell', 'am', 'force-stop', pkg);
+  // Every scripted run starts from a fresh install state, like desktop.mjs's empty save folder per scenario: a save
+  // left by the previous scenario changes the title menu and the path a script takes. `pm clear` also stops the app.
+  adb('shell', 'pm', 'clear', pkg);
   adb('logcat', '-c');
   const env = Object.entries(s.env).map(([k, v]) => `${k}=${v}`).join(';');
   // One command line for the device shell, which would otherwise split the env extra at its ';'.

@@ -9,6 +9,8 @@
 // raylib, the platform the browser build shares, because the browser comparison is byte for byte on the PNG files.
 // --platform labels a new reference (--write-reference). --jobs runs that many scenarios at once (default: up to 4).
 // --skip-run compares captures already in --out/desktop/<Game>/<script> (for example pulled from a device).
+// --packages DIR runs the executables of extracted native packages instead of the repository's build
+// (DIR/<Game>/<Game>[.exe], or the executable inside DIR/<Game>/<Title>.app on macOS; packaging/verify.mjs).
 //
 // --reference also checks the native captures against a platform's visual reference (captures.mjs): every capture
 // present, same size, no visible change. --names-only checks completeness and sizes only, for a platform without
@@ -31,6 +33,16 @@ const skipRun = args.includes('--skip-run');
 const referenceFile = option('--reference', '');
 const writeReference = option('--write-reference', '');
 const backend = option('--backend', 'raylib');
+const packages = option('--packages', '');
+
+/** The executable that plays a game: the repository's build, or the one inside an extracted package. */
+function executableOf(game) {
+  const name = game + (process.platform === 'win32' ? '.exe' : '');
+  if (!packages) return path.join(repo, 'games', game, 'bin/Release/net10.0', name);
+  const top = path.resolve(packages, game);
+  const app = fs.existsSync(top) ? fs.readdirSync(top).find(f => f.endsWith('.app')) : undefined;
+  return app ? path.join(top, app, 'Contents', 'MacOS', game) : path.join(top, name);
+}
 // Scripted runs are deterministic (fixed step, seed 1), so they run side by side; results print in scenario order.
 const jobs = Math.max(1, Number(option('--jobs', String(Math.min(4, os.availableParallelism())))));
 const saveDirVariable = { MeadowRun: 'MEADOW_SAVE_DIR', CourtyardKey: 'COURTYARD_SAVE_DIR', TrailDuel: 'TRAIL_SAVE_DIR', NeonRift: 'RIFT_SAVE_DIR' };
@@ -42,8 +54,8 @@ const selected = scenarios.filter(s => !only || only.split(',').includes(s.game)
 function play(s) {
   const name = path.basename(s.script, '.script');
   const dir = path.join(out, 'desktop', s.game, name);
-  const exe = path.join(repo, 'games', s.game, 'bin/Release/net10.0', s.game + (process.platform === 'win32' ? '.exe' : ''));
-  if (!fs.existsSync(exe)) throw new Error(`${exe} is missing; run dotnet build MicroEngine.slnx -c Release.`);
+  const exe = executableOf(s.game);
+  if (!fs.existsSync(exe)) throw new Error(`${exe} is missing; ${packages ? 'extract the package there' : 'run dotnet build MicroEngine.slnx -c Release'}.`);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
   const saves = fs.mkdtempSync(path.join(os.tmpdir(), 'microengine-saves-'));

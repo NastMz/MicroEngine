@@ -30,7 +30,7 @@ const executables = {
 const games = [
   ['meadow-run', 'MeadowRun'], ['courtyard-key', 'CourtyardKey'], ['trail-duel', 'TrailDuel'], ['neon-rift', 'NeonRift'],
 ];
-const pages = ['/', '/demos/', ...games.map(([slug]) => `/demos/${slug}/`), '/roadmap/', '/docs/', '/docs/getting-started/', '/docs/architecture/', '/docs/manual/scenes/', '/docs/reference/components/', '/docs/reference/contracts/', '/docs/credits/neon-rift/', '/no-such-page/'];
+const pages = ['/', '/demos/', ...games.map(([slug]) => `/demos/${slug}/`), '/roadmap/', '/platforms/', '/docs/', '/docs/downloads/', '/docs/sdk/', '/docs/getting-started/', '/docs/architecture/', '/docs/manual/scenes/', '/docs/reference/components/', '/docs/reference/contracts/', '/docs/credits/neon-rift/', '/no-such-page/'];
 const viewports = {
   desktop: { width: 1280, height: 800 },
   tablet: { width: 768, height: 1024, isMobile: true, hasTouch: true },

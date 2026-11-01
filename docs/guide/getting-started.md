@@ -1,7 +1,7 @@
 # Engine development setup (internal)
 
-This page is for engine developers with access to the private MicroEngine repository; it is not a public
-installation guide (see [Getting MicroEngine](getting-microengine.md) for the distribution status). It takes you from a fresh machine to a running MicroEngine game: install the .NET 10 SDK, clone the
+This page is for people working on the engine itself in a clone of the public repository; it is not an installation
+guide for game developers (see [Getting MicroEngine](getting-microengine.md)). It takes you from a fresh machine to a running MicroEngine game: install the .NET 10 SDK, clone the
 repository, build the solution, run the tests and play a demo on the desktop. Browser builds use a separate,
 pinned toolchain and are covered by [web/README.md](../../web/README.md).
 
@@ -11,11 +11,13 @@ pinned toolchain and are covered by [web/README.md](../../web/README.md).
 | --- | --- | --- |
 | .NET SDK | 10 (`global.json` asks for 10.0.100 or a later feature band) | The only requirement for desktop builds and tests |
 | Git | any recent | To clone the repository |
-| OS | Windows 11 validated | Linux x64 is checked automatically but not yet supported; macOS is under evaluation ([Platforms](platforms.md#desktop-validation)) |
+| OS | Windows, Linux or macOS | Windows 11 is where the engine is developed and played by hand; Linux x64 and macOS (Apple silicon) build and pass the tests on CI ([Platforms](platforms.md#desktop-validation)) |
 | Node.js | 18 or later | Only for serving and testing browser packages |
 
-The raylib native library comes with the `Raylib-cs` NuGet package that `src/MicroEngine.Raylib` references; no
-separate install is needed for the desktop.
+The native libraries come with NuGet packages: SDL 3 with `ppy.SDL3-CS` (`src/MicroEngine.Sdl`) and raylib with
+`Raylib-cs` (`src/MicroEngine.Raylib`); no separate install is needed for the desktop. Phone hosts need the
+`android` or `ios` workload ([platforms/README.md](../../platforms/README.md)); native demo packages are built by
+[packaging](../../packaging/README.md).
 
 [`Directory.Build.props`](../../Directory.Build.props) sets the shared build settings for every project:
 

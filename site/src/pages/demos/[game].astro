@@ -5,6 +5,7 @@ import DemoPlayer from '../../components/DemoPlayer.astro';
 import { demoGames, type DemoGame } from '../../data/games';
 import { playManifest, megabytes } from '../../lib/play-manifest.mjs';
 import { repositoryUrl } from '../../lib/repo-docs.mjs';
+import { targets, gameVersion, sdkVersion, installSteps } from '../../lib/versions.mjs';
 
 export function getStaticPaths() {
   return demoGames.map(game => ({ params: { game: game.slug }, props: { game } }));
@@ -15,8 +16,15 @@ const { game } = Astro.props;
 const manifest = playManifest();
 const packaged = manifest?.games?.[game.id];
 const others = demoGames.filter(g => g.id !== game.id);
+// Downloads come only from the release this build reads (scripts/demos.mjs): no button without a real package.
+const downloads = manifest?.downloads?.[game.id] ?? {};
+const offered = targets.filter(t => downloads[t.id]?.url);
+const absent = targets.filter(t => !downloads[t.id]);
+const release = Object.values(downloads)[0]?.release;
+const version = gameVersion(game.id);
+const engine = Object.values(downloads)[0]?.engineVersion ?? sdkVersion;
 ---
-<SiteLayout title={game.title} description={`${game.title}, a ${game.genre.toLowerCase()} built with MicroEngine. ${game.tagline} Play it in a desktop browser.`} current="demos">
+<SiteLayout title={game.title} description={`${game.title}, a ${game.genre.toLowerCase()} built with MicroEngine. ${game.tagline} Play it in a desktop browser or download it for your system.`} current="demos">
   <div class="wrap demo-page" style={`--game: var(${game.colorToken})`}>
     <nav class="crumbs" aria-label="Breadcrumb"><a href="/demos/">Demos</a> <span aria-hidden="true">/</span> <span aria-current="page">{game.title}</span></nav>
     <header class="demo-head">
@@ -26,6 +34,40 @@ const others = demoGames.filter(g => g.id !== game.id);
     </header>
 
     <DemoPlayer game={game} />
+
+    <section aria-labelledby="download-title" class="downloads" id="download">
+      <div class="downloads-head">
+        <h2 id="download-title">Download for your platform</h2>
+        <p class="muted">{game.title} {version} · MicroEngine {engine}{release && <> · release <a class="mono" href={`${repositoryUrl}/releases/tag/${release}`}>{release}</a></>}. Each package was played on its own system before it was published: <a href="/platforms/">how each platform was checked</a>.</p>
+      </div>
+      {offered.length > 0
+        ? <ul class="packages" data-packages>
+            {offered.map(t => {
+              const d = downloads[t.id];
+              return (
+                <li class="package" data-os={t.os}>
+                  <div class="package-main">
+                    <a class="button" href={d.url} download>Download for {t.label}</a>
+                    <span class="mono small">{d.file} · {Math.round(d.size / 1048576)} MB</span>
+                    <span class="recommended label" hidden>Your system</span>
+                  </div>
+                  <p class="small">{t.requirements}</p>
+                  <details>
+                    <summary>Install and run</summary>
+                    <ol class="small">{installSteps(t, game.id, game.title).map(step => <li>{step}</li>)}</ol>
+                    <p class="small muted">SHA-256 <code class="hash">{d.sha256}</code></p>
+                  </details>
+                </li>
+              );
+            })}
+          </ul>
+        : <p class="notice small"><span class="status partial">Not yet</span> This build has no released native packages. Play in the browser above, or build the game from the <a href={repositoryUrl}>repository</a>.</p>}
+      <ul class="no-download small muted">
+        {offered.length > 0 && absent.map(t => <li>{t.label}: no package in this release.</li>)}
+        <li>iOS: no download. Installing on an iPhone requires Apple signing, and the build checked in Apple’s simulator cannot run on a device (<a href="/docs/downloads/#ios">why</a>).</li>
+        <li>Direct downloads from GitHub Releases, not store listings: no Steam, Google Play or App Store account is needed. <a href="/docs/downloads/">Downloads and installation</a></li>
+      </ul>
+    </section>
 
     <div class="demo-body">
       <section aria-labelledby="about-title" class="about">
@@ -48,16 +90,17 @@ const others = demoGames.filter(g => g.id !== game.id);
       <section aria-labelledby="compat-title">
         <h2 id="compat-title">Compatibility</h2>
         <ul class="compat">
-          <li><span class="status ok">Verified</span> Chrome and Firefox on desktop, with a keyboard (automated tests and manual play)</li>
+          <li><span class="status ok">Verified</span> In the browser: Chrome and Firefox on desktop, with a keyboard (automated tests and manual play)</li>
           <li><span class="status ok">Manually tested</span> One gamepad in a Chromium-based browser</li>
-          <li><span class="status partial">Not tested</span> Safari; other browsers are not claimed</li>
-          <li><span class="status no">Not supported</span> Phones and tablets: no touch controls, not validated on devices</li>
+          <li><span class="status partial">Not tested</span> Safari, other browsers, and browsers on phones (the web build has no touch controls)</li>
+          <li><span class="status partial">Emulator only</span> The Android app: generic on-screen controls (d-pad, A, B, X, shoulder, Start); no physical phone has run it</li>
         </ul>
         <dl class="facts">
-          <div><dt>Download</dt><dd>{packaged ? `about ${megabytes(packaged.transfer)}, only when you press Play` : 'not included in this build'}</dd></div>
+          <div><dt>Version</dt><dd>{game.title} {version}, MicroEngine {engine}</dd></div>
+          <div><dt>Browser download</dt><dd>{packaged ? `about ${megabytes(packaged.transfer)}, only when you press Play` : 'not included in this build'}</dd></div>
           <div><dt>Content</dt><dd>{game.content.kind}: {game.content.detail}</dd></div>
           <div><dt>Licence</dt><dd>Demo game: all rights reserved (<a href={`${repositoryUrl}/blob/main/games/LICENSE`}>notice</a>). Read its code to learn MicroEngine; do not redistribute or sell it. The engine that runs it is <a href="/docs/licensing/">MIT licensed</a>{game.credits && ', and its third-party art and audio keep their own licences'}. The package includes these notices and the <a href="/docs/third-party-notices/">third-party notices</a>.</dd></div>
-          <div><dt>Saves</dt><dd>Kept in this browser’s storage for this site, separately for each game. Clearing site data or a private window removes them.</dd></div>
+          <div><dt>Saves</dt><dd>In the browser, in this site’s storage for each game (clearing site data or a private window removes them). Native builds save in your user data folder; Android in the app’s own storage.</dd></div>
           {packaged?.key && <div><dt>Build</dt><dd class="mono">{packaged.key}{packaged.commit && ` · ${String(packaged.commit).slice(0, 7)}`}</dd></div>}
         </dl>
       </section>
@@ -82,6 +125,18 @@ const others = demoGames.filter(g => g.id !== game.id);
   </div>
 </SiteLayout>
 
+<script>
+  // Progressive: marks the visitor's system and moves it first. Without JavaScript every package shows the same.
+  const ua = navigator.userAgent;
+  const os = /Android/i.test(ua) ? 'android' : /iPhone|iPad/i.test(ua) ? '' : /Windows/i.test(ua) ? 'windows' : /Mac OS X/i.test(ua) ? 'macos' : /Linux|X11/i.test(ua) ? 'linux' : '';
+  const yours = os ? document.querySelector(`[data-packages] [data-os="${os}"]`) : null;
+  if (yours) {
+    yours.classList.add('is-yours');
+    yours.querySelector('.recommended')?.removeAttribute('hidden');
+    yours.parentElement?.prepend(yours);
+  }
+</script>
+
 <style>
   .demo-page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); padding-top: var(--space-xl); }
   .crumbs { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-ink-2); }
@@ -99,10 +154,24 @@ const others = demoGames.filter(g => g.id !== game.id);
   .facts dt { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-ink-2); }
   .facts dd { margin: 0; }
   .shots-section { display: grid; gap: var(--space-md); }
+  .downloads { display: grid; gap: var(--space-md); padding: var(--space-lg); border: var(--rule-thin) solid var(--color-rule); border-left: 4px solid var(--game); background: var(--color-paper-2); min-width: 0; }
+  .downloads-head { display: grid; gap: var(--space-xs); }
+  .downloads-head p { max-width: var(--measure); font-size: var(--text-sm); }
+  .packages { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-md); grid-template-columns: minmax(0, 1fr); }
+  .package { display: grid; gap: var(--space-xs); align-content: start; padding: var(--space-md); border: var(--rule-thin) solid var(--color-rule); background: var(--color-paper); min-width: 0; }
+  .package.is-yours { border-color: var(--game); }
+  .package-main { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-sm); align-items: center; }
+  .package-main .small { overflow-wrap: anywhere; color: var(--color-ink-2); }
+  .package .recommended { color: var(--game); }
+  .package summary { cursor: pointer; font-size: var(--text-sm); min-height: var(--tap); display: flex; align-items: center; }
+  .package ol { margin: 0; padding-left: var(--space-lg); display: grid; gap: var(--space-2xs); }
+  .hash { overflow-wrap: anywhere; font-size: var(--text-xs); }
+  .no-download { margin: 0; padding-left: var(--space-lg); display: grid; gap: var(--space-2xs); }
+  .notice { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: baseline; }
   .shots { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-md); grid-template-columns: minmax(0, 1fr); }
   .others ul { list-style: none; margin: var(--space-sm) 0 0; padding: 0; display: grid; gap: var(--space-2xs); }
   .others li { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: baseline; padding-left: var(--space-md); border-left: 4px solid var(--game); }
   .others a { display: inline-flex; align-items: center; min-height: var(--tap); font-weight: 600; }
-  @media (min-width: 48rem) { .shots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 48rem) { .shots, .packages { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (min-width: 64rem) { .demo-body { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); } }
 </style>

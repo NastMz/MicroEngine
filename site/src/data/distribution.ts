@@ -1,24 +1,23 @@
-// How visitors can get MicroEngine. The engine is open source (MIT): today it is used from its public repository;
-// when NuGet packages and templates are published, replace `install` with their commands.
+// How visitors can get MicroEngine and what state it is in. The engine is open source (MIT) and used from its public
+// repository; NuGet packages and `dotnet new` templates are prepared for SDK-1 (docs/guide/sdk.md) but not
+// published: when they are, replace `install` with their commands. The version is read from the build.
+import { sdkVersion } from '../lib/versions.mjs';
+
 export interface InstallStep { label: string; command: string }
 
-export interface Distribution {
-  available: boolean;
-  /** One sentence on the current state, shown on the landing. */
-  status: string;
-  /** Shell commands of the public install, in order (only when `available`). */
-  install: InstallStep[];
-  /** Where the public "get started" call to action points. */
-  startHref: string;
-}
+export const sdk = {
+  version: sdkVersion,
+  stage: 'Alpha',
+  summary: 'MicroEngine works and is checked on six platforms, but its contracts, subsystems and tools are still evolving. Public APIs may change incompatibly between Alpha versions; there is no 1.0 and no promise of backward compatibility yet.',
+};
 
-export const distribution: Distribution = {
-  available: true,
-  status: 'MicroEngine is open source under the MIT License: free for personal and commercial games, no royalties. There are no NuGet packages yet; build it from the public repository with the .NET 10 SDK.',
+export const distribution = {
+  status: 'Open source under the MIT License: free for personal and commercial games, no royalties. There are no NuGet packages yet; build it from the public repository with the .NET 10 SDK.',
   install: [
     { label: 'Clone', command: 'git clone https://github.com/NastMz/MicroEngine.git' },
     { label: 'Build and test', command: 'dotnet test MicroEngine.slnx -c Release' },
     { label: 'Run the sample', command: 'dotnet run --project samples/HelloEngine -c Release' },
-  ],
+  ] satisfies InstallStep[],
   startHref: '/docs/getting-started/',
+  repository: 'https://github.com/NastMz/MicroEngine',
 };

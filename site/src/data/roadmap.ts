@@ -13,47 +13,43 @@ export const statusLabels: Record<RoadmapStatus, { label: string; meaning: strin
 export interface RoadmapTrack { title: string; status: RoadmapStatus; summary: string; items: string[] }
 
 export const completed: string[] = [
-  '2D engine in C#/.NET 10',
+  '2D engine in C#/.NET 10, Alpha 0.x',
   'Four complete demo games',
   'Procedural and file-based assets',
   'Scenes, rendering, audio, input and UI',
-  'Saves (persistence)',
-  'Achievements',
-  'Desktop backend with raylib',
-  'WebAssembly builds in desktop browsers',
-  'One shared web host for every game',
+  'Saves (persistence) and achievements',
+  'SDL 3 platform on Windows, Linux, macOS, Android and iOS',
+  'raylib in WebAssembly for browsers, and as a desktop alternative',
+  'Named platform profiles and replaceable subsystems behind IPlatform',
+  'On-screen touch controls and suspend/resume on phones',
+  'Native demo downloads, checked as downloaded',
   'This site and its documentation',
 ];
 
 export const next: RoadmapTrack[] = [
   {
-    title: 'Packages',
+    title: 'SDK-1: packages',
     status: 'planned',
-    summary: 'Make MicroEngine easy to add to a game without building it from the repository.',
-    items: ['NuGet packages', 'Templates for C# projects', 'Installation without cloning the repository', 'Versioned engine releases'],
+    summary: 'Make MicroEngine easy to add to a game without building it from the repository. The layout is prepared (docs/guide/sdk.md).',
+    items: ['NuGet packages: the core and one package per backend', 'dotnet new templates', 'Versioned SDK releases with migration notes', 'A default platform without installing every backend'],
+  },
+  {
+    title: 'Real devices',
+    status: 'planned',
+    summary: 'Turn automated evidence into played evidence.',
+    items: ['Play the SDL builds by hand on Windows, Linux and a Mac', 'An arm64 Android phone', 'An iPhone, with Apple signing for a distributable build', 'Safari and browsers on phones'],
   },
   {
     title: 'Engine robustness',
     status: 'planned',
     summary: 'Audit behaviour under real-world conditions.',
-    items: ['Variable frame rates and the simulation', 'Fixed timestep, and interpolation where it helps', 'Physics and mechanics consistency under load', 'Web audio and behaviour in background tabs'],
-  },
-  {
-    title: 'Platform compatibility',
-    status: 'planned',
-    summary: 'Verify platforms the technology should already reach.',
-    items: ['Validation on Linux and macOS (macOS rendering needs a Mac with a GPU)', 'Validation in Safari', 'Research into additional backends (exploring)'],
+    items: ['Variable frame rates and the simulation', 'Fixed timestep, and interpolation where it helps', 'Web audio and behaviour in background tabs'],
   },
   {
     title: 'Mobile experience',
     status: 'exploring',
-    summary: 'Find out what playing MicroEngine games on touch screens needs.',
-    items: [
-      'Experimental Android app: one demo runs on an emulator with the same backend (keys only, no touch yet)',
-      'iOS: needs a new platform layer, because raylib has no iOS support; game code already runs in the simulator',
-      'Touch control research', 'Virtual joysticks and buttons', 'Integration with the engine’s action-based input',
-      'Adapting and validating the demos on real phones and tablets',
-    ],
+    summary: 'The phone hosts run the games with generic on-screen controls; what a good touch experience needs is still open.',
+    items: ['Control layouts per game', 'Screen safe areas (notches)', 'Text input, haptics', 'Touch controls in the browser builds'],
   },
 ];
 

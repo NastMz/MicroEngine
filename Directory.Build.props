@@ -7,6 +7,10 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NuGetAudit>false</NuGetAudit>
+    <!-- The SDK version (docs/guide/sdk.md): Alpha, 0.x; incompatible API changes may happen between Alpha versions.
+         Engine assemblies carry it and every demo package records it. Games set their own <Version>. -->
+    <MicroEngineVersion>0.2.0-alpha</MicroEngineVersion>
+    <Version>$(MicroEngineVersion)</Version>
   </PropertyGroup>
   <!-- Browser packages are published (web/build.sh passes MicroEngineWebPackage=true): the engine and games they
        contain are compiled without debug information, so no build-machine path (.pdb location) ends up in them, and
@@ -19,5 +23,17 @@
     <BaseIntermediateOutputPath>obj/web/</BaseIntermediateOutputPath>
     <BaseOutputPath>bin/web/</BaseOutputPath>
     <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+  </PropertyGroup>
+  <!-- Native demo packages (packaging/package.mjs passes MicroEngineNativePackage=true): published like browser
+       packages, without debug information and into their own folders, so a package never names a build machine. -->
+  <PropertyGroup Condition="'$(MicroEngineNativePackage)' == 'true'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <BaseIntermediateOutputPath>obj/package/</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin/package/</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+    <!-- As in browser and phone builds: no ICU library is needed on the player's system (a minimal Linux install has
+         none, and .NET would stop at startup without it). -->
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 </Project>

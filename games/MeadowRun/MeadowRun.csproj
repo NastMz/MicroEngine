@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>MeadowRun</RootNamespace>
+    <!-- The demo's own version, shown on its page and in its downloads (packaging/README.md). -->
+    <Version>1.0.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />

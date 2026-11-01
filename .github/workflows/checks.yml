@@ -68,6 +68,20 @@ on:
           the shared store and hands them to the site job as workflow artifacts
         type: boolean
         default: false
+      native-packages:
+        description: 'JSON list of native packages to build, check and store: [{"game", "target", "runner"}] from
+          `demos.mjs plan --native` (packaging/README.md). Never from a fork: storing needs contents write'
+        type: string
+        default: '[]'
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      ANDROID_KEY_ALIAS:
+        required: false
+      ANDROID_KEY_PASSWORD:
+        required: false
 
 permissions:
   contents: read
@@ -297,6 +311,120 @@ jobs:
           name: demo-package-${{ matrix.game }}
           path: demo-overlay
           retention-days: 3
+
+  # Native packages (packaging/README.md): each one is built on its own system, checked as the file a player
+  # downloads (structure, dependencies, then the game played by the package's executable against the target's SDL
+  # reference) and only then stored under its content key. A stored package is never rebuilt; a release copies it.
+  build-native:
+    name: Package ${{ matrix.game }} for ${{ matrix.target }}
+    if: inputs.native-packages != '[]'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.native-packages) }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      GAME: ${{ matrix.game }}
+      TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci --prefix site
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ matrix.target }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json', 'NuGet.config') }}
+      - name: Virtual display and sound server (Linux)
+        if: matrix.target == 'linux-x64'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1 libglx-mesa0 libgl1-mesa-dri pulseaudio pulseaudio-utils binutils
+          export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$RUNNER_TEMP/xdg}"
+          mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+          echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=microengine
+          pactl set-default-sink microengine
+      - uses: actions/setup-java@v4
+        if: matrix.target == 'android'
+        with:
+          distribution: microsoft
+          java-version: '21'
+      - name: Android toolchain and signing key
+        if: matrix.target == 'android'
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          [ -n "$KEYSTORE" ] || { echo "::error::No ANDROID_KEYSTORE_BASE64 secret: Android packages are signed with the release key only (packaging/README.md, \"Android signing\")."; exit 1; }
+          sed 's/[[:space:]]*#.*$//' platforms/android/toolchain.env | grep '=' >> "$GITHUB_ENV"
+          sudo rm -rf /usr/local/.ghcup /opt/ghc /usr/share/swift /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/julia* /usr/local/share/chromium
+          dotnet workload install android > /dev/null
+          echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "ANDROID_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Build the package
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          file=$(node packaging/package.mjs "$GAME" --target "$TARGET" --out dist/packages | head -1)
+          echo "PACKAGE=$file" >> "$GITHUB_ENV"
+          echo "- Built \`$(basename "$file")\`, $(du -h "$file" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Check the package on ${{ matrix.target }}
+        if: matrix.target != 'android'
+        run: |
+          # Hosted Windows runners have no sound device (audio is recorded there as not verified) and no GPU: Direct3D 11
+          # runs on WARP, which rasterizes half-pixel and rotated sprites like other software renderers, so the runner
+          # has its own reference (the GPU one is checked on real hardware, docs/evaluations/product-1.md).
+          extra=(); [ "$TARGET" = windows-x64 ] && extra=(--audio optional --reference web/tests/reference/sdl-windows-ci.json)
+          run=(); [ "$TARGET" = linux-x64 ] && run=(xvfb-run -a -s "-screen 0 1920x1080x24")
+          "${run[@]}" node packaging/verify.mjs "$PACKAGE" --game "$GAME" --target "$TARGET" --record dist/verification.json --keep-captures dist/captures "${extra[@]}"
+      - name: Linux distributions (Ubuntu 22.04, Debian 12, Fedora 41; Debian 11 must refuse)
+        if: matrix.target == 'linux-x64'
+        run: node packaging/linux-distros.mjs --packages dist/packages --out dist/linux-distros
+      - name: Check the package on the emulator
+        if: matrix.target == 'android'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.EMULATOR_API }}
+          target: google_apis
+          arch: x86_64
+          emulator-options: -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+          disable-animations: true
+          disk-size: 4G
+          script: node packaging/verify.mjs "$PACKAGE" --game "$GAME" --target "$TARGET" --record dist/verification.json --keep-captures dist/captures
+      - name: Store the checked package
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node site/scripts/demos.mjs publish-native --file "$PACKAGE" --verification dist/verification.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/release.keystore"
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.game }}-${{ matrix.target }}
+          path: |
+            dist/verification.json
+            dist/captures
+            dist/linux-distros
+          retention-days: 7
 
   site:
     name: Site (Chrome and Firefox)

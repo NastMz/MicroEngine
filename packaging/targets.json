@@ -1,0 +1,68 @@
+{
+  "$comment": "Native demo packages (packaging/README.md). One entry per downloadable target: how it is built and checked, and what the site tells a player. package.mjs, verify.mjs, site/scripts/demos.mjs (keys, store, releases), checks.yml (through `demos.mjs plan`) and the site's demo pages all read this file. A target is offered for download only when a release holds its package.",
+  "targets": [
+    {
+      "id": "windows-x64",
+      "label": "Windows",
+      "detail": "64-bit (x64)",
+      "os": "windows",
+      "rid": "win-x64",
+      "runner": "windows-latest",
+      "archive": "zip",
+      "reference": "web/tests/reference/sdl.json",
+      "requirements": "Windows 10 or 11, 64-bit, a GPU with Direct3D 11, OpenGL or Vulkan.",
+      "install": [
+        "Extract the ZIP anywhere.",
+        "Run <Game>.exe. Windows SmartScreen may say the publisher is unknown, because the program is not signed: choose More info, then Run anyway."
+      ]
+    },
+    {
+      "id": "linux-x64",
+      "label": "Linux",
+      "detail": "64-bit (x86_64), glibc",
+      "os": "linux",
+      "rid": "linux-x64",
+      "runner": "ubuntu-latest",
+      "archive": "tar.gz",
+      "reference": "web/tests/reference/sdl-linux-x64.json",
+      "glibc": "2.34",
+      "requirements": "A 64-bit x86 distribution with glibc 2.34 or later (for example Ubuntu 22.04, Debian 12, Fedora 35 or newer), an X11 or Wayland desktop with OpenGL (Mesa or a GPU driver), and PulseAudio or PipeWire for sound. The alternative --platform raylib needs glibc 2.38 (Ubuntu 24.04 or newer).",
+      "install": [
+        "Extract the archive: tar -xzf <file>.",
+        "Run ./<Game>/<Game> from a terminal or your file manager."
+      ]
+    },
+    {
+      "id": "macos-arm64",
+      "label": "macOS",
+      "detail": "Apple silicon (arm64)",
+      "os": "macos",
+      "rid": "osx-arm64",
+      "runner": "macos-latest",
+      "archive": "zip",
+      "reference": "web/tests/reference/sdl-macos-arm64.json",
+      "requirements": "macOS 14 or later on Apple silicon (M1 or newer). Intel Macs are not packaged.",
+      "install": [
+        "Extract the ZIP and move <Title>.app wherever you like.",
+        "The app is not notarized by Apple, so macOS blocks the first launch. Open it once, then go to System Settings → Privacy & Security and choose Open Anyway; or run xattr -dr com.apple.quarantine \"<Title>.app\" in Terminal."
+      ]
+    },
+    {
+      "id": "android",
+      "label": "Android",
+      "detail": "APK for arm64-v8a and x86_64",
+      "os": "android",
+      "rid": "android-arm64;android-x64",
+      "runner": "ubuntu-latest",
+      "archive": "apk",
+      "reference": "web/tests/reference/sdl-android-x86_64.json",
+      "requirements": "Android 7.0 (API 24) or later on a 64-bit ARM or x86 device. On-screen touch controls; a keyboard or gamepad also works.",
+      "signing": "release",
+      "install": [
+        "Download the APK on the device.",
+        "Open it. Android asks once to allow installing apps from that source (your browser or file manager); allow it, then install.",
+        "The APK is signed with MicroEngine's demo key, so later demo versions install as updates."
+      ]
+    }
+  ]
+}

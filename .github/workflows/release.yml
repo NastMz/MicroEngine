@@ -2,15 +2,19 @@
 # ref. The only way a new demo reaches the public site; no push, merge or schedule starts it.
 #   Preflight  the version is new; the ref is on main and its ci run passed; current main's ci run passed (its site is
 #              what gets deployed); every package missing for the ref's keys is listed
-#   Build      only those packages, into the integration store (checks.yml)
+#   Build      only those packages, into the integration store (checks.yml): web packages, and the native packages of
+#              each downloadable target (packaging/README.md), each built and played on its own system before it is
+#              stored. Android is offered only when the release signing key is configured (ANDROID_KEYSTORE_* secrets)
 #   Draft      draft release v<version>: each package copied from the store after its archive matched its manifest's
-#              SHA-256, plus release.json (keys, hashes, commit). A draft is not public and not "latest"
-#   Verify     the site of current main built with the draft's packages, every file checked against the release, unit
-#              tests, check-dist, and every browser suite (layout, play, touch) on exactly those packages
+#              SHA-256, the native ones under player-facing names (NeonRift-1.0.0-windows-x64.zip), plus release.json
+#              (keys, hashes, commit, downloads). A draft is not public and not "latest"
+#   Verify     the site of current main built with the draft's packages, every file checked against the release, every
+#              download re-read and hashed, unit tests, check-dist, and every browser suite (layout, play, touch) on
+#              exactly those packages
 #   Publish    deploy-site.yml: the same build staged on Vercel, verified file by file, promoted, then the draft is
 #              published as the latest release; if publishing fails after the switch, production is rolled back
 #   Clean up   any failure, cancellation or dry run discards the draft: the public site and the latest release are
-#              left exactly as they were
+#              left exactly as they were. After a publication, each download is fetched from its public address
 name: release
 
 on:
@@ -48,6 +52,8 @@ jobs:
       main: ${{ steps.check.outputs.main }}
       tag: ${{ steps.check.outputs.tag }}
       build: ${{ steps.demos.outputs.build }}
+      native: ${{ steps.demos.outputs.native }}
+      native-targets: ${{ steps.demos.outputs.native-targets }}
     env:
       GH_TOKEN: ${{ github.token }}
       GITHUB_TOKEN: ${{ github.token }}
@@ -81,7 +87,14 @@ jobs:
             echo "- Dry run: ${{ inputs.dry-run }}"; echo; } >> "$GITHUB_STEP_SUMMARY"
       - name: Packages to build (anything missing for this commit's keys)
         id: demos
-        run: node site/scripts/demos.mjs plan --policy all --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+        env:
+          ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: |
+          targets=$(node -e "console.log(require('./packaging/targets.json').targets.map(t => t.id).filter(id => id !== 'android').join(','))")
+          if [ "$ANDROID_SIGNING" = true ]; then targets="$targets,android"
+          else echo "::warning::No Android signing key (ANDROID_KEYSTORE_* secrets, packaging/README.md): this release offers no Android download."; fi
+          echo "- Downloads offered: $targets" >> "$GITHUB_STEP_SUMMARY"
+          node site/scripts/demos.mjs plan --policy all --native "$targets" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
 
   build:
     name: Build
@@ -92,6 +105,12 @@ jobs:
     with:
       ref: ${{ needs.preflight.outputs.sha }}
       build: ${{ needs.preflight.outputs.build }}
+      native-packages: ${{ needs.preflight.outputs.native }}
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
   draft:
     name: Draft ${{ needs.preflight.outputs.tag }}
@@ -118,7 +137,7 @@ jobs:
       - run: npm ci --prefix site
       - name: Copy the approved packages into a draft release
         shell: bash
-        run: node site/scripts/demos.mjs release-create --version "${{ needs.preflight.outputs.tag }}" | tee -a "$GITHUB_STEP_SUMMARY"
+        run: node site/scripts/demos.mjs release-create --version "${{ needs.preflight.outputs.tag }}" --targets "${{ needs.preflight.outputs.native-targets }}" | tee -a "$GITHUB_STEP_SUMMARY"
 
   verify:
     name: Verify the packages to publish (Chrome and Firefox)
@@ -146,8 +165,8 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-      - name: Built packages are the release's, file by file
-        run: node scripts/demos.mjs release-verify --tag "${{ needs.preflight.outputs.tag }}" --dir dist/play
+      - name: Built packages are the release's, file by file; downloads are what was checked
+        run: node scripts/demos.mjs release-verify --tag "${{ needs.preflight.outputs.tag }}" --dir dist/play --downloads
       - name: Every browser suite on these packages
         env:
           CHROME_PATH: /usr/bin/google-chrome
@@ -205,6 +224,12 @@ jobs:
         if: env.PUBLISHED == 'true'
         run: |
           { echo "### Published $TAG"; echo; echo '```json'; node site/scripts/demos.mjs release-show --tag "$TAG"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      # Players download from github.com, not through the API: each address must answer with the recorded size. A
+      # failure here does not undo the publication (the site and the release agree); it is reported to be fixed.
+      - name: Downloads answer at their public addresses
+        if: env.PUBLISHED == 'true'
+        shell: bash
+        run: node site/scripts/demos.mjs release-downloads --tag "$TAG" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Discard the draft (nothing public changed)
         if: env.PUBLISHED != 'true'
         run: |
