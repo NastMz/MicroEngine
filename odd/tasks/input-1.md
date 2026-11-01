@@ -46,7 +46,7 @@ Evaluation: [`docs/evaluations/input-1.md`](../../docs/evaluations/input-1.md). 
 | T4 SDL touch screen (safe area, density, haptics, focus, pad reconnection) | S3 S4 S5 | inline | done | b964d3f; Android/iOS CI levels |
 | T5 Demo layouts and behavioural tests | S7 | inline | done | 1462c83; `TouchTests` in each game (10) |
 | T6 Browser: Pointer Events, safe areas, gestures, focus, visibility, haptics | S6 | inline | done | 6bef9d7; `mobile.mjs` 256/256 |
-| T7 Phone checks: logged layout, real taps and held fingers, scripted two thumbs | S8 | inline | done (input); rendering gap noted | 80e2e98, 122fdd2, 0805e93; platform run 41278826494: every input level passes on Android and iOS for all four games |
+| T7 Phone checks: logged layout, real taps and held fingers, scripted two thumbs | S8 | inline | done | 80e2e98, 122fdd2, 0805e93; platform run 41278826494: every input level passes on Android and iOS for all four games |
 | T8 Docs, ADR, migration, CI job | S9 | inline | done | ed7ea4a and later |
 
 ## Log
@@ -64,3 +64,7 @@ Evaluation: [`docs/evaluations/input-1.md`](../../docs/evaluations/input-1.md). 
   never checked in CI before): left for an owner-recorded emulator reference.
 - L5 The public demo page told touch devices the demos had no touch controls. Packages now declare `"touch": true`
   and the page offers Play to touch devices only when the served package declares it (no change before a release).
+- L6 Owner review: frame kept clear of controls (VirtualControls.Frame), controls by context (Scene.TouchActions),
+  touch help screens; Android compared with the emulator reference (differences only in blended pixels, inspected),
+  iOS with a simulator reference; the Controls screens re-recorded; lost first launches on the CI emulator relaunched.
+  Final: platform 41310966157 and validate 41310968737 green on 6756b9f.
