@@ -53,7 +53,7 @@ jobs:
         with:
           path: ${{ runner.temp }}/web-tools
           key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh') }}
-      - run: web/setup.sh
+      - run: bash web/setup.sh
       - name: Pack
         id: pack
         run: |
