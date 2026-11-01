@@ -1,11 +1,14 @@
-# Releases the SDK (docs/guide/sdk.md, "Publishing a release"): run by hand, from the commit to release.
-#   preflight  the version (MicroEngineVersion) is not released yet: no sdk-v<version> tag, no such package on nuget.org
-#   check      sdk.yml on this commit: pack every package, check them, and build, run and package a new game from them
-#              on Windows, Linux and macOS
-#   draft      a draft GitHub prerelease sdk-v<version> holding the checked packages and the version's release notes
-#              (docs/guide/release-notes.md); nothing is public yet
-#   publish    only when the `publish` input is on: pushes those same files to nuget.org with the NUGET_API_KEY secret,
-#              after the `nuget` environment's reviewers approve, then publishes the GitHub release
+# Releases the SDK (docs/guide/sdk.md, "Publishing a release"): run by hand from main, twice.
+#   1st run, `publish` off:
+#     preflight  the version (MicroEngineVersion) is new: no published sdk-v<version> release, not on nuget.org
+#     check      sdk.yml on this commit: pack every package, check them, and build, run and package a new game from them
+#                on Windows, Linux and macOS
+#     draft      a draft GitHub prerelease sdk-v<version> holding the checked packages, SHA256SUMS and the version's
+#                release notes (docs/guide/release-notes.md); nothing is public yet
+#   2nd run, `publish` on, same commit, after reviewing the draft:
+#     publish    after the `nuget` environment's reviewers approve: exchanges a GitHub OIDC token for a one-hour nuget.org
+#                key (Trusted Publishing, NuGet/login), pushes exactly the draft's files, verified against SHA256SUMS,
+#                then publishes the GitHub release. No long-lived nuget.org key exists anywhere.
 # SDK tags are sdk-v<version>, apart from the demo releases (v0.1.0, v0.2.0...), which release.yml makes.
 name: sdk-release
 
@@ -13,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Push the packages to nuget.org (needs the NUGET_API_KEY secret and the nuget environment's approval). Off builds, checks and drafts only.
+        description: Push the reviewed draft's packages to nuget.org (Trusted Publishing; the nuget environment's reviewers approve). Off checks and drafts only.
         type: boolean
         default: false
 
@@ -30,24 +33,42 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      drafted: ${{ steps.version.outputs.drafted }}
     steps:
       - uses: actions/checkout@v4
       - name: Version
         id: version
         env:
           GH_TOKEN: ${{ github.token }}
+          PUBLISH: ${{ inputs.publish }}
         run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then echo "::error::SDK releases are made from main, not $GITHUB_REF."; exit 1; fi
           version=$(sed -n 's:.*<MicroEngineVersion>\(.*\)</MicroEngineVersion>.*:\1:p' Directory.Build.props)
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          if gh release view "sdk-v$version" > /dev/null 2>&1; then echo "::error::sdk-v$version is already released; raise MicroEngineVersion."; exit 1; fi
           code=$(curl -s -o /dev/null -w '%{http_code}' "https://api.nuget.org/v3-flatcontainer/microengine/$version/microengine.$version.nupkg")
           if [ "$code" = 200 ]; then echo "::error::MicroEngine $version is already on nuget.org; raise MicroEngineVersion."; exit 1; fi
           grep -q "^## $version" docs/guide/release-notes.md || { echo "::error::docs/guide/release-notes.md has no '## $version' section."; exit 1; }
-          echo "SDK $version from ${GITHUB_SHA::12}" >> "$GITHUB_STEP_SUMMARY"
+          # Drafts have no tag yet, so releases are listed rather than looked up by tag.
+          release=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --jq ".[] | select(.tag_name == \"sdk-v$version\") | \"\(.draft) \(.target_commitish)\"" | head -1)
+          drafted=false
+          if [ -n "$release" ]; then
+            read -r draft target <<< "$release"
+            if [ "$draft" != true ]; then echo "::error::sdk-v$version is already released; raise MicroEngineVersion."; exit 1; fi
+            if [ "$target" != "$GITHUB_SHA" ]; then
+              echo "::error::The draft sdk-v$version was made from $target, not $GITHUB_SHA: delete that draft to release this commit."; exit 1
+            fi
+            drafted=true
+          fi
+          if [ "$PUBLISH" = true ] && [ "$drafted" != true ]; then
+            echo "::error::Nothing to publish: run sdk-release with publish off first, review the draft sdk-v$version, then publish."; exit 1
+          fi
+          echo "drafted=$drafted" >> "$GITHUB_OUTPUT"
+          echo "SDK $version from ${GITHUB_SHA::12}; draft already made: $drafted; publish: $PUBLISH" >> "$GITHUB_STEP_SUMMARY"
 
   check:
     name: Check
     needs: preflight
+    if: needs.preflight.outputs.drafted != 'true'
     uses: ./.github/workflows/sdk.yml
     with:
       ref: ${{ github.sha }}
@@ -55,6 +76,7 @@ jobs:
   draft:
     name: Draft release
     needs: [preflight, check]
+    if: needs.preflight.outputs.drafted != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -73,16 +95,18 @@ jobs:
           awk -v v="## $VERSION" '$0 ~ "^## " { on = index($0, v) == 1 } on' docs/guide/release-notes.md > notes.md
           ( cd sdk-feed && sha256sum ./*.nupkg ./*.snupkg > SHA256SUMS )
           gh release create "sdk-v$VERSION" --draft --prerelease --target "$GITHUB_SHA" --title "MicroEngine SDK $VERSION (Alpha)" --notes-file notes.md sdk-feed/*
-          echo "Draft: sdk-v$VERSION with $(find sdk-feed -name '*.nupkg' | wc -l) packages" >> "$GITHUB_STEP_SUMMARY"
+          { echo "Draft: sdk-v$VERSION with $(find sdk-feed -name '*.nupkg' | wc -l) packages"; echo; echo '```'; cat sdk-feed/SHA256SUMS; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
   publish:
     name: Publish to nuget.org
-    if: inputs.publish
     needs: [preflight, draft]
+    if: inputs.publish && needs.preflight.outputs.drafted == 'true' && !cancelled() && needs.preflight.result == 'success'
     runs-on: ubuntu-latest
+    # Reviewers approve here; the Trusted Publishing policy on nuget.org accepts only this environment.
     environment: nuget
     permissions:
-      contents: write
+      contents: write # publish the GitHub release
+      id-token: write # GitHub OIDC token, exchanged for a one-hour nuget.org key
     env:
       VERSION: ${{ needs.preflight.outputs.version }}
       GH_TOKEN: ${{ github.token }}
@@ -90,17 +114,23 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-      # The very files the draft holds, which the check job built and tested.
+      # The very files the reviewed draft holds, which the check job built and tested.
       - name: Packages from the draft
         run: gh release download "sdk-v$VERSION" --repo "$GITHUB_REPOSITORY" --dir sdk-feed --pattern '*.nupkg' --pattern '*.snupkg' --pattern SHA256SUMS
       - name: Verify
         run: cd sdk-feed && sha256sum -c SHA256SUMS
+      # Requested right before pushing: the key lives one hour and can push only what the policy allows.
+      - name: NuGet login (Trusted Publishing)
+        id: login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ secrets.NUGET_USER }}
       - name: Push
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: |
-          [ -n "$NUGET_API_KEY" ] || { echo "::error::The NUGET_API_KEY secret is not set."; exit 1; }
           # Engine packages first, so the tool and the template never point at a version nuget.org does not have yet.
+          # Each push also sends the matching .snupkg (symbols) from the same folder.
           for id in MicroEngine MicroEngine.Sdl MicroEngine.Raylib MicroEngine.Desktop MicroEngine.Cli MicroEngine.Templates; do
             dotnet nuget push "sdk-feed/$id.$VERSION.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
           done

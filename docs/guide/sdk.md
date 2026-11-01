@@ -66,16 +66,33 @@ scenario on each system ([packaging/](../../packaging/README.md)).
 
 Only the repository owner publishes. The procedure:
 
+Publishing uses nuget.org [Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing):
+the workflow exchanges a GitHub OIDC token for a nuget.org key that lives one hour. No long-lived nuget.org API key
+is created or stored.
+
+Once, before the first release:
+
+- On nuget.org (the account that will own the packages): **Trusted Publishing** → add a GitHub Actions policy with
+  repository owner `NastMz`, repository `MicroEngine`, workflow file `sdk-release.yml` (the file name only) and
+  environment `nuget`, allowed to push new packages and new versions of `MicroEngine*`.
+- On GitHub: the `nuget` environment (Settings → Environments) with the owner as required reviewer, deployments
+  limited to `main`, and the environment secret `NUGET_USER` holding that nuget.org profile name (not the e-mail).
+
+For every release:
+
 1. Set `MicroEngineVersion` to the new version and add its section to [release notes](release-notes.md) (and to the
    [migration notes](../migrations.md) when something breaks); merge to `main`.
-2. Create the nuget.org API key (scoped to push the `MicroEngine*` packages) as the `NUGET_API_KEY` secret, and a
-   `nuget` environment whose required reviewer is the owner (once).
-3. Run **sdk-release** (Actions → sdk-release → Run workflow) with `publish` off: it checks the version is new, runs
-   `sdk.yml` on that commit and drafts the GitHub prerelease `sdk-v<version>` with the checked packages and
+2. Run **sdk-release** on `main` (Actions → sdk-release → Run workflow) with `publish` off: it checks the version is
+   new, runs `sdk.yml` on that commit and drafts the GitHub prerelease `sdk-v<version>` with the checked packages and
    `SHA256SUMS`. Review the draft.
-4. Run it again with `publish` on: after the `nuget` environment's approval it pushes exactly the draft's files
-   (verified against `SHA256SUMS`) to nuget.org, engine packages first, then publishes the GitHub release.
-5. When nuget.org lists the packages, update [Getting MicroEngine](getting-microengine.md) and the site so they no
+3. Run it again on the same commit with `publish` on: it finds the draft, waits for the `nuget` environment's
+   approval, logs in with Trusted Publishing, pushes exactly the draft's files (verified against `SHA256SUMS`),
+   engine packages first, and publishes the GitHub release. A new commit on `main` in between means deleting the
+   draft and starting again.
+4. When nuget.org lists the packages, update [Getting MicroEngine](getting-microengine.md) and the site so they no
    longer say "not yet on nuget.org".
+
+A policy for a repository nuget.org has not yet seen publish from can start as temporarily active for 7 days; the
+first successful publish makes it permanent.
 
 Decisions: [ADR 0019](../decisions/0019-sdk-packages.md), [ADR 0021](../decisions/0021-sdk-toolchain.md).
