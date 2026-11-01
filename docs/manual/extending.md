@@ -186,7 +186,7 @@ done: 30 updates, 30 frames
 ## What is not an extension point
 
 - **Hosts for phones and browsers** are built by `microengine package`; a game does not provide its own Android
-  activity, iOS app or web page in 0.4.0-alpha.1.
+  activity, iOS app or web page in 0.4.0-alpha.2.
 - **Rendering features beyond `IRenderer`** (shaders, render targets) cannot be added from a game: the renderer contract
   has no hook for them.
 - **The game loop** (fixed step, order of a frame) is the engine's; a host that drives frames itself uses

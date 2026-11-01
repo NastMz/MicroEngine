@@ -6,7 +6,7 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 
 ## 0.4.0-alpha.2
 
-Fixes found while writing the developer manual (GitHub release `sdk-v0.4.0-alpha.2`). **Fixed**: scene changes requested during a
+Published 2026-11-01 on nuget.org (GitHub release `sdk-v0.4.0-alpha.2`): fixes found while writing the developer manual. **Fixed**: scene changes requested during a
 transition keep their order; `CoroutineRunner.StopAll` stops coroutines that had not run yet; a tap shorter than a
 frame reports `Released`; `PlayMusic` with no fade starts at full volume; `Animator.Speed` refuses negative values;
 `Synth.Render` gives no NaN samples for a sound of length 0; `Synth.Layer` refuses clips it would mix wrongly;

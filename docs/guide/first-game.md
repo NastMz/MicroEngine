@@ -74,7 +74,7 @@ template's files, with `MyGame` where your project's name goes.
 </Project>
 ```
 
-In your project `MICROENGINE_VERSION` is the tool's version (`0.4.0-alpha.1`). The second group is the game's
+In your project `MICROENGINE_VERSION` is the tool's version (`0.4.0-alpha.2`). The second group is the game's
 identity: every package `microengine package` builds takes its name, id, version, icon and orientation from there, and
 nowhere else. `MicroEngineGameFactory` is the C# expression that creates the game in the hosts that build it
 themselves (browser, Android, iOS); keep it in step with `Program.cs` if your game's constructor takes arguments.
