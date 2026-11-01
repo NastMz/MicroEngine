@@ -16,6 +16,7 @@ public abstract class Game
     public IGraphicsDevice Graphics => Platform.Graphics;
     public AudioMixer Audio { get; private set; } = null!;
     public InputMap Input { get; private set; } = null!;
+    public VirtualControls Touch { get; private set; } = null!;
     public SceneManager Scenes { get; private set; } = null!;
     public BitmapFont Font { get; private set; } = null!;
     public float Time { get; private set; }
@@ -32,6 +33,7 @@ public abstract class Game
     protected abstract void Load();
     protected virtual void Unload() { }
     protected virtual InputMap CreateInput() => InputMap.CreateDefault();
+    protected virtual TouchLayout CreateTouchLayout() => TouchLayout.CreateDefault();
     public void Quit() => QuitRequested = true;
     protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, SaveStore store, UiTheme? theme = null)
     public void InitializeForTest(IPlatform platform, int seed = 1) => Initialize(platform, seed);
@@ -44,6 +46,8 @@ public abstract class Game
 | `Load` | Called once after the platform exists. Build atlases and sounds, push the first scene |
 | `Unload` | Called once before the platform is disposed |
 | `CreateInput` | Override to change or add action bindings |
+| `CreateTouchLayout` | Override to choose the on-screen controls ([Touch controls](../manual/input.md#touch-controls)) |
+| `Touch` | The on-screen controls at run time: shown, pressed, geometry, `SetVisible`, `Layout` |
 | `Random` | Deterministic per run; seeded by the launcher (seed 1 under a script) |
 | `Achievements` | Throws until `UseAchievements` was called |
 | `InitializeForTest` / `StepForTest` | Run `Load`, then advance one fixed update after sampling input, without a loop |
@@ -116,6 +120,7 @@ public interface IPlatform : IDisposable
     double Now { get; }
     bool RealTime { get; }
     bool Suspended => false;
+    ITouchScreen? Touch => null;
     void PollEvents();
     IRenderer BeginFrame();
     void EndFrame();
@@ -126,7 +131,8 @@ public interface IPlatform : IDisposable
 
 `RealTime` is true when time follows the wall clock (desktop, browser) and false when the loop advances one step
 per frame (headless). `Suspended` is true while the system has taken the app away (a phone app in the background);
-the loop then pauses. Implementations: `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform`.
+the loop then pauses. `Touch` is the touch screen, if any: touches, safe area, density, vibration and the overlay
+layer. Implementations: `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform`.
 
 ### Platform profiles
 
@@ -197,8 +203,41 @@ public interface IInputSource
     bool IsKeyDown(Key key);
     bool IsPadDown(PadButton button);
     System.Numerics.Vector2 LeftStick { get; }
+    float GetPadAxis(PadAxis axis) => /* left stick only */;
+    bool PadConnected => false;
+    PointerState Pointer => default;
 }
 ```
+
+[`src/MicroEngine/Input/Touch.cs`](../../src/MicroEngine/Input/Touch.cs):
+
+```csharp
+public readonly record struct TouchEvent(long Finger, TouchPhase Phase, Vector2 Position);
+
+public interface ITouchScreen
+{
+    Vector2 Size { get; }
+    RectF SafeArea { get; }
+    float PixelsPerDp { get; }
+    bool TouchFirst { get; }
+    void ReadTouches(List<TouchEvent> events);
+    ITouchOverlay? Overlay { get; set; }
+    bool CanVibrate => false;
+    bool Vibrate(float strength, int milliseconds) => false;
+}
+
+public interface IOverlayCanvas
+{
+    void FillCircle(Vector2 center, float radius, Color color);
+    void Ring(Vector2 center, float radius, float thickness, Color color);
+    void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color);
+    void FillRect(RectF rect, Color color);
+    void Text(string text, Vector2 center, float height, Color color);
+}
+```
+
+Coordinates are drawable pixels. `FrameLayout.Fit(window, safeArea, width, height)` is the letterbox rule every
+backend uses.
 
 Games rarely touch these directly: they use `AudioMixer`, `InputMap` and the renderer passed to `Draw`.
 
@@ -210,8 +249,20 @@ Games rarely touch these directly: they use `AudioMixer`, `InputMap` and the ren
 public sealed class InputMap
 {
     public enum StickDirection { None, Left, Right, Up, Down }
+    public float StickDeadZone { get; set; }          // 0.2
+    public float StickThreshold { get; set; }         // 0.35
+    public StickDirections StickMode { get; set; }    // Eight
+    public float AxisDeadZone { get; set; }           // 0.1
+    public InputDevice LastDevice { get; }
+    public bool PadConnected { get; }
+    public PointerState Pointer { get; }
     public InputMap Bind(string action, params Key[] keys)
     public InputMap Bind(string action, Key[] keys, PadButton[] buttons, StickDirection stick = StickDirection.None)
+    public InputMap BindAxis(string action, PadAxis axis, bool positive = true)
+    public InputMap Unbind(string action)
+    public ActionBindings? GetBindings(string action)
+    public InputMap AddSource(IActionSource source)
+    public bool RemoveSource(IActionSource source)
     public IEnumerable<string> Actions => _bindings.Keys;
     public void Sample(IInputSource source)
     public void SetForced(string action, bool down)
@@ -220,12 +271,19 @@ public sealed class InputMap
     public bool Pressed(string action)
     public bool Released(string action)
     public int Axis(string negative, string positive)
+    public float Value(string action)
+    public float AnalogAxis(string negative, string positive)
+    public Vector2 Vector(string left, string right, string up, string down)
     public void Reset()
     public static InputMap CreateDefault()
 }
 ```
 
-`Bind` adds to an existing action. `SetForced` is how scripts and tests press actions. Default bindings are listed
+`Bind` adds to an existing action. `SetForced` is how scripts and tests press actions. `Down`/`Pressed`/`Released`/`Axis`
+are digital; `Value`/`AnalogAxis`/`Vector` analog. Action sources implement
+`IActionSource { bool IsDown(string); float Value(string); InputDevice Device; IEnumerable<string> Actions; }` (the
+last three have defaults). Touch controls: `TouchLayout`, `TouchDPad`, `TouchStick`, `TouchButton`, `VirtualControls`
+([Touch controls](../manual/input.md#touch-controls), [`VirtualControls.cs`](../../src/MicroEngine/Input/VirtualControls.cs)). Default bindings are listed
 in [Configuration](configuration.md#default-input-actions).
 
 ## SaveStore and ISaveStorage

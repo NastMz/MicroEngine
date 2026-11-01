@@ -4,6 +4,37 @@ What changes between SDK versions and how to update a game. MicroEngine is in Al
 a version may change public APIs incompatibly, and when it does, the change is listed here with the version that makes
 it. Newest first.
 
+## 0.3.0-alpha
+
+Unified input and touch controls (INPUT-1, [ADR 0020](decisions/0020-unified-input-and-touch-controls.md)). Games that
+only bind actions and read `Down`/`Pressed`/`Released`/`Axis` build and behave as before; one type was removed.
+
+- **`TouchPad` removed.** On-screen controls are now per game (`Game.CreateTouchLayout`, `VirtualControls`) and press
+  actions, not gamepad buttons. A game that did nothing gets `TouchLayout.CreateDefault()`: a d-pad and A/B/C/pause
+  buttons pressing the default actions `left`/`right`/`up`/`down`/`confirm`/`cancel`/`action`/`pause`, as the old
+  pad's buttons did through `PadButton` bindings. **Migration:** if your game bound extra actions to `PadButton.A`,
+  `B`, `X` or `RightShoulder` so the old pad would press them, describe them in a layout instead:
+
+  ```csharp
+  protected override TouchLayout CreateTouchLayout() => TouchLayout.Of(
+      new TouchDPad { Offset = new(104, 100) },
+      new TouchButton("jump", "jump", "A") { Anchor = TouchAnchor.BottomRight, Offset = new(70, 92), Also = ["confirm"] });
+  ```
+
+  Code that read `TouchPad` from a backend (`SdlPlatform` used it internally) reads `IPlatform.Touch` instead.
+- **Stick directions.** The left stick now has a radial dead zone (0.2) and presses directions by 45° sectors past a
+  threshold (`StickDeadZone`, `StickThreshold`, `StickMode`) instead of per axis beyond 0.5. A straight push behaves as
+  before; a diagonal now presses both directions from about 22.5° off the axis. Set `StickMode = StickDirections.Four`
+  for grid movement or menus.
+- **New, additive.** `InputMap.Value`, `AnalogAxis`, `Vector`, `BindAxis`, `Unbind`, `GetBindings`, `AddSource`,
+  `LastDevice`, `PadConnected`, `Pointer`; `PadAxis`, `PadButton.LeftStick`/`RightStick`; `IActionSource`;
+  `IInputSource.GetPadAxis`/`PadConnected`/`Pointer` and `IPlatform.Touch` with default implementations (existing
+  implementations compile unchanged); `Scene.Describe()` for diagnostics; input script commands `touch`, `tap`, `lift`;
+  `HeadlessPlatform.TouchScreen`.
+- **Frame placement.** Backends fit the frame inside the window's safe area, place it at the top on portrait screens,
+  and scale fractionally when whole factors would fill less than 80 % of the space (`FrameLayout.Fit`). Captures are
+  unchanged; on a phone the picture may sit differently than before.
+
 ## 0.2.0-alpha
 
 The first versioned SDK. Nothing a game calls was removed or renamed; a game written for the unversioned engine builds

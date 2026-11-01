@@ -44,7 +44,8 @@ Source: [`src/MicroEngine/Core/Platform.cs`](../../src/MicroEngine/Core/Platform
 | `IRenderer` | Immediate-mode drawing into the virtual canvas ([Rendering](rendering.md#irenderer)) | `SdlRenderer` | `RaylibRenderer` | `HeadlessRenderer` |
 | `IGraphicsDevice` | `CreateTexture(PixelImage)` | `SdlGraphicsDevice` | `RaylibGraphicsDevice` | `HeadlessGraphicsDevice` |
 | `IAudioDevice` | Sounds, looping and streamed music ([Audio](audio.md)) | `SdlAudioDevice` | `RaylibAudioDevice` | `SilentAudioDevice` |
-| `IInputSource` | Key, pad button and left-stick state ([Input](input.md)) | `SdlInput` (with `TouchPad`) | `RaylibInput` | `HeadlessInput` |
+| `IInputSource` | Keys, pad buttons and axes, gamepad connection, mouse ([Input](input.md)) | `SdlInput` | `RaylibInput` | `HeadlessInput` |
+| `ITouchScreen` (`IPlatform.Touch`, optional) | Touches, safe area, density, vibration, the overlay drawn over the frame ([Touch controls](input.md#touch-controls)) | `SdlTouchScreen` | `RaylibTouchScreen` (fed by the browser page) | `HeadlessTouchScreen` |
 
 While `Suspended` is true the loop neither simulates nor renders, pauses music, saves achievement progress and calls
 the game's `OnSuspended`/`OnResumed`. See [Lifecycle](lifecycle.md#fixed-step-and-frame-order) for the frame order.
@@ -124,12 +125,15 @@ return DesktopLauncher.Run(game, args, catalog);   // --platform console
 ## SDL 3
 
 `SdlPlatform` opens a resizable window of `VirtualWidth × Scale` by `VirtualHeight × Scale` (full screen on phones),
-draws through SDL's renderer into a texture of the virtual size and scales it by whole factors with letterboxing.
+draws through SDL's renderer into a texture of the virtual size and scales it by whole factors with letterboxing,
+inside the window's safe area (`FrameLayout`).
 SDL chooses the graphics API for the system; `SdlPlatform.CreateProfile("vulkan")` (or `direct3d11`, `direct3d12`,
 `metal`, `opengl`, `opengles2`, `software`) fixes one, and `SdlPlatform.RenderDrivers` lists what this build offers.
-Keyboard, the first gamepad and touch are read; F11 and Alt+Enter toggle fullscreen on desktops. Audio uses SDL audio
-streams: wav and ogg music, silence when no device exists. On touch screens `TouchPad` draws a d-pad, A, B, X, a
-shoulder button and Start over the frame (never into captures); they press the gamepad buttons games already bind.
+Keyboard, mouse, the first gamepad (the next one takes over when it is unplugged) and touch are read; F11 and
+Alt+Enter toggle fullscreen on desktops; losing focus releases keys and fingers. Audio uses SDL audio streams: wav and
+ogg music, silence when no device exists. `SdlTouchScreen` reports finger events, `SDL_GetWindowSafeArea` and the
+display scale, vibrates the device on Android (SDL's haptic API) and draws the game's on-screen controls over the frame
+in window pixels (never into captures; [Touch controls](input.md#touch-controls)).
 `MICROENGINE_SDL_EVENT_LOGGING=1` makes SDL log the events it delivers. The package is
 [ppy.SDL3-CS](https://github.com/ppy/SDL3-CS) with SDL 3.5. If the system cannot load SDL (on Linux, a glibc older
 than 2.34), the launcher ends with `error: platform 'sdl' could not load its native library` and the loader's reason,

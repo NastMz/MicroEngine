@@ -29,7 +29,7 @@ The core references no backend library. Games reference only `MicroEngine.Deskto
 | `MicroEngine` | `Math/` | Value types and maths helpers | `Color`, `RectF`, `MathX`, `Ease` |
 | `MicroEngine.Core` | `Core/` | Game lifecycle, the loop, platform boundary, runs and scripts, saves, content files, achievements | `Game`, `GameSettings`, `IPlatform`, `GameRunner`, `GameLoop`, `GameSession`, `RunOptions`, `InputScript`, `HeadlessPlatform`, `SaveStore`, `ISaveStorage`, `FileSaveStorage`, `ContentFolder`, `Achievement`, `AchievementTracker` |
 | `MicroEngine.Scenes` | `Scenes/` | The scene stack, transitions, per-scene coroutines and tweens | `Scene`, `SceneManager`, `Transition`, `CoroutineRunner`, `Tweener` |
-| `MicroEngine.Input` | `Input/` | Device state and named actions | `Key`, `PadButton`, `IInputSource`, `InputMap` |
+| `MicroEngine.Input` | `Input/` | Device state, named actions (digital and analog), touch controls | `Key`, `PadButton`, `PadAxis`, `IInputSource`, `IActionSource`, `InputMap`, `ITouchScreen`, `TouchLayout`, `TouchDPad`, `TouchStick`, `TouchButton`, `VirtualControls`, `FrameLayout` |
 | `MicroEngine.Graphics` | `Graphics/` | CPU images, procedural art, PNG decoding, sprites, animation, camera, parallax, particles, lighting, font, drawing interfaces | `PixelImage`, `Art`, `SpriteAtlasBuilder`, `SpriteAtlas`, `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `BitmapFont`, `IRenderer`, `IGraphicsDevice`, `Texture` |
 | `MicroEngine.World` | `World/` | Tile maps, swept collision, autotiling, entities | `TileLayer`, `TileGrid`, `TileMotion`, `Autotile`, `TileRenderer`, `Entity`, `EntityList<T>` |
 | `MicroEngine.Audio` | `Audio/` | PCM clips and WAV decoding, the device interface, mixing, synthesis, sequenced music | `AudioClip`, `IAudioDevice`, `SilentAudioDevice`, `AudioMixer`, `Synth`, `Song` |
@@ -44,9 +44,9 @@ The manual covers each area: [lifecycle](../manual/lifecycle.md), [scenes](../ma
 
 | Type | Responsibility |
 | --- | --- |
-| `RaylibPlatform` | `IPlatform` over raylib: window, scaled and letterboxed canvas, renderer, texture creation, keyboard and gamepad, captures, F11 and Alt+Enter fullscreen on desktop. In a browser it leaves fullscreen and minimum size to the page |
+| `RaylibPlatform` | `IPlatform` over raylib: window, scaled and letterboxed canvas, renderer, texture creation, keyboard, gamepad and mouse, touches from the browser page (`BrowserTouch`), captures, F11 and Alt+Enter fullscreen on desktop. In a browser it leaves fullscreen and minimum size to the page |
 | `RaylibAudioDevice` | `IAudioDevice` over raylib audio, including streamed OGG/MP3 music |
-| `SdlPlatform` | `IPlatform` over SDL 3: window (full screen on phones), SDL renderer into a virtual-size texture, keyboard, gamepad, touch controls, lifecycle events, captures; `CreateProfile(renderer)` fixes a render driver |
+| `SdlPlatform` | `IPlatform` over SDL 3: window (full screen on phones), SDL renderer into a virtual-size texture, keyboard, mouse, gamepad, touch screen (safe area, density, Android vibration), lifecycle events, captures; `CreateProfile(renderer)` fixes a render driver |
 | `SdlAudioDevice` | `IAudioDevice` over SDL audio streams; WAV and OGG (NVorbis) music; usable with another platform |
 | `GameLauncher` (core) | Parses launcher flags, builds `RunOptions` and a `PlatformRequest`, resolves a profile from a `PlatformCatalog`, calls `GameRunner.Run`, returns an exit code |
 | `DesktopLauncher` | `GameLauncher` with the official desktop catalog (in `MicroEngine.Desktop`) or with raylib only (in `MicroEngine.Raylib`) |
