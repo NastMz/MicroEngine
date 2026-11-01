@@ -1,13 +1,28 @@
 <Project>
-  <!-- The engine's own projects, the future SDK packages (docs/guide/sdk.md). `dotnet pack` already produces one
-       package per project at MicroEngineVersion; nothing is published until SDK-1. -->
+  <!-- The engine's own projects: the SDK packages (docs/guide/sdk.md). One package per project, all at
+       MicroEngineVersion; the release workflow (sdk-release.yml) packs, checks and, when the owner asks, publishes them. -->
   <Import Project="../Directory.Build.props" />
   <PropertyGroup>
     <Authors>MicroEngine contributors</Authors>
+    <Copyright>Copyright (c) MicroEngine contributors</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/NastMz/MicroEngine</PackageProjectUrl>
     <RepositoryUrl>https://github.com/NastMz/MicroEngine</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageTags>game-engine;2d;pixel-art;sdl3;raylib;webassembly</PackageTags>
-    <PackageReleaseNotes>Alpha: public APIs may change incompatibly between 0.x versions (docs/guide/sdk.md).</PackageReleaseNotes>
+    <PackageReleaseNotes>Alpha: public APIs may change incompatibly between 0.x versions. Release notes: https://github.com/NastMz/MicroEngine/blob/main/docs/guide/release-notes.md</PackageReleaseNotes>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- Symbols for debugging into the engine: a .snupkg next to each package, with the commit recorded. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Public members without XML comments are allowed in Alpha. -->
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+    <!-- Paths inside the packages are repository-relative, never this machine's. -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(MicroEngineRelease)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildProjectDirectory)/README.md" Pack="true" PackagePath="/" Condition="Exists('$(MSBuildProjectDirectory)/README.md')" />
+  </ItemGroup>
 </Project>

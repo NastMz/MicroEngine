@@ -16,7 +16,7 @@ function repo() {
   for (const [file, text] of Object.entries({
     'src/Engine.cs': 'engine', 'games/Alpha/Game.cs': 'game', 'games/Alpha/README.md': '# a',
     'games/Alpha/Content/notes.md': 'shipped', 'games/Alpha/screenshots/01.png': 'png', 'docs/guide.md': '# g',
-    'site/src/page.astro': 'page', 'web/Host/main.js': 'host', 'web/tests/desktop.mjs': 'captures',
+    'site/src/page.astro': 'page', 'src/MicroEngine.Cli/Hosts/web/wwwroot/main.js': 'host', 'web/tests/desktop.mjs': 'captures',
     '.github/workflows/ci.yml': 'on: push', 'platforms/android/A.cs': 'android', 'odd/tasks/x.md': 'log',
   })) write(root, file, text);
   commit(root);
@@ -34,7 +34,7 @@ test('inputs: each check reads its own part of the tree, conservatively', () => 
   assert.equal(isInput('dotnet', '.github/workflows/ci.yml'), true, 'CI changes invalidate every evidence');
   assert.equal(isInput('dotnet', 'web/tests/desktop.mjs'), false);
   assert.equal(isInput('native', 'web/tests/desktop.mjs'), true);
-  assert.equal(isInput('native', 'web/Host/main.js'), false);
+  assert.equal(isInput('native', 'src/MicroEngine.Cli/Hosts/web/wwwroot/main.js'), false);
   assert.equal(isInput('site', 'games/Alpha/Game.cs'), false, 'game code reaches the site through its package key');
   assert.equal(isInput('site', 'games/Alpha/screenshots/01.png'), true);
   assert.equal(isInput('site', 'src/Engine.cs'), false);

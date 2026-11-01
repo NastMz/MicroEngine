@@ -2,8 +2,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>TrailDuel</RootNamespace>
-    <!-- The demo's own version, shown on its page and in its downloads (packaging/README.md). -->
+    <!-- The demo's application identity (docs/guide/app-identity.md): every package, web page and phone host reads it
+         from here. The id keeps the one earlier demo packages used, so a new APK installs over an old one. -->
     <Version>1.0.0</Version>
+    <ApplicationTitle>Trail Duel</ApplicationTitle>
+    <ApplicationId>dev.microengine.trailduel</ApplicationId>
+    <Description>A small creature-collecting, turn-based adventure built on MicroEngine.</Description>
+    <MicroEngineIcon>icon.png</MicroEngineIcon>
+    <MicroEngineGameFactory>new TrailDuel.TrailDuelGame()</MicroEngineGameFactory>
   </PropertyGroup>
   <ItemGroup>
     <None Include="Content/**" Exclude="Content/**/*.cs" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />

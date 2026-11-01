@@ -4,6 +4,27 @@ What changes between SDK versions and how to update a game. MicroEngine is in Al
 a version may change public APIs incompatibly, and when it does, the change is listed here with the version that makes
 it. Newest first.
 
+## 0.4.0-alpha.1
+
+The first public SDK (SDK-1, [ADR 0021](decisions/0021-sdk-toolchain.md)). Game code builds and behaves as before;
+what changes is how a game is referenced, identified and packaged.
+
+- **Engine from packages.** A game outside this repository references `MicroEngine.Desktop` (or `MicroEngine.Sdl`)
+  at `0.4.0-alpha.1` instead of the engine's projects. **Migration:** replace the `ProjectReference` to
+  `src/MicroEngine.Desktop/MicroEngine.Desktop.csproj` with
+  `<PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.1" />`.
+- **Identity in the project file.** Name, id, version, icon and orientation are MSBuild properties
+  ([Application identity](guide/app-identity.md)); the build now checks them. **Migration:** add `ApplicationTitle`,
+  `ApplicationId` (needed for macOS, Android and iOS packages), `MicroEngineIcon`, and `MicroEngineGameFactory` when
+  the game's class is not `<RootNamespace>.MainGame` or its constructor takes arguments.
+- **`web/games.props` removed** (this repository). The browser, Android and iOS hosts are templates inside
+  `microengine`; a game is chosen by its project, not by `-p:Game=<Id>`. **Migration:** `microengine package web`,
+  `android` or `ios-simulator` with `--project games/<Id>/<Id>.csproj`; `web/build.sh` and `packaging/package.mjs`
+  do this for the demos.
+- **New, compatible:** `AppIdentity`, `AppOrientation`, `PlatformRequest.Identity`, `DesktopOptions.Icon`. A
+  platform of your own may read `request.Identity` to name its window and set its icon; ignoring it is fine.
+- **Version numbers.** The SDK uses numbered pre-releases (`0.4.0-alpha.1`, `alpha.2`...) and tags `sdk-v<version>`.
+
 ## 0.3.0-alpha
 
 Unified input and touch controls (INPUT-1, [ADR 0020](decisions/0020-unified-input-and-touch-controls.md)). Games that

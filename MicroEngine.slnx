@@ -3,6 +3,7 @@
     <Project Path="src/MicroEngine/MicroEngine.csproj" />
     <Project Path="src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
     <Project Path="src/MicroEngine.Sdl/MicroEngine.Sdl.csproj" />
+    <Project Path="src/MicroEngine.Cli/MicroEngine.Cli.csproj" />
     <Project Path="src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
   </Folder>
   <Folder Name="/games/">
@@ -13,6 +14,9 @@
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/HelloEngine/HelloEngine.csproj" />
+  </Folder>
+  <Folder Name="/templates/">
+    <Project Path="templates/MicroEngine.Templates/MicroEngine.Templates.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MicroEngine.Tests/MicroEngine.Tests.csproj" />

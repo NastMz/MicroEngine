@@ -21,8 +21,8 @@ code-first and has no visual editor; it is not a Godot or Unity, and not a thin 
   headless tests and scripted input.
 
 MicroEngine is open source under the MIT License and in Alpha ([SDK status](sdk.md)): it works and is checked on six
-platforms, but its APIs may still change between 0.x versions. There is no published package or template yet: games use
-the engine from its public repository; NuGet packages and templates are prepared for SDK-1 (see
+platforms, but its APIs may still change between 0.x versions. A game is created, run and packaged with the
+`microengine` tool and the SDK's NuGet packages, which are ready but not yet on nuget.org (see
 [Getting MicroEngine](getting-microengine.md) and the [roadmap](/roadmap/)).
 
 ## The four games

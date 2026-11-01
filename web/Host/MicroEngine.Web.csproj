@@ -1,4 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
-  <!-- The one browser host for every game: build with -p:Game=<Id> (web/games.props). The game, its content and
-       its entry point are chosen by web/Directory.Build.targets; this project holds only the page bridge. -->
-</Project>

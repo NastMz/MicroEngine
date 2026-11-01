@@ -17,7 +17,9 @@ the backend, a game, or the browser host.
 | `tests/MicroEngine.Tests` | MSTest | Engine contracts | `MicroEngine` |
 | `tests/MicroEngine.Desktop.Tests` | MSTest (native) | SDL and raylib draw the same frames; replacing audio; platform errors | `MicroEngine.Desktop` |
 | `tests/<Game>.Tests` | MSTest | Game rules, headless playthroughs, content checks | The game project |
-| `web/Host` (`MicroEngine.Web.csproj`) | WebAssembly executable, built by internal tooling | The page bridge (`WebHost`) and page files; builds one selected game per package | The selected game project, and through it the desktop platforms; it runs on `MicroEngine.Raylib` |
+| `src/MicroEngine.Cli` (`microengine`) | .NET tool | Creates, runs, builds and packages games ([the microengine tool](../guide/cli.md)); holds the browser, Android and iOS host templates (`Hosts/`) | `MicroEngine` (icons) |
+| `src/MicroEngine.Cli/Hosts/web` | WebAssembly host template, built by `microengine package web` | The page bridge (`WebHost`) and page files; one package per game | The game project, and through it its platforms; it runs on `MicroEngine.Raylib` |
+| `templates/MicroEngine.Templates` | `dotnet new` template package | `microengine-game`: a complete starting game | `MicroEngine.Desktop` (package) |
 | `experiments/web/RaylibProbe` | Experiment, outside the build | WEB-0 feasibility record | — |
 
 The core references no backend library. Games reference only `MicroEngine.Desktop`, which brings the backends and the core with it. The phone hosts in `platforms/` are outside the solution.
@@ -103,7 +105,7 @@ flowchart TB
 flowchart TB
   accTitle: Browser call flow
   accDescr: main.js calls WebHost, which uses a GameSession from BrowserLauncher.CreateSession; the session starts, ticks and ends the game loop.
-  main["main.js"] --> host["WebHost.Start/Frame/Outcome/Stop <br/> (web/Host/Program.cs, [JSExport])"]
+  main["main.js"] --> host["WebHost.Start/Frame/Outcome/Stop <br/> (Hosts/web/Program.cs, [JSExport])"]
   host --> session["GameSession from <br/> BrowserLauncher.CreateSession(GameEntry.Create)"]
   session --> start["Start"] --> create["new game + <br/> new RaylibPlatform"] --> loopStart["GameLoop.Start"]
   session --> tick["Tick"] --> loopTick["GameLoop.Tick <br/> (one per <br/> requestAnimationFrame)"]

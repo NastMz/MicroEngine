@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>MicroEngine</title>
+  <link rel="icon" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="stylesheet" href="host.css">
+</head>
+<body>
+  <canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+  <div id="screen" aria-live="polite">
+    <h1 id="title"></h1>
+    <p id="message">Loading…</p>
+    <div id="progress"><div></div></div>
+    <button id="play" type="button" tabindex="-1" hidden>Play</button>
+    <pre id="detail" hidden></pre>
+  </div>
+  <div id="bar">
+    <span id="notice" hidden></span>
+    <button id="sound" type="button" tabindex="-1" hidden>Sound is blocked: click to enable</button>
+    <button id="fullscreen" type="button" tabindex="-1" title="Fullscreen (Alt+Enter)" hidden>Fullscreen</button>
+  </div>
+  <div id="safe" aria-hidden="true"></div>
+  <noscript><p id="noscript">This game needs JavaScript and WebAssembly.</p></noscript>
+  <script type="module" src="main.js"></script>
+</body>
+</html>

@@ -34,6 +34,8 @@ public sealed record PlatformRequest(GameSettings Settings)
     public Func<IAudioDevice>? Audio { get; init; }
     /// <summary>Input sources read together with the backend's (an on-screen pad, a network peer, a test).</summary>
     public IReadOnlyList<IInputSource> ExtraInput { get; init; } = [];
+    /// <summary>The game's application identity (name, id, icon, orientation); null keeps the backend's defaults.</summary>
+    public AppIdentity? Identity { get; init; }
 
     /// <summary>Whether the backend should open its own audio device.</summary>
     public bool OpensOwnAudio => Audio is null && !Mute;

@@ -1,55 +1,93 @@
 # Getting MicroEngine
 
-MicroEngine is open source under the MIT License and lives in a public repository on GitHub:
-[github.com/NastMz/MicroEngine](https://github.com/NastMz/MicroEngine). It is in Alpha ([SDK status](sdk.md)). There are
-no published NuGet packages or project templates yet, so a game uses the engine from a copy of the repository.
+MicroEngine is a code-first 2D game engine for .NET, open source under the MIT License
+([github.com/NastMz/MicroEngine](https://github.com/NastMz/MicroEngine)). It is in Alpha ([SDK status](sdk.md)): the
+engine is tested on six platforms, and its public API may still change between 0.x versions.
 
-Only want to play the demos? They are on the [demo pages](/demos/), in the browser and as downloads
-([Downloads](downloads.md)).
+Only want to play the demos? They are on the [demo pages](/demos/), in the browser and as downloads ([Downloads](downloads.md)).
 
-## Requirements
+## What you need
 
-- The [.NET 10 SDK](https://dotnet.microsoft.com/download).
-- Windows, Linux or macOS to develop. Games run on Windows, Linux, macOS, Android, iOS and in browsers, each validated to
-  the level stated in [Platforms](platforms.md).
+- The [.NET 10 SDK](https://dotnet.microsoft.com/download), on Windows, Linux or macOS.
+- For phones and browsers, the .NET workloads and tools of those targets; `microengine doctor` lists them
+  ([Packaging](packaging.md)).
 
-## Build and run
+## Install the tool
+
+The SDK is six NuGet packages: the engine (`MicroEngine`, `MicroEngine.Sdl`, `MicroEngine.Raylib`,
+`MicroEngine.Desktop`), the `microengine` tool (`MicroEngine.Cli`) and the project template (`MicroEngine.Templates`).
+
+> **Not on nuget.org yet.** Version 0.4.0-alpha.1 is prepared and checked, but not published. Until it is, build the
+> packages from the repository into a local folder and install from there; once it is published, the same commands
+> work without `--add-source`.
 
 ```bash
 git clone https://github.com/NastMz/MicroEngine.git
-cd MicroEngine
+dotnet pack MicroEngine/MicroEngine.slnx -c Release -o ~/microengine-feed
+dotnet tool install -g MicroEngine.Cli --prerelease --add-source ~/microengine-feed
+dotnet nuget add source ~/microengine-feed --name microengine-local
+```
+
+(The last line lets new games find the engine packages in that folder.) After the release:
+
+```bash
+dotnet tool install -g MicroEngine.Cli --prerelease
+```
+
+## Your first game
+
+```bash
+microengine new StarCourier --id com.yourstudio.starcourier --title "Star Courier"
+cd StarCourier
+microengine run
+```
+
+A window opens with a hero you move with the arrow keys, a gamepad or the on-screen controls, collecting coins.
+The project is yours, with nothing from MicroEngine's repository in it:
+
+```text
+StarCourier/
+  StarCourier.csproj    identity (name, id, version, icon, orientation) and the MicroEngine.Desktop package
+  Program.cs            one line: DesktopLauncher.Run(new MainGame(), args)
+  MainGame.cs           settings, shared assets (a sprite from Content, a sound made in code), the first scene
+  Scenes/PlayScene.cs   input actions, movement, drawing
+  Content/hero.png      asset files, read with ContentFolder
+  icon.png              the game's icon
+```
+
+Then [Making a game](../making-a-game.md) and the [engine manual](/docs/manual/lifecycle/) explain scenes,
+rendering, input, audio, assets, UI and saves.
+
+## Build and distribute
+
+```bash
+microengine build                 # compile and check the identity
+microengine package windows       # or linux, macos, android, ios, ios-simulator, web
+microengine doctor                # what this machine can build
+```
+
+Each target, what it produces and what it needs: [Packaging](packaging.md). Keys for Android, macOS and iOS:
+[Signing](signing.md). All commands: [the microengine tool](cli.md).
+
+## Only SDL
+
+A game that wants no raylib references `MicroEngine.Sdl` instead of `MicroEngine.Desktop` and passes its own
+catalog: `GameLauncher.Run(new MainGame(), args, new PlatformCatalog().Add(SdlPlatform.Profile).Add(HeadlessPlatform.Profile))`.
+It packages for every target except the web, whose platform is raylib.
+
+## From the repository
+
+To work on the engine itself, or to read the demos:
+
+```bash
 dotnet test MicroEngine.slnx -c Release
 dotnet run --project samples/HelloEngine -c Release
+dotnet run --project games/MeadowRun -c Release
 ```
 
-The demos run the same way, for example `dotnet run --project games/MeadowRun -c Release`. They are there to play
-and to learn from; they are not MIT licensed (see [Licensing](licensing.md)).
-
-## Start your own game
-
-A game is a .NET console project that references the engine and the official desktop platforms (SDL 3 by default,
-raylib as an alternative):
-
-```xml
-<ItemGroup>
-  <ProjectReference Include="path/to/MicroEngine/src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
-</ItemGroup>
-```
-
-Copy `samples/HelloEngine` as a starting point (it is MIT licensed, so you may reuse it freely), then follow
-[Making a game](../making-a-game.md). Keep the engine as a Git submodule or a copied folder: both work, and both
-keep its licence file next to it.
-
-To ship SDL only, reference `src/MicroEngine.Sdl` and pass your own catalog to `GameLauncher.Run`
-([SDK status](sdk.md#packages)).
-
-## Planned: SDK-1
-
-NuGet packages (`MicroEngine`, `MicroEngine.Sdl`, `MicroEngine.Raylib`, `MicroEngine.Desktop`) and `dotnet new`
-templates are prepared but not published ([SDK status](sdk.md#sdk-1-what-is-prepared)). The commands will be documented
-here when they exist.
+The demos are there to play and learn from; they are not MIT licensed ([Licensing](licensing.md)).
 
 ## Licence
 
 The engine is MIT: use it in personal and commercial games with no royalties, and ship it inside them with its
-licence notice. See [Licensing](licensing.md) for what that means in practice, and for the demo games' terms.
+licence notice (every package `microengine` builds includes it). See [Licensing](licensing.md).

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Android host of `microengine package android` (docs/guide/packaging.md): the game runs on SDL 3 inside SDL's
+       activity, with on-screen touch controls. `microengine` copies this folder (and ../mobile) into the game's obj
+       folder and writes Game.props (identity and paths), GameEntry.cs (how to create the game), the launcher name
+       and the icon; nothing here names a particular game. -->
+  <Import Project="Game.props" />
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>$(GameAndroidMinApi)</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MicroEngine.Android</RootNamespace>
+    <AssemblyName>$(GameId).Android</AssemblyName>
+    <ApplicationId>$(GameApplicationId)</ApplicationId>
+    <ApplicationTitle>$(GameTitle)</ApplicationTitle>
+    <ApplicationVersion>$(GameVersionCode)</ApplicationVersion>
+    <ApplicationDisplayVersion>$(GameVersion)</ApplicationDisplayVersion>
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- The host references the game (a desktop executable) only for its assembly. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <!-- SaveStore serializes game types with reflection-based System.Text.Json. -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <TrimMode>partial</TrimMode>
+    <NoWarn>$(NoWarn);IL2026;IL3050;IL2104</NoWarn>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(GameProject)" GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+    <!-- A game that also references raylib (MicroEngine.Desktop): raylib is not used on Android, and android-x64
+         would pick up its glibc build. -->
+    <PackageReference Include="Raylib-cs" Version="[8.1.0]" ExcludeAssets="native" Condition="'$(GameUsesRaylib)' == 'true'" />
+    <AndroidAsset Include="$(GameContentDir)**" Exclude="$(GameContentDir)**/*.cs" Link="Content/%(RecursiveDir)%(Filename)%(Extension)" Condition="'$(GameContentDir)' != ''" />
+    <AndroidAsset Include="$(GameScriptsDir)*.script" Link="scripts/%(Filename)%(Extension)" Condition="'$(GameScriptsDir)' != ''" />
+    <AndroidAsset Include="@(GameNotice)" Link="licenses/%(Name)" />
+    <AndroidAsset Include="$(NetCoreRoot)packs/Microsoft.NETCore.App.Runtime.Mono.android-arm64/$(BundledNETCoreAppPackageVersion)/LICENSE.TXT" Link="licenses/dotnet-LICENSE.txt" />
+    <AndroidAsset Include="$(NetCoreRoot)packs/Microsoft.NETCore.App.Runtime.Mono.android-arm64/$(BundledNETCoreAppPackageVersion)/THIRD-PARTY-NOTICES.TXT" Link="licenses/dotnet-THIRD-PARTY-NOTICES.txt" />
+  </ItemGroup>
+</Project>

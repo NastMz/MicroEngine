@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- iOS host of `microengine package ios` (docs/guide/packaging.md): SDL_RunApp hands the app to SDL, which runs the
+       game on SDL 3 (Metal) with on-screen touch controls. `microengine` copies this folder (and ../mobile) into the
+       game's obj folder and writes Game.props, GameEntry.cs, Info.plist's orientations and the app icon. Needs macOS,
+       Xcode and the ios workload. -->
+  <Import Project="Game.props" />
+  <PropertyGroup>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MicroEngine.iOS</RootNamespace>
+    <AssemblyName>$(GameId)</AssemblyName>
+    <ApplicationId>$(GameApplicationId)</ApplicationId>
+    <ApplicationTitle>$(GameTitle)</ApplicationTitle>
+    <ApplicationVersion>$(GameVersionCode)</ApplicationVersion>
+    <ApplicationDisplayVersion>$(GameVersion)</ApplicationDisplayVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <TrimMode>partial</TrimMode>
+    <!-- IL2104: framework assemblies report their own trim warnings in a trimmed device build. -->
+    <NoWarn>$(NoWarn);IL2026;IL3050;IL2104</NoWarn>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <XSAppIconAssets>Assets.xcassets/AppIcon.appiconset</XSAppIconAssets>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(GameProject)" GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+    <!-- raylib has no iOS build and is not used here. -->
+    <PackageReference Include="Raylib-cs" Version="[8.1.0]" ExcludeAssets="native" Condition="'$(GameUsesRaylib)' == 'true'" />
+    <ImageAsset Include="Assets.xcassets/**" />
+    <BundleResource Include="$(GameContentDir)**" Exclude="$(GameContentDir)**/*.cs" Link="Content/%(RecursiveDir)%(Filename)%(Extension)" Condition="'$(GameContentDir)' != ''" />
+    <BundleResource Include="$(GameScriptsDir)*.script" Link="scripts/%(Filename)%(Extension)" Condition="'$(GameScriptsDir)' != ''" />
+    <BundleResource Include="@(GameNotice)" Link="licenses/%(Name)" />
+  </ItemGroup>
+</Project>

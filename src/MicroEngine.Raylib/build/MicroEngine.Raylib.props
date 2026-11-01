@@ -1,0 +1,6 @@
+<Project>
+  <!-- raylib for browser builds, compiled by the wasm-tools workload's own emscripten (see MicroEngine.Raylib.csproj). -->
+  <PropertyGroup>
+    <MicroEngineWebRaylibFromPackage Condition="Exists('$(MSBuildThisFileDirectory)../native/browser-wasm/raylib.a')">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../native/browser-wasm/raylib.a'))</MicroEngineWebRaylibFromPackage>
+  </PropertyGroup>
+</Project>

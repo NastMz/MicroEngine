@@ -114,5 +114,5 @@ var saveDir = Environment.GetEnvironmentVariable("TRAIL_SAVE_DIR");
 return DesktopLauncher.Run(new TrailDuelGame(string.IsNullOrWhiteSpace(saveDir) ? null : saveDir), args);
 ```
 
-Keeping it this small is also what lets the browser host build the same game: `web/games.props` repeats the
-constructor expression ([Configuration](../reference/configuration.md#web-build-options)).
+Keeping it this small is also what lets the browser and phone hosts build the same game: the project's
+`MicroEngineGameFactory` repeats the constructor expression ([Application identity](app-identity.md)).

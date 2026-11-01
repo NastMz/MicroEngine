@@ -56,6 +56,7 @@ public static class GameLauncher
             Hidden = parsed.Hidden,
             FixedStep = parsed.ScriptPath is not null || parsed.Hidden,
             Mute = parsed.Mute,
+            Identity = AppIdentity.Of(game),
         };
         if (configure is not null) request = configure(request);
         IPlatform platform;

@@ -47,9 +47,10 @@ export function nativeLibraries(t) {
 
 /**
  * Files a desktop package must contain, relative to its top folder `<Game>/`: the executable and its libraries
- * (inside `<Title>.app/Contents/MacOS` on macOS), the content files, the notices, README.txt and build-info.json.
+ * (inside `<Title>.app/Contents/MacOS` on macOS, with the icon in Resources), the content files, the notices,
+ * README.txt and build-info.json; on Linux also the icon and a desktop entry named after the application id.
  */
-export function requiredFiles({ game, title, content = [] }, t) {
+export function requiredFiles({ game, title, applicationId, content = [] }, t) {
   if (t.os === 'android') return [];
   const app = t.os === 'macos' ? `${title}.app/Contents/` : '';
   const code = t.os === 'macos' ? `${app}MacOS/` : '';
@@ -57,7 +58,8 @@ export function requiredFiles({ game, title, content = [] }, t) {
   return [
     `${code}${executable(game, t)}`,
     ...nativeLibraries(t).map(lib => `${code}${lib}`),
-    ...(t.os === 'macos' ? [`${app}Info.plist`] : []),
+    ...(t.os === 'macos' ? [`${app}Info.plist`, `${app}Resources/AppIcon.icns`] : []),
+    ...(t.os === 'linux' ? ['icon.png', `${applicationId}.desktop`] : []),
     ...content.map(file => `${data}Content/${file}`),
     ...noticeFiles, 'README.txt', 'build-info.json',
   ];

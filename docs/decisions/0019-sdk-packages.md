@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted. Prepares SDK-1; nothing is published by this decision. Evidence: [SDK status](../guide/sdk.md),
+Accepted; amended by [ADR 0021](0021-sdk-toolchain.md) (templates, hosts, versioning: the first public version is
+0.4.0-alpha.1). Prepares SDK-1; nothing is published by this decision. Evidence: [SDK status](../guide/sdk.md),
 [PRODUCT-1](../evaluations/product-1.md).
 
 ## Context

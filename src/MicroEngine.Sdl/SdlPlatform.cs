@@ -76,6 +76,9 @@ public sealed unsafe class SdlPlatform : IPlatform
         _fixedStep = request.FixedStep;
         _captureScale = Math.Max(1, request.CaptureScale);
         SDL_SetHint(SDL_HINT_APP_NAME, _settings.Title);
+        // The game's identity (its project's ApplicationTitle and ApplicationId): the name and id desktops group
+        // windows by (Wayland's app id, X11's class), so a packaged game is not shown under a generic name.
+        if (request.Identity is { } identity) SDL_SetAppMetadata(identity.Title, identity.Version, identity.Id);
         // Mobile systems deliver input to the game's thread through the event queue; keep mouse and touch apart.
         SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
         SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
@@ -88,7 +91,12 @@ public sealed unsafe class SdlPlatform : IPlatform
             SDL_SetHint(SDL_HINT_EVENT_LOGGING, logging);
         bool mobile = OperatingSystem.IsAndroid() || OperatingSystem.IsIOS();
         // Pixel-art games are wide; without this SDL lets a phone turn the window to portrait.
-        if (mobile) SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+        if (mobile) SDL_SetHint(SDL_HINT_ORIENTATIONS, (request.Identity?.Orientation ?? AppOrientation.Landscape) switch
+        {
+            AppOrientation.Portrait => "Portrait PortraitUpsideDown",
+            AppOrientation.Any => "LandscapeLeft LandscapeRight Portrait PortraitUpsideDown",
+            _ => "LandscapeLeft LandscapeRight",
+        });
         if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO | SDL_InitFlags.SDL_INIT_GAMEPAD))
             throw new InvalidOperationException($"SDL could not start its video subsystem: {SDL_GetError()}");
         int scale = request.Scale ?? _settings.Scale;
@@ -97,6 +105,7 @@ public sealed unsafe class SdlPlatform : IPlatform
         if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS()) flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
         _window = SDL_CreateWindow(_settings.Title, _settings.VirtualWidth * scale, _settings.VirtualHeight * scale, flags);
         if (_window == null) throw Fail("SDL could not open a window");
+        if (!mobile && request.Identity?.Icon is { } icon) SetWindowIcon(icon);
         _sdl = renderer is null ? SDL_CreateRenderer(_window, (byte*)null) : SDL_CreateRenderer(_window, renderer);
         if (_sdl == null)
         {
@@ -159,6 +168,19 @@ public sealed unsafe class SdlPlatform : IPlatform
     }
 
     private static InvalidOperationException Fail(string what) => new($"{what}: {SDL_GetError()}");
+
+    /// <summary>The game's icon on its window and taskbar entry (Windows also shows the executable's own icon).</summary>
+    private void SetWindowIcon(PixelImage icon)
+    {
+        byte[] rgba = icon.ToRgba();
+        fixed (byte* pixels = rgba)
+        {
+            var surface = SDL_CreateSurfaceFrom(icon.Width, icon.Height, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, (IntPtr)pixels, icon.Width * 4);
+            if (surface == null) return;
+            SDL_SetWindowIcon(_window, surface);
+            SDL_DestroySurface(surface);
+        }
+    }
 
     public void PollEvents()
     {
