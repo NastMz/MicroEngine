@@ -64,7 +64,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.23.4
           cache: npm
           cache-dependency-path: site/package-lock.json
       - run: npm ci --prefix site
@@ -131,7 +131,7 @@ jobs:
           ref: ${{ needs.preflight.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.23.4
           cache: npm
           cache-dependency-path: site/package-lock.json
       - run: npm ci --prefix site
@@ -159,7 +159,7 @@ jobs:
           ref: ${{ needs.preflight.outputs.main }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.23.4
           cache: npm
           cache-dependency-path: site/package-lock.json
       - run: npm ci
@@ -216,7 +216,7 @@ jobs:
           ref: ${{ needs.preflight.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.23.4
           cache: npm
           cache-dependency-path: site/package-lock.json
       - run: npm ci --prefix site
