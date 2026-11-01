@@ -85,13 +85,15 @@ public sealed record TouchStick(string Id = "stick", string Left = "left", strin
     internal override IEnumerable<string> ActionNames => [Left, Right, Up, Down];
 }
 
-/// <summary>A button that presses one action.</summary>
+/// <summary>A button that presses an action (and optionally more, as one key may: <c>Also = ["confirm"]</c> on a jump button).</summary>
 /// <param name="Label">Short text drawn on it ("A", "JUMP"); null draws none.</param>
 public sealed record TouchButton(string Id, string Action, string? Label = null) : TouchControl(Id)
 {
     public TouchButtonMode Mode { get; init; } = TouchButtonMode.Hold;
+    /// <summary>Further actions the button presses with <see cref="TouchButton.Action"/>, like a key bound to several actions.</summary>
+    public IReadOnlyList<string> Also { get; init; } = [];
     internal override float DefaultRadius => 34;
-    internal override IEnumerable<string> ActionNames => [Action];
+    internal override IEnumerable<string> ActionNames => [Action, .. Also];
 }
 
 /// <summary>
@@ -331,9 +333,14 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
             else
             {
                 var p = Find(target);
-                position = (p.Finger == finger && p.Control is not TouchButton ? p.Origin : p.Center) + at * p.Radius;
+                bool holding = p.Finger == finger && p.Control is not TouchButton;
+                // A thumb lands on the middle of a stick or d-pad, then pushes: a floating stick starts where it lands.
+                if (!holding && p.Control is not TouchButton && at != Vector2.Zero && !_fingers.ContainsKey(finger))
+                    _events.Add(new TouchEvent(finger, TouchPhase.Began, p.Center));
+                position = (holding ? p.Origin : p.Center) + at * p.Radius;
             }
-            _events.Add(new TouchEvent(finger, _fingers.ContainsKey(finger) ? TouchPhase.Moved : TouchPhase.Began, position));
+            bool known = _fingers.ContainsKey(finger) || _events.Any(e => e.Finger == finger && e.Phase == TouchPhase.Began);
+            _events.Add(new TouchEvent(finger, known ? TouchPhase.Moved : TouchPhase.Began, position));
         }
         _scripted.Clear();
         if (_layout.Visibility == TouchVisibility.Never) _events.Clear();
@@ -539,7 +546,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
         switch (p.Control)
         {
             case TouchButton b:
-                if (!was && p.Pressed) newly.Add(b.Action);
+                if (!was && p.Pressed) newly.AddRange(b.ActionNames);
                 break;
             case TouchDPad d:
                 foreach (var dir in p.Directions) if (!p.Reported.Contains(dir)) newly.Add(Name(d.Left, d.Right, d.Up, d.Down, dir));
@@ -579,7 +586,8 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
             switch (p.Control)
             {
                 case TouchButton b:
-                    if (p.Pressed) { _held.Add(b.Action); _values[b.Action] = 1; }
+                    if (p.Pressed)
+                        foreach (var a in b.ActionNames) { _held.Add(a); _values[a] = 1; }
                     break;
                 case TouchDPad d:
                     foreach (var dir in p.Directions) { var a = Name(d.Left, d.Right, d.Up, d.Down, dir); _held.Add(a); _values[a] = 1; }

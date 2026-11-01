@@ -44,6 +44,18 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
         .Bind("fire", [Key.X, Key.K], [PadButton.X, PadButton.B])
         .Bind("lock", [Key.C, Key.L, Key.LeftShift], [PadButton.RightShoulder, PadButton.LeftShoulder]);
 
+    /// <summary>
+    /// Touch: a floating joystick for running and eight-way aiming (the thumb rolls between diagonals more easily than
+    /// on a d-pad); FIRE and JUMP side by side, and the thumb may roll from one onto the other; LOCK is a toggle, so
+    /// standing still to aim needs no third finger.
+    /// </summary>
+    protected override TouchLayout CreateTouchLayout() => TouchLayout.Of(
+        new TouchStick { Offset = new(104, 100), Threshold = 0.35f },
+        new TouchButton("fire", "fire", "FIRE") { Anchor = TouchAnchor.BottomRight, Offset = new(72, 92), Radius = 40, Also = ["cancel"] },
+        new TouchButton("jump", "jump", "JUMP") { Anchor = TouchAnchor.BottomRight, Offset = new(166, 60), Radius = 36, Also = ["confirm"] },
+        new TouchButton("lock", "lock", "LOCK") { Anchor = TouchAnchor.BottomRight, Offset = new(150, 156), Radius = 28, Mode = TouchButtonMode.Toggle },
+        new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(30, 30), Radius = 20 }) with { SlideBetweenButtons = true };
+
     protected override void Load()
     {
         var content = new ContentFolder(contentRoot);

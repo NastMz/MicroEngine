@@ -115,7 +115,8 @@ public sealed class Hero : Actor
     {
         if (!Controllable) { PushTime = 0; return; }
         var input = World.Input;
-        var dir = new Vector2(input.Axis("left", "right"), input.Axis("up", "down"));
+        // Analog: keys give unit directions (as before), a stick or the touch joystick also gives how far it is pushed.
+        var dir = input.Vector("left", "right", "up", "down");
         InputDirection = dir;
         if (input.Pressed("confirm") && World.TryInteract(this)) return;
         if (input.Pressed("confirm") && World.Progress.HasSword)
@@ -131,7 +132,7 @@ public sealed class Hero : Actor
         }
         if (dir == Vector2.Zero) { PushTime = 0; _animTime = 0; return; }
         UpdateFacing(dir);
-        var velocity = Vector2.Normalize(dir) * Speed;
+        var velocity = dir * Speed;
         var result = Move(velocity * dt);
         IsMoving = true;
         _animTime += dt;
