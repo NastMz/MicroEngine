@@ -1,5 +1,7 @@
 # Enum TileFlags
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
 Assembly: MicroEngine.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
@@ -64,3 +66,5 @@ Blocks movement from every side.
 `Water = 8` 
 
 Liquid; does not block.
+
+</div>

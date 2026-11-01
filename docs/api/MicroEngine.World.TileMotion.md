@@ -1,5 +1,7 @@
 # Class TileMotion
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
 Assembly: MicroEngine.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
@@ -118,3 +120,5 @@ public static TileFlags TouchedFlags(RectF box, ICollisionGrid grid)
 #### Returns
 
  [TileFlags](MicroEngine.World.TileFlags.md)
+
+</div>

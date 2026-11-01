@@ -1,5 +1,7 @@
 # Struct PanelStyle
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -209,3 +211,5 @@ public static bool operator !=(PanelStyle left, PanelStyle right)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

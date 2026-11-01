@@ -1,5 +1,7 @@
 # Class RaylibTouchScreen
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Raylib](MicroEngine.Raylib.md)  
 Assembly: MicroEngine.Raylib.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -20,7 +22,7 @@ public sealed class RaylibTouchScreen : ITouchScreen
 
 #### Implements
 
-[ITouchScreen](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Input/Touch.cs)
+[ITouchScreen](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Input/Touch.cs)
 
 ## Constructors
 
@@ -54,7 +56,7 @@ public ITouchOverlay? Overlay { get; set; }
 
 #### Property Value
 
- [ITouchOverlay](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Input/Touch.cs)?
+ [ITouchOverlay](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Input/Touch.cs)?
 
 ### <a id="MicroEngine_Raylib_RaylibTouchScreen_PixelsPerDp"></a> PixelsPerDp
 
@@ -78,7 +80,7 @@ public RectF SafeArea { get; }
 
 #### Property Value
 
- [RectF](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Math/RectF.cs)
+ [RectF](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Math/RectF.cs)
 
 ### <a id="MicroEngine_Raylib_RaylibTouchScreen_Size"></a> Size
 
@@ -116,7 +118,7 @@ public void ReadTouches(List<TouchEvent> events)
 
 #### Parameters
 
-`events` [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<[TouchEvent](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Input/Touch.cs)\>
+`events` [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<[TouchEvent](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Input/Touch.cs)\>
 
 ### <a id="MicroEngine_Raylib_RaylibTouchScreen_Vibrate_System_Single_System_Int32_"></a> Vibrate\(float, int\)
 
@@ -135,3 +137,5 @@ public bool Vibrate(float strength, int milliseconds)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

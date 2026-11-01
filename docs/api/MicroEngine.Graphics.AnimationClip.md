@@ -1,5 +1,7 @@
 # Class AnimationClip
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -116,3 +118,5 @@ public Sprite FrameAt(float time)
 #### Returns
 
  [Sprite](MicroEngine.Graphics.Sprite.md)
+
+</div>

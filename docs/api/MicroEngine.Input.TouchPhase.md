@@ -1,5 +1,7 @@
 # Enum TouchPhase
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -20,3 +22,5 @@ public enum TouchPhase
 `Ended = 2` 
 
 `Moved = 1`
+
+</div>

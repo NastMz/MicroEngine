@@ -1,5 +1,7 @@
 # Class SfxParams
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
 Assembly: MicroEngine.dll  
 Guide: [Audio](../manual/audio.md)  
@@ -279,3 +281,5 @@ public static bool operator !=(SfxParams? left, SfxParams? right)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

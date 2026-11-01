@@ -1,5 +1,7 @@
 # Class Synth
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
 Assembly: MicroEngine.dll  
 Guide: [Audio](../manual/audio.md)  
@@ -120,3 +122,5 @@ Samples per second of the result.
  [AudioClip](MicroEngine.Audio.AudioClip.md)
 
 A mono clip, ready for [AddSound](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_AddSound_System_String_MicroEngine_Audio_AudioClip_).
+
+</div>

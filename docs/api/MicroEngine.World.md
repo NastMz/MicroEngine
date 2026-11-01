@@ -1,5 +1,7 @@
 # Namespace MicroEngine.World
 
+<div data-pagefind-weight="0.3">
+
 Tile layers, collision grids, swept movement against tiles, autotiling and plain entities.
 
 Guide: [Tile maps and collision](../manual/world.md)  
@@ -57,3 +59,5 @@ Answers collision queries for [TileMotion](MicroEngine.World.TileMotion.md).
  [TileFlags](MicroEngine.World.TileFlags.md)
 
 Collision semantics of a tile. Games may use the Custom bits for their own meaning.
+
+</div>

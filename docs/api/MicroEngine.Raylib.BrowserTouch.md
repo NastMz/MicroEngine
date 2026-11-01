@@ -1,5 +1,7 @@
 # Class BrowserTouch
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Raylib](MicroEngine.Raylib.md)  
 Assembly: MicroEngine.Raylib.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -72,3 +74,5 @@ public static void Screen(float left, float top, float right, float bottom, floa
 `pixelsPerDp` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 `touchFirst` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

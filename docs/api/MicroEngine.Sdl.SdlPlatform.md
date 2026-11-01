@@ -1,5 +1,7 @@
 # Class SdlPlatform
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Sdl](MicroEngine.Sdl.md)  
 Assembly: MicroEngine.Sdl.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -23,7 +25,7 @@ public sealed class SdlPlatform : IPlatform, IDisposable
 
 #### Implements
 
-[IPlatform](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Core/Platform.cs), 
+[IPlatform](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/Platform.cs), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
 ## Constructors
@@ -38,7 +40,7 @@ public SdlPlatform(PlatformRequest request, string? renderer = null)
 
 #### Parameters
 
-`request` [PlatformRequest](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Core/PlatformProfiles.cs)
+`request` [PlatformRequest](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/PlatformProfiles.cs)
 
 The game's settings and window options.
 
@@ -58,7 +60,7 @@ public IAudioDevice Audio { get; }
 
 #### Property Value
 
- [IAudioDevice](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Audio/Audio.cs)
+ [IAudioDevice](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_CloseRequested"></a> CloseRequested
 
@@ -82,7 +84,7 @@ public IGraphicsDevice Graphics { get; }
 
 #### Property Value
 
- [IGraphicsDevice](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Graphics/IGraphics.cs)
+ [IGraphicsDevice](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Graphics/IGraphics.cs)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Input"></a> Input
 
@@ -94,7 +96,7 @@ public IInputSource Input { get; }
 
 #### Property Value
 
- [IInputSource](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Input/Input.cs)
+ [IInputSource](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Input/Input.cs)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Now"></a> Now
 
@@ -118,7 +120,7 @@ public static PlatformProfile Profile { get; }
 
 #### Property Value
 
- [PlatformProfile](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Core/PlatformProfiles.cs)
+ [PlatformProfile](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/PlatformProfiles.cs)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_RealTime"></a> RealTime
 
@@ -181,7 +183,7 @@ public ITouchScreen Touch { get; }
 
 #### Property Value
 
- [ITouchScreen](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Input/Touch.cs)
+ [ITouchScreen](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Input/Touch.cs)
 
 ## Methods
 
@@ -195,7 +197,7 @@ public IRenderer BeginFrame()
 
 #### Returns
 
- [IRenderer](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Graphics/IGraphics.cs)
+ [IRenderer](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Graphics/IGraphics.cs)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_CreateProfile_System_String_"></a> CreateProfile\(string?\)
 
@@ -213,7 +215,7 @@ public static PlatformProfile CreateProfile(string? renderer = null)
 
 #### Returns
 
- [PlatformProfile](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Core/PlatformProfiles.cs)
+ [PlatformProfile](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/PlatformProfiles.cs)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Dispose"></a> Dispose\(\)
 
@@ -270,3 +272,5 @@ Switches between window and full screen where the platform has a window; does no
 ```csharp
 public void ToggleFullscreen()
 ```
+
+</div>

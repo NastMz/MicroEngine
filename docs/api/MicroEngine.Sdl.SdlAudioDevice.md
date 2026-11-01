@@ -1,5 +1,7 @@
 # Class SdlAudioDevice
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Sdl](MicroEngine.Sdl.md)  
 Assembly: MicroEngine.Sdl.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -20,7 +22,7 @@ public sealed class SdlAudioDevice : IAudioDevice, IDisposable
 
 #### Implements
 
-[IAudioDevice](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Audio/Audio.cs), 
+[IAudioDevice](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
 ## Properties
@@ -35,7 +37,7 @@ public MusicHandle? CurrentMusic { get; }
 
 #### Property Value
 
- [MusicHandle](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Audio/Audio.cs)?
+ [MusicHandle](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs)?
 
 ### <a id="MicroEngine_Sdl_SdlAudioDevice_IsAvailable"></a> IsAvailable
 
@@ -73,7 +75,7 @@ public MusicHandle LoadMusic(string name, AudioClip clip, bool loop = true)
 
 Name reported by [Name](MicroEngine.Audio.MusicHandle.md#MicroEngine_Audio_MusicHandle_Name).
 
-`clip` [AudioClip](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Audio/Audio.cs)
+`clip` [AudioClip](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs)
 
 The music samples.
 
@@ -83,7 +85,7 @@ Whether the music restarts when it reaches its end.
 
 #### Returns
 
- [MusicHandle](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Audio/Audio.cs)
+ [MusicHandle](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs)
 
 ### <a id="MicroEngine_Sdl_SdlAudioDevice_LoadMusicStream_System_String_System_Byte___System_String_System_Boolean_"></a> LoadMusicStream\(string, byte\[\], string, bool\)
 
@@ -105,7 +107,7 @@ public MusicHandle LoadMusicStream(string name, byte[] encoded, string format, b
 
 #### Returns
 
- [MusicHandle](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Audio/Audio.cs)
+ [MusicHandle](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs)
 
 #### Exceptions
 
@@ -125,11 +127,11 @@ public SoundHandle LoadSound(string name, AudioClip clip)
 
 `name` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`clip` [AudioClip](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Audio/Audio.cs)
+`clip` [AudioClip](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs)
 
 #### Returns
 
- [SoundHandle](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Audio/Audio.cs)
+ [SoundHandle](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs)
 
 ### <a id="MicroEngine_Sdl_SdlAudioDevice_PauseMusic_System_Boolean_"></a> PauseMusic\(bool\)
 
@@ -153,7 +155,7 @@ public void Play(SoundHandle sound, float volume = 1, float pitch = 1, float pan
 
 #### Parameters
 
-`sound` [SoundHandle](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Audio/Audio.cs)
+`sound` [SoundHandle](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs)
 
 A handle from [LoadSound](MicroEngine.Audio.IAudioDevice.md#MicroEngine_Audio_IAudioDevice_LoadSound_System_String_MicroEngine_Audio_AudioClip_).
 
@@ -179,7 +181,7 @@ public void PlayMusic(MusicHandle music, float volume = 1)
 
 #### Parameters
 
-`music` [MusicHandle](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Audio/Audio.cs)
+`music` [MusicHandle](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs)
 
 `volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
@@ -213,7 +215,7 @@ public static IAudioDevice TryCreate()
 
 #### Returns
 
- [IAudioDevice](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Audio/Audio.cs)
+ [IAudioDevice](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs)
 
 ### <a id="MicroEngine_Sdl_SdlAudioDevice_Update"></a> Update\(\)
 
@@ -222,3 +224,5 @@ Keeps about a quarter of a second of music queued.
 ```csharp
 public void Update()
 ```
+
+</div>

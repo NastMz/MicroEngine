@@ -1,5 +1,7 @@
 # Class Typewriter
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.UI](MicroEngine.UI.md)  
 Assembly: MicroEngine.dll  
 Guide: [UI widgets](../manual/ui.md)  
@@ -130,3 +132,5 @@ public event Action<char>? Revealed
 #### Event Type
 
  [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[char](https://learn.microsoft.com/dotnet/api/system.char)\>?
+
+</div>

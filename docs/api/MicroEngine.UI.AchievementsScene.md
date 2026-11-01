@@ -1,5 +1,7 @@
 # Class AchievementsScene
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.UI](MicroEngine.UI.md)  
 Assembly: MicroEngine.dll  
 Guide: [Achievements](../manual/achievements.md)  
@@ -194,3 +196,5 @@ public event Action? Moved
 #### Event Type
 
  [Action](https://learn.microsoft.com/dotnet/api/system.action)?
+
+</div>

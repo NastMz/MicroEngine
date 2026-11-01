@@ -1,5 +1,7 @@
 # Class ContentFolder
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Assets](../manual/assets.md)  
@@ -143,3 +145,5 @@ public byte[] ReadBytes(string relative)
  [FileNotFoundException](https://learn.microsoft.com/dotnet/api/system.io.filenotfoundexception)
 
 The file does not exist.
+
+</div>

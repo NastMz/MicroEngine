@@ -1,5 +1,7 @@
 # Class FrameLayout
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -64,3 +66,5 @@ public static Vector2 ToCanvas(Vector2 window, RectF frame, int virtualWidth, in
 #### Returns
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+</div>

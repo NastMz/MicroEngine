@@ -1,5 +1,7 @@
 # Class SpriteAtlasBuilder
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -18,14 +20,16 @@ public sealed class SpriteAtlasBuilder
 
 ## Examples
 
-<pre><code class="lang-csharp">var hero = new PixelImage(16, 16);
+```csharp
+var hero = new PixelImage(16, 16);
 hero.FillRect(4, 2, 8, 12, Color.White);
 var atlas = new SpriteAtlasBuilder()
     .Add("hero", hero, origin: new Vector2(8, 16))
     .Build(Graphics);
 
 // In Draw:
-renderer.Draw(atlas["hero"], new Vector2(160, 120));</code></pre>
+renderer.Draw(atlas["hero"], new Vector2(160, 120));
+```
 
 ## Remarks
 
@@ -153,3 +157,5 @@ public SpriteAtlas Build(IGraphicsDevice device)
 #### Returns
 
  [SpriteAtlas](MicroEngine.Graphics.SpriteAtlas.md)
+
+</div>

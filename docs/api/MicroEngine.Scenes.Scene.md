@@ -1,5 +1,7 @@
 # Class Scene
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Scenes](MicroEngine.Scenes.md)  
 Assembly: MicroEngine.dll  
 Guide: [Scenes](../manual/scenes.md)  
@@ -23,16 +25,18 @@ public abstract class Scene
 
 ## Examples
 
-<pre><code class="lang-csharp">public sealed class TitleScene : Scene
+```csharp
+public sealed class TitleScene : Scene
 {
     public override void Update(float dt)
     {
         if (Input.Pressed("confirm")) Game.Scenes.Replace(new LevelScene(), Transition.Fade());
     }
 
-    public override void Draw(IRenderer renderer) =&gt;
+    public override void Draw(IRenderer renderer) =>
         Font.DrawCentered(renderer, "PRESS START", new Vector2(Game.Width / 2f, Game.Height / 2f), Color.White);
-}</code></pre>
+}
+```
 
 ## Constructors
 
@@ -232,3 +236,5 @@ public abstract void Update(float dt)
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 Step length in seconds (<code>1 / UpdateRate</code>).
+
+</div>

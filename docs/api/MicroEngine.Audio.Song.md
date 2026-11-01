@@ -1,5 +1,7 @@
 # Class Song
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
 Assembly: MicroEngine.dll  
 Guide: [Audio](../manual/audio.md)  
@@ -189,3 +191,5 @@ Note patterns (see the class remarks for the token format).
  [Song](MicroEngine.Audio.Song.md)
 
 This song, for chaining.
+
+</div>

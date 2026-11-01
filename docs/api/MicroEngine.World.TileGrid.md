@@ -1,5 +1,7 @@
 # Class TileGrid
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
 Assembly: MicroEngine.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
@@ -157,3 +159,5 @@ public void SetFlags(int id, TileFlags flags)
 `id` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 `flags` [TileFlags](MicroEngine.World.TileFlags.md)
+
+</div>

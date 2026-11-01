@@ -1,5 +1,7 @@
 # Struct MoveResult
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
 Assembly: MicroEngine.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
@@ -251,3 +253,5 @@ public static bool operator !=(MoveResult left, MoveResult right)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

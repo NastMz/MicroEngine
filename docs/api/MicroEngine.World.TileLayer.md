@@ -1,5 +1,7 @@
 # Class TileLayer
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
 Assembly: MicroEngine.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
@@ -151,3 +153,5 @@ public static TileLayer Parse(IReadOnlyList<string> rows, IReadOnlyDictionary<ch
 #### Returns
 
  [TileLayer](MicroEngine.World.TileLayer.md)
+
+</div>

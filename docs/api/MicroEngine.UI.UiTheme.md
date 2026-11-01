@@ -1,5 +1,7 @@
 # Class UiTheme
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.UI](MicroEngine.UI.md)  
 Assembly: MicroEngine.dll  
 Guide: [UI widgets](../manual/ui.md)  
@@ -238,3 +240,5 @@ public static bool operator !=(UiTheme? left, UiTheme? right)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

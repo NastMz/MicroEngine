@@ -1,5 +1,7 @@
 # Class SaveStore
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Saving data](../manual/persistence.md)  
@@ -24,12 +26,14 @@ public sealed class SaveStore
 
 ## Examples
 
-<pre><code class="lang-csharp">public sealed class Progress { public int Level { get; set; } = 1; }
+```csharp
+public sealed class Progress { public int Level { get; set; } = 1; }
 
 var store = new SaveStore("com.example.mygame");
-var progress = store.Load&lt;Progress&gt;("progress") ?? new Progress();
+var progress = store.Load<Progress>("progress") ?? new Progress();
 progress.Level++;
-store.Save("progress", progress);</code></pre>
+store.Save("progress", progress);
+```
 
 ## Remarks
 
@@ -205,3 +209,5 @@ public bool Save<T>(string slot, T data)
 #### Type Parameters
 
 `T`
+
+</div>

@@ -1,5 +1,7 @@
 # Class BitmapFont
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Text](../manual/text.md)  
@@ -259,3 +261,5 @@ public IReadOnlyList<string> Wrap(string text, int maxWidth)
 #### Returns
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
+
+</div>

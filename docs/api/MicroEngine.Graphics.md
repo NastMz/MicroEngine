@@ -1,5 +1,7 @@
 # Namespace MicroEngine.Graphics
 
+<div data-pagefind-weight="0.3">
+
 Drawing: the renderer contract, images in code and from PNG, sprites and atlases, animation, camera, parallax, particles, light, the pixel font.
 
 Guide: [Graphics](../manual/rendering.md)  
@@ -114,3 +116,5 @@ pushed with [PushCamera](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_
 
 How drawn pixels combine with the canvas (see [SetBlendMode](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_)): <code>Alpha</code> (normal
 transparency, the default), <code>Additive</code> (adds light: glows, sparks, fire) and <code>Multiply</code> (darkens: shadows, tints).
+
+</div>

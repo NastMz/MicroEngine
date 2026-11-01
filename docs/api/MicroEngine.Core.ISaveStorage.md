@@ -1,5 +1,7 @@
 # Interface ISaveStorage
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Saving data](../manual/persistence.md)  
@@ -96,3 +98,5 @@ void Write(string slot, string text)
 `slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+</div>

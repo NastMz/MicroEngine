@@ -1,5 +1,7 @@
 # Class SoundHandle
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
 Assembly: MicroEngine.dll  
 Guide: [Audio](../manual/audio.md)  
@@ -56,3 +58,5 @@ public string Name { get; }
 #### Property Value
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+</div>

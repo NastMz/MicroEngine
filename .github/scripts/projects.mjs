@@ -17,8 +17,23 @@ const posix = path.posix;
 
 /** Every tracked .csproj with the projects it references (repository-relative paths, '/' separators). */
 export function readGraph(root = process.cwd()) {
-  const files = execFileSync('git', ['ls-files', '*.csproj'], { cwd: root, encoding: 'utf8' }).split('\n').filter(Boolean);
-  return buildGraph(Object.fromEntries(files.map(file => [file, fs.readFileSync(path.join(root, file), 'utf8')])));
+  const list = pattern => execFileSync('git', ['ls-files', pattern], { cwd: root, encoding: 'utf8' }).split('\n').filter(Boolean);
+  const targets = list('*Directory.Build.targets').map(file => [file, fs.readFileSync(path.join(root, file), 'utf8')]);
+  return buildGraph(Object.fromEntries(list('*.csproj').map(file =>
+    [file, fs.readFileSync(path.join(root, file), 'utf8') + inheritedReferences(file, targets)])));
+}
+
+/**
+ * ProjectReference items that a Directory.Build.targets above the project adds with $(MSBuildThisFileDirectory),
+ * written as the project's own references. The samples name the published packages in their project files and
+ * reference the engine's source through samples/Directory.Build.targets, so an engine change still reaches their tests.
+ */
+export function inheritedReferences(file, targets) {
+  return targets.filter(([target]) => file.startsWith(`${posix.dirname(target)}/`)).flatMap(([target, text]) =>
+    [...text.matchAll(/<ProjectReference\s+Include="\$\(MSBuildThisFileDirectory\)([^"]+)"/g)].map(([, include]) => {
+      const referenced = posix.normalize(posix.join(posix.dirname(target), include.replace(/\\/g, '/')));
+      return `\n<ProjectReference Include="${posix.relative(posix.dirname(file), referenced)}" />`;
+    })).join('');
 }
 
 /** The graph of the given project files: { projects: { path: { dir, references } } }. */

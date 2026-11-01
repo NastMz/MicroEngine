@@ -1,5 +1,7 @@
 # Class WaitSeconds
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Scenes](MicroEngine.Scenes.md)  
 Assembly: MicroEngine.dll  
 Guide: [Scenes](../manual/scenes.md)  
@@ -152,3 +154,5 @@ public static bool operator !=(WaitSeconds? left, WaitSeconds? right)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

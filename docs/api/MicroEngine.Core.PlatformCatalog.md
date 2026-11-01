@@ -1,5 +1,7 @@
 # Class PlatformCatalog
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -107,3 +109,5 @@ public PlatformProfile Resolve(string? name)
 #### Returns
 
  [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
+
+</div>

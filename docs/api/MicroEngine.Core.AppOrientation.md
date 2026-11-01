@@ -1,5 +1,7 @@
 # Enum AppOrientation
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
@@ -27,3 +29,5 @@ Wider than tall (the default).
 `Portrait = 1` 
 
 Taller than wide.
+
+</div>

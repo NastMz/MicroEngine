@@ -1,5 +1,7 @@
 # Namespace MicroEngine
 
+<div data-pagefind-weight="0.3">
+
 Basic value types: colours, rectangles, maths and easing helpers.
 
 Guide: [Graphics](../manual/rendering.md)  
@@ -45,3 +47,5 @@ An 8-bit-per-channel, non-premultiplied RGBA color.
  [RectF](MicroEngine.RectF.md)
 
 Axis-aligned rectangle in world or screen units (Y grows downward).
+
+</div>

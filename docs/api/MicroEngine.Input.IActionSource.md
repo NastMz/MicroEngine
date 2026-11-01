@@ -1,5 +1,7 @@
 # Interface IActionSource
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -71,3 +73,5 @@ float Value(string action)
 #### Returns
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+</div>

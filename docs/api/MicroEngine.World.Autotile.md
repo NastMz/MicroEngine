@@ -1,5 +1,7 @@
 # Class Autotile
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
 Assembly: MicroEngine.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
@@ -40,3 +42,5 @@ public static int Mask4(TileLayer layer, int x, int y, Func<int, bool> same, boo
 #### Returns
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+</div>

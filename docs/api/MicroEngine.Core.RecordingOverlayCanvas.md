@@ -1,5 +1,7 @@
 # Class RecordingOverlayCanvas
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
@@ -126,3 +128,5 @@ public void Text(string text, Vector2 center, float height, Color color)
 `height` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 `color` [Color](MicroEngine.Color.md)
+
+</div>

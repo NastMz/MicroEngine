@@ -1,5 +1,7 @@
 # Namespace MicroEngine.Scenes
 
+<div data-pagefind-weight="0.3">
+
 The scene stack: scenes, transitions, coroutines and tweens.
 
 Guide: [Scenes](../manual/scenes.md)  
@@ -46,3 +48,5 @@ Yield instruction that pauses a coroutine for a number of seconds; create it wit
  [WaitUntil](MicroEngine.Scenes.WaitUntil.md)
 
 Yield instruction that pauses a coroutine until a condition holds; create it with [Until](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Until_System_Func_System_Boolean__).
+
+</div>

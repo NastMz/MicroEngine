@@ -1,5 +1,7 @@
 # Enum BlendMode
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -18,3 +20,5 @@ public enum BlendMode
 `Alpha = 0` 
 
 `Multiply = 2`
+
+</div>

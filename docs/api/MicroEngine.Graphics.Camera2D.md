@@ -1,5 +1,7 @@
 # Class Camera2D
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -18,7 +20,8 @@ public sealed class Camera2D
 
 ## Examples
 
-<pre><code class="lang-csharp">var camera = new Camera2D(Game.Width, Game.Height) { Bounds = new RectF(0, 0, 1280, 360), DeadZone = new Vector2(24, 16) };
+```csharp
+var camera = new Camera2D(Game.Width, Game.Height) { Bounds = new RectF(0, 0, 1280, 360), DeadZone = new Vector2(24, 16) };
 
 // Update:
 camera.Follow(player.Center, dt);
@@ -27,7 +30,8 @@ camera.Update(dt);
 // Draw:
 renderer.PushCamera(camera);
 DrawWorld(renderer);
-renderer.PopCamera();</code></pre>
+renderer.PopCamera();
+```
 
 ## Remarks
 
@@ -311,3 +315,5 @@ public Vector2 WorldToScreen(Vector2 world)
 #### Returns
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+</div>

@@ -1,5 +1,7 @@
 # Class CoroutineHandle
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Scenes](MicroEngine.Scenes.md)  
 Assembly: MicroEngine.dll  
 Guide: [Scenes](../manual/scenes.md)  
@@ -54,3 +56,5 @@ Stops the coroutine; it does not run another step. Safe to call more than once.
 ```csharp
 public void Cancel()
 ```
+
+</div>

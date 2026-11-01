@@ -1,5 +1,7 @@
 # Class HeadlessRenderer
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
@@ -277,3 +279,5 @@ public void SetClip(RectF? screenRect)
 #### Parameters
 
 `screenRect` [RectF](MicroEngine.RectF.md)?
+
+</div>

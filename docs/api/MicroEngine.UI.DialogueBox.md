@@ -1,5 +1,7 @@
 # Class DialogueBox
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.UI](MicroEngine.UI.md)  
 Assembly: MicroEngine.dll  
 Guide: [UI widgets](../manual/ui.md)  
@@ -149,3 +151,5 @@ public event Action? Closed
 #### Event Type
 
  [Action](https://learn.microsoft.com/dotnet/api/system.action)?
+
+</div>

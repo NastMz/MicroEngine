@@ -1,5 +1,7 @@
 # Class PngEncoder
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -38,3 +40,5 @@ public static byte[] Encode(ReadOnlySpan<byte> rgba, int width, int height, int 
 #### Returns
 
  [byte](https://learn.microsoft.com/dotnet/api/system.byte)\[\]
+
+</div>

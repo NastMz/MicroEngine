@@ -1,5 +1,7 @@
 # Struct RectF
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine](MicroEngine.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -393,3 +395,5 @@ public static bool operator !=(RectF left, RectF right)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

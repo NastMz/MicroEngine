@@ -1,5 +1,7 @@
 # Enum TouchButtonMode
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -21,3 +23,5 @@ Down while a finger holds it.
 `Toggle = 1` 
 
 Each tap switches it on or off (an aim lock, a run toggle).
+
+</div>

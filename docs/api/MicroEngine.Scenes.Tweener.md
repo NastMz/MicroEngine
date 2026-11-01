@@ -1,5 +1,7 @@
 # Class Tweener
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Scenes](MicroEngine.Scenes.md)  
 Assembly: MicroEngine.dll  
 Guide: [Scenes](../manual/scenes.md)  
@@ -78,3 +80,5 @@ public void Update(float dt)
 #### Parameters
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+</div>

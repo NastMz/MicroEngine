@@ -1,5 +1,7 @@
 # Enum Key
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -123,3 +125,5 @@ public enum Key
 `Y = 37` 
 
 `Z = 38`
+
+</div>

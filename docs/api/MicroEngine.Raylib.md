@@ -1,5 +1,7 @@
 # Namespace MicroEngine.Raylib
 
+<div data-pagefind-weight="0.3">
+
 The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and browser storage.
 
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -54,3 +56,5 @@ Touches for the raylib platform. raylib's own touch state is a per-frame list of
 cancel, no reliable identity across frames), so it is not used: in a browser the page forwards Pointer Events
 ([BrowserTouch](MicroEngine.Raylib.BrowserTouch.md)), with their pointer ids, the page's safe-area insets and its density. A desktop raylib
 window reports no touches; its controls still lay out for scripted touches.
+
+</div>

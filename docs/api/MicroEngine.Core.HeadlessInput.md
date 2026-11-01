@@ -1,5 +1,7 @@
 # Class HeadlessInput
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
@@ -168,3 +170,5 @@ public void SetLeftStick(Vector2 value)
 #### Parameters
 
 `value` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+</div>

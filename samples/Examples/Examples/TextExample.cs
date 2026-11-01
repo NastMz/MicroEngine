@@ -36,8 +36,8 @@ public sealed class TextExample : Scene
             Font.Draw(r, lines[i], new Vector2(box.X + 6, box.Y + 6 + i * (Font.LineHeight + 1)), Color.White);
         #endregion
 
-        Font.Draw(r, "Symbols: ♥ ▶ ▼ ★ ♪ → ← ↑ ↓ × © ·", new Vector2(196, 84), Color.Hex("ffcd75"));
-        Font.Draw(r, "Not in the font: ñ é ü", new Vector2(196, 96), Color.Hex("ef7d57"));   // drawn as ?
+        Font.Draw(r, "Symbols: ♥ ▶ ▼ ★ ♪ → ← ↑ ↓ × © ·", new Vector2(8, 146), Color.Hex("ffcd75"));
+        Font.Draw(r, "Not in the font: ñ é ü", new Vector2(8, 158), Color.Hex("ef7d57"));   // drawn as ?
         Heading.Draw(r, Font, "TEXT");
     }
 }

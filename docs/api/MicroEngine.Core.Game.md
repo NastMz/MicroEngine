@@ -1,5 +1,7 @@
 # Class Game
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
@@ -18,12 +20,14 @@ public abstract class Game
 
 ## Examples
 
-<pre><code class="lang-csharp">public sealed class MyGame : Game
+```csharp
+public sealed class MyGame : Game
 {
     public override GameSettings Settings { get; } = new("My Game", 320, 180);
 
-    protected override void Load() =&gt; Scenes.Push(new TitleScene());
-}</code></pre>
+    protected override void Load() => Scenes.Push(new TitleScene());
+}
+```
 
 ## Remarks
 
@@ -355,3 +359,5 @@ protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, S
 #### Returns
 
  [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
+
+</div>

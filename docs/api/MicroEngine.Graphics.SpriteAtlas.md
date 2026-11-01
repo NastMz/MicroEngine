@@ -1,5 +1,7 @@
 # Class SpriteAtlas
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -105,3 +107,5 @@ public Sprite[] Frames(string name)
 #### Returns
 
  [Sprite](MicroEngine.Graphics.Sprite.md)\[\]
+
+</div>

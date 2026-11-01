@@ -1,5 +1,7 @@
 # Class PlatformRequest
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -258,3 +260,5 @@ public static bool operator !=(PlatformRequest? left, PlatformRequest? right)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

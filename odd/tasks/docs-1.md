@@ -59,20 +59,21 @@ MicroEngine.slnx -c Release`, `npm test` and `npm run build` in `site/`, `node s
 
 | ID | Specs | Route | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| T1 | S1 S2 S10 S14 | inline | pending | audit and SDK gaps in docs/evaluations/docs-1.md |
-| T2 | S3 S9 S10 | inline | pending | site structure: groups, tutorial and API discovery, snippet check |
-| T3 | S4 S7 | inline | pending | samples: package/project switch, tutorial checkpoints, focused examples, tests |
-| T4 | S3 S11 S15 | inline | pending | Getting started pages |
-| T5 | S4 S15 | inline | pending | tutorial pages |
-| T6 | S5 S13 | inline | pending | manual: new and corrected pages |
-| T7 | S7 S8 | inline | pending | how-to and examples pages |
-| T8 | S3 S5 S11 | inline | pending | platforms, distribution, advanced |
-| T9 | S6 | inline | pending | API reference with DocFX |
-| T10 | S11 S12 | inline | pending | validation runs |
-| T11 | S14 | inline | pending | PR |
+| T1 | S1 S2 S10 S14 | inline | done | docs/evaluations/docs-1.md: audit table, 15 SDK defects, functional gaps, tooling fixes |
+| T2 | S3 S9 S10 | inline | done | 4d99990, 6aa7502: ten sidebar groups, tutorial and API discovery, quoted-code check, link and anchor check |
+| T3 | S4 S7 | inline | done | 6c949dd, f0134a2: samples/GemGarden (4 checkpoints), samples/Examples (14), tests/Samples.Tests (9 tests) |
+| T4 | S3 S11 S15 | inline | done | 4d99990: Install the SDK, Your first game, Updating the SDK; commands run against nuget.org |
+| T5 | S4 S15 | inline | done | 4d99990: overview and 13 steps, every listing quoted from a checkpoint |
+| T6 | S5 S13 | inline | done | 6aa7502: Text, Tile maps and collision, Extending the engine; audio formats, web, testing, input corrected |
+| T7 | S7 S8 | inline | done | 6aa7502: How do I...? (14 questions and more), Focused examples |
+| T8 | S3 S5 S11 | inline | done | 6aa7502: Publishing on the web, platforms group, advanced group, configuration corrected |
+| T9 | S6 | delegated (XML comments: one writer, disjoint src surface, parallel with T4-T7) + inline (generator) | done | e330e04: DocFX 2.81, 147 pages, 615 members documented, comment-only diff checked |
+| T10 | S11 S12 | inline | done | final commit: results table in docs/evaluations/docs-1.md |
+| T11 | S14 | inline | done | pull request |
 
-Route evidence: one writer (this session); no unit has a parallel independent partner large enough for a writer, so
-every task is inline.
+Route evidence: the XML comments of T9 were a separate unit (src/**/*.cs comments, several hundred lines) with an edit
+surface disjoint from the documentation being written, so one bounded writer did them in parallel (Writer trigger a);
+its diff was checked to contain only `///` lines. Everything else was inline.
 
 ## Log
 
@@ -299,3 +300,17 @@ every task is inline.
   repository project references and says browser packages are unavailable, examples lean on demo code. API reference
   tool: DocFX 2.81 `metadata` with `outputFormat: markdown` produces 147 linked pages from the four engine assemblies
   and their XML docs; chosen over writing a generator.
+
+- L3 (2026-11-01) Design. Tutorial code lives in four checkpoint projects (a page shows whole methods or files as they
+  are at the end of its part); a fenced block after `<!-- code: path#region -->` must equal the sample region or the
+  site build fails. Samples reference MicroEngine.Desktop 0.4.0-alpha.1 and build against the source inside the
+  repository (samples/Directory.Build.targets); sdk/tests/docs.mjs builds copies against nuget.org. API reference: DocFX
+  markdown, post-processed (xrefs, examples as fences, guide links, search weight), committed with a --check.
+- L4 (2026-11-01) Findings. The SDL audio device streams only WAV and OGG music (MP3 is raylib only), contrary to the
+  former docs. The CI project graph ignored references added by Directory.Build.targets (fixed). Fifteen engine
+  behaviours reported by the XML-comment pass are listed in docs/evaluations/docs-1.md, not fixed (S13).
+- L5 (2026-11-01) Validation: dotnet test 378 passed / 5 skipped; site npm test 42 passed; astro build 213 pages with
+  links and anchors checked; 102 quoted blocks current; API --check current; docs.mjs and external.mjs --public passed;
+  onboarding from scratch 14/14; 204 pages without overflow at 375 px; axe WCAG A/AA clean on sampled pages. Not run
+  here: web, Android, macOS, iOS packages of the tutorial game (no workloads on this machine). Next: owner review of
+  the pull request; merging publishes the site (docs/deployment.md).

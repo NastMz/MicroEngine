@@ -1,5 +1,7 @@
 # Class Texture
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -102,3 +104,5 @@ Frees the device resource; called once by [Dispose](MicroEngine.Graphics.Texture
 ```csharp
 protected abstract void Release()
 ```
+
+</div>

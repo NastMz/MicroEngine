@@ -1,5 +1,7 @@
 # Class GameLauncher
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Configuration and launch options](../reference/configuration.md)  
@@ -77,3 +79,5 @@ Changes the platform request before the platform is built: an audio device or in
 #### Returns
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+</div>

@@ -40,6 +40,8 @@ export default defineConfig({
       sidebar: sidebar(),
       disable404Route: true,
       pagination: true,
+      // Long guides (tutorial, manual, how-to) should not lose to the many short API type pages that share their words.
+      pagefind: { ranking: { pageLength: 0.1 } },
       head: [
         { tag: 'meta', attrs: { name: 'theme-color', content: '#15171c' } },
         { tag: 'meta', attrs: { property: 'og:image', content: new URL('/og.png', site).href } },

@@ -1,5 +1,7 @@
 # Namespace MicroEngine.Audio
 
+<div data-pagefind-weight="0.3">
+
 Sound effects and music: synthesis, WAV decoding, the mixer games play sounds through, and the audio device contract.
 
 Guide: [Audio](../manual/audio.md)  
@@ -60,3 +62,5 @@ Backend audio device. Implementations must tolerate missing hardware by becoming
 Oscillator waveforms for [SfxParams](MicroEngine.Audio.SfxParams.md) and [Instrument](MicroEngine.Audio.Instrument.md): <code>Square</code>, <code>Triangle</code>, <code>Saw</code>,
 <code>Sine</code>, <code>Noise</code> (a random value held for each cycle, so its frequency sets the colour of the noise), and the
 thinner pulse waves <code>Pulse25</code> and <code>Pulse12</code> (25% and 12.5% duty cycle).
+
+</div>

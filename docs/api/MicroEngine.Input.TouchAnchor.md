@@ -1,5 +1,7 @@
 # Enum TouchAnchor
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -27,3 +29,5 @@ public enum TouchAnchor
 ## Remarks
 
 Offsets point into the screen from the anchor, so the same offset mirrors between left and right anchors.
+
+</div>

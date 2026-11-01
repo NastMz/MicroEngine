@@ -1,5 +1,7 @@
 # Interface IGraphicsDevice
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -27,3 +29,5 @@ Texture CreateTexture(PixelImage image)
 #### Returns
 
  [Texture](MicroEngine.Graphics.Texture.md)
+
+</div>

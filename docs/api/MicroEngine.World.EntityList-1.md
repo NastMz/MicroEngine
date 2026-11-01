@@ -1,5 +1,7 @@
 # Class EntityList<T\>
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
 Assembly: MicroEngine.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
@@ -158,3 +160,5 @@ public void Update(float dt)
 #### Parameters
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+</div>

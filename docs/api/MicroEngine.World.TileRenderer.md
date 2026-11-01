@@ -1,5 +1,7 @@
 # Class TileRenderer
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
 Assembly: MicroEngine.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
@@ -46,3 +48,5 @@ The camera, used only to skip tiles outside its view; null draws the tiles over 
 `spriteFor` [Func](https://learn.microsoft.com/dotnet/api/system.func\-4)<[int](https://learn.microsoft.com/dotnet/api/system.int32), [int](https://learn.microsoft.com/dotnet/api/system.int32), [int](https://learn.microsoft.com/dotnet/api/system.int32), [Sprite](MicroEngine.Graphics.Sprite.md)?\>
 
 Returns the sprite for a tile id at tile (x, y), or null to draw nothing.
+
+</div>

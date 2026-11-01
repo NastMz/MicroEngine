@@ -1,5 +1,7 @@
 # Class DesktopLauncher
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Raylib](MicroEngine.Raylib.md)  
 Assembly: MicroEngine.Raylib.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -29,7 +31,7 @@ public static PlatformCatalog CreateCatalog()
 
 #### Returns
 
- [PlatformCatalog](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Core/PlatformProfiles.cs)
+ [PlatformCatalog](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/PlatformProfiles.cs)
 
 ### <a id="MicroEngine_Raylib_DesktopLauncher_Run_MicroEngine_Core_Game_System_String___"></a> Run\(Game, string\[\]\)
 
@@ -41,10 +43,12 @@ public static int Run(Game game, string[] args)
 
 #### Parameters
 
-`game` [Game](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Core/Game.cs)
+`game` [Game](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/Game.cs)
 
 `args` [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
 
 #### Returns
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+</div>

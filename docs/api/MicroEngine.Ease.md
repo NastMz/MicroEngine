@@ -1,5 +1,7 @@
 # Class Ease
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine](MicroEngine.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -176,3 +178,5 @@ public static float OutQuad(float t)
 #### Returns
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+</div>

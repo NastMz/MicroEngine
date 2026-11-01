@@ -1,5 +1,7 @@
 # Namespace MicroEngine.UI
 
+<div data-pagefind-weight="0.3">
+
 Pixel-art widgets: dialogue boxes, menus, typewriter text, themes, achievement banners and list.
 
 Guide: [UI widgets](../manual/ui.md)  
@@ -33,3 +35,5 @@ Reveals text character by character. Confirm skips to the end; a second confirm 
  [UiTheme](MicroEngine.UI.UiTheme.md)
 
 Visual theme for the shared widgets so each game can keep its own identity.
+
+</div>

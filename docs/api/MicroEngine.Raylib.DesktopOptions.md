@@ -1,5 +1,7 @@
 # Class DesktopOptions
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Raylib](MicroEngine.Raylib.md)  
 Assembly: MicroEngine.Raylib.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -83,7 +85,7 @@ public PixelImage? Icon { get; init; }
 
 #### Property Value
 
- [PixelImage](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Graphics/PixelImage.cs)?
+ [PixelImage](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Graphics/PixelImage.cs)?
 
 ### <a id="MicroEngine_Raylib_DesktopOptions_Mute"></a> Mute
 
@@ -216,3 +218,5 @@ public static bool operator !=(DesktopOptions? left, DesktopOptions? right)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

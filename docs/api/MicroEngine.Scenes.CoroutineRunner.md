@@ -1,5 +1,7 @@
 # Class CoroutineRunner
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Scenes](MicroEngine.Scenes.md)  
 Assembly: MicroEngine.dll  
 Guide: [Scenes](../manual/scenes.md)  
@@ -94,3 +96,5 @@ Elapsed time in seconds, consumed by [Seconds](MicroEngine.Scenes.Wait.md#MicroE
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
 A coroutine yielded a value other than null, a wait instruction or an `IEnumerator`.
+
+</div>

@@ -1,5 +1,7 @@
 # Class GameRunner
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
@@ -41,3 +43,5 @@ public static RunResult Run(Game game, IPlatform platform, RunOptions? options =
 #### Remarks
 
 The platform is not disposed; its owner does that.
+
+</div>

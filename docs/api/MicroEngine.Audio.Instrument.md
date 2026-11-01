@@ -1,5 +1,7 @@
 # Class Instrument
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
 Assembly: MicroEngine.dll  
 Guide: [Audio](../manual/audio.md)  
@@ -336,3 +338,5 @@ public static bool operator !=(Instrument? left, Instrument? right)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

@@ -1,5 +1,7 @@
 # Class SilentAudioDevice
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
 Assembly: MicroEngine.dll  
 Guide: [Audio](../manual/audio.md)  
@@ -208,3 +210,5 @@ Called once per frame so streaming music keeps playing.
 ```csharp
 public void Update()
 ```
+
+</div>

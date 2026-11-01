@@ -1,5 +1,7 @@
 # Class RendererExtensions
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -163,3 +165,5 @@ public static void Panel(this IRenderer r, RectF rect, PanelStyle style)
 `rect` [RectF](MicroEngine.RectF.md)
 
 `style` [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
+
+</div>

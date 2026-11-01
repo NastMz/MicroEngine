@@ -1,5 +1,7 @@
 # Class AchievementToasts
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.UI](MicroEngine.UI.md)  
 Assembly: MicroEngine.dll  
 Guide: [Achievements](../manual/achievements.md)  
@@ -152,3 +154,5 @@ public void Update(float dt)
 #### Parameters
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+</div>

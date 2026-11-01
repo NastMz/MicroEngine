@@ -1,5 +1,7 @@
 # Class AchievementTracker
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
@@ -265,3 +267,5 @@ public event Action<Achievement>? Unlocked
 #### Event Type
 
  [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[Achievement](MicroEngine.Core.Achievement.md)\>?
+
+</div>

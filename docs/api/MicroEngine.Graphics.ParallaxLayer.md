@@ -1,5 +1,7 @@
 # Class ParallaxLayer
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -144,3 +146,5 @@ The camera's [Position](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Ca
 `time` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 Seconds used by [Drift](MicroEngine.Graphics.ParallaxLayer.md#MicroEngine_Graphics_ParallaxLayer_Drift), for example [Time](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Time).
+
+</div>

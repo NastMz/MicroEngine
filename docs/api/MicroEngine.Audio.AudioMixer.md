@@ -1,5 +1,7 @@
 # Class AudioMixer
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
 Assembly: MicroEngine.dll  
 Guide: [Audio](../manual/audio.md)  
@@ -18,13 +20,15 @@ public sealed class AudioMixer
 
 ## Examples
 
-<pre><code class="lang-csharp">// In Game.Load:
+```csharp
+// In Game.Load:
 Audio.AddSound("jump", Synth.Render(new SfxParams { Wave = Wave.Square, Frequency = 520, EndFrequency = 880 }));
 Audio.AddMusicFile("theme", "Content/theme.ogg");
 Audio.PlayMusic("theme");
 
 // In a scene's Update:
-if (Input.Pressed("jump")) Audio.Play("jump", pitchJitter: 0.05f);</code></pre>
+if (Input.Pressed("jump")) Audio.Play("jump", pitchJitter: 0.05f);
+```
 
 ## Remarks
 
@@ -346,3 +350,5 @@ public void Update(float dt)
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 Elapsed time in seconds.
+
+</div>

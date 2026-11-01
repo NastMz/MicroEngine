@@ -333,3 +333,13 @@ the browser test scenarios:
 { "game": "MeadowRun", "script": "smoke.script", "keyboard": true, "env": {} },
 { "game": "CourtyardKey", "script": "boss.script", "env": { "COURTYARD_START": "boss" } },
 ```
+
+## Documentation checks
+
+- The site build fails when a quoted code block differs from its sample (`site/src/lib/repo-docs.mjs`) or a page links
+  to a page or anchor the site does not have (`site/scripts/check-dist.mjs`).
+- The Linux .NET job checks that `docs/api` matches the XML comments (`site/scripts/api-reference.mjs --check`) when an
+  engine project is tested, and builds the documented samples against nuget.org outside the repository
+  (`sdk/tests/docs.mjs`) when `tests/Samples.Tests` is selected.
+- The CI planner (`.github/scripts/projects.mjs`) reads the `ProjectReference` items a `Directory.Build.targets` adds,
+  so an engine change also selects `tests/Samples.Tests`.

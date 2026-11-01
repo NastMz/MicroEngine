@@ -1,5 +1,7 @@
 # Namespace MicroEngine.Input
 
+<div data-pagefind-weight="0.3">
+
 Input actions over keyboard, gamepad, mouse and touch: bindings, analog values, on-screen controls, custom sources.
 
 Guide: [Input](../manual/input.md)  
@@ -140,3 +142,5 @@ was lifted (<code>Ended</code>), or the system took it away, for example when th
  [TouchVisibility](MicroEngine.Input.TouchVisibility.md)
 
 When on-screen controls are drawn.
+
+</div>

@@ -1,5 +1,7 @@
 # Enum Wave
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
 Assembly: MicroEngine.dll  
 Guide: [Audio](../manual/audio.md)  
@@ -27,3 +29,5 @@ public enum Wave
 `Square = 0` 
 
 `Triangle = 1`
+
+</div>

@@ -1,5 +1,7 @@
 # Class MathX
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine](MicroEngine.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -194,3 +196,5 @@ public static float Wave(float time, float frequency, float amplitude = 1)
 #### Returns
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+</div>

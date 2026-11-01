@@ -1,5 +1,7 @@
 # Enum StickDirections
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -21,3 +23,5 @@ Eight 45° sectors: diagonals press two directions.
 `Four = 1` 
 
 Four 90° sectors: only the dominant direction is pressed (grid movement, menus).
+
+</div>

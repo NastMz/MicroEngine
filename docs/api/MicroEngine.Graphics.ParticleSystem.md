@@ -1,5 +1,7 @@
 # Class ParticleSystem
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -120,3 +122,5 @@ public void Update(float dt)
 #### Parameters
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+</div>

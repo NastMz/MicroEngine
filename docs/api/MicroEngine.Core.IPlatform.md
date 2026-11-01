@@ -1,5 +1,7 @@
 # Interface IPlatform
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -165,3 +167,5 @@ Switches between window and full screen where the platform has a window; does no
 ```csharp
 void ToggleFullscreen()
 ```
+
+</div>

@@ -1,5 +1,7 @@
 # Enum InputMap.StickDirection
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -23,3 +25,5 @@ public enum InputMap.StickDirection
 `Right = 2` 
 
 `Up = 3`
+
+</div>

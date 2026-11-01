@@ -1,5 +1,7 @@
 # Enum TouchVisibility
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -27,3 +29,5 @@ On touch-first screens, and elsewhere after the first touch; hidden while a keyb
 `Never = 2` 
 
 Never drawn, and touches are ignored.
+
+</div>

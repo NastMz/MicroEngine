@@ -1,12 +1,15 @@
 # Class InputScript
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Testing your game](../examples/testing.md)  
 
 A deterministic input script, keyed by update number. Text format, one command per line:
 
-<pre><code class="lang-csharp"># comment
+```csharp
+# comment
 30 press confirm          # down for 2 updates
 60 hold right 90          # down for 90 updates
 60 down jump / 75 up jump # explicit edges
@@ -15,7 +18,8 @@ A deterministic input script, keyed by update number. Text format, one command p
 250 tap 2 jump            # finger 2 taps the "jump" control (lifted 2 updates later)
 260 touch 3 0.5,0.5       # finger 3 at the middle of the screen (fractions of its size)
 300 lift 1
-900 quit</code></pre>
+900 quit
+```
 
 "@+N" instead of an absolute number means N updates after the previous command. Touch commands go through the
 game's [VirtualControls](MicroEngine.Input.VirtualControls.md) with the same hit testing as real fingers.
@@ -246,3 +250,5 @@ public InputScript Touch(long at, int finger, string control, Vector2 offset = d
 #### Returns
 
  [InputScript](MicroEngine.Core.InputScript.md)
+
+</div>

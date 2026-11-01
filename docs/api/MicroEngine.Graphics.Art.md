@@ -1,5 +1,7 @@
 # Class Art
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -117,3 +119,5 @@ public static float ValueNoise(float x, float y, float cell, int seed = 0)
 #### Returns
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+</div>

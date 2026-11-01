@@ -1,5 +1,7 @@
 # Class Wait
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Scenes](MicroEngine.Scenes.md)  
 Assembly: MicroEngine.dll  
 Guide: [Scenes](../manual/scenes.md)  
@@ -48,3 +50,5 @@ public static WaitUntil Until(Func<bool> condition)
 #### Returns
 
  [WaitUntil](MicroEngine.Scenes.WaitUntil.md)
+
+</div>

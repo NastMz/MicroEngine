@@ -1,5 +1,7 @@
 # Interface ITouchOverlay
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -47,3 +49,5 @@ RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight)
 #### Returns
 
  [RectF](MicroEngine.RectF.md)
+
+</div>

@@ -1,5 +1,7 @@
 # Enum InputDevice
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -25,3 +27,5 @@ public enum InputDevice
 ## Remarks
 
 <code>Other</code> covers scripted input and custom [IActionSource](MicroEngine.Input.IActionSource.md)s.
+
+</div>

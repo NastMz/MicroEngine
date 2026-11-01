@@ -1,5 +1,7 @@
 # Interface IRenderer
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -225,3 +227,5 @@ void SetClip(RectF? screenRect)
 #### Parameters
 
 `screenRect` [RectF](MicroEngine.RectF.md)?
+
+</div>

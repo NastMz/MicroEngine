@@ -1,5 +1,7 @@
 # Class BrowserLifecycle
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Raylib](MicroEngine.Raylib.md)  
 Assembly: MicroEngine.Raylib.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -28,3 +30,5 @@ public static bool Hidden { get; set; }
 #### Property Value
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

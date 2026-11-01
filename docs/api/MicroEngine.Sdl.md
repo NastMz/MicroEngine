@@ -1,5 +1,7 @@
 # Namespace MicroEngine.Sdl
 
+<div data-pagefind-weight="0.3">
+
 The SDL 3 platform: Windows, Linux, macOS, Android and iOS.
 
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -22,3 +24,5 @@ graphics API per system (Direct3D, Metal, OpenGL, OpenGL ES, Vulkan, or its soft
 Fingers go to the game's on-screen controls through [ITouchScreen](MicroEngine.Input.ITouchScreen.md) ([SdlTouchScreen](MicroEngine.Sdl.md)), which
 also reports the window's safe area and density; a system that sends the app to the background suspends it
 ([Suspended](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_Suspended)).
+
+</div>

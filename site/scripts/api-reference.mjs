@@ -122,12 +122,19 @@ for (const file of generated) {
   let text = fs.readFileSync(path.join(work, 'md', file), 'utf8').replace(/\r\n/g, '\n');
   text = text.replace(/^# <a id="[^"]*"><\/a>\s*/m, '# ');
   text = text.replace(/<xref href="([^"]+)"[^>]*><\/xref>/g, (_, href) => xref(href));
+  // <example><code> blocks arrive as raw HTML; as fenced blocks they get the site's highlighting and scroll sideways on
+  // small screens instead of widening the page.
+  text = text.replace(/<pre><code class="lang-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (_, lang, code) =>
+    `\`\`\`${lang}\n${code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').trimEnd()}\n\`\`\``);
   // Inherited members that every .NET object has (ToString, Equals...) say nothing about the engine.
   text = text.replace(/#### Inherited Members\n\n((?:\[object\.[^\n]*\n)+)\n?/g, '');
   const namespace = /^# Namespace /.test(text) ? name : [...Object.keys(guides)].filter(ns => name.startsWith(`${ns}.`)).sort((a, b) => b.length - a.length)[0];
   const guide = typeGuides[name] ?? guides[namespace];
   if (guide) text = text.replace(/^(Assembly: [^\n]*\n|# Namespace [^\n]*\n)/m, m => `${m}Guide: [${guide[0]}](${guide[1]})  \n`);
   if (/^# Namespace /.test(text) && namespaceSummaries[name]) text = text.replace(/^(# Namespace [^\n]*\n)/, `$1\n${namespaceSummaries[name]}\n\n`);
+  // Search: a type page repeats many words of the guides (Touch, Control, Save); weighting its text down keeps the
+  // tutorial and the manual above it, while its title still finds it.
+  text = text.replace(/^(# [^\n]*\n)([\s\S]*)$/, (_, h1, body) => `${h1}\n<div data-pagefind-weight="0.3">\n\n${body.trim()}\n\n</div>\n`);
   pages.set(file, text.trimEnd() + '\n');
 }
 

@@ -1,5 +1,7 @@
 # Class VirtualControls
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -423,3 +425,5 @@ public Vector2 ValueOf(string id)
 #### Returns
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+</div>

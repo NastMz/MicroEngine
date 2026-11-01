@@ -1,5 +1,7 @@
 # Class Transition
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Scenes](MicroEngine.Scenes.md)  
 Assembly: MicroEngine.dll  
 Guide: [Scenes](../manual/scenes.md)  
@@ -198,3 +200,5 @@ Cover colour; null for black.
 #### Returns
 
  [Transition](MicroEngine.Scenes.Transition.md)
+
+</div>

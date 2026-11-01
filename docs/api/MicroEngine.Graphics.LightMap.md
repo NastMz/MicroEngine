@@ -1,5 +1,7 @@
 # Class LightMap
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
@@ -220,3 +222,5 @@ public void Draw(IRenderer r, Camera2D camera)
 `r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)
+
+</div>

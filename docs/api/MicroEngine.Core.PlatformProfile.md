@@ -1,5 +1,7 @@
 # Class PlatformProfile
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -142,3 +144,5 @@ public override string ToString()
 #### Returns
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+</div>

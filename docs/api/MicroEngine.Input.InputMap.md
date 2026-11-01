@@ -1,5 +1,7 @@
 # Class InputMap
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -22,13 +24,15 @@ public sealed class InputMap
 
 ## Examples
 
-<pre><code class="lang-csharp">// In a Game subclass: keep the defaults and add a "dash" action.
-protected override InputMap CreateInput() =&gt; InputMap.CreateDefault()
+```csharp
+// In a Game subclass: keep the defaults and add a "dash" action.
+protected override InputMap CreateInput() => InputMap.CreateDefault()
     .Bind("dash", [Key.LeftShift, Key.N], [PadButton.RightShoulder]);
 
 // In a scene's Update:
 var move = Input.Vector("left", "right", "up", "down");
-if (Input.Pressed("confirm")) Audio.Play("select");</code></pre>
+if (Input.Pressed("confirm")) Audio.Play("select");
+```
 
 ## Constructors
 
@@ -519,3 +523,5 @@ public Vector2 Vector(string left, string right, string up, string down)
 #### Returns
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+</div>

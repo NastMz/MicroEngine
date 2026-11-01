@@ -1,5 +1,7 @@
 # Class AppIdentity
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Name, id, version and icon](../guide/app-identity.md)  
@@ -255,3 +257,5 @@ public static bool operator !=(AppIdentity? left, AppIdentity? right)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

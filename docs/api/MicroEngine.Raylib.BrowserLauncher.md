@@ -1,5 +1,7 @@
 # Class BrowserLauncher
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Raylib](MicroEngine.Raylib.md)  
 Assembly: MicroEngine.Raylib.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
@@ -31,8 +33,10 @@ public static GameSession CreateSession(Func<Game> createGame)
 
 #### Parameters
 
-`createGame` [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[Game](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Core/Game.cs)\>
+`createGame` [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[Game](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/Game.cs)\>
 
 #### Returns
 
- [GameSession](https://github.com/NastMz/MicroEngine/blob/4d9999002843ba740441ef7bb60461c13b2a816e/src/MicroEngine/Core/GameSession.cs)
+ [GameSession](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/GameSession.cs)
+
+</div>

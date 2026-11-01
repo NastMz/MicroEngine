@@ -1,5 +1,7 @@
 # Struct TouchEvent
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
 Assembly: MicroEngine.dll  
 Guide: [Input](../manual/input.md)  
@@ -165,3 +167,5 @@ public static bool operator !=(TouchEvent left, TouchEvent right)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+</div>

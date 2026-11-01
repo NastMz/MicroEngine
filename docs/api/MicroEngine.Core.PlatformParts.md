@@ -1,5 +1,7 @@
 # Enum PlatformParts
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
@@ -28,3 +30,5 @@ Add input sources next to the backend's ([ExtraInput](MicroEngine.Core.PlatformR
 `None = 0` 
 
 The host may replace nothing.
+
+</div>

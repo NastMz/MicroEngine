@@ -1,5 +1,7 @@
 # Class HeadlessPlatform
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
 Assembly: MicroEngine.dll  
 Guide: [Testing your game](../examples/testing.md)  
@@ -268,3 +270,5 @@ Does nothing.
 ```csharp
 public void ToggleFullscreen()
 ```
+
+</div>

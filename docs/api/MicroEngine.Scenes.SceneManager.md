@@ -1,5 +1,7 @@
 # Class SceneManager
 
+<div data-pagefind-weight="0.3">
+
 Namespace: [MicroEngine.Scenes](MicroEngine.Scenes.md)  
 Assembly: MicroEngine.dll  
 Guide: [Scenes](../manual/scenes.md)  
@@ -126,3 +128,5 @@ public void Reset(Scene scene, Transition? transition = null)
 `scene` [Scene](MicroEngine.Scenes.Scene.md)
 
 `transition` [Transition](MicroEngine.Scenes.Transition.md)?
+
+</div>
