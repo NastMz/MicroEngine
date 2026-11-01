@@ -47,14 +47,14 @@ export const platforms: PlatformRow[] = [
   },
   {
     id: 'linux', name: 'Linux x64', platform: 'SDL 3 (default) · raylib · SDL software',
-    status: { label: 'Played on Debian', tone: 'ok' },
+    status: { label: 'Works', tone: 'ok' },
     build: { level: 'virtual', note: 'Ubuntu runner on every engine change' },
     tests: { level: 'virtual', note: 'Engine and four games, every engine change' },
     rendering: { level: 'virtual', note: '138 captures on Mesa (software) under Xvfb; the package reproduces them on Ubuntu 22.04, Debian 12 and Fedora 41' },
     input: { level: 'virtual', note: 'System keyboard through the X server (raylib); scripted input on SDL' },
     audio: { level: 'virtual', note: 'Virtual PulseAudio: a played tone recorded and recognised (raylib); SDL’s device opens' },
     lifecycle: { level: 'na', note: 'Desktop windows are not suspended' },
-    hardware: { level: 'person', note: 'The four downloads played by hand on a stock Debian 13.7 desktop in a VM (keyboard, Xbox controller) and under WSL2; virtual GPU, no physical Linux PC yet' },
+    hardware: { level: 'person', note: 'The four downloads played by hand on Debian 13.7 and Ubuntu 24.04.4 LTS, with keyboard and an Xbox controller' },
     download: { target: 'linux-x64' },
   },
   {

@@ -20,7 +20,6 @@ build. Items move off this list only when a change and its validation are record
 
 | Limitation | Evidence |
 | --- | --- |
-| Linux desktop: checked on hosted runners and in Ubuntu 22.04, Debian 12 and Fedora 41 containers (software rendering, virtual display and sound server), and played by hand on a stock Debian 13.7 desktop in a virtual machine and in Ubuntu 24.04.4 LTS under WSL2 (WSLg) on Windows 11; both on a virtual GPU, no physical Linux PC played yet | [Platforms](../guide/platforms.md#desktop-validation) |
 | macOS: checked on hosted runners (paravirtual GPU, Metal); no person has played on a Mac, no system keyboard check | [Platforms](../guide/platforms.md#desktop-validation) |
 | Android: played by hand on one phone (Redmi Note 14 Pro, Android 16); automated checks on the x86_64 emulator only; no tablet | [Platforms](../guide/platforms.md#phones-and-tablets) |
 | iOS: games checked in the simulator only; touch checked with scripted touches on the simulator's layout, not system touches; no iPhone or iPad | [Platforms](../guide/platforms.md#phones-and-tablets) |

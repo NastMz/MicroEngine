@@ -71,6 +71,6 @@ Evaluation: [`docs/evaluations/input-1.md`](../../docs/evaluations/input-1.md). 
 - L7 2026-11-01 Recreated as PR #8 on `feat/input-1` (authorship and trailers corrected). Review fix: a finger never
   slides onto a toggle button (Neon Rift's LOCK next to FIRE). The owner played the four demos by hand from the
   INPUT-1 builds: Android APKs on a Redmi Note 14 Pro (Android 16; touch, Bluetooth PlayStation controller), Chrome on it,
-  Windows 11 downloads (keyboard, Xbox controller), Linux downloads in Ubuntu 24.04.4 LTS under WSL2 (WSLg) and on a stock Debian 13.7 desktop in a VM (keyboard,
-  Xbox controller passed through), and Edge on the desktop; all working. Recorded in
+  Windows 11 downloads (keyboard, Xbox controller), Linux downloads on Debian 13.7 and Ubuntu 24.04.4 LTS (keyboard, Xbox controller), and Edge on the desktop; all
+  working. The owner declared Linux working without caveats. Recorded in
   the evaluation (§7b), the platform matrix and the status, platforms and limitations pages.

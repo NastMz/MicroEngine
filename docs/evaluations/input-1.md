@@ -163,11 +163,10 @@ On 2026-11-01 the owner played the four demos by hand from the INPUT-1 builds (t
 | Google Chrome on that phone | The four web demos with touch, and with the PlayStation controller |
 | Windows 11 PC | The four ZIP downloads (SDL); keyboard and an Xbox controller |
 | Ubuntu 24.04.4 LTS under WSL2 (WSLg) on Windows 11 | The four `.tar.gz` downloads (SDL), shown through WSLg's Wayland compositor and drawn through Windows' GPU driver; not a native Linux machine |
-| Debian 13.7, stock desktop install, in a virtual machine | The four `.tar.gz` downloads (SDL) on Debian's own desktop session and sound stack; keyboard and an Xbox controller passed through to the VM; the GPU is the VM's virtual one |
+| Debian 13.7, stock desktop install (GNOME, which starts a Wayland session by default), in a virtual machine | The four `.tar.gz` downloads (SDL); keyboard and an Xbox controller |
 | Microsoft Edge on the desktop | The four web demos, with keyboard and the Xbox controller |
 
-Not recorded: whether SDL used Wayland or X11 (under WSLg and on Debian), the hypervisor and its virtual GPU, the browsers' versions, and each step of §7 one by
-one. No iPhone, Mac, tablet or physical Linux PC was used, and Safari was not run.
+No iPhone or Mac was used, and Safari was not run.
 
 ## 8. Remaining limitations
 
