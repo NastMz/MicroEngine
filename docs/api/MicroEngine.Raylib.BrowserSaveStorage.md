@@ -21,7 +21,7 @@ public sealed class BrowserSaveStorage : ISaveStorage
 
 #### Implements
 
-[ISaveStorage](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/SaveStore.cs)
+ISaveStorage
 
 ## Constructors
 

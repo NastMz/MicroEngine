@@ -33,10 +33,10 @@ public static GameSession CreateSession(Func<Game> createGame)
 
 #### Parameters
 
-`createGame` [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[Game](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/Game.cs)\>
+`createGame` [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<Game\>
 
 #### Returns
 
- [GameSession](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/GameSession.cs)
+ GameSession
 
 </div>

@@ -22,7 +22,7 @@ public sealed class RaylibTouchScreen : ITouchScreen
 
 #### Implements
 
-[ITouchScreen](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Input/Touch.cs)
+ITouchScreen
 
 ## Constructors
 
@@ -56,7 +56,7 @@ public ITouchOverlay? Overlay { get; set; }
 
 #### Property Value
 
- [ITouchOverlay](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Input/Touch.cs)?
+ ITouchOverlay?
 
 ### <a id="MicroEngine_Raylib_RaylibTouchScreen_PixelsPerDp"></a> PixelsPerDp
 
@@ -80,7 +80,7 @@ public RectF SafeArea { get; }
 
 #### Property Value
 
- [RectF](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Math/RectF.cs)
+ RectF
 
 ### <a id="MicroEngine_Raylib_RaylibTouchScreen_Size"></a> Size
 
@@ -118,7 +118,7 @@ public void ReadTouches(List<TouchEvent> events)
 
 #### Parameters
 
-`events` [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<[TouchEvent](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Input/Touch.cs)\>
+`events` [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<TouchEvent\>
 
 ### <a id="MicroEngine_Raylib_RaylibTouchScreen_Vibrate_System_Single_System_Int32_"></a> Vibrate\(float, int\)
 

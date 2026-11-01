@@ -25,7 +25,7 @@ public sealed class SdlPlatform : IPlatform, IDisposable
 
 #### Implements
 
-[IPlatform](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/Platform.cs), 
+IPlatform, 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
 ## Constructors
@@ -40,7 +40,7 @@ public SdlPlatform(PlatformRequest request, string? renderer = null)
 
 #### Parameters
 
-`request` [PlatformRequest](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/PlatformProfiles.cs)
+`request` PlatformRequest
 
 The game's settings and window options.
 
@@ -60,7 +60,7 @@ public IAudioDevice Audio { get; }
 
 #### Property Value
 
- [IAudioDevice](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Audio/Audio.cs)
+ IAudioDevice
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_CloseRequested"></a> CloseRequested
 
@@ -84,7 +84,7 @@ public IGraphicsDevice Graphics { get; }
 
 #### Property Value
 
- [IGraphicsDevice](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Graphics/IGraphics.cs)
+ IGraphicsDevice
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Input"></a> Input
 
@@ -96,7 +96,7 @@ public IInputSource Input { get; }
 
 #### Property Value
 
- [IInputSource](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Input/Input.cs)
+ IInputSource
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Now"></a> Now
 
@@ -120,7 +120,7 @@ public static PlatformProfile Profile { get; }
 
 #### Property Value
 
- [PlatformProfile](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/PlatformProfiles.cs)
+ PlatformProfile
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_RealTime"></a> RealTime
 
@@ -183,7 +183,7 @@ public ITouchScreen Touch { get; }
 
 #### Property Value
 
- [ITouchScreen](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Input/Touch.cs)
+ ITouchScreen
 
 ## Methods
 
@@ -197,7 +197,7 @@ public IRenderer BeginFrame()
 
 #### Returns
 
- [IRenderer](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Graphics/IGraphics.cs)
+ IRenderer
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_CreateProfile_System_String_"></a> CreateProfile\(string?\)
 
@@ -215,7 +215,7 @@ public static PlatformProfile CreateProfile(string? renderer = null)
 
 #### Returns
 
- [PlatformProfile](https://github.com/NastMz/MicroEngine/blob/6aa7502bc7854ca56ec44cb5b9c7e43cd9d8563d/src/MicroEngine/Core/PlatformProfiles.cs)
+ PlatformProfile
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Dispose"></a> Dispose\(\)
 

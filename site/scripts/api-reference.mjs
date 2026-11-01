@@ -77,6 +77,9 @@ function run(command, args, options = {}) {
 // 1. Build the assemblies (their XML documentation files sit next to them), then let DocFX read them.
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'microengine-api-'));
 run('dotnet', ['build', 'src/MicroEngine.Desktop/MicroEngine.Desktop.csproj', '-c', 'Release', '-v', 'q', '-nologo', `-p:OutDir=${path.join(work, 'bin')}${path.sep}`]);
+// Without symbols DocFX cannot turn a type of another assembly into a link to its source at the current commit, which
+// would make every page change with every commit (and differ in a copy without .git).
+for (const file of fs.readdirSync(path.join(work, 'bin'))) if (file.endsWith('.pdb')) fs.rmSync(path.join(work, 'bin', file));
 const config = {
   metadata: [{
     src: [{ src: path.join(work, 'bin'), files: assemblies.map(a => `${a}.dll`) }],
