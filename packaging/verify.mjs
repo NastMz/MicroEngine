@@ -155,8 +155,7 @@ export async function verifyPackage(file, { game: gameId, target: targetId, key,
       const verified = spawnSync('codesign', ['--verify', '--deep', '--strict', path.join(top, `${game.title}.app`)], { encoding: 'utf8' });
       const gatekeeper = spawnSync('spctl', ['--assess', '--type', 'execute', path.join(top, `${game.title}.app`)], { encoding: 'utf8' });
       // spctl prints "<path>: <verdict>" and its reason; the verdict and reason are what matter.
-      record.gatekeeper = (gatekeeper.stderr || gatekeeper.stdout).trim().split(path.join(top, `${game.title}.app`)).join(`${game.title}.app`).replace(/
-/g, '; ');
+      record.gatekeeper = (gatekeeper.stderr || gatekeeper.stdout).trim().split(path.join(top, `${game.title}.app`)).join(`${game.title}.app`).split(/\r?\n/).join('; ');
       level('dependencies', verified.status === 0, `codesign --verify --deep --strict ${verified.status === 0 ? 'passed (ad-hoc signature)' : `failed: ${verified.stderr.trim()}`}; Gatekeeper: ${record.gatekeeper || 'accepted'}`);
     } else {
       level('dependencies', true, `self-contained .NET ${info.dotnet}; ${nativeLibraries(t).join(', ')} next to the executable`);

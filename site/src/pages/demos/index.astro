@@ -3,15 +3,19 @@ import { Image } from 'astro:assets';
 import SiteLayout from '../../layouts/SiteLayout.astro';
 import { demoGames } from '../../data/games';
 import { playManifest, megabytes } from '../../lib/play-manifest.mjs';
+import { targets } from '../../lib/versions.mjs';
 
 const manifest = playManifest();
+// Systems with a released package, in targets.json order: the copy never names a download that does not exist.
+const systems = targets.filter(t => Object.values(manifest?.downloads ?? {}).some(byTarget => byTarget[t.id]?.url)).map(t => t.label);
+const where = systems.length ? ` or download them for ${systems.join(', ')}` : '';
 ---
-<SiteLayout title="Demos" description="Play the four MicroEngine demo games in a desktop browser: a platformer, an action adventure, a creature-collecting RPG and a run & gun." current="demos">
+<SiteLayout title="Demos" description={`Play the four MicroEngine demo games in a desktop browser${where}: a platformer, an action adventure, a creature-collecting RPG and a run & gun.`} current="demos">
   <div class="wrap page">
     <header class="page-head">
       <h1>The demos</h1>
-      <p class="lede">Four complete games built with MicroEngine, compiled to WebAssembly from the same game code as their desktop versions. Each page loads its game only when you press Play.</p>
-      <p class="notice"><span class="status partial">Desktop only</span> The games need a keyboard. They were verified in Chrome and Firefox on desktop; phones and tablets can browse the screenshots and guides.</p>
+      <p class="lede">Four complete games built with MicroEngine: the same game code in the browser (WebAssembly){systems.length ? <> and as downloads for {systems.join(", ")}</> : null}. Each page loads its game only when you press Play.</p>
+      <p class="notice"><span class="status partial">In the browser</span> The web builds need a keyboard or a gamepad and were verified in Chrome and Firefox on desktop. The Android app has on-screen controls; see each game for downloads.</p>
     </header>
     <ol class="list">
       {demoGames.map((game, i) => (

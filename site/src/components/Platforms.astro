@@ -1,28 +1,37 @@
 ---
-// Platform status, limited to what has been run: automated browser tests and manual checks (WEB-1, WEB-2) and the
-// desktop validation on Windows. Keep it in step with docs/guide/platforms.md when a platform is validated.
-const rows = [
-  { platform: 'Windows desktop', state: 'ok', label: 'Validated', note: 'Native build with raylib; all tests and scripted playthroughs run here.' },
-  { platform: 'Chrome and Firefox on desktop', state: 'ok', label: 'Verified', note: 'The four demos, by automated tests in Chromium and Firefox and by manual play: keyboard, audio, saves and fullscreen.' },
-  { platform: 'Gamepad in the browser', state: 'ok', label: 'Manually tested', note: 'One controller, validated by hand in a Chromium-based browser. Other controllers and browsers are untested.' },
-  { platform: 'Linux and macOS desktop', state: 'partial', label: 'Not verified', note: '.NET and raylib run there, so they may work; no build has been verified and they are not supported yet.' },
-  { platform: 'Safari and other browsers', state: 'partial', label: 'Not tested', note: 'Safari has not been tested. Other Chromium-based browsers, such as Edge, are not claimed.' },
-  { platform: 'Phones and tablets', state: 'no', label: 'Not supported', note: 'This site works on them. The demos have no touch controls and are not validated on real devices.' },
-];
+// Platform summary for the landing: one row per official target with its status, its platform profile and whether a
+// download exists. The evidence behind each row is the matrix on /platforms/ (src/data/platforms.ts).
+import { platforms } from '../data/platforms';
+import { targets } from '../lib/versions.mjs';
+import { playManifest } from '../lib/play-manifest.mjs';
+
+const downloads = playManifest()?.downloads ?? {};
+const released = new Set(Object.values(downloads).flatMap(byTarget => Object.keys(byTarget)));
+const label = (row: (typeof platforms)[number]) => {
+  if ('none' in row.download) return row.download.none;
+  const target = targets.find(t => t.id === (row.download as { target: string }).target);
+  return released.has(target.id) ? `Download: ${target.detail}` : `No ${target.label} package in the current release`;
+};
 ---
 <div class="table-scroll">
   <table class="plain">
-    <thead><tr><th scope="col">Platform</th><th scope="col">Status</th><th scope="col">Notes</th></tr></thead>
+    <thead><tr><th scope="col">Target</th><th scope="col">Status</th><th scope="col">Platform</th><th scope="col">Get the demos</th></tr></thead>
     <tbody>
-      {rows.map(row => (
-        <tr><th scope="row">{row.platform}</th><td><span class={`status ${row.state}`}>{row.label}</span></td><td class="muted">{row.note}</td></tr>
+      {platforms.map(row => (
+        <tr>
+          <th scope="row"><a href={`/platforms/#${row.id}`}>{row.name}</a></th>
+          <td><span class={`status ${row.status.tone}`}>{row.status.label}</span></td>
+          <td class="muted">{row.platform}</td>
+          <td class="muted">{label(row)}</td>
+        </tr>
       ))}
     </tbody>
   </table>
 </div>
 
 <style>
-  tbody th { font-family: var(--font-body); font-size: var(--text-sm); text-transform: none; letter-spacing: 0; color: var(--color-ink); font-weight: 600; }
+  tbody th { font-family: var(--font-body); font-size: var(--text-sm); text-transform: none; letter-spacing: 0; font-weight: 600; }
+  tbody th a { color: var(--color-ink); }
   @media (max-width: 40rem) {
     table, tbody, tr, th, td { display: block; }
     thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }

@@ -6,14 +6,16 @@ import '../styles/tokens.css';
 import '../styles/site.css';
 import mark from '../assets/mark.svg?url';
 
-interface Props { title: string; description: string; image?: string; noindex?: boolean; current?: 'home' | 'demos' | 'roadmap' }
+interface Props { title: string; description: string; image?: string; noindex?: boolean; current?: 'home' | 'demos' | 'platforms' | 'roadmap' }
 const { title, description, image = '/og.png', noindex = false, current } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const fullTitle = title === 'MicroEngine' ? 'MicroEngine — a code-first 2D game engine for C#' : `${title} · MicroEngine`;
 const nav = [
   { href: '/demos/', label: 'Demos', key: 'demos' },
   { href: '/docs/', label: 'Docs', key: 'docs' },
+  { href: '/platforms/', label: 'Platforms', key: 'platforms' },
   { href: '/roadmap/', label: 'Roadmap', key: 'roadmap' },
+  { href: 'https://github.com/NastMz/MicroEngine', label: 'GitHub', key: 'github' },
 ];
 ---
 <!doctype html>
