@@ -1,0 +1,73 @@
+using MicroEngine.Core;
+
+namespace MicroEngine.Tests;
+
+[TestClass]
+public sealed class GameLauncherTests
+{
+    [TestMethod]
+    public void Report_is_off_unless_asked()
+    {
+        Assert.IsFalse(LaunchArguments.Parse([]).Report);
+        Assert.IsTrue(LaunchArguments.Parse(["--report", "--mute"]).Report);
+    }
+
+    [TestMethod]
+    public void Report_names_the_platform_and_whether_audio_is_available()
+    {
+        using var platform = new HeadlessPlatform();
+        CollectionAssert.AreEqual(new[] { "platform: headless", "audio: unavailable" }, GameLauncher.Report(HeadlessPlatform.Profile, platform).ToArray());
+    }
+
+    [TestMethod]
+    public void Report_adds_what_a_platform_says_about_itself()
+    {
+        using var platform = new DescribedPlatform();
+        CollectionAssert.AreEqual(new[] { "platform: headless (probe renderer)", "audio: unavailable" }, GameLauncher.Report(HeadlessPlatform.Profile, platform).ToArray());
+    }
+
+    [TestMethod]
+    public void Existing_arguments_parse_as_before()
+    {
+        var parsed = LaunchArguments.Parse(["--hidden", "--mute", "--frames", "5", "--platform", "headless"]);
+        Assert.IsTrue(parsed.Hidden);
+        Assert.IsTrue(parsed.Mute);
+        Assert.AreEqual(5, parsed.Frames);
+        Assert.AreEqual("headless", parsed.Platform);
+        Assert.IsFalse(parsed.Report);
+        Assert.ThrowsExactly<FormatException>(() => LaunchArguments.Parse(["--reports"]));
+    }
+
+    [TestMethod]
+    public void A_platform_whose_native_library_cannot_load_is_an_error_not_a_crash()
+    {
+        var catalog = new PlatformCatalog().Add(new PlatformProfile("native", "a library that cannot load",
+            _ => throw new DllNotFoundException("version `GLIBC_2.99' not found (required by libSDL3.so)")));
+        Assert.AreEqual(1, GameLauncher.Run(new EmptyGame(), ["--frames", "1"], catalog));
+    }
+
+    private sealed class EmptyGame : Game
+    {
+        public override GameSettings Settings { get; } = new("Empty", 8, 8);
+        protected override void Load() { }
+    }
+
+    private sealed class DescribedPlatform : IPlatform
+    {
+        private readonly HeadlessPlatform _inner = new();
+        public Graphics.IGraphicsDevice Graphics => _inner.Graphics;
+        public Audio.IAudioDevice Audio => _inner.Audio;
+        public Input.IInputSource Input => _inner.Input;
+        public bool CloseRequested => _inner.CloseRequested;
+        public double Now => _inner.Now;
+        public bool RealTime => _inner.RealTime;
+        public bool Suspended => ((IPlatform)_inner).Suspended;
+        public void PollEvents() => _inner.PollEvents();
+        public Graphics.IRenderer BeginFrame() => _inner.BeginFrame();
+        public void EndFrame() => _inner.EndFrame();
+        public void SaveScreenshot(string path) => _inner.SaveScreenshot(path);
+        public void ToggleFullscreen() => _inner.ToggleFullscreen();
+        public void Dispose() => _inner.Dispose();
+        public override string ToString() => "probe renderer";
+    }
+}
