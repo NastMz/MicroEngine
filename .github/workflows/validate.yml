@@ -24,6 +24,10 @@ on:
         description: Build every missing demo package, then the site and all browser suites (supported)
         type: boolean
         default: true
+      packages:
+        description: Build, check and store every missing native download (Windows, Linux, macOS; Android with the signing key)
+        type: boolean
+        default: true
       macos:
         description: macOS tests and OpenGL diagnosis (experimental)
         type: boolean
@@ -51,6 +55,7 @@ jobs:
     outputs:
       sha: ${{ steps.ref.outputs.sha }}
       build: ${{ steps.demos.outputs.build }}
+      native: ${{ steps.demos.outputs.native || '[]' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,21 +65,32 @@ jobs:
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           echo "Validating \`${{ inputs.ref }}\` at $(git rev-parse HEAD)." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/setup-node@v4
-        if: inputs.web
+        if: inputs.web || inputs.packages
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: site/package-lock.json
-      - if: inputs.web
+      - if: inputs.web || inputs.packages
         run: npm ci --prefix site
       - name: Demo packages (every missing one is built)
         id: demos
         env:
           GITHUB_TOKEN: ${{ github.token }}
           WEB: ${{ inputs.web }}
+          PACKAGES: ${{ inputs.packages }}
+          ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
         run: |
-          if [ "$WEB" = true ]; then node site/scripts/demos.mjs plan --policy all --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+          native=()
+          if [ "$PACKAGES" = true ]; then
+            targets=$(node -e "console.log(require('./packaging/targets.json').targets.map(t => t.id).filter(id => id !== 'android').join(','))")
+            if [ "$ANDROID_SIGNING" = true ]; then targets="$targets,android"
+            else echo "::notice::No Android signing key (packaging/README.md): Android packages are not built."; fi
+            native=(--native "$targets")
+          fi
+          if [ "$WEB" = true ] || [ "$PACKAGES" = true ]; then node site/scripts/demos.mjs plan --policy all "${native[@]}" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
           else echo "build=[]" >> "$GITHUB_OUTPUT"; fi
+          # Web packages are built only when the web checks were asked for.
+          [ "$WEB" = true ] || echo "build=[]" >> "$GITHUB_OUTPUT"
 
   checks:
     name: Supported
@@ -88,9 +104,15 @@ jobs:
       windows: ${{ inputs.dotnet }}
       native: ${{ inputs.native }}
       build: ${{ needs.resolve.outputs.build }}
+      native-packages: ${{ needs.resolve.outputs.native }}
       site: ${{ inputs.web }}
       demo-source: keys
       suites: layout,play,touch
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
   platforms:
     name: Experimental

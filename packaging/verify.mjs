@@ -3,7 +3,7 @@
 // not the build folder it came from. Prints one line per level and writes the result as JSON (--record), which
 // site/scripts/demos.mjs stores in the package's manifest.
 //
-//   node packaging/verify.mjs <archive> --game <Game> --target <id> [--key K] [--record FILE] [--no-run]
+//   node packaging/verify.mjs <archive> --game <Game> --target <id> [--key K] [--record FILE] [--no-run] [--audio optional]
 //
 // Levels: integrity (SHA-256 and size), structure (every file a package needs, nothing unexpected, the content
 // files of the game, no build-machine path), build-info (game, target, key, versions), dependencies (glibc on Linux,
@@ -62,7 +62,7 @@ function scanForPaths(folder, files) {
   });
 }
 
-export async function verifyPackage(file, { game: gameId, target: targetId, key, run = true, log = console.log } = {}) {
+export async function verifyPackage(file, { game: gameId, target: targetId, key, run = true, audioOptional = false, log = console.log } = {}) {
   const t = target(targetId);
   const game = registry().find(g => g.id === gameId) ?? fail(`unknown game "${gameId}".`);
   const record = { game: gameId, target: t.id, file: path.basename(file), checkedOn: `${process.platform}-${process.arch}`, levels: {} };
@@ -165,8 +165,12 @@ export async function verifyPackage(file, { game: gameId, target: targetId, key,
       const report = spawnSync(exe, ['--report', '--hidden', '--frames', '120'], { encoding: 'utf8', env: { ...env, [saveVar]: saves }, cwd: os.tmpdir(), timeout: 120000 });
       const platform = report.stdout.match(/^platform: (.*)$/m)?.[1], audio = report.stdout.match(/^audio: (.*)$/m)?.[1];
       record.platform = platform; record.audio = audio;
-      level('report', report.status === 0 && /^sdl\b/.test(platform ?? '') && audio === 'available',
-        report.status === 0 ? `ran 120 updates on ${platform}; audio device ${audio}` : `exit ${report.status ?? report.signal}: ${report.stderr.trim().split('\n').pop()}`);
+      // A machine without a sound device (hosted Windows runners) cannot show that audio opens: with --audio optional
+      // that is recorded as not verified here, never as verified.
+      const audioOk = audio === 'available' || (audioOptional && audio === 'unavailable');
+      level('report', report.status === 0 && /^sdl\b/.test(platform ?? '') && audioOk,
+        report.status === 0 ? `ran 120 updates on ${platform}; audio device ${audio}${audio !== 'available' && audioOptional ? ' (this machine has no sound device: audio not verified here)' : ''}`
+          : `exit ${report.status ?? report.signal}: ${report.stderr.trim().split('\n').pop()}`);
       fs.rmSync(saves, { recursive: true, force: true });
       const out = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'microengine-verify-captures-'));
       const compared = spawnSync('node', [path.join(repoRoot, 'web/tests/desktop.mjs'), '--packages', dir, '--backend', 'sdl', '--games', gameId, '--out', out, '--reference', path.join(repoRoot, t.reference)], { encoding: 'utf8' });
@@ -184,10 +188,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const args = process.argv.slice(2);
   const option = name => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : undefined; };
   if (!args[0] || args[0].startsWith('--') || !option('game') || !option('target')) {
-    console.log('usage: node packaging/verify.mjs <archive> --game <Game> --target <id> [--key K] [--record FILE] [--no-run]');
+    console.log('usage: node packaging/verify.mjs <archive> --game <Game> --target <id> [--key K] [--record FILE] [--no-run] [--audio optional]');
     process.exit(args[0] ? 1 : 0);
   }
-  verifyPackage(path.resolve(args[0]), { game: option('game'), target: option('target'), key: option('key'), run: !args.includes('--no-run') })
+  verifyPackage(path.resolve(args[0]), { game: option('game'), target: option('target'), key: option('key'), run: !args.includes('--no-run'), audioOptional: option('audio') === 'optional' })
     .then(record => {
       if (option('record')) fs.writeFileSync(option('record'), `${JSON.stringify(record, null, 2)}\n`);
       if (process.env.GITHUB_STEP_SUMMARY) {
