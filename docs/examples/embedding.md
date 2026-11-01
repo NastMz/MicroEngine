@@ -109,8 +109,3 @@ packages can share one origin without conflict. That storage is also shared with
 (about 5 MB in total), browsers may evict it, and private windows discard it. Serving the packages from a
 different origin than the parent page keeps the parent's storage separate. Details:
 [Persistence](../manual/persistence.md).
-
-## What was validated
-
-The packages are verified with automated tests in Chrome and Firefox on desktop, plus manual validation in the
-browser. Edge and Safari (Mac and iPhone) were played by hand; other Chromium-based browsers are not claimed; see [Platforms](../guide/platforms.md) for the full list.

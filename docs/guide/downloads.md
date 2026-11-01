@@ -37,8 +37,8 @@ tar -xzf NeonRift-1.0.0-linux-x64.tar.gz
 ./NeonRift/NeonRift
 ```
 
-The package was built once and checked on Ubuntu 22.04, Debian 12 and Fedora 41 by playing every scripted scenario in a
-container; a desktop installation normally already has what it needs: OpenGL from Mesa or your GPU driver, an X11 or
+It runs on Ubuntu 22.04, Debian 12, Fedora 35 and newer distributions; a desktop installation normally already has
+what it needs: OpenGL from Mesa or your GPU driver, an X11 or
 Wayland session, and PulseAudio or PipeWire for sound. On a distribution with an older C library (glibc before 2.34,
 such as Debian 11) the game stops with `error: platform 'sdl' could not load its native library` and names the missing
 glibc version. Without a working GPU driver, `--platform sdl-software` draws on the CPU. Saves go to
@@ -71,8 +71,7 @@ developers registered with Google, and Google plans to extend this worldwide in 
 registered: in those countries the APK installs through Android's advanced installation flow for unverified developers,
 or with `adb install` from a computer. Elsewhere, nothing changes yet.
 
-The Android app has been played on one phone (Redmi Note 14 Pro, Android 16) and is checked automatically on the Android emulator
-([Platforms](/platforms/)).
+The game uses on-screen touch controls; keyboards and gamepads work too.
 
 ## iOS
 
@@ -83,12 +82,12 @@ Software on an iPhone must be signed by Apple's chain. The ways to reach a devic
 ad-hoc builds limited to registered devices, and in the EU alternative marketplaces or web distribution of
 notarized apps; every one of them needs a paid Apple Developer Program membership, and none is a file a visitor could
 simply download. A simulator build cannot be installed on a device at all. A developer can build the iOS host from the
-repository with Xcode and run it on their own iPhone with their own Apple ID ([Platforms](platforms.md#phones-and-tablets)).
+repository with Xcode and run it on their own iPhone with their own Apple ID ([Platforms](platforms.md#ios-and-ipados-preview)).
 
 ## In the browser
 
-Nothing to install: the demo pages load each game when you press Play. Chrome and Firefox on a desktop are verified;
-the browser builds need a keyboard or a gamepad.
+Nothing to install: the demo pages load each game when you press Play, in Chrome, Edge, Firefox or Safari, on a
+desktop with a keyboard or gamepad, or on a phone or tablet with the on-screen touch controls.
 
 ## Running options
 

@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classify } from '../src/lib/capability.mjs';
 import { gameIds } from '../scripts/demos.mjs';
-import { checkDiagrams, checkDist, checkPublicContent } from '../scripts/check-dist.mjs';
+import { checkDiagrams, checkDist, checkPublicContent, engineeringMaterial } from '../scripts/check-dist.mjs';
 import { headerRules, headersFor } from './serve-dist.mjs';
 
 const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -98,4 +98,13 @@ test('check-dist: repository links and the MIT engine are fine; demo pages need 
   assert.ok(checkPublicContent(dist).includes("play/a.wasm contains a build machine's user folder path"));
   fs.writeFileSync(path.join(dist, 'play', 'a.wasm'), Buffer.from('\0asm /home/runner/work/x/obj/x.pdb\0', 'latin1'));
   assert.ok(!checkPublicContent(dist).some(p => p.includes('a.wasm')), 'public CI runner paths in third-party assemblies are allowed');
+});
+
+test('public pages never show the engineering record', () => {
+  assert.deepEqual(engineeringMaterial('<h1>Platforms</h1><p>Games run on SDK 0.4.0-alpha.1 with SDL 3.</p>'), []);
+  const found = engineeringMaterial('<p>See PLATFORM-3 and <a href="https://github.com/x/blob/main/docs/decisions/0016-platform-profiles.md">ADR 0016</a>.</p><h2>Evidence</h2>');
+  assert.ok(found.includes('project code name PLATFORM-3'));
+  assert.ok(found.includes('decision record ADR 0016'));
+  assert.ok(found.some(f => f.startsWith('link to docs/decisions/')));
+  assert.ok(found.includes('an evidence or validation-history section'));
 });

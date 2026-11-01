@@ -2,9 +2,11 @@
 // them: the repository file is the only source. This module holds the list of public pages and the pure functions
 // that turn a repository Markdown file into a page; the Astro loader at the bottom wires them into the build.
 //
-// A public page is any file listed in `pages`. Everything else (engine-development guides, ADRs, evaluations, game
-// READMEs, source files) stays in the repository: a link from a public page to such a file points to it in the public
-// repository on GitHub, and a link to a file that does not exist is published as its plain text.
+// A public page is any file listed in `pages`: product documentation for people making games. Engineering material
+// (decision records, evaluations, task records, CI and release procedures, the demos' build pipeline) stays in the
+// repository for maintainers and is never published or linked: a public page that links to it fails the build. A
+// link to any other repository file (source code, a sample) points to it on GitHub, and a link to a file that does
+// not exist is published as its plain text.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,8 +37,8 @@ export const groups = [
 
 export const pages = [
   { source: 'docs/guide/introduction.md', slug: 'docs', group: 'intro', label: 'What is MicroEngine' },
-  { source: 'docs/guide/status.md', slug: 'docs/status', group: 'intro', label: 'Status and limitations' },
-  { source: 'docs/guide/sdk.md', slug: 'docs/sdk', group: 'intro', label: 'SDK status (Alpha)' },
+  { source: 'docs/guide/status.md', slug: 'docs/status', group: 'intro', label: 'What it offers today' },
+  { source: 'docs/guide/sdk.md', slug: 'docs/sdk', group: 'intro', label: 'Versions and compatibility' },
   { source: 'docs/guide/release-notes.md', slug: 'docs/release-notes', group: 'intro', label: 'SDK release notes' },
   { source: 'docs/architecture.md', slug: 'docs/architecture', group: 'intro', label: 'Architecture' },
   { source: 'docs/guide/platforms.md', slug: 'docs/platforms', group: 'intro', label: 'Platforms' },
@@ -64,7 +66,7 @@ export const pages = [
   { source: 'docs/reference/contracts.md', slug: 'docs/reference/contracts', group: 'reference', label: 'Public contracts' },
   { source: 'docs/reference/components.md', slug: 'docs/reference/components', group: 'reference', label: 'Components' },
   { source: 'docs/reference/configuration.md', slug: 'docs/reference/configuration', group: 'reference', label: 'Configuration' },
-  { source: 'docs/reference/limitations.md', slug: 'docs/reference/limitations', group: 'reference', label: 'Known limitations' },
+  { source: 'docs/reference/limitations.md', slug: 'docs/reference/limitations', group: 'reference', label: 'Requirements and limitations' },
   { source: 'docs/migrations.md', slug: 'docs/migrations', group: 'reference', label: 'Migration notes' },
   { source: 'games/CourtyardKey/CREDITS.md', slug: 'docs/credits/courtyard-key', group: 'credits', label: 'Courtyard Key' },
   { source: 'games/TrailDuel/CREDITS.md', slug: 'docs/credits/trail-duel', group: 'credits', label: 'Trail Duel' },
@@ -74,7 +76,7 @@ export const pages = [
 ];
 
 // Site pages outside the documentation that the sidebar also lists (label, URL, group).
-export const extraLinks = [{ label: 'Platforms: compatibility matrix', link: '/platforms/', group: 'intro' }, { label: 'Roadmap', link: '/roadmap/', group: 'intro' }];
+export const extraLinks = [{ label: 'Supported platforms', link: '/platforms/', group: 'intro' }, { label: 'Roadmap', link: '/roadmap/', group: 'intro' }];
 
 const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif']);
 const toPosix = p => p.split(path.sep).join('/');
@@ -96,6 +98,12 @@ export function docImages(list = pages, root = repoRoot) {
   }
   return [...found].sort();
 }
+
+/**
+ * Repository paths that are engineering material, not product documentation: decision records, evaluations, task
+ * records, experiments, CI and release procedures, the demos' packaging and platform checks.
+ */
+export const internalPath = file => /^(docs\/(decisions|evaluations)\/|docs\/(ci|deployment)\.md$|odd\/|experiments\/|packaging\/|platforms\/|sdk\/|\.github\/|AGENTS\.md$)/.test(file);
 
 /** The public repository; links to files that are not site pages point into its default branch. */
 export const repositoryUrl = 'https://github.com/NastMz/MicroEngine';
@@ -120,6 +128,7 @@ export function resolveLink(source, target, { list = pages, root = repoRoot, ima
     : path.posix.normalize(path.posix.join(path.posix.dirname(source), decodeURI(rawPath)));
   if (resolved.startsWith('..')) return target; // outside the repository: leave it alone
   const clean = resolved.replace(/\/$/, '');
+  if (internalPath(clean) && !pageUrl(clean, list)) throw new Error(`${source} links to ${clean}, which is internal engineering material; public pages must not link to it.`);
   const url = pageUrl(clean, list);
   if (url) return url + anchor;
   const absolute = path.join(root, clean);

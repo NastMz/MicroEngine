@@ -4,7 +4,7 @@ Games never ask whether a key is down: they ask whether an *action* is, such as 
 `InputMap` binds each action to keyboard keys, gamepad buttons, stick directions and analog axes, reads any number of
 *action sources* (the on-screen touch controls are one), samples everything once per fixed step and computes press and
 release edges per step. Scripted input forces the same actions and touches the same controls, so automated runs
-exercise exactly the code players do. Decision: [ADR 0020](../decisions/0020-unified-input-and-touch-controls.md).
+exercise exactly the code players do.
 
 ```mermaid
 flowchart LR
@@ -351,8 +351,5 @@ sound) move to the bottom centre, between the thumbs. Details: [Embedding](../ex
 - iOS gives no haptic feedback (see Feedback). Android vibration needs the `VIBRATE` permission (the demo host has it).
 - Touch controls are drawn in screen pixels with simple shapes and the backend's own font (SDL's 8×8 debug font,
   raylib's default font); there are no images or custom fonts on controls.
-- Two fingers at once were checked in emulated mobile Chrome (real multi-touch events), in headless tests and with
-  scripted touches on the Android emulator and the iOS simulator, and by hand on an Android phone
-  ([INPUT-1](../evaluations/input-1.md#7b-played-by-hand)); not on an iPhone.
-- In the browser, gamepad play was validated by hand in Edge on the desktop (Xbox controller) and in Chrome on an
-  Android phone (PlayStation controller over Bluetooth); no claim is made for other controllers, Firefox or Safari ([Platforms](../guide/platforms.md#gamepads)).
+- In browsers, gamepads come through the Gamepad API, whose support and button layout vary by browser and
+  controller.

@@ -35,10 +35,9 @@ microengine new MyGame
 
 **Changed**: hosts and demo packaging; see the [migration notes](../migrations.md#040-alpha1).
 
-**Known limitations**: Android App Bundles (`.aab`) are not built; iOS device builds and macOS notarization run only
-with the developer's Apple credentials and are not exercised in MicroEngine's CI; Windows executables are not
-code-signed by the tool; desktop packages are x64 (Windows, Linux) and arm64 (macOS) only. See
-[Status and limitations](status.md).
+**Known limitations**: Android App Bundles (`.aab`) are not built; iOS device builds and macOS notarization need the
+developer's Apple credentials; Windows executables are not code-signed by the tool; desktop packages are x64 (Windows, Linux) and arm64 (macOS) only. See
+[Requirements and limitations](../reference/limitations.md).
 
 **Upgrading** from a game that referenced the engine's projects: replace the `ProjectReference` with
 `<PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.1" />`, add the identity properties, and

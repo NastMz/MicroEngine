@@ -1,7 +1,7 @@
 # Getting MicroEngine
 
 MicroEngine is a code-first 2D game engine for .NET, open source under the MIT License
-([github.com/NastMz/MicroEngine](https://github.com/NastMz/MicroEngine)). It is in Alpha ([SDK status](sdk.md)): the
+([github.com/NastMz/MicroEngine](https://github.com/NastMz/MicroEngine)). It is in Alpha ([Versions](sdk.md)): the
 engine is tested on six platforms, and its public API may still change between 0.x versions.
 
 Only want to play the demos? They are on the [demo pages](/demos/), in the browser and as downloads ([Downloads](downloads.md)).

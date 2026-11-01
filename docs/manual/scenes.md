@@ -170,4 +170,3 @@ Tweens have no handle; `Tweens.Clear()` drops all of them, and popping the scene
 
 - [Lifecycle](lifecycle.md): where scene updates sit in a frame
 - [UI](ui.md): dialogue and menus used inside scenes
-- [ADR 0003](../decisions/0003-scenes-entities-runtime.md): why a scene stack instead of a global state machine

@@ -8,7 +8,7 @@ export interface InstallStep { label: string; command: string }
 export const sdk = {
   version: sdkVersion,
   stage: 'Alpha',
-  summary: 'MicroEngine works and is checked on six platforms, but its contracts, subsystems and tools are still evolving. Public APIs may change incompatibly between Alpha versions; there is no 1.0 and no promise of backward compatibility yet.',
+  summary: 'MicroEngine runs on six platforms and four complete games are built with it, but its API and tools are still evolving. Public APIs may change incompatibly between Alpha versions; every change is listed in the migration notes, and there is no 1.0 yet.',
 };
 
 export const distribution = {

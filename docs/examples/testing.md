@@ -9,8 +9,8 @@ code from `tests/` and `games/*/scripts`.
 ## The test projects
 
 The engine and each game have their own test project, written with MSTest; they are ordinary .NET test projects
-run by the standard .NET test tooling. At the WEB-1 evaluation they held 279 tests (engine 93, Meadow Run 44, Courtyard
-Key 27, Trail Duel 85, Neon Rift 30; [web support](../evaluations/web-support.md#desktop)).
+run by the standard .NET test tooling (`dotnet test`). A game's tests can do the same: reference the game project
+and drive it on `HeadlessPlatform`.
 
 ## Level 1: engine contracts
 

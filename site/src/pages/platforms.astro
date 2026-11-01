@@ -1,25 +1,22 @@
 ---
-// The public compatibility matrix (src/data/platforms.ts): every official target, every kind of evidence, where it came
-// from. Kept with docs/guide/platforms.md, which explains how to target each platform.
+// The supported platforms (src/data/platforms.ts): how a game runs on each, where it is built, what players need and
+// what to plan around. The developer guide is docs/guide/platforms.md.
 import SiteLayout from '../layouts/SiteLayout.astro';
-import { platforms, columns, evidenceLabels, type Cell, type Evidence } from '../data/platforms';
+import { platforms, supportLabels } from '../data/platforms';
 import { targets } from '../lib/versions.mjs';
 import { playManifest } from '../lib/play-manifest.mjs';
 
 const downloads = playManifest()?.downloads ?? {};
-const release = Object.values(downloads).flatMap(byTarget => Object.values(byTarget))[0]?.release;
 const released = new Set(Object.values(downloads).flatMap(byTarget => Object.keys(byTarget)));
-const legend = Object.entries(evidenceLabels).filter(([key]) => key !== 'na') as [Evidence, { label: string; meaning: string }][];
-const cells = (row: (typeof platforms)[number]) => columns.map(([key, name]) => [name, row[key] as Cell] as const);
+const rows = (row: (typeof platforms)[number]) => [
+  ['Runs on', row.runtime], ['Build', row.build], ['Players need', row.requires], ['Input', row.input], ['Plan for', row.notes],
+] as const;
 ---
-<SiteLayout title="Platforms" description="MicroEngine's compatibility matrix: Windows, Linux, macOS, Android, iOS and browsers, with the kind of evidence behind each claim (real hardware, CI, emulator, simulator)." current="platforms">
+<SiteLayout title="Platforms" description="Where MicroEngine games run: Windows, Linux, macOS, Android, iOS and web browsers, from one game project, and what each platform needs." current="platforms">
   <div class="wrap page">
     <header class="page-head">
       <h1>Platforms</h1>
-      <p class="lede">Six official targets, one game assembly. Each cell says how a capability was checked, so “runs on iOS” is never read as “runs on your iPhone”.</p>
-      <dl class="legend">
-        {legend.map(([key, value]) => <div><dt><span class={`ev ${key}`}>{value.label}</span></dt><dd>{value.meaning}</dd></div>)}
-      </dl>
+      <p class="lede">One game project, six targets. The game's code is the same everywhere; the platform underneath is SDL 3 on desktops and phones and raylib in browsers, and <code>microengine package</code> builds what players install.</p>
     </header>
 
     {platforms.map(row => {
@@ -28,29 +25,21 @@ const cells = (row: (typeof platforms)[number]) => columns.map(([key, name]) => 
         <section class="platform" id={row.id} aria-labelledby={`${row.id}-title`}>
           <div class="platform-head">
             <h2 id={`${row.id}-title`}>{row.name}</h2>
-            <span class={`status ${row.status.tone}`}>{row.status.label}</span>
+            <span class={`status ${row.support === 'supported' ? 'ok' : 'partial'}`}>{supportLabels[row.support]}</span>
           </div>
-          <p class="muted mono small">{row.platform}</p>
-          <dl class="cells">
-            {cells(row).map(([name, cell]) => (
-              <div class={`cell ${cell.level}`}>
-                <dt>{name}</dt>
-                <dd><span class={`ev ${cell.level}`}>{evidenceLabels[cell.level].label}</span><span class="note">{cell.note}</span></dd>
-              </div>
-            ))}
+          <dl class="facts">
+            {rows(row).map(([name, value]) => <div><dt>{name}</dt><dd>{value}</dd></div>)}
           </dl>
-          <p class="small">
+          <p class="small muted">
             {target
-              ? (released.has(target.id)
-                  ? <>Download: {target.detail} package in release <span class="mono">{release}</span>, checked by playing the downloaded file (<a href="/docs/downloads/">install steps</a>).</>
-                  : <>No {target.label} package in the current release yet.</>)
+              ? (released.has(target.id) ? <>The demos: <a href="/docs/downloads/">{target.detail} downloads</a>.</> : <>The demos: no {target.label} download in the current release.</>)
               : row.download.none}
           </p>
         </section>
       );
     })}
 
-    <p class="muted small">Evidence: <a href="https://github.com/NastMz/MicroEngine/blob/main/docs/evaluations/platform-3.md">PLATFORM-3</a> and <a href="https://github.com/NastMz/MicroEngine/blob/main/docs/evaluations/product-1.md">PRODUCT-1</a> evaluations. Developer guide: <a href="/docs/platforms/">Platforms</a>.</p>
+    <p class="muted small">Building for a platform: <a href="/docs/platforms/">Platforms guide</a> · <a href="/docs/packaging/">Packaging a game</a> · <a href="/docs/signing/">Signing</a>.</p>
   </div>
 </SiteLayout>
 
@@ -58,29 +47,12 @@ const cells = (row: (typeof platforms)[number]) => columns.map(([key, name]) => 
   .page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); padding-top: var(--space-3xl); }
   .page-head { display: grid; gap: var(--space-lg); }
   .small { font-size: var(--text-sm); }
-  .legend { margin: 0; display: grid; gap: var(--space-xs); grid-template-columns: minmax(0, 1fr); font-size: var(--text-sm); }
-  .legend > div { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: var(--space-sm); align-items: baseline; }
-  .legend dd { margin: 0; color: var(--color-ink-2); }
-
-  .ev { --tone: var(--color-ink-3); display: inline-flex; align-items: center; gap: var(--space-xs); color: var(--tone);
-    font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
-  .ev::before { content: ''; width: 8px; height: 8px; background: var(--tone); }
-  .ev.person { --tone: var(--color-ok); }
-  .ev.hardware { --tone: var(--color-ok); }
-  .ev.hardware::before { background: transparent; outline: var(--rule-pixel) solid var(--tone); outline-offset: -2px; }
-  .ev.virtual { --tone: var(--color-accent); }
-  .ev.emulator, .ev.simulator { --tone: var(--color-exploring); }
-  .ev.none { --tone: var(--color-no); }
-  .ev.na { --tone: var(--color-ink-3); }
-  .ev.na::before { display: none; }
-
   .platform { display: grid; gap: var(--space-sm); padding-top: var(--space-lg); border-top: var(--rule-pixel) solid var(--color-rule); scroll-margin-top: var(--space-lg); }
   .platform-head { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-md); align-items: baseline; }
-  .cells { margin: 0; display: grid; gap: var(--space-xs); grid-template-columns: minmax(0, 1fr); }
-  .cell { display: grid; gap: var(--space-2xs); padding: var(--space-sm); background: var(--color-paper-2); border: var(--rule-thin) solid var(--color-rule); min-width: 0; }
-  .cell dt { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
-  .cell dd { margin: 0; display: grid; gap: var(--space-2xs); }
-  .cell .note { font-size: var(--text-sm); color: var(--color-ink-2); }
-  @media (min-width: 40rem) { .cells { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (min-width: 64rem) { .cells { grid-template-columns: repeat(4, minmax(0, 1fr)); } .legend { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .facts { margin: 0; display: grid; gap: var(--space-xs); grid-template-columns: minmax(0, 1fr); }
+  .facts > div { display: grid; gap: var(--space-2xs); padding: var(--space-sm); background: var(--color-paper-2); border: var(--rule-thin) solid var(--color-rule); min-width: 0; }
+  .facts dt { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
+  .facts dd { margin: 0; font-size: var(--text-sm); }
+  @media (min-width: 40rem) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 64rem) { .facts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 </style>

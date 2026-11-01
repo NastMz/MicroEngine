@@ -72,7 +72,7 @@ const layers = [
         <a class="button" href="/demos/">Play the demos</a>
         <a class="button secondary" href="/docs/">Read the docs</a>
       </div>
-      <p class="hero-note muted">Open source, MIT · <a href={distribution.repository}>Source on GitHub</a> · <a href="/platforms/">Six platforms, and how each was checked</a></p>
+      <p class="hero-note muted">Open source, MIT · <a href={distribution.repository}>Source on GitHub</a> · <a href="/platforms/">Windows, Linux, macOS, Android, iOS and the web</a></p>
     </div>
     <figure class="hero-figure">
       <div class="sprite-code">
@@ -146,7 +146,7 @@ const layers = [
   <section class="section wrap" id="demos" aria-labelledby="demos-title">
     <div class="section-head">
       <h2 id="demos-title">Four games, one engine, unchanged on every platform</h2>
-      <p>Each demo is a complete game with a title screen, an ending, saves and achievements. Play them in the browser, or download them{downloadable.length ? '' : ' once a release offers native packages'}. Screenshots are real captures from scripted playthroughs.</p>
+      <p>Each demo is a complete game with a title screen, an ending, saves and achievements. Play them in the browser, or download them{downloadable.length ? '' : ' once a release offers native packages'}. The screenshots are captures of the games themselves.</p>
     </div>
     <ul class="demo-grid">
       {demoGames.map((game, i) => (
@@ -166,11 +166,11 @@ const layers = [
 
   <section class="section wrap" aria-labelledby="platforms-title">
     <div class="section-head">
-      <h2 id="platforms-title">Where it runs, and how we know</h2>
-      <p>All six are official targets. They are not equally proven: a capture on a CI runner is not a person playing on a phone, and a simulator is not an iPhone. The badge says which.</p>
+      <h2 id="platforms-title">Where your game runs</h2>
+      <p>One project builds for six targets. <code>microengine package</code> produces what players install on each: a ZIP, a tar.gz, an app, an APK, an .ipa or a static web site.</p>
     </div>
     <Platforms />
-    <p class="map-more"><a href="/platforms/">The full compatibility matrix</a> · <a href="/docs/downloads/">Downloads and installation</a></p>
+    <p class="map-more"><a href="/platforms/">Platforms in detail</a> · <a href="/docs/packaging/">Packaging a game</a></p>
   </section>
 
   <section class="section wrap" aria-labelledby="status-title">
@@ -179,15 +179,15 @@ const layers = [
         <h2 id="status-title">SDK {sdk.stage} · {sdk.version}</h2>
         <p>{sdk.summary}</p>
         <div class="actions">
-          <a class="button secondary" href="/docs/sdk/">SDK status</a>
+          <a class="button secondary" href="/docs/sdk/">Versions and compatibility</a>
           <a class="button secondary" href="/roadmap/">Roadmap</a>
         </div>
       </div>
       <ul class="not-yet">
         <li><strong>Alpha API.</strong> Public APIs may change between 0.x versions; every change is in the migration notes.</li>
         <li><strong>No visual editor.</strong> MicroEngine is code-first; content is code, or files in a content folder.</li>
-        <li><strong>No iPhone has run a native build.</strong> iOS is checked in Apple's simulator; Android was played on a phone.</li>
-        <li><strong>macOS downloads are not hand-played yet.</strong> They are checked automatically on hosted Mac runners.</li>
+        <li><strong>iOS is a preview.</strong> Installing on a device needs your Apple developer signing.</li>
+        <li><strong>No Android App Bundles yet.</strong> Packages are APKs; Google Play asks for an .aab.</li>
       </ul>
     </div>
   </section>

@@ -26,7 +26,7 @@ public sealed record GameSettings(string Title, int VirtualWidth = 320, int Virt
 | `UpdateRate` | 60 | Fixed simulation steps per second; `dt` is `1 / UpdateRate` |
 | `Background` | black | Clear colour of every frame |
 
-Neon Rift, for example, draws at 480x270 ([web support](../evaluations/web-support.md#lifecycle-and-presentation)).
+Neon Rift, for example, draws at 480x270.
 
 ## Command-line flags
 

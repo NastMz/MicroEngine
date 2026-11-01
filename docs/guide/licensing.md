@@ -20,8 +20,9 @@ Games you make with MicroEngine are yours: code, art, audio, names and revenue. 
 limits and nothing to register.
 
 When you ship a game, its build contains the engine's assemblies and the native libraries of the platforms it uses
-(SDL 3, raylib). The licences ask for one thing: keep their notices with your game. The demo downloads show one way:
-`LICENSE.txt`, `THIRD-PARTY-NOTICES.txt` and a `licenses/` folder next to the executable ([packaging](../../packaging/README.md)).
+(SDL 3, raylib). The licences ask for one thing: keep their notices with your game. `microengine package` does it for
+you: every package has `THIRD-PARTY-NOTICES.txt` and a `licenses/` folder next to the game, and your own licence as
+`LICENSE.txt` ([Packaging](packaging.md)).
 
 - MicroEngine: include the MIT License text with its copyright line, for example in a `licenses` folder or on a
   credits screen. You do not have to show "Made with MicroEngine" (it is welcome).

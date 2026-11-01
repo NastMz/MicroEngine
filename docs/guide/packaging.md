@@ -64,12 +64,3 @@ same page in desktop and mobile browsers, with touch controls.
 It needs the `wasm-tools` workload (`dotnet workload install wasm-tools`). raylib for the browser comes inside the
 `MicroEngine.Raylib` package, built with the same emscripten as that workload. A game that references only
 `MicroEngine.Sdl` cannot be packaged for the web; reference `MicroEngine.Desktop` (or `MicroEngine.Raylib`).
-
-## What is checked
-
-The SDK's own test (`sdk/tests/external.mjs`, run on Windows, Linux and macOS for every SDK change) creates a game
-outside the repository from the packages, gives it its own name, id and icon, and packages it: it checks the files and
-metadata of each package, runs the desktop package of the system it is on and plays the web package in Chrome; with
-`--device` (run locally) it also installs and starts the APK on an Android device or emulator. The demos' packages are also played scenario by scenario and compared with
-reference captures ([packaging/](../../packaging/README.md)). iOS device builds and notarization are not exercised in
-CI, which has no Apple developer account.

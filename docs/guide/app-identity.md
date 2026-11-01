@@ -54,5 +54,4 @@ orientation. A game built without the targets has no identity, and platforms kee
 ## Where it comes from
 
 The targets are `build/MicroEngine.targets` in the `MicroEngine` package; every game that references any MicroEngine
-package imports them. In this repository the demos import the same file (`games/Directory.Build.targets`).
-Decision: [ADR 0021](../decisions/0021-sdk-toolchain.md).
+package imports them.

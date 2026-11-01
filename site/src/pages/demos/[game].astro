@@ -43,7 +43,7 @@ const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'u
     <section aria-labelledby="download-title" class="downloads" id="download">
       <div class="downloads-head">
         <h2 id="download-title">Download for your platform</h2>
-        <p class="muted">{game.title} {version} · MicroEngine {engine}{release && <> · release <a class="mono" href={`${repositoryUrl}/releases/tag/${release}`}>{release}</a></>}. Each package was played on its own system before it was published: <a href="/platforms/">how each platform was checked</a>.</p>
+        <p class="muted">{game.title} {version} · MicroEngine {engine}{release && <> · release <a class="mono" href={`${repositoryUrl}/releases/tag/${release}`}>{release}</a></>}.</p>
       </div>
       {offered.length > 0
         ? <ul class="packages" data-packages>
@@ -69,7 +69,7 @@ const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'u
         : <p class="notice small"><span class="status partial">Not yet</span> This build has no released native packages. Play in the browser above, or build the game from the <a href={repositoryUrl}>repository</a>.</p>}
       <ul class="no-download small muted">
         {offered.length > 0 && absent.map(t => <li>{t.label}: no package in this release.</li>)}
-        <li>iOS: no download. Installing on an iPhone requires Apple signing, and the build checked in Apple’s simulator cannot run on a device (<a href="/docs/downloads/#ios">why</a>).</li>
+        <li>iOS: no download. Installing on an iPhone requires Apple signing, and a Simulator build cannot run on a device (<a href="/docs/downloads/#ios">why</a>).</li>
         <li>Direct downloads from GitHub Releases, not store listings: no Steam, Google Play or App Store account is needed. <a href="/docs/downloads/">Downloads and installation</a></li>
       </ul>
     </section>
@@ -89,7 +89,7 @@ const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'u
             <tbody>{game.controls.map(([action, keys]) => <tr><td>{action}</td><td class="mono">{keys}</td></tr>)}</tbody>
           </table>
         </div>
-        <p class="muted small">In the browser, <kbd>Alt</kbd>+<kbd>Enter</kbd> or the Fullscreen button toggles fullscreen. A gamepad was validated by hand in a Chromium-based browser with one controller; other controllers are untested.</p>
+        <p class="muted small">In the browser, <kbd>Alt</kbd>+<kbd>Enter</kbd> or the Fullscreen button toggles fullscreen. Gamepads work through the browser's Gamepad API; button layouts can vary between browsers and controllers.</p>
       </section>
 
       <section aria-labelledby="compat-title">

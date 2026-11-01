@@ -40,5 +40,10 @@ sufficient without previous chats or agent memory.
 - Test public behaviour; for visual or feel changes, run scripted captures and inspect them.
   Never report something as verified unless it was run or looked at.
 - Significant architectural changes get an ADR in `docs/decisions/`.
+- The site is product documentation for people making games. Decision records, evaluations, task records, CI and
+  release procedures and project code names (PLATFORM-3, SDK-1...) are engineering material: they stay in the
+  repository and are never published, linked or quoted on public pages (`site/src/lib/repo-docs.mjs` refuses such
+  links, `site/scripts/check-dist.mjs` refuses such content). Public pages state capabilities and functional limits,
+  not how they were tested.
 - Technical artifacts in English. Conventional Commits, no AI attribution lines.
 - Branch names: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`. No force-push, PR or release without the owner asking.

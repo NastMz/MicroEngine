@@ -209,4 +209,4 @@ list.Closed += () => game.Sfx("menu_back", 0.7f);
 Game.Scenes.Push(list);
 ```
 
-See [Achievements](../manual/achievements.md) and [ADR 0006](../decisions/0006-achievements.md).
+See [Achievements](../manual/achievements.md).

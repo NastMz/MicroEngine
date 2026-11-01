@@ -1,28 +1,18 @@
 ---
-// Platform summary for the landing: one row per official target with its status, its platform profile and whether a
-// download exists. The evidence behind each row is the matrix on /platforms/ (src/data/platforms.ts).
-import { platforms } from '../data/platforms';
-import { targets } from '../lib/versions.mjs';
-import { playManifest } from '../lib/play-manifest.mjs';
-
-const downloads = playManifest()?.downloads ?? {};
-const released = new Set(Object.values(downloads).flatMap(byTarget => Object.keys(byTarget)));
-const label = (row: (typeof platforms)[number]) => {
-  if ('none' in row.download) return row.download.none;
-  const target = targets.find(t => t.id === (row.download as { target: string }).target);
-  return released.has(target.id) ? `Download: ${target.detail}` : `No ${target.label} package in the current release`;
-};
+// Platform summary for the landing: one row per target with its support level, what a game runs on there and what
+// players need. Details are on /platforms/ (src/data/platforms.ts).
+import { platforms, supportLabels } from '../data/platforms';
 ---
 <div class="table-scroll">
   <table class="plain">
-    <thead><tr><th scope="col">Target</th><th scope="col">Status</th><th scope="col">Platform</th><th scope="col">Get the demos</th></tr></thead>
+    <thead><tr><th scope="col">Platform</th><th scope="col">Support</th><th scope="col">Runs on</th><th scope="col">Players need</th></tr></thead>
     <tbody>
       {platforms.map(row => (
         <tr>
           <th scope="row"><a href={`/platforms/#${row.id}`}>{row.name}</a></th>
-          <td><span class={`status ${row.status.tone}`}>{row.status.label}</span></td>
-          <td class="muted">{row.platform}</td>
-          <td class="muted">{label(row)}</td>
+          <td><span class={`status ${row.support === 'supported' ? 'ok' : 'partial'}`}>{supportLabels[row.support]}</span></td>
+          <td class="muted">{row.runtime}</td>
+          <td class="muted">{row.requires}</td>
         </tr>
       ))}
     </tbody>

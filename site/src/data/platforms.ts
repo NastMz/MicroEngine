@@ -1,108 +1,84 @@
-// The public compatibility matrix: one row per official target, one cell per kind of evidence. A cell names where the
-// evidence came from, never more: "hardware" means a real machine of that kind, "virtual" a hosted CI runner or a
-// container (no real GPU, virtual display and sound server), "emulator" and "simulator" what they say. Sources:
-// docs/evaluations/platform-3.md, docs/evaluations/product-1.md and docs/evaluations/input-1.md (§7b, played by hand).
-// Update them together when a platform is validated.
-export type Evidence = 'person' | 'hardware' | 'virtual' | 'emulator' | 'simulator' | 'none' | 'na';
+// The supported platforms, as a game developer needs them: how a game runs there, where it is built, what
+// `microengine package` produces and what players need. Functional limits only; keep in step with
+// docs/guide/platforms.md and docs/guide/packaging.md.
+export type Support = 'supported' | 'preview';
 
-export const evidenceLabels: Record<Evidence, { label: string; meaning: string }> = {
-  person: { label: 'Played', meaning: 'A person played the games on real hardware of this kind.' },
-  hardware: { label: 'Real hardware', meaning: 'Automated runs on a real machine of this kind (GPU, sound device).' },
-  virtual: { label: 'CI / virtual', meaning: 'Automated runs on a hosted CI runner or in a container: no real GPU, a virtual display and sound server.' },
-  emulator: { label: 'Emulator', meaning: 'Automated runs on the Android emulator (x86_64).' },
-  simulator: { label: 'Simulator', meaning: 'Automated runs in Apple’s iOS simulator on a Mac. Not an iPhone.' },
-  none: { label: 'Not checked', meaning: 'No evidence yet.' },
-  na: { label: '—', meaning: 'Does not apply.' },
+export const supportLabels: Record<Support, string> = {
+  supported: 'Supported',
+  preview: 'Preview',
 };
-
-export interface Cell { level: Evidence; note: string }
 
 export interface PlatformRow {
   id: string;
   name: string;
-  platform: string;
-  status: { label: string; tone: 'ok' | 'partial' | 'no' };
-  build: Cell; tests: Cell; rendering: Cell; input: Cell; audio: Cell; lifecycle: Cell; hardware: Cell;
-  /** The id of its downloadable target in packaging/targets.json, or why there is none. */
+  support: Support;
+  /** The platform profile the game runs on there. */
+  runtime: string;
+  /** Where `microengine package` builds it, and what it produces. */
+  build: string;
+  /** What a player's device needs. */
+  requires: string;
+  /** Input devices the game receives. */
+  input: string;
+  /** Functional limits a developer should plan around. */
+  notes: string;
+  /** The id of the demos' downloadable target (packaging/targets.json), or how the demos are offered instead. */
   download: { target: string } | { none: string };
 }
 
-export const columns: [keyof PlatformRow, string][] = [
-  ['build', 'Build'], ['tests', 'Headless tests'], ['rendering', 'Rendering'], ['input', 'Input'], ['audio', 'Audio'],
-  ['lifecycle', 'Lifecycle'], ['hardware', 'Real device'],
-];
-
 export const platforms: PlatformRow[] = [
   {
-    id: 'windows', name: 'Windows x64', platform: 'SDL 3 (default) · raylib · SDL software',
-    status: { label: 'Runs on hardware', tone: 'ok' },
-    build: { level: 'virtual', note: 'Hosted Windows runner on engine changes; local builds' },
-    tests: { level: 'virtual', note: 'Engine and four games, every engine change' },
-    rendering: { level: 'hardware', note: '138 scripted captures; Direct3D 11, OpenGL and Vulkan identical; the four ZIP packages reproduce them' },
-    input: { level: 'person', note: 'Keyboard and gamepads played by hand with raylib and with the SDL downloads (an Xbox controller)' },
-    audio: { level: 'person', note: 'Heard with raylib; SDL’s device opens and plays (packages included)' },
-    lifecycle: { level: 'na', note: 'Desktop windows are not suspended' },
-    hardware: { level: 'person', note: 'Windows 11 PC with a GPU; the four downloads played by hand' },
+    id: 'windows', name: 'Windows', support: 'supported',
+    runtime: 'SDL 3 (Direct3D 11, OpenGL or Vulkan) · raylib · SDL software renderer',
+    build: 'microengine package windows, on Windows: a portable ZIP with a self-contained executable',
+    requires: 'Windows 10 or 11, 64-bit (x64)',
+    input: 'Keyboard, mouse, gamepads',
+    notes: 'Executables are not code-signed by the tool, so SmartScreen may warn until you sign them.',
     download: { target: 'windows-x64' },
   },
   {
-    id: 'linux', name: 'Linux x64', platform: 'SDL 3 (default) · raylib · SDL software',
-    status: { label: 'Works', tone: 'ok' },
-    build: { level: 'virtual', note: 'Ubuntu runner on every engine change' },
-    tests: { level: 'virtual', note: 'Engine and four games, every engine change' },
-    rendering: { level: 'virtual', note: '138 captures on Mesa (software) under Xvfb; the package reproduces them on Ubuntu 22.04, Debian 12 and Fedora 41' },
-    input: { level: 'virtual', note: 'System keyboard through the X server (raylib); scripted input on SDL' },
-    audio: { level: 'virtual', note: 'Virtual PulseAudio: a played tone recorded and recognised (raylib); SDL’s device opens' },
-    lifecycle: { level: 'na', note: 'Desktop windows are not suspended' },
-    hardware: { level: 'person', note: 'The four downloads played by hand on Debian 13.7 and Ubuntu 24.04.4 LTS, with keyboard and an Xbox controller' },
+    id: 'linux', name: 'Linux', support: 'supported',
+    runtime: 'SDL 3 (OpenGL) · raylib · SDL software renderer',
+    build: 'microengine package linux, from any system: a portable tar.gz with a desktop entry and icon',
+    requires: 'x86_64 with glibc 2.34 or later (Ubuntu 22.04, Debian 12, Fedora 35 or newer), X11 or Wayland, PulseAudio or PipeWire',
+    input: 'Keyboard, mouse, gamepads',
+    notes: 'The raylib alternative needs glibc 2.38 (Ubuntu 24.04 or newer).',
     download: { target: 'linux-x64' },
   },
   {
-    id: 'macos', name: 'macOS (Apple silicon)', platform: 'SDL 3 with Metal (default); raylib needs an OpenGL GPU',
-    status: { label: 'Checked, not yet played', tone: 'partial' },
-    build: { level: 'virtual', note: 'Hosted macOS 26 arm64 runner' },
-    tests: { level: 'virtual', note: 'Headless tests on the hosted runner' },
-    rendering: { level: 'virtual', note: '138 captures on SDL against a macOS reference (paravirtual GPU)' },
-    input: { level: 'none', note: 'Scripted input only; no system keyboard check' },
-    audio: { level: 'virtual', note: 'SDL’s device opens on the runner' },
-    lifecycle: { level: 'na', note: 'Desktop windows are not suspended' },
-    hardware: { level: 'none', note: 'No Mac with a person or a real GPU yet' },
+    id: 'macos', name: 'macOS', support: 'supported',
+    runtime: 'SDL 3 with Metal · raylib where OpenGL is available',
+    build: 'microengine package macos, on a Mac: an application bundle, signed ad hoc or with your Developer ID',
+    requires: 'macOS 14 or later on Apple silicon',
+    input: 'Keyboard, mouse, gamepads',
+    notes: 'Intel Macs are not packaged. Without Apple notarization, players allow the app once in Privacy & Security.',
     download: { target: 'macos-arm64' },
   },
   {
-    id: 'android', name: 'Android', platform: 'SDL 3 (the Android host)',
-    status: { label: 'Runs on a phone', tone: 'ok' },
-    build: { level: 'virtual', note: 'APKs for arm64-v8a and x86_64' },
-    tests: { level: 'na', note: 'Game rules are tested on the desktop' },
-    rendering: { level: 'emulator', note: 'All four games, 138 captures (x86_64 emulator)' },
-    input: { level: 'person', note: 'Touch controls and a Bluetooth PlayStation controller played on a phone; taps, drags and two thumbs also checked on the emulator' },
-    audio: { level: 'emulator', note: 'SDL’s device opens; not listened to' },
-    lifecycle: { level: 'emulator', note: 'Home suspends the game, returning resumes it' },
-    hardware: { level: 'person', note: 'Redmi Note 14 Pro (arm64, Android 16): the four APKs played by hand; no tablet' },
+    id: 'android', name: 'Android', support: 'supported',
+    runtime: 'SDL 3 (OpenGL ES) with on-screen touch controls',
+    build: 'microengine package android: an APK for arm64-v8a and x86_64, signed with your key',
+    requires: 'Android 7.0 (API 24) or later, 64-bit',
+    input: 'Touch controls, keyboards, gamepads',
+    notes: 'APKs, not Android App Bundles: Google Play needs an .aab, which the tool does not build yet.',
     download: { target: 'android' },
   },
   {
-    id: 'ios', name: 'iOS', platform: 'SDL 3 with Metal (the iOS host)',
-    status: { label: 'Simulator only', tone: 'partial' },
-    build: { level: 'virtual', note: 'Simulator app on a hosted Mac' },
-    tests: { level: 'na', note: 'Game rules are tested on the desktop' },
-    rendering: { level: 'simulator', note: 'Two games, 25 captures within the SDL reference' },
-    input: { level: 'simulator', note: 'Scripted touches on the simulator’s control layout; it cannot be sent system touches by script' },
-    audio: { level: 'simulator', note: 'SDL’s device opens' },
-    lifecycle: { level: 'simulator', note: 'Another app suspends the game; returning resumes it' },
-    hardware: { level: 'none', note: 'No iPhone or iPad has run it' },
-    download: { none: 'Installing on an iPhone needs Apple signing; a simulator build cannot run on a device' },
+    id: 'ios', name: 'iOS and iPadOS', support: 'preview',
+    runtime: 'SDL 3 with Metal and on-screen touch controls',
+    build: 'microengine package ios on a Mac with Xcode: an .ipa signed with your Apple certificate (ios-simulator: a Simulator app)',
+    requires: 'iOS 15 or later',
+    input: 'Touch controls, keyboards, gamepads',
+    notes: 'Installing on a device needs an Apple Developer account; App Store submission goes through Apple’s tools.',
+    download: { none: 'No demo download: installing on an iPhone needs the developer’s Apple signing.' },
   },
   {
-    id: 'browser', name: 'Browsers (WebAssembly)', platform: 'raylib compiled to WebAssembly',
-    status: { label: 'Played in four browsers', tone: 'ok' },
-    build: { level: 'virtual', note: 'Pinned toolchain on a hosted runner' },
-    tests: { level: 'na', note: 'Same game code as the desktop' },
-    rendering: { level: 'virtual', note: '138 captures byte-identical to desktop raylib, Chrome and Firefox' },
-    input: { level: 'person', note: 'Keyboard (automated and by hand); gamepads by hand in Edge on the desktop (Xbox) and Chrome on an Android phone (PlayStation, Bluetooth); touch played in Chrome on an Android phone and Safari on an iPhone, and checked with real multi-touch in emulated mobile Chrome' },
-    audio: { level: 'person', note: 'After the first click or key; stops in a hidden tab' },
-    lifecycle: { level: 'virtual', note: 'Saves persist; a hidden page suspends the game' },
-    hardware: { level: 'person', note: 'Desktop Chrome and Firefox; Edge on the desktop, Chrome on an Android 16 phone and Safari on a Mac and an iPhone 13 (BrowserStack) played by hand' },
-    download: { none: 'Plays on the demo pages; nothing to install' },
+    id: 'browser', name: 'Web browsers', support: 'supported',
+    runtime: 'raylib compiled to WebAssembly',
+    build: 'microengine package web, from any system: a static site for any web server',
+    requires: 'A browser with WebAssembly and WebGL: Chrome, Edge, Firefox, Safari, on desktops and phones',
+    input: 'Keyboard, gamepads, touch controls',
+    notes: 'Sound starts after the first click or key press, as browsers require; a hidden tab pauses the game.',
+    download: { none: 'Play the demos in the browser on their pages.' },
   },
 ];

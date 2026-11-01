@@ -66,7 +66,7 @@ Only a system with no home folder at all falls back to the temporary folder.
 
 `FileSaveStorage` writes a temporary file and moves it over the slot, so a crash never leaves a half-written save.
 `BrowserLauncher.CreateSession` sets `SaveStore.DefaultStorage` to `BrowserSaveStorage` before any game is built, so
-games construct their store exactly as on desktop ([ADR 0007](../decisions/0007-browser-host.md)). An explicit
+games construct their store exactly as on desktop. An explicit
 `directory` always means files.
 
 ## `ISaveStorage`
@@ -113,7 +113,7 @@ The web host reports storage problems to the player: "Progress will not be kept"
 storage (a session-only store is used), and "Progress could not be saved: site storage is full" on a quota error.
 Closing or reloading the page ends the run properly so progress written at shutdown is saved. Browser storage
 holds about 5 MB per origin, can be evicted and is discarded by private windows; see
-[Known limitations](../reference/limitations.md#storage-limits-in-browsers).
+[Requirements and limitations](../reference/limitations.md#saves).
 
 ## Limitations
 

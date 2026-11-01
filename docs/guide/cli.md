@@ -61,7 +61,7 @@ Builds a file a player installs, into `dist/` next to the project (or `--out`), 
 | `--version-code N` | `android`, `ios`: the build number stores compare (default: minutes from 2026-01-01 to the commit, or to now outside Git, so later builds install over earlier ones) |
 | `--dev` | `web`: a development build that also ships input scripts and accepts URL parameters |
 | `--raylib-wasm FILE` | `web`: the raylib library to link (default: the one inside the `MicroEngine.Raylib` package) |
-| `--key LABEL` | a label recorded in `build-info.json` (MicroEngine's own release pipeline records content keys) |
+| `--key LABEL` | a label recorded in `build-info.json`, for your own release tooling (default `local`) |
 
 `MICROENGINE_DOTNET` names another `dotnet` to build with (for example a private SDK with the `wasm-tools`
 workload); by default the one on `PATH` is used.

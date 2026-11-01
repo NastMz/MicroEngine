@@ -23,7 +23,7 @@ export const completed: string[] = [
   'Named platform profiles and replaceable subsystems behind IPlatform',
   'On-screen touch controls and suspend/resume on phones',
   'Analog input and per-game touch controls (d-pad, joystick, buttons) on phones and in mobile browsers',
-  'Native demo downloads, checked as downloaded',
+  'Native demo downloads for Windows, Linux, macOS and Android',
   'SDK 0.4.0-alpha.1 on nuget.org: engine packages, the microengine tool and a dotnet new template',
   'Per-game name, id, version and icon on every platform',
   'This site and its documentation',
@@ -37,21 +37,15 @@ export const next: RoadmapTrack[] = [
     items: ['Android App Bundles for Google Play', 'Notarized macOS and signed iOS builds exercised with a real Apple account', 'Windows code signing in microengine package'],
   },
   {
-    title: 'Real devices',
-    status: 'planned',
-    summary: 'Turn automated evidence into played evidence.',
-    items: ['Play the SDL builds by hand on a Mac (Windows and Linux done)', 'More Android phones and a tablet (one arm64 phone done)', 'An iPhone, with Apple signing for a distributable build'],
-  },
-  {
     title: 'Engine robustness',
     status: 'planned',
-    summary: 'Audit behaviour under real-world conditions.',
+    summary: 'How games behave under real-world conditions.',
     items: ['Variable frame rates and the simulation', 'Fixed timestep, and interpolation where it helps', 'Web audio and behaviour in background tabs'],
   },
   {
     title: 'Mobile experience',
     status: 'exploring',
-    summary: 'Each game has its own touch controls with safe areas and feedback; what remains is mostly polish and real devices.',
+    summary: 'Each game has its own touch controls with safe areas and feedback; what remains is polish.',
     items: ['Hide controls during dialogues', 'Haptics on iOS', 'Text input', 'A player setting for control size and opacity'],
   },
 ];

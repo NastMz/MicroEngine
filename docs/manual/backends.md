@@ -7,11 +7,10 @@ platform-specific sits behind `IPlatform` and four small interfaces. The officia
 | --- | --- | --- |
 | SDL 3 | `src/MicroEngine.Sdl` | The default on Windows, Linux, macOS, Android and iOS |
 | raylib | `src/MicroEngine.Raylib` | Browsers (WebAssembly), and an alternative desktop platform |
-| Headless | `src/MicroEngine` (`HeadlessPlatform`) | Tests and CI |
+| Headless | `src/MicroEngine` (`HeadlessPlatform`) | Automated tests |
 
 A game is an ordinary .NET program and does not change between them. Which platform runs is the host's choice
-(a command-line argument, an environment variable, the phone app), never the game's. The decisions are recorded in
-[ADR 0016](../decisions/0016-platform-profiles.md) and [ADR 0017](../decisions/0017-sdl3-native-platform.md).
+(a command-line argument, an environment variable, the phone app), never the game's.
 
 ## `IPlatform`
 
@@ -70,7 +69,7 @@ $ MeadowRun --list-platforms
 sdl: SDL 3: window, 2D renderer (Direct3D, Metal, OpenGL, Vulkan or software), input, touch and audio
 raylib: raylib 6.0: GLFW window, OpenGL renderer, input and miniaudio sound
 sdl-software: SDL 3 with its software renderer
-headless: no window, devices or sound; one step per frame, for tests and CI
+headless: no window, devices or sound; one step per frame, for automated tests
 ```
 
 | Argument | Effect |
@@ -164,9 +163,9 @@ The shared web host calls `Frame` once per `requestAnimationFrame`. In a browser
 
 ## Phones
 
-The hosts in `platforms/android` and `platforms/ios` run one game each on the SDL platform with touch controls,
-suspend it in the background and ship its `Content` files (unpacked from the APK on Android, bundle resources on
-iOS, both through `ContentFolder.DefaultRoot`). See [`platforms/README.md`](../../platforms/README.md).
+`microengine package android` and `ios` build a host app around the game: it runs on the SDL platform with touch
+controls, is suspended in the background and ships the game's `Content` files (unpacked from the APK on Android,
+bundle resources on iOS, both through `ContentFolder.DefaultRoot`). See [Platforms](../guide/platforms.md#android).
 
 ## Headless platform
 
@@ -217,9 +216,5 @@ renderer operation, compared pixel by pixel.
 
 ## Limitations
 
-- The on-screen controls are one layout for every game, without labels.
-- No published NuGet packages yet: the engine is used from its repository; one package per backend is prepared
-  ([SDK status](../guide/sdk.md)).
-- Packaging a game for players is documented for the four demos ([packaging](../../packaging/README.md)), not yet as a
-  tool for any game.
-- What each platform has been shown to do: [Platforms](../guide/platforms.md).
+- The phone hosts are built by `microengine package`; a game does not write its own Android activity or iOS app.
+- What each platform needs and supports: [Platforms](../guide/platforms.md).

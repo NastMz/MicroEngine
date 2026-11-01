@@ -139,7 +139,7 @@ layer. Implementations: `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform`.
 ### Platform profiles
 
 [`src/MicroEngine/Core/PlatformProfiles.cs`](../../src/MicroEngine/Core/PlatformProfiles.cs). How a host chooses and
-assembles a platform ([Backends](../manual/backends.md#choosing-a-platform), [ADR 0016](../decisions/0016-platform-profiles.md)).
+assembles a platform ([Backends](../manual/backends.md#choosing-a-platform)).
 
 | Type | Role |
 | --- | --- |

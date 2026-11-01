@@ -116,8 +116,7 @@ other off. `--mute` on desktop (or `RunOptions.Mute`) sets both volumes to zero 
 Browsers do not start audio until the user interacts with the page. The web host waits for a click or key before
 starting the game, so the audio context is created inside that gesture; if the browser still holds audio
 suspended, the page shows a "Sound is blocked" button and any key or click resumes it. Development packages with
-`autostart=1` skip the gesture and stay silent. See [web builds](../../web/README.md#how-the-host-works) and
-[ADR 0008](../decisions/0008-web-packages.md).
+`autostart=1` skip the gesture and stay silent. See [The browser host](../examples/embedding.md).
 
 ## Limitations
 
