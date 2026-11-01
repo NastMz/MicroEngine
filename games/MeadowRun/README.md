@@ -30,7 +30,8 @@ On a phone or tablet (the app, or the browser demo) the game shows on-screen con
 (precise, so a rolled thumb never crouches or drops through a plank), **A** (jump, confirm) and **B** (run, throw seeds,
 back) on the right, and **II** (pause) at the top right. Hold a direction with one thumb and jump with the other; the
 right thumb can roll from B onto A to jump while running. The controls hide while a keyboard or gamepad is used and
-come back on the next touch.
+come back on the next touch; the picture is fitted around them, and the Controls screen lists them while they are in
+use.
 
 ## Features
 

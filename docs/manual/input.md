@@ -141,7 +141,7 @@ needs intensity. The four demos show both:
 | --- | --- | --- |
 | Meadow Run | Four-way d-pad (a rolled thumb never crouches or drops through a platform) | A jump/confirm, B run/cancel, roll between them |
 | Neon Rift | Floating joystick, eight-way aim | FIRE, JUMP (roll between them), LOCK toggle |
-| Courtyard Key | Floating joystick, analog walking | A sword/talk, C boomerang, B cancel, pause at the top centre |
+| Courtyard Key | Floating joystick, analog walking | A sword/talk, C boomerang, B cancel, II pause |
 | Trail Duel | Four-way d-pad (grid, menus, battle grid) | A, B (held: run), C (move details), MENU |
 
 ### Layout options
@@ -157,9 +157,41 @@ needs intensity. The four demos show both:
 | `Visibility` | `Auto` | `Auto`: shown on touch-first screens and after any touch, hidden while a keyboard or gamepad plays, back on the next touch. `Always`, `Never` |
 | `Tint`, `PressedTint` | white, light blue | Outline and label colour; fill of a pressed control |
 
-At run time: `Touch.SetVisible(id, bool)` hides a control in a context that does not need it (hidden controls release
-their finger and ignore touches), `Touch.Layout = ...` switches layouts (fingers are released), `Touch.IsPressed(id)`,
-`Touch.ValueOf(id)` and `Touch.Geometry(id)` describe a control, `Touch.Shown` says whether they are drawn.
+At run time: `Touch.SetVisible(id, bool)` hides a control (hidden controls release their finger and ignore touches),
+`Touch.Layout = ...` switches layouts (fingers are released), `Touch.IsPressed(id)`, `Touch.ValueOf(id)` and
+`Touch.Geometry(id)` describe a control, `Touch.Shown` says whether they are drawn (help screens use it to explain
+the touch controls instead of the keys).
+
+### Controls by context
+
+A scene says which actions it needs from the touch controls with `TouchActions`; while it is on top, only the controls
+that press at least one of them are shown and touchable (null, the default, shows all). The game applies it every
+frame, so a scene may change it with its own state. A dialogue keeps the buttons that advance and close it and removes
+the movement control from over its text:
+
+```csharp
+/// <summary>Only A (advance) and B on touch screens: the joystick and the other buttons leave the text.</summary>
+public override IReadOnlyCollection<string>? TouchActions { get; } = ["confirm", "cancel"];
+```
+
+Source: [`games/CourtyardKey/Scenes/DialogueScene.cs`](../../games/CourtyardKey/Scenes/DialogueScene.cs). Trail Duel
+does the same for its overworld text, battle narration and evolution, and keeps the d-pad for questions (`up`, `down`).
+Controls hidden by context release their fingers; the game frame keeps its size.
+
+### Keeping the game visible
+
+While the controls are shown, the backend asks them where to draw the game frame (`ITouchOverlay.Frame`). On wide
+phones the letterbox bars hold most of the controls; on screens near 16:9, and whenever a control would cover the
+largest frame, `VirtualControls` moves the frame to the top of the safe area and makes it as large as it can be without
+any control overlapping it, keeping a whole-number scale when that costs less than 10 %. It never goes below
+`MinimumFrameFraction` (half the largest frame); `KeepFrameClear = false` turns this off. Context changes do not resize
+the frame; a keyboard or gamepad hiding the controls gives the frame its full size back.
+
+| Screen (dp density) | Meadow Run frame | Controls over the game |
+| --- | --- | --- |
+| 20:9 phone, 2400×1080 (2.75) | about 78 % of the largest | none |
+| 16:9 phone, 1920×1080 (2.75) | about 53 % | none |
+| 4:3 tablet, 1024×768 (1) | 100 % (the frame at the top leaves room below) | none |
 
 ### How touches are handled
 

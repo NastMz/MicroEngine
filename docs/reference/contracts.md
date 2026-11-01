@@ -86,6 +86,8 @@ public abstract class Scene
     public virtual void Enter() { }
     public virtual void Exit() { }
     public virtual void Resume() { }
+    public virtual string? Describe() => null;                          // development probes
+    public virtual IReadOnlyCollection<string>? TouchActions => null;   // touch controls this scene needs; null = all
     public abstract void Update(float dt);
     public abstract void Draw(IRenderer renderer);
 }
@@ -224,6 +226,12 @@ public interface ITouchScreen
     ITouchOverlay? Overlay { get; set; }
     bool CanVibrate => false;
     bool Vibrate(float strength, int milliseconds) => false;
+}
+
+public interface ITouchOverlay
+{
+    void Draw(IOverlayCanvas canvas);
+    RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight) => FrameLayout.Fit(/* ... */);
 }
 
 public interface IOverlayCanvas

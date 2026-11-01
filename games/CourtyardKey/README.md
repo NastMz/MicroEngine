@@ -29,7 +29,9 @@ heart-trap is a hand-drawn CC0 monster repainted in the game's palette (see [CRE
 
 On a phone or tablet the game shows on-screen controls: a joystick that appears under the left thumb (push lightly to
 walk slowly, fully to walk at full speed), **A** (sword, talk, confirm), **C** (boomerang) and **B** (back) on the
-right, and **II** (pause) at the top centre, clear of the hearts and item slots.
+right, and **II** (pause) at the top right. The picture is fitted around the controls so none covers the hearts, the
+item slots or the play area, and during a conversation only A and B stay on screen. The Controls screen on the title
+lists the touch controls when they are in use.
 
 ## Achievements
 
