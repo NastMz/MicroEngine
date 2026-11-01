@@ -269,6 +269,23 @@ public sealed class TouchControlsTests
     }
 
     [TestMethod]
+    public void SlidingNeverFlipsAToggleButton()
+    {
+        var rig = new Rig(TouchLayout.Of(
+            new TouchButton("fire", "fire", "B") { Anchor = TouchAnchor.BottomRight, Offset = new(150, 60), Radius = 30 },
+            new TouchButton("lock", "lock", "L") { Anchor = TouchAnchor.BottomRight, Offset = new(70, 80), Mode = TouchButtonMode.Toggle })
+            with { SlideBetweenButtons = true });
+        rig.Screen.Down(1, rig.At("fire"));
+        rig.Step();
+        rig.Screen.Move(1, rig.At("lock"));
+        rig.Step();
+        rig.Screen.Up(1);
+        rig.Step();
+        rig.Step();
+        Assert.IsFalse(rig.Map.Down("lock"), "a thumb rolling off FIRE does not lock");
+    }
+
+    [TestMethod]
     public void CancelledFingersReleaseTheirControls()
     {
         var rig = new Rig();

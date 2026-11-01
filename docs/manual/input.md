@@ -152,7 +152,7 @@ needs intensity. The four demos show both:
 | `Scale` | 1 | Size factor on top of the density (a player setting) |
 | `HitScale` | 1.3 | Touchable radius as a multiple of the drawn one; overlapping areas go to the nearest control |
 | `SlideTolerance` | 1.6 | A held button stays pressed until its finger is this many touchable radii away; beyond, it releases (no stuck button), and coming back presses it again |
-| `SlideBetweenButtons` | false | A finger sliding onto another button presses it instead (roll from fire onto jump) |
+| `SlideBetweenButtons` | false | A finger sliding onto another button presses it instead (roll from fire onto jump); toggle buttons only switch on a press that starts on them |
 | `Haptics` | true | A short vibration on each press and d-pad direction change, where the device can vibrate |
 | `Visibility` | `Auto` | `Auto`: shown on touch-first screens and after any touch, hidden while a keyboard or gamepad plays, back on the next touch. `Always`, `Never` |
 | `Tint`, `PressedTint` | white, light blue | Outline and label colour; fill of a pressed control |

@@ -111,7 +111,7 @@ public sealed record TouchLayout
     public float HitScale { get; init; } = 1.3f;
     /// <summary>A held button stays pressed until its finger is this many touchable radii from its centre.</summary>
     public float SlideTolerance { get; init; } = 1.6f;
-    /// <summary>Whether a finger that slides onto another button presses it instead (fire-and-jump rolls).</summary>
+    /// <summary>Whether a finger that slides onto another button presses it instead (fire-and-jump rolls); toggle buttons are never slid onto.</summary>
     public bool SlideBetweenButtons { get; init; }
     /// <summary>A short vibration on each press where the device can vibrate.</summary>
     public bool Haptics { get; init; } = true;
@@ -566,7 +566,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
             float hit = p.Radius * _layout.HitScale;
             if (_layout.SlideBetweenButtons)
             {
-                var other = _controls.Where(o => o != p && o.Visible && o.Control is TouchButton && Vector2.Distance(at, o.Center) <= o.Radius * _layout.HitScale)
+                var other = _controls.Where(o => o != p && o.Visible && o.Control is TouchButton { Mode: not TouchButtonMode.Toggle } && Vector2.Distance(at, o.Center) <= o.Radius * _layout.HitScale)
                     .OrderBy(o => Vector2.Distance(at, o.Center)).FirstOrDefault();
                 if (other is not null && Vector2.Distance(at, other.Center) < Vector2.Distance(at, p.Center))
                 {
