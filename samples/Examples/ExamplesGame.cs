@@ -46,7 +46,7 @@ public sealed class MenuScene : Scene
     public override void Update(float dt)
     {
         if (_menu.Update(Input) is { } choice)
-            Game.Scenes.Push(ExamplesGame.All[choice].Create((ExamplesGame)Game));
+            Game.Scenes.Push(ExamplesGame.All[choice].Create((ExamplesGame)Game), new CurtainTransition());
     }
 
     public override void Draw(IRenderer r)

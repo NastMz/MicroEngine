@@ -44,10 +44,12 @@ public sealed class Player
             Y = Math.Clamp(moved.Y, area.Top, area.Bottom - moved.Height),
         };
 
+        #region animate
         if (direction.X != 0) _facingLeft = direction.X < 0;
         _animator.Play(direction == Vector2.Zero ? "idle" : "walk");
         _animator.Speed = speed / WalkSpeed;
         _animator.Update(dt);
+        #endregion
     }
     #endregion
 

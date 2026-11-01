@@ -12,8 +12,8 @@
   <PropertyGroup>
     <ApplicationTitle>Gem Garden</ApplicationTitle>
     <ApplicationId>com.example.gemgarden</ApplicationId>
-    <Version>1.0.0</Version>
-    <Description>Collect the gems of a walled garden before the sun sets.</Description>
+    <Version>0.1.0</Version>
+    <Description>A game made with MicroEngine.</Description>
     <MicroEngineIcon>icon.png</MicroEngineIcon>
     <MicroEngineOrientation>landscape</MicroEngineOrientation>
     <MicroEngineGameFactory>new GemGarden.MainGame()</MicroEngineGameFactory>

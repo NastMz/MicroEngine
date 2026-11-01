@@ -54,8 +54,10 @@ public sealed class PlayScene : Scene
         CheckSlimes();
 
         _sparkles.Update(dt);
+        #region camera
         _camera.Follow(_player.Position, dt);
         _camera.Update(dt);
+        #endregion
     }
     #endregion
 

@@ -156,3 +156,29 @@ public sealed class ExampleTests
         Directory.Delete(saves, true);
     }
 }
+
+[TestClass]
+public sealed class ExtendingTests
+{
+    [TestMethod]
+    public void AGameSavesThroughACustomStorage()
+    {
+        var storage = new MemorySaveStorage();
+        var store = new SaveStore(storage);
+        Assert.IsTrue(store.Save("slot", new SaveExample.Progress { Coins = 3 }));
+        Assert.AreEqual(3, store.Load<SaveExample.Progress>("slot")!.Coins);
+        storage.Write("broken", "{ not json");
+        Assert.IsNull(store.Load<SaveExample.Progress>("broken"), "unreadable data loads as null");
+        Assert.IsTrue(storage.Exists("broken.corrupt"), "and is set aside, not lost");
+    }
+
+    [TestMethod]
+    public void AWrappedProfileJoinsTheCatalogAndRunsTheGame()
+    {
+        var profile = CountingPlatform.Wrap(HeadlessPlatform.Profile);
+        var catalog = new PlatformCatalog().Add(HeadlessPlatform.Profile).Add(profile);
+        Assert.AreEqual("headless-counted", profile.Name);
+        int exit = GameLauncher.Run(new ExamplesGame(), ["--platform", "headless-counted", "--frames", "30"], catalog);
+        Assert.AreEqual(0, exit);
+    }
+}
