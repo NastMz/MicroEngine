@@ -212,9 +212,6 @@ jobs:
             [ -d "$candidate" ] && { sudo xcode-select -s "$candidate"; break; }
           done
           xcodebuild -version | paste -sd' ' -
-      # The simulator takes about three minutes to boot: it boots while the toolchain installs and the app builds.
-      - name: Boot the simulator
-        run: echo "SIMULATOR=$(platforms/ios/simulator-checks.sh --boot)" >> "$GITHUB_ENV"
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_SDK_VERSION }}

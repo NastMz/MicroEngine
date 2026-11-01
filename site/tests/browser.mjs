@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Browser checks for the built site (site/dist, with demo packages), in the installed Chrome and Firefox:
 //   node tests/browser.mjs [--browsers chrome,firefox] [--suites layout,play,touch] [--out test-results] [--concurrency 4]
-// Browsers run at the same time; layout checks up to --concurrency pages at once per browser.
+// Browsers run at the same time; layout checks up to --concurrency pages at once in Chrome (one at a time in Firefox).
 // Suites (all by default; CI runs only `layout` when a change touches documentation alone):
 // - layout: every page at desktop, tablet and phone widths: no horizontal scroll, images with alt text, no request to a
 //   demo package (/play/) until Play is pressed; full-page screenshots are written to --out for review;
@@ -84,7 +84,9 @@ const usesKeyboard = (size, route) => size === 'desktop' && (route === '/' || ro
 async function layout(browser, label, base) {
   const sizes = label === 'chrome' ? Object.keys(viewports) : ['desktop', 'phone'];
   const items = sizes.flatMap(size => pages.map(route => [size, route]));
-  await pool(items.filter(([size, route]) => !usesKeyboard(size, route)), concurrency, item => layoutPage(browser, label, base, ...item));
+  // Firefox, driven over WebDriver BiDi, loses browsing contexts created at the same time: one page at a time there.
+  const limit = label === 'firefox' ? 1 : concurrency;
+  await pool(items.filter(([size, route]) => !usesKeyboard(size, route)), limit, item => layoutPage(browser, label, base, ...item));
   for (const item of items.filter(([size, route]) => usesKeyboard(size, route))) await layoutPage(browser, label, base, ...item);
 }
 
