@@ -5,7 +5,7 @@
 #                on Windows, Linux and macOS
 #     draft      a draft GitHub prerelease sdk-v<version> holding the checked packages, SHA256SUMS and the version's
 #                release notes (docs/guide/release-notes.md); nothing is public yet
-#   2nd run, `publish` on, same commit, after reviewing the draft:
+#   2nd run, `publish` on, after reviewing the draft (main may have moved on; the draft's commit must be in its history):
 #     publish    after the `nuget` environment's reviewers approve: exchanges a GitHub OIDC token for a one-hour nuget.org
 #                key (Trusted Publishing, NuGet/login), pushes exactly the draft's files, verified against SHA256SUMS,
 #                then publishes the GitHub release. No long-lived nuget.org key exists anywhere.
@@ -31,11 +31,16 @@ jobs:
   preflight:
     name: Preflight
     runs-on: ubuntu-latest
+    # GitHub lists draft releases only to tokens that can write contents; this job only reads.
+    permissions:
+      contents: write
     outputs:
       version: ${{ steps.version.outputs.version }}
       drafted: ${{ steps.version.outputs.drafted }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the draft's commit must be in main's history
       - name: Version
         id: version
         env:
@@ -54,8 +59,16 @@ jobs:
           if [ -n "$release" ]; then
             read -r draft target <<< "$release"
             if [ "$draft" != true ]; then echo "::error::sdk-v$version is already released; raise MicroEngineVersion."; exit 1; fi
+            if [ "$PUBLISH" != true ] && [ "$target" != "$GITHUB_SHA" ]; then
+              echo "::error::The draft sdk-v$version was made from $target, not $GITHUB_SHA: publish it, or delete it to draft this commit."; exit 1
+            fi
+            # Publishing pushes the draft's own files (checked against its SHA256SUMS), so main may have moved on since
+            # (a workflow fix, for instance), provided the draft's commit is in its history and the version is the same.
+            if ! git merge-base --is-ancestor "$target" "$GITHUB_SHA"; then
+              echo "::error::The draft sdk-v$version was made from $target, which is not in the history of main ($GITHUB_SHA)."; exit 1
+            fi
             if [ "$target" != "$GITHUB_SHA" ]; then
-              echo "::error::The draft sdk-v$version was made from $target, not $GITHUB_SHA: delete that draft to release this commit."; exit 1
+              { echo "The draft was made from ${target::12}; main has moved on since:"; echo; echo '```'; git log --oneline "$target..$GITHUB_SHA"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
             fi
             drafted=true
           fi
