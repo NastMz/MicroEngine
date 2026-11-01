@@ -43,7 +43,7 @@ from the `ppy.SDL3-CS` package.
 ```bash
 dotnet build platforms/android -c Release -p:Game=NeonRift -p:AndroidSdkDirectory="$ANDROID_HOME"
 node platforms/android/device-checks.mjs --apk platforms/android/bin/NeonRift/Release/net10.0-android/dev.microengine.neonrift-Signed.apk --game NeonRift --out dist/android-checks
-node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/android-checks --reference web/tests/reference/sdl.json
+node web/tests/desktop.mjs --skip-run --games NeonRift --out dist/android-checks --reference web/tests/reference/sdl-android-x86_64.json
 ```
 
 `device-checks.mjs` needs a running emulator or device and prints one line per level (installed, started, rendered,
