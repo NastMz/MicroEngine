@@ -277,6 +277,7 @@ public sealed class GameLoop
 
     private double _drift, _nextFrame;
     private readonly double[] _recent = new double[16]; // the last measured frame times, to check the reported rate
+    private double _cadence, _cadenceMedian; // the period frames arrive at when it is not the reported rate's; 0 otherwise
     private int _recentCount;
 
     /// <summary>
@@ -329,7 +330,11 @@ public sealed class GameLoop
         double period = 1 / rate, time = elapsed + _drift;
         // A rate the frames do not arrive at (a window composed at another display's rate, a moved window) would count
         // 10 ms frames as 16.7 ms then 3.3 ms: time stays real but motion judders. Trust it only while the median of the
-        // recent frames is near its period.
+        // recent frames is near its period; otherwise pace to the cadence they do arrive at (measured time would let the
+        // wake-up jitter back in). That cadence starts at their median and follows the carried remainder, so a median a
+        // little off the true period does not slip a frame now and then. The remainder is carried either way: time stays
+        // real.
+        bool cadence = false;
         if (_recentCount >= 5)
         {
             Span<double> sorted = stackalloc double[16];
@@ -337,13 +342,23 @@ public sealed class GameLoop
             _recent.AsSpan(0, n).CopyTo(sorted);
             sorted[..n].Sort();
             double median = sorted[n / 2];
-            if (median < period * 0.85 || median > period * 1.15) { _drift = 0; return elapsed; }
+            if (median <= 0) { _drift = 0; return elapsed; }
+            if (median < period * 0.85 || median > period * 1.15)
+            {
+                if (_cadence <= 0 || Math.Abs(_cadence - median) > median * 0.15) _cadence = median;
+                _cadenceMedian = median;
+                period = _cadence;
+                cadence = true;
+            }
+            else _cadence = 0;
         }
         // A short frame keeps the debt of an earlier frame rounded up, or frames faster than the reported rate would
         // each count as a whole period and the game would run fast.
         if (time < period / 2) { _drift = 0; return Math.Max(0, time); }
         double shown = Math.Round(time / period) * period;
         _drift = Math.Clamp(time - shown, -period, period);
+        // A remainder that keeps one sign means the cadence is a little off: move it a small step towards the frames.
+        if (cadence) _cadence = Math.Clamp(_cadence + _drift * 0.005, _cadenceMedian * 0.9, _cadenceMedian * 1.1);
         return shown;
     }
 

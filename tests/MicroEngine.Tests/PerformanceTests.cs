@@ -133,23 +133,25 @@ public class PerformanceTests
     }
 
     [TestMethod]
-    public void A_wrong_display_rate_is_ignored_while_frames_do_not_arrive_at_it()
+    public void A_wrong_display_rate_gives_way_to_the_cadence_frames_really_arrive_at()
     {
         // A window on a 60 Hz display composed at another display's 100 Hz (measured on Windows): frames come every
-        // 10 ms (+-1 ms) while the display says 60 Hz. Counting them in 60 Hz periods would draw game time advancing
-        // 16.7 ms, then 3.3 ms: motion judders although the total stays real time.
+        // 10 ms, waking up to 2 ms early or late, while the display says 60 Hz. Counting them in 60 Hz periods would
+        // draw game time advancing 16.7 ms, then 3.3 ms; counting them as measured lets the wake-up jitter through
+        // (4 to 16 ms). Paced to the cadence they really arrive at, drawn time advances 10 ms a frame.
         var game = new StepGame();
         var platform = new DisplayPlatform(60);
         var loop = new GameLoop(game, platform);
         loop.Start();
+        var jitter = new Random(7);
         for (int frame = 1; frame <= 600; frame++)
         {
-            platform.Now = frame / 100.0 + (frame * 7919 % 3 - 1) * 0.001;
+            platform.Now = frame / 100.0 + (jitter.NextDouble() * 4 - 2) * 0.001;
             loop.Tick();
         }
         Assert.AreEqual(360, game.UpdateCount, 2, "real time");
         var steps = game.Drawn.Skip(100).Zip(game.Drawn.Skip(101), (a, b) => (b - a) * 1000).ToList();
-        Assert.IsTrue(steps.All(d => d > 7 && d < 13), $"drawn time follows the frames: {string.Join(" ", steps.Take(12).Select(d => d.ToString("0.0")))}");
+        Assert.IsTrue(steps.All(d => d > 9 && d < 11), $"drawn time follows the cadence: {string.Join(" ", steps.Where(d => d <= 9 || d >= 11).Take(12).Select(d => d.ToString("0.0")))}");
 
         // Frames that do arrive at the display's rate are still paced to it.
         Assert.AreEqual(0, JitteredRun(paceToDisplay: true, displayRate: 60).Skip(1).Count(s => s != 1));
