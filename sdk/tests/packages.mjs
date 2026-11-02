@@ -69,7 +69,10 @@ for (const [id, want] of Object.entries(expected)) {
   const demo = [...names].filter(n => /(^|\/)(games|MeadowRun|CourtyardKey|TrailDuel|NeonRift)(\/|\.)/.test(n));
   check(`${id}: no demo game file`, demo.length === 0, demo.slice(0, 4).join(', '));
   const leaks = entries.filter(e => machine.some(p => e.data.includes(Buffer.from(p)))).map(e => e.name);
-  check(`${id}: no build-machine path`, leaks.length === 0, leaks.slice(0, 4).join(', '));
+  // Paths are mapped away only in CI builds (ContinuousIntegrationBuild, src/Directory.Build.props): a local pack checks
+  // the same only with -p:MicroEngineRelease=true, as the SDK workflow packs.
+  check(`${id}: no build-machine path`, leaks.length === 0,
+    leaks.length ? `${leaks.slice(0, 4).join(', ')} (a local pack needs -p:MicroEngineRelease=true, as in CI)` : '');
   if (id !== 'MicroEngine.Cli' && id !== 'MicroEngine.Templates') check(`${id}: symbols package`, fs.existsSync(path.join(feed, `${id}.${version}.snupkg`)));
 }
 const templates = path.join(feed, `MicroEngine.Templates.${version}.nupkg`);
