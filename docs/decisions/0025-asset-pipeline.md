@@ -22,7 +22,7 @@ committing the engine to pixel art or blocking a later move to 3D.
 | Images | Current managed PNG decoder; StbImageSharp (Unlicense/MIT, managed port of stb_image); ImageSharp; SkiaSharp; System.Drawing; SDL_image / raylib loaders | StbImageSharp for every format |
 | Fonts | FontStashSharp (Zlib) over StbTrueTypeSharp; StbTrueTypeSharp alone; SixLabors.Fonts; FreeType (SharpFont, FreeTypeSharp); SDL_ttf; SDF/MSDF (msdf-atlas-gen); AngelCode BMFont | FontStashSharp |
 | Atlases | TexturePacker, Free Texture Packer, ShoeBox, Aseprite exports; libGDX `.atlas`; MonoGame.Extended's importers; run-time packing | Import TexturePacker/Aseprite JSON and Starling XML; keep run-time packing |
-| Asset management | MonoGame `ContentManager`; Unity Addressables (reference counting, async); Godot `ResourceLoader` (cache by path, threaded loading) | An engine cache with scopes, no reference counting |
+| Asset management | MonoGame `ContentManager`; Unity Addressables (reference counting, async); Godot `ResourceLoader` (cache by path, threaded loading) | An engine cache with scopes, no reference counting exposed to games |
 
 ## Decision
 
@@ -62,7 +62,8 @@ committing the engine to pixel art or blocking a later move to 3D.
 - **`Game.Assets` owns loading, sharing and releasing.** One cache keyed by content path and kind returns the same
   texture, atlas or font to every caller and disposes them when its scope ends: the game's root scope at shutdown,
   `Assets.CreateScope()` for a level or a scene. Scopes look up their parents first, so nothing is loaded twice. No
-  reference counting: lifetimes follow scopes, which games already think in. Missing files, unsupported formats and
+  reference counting exposed to games: lifetimes follow scopes, which games already think in (see the amendment below
+  for how the cache tracks scopes internally). Missing files, unsupported formats and
   wrong-case names fail with `AssetLoadException` naming the path; `Assets.Statistics` reports counts, texture memory
   and load times, and loads during play are counted so hitches are visible. `Assets.Preload` decodes files on worker
   threads where the platform has them and uploads a few per frame within a time budget; the browser, which runs
@@ -81,3 +82,13 @@ committing the engine to pixel art or blocking a later move to 3D.
 - Text in HD games and UI widgets can use any font; pixel-art games keep the built-in face unchanged.
 - No compressed GPU textures, mipmaps or signed-distance-field text until GRAPHICS-1 gives the renderers shaders and
   texture formats.
+
+## Amendment (2026-11-02, ARCH-1 stage 0)
+
+The ARCH-1 audit (defect D9) found that sibling scopes loaded the same file twice and that `Unload` or disposing a
+scope disposed an object another scope still used. The decision above stands: games still never count references, and
+lifetimes still follow scopes. Internally, the cache now keeps one entry per (file, kind, options) for the whole game
+and tracks which scopes hold each entry. Every scope that asks for an asset holds it, so sibling scopes share one
+object; `Unload` and disposing a scope release that scope's hold, and the asset is disposed when the last holding scope
+releases it. A scope's `Count` is the number of assets it and its children hold, including parent assets they asked
+for; `Loaded`, `Statistics` and the root's `Count` count a shared asset once.
