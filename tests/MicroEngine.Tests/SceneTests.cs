@@ -107,6 +107,31 @@ public sealed class SceneTests
         CollectionAssert.AreEqual(new[] { "enter a", "exit a", "enter b" }, log);
     }
 
+    private sealed class CoverProbe(float duration) : Transition(duration)
+    {
+        public float Drawn;
+        public override void Draw(IRenderer renderer) => Drawn = Cover;
+    }
+
+    [TestMethod]
+    public void A_transition_is_drawn_between_its_last_two_updates()
+    {
+        var (game, platform) = Start(new Probe("a", []));
+        var fade = new CoverProbe(1f);
+        game.Scenes.Replace(new Probe("b", []), fade);
+        for (int i = 0; i < 6; i++) game.StepForTest(); // 0.1 s of a 1 s transition: covering
+        float before = fade.Cover;
+        game.StepForTest();
+        float after = fade.Cover;
+        game.FrameBlend = 0.5f;
+        game.Render(platform.BeginFrame());
+        Assert.IsTrue(fade.Drawn > before && fade.Drawn < after, $"drawn {fade.Drawn} between {before} and {after}");
+        game.FrameBlend = 1;
+        game.Render(platform.BeginFrame());
+        Assert.AreEqual(after, fade.Drawn, 1e-6, "at 1, the last update");
+        Assert.AreEqual(after, fade.Cover, 1e-6, "outside drawing, the last update");
+    }
+
     [TestMethod]
     public void Coroutines_wait_for_time_conditions_and_nested_routines()
     {
