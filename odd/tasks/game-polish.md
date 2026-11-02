@@ -54,13 +54,13 @@ Quoted fragments are the owner's request (2026-11-01), verbatim.
 | Task | Specs | Route | Status | Evidence |
 | --- | --- | --- | --- | --- |
 | T1 Audit: run every demo script, inspect captures, packages and identity | S1 S2 S8 | inline | done | L3, L4 |
-| T2 Identity: adaptive Android icon, artifact checks on every target, web manifest | S2 S9 | inline | in progress | 7c976f1; emulator L5 |
-| T3 Action prompts in the core, glyphs in UI, demos use them | S3 S9 | inline | in progress | 357c584 core; demos pending |
-| T4 Touch control styles and skins, demo styles | S4 S9 | inline | in progress | 4d7a65e core; demos pending |
-| T5 DialogueBox pagination and prompt tokens, menu and text fixes | S5 S9 | inline | in progress | 357c584 DialogueBox, Wrap |
-| T6 Startup: Android splash, iOS launch screen, web loading, branding option | S6 S9 | inline | in progress | 7c976f1; emulator L6; iOS needs CI |
-| T7 Audiovisual and demo fixes found by the audit | S1 S7 | inline | pending | |
-| T8 Docs, release notes, evaluation, full tests, PR | S10 S11 S13 | inline | pending | |
+| T2 Identity: adaptive Android icon, artifact checks on every target, web manifest | S2 S9 | inline | done | 7c976f1, 913bc98; emulator L5; Windows/Linux packages L8 |
+| T3 Action prompts in the core, glyphs in UI, demos use them | S3 S9 | inline | done | 357c584, ff1ffa4; captures L7 |
+| T4 Touch control styles and skins, demo styles | S4 S9 | inline | done | 4d7a65e, ff1ffa4; emulator L7 |
+| T5 DialogueBox pagination and prompt tokens, menu and text fixes | S5 S9 | inline | done | 357c584, ff1ffa4 |
+| T6 Startup: Android splash, iOS launch screen, web loading, branding option | S6 S9 | inline | done | 7c976f1, e282e57; emulator L6, browser L8; iOS: CI |
+| T7 Audiovisual and demo fixes found by the audit | S1 S7 | inline | done | ff1ffa4, f7ddfa5 |
+| T8 Docs, release notes, evaluation, full tests, PR | S10 S11 S13 | inline | in progress | 94f08ec; evaluation |
 
 Route evidence: no Writer trigger (units share `src/MicroEngine/Input` and `UI`, and each is understood); work stays
 inline following this record.
@@ -93,3 +93,13 @@ inline following this record.
   -> engine start screen with black bands -> title. After holding Android 12's launch screen until the engine's
   first frame and letterboxing in the start-screen colour: launch screen -> start screen (same colour, full screen)
   -> title, no black frame. The start screen lasts as long as loading does (about 3.5 s on the emulator).
+- L7 Prompts and looks: controls screens captured for keyboard, Xbox, PlayStation and touch with the new `prompts`
+  script command; every panel fits (Trail Duel's key column was widened after its first capture). Before any press the
+  prompts first showed gamepad names on this machine because a controller was plugged in: the default is now the
+  keyboard until a pad is pressed (deterministic captures). On the emulator the four demos show their own touch looks;
+  a held FIRE in Neon Rift fills magenta, outlines thicker and shrinks.
+- L8 Packages: Windows executable carries "Meadow Run", 1.0.0 and the icon (read back with PowerShell); the Linux entry
+  lacked `StartupWMClass` (added). The browser loading page was checked on the published Meadow Run web package with
+  the new page applied (the `wasm-tools` workload is not installed here, so the tool's own web build runs in CI):
+  colour, image, title, progress, branding; status text unreadable on light colours and branding under the Fullscreen
+  button at phone width, both fixed. `AudioMixer.PlayMusic` restarted a fading track (RED test, fixed, f7ddfa5).
