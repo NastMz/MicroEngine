@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 P3 offline shader build: HLSL -> DXIL and SPIR-V (DXC), SPIR-V -> MSL (SPIRV-Cross) + reflection JSON.
+       Throwaway experiment; not part of MicroEngine.slnx or CI. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Microsoft's DXC release build (dxc.exe + dxcompiler.dll); unlike the Windows SDK copy it has SPIR-V codegen. -->
+    <PackageReference Include="Microsoft.Direct3D.DXC" Version="[1.8.2505.32]" GeneratePathProperty="true" ExcludeAssets="all" />
+    <!-- SPIRV-Cross C API + native library (Silk.NET), for MSL generation and resource reflection. -->
+    <PackageReference Include="Silk.NET.SPIRV.Cross" Version="[2.22.0]" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(PkgMicrosoft_Direct3D_DXC)/build/native/bin/x64/dxc.exe;$(PkgMicrosoft_Direct3D_DXC)/build/native/bin/x64/dxcompiler.dll;$(PkgMicrosoft_Direct3D_DXC)/build/native/bin/x64/dxil.dll"
+          Link="dxc/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+</Project>

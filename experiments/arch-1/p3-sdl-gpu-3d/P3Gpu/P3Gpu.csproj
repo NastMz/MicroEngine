@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 P3: SDL_GPU depth-tested 3D composited with 2D on one device, from C# through ppy.SDL3-CS.
+       Throwaway experiment; not part of MicroEngine.slnx or CI; does not reference the engine. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The same binding and version as src/MicroEngine.Sdl. -->
+    <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../shaders/compiled/*" Link="shaders/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
