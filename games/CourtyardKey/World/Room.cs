@@ -67,6 +67,9 @@ public sealed class RoomGrid(Room room, Func<int, int, Room?> neighbour, bool fl
 {
     public int TileSize => Room.Ts;
 
+    /// <summary>Whether this is the collision view of <paramref name="other"/>.</summary>
+    public bool Views(Room other) => ReferenceEquals(room, other);
+
     public TileFlags FlagsAt(int worldTileX, int worldTileY)
     {
         int lx = worldTileX - room.X * Room.W, ly = worldTileY - room.Y * Room.Hgt;
@@ -76,7 +79,9 @@ public sealed class RoomGrid(Room room, Func<int, int, Room?> neighbour, bool fl
         // Corners never connect: only straight edges lead somewhere.
         if (rx != room.X && ry != room.Y) return TileFlags.Solid;
         var dir = rx < room.X ? Dir.Left : rx > room.X ? Dir.Right : ry < room.Y ? Dir.Up : Dir.Down;
-        if (room.Area.Links.Any(l => l.Edge == dir && l.RoomX == room.X && l.RoomY == room.Y)) return TileFlags.None;
+        var links = room.Area.Links;
+        for (int i = 0; i < links.Count; i++)
+            if (links[i] is var l && l.Edge == dir && l.RoomX == room.X && l.RoomY == room.Y) return TileFlags.None;
         var next = neighbour(rx, ry);
         if (next is null) return TileFlags.Solid;
         int nx = ((lx % Room.W) + Room.W) % Room.W, ny = ((ly % Room.Hgt) + Room.Hgt) % Room.Hgt;

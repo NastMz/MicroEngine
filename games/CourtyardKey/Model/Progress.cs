@@ -48,7 +48,14 @@ public sealed class Progress
 
     public static string RoomKey(string area, int x, int y) => $"{area}:{x},{y}";
     public void MarkVisited(string area, int x, int y) => Visited.Add(RoomKey(area, x, y));
-    public bool WasVisited(string area, int x, int y) => Visited.Contains(RoomKey(area, x, y));
+    public bool WasVisited(string area, int x, int y)
+    {
+        // The pause map asks for every room each frame: look the key up without building a string.
+        Span<char> key = stackalloc char[area.Length + 24];
+        if (Visited.TryGetAlternateLookup<ReadOnlySpan<char>>(out var lookup) && key.TryWrite($"{area}:{x},{y}", out int length))
+            return lookup.Contains(key[..length]);
+        return Visited.Contains(RoomKey(area, x, y));
+    }
 }
 
 /// <summary>An area, room and tile-space position to respawn at.</summary>

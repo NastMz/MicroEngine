@@ -17,11 +17,16 @@ public static class UiStyle
     public static void Frame(IRenderer r, RectF rect)
     {
         r.Panel(rect, Panel);
-        foreach (var (x, y) in new[] { (rect.X, rect.Y), (rect.Right - 3, rect.Y), (rect.X, rect.Bottom - 3), (rect.Right - 3, rect.Bottom - 3) })
-        {
-            r.FillRect(new RectF(x, y, 3, 3), Pal.Gold[2]);
-            r.FillRect(new RectF(x + 1, y + 1, 1, 1), Pal.Gold[3]);
-        }
+        Stud(r, rect.X, rect.Y);
+        Stud(r, rect.Right - 3, rect.Y);
+        Stud(r, rect.X, rect.Bottom - 3);
+        Stud(r, rect.Right - 3, rect.Bottom - 3);
+    }
+
+    private static void Stud(IRenderer r, float x, float y)
+    {
+        r.FillRect(new RectF(x, y, 3, 3), Pal.Gold[2]);
+        r.FillRect(new RectF(x + 1, y + 1, 1, 1), Pal.Gold[3]);
     }
 
     /// <summary>A small key-cap label like "Z" for control hints.</summary>

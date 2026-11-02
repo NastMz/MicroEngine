@@ -19,6 +19,8 @@ public sealed class Warden : Enemy
 {
     public const int MaxHealth = 10;
     private const float ChargeSpeed = 200f;
+    private static readonly string[] IdleFrames = ["boss_idle0", "boss_idle1"];
+    private static readonly string[] RageFrames = ["boss_rage0", "boss_rage1"];
 
     private float _stateTime, _boomerangCooldown;
     private Vector2 _chargeDir, _leapFrom, _leapTo;
@@ -186,7 +188,7 @@ public sealed class Warden : Enemy
         {
             WardenState.TellCharge or WardenState.TellLeap or WardenState.TellVolley => "boss_tell",
             WardenState.Dazed or WardenState.Dying => "boss_dazed",
-            _ => (Enraged ? "boss_rage" : "boss_idle") + ((int)(Time * 3) % 2),
+            _ => (Enraged ? RageFrames : IdleFrames)[(int)(Time * 3) % 2],
         };
         var at = DrawPosition + new Vector2(0, -Height);
         if (State is WardenState.TellCharge or WardenState.TellVolley || State == WardenState.Dying) at.X += (int)(Time * 40) % 2 * 2 - 1;

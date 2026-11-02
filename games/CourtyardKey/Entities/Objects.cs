@@ -218,7 +218,11 @@ public sealed class Npc : Actor, IInteractable
         Position = world.Room.TileToWorld(def.TileX, def.TileY);
         Hitbox = new RectF(-6, -9, 12, 9);
         _phase = def.TileX;
+        string look = def.Look.ToString().ToLowerInvariant();
+        _frames = [$"npc_{look}0", $"npc_{look}1"];
     }
+
+    private readonly string[] _frames;
 
     public NpcDef Def { get; }
     public override bool IsSolid => true;
@@ -235,9 +239,8 @@ public sealed class Npc : Actor, IInteractable
 
     public override void Draw(IRenderer r)
     {
-        string look = Def.Look.ToString().ToLowerInvariant();
         int f = (int)((World.Age + _phase) * 1.6f) % 2;
-        DrawSprite(r, Art[$"npc_{look}{f}"], Position, FlipX);
+        DrawSprite(r, Art[_frames[f]], Position, FlipX);
     }
 }
 

@@ -103,7 +103,10 @@ public abstract class Enemy : Actor, IHittable
     }
 
     /// <summary>The flash twin of a sprite while recently hit.</summary>
-    protected Sprite Flashing(string name) => Art[Flash > 0 && (int)(Flash * 30) % 2 == 0 ? name + "!" : name];
+    protected Sprite Flashing(string name) => Art[Flash > 0 && (int)(Flash * 30) % 2 == 0 ? FlashNames.GetOrAdd(name, static n => n + "!") : name];
+
+    /// <summary>"name!" for each sprite name, built once instead of every frame of a flash.</summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> FlashNames = new();
 
     protected void DrawStunStars(IRenderer r, float height)
     {

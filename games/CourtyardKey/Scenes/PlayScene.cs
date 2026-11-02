@@ -138,10 +138,21 @@ public sealed partial class PlayScene : Scene
         if (!throughActors)
             foreach (var a in _actors)
                 if (a.IsSolid && a != actor) _solids.Add(a.SolidBox);
-        var grid = new RoomGrid(Room, (x, y) => Area.Pristine(x, y), flying);
-        var result = TileMotion.Move(actor.Bounds, delta, grid, _solids);
+        var result = TileMotion.Move(actor.Bounds, delta, GridFor(flying), _solids);
         actor.Position += result.Position - actor.Bounds.Position;
         return result;
+    }
+
+    private RoomGrid? _walkGrid, _flyGrid;
+    private Func<int, int, Room?>? _neighbour;
+
+    /// <summary>The current room's collision view, made once per room instead of once per move.</summary>
+    private RoomGrid GridFor(bool flying)
+    {
+        _neighbour ??= (x, y) => Area.Pristine(x, y);
+        ref var grid = ref flying ? ref _flyGrid : ref _walkGrid;
+        if (grid is null || !grid.Views(Room)) grid = new RoomGrid(Room, _neighbour, flying);
+        return grid;
     }
 
     /// <summary>Queues an actor; it joins the room after the current update phase (safe during iteration).</summary>

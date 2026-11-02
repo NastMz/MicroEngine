@@ -14,6 +14,21 @@ public sealed class PauseScene : Scene
 {
     private readonly PlayScene _play;
     private readonly SelectionList _menu = new("Resume", "Save & Quit");
+    private static readonly (string Sprite, string Label)[] Items =
+    [
+        ("sword", "Oswin's Sword"),
+        ("boomerang", "Wind Boomerang"),
+        ("key_boss", "Warden's Key"),
+        ("courtyard_key", "Courtyard Key"),
+    ];
+    // Texts are rebuilt only when what they show changes, not every frame.
+    private readonly NumberText _gems = new(n => $"{n} gems");
+    private readonly NumberText _keys = new(n => $"×{n}");
+    private string? _status, _areaTitle;
+    private double _statusSeconds;
+    private int _statusDeaths;
+    private string? _areaName;
+    private CachedPrompt? _back;
 
     public PauseScene(PlayScene play)
     {
@@ -53,45 +68,46 @@ public sealed class PauseScene : Scene
         var inv = new RectF(10, 26, 136, 146);
         UiStyle.Frame(r, inv);
         Font.DrawShadowed(r, "INVENTORY", new Vector2(inv.X + 10, inv.Y + 7), Pal.Gold[3], Pal.Ink);
-        (string Sprite, string Label, bool Owned)[] items =
-        [
-            ("sword", "Oswin's Sword", p.HasSword),
-            ("boomerang", "Wind Boomerang", p.HasBoomerang),
-            ("key_boss", "Warden's Key", p.HasBossKey),
-            ("courtyard_key", "Courtyard Key", p.HasCourtyardKey),
-        ];
-        for (int i = 0; i < items.Length; i++)
+        for (int i = 0; i < Items.Length; i++)
         {
+            bool owned = i switch { 0 => p.HasSword, 1 => p.HasBoomerang, 2 => p.HasBossKey, _ => p.HasCourtyardKey };
             var slot = new RectF(inv.X + 10, inv.Y + 20 + i * 21, 18, 18);
             r.FillRect(slot, Pal.Ink);
-            r.DrawRect(slot, items[i].Owned ? Pal.Gold[1] : Pal.Stone[2]);
-            if (items[i].Owned)
+            r.DrawRect(slot, owned ? Pal.Gold[1] : Pal.Stone[2]);
+            if (owned)
             {
-                var s = art[items[i].Sprite];
+                var s = art[Items[i].Sprite];
                 r.DrawPivoted(s, slot.Center, 0, new Vector2(s.Height > 15 ? 0.85f : 1f));
             }
-            Font.DrawShadowed(r, items[i].Owned ? items[i].Label : "???", new Vector2(slot.Right + 6, slot.Y + 5), items[i].Owned ? Pal.White : Pal.Stone[3], Pal.Ink);
+            Font.DrawShadowed(r, owned ? Items[i].Label : "???", new Vector2(slot.Right + 6, slot.Y + 5), owned ? Pal.White : Pal.Stone[3], Pal.Ink);
         }
         float y = inv.Y + 108;
         r.DrawPivoted(art["gem_green"], new Vector2(inv.X + 16, y + 4));
-        Font.DrawShadowed(r, $"{p.Gems} gems", new Vector2(inv.X + 26, y), Pal.White, Pal.Ink);
+        Font.DrawShadowed(r, _gems.For(p.Gems), new Vector2(inv.X + 26, y), Pal.White, Pal.Ink);
         r.DrawPivoted(art["key_small"], new Vector2(inv.X + 84, y + 4));
-        Font.DrawShadowed(r, $"×{p.SmallKeys}", new Vector2(inv.X + 92, y), Pal.White, Pal.Ink);
-        var time = TimeSpan.FromSeconds(p.PlaySeconds);
-        Font.Draw(r, $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}   Falls {p.Deaths}", new Vector2(inv.X + 10, y + 16), Pal.Stone[4]);
+        Font.DrawShadowed(r, _keys.For(p.SmallKeys), new Vector2(inv.X + 92, y), Pal.White, Pal.Ink);
+        if (_status is null || _statusSeconds != p.PlaySeconds || _statusDeaths != p.Deaths)
+        {
+            var time = TimeSpan.FromSeconds(p.PlaySeconds);
+            _status = $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}   Falls {p.Deaths}";
+            (_statusSeconds, _statusDeaths) = (p.PlaySeconds, p.Deaths);
+        }
+        Font.Draw(r, _status, new Vector2(inv.X + 10, y + 16), Pal.Stone[4]);
 
         // Map panel
         var map = new RectF(154, 26, 156, 104);
         UiStyle.Frame(r, map);
         var area = _play.Area.Def;
-        Font.DrawShadowed(r, area.Name.ToUpperInvariant(), new Vector2(map.X + 10, map.Y + 7), Pal.Gold[3], Pal.Ink);
+        if (_areaTitle is null || !ReferenceEquals(_areaName, area.Name)) (_areaTitle, _areaName) = (area.Name.ToUpperInvariant(), area.Name);
+        Font.DrawShadowed(r, _areaTitle, new Vector2(map.X + 10, map.Y + 7), Pal.Gold[3], Pal.Ink);
         MapView.Draw(r, _play, new RectF(map.X + 10, map.Y + 20, map.Width - 20, map.Height - 28), Age);
 
         // Menu
         var menu = new RectF(154, 136, 156, 36);
         UiStyle.Frame(r, menu);
         _menu.Draw(r, Font, new Vector2(menu.X + 8, menu.Y + 7), UiStyle.Theme, Age, 12);
-        string back = Game.Prompts.Format("{cancel}: back");
+        _back ??= new CachedPrompt(Game.Prompts, "{cancel}: back");
+        string back = _back.Text;
         Font.Draw(r, back, new Vector2(menu.Right - 6 - Font.MeasureWidth(back), menu.Y + 7), Pal.Stone[3]);
     }
 }
@@ -134,6 +150,10 @@ public sealed class ShopScene : Scene
     private readonly PlayScene _play;
     private readonly SelectionList _menu = new("Heart Tonic", "Hearty Pie", "Leave");
     private string _message = "What'll it be, dear?";
+    private static readonly string[] Icons = ["tonic", "pie", ""];
+    private static readonly string[] Notes = ["Full heal", "+1 max heart", ""];
+    private static readonly string TonicPriceText = $"{TonicPrice}", PiePriceText = $"{PiePrice}";
+    private readonly NumberText _gems = new(n => $"{n}");
 
     public ShopScene(PlayScene play)
     {
@@ -191,25 +211,23 @@ public sealed class ShopScene : Scene
         UiStyle.Frame(r, panel);
         Font.DrawShadowed(r, "MARLA'S PROVISIONS", new Vector2(panel.X + 10, panel.Y + 8), Pal.Gold[3], Pal.Ink);
         var art = _play.Art;
-        string[] icons = ["tonic", "pie", ""];
-        string[] prices = [$"{TonicPrice}", _play.Progress.Has(PieFlag) ? "SOLD" : $"{PiePrice}", ""];
-        string[] notes = ["Full heal", "+1 max heart", ""];
         for (int i = 0; i < 3; i++)
         {
             float y = panel.Y + 26 + i * 18;
-            if (icons[i].Length > 0) r.DrawPivoted(art[icons[i]], new Vector2(panel.X + 16, y + 4));
-            if (prices[i].Length > 0)
+            if (Icons[i].Length > 0) r.DrawPivoted(art[Icons[i]], new Vector2(panel.X + 16, y + 4));
+            string price = i switch { 0 => TonicPriceText, 1 => _play.Progress.Has(PieFlag) ? "SOLD" : PiePriceText, _ => "" };
+            if (price.Length > 0)
             {
                 r.DrawPivoted(art["gem_green"], new Vector2(panel.Right - 40, y + 4));
-                Font.DrawShadowed(r, prices[i], new Vector2(panel.Right - 32, y), Pal.White, Pal.Ink);
-                Font.Draw(r, notes[i], new Vector2(panel.X + 100, y), Pal.Stone[4]);
+                Font.DrawShadowed(r, price, new Vector2(panel.Right - 32, y), Pal.White, Pal.Ink);
+                Font.Draw(r, Notes[i], new Vector2(panel.X + 100, y), Pal.Stone[4]);
             }
         }
         _menu.Draw(r, Font, new Vector2(panel.X + 22, panel.Y + 26), UiStyle.Theme, Age, 18);
         r.FillRect(new RectF(panel.X + 8, panel.Bottom - 22, panel.Width - 16, 1), Pal.Gold[0]);
         Font.DrawShadowed(r, _message, new Vector2(panel.X + 10, panel.Bottom - 16), Pal.Cream, Pal.Ink);
         r.DrawPivoted(art["gem_green"], new Vector2(panel.Right - 40, panel.Y + 12));
-        Font.DrawShadowed(r, $"{_play.Progress.Gems}", new Vector2(panel.Right - 32, panel.Y + 8), Pal.Gold[3], Pal.Ink);
+        Font.DrawShadowed(r, _gems.For(_play.Progress.Gems), new Vector2(panel.Right - 32, panel.Y + 8), Pal.Gold[3], Pal.Ink);
     }
 }
 

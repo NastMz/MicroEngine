@@ -72,6 +72,8 @@ public sealed class Bat : Enemy
         _rest = 0.5f + (float)world.Rng.NextDouble() * 1.2f;
     }
 
+    private static readonly string[] Frames = ["bat0", "bat1", "bat2"];
+
     public override bool Flies => true;
     protected override bool FragileToBoomerang => true;
     private bool Resting => _rest > 0;
@@ -109,7 +111,7 @@ public sealed class Bat : Enemy
     public override void Draw(IRenderer r)
     {
         int f = Resting || Stunned ? 1 : (int)(Time * 14) % 3;
-        DrawSprite(r, Flashing($"bat{f}"), DrawPosition + new Vector2(0, -Altitude));
+        DrawSprite(r, Flashing(Frames[f]), DrawPosition + new Vector2(0, -Altitude));
         DrawStunStars(r, Altitude + 8);
     }
 }
@@ -125,6 +127,8 @@ public sealed class Spitter : Enemy
         Hitbox = new RectF(-6, -12, 12, 12);
         _cycle = (float)world.Rng.NextDouble() * Idle;
     }
+
+    private static readonly string[] Frames = ["spitter0", "spitter1", "spitter2"];
 
     protected override float KnockbackScale => 0;
     public override bool IsSolid => true;
@@ -149,7 +153,7 @@ public sealed class Spitter : Enemy
     {
         int f = _cycle < Idle ? 0 : _cycle < Idle + Swell ? 1 : 2;
         var shake = f == 1 ? new Vector2((int)(Time * 30) % 2, 0) : Vector2.Zero;
-        DrawSprite(r, Flashing($"spitter{f}"), Position + shake);
+        DrawSprite(r, Flashing(Frames[f]), Position + shake);
         DrawStunStars(r, 16);
     }
 }
@@ -165,6 +169,10 @@ public sealed class Knight : Enemy
     private Dir _facing = Dir.Down;
 
     public Knight(PlayScene world, Vector2 at) : base(world, at, 4) => Hitbox = new RectF(-6, -10, 12, 10);
+
+    private static readonly string[] DownFrames = ["knight_down0", "knight_down1"];
+    private static readonly string[] UpFrames = ["knight_up0", "knight_up1"];
+    private static readonly string[] SideFrames = ["knight_side0", "knight_side1"];
 
     public override int ContactDamage => 2;
     protected override float KnockbackScale => 0.6f;
@@ -197,10 +205,10 @@ public sealed class Knight : Enemy
 
     public override void Draw(IRenderer r)
     {
-        string dir = _facing switch { Dir.Down => "down", Dir.Up => "up", _ => "side" };
+        var frames = _facing switch { Dir.Down => DownFrames, Dir.Up => UpFrames, _ => SideFrames };
         int f = Stunned ? 0 : (int)(_anim * 5) % 2;
         var at = DrawPosition + (Stunned ? new Vector2((int)(Time * 20) % 2, 0) : Vector2.Zero);
-        DrawSprite(r, Flashing($"knight_{dir}{f}"), at, _facing == Dir.Left);
+        DrawSprite(r, Flashing(frames[f]), at, _facing == Dir.Left);
         DrawStunStars(r, 18);
     }
 }

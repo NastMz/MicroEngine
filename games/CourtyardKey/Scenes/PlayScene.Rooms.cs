@@ -21,7 +21,22 @@ public sealed partial class PlayScene
     /// <summary>Raised after the hero settles in a room (tests and the HUD banner listen).</summary>
     public event Action<Room>? RoomEntered;
 
-    public string SolvedFlag => $"solved:{Room.Key}";
+    private Room? _solvedFlagRoom;
+    private string _solvedFlag = "";
+
+    /// <summary>The progress flag of the current room's puzzle (built once per room).</summary>
+    public string SolvedFlag
+    {
+        get
+        {
+            if (!ReferenceEquals(_solvedFlagRoom, Room))
+            {
+                _solvedFlag = $"solved:{Room.Key}";
+                _solvedFlagRoom = Room;
+            }
+            return _solvedFlag;
+        }
+    }
     public bool RoomSolved => Progress.Has(SolvedFlag);
 
     private static Vector2 CameraFor(Room room) => room.Origin - new Vector2(0, HudHeight);
@@ -176,7 +191,9 @@ public sealed partial class PlayScene
     {
         if (_closeShuttersPending)
         {
-            bool clear = Doors.All(d => d.Kind != DoorKind.Shutter || !d.Bounds.Inflate(2).Intersects(Hero.Bounds));
+            bool clear = true;
+            foreach (var a in _actors)
+                if (a is Door { Kind: DoorKind.Shutter } d && d.Bounds.Inflate(2).Intersects(Hero.Bounds)) { clear = false; break; }
             if (clear)
             {
                 _closeShuttersPending = false;
@@ -186,9 +203,15 @@ public sealed partial class PlayScene
                 if (Room.Def.Rule == RoomRule.Boss) Coroutines.Start(BossIntro());
             }
         }
-        if (Room.Def.Rule == RoomRule.Ambush && !RoomSolved && !_closeShuttersPending
-            && !_actors.OfType<Enemy>().Any(e => e.CountsForClear))
+        if (Room.Def.Rule == RoomRule.Ambush && !RoomSolved && !_closeShuttersPending && !AnyEnemyLeftToClear())
             Solve();
+    }
+
+    private bool AnyEnemyLeftToClear()
+    {
+        foreach (var a in _actors)
+            if (a is Enemy { CountsForClear: true }) return true;
+        return false;
     }
 
     /// <summary>Marks the room solved: shutters open and hidden treasure appears.</summary>
@@ -204,8 +227,8 @@ public sealed partial class PlayScene
     /// <summary>True when the cell is a plate with a block resting on it.</summary>
     public bool PlatePressed(int x, int y)
     {
-        foreach (var b in _actors.OfType<PushBlock>())
-            if (!b.Sliding && b.Cell == (x, y)) return true;
+        foreach (var a in _actors)
+            if (a is PushBlock { Sliding: false } b && b.Cell == (x, y)) return true;
         return false;
     }
 
