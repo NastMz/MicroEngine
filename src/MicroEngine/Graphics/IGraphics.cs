@@ -24,10 +24,46 @@ public abstract class Texture : IDisposable
     public int Width { get; }
     /// <summary>Height in pixels.</summary>
     public int Height { get; }
-    /// <summary>Whether <see cref="Dispose"/> was called. Drawing a disposed texture fails.</summary>
+    /// <summary>
+    /// Whether <see cref="Dispose"/> was called. Drawing a disposed texture throws <see cref="ObjectDisposedException"/>
+    /// on every renderer, and nothing is drawn.
+    /// </summary>
     public bool IsDisposed { get; private set; }
+    /// <summary>
+    /// The graphics device that created the texture, or null for a texture whose device did not say (one made with the
+    /// constructor that takes no device). Renderers draw only the textures of their own device.
+    /// </summary>
+    public IGraphicsDevice? Device { get; }
     /// <summary>Records the size and filter of a texture created by a graphics device.</summary>
     protected Texture(int width, int height, TextureFilter filter = TextureFilter.Nearest) => (Width, Height, _filter) = (width, height, filter);
+    /// <summary>Records the size, filter and creating <paramref name="device"/> of a texture.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="device"/> is null.</exception>
+    protected Texture(IGraphicsDevice device, int width, int height, TextureFilter filter = TextureFilter.Nearest) : this(width, height, filter) =>
+        Device = device ?? throw new ArgumentNullException(nameof(device));
+
+    /// <summary>
+    /// The checks every renderer makes before it draws <paramref name="texture"/>, so that all backends fail alike: a
+    /// disposed texture throws <see cref="ObjectDisposedException"/>, and a texture another graphics device created (one
+    /// that is not a <typeparamref name="TTexture"/>, or whose <see cref="Device"/> is not <paramref name="device"/>)
+    /// throws <see cref="ArgumentException"/>. Backend authors call it first in every drawing method that takes a texture.
+    /// </summary>
+    /// <typeparam name="TTexture">The texture type of the renderer's device.</typeparam>
+    /// <param name="texture">The texture a game asked to draw.</param>
+    /// <param name="device">The renderer's graphics device.</param>
+    /// <returns><paramref name="texture"/> as the device's own type.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="texture"/> is null.</exception>
+    /// <exception cref="ObjectDisposedException">The texture was disposed.</exception>
+    /// <exception cref="ArgumentException">Another graphics device created the texture.</exception>
+    public static TTexture CheckDrawable<TTexture>(Texture texture, IGraphicsDevice device) where TTexture : Texture
+    {
+        ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(device);
+        ObjectDisposedException.ThrowIf(texture.IsDisposed, texture);
+        if (texture is TTexture own && (texture.Device is null || ReferenceEquals(texture.Device, device))) return own;
+        string owner = texture.Device?.GetType().Name ?? texture.GetType().Name;
+        throw new ArgumentException($"The {texture.Width}x{texture.Height} texture was created by another graphics device ({owner}); " +
+            $"a renderer draws only the textures of its own device ({device.GetType().Name}). Create it with the game's Graphics.", nameof(texture));
+    }
     /// <summary>The whole texture as a source rectangle: (0, 0, <see cref="Width"/>, <see cref="Height"/>).</summary>
     public RectF Bounds => new(0, 0, Width, Height);
     /// <summary>Memory the texture's pixels take on the device, in bytes (4 per pixel).</summary>
@@ -112,24 +148,41 @@ public readonly record struct DrawOptions(
 /// Immediate-mode 2D drawing in virtual pixels. Coordinates go through the camera
 /// pushed with <see cref="PushCamera"/>; with no camera they are screen space.
 /// </summary>
+/// <remarks>
+/// Every renderer follows the same rules. Pixel (x, y) is the square from (x, y) to (x + 1, y + 1) and its centre is
+/// (x + 0.5, y + 0.5). A rectangle or an unrotated sprite covers exactly the pixels whose centre lies inside it, a
+/// centre on its left or top edge counting as inside and one on its right or bottom edge as outside (the top-left rule
+/// of Direct3D and Vulkan): a 1 × 1 rectangle at (2.5, 2.5) covers pixel (2, 2) only. A sprite pixel shows the texel
+/// under its centre (nearest) or the bilinear mix of the four texels around it (linear, clamped at the texture's edge).
+/// Colours are straight (not premultiplied) alpha with 8-bit results rounded to nearest. Circles, lines and triangles
+/// cover their shape's area but their edge pixels may differ between renderers.
+/// </remarks>
 public interface IRenderer
 {
     /// <summary>Width of the virtual canvas in pixels.</summary>
     int Width { get; }
     /// <summary>Height of the virtual canvas in pixels.</summary>
     int Height { get; }
-    /// <summary>Fills the whole canvas with <paramref name="color"/>. The game clears to <see cref="Core.GameSettings.Background"/> before the scenes draw.</summary>
+    /// <summary>
+    /// Replaces every pixel of the canvas with <paramref name="color"/>, alpha included, whatever the clip
+    /// (<see cref="SetClip"/>) and blend mode, and replaces what was drawn before it in the frame. The clip still applies
+    /// to the draws after it. The game clears to <see cref="Core.GameSettings.Background"/> before the scenes draw.
+    /// </summary>
     void Clear(Color color);
     /// <summary>Draws the <paramref name="source"/> part of <paramref name="texture"/> with its top-left at <paramref name="position"/>, multiplied by <paramref name="tint"/>.</summary>
-    /// <param name="texture">The texture; must not be disposed.</param>
+    /// <param name="texture">A texture of this renderer's graphics device, not disposed.</param>
     /// <param name="source">The rectangle of the texture to draw, in texture pixels.</param>
     /// <param name="position">Where the top-left of the unrotated, scaled source lands, in virtual pixels (world pixels under a camera).</param>
     /// <param name="tint">Colour multiplier; <see cref="Color.White"/> draws the texture unchanged.</param>
     /// <param name="options">Flip, rotation, pivot and scale.</param>
+    /// <exception cref="ObjectDisposedException"><paramref name="texture"/> was disposed; nothing is drawn.</exception>
+    /// <exception cref="ArgumentException">Another graphics device created <paramref name="texture"/>; nothing is drawn.</exception>
     void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default);
     /// <summary>Draws the <paramref name="source"/> part of <paramref name="texture"/> scaled to fill <paramref name="destination"/>.</summary>
+    /// <exception cref="ObjectDisposedException"><paramref name="texture"/> was disposed; nothing is drawn.</exception>
+    /// <exception cref="ArgumentException">Another graphics device created <paramref name="texture"/>; nothing is drawn.</exception>
     void DrawStretched(Texture texture, RectF source, RectF destination, Color tint);
-    /// <summary>Fills a rectangle.</summary>
+    /// <summary>Fills a rectangle: the pixels whose centre lies inside it (see the rules of <see cref="IRenderer"/>). A fully transparent colour draws nothing.</summary>
     void FillRect(RectF rect, Color color);
     /// <summary>Fills a circle; <paramref name="radius"/> is in pixels.</summary>
     void FillCircle(Vector2 center, float radius, Color color);
@@ -145,9 +198,16 @@ public interface IRenderer
     /// <summary>Returns to the coordinates in use before the last <see cref="PushCamera"/>.</summary>
     /// <exception cref="InvalidOperationException">No camera was pushed.</exception>
     void PopCamera();
-    /// <summary>Sets how later draws combine with the canvas. Every frame starts with <see cref="BlendMode.Alpha"/>.</summary>
+    /// <summary>
+    /// Sets how later draws combine with the canvas. Every frame starts with <see cref="BlendMode.Alpha"/>. With source
+    /// colour s (after the tint), its alpha a and canvas colour d: <c>Alpha</c> writes s·a + d·(1 − a),
+    /// <c>Additive</c> s·a + d, <c>Multiply</c> s·d + d·(1 − a), each channel clamped to 0..1.
+    /// </summary>
     void SetBlendMode(BlendMode mode);
-    /// <summary>Restricts drawing to a screen-space rectangle; pass null to remove.</summary>
+    /// <summary>
+    /// Restricts drawing to a screen-space rectangle (the camera does not move it); pass null to remove. X, Y, Width and
+    /// Height are truncated to whole pixels. <see cref="Clear"/> ignores the clip.
+    /// </summary>
     void SetClip(RectF? screenRect);
 }
 

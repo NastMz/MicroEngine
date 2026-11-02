@@ -6,22 +6,43 @@ using MicroEngine.Input;
 namespace MicroEngine.Core;
 
 /// <summary>
-/// A windowless platform: deterministic time, no devices, and a renderer that only counts
-/// calls. Used by automated tests and CI to play whole games through scripts.
+/// A windowless platform: deterministic time, no devices, and a renderer that counts calls (or, with
+/// <see cref="Rasterize"/>, also records them and draws them with the CPU reference rasterizer). Used by automated tests
+/// and CI to play whole games through scripts.
 /// </summary>
 public sealed class HeadlessPlatform : IPlatform
 {
-    private readonly HeadlessRenderer _renderer;
+    private readonly int _width, _height;
+    private HeadlessRenderer _renderer;
+    private HeadlessGraphicsDevice _graphics = new();
     private int _frames;
     /// <summary>Creates a headless platform whose renderer reports a <paramref name="width"/> × <paramref name="height"/> canvas.</summary>
     public HeadlessPlatform(int width = 320, int height = 180)
     {
+        (_width, _height) = (width, height);
         _renderer = new HeadlessRenderer(width, height);
         TouchScreen = new HeadlessTouchScreen(new Vector2(width * 4, height * 4));
     }
 
-    /// <summary>A <see cref="HeadlessGraphicsDevice"/>: textures have a size but no pixels.</summary>
-    public IGraphicsDevice Graphics { get; } = new HeadlessGraphicsDevice();
+    /// <summary>
+    /// When true, textures keep their pixels and the renderer records each frame's draws
+    /// (<see cref="HeadlessRenderer.Commands"/>) and draws them on <see cref="HeadlessRenderer.Frame"/> with the CPU
+    /// reference rasterizer, following the engine's rendering rules; <see cref="SaveScreenshot"/> then writes that frame
+    /// as a PNG (at scale 1). False by default: the renderer only counts. Set it when creating the platform.
+    /// </summary>
+    public bool Rasterize
+    {
+        get => _renderer.Rasterizes;
+        init
+        {
+            if (value == _renderer.Rasterizes) return;
+            _graphics = new HeadlessGraphicsDevice { KeepsPixels = value };
+            _renderer = value ? new HeadlessRenderer(_width, _height, _graphics) : new HeadlessRenderer(_width, _height);
+        }
+    }
+
+    /// <summary>A <see cref="HeadlessGraphicsDevice"/>: textures have a size but no pixels, unless <see cref="Rasterize"/> is on.</summary>
+    public IGraphicsDevice Graphics => _graphics;
     /// <summary>The silent audio device, typed so tests can read <see cref="SilentAudioDevice.Played"/>.</summary>
     public SilentAudioDevice SilentAudio { get; } = new();
     /// <summary>The same device as <see cref="SilentAudio"/>.</summary>
@@ -40,7 +61,7 @@ public sealed class HeadlessPlatform : IPlatform
     public double Now => _frames / (double)UpdateRate;
     /// <summary>
     /// Updates per simulated second, which should be the game's <see cref="GameSettings.UpdateRate"/> (60 by default):
-    /// <see cref="For"/> and <see cref="Profile"/> take it from the settings.
+    /// <see cref="For(GameSettings)"/> and <see cref="Profile"/> take it from the settings.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is zero or negative.</exception>
     public int UpdateRate
@@ -53,11 +74,15 @@ public sealed class HeadlessPlatform : IPlatform
     public bool RealTime => false;
     /// <summary>The renderer, typed so tests can read its counters.</summary>
     public HeadlessRenderer Renderer => _renderer;
-    /// <summary>Paths of the screenshots requested, in order; no file is written.</summary>
+    /// <summary>Paths of the screenshots requested, in order; a file is written only when <see cref="Rasterize"/> is on.</summary>
     public List<string> Screenshots { get; } = [];
 
     /// <summary>A headless platform with the virtual size and update rate of <paramref name="settings"/>.</summary>
     public static HeadlessPlatform For(GameSettings settings) => new(settings.VirtualWidth, settings.VirtualHeight) { UpdateRate = settings.UpdateRate };
+
+    /// <summary>A headless platform with the virtual size and update rate of <paramref name="settings"/>, rasterizing when <paramref name="rasterize"/> is true (see <see cref="Rasterize"/>).</summary>
+    public static HeadlessPlatform For(GameSettings settings, bool rasterize) =>
+        new(settings.VirtualWidth, settings.VirtualHeight) { UpdateRate = settings.UpdateRate, Rasterize = rasterize };
 
     /// <summary>The headless platform as a catalog entry (<c>--platform headless</c>, <c>--headless</c>).</summary>
     public static PlatformProfile Profile { get; } = new("headless", "no window, devices or sound; one step per frame, for tests and CI", request => For(request.Settings));
@@ -68,8 +93,15 @@ public sealed class HeadlessPlatform : IPlatform
     public IRenderer BeginFrame() { _renderer.Reset(); return _renderer; }
     /// <inheritdoc/>
     public void EndFrame() { }
-    /// <summary>Records <paramref name="path"/> in <see cref="Screenshots"/> without writing a file.</summary>
-    public void SaveScreenshot(string path) => Screenshots.Add(path);
+    /// <summary>
+    /// Records <paramref name="path"/> in <see cref="Screenshots"/>; with <see cref="Rasterize"/> on, also writes the
+    /// rasterized frame there as an opaque PNG at scale 1.
+    /// </summary>
+    public void SaveScreenshot(string path)
+    {
+        Screenshots.Add(path);
+        if (_renderer.Frame is { } frame) File.WriteAllBytes(path, PngEncoder.Encode(frame.ToRgba(), frame.Width, frame.Height));
+    }
     /// <summary>Does nothing.</summary>
     public void ToggleFullscreen() { }
     /// <summary>Does nothing; there is nothing to release.</summary>
@@ -191,9 +223,17 @@ public sealed class RecordingOverlayCanvas : IOverlayCanvas
     public void Image(PixelImage image, RectF destination, Color tint) => Shapes.Add(new("image", destination.Center, destination.Width, tint));
 }
 
-/// <summary>A graphics device for tests: textures keep their size and filter but hold no pixels; creations, uploads and live textures are counted.</summary>
+/// <summary>
+/// A graphics device for tests: textures keep their size and filter but hold no pixels (unless <see cref="KeepsPixels"/>);
+/// creations, uploads and live textures are counted.
+/// </summary>
 public sealed class HeadlessGraphicsDevice : IGraphicsDevice
 {
+    /// <summary>
+    /// Whether textures keep a copy of their pixels (creations and updates), which a rasterizing
+    /// <see cref="HeadlessRenderer"/> needs to draw them. False by default.
+    /// </summary>
+    public bool KeepsPixels { get; init; }
     /// <summary>Number of textures created so far.</summary>
     public int TexturesCreated { get; private set; }
     /// <summary>Number of textures created and not disposed yet.</summary>
@@ -213,69 +253,211 @@ public sealed class HeadlessGraphicsDevice : IGraphicsDevice
         TexturesCreated++;
         LiveTextures++;
         PixelsUploaded += (long)image.Width * image.Height;
-        return new HeadlessTexture(this, image.Width, image.Height, filter);
+        return new HeadlessTexture(this, TexturesCreated, image.Width, image.Height, filter) { Pixels = KeepsPixels ? image.Clone() : null };
     }
 
-    private sealed class HeadlessTexture(HeadlessGraphicsDevice device, int width, int height, TextureFilter filter) : Texture(width, height, filter)
+    internal sealed class HeadlessTexture(HeadlessGraphicsDevice device, int id, int width, int height, TextureFilter filter) : Texture(device, width, height, filter)
     {
+        /// <summary>The creation number on its device, used to name the texture in recorded commands.</summary>
+        public int Id { get; } = id;
+        /// <summary>A copy of the pixels when the device keeps them.</summary>
+        public PixelImage? Pixels { get; init; }
+
         protected override void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)
         {
             device.Updates++;
             device.PixelsUploaded += pixels.Length;
+            if (Pixels is null) return;
+            for (int j = 0; j < height; j++)
+                for (int i = 0; i < width; i++) Pixels[x + i, y + j] = pixels[j * width + i];
         }
         protected override void ApplyFilter(TextureFilter filter) { }
         protected override void Release() => device.LiveTextures--;
     }
 }
 
-/// <summary>Counts draw calls and tracks camera balance so tests can assert rendering ran correctly.</summary>
-public sealed class HeadlessRenderer(int width, int height) : IRenderer
+/// <summary>
+/// Counts draw calls and tracks camera balance so tests can assert rendering ran correctly. Created with a graphics
+/// device, it also rasterizes: it records each draw as a line of text (<see cref="Commands"/>) and draws it on
+/// <see cref="Frame"/> with the CPU reference rasterizer, which follows the engine's rendering rules exactly.
+/// </summary>
+public sealed class HeadlessRenderer : IRenderer
 {
+    private readonly HeadlessGraphicsDevice? _device;
+    private readonly ReferenceRasterizer? _raster;
+    private readonly List<string> _commands = [];
+    private readonly Stack<Vector2> _offsets = new();
+    private Vector2 _offset;
     private int _cameraDepth;
+
+    /// <summary>A counting renderer: nothing is drawn, every texture of any headless device is accepted.</summary>
+    public HeadlessRenderer(int width, int height) => (Width, Height) = (width, height);
+
+    /// <summary>
+    /// A rasterizing renderer for <paramref name="device"/>: it draws only that device's textures, which must keep
+    /// their pixels (<see cref="HeadlessGraphicsDevice.KeepsPixels"/>).
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="device"/> does not keep pixels.</exception>
+    public HeadlessRenderer(int width, int height, HeadlessGraphicsDevice device) : this(width, height)
+    {
+        ArgumentNullException.ThrowIfNull(device);
+        if (!device.KeepsPixels) throw new ArgumentException("A rasterizing renderer needs a device that keeps pixels (KeepsPixels = true).", nameof(device));
+        _device = device;
+        _raster = new ReferenceRasterizer(width, height);
+    }
+
     /// <inheritdoc/>
-    public int Width { get; } = width;
+    public int Width { get; }
     /// <inheritdoc/>
-    public int Height { get; } = height;
+    public int Height { get; }
     /// <summary>Draw calls since the frame began (cleared by <see cref="Reset"/>).</summary>
     public int DrawCalls { get; private set; }
     /// <summary>Cameras pushed and not yet popped.</summary>
     public int CameraDepth => _cameraDepth;
+    /// <summary>Whether this renderer rasterizes (it was created with a graphics device).</summary>
+    public bool Rasterizes => _raster is not null;
 
-    /// <summary>Starts a new frame: clears <see cref="DrawCalls"/>.</summary>
+    /// <summary>
+    /// This frame's draws as text, one line per call, in screen pixels after the camera offset (a backend-neutral form
+    /// tests can compare exactly): <c>clear</c>, <c>rect</c>, <c>sprite</c>, <c>circle</c>, <c>triangle</c>,
+    /// <c>line</c>, <c>blend</c>, <c>clip</c>, <c>camera</c>. Empty when the renderer does not rasterize.
+    /// </summary>
+    public IReadOnlyList<string> Commands => _commands;
+
+    /// <summary>
+    /// A copy of the canvas as a capture stores it (opaque), or null when the renderer does not rasterize. The canvas
+    /// keeps its pixels between frames, as a backend's does.
+    /// </summary>
+    public PixelImage? Frame => _raster?.Capture();
+
+    /// <summary>Starts a new frame: clears <see cref="DrawCalls"/> and <see cref="Commands"/>, blending returns to <see cref="BlendMode.Alpha"/> and the clip is removed.</summary>
     /// <exception cref="InvalidOperationException">The previous frame pushed a camera it did not pop.</exception>
     public void Reset()
     {
         if (_cameraDepth != 0) throw new InvalidOperationException("Unbalanced PushCamera/PopCamera in the previous frame.");
         DrawCalls = 0;
+        _commands.Clear();
+        _offsets.Clear();
+        _offset = Vector2.Zero;
+        if (_raster is null) return;
+        _raster.Blend = BlendMode.Alpha;
+        _raster.SetClip(null);
     }
+
+    private static string N(float v) => v.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+    private static string P(Vector2 v) => $"{N(v.X)},{N(v.Y)}";
+    private static string R(RectF r) => $"{N(r.X)},{N(r.Y)} {N(r.Width)}x{N(r.Height)}";
+    private static string C(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}{c.A:X2}";
+
+    private void Record(string command)
+    {
+        DrawCalls++;
+        if (_raster is not null) _commands.Add(command);
+    }
+
     /// <inheritdoc/>
-    public void Clear(Color color) => DrawCalls++;
-    /// <summary>Counts the call; throws <see cref="ObjectDisposedException"/> for a disposed texture, as real renderers fail.</summary>
+    public void Clear(Color color)
+    {
+        Record($"clear {C(color)}");
+        _raster?.Clear(color);
+    }
+
+    /// <summary>Counts the call (and rasterizes it); throws <see cref="ObjectDisposedException"/> for a disposed texture and, when rasterizing, <see cref="ArgumentException"/> for another device's texture.</summary>
     public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default)
     {
-        ObjectDisposedException.ThrowIf(texture.IsDisposed, texture);
-        DrawCalls++;
+        var own = Check(texture);
+        var scale = options.Scale ?? Vector2.One;
+        var p = position + _offset;
+        if (own is null) { DrawCalls++; return; }
+        string extra = (options.FlipX ? " flipx" : "") + (options.FlipY ? " flipy" : "")
+            + (options.Rotation != 0 ? $" rotate {N(options.Rotation)} origin {P(options.Origin)}" : "");
+        Record($"sprite #{own.Id} {own.Width}x{own.Height} {own.Filter.ToString().ToLowerInvariant()} src {R(source)} dst {R(new RectF(p.X, p.Y, source.Width * scale.X, source.Height * scale.Y))} tint {C(tint)}{extra}");
+        _raster!.DrawSprite(own.Pixels!, own.Filter, source, p, scale, options.Rotation, options.Origin, options.FlipX, options.FlipY, tint);
     }
+
+    /// <summary>Counts the call (and rasterizes it), with the checks of <see cref="Draw"/>.</summary>
+    public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint)
+    {
+        var own = Check(texture);
+        if (own is null) { DrawCalls++; return; }
+        var dst = new RectF(destination.X + _offset.X, destination.Y + _offset.Y, destination.Width, destination.Height);
+        Record($"sprite #{own.Id} {own.Width}x{own.Height} {own.Filter.ToString().ToLowerInvariant()} src {R(source)} dst {R(dst)} tint {C(tint)}");
+        if (source.Width == 0 || source.Height == 0) return;
+        _raster!.DrawSprite(own.Pixels!, own.Filter, source, dst.Position, new Vector2(dst.Width / source.Width, dst.Height / source.Height), 0, Vector2.Zero, false, false, tint);
+    }
+
+    /// <summary>The texture as this device's own when rasterizing (null when only counting), after the checks every renderer makes.</summary>
+    private HeadlessGraphicsDevice.HeadlessTexture? Check(Texture texture)
+    {
+        if (_device is null)
+        {
+            ArgumentNullException.ThrowIfNull(texture);
+            ObjectDisposedException.ThrowIf(texture.IsDisposed, texture);
+            return null;
+        }
+        return Texture.CheckDrawable<HeadlessGraphicsDevice.HeadlessTexture>(texture, _device);
+    }
+
     /// <inheritdoc/>
-    public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint) => DrawCalls++;
+    public void FillRect(RectF rect, Color color)
+    {
+        var r = new RectF(rect.X + _offset.X, rect.Y + _offset.Y, rect.Width, rect.Height);
+        Record($"rect {R(r)} {C(color)}");
+        _raster?.FillRect(r, color);
+    }
+
     /// <inheritdoc/>
-    public void FillRect(RectF rect, Color color) => DrawCalls++;
+    public void FillCircle(Vector2 center, float radius, Color color)
+    {
+        Record($"circle {P(center + _offset)} r {N(radius)} {C(color)}");
+        _raster?.FillCircle(center + _offset, radius, color);
+    }
+
     /// <inheritdoc/>
-    public void FillCircle(Vector2 center, float radius, Color color) => DrawCalls++;
+    public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
+    {
+        Record($"triangle {P(a + _offset)} {P(b + _offset)} {P(c + _offset)} {C(color)}");
+        _raster?.FillTriangle(a + _offset, b + _offset, c + _offset, color);
+    }
+
     /// <inheritdoc/>
-    public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color) => DrawCalls++;
+    public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color)
+    {
+        Record($"line {P(from + _offset)} {P(to + _offset)} w {N(thickness)} {C(color)}");
+        _raster?.DrawLine(from + _offset, to + _offset, thickness, color);
+    }
+
     /// <inheritdoc/>
-    public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color) => DrawCalls++;
-    /// <inheritdoc/>
-    public void PushCamera(Camera2D camera) => _cameraDepth++;
+    public void PushCamera(Camera2D camera)
+    {
+        _cameraDepth++;
+        _offsets.Push(_offset);
+        _offset = camera.RenderOffset;
+        if (_raster is not null) _commands.Add($"camera {P(_offset)}");
+    }
+
     /// <inheritdoc/>
     public void PopCamera()
     {
         if (_cameraDepth == 0) throw new InvalidOperationException("PopCamera without PushCamera.");
         _cameraDepth--;
+        _offset = _offsets.Pop();
+        if (_raster is not null) _commands.Add($"camera {P(_offset)}");
     }
+
     /// <inheritdoc/>
-    public void SetBlendMode(BlendMode mode) { }
+    public void SetBlendMode(BlendMode mode)
+    {
+        if (_raster is null) return;
+        _raster.Blend = mode;
+        _commands.Add($"blend {mode.ToString().ToLowerInvariant()}");
+    }
+
     /// <inheritdoc/>
-    public void SetClip(RectF? screenRect) { }
+    public void SetClip(RectF? screenRect)
+    {
+        if (_raster is null) return;
+        _raster.SetClip(screenRect);
+        _commands.Add(screenRect is { } r ? $"clip {R(r)}" : "clip none");
+    }
 }
