@@ -46,22 +46,23 @@ public sealed class AssetCacheTests
         assets.Atlas("atlases/players.xml");
         assets.Font("fonts/Inter-Regular.ttf");
         var scope = assets.CreateScope();
-        for (int i = 0; i < 100; i++) Lookups(scope);
+        for (int i = 0; i < 100; i++) Lookups(scope, assets);
         // Steady garbage repeats in every round; the runtime's one-off work (tiered compilation) lands in one at most.
         var rounds = new List<long>();
         for (int round = 0; round < 3; round++)
         {
             long before = GC.GetAllocatedBytesForCurrentThread();
-            for (int i = 0; i < 1000; i++) Lookups(scope);
+            for (int i = 0; i < 1000; i++) Lookups(scope, assets);
             rounds.Add(GC.GetAllocatedBytesForCurrentThread() - before);
         }
         Assert.AreEqual(0, rounds.Min(), $"games may ask for assets in Draw, every frame (rounds: {string.Join(", ", rounds)})");
 
-        static void Lookups(AssetCache scope)
+        static void Lookups(AssetCache scope, AssetCache root)
         {
             scope.Texture("items/blueGem.png");
             scope.Atlas("atlases/players.xml");
             scope.Font("fonts/Inter-Regular.ttf");
+            _ = scope.Count + root.Count;
         }
     }
 
@@ -99,14 +100,100 @@ public sealed class AssetCacheTests
         Assert.IsTrue(level.IsLoaded("atlases/tiles.xml"));
         Assert.IsFalse(assets.IsLoaded("atlases/tiles.xml"), "the parent does not see its children's assets");
         Assert.AreEqual(2, assets.Statistics.Count, "statistics include children");
-        Assert.AreEqual(2, assets.Count);
-        Assert.AreEqual(1, level.Count);
+        Assert.AreEqual(2, assets.Count, "the shared atlas counts once");
+        Assert.AreEqual(2, level.Count, "the level holds the atlas it asked for and its own tiles");
         level.Dispose();
         Assert.IsTrue(tiles.Texture.IsDisposed);
         Assert.IsFalse(shared.Texture.IsDisposed);
         Assert.AreEqual(1, device.LiveTextures);
         Assert.AreEqual(1, assets.Statistics.Count);
         Assert.ThrowsExactly<ObjectDisposedException>(() => level.Texture("items/blueGem.png"));
+    }
+
+    [TestMethod]
+    public void Sibling_scopes_share_one_object_and_it_lives_until_the_last_releases_it()
+    {
+        var (assets, device) = Open();
+        var level1 = assets.CreateScope("level 1");
+        var level2 = assets.CreateScope("level 2");
+        var a = level1.Texture("items/blueGem.png");
+        var b = level2.Texture("items/blueGem.png");
+        Assert.AreSame(a, b, "a second scope gets the object the first loaded");
+        Assert.AreEqual(1, device.TexturesCreated, "decoded and uploaded once");
+        Assert.AreEqual(1, assets.Count, "one shared entry");
+        Assert.AreEqual(1, assets.Statistics.Count);
+        Assert.AreEqual(a.SizeInBytes, assets.Statistics.TextureBytes, "counted once");
+        Assert.AreEqual(1, assets.Loaded.Count);
+        Assert.AreEqual(1, level1.Count);
+        Assert.AreEqual(1, level2.Count);
+
+        Assert.IsTrue(level1.Unload("items/blueGem.png"), "level 1 let go of it");
+        Assert.IsFalse(a.IsDisposed, "level 2 still holds it");
+        Assert.AreEqual(0, level1.Count);
+        Assert.IsFalse(level1.IsLoaded("items/blueGem.png"));
+        Assert.AreEqual(1, assets.Count);
+        Assert.AreSame(a, level1.Texture("items/blueGem.png"), "asking again holds the same object again");
+        level1.Dispose();
+        Assert.IsFalse(a.IsDisposed);
+        level2.Dispose();
+        Assert.IsTrue(a.IsDisposed, "released with its last holder");
+        Assert.AreEqual(0, device.LiveTextures);
+        Assert.AreEqual(0, assets.Count);
+        Assert.AreEqual(1, device.TexturesCreated);
+    }
+
+    [TestMethod]
+    public void Unloading_both_holders_disposes_the_asset_once()
+    {
+        var (assets, device) = Open();
+        var level1 = assets.CreateScope();
+        var level2 = assets.CreateScope();
+        var atlas = level1.Atlas("atlases/players.xml");
+        Assert.AreSame(atlas, level2.Atlas("atlases/players.xml"));
+        var font = level1.Font("fonts/Inter-Regular.ttf");
+        Assert.AreSame(font, level2.Font("fonts/Inter-Regular.ttf"));
+        Assert.IsTrue(level2.Unload("atlases/players.xml"));
+        Assert.IsFalse(atlas.Texture.IsDisposed);
+        Assert.IsTrue(level1.Unload("atlases/players.xml"));
+        Assert.IsTrue(atlas.Texture.IsDisposed);
+        Assert.AreEqual(0, device.LiveTextures, "one texture made, one released: never disposed twice");
+        Assert.IsFalse(level1.Unload("atlases/players.xml"), "nothing left to release");
+        Assert.AreEqual(1, assets.Count, "the font is still shared");
+        level1.Dispose();
+        level2.Dispose();
+        Assert.AreEqual(0, assets.Count);
+    }
+
+    [TestMethod]
+    public void An_asset_a_child_also_holds_survives_its_parents_unload()
+    {
+        var (assets, _) = Open();
+        var held = assets.Texture("items/redGem.png");
+        var level = assets.CreateScope();
+        Assert.AreSame(held, level.Texture("items/redGem.png"));
+        Assert.IsTrue(assets.Unload("items/redGem.png"));
+        Assert.IsFalse(held.IsDisposed, "the level still uses it");
+        Assert.IsFalse(assets.IsLoaded("items/redGem.png"), "the root let go of it");
+        Assert.IsTrue(level.IsLoaded("items/redGem.png"));
+        level.Dispose();
+        Assert.IsTrue(held.IsDisposed);
+    }
+
+    [TestMethod]
+    public void A_preload_in_a_scope_finds_what_a_sibling_loaded()
+    {
+        var (assets, device) = Open();
+        var level1 = assets.CreateScope();
+        var level2 = assets.CreateScope();
+        var gem = level1.Texture("items/greenGem.png");
+        var batch = level2.Preload("items/greenGem.png");
+        Assert.IsTrue(batch.IsDone, "already loaded by a sibling: done at once");
+        Assert.AreSame(gem, level2.Texture("items/greenGem.png"));
+        Assert.AreEqual(1, device.TexturesCreated);
+        level1.Dispose();
+        Assert.IsFalse(gem.IsDisposed, "the preloading scope holds it");
+        level2.Dispose();
+        Assert.IsTrue(gem.IsDisposed);
     }
 
     [TestMethod]

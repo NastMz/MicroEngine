@@ -71,9 +71,9 @@ protected override void Load()
 | `AtlasFromFolder(folder, pivot?, filter?)` | every image of a folder packed into one atlas, named by file name |
 | `Font(path, options?)` | a `ScalableFont` ([Text](text.md#scalable-fonts-ttf-and-otf)) |
 | `Bytes(path)`, `Text(path)` | the file's content (not cached) |
-| `IsLoaded(path)`, `Unload(path)` | whether a file is loaded; releases it |
+| `IsLoaded(path)`, `Unload(path)` | whether a file is loaded; releases this cache's hold on it |
 | `Loaded`, `Statistics` | what is loaded, texture memory, load times, loads during play |
-| `CreateScope(name?)` | a child cache whose assets are released with it |
+| `CreateScope(name?)` | a child cache that releases what it holds when disposed |
 | `Preload(paths...)` | loads files in the background, returning an `AssetBatch` |
 
 Paths are relative to `Content/` with `/` separators. Everything `Game.Assets` loaded is disposed after `Game.Unload`;
@@ -84,15 +84,17 @@ Sounds and music keep their own registry: `Audio.AddSoundFile` and `Audio.AddMus
 
 ### Levels and scenes: scopes
 
-Assets used by one level should go away when the level ends. A scope reuses whatever its parents already loaded and
-disposes only what it loads itself:
+Assets used by one level should go away when the level ends. Scopes share what they load: a scope that asks for a file
+another scope (`Game.Assets`, another level, an overlay scene) already loaded gets the same object, loaded once, and
+holds it too. Disposing a scope, or `Unload(path)`, releases that scope's hold; an asset is disposed only when no scope
+holds it any more, so one level ending never takes a texture away from another:
 
 ```csharp
 public override void Enter()
 {
     _level = Assets.CreateScope("forest");
     _tiles = _level.Atlas("levels/forest/tiles.xml");       // released with the scope
-    _hero = _level.Atlas("atlases/hero.json");               // found in Game.Assets if loaded there: not loaded twice
+    _hero = _level.Atlas("atlases/hero.json");               // the same object if Game.Assets loaded it: not loaded twice
 }
 
 public override void Exit() => _level.Dispose();

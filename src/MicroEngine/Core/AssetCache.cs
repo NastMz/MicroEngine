@@ -36,7 +36,8 @@ public readonly record struct AssetStatistics(int Count, long TextureBytes, doub
 /// <summary>
 /// Loads, shares and releases a game's content files (<c>Game.Assets</c>): images as textures, packing tools' atlases,
 /// folders of images packed into one atlas, and TTF/OTF fonts. The same request returns the same object, so a texture
-/// used by ten scenes is decoded and uploaded once; everything a scope loaded is disposed with it.
+/// used by ten scenes is decoded and uploaded once, whichever scopes ask for it; an asset is disposed when the last scope
+/// holding it releases it.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -45,8 +46,10 @@ public readonly record struct AssetStatistics(int Count, long TextureBytes, doub
 /// </para>
 /// <para>
 /// <c>Game.Assets</c> lives as long as the game and is disposed after <c>Unload</c>. For assets of one level or scene,
-/// create a child with <see cref="CreateScope"/> and dispose it when the level ends: a child finds what its parents
-/// already loaded instead of loading it again, and releases only its own. Loading belongs in <c>Load</c>, a scene's
+/// create a child with <see cref="CreateScope"/> and dispose it when the level ends. Scopes share: a scope that asks for
+/// an asset another scope (a parent, a sibling) already loaded gets the same object instead of loading it again, and holds
+/// it too; disposing a scope or calling <see cref="Unload"/> releases its hold, and an asset is disposed when no scope
+/// holds it any more. Loading belongs in <c>Load</c>, a scene's
 /// <c>Enter</c> or a loading screen; a load during play is reported, because decoding a large image takes longer than a
 /// frame. <see cref="Preload"/> decodes on worker threads where the platform has them and uploads within a time budget
 /// per frame, for loading screens.
@@ -69,6 +72,9 @@ public sealed class AssetCache : IDisposable
     private ContentFolder? _content;
     private readonly AssetCache? _parent;
     private readonly List<AssetCache> _children = [];
+    // The assets of every scope of a game, one entry per key, shared by the scopes that hold it.
+    private readonly Dictionary<AssetKey, Entry> _shared;
+    // What this scope holds, in the order it first asked.
     private readonly Dictionary<AssetKey, Entry> _entries = [];
 
     /// <summary>What identifies a cached asset: its path, its kind and the options it was loaded with. A struct of references and values, so a lookup allocates nothing.</summary>
@@ -83,6 +89,8 @@ public sealed class AssetCache : IDisposable
         public readonly IDisposable Value = value;
         public readonly double Milliseconds = milliseconds;
         public readonly bool DuringPlay = duringPlay;
+        // The scopes holding the asset; it is disposed when the last one releases it.
+        public readonly List<AssetCache> Holders = [];
         public long Bytes => Value switch
         {
             Texture t => t.IsDisposed ? 0 : t.SizeInBytes,
@@ -99,11 +107,12 @@ public sealed class AssetCache : IDisposable
     {
         _device = device ?? throw new ArgumentNullException(nameof(device));
         _root = root;
+        _shared = [];
     }
 
     private AssetCache(AssetCache parent, string? name)
     {
-        (_device, _root, _content, _parent, Name) = (parent._device, parent._root, parent._content, parent, name);
+        (_device, _root, _content, _parent, _shared, Name) = (parent._device, parent._root, parent._content, parent, parent._shared, name);
         Playing = parent.Playing;
         BackgroundDecoding = parent.BackgroundDecoding;
         FrameBudgetMilliseconds = parent.FrameBudgetMilliseconds;
@@ -249,8 +258,9 @@ public sealed class AssetCache : IDisposable
     // ---- Lifecycle
 
     /// <summary>
-    /// A child scope: it reuses what this scope (and its parents) loaded and disposes only what it loads itself, when it is
-    /// disposed. Use one per level or scene whose assets should be freed when it ends.
+    /// A child scope: an asset it asks for that another scope already loaded is the same object, and disposing the scope
+    /// releases what it holds, disposing only what no other scope holds. Use one per level or scene whose assets should be
+    /// freed when it ends.
     /// </summary>
     public AssetCache CreateScope(string? name = null)
     {
@@ -260,28 +270,34 @@ public sealed class AssetCache : IDisposable
         return child;
     }
 
-    /// <summary>Disposes everything this scope loaded from <paramref name="path"/>; it loads again if asked for later. Parents' assets are not touched.</summary>
-    /// <returns>Whether anything was released.</returns>
+    /// <summary>
+    /// Releases what this scope holds from <paramref name="path"/> (in any form): each object is disposed unless another
+    /// scope still holds it, and loads again if asked for later. What only other scopes hold is not touched.
+    /// </summary>
+    /// <returns>Whether this scope held anything from the file.</returns>
     public bool Unload(string path)
     {
         string normalized = Normalize(path);
         var keys = _entries.Keys.Where(k => k.Path == normalized).ToList();
         foreach (var k in keys)
         {
-            _entries[k].Value.Dispose();
+            Release(k, _entries[k]);
             _entries.Remove(k);
         }
         return keys.Count > 0;
     }
 
-    /// <summary>Disposes every asset of this scope and of its child scopes. The root scope is disposed by the engine after <c>Game.Unload</c>.</summary>
+    /// <summary>
+    /// Releases every asset this scope and its child scopes hold, disposing those no other scope holds. The root scope is
+    /// disposed by the engine after <c>Game.Unload</c>.
+    /// </summary>
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
         foreach (var child in _children.ToList()) child.Dispose();
         _children.Clear();
-        foreach (var entry in _entries.Values) entry.Value.Dispose();
+        foreach (var (key, entry) in _entries) Release(key, entry);
         _entries.Clear();
         _uploads.Clear();
         _parent?._children.Remove(this);
@@ -289,20 +305,48 @@ public sealed class AssetCache : IDisposable
 
     // ---- Diagnostics
 
-    /// <summary>How many assets this scope and its children hold; allocates nothing, so it can be checked every frame.</summary>
+    /// <summary>
+    /// How many assets this scope and its children hold, an asset several of them share counting once; allocates
+    /// nothing, so it can be checked every frame.
+    /// </summary>
     public int Count
     {
         get
         {
-            int count = _entries.Count;
-            foreach (var child in _children) count += child.Count;
+            if (_parent is null) return _shared.Count;
+            int count = 0;
+            foreach (var entry in _shared.Values)
+                foreach (var holder in entry.Holders)
+                    if (holder.IsWithin(this)) { count++; break; }
             return count;
         }
     }
 
-    /// <summary>The assets of this scope and its children, in load order within each scope.</summary>
-    public IReadOnlyList<AssetInfo> Loaded =>
-        [.. _entries.Values.Select(e => new AssetInfo(e.Path, e.Kind, e.Bytes, e.Milliseconds, e.DuringPlay)), .. _children.SelectMany(c => c.Loaded)];
+    /// <summary>The assets of this scope and its children, each once, in the order each scope asked for them.</summary>
+    public IReadOnlyList<AssetInfo> Loaded
+    {
+        get
+        {
+            var seen = new HashSet<Entry>();
+            var loaded = new List<AssetInfo>();
+            Collect(seen, loaded);
+            return loaded;
+        }
+    }
+
+    private void Collect(HashSet<Entry> seen, List<AssetInfo> into)
+    {
+        foreach (var e in _entries.Values)
+            if (seen.Add(e)) into.Add(new AssetInfo(e.Path, e.Kind, e.Bytes, e.Milliseconds, e.DuringPlay));
+        foreach (var child in _children) child.Collect(seen, into);
+    }
+
+    private bool IsWithin(AssetCache scope)
+    {
+        for (var s = this; s is not null; s = s._parent)
+            if (s == scope) return true;
+        return false;
+    }
 
     /// <summary>Counts, texture memory and load time of this scope and its children.</summary>
     public AssetStatistics Statistics
@@ -336,7 +380,7 @@ public sealed class AssetCache : IDisposable
             var kind = ImageDecoder.Extensions.Contains(ext) ? "texture" : ext is ".json" or ".xml" ? "atlas" : ext is ".ttf" or ".otf" ? "font"
                 : throw new ArgumentException($"'{path}' is not an image, atlas or font file.", nameof(paths));
             var pending = new Pending(batch, path, kind);
-            if (FindLoaded(path, kind) is not null) { batch.Complete(null); continue; }
+            if (FindLoaded(path, kind)) { batch.Complete(null); continue; }
             if (BackgroundDecoding) pending.Decoding = Task.Run(() => pending.Decode(this));
             _uploads.Enqueue(pending);
         }
@@ -385,7 +429,7 @@ public sealed class AssetCache : IDisposable
                 "atlas" => new AssetKey(Normalize(pending.Path), "atlas", _device.DefaultFilter, default, AtlasOptions.Default),
                 _ => new AssetKey(Normalize(pending.Path), "font", default, default, FontOptions.Default),
             };
-            if (FindLoaded(pending.Path, pending.Kind) is null)
+            if (!FindLoaded(pending.Path, pending.Kind))
             {
                 IDisposable value = pending.Kind switch
                 {
@@ -438,13 +482,32 @@ public sealed class AssetCache : IDisposable
 
     // ---- Internals
 
-    /// <summary>The asset under <paramref name="key"/> in this scope or a parent, or null; allocates nothing.</summary>
+    /// <summary>
+    /// The asset under <paramref name="key"/>, held by this scope from now on, or null when no scope has it; a hit this
+    /// scope already holds allocates nothing.
+    /// </summary>
     private T? Find<T>(in AssetKey key) where T : class
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        for (var scope = this; scope is not null; scope = scope._parent)
-            if (scope._entries.TryGetValue(key, out var found)) return (T)found.Value;
-        return null;
+        if (_entries.TryGetValue(key, out var held)) return (T)held.Value;
+        if (!_shared.TryGetValue(key, out var shared)) return null;
+        Hold(key, shared);
+        return (T)shared.Value;
+    }
+
+    private void Hold(AssetKey key, Entry entry)
+    {
+        _entries.Add(key, entry);
+        entry.Holders.Add(this);
+    }
+
+    /// <summary>Lets go of <paramref name="entry"/> (the caller removes it from this scope); disposes it when no scope holds it any more.</summary>
+    private void Release(AssetKey key, Entry entry)
+    {
+        entry.Holders.Remove(this);
+        if (entry.Holders.Count > 0) return;
+        _shared.Remove(key);
+        entry.Value.Dispose();
     }
 
     private T Get<T>(AssetKey key, Func<AssetKey, T> load) where T : class, IDisposable
@@ -465,19 +528,27 @@ public sealed class AssetCache : IDisposable
     /// <param name="blocking">The part spent on the game's thread, which is what a player sees as a hitch; the whole load when null.</param>
     private void Store(AssetKey key, IDisposable value, double milliseconds, double? blocking = null)
     {
-        _entries[key] = new Entry(key.Path, key.Kind, value, milliseconds, Playing);
+        var entry = new Entry(key.Path, key.Kind, value, milliseconds, Playing);
+        _shared.Add(key, entry);
+        Hold(key, entry);
         double hitch = blocking ?? milliseconds;
         if (Playing && SlowLoadMilliseconds > 0 && hitch >= SlowLoadMilliseconds && _warned.Add(key.Kind + "|" + key.Path))
             Console.Error.WriteLine($"assets: {key.Kind} '{key.Path}' was loaded during play and took {hitch:0.0} ms (a visible hitch); load it in Load, or Preload it behind a loading screen.");
     }
 
-    private IDisposable? FindLoaded(string path, string kind)
+    /// <summary>Whether any scope has <paramref name="path"/> loaded as <paramref name="kind"/> (with any options); this scope then holds it.</summary>
+    private bool FindLoaded(string path, string kind)
     {
         string normalized = Normalize(path);
-        for (var scope = this; scope is not null; scope = scope._parent)
-            foreach (var (key, entry) in scope._entries)
-                if (key.Path == normalized && key.Kind == kind) return entry.Value;
-        return null;
+        foreach (var key in _entries.Keys)
+            if (key.Path == normalized && key.Kind == kind) return true;
+        foreach (var (key, entry) in _shared)
+            if (key.Path == normalized && key.Kind == kind)
+            {
+                Hold(key, entry);
+                return true;
+            }
+        return false;
     }
     /// <summary>'/' separators, no leading '/' or "./"; the same string when nothing changes, so lookups allocate nothing.</summary>
     private static string Normalize(string path)
