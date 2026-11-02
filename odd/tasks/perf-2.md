@@ -45,6 +45,30 @@ Quoted fragments are the owner's request (2026-11-02), verbatim.
   resultados." "Ejecuta las pruebas de regresión correspondientes y aprovecha la infraestructura de CI existente."
   "Documenta las decisiones técnicas, mejoras realizadas y pendientes que permanezcan abiertos."
 
+- S17 (2026-11-02, review before the PR) WebAssembly music freeze: "Investiga su causa real, implementa una solución y
+  comprueba que la generación o incorporación de recursos musicales no produzca interrupciones perceptibles durante el
+  gameplay." "Conserva las mejoras ya obtenidas en los tiempos de carga, pero prioriza la fluidez sostenida sobre la
+  velocidad de arranque."
+- S18 "Valida visualmente la implementación de `Game.FrameBlend` en las cuatro demos." (characters and enemies, cameras,
+  animations and particles, scene transitions, consistency across update and presentation rates). "Las pruebas
+  automatizadas y las capturas deben complementar la validación visual, no sustituirla."
+- S19 "Valida el comportamiento del motor con los tres monitores disponibles: 100 Hz, 74,97 Hz y 60 Hz." "Comprueba el
+  movimiento de ventanas entre pantallas, los cambios de frecuencia, la sincronización vertical y los límites de FPS."
+  "una presentación lo más uniforme posible, independientemente del monitor utilizado."
+- S20 GameInput: "La compatibilidad funcional con dispositivos de entrada tiene mayor importancia que ahorrar ese
+  segundo." "Comprueba el funcionamiento de los mandos con los recursos de prueba disponibles, incluyendo conexión,
+  desconexión y reconocimiento de dispositivos." "No sacrifiques capacidades funcionales únicamente para mejorar el
+  tiempo de inicio."
+- S21 Alpha APIs: "No introduzcas capas de compatibilidad, adaptadores obsoletos ni complejidad adicional únicamente para
+  conservar comportamientos antiguos." "Actualiza los consumidores, las plantillas, los ejemplos, las pruebas y la
+  documentación según corresponda."
+- S22 Sustained performance: frame-time stability, gameplay micro-stutter, allocations and GC, main-thread work, audio
+  and resource generation, simulation/render/presentation interaction, platforms and backends. "Los tiempos de arranque
+  son secundarios, salvo cuando exista un problema realmente significativo."
+- S23 Delivery: verify engine, SDK and demo suites; update the report; coherent commits; "Publica la rama y abre el PR
+  para activar el CI." "Revisa los resultados del CI y corrige los fallos atribuibles a esta rama." "No hagas merge ni
+  publiques nuevas versiones sin autorización."
+
 ## Tasks
 
 | ID | Specs | Route | Status | Evidence |
@@ -60,6 +84,13 @@ Quoted fragments are the owner's request (2026-11-02), verbatim.
 | T9 | S14 | inline | done | evaluation section 7; GRAPHICS-1 decided as a separate mission (ADR 0024) |
 | T10 | S15 | inline | done | 291d6a1, f720501 (songs render in slices in browsers); Android emulator start, memory, stability; evaluation section 8 |
 | T11 | S16 | inline | done | docs/evaluations/perf-2.md; all suites pass (native included); PR pending the owner |
+| T12 | S17 | inline | pending | |
+| T13 | S20 | inline | pending | |
+| T14 | S18 | inline | pending | |
+| T15 | S19 | inline | pending | |
+| T16 | S21 | inline | pending | |
+| T17 | S22 | inline | pending | |
+| T18 | S23 | inline | pending | |
 
 ## Log
 
@@ -98,3 +129,7 @@ Quoted fragments are the owner's request (2026-11-02), verbatim.
   -p:MicroEngineRelease=true (ContinuousIntegrationBuild maps paths only in CI or with that flag).
 - L10 Android: emulator only (no phone connected); Meadow Run cold start 0.96-1.55 s (am start -W), engine start to title
   2.15 s, PSS 159 MB, no fatal error in a 20 s run. Not a phone measurement.
+- L11 (2026-11-02) The owner's review before the PR, verbatim: the seven-point text pasted in the session ("Antes de
+  abrir el PR, quiero resolver y validar los siguientes aspectos." ... "No queremos sacrificar compatibilidad o calidad
+  arquitectónica para obtener mejoras marginales en los tiempos de arranque."); quoted fragments in S17-S23. It reverses
+  the GameInput decision of 51cece6 and authorizes pushing the branch and opening the PR.
