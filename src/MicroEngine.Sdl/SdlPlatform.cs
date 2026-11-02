@@ -438,6 +438,15 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     private void StartGamepads()
     {
         _gamepadsStarted = true;
+        // On Windows SDL 3.4+ reaches pads through Microsoft's GameInput by default, whose start waits about a second for
+        // the GameInput service where that service is not running (measured: 1,100 ms against 120 ms). Without it SDL
+        // uses its RawInput, XInput and Windows.Gaming.Input drivers, its default until 3.2. Both hints must be off: raw
+        // GIP devices (Xbox One guitars) also start GameInput. The environment variables of the same names override this.
+        if (OperatingSystem.IsWindows())
+        {
+            SDL_SetHint(SDL_HINT_JOYSTICK_GAMEINPUT, "0");
+            SDL_SetHint("SDL_JOYSTICK_GAMEINPUT_RAW", "0");
+        }
         long started = System.Diagnostics.Stopwatch.GetTimestamp();
         if (!SDL_InitSubSystem(SDL_InitFlags.SDL_INIT_GAMEPAD))
             Console.Error.WriteLine($"input: gamepads unavailable ({SDL_GetError()})");
