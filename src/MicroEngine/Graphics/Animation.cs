@@ -1,14 +1,45 @@
 namespace MicroEngine.Graphics;
 
-/// <summary>An immutable sequence of sprites played at a fixed rate.</summary>
+/// <summary>An immutable sequence of sprites played at a fixed rate, or with a duration per frame (Aseprite timing).</summary>
 public sealed class AnimationClip
 {
+    // Times at which each frame ends, for clips with a duration per frame; null for a fixed rate.
+    private readonly float[]? _ends;
+
     /// <summary>The frames in playing order (at least one).</summary>
     public IReadOnlyList<Sprite> Frames { get; }
-    /// <summary>Playback rate in frames per second.</summary>
+    /// <summary>Playback rate in frames per second; for a clip with a duration per frame, its average rate.</summary>
     public float FramesPerSecond { get; }
     /// <summary>Whether the clip starts over after its last frame; otherwise it holds the last frame.</summary>
     public bool Loop { get; }
+    /// <summary>How long each frame shows, in seconds (all equal for a clip with a fixed rate).</summary>
+    public IReadOnlyList<float> FrameDurations { get; }
+
+    /// <summary>Creates a clip whose frames each show for their own time, in seconds; frames and durations are copied.</summary>
+    /// <param name="frames">The frames in playing order.</param>
+    /// <param name="frameDurations">One positive duration per frame, in seconds.</param>
+    /// <param name="loop">Whether the clip repeats.</param>
+    /// <exception cref="ArgumentException">No frames, or not one duration per frame.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A duration is not positive.</exception>
+    public AnimationClip(IEnumerable<Sprite> frames, IEnumerable<float> frameDurations, bool loop = true)
+    {
+        ArgumentNullException.ThrowIfNull(frames);
+        ArgumentNullException.ThrowIfNull(frameDurations);
+        Frames = frames.ToArray();
+        var durations = frameDurations.ToArray();
+        if (Frames.Count == 0) throw new ArgumentException("A clip needs at least one frame.", nameof(frames));
+        if (durations.Length != Frames.Count) throw new ArgumentException($"{Frames.Count} frames need {Frames.Count} durations, got {durations.Length}.", nameof(frameDurations));
+        _ends = new float[durations.Length];
+        float total = 0;
+        for (int i = 0; i < durations.Length; i++)
+        {
+            if (!(durations[i] > 0) || float.IsInfinity(durations[i])) throw new ArgumentOutOfRangeException(nameof(frameDurations), durations[i], "Frame durations are positive.");
+            _ends[i] = total += durations[i];
+        }
+        FrameDurations = durations;
+        FramesPerSecond = Frames.Count / total;
+        Loop = loop;
+    }
 
     /// <summary>Creates a clip; the frames are copied.</summary>
     /// <param name="frames">The frames, for example from <see cref="SpriteAtlas.Frames"/>.</param>
@@ -24,14 +55,23 @@ public sealed class AnimationClip
         if (framesPerSecond <= 0) throw new ArgumentOutOfRangeException(nameof(framesPerSecond));
         FramesPerSecond = framesPerSecond;
         Loop = loop;
+        FrameDurations = Enumerable.Repeat(1 / framesPerSecond, Frames.Count).ToArray();
     }
 
     /// <summary>Length of one pass through the frames, in seconds.</summary>
-    public float Duration => Frames.Count / FramesPerSecond;
+    public float Duration => _ends is { } ends ? ends[^1] : Frames.Count / FramesPerSecond;
 
     /// <summary>The frame shown <paramref name="time"/> seconds after the clip started (0 or more).</summary>
     public Sprite FrameAt(float time)
     {
+        if (_ends is { } ends)
+        {
+            float t = Loop ? time % ends[^1] : time;
+            int found = Array.BinarySearch(ends, t);
+            // An exact end time belongs to the next frame; otherwise BinarySearch gives the first end after t.
+            int at = found >= 0 ? found + 1 : ~found;
+            return Frames[Math.Min(at, Frames.Count - 1)];
+        }
         int index = (int)(time * FramesPerSecond);
         return Frames[Loop ? index % Frames.Count : Math.Min(index, Frames.Count - 1)];
     }
