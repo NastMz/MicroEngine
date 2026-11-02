@@ -108,3 +108,4 @@ inline following this record.
   a bottom banner in Courtyard Key covered the hero entering the boss room (back at the top, the room name waits).
   Visual references re-recorded only for intended captures, each checked by eye first (merge script refuses any
   other difference). Platform run 41381187401: macOS, Android x4, iOS simulator x4 functional checks, mobile web pass.
+- L10 Platform run 41383851136 on 427bdca: all 10 jobs pass (macOS; Android and iOS simulator for the four games; mobile web).

@@ -77,7 +77,7 @@ changes (dialogue paging, long-word wrapping, the start screen on by default, th
 | Linux | desktop entry `Name`, window app id (SDL) | `icon.png`, window icon | `StartupWMClass`, id file name | run: packaged, entry read; not run on a Linux desktop here |
 | macOS | bundle name, Dock | `AppIcon.icns` | bundle id, version, ad hoc signature | unchanged by this branch; checked by the SDK test on CI |
 | Android | launcher, recents, app info | adaptive and round icons | package id unchanged (update installs over earlier builds), launch screen | emulator, `aapt` |
-| iOS | home screen | asset catalog icon | bundle id, `UILaunchScreen` | CI: the simulator app installs, starts, renders, plays sound, takes scripted touches and resumes after suspension (platform run 41381187401); not on an iPhone |
+| iOS | home screen | asset catalog icon | bundle id, `UILaunchScreen` | CI: the simulator app installs, starts, renders, plays sound, takes scripted touches and resumes after suspension (platform run 41383851136); not on an iPhone |
 | Web | tab title | favicon, manifest icon | manifest name, colours, orientation; start screen | browser (loading page and start); the tool's web build needs the `wasm-tools` workload, not installed here: CI |
 
 The four demos keep distinct names, ids (`dev.microengine.<game>`) and icons; their start-screen colours come from
@@ -92,7 +92,7 @@ their own palettes.
 | Samples, desktop, raylib | 9, 8 passed; raylib 1 passed, 4 skipped (native window not available) |
 | Site build and content checks | 204 pages, quoted code blocks equal their sources |
 | Visual references | only intended captures re-recorded: 8 per desktop reference (Windows, Linux raylib and SDL, macOS), 26 on Android and in the iOS simulator (touch names); every other capture unchanged |
-| Platform run 41381187401 | macOS, Android (four games), iOS simulator (four games: installed, started, rendered, audio, touch, lifecycle), web demos on emulated phones |
+| Platform run 41383851136 (head 427bdca) | all 10 jobs pass: macOS, Android and iOS simulator for the four games (installed, started, rendered, audio, touch, lifecycle, captures against the references), web demos on emulated phones |
 
 ## 6. Limitations and follow-ups
 
