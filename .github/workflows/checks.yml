@@ -500,11 +500,16 @@ jobs:
       - name: Browser suites (platform, scripts, keyboard, frame rate, audio)
         env:
           CHROME_PATH: /usr/bin/google-chrome
+          # A headed Chrome refuses WebGL on Mesa's software GPU unless told otherwise; with this it draws with
+          # llvmpipe, the renderer of the desktop build it is compared with.
+          CHROME_FLAGS: --ignore-gpu-blocklist
         run: |
-          { echo "### Browser engine: $GAME"; echo; echo "- $(google-chrome --version)"; echo; } >> "$GITHUB_STEP_SUMMARY"
+          { echo "### Browser engine: $GAME"; echo; } >> "$GITHUB_STEP_SUMMARY"
+          status=0
           xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/run.mjs platform scripts keyboard framerate audio \
-            --browsers chrome --games "$GAME" --headed --out web-tests | tee web-tests.log
-          grep -E '^(FAIL|[0-9]+ passed)' web-tests.log | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY" || true
+            --browsers chrome --games "$GAME" --headed --out web-tests | tee web-tests.log || status=$?
+          grep -E '^(==|FAIL|[0-9]+ passed)' web-tests.log | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY" || true
+          exit "$status"
       - name: Browser frames against the desktop build
         if: ${{ !cancelled() }}
         run: xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --out web-tests --games "$GAME" | tee -a "$GITHUB_STEP_SUMMARY"

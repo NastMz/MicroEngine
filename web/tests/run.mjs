@@ -58,11 +58,31 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function launch(name) {
   const executablePath = executables[name].find(p => p && fs.existsSync(p));
   if (!executablePath) throw new Error(`${name} not found; set ${name.toUpperCase()}_PATH.`);
-  // Both browsers are told to require a user gesture before audio plays, as they do for real visitors.
+  // Both browsers are told to require a user gesture before audio plays, as they do for real visitors. CHROME_FLAGS
+  // adds Chrome switches (CI: --ignore-gpu-blocklist, so a headed Chrome on Xvfb draws WebGL with Mesa's llvmpipe,
+  // the desktop build's renderer, instead of refusing WebGL on a software GPU).
+  const chromeFlags = (process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean);
   return puppeteer.launch(name === 'chrome'
-    ? { browser: 'chrome', executablePath, headless: !headed, args: ['--autoplay-policy=user-gesture-required', '--no-first-run', '--window-size=1024,768'] }
+    ? { browser: 'chrome', executablePath, headless: !headed, args: ['--autoplay-policy=user-gesture-required', '--no-first-run', '--window-size=1024,768', ...chromeFlags] }
     : { browser: 'firefox', executablePath, headless: !headed, args: ['--width=1024', '--height=768'],
         extraPrefsFirefox: { 'media.autoplay.default': 1, 'media.autoplay.block-webaudio': true } });
+}
+
+/** The renderer behind the browser's WebGL (which GPU or software rasterizer draws the frames), or why there is none. */
+async function webglRenderer(browser) {
+  const page = await browser.newPage();
+  try {
+    return await page.evaluate(() => {
+      const gl = document.createElement('canvas').getContext('webgl2') ?? document.createElement('canvas').getContext('webgl');
+      if (!gl) return 'unavailable';
+      const info = gl.getExtension('WEBGL_debug_renderer_info');
+      return info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    });
+  } catch (e) {
+    return `unknown (${e.message})`;
+  } finally {
+    await page.close();
+  }
 }
 
 /** Opens a game in a fresh profile and waits until it is ready to play. */
@@ -432,7 +452,7 @@ await sleep(500);
 try {
   for (const label of browserNames) {
     const browser = await launch(label);
-    console.log(`== ${label} ${await browser.version()}`);
+    console.log(`== ${label} ${await browser.version()}; WebGL: ${await webglRenderer(browser)}`);
     try {
       if (suites.includes('platform')) {
         for (const game of games) await platform(browser, label, game).catch(e => check(`${label} ${game}: platform checks`, false, e.message));
