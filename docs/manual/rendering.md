@@ -91,6 +91,22 @@ Source: [`src/MicroEngine/Graphics/IGraphics.cs`](../../src/MicroEngine/Graphics
 - `BlendMode` is `Alpha`, `Additive` or `Multiply`.
 - `PushCamera`/`PopCamera` must balance within a frame; both backends throw otherwise.
 
+Next SDK version (not published yet: arrives with the next SDK version): every backend draws by the same rules.
+
+- Pixel (x, y) is the square from (x, y) to (x + 1, y + 1). A rectangle or an unrotated sprite covers exactly the
+  pixels whose centre (x + 0.5, y + 0.5) lies inside it; a centre on its left or top edge counts as inside, one on its
+  right or bottom edge as outside. A 1 × 1 rectangle at (2.5, 2.5) covers pixel (2, 2) only, on SDL and on raylib.
+- Nearest sampling shows the texel under each pixel's centre; linear sampling mixes the four texels around it and
+  stops at the texture's edge (it never wraps around to the opposite edge).
+- `Clear` replaces every pixel of the canvas whatever the clip and blend mode, and replaces what was drawn before it;
+  the clip still applies to the draws after it. `SetClip` truncates its rectangle to whole pixels.
+- Blending is straight alpha: with source colour s (after the tint), its alpha a and canvas colour d, `Alpha` writes
+  s·a + d·(1 − a), `Additive` s·a + d, `Multiply` s·d + d·(1 − a).
+- Drawing a disposed texture throws `ObjectDisposedException`, and a texture created by another graphics device
+  throws `ArgumentException`, on every backend; nothing is drawn.
+- Captures are opaque (alpha 255) on every backend.
+- Circles, lines and triangles cover their shape, but the pixels along their edges may differ between backends.
+
 Extension methods in [`RendererExtensions.cs`](../../src/MicroEngine/Graphics/RendererExtensions.cs) add
 `Draw(sprite, position, tint?, flipX)` (places the sprite's origin at the position), `DrawPivoted` (rotate and
 scale around the origin), `FillEllipse`, `DrawRect`, `FillGradient` and `Panel` (bordered UI box from a

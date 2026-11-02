@@ -6,7 +6,8 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
-A graphics device for tests: textures keep their size and filter but hold no pixels; creations, uploads and live textures are counted.
+A graphics device for tests: textures keep their size and filter but hold no pixels (unless [KeepsPixels](MicroEngine.Core.HeadlessGraphicsDevice.md#MicroEngine_Core_HeadlessGraphicsDevice_KeepsPixels));
+creations, uploads and live textures are counted.
 
 ```csharp
 public sealed class HeadlessGraphicsDevice : IGraphicsDevice
@@ -45,6 +46,19 @@ public TextureFilter DefaultFilter { get; set; }
 #### Property Value
 
  [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
+
+### <a id="MicroEngine_Core_HeadlessGraphicsDevice_KeepsPixels"></a> KeepsPixels
+
+Whether textures keep a copy of their pixels (creations and updates), which a rasterizing
+[HeadlessRenderer](MicroEngine.Core.HeadlessRenderer.md) needs to draw them. False by default.
+
+```csharp
+public bool KeepsPixels { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Core_HeadlessGraphicsDevice_LiveTextures"></a> LiveTextures
 

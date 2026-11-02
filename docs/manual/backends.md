@@ -254,6 +254,12 @@ Source: [`tests/MeadowRun.Tests/PlaythroughTests.cs`](../../tests/MeadowRun.Test
 Useful probes: `platform.Renderer.DrawCalls`, `platform.SilentAudio.Played`, `platform.Screenshots` (capture
 paths requested), `HeadlessGraphicsDevice.TexturesCreated`, and `CloseRequested` (settable).
 
+Next SDK version (not published yet: arrives with the next SDK version): `HeadlessPlatform.For(settings, rasterize:
+true)` (or `Rasterize = true` when creating it) also draws every frame on the CPU, following the rendering rules
+([Rendering](rendering.md#irenderer)), so a test can check pixels without a window. `platform.Renderer.Frame` is the
+current frame as an image, `platform.Renderer.Commands` lists the frame's draws as text (one line each, in screen
+pixels, such as `rect 2,2 3x3 #FFFFFFFF`), and script captures are written as PNG files at scale 1.
+
 ## Writing a new backend
 
 A backend for another library would:
@@ -267,8 +273,11 @@ A backend for another library would:
 5. Implement `IPlatform` (time, events, frame begin/end, screenshots, fullscreen, and `Suspended` if the system
    can take the app away) and expose it as a `PlatformProfile`.
 
-`tests/MicroEngine.Desktop.Tests` shows how to check a backend against the others: one probe frame exercising every
-renderer operation, compared pixel by pixel.
+`tests/MicroEngine.Desktop.Tests` shows how to check a backend: a conformance suite (`RendererConformance`) states each
+rendering rule as a test, and every backend (the headless CPU reference, each SDL driver, raylib) runs the same tests
+by subclassing it. Next SDK version (not published yet: arrives with the next SDK version): a renderer calls
+`Texture.CheckDrawable<TTexture>(texture, device)` before drawing a texture, so disposed and foreign textures fail as
+on every other backend, and its textures pass their device to the `Texture` constructor.
 
 ## Limitations
 

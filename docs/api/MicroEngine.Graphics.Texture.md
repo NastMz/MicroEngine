@@ -39,6 +39,30 @@ protected Texture(int width, int height, TextureFilter filter = TextureFilter.Ne
 
 `filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
+### <a id="MicroEngine_Graphics_Texture__ctor_MicroEngine_Graphics_IGraphicsDevice_System_Int32_System_Int32_MicroEngine_Graphics_TextureFilter_"></a> Texture\(IGraphicsDevice, int, int, TextureFilter\)
+
+Records the size, filter and creating <code class="paramref">device</code> of a texture.
+
+```csharp
+protected Texture(IGraphicsDevice device, int width, int height, TextureFilter filter = TextureFilter.Nearest)
+```
+
+#### Parameters
+
+`device` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+
+`width` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">device</code> is null.
+
 ## Properties
 
 ### <a id="MicroEngine_Graphics_Texture_Bounds"></a> Bounds
@@ -52,6 +76,19 @@ public RectF Bounds { get; }
 #### Property Value
 
  [RectF](MicroEngine.RectF.md)
+
+### <a id="MicroEngine_Graphics_Texture_Device"></a> Device
+
+The graphics device that created the texture, or null for a texture whose device did not say (one made with the
+constructor that takes no device). Renderers draw only the textures of their own device.
+
+```csharp
+public IGraphicsDevice? Device { get; }
+```
+
+#### Property Value
+
+ [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)?
 
 ### <a id="MicroEngine_Graphics_Texture_Filter"></a> Filter
 
@@ -79,7 +116,8 @@ public int Height { get; }
 
 ### <a id="MicroEngine_Graphics_Texture_IsDisposed"></a> IsDisposed
 
-Whether [Dispose](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Dispose) was called. Drawing a disposed texture fails.
+Whether [Dispose](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Dispose) was called. Drawing a disposed texture throws `ObjectDisposedException`
+on every renderer, and nothing is drawn.
 
 ```csharp
 public bool IsDisposed { get; }
@@ -126,6 +164,53 @@ protected abstract void ApplyFilter(TextureFilter filter)
 #### Parameters
 
 `filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
+
+### <a id="MicroEngine_Graphics_Texture_CheckDrawable__1_MicroEngine_Graphics_Texture_MicroEngine_Graphics_IGraphicsDevice_"></a> CheckDrawable<TTexture\>\(Texture, IGraphicsDevice\)
+
+The checks every renderer makes before it draws <code class="paramref">texture</code>, so that all backends fail alike: a
+disposed texture throws `ObjectDisposedException`, and a texture another graphics device created (one
+that is not a <code class="typeparamref">TTexture</code>, or whose [Device](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Device) is not <code class="paramref">device</code>)
+throws `ArgumentException`. Backend authors call it first in every drawing method that takes a texture.
+
+```csharp
+public static TTexture CheckDrawable<TTexture>(Texture texture, IGraphicsDevice device) where TTexture : Texture
+```
+
+#### Parameters
+
+`texture` [Texture](MicroEngine.Graphics.Texture.md)
+
+The texture a game asked to draw.
+
+`device` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+
+The renderer's graphics device.
+
+#### Returns
+
+ TTexture
+
+<code class="paramref">texture</code> as the device's own type.
+
+#### Type Parameters
+
+`TTexture` 
+
+The texture type of the renderer's device.
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">texture</code> is null.
+
+ [ObjectDisposedException](https://learn.microsoft.com/dotnet/api/system.objectdisposedexception)
+
+The texture was disposed.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+Another graphics device created the texture.
 
 ### <a id="MicroEngine_Graphics_Texture_Dispose"></a> Dispose\(\)
 

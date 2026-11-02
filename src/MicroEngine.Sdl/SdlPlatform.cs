@@ -161,7 +161,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         if (_target == null) { Dispose(); throw Fail("SDL could not create the frame texture"); }
         SDL_SetTextureScaleMode(_target, _settings.Scaling == CanvasScaling.Smooth ? SDL_ScaleMode.SDL_SCALEMODE_LINEAR : SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
         _graphics = new SdlGraphicsDevice(_sdl) { DefaultFilter = _settings.DefaultTextureFilter };
-        _renderer = new SdlRenderer(_sdl, _settings.VirtualWidth, _settings.VirtualHeight);
+        _renderer = new SdlRenderer(_sdl, _graphics, _settings.VirtualWidth, _settings.VirtualHeight);
         _touch = new SdlTouchScreen(_window, _sdl, mobile);
         _input = new SdlInput(this);
         Mark("frame", ref started);
@@ -645,7 +645,7 @@ internal sealed unsafe class SdlGraphicsDevice(SDL_Renderer* renderer) : IGraphi
     }
 }
 
-internal sealed unsafe class SdlTexture(SdlGraphicsDevice device, SDL_Texture* native, int width, int height, TextureFilter filter) : Texture(width, height, filter)
+internal sealed unsafe class SdlTexture(SdlGraphicsDevice device, SDL_Texture* native, int width, int height, TextureFilter filter) : Texture(device, width, height, filter)
 {
     public SDL_Texture* Native { get; } = native;
     /// <summary>The frame (<see cref="SdlRenderer"/>'s count) in which <see cref="Tint"/> and <see cref="Blend"/> were last applied.</summary>
@@ -672,8 +672,12 @@ internal sealed unsafe class SdlTexture(SdlGraphicsDevice device, SDL_Texture* n
     }
 }
 
-/// <summary>Immediate-mode drawing through SDL's renderer, with the raylib renderer's conventions (pivot, winding, blend modes).</summary>
-internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int height) : IRenderer
+/// <summary>
+/// Immediate-mode drawing through SDL's renderer, with the raylib renderer's conventions (pivot, winding, blend modes).
+/// SDL already follows the engine's rendering rules (pixel centres at +0.5 with the top-left rule, Clear replacing the
+/// whole target whatever the clip); textures go through <see cref="Texture.CheckDrawable"/> first.
+/// </summary>
+internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, SdlGraphicsDevice device, int width, int height) : IRenderer
 {
     private const int CircleSegments = 36;
     /// <summary>The circle's rim as unit vectors, computed once.</summary>
@@ -752,7 +756,7 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
 
     public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default)
     {
-        var native = Tint((SdlTexture)texture, tint);
+        var native = Tint(Texture.CheckDrawable<SdlTexture>(texture, device), tint);
         var scale = options.Scale ?? Vector2.One;
         var p = position + _offset;
         var src = new SDL_FRect { x = source.X, y = source.Y, w = source.Width, h = source.Height };
@@ -770,7 +774,7 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
 
     public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint)
     {
-        var native = Tint((SdlTexture)texture, tint);
+        var native = Tint(Texture.CheckDrawable<SdlTexture>(texture, device), tint);
         var src = new SDL_FRect { x = source.X, y = source.Y, w = source.Width, h = source.Height };
         var dst = new SDL_FRect { x = destination.X + _offset.X, y = destination.Y + _offset.Y, w = destination.Width, h = destination.Height };
         SDL_RenderTexture(sdl, native, &src, &dst);

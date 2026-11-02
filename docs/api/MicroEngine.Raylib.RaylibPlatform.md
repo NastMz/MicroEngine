@@ -284,7 +284,7 @@ public void PollEvents()
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_SaveScreenshot_System_String_"></a> SaveScreenshot\(string\)
 
-Writes the most recently completed virtual frame as a PNG.
+Writes the canvas as a PNG, opaque (alpha 255 everywhere) as on every backend: the frame is shown on an opaque backdrop.
 
 ```csharp
 public void SaveScreenshot(string path)
