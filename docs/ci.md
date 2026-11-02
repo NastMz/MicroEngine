@@ -21,6 +21,9 @@ Linux, demo builds, site and browsers), [`sdk.yml`](../.github/workflows/sdk.yml
 repository) and [`deploy-site.yml`](../.github/workflows/deploy-site.yml) (Vercel). How the three publications relate
 and how to run each: [Releasing](releasing.md); decision: [ADR 0022](decisions/0022-release-coordination.md).
 
+**While [`.github/phase-freeze`](../.github/phase-freeze) exists, nothing in this table publishes**, except Rollback:
+see [Publication freeze](#publication-freeze).
+
 ## Daily CI
 
 ```mermaid
@@ -51,7 +54,9 @@ flowchart LR
 3. **Deploy**: a protected preview for pull requests that change the site or a demo; production for pushes to
    `main` that change the published site (documentation, site, game pages). Production always uses the latest
    demo release, and is held (the current deployment stays, with a warning) while the documentation presents an SDK
-   version nuget.org does not serve yet ([Releasing](releasing.md#versions)).
+   version nuget.org does not serve yet ([Releasing](releasing.md#versions)), and never while publication is frozen
+   ([Publication freeze](#publication-freeze)). The decision is `deployTarget` in
+   [`freeze.mjs`](../.github/scripts/freeze.mjs).
 4. **CI result** is the gate: it fails if anything needed failed, was cancelled or did not run, or if a wanted
    deployment did not succeed. Its summary says, per check, whether it ran here, was proven by an earlier run (with a
    link) or was not needed, and what the run cost.
@@ -268,6 +273,30 @@ workflows are the gate:
 
 Only **CI result** is required: it always runs and is green only when everything needed passed, so skipped jobs
 never block a merge.
+
+## Publication freeze
+
+A long series of merges to `main` that must not reach the public (a reconstruction in progress) is protected by one
+checked-in file, [`.github/phase-freeze`](../.github/phase-freeze). Its first line that is neither blank nor a `#`
+comment is the reason shown in run summaries. It needs no secret, variable or repository setting.
+
+| While the file exists on the commit | Effect |
+| --- | --- |
+| `ci.yml`, push to `main` | **Plan** decides `deploy=none` instead of `production` ([`freeze.mjs`](../.github/scripts/freeze.mjs) `deployTarget`); its summary says production was not deployed and why. Every check runs exactly as without the freeze, and **CI result** gates the same way |
+| `ci.yml`, pull request | unchanged: the checks and the protected preview run |
+| `sdk-release.yml` (after ci, or by hand) | **Preflight** ends with the decision `frozen` and a "Frozen" summary before asking nuget.org or GitHub ([`sdk/version.mjs`](../sdk/version.mjs) `release-plan`); check, draft, publish, verify and site are skipped. The run succeeds: a frozen merge is not a failure |
+| `release.yml` | refused in **Preflight**, dry run included, when the file exists on the ref or on `main`: nothing is built, drafted or deployed |
+| `rollback.yml` | unchanged: it only returns production to an earlier deployment |
+| `validate.yml`, `platforms.yml` | unchanged: they publish nothing |
+
+Adding or removing the file is a change of its own for the planner (rule "publication freeze"): it builds the site and
+checks its page layouts, nothing else.
+
+**Lifting it** is the owner's decision: a pull request that deletes `.github/phase-freeze`. When it merges, `main`'s
+ci deploys production with the site `main` accumulated meanwhile (held, as always, while the documentation presents an
+SDK version nuget.org does not serve), and sdk-release runs again: if `main` documents a version nuget.org lacks, it
+checks, drafts and waits for the `nuget` environment's approval ([Releasing](releasing.md#publication-freeze)). Demo
+releases are again possible by hand.
 
 ## Public repository
 

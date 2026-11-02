@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { check, release, findReferences, activeFiles, documentedVersion, preparedVersion, publicState, isPublic, waitPublic, packageIds, releasePlan } from '../version.mjs';
 
 function fixture(files = {}) {
@@ -170,4 +171,33 @@ test('release plan: states no run can repair are refused with what to do', () =>
   assert.throws(() => releasePlan(state({ packages: some(4), release: { draft: false, target: 'a' } })), /published on GitHub but nuget\.org lacks MicroEngine\.Cli, MicroEngine\.Templates/);
   assert.throws(() => releasePlan(state({ prepared: '0.5.0-alpha.2' })), /presents 0\.5\.0-alpha\.1, which nuget\.org does not serve, but this commit packs 0\.5\.0-alpha\.2/);
   assert.throws(() => releasePlan(state({ notes: false })), /no "## 0\.5\.0-alpha\.1" section/);
+});
+
+// Publication freeze (docs/releasing.md, "Publication freeze"): every state stops in preflight.
+test('release plan: frozen, no state releases, publishes or deploys anything, by hand either', () => {
+  const states = [state(), state({ release: { draft: true, target: 'b'.repeat(40) } }), state({ packages: some(3), release: { draft: true, target: 'a'.repeat(40) } }),
+    state({ packages: all(true), release: { draft: false, target: 'a' }, event: 'workflow_dispatch' }), state({ packages: some(2) }), state({ notes: false })];
+  for (const s of states) {
+    const plan = releasePlan({ ...s, frozen: 'Phase two in progress' });
+    assert.equal(plan.action, 'frozen');
+    assert.deepEqual(plan.lines, ['Frozen: publication is frozen (.github/phase-freeze: Phase two in progress). Nothing is checked, drafted, pushed to nuget.org or deployed, whatever the state of 0.5.0-alpha.1. To release, delete .github/phase-freeze in a pull request (docs/releasing.md, "Publication freeze").']);
+  }
+  // Not frozen (null, as freezeReason returns without the file): the plans above are unchanged.
+  assert.equal(releasePlan(state({ frozen: null })).action, 'release');
+});
+
+test('release-plan: a frozen tree answers frozen without asking nuget.org or GitHub', () => {
+  const root = fixture({ '.github/phase-freeze': '# lift by deleting\nPhase two in progress\n' });
+  fs.copyFileSync(new URL('../version.mjs', import.meta.url), path.join(root, 'sdk/version.mjs'));
+  const output = path.join(root, 'github-output');
+  // GitHub's API at a closed local port: any request fails at once, so passing proves none was made.
+  const env = { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot ?? '', GITHUB_OUTPUT: output, GITHUB_API_URL: 'http://127.0.0.1:9' };
+  const plan = args => spawnSync(process.execPath, [path.join(root, 'sdk/version.mjs'), 'release-plan', '--sha', 'c'.repeat(40), ...args], { encoding: 'utf8', env });
+  const run = plan(['--event', 'workflow_dispatch']);
+  assert.equal(run.status, 0, run.stderr);
+  assert.match(run.stdout, /### SDK 0\.4\.0-alpha\.2 from `cccccccccccc`\n\n- Frozen: publication is frozen \(\.github\/phase-freeze: Phase two in progress\)/);
+  assert.equal(fs.readFileSync(output, 'utf8'), 'version=0.4.0-alpha.2\naction=frozen\n');
+  // Without the file the same tree asks GitHub, which fails here: the freeze is what stopped it.
+  fs.rmSync(path.join(root, '.github/phase-freeze'));
+  assert.notEqual(plan([]).status, 0);
 });

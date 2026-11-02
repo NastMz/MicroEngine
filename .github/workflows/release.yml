@@ -1,7 +1,7 @@
 # Publishing a demo release (docs/ci.md, "Releases"): Actions → release → Run workflow, with the source ref and
 # optionally a version (default: the minor after the latest demo release). The only way a new demo reaches the public
 # site; no push, merge or schedule starts it.
-#   Preflight  the version is new; the ref is on main and its ci run passed; current main's ci run passed (its site is
+#   Preflight  refused while .github/phase-freeze exists on the ref or on main (publication freeze); the version is new; the ref is on main and its ci run passed; current main's ci run passed (its site is
 #              what gets deployed) and documents an SDK version nuget.org serves; every package missing for the ref's
 #              keys is listed
 #   Build      only those packages, into the integration store (checks.yml): web packages, and the native packages of
@@ -64,6 +64,18 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
+      # Publication freeze (docs/ci.md): while .github/phase-freeze exists on the ref or on main, nothing is
+      # released, dry run included. Read with git, not freeze.mjs: an older ref may predate the script.
+      - name: Publication freeze
+        run: |
+          for at in HEAD origin/main; do
+            git rev-parse --verify --quiet "$at^{commit}" > /dev/null || { echo "::error::Cannot read $at."; exit 1; }
+            if git cat-file -e "$at:.github/phase-freeze" 2> /dev/null; then
+              reason=$(git show "$at:.github/phase-freeze" | grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' | head -n 1 || true)
+              message="Publication is frozen: $at ($(git rev-parse --short "$at")) has .github/phase-freeze (${reason:-publication frozen}). Nothing was built, drafted or deployed. Lift the freeze by deleting that file in a pull request (docs/releasing.md, \"Publication freeze\")."
+              echo "::error::$message"; echo "Release refused: $message" >> "$GITHUB_STEP_SUMMARY"; exit 1
+            fi
+          done
       - uses: actions/setup-node@v4
         with:
           node-version: 22.23.4
