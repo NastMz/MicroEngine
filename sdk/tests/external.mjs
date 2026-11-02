@@ -213,6 +213,9 @@ function checkPackage(target, file, dist) {
     const meta = JSON.parse(fs.readFileSync(path.join(folder, 'game.json'), 'utf8'));
     check('web: page title, favicon, game.json and content', /<title>Sample Game<\/title>/.test(index) && /rel="icon" href="icon.png"/.test(index) && meta.title === 'Sample Game'
       && fs.existsSync(path.join(folder, 'icon.png')) && fs.existsSync(path.join(folder, 'Content', 'hero.png')) && fs.existsSync(path.join(folder, '_framework')));
+    const manifest = JSON.parse(fs.readFileSync(path.join(folder, 'manifest.webmanifest'), 'utf8'));
+    check('web: app manifest and start screen', manifest.name === 'Sample Game' && manifest.icons?.[0]?.src === 'icon.png' && /rel="manifest"/.test(index)
+      && /<img id="splash" src="splash.png"/.test(index) && fs.existsSync(path.join(folder, 'splash.png')) && /--splash: #[0-9a-f]{6}/.test(index), JSON.stringify(manifest));
     webPlays.push(folder);
   } else if (target === 'android') {
     const sdk = process.env.ANDROID_HOME;
@@ -221,6 +224,11 @@ function checkPackage(target, file, dist) {
     if (!latest) return check('android: aapt is available to read the APK', false, 'set ANDROID_HOME');
     const badging = run(path.join(tools, latest, `aapt${exe}`), ['dump', 'badging', file]).out;
     check('android: package id, launcher name, icon and version', /package: name='com\.example\.sample'/.test(badging) && /application-label:'Sample Game'/.test(badging) && /application-icon-\d+:'res\/mipmap/.test(badging) && /versionName='1\.2\.3'/.test(badging), tail(badging));
+    // The launcher reads the launchable activity, not the application: both must name the game and carry its icon.
+    check('android: the launcher entry names the game and has its adaptive icon', /launchable-activity: name='dev\.microengine\.GameActivity'\s+label='Sample Game' icon='res\/mipmap-anydpi-v26\/appicon\.xml'/.test(badging), tail(badging));
+    const listing = run(path.join(tools, latest, `aapt${exe}`), ['list', file]).out;
+    check('android: adaptive icon, round icon and launch screen resources', ['res/mipmap-anydpi-v26/appicon_round.xml', 'res/mipmap-xxxhdpi-v4/appicon_foreground.png', 'res/mipmap-mdpi-v4/appicon.png', 'res/drawable/splash.xml']
+      .every(r => listing.includes(r)), tail(listing));
     if (args.includes('--device')) {
       const adb = path.join(sdk, 'platform-tools', `adb${exe}`);
       const installed = run(adb, ['install', '-r', file]);

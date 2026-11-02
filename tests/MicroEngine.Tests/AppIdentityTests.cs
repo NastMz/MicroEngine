@@ -6,6 +6,8 @@ using MicroEngine.Core;
 [assembly: AssemblyMetadata("MicroEngine.ApplicationId", "com.example.identitytest")]
 [assembly: AssemblyMetadata("MicroEngine.Version", "2.1.0")]
 [assembly: AssemblyMetadata("MicroEngine.Orientation", "portrait")]
+[assembly: AssemblyMetadata("MicroEngine.SplashColor", "#123456")]
+[assembly: AssemblyMetadata("MicroEngine.SplashBranding", "true")]
 
 namespace MicroEngine.Tests;
 

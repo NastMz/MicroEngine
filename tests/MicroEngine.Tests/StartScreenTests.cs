@@ -1,0 +1,95 @@
+using System.Numerics;
+using MicroEngine.Core;
+using MicroEngine.Graphics;
+using MicroEngine.Input;
+
+namespace MicroEngine.Tests;
+
+/// <summary>The start screen: settings read from the game's identity, drawn once before loading, never headless.</summary>
+[TestClass]
+public sealed class StartScreenTests
+{
+    /// <summary>A headless platform that runs "in real time" and records what each frame drew, for the start screen.</summary>
+    private sealed class RealTimePlatform : IPlatform
+    {
+        private readonly HeadlessPlatform _inner = new();
+        public List<string> Log { get; } = [];
+        public IGraphicsDevice Graphics => _inner.Graphics;
+        public MicroEngine.Audio.IAudioDevice Audio => _inner.Audio;
+        public IInputSource Input => _inner.Input;
+        public bool CloseRequested => false;
+        public double Now => _inner.Now;
+        public bool RealTime => true;
+        public void PollEvents() => _inner.PollEvents();
+        public IRenderer BeginFrame() { Log.Add("frame"); return _inner.BeginFrame(); }
+        public void EndFrame() { Log.Add($"draws {_inner.Renderer.DrawCalls}"); _inner.EndFrame(); }
+        public void SaveScreenshot(string path) { }
+        public void ToggleFullscreen() { }
+        public void Dispose() => _inner.Dispose();
+    }
+
+    private sealed class LoggingGame(List<string> log) : Game
+    {
+        public override GameSettings Settings { get; } = new("Logging", 320, 180);
+        protected override void Load() => log.Add("load");
+    }
+
+    [TestMethod]
+    public void TheIdentityCarriesTheStartScreenSettings()
+    {
+        var identity = AppIdentity.Of(typeof(StartScreenTests).Assembly)!;
+        Assert.IsTrue(identity.Splash, "on unless the project turns it off");
+        Assert.AreEqual(Color.Hex("123456"), identity.SplashColor);
+        Assert.IsTrue(identity.SplashBranding);
+        Assert.IsNull(identity.SplashImage, "no icon in the test assembly");
+    }
+
+    [TestMethod]
+    public void TheBackgroundContinuesTheImagesEdge()
+    {
+        var image = new PixelImage(16, 16).Clear(Color.Hex("204080")).FillRect(4, 4, 8, 8, Color.White);
+        Assert.AreEqual(Color.Hex("204080"), AppIdentity.EdgeColor(image));
+        Assert.AreEqual(AppIdentity.DefaultBackground, AppIdentity.EdgeColor(new PixelImage(8, 8)), "a transparent border gives the default");
+        var identity = new AppIdentity("Game", null, "1.0", AppOrientation.Landscape) { Icon = image };
+        Assert.AreEqual(Color.Hex("204080"), identity.SplashColor);
+        Assert.AreSame(image, identity.SplashImage);
+    }
+
+    [TestMethod]
+    public void ItIsDrawnOnceBeforeTheGameLoads()
+    {
+        var platform = new RealTimePlatform();
+        var game = new LoggingGame(platform.Log);
+        var loop = new GameLoop(game, platform);
+        Assert.IsTrue(loop.Start());
+        // The test assembly's identity has branding but no image: a clear and the text.
+        Assert.AreEqual("frame", platform.Log[0]);
+        Assert.IsTrue(platform.Log[1].StartsWith("draws ") && int.Parse(platform.Log[1][6..]) > 1, string.Join(",", platform.Log));
+        Assert.AreEqual("load", platform.Log[2], "loading starts right after: no delay, one frame");
+        loop.Finish();
+    }
+
+    [TestMethod]
+    public void HeadlessRunsAndOptedOutRunsSkipIt()
+    {
+        var log = new List<string>();
+        var headless = new GameLoop(new LoggingGame(log), new HeadlessPlatform());
+        headless.Start();
+        CollectionAssert.AreEqual(new[] { "load" }, log, "captures and tests are unchanged");
+        var platform = new RealTimePlatform();
+        var off = new GameLoop(new LoggingGame(platform.Log), platform, new RunOptions { StartScreen = false });
+        off.Start();
+        CollectionAssert.AreEqual(new[] { "load" }, platform.Log);
+    }
+
+    [TestMethod]
+    public void TheImageFillsHalfTheShorterSideAndKeepsItsShape()
+    {
+        Assert.AreEqual((90, 90), StartScreen.ImageSize(new PixelImage(1024, 1024), 320, 180));
+        Assert.AreEqual((90, 45), StartScreen.ImageSize(new PixelImage(200, 100), 320, 180));
+        var big = new PixelImage(4, 4).Clear(Color.White).Resized(16, 16);
+        Assert.AreEqual(Color.White, big[15, 15], "whole-number enlargements repeat pixels");
+        var half = new PixelImage(2, 2).FillRect(0, 0, 1, 2, Color.Hex("ff0000")).FillRect(1, 0, 1, 2, Color.Hex("0000ff")).Resized(1, 1)[0, 0];
+        Assert.AreEqual(new Color(127, 0, 127), half, "reductions average the area");
+    }
+}

@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using MicroEngine.Graphics;
 
 namespace MicroEngine.Cli;
 
@@ -44,4 +45,54 @@ public static class Icons
 
     /// <summary>MicroEngine's own icon, used (with a warning) when a game declares none: phones require one.</summary>
     public static string Default => Path.Combine(Tool.Home, "Hosts", "default-icon.png");
+
+    /// <summary><paramref name="image"/> at <paramref name="size"/> pixels square (<see cref="PixelImage.Resized"/>).</summary>
+    public static PixelImage Resize(PixelImage image, int size) => image.Resized(size, size);
+
+    /// <summary>Writes <paramref name="image"/> as a PNG file.</summary>
+    public static void WritePng(PixelImage image, string path)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, PngEncoder.Encode(image.ToRgba(), image.Width, image.Height));
+    }
+
+    /// <summary>#RRGGBB of a colour (alpha dropped).</summary>
+    public static string Hex(Color c) => $"#{c.R:x2}{c.G:x2}{c.B:x2}";
+
+    private static readonly (string Folder, float Scale)[] AndroidDensities = [("mdpi", 1), ("hdpi", 1.5f), ("xhdpi", 2), ("xxhdpi", 3), ("xxxhdpi", 4)];
+
+    /// <summary>
+    /// Android launcher icons in <paramref name="res"/>: the legacy square icon at every density (48 dp), and an adaptive
+    /// icon (Android 8+) whose foreground is the icon over the 72 dp the launcher shows and whose background is
+    /// <paramref name="background"/>, so launchers mask the game's own art instead of shrinking it onto a white plate.
+    /// </summary>
+    public static void WriteAndroid(string png, string res, Color background)
+    {
+        Check(png);
+        var icon = PixelImage.Load(png);
+        foreach (var (folder, scale) in AndroidDensities)
+        {
+            var legacy = Resize(icon, (int)(48 * scale));
+            WritePng(legacy, Path.Combine(res, $"mipmap-{folder}", "appicon.png"));
+            // Android 7.1 asks for a round icon; the square one keeps the game's art whole there.
+            WritePng(legacy, Path.Combine(res, $"mipmap-{folder}", "appicon_round.png"));
+            int layer = (int)(108 * scale), visible = (int)(72 * scale);
+            var foreground = new PixelImage(layer, layer).Blit(Resize(icon, visible), (layer - visible) / 2, (layer - visible) / 2);
+            WritePng(foreground, Path.Combine(res, $"mipmap-{folder}", "appicon_foreground.png"));
+        }
+        Directory.CreateDirectory(Path.Combine(res, "mipmap-anydpi-v26"));
+        const string adaptive = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/appicon_background" />
+              <foreground android:drawable="@mipmap/appicon_foreground" />
+            </adaptive-icon>
+
+            """;
+        File.WriteAllText(Path.Combine(res, "mipmap-anydpi-v26", "appicon.xml"), adaptive);
+        File.WriteAllText(Path.Combine(res, "mipmap-anydpi-v26", "appicon_round.xml"), adaptive);
+        Directory.CreateDirectory(Path.Combine(res, "values"));
+        File.WriteAllText(Path.Combine(res, "values", "icon.xml"),
+            $"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n  <color name=\"appicon_background\">{Hex(background)}</color>\n</resources>\n");
+    }
 }

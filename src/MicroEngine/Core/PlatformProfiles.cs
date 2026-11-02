@@ -180,6 +180,7 @@ internal sealed class ComposedPlatform : IPlatform
     public void EndFrame() => _inner.EndFrame();
     public void SaveScreenshot(string path) => _inner.SaveScreenshot(path);
     public void ToggleFullscreen() => _inner.ToggleFullscreen();
+    public Color Letterbox { get => _inner.Letterbox; set => _inner.Letterbox = value; }
 
     public void Dispose()
     {
