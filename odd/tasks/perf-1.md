@@ -63,7 +63,7 @@ Quoted fragments are the owner's request (2026-11-01), verbatim.
 | T7 | S7 S8 | inline | done | 318d70a (fallback, --gpu), 257f8b4 (adapter diagnostics) |
 | T8 | S9 | inline | done | df612e3 (SDL renderer state), 018b74c (input allocations), c3653bc (raylib hidden VSync) |
 | T9 | S5 S6 S8 | inline | done (desk + Windows); phones and web frame timing pending hardware | docs/evaluations/perf-1.md sections 5, 8, 10 |
-| T10 | S14 S16 | inline | in progress | ADR 0023, public docs, PR |
+| T10 | S14 S16 | inline | done | aae3447, 693fb43 (ADR 0023, public docs); c015f8c (verifier blockers fixed); PR NastMz/MicroEngine#19 |
 
 ## Log
 
@@ -81,3 +81,5 @@ Quoted fragments are the owner's request (2026-11-01), verbatim.
   (global), so no native review ran.
 - L5 Not available here: Android/iOS hardware, adb, the wasm-tools workload, a visible browser pane for frame timing,
   PresentMon. Pending measurements are listed in the evaluation, section 10.
+- L6 Independent verification found two blockers (paced time ran fast when frames outpaced the reported display
+  rate; --audio-capture dropped when a host supplied audio); fixed in c015f8c with tests checked RED first. PR #19 opened.
