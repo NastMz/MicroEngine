@@ -1,11 +1,16 @@
-# Full validation on demand (docs/ci.md, "Full validation"): Actions → validate → Run workflow, for any commit,
-# branch or tag. Every selected check runs, whatever changed and whatever evidence exists; nothing is deployed or
-# released. Each job names its platform, and the report at the end lists the outcome and cost per platform, with the
-# experimental ones (macOS, Android, iOS) marked as such: a failure there is not a failure of a supported platform.
-# Untick what is not needed to save runner minutes; a full run is estimated at about $1 (docs/evaluations/infra-1.md).
+# Full validation (docs/ci.md, "Full validation"): on demand (Actions → validate → Run workflow, for any commit, branch
+# or tag) and every night on main. Every selected check runs, whatever changed and whatever evidence exists; nothing
+# is deployed or released (demo packages that pass their checks are stored in the integration store, as daily CI
+# stores them). Each job names its platform, and the report at the end lists the outcome and cost per platform, with
+# the experimental ones (macOS, Android, iOS) marked as such: a failure there is not a failure of a supported platform.
+# The nightly run selects every supported check (the release gates: .NET, native Linux, web, SDK, native packages) so
+# their drift (references, runner images, toolchains) shows within a day; the experimental platforms keep their own
+# monthly run (platforms.yml). Untick what is not needed in a manual run to save runner minutes.
 name: validate
 
 on:
+  schedule:
+    - cron: '17 3 * * *' # every night at 03:17 UTC, on main
   workflow_dispatch:
     inputs:
       ref:
@@ -21,7 +26,7 @@ on:
         type: boolean
         default: true
       web:
-        description: Build every missing demo package, then the site and all browser suites (supported)
+        description: Build every missing demo package, then the site, all browser suites and the browser engine suites (supported)
         type: boolean
         default: true
       sdk:
@@ -49,39 +54,70 @@ permissions:
   contents: read
 
 concurrency:
-  group: validate-${{ inputs.ref }}
+  group: validate-${{ inputs.ref || 'main' }}
   cancel-in-progress: false
 
 jobs:
   resolve:
-    name: Resolve ${{ inputs.ref }}
+    name: Resolve ${{ inputs.ref || 'main (nightly)' }}
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.ref.outputs.sha }}
       build: ${{ steps.demos.outputs.build }}
       native: ${{ steps.demos.outputs.native || '[]' }}
+      web-games: ${{ steps.select.outputs.web-games }}
+      dotnet: ${{ steps.select.outputs.dotnet }}
+      checks-native: ${{ steps.select.outputs.native }}
+      web: ${{ steps.select.outputs.web }}
+      sdk: ${{ steps.select.outputs.sdk }}
+      macos: ${{ steps.select.outputs.macos }}
+      android: ${{ steps.select.outputs.android }}
+      ios: ${{ steps.select.outputs.ios }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || 'main' }}
+      # A scheduled run has no inputs: it selects every supported check and no experimental platform.
+      - name: Checks selected
+        id: select
+        env:
+          SCHEDULED: ${{ github.event_name == 'schedule' }}
+          DOTNET: ${{ inputs.dotnet }}
+          NATIVE: ${{ inputs.native }}
+          WEB: ${{ inputs.web }}
+          SDK: ${{ inputs.sdk }}
+          PACKAGES: ${{ inputs.packages }}
+          MACOS: ${{ inputs.macos }}
+          ANDROID: ${{ inputs.android }}
+          IOS: ${{ inputs.ios }}
+        run: |
+          if [ "$SCHEDULED" = true ]; then
+            DOTNET=true NATIVE=true WEB=true SDK=true PACKAGES=true MACOS=false ANDROID=false IOS=false
+          fi
+          games=$(node -e "console.log(JSON.stringify([...new Set(require('./web/tests/scenarios.json').scenarios.map(s => s.game))]))")
+          {
+            echo "dotnet=$DOTNET"; echo "native=$NATIVE"; echo "web=$WEB"; echo "sdk=$SDK"; echo "packages=$PACKAGES"
+            echo "macos=$MACOS"; echo "android=$ANDROID"; echo "ios=$IOS"
+            echo "web-games=$([ "$WEB" = true ] && echo "$games" || echo '[]')"
+          } | tee -a "$GITHUB_OUTPUT"
       - id: ref
         run: |
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "Validating \`${{ inputs.ref }}\` at $(git rev-parse HEAD)." >> "$GITHUB_STEP_SUMMARY"
+          echo "Validating \`${{ inputs.ref || 'main' }}\` at $(git rev-parse HEAD)${{ github.event_name == 'schedule' && ' (nightly: every supported check)' || '' }}." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/setup-node@v4
-        if: inputs.web || inputs.packages
+        if: steps.select.outputs.web == 'true' || steps.select.outputs.packages == 'true'
         with:
           node-version: 22.23.4
           cache: npm
           cache-dependency-path: site/package-lock.json
-      - if: inputs.web || inputs.packages
+      - if: steps.select.outputs.web == 'true' || steps.select.outputs.packages == 'true'
         run: npm ci --prefix site
       - name: Demo packages (every missing one is built)
         id: demos
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          WEB: ${{ inputs.web }}
-          PACKAGES: ${{ inputs.packages }}
+          WEB: ${{ steps.select.outputs.web }}
+          PACKAGES: ${{ steps.select.outputs.packages }}
           ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
         run: |
           native=()
@@ -101,17 +137,18 @@ jobs:
     needs: resolve
     uses: ./.github/workflows/checks.yml
     permissions:
-      contents: write # storing demo packages
+      contents: write # storing demo packages in the integration store (never a release)
     with:
       ref: ${{ needs.resolve.outputs.sha }}
-      dotnet: ${{ inputs.dotnet }}
-      windows: ${{ inputs.dotnet }}
-      native: ${{ inputs.native }}
+      dotnet: ${{ needs.resolve.outputs.dotnet == 'true' }}
+      windows: ${{ needs.resolve.outputs.dotnet == 'true' }}
+      native: ${{ needs.resolve.outputs.checks-native == 'true' }}
       build: ${{ needs.resolve.outputs.build }}
       native-packages: ${{ needs.resolve.outputs.native }}
-      site: ${{ inputs.web }}
+      site: ${{ needs.resolve.outputs.web == 'true' }}
       demo-source: keys
       suites: layout,play,touch
+      web-games: ${{ needs.resolve.outputs.web-games }}
     secrets:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -121,7 +158,7 @@ jobs:
   sdk:
     name: SDK
     needs: resolve
-    if: inputs.sdk
+    if: needs.resolve.outputs.sdk == 'true'
     uses: ./.github/workflows/sdk.yml
     with:
       ref: ${{ needs.resolve.outputs.sha }}
@@ -129,13 +166,13 @@ jobs:
   platforms:
     name: Experimental
     needs: resolve
-    if: inputs.macos || inputs.android || inputs.ios
+    if: needs.resolve.outputs.macos == 'true' || needs.resolve.outputs.android == 'true' || needs.resolve.outputs.ios == 'true'
     uses: ./.github/workflows/platforms.yml
     with:
       ref: ${{ needs.resolve.outputs.sha }}
-      macos: ${{ inputs.macos }}
-      android: ${{ inputs.android }}
-      ios: ${{ inputs.ios }}
+      macos: ${{ needs.resolve.outputs.macos == 'true' }}
+      android: ${{ needs.resolve.outputs.android == 'true' }}
+      ios: ${{ needs.resolve.outputs.ios == 'true' }}
 
   report:
     name: Report by platform
