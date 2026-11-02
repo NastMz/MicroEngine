@@ -137,6 +137,9 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
         Mark("frame", ref started);
         _audio = request.OpensOwnAudio ? SdlAudioDevice.TryCreate() : new SilentAudioDevice();
         Mark("audio", ref started);
+        // Only a start screen hides the gamepad subsystem's start (StartGamepads); without one, a window that showed the
+        // game's first frame and then froze would be worse than a window that appears a moment later.
+        if (!(request.Identity is { Splash: true } && !request.Hidden && !_fixedStep)) StartGamepads();
         _self = GCHandle.Alloc(this);
         SDL_AddEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
         _start = SDL_GetTicksNS();
@@ -166,6 +169,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
             if (mode != null) facts["display"] = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{mode->w}x{mode->h} @ {mode->refresh_rate:0.##} Hz");
             int w, h;
             if (SDL_GetCurrentRenderOutputSize(_sdl, &w, &h)) facts["output"] = $"{w}x{h}";
+            if (OperatingSystem.IsWindows() && Direct3DAdapter() is { } adapter) facts["adapter"] = adapter;
             foreach (var (step, ms) in _startSteps)
                 facts[$"start.{step}"] = ms.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms";
             return facts;
@@ -222,6 +226,33 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
     }
 
     private readonly List<(string Step, double Milliseconds)> _startSteps = [];
+
+    /// <summary>
+    /// The graphics adapter SDL's Direct3D 11 renderer draws with, by its DXGI description (on a machine with two GPUs,
+    /// which one the game got); null with another renderer or when it cannot be read.
+    /// </summary>
+    private string? Direct3DAdapter()
+    {
+        nint device = SDL_GetPointerProperty(SDL_GetRendererProperties(_sdl), SDL_PROP_RENDERER_D3D11_DEVICE_POINTER, 0);
+        if (device == 0) return null;
+        nint dxgi = 0, adapter = 0;
+        try
+        {
+            // ID3D11Device → IDXGIDevice (IUnknown::QueryInterface, slot 0) → IDXGIDevice::GetAdapter (slot 7)
+            // → IDXGIAdapter::GetDesc (slot 8): DXGI_ADAPTER_DESC starts with the adapter's name in 128 UTF-16 units.
+            var iid = new Guid("54ec77fa-1377-44e6-8c32-88fd5f44c84c");
+            if (((delegate* unmanaged[Stdcall]<nint, Guid*, nint*, int>)(*(nint**)device)[0])(device, &iid, &dxgi) != 0) return null;
+            if (((delegate* unmanaged[Stdcall]<nint, nint*, int>)(*(nint**)dxgi)[7])(dxgi, &adapter) != 0) return null;
+            var desc = stackalloc byte[512];
+            if (((delegate* unmanaged[Stdcall]<nint, byte*, int>)(*(nint**)adapter)[8])(adapter, desc) != 0) return null;
+            return new string((char*)desc, 0, 128).TrimEnd(' ');
+        }
+        finally
+        {
+            if (adapter != 0) ((delegate* unmanaged[Stdcall]<nint, uint>)(*(nint**)adapter)[2])(adapter);
+            if (dxgi != 0) ((delegate* unmanaged[Stdcall]<nint, uint>)(*(nint**)dxgi)[2])(dxgi);
+        }
+    }
 
     /// <summary>Records how long a step of the constructor took, for <see cref="Diagnostics"/>.</summary>
     private void Mark(string step, ref long since)
@@ -352,9 +383,10 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
     private bool _gamepadsStarted;
 
     /// <summary>
-    /// Starts SDL's gamepad subsystem once the first frame is on screen: on some Windows machines it takes about a second
-    /// (measured in PERF-1, with every joystick driver of SDL turned off as well), which would otherwise keep the window
-    /// from appearing. SDL reports the pads already connected as added, so none is missed.
+    /// Starts SDL's gamepad subsystem. A game with a start screen does it once that screen is shown, before the game
+    /// loads: on some Windows machines it takes about a second (measured in PERF-1, with every joystick driver of SDL
+    /// turned off as well), which would otherwise keep the window from appearing. SDL reports the pads already connected
+    /// as added, so none is missed.
     /// </summary>
     private void StartGamepads()
     {
