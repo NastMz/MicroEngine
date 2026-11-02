@@ -2,7 +2,7 @@ namespace MicroEngine.Graphics;
 
 /// <summary>
 /// A CPU-side RGBA image. Games author procedural art with it and hand it to
-/// <see cref="IGraphicsDevice.CreateTexture"/>; it also backs the built-in font.
+/// <see cref="IGraphicsDevice.CreateTexture(PixelImage)"/>; it also backs the built-in font.
 /// </summary>
 /// <remarks>
 /// Drawing methods change this image and return it, so calls chain; methods that build a new image (<see cref="Clone"/>,

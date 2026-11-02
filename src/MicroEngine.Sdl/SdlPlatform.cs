@@ -116,7 +116,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         bool placed = !mobile && (graphics.Display is not null || graphics.WindowMode != WindowMode.Windowed);
         if (request.Hidden || placed) flags |= SDL_WindowFlags.SDL_WINDOW_HIDDEN;
         if (mobile) flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
-        _window = SDL_CreateWindow(_settings.Title, _settings.VirtualWidth * scale, _settings.VirtualHeight * scale, flags);
+        var (windowWidth, windowHeight) = mobile ? (_settings.VirtualWidth * scale, _settings.VirtualHeight * scale) : InitialWindowSize(scale);
+        _window = SDL_CreateWindow(_settings.Title, windowWidth, windowHeight, flags);
         if (_window == null) throw Fail("SDL could not open a window");
         if (placed)
         {
@@ -151,14 +152,15 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
             throw error;
         }
         Mark("renderer", ref started);
-        SDL_SetWindowMinimumSize(_window, _settings.VirtualWidth, _settings.VirtualHeight);
+        var (minWidth, minHeight) = WindowSizing.Minimum(_settings);
+        SDL_SetWindowMinimumSize(_window, minWidth, minHeight);
         _paced = !request.Hidden && !_fixedStep;
         _vsync = _paced && graphics.VSync && SDL_SetRenderVSync(_sdl, 1);
         if (_paced && !graphics.VSync) SDL_SetRenderVSync(_sdl, 0);
         _target = SDL_CreateTexture(_sdl, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, _settings.VirtualWidth, _settings.VirtualHeight);
         if (_target == null) { Dispose(); throw Fail("SDL could not create the frame texture"); }
-        SDL_SetTextureScaleMode(_target, SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
-        _graphics = new SdlGraphicsDevice(_sdl);
+        SDL_SetTextureScaleMode(_target, _settings.Scaling == CanvasScaling.Smooth ? SDL_ScaleMode.SDL_SCALEMODE_LINEAR : SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
+        _graphics = new SdlGraphicsDevice(_sdl) { DefaultFilter = _settings.DefaultTextureFilter };
         _renderer = new SdlRenderer(_sdl, _settings.VirtualWidth, _settings.VirtualHeight);
         _touch = new SdlTouchScreen(_window, _sdl, mobile);
         _input = new SdlInput(this);
@@ -302,6 +304,22 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     }
 
     /// <summary>Records how long a step of the constructor took, for <see cref="Diagnostics"/>.</summary>
+    /// <summary>The window size for <paramref name="scale"/>, kept inside the display the window opens on (<see cref="WindowSizing.Initial"/>).</summary>
+    private (int Width, int Height) InitialWindowSize(int scale)
+    {
+        var display = SDL_GetPrimaryDisplay();
+        int count;
+        var ids = SDL_GetDisplays(&count);
+        if (ids != null)
+        {
+            if (_settings.Graphics.Display is { } index && index >= 0 && index < count) display = ids[index];
+            SDL_free(ids);
+        }
+        SDL_Rect usable;
+        bool known = SDL_GetDisplayUsableBounds(display, &usable);
+        return WindowSizing.Initial(_settings, scale, known ? usable.w : 0, known ? usable.h : 0);
+    }
+
     private void Mark(string step, ref long since)
     {
         long now = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -389,8 +407,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         int sw, sh;
         SDL_GetCurrentRenderOutputSize(_sdl, &sw, &sh);
         var window = new Vector2(sw, sh);
-        return _touch.Overlay?.Frame(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight)
-            ?? FrameLayout.Fit(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
+        return _touch.Overlay?.Frame(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, _settings.Scaling)
+            ?? FrameLayout.Fit(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, _settings.Scaling);
     }
 
     /// <summary>A window position in SDL's window coordinates as virtual canvas pixels.</summary>
@@ -597,36 +615,61 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
 
 internal sealed unsafe class SdlGraphicsDevice(SDL_Renderer* renderer) : IGraphicsDevice, IDisposable
 {
-    private readonly List<SdlTexture> _textures = [];
+    // Textures not disposed yet, released with the renderer; a texture leaves the set when it is disposed, so games that
+    // load and release assets for every level do not keep their wrappers alive.
+    private readonly HashSet<SdlTexture> _textures = [];
 
-    public Texture CreateTexture(PixelImage image)
+    public TextureFilter DefaultFilter { get; set; }
+
+    public Texture CreateTexture(PixelImage image) => CreateTexture(image, DefaultFilter);
+
+    public Texture CreateTexture(PixelImage image, TextureFilter filter)
     {
         ArgumentNullException.ThrowIfNull(image);
         var native = SDL_CreateTexture(renderer, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC, image.Width, image.Height);
         if (native == null) throw new InvalidOperationException($"SDL could not create a {image.Width}x{image.Height} texture: {SDL_GetError()}");
-        var rgba = image.ToRgba();
-        fixed (byte* p = rgba) SDL_UpdateTexture(native, null, (nint)p, image.Width * 4);
-        SDL_SetTextureScaleMode(native, SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
-        var texture = new SdlTexture(native, image.Width, image.Height);
+        // Color is laid out as R, G, B, A bytes, which is ABGR8888 on little-endian machines: no conversion copy.
+        fixed (Color* p = image.Pixels) SDL_UpdateTexture(native, null, (nint)p, image.Width * 4);
+        SDL_SetTextureScaleMode(native, SdlTexture.ScaleMode(filter));
+        var texture = new SdlTexture(this, native, image.Width, image.Height, filter);
         _textures.Add(texture);
         return texture;
     }
 
+    internal void Forget(SdlTexture texture) => _textures.Remove(texture);
+
     public void Dispose()
     {
-        foreach (var t in _textures) t.Dispose();
+        foreach (var t in _textures.ToList()) t.Dispose();
         _textures.Clear();
     }
 }
 
-internal sealed unsafe class SdlTexture(SDL_Texture* native, int width, int height) : Texture(width, height)
+internal sealed unsafe class SdlTexture(SdlGraphicsDevice device, SDL_Texture* native, int width, int height, TextureFilter filter) : Texture(width, height, filter)
 {
     public SDL_Texture* Native { get; } = native;
     /// <summary>The frame (<see cref="SdlRenderer"/>'s count) in which <see cref="Tint"/> and <see cref="Blend"/> were last applied.</summary>
     public long StateFrame { get; set; } = -1;
     public Color Tint { get; set; }
     public SDL_BlendMode Blend { get; set; }
-    protected override void Release() => SDL_DestroyTexture(Native);
+
+    public static SDL_ScaleMode ScaleMode(TextureFilter filter) => filter == TextureFilter.Linear ? SDL_ScaleMode.SDL_SCALEMODE_LINEAR : SDL_ScaleMode.SDL_SCALEMODE_NEAREST;
+
+    protected override void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)
+    {
+        var rect = new SDL_Rect { x = x, y = y, w = width, h = height };
+        fixed (Color* p = pixels)
+            if (!SDL_UpdateTexture(Native, &rect, (nint)p, width * 4))
+                throw new InvalidOperationException($"SDL could not update a {width}x{height} region of a texture: {SDL_GetError()}");
+    }
+
+    protected override void ApplyFilter(TextureFilter filter) => SDL_SetTextureScaleMode(Native, ScaleMode(filter));
+
+    protected override void Release()
+    {
+        device.Forget(this);
+        SDL_DestroyTexture(Native);
+    }
 }
 
 /// <summary>Immediate-mode drawing through SDL's renderer, with the raylib renderer's conventions (pivot, winding, blend modes).</summary>

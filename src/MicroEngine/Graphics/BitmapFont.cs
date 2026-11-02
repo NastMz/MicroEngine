@@ -53,7 +53,8 @@ public sealed class BitmapFont : IDisposable
             glyphs[ch] = new Glyph(new RectF(ox, oy, Math.Max(width, 1), rows), width);
             index++;
         }
-        var texture = device?.CreateTexture(sheet);
+        // Pixel glyphs stay crisp whatever filter the game gives its other textures.
+        var texture = device?.CreateTexture(sheet, TextureFilter.Nearest);
         return new BitmapFont(glyphs, texture, 10);
     }
 

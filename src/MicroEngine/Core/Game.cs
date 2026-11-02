@@ -130,6 +130,7 @@ public abstract class Game
         Input.AddSource(Touch);
         Prompts = new ActionPrompts(Input, Touch);
         if (platform.Touch is { } screen) screen.Overlay = Touch;
+        platform.Graphics.DefaultFilter = Settings.DefaultTextureFilter;
         Audio = new AudioMixer(platform.Audio);
         Font = BitmapFont.CreateDefault(platform.Graphics);
         Scenes = new SceneManager(this);

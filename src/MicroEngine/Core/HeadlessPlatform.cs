@@ -180,21 +180,40 @@ public sealed class RecordingOverlayCanvas : IOverlayCanvas
     public void Image(PixelImage image, RectF destination, Color tint) => Shapes.Add(new("image", destination.Center, destination.Width, tint));
 }
 
-/// <summary>A graphics device for tests: textures keep their size but hold no pixels, and creations are counted.</summary>
+/// <summary>A graphics device for tests: textures keep their size and filter but hold no pixels; creations, uploads and live textures are counted.</summary>
 public sealed class HeadlessGraphicsDevice : IGraphicsDevice
 {
     /// <summary>Number of textures created so far.</summary>
     public int TexturesCreated { get; private set; }
+    /// <summary>Number of textures created and not disposed yet.</summary>
+    public int LiveTextures { get; private set; }
+    /// <summary>Number of region updates (<see cref="Texture.Update(int, int, int, int, ReadOnlySpan{Color})"/>) so far.</summary>
+    public int Updates { get; private set; }
+    /// <summary>Pixels sent by creations and updates so far.</summary>
+    public long PixelsUploaded { get; private set; }
     /// <inheritdoc/>
-    public Texture CreateTexture(PixelImage image)
+    public TextureFilter DefaultFilter { get; set; }
+    /// <inheritdoc/>
+    public Texture CreateTexture(PixelImage image) => CreateTexture(image, DefaultFilter);
+    /// <inheritdoc/>
+    public Texture CreateTexture(PixelImage image, TextureFilter filter)
     {
+        ArgumentNullException.ThrowIfNull(image);
         TexturesCreated++;
-        return new HeadlessTexture(image.Width, image.Height);
+        LiveTextures++;
+        PixelsUploaded += (long)image.Width * image.Height;
+        return new HeadlessTexture(this, image.Width, image.Height, filter);
     }
 
-    private sealed class HeadlessTexture(int width, int height) : Texture(width, height)
+    private sealed class HeadlessTexture(HeadlessGraphicsDevice device, int width, int height, TextureFilter filter) : Texture(width, height, filter)
     {
-        protected override void Release() { }
+        protected override void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)
+        {
+            device.Updates++;
+            device.PixelsUploaded += pixels.Length;
+        }
+        protected override void ApplyFilter(TextureFilter filter) { }
+        protected override void Release() => device.LiveTextures--;
     }
 }
 

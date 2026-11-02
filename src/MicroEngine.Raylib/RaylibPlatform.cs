@@ -76,7 +76,15 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
         if (!Rl.IsWindowReady())
             throw new InvalidOperationException("raylib could not open a window: no display, or no usable OpenGL (raylib's warnings above give the reason).");
         // A page may be smaller than the virtual canvas (a small iframe); the canvas then scales down instead of being cropped.
-        if (!OperatingSystem.IsBrowser()) Rl.SetWindowMinSize(settings.VirtualWidth, settings.VirtualHeight);
+        if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsAndroid())
+        {
+            var (minWidth, minHeight) = WindowSizing.Minimum(settings);
+            Rl.SetWindowMinSize(minWidth, minHeight);
+            // GLFW knows the monitors only once the window exists: a window larger than its display shrinks to fit it.
+            int monitor = Rl.GetCurrentMonitor();
+            var (width, height) = WindowSizing.Initial(settings, scale, Rl.GetMonitorWidth(monitor), Rl.GetMonitorHeight(monitor));
+            if (width != settings.VirtualWidth * scale || height != settings.VirtualHeight * scale) Rl.SetWindowSize(width, height);
+        }
         Rl.SetExitKey(Raylib_cs.KeyboardKey.Null);
         if (options.Icon is { } icon && !OperatingSystem.IsBrowser()) SetWindowIcon(icon);
         // On Android raylib's GetCurrentMonitor detaches the calling thread from the JVM, which aborts a thread that is
@@ -89,7 +97,8 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
             Pace();
         }
         _target = Rl.LoadRenderTexture(settings.VirtualWidth, settings.VirtualHeight);
-        Rl.SetTextureFilter(_target.Texture, Raylib_cs.TextureFilter.Point);
+        Rl.SetTextureFilter(_target.Texture, settings.Scaling == CanvasScaling.Smooth ? Raylib_cs.TextureFilter.Bilinear : Raylib_cs.TextureFilter.Point);
+        _graphics.DefaultFilter = settings.DefaultTextureFilter;
         _renderer = new RaylibRenderer(settings.VirtualWidth, settings.VirtualHeight);
         _audio = options.Mute ? new SilentAudioDevice() : RaylibAudioDevice.TryCreate();
     }
@@ -165,8 +174,8 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
         Rl.EndDrawing();
     }
 
-    private RectF FrameRect() => _touch.Overlay?.Frame(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight)
-        ?? FrameLayout.Fit(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
+    private RectF FrameRect() => _touch.Overlay?.Frame(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, _settings.Scaling)
+        ?? FrameLayout.Fit(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, _settings.Scaling);
 
     /// <inheritdoc/>
     public void SaveScreenshot(string path)
@@ -273,34 +282,61 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
     }
 }
 
-internal sealed class RaylibGraphicsDevice : IGraphicsDevice, IDisposable
+internal sealed unsafe class RaylibGraphicsDevice : IGraphicsDevice, IDisposable
 {
-    private readonly List<RaylibTexture> _textures = [];
+    // Textures not disposed yet, released with the window; a texture leaves the set when it is disposed.
+    private readonly HashSet<RaylibTexture> _textures = [];
 
-    public Texture CreateTexture(PixelImage image)
+    public TextureFilter DefaultFilter { get; set; }
+
+    public Texture CreateTexture(PixelImage image) => CreateTexture(image, DefaultFilter);
+
+    public Texture CreateTexture(PixelImage image, TextureFilter filter)
     {
         ArgumentNullException.ThrowIfNull(image);
-        var blank = Rl.GenImageColor(image.Width, image.Height, new RlColor(0, 0, 0, 0));
-        var native = Rl.LoadTextureFromImage(blank);
-        Rl.UnloadImage(blank);
-        Rl.UpdateTexture(native, image.ToRgba());
-        Rl.SetTextureFilter(native, Raylib_cs.TextureFilter.Point);
-        var texture = new RaylibTexture(native);
+        Raylib_cs.Texture2D native;
+        // raylib copies the pixels to the GPU from an image that points at the PixelImage's own memory (Color is laid out
+        // as R, G, B, A bytes): no blank image and no conversion copy.
+        fixed (Color* pixels = image.Pixels)
+            native = Rl.LoadTextureFromImage(new Raylib_cs.Image
+            {
+                Data = pixels, Width = image.Width, Height = image.Height, Mipmaps = 1,
+                Format = Raylib_cs.PixelFormat.UncompressedR8G8B8A8,
+            });
+        if (native.Id == 0) throw new InvalidOperationException($"raylib could not create a {image.Width}x{image.Height} texture.");
+        Rl.SetTextureFilter(native, RaylibTexture.ToRaylib(filter));
+        var texture = new RaylibTexture(this, native, filter);
         _textures.Add(texture);
         return texture;
     }
 
+    internal void Forget(RaylibTexture texture) => _textures.Remove(texture);
+
     public void Dispose()
     {
-        foreach (var t in _textures) t.Dispose();
+        foreach (var t in _textures.ToList()) t.Dispose();
         _textures.Clear();
     }
 }
 
-internal sealed class RaylibTexture(Raylib_cs.Texture2D native) : Texture(native.Width, native.Height)
+internal sealed unsafe class RaylibTexture(RaylibGraphicsDevice device, Raylib_cs.Texture2D native, TextureFilter filter) : Texture(native.Width, native.Height, filter)
 {
     public Raylib_cs.Texture2D Native { get; } = native;
-    protected override void Release() => Rl.UnloadTexture(Native);
+
+    public static Raylib_cs.TextureFilter ToRaylib(TextureFilter filter) => filter == TextureFilter.Linear ? Raylib_cs.TextureFilter.Bilinear : Raylib_cs.TextureFilter.Point;
+
+    protected override void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)
+    {
+        fixed (Color* p = pixels) Rl.UpdateTextureRec(Native, new RlRect(x, y, width, height), p);
+    }
+
+    protected override void ApplyFilter(TextureFilter filter) => Rl.SetTextureFilter(Native, ToRaylib(filter));
+
+    protected override void Release()
+    {
+        device.Forget(this);
+        Rl.UnloadTexture(Native);
+    }
 }
 
 internal sealed class RaylibRenderer(int width, int height) : IRenderer

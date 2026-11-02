@@ -2,19 +2,77 @@ using System.Numerics;
 
 namespace MicroEngine.Graphics;
 
+/// <summary>
+/// How a texture is sampled when it is drawn bigger or smaller than its pixels, or between them: <c>Nearest</c> keeps
+/// hard pixel edges (pixel art), <c>Linear</c> blends neighbouring pixels (smooth, high-resolution art and text).
+/// </summary>
+public enum TextureFilter { Nearest, Linear }
+
+/// <summary>
+/// How the virtual canvas reaches the window (<see cref="Core.GameSettings.Scaling"/>). <c>Pixel</c> prefers whole
+/// factors (fractional only when whole ones would waste a fifth of the screen) and samples nearest, so pixels stay square
+/// and even; <c>Smooth</c> fills the largest area of the canvas's shape and samples linearly, for high-resolution art.
+/// </summary>
+public enum CanvasScaling { Pixel, Smooth }
+
 /// <summary>A GPU (or headless) texture owned by the active graphics device.</summary>
 public abstract class Texture : IDisposable
 {
+    private TextureFilter _filter;
+
     /// <summary>Width in pixels.</summary>
     public int Width { get; }
     /// <summary>Height in pixels.</summary>
     public int Height { get; }
     /// <summary>Whether <see cref="Dispose"/> was called. Drawing a disposed texture fails.</summary>
     public bool IsDisposed { get; private set; }
-    /// <summary>Records the size of a texture created by a graphics device.</summary>
-    protected Texture(int width, int height) => (Width, Height) = (width, height);
+    /// <summary>Records the size and filter of a texture created by a graphics device.</summary>
+    protected Texture(int width, int height, TextureFilter filter = TextureFilter.Nearest) => (Width, Height, _filter) = (width, height, filter);
     /// <summary>The whole texture as a source rectangle: (0, 0, <see cref="Width"/>, <see cref="Height"/>).</summary>
     public RectF Bounds => new(0, 0, Width, Height);
+    /// <summary>Memory the texture's pixels take on the device, in bytes (4 per pixel).</summary>
+    public long SizeInBytes => (long)Width * Height * 4;
+
+    /// <summary>How the texture is sampled; it can change at any time and applies to the next draws.</summary>
+    public TextureFilter Filter
+    {
+        get => _filter;
+        set
+        {
+            if (_filter == value) return;
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            _filter = value;
+            ApplyFilter(value);
+        }
+    }
+
+    /// <summary>
+    /// Replaces the pixels of a rectangle of the texture (glyphs added to a font page, a painted canvas). The pixels are
+    /// row-major, <paramref name="width"/> per row.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The rectangle leaves the texture.</exception>
+    /// <exception cref="ArgumentException"><paramref name="pixels"/> holds fewer than <paramref name="width"/> × <paramref name="height"/> colours.</exception>
+    public void Update(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)
+    {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        if (x < 0 || y < 0 || width < 0 || height < 0 || x + width > Width || y + height > Height)
+            throw new ArgumentOutOfRangeException(nameof(x), $"The rectangle ({x}, {y}, {width}, {height}) leaves the {Width}x{Height} texture.");
+        if (pixels.Length < width * height) throw new ArgumentException($"{width}x{height} pixels need {width * height} colours, got {pixels.Length}.", nameof(pixels));
+        if (width == 0 || height == 0) return;
+        Upload(x, y, width, height, pixels[..(width * height)]);
+    }
+
+    /// <summary>Copies a whole image into the texture at (<paramref name="x"/>, <paramref name="y"/>).</summary>
+    public void Update(PixelImage image, int x = 0, int y = 0)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        Update(x, y, image.Width, image.Height, image.Pixels);
+    }
+
+    /// <summary>Sends <paramref name="pixels"/> (exactly width × height, already checked) to the device.</summary>
+    protected abstract void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels);
+    /// <summary>Applies a new filter on the device; called by <see cref="Filter"/> when it changes.</summary>
+    protected abstract void ApplyFilter(TextureFilter filter);
     /// <summary>Releases the device texture. Safe to call more than once. Whoever created the texture (or the atlas or font that owns it) disposes it.</summary>
     public void Dispose()
     {
@@ -96,6 +154,13 @@ public interface IRenderer
 /// <summary>Creates device resources. Separated so headless tests can provide fakes.</summary>
 public interface IGraphicsDevice
 {
-    /// <summary>Uploads <paramref name="image"/> as a texture. The caller owns the texture and disposes it.</summary>
-    Texture CreateTexture(PixelImage image);
+    /// <summary>
+    /// The filter of textures created without one: <see cref="CreateTexture(PixelImage)"/>, atlases, fonts. The engine
+    /// sets it from <see cref="Core.GameSettings.TextureFilter"/> before <c>Game.Load</c>.
+    /// </summary>
+    TextureFilter DefaultFilter { get; set; }
+    /// <summary>Uploads <paramref name="image"/> as a texture sampled with <paramref name="filter"/>. The caller owns the texture and disposes it.</summary>
+    Texture CreateTexture(PixelImage image, TextureFilter filter);
+    /// <summary>Uploads <paramref name="image"/> as a texture sampled with <see cref="DefaultFilter"/>. The caller owns the texture and disposes it.</summary>
+    Texture CreateTexture(PixelImage image) => CreateTexture(image, DefaultFilter);
 }
