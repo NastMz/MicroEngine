@@ -114,6 +114,13 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
         if (_window == null) throw Fail("SDL could not open a window");
         if (!mobile && request.Identity?.Icon is { } icon) SetWindowIcon(icon);
         Mark("window", ref started);
+        // SDL can choose a GPU only for its Metal and GPU renderers; elsewhere the system decides (GpuPreference).
+        if (request.GpuPreference != GpuPreference.Automatic)
+        {
+            string lowPower = request.GpuPreference == GpuPreference.PowerSaving ? "1" : "0";
+            SDL_SetHint(SDL_HINT_RENDER_GPU_LOW_POWER, lowPower);
+            SDL_SetHint(SDL_HINT_RENDER_METAL_PREFER_LOW_POWER_DEVICE, lowPower);
+        }
         _sdl = renderer is null ? SDL_CreateRenderer(_window, (byte*)null) : SDL_CreateRenderer(_window, renderer);
         if (_sdl == null)
         {
@@ -169,7 +176,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
             if (mode != null) facts["display"] = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{mode->w}x{mode->h} @ {mode->refresh_rate:0.##} Hz");
             int w, h;
             if (SDL_GetCurrentRenderOutputSize(_sdl, &w, &h)) facts["output"] = $"{w}x{h}";
-            if (OperatingSystem.IsWindows() && Direct3DAdapter() is { } adapter) facts["adapter"] = adapter;
+            if (Adapter() is { } adapter) facts["adapter"] = adapter;
             foreach (var (step, ms) in _startSteps)
                 facts[$"start.{step}"] = ms.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms";
             return facts;
@@ -226,6 +233,20 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
     }
 
     private readonly List<(string Step, double Milliseconds)> _startSteps = [];
+
+    /// <summary>The GPU the renderer draws with, when its graphics API can name it (Direct3D 11, SDL's GPU renderer); null otherwise.</summary>
+    private string? Adapter()
+    {
+        nint gpu = SDL_GetPointerProperty(SDL_GetRendererProperties(_sdl), SDL_PROP_RENDERER_GPU_DEVICE_POINTER, 0);
+        if (gpu != 0)
+        {
+            var props = SDL_GetGPUDeviceProperties((SDL_GPUDevice*)gpu);
+            string? name = SDL_GetStringProperty(props, SDL_PROP_GPU_DEVICE_NAME_STRING, null);
+            string? driver = SDL_GetStringProperty(props, SDL_PROP_GPU_DEVICE_DRIVER_NAME_STRING, null);
+            return name is null ? null : driver is null ? name : $"{name} ({driver})";
+        }
+        return OperatingSystem.IsWindows() ? Direct3DAdapter() : null;
+    }
 
     /// <summary>
     /// The graphics adapter SDL's Direct3D 11 renderer draws with, by its DXGI description (on a machine with two GPUs,

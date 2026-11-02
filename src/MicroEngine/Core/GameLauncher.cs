@@ -17,6 +17,8 @@ namespace MicroEngine.Core;
 /// scripted runs open no physical device, so checks and tests are never heard.</item>
 /// <item><c>--audio-capture FILE</c> play nothing aloud and write what would have been heard as a WAV
 /// (<see cref="Audio.CaptureAudioDevice"/>).</item>
+/// <item><c>--gpu auto|high-performance|power-saving</c> the GPU to ask for on a machine with two
+/// (<see cref="GpuPreference"/>).</item>
 /// <item><c>--pacing display|measured</c> count frame time in refresh periods of the display (the default) or as
 /// measured (<see cref="RunOptions.PaceToDisplay"/>).</item>
 /// <item><c>--profile FILE</c> measure every frame and the start phases (<see cref="FrameProfiler"/>), print a summary and
@@ -27,7 +29,7 @@ namespace MicroEngine.Core;
 public static class GameLauncher
 {
     /// <summary>The one-line usage text printed after an argument error.</summary>
-    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--pacing display|measured] [--profile FILE]";
+    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--pacing display|measured] [--profile FILE]";
 
     /// <param name="configure">Changes the platform request before the platform is built: an audio device or input
     /// sources of the host's own (see <see cref="PlatformRequest"/>).</param>
@@ -69,33 +71,55 @@ public static class GameLauncher
             FixedStep = parsed.ScriptPath is not null || parsed.Hidden,
             Mute = parsed.Mute,
             AudioOutput = parsed.Audio,
+            GpuPreference = parsed.Gpu,
             Identity = AppIdentity.Of(game),
         };
         Audio.CaptureAudioDevice? capture = null;
         if (parsed.AudioCapturePath is not null)
             request = request with { Audio = () => capture = new Audio.CaptureAudioDevice(game.Settings.UpdateRate) };
         if (configure is not null) request = configure(request);
-        IPlatform platform;
-        PlatformProfile? profile = null;
+        IPlatform? platform = null;
+        PlatformProfile profile;
+        IReadOnlyList<PlatformProfile> candidates;
         try
         {
             string? name = parsed.Headless ? HeadlessPlatform.Profile.Name : parsed.Platform ?? Environment.GetEnvironmentVariable("MICROENGINE_PLATFORM");
-            profile = parsed.Headless && catalog.Find(HeadlessPlatform.Profile.Name) is null ? HeadlessPlatform.Profile : catalog.Resolve(name);
-            platform = profile.Create(request);
-            profiler?.Phase("platform");
+            candidates = parsed.Headless && catalog.Find(HeadlessPlatform.Profile.Name) is null ? [HeadlessPlatform.Profile]
+                : name is null ? Fallbacks(catalog) : [catalog.Resolve(name)];
         }
-        catch (Exception e) when (e is InvalidOperationException or PlatformConfigurationException)
+        catch (PlatformConfigurationException e)
         {
             Console.Error.WriteLine($"error: {e.Message}");
             return 1;
         }
-        // A backend's native library that this system cannot load (missing, or built for a newer C library): the
-        // loader's message names the cause, so it is reported instead of crashing.
-        catch (DllNotFoundException e)
+        profile = candidates[0];
+        for (int i = 0; platform is null; i++)
         {
-            Console.Error.WriteLine($"error: platform '{profile?.Name}' could not load its native library. {e.Message}");
-            return 1;
+            profile = candidates[i];
+            string? failure;
+            try
+            {
+                platform = profile.Create(request);
+                break;
+            }
+            catch (Exception e) when (e is InvalidOperationException or PlatformConfigurationException)
+            {
+                failure = e.Message;
+            }
+            // A backend's native library that this system cannot load (missing, or built for a newer C library): the
+            // loader's message names the cause, so it is reported instead of crashing.
+            catch (DllNotFoundException e)
+            {
+                failure = $"platform '{profile.Name}' could not load its native library. {e.Message}";
+            }
+            if (i == candidates.Count - 1)
+            {
+                Console.Error.WriteLine($"error: {failure}");
+                return 1;
+            }
+            Console.Error.WriteLine($"platform: {profile.Name} could not start ({failure}); trying {candidates[i + 1].Name}");
         }
+        profiler?.Phase("platform");
         using var owned = platform;
         if (parsed.Report) foreach (var line in Report(profile, platform)) Console.WriteLine(line);
         var result = GameRunner.Run(game, platform, options);
@@ -122,6 +146,18 @@ public static class GameLauncher
         }
         Console.WriteLine($"done: {result.Updates} updates, {result.Frames} frames");
         return 0;
+    }
+
+    /// <summary>
+    /// The platforms tried, in order, when nobody named one: every platform of the catalog that can run here except the
+    /// headless one (a player who sees no window would not know why), or the catalog's default when that leaves none.
+    /// </summary>
+    public static IReadOnlyList<PlatformProfile> Fallbacks(PlatformCatalog catalog)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        var windowed = catalog.Profiles.Where(p => p.UnsupportedReason is null
+            && !string.Equals(p.Name, HeadlessPlatform.Profile.Name, StringComparison.OrdinalIgnoreCase)).ToList();
+        return windowed.Count > 0 ? windowed : [catalog.Default];
     }
 
     /// <summary>Frames of a profiled run left out of its summary: the first second or so, while the JIT compiles and caches warm up.</summary>
@@ -180,6 +216,8 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
     public AudioOutput Audio { get; init; }
     /// <summary><c>--audio-capture</c>: the WAV file to write what would have been heard to, or null.</summary>
     public string? AudioCapturePath { get; init; }
+    /// <summary><c>--gpu</c>: the GPU to ask for.</summary>
+    public GpuPreference Gpu { get; init; }
     /// <summary><c>--pacing</c>: false for <c>measured</c>, true (the default) for <c>display</c>.</summary>
     public bool PaceToDisplay { get; init; } = true;
     /// <summary><c>--profile</c>: the file to write frame measurements to, or null to measure nothing.</summary>
@@ -192,6 +230,7 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
         string? script = null, captures = "captures", platform = null, audioCapture = null, profile = null;
         var audio = AudioOutput.Automatic;
         bool paceToDisplay = true;
+        var gpu = GpuPreference.Automatic;
         bool headless = false, hidden = false, mute = false, list = false, report = false;
         long frames = 0;
         int? seed = null;
@@ -229,6 +268,15 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
                     break;
                 case "--audio-capture": audioCapture = Next(); break;
                 case "--profile": profile = Next(); break;
+                case "--gpu":
+                    gpu = Next() switch
+                    {
+                        "auto" => GpuPreference.Automatic,
+                        "high-performance" => GpuPreference.HighPerformance,
+                        "power-saving" => GpuPreference.PowerSaving,
+                        var other => throw new FormatException($"--gpu needs auto, high-performance or power-saving, not '{other}'."),
+                    };
+                    break;
                 case "--pacing":
                     paceToDisplay = Next() switch
                     {
@@ -252,6 +300,7 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
             AudioCapturePath = audioCapture,
             ProfilePath = profile,
             PaceToDisplay = paceToDisplay,
+            Gpu = gpu,
         };
     }
 }

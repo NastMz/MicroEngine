@@ -36,6 +36,11 @@ public sealed record PlatformRequest(GameSettings Settings)
     /// only for runs a player watches: not for hidden windows or fixed-step (scripted) runs, which are checks and tests.
     /// </summary>
     public AudioOutput AudioOutput { get; init; }
+    /// <summary>
+    /// Which GPU the backend should ask for on a machine with two (<see cref="GpuPreference"/>, the launcher's
+    /// <c>--gpu</c>). A preference, not a guarantee: backends pass it on only where their graphics API lets them choose.
+    /// </summary>
+    public GpuPreference GpuPreference { get; init; }
     /// <summary>Size factor of the PNGs written by <see cref="IPlatform.SaveScreenshot"/>.</summary>
     public int CaptureScale { get; init; } = 3;
     /// <summary>Creates the audio device used instead of the backend's; the platform disposes it.</summary>
@@ -52,6 +57,22 @@ public sealed record PlatformRequest(GameSettings Settings)
         AudioOutput.Silent => false,
         _ => !Hidden && !FixedStep,
     };
+}
+
+/// <summary>
+/// Which GPU a game prefers on machines with an integrated and a dedicated one. The system has the last word: on
+/// Windows, Direct3D 11 and OpenGL use the adapter Windows assigns to the application (Settings, Display, Graphics), which
+/// no backend overrides; SDL passes the preference to its Metal (macOS, iOS) and GPU (Direct3D 12, Vulkan, Metal)
+/// renderers; raylib's OpenGL ignores it.
+/// </summary>
+public enum GpuPreference
+{
+    /// <summary>The backend's and system's default (the high-performance GPU for SDL's Metal and GPU renderers).</summary>
+    Automatic,
+    /// <summary>Ask for the high-performance (usually dedicated) GPU where the backend can choose.</summary>
+    HighPerformance,
+    /// <summary>Ask for the low-power (usually integrated) GPU where the backend can choose: light games on laptops.</summary>
+    PowerSaving,
 }
 
 /// <summary>Where a run's sound may go (<see cref="PlatformRequest.AudioOutput"/>, the launcher's <c>--audio</c>).</summary>
