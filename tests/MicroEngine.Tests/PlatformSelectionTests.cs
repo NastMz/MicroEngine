@@ -87,6 +87,50 @@ public sealed class PlatformSelectionTests
     }
 
     [TestMethod]
+    public void Audio_capture_wins_over_an_audio_device_the_host_supplies()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"microengine-capture-{Guid.NewGuid():N}.wav");
+        var catalog = new PlatformCatalog().Add(new PlatformProfile("probe", "", request =>
+        {
+            var platform = new HeadlessPlatform();
+            return request.Audio is { } audio ? new AudioPlatform(platform, audio()) : platform;
+        }));
+        try
+        {
+            var errors = new StringWriter();
+            var previous = Console.Error;
+            Console.SetError(errors);
+            int code;
+            try
+            {
+                code = GameLauncher.Run(new EmptyGame(), ["--audio-capture", file, "--frames", "30"], catalog,
+                    request => request with { Audio = () => new MicroEngine.Audio.SilentAudioDevice() });
+            }
+            finally { Console.SetError(previous); }
+            Assert.AreEqual(0, code, errors.ToString());
+            Assert.IsTrue(File.Exists(file), "the capture is written although the host supplied its own device");
+        }
+        finally { File.Delete(file); }
+    }
+
+    /// <summary>A headless platform playing through the audio device of the request.</summary>
+    private sealed class AudioPlatform(HeadlessPlatform inner, MicroEngine.Audio.IAudioDevice audio) : IPlatform
+    {
+        public MicroEngine.Graphics.IGraphicsDevice Graphics => inner.Graphics;
+        public MicroEngine.Audio.IAudioDevice Audio => audio;
+        public MicroEngine.Input.IInputSource Input => inner.Input;
+        public bool CloseRequested => false;
+        public double Now => inner.Now;
+        public bool RealTime => false;
+        public void PollEvents() => inner.PollEvents();
+        public MicroEngine.Graphics.IRenderer BeginFrame() => inner.BeginFrame();
+        public void EndFrame() => inner.EndFrame();
+        public void SaveScreenshot(string path) { }
+        public void ToggleFullscreen() { }
+        public void Dispose() => inner.Dispose();
+    }
+
+    [TestMethod]
     public void Gpu_preference_reaches_the_platform_request()
     {
         Assert.AreEqual(GpuPreference.Automatic, LaunchArguments.Parse([]).Gpu);

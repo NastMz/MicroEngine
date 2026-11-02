@@ -74,10 +74,11 @@ public static class GameLauncher
             GpuPreference = parsed.Gpu,
             Identity = AppIdentity.Of(game),
         };
+        if (configure is not null) request = configure(request);
+        // Applied after the host's changes: the option is explicit, so it replaces an audio device the host supplies.
         Audio.CaptureAudioDevice? capture = null;
         if (parsed.AudioCapturePath is not null)
             request = request with { Audio = () => capture = new Audio.CaptureAudioDevice(game.Settings.UpdateRate) };
-        if (configure is not null) request = configure(request);
         IPlatform? platform = null;
         PlatformProfile profile;
         IReadOnlyList<PlatformProfile> candidates;

@@ -161,7 +161,8 @@ Name used by [PlayMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_Audio
 
 `song` [Song](MicroEngine.Audio.Song.md)
 
-The song; do not change it after registering it.
+The song; do not change it after registering it. A song that cannot be rendered is reported
+            when it first plays, not here; render it with [Render](MicroEngine.Audio.Song.md#MicroEngine_Audio_Song_Render_System_Int32_) in <code>Load</code> to fail there instead.
 
 `loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
@@ -325,6 +326,12 @@ With a fade, music starting from silence rises over about a quarter of a second;
  [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
 
 No music is registered under <code class="paramref">name</code>.
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+A song registered with [AddMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_AudioClip_System_Boolean_)
+            could not be rendered (an invalid note, no steps); its name is then unregistered. With a fade, this surfaces from
+            [Update](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Update_System_Single_) when the song is due to start.
 
 ### <a id="MicroEngine_Audio_AudioMixer_StopMusic_System_Single_"></a> StopMusic\(float\)
 

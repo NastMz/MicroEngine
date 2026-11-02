@@ -244,7 +244,8 @@ public sealed class AudioMixer
     /// <c>Load</c>. Where the runtime has no background threads (browsers), the song renders here instead.
     /// </summary>
     /// <param name="name">Name used by <see cref="PlayMusic"/>.</param>
-    /// <param name="song">The song; do not change it after registering it.</param>
+    /// <param name="song">The song; do not change it after registering it. A song that cannot be rendered is reported
+    /// when it first plays, not here; render it with <see cref="Song.Render"/> in <c>Load</c> to fail there instead.</param>
     /// <param name="loop">Whether the music restarts when it reaches its end.</param>
     public void AddMusic(string name, Song song, bool loop = true)
     {
@@ -312,6 +313,9 @@ public sealed class AudioMixer
     /// <summary>Switches music. With a fade, the current track fades out before the new one starts.</summary>
     /// <remarks>With a fade, music starting from silence rises over about a quarter of a second; with <paramref name="fadeSeconds"/> 0 or less it starts at full volume at once. Asking for the music that is already playing does nothing; asking for it while it fades out (towards another track or silence) cancels the fade and brings it back, without restarting it.</remarks>
     /// <exception cref="KeyNotFoundException">No music is registered under <paramref name="name"/>.</exception>
+    /// <exception cref="InvalidOperationException">A song registered with <see cref="AddMusic(string, Song, bool)"/>
+    /// could not be rendered (an invalid note, no steps); its name is then unregistered. With a fade, this surfaces from
+    /// <see cref="Update"/> when the song is due to start.</exception>
     public void PlayMusic(string name, float fadeSeconds = 0.4f)
     {
         if (!HasMusic(name)) throw new KeyNotFoundException($"Music '{name}' is not registered.");

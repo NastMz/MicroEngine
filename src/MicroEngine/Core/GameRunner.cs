@@ -283,7 +283,9 @@ public sealed class GameLoop
         double rate = _options.PaceToDisplay ? _platform.DisplayRate : 0;
         if (rate <= 0) return elapsed;
         double period = 1 / rate, time = elapsed + _drift;
-        if (time < period / 2) { _drift = 0; return elapsed; }
+        // A short frame keeps the debt of an earlier frame rounded up, or frames faster than the reported rate would
+        // each count as a whole period and the game would run fast.
+        if (time < period / 2) { _drift = 0; return Math.Max(0, time); }
         double shown = Math.Round(time / period) * period;
         _drift = Math.Clamp(time - shown, -period, period);
         return shown;

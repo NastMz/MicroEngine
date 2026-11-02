@@ -97,6 +97,22 @@ public class PerformanceTests
         }
         Assert.AreEqual(120, game.UpdateCount, 2, "two seconds at 60 updates per second");
 
+        // The display says less than the rate frames really come at (a compositor pacing the window at another
+        // display's rate): still real time.
+        foreach (var (reported, actual) in new[] { (60.0, 75.0), (60.0, 100.0), (100.0, 144.0) })
+        {
+            game = new StepGame();
+            platform = new DisplayPlatform(reported);
+            loop = new GameLoop(game, platform);
+            loop.Start();
+            for (int frame = 1; frame <= actual * 10; frame++)
+            {
+                platform.Now = frame / actual;
+                loop.Tick();
+            }
+            Assert.AreEqual(600, game.UpdateCount, 2, $"{reported} Hz reported, frames at {actual} per second");
+        }
+
         // The display says 75 Hz but frames come at 60 Hz: still real time.
         game = new StepGame();
         platform = new DisplayPlatform(75);
