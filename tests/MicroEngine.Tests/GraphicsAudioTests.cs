@@ -156,6 +156,46 @@ public sealed class GraphicsTests
         Assert.AreEqual(0, particles.Count);
     }
 
+    private sealed class RectRecorder : IRenderer
+    {
+        public List<RectF> Rects { get; } = [];
+        public int Width => 320;
+        public int Height => 180;
+        public void Clear(Color color) { }
+        public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default) { }
+        public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint) { }
+        public void FillRect(RectF rect, Color color) => Rects.Add(rect);
+        public void FillCircle(Vector2 center, float radius, Color color) { }
+        public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color) { }
+        public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color) { }
+        public void PushCamera(Camera2D camera) { }
+        public void PopCamera() { }
+        public void SetBlendMode(BlendMode mode) { }
+        public void SetClip(RectF? screenRect) { }
+    }
+
+    [TestMethod]
+    public void Particles_are_drawn_between_their_last_two_updates()
+    {
+        // One particle moving right at 60 px/s, one update of 1/6 s: from x=100 to x=110.
+        var particles = new ParticleSystem(4);
+        var spec = new ParticleSpec { Life = (5, 5), Speed = (60, 60), Angle = (0, 0), Size = (1, 1), Drag = 1 };
+        particles.Emit(new Vector2(100, 50), spec);
+        // Squares are pixel-aligned (rounded), hence the 1 px tolerance.
+        float X(float? blend)
+        {
+            var r = new RectRecorder();
+            if (blend is { } b) particles.Draw(r, b); else particles.Draw(r);
+            return r.Rects[0].X;
+        }
+        Assert.AreEqual(100, X(0.5f), 1, "a new particle starts where it appears");
+        particles.Update(1f / 6);
+        Assert.AreEqual(110, X(null), 1, "by default, the last update");
+        Assert.AreEqual(110, X(1), 1);
+        Assert.AreEqual(105, X(0.5f), 1, "halfway between the last two updates");
+        Assert.AreEqual(100, X(0), 1);
+    }
+
     [TestMethod]
     public void Typewriter_reveals_progressively_and_reports_characters()
     {

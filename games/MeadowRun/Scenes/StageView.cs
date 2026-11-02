@@ -57,11 +57,11 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
     public void Draw(IRenderer r, Stage stage, float time, float blend = 1)
     {
         _motion.Place(stage, blend);
-        try { DrawStage(r, stage, time); }
+        try { DrawStage(r, stage, time, blend); }
         finally { _motion.Restore(stage); }
     }
 
-    private void DrawStage(IRenderer r, Stage stage, float time)
+    private void DrawStage(IRenderer r, Stage stage, float time, float blend)
     {
         // One pass over the actors per frame; the layers and the light pass reuse it.
         _actors.Clear();
@@ -79,7 +79,7 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         DrawActors(r, stage, time, layer: 2);
         DrawPlayer(r, stage, time);
         DrawActors(r, stage, time, layer: 3);
-        stage.Particles.Draw(r);
+        stage.Particles.Draw(r, blend);
         r.PopCamera();
 
         DrawLighting(r, stage, time);

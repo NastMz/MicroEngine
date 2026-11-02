@@ -69,7 +69,7 @@ public sealed partial class PlayScene
         _drawList.Sort(ByDepth);
         foreach (var a in _drawList) a.DrawShadow(r);
         foreach (var a in _drawList) a.Draw(r);
-        Particles.Draw(r);
+        Particles.Draw(r, DrawBlend);
         Ambient.Draw(r);
         r.PopCamera();
 

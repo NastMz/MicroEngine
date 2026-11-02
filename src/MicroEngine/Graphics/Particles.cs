@@ -32,7 +32,7 @@ public sealed class ParticleSystem
 {
     private struct Particle
     {
-        public Vector2 Position, Velocity;
+        public Vector2 Position, Previous, Velocity;
         public float Age, Life;
         public ParticleSpec Spec;
     }
@@ -71,6 +71,7 @@ public sealed class ParticleSystem
             _particles[_count++] = new Particle
             {
                 Position = at + offset,
+                Previous = at + offset, // a new particle starts where it appears
                 Velocity = MathX.FromAngle(angle, speed) + inheritVelocity,
                 Life = Range(spec.Life.Min, spec.Life.Max),
                 Spec = spec,
@@ -95,12 +96,16 @@ public sealed class ParticleSystem
             }
             p.Velocity.Y += p.Spec.Gravity * dt;
             if (p.Spec.Drag != 1f) p.Velocity *= MathF.Pow(p.Spec.Drag, dt);
+            p.Previous = p.Position;
             p.Position += p.Velocity * dt;
         }
     }
 
     /// <summary>Draws every live particle. With <see cref="Additive"/>, the blend mode is set to additive and back to <see cref="BlendMode.Alpha"/> afterwards.</summary>
-    public void Draw(IRenderer renderer)
+    /// <param name="renderer">The renderer.</param>
+    /// <param name="blend">How far between the last two updates to draw them (<see cref="Core.Game.FrameBlend"/>, or 1 for
+    /// the last update, the default): with the game's blend they move evenly on displays of any rate.</param>
+    public void Draw(IRenderer renderer, float blend = 1)
     {
         if (Additive) renderer.SetBlendMode(BlendMode.Additive);
         for (int i = 0; i < _count; i++)
@@ -110,8 +115,9 @@ public sealed class ParticleSystem
             var color = Color.Lerp(p.Spec.StartColor, p.Spec.EndColor, t);
             float size = MathX.Lerp(p.Spec.Size.Start, p.Spec.Size.End, t);
             if (size <= 0.2f) continue;
-            if (p.Spec.Round) renderer.FillCircle(p.Position, size / 2f, color);
-            else renderer.FillRect(new RectF(MathF.Round(p.Position.X - size / 2), MathF.Round(p.Position.Y - size / 2), MathF.Max(1, MathF.Round(size)), MathF.Max(1, MathF.Round(size))), color);
+            var at = blend >= 1 ? p.Position : Vector2.Lerp(p.Previous, p.Position, blend);
+            if (p.Spec.Round) renderer.FillCircle(at, size / 2f, color);
+            else renderer.FillRect(new RectF(MathF.Round(at.X - size / 2), MathF.Round(at.Y - size / 2), MathF.Max(1, MathF.Round(size)), MathF.Max(1, MathF.Round(size))), color);
         }
         if (Additive) renderer.SetBlendMode(BlendMode.Alpha);
     }
