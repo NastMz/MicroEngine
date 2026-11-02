@@ -108,13 +108,28 @@ public sealed class Song
     /// <exception cref="FormatException">A track has an invalid note or a drum track an unknown drum.</exception>
     public AudioClip Render(int sampleRate = AudioClip.DefaultSampleRate)
     {
+        var slices = RenderInSlices(sampleRate);
+        while (slices.MoveNext())
+            if (slices.Current is { } clip) return clip;
+        throw new InvalidOperationException("The song rendered nothing.");
+    }
+
+    /// <summary>
+    /// <see cref="Render"/> in small slices (a note, a drum hit, a block of samples): every step yields null until the
+    /// last, which yields the clip. A single-threaded host (a browser) renders songs a few milliseconds per update this
+    /// way instead of all at once while loading. The result equals <see cref="Render"/>'s sample for sample.
+    /// </summary>
+    internal IEnumerator<AudioClip?> RenderInSlices(int sampleRate = AudioClip.DefaultSampleRate)
+    {
+        const int Block = 32768;
         int steps = LengthInSteps;
         if (steps == 0) throw new InvalidOperationException("Song has no steps.");
         double stepSamples = StepSeconds * sampleRate;
         int total = (int)Math.Round(steps * stepSamples);
         var left = new float[total];
         var right = new float[total];
-        foreach (var (instrument, track) in _tracks) RenderTrack(instrument, track, steps, stepSamples, sampleRate, left, right);
+        foreach (var (instrument, track) in _tracks)
+            foreach (var _ in RenderTrack(instrument, track, steps, stepSamples, sampleRate, left, right)) yield return null;
         var rng = new Random(5);
         foreach (var drum in _drums)
             for (int s = 0; s < steps; s++)
@@ -122,6 +137,7 @@ public sealed class Song
                 var token = drum[s % drum.Length];
                 if (token is "." or "-") continue;
                 RenderDrum(token, (int)Math.Round(s * stepSamples), sampleRate, left, right, rng);
+                yield return null;
             }
         if (Echo > 0)
         {
@@ -134,6 +150,7 @@ public sealed class Song
                     float l = left[i], r = right[i];
                     left[i] = l + right[j] * Echo * 0.5f;
                     right[i] = r + left[j] * Echo * 0.5f;
+                    if (i % Block == Block - 1) yield return null;
                 }
         }
         var interleaved = new float[total * 2];
@@ -141,11 +158,13 @@ public sealed class Song
         {
             interleaved[i * 2] = MathF.Tanh(left[i] * 1.1f) * 0.9f;
             interleaved[i * 2 + 1] = MathF.Tanh(right[i] * 1.1f) * 0.9f;
+            if (i % Block == Block - 1) yield return null;
         }
-        return new AudioClip(interleaved, sampleRate, 2);
+        yield return new AudioClip(interleaved, sampleRate, 2);
     }
 
-    private static void RenderTrack(Instrument ins, string[] track, int steps, double stepSamples, int rate, float[] left, float[] right)
+    /// <summary>Renders one track into the buffers, yielding after each note.</summary>
+    private static IEnumerable<int> RenderTrack(Instrument ins, string[] track, int steps, double stepSamples, int rate, float[] left, float[] right)
     {
         int total = left.Length;
         int s = 0;
@@ -182,6 +201,7 @@ public sealed class Song
                 right[index] += filtered * ins.Pan * 2 * 0.7f;
             }
             s += length;
+            yield return s;
         }
     }
 

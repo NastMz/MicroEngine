@@ -206,6 +206,15 @@ public sealed class AudioMixer
     private readonly Dictionary<string, SoundHandle> _sounds = new(StringComparer.Ordinal);
     private readonly Dictionary<string, MusicHandle> _music = new(StringComparer.Ordinal);
     private readonly Dictionary<string, (Task<AudioClip> Render, bool Loop)> _songs = new(StringComparer.Ordinal);
+    // Single-threaded hosts (browsers): songs render a slice at a time from Update, in the order they were registered.
+    private readonly List<(string Name, IEnumerator<AudioClip?> Slices, bool Loop)> _sliced = [];
+
+    /// <summary>Whether songs render on the thread pool (true) or in slices from <see cref="Update"/> (browsers).</summary>
+    internal static bool RenderSongsOnThreads { get; set; } = !OperatingSystem.IsBrowser();
+    /// <summary>The time <see cref="Update"/> spends rendering songs in slices, per call.</summary>
+    internal static TimeSpan SliceBudget { get; set; } = TimeSpan.FromMilliseconds(4);
+    /// <summary>Songs still rendering in slices.</summary>
+    internal int SlicedSongs => _sliced.Count;
     private readonly Dictionary<string, int> _lastPlayedFrame = new(StringComparer.Ordinal);
     private readonly Random _random = new(7);
     private float _musicVolume = 1f, _fade = 1f, _fadeSpeed;
@@ -234,6 +243,7 @@ public sealed class AudioMixer
     public void AddMusic(string name, AudioClip clip, bool loop = true)
     {
         _songs.Remove(name);
+        _sliced.RemoveAll(s => s.Name == name);
         _music[name] = _device.LoadMusic(name, clip, loop);
     }
 
@@ -241,7 +251,8 @@ public sealed class AudioMixer
     /// Registers a <see cref="Song"/> under <paramref name="name"/> without waiting for it to be rendered: songs render
     /// in the background, side by side, and each is handed to the device the first time it plays (waiting then only for
     /// that song if it is not ready yet). Registering every song of a game this way keeps their synthesis out of
-    /// <c>Load</c>. Where the runtime has no background threads (browsers), the song renders here instead.
+    /// <c>Load</c>. Where the runtime has no background threads (browsers), songs render a few milliseconds per
+    /// <see cref="Update"/> instead, one after another in the order they were registered.
     /// </summary>
     /// <param name="name">Name used by <see cref="PlayMusic"/>.</param>
     /// <param name="song">The song; do not change it after registering it.</param>
@@ -253,14 +264,27 @@ public sealed class AudioMixer
         ArgumentNullException.ThrowIfNull(song);
         // Mistakes in the song are reported here, in Load, not later when it first plays.
         song.Validate();
-        if (OperatingSystem.IsBrowser()) { AddMusic(name, song.Render(), loop); return; }
         _music.Remove(name);
-        _songs[name] = (Task.Run(() => song.Render()), loop);
+        _sliced.RemoveAll(s => s.Name == name);
+        _songs.Remove(name);
+        // Without threads (a browser) the song renders a few milliseconds per update instead of all at once in Load.
+        if (RenderSongsOnThreads) _songs[name] = (Task.Run(() => song.Render()), loop);
+        else _sliced.Add((name, song.RenderInSlices(), loop));
     }
 
     /// <summary>The handle of music <paramref name="name"/>, handing a background-rendered song to the device first if needed.</summary>
     private MusicHandle Music(string name)
     {
+        int sliced = _sliced.FindIndex(s => s.Name == name);
+        if (sliced >= 0)
+        {
+            // Asked for before its turn finished: the rest of it renders now.
+            var (_, slices, loop) = _sliced[sliced];
+            _sliced.RemoveAt(sliced);
+            AudioClip? clip = null;
+            while (clip is null && slices.MoveNext()) clip = slices.Current;
+            _music[name] = _device.LoadMusic(name, clip!, loop);
+        }
         if (_songs.Remove(name, out var song))
         {
             AudioClip clip;
@@ -273,7 +297,7 @@ public sealed class AudioMixer
     /// <summary>Whether a sound effect is registered under <paramref name="name"/>.</summary>
     public bool HasSound(string name) => _sounds.ContainsKey(name);
     /// <summary>Whether music is registered under <paramref name="name"/>.</summary>
-    public bool HasMusic(string name) => _music.ContainsKey(name) || _songs.ContainsKey(name);
+    public bool HasMusic(string name) => _music.ContainsKey(name) || _songs.ContainsKey(name) || _sliced.Exists(s => s.Name == name);
 
     /// <summary>Registers a WAV file as a sound effect.</summary>
     /// <exception cref="FileNotFoundException">The file does not exist.</exception>
@@ -288,6 +312,7 @@ public sealed class AudioMixer
         var bytes = File.ReadAllBytes(path);
         var format = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
         _songs.Remove(name);
+        _sliced.RemoveAll(s => s.Name == name);
         _music[name] = format == "wav"
             ? _device.LoadMusic(name, AudioClip.FromWav(bytes), loop)
             : _device.LoadMusicStream(name, bytes, format, loop);
@@ -366,11 +391,28 @@ public sealed class AudioMixer
 
     private void Apply() => _device.SetMusicVolume(_musicVolume * _fade);
 
+    /// <summary>Renders pending songs for up to <see cref="SliceBudget"/>, handing each finished one to the device.</summary>
+    private void RenderSlices()
+    {
+        long due = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(SliceBudget.TotalSeconds * System.Diagnostics.Stopwatch.Frequency);
+        while (_sliced.Count > 0 && System.Diagnostics.Stopwatch.GetTimestamp() < due)
+        {
+            var (name, slices, loop) = _sliced[0];
+            if (!slices.MoveNext()) { _sliced.RemoveAt(0); continue; }
+            if (slices.Current is { } clip)
+            {
+                _sliced.RemoveAt(0);
+                _music[name] = _device.LoadMusic(name, clip, loop);
+            }
+        }
+    }
+
     /// <summary>Advances music fades and lets the device stream. The game calls it once per update; call it yourself only for a mixer you created.</summary>
     /// <param name="dt">Elapsed time in seconds.</param>
     public void Update(float dt)
     {
         _frame++;
+        if (_sliced.Count > 0) RenderSlices();
         if (_fadeSpeed != 0)
         {
             _fade = Math.Clamp(_fade + _fadeSpeed * dt, 0, 1);

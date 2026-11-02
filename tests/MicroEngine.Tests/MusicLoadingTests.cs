@@ -32,6 +32,67 @@ public class MusicLoadingTests
         Assert.IsTrue(mixer.HasMusic("tune"), "a clip registered later replaces the song");
     }
 
+    private static Song Long() => new Song(140).Track(Instrument.Lead, "C4 E4 G4 C5 . G4 E4 -", "D4 F4 A4 D5 . A4 F4 -")
+        .Track(Instrument.Bass, "C2 - . C2 G2 - . G2").Drums("k . s . k k s h");
+
+    [TestMethod]
+    public void Rendering_in_slices_gives_the_same_samples_as_rendering_at_once()
+    {
+        var slices = Long().RenderInSlices();
+        int count = 0;
+        AudioClip? clip = null;
+        while (clip is null && slices.MoveNext()) { clip = slices.Current; count++; }
+        Assert.IsTrue(count > 20, $"many small slices ({count})");
+        CollectionAssert.AreEqual(Long().Render().Samples, clip!.Samples);
+    }
+
+    [TestMethod]
+    [DoNotParallelize]
+    public void Without_threads_songs_render_a_few_milliseconds_per_update_and_play_unchanged()
+    {
+        bool threads = AudioMixer.RenderSongsOnThreads;
+        var budget = AudioMixer.SliceBudget;
+        AudioMixer.RenderSongsOnThreads = false;
+        AudioMixer.SliceBudget = TimeSpan.FromTicks(1); // one slice per update, whatever the machine
+        try
+        {
+            var device = new CaptureAudioDevice();
+            var mixer = new AudioMixer(device);
+            mixer.AddMusic("first", Long(), loop: false);
+            mixer.AddMusic("second", Tune(), loop: false);
+            Assert.IsTrue(mixer.HasMusic("first") && mixer.HasMusic("second"));
+            mixer.Update(1f / 60);
+            mixer.Update(1f / 60);
+            Assert.IsNull(device.CurrentMusic, "rendering does not play anything");
+
+            // Asked for before its turn: the rest renders at once, and it sounds as if rendered in Load.
+            mixer.PlayMusic("second", fadeSeconds: 0);
+            for (int i = 0; i < 30; i++) mixer.Update(1f / 60);
+            var expected = new CaptureAudioDevice();
+            var reference = new AudioMixer(expected);
+            reference.AddMusic("second", Tune().Render(), loop: false);
+            reference.Update(1f / 60);
+            reference.Update(1f / 60);
+            reference.PlayMusic("second", fadeSeconds: 0);
+            for (int i = 0; i < 30; i++) reference.Update(1f / 60);
+            CollectionAssert.AreEqual(expected.Output.Samples, device.Output.Samples);
+
+            // The first song keeps rendering a slice per update until it is ready.
+            Assert.AreEqual(1, mixer.SlicedSongs);
+            int updates = 0;
+            while (mixer.SlicedSongs > 0 && updates < 100_000) { mixer.Update(1f / 60); updates++; }
+            Assert.AreEqual(0, mixer.SlicedSongs, "rendered by updates alone");
+            Assert.IsTrue(updates > 20, $"over many updates ({updates})");
+            mixer.PlayMusic("first", fadeSeconds: 0);
+            Assert.AreEqual("first", mixer.CurrentMusic);
+        }
+        finally
+        {
+            AudioMixer.RenderSongsOnThreads = threads;
+            AudioMixer.SliceBudget = budget;
+        }
+    }
+
     [TestMethod]
     public void A_song_that_cannot_be_rendered_fails_when_registered_not_when_it_plays()
     {
