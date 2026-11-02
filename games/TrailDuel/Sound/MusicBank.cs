@@ -23,19 +23,19 @@ internal static class MusicBank
     public static void Register(AudioMixer audio, ContentFolder content)
     {
         foreach (var jingle in Jingles) audio.AddSoundFile("jingle:" + jingle, content.PathOf($"jingles/{jingle}.wav"));
-        audio.AddMusic("title", Title().Render());
-        audio.AddMusic("town", Town().Render());
-        audio.AddMusic("route", Route().Render());
-        audio.AddMusic("forest", Forest().Render());
-        audio.AddMusic("town2", Brookhaven().Render());
-        audio.AddMusic("shrine", Shrine().Render());
-        audio.AddMusic("hall", Hall().Render());
-        audio.AddMusic("battle", WildBattle().Render());
-        audio.AddMusic("trainer", TrainerBattle().Render());
-        audio.AddMusic("master", MasterBattle().Render());
-        audio.AddMusic("victory", Victory().Render());
-        audio.AddMusic("evolution", Evolution().Render());
-        audio.AddMusic("credits", Credits().Render());
+        audio.AddMusic("title", Title());
+        audio.AddMusic("town", Town());
+        audio.AddMusic("route", Route());
+        audio.AddMusic("forest", Forest());
+        audio.AddMusic("town2", Brookhaven());
+        audio.AddMusic("shrine", Shrine());
+        audio.AddMusic("hall", Hall());
+        audio.AddMusic("battle", WildBattle());
+        audio.AddMusic("trainer", TrainerBattle());
+        audio.AddMusic("master", MasterBattle());
+        audio.AddMusic("victory", Victory());
+        audio.AddMusic("evolution", Evolution());
+        audio.AddMusic("credits", Credits());
     }
 
     private static string Arp(params string[] chords) => string.Join(" ", chords.Select(c =>

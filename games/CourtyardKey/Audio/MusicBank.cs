@@ -11,11 +11,11 @@ public static class MusicBank
 {
     public static void Register(AudioMixer audio)
     {
-        audio.AddMusic("title", Title().Render());
-        audio.AddMusic("overworld", Overworld().Render());
-        audio.AddMusic("dungeon", Dungeon().Render());
-        audio.AddMusic("boss", Boss().Render());
-        audio.AddMusic("ending", Ending().Render());
+        audio.AddMusic("title", Title());
+        audio.AddMusic("overworld", Overworld());
+        audio.AddMusic("dungeon", Dungeon());
+        audio.AddMusic("boss", Boss());
+        audio.AddMusic("ending", Ending());
     }
 
     private static readonly Dictionary<string, string[]> Chords = new()

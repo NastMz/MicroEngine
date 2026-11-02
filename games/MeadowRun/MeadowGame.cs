@@ -75,7 +75,7 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
         // Banded halo keeps light pools pixel-art instead of airbrushed.
         Lights = new MicroEngine.Graphics.LightMap(Graphics, DecoArt.Glow(24)) { Darkness = 1 };
         foreach (var (name, clip) in SoundBank.All()) Audio.AddSound(name, clip);
-        foreach (var (name, clip, loop) in MusicBank.All()) Audio.AddMusic(name, clip, loop);
+        foreach (var (name, song, loop) in MusicBank.All()) Audio.AddMusic(name, song, loop);
         UseAchievements(MeadowAchievements.Catalog, Store, MeadowRun.Scenes.Ui.Theme);
         AchievementToasts!.Top = 17;   // below the HUD row
         Achievements.Unlocked += _ => Sfx("checkpoint", 0.8f);

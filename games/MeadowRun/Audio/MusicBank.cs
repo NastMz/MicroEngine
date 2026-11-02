@@ -17,7 +17,7 @@ internal static class MusicBank
     private static readonly Instrument Pad = new(Wave.Saw, 0.07f, 0.12f, 0.4f, 0.65f, 0.3f, 0.4f, 0.003f, 3.5f, 1400);
     private static readonly Instrument Grit = new(Wave.Square, 0.16f, 0.003f, 0.05f, 0.5f, 0.04f, 0.4f, 0, 5, 2200);
 
-    public static IEnumerable<(string Name, AudioClip Clip, bool Loop)> All()
+    public static IEnumerable<(string Name, Song Song, bool Loop)> All()
     {
         yield return ("title", Title(), true);
         yield return ("map", Map(), true);
@@ -79,15 +79,14 @@ internal static class MusicBank
     private const string MeadowChords = "C G Am G C G Am C F Dm Am G F F C C";
 
     /// <summary>Sunny Meadow: bouncy and bright, the game's main theme.</summary>
-    private static AudioClip Meadow() => new Song(144, 2) { Echo = 0.14f }
+    private static Song Meadow() => new Song(144, 2) { Echo = 0.14f }
         .Track(Lead, MeadowA1, MeadowA2, MeadowB)
         .Track(Bass, BassLine(MeadowChords, 2))
         .Track(Arp, ArpLine(MeadowChords, 4))
         .Drums("k . s . k k s .")
-        .Drums("h h h h h h h o")
-        .Render();
+        .Drums("h h h h h h h o");
 
-    private static AudioClip Title()
+    private static Song Title()
     {
         const string chords = "C G Dm G C F C C";
         return new Song(112, 2) { Echo = 0.24f }
@@ -96,11 +95,10 @@ internal static class MusicBank
             .Track(Pad, BassLine(chords, 3, "R - - - - - - -"))
             .Track(Bass, BassLine(chords, 2, "R . . R . . O ."))
             .Track(Arp, ArpLine(chords, 4, "0 1 2 1 2 1 0 1"))
-            .Drums("k . . . s . . . | k . k . s . . h")
-            .Render();
+            .Drums("k . . . s . . . | k . k . s . . h");
     }
 
-    private static AudioClip Map()
+    private static Song Map()
     {
         const string chords = "G Em C D G Em C G";
         return new Song(116, 2) { Echo = 0.2f }
@@ -108,12 +106,11 @@ internal static class MusicBank
                 + "G5 - F#5 - E5 D5 B4 - | E5 - G5 - B4 - - . | C5 - E5 - D5 - A4 - | G4 - - - . . . . |")
             .Track(Bass, BassLine(chords, 2, "R . F . O . F ."))
             .Track(Arp, ArpLine(chords, 4, "0 2 1 2 0 2 1 2"))
-            .Drums("k . h . s . h h")
-            .Render();
+            .Drums("k . h . s . h h");
     }
 
     /// <summary>Crystal Caves: slow, echoing bell arpeggios over a held bass.</summary>
-    private static AudioClip Caves()
+    private static Song Caves()
     {
         const string chords = "Am F G E Am F Dm E";
         return new Song(92, 2) { Echo = 0.4f, EchoDelayBeats = 1.5f }
@@ -122,12 +119,11 @@ internal static class MusicBank
             .Track(Bell, ArpLine(chords, 4, "0 1 2 0 2 1 2 1"))
             .Track(Bass, BassLine(chords, 2, "R - - - - - F -"))
             .Track(Pad, BassLine(chords, 3, "R - - - - - - -"))
-            .Drums("k . . . . . h . | . . k . . . h .")
-            .Render();
+            .Drums("k . . . . . h . | . . k . . . h .");
     }
 
     /// <summary>Cloud Heights: airy and wide, a soaring melody with gentle drums.</summary>
-    private static AudioClip Sky()
+    private static Song Sky()
     {
         const string chords = "F Bb C F Dm Bb C C";
         return new Song(120, 2) { Echo = 0.3f, EchoDelayBeats = 1f }
@@ -137,12 +133,11 @@ internal static class MusicBank
             .Track(Bass, BassLine(chords, 2, "R . . O . . R ."))
             .Track(Arp, ArpLine(chords, 4, "0 1 2 1 0 2 1 2"))
             .Track(Pad, BassLine(chords, 4, "R - - - - - - -"))
-            .Drums("k . h . s . h . | k . h k s . h h")
-            .Render();
+            .Drums("k . h . s . h . | k . h k s . h h");
     }
 
     /// <summary>Ember Castle: a driving minor ostinato with a tense lead.</summary>
-    private static AudioClip Castle()
+    private static Song Castle()
     {
         const string chords = "Dm Dm Bb A Dm Dm Bb A";
         return new Song(150, 2) { Echo = 0.16f }
@@ -150,12 +145,11 @@ internal static class MusicBank
                 + "F5 - - D5 F5 - G5 - | A5 - G5 - F5 - E5 - | F5 - E5 D5 A#4 - D5 - | C#5 - - - E5 - A5 - |")
             .Track(Grit, BassLine(chords, 2, "R R O R R R F R"))
             .Track(Bass, BassLine(chords, 1, "R - - - R - - -"))
-            .Drums("k h s h k k s h")
-            .Render();
+            .Drums("k h s h k k s h");
     }
 
     /// <summary>The Mole King: fast, aggressive, with a syncopated bass.</summary>
-    private static AudioClip Boss()
+    private static Song Boss()
     {
         const string chords = "Em Em C D Em Em C B";
         return new Song(170, 2) { Echo = 0.12f }
@@ -163,18 +157,16 @@ internal static class MusicBank
                 + "E5 - G5 - F#5 - E5 - | B5 - - - D6 C6 B5 - | C6 - B5 - A5 - G5 - | F#5 - - - D#5 - F#5 - |")
             .Track(Grit, BassLine(chords, 2, "R O R O R O F O"))
             .Track(Arp, ArpLine(chords, 5, "2 1 0 1 2 1 0 1"))
-            .Drums("k h s h k s s h | k h s h k k s o")
-            .Render();
+            .Drums("k h s h k s s h | k h s h k k s o");
     }
 
-    private static AudioClip Clear() => new Song(150, 2) { Echo = 0.2f }
+    private static Song Clear() => new Song(150, 2) { Echo = 0.2f }
         .Track(Lead, "C5 E5 G5 C6 - - G5 - | A5 - B5 - C6 - - - | . . . . . . . .")
         .Track(Bass, "C3 . . . G2 . . . | F2 . G2 . C3 - - - | . . . . . . . .")
         .Track(Arp, "E4 G4 C5 E5 - - . . | F4 A4 G4 B4 C5 - - - | . . . . . . . .")
-        .Drums("k . . . k . . . | k . k . s . . . | . . . . . . . .")
-        .Render();
+        .Drums("k . . . k . . . | k . k . s . . . | . . . . . . . .");
 
-    private static AudioClip Victory()
+    private static Song Victory()
     {
         const string chords = "C Am F G C F G C";
         return new Song(126, 2) { Echo = 0.25f }
@@ -182,23 +174,20 @@ internal static class MusicBank
                 + "C6 - - G5 E5 - G5 - | A5 - - F5 A5 - C6 - | B5 - D6 - B5 - G5 - | C6 - - - - - - - |")
             .Track(Bass, BassLine(chords, 2))
             .Track(Arp, ArpLine(chords, 4))
-            .Drums("k . s . k k s .")
-            .Render();
+            .Drums("k . s . k k s .");
     }
 
-    private static AudioClip GameOver() => new Song(84, 2) { Echo = 0.3f }
+    private static Song GameOver() => new Song(84, 2) { Echo = 0.3f }
         .Track(SoftLead, "C5 - B4 - A#4 - A4 - | G#4 - - - G4 - - - | . . . . . . . .")
-        .Track(Bass, "C3 - - - F2 - - - | C#3 - - - C3 - - - | . . . . . . . .")
-        .Render();
+        .Track(Bass, "C3 - - - F2 - - - | C#3 - - - C3 - - - | . . . . . . . .");
 
-    private static AudioClip Credits()
+    private static Song Credits()
     {
         return new Song(100, 2) { Echo = 0.3f, EchoDelayBeats = 1f }
             .Track(Bell, MeadowA1, MeadowA2, MeadowB)
             .Track(Pad, BassLine(MeadowChords, 3, "R - - - - - - -"))
             .Track(Bass, BassLine(MeadowChords, 2, "R . . . O . . ."))
             .Track(Arp with { Volume = 0.05f }, ArpLine(MeadowChords, 4, "0 1 2 1 2 1 0 1"))
-            .Drums(Repeat("k . . . s . . . | k . . k s . . h", 1))
-            .Render();
+            .Drums(Repeat("k . . . s . . . | k . . k s . . h", 1));
     }
 }
