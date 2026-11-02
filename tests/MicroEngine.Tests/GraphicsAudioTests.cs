@@ -76,6 +76,16 @@ public sealed class GraphicsTests
     }
 
     [TestMethod]
+    public void Measuring_text_allocates_nothing()
+    {
+        var font = BitmapFont.CreateDefault(null);
+        Assert.AreEqual(new System.Numerics.Vector2(font.MeasureWidth("ab\ncdef"), 18), font.Measure("ab\ncdef"));
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < 100; i++) font.Measure("HP 12/20\nLv 5");
+        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
+
+    [TestMethod]
     public void Font_is_proportional_and_wraps_on_word_boundaries()
     {
         var font = BitmapFont.CreateDefault(null);

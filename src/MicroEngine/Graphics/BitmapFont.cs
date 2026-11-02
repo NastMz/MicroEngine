@@ -75,7 +75,7 @@ public sealed class BitmapFont : IDisposable
     /// <summary>Size of <paramref name="text"/> in pixels at <paramref name="scale"/>: the widest line by the height of its lines (8 pixels for one line at scale 1).</summary>
     public Vector2 Measure(string text, float scale = 1f)
     {
-        int lines = 1 + text.Count(c => c == '\n');
+        int lines = 1 + text.AsSpan().Count('\n'); // no enumerator: games measure text every frame
         return new Vector2(MeasureWidth(text) * scale, (lines * LineHeight - (LineHeight - 8)) * scale);
     }
 
