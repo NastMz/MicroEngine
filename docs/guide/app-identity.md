@@ -67,7 +67,7 @@ manifest icon, and Android launcher icons at every density. On Android 8 and lat
 shape (circle, squircle...); the package carries an adaptive icon whose foreground is your icon over the part every mask
 shows and whose background is `MicroEngineIconBackground`, so the launcher shows your art instead of shrinking it onto
 a white plate. Art that reaches the corners loses them to round masks: keep what matters away from the corners. (The
-adaptive icon is not in a published SDK yet; 0.4.0-alpha.2 packages a square icon at one density.)
+adaptive icon is not in a published SDK yet; the published SDK packages a square icon at one density.)
 
 ## Start screen
 

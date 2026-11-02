@@ -95,7 +95,7 @@ Source: [`games/CourtyardKey/Entities/Hero.cs`](../../games/CourtyardKey/Entitie
 ## Showing controls to the player
 
 > **Not in a published SDK yet.** Action prompts arrive with the next SDK release
-> ([release notes](../guide/release-notes.md#next-release)); 0.4.0-alpha.2 does not have them.
+> ([release notes](../guide/release-notes.md#next-release)); the published SDK does not have them.
 
 Text that names a control ("press Z to jump") is wrong for a player holding a gamepad or touching a phone. Name the
 action instead and let `Game.Prompts` (an `ActionPrompts`) say which control presses it on the device being played:

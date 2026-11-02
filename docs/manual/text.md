@@ -53,7 +53,7 @@ use whole numbers (2, 3) to keep pixels square. `\n` starts a new line, `LineHei
 | `LineHeight`, `CapHeight`, `Spacing`, `Advance(c)` | the font's metrics |
 
 Right-aligning a score: `new Vector2(Game.Width - 6 - Font.MeasureWidth(text), 4)`. A word longer than `maxWidth` is
-broken between characters, so no line is wider than `maxWidth` (in 0.4.0-alpha.2 such a word overflows; the change is
+broken between characters, so no line is wider than `maxWidth` (in the published SDK such a word overflows; the change is
 in the next SDK release). The [UI widgets](ui.md) (`DialogueBox`, `Typewriter`) wrap and page text for you.
 
 ## Characters

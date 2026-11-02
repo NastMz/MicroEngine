@@ -58,7 +58,7 @@ A page that wraps to more than `Lines` lines continues on the next confirm inste
 whether more lines follow; `VisibleLines` are the lines in the box). With `Prompts` set (usually to `Game.Prompts`),
 `{action}` in a page names the player's own control, and changes if the player switches device while the page shows:
 `"Press {confirm} to swing it."` reads "Press Z" on a keyboard, "Press A" on a gamepad or on the touch button labelled A.
-Both are not in a published SDK yet: 0.4.0-alpha.2 cuts the extra lines and prints `{confirm}` as written.
+Both are not in a published SDK yet: the published SDK cuts the extra lines and prints `{confirm}` as written.
 
 Courtyard Key wraps the box in an overlay scene that freezes the world:
 

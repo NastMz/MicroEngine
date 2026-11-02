@@ -10,6 +10,10 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>MicroEngine.iOS</RootNamespace>
     <AssemblyName>$(GameId)</AssemblyName>
+    <!-- The app's executable keeps the game's name, but the host project must not share the game project's name in
+         NuGet's restore graph ("Ambiguous project name"), so it has a package id of its own. -->
+    <PackageId>$(GameId).iOS.Host</PackageId>
+    <IsPackable>false</IsPackable>
     <ApplicationId>$(GameApplicationId)</ApplicationId>
     <ApplicationTitle>$(GameTitle)</ApplicationTitle>
     <ApplicationVersion>$(GameVersionCode)</ApplicationVersion>
