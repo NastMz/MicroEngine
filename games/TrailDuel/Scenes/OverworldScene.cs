@@ -110,7 +110,9 @@ internal sealed partial class OverworldScene : Scene
         _bannerTime += dt;
         _npcClock += dt;
         _dust.Update(dt);
-        _rustles.RemoveAll(r => Age - r.Time > 0.45f);
+        // Expired rustles removed in place, keeping the order (a lambda over Age allocated every update).
+        for (int i = _rustles.Count - 1; i >= 0; i--)
+            if (Age - _rustles[i].Time > 0.45f) _rustles.RemoveAt(i);
         _text.Update(dt, Input);
         _choice?.Update(dt, Input);
         foreach (var npc in _map.Npcs) npc.Update(dt);

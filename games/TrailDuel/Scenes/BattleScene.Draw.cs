@@ -13,6 +13,20 @@ internal sealed partial class BattleScene
 {
     private string PlatformSuffix => _setup.Backdrop switch { Backdrop.Forest => "forest", Backdrop.Hall => "hall", Backdrop.Indoor => "indoor", _ => "" };
 
+    /// <summary>The atlas keys of one side's creature: still, breathing, white flash, and whether it is the player's (seen from behind).</summary>
+    private sealed record CreatureKeys(PrefixedKeys Still, PrefixedKeys Breathing, PrefixedKeys White, bool Player);
+
+    // Keys built once per battle or per species instead of formatted every frame.
+    private static readonly CreatureKeys EnemyKeys = new(SpriteKeys.Front, new("front2:"), new("white:"), false);
+    private static readonly CreatureKeys PlayerKeys = new(new("back:"), new("back2:"), new("whiteback:"), true);
+    private static readonly string PlayerPortraitKey = CharacterArt.PortraitKey("player", Direction.Up);
+    private static readonly string[] StatNames = ["Max HP", "Attack", "Defense", "Special", "Speed"];
+    private string? _backdropKey, _enemyPlatformKey, _playerPlatformKey, _trainerPortraitKey;
+    private MoveData? _infoMove;
+    private string _infoPower = "", _infoAccuracy = "";
+    private LevelUp? _levelTextsFor;
+    private readonly string[] _levelValues = new string[5], _levelGains = new string[5];
+
     private Vector2 EnemyPlatform => EnemyBase + new Vector2(-(1 - _introT) * 330, 0);
     private Vector2 PlayerPlatform => PlayerBase + new Vector2((1 - _introT) * 330, 0);
     private Vector2 EnemyTrainerOffset => new(_enemyTrainerX * 120, 0);
@@ -45,7 +59,7 @@ internal sealed partial class BattleScene
     {
         var shake = _shake > 0 ? new Vector2(MathF.Round(MathF.Sin(Age * 90) * 3 * _shake), 0) : Vector2.Zero;
         var bd = _setup.Backdrop;
-        r.Draw(_game.Sprite("backdrop:" + bd), shake);
+        r.Draw(_game.Sprite(_backdropKey ??= "backdrop:" + bd), shake);
         if (bd == Backdrop.Meadow)
             for (int i = 0; i < 3; i++)
             {
@@ -62,20 +76,20 @@ internal sealed partial class BattleScene
 
         var enemyPlat = Drawn(_drawnEnemyPlatform, EnemyPlatform) + shake;
         var playerPlat = Drawn(_drawnPlayerPlatform, PlayerPlatform) + shake;
-        r.Draw(_game.Sprite("platform:enemy" + PlatformSuffix), enemyPlat + new Vector2(0, -2));
-        r.Draw(_game.Sprite("platform:player" + PlatformSuffix), playerPlat + new Vector2(0, -10));
+        r.Draw(_game.Sprite(_enemyPlatformKey ??= "platform:enemy" + PlatformSuffix), enemyPlat + new Vector2(0, -2));
+        r.Draw(_game.Sprite(_playerPlatformKey ??= "platform:player" + PlatformSuffix), playerPlat + new Vector2(0, -10));
 
         // Opposing trainer and the player's own trainer, at battle size.
         if (_setup.Trainer is { } trainerDef && _enemyTrainerX < 1)
         {
-            var look = LookFor(trainerDef);
-            r.Draw(_game.Sprite(CharacterArt.PortraitKey(look.Key, Direction.Down)), enemyPlat + Drawn(_drawnEnemyTrainer, EnemyTrainerOffset));
+            _trainerPortraitKey ??= CharacterArt.PortraitKey(LookFor(trainerDef).Key, Direction.Down);
+            r.Draw(_game.Sprite(_trainerPortraitKey), enemyPlat + Drawn(_drawnEnemyTrainer, EnemyTrainerOffset));
         }
         if (_playerTrainerX < 1)
-            r.Draw(_game.Sprite(CharacterArt.PortraitKey("player", Direction.Up)), playerPlat + Drawn(_drawnPlayerTrainer, PlayerTrainerOffset));
+            r.Draw(_game.Sprite(PlayerPortraitKey), playerPlat + Drawn(_drawnPlayerTrainer, PlayerTrainerOffset));
 
-        DrawCreature(r, _enemy, "front:", "white:", enemyPlat, clipBottom: enemyPlat.Y + 2);
-        DrawCreature(r, _player, "back:", "whiteback:", playerPlat, clipBottom: 180);
+        DrawCreature(r, _enemy, EnemyKeys, enemyPlat, clipBottom: enemyPlat.Y + 2);
+        DrawCreature(r, _player, PlayerKeys, playerPlat, clipBottom: 180);
 
         if (_orbVisible)
         {
@@ -107,22 +121,22 @@ internal sealed partial class BattleScene
     private static void DrawScaled(IRenderer r, Sprite sprite, Vector2 anchor, float scale, Color tint, Vector2 origin)
         => r.Draw(sprite.Texture, sprite.Source, anchor - origin * scale, tint, new DrawOptions(Scale: new Vector2(scale)));
 
-    private void DrawCreature(IRenderer r, Display d, string prefix, string whitePrefix, Vector2 platform, float clipBottom)
+    private void DrawCreature(IRenderer r, Display d, CreatureKeys keys, Vector2 platform, float clipBottom)
     {
         if (!d.Visible || d.Blink) return;
-        bool player = prefix == "back:";
+        bool player = keys.Player;
         var anchor = platform + (player ? new Vector2(0, 0) : new Vector2(0, -2)) + Drawn(d.DrawnOffset, d.Offset);
-        var white = _game.Sprite(whitePrefix + d.Creature.SpeciesId);
+        var white = _game.Sprite(keys.White[d.Creature.SpeciesId]);
         if (!player && d.SinkDepth <= 0)
         {
             // The ground shadow stays on the platform while the creature lunges or hops.
-            var shadow = _game.Sprite("cshadow:" + d.Creature.SpeciesId);
+            var shadow = _game.Sprite(SpriteKeys.Shadow[d.Creature.SpeciesId]);
             r.Draw(shadow, new Vector2(MathF.Round(anchor.X), platform.Y - 2), Color.White.WithAlpha(Math.Clamp(d.Scale, 0, 1)));
         }
         // Idle breathing: alternate with the raised frame while the feet stay planted, out of phase per side.
         bool idle = (_mode != Mode.Busy || d.Offset == Vector2.Zero) && d.White <= 0 && d.TintAlpha <= 0;
         bool breathe = idle && (int)((Age + (player ? 0.45f : 0)) / 0.55f) % 2 == 1;
-        var sprite = _game.Sprite((breathe ? (player ? "back2:" : "front2:") : prefix) + d.Creature.SpeciesId);
+        var sprite = _game.Sprite((breathe ? keys.Breathing : keys.Still)[d.Creature.SpeciesId]);
         float scale = MathF.Max(0.01f, d.Scale);
         if (d.SinkDepth > 0)
         {
@@ -150,7 +164,7 @@ internal sealed partial class BattleScene
         var rect = new RectF(8, 10, 130, 34);
         UiKit.Box(r, rect);
         UiKit.Text(r, Font, _enemy.Creature.Name, rect.X + 8, rect.Y + 6);
-        UiKit.TextRight(r, Font, "Lv" + _enemy.Level, rect.Right - 8, rect.Y + 6);
+        UiKit.TextRight(r, Font, NumberTexts.Level(_enemy.Level), rect.Right - 8, rect.Y + 6);
         if (_setup.Trainer is null && _game.State.Caught.Contains(_enemy.Creature.SpeciesId))
             r.Draw(_game.Sprite("orbsmall"), new Vector2(rect.X + 12 + Font.MeasureWidth(_enemy.Creature.Name), rect.Y + 10));
         UiKit.HpBar(r, Font, rect.X + 8, rect.Y + 19, 98, _enemy.Hp / Math.Max(1, _enemy.MaxHp));
@@ -162,9 +176,9 @@ internal sealed partial class BattleScene
         var rect = new RectF(176, 84, 138, 44);
         UiKit.Box(r, rect);
         UiKit.Text(r, Font, _player.Creature.Name, rect.X + 8, rect.Y + 6);
-        UiKit.TextRight(r, Font, "Lv" + _player.Level, rect.Right - 8, rect.Y + 6);
+        UiKit.TextRight(r, Font, NumberTexts.Level(_player.Level), rect.Right - 8, rect.Y + 6);
         UiKit.HpBar(r, Font, rect.X + 8, rect.Y + 18, 100, _player.Hp / Math.Max(1, _player.MaxHp));
-        UiKit.TextRight(r, Font, $"{(int)MathF.Ceiling(_player.Hp)}/{_player.MaxHp}", rect.Right - 8, rect.Y + 27);
+        UiKit.TextRight(r, Font, NumberTexts.Ratio((int)MathF.Ceiling(_player.Hp), _player.MaxHp), rect.Right - 8, rect.Y + 27);
         UiKit.XpBar(r, rect.X + 8, rect.Y + 37, 80, _player.Xp);
         UiKit.StatusBadge(r, Font, _player.Status, rect.X + 6, rect.Y - 6);
     }
@@ -229,10 +243,11 @@ internal sealed partial class BattleScene
             var m = moves[_moveIndex];
             UiKit.Text(r, Font, "PP", info.X + 8, info.Y + 5, UiKit.Muted);
             var ppColor = m.Pp == 0 ? Color.Hex("e8504a") : m.Pp <= m.Data.Pp / 4 ? Color.Hex("d89a20") : (Color?)null;
-            UiKit.TextRight(r, Font, $"{m.Pp}/{m.Data.Pp}", info.Right - 8, info.Y + 5, ppColor);
+            UiKit.TextRight(r, Font, NumberTexts.Ratio(m.Pp, m.Data.Pp), info.Right - 8, info.Y + 5, ppColor);
+            if (!ReferenceEquals(_infoMove, m.Data)) (_infoMove, _infoPower, _infoAccuracy) = (m.Data, MoveText.Power(m.Data), MoveText.Accuracy(m.Data));
             UiKit.Text(r, Font, "POW", info.X + 8, info.Y + 16, UiKit.Muted);
-            UiKit.Text(r, Font, MoveText.Power(m.Data), info.X + 28, info.Y + 16);
-            UiKit.TextRight(r, Font, MoveText.Accuracy(m.Data), info.Right - 8, info.Y + 16);
+            UiKit.Text(r, Font, _infoPower, info.X + 28, info.Y + 16);
+            UiKit.TextRight(r, Font, _infoAccuracy, info.Right - 8, info.Y + 16);
             UiKit.TypeBadge(r, Font, m.Data.Type, info.X + 8, info.Y + 27);
             float eff = TypeChart.Effectiveness(m.Data.Type, _battle.Enemy.Type);
             if (m.Data.IsDamaging && eff != 1)
@@ -246,14 +261,22 @@ internal sealed partial class BattleScene
     {
         var rect = new RectF(196, 8, 118, 74);
         UiKit.Box(r, rect);
-        string[] names = ["Max HP", "Attack", "Defense", "Special", "Speed"];
+        if (!ReferenceEquals(_levelTextsFor, lp))
+        {
+            _levelTextsFor = lp;
+            for (int i = 0; i < 5; i++)
+            {
+                _levelValues[i] = $"{lp.After[i]}";
+                _levelGains[i] = $"+{lp.After[i] - lp.Before[i]}";
+            }
+        }
         UiKit.Text(r, Font, _levelPanelName ?? "", rect.X + 8, rect.Y + 5, Pal.Coral);
         for (int i = 0; i < 5; i++)
         {
             float y = rect.Y + 17 + i * 11;
-            UiKit.Text(r, Font, names[i], rect.X + 8, y);
-            UiKit.TextRight(r, Font, $"{lp.After[i]}", rect.Right - 28, y);
-            UiKit.TextRight(r, Font, $"+{lp.After[i] - lp.Before[i]}", rect.Right - 7, y, Color.Hex("3f9a4a"));
+            UiKit.Text(r, Font, StatNames[i], rect.X + 8, y);
+            UiKit.TextRight(r, Font, _levelValues[i], rect.Right - 28, y);
+            UiKit.TextRight(r, Font, _levelGains[i], rect.Right - 7, y, Color.Hex("3f9a4a"));
         }
     }
 }

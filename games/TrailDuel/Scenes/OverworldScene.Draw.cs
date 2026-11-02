@@ -14,6 +14,40 @@ internal sealed partial class OverworldScene
 {
     private readonly List<Actor> _rowActors = [];
 
+    // Tile keys built once: formatting them per tile per frame was most of the overworld's garbage.
+    private static readonly string[] FlowerKeys = SpriteKeys.Numbered("t:flowers", 2), TallKeys = SpriteKeys.Numbered("t:tall", 2),
+        PathKeys = SpriteKeys.Numbered("t:path", 16), LedgeKeys = SpriteKeys.Numbered("t:ledge", 4), CarpetKeys = SpriteKeys.Numbered("t:carpet", 16),
+        FloorKeys = SpriteKeys.Numbered("t:floor", 2), GrassKeys = SpriteKeys.Numbered("t:grass", 4), WaterInKeys = SpriteKeys.Numbered("t:waterin", 4),
+        TreeKeys = SpriteKeys.Numbered("t:tree", TileArt.TreeVariants), PineKeys = SpriteKeys.Numbered("t:pine", TileArt.PineVariants),
+        FenceKeys = SpriteKeys.Numbered("t:fence", 4), TableKeys = SpriteKeys.Numbered("t:table", 4), CounterKeys = SpriteKeys.Numbered("t:counter", 16),
+        RustleKeys = SpriteKeys.Numbered("t:rustle", 3);
+    private const int WaterFrames = 3;
+    private static readonly string[] WaterKeys = WaterKeyTable();
+    private MapDef? _mapKeysFor;
+    private string _groundKey = "";
+    private string[] _buildingKeys = [];
+
+    private static string[] WaterKeyTable()
+    {
+        var keys = new string[16 * WaterFrames];
+        for (int mask = 0; mask < 16; mask++)
+            for (int frame = 0; frame < WaterFrames; frame++) keys[mask * WaterFrames + frame] = $"t:water{mask}_{frame}";
+        return keys;
+    }
+
+    private static string WaterKey(int mask, int frame)
+        => (uint)mask < 16 && (uint)frame < WaterFrames ? WaterKeys[mask * WaterFrames + frame] : $"t:water{mask}_{frame}";
+
+    /// <summary>The ground layer and building keys of the current map, rebuilt when the map changes.</summary>
+    private void RefreshMapKeys()
+    {
+        if (_mapKeysFor == _map.Def) return;
+        _mapKeysFor = _map.Def;
+        _groundKey = "ground:" + _map.Def.Id;
+        _buildingKeys = new string[_map.Def.Buildings.Count];
+        for (int i = 0; i < _buildingKeys.Length; i++) _buildingKeys[i] = $"bld:{_map.Def.Id}:{i}";
+    }
+
     /// <summary>Update the drawn positions belong to and how far the frame is past it (1 in fixed-step runs).</summary>
     private long DrawUpdate => Game.UpdateCount;
     private float Blend => Game.FrameBlend;
@@ -33,6 +67,7 @@ internal sealed partial class OverworldScene
 
     private void DrawWorld(IRenderer r)
     {
+        RefreshMapKeys();
         var view = _camera.View;
         int x0 = Math.Max(0, (int)MathF.Floor(view.X / 16) - 1), x1 = Math.Min(_map.Width - 1, (int)MathF.Ceiling(view.Right / 16) + 1);
         int y0 = Math.Max(0, (int)MathF.Floor(view.Y / 16) - 1), y1 = Math.Min(_map.Height - 1, (int)MathF.Ceiling(view.Bottom / 16) + 2);
@@ -41,16 +76,16 @@ internal sealed partial class OverworldScene
         for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++)
             DrawGround(r, x, y);
-        r.Draw(_game.Sprite("ground:" + _map.Def.Id), Vector2.Zero);
+        r.Draw(_game.Sprite(_groundKey), Vector2.Zero);
 
         for (int y = y0; y <= y1; y++)
         {
             for (int x = x0; x <= x1; x++) DrawObject(r, x, y);
-            foreach (var item in _map.ItemBalls) if (item.Y == y) r.Draw(_game.Sprite("itemball"), new Vector2(item.X * 16, item.Y * 16 + MathF.Round(MathX.Wave(Age + item.X, 0.8f, 1))));
+            foreach (var item in _map.Def.Items) if (item.Y == y && !State.Has(item.Flag)) r.Draw(_game.Sprite("itemball"), new Vector2(item.X * 16, item.Y * 16 + MathF.Round(MathX.Wave(Age + item.X, 0.8f, 1))));
             for (int i = 0; i < _map.Def.Buildings.Count; i++)
             {
                 var b = _map.Def.Buildings[i];
-                if (b.Y + b.H - 1 == y) r.Draw(_game.Sprite($"bld:{_map.Def.Id}:{i}"), new Vector2(b.X * 16, b.Y * 16 - BuildingArt.RoofOverhang));
+                if (b.Y + b.H - 1 == y) r.Draw(_game.Sprite(_buildingKeys[i]), new Vector2(b.X * 16, b.Y * 16 - BuildingArt.RoofOverhang));
             }
             _rowActors.Clear();
             foreach (var npc in _map.Npcs) if (npc.Visible && npc.DrawRow == y) _rowActors.Add(npc);
@@ -62,7 +97,7 @@ internal sealed partial class OverworldScene
         foreach (var (rx, ry, time) in _rustles)
         {
             int frame = Math.Min(2, (int)((Age - time) / 0.15f));
-            r.Draw(_game.Sprite($"t:rustle{frame}"), new Vector2(rx * 16, ry * 16));
+            r.Draw(_game.Sprite(SpriteKeys.Pick(RustleKeys, "t:rustle", frame)), new Vector2(rx * 16, ry * 16));
         }
         _dust.Draw(r);
         if (_healGlow >= 0) DrawHealGlow(r);
@@ -81,17 +116,17 @@ internal sealed partial class OverworldScene
         var pos = new Vector2(x * 16, y * 16);
         string? key = kind switch
         {
-            TileKind.Flowers => $"t:flowers{(int)(Age * 1.6f + x * 0.37f + y * 0.21f) % 2}",
-            TileKind.TallGrass => $"t:tall{(int)(Age * 0.9f + (x + y) * 0.5f) % 2}",
-            TileKind.Path => "t:path" + Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Path || id == DoorMarker, outsideMatches: true),
-            TileKind.Water => $"t:water{Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Water, true)}_{(int)(Age * 2.2f) % 3}",
-            TileKind.Ledge => "t:ledge" + ((_map.KindAt(x - 1, y) == TileKind.Ledge ? 1 : 0) | (_map.KindAt(x + 1, y) == TileKind.Ledge ? 2 : 0)),
+            TileKind.Flowers => SpriteKeys.Pick(FlowerKeys, "t:flowers", (int)(Age * 1.6f + x * 0.37f + y * 0.21f) % 2),
+            TileKind.TallGrass => SpriteKeys.Pick(TallKeys, "t:tall", (int)(Age * 0.9f + (x + y) * 0.5f) % 2),
+            TileKind.Path => SpriteKeys.Pick(PathKeys, "t:path", Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Path || id == DoorMarker, outsideMatches: true)),
+            TileKind.Water => WaterKey(Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Water, true), (int)(Age * 2.2f) % 3),
+            TileKind.Ledge => SpriteKeys.Pick(LedgeKeys, "t:ledge", (_map.KindAt(x - 1, y) == TileKind.Ledge ? 1 : 0) | (_map.KindAt(x + 1, y) == TileKind.Ledge ? 2 : 0)),
             TileKind.Wall => _map.KindAt(x, y + 1) == TileKind.Wall ? "t:walltop" : (x % 4 == 2 && !_map.Def.Id.Equals("hall") ? "t:wallwin" : "t:wall"),
             TileKind.Mat => "t:mat",
-            TileKind.Carpet => "t:carpet" + Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Carpet || id == (int)TileKind.Mat, outsideMatches: false),
+            TileKind.Carpet => SpriteKeys.Pick(CarpetKeys, "t:carpet", Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Carpet || id == (int)TileKind.Mat, outsideMatches: false)),
             TileKind.Rug => "t:rug",
             TileKind.Void => null,
-            _ => _map.Def.Id is "hall" or "shrine" ? "t:stone" : _map.Def.Indoor ? $"t:floor{(x + y) % 2}" : $"t:grass{(int)(Art.Hash(x, y, 31) * 4)}",
+            _ => _map.Def.Id is "hall" or "shrine" ? "t:stone" : _map.Def.Indoor ? SpriteKeys.Pick(FloorKeys, "t:floor", (x + y) % 2) : SpriteKeys.Pick(GrassKeys, "t:grass", (int)(Art.Hash(x, y, 31) * 4)),
         };
         if (key is not null) r.Draw(_game.Sprite(key), pos);
         if (kind == TileKind.Water)
@@ -101,7 +136,7 @@ internal sealed partial class OverworldScene
             for (int c = 0; c < 4; c++)
             {
                 int dx = c % 2 == 0 ? -1 : 1, dy = c < 2 ? -1 : 1;
-                if (W(x + dx, y) && W(x, y + dy) && !W(x + dx, y + dy)) r.Draw(_game.Sprite($"t:waterin{c}"), pos);
+                if (W(x + dx, y) && W(x, y + dy) && !W(x + dx, y + dy)) r.Draw(_game.Sprite(WaterInKeys[c]), pos);
             }
         }
     }
@@ -132,16 +167,16 @@ internal sealed partial class OverworldScene
         var pos = new Vector2(x * 16, y * 16);
         string? key = kind switch
         {
-            TileKind.Tree => "t:tree" + (int)(Art.Hash(x, y, 61) * TileArt.TreeVariants),
-            TileKind.Pine => "t:pine" + (int)(Art.Hash(x, y, 62) * TileArt.PineVariants),
+            TileKind.Tree => SpriteKeys.Pick(TreeKeys, "t:tree", (int)(Art.Hash(x, y, 61) * TileArt.TreeVariants)),
+            TileKind.Pine => SpriteKeys.Pick(PineKeys, "t:pine", (int)(Art.Hash(x, y, 62) * TileArt.PineVariants)),
             TileKind.Rock => "t:rock",
             TileKind.Bush => "t:bush",
-            TileKind.Fence => "t:fence" + ((_map.KindAt(x - 1, y) == TileKind.Fence ? 1 : 0) | (_map.KindAt(x + 1, y) == TileKind.Fence ? 2 : 0)),
+            TileKind.Fence => SpriteKeys.Pick(FenceKeys, "t:fence", (_map.KindAt(x - 1, y) == TileKind.Fence ? 1 : 0) | (_map.KindAt(x + 1, y) == TileKind.Fence ? 2 : 0)),
             TileKind.Bookshelf => "t:bookshelf",
             TileKind.Bed => _map.KindAt(x, y - 1) == TileKind.Bed ? "t:bedbottom" : "t:bedtop",
-            TileKind.Table or TileKind.Pedestal => "t:table" + ((IsTable(x - 1, y) ? 1 : 0) | (IsTable(x + 1, y) ? 2 : 0)),
+            TileKind.Table or TileKind.Pedestal => SpriteKeys.Pick(TableKeys, "t:table", (IsTable(x - 1, y) ? 1 : 0) | (IsTable(x + 1, y) ? 2 : 0)),
             TileKind.Plant => "t:plant",
-            TileKind.Counter => "t:counter" + Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Counter, outsideMatches: false),
+            TileKind.Counter => SpriteKeys.Pick(CounterKeys, "t:counter", Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Counter, outsideMatches: false)),
             TileKind.Tv => "t:tv",
             TileKind.Kitchen => "t:kitchen",
             TileKind.Altar => "t:altar",
@@ -241,7 +276,7 @@ internal sealed partial class OverworldScene
         r.FillGradient(new RectF(rect.X + 4, rect.Y + 4, rect.Width - 8, 70), Pal.Sky.WithAlpha(0.6f), Pal.Cream, 6);
         r.Draw(_game.Sprite("platform:enemy"), new Vector2(160, 72));
         float bob = MathF.Round(MathX.Wave(Age, 1.2f, 1.5f));
-        r.Draw(_game.Sprite("front:" + species), new Vector2(160, 74 + bob));
+        r.Draw(_game.Sprite(SpriteKeys.Front[species]), new Vector2(160, 74 + bob));
         UiKit.Text(r, Font, data.Name, rect.X + 10, rect.Y + 82);
         int bw = UiKit.TypeBadgeWidth(Font, data.Type);
         UiKit.TypeBadge(r, Font, data.Type, rect.Right - bw - 10, rect.Y + 81);

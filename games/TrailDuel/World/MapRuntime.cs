@@ -54,14 +54,43 @@ internal sealed class MapRuntime
 
     public IEnumerable<ItemBallDef> ItemBalls => Def.Items.Where(i => !State.Has(i.Flag));
 
-    public ItemBallDef? ItemAt(int x, int y) => ItemBalls.FirstOrDefault(i => i.X == x && i.Y == y);
-    public SignDef? SignAt(int x, int y) => Def.Signs.FirstOrDefault(s => s.X == x && s.Y == y);
-    public WarpDef? WarpAt(int x, int y) => Def.Warps.FirstOrDefault(w => w.X == x && w.Y == y);
-    public TriggerDef? TriggerAt(int x, int y) => Def.Triggers.FirstOrDefault(t => t.X == x && t.Y == y);
-    public BuildingDef? LockedDoorAt(int x, int y) => Def.Buildings.FirstOrDefault(b => b.Locked && x == b.X + b.DoorX && y == b.Y + b.H - 1);
+    // Plain loops: these run per tile while drawing and per step, where LINQ allocated a closure each call.
+    public ItemBallDef? ItemAt(int x, int y)
+    {
+        foreach (var i in Def.Items) if (i.X == x && i.Y == y && !State.Has(i.Flag)) return i;
+        return null;
+    }
+
+    public SignDef? SignAt(int x, int y)
+    {
+        foreach (var s in Def.Signs) if (s.X == x && s.Y == y) return s;
+        return null;
+    }
+
+    public WarpDef? WarpAt(int x, int y)
+    {
+        foreach (var w in Def.Warps) if (w.X == x && w.Y == y) return w;
+        return null;
+    }
+
+    public TriggerDef? TriggerAt(int x, int y)
+    {
+        foreach (var t in Def.Triggers) if (t.X == x && t.Y == y) return t;
+        return null;
+    }
+
+    public BuildingDef? LockedDoorAt(int x, int y)
+    {
+        foreach (var b in Def.Buildings) if (b.Locked && x == b.X + b.DoorX && y == b.Y + b.H - 1) return b;
+        return null;
+    }
 
     /// <summary>NPC standing on, or moving into, a tile.</summary>
-    public Actor? NpcAt(int x, int y) => Npcs.FirstOrDefault(a => a.Visible && a.X == x && a.Y == y);
+    public Actor? NpcAt(int x, int y)
+    {
+        foreach (var a in Npcs) if (a.Visible && a.X == x && a.Y == y) return a;
+        return null;
+    }
 
     public bool Occupied(int x, int y, Actor? player)
         => TileSolid(x, y) || NpcAt(x, y) is not null || ItemAt(x, y) is not null || (player is not null && player.X == x && player.Y == y);

@@ -23,7 +23,11 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
         "Thank you for walking the trail!", "", "", "", "THE END",
     ];
 
+    /// <summary>Lines in capitals are headers (worked out once, not per line per frame).</summary>
+    private static readonly bool[] Headers = Array.ConvertAll(Lines, line => line == line.ToUpperInvariant() && line.Length > 0);
+
     private const float LineHeight = 14;
+    private CachedText _timeText;
     private float _scroll;
     /// <summary>The scroll kept from the previous update, to draw the rolling credits between updates.</summary>
     private Interpolated _drawnScroll;
@@ -73,15 +77,17 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
         {
             float x = _champion ? 160 + (i - (party.Count - 1) / 2f) * MathF.Min(60, 280f / Math.Max(1, party.Count)) : (i * 60 + Age * 22) % 400 - 40;
             float hop = MathF.Abs(MathF.Sin(Age * 3 + i)) * (_champion ? 6 : 3);
-            r.Draw(game.Sprite("cshadow:" + party[i].SpeciesId), new Vector2(MathF.Round(x), 149), Color.White.WithAlpha(1 - hop / 12f));
-            r.Draw(game.Sprite("front:" + party[i].SpeciesId), new Vector2(MathF.Round(x), MathF.Round(150 - hop)));
+            r.Draw(game.Sprite(SpriteKeys.Shadow[party[i].SpeciesId]), new Vector2(MathF.Round(x), 149), Color.White.WithAlpha(1 - hop / 12f));
+            r.Draw(game.Sprite(SpriteKeys.Front[party[i].SpeciesId]), new Vector2(MathF.Round(x), MathF.Round(150 - hop)));
         }
         if (_champion)
         {
             UiKit.Title(r, Font, "TRAIL CHAMPION", new Vector2(160, 40), 2, Pal.Gold);
             UiKit.Title(r, Font, $"Congratulations, {GameState.PlayerName}!", new Vector2(160, 66));
             var t = TimeSpan.FromSeconds(game.State.PlaySeconds);
-            UiKit.Title(r, Font, $"Time {(int)t.TotalHours}:{t.Minutes:00}   Caught {game.State.Caught.Count}/{SpeciesDex.All.Count}", new Vector2(160, 80), 1, Pal.Cream);
+            string time = _timeText.Get((int)t.TotalHours * 60 + t.Minutes, game.State.Caught.Count,
+                static (minutes, caught) => $"Time {minutes / 60}:{minutes % 60:00}   Caught {caught}/{SpeciesDex.All.Count}");
+            UiKit.Title(r, Font, time, new Vector2(160, 80), 1, Pal.Cream);
             for (int i = 0; i < 8; i++)
             {
                 float a = Age * 2 + i * MathF.Tau / 8;
@@ -94,7 +100,7 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
         {
             float y = 180 + i * LineHeight - scroll;
             if (y < -10 || y > 140) continue;
-            bool header = Lines[i] == Lines[i].ToUpperInvariant() && Lines[i].Length > 0;
+            bool header = Headers[i];
             UiKit.Title(r, Font, Lines[i], new Vector2(160, y), Lines[i] is "TRAIL DUEL" or "THE END" ? 2 : 1, header ? Pal.Gold : Pal.White);
         }
     }

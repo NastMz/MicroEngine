@@ -93,5 +93,10 @@ public static class SpeciesDex
 
     public static SpeciesData Get(string id) => Species.TryGetValue(id, out var s) ? s : throw new KeyNotFoundException($"Unknown species '{id}'.");
     public static IReadOnlyList<SpeciesData> All => Ordered;
-    public static int Number(string id) => Ordered.FindIndex(s => s.Id == id) + 1;
+    public static int Number(string id)
+    {
+        // A plain loop: the summary shows the number every frame, and a lambda over the id allocated each call.
+        for (int i = 0; i < Ordered.Count; i++) if (Ordered[i].Id == id) return i + 1;
+        return 0;
+    }
 }
