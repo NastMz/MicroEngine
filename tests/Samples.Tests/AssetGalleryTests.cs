@@ -44,6 +44,86 @@ public sealed class AssetGalleryTests
         Assert.AreEqual("9", profiler.Environment["assets.loaded"]);
     }
 
+    /// <summary>A headless platform whose clock follows the wall clock, as a desktop window's does.</summary>
+    private sealed class RealTimePlatform(HeadlessPlatform inner) : IPlatform
+    {
+        public IGraphicsDevice Graphics => inner.Graphics;
+        public MicroEngine.Audio.IAudioDevice Audio => inner.Audio;
+        public MicroEngine.Input.IInputSource Input => inner.Input;
+        public bool CloseRequested => inner.CloseRequested;
+        public double Now => System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency;
+        public bool RealTime => true;
+        public void PollEvents() => inner.PollEvents();
+        public IRenderer BeginFrame() => inner.BeginFrame();
+        public void EndFrame() => inner.EndFrame();
+        public void SaveScreenshot(string path) => inner.SaveScreenshot(path);
+        public void ToggleFullscreen() { }
+        public void Dispose() => inner.Dispose();
+    }
+
+    /// <summary>Plays the gallery's tour on the CPU reference rasterizer and returns each capture's bytes, by name.</summary>
+    private static Dictionary<string, byte[]> PlayTour()
+    {
+        var directory = Directory.CreateTempSubdirectory("asset-gallery-tour-");
+        try
+        {
+            var game = new GalleryGame();
+            var platform = HeadlessPlatform.For(game.Settings, rasterize: true);
+            var script = InputScript.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scripts", "tour.script")));
+            var result = GameRunner.Run(game, platform, new RunOptions { Script = script, CaptureDirectory = directory.FullName });
+            Assert.IsNull(result.Error, result.Error?.ToString());
+            Assert.HasCount(3, result.Captures);
+            return result.Captures.ToDictionary(path => Path.GetFileName(path), File.ReadAllBytes);
+        }
+        finally { directory.Delete(recursive: true); }
+    }
+
+    [TestMethod]
+    public void EveryScriptedRunOfTheTourCapturesTheSameFrames()
+    {
+        var first = PlayTour();
+        var second = PlayTour();
+        CollectionAssert.AreEquivalent(new[] { "gallery.png", "nearest-level.png", "back.png" }, first.Keys.ToArray());
+        foreach (var (name, bytes) in first)
+            CollectionAssert.AreEqual(bytes, second[name], $"{name} differs between two scripted runs");
+    }
+
+    [TestMethod]
+    public void AScriptedRunShowsNoMeasuredTime()
+    {
+        var game = new GalleryGame();
+        game.InitializeForTest(HeadlessPlatform.For(game.Settings));
+        var scene = (GalleryScene)game.Scenes.Current!;
+        game.StepForTest();
+        Assert.IsFalse(game.RealTime);
+        StringAssert.Matches(scene.StatusLines[0], new System.Text.RegularExpressions.Regex(@"^9 assets, \d+\.\d MB of textures, loaded \(not timed\)$"));
+        StringAssert.DoesNotMatch(string.Join("\n", scene.StatusLines), new System.Text.RegularExpressions.Regex(@"\d+ ms"));
+    }
+
+    [TestMethod]
+    public void AScriptedRunShowsTheLevelScopeLoadedOnTheUpdateItIsAskedFor()
+    {
+        var game = new GalleryGame();
+        game.InitializeForTest(HeadlessPlatform.For(game.Settings));
+        var scene = (GalleryScene)game.Scenes.Current!;
+        game.Input.SetForced("action", true);
+        game.StepForTest();
+        game.Input.SetForced("action", false);
+        Assert.IsTrue(scene.LevelLoaded, "a fixed-step run does not depend on how long the workers take");
+        Assert.AreEqual("Level scope: loaded (action switches)", scene.StatusLines[2]);
+    }
+
+    [TestMethod]
+    public void AnInteractiveRunShowsTheMeasuredLoadTime()
+    {
+        var game = new GalleryGame();
+        game.InitializeForTest(new RealTimePlatform(HeadlessPlatform.For(game.Settings)));
+        var scene = (GalleryScene)game.Scenes.Current!;
+        game.StepForTest();
+        Assert.IsTrue(game.RealTime);
+        StringAssert.Matches(scene.StatusLines[0], new System.Text.RegularExpressions.Regex(@"^9 assets, \d+\.\d MB of textures, loaded in \d+ ms$"));
+    }
+
     [TestMethod]
     public void ConfirmSwitchesSamplingAndActionLoadsAndReleasesTheLevelScope()
     {

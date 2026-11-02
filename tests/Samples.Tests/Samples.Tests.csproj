@@ -15,4 +15,8 @@
     <ProjectReference Include="../../samples/Examples/Examples.csproj" />
     <ProjectReference Include="../../samples/AssetGallery/AssetGallery.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The gallery's tour, played by the tests as the launcher plays it. -->
+    <None Include="../../samples/AssetGallery/scripts/tour.script" Link="scripts/tour.script" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

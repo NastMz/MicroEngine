@@ -10,7 +10,9 @@ namespace AssetGallery;
 /// <summary>
 /// One screen: a backdrop from PNG and JPEG files, animated characters from two atlas formats, a folder atlas, text in three
 /// fonts at several sizes, and the asset cache's own numbers. Confirm switches the characters between linear and nearest
-/// sampling; action loads (or releases) a "level" scope with a tile atlas.
+/// sampling; action loads (or releases) a "level" scope with a tile atlas. A fixed-step run (scripted, hidden or headless)
+/// shows no wall-clock measurement and finishes the level scope on the update that asks for it, so its frames are the
+/// same on every run.
 /// </summary>
 public sealed class GalleryScene(GalleryGame game) : Scene
 {
@@ -27,6 +29,8 @@ public sealed class GalleryScene(GalleryGame game) : Scene
 
     /// <summary>Whether the level scope's tile atlas is loaded.</summary>
     public bool LevelLoaded => _tiles is not null;
+    /// <summary>The status lines the screen shows now.</summary>
+    public IReadOnlyList<string> StatusLines => Status();
     /// <summary>The sampling the character atlases use now.</summary>
     public TextureFilter CharacterFilter => game.Players.Texture.Filter;
 
@@ -47,6 +51,8 @@ public sealed class GalleryScene(GalleryGame game) : Scene
                 // uploads within the frame budget, so switching levels during play does not stall a frame.
                 _level = Assets.CreateScope("level");
                 _loading = _level.Preload("atlases/tiles.xml");
+                // A scripted run finishes the batch now: how many frames the workers take must not show in its captures.
+                if (!game.RealTime) _loading.Wait();
             }
             else
             {
@@ -123,9 +129,13 @@ public sealed class GalleryScene(GalleryGame game) : Scene
         if (now == _shown) return _status;
         _shown = now;
         var stats = Assets.Statistics;
+        // The load time is a wall-clock measurement: a scripted run hides it so its captures are the same on every run.
+        var loaded = game.RealTime
+            ? string.Create(CultureInfo.InvariantCulture, $"loaded in {stats.LoadMilliseconds:0} ms")
+            : "loaded (not timed)";
         return _status =
         [
-            string.Create(CultureInfo.InvariantCulture, $"{stats.Count} assets, {stats.TextureBytes / 1048576.0:0.0} MB of textures, loaded in {stats.LoadMilliseconds:0} ms"),
+            string.Create(CultureInfo.InvariantCulture, $"{stats.Count} assets, {stats.TextureBytes / 1048576.0:0.0} MB of textures, {loaded}"),
             $"Characters: {CharacterFilter} sampling (confirm switches)",
             $"Level scope: {(LevelLoaded ? "loaded" : _loading is not null ? "loading" : "released")} (action switches)",
             $"Glyph pages: {now.Item5}",
