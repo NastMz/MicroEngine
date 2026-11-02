@@ -47,10 +47,10 @@ public sealed class GalleryGame : Game
     public Texture Dusk { get; private set; } = null!;
 
     /// <summary>
-    /// Whether time follows the wall clock (an interactive run) rather than one fixed step per frame (a scripted, hidden
-    /// or headless run, whose frames must not depend on how long anything took).
+    /// Whether the loop runs in real time (an interactive run) rather than one fixed step per frame (deterministic time: a
+    /// scripted or headless run, whose frames must not depend on how long anything took).
     /// </summary>
-    public bool RealTime => Platform.RealTime;
+    public bool RealTime => TimeSettings.Mode == MicroEngine.Kernel.TimeMode.RealTime;
 
     /// <inheritdoc/>
     protected override void Load()

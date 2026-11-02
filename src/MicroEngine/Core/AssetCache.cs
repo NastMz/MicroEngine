@@ -134,6 +134,10 @@ public sealed class AssetCache : IDisposable
         }
     }
 
+    /// <summary>Where warnings about loads during play go: the game's <see cref="Kernel.ILog"/>, or standard error when none was set.</summary>
+    internal Kernel.ILog? Log { get; set; }
+    private static readonly Kernel.ILog DefaultLog = new Kernel.ConsoleLog();
+
     /// <summary>
     /// Whether the game is past its first update; loads from then on count as loads during play (<see cref="AssetInfo.DuringPlay"/>).
     /// The engine sets it.
@@ -534,7 +538,7 @@ public sealed class AssetCache : IDisposable
         Hold(key, entry);
         double hitch = blocking ?? milliseconds;
         if (Playing && SlowLoadMilliseconds > 0 && hitch >= SlowLoadMilliseconds && _warned.Add(key.Kind + "|" + key.Path))
-            Console.Error.WriteLine($"assets: {key.Kind} '{key.Path}' was loaded during play and took {hitch:0.0} ms (a visible hitch); load it in Load, or Preload it behind a loading screen.");
+            (Log ?? DefaultLog).Write(Kernel.LogLevel.Warning, "assets", $"{key.Kind} '{key.Path}' was loaded during play and took {hitch:0.0} ms (a visible hitch); load it in Load, or Preload it behind a loading screen.");
     }
 
     /// <summary>Whether any scope has <paramref name="path"/> loaded as <paramref name="kind"/> (with any options); this scope then holds it.</summary>

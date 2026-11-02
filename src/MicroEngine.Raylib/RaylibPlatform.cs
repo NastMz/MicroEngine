@@ -112,7 +112,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
     /// <inheritdoc/>
     public bool CloseRequested => !OperatingSystem.IsBrowser() && Rl.WindowShouldClose();
     /// <inheritdoc/>
-    public double Now => _fixedStep ? _frames / (double)_settings.UpdateRate : Rl.GetTime();
+    public double Now => Rl.GetTime();
     /// <inheritdoc/>
     public bool RealTime => !_fixedStep;
     /// <summary>The monitor's refresh rate when frames are paced to it (a visible real-time desktop window with VSync); 0 otherwise.</summary>

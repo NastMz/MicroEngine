@@ -55,12 +55,20 @@ restarts, and keeps saves in `localStorage`. `microengine package web` builds an
 ## The frame
 
 `GameLoop` runs one frame per `Tick()`; `GameRunner.Run(game, platform, options)` ticks it until the game
-ends. Hosts that outlive a run (a browser page) use `GameSession`, which builds the game and platform, ticks the
+ends. Next SDK version (not published yet: arrives with the next SDK version): the loop owns time; the platform only
+supplies a monotonic clock,
+and the engine's `FrameClock` turns each frame's time into fixed steps following `TimeSettings` (fixed rate, at most
+`MaxStepsPerFrame` steps, frames of at most `MaxFrameDelta`, real or deterministic time). A frame runs the engine's
+frame schedule: `BeginFrame` and `Input` once, `PreFixed`, `FixedUpdate`, `Physics` and `PostFixed` once per step,
+then `Update`, `LateUpdate`, `Extract`, `Render`, `Present` and `EndFrame`. `Game` registers the built-in systems
+(`engine.assets`, `engine.touch`, `engine.input`, `engine.time`, `engine.scenes`, `engine.audio`,
+`engine.achievements`, `engine.input.end`, `engine.render`, `engine.present`...) in the order listed below, and a game
+adds its own from `Game.Configure`. Hosts that outlive a run (a browser page) use `GameSession`, which builds the game and platform, ticks the
 loop from `requestAnimationFrame` and releases the platform when the run ends. Each frame:
 
 1. Poll platform events. While the platform is suspended (a phone app in the background) the frame stops here:
    no simulation and no rendering; on the way out of suspension the clock restarts, so the time away is not simulated.
-2. Accumulate wall-clock time (headless: exactly one step per frame).
+2. Accumulate wall-clock time in real time, exactly one step in deterministic time (headless and scripted runs by default).
 3. Hand the frame's touches to the game's on-screen controls (`VirtualControls`), which update their state and
    drawing immediately.
 4. For each fixed step (60 Hz, at most five per frame): apply scripted input, sample devices and action sources
@@ -123,6 +131,7 @@ In short:
 
 ## Testing a game
 
-- `HeadlessPlatform` runs a game without a window or sound, one step per frame, so tests are deterministic.
+- `HeadlessPlatform` runs a game without a window or sound; runs on it default to deterministic time (one step per
+  frame), so tests are reproducible.
 - Any game accepts `--script file --hidden --captures dir` to replay input and save 3× PNG captures, for visual
   review and screenshots ([Testing](examples/testing.md)).

@@ -420,6 +420,8 @@ On the desktop, a game started through `DesktopLauncher` plays a script when it 
 where captures go ([Backends](backends.md#choosing-a-platform)).
 
 On desktop a script implies a fixed step (one update per frame) and seed 1 unless `--seed` is given, so the run and its captures are reproducible.
+Next SDK version (not published yet: arrives with the next SDK version): the fixed step is the loop's deterministic
+time mode; `--time realtime` plays a script in real time instead, and a hidden window alone no longer implies either.
 
 ## Testing with touches
 

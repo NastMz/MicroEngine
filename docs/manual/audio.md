@@ -125,7 +125,9 @@ Next SDK version (not published yet: arrives with the next SDK version):
 
 - Runs nobody listens to are silent: `PlatformRequest.AudioOutput` (`--audio`) opens a sound device only for visible
   real-time runs by default, never for `--hidden`, `--script` or headless runs. `AudioOutput.Device` (`--audio device`)
-  asks for one anyway; `AudioOutput.Silent` never opens one.
+  asks for one anyway; `AudioOutput.Silent` never opens one. In the version after that, the default follows the
+  loop's time mode instead of the window: a real-time run opens a device (a hidden one too, unless it passes
+  `--audio silent` or `--mute`), a deterministic-time run (`--script`, `--time deterministic`, headless) does not.
 - `CaptureAudioDevice` records what would have been heard: it mixes sound effects (volume, pitch, balance panning) and
   music (looping, pause, volume) one game step per update, so the same run always gives the same samples. Tests read
   its `Output` clip (waves, durations, silences, amplitudes) and `Played` list; `--audio-capture FILE` writes it as a

@@ -190,7 +190,9 @@ done: 30 updates, 30 frames
 - **Rendering features beyond `IRenderer`** (shaders, render targets) cannot be added from a game: the renderer contract
   has no hook for them.
 - **The game loop** (fixed step, order of a frame) is the engine's; a host that drives frames itself uses
-  `GameSession` ([Game lifecycle and time](lifecycle.md#loop-runner-and-session)).
+  `GameSession` ([Game lifecycle and time](lifecycle.md#loop-runner-and-session)). Next SDK version (not published yet:
+  arrives with the next SDK version): a game adds its own systems to the frame's phases, replaces built-in services and
+  edits the time policy from `Game.Configure` ([Modules and the frame schedule](lifecycle.md#modules-and-the-frame-schedule)).
 
 ## Related
 

@@ -10,7 +10,7 @@ namespace AssetGallery;
 /// <summary>
 /// One screen: a backdrop from PNG and JPEG files, animated characters from two atlas formats, a folder atlas, text in three
 /// fonts at several sizes, and the asset cache's own numbers. Confirm switches the characters between linear and nearest
-/// sampling; action loads (or releases) a "level" scope with a tile atlas. A fixed-step run (scripted, hidden or headless)
+/// sampling; action loads (or releases) a "level" scope with a tile atlas. A deterministic-time run (scripted or headless)
 /// shows no wall-clock measurement and finishes the level scope on the update that asks for it, so its frames are the
 /// same on every run.
 /// </summary>

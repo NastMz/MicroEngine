@@ -40,6 +40,13 @@ public sealed record RunOptions
     /// them); null uses <see cref="GameSettings.Graphics"/>.
     /// </summary>
     public GraphicsSettings? Graphics { get; init; }
+    /// <summary>
+    /// How the loop advances time (the launcher's <c>--time</c>): <see cref="Kernel.TimeMode.RealTime"/> with the wall
+    /// clock, or <see cref="Kernel.TimeMode.Deterministic"/>, one fixed step per frame. It wins over the game's
+    /// <see cref="Game.Configure"/>; null (the default) keeps the game's choice, else the platform's preference
+    /// (<see cref="IPlatform.RealTime"/>).
+    /// </summary>
+    public Kernel.TimeMode? TimeMode { get; init; }
 }
 
 /// <summary>How a run ended.</summary>
@@ -67,11 +74,13 @@ public static class GameRunner
 }
 
 /// <summary>
-/// The fixed-timestep loop, one frame per <see cref="Tick"/>: input is sampled once per step, the
-/// simulation advances in exact steps (at most five per frame to avoid a spiral of death), and
-/// rendering happens once per frame. Headless platforms advance exactly one step per frame, which
-/// makes scripted runs fully deterministic. Hosts that cannot block, such as a browser driving frames
-/// from <c>requestAnimationFrame</c>, call <see cref="Tick"/> themselves; errors are captured, never thrown.
+/// The loop, one frame per <see cref="Tick"/>. It owns time: the platform only supplies a monotonic clock
+/// (<see cref="IPlatform.Now"/>), and the engine's <see cref="Kernel.FrameClock"/> turns each frame's time into fixed
+/// steps following the game's <see cref="Kernel.TimeSettings"/> (at most <c>MaxStepsPerFrame</c> a frame, frames of at
+/// most <c>MaxFrameDelta</c>). Each frame runs the engine's frame schedule: the per-frame phases, the four fixed phases
+/// once per step, then the update, drawing and presentation phases. In deterministic time every frame is exactly one
+/// step, which makes scripted runs reproducible. Hosts that cannot block, such as a browser driving frames from
+/// <c>requestAnimationFrame</c>, call <see cref="Tick"/> themselves; errors are captured, never thrown.
 /// </summary>
 public sealed class GameLoop
 {
@@ -79,10 +88,13 @@ public sealed class GameLoop
     private readonly IPlatform _platform;
     private readonly RunOptions _options;
     private readonly List<string> _captures = [];
-    private double _step, _accumulator, _last, _lastTouch;
+    private Kernel.Engine? _engine;
+    private bool _realTime;
+    private double _last;
     private long _frames;
     private bool _running;
     private bool _suspended;
+    private bool _closeAsked, _closeAccepted;
     private Exception? _error;
     private RunResult? _result;
 
@@ -107,15 +119,19 @@ public sealed class GameLoop
         try
         {
             var profiler = _options.Profiler;
+            // Before the game exists only the run's choice and the platform's preference are known; the start screen
+            // shows only in real time.
+            _realTime = (_options.TimeMode ?? (_platform.RealTime ? Kernel.TimeMode.RealTime : Kernel.TimeMode.Deterministic)) == Kernel.TimeMode.RealTime;
             ShowStartScreen();
             profiler?.Phase("start screen");
-            _game.Initialize(_platform, _options.Seed, _options.Graphics ?? _game.Settings.Graphics);
+            _game.Initialize(_platform, _options.Seed, _options.Graphics ?? _game.Settings.Graphics, _options.TimeMode, AddRunSystems);
+            _engine = _game.Engine;
+            _realTime = _engine.Clock.Mode == Kernel.TimeMode.RealTime;
             profiler?.Phase("load");
             if (profiler is not null) profiler.DisplayRate = _platform.DisplayRate;
             _platform.Letterbox = _game.Settings.Letterbox;
             if (_options.Mute) _game.Audio.SfxVolume = 0;
             if (_options.Mute) _game.Audio.MusicVolume = 0;
-            _step = 1.0 / _game.Settings.UpdateRate;
             _last = _platform.Now;
             _running = true;
         }
@@ -124,6 +140,18 @@ public sealed class GameLoop
             _error = e;
         }
         return _running;
+    }
+
+    /// <summary>The run's own systems: a script's touches and forced actions, just before the engine reads them.</summary>
+    private void AddRunSystems(Kernel.EngineBuilder builder)
+    {
+        if (_options.Script is not { } script) return;
+        builder.Schedule.Add(Kernel.FramePhase.Input, "run.script.touches", _ => script.ApplyTouches(_game.UpdateCount, _game.Touch), before: "engine.touch");
+        builder.Schedule.Add(Kernel.FramePhase.PreFixed, "run.script.input", _ =>
+        {
+            script.Apply(_game.UpdateCount, _game.Input);
+            script.ApplyPrompts(_game.UpdateCount, _game.Prompts);
+        }, before: "engine.input");
     }
 
     private bool _presented;
@@ -138,7 +166,7 @@ public sealed class GameLoop
     /// <summary>Presents the start screen once, so the window shows the game's colour and image while it loads.</summary>
     private void ShowStartScreen()
     {
-        if (!_options.StartScreen || !_platform.RealTime || AppIdentity.Of(_game) is not { Splash: true } identity) return;
+        if (!_options.StartScreen || !_realTime || AppIdentity.Of(_game) is not { Splash: true } identity) return;
         try
         {
             _platform.PollEvents();
@@ -159,7 +187,7 @@ public sealed class GameLoop
         if (!_running) return false;
         try
         {
-            if (_platform.CloseRequested || _game.QuitRequested) return _running = false;
+            if (CloseAccepted() || _game.QuitRequested) return _running = false;
             _running = !Frame();
         }
         catch (Exception e)
@@ -170,13 +198,28 @@ public sealed class GameLoop
         return _running;
     }
 
+    /// <summary>
+    /// Whether the platform's close request (the window's close button) ends the run: asked once per request through
+    /// <see cref="Kernel.IEngineLifecycle.QuitRequested"/>, whose handlers may veto it.
+    /// </summary>
+    private bool CloseAccepted()
+    {
+        if (!_platform.CloseRequested) return _closeAsked = false;
+        if (!_closeAsked)
+        {
+            _closeAsked = true;
+            _closeAccepted = _engine!.Lifecycle.RaiseQuitRequested();
+        }
+        return _closeAccepted;
+    }
+
     /// <returns>True when the run must stop after this frame.</returns>
     private bool Frame()
     {
         if (!Limit()) return false;
         if (_options.Profiler is { } profiler) return ProfiledFrame(profiler);
         _platform.PollEvents();
-        if (FollowSuspension()) return _platform.CloseRequested || _game.QuitRequested;
+        if (FollowSuspension()) return CloseAccepted() || _game.QuitRequested;
         var (stop, capture) = Update();
         Render();
         return EndOfFrame(stop, capture);
@@ -194,14 +237,19 @@ public sealed class GameLoop
         _frameStart = start;
         _platform.PollEvents();
         long polled = Stopwatch.GetTimestamp();
-        if (FollowSuspension()) return _platform.CloseRequested || _game.QuitRequested;
+        if (FollowSuspension()) return CloseAccepted() || _game.QuitRequested;
         long updates = _game.UpdateCount;
         var (stop, capture) = Update();
+        var engine = _engine!;
+        var frame = engine.Clock.Context;
+        engine.Run(Kernel.FramePhase.Update, frame);
+        engine.Run(Kernel.FramePhase.LateUpdate, frame);
         long updated = Stopwatch.GetTimestamp();
-        var renderer = _platform.BeginFrame();
-        _game.Render(renderer);
+        engine.Run(Kernel.FramePhase.Extract, frame);
+        engine.Run(Kernel.FramePhase.Render, frame);
         long rendered = Stopwatch.GetTimestamp();
-        _platform.EndFrame();
+        engine.Run(Kernel.FramePhase.Present, frame);
+        engine.Run(Kernel.FramePhase.EndFrame, frame);
         long presented = Stopwatch.GetTimestamp();
         profiler.Add(new FrameSample(interval,
             Stopwatch.GetElapsedTime(start, polled).TotalMilliseconds,
@@ -210,7 +258,7 @@ public sealed class GameLoop
             Stopwatch.GetElapsedTime(rendered, presented).TotalMilliseconds,
             (int)(_game.UpdateCount - updates),
             _game.Time,
-            _game.Time - (1 - _game.FrameBlend) * _step,
+            _game.Time - (1 - _game.FrameBlend) * engine.Clock.FixedDelta,
             GC.GetAllocatedBytesForCurrentThread() - allocated,
             GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2) - collections));
         if (_frames == 0) profiler.Phase("first frame");
@@ -223,13 +271,14 @@ public sealed class GameLoop
         if (_platform.Suspended != _suspended)
         {
             _suspended = !_suspended;
-            if (_suspended) _game.Suspend();
+            // The game's own handling (music, achievements, fingers, OnSuspended/OnResumed) is the first handler.
+            if (_suspended) _engine!.Lifecycle.RaiseSuspending();
             else
             {
                 // The time spent away is not simulated.
                 _last = _platform.Now;
-                _accumulator = 0;
-                _game.Resume();
+                _engine!.Clock.DiscardPending();
+                _engine.Lifecycle.RaiseResumed();
             }
         }
         return _suspended;
@@ -238,31 +287,27 @@ public sealed class GameLoop
     /// <summary>Runs the fixed steps the elapsed time calls for; returns whether the run must stop and the capture due.</summary>
     private (bool Stop, string? Capture) Update()
     {
-        // Preloaded assets finish within their per-frame budget before the frame's updates.
-        _game.Assets.Update();
-        if (_platform.RealTime)
+        var engine = _engine!;
+        var clock = engine.Clock;
+        double elapsed = 0;
+        if (_realTime)
         {
             double now = _platform.Now;
-            _accumulator += Paced(Math.Min(now - _last, 0.25));
+            elapsed = Paced(clock.ClampElapsed(now - _last));
             _last = now;
         }
-        else _accumulator += _step;
-        _options.Script?.ApplyTouches(_game.UpdateCount, _game.Touch);
-        _game.UpdateTouch(_platform.Touch, (float)Math.Clamp(_platform.Now - _lastTouch, 0, 0.25));
-        _lastTouch = _platform.Now;
+        clock.BeginFrame(elapsed);
+        var frame = clock.Context;
+        // Preloaded assets finish within their per-frame budget before the frame's updates; touches follow the frame.
+        engine.Run(Kernel.FramePhase.BeginFrame, frame);
+        engine.Run(Kernel.FramePhase.Input, frame);
 
-        int steps = 0;
         string? capture = null;
         bool stop = false;
         var script = _options.Script;
-        while (_accumulator >= _step - 1e-9 && steps < 5)
+        while (clock.TryStep(out var step))
         {
-            script?.Apply(_game.UpdateCount, _game.Input);
-            script?.ApplyPrompts(_game.UpdateCount, _game.Prompts);
-            _game.Input.Sample(_platform.Input);
-            _game.Step((float)_step);
-            _accumulator -= _step;
-            steps++;
+            engine.RunFixedStep(step);
             if (script?.CaptureAt(_game.UpdateCount) is { } name) capture = name;
             if (script?.QuitAt(_game.UpdateCount) == true || _options.MaxUpdates > 0 && _game.UpdateCount >= _options.MaxUpdates)
             {
@@ -271,9 +316,9 @@ public sealed class GameLoop
             }
             if (capture is not null) break;
         }
-        if (steps == 5) _accumulator = Math.Min(_accumulator, _step);
-        // One step per frame leaves nothing between updates: the frame is the update (Lerp at 1 draws it exactly).
-        _game.FrameBlend = _platform.RealTime ? (float)Math.Clamp(_accumulator / _step, 0, 1) : 1;
+        clock.EndSteps();
+        // Deterministic time leaves nothing between updates: the frame is the update (Lerp at 1 draws it exactly).
+        _game.FrameBlend = clock.Blend;
         return (stop, capture);
     }
 
@@ -290,7 +335,7 @@ public sealed class GameLoop
     private bool Limit()
     {
         int limit = _game.Screen.FrameRateLimit;
-        if (limit <= 0 || !_platform.RealTime) { _nextFrame = 0; return true; }
+        if (limit <= 0 || !_realTime) { _nextFrame = 0; return true; }
         double period = 1.0 / limit, now = _platform.Now;
         // The first limited frame, one late by more than a period (a hitch), or a schedule further ahead than a period
         // (the limit was raised): start a new schedule. The margin keeps a frame that took no time on the schedule.
@@ -313,7 +358,7 @@ public sealed class GameLoop
         double display = _platform.DisplayRate;
         if (display > 0) return display;
         int limit = _game.Screen.FrameRateLimit;
-        return limit > 0 && _platform.RealTime ? limit : 0;
+        return limit > 0 && _realTime ? limit : 0;
     }
 
     /// <summary>
@@ -364,11 +409,17 @@ public sealed class GameLoop
         return shown;
     }
 
+    /// <summary>The once-per-frame phases after the steps: update at the display's rate, extract, draw, present, end.</summary>
     private void Render()
     {
-        var renderer = _platform.BeginFrame();
-        _game.Render(renderer);
-        _platform.EndFrame();
+        var engine = _engine!;
+        var frame = engine.Clock.Context;
+        engine.Run(Kernel.FramePhase.Update, frame);
+        engine.Run(Kernel.FramePhase.LateUpdate, frame);
+        engine.Run(Kernel.FramePhase.Extract, frame);
+        engine.Run(Kernel.FramePhase.Render, frame);
+        engine.Run(Kernel.FramePhase.Present, frame);
+        engine.Run(Kernel.FramePhase.EndFrame, frame);
     }
 
     /// <summary>Counts the frame, writes its capture, and returns whether the run stops after it.</summary>
@@ -383,7 +434,7 @@ public sealed class GameLoop
             _platform.SaveScreenshot(path);
             _captures.Add(path);
         }
-        return stop || _platform.CloseRequested || _game.QuitRequested;
+        return stop || CloseAccepted() || _game.QuitRequested;
     }
 
     /// <summary>Shuts the game down (once) and reports the run.</summary>

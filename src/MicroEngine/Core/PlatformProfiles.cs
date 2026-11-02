@@ -27,13 +27,18 @@ public sealed record PlatformRequest(GameSettings Settings)
     public int? Scale { get; init; }
     /// <summary>Renders into a hidden window (captures still work).</summary>
     public bool Hidden { get; init; }
-    /// <summary>One simulation step per frame instead of wall-clock time (scripted runs).</summary>
+    /// <summary>
+    /// The run uses deterministic time (one simulation step per frame, <see cref="Kernel.TimeMode.Deterministic"/>):
+    /// the backend reports it as its preference (<see cref="IPlatform.RealTime"/> false), does not wait for the display
+    /// and does not hold devices behind a start screen. It never changes the backend's clock, which stays monotonic.
+    /// </summary>
     public bool FixedStep { get; init; }
     /// <summary>No sound: the backend opens no audio device.</summary>
     public bool Mute { get; init; }
     /// <summary>
     /// Whether the backend may open a physical audio device. <see cref="AudioOutput.Automatic"/> (the default) opens one
-    /// only for runs a player watches: not for hidden windows or fixed-step (scripted) runs, which are checks and tests.
+    /// for real-time runs, hidden windows included, and none for deterministic-time runs (<see cref="FixedStep"/>),
+    /// whose sound would not follow the wall clock.
     /// </summary>
     public AudioOutput AudioOutput { get; init; }
     /// <summary>
@@ -53,7 +58,7 @@ public sealed record PlatformRequest(GameSettings Settings)
     {
         AudioOutput.Device => true,
         AudioOutput.Silent => false,
-        _ => !Hidden && !FixedStep,
+        _ => !FixedStep,
     };
 }
 
@@ -76,7 +81,7 @@ public enum GpuPreference
 /// <summary>Where a run's sound may go (<see cref="PlatformRequest.AudioOutput"/>, the launcher's <c>--audio</c>).</summary>
 public enum AudioOutput
 {
-    /// <summary>A physical device for runs a player watches; none for hidden windows and fixed-step (scripted) runs.</summary>
+    /// <summary>A physical device for real-time runs (hidden windows included); none for deterministic-time (scripted) runs.</summary>
     Automatic,
     /// <summary>Always a physical device, for listening checks and package checks that must prove a device opens.</summary>
     Device,

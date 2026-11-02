@@ -145,7 +145,7 @@ public sealed class ComposedPlatformTests
         Assert.AreEqual(direct.Touch is null, composed.Touch is null);
         Assert.AreEqual(direct.Letterbox, composed.Letterbox);
         for (int i = 0; i < 6; i++) { direct.PollEvents(); composed.PollEvents(); }
-        Assert.AreEqual(direct.Now, composed.Now);
+        Assert.AreEqual(direct.Now, composed.Now, 0.5, "both are headless monotonic clocks started moments apart");
         Assert.AreEqual(direct.Wait(0), composed.Wait(0));
     }
 

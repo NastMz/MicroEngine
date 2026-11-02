@@ -6,7 +6,7 @@ using MicroEngine.Input;
 namespace MicroEngine.Core;
 
 /// <summary>
-/// A windowless platform: deterministic time, no devices, and a renderer that counts calls (or, with
+/// A windowless platform: deterministic time by default (<see cref="RealTime"/> is false), no devices, and a renderer that counts calls (or, with
 /// <see cref="Rasterize"/>, also records them and draws them with the CPU reference rasterizer). Used by automated tests
 /// and CI to play whole games through scripts.
 /// </summary>
@@ -15,7 +15,6 @@ public sealed class HeadlessPlatform : IPlatform
     private readonly int _width, _height;
     private HeadlessRenderer _renderer;
     private HeadlessGraphicsDevice _graphics = new();
-    private int _frames;
     /// <summary>Creates a headless platform whose renderer reports a <paramref name="width"/> × <paramref name="height"/> canvas.</summary>
     public HeadlessPlatform(int width = 320, int height = 180)
     {
@@ -57,38 +56,31 @@ public sealed class HeadlessPlatform : IPlatform
     public ITouchScreen Touch => TouchScreen;
     /// <summary>Set it to true to stop the loop at the next frame, as if the window closed.</summary>
     public bool CloseRequested { get; set; }
-    /// <summary>Simulated time: one update (1/<see cref="UpdateRate"/> second) per frame polled, so it equals <c>Game.Time</c>.</summary>
-    public double Now => _frames / (double)UpdateRate;
     /// <summary>
-    /// Updates per simulated second, which should be the game's <see cref="GameSettings.UpdateRate"/> (60 by default):
-    /// <see cref="For(GameSettings)"/> and <see cref="Profile"/> take it from the settings.
+    /// A monotonic clock in seconds since the platform was created. The loop owns time: in deterministic time (the
+    /// default here) it never reads this clock to decide how many steps a frame runs.
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">The value is zero or negative.</exception>
-    public int UpdateRate
-    {
-        get => _updateRate;
-        init => _updateRate = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), "The update rate must be positive.");
-    }
-    private readonly int _updateRate = 60;
-    /// <summary>Always false: the loop advances exactly one update per frame.</summary>
+    public double Now => _clock.Elapsed.TotalSeconds;
+    private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
+    /// <summary>False: runs that choose no time mode advance exactly one update per frame.</summary>
     public bool RealTime => false;
     /// <summary>The renderer, typed so tests can read its counters.</summary>
     public HeadlessRenderer Renderer => _renderer;
     /// <summary>Paths of the screenshots requested, in order; a file is written only when <see cref="Rasterize"/> is on.</summary>
     public List<string> Screenshots { get; } = [];
 
-    /// <summary>A headless platform with the virtual size and update rate of <paramref name="settings"/>.</summary>
-    public static HeadlessPlatform For(GameSettings settings) => new(settings.VirtualWidth, settings.VirtualHeight) { UpdateRate = settings.UpdateRate };
+    /// <summary>A headless platform with the virtual size of <paramref name="settings"/>.</summary>
+    public static HeadlessPlatform For(GameSettings settings) => new(settings.VirtualWidth, settings.VirtualHeight);
 
-    /// <summary>A headless platform with the virtual size and update rate of <paramref name="settings"/>, rasterizing when <paramref name="rasterize"/> is true (see <see cref="Rasterize"/>).</summary>
+    /// <summary>A headless platform with the virtual size of <paramref name="settings"/>, rasterizing when <paramref name="rasterize"/> is true (see <see cref="Rasterize"/>).</summary>
     public static HeadlessPlatform For(GameSettings settings, bool rasterize) =>
-        new(settings.VirtualWidth, settings.VirtualHeight) { UpdateRate = settings.UpdateRate, Rasterize = rasterize };
+        new(settings.VirtualWidth, settings.VirtualHeight) { Rasterize = rasterize };
 
     /// <summary>The headless platform as a catalog entry (<c>--platform headless</c>, <c>--headless</c>).</summary>
     public static PlatformProfile Profile { get; } = new("headless", "no window, devices or sound; one step per frame, for tests and CI", request => For(request.Settings));
 
-    /// <summary>Advances simulated time by one frame.</summary>
-    public void PollEvents() => _frames++;
+    /// <summary>Does nothing: a headless platform has no events.</summary>
+    public void PollEvents() { }
     /// <inheritdoc/>
     public IRenderer BeginFrame() { _renderer.Reset(); return _renderer; }
     /// <inheritdoc/>
