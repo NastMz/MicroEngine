@@ -103,7 +103,7 @@ public HeadlessInput Keys { get; }
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Now"></a> Now
 
-Simulated time: 1/60 second per frame polled.
+Simulated time: one update (1/[UpdateRate](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_UpdateRate) second) per frame polled, so it equals <code>Game.Time</code>.
 
 ```csharp
 public double Now { get; }
@@ -197,6 +197,25 @@ public HeadlessTouchScreen TouchScreen { get; }
 
  [HeadlessTouchScreen](MicroEngine.Core.HeadlessTouchScreen.md)
 
+### <a id="MicroEngine_Core_HeadlessPlatform_UpdateRate"></a> UpdateRate
+
+Updates per simulated second, which should be the game's [UpdateRate](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_UpdateRate) (60 by default):
+[For](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_For_MicroEngine_Core_GameSettings_) and [Profile](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Profile) take it from the settings.
+
+```csharp
+public int UpdateRate { get; init; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The value is zero or negative.
+
 ## Methods
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_BeginFrame"></a> BeginFrame\(\)
@@ -229,7 +248,7 @@ public void EndFrame()
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_For_MicroEngine_Core_GameSettings_"></a> For\(GameSettings\)
 
-A headless platform with the virtual size of <code class="paramref">settings</code>.
+A headless platform with the virtual size and update rate of <code class="paramref">settings</code>.
 
 ```csharp
 public static HeadlessPlatform For(GameSettings settings)

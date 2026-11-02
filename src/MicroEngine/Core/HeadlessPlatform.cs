@@ -36,8 +36,19 @@ public sealed class HeadlessPlatform : IPlatform
     public ITouchScreen Touch => TouchScreen;
     /// <summary>Set it to true to stop the loop at the next frame, as if the window closed.</summary>
     public bool CloseRequested { get; set; }
-    /// <summary>Simulated time: 1/60 second per frame polled.</summary>
-    public double Now => _frames / 60.0;
+    /// <summary>Simulated time: one update (1/<see cref="UpdateRate"/> second) per frame polled, so it equals <c>Game.Time</c>.</summary>
+    public double Now => _frames / (double)UpdateRate;
+    /// <summary>
+    /// Updates per simulated second, which should be the game's <see cref="GameSettings.UpdateRate"/> (60 by default):
+    /// <see cref="For"/> and <see cref="Profile"/> take it from the settings.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is zero or negative.</exception>
+    public int UpdateRate
+    {
+        get => _updateRate;
+        init => _updateRate = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), "The update rate must be positive.");
+    }
+    private readonly int _updateRate = 60;
     /// <summary>Always false: the loop advances exactly one update per frame.</summary>
     public bool RealTime => false;
     /// <summary>The renderer, typed so tests can read its counters.</summary>
@@ -45,8 +56,8 @@ public sealed class HeadlessPlatform : IPlatform
     /// <summary>Paths of the screenshots requested, in order; no file is written.</summary>
     public List<string> Screenshots { get; } = [];
 
-    /// <summary>A headless platform with the virtual size of <paramref name="settings"/>.</summary>
-    public static HeadlessPlatform For(GameSettings settings) => new(settings.VirtualWidth, settings.VirtualHeight);
+    /// <summary>A headless platform with the virtual size and update rate of <paramref name="settings"/>.</summary>
+    public static HeadlessPlatform For(GameSettings settings) => new(settings.VirtualWidth, settings.VirtualHeight) { UpdateRate = settings.UpdateRate };
 
     /// <summary>The headless platform as a catalog entry (<c>--platform headless</c>, <c>--headless</c>).</summary>
     public static PlatformProfile Profile { get; } = new("headless", "no window, devices or sound; one step per frame, for tests and CI", request => For(request.Settings));
