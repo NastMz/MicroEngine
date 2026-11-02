@@ -1,7 +1,9 @@
-# Publishing a demo release (docs/ci.md, "Releases"): Actions → release → Run workflow, with a version and the source
-# ref. The only way a new demo reaches the public site; no push, merge or schedule starts it.
+# Publishing a demo release (docs/ci.md, "Releases"): Actions → release → Run workflow, with the source ref and
+# optionally a version (default: the minor after the latest demo release). The only way a new demo reaches the public
+# site; no push, merge or schedule starts it.
 #   Preflight  the version is new; the ref is on main and its ci run passed; current main's ci run passed (its site is
-#              what gets deployed); every package missing for the ref's keys is listed
+#              what gets deployed) and documents an SDK version nuget.org serves; every package missing for the ref's
+#              keys is listed
 #   Build      only those packages, into the integration store (checks.yml): web packages, and the native packages of
 #              each downloadable target (packaging/README.md), each built and played on its own system before it is
 #              stored. Android is offered only when the release signing key is configured (ANDROID_KEYSTORE_* secrets)
@@ -21,9 +23,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Version to publish (1.2.0 or v1.2.0); must not exist yet
+        description: Version to publish (1.2.0 or v1.2.0); must not exist yet. Empty takes the minor after the latest release
         type: string
-        required: true
+        default: ''
       ref:
         description: Commit, branch or tag whose demo packages are released (on main, with a passed ci run)
         type: string
@@ -74,12 +76,21 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           error() { echo "::error::$1"; echo "Release refused: $1" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
+          if [ -z "$VERSION" ]; then
+            mapfile -t tags < <(gh release list --limit 100 --json tagName,isDraft --jq '.[] | select(.isDraft | not) | .tagName')
+            VERSION=$(node site/scripts/demos.mjs next-version "${tags[@]}")
+            echo "No version given: $VERSION, the minor after the latest demo release." >> "$GITHUB_STEP_SUMMARY"
+          fi
           tag=$(node --input-type=module -e "import { versionTag } from './site/scripts/demos.mjs'; console.log(versionTag(process.env.VERSION))") || error "\"$VERSION\" is not a version."
           sha=$(git rev-parse HEAD); main=$(git rev-parse origin/main)
           git merge-base --is-ancestor "$sha" origin/main || error "$sha is not on main: only merged, reviewed code is released."
           passed() { gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$1&event=push&status=success&per_page=1" --jq .total_count; }
           [ "$(passed "$sha")" -ge 1 ] || error "ci has no passed run on main for $sha (choose a commit that main's ci ran, such as a merge commit)."
           [ "$(passed "$main")" -ge 1 ] || error "ci has not passed (yet) for current main $main, whose site would be deployed."
+          # The site deployed with the release is main's: its documentation must present an SDK version nuget.org serves.
+          git worktree add -q --detach "$RUNNER_TEMP/main" "$main"
+          sdk=$(node "$RUNNER_TEMP/main/sdk/version.mjs" status --public --json) || error "nuget.org could not be asked about the documented SDK version; run the release again."
+          [ "$(jq -r .documentedPublic <<< "$sdk")" = true ] || error "main documents SDK $(jq -r .documented <<< "$sdk"), which nuget.org does not serve yet: let sdk-release publish it first (docs/releasing.md)."
           state=$(gh release view "$tag" --json isDraft --jq .isDraft 2> /dev/null || echo none)
           [ "$state" != false ] || error "$tag is already published; choose a new version."
           { echo "sha=$sha"; echo "main=$main"; echo "tag=$tag"; } >> "$GITHUB_OUTPUT"

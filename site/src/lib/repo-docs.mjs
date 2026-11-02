@@ -157,7 +157,7 @@ export function docImages(list = pages, root = repoRoot) {
  * Repository paths that are engineering material, not product documentation: decision records, evaluations, task
  * records, experiments, CI and release procedures, the demos' packaging and platform checks.
  */
-export const internalPath = file => /^(docs\/(decisions|evaluations)\/|docs\/(ci|deployment)\.md$|odd\/|experiments\/|packaging\/|platforms\/|sdk\/|\.github\/|AGENTS\.md$)/.test(file);
+export const internalPath = file => /^(docs\/(decisions|evaluations)\/|docs\/(ci|deployment|releasing)\.md$|odd\/|experiments\/|packaging\/|platforms\/|sdk\/|\.github\/|AGENTS\.md$)/.test(file);
 
 /** The public repository; links to files that are not site pages point into its default branch. */
 export const repositoryUrl = 'https://github.com/NastMz/MicroEngine';

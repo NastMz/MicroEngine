@@ -11,18 +11,21 @@ sufficient without previous chats or agent memory.
   template (`templates/`) and four demo games (`games/`), playable in browsers and as native downloads built by
   `microengine package` and checked by [`packaging/`](packaging/README.md). A game's name, id, version and icon live
   only in its project file ([application identity](docs/guide/app-identity.md)); `sdk/tests/` checks the SDK from a
-  project outside the repository. SDK 0.4.0-alpha.2 is on nuget.org (tag `sdk-v0.4.0-alpha.2`; the first public SDK was 0.4.0-alpha.1); a release is published
-  only by the owner, through `sdk-release.yml` (Trusted Publishing, `nuget` environment). SDK tags `sdk-v*` and demo
+  project outside the repository. The SDK version the documentation presents is in `sdk/version.json`
+  (published on nuget.org, tag `sdk-v<version>`; [versions](docs/releasing.md#versions)); a release is published only
+  with the owner's approval, through `sdk-release.yml` (Trusted Publishing, `nuget` environment). SDK tags `sdk-v*` and demo
   releases `v*` are separate series. The public history starts on 2026-10-30;
   the previous implementation and the first days of the rebuild live only in the maintainer's archive, so commit
   hashes and Actions run IDs quoted in older records point there. Never push branches from an old clone.
 - The active rebuild record (specs, tasks, log) is [`odd/tasks/engine-rebuild.md`](odd/tasks/engine-rebuild.md); the latest
   feature records are [`odd/tasks/docs-1.md`](odd/tasks/docs-1.md), [`odd/tasks/sdk-1.md`](odd/tasks/sdk-1.md),
   [`odd/tasks/input-1.md`](odd/tasks/input-1.md) and [`odd/tasks/product-1.md`](odd/tasks/product-1.md).
-- CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence);
-  `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual macOS, Android and iOS
-  experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos reach the public site
-  only through `release.yml`; merging never publishes them.
+- CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence),
+  the SDK check included; `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual
+  macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos
+  reach the public site only through `release.yml`; merging never publishes them. An SDK release is one pull request
+  (`node sdk/version.mjs release <version>`) and the `nuget` environment's approval ([releasing](docs/releasing.md),
+  ADR 0022); never hand-edit version references.
 - `site/` is the public site (Astro + Starlight): it publishes the Markdown listed in `site/src/lib/repo-docs.mjs`
   straight from `docs/` and `games/`, so edit those files, never a copy. See [publishing the site](docs/deployment.md).
 - Licensing ([ADR 0015](docs/decisions/0015-mit-engine-reserved-demos.md)): the engine, samples, tools, site code and

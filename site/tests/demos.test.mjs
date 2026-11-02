@@ -8,7 +8,7 @@ import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import {
   registry, demoKey, publish, plan, fetchDemos, openStore, noticeFiles, playDir, cacheDir, createRelease, verifyRelease,
-  versionTag, candidatePackages, releaseRecord,
+  versionTag, nextVersion, candidatePackages, releaseRecord,
 } from '../scripts/demos.mjs';
 
 const git = (root, ...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' });
@@ -324,6 +324,12 @@ test('plan, ci policy: a game change builds that game, an engine change builds t
   assert.deepEqual(await builds({ policy: 'all' }), ['Alpha', 'Beta'], 'validation and releases build every missing package');
   assert.deepEqual(candidatePackages(await plan(store, { root, policy: 'ci', canary: 'Alpha' })),
     { Alpha: `candidate:${demoKey('Alpha', { root }).key}`, Beta: `release:${(await releaseRecord(await store.releases.latest())).games.Beta.key}` });
+});
+
+test('next version: the minor after the newest demo release; SDK tags and pre-releases never count', () => {
+  assert.equal(nextVersion([]), '0.1.0');
+  assert.equal(nextVersion(['v0.3.0', 'sdk-v0.4.0-alpha.2', 'v0.4.0', 'demo-artifacts', 'v0.10.0-rc.1', 'v0.2.0']), '0.5.0');
+  assert.equal(nextVersion(['v0.9.0', 'v0.10.0', 'v1.0.2']), '1.1.0', 'numeric order, not text order');
 });
 
 test('versions: 1.2.0, v1.2.0 and pre-releases are accepted, anything else refused', () => {

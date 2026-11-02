@@ -81,7 +81,7 @@ small font (SDL's 8x8 debug font, raylib's default font).
 
 ## Limits
 
-- One typeface. There is no API to load TTF/OTF fonts or bitmap font files in 0.4.0-alpha.2.
+- One typeface. There is no API to load TTF/OTF fonts or bitmap font files.
 - No rich text (colour or style changes inside a string), no kerning, no right-to-left or complex scripts, no text
   input widget.
 - To use another pixel font, draw its glyphs as sprites yourself: put a glyph sheet in an atlas with `AddGrid`, map

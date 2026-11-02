@@ -1,17 +1,14 @@
-# The SDK as an outside developer gets it (docs/guide/sdk.md, "How the SDK is checked"):
+# The SDK as an outside developer gets it (docs/releasing.md, "How the SDK is checked"):
 #   pack      every SDK package (dotnet pack MicroEngine.slnx), MicroEngine.Raylib with the web raylib; the feed is an artifact
 #   external  sdk/tests/external.mjs on Windows, Linux and macOS: install microengine and the template from that feed into
 #             a folder outside the repository, create, build, run and package a game, check expected failures
-# Runs when the engine, the tool, the template or this test change; sdk-release.yml calls it before a release.
-# It never publishes anything.
+#   evidence  with `evidence` on, the run that passed records evidence-sdk-<key> (.github/scripts/evidence.mjs)
+# Called by ci.yml when a package input changed (so the required CI result covers it, once per content) and by
+# sdk-release.yml before a release, whose draft holds exactly this run's feed. It never publishes anything. No
+# concurrency group of its own: its callers have theirs, and a shared group made one caller cancel the other.
 name: sdk
 
 on:
-  pull_request:
-    paths: ['src/**', 'templates/**', 'sdk/**', 'Directory.Build.props', 'global.json', 'NuGet.config', 'THIRD-PARTY-NOTICES.md', 'web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh', '.github/workflows/sdk.yml']
-  push:
-    branches: [main]
-    paths: ['src/**', 'templates/**', 'sdk/**', 'Directory.Build.props', 'global.json', 'NuGet.config', 'THIRD-PARTY-NOTICES.md', 'web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh', '.github/workflows/sdk.yml']
   workflow_dispatch:
   workflow_call:
     inputs:
@@ -19,13 +16,17 @@ on:
         description: Commit to check out
         type: string
         required: true
+      evidence:
+        description: Upload evidence of the passed check
+        type: boolean
+        default: false
+      key:
+        description: Evidence key of the sdk check (evidence.mjs plan)
+        type: string
+        default: ''
 
 permissions:
   contents: read
-
-concurrency:
-  group: sdk-${{ github.ref }}-${{ inputs.ref || github.sha }}
-  cancel-in-progress: true
 
 env:
   NODE_VERSION: 22.23.4 # site/package.json engines: Astro needs >= 22.23.4; a bare "22" takes whatever 22.x the runner caches
@@ -119,3 +120,21 @@ jobs:
           # A display for the game's window (SDL's CPU renderer) on Linux.
           if [ "${{ matrix.os }}" = Linux ]; then xvfb-run -a "${run[@]}"; else "${run[@]}"; fi | tee external.log
           { echo "### External project on ${{ matrix.os }}"; echo '```'; grep -E '^(PASS|FAIL|skip)' external.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  evidence:
+    name: Evidence
+    needs: [pack, external]
+    if: inputs.evidence && inputs.key != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          sparse-checkout: .github/scripts
+      - run: node .github/scripts/evidence.mjs record sdk "${{ inputs.key }}" evidence.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evidence-sdk-${{ inputs.key }}
+          path: evidence.json
+          retention-days: 30
+          overwrite: true

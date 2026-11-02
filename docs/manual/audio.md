@@ -68,6 +68,7 @@ Rendering happens on the CPU at load time; long songs add to start-up time, so r
 | `SfxVolume` (default 0.8), `MusicVolume` (0..1) | Global volumes |
 | `HasSound`, `HasMusic`, `CurrentMusic` | Queries |
 
+<!-- sdk-version: history -->
 **Music changes are fade-out then fade-in, not an overlapping crossfade.** With a fade, the current track fades to
 silence over `fadeSeconds`, then the new one starts and rises to full volume in about a quarter of a second. When
 nothing is playing, the new track starts at once and rises in about a quarter of a second. With `fadeSeconds` 0 it starts

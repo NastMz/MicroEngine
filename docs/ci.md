@@ -12,11 +12,14 @@ Decision: [ADR 0013](decisions/0013-ci-cost-and-manual-releases.md). Audit, cost
 | Daily CI | [`ci.yml`](../.github/workflows/ci.yml) | every pull request, every push to `main` | site previews; production only when `main` changes the published site, always with the released demos |
 | Full validation | [`validate.yml`](../.github/workflows/validate.yml) | Actions → validate → Run workflow (any ref) | nothing |
 | Experimental platforms | [`platforms.yml`](../.github/workflows/platforms.yml) | manually, from validate, and on the 1st of each month | nothing |
-| Release | [`release.yml`](../.github/workflows/release.yml) | Actions → release → Run workflow (version, ref) | a demo release and the site that serves it |
+| Release | [`release.yml`](../.github/workflows/release.yml) | Actions → release → Run workflow (ref; version optional) | a demo release and the site that serves it |
+| SDK release | [`sdk-release.yml`](../.github/workflows/sdk-release.yml) | after ci passes on `main` (ends at once unless `main` documents an unpublished version), or by hand to resume | the SDK on nuget.org after the `nuget` environment's approval, then the site |
 | Rollback | [`rollback.yml`](../.github/workflows/rollback.yml) | manually | an earlier production deployment |
 
-The jobs themselves live in two reusable workflows: [`checks.yml`](../.github/workflows/checks.yml) (.NET, native
-Linux, demo builds, site and browsers) and [`deploy-site.yml`](../.github/workflows/deploy-site.yml) (Vercel).
+The jobs themselves live in three reusable workflows: [`checks.yml`](../.github/workflows/checks.yml) (.NET, native
+Linux, demo builds, site and browsers), [`sdk.yml`](../.github/workflows/sdk.yml) (the SDK packages from outside the
+repository) and [`deploy-site.yml`](../.github/workflows/deploy-site.yml) (Vercel). How the three publications relate
+and how to run each: [Releasing](releasing.md); decision: [ADR 0022](decisions/0022-release-coordination.md).
 
 ## Daily CI
 
@@ -28,22 +31,27 @@ flowchart LR
   linux --> windows[.NET Windows]
   linux --> native[Native Linux]
   plan --> build[Demo builds]
+  plan --> sdk[SDK<br/>Windows, Linux, macOS]
   build --> site[Site and browsers]
   windows --> deploy[Deploy]
   native --> deploy
   site --> deploy
   deploy --> result[CI result]
+  sdk --> result
 ```
 
-1. **Plan** runs the planner tests, maps the changed paths to checks
+1. **Plan** runs the planner and release tool tests, checks that every documentation reference names the documented
+   SDK version ([`sdk/version.mjs check`](../sdk/version.mjs)), maps the changed paths to checks
    ([`changes.mjs`](../.github/scripts/changes.mjs)), looks up evidence that a needed check already passed for the same
    inputs ([`evidence.mjs`](../.github/scripts/evidence.mjs)), lints the workflows when they changed, and decides the
    demo builds ([`demos.mjs plan --policy ci`](../site/scripts/demos.mjs)).
 2. **Checks** run what is needed and not already proven. Windows and native Linux start only after the Linux tests
-   pass, so a broken change never occupies a Windows runner.
+   pass, so a broken change never occupies a Windows runner. **SDK** (`sdk.yml`) runs beside them when a package
+   input changed: pack, check, and a game made from the packages on Windows, Linux and macOS.
 3. **Deploy**: a protected preview for pull requests that change the site or a demo; production for pushes to
    `main` that change the published site (documentation, site, game pages). Production always uses the latest
-   demo release.
+   demo release, and is held (the current deployment stays, with a warning) while the documentation presents an SDK
+   version nuget.org does not serve yet ([Releasing](releasing.md#versions)).
 4. **CI result** is the gate: it fails if anything needed failed, was cancelled or did not run, or if a wanted
    deployment did not succeed. Its summary says, per check, whether it ran here, was proven by an earlier run (with a
    link) or was not needed, and what the run cost.
@@ -52,24 +60,26 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
 
 ### What runs for a change
 
-| Change | .NET Linux | .NET Windows | Native Linux | Demo builds | Browser suites | Deploy |
-| --- | --- | --- | --- | --- | --- | --- |
-| Engine core (`src/MicroEngine`) | yes | yes | yes | the canary game | all | preview |
-| raylib backend (`src/MicroEngine.Raylib`) | yes | yes | yes | the canary game | all | preview |
-| One game's code (`games/<Name>`) | that game's tests | — | that game's captures | that game | all | preview |
-| A game's Markdown or screenshots | — | — | — | — | layout | preview, production |
-| Engine or backend tests | those tests | yes | backend tests only | — | — | — |
-| One game's tests | those tests | — | — | — | — | — |
-| Samples | compile only | — | — | — | — | — |
-| Desktop capture scripts (`web/tests`) | — | — | yes | — | — | — |
-| Web host or toolchain (`web/`) | — | — | — | the canary game | all | preview, production |
-| Site (`site/`) | — | — | — | — | all | preview, production |
-| Documentation (`docs/`, other Markdown) | — | — | — | — | layout | preview, production |
-| Daily workflows, their scripts, build settings | yes | yes | yes | as keys say | all | preview, production |
-| Manual workflows (validate, release, platforms, rollback) | lint only | — | — | — | — | — |
-| Mobile hosts (`platforms/`) | advisory only: run validate or platforms | — | — | — | — | — |
-| Task records, experiments (`odd/`, `experiments/`) | — | — | — | — | — | — |
-| A path no rule knows | everything | everything | everything | as keys say | all | preview, production |
+| Change | .NET Linux | .NET Windows | Native Linux | SDK | Demo builds | Browser suites | Deploy |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Engine core (`src/MicroEngine`) | yes | yes | yes | yes | the canary game | all | preview |
+| raylib backend (`src/MicroEngine.Raylib`) | yes | yes | yes | yes | the canary game | all | preview |
+| One game's code (`games/<Name>`) | that game's tests | — | that game's captures | — | that game | all | preview |
+| A game's Markdown or screenshots | — | — | — | — | — | layout | preview, production |
+| Engine or backend tests | those tests | yes | backend tests only | — | — | — | — |
+| One game's tests | those tests | — | — | — | — | — | — |
+| Samples | compile only | — | — | — | — | — | — |
+| The tool, the template, SDK tests (`src/MicroEngine.Cli`, `templates/`, `sdk/tests/external.mjs`) | the tool's and template's tests | the tool's | — | yes | — | — | — |
+| Documented SDK version (`sdk/version.json`, `sdk/version.mjs`, `sdk/tests/docs.mjs`) | all, with the documented samples | — | — | — | — | — | — |
+| Desktop capture scripts (`web/tests`) | — | — | yes | its browser driver only | — | — | — |
+| Web host or toolchain (`web/`) | — | — | — | toolchain, server | the canary game | all | preview, production |
+| Site (`site/`) | — | — | — | — | — | all | preview, production |
+| Documentation (`docs/`, other Markdown) | — | — | — | — | — | layout | preview, production |
+| Daily workflows (`sdk.yml` too), their scripts, build settings | yes | yes | yes | yes | as keys say | all | preview, production |
+| Manual workflows (validate, release, sdk-release, platforms, rollback) | lint only | — | — | — | — | — | — |
+| Mobile hosts (`platforms/`) | advisory only: run validate or platforms | — | — | — | — | — | — |
+| Task records, experiments (`odd/`, `experiments/`) | — | — | — | — | — | — | — |
+| A path no rule knows | everything | everything | everything | yes | as keys say | all | preview, production |
 
 - **Scope** comes from the project graph ([`projects.mjs`](../.github/scripts/projects.mjs), ADR 0014): the .NET jobs
   run the test projects that reference the changed project, directly or not, and native Linux compares the captures
@@ -94,6 +104,7 @@ so a new folder is an input until a rule says otherwise; `.github/` is an input 
 | `dotnet`, `windows` | `docs/`, `site/`, `web/`, `platforms/`, `odd/`, `experiments/`, Markdown (except in a game's `Content/`) |
 | `native` | the same, but `web/tests/` is an input |
 | `site` | `src/`, `tests/`, `samples/`, `platforms/`, `odd/`, `experiments/`, game files other than Markdown and screenshots; the key adds the demo packages used and the browser suites |
+| `sdk` | `docs/`, `site/`, `platforms/`, `games/`, `tests/`, `samples/`, `odd/`, `experiments/`, Markdown outside `src/`, `templates/` and `sdk/` (except `THIRD-PARTY-NOTICES.md`, which the packages ship) |
 
 When a job passes it uploads the artifact `evidence-<check>-<key>` (kept 30 days). Plan skips a needed check when
 such an artifact exists, is unexpired, and was produced by a commit with an identical `.github` folder. Examples:
@@ -127,6 +138,7 @@ and whatever evidence exists; nothing is deployed.
 | .NET | .NET tests on Linux and Windows | supported |
 | Native Linux | raylib under Xvfb: native tests, scripted captures against the Linux reference | supported |
 | Web | every missing demo package built; site; all browser suites in Chrome and Firefox | supported |
+| SDK | `sdk.yml`: the packages packed, checked and used from outside the repository on Windows, Linux and macOS | supported |
 | macOS | .NET tests, OpenGL probe, captures when a window can be opened | experimental |
 | Android | APK built with the NDK and played on an emulator | experimental |
 | iOS | the iOS host in the simulator, headless | experimental |
@@ -169,14 +181,26 @@ llvmpipe) against `sdl-linux-x64.json`, plus the SDL platform tests (`tests/Micr
 
 ## SDK checks and releases
 
-The SDK has its own workflows, apart from the demos' ([SDK status](guide/sdk.md#how-the-sdk-is-checked)):
-
 | Workflow | When | What |
 | --- | --- | --- |
-| `sdk.yml` | pull requests and pushes that change `src/`, `templates/`, `sdk/` or the build settings; manual; called by `sdk-release.yml` | packs every SDK package (with the web raylib), checks them (`sdk/tests/packages.mjs`), then on Windows, Linux and macOS installs the tool and template from that feed into a folder outside the repository and creates, builds, runs and packages a game (`sdk/tests/external.mjs`) |
-| `sdk-release.yml` | by hand only, from `main` | first run: checks the version is new, runs `sdk.yml`, drafts the GitHub prerelease `sdk-v<version>`; second run with `publish` on: after the `nuget` environment's approval, pushes exactly the draft's packages to nuget.org with a one-hour Trusted Publishing key (GitHub OIDC), then publishes the release |
+| `sdk.yml` | called by daily CI when a package input changed (the `sdk` check, with evidence, required through **CI result**), by validate, by `sdk-release.yml`, or by hand | packs every SDK package (with the web raylib), checks them (`sdk/tests/packages.mjs`), then on Windows, Linux and macOS installs the tool and template from that feed into a folder outside the repository and creates, builds, runs and packages a game (`sdk/tests/external.mjs`) |
+| `sdk-release.yml` | after every ci run that passed for a push to `main`; by hand to resume | preflight (`sdk/version.mjs release-plan`) reads nuget.org and the GitHub release `sdk-v<version>`: nothing to do unless `main` documents a version nuget.org lacks; otherwise checks with `sdk.yml`, drafts, waits for the `nuget` environment's approval, pushes exactly the draft's packages with a one-hour Trusted Publishing key (GitHub OIDC), publishes the release, waits for nuget.org and builds a game and the documented samples from it, then deploys the site |
 
-The release procedure is in [Releasing the SDK](releasing.md). `sdk.yml` is not a required check: the **CI result** check stays the one gate. Nothing in daily CI publishes a package.
+```mermaid
+flowchart LR
+  accTitle: SDK release
+  accDescr: A merged release pull request passes CI, sdk-release checks and drafts, a person approves, the draft is pushed to nuget.org, verified there, and the site deploys.
+  pr[Release pull request<br/>version.mjs release] --> ci[ci on main<br/>CI result]
+  ci --> pre[sdk-release<br/>preflight]
+  pre -->|nothing public| check[sdk.yml] --> draft[Draft<br/>sdk-v version]
+  pre -->|stopped part way| approve
+  draft --> approve{nuget environment<br/>approval}
+  approve --> push[Push the draft's files<br/>publish the release]
+  push --> verify[nuget.org serves it<br/>game and samples from it]
+  verify --> site[Production site]
+```
+
+The procedure, the versions and recovery are in [Releasing](releasing.md). Nothing in daily CI publishes a package.
 
 ## Releases
 
@@ -199,14 +223,14 @@ Two kinds of artifact, never mixed up:
 
 Actions → **release** → Run workflow:
 
-- **version**: `1.2.0` or `v1.2.0`; must be new.
+- **version**: `1.2.0` or `v1.2.0`; must be new. Empty takes the minor after the latest release (`v0.4.0` → `0.5.0`).
 - **ref**: whose packages to release, default `main`. It must be on `main` and have a passed `ci` run (`main`'s head
   or a merge commit).
 - **dry-run**: everything except deploying and publishing; the draft is discarded.
 
 | Step | What it does | If it fails |
 | --- | --- | --- |
-| Preflight | version new; ref on `main` with a passed `ci` run; current `main` has a passed `ci` run (its site is deployed); chooses the downloadable targets (Android only with the signing key); lists missing packages | nothing happened |
+| Preflight | version new; ref on `main` with a passed `ci` run; current `main` has a passed `ci` run (its site is deployed) and documents an SDK version nuget.org serves; chooses the downloadable targets (Android only with the signing key); lists missing packages | nothing happened |
 | Build | builds only the missing packages, into the integration store: web packages, and native packages each built, played on its own system and only then stored | nothing public changed |
 | Draft | copies every package after checking its archive against its manifest's SHA-256, native ones under player-facing names; writes `release.json`; refuses if any game lacks a package for an offered target | the partial draft is deleted |
 | Verify | builds current `main`'s site with the draft's packages, checks every file against the release, downloads and hashes every native package again, runs unit tests, `check-dist` and every browser suite | the draft is discarded |
@@ -237,7 +261,7 @@ workflows are the gate:
 
 | Kind | Examples | Effect |
 | --- | --- | --- |
-| Required | every needed daily check; supported checks in validate and release | failure, cancellation or absence stops the deployment, fails **CI result** or refuses the release |
+| Required | every needed daily check (the SDK check included); supported checks in validate and release | failure, cancellation or absence stops the deployment, fails **CI result** or refuses the release |
 | Legitimately skipped | not needed for the change, or proven by evidence for identical inputs | reported as such in CI result |
 | Informative | the Plan's advisory platforms, the cost summary | never blocks |
 | Experimental | macOS, Android, iOS | reported per platform, never a gate |
@@ -298,6 +322,10 @@ Every CI result and validate report includes the cost of its own run. Re-run att
 | A check should not have been skipped | a rule in `changes.mjs` or `evidence.mjs` is too narrow | fix the rule and its test; a manual validate run checks everything meanwhile |
 | Release refused: "ci has no passed run on main" | the ref is an intermediate commit or its run failed | release `main`'s head or a merge commit |
 | Release stopped: "main moved" | a merge landed during the release | run it again |
+| Production deployment skipped: "The documentation presents SDK …, which nuget.org does not serve" | a release pull request was merged and is waiting for approval | approve sdk-release, or revert the release pull request ([Releasing](releasing.md)) |
+| Release refused: "main documents SDK …" | the same window | let sdk-release finish first |
+| sdk-release: "Nothing to release" | the normal outcome of every merge that is not an SDK release | nothing |
+| sdk-release refused, or stopped after publishing | a state its preflight cannot repair, or a failed verification | [Releasing, Recovering](releasing.md#recovering) |
 | `release-verify` fails | a deployed file differs from the release | nothing was published; inspect the build |
 
 ## Engine checks beyond unit tests
@@ -339,7 +367,10 @@ the browser test scenarios:
 - The site build fails when a quoted code block differs from its sample (`site/src/lib/repo-docs.mjs`) or a page links
   to a page or anchor the site does not have (`site/scripts/check-dist.mjs`).
 - The Linux .NET job checks that `docs/api` matches the XML comments (`site/scripts/api-reference.mjs --check`) when an
-  engine project is tested, and builds the documented samples against nuget.org outside the repository
-  (`sdk/tests/docs.mjs`) when `tests/Samples.Tests` is selected.
+  engine project is tested, and builds the documented samples outside the repository at the documented SDK version
+  (`sdk/tests/docs.mjs`: from nuget.org, or from this commit's packages before that version is published) when
+  `tests/Samples.Tests` is selected.
+- Plan checks that every active documentation reference names the documented SDK version (`sdk/version.mjs check`,
+  [Releasing, Versions](releasing.md#versions)).
 - The CI planner (`.github/scripts/projects.mjs`) reads the `ProjectReference` items a `Directory.Build.targets` adds,
   so an engine change also selects `tests/Samples.Tests`.

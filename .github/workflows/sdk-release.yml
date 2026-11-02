@@ -1,24 +1,31 @@
-# Releases the SDK (docs/guide/sdk.md, "Publishing a release"): run by hand from main, twice.
-#   1st run, `publish` off:
-#     preflight  the version (MicroEngineVersion) is new: no published sdk-v<version> release, not on nuget.org
-#     check      sdk.yml on this commit: pack every package, check them, and build, run and package a new game from them
-#                on Windows, Linux and macOS
-#     draft      a draft GitHub prerelease sdk-v<version> holding the checked packages, SHA256SUMS and the version's
-#                release notes (docs/guide/release-notes.md); nothing is public yet
-#   2nd run, `publish` on, after reviewing the draft (main may have moved on; the draft's commit must be in its history):
-#     publish    after the `nuget` environment's reviewers approve: exchanges a GitHub OIDC token for a one-hour nuget.org
-#                key (Trusted Publishing, NuGet/login), pushes exactly the draft's files, verified against SHA256SUMS,
-#                then publishes the GitHub release. No long-lived nuget.org key exists anywhere.
+# Releases the SDK (docs/releasing.md, "Releasing the SDK"). A release is requested by merging a pull request that
+# documents a version nuget.org does not serve yet (node sdk/version.mjs release <version>: MicroEngineVersion,
+# sdk/version.json and every active documentation reference). When ci passes for that merge on main, this workflow
+# starts on its own; it can also be run by hand (Actions → sdk-release → Run workflow) to resume one.
+#   preflight  reads the state of the documented version: on nuget.org (package by package), its GitHub release
+#              sdk-v<version> (none, draft, published), and decides what is left to do. Nothing to do is the normal
+#              outcome after any other merge
+#   check      sdk.yml on this commit: pack every package, check them, and build, run and package a new game from them
+#              on Windows, Linux and macOS
+#   draft      a draft GitHub prerelease sdk-v<version> holding exactly the checked packages and SHA256SUMS; not public
+#   publish    after the `nuget` environment's reviewers approve: a one-hour nuget.org key (Trusted Publishing, GitHub
+#              OIDC), the draft's files verified against SHA256SUMS and pushed (engine first, a package nuget.org
+#              already has is skipped), then the GitHub release is published. Never rebuilt: what was approved is pushed
+#   verify     waits until nuget.org serves all six packages, then builds, runs and packages a game and the documented
+#              samples from nuget.org alone
+#   site       production deploys main with the latest demo release (deploy-site.yml). Until now it was held: the
+#              documentation of main presents this version, and production deploys only a version nuget.org serves
+# Every state is resumable: a run that stops after a step is continued by the next run (by hand, or the next merge),
+# which skips what is done. nuget.org versions are immutable; nothing here deletes or overwrites a pushed package.
 # SDK tags are sdk-v<version>, apart from the demo releases (v0.1.0, v0.2.0...), which release.yml makes.
 name: sdk-release
 
 on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      publish:
-        description: Push the reviewed draft's packages to nuget.org (Trusted Publishing; the nuget environment's reviewers approve). Off checks and drafts only.
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -30,90 +37,91 @@ concurrency:
 jobs:
   preflight:
     name: Preflight
+    # A ci run of a push to main in this repository that passed; never a pull request's or a fork's run.
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+          && github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
-    # GitHub lists draft releases only to tokens that can write contents; this job only reads.
     permissions:
-      contents: write
+      contents: write # GitHub lists draft releases only to tokens that can write contents; this job only reads
+      actions: read # ci runs
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      drafted: ${{ steps.version.outputs.drafted }}
+      version: ${{ steps.state.outputs.version }}
+      sha: ${{ steps.state.outputs.sha }}
+      action: ${{ steps.state.outputs.action }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      EVENT: ${{ github.event_name }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # the draft's commit must be in main's history
-      - name: Version
-        id: version
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PUBLISH: ${{ inputs.publish }}
+          ref: ${{ env.SHA }}
+          fetch-depth: 0 # a draft's commit must be in this commit's history
+      - name: What is left to do
+        id: state
         run: |
-          if [ "$GITHUB_REF" != refs/heads/main ]; then echo "::error::SDK releases are made from main, not $GITHUB_REF."; exit 1; fi
-          version=$(sed -n 's:.*<MicroEngineVersion>\(.*\)</MicroEngineVersion>.*:\1:p' Directory.Build.props)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          code=$(curl -s -o /dev/null -w '%{http_code}' "https://api.nuget.org/v3-flatcontainer/microengine/$version/microengine.$version.nupkg")
-          if [ "$code" = 200 ]; then echo "::error::MicroEngine $version is already on nuget.org; raise MicroEngineVersion."; exit 1; fi
-          grep -q "^## $version" docs/guide/release-notes.md || { echo "::error::docs/guide/release-notes.md has no '## $version' section."; exit 1; }
-          # Drafts have no tag yet, so releases are listed rather than looked up by tag.
-          release=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --jq ".[] | select(.tag_name == \"sdk-v$version\") | \"\(.draft) \(.target_commitish)\"" | head -1)
-          drafted=false
-          if [ -n "$release" ]; then
-            read -r draft target <<< "$release"
-            if [ "$draft" != true ]; then echo "::error::sdk-v$version is already released; raise MicroEngineVersion."; exit 1; fi
-            if [ "$PUBLISH" != true ] && [ "$target" != "$GITHUB_SHA" ]; then
-              echo "::error::The draft sdk-v$version was made from $target, not $GITHUB_SHA: publish it, or delete it to draft this commit."; exit 1
-            fi
-            # Publishing pushes the draft's own files (checked against its SHA256SUMS), so main may have moved on since
-            # (a workflow fix, for instance), provided the draft's commit is in its history and the version is the same.
-            if ! git merge-base --is-ancestor "$target" "$GITHUB_SHA"; then
-              echo "::error::The draft sdk-v$version was made from $target, which is not in the history of main ($GITHUB_SHA)."; exit 1
-            fi
-            if [ "$target" != "$GITHUB_SHA" ]; then
-              { echo "The draft was made from ${target::12}; main has moved on since:"; echo; echo '```'; git log --oneline "$target..$GITHUB_SHA"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-            fi
-            drafted=true
+          error() { echo "::error::$1"; echo "Refused: $1" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
+          if [ "$EVENT" = workflow_dispatch ]; then
+            [ "$GITHUB_REF" = refs/heads/main ] || error "SDK releases are made from main, not $GITHUB_REF."
+            passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SHA&event=push&status=success&per_page=1" --jq .total_count)
+            [ "$passed" -ge 1 ] || error "ci has not passed on main for $SHA (yet)."
           fi
-          if [ "$PUBLISH" = true ] && [ "$drafted" != true ]; then
-            echo "::error::Nothing to publish: run sdk-release with publish off first, review the draft sdk-v$version, then publish."; exit 1
-          fi
-          echo "drafted=$drafted" >> "$GITHUB_OUTPUT"
-          echo "SDK $version from ${GITHUB_SHA::12}; draft already made: $drafted; publish: $PUBLISH" >> "$GITHUB_STEP_SUMMARY"
+          # The decision is sdk/version.mjs releasePlan (tested in sdk/tests/version.test.mjs): nuget.org package by
+          # package, the GitHub release sdk-v<version>, the release notes.
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          node sdk/version.mjs release-plan --sha "$SHA" --event "$EVENT" > plan.md 2> refused.txt || error "$(sed 's/^error: //' refused.txt)"
+          tee -a "$GITHUB_STEP_SUMMARY" < plan.md
 
   check:
     name: Check
     needs: preflight
-    if: needs.preflight.outputs.drafted != 'true'
+    if: needs.preflight.outputs.action == 'release'
     uses: ./.github/workflows/sdk.yml
     with:
-      ref: ${{ github.sha }}
+      ref: ${{ needs.preflight.outputs.sha }}
 
   draft:
     name: Draft release
     needs: [preflight, check]
-    if: needs.preflight.outputs.drafted != 'true'
+    if: needs.preflight.outputs.action == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     env:
       VERSION: ${{ needs.preflight.outputs.version }}
+      SHA: ${{ needs.preflight.outputs.sha }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
       - uses: actions/download-artifact@v4
         with:
           name: sdk-feed
           path: sdk-feed
       - name: Draft
         run: |
+          # Only a draft is ever replaced: nothing of it is public, and preflight saw no package on nuget.org.
+          if [ "$(gh release view "sdk-v$VERSION" --json isDraft --jq .isDraft 2> /dev/null)" = true ]; then
+            gh release delete "sdk-v$VERSION" --yes
+          fi
           # The version's section of the release notes, up to the next version.
-          awk -v v="## $VERSION" '$0 ~ "^## " { on = index($0, v) == 1 } on' docs/guide/release-notes.md > notes.md
+          awk -v v="## $VERSION" '/^## / { h = $0; sub(/[[:space:]]+$/, "", h); on = (h == v) } on' docs/guide/release-notes.md > notes.md
           ( cd sdk-feed && sha256sum ./*.nupkg ./*.snupkg > SHA256SUMS )
-          gh release create "sdk-v$VERSION" --draft --prerelease --target "$GITHUB_SHA" --title "MicroEngine SDK $VERSION (Alpha)" --notes-file notes.md sdk-feed/*
+          gh release create "sdk-v$VERSION" --draft --prerelease --target "$SHA" --title "MicroEngine SDK $VERSION (Alpha)" --notes-file notes.md sdk-feed/*
           { echo "Draft: sdk-v$VERSION with $(find sdk-feed -name '*.nupkg' | wc -l) packages"; echo; echo '```'; cat sdk-feed/SHA256SUMS; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
   publish:
     name: Publish to nuget.org
     needs: [preflight, draft]
-    if: inputs.publish && needs.preflight.outputs.drafted == 'true' && !cancelled() && needs.preflight.result == 'success'
+    # A new draft must have succeeded; an existing draft (action publish) is published with draft skipped. A failed
+    # check skips the draft too, so `skipped` is accepted only when nothing was to be drafted.
+    if: >-
+      !cancelled() && needs.preflight.result == 'success'
+      && ((needs.preflight.outputs.action == 'release' && needs.draft.result == 'success')
+          || (needs.preflight.outputs.action == 'publish' && needs.draft.result == 'skipped'))
     runs-on: ubuntu-latest
     # Reviewers approve here; the Trusted Publishing policy on nuget.org accepts only this environment.
     environment: nuget
@@ -124,6 +132,10 @@ jobs:
       VERSION: ${{ needs.preflight.outputs.version }}
       GH_TOKEN: ${{ github.token }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preflight.outputs.sha }}
+          sparse-checkout: sdk
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
@@ -131,21 +143,102 @@ jobs:
       - name: Packages from the draft
         run: gh release download "sdk-v$VERSION" --repo "$GITHUB_REPOSITORY" --dir sdk-feed --pattern '*.nupkg' --pattern '*.snupkg' --pattern SHA256SUMS
       - name: Verify
-        run: cd sdk-feed && sha256sum -c SHA256SUMS
+        run: |
+          cd sdk-feed && sha256sum -c SHA256SUMS
+          for id in $(node ../sdk/version.mjs packages); do
+            [ -f "$id.$VERSION.nupkg" ] || { echo "::error::The draft has no $id.$VERSION.nupkg."; exit 1; }
+          done
+      - name: Packages nuget.org does not have yet
+        id: missing
+        shell: bash
+        run: |
+          # If nuget.org cannot be asked, stop: an empty answer would read as "all pushed" and publish the release.
+          status=$(node sdk/version.mjs status --public --json) || { echo "::error::nuget.org could not be asked; nothing was pushed or published. Run sdk-release again."; exit 1; }
+          missing=$(jq -r '.packages | to_entries[] | select(.value | not) | .key' <<< "$status" | xargs)
+          echo "packages=$missing" >> "$GITHUB_OUTPUT"
+          echo "To push: ${missing:-none (all six are on nuget.org)}" >> "$GITHUB_STEP_SUMMARY"
       # Requested right before pushing: the key lives one hour and can push only what the policy allows.
       - name: NuGet login (Trusted Publishing)
         id: login
+        if: steps.missing.outputs.packages != ''
         uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
         with:
           user: ${{ secrets.NUGET_USER }}
       - name: Push
+        if: steps.missing.outputs.packages != ''
         env:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+          PACKAGES: ${{ steps.missing.outputs.packages }}
         run: |
-          # Engine packages first, so the tool and the template never point at a version nuget.org does not have yet.
-          # Each push also sends the matching .snupkg (symbols) from the same folder.
-          for id in MicroEngine MicroEngine.Sdl MicroEngine.Raylib MicroEngine.Desktop MicroEngine.Cli MicroEngine.Templates; do
+          # Engine packages first (version.mjs packages order), so the tool and the template never point at a version
+          # nuget.org does not have yet. Each push also sends the matching .snupkg (symbols) from the same folder; a
+          # package pushed by an earlier attempt and not indexed yet is skipped by nuget.org (--skip-duplicate).
+          for id in $(node sdk/version.mjs packages); do
+            case " $PACKAGES " in *" $id "*) ;; *) continue ;; esac
             dotnet nuget push "sdk-feed/$id.$VERSION.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
       - name: Publish the GitHub release
         run: gh release edit "sdk-v$VERSION" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease
+
+  verify:
+    name: nuget.org serves it
+    needs: [preflight, publish]
+    if: >-
+      !cancelled() && needs.preflight.result == 'success'
+      && ((needs.preflight.outputs.action == 'finish' && needs.publish.result == 'skipped')
+          || (contains(fromJSON('["release", "publish"]'), needs.preflight.outputs.action) && needs.publish.result == 'success'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read # ci runs of main
+    outputs:
+      main: ${{ steps.main.outputs.main }}
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+      DOTNET_NOLOGO: 1
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preflight.outputs.sha }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Wait for nuget.org
+        run: node sdk/version.mjs wait-public "$VERSION" --timeout 1800
+      - name: A game from nuget.org alone
+        shell: bash # with pipefail, so `| tee` keeps a failure
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb > /dev/null
+          xvfb-run -a node sdk/tests/external.mjs --public --version "$VERSION" --targets linux | tee external.log
+          { echo "### A game from nuget.org"; echo '```'; grep -E '^(PASS|FAIL|skip)' external.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: The documented samples from nuget.org alone
+        shell: bash
+        run: node sdk/tests/docs.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+      # Production deploys main's head, and only once its own ci run passed; if it is still running, that run deploys
+      # it now that the documented version is public.
+      - name: Main to deploy
+        id: main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          main=$(git ls-remote origin refs/heads/main | cut -f1)
+          passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$main&event=push&status=success&per_page=1" --jq .total_count)
+          if [ "$passed" -ge 1 ]; then echo "main=$main" >> "$GITHUB_OUTPUT"
+          else echo "::notice::ci has not passed for main ${main::12} yet; its own run deploys the site."; fi
+
+  site:
+    name: Site
+    needs: [preflight, verify]
+    if: ${{ !cancelled() && needs.verify.result == 'success' && needs.verify.outputs.main != '' }}
+    uses: ./.github/workflows/deploy-site.yml
+    permissions:
+      contents: read
+    with:
+      ref: ${{ needs.verify.outputs.main }}
+      target: production
+      demo-source: release
+      expect-main: ${{ needs.verify.outputs.main }}
+    secrets:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

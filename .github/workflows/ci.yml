@@ -4,9 +4,12 @@
 #              (site/scripts/demos.mjs, ci policy: a changed game, or one canary game for an engine-wide change)
 #   checks     .NET on Linux, then Windows and native Linux; demo builds; the site and its browser suites
 #              (.github/workflows/checks.yml)
+#   sdk        the SDK packed, checked and used from outside the repository on Windows, Linux and macOS
+#              (.github/workflows/sdk.yml), when a package input changed; never published from here
 #   deploy     a preview for pull requests that change the site or a demo; production when main changes the
 #              published site, always with the latest released demos: merging never publishes a demo
-#   CI result  the one check to require: fails if anything needed failed, was cancelled or did not run
+#   CI result  the one check to require: fails if anything needed failed, was cancelled or did not run (the SDK
+#              check included); after it passes on main, sdk-release.yml starts if main documents a new SDK version
 #   project graph  .NET tests and native captures are narrowed to the test projects and games that depend on the
 #              changed files (.github/scripts/projects.mjs); a file outside every project runs them all
 # macOS: headless tests, informative only, when the repository variable PUBLIC_RUNNERS is true (free public runners).
@@ -39,6 +42,7 @@ jobs:
       dotnet: ${{ steps.decide.outputs.dotnet }}
       windows: ${{ steps.decide.outputs.windows }}
       native: ${{ steps.decide.outputs.native }}
+      sdk: ${{ steps.decide.outputs.sdk }}
       macos: ${{ steps.decide.outputs.macos }}
       tests: ${{ steps.changes.outputs.tests }}
       games: ${{ steps.changes.outputs.games }}
@@ -59,8 +63,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: site/package-lock.json
-      - name: Planner tests
-        run: node --test .github/scripts/*.test.mjs
+      - name: Planner and release tool tests
+        run: node --test .github/scripts/*.test.mjs sdk/tests/version.test.mjs
+      # Every active documentation reference names the documented SDK version (docs/releasing.md, "Versions").
+      - name: SDK version references
+        shell: bash # with pipefail, so `| tee` keeps a failure
+        run: node sdk/version.mjs check | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Checks for this change
         id: changes
         env:
@@ -97,6 +105,7 @@ jobs:
           DOTNET: ${{ steps.changes.outputs.dotnet }}
           WINDOWS: ${{ steps.changes.outputs.windows }}
           NATIVE: ${{ steps.changes.outputs.native }}
+          SDK: ${{ steps.changes.outputs.sdk }}
           MACOS: ${{ steps.changes.outputs.macos }}
           PUBLIC_RUNNERS: ${{ vars.PUBLIC_RUNNERS }}
           TESTS: ${{ steps.changes.outputs.tests }}
@@ -111,7 +120,7 @@ jobs:
           else suites=; fi
           site=$([ -n "$suites" ] && echo true || echo false)
           evidence=$(mktemp)
-          GITHUB_OUTPUT="$evidence" node .github/scripts/evidence.mjs plan --checks dotnet,windows,native,site \
+          GITHUB_OUTPUT="$evidence" node .github/scripts/evidence.mjs plan --checks dotnet,windows,native,site,sdk \
             --extra "dotnet=tests=$TESTS" --extra "windows=tests=$TESTS" --extra "native=games=$GAMES" \
             --site-extra "suites=$suites $PACKAGES" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
           get() { grep "^$1=" "$evidence" | cut -d= -f2-; }
@@ -124,14 +133,15 @@ jobs:
             echo "dotnet=$(run "$DOTNET" dotnet)"
             echo "windows=$(run "$WINDOWS" windows)"
             echo "native=$(run "$NATIVE" native)"
+            echo "sdk=$(run "$SDK" sdk)"
             # Informative and free only on a public repository's standard runners; never evidence, never a gate.
             echo "macos=$([ "$MACOS" = true ] && [ "$PUBLIC_RUNNERS" = true ] && echo true || echo false)"
             echo "site=$(run "$site" site)"
             echo "suites=$suites"
             echo "deploy=$deploy"
-            echo "keys={\"dotnet\":\"$(get key_dotnet)\",\"windows\":\"$(get key_windows)\",\"native\":\"$(get key_native)\",\"site\":\"$(get key_site)\"}"
-            echo "reused={\"dotnet\":\"$(get reused_dotnet)\",\"windows\":\"$(get reused_windows)\",\"native\":\"$(get reused_native)\",\"site\":\"$(get reused_site)\"}"
-            echo "needed={\"dotnet\":$DOTNET,\"windows\":$WINDOWS,\"native\":$NATIVE,\"site\":$site}"
+            echo "keys={\"dotnet\":\"$(get key_dotnet)\",\"windows\":\"$(get key_windows)\",\"native\":\"$(get key_native)\",\"site\":\"$(get key_site)\",\"sdk\":\"$(get key_sdk)\"}"
+            echo "reused={\"dotnet\":\"$(get reused_dotnet)\",\"windows\":\"$(get reused_windows)\",\"native\":\"$(get reused_native)\",\"site\":\"$(get reused_site)\",\"sdk\":\"$(get reused_sdk)\"}"
+            echo "needed={\"dotnet\":$DOTNET,\"windows\":$WINDOWS,\"native\":$NATIVE,\"site\":$site,\"sdk\":$SDK}"
           } >> "$GITHUB_OUTPUT"
           echo "Deployment: $deploy" >> "$GITHUB_STEP_SUMMARY"
 
@@ -158,6 +168,17 @@ jobs:
       keys: ${{ needs.plan.outputs.keys }}
       fork: ${{ needs.plan.outputs.fork == 'true' }}
 
+  # The SDK as an outside developer gets it; a separate reusable workflow because sdk-release.yml runs it too.
+  sdk:
+    name: SDK
+    needs: plan
+    if: needs.plan.outputs.sdk == 'true'
+    uses: ./.github/workflows/sdk.yml
+    with:
+      ref: ${{ github.sha }}
+      evidence: ${{ needs.plan.outputs.fork != 'true' }}
+      key: ${{ fromJSON(needs.plan.outputs.keys).sdk }}
+
   deploy:
     name: Site
     needs: [plan, checks]
@@ -181,7 +202,7 @@ jobs:
   # identical inputs, and the deployment (if any) succeeded.
   result:
     name: CI result
-    needs: [plan, checks, deploy]
+    needs: [plan, checks, sdk, deploy]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -192,6 +213,7 @@ jobs:
         env:
           PLAN: ${{ needs.plan.result }}
           CHECKS: ${{ needs.checks.result }}
+          SDK: ${{ needs.sdk.result }}
           DEPLOY: ${{ needs.deploy.result }}
           WANTED: ${{ needs.plan.outputs.deploy }}
           NEEDED: ${{ needs.plan.outputs.needed }}
@@ -204,11 +226,11 @@ jobs:
           {
             echo "### CI result"; echo
             echo "| Check | Needed | Outcome |"; echo "| --- | --- | --- |"
-            for check in dotnet windows native site; do
+            for check in dotnet windows native site sdk; do
               is_needed=$(echo "$NEEDED" | jq -r ".$check // false"); proof=$(echo "$REUSED" | jq -r ".$check // \"\"")
               if [ "$is_needed" != true ]; then outcome="not needed for this change"
               elif [ -n "$proof" ]; then outcome="already passed for identical inputs in [run $proof]($RUN_URL/$proof)"
-              else outcome="ran here: checks $CHECKS"; fi
+              else outcome="ran here: $([ "$check" = sdk ] && echo "sdk $SDK" || echo "checks $CHECKS")"; fi
               echo "| $check | $is_needed | $outcome |"
             done
             echo; echo "Deployment: $WANTED ($DEPLOY). .NET tests: $TESTS; native captures: ${GAMES:-none}."
@@ -218,6 +240,7 @@ jobs:
           [ "$PLAN" = success ] || { echo "::error::Plan $PLAN."; exit 1; }
           # Checks is skipped as a whole when the change needs none of its jobs (or evidence proved them all).
           [ "$CHECKS" = success ] || [ "$CHECKS" = skipped ] || { echo "::error::Checks $CHECKS."; exit 1; }
+          [ "$SDK" = success ] || [ "$SDK" = skipped ] || { echo "::error::SDK $SDK."; exit 1; }
           if [ "$WANTED" != none ] && [ "$DEPLOY" != success ]; then echo "::error::Deployment $DEPLOY."; exit 1; fi
       - uses: actions/checkout@v4
         if: always()

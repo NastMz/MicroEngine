@@ -17,8 +17,14 @@ How CI, full validation and releases work, and what they cost: [CI, validation a
 | Push to `main` that changes the published site | **production**, after every needed check passed | the latest release |
 | Push to `main` that only changes code | nothing deployed | nothing published |
 | Release workflow (manual) | **production**, staged, verified file by file, then promoted | the new release, published as the latest |
+| SDK release, once nuget.org serves the documented version | **production** of `main`'s head, if its ci passed | the latest release |
 
-The site deployed by `ci.yml` and `release.yml` is built in [`deploy-site.yml`](../.github/workflows/deploy-site.yml).
+**Production never presents an SDK version nobody can install.** When the documentation of `main` presents an SDK
+version nuget.org does not serve yet (between merging a release pull request and publishing it), every production
+deployment keeps the current one, with a warning, and a demo release is refused; `sdk-release.yml` deploys `main`
+once the packages are public ([Releasing](releasing.md)). Previews are not held.
+
+The site deployed by `ci.yml`, `release.yml` and `sdk-release.yml` is built in [`deploy-site.yml`](../.github/workflows/deploy-site.yml).
 Production refuses anything but released packages (`DEMOS_SOURCE=release`), and it is always staged with
 `--skip-domain` and then made public with `vercel promote`, which also re-enables domain assignment after a
 rollback.

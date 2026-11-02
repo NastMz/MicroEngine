@@ -42,6 +42,15 @@ test('inputs: each check reads its own part of the tree, conservatively', () => 
   for (const check of ['dotnet', 'windows', 'native', 'site']) assert.equal(isInput(check, 'odd/tasks/x.md'), false);
 });
 
+test('inputs: the SDK check reads what the packages and the external project test read', () => {
+  for (const file of ['src/Engine.cs', 'src/MicroEngine.Cli/Hosts/web/wwwroot/main.js', 'templates/Game/README.md', 'sdk/tests/external.mjs',
+    'web/toolchain.env', 'web/tests/package.json', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'Directory.Build.props', '.github/workflows/sdk.yml', 'newfolder/tool.cs'])
+    assert.equal(isInput('sdk', file), true, file);
+  for (const file of ['games/Alpha/Game.cs', 'tests/Alpha.Tests/A.cs', 'samples/Hello/Program.cs', 'docs/guide.md', 'site/src/page.astro',
+    'platforms/android/A.cs', 'README.md', 'odd/tasks/x.md'])
+    assert.equal(isInput('sdk', file), false, file);
+});
+
 test('keys: same content, same key; a change to an input changes it, other changes do not', () => {
   const root = repo();
   const dotnet = checkKey('dotnet', { root });
@@ -84,4 +93,17 @@ test('evidence: accepted only when unexpired, produced by this repository and wi
   assert.equal(await findEvidence('dotnet', key, { root, api: listing([{ expired: false, workflow_run: { id: 42, head_sha: produced } }]) }), null, 'a run whose repository is unknown');
   assert.equal(await findEvidence('dotnet', key, { root, api: listing([]) }), null);
   assert.equal(await findEvidence('dotnet', key, { root, api: async () => { throw new Error('HTTP 500'); } }), null, 'an API failure runs the check');
+});
+
+test('inputs agree with the planner: a file whose rule needs a check is an input of that check', async () => {
+  const { planChecks } = await import('./changes.mjs');
+  const files = ['src/MicroEngine/Core/A.cs', 'src/MicroEngine.Cli/Commands/A.cs', 'templates/Game/Program.cs', 'sdk/version.json',
+    'sdk/version.mjs', 'sdk/tests/docs.mjs', 'sdk/tests/external.mjs', 'games/Alpha/Game.cs', 'tests/Alpha.Tests/A.cs',
+    'samples/Hello/Program.cs', 'web/toolchain.env', 'web/tests/package.json', 'web/tests/desktop.mjs', 'THIRD-PARTY-NOTICES.md', 'LICENSE'];
+  for (const file of files) {
+    const checks = planChecks([file]);
+    for (const check of ['dotnet', 'windows', 'native', 'sdk']) {
+      if (checks[check] === true) assert.equal(isInput(check, file), true, `${file} runs ${check}, so it must change its key`);
+    }
+  }
 });

@@ -27,7 +27,9 @@ const always = file => /^(odd|experiments)\//.test(file);
 // Markdown is documentation unless a game ships it as content.
 const docs = file => /^docs\//.test(file) || (/\.md$/i.test(file) && !/\/Content\//.test(file));
 // Host templates of the microengine tool are compiled only into packages, never by the .NET tests.
-const dotnetSkips = file => always(file) || docs(file) || /^(site|platforms|web|sdk)\//.test(file) || /^src\/MicroEngine\.Cli\/Hosts\//.test(file);
+// The documented SDK version and the samples check (sdk/tests/docs.mjs, in the .NET Linux job) are .NET inputs.
+const dotnetSkips = file => always(file) || docs(file) || /^(site|platforms|web)\//.test(file) || /^src\/MicroEngine\.Cli\/Hosts\//.test(file)
+  || (/^sdk\//.test(file) && !/^sdk\/(version\.|tests\/(docs|version)\.)/.test(file));
 
 /** Which files can affect each check. */
 export const scopes = {
@@ -38,6 +40,11 @@ export const scopes = {
   // code reaches it only as packages, which the caller adds to the key (--site-extra).
   site: file => !always(file) && !/^(src|tests|samples|platforms)\//.test(file)
     && (!/^games\//.test(file) || /\.md$/i.test(file) || /^games\/[^/]+\/screenshots\//.test(file)),
+  // The packages read the engine, the tool, the template, the build settings, the web toolchain and the notices they
+  // ship; the external project test also reads web/ (its server and browser driver). Games, tests, samples and the
+  // documentation never reach a package.
+  sdk: file => !always(file) && !/^(docs|site|platforms|games|tests|samples)\//.test(file)
+    && (!/\.md$/i.test(file) || /^(src|templates|sdk)\//.test(file) || file === 'THIRD-PARTY-NOTICES.md'),
 };
 
 export const isInput = (check, file) => (scopes[check] ?? fail(`unknown check "${check}"`))(file);

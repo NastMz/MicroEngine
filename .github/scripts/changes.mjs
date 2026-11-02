@@ -14,6 +14,8 @@
 //   browser    none | layout: every page at three widths | full: layout plus playing each demo; anything but none
 //              also means the published site changed, so main deploys it
 //   workflows  actionlint over every workflow
+//   sdk        the SDK packages packed and checked, then used from outside the repository on Windows, Linux and macOS
+//              (sdk.yml): every input of a package, the tool, the template or the external project test
 //   macos      the headless .NET tests on macOS: informative (never a gate), and only started when the repository
 //              uses free public runners (repository variable PUBLIC_RUNNERS=true); otherwise advisory
 //   mobile     advisory only: printed as a recommendation to run platforms.yml or validate.yml; daily CI never
@@ -28,26 +30,28 @@ import { fileURLToPath } from 'node:url';
 import { readGraph, affectedScope, scopeText } from './projects.mjs';
 
 const levels = ['none', 'layout', 'full'];
-export const everything = Object.freeze({ dotnet: true, windows: true, native: true, browser: 'full', workflows: true, macos: true, mobile: true });
-const nothing = () => ({ dotnet: false, windows: false, native: false, browser: 'none', workflows: false, macos: false, mobile: false });
+export const everything = Object.freeze({ dotnet: true, windows: true, native: true, browser: 'full', workflows: true, sdk: true, macos: true, mobile: true });
+const nothing = () => ({ dotnet: false, windows: false, native: false, browser: 'none', workflows: false, sdk: false, macos: false, mobile: false });
 
 // First matching rule wins. `checks` lists what the path needs; 'all' means everything.
 const build = /^(Directory\.Build\.(props|targets)|global\.json|NuGet\.config|MicroEngine\.slnx|\.editorconfig|\.gitattributes)$/;
 export const rules = [
-  { pattern: /^\.github\/(workflows\/(ci|checks|deploy-site)\.yml|scripts\/)/, checks: 'all', why: 'daily CI itself' },
+  { pattern: /^\.github\/(workflows\/(ci|checks|deploy-site|sdk)\.yml|scripts\/)/, checks: 'all', why: 'daily CI itself' },
   { pattern: build, checks: 'all', why: 'build settings' },
   { pattern: /^\.github\/workflows\/platforms\.yml$/, checks: ['workflows', 'mobile'], why: 'platform workflow' },
   { pattern: /^\.github\/workflows\//, checks: ['workflows'], why: 'manual workflow' },
   { pattern: /^platforms\//, checks: ['mobile'], why: 'mobile hosts' },
   { pattern: /^\.github\//, checks: [], why: 'other repository settings' },
-  { pattern: /^src\/MicroEngine\.Cli\/Hosts\/web\//, checks: ['full'], why: 'browser host (microengine package web)' },
-  { pattern: /^src\/MicroEngine\.Cli\/Hosts\//, checks: ['mobile'], why: 'phone hosts (microengine package android, ios)' },
-  { pattern: /^src\/MicroEngine\.Cli\//, checks: ['dotnet', 'windows'], why: 'microengine tool (sdk.yml checks it from packages)' },
-  { pattern: /^templates\//, checks: ['dotnet'], why: 'project templates (sdk.yml creates a game from them)' },
-  { pattern: /^sdk\//, checks: [], why: 'SDK checks (sdk.yml)' },
-  { pattern: /^src\/MicroEngine\.Raylib\//, checks: ['dotnet', 'windows', 'native', 'macos', 'mobile'], why: 'raylib backend' },
-  { pattern: /^src\/MicroEngine\.(Sdl|Desktop)\//, checks: ['dotnet', 'windows', 'native', 'macos', 'mobile'], why: 'SDL backend and desktop platforms' },
-  { pattern: /^src\//, checks: ['dotnet', 'windows', 'native', 'macos'], why: 'engine' },
+  { pattern: /^src\/MicroEngine\.Cli\/Hosts\/web\//, checks: ['full', 'sdk'], why: 'browser host (microengine package web)' },
+  { pattern: /^src\/MicroEngine\.Cli\/Hosts\//, checks: ['mobile', 'sdk'], why: 'phone hosts (microengine package android, ios)' },
+  { pattern: /^src\/MicroEngine\.Cli\//, checks: ['dotnet', 'windows', 'sdk'], why: 'microengine tool' },
+  { pattern: /^templates\//, checks: ['dotnet', 'sdk'], why: 'project templates' },
+  // The documented samples' check (docs.mjs, .NET Linux) and the version tool it reads; Plan runs the tool's tests.
+  { pattern: /^sdk\/(version\.|tests\/(docs|version)\.)/, checks: ['dotnet'], why: 'documented SDK version and samples check' },
+  { pattern: /^sdk\//, checks: ['sdk'], why: 'SDK checks' },
+  { pattern: /^src\/MicroEngine\.Raylib\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile'], why: 'raylib backend' },
+  { pattern: /^src\/MicroEngine\.(Sdl|Desktop)\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile'], why: 'SDL backend and desktop platforms' },
+  { pattern: /^src\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos'], why: 'engine' },
   { pattern: /^games\/LICENSE$/, checks: ['layout'], why: 'demo games licence (packaged: demo keys rebuild)' },
   { pattern: /^games\/.*\.md$/i, checks: ['layout'], why: 'published game page' },
   { pattern: /^games\/[^/]+\/screenshots\//, checks: ['layout'], why: 'screenshots on the site' },
@@ -55,12 +59,16 @@ export const rules = [
   { pattern: /^tests\/MicroEngine\.(Raylib|Desktop)\.Tests\//, checks: ['dotnet', 'windows', 'native', 'macos'], why: 'backend tests' },
   { pattern: /^tests\/MicroEngine\.Tests\//, checks: ['dotnet', 'windows', 'macos'], why: 'engine tests' },
   { pattern: /^(tests|samples)\//, checks: ['dotnet'], why: 'game tests and samples' },
+  { pattern: /^web\/(toolchain\.env|setup\.sh|build-raylib-wasm\.sh)$/, checks: ['full', 'sdk'], why: 'web toolchain (MicroEngine.Raylib carries the web raylib)' },
+  { pattern: /^web\/tests\/package(-lock)?\.json$/, checks: ['native', 'sdk'], why: 'browser driver (desktop captures, the SDK test plays its web package)' },
   { pattern: /^web\/tests\//, checks: ['native'], why: 'desktop capture scripts' },
+  { pattern: /^web\/serve\.mjs$/, checks: ['full', 'sdk'], why: 'local web server (site checks, SDK test)' },
   { pattern: /^web\/.*\.md$/i, checks: ['layout'], why: 'published web page' },
   { pattern: /^(web|site)\//, checks: ['full'], why: 'web host and site' },
   { pattern: /^(odd|experiments)\//, checks: [], why: 'task records and experiments' },
+  { pattern: /^THIRD-PARTY-NOTICES\.md$/, checks: ['layout', 'sdk'], why: 'third-party notices (shipped in the packages)' },
   { pattern: /\.md$/i, checks: ['layout'], why: 'documentation' },
-  { pattern: /^LICENSE$/, checks: ['layout'], why: 'licence' },
+  { pattern: /^LICENSE$/, checks: ['layout', 'sdk'], why: 'licence (shipped in the packages)' },
 ];
 
 export function ruleFor(file) {
