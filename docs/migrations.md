@@ -11,6 +11,8 @@ Not published yet. Behaviour that changes:
 - `DialogueBox` shows every line of a page: a page that wraps to more than `Lines` lines continues on the next
   confirm (before, the extra lines were never shown). Pages written short show as before.
 - `BitmapFont.Wrap` breaks a word wider than `maxWidth` between characters (before, it overflowed the line).
+- `AudioMixer.PlayMusic` with the track that is fading out (towards another track or silence) brings it back
+  instead of restarting it from the beginning.
 - A game whose project declares an icon opens on its [start screen](guide/app-identity.md#start-screen) while it
   loads (desktop windows too). **Migration:** to keep a plain black window, set
   `<MicroEngineSplash>false</MicroEngineSplash>`.
