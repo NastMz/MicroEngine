@@ -15,13 +15,16 @@ namespace MicroEngine.Graphics;
 /// How glyph pages are sampled when text is scaled or rotated; null picks linear for antialiased text and nearest
 /// otherwise.
 /// </param>
-/// <param name="PageSize">Width and height of each glyph page texture (1024 by default: 4 MB each).</param>
+/// <param name="PageSize">
+/// Width and height of each glyph page texture: 512 by default (1 MB), enough for the printable ASCII of a few sizes;
+/// another page is added when one fills up.
+/// </param>
 /// <param name="Kerning">Applies the font's kerning pairs (true by default).</param>
 /// <param name="SnapToPixels">
 /// Places each glyph on whole canvas pixels (true by default) so unscaled text stays sharp; false keeps fractional
 /// positions, smoother for slowly moving text.
 /// </param>
-public sealed record FontOptions(bool Antialiasing = true, TextureFilter? Filter = null, int PageSize = 1024, bool Kerning = true, bool SnapToPixels = true)
+public sealed record FontOptions(bool Antialiasing = true, TextureFilter? Filter = null, int PageSize = 512, bool Kerning = true, bool SnapToPixels = true)
 {
     /// <summary>The default: antialiased, linear, kerned, snapped to pixels.</summary>
     public static FontOptions Default { get; } = new();

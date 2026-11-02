@@ -38,6 +38,27 @@ public sealed class AssetCacheTests
     }
 
     [TestMethod]
+    public void Looking_up_a_loaded_asset_allocates_nothing()
+    {
+        var (assets, _) = Open();
+        assets.Texture("items/blueGem.png");
+        assets.Atlas("atlases/players.xml");
+        assets.Font("fonts/Inter-Regular.ttf");
+        var scope = assets.CreateScope();
+        for (int i = 0; i < 10; i++) Lookups(scope);
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < 1000; i++) Lookups(scope);
+        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before, "games may ask for assets in Draw, every frame");
+
+        static void Lookups(AssetCache scope)
+        {
+            scope.Texture("items/blueGem.png");
+            scope.Atlas("atlases/players.xml");
+            scope.Font("fonts/Inter-Regular.ttf");
+        }
+    }
+
+    [TestMethod]
     public void Images_are_decoded_fresh_for_editing_and_never_cached()
     {
         var (assets, device) = Open();

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>AssetGallery</RootNamespace>
+  </PropertyGroup>
+
+  <!-- A small HD game made only from files: images, a JPEG, atlases from packing tools, a folder of sprites and TTF/OTF
+       fonts. Everything under Content/ ships with it without an item here (credits: CREDITS.md). -->
+  <PropertyGroup>
+    <ApplicationTitle>Asset Gallery</ApplicationTitle>
+    <ApplicationId>com.example.assetgallery</ApplicationId>
+    <Version>1.0.0</Version>
+    <Description>The MicroEngine asset pipeline in one HD screen: external images, atlases, fonts and filtering.</Description>
+    <MicroEngineGameFactory>new AssetGallery.GalleryGame()</MicroEngineGameFactory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.2" />
+  </ItemGroup>
+</Project>

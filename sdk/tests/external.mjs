@@ -58,7 +58,12 @@ fs.writeFileSync(path.join(work, 'NuGet.config'), `<?xml version="1.0" encoding=
     <clear />
 ${feed ? `    <add key="sdk-feed" value="${feed}" />\n` : ''}    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
   </packageSources>
-</configuration>
+${feed ? `  <!-- MicroEngine packages come from the feed only: nuget.org may hold the same version, built from an older commit. -->
+  <packageSourceMapping>
+    <packageSource key="sdk-feed"><package pattern="MicroEngine" /><package pattern="MicroEngine.*" /></packageSource>
+    <packageSource key="nuget.org"><package pattern="*" /></packageSource>
+  </packageSourceMapping>
+` : ''}</configuration>
 `);
 
 const run = (command, list, { cwd = work, extra = {} } = {}) => {
@@ -137,6 +142,10 @@ try {
     checkPackage(target, file, dist);
   }
 
+  // 4b. An HD game made only from files (samples/AssetGallery, ASSET-1): images, a JPEG, tool atlases, a folder atlas and
+  // TTF/OTF fonts, built from the packages alone, played through its tour and packaged with its content.
+  await checkGallery();
+
   // 5. Failures a developer meets, each with an actionable message.
   const original = fs.readFileSync(projectFile, 'utf8');
   const expectFailure = (name, edit, command, pattern) => {
@@ -163,6 +172,14 @@ try {
   if (process.platform !== 'win32') expectFailure('Windows package on another system', null, ['package', 'windows'], /built on Windows/);
   const workloads = run('dotnet', ['workload', 'list']).out;
   if (!/^\s*wasm-tools\s/m.test(workloads)) expectFailure('web package without the wasm-tools workload', null, ['package', 'web'], /wasm-tools/);
+  // Only a case-sensitive file system can hold both names; the build refuses them so every system loads the same file.
+  if (process.platform === 'linux') {
+    const twin = path.join(game, 'Content', 'Hero.png');
+    fs.copyFileSync(path.join(game, 'Content', 'hero.png'), twin);
+    const result = run(me, ['build'], { cwd: game });
+    fs.rmSync(twin);
+    check('fails clearly: content names that differ only in letter case', result.code !== 0 && /ME0010/.test(result.out), tail(result.out));
+  }
   const outside = run(me, ['build'], { cwd: work });
   check('fails clearly: no project in the folder', outside.code === 2 && /no game project/.test(outside.out), tail(outside.out));
   for (const folder of webPlays) await playInBrowser(folder);
@@ -174,6 +191,55 @@ try {
 }
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);
+
+/**
+ * The asset pipeline's consumer outside the repository: samples/AssetGallery copied (without build output), pointed at
+ * this SDK version, built, run with its tour script (the captures must differ: sampling and a level scope change the
+ * frame) and packaged for this system's desktop target and the web when available, with its fonts and atlases inside.
+ */
+async function checkGallery() {
+  const me = path.join(work, 'tools', `microengine${exe}`);
+  const source = path.join(repo, 'samples', 'AssetGallery');
+  const gallery = path.join(work, 'AssetGallery');
+  fs.cpSync(source, gallery, { recursive: true, filter: f => !/[\\/](bin|obj)([\\/]|$)/.test(path.relative(source, f)) });
+  const projectFile = path.join(gallery, 'AssetGallery.csproj');
+  fs.writeFileSync(projectFile, fs.readFileSync(projectFile, 'utf8').replace(/(<PackageReference Include="MicroEngine\.Desktop" Version=")[^"]+(")/, `$1${version}$2`));
+  let r = run(me, ['build'], { cwd: gallery });
+  if (!check('gallery: builds from the packages', r.code === 0, tail(r.out))) return;
+  const captures = path.join(work, 'gallery-captures');
+  r = run(me, ['run', '-c', 'Release', '--platform', 'sdl-software', '--', '--hidden', '--script', path.join(gallery, 'scripts', 'tour.script'), '--captures', captures], { cwd: gallery });
+  const shot = name => path.join(captures, name);
+  const ran = r.code === 0 && ['gallery.png', 'nearest-level.png', 'back.png'].every(n => fs.existsSync(shot(n)));
+  check('gallery: the tour runs and captures its HD frames', ran && !/assets: .* during play/.test(r.out), tail(r.out));
+  if (ran) {
+    const width = fs.readFileSync(shot('gallery.png')).readUInt32BE(16);
+    check('gallery: captures are 1280 wide (smooth canvas, scale 1)', width === 1280, String(width));
+    check('gallery: sampling and the level scope change the frame', !fs.readFileSync(shot('gallery.png')).equals(fs.readFileSync(shot('nearest-level.png'))));
+  }
+  const files = ['Content/fonts/Inter-Regular.ttf', 'Content/fonts/SourceSerif4-Regular.otf', 'Content/atlases/enemies.json', 'Content/atlases/players.png', 'Content/backgrounds/set2_background.jpg', 'Content/items/blueGem.png'];
+  for (const target of [host, ...(targets.includes('web') ? ['web'] : [])]) {
+    r = run(me, ['package', target], { cwd: gallery });
+    const file = r.out.match(/^package: (.+)$/m)?.[1]?.trim();
+    if (!check(`gallery: microengine package ${target}`, r.code === 0 && file && fs.existsSync(file), tail(r.out))) continue;
+    if (target === 'web') {
+      const folder = file.replace(/\.zip$/, '');
+      check('gallery web: fonts, atlases and images are in the page', files.every(f => fs.existsSync(path.join(folder, f))));
+      const list = fs.readFileSync(path.join(folder, 'content.txt'), 'utf8');
+      check('gallery web: the content list names them for the browser', files.every(f => list.includes(f.slice('Content/'.length))), tail(list));
+      continue;
+    }
+    const into = fs.mkdtempSync(path.join(gallery, 'extract-'));
+    const tar = process.platform === 'win32' ? path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe') : 'tar';
+    const x = target === 'macos' ? run('ditto', ['-x', '-k', file, into]) : run(tar, ['-xf', file, '-C', into]);
+    if (!check(`gallery ${target}: the package extracts`, x.code === 0, tail(x.out))) continue;
+    const top = path.join(into, 'AssetGallery');
+    const contentRoot = target === 'macos' ? path.join(top, 'Asset Gallery.app', 'Contents', 'Resources') : top;
+    check(`gallery ${target}: fonts, atlases and images are in the package`, files.every(f => fs.existsSync(path.join(contentRoot, f))));
+    const code = target === 'macos' ? path.join(top, 'Asset Gallery.app', 'Contents', 'MacOS') : top;
+    const played = run(path.join(code, `AssetGallery${exe}`), ['--platform', 'sdl-software', '--hidden', '--frames', '30', '--report']);
+    check(`gallery ${target}: the packaged game loads its content and runs`, played.code === 0 && /done: 30 updates/.test(played.out), tail(played.out));
+  }
+}
 
 function checkPackage(target, file, dist) {
   const id = 'Sample';

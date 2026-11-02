@@ -69,7 +69,10 @@ public sealed class AssetCache : IDisposable
     private ContentFolder? _content;
     private readonly AssetCache? _parent;
     private readonly List<AssetCache> _children = [];
-    private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
+    private readonly Dictionary<AssetKey, Entry> _entries = [];
+
+    /// <summary>What identifies a cached asset: its path, its kind and the options it was loaded with. A struct of references and values, so a lookup allocates nothing.</summary>
+    private readonly record struct AssetKey(string Path, string Kind, TextureFilter Filter, Vector2 Pivot, object? Options);
     private readonly Queue<Pending> _uploads = new();
     private readonly HashSet<string> _warned = new(StringComparer.Ordinal);
     private bool _disposed;
@@ -159,7 +162,9 @@ public sealed class AssetCache : IDisposable
     public Texture Texture(string path, TextureFilter? filter = null)
     {
         var sampling = filter ?? _device.DefaultFilter;
-        return Get(path, "texture", Variant(sampling), () => _device.CreateTexture(DecodeImage(path, "texture"), sampling));
+        var key = new AssetKey(Normalize(path), "texture", sampling, default, null);
+        // The loaders read everything from the key: a lambda capturing a parameter would allocate on every call, hits included.
+        return Find<Texture>(key) ?? Get(key, k => _device.CreateTexture(DecodeImage(k.Path, k.Kind), k.Filter));
     }
 
     /// <summary>
@@ -181,10 +186,11 @@ public sealed class AssetCache : IDisposable
     {
         options ??= AtlasOptions.Default;
         var sampling = filter ?? _device.DefaultFilter;
-        return Get(path, "atlas", Variant(sampling, options), () =>
+        var key = new AssetKey(Normalize(path), "atlas", sampling, default, options);
+        return Find<SpriteAtlas>(key) ?? Get(key, k =>
         {
-            var (data, image) = DecodeAtlas(path, options);
-            return BuildAtlas(path, data, image, sampling);
+            var (data, image) = DecodeAtlas(k.Path, (AtlasOptions)k.Options!);
+            return BuildAtlas(k.Path, data, image, k.Filter);
         });
     }
 
@@ -199,17 +205,18 @@ public sealed class AssetCache : IDisposable
     public SpriteAtlas AtlasFromFolder(string folder, Vector2 pivot = default, TextureFilter? filter = null)
     {
         var sampling = filter ?? _device.DefaultFilter;
-        return Get(folder, "folder atlas", Variant(sampling, pivot), () =>
+        var key = new AssetKey(Normalize(folder), "folder atlas", sampling, pivot, null);
+        return Find<SpriteAtlas>(key) ?? Get(key, k =>
         {
-            var files = Files(folder, "folder atlas").Where(f => ImageDecoder.Extensions.Contains(System.IO.Path.GetExtension(f))).ToList();
-            if (files.Count == 0) throw new AssetLoadException(folder, "folder atlas", "the folder holds no image.");
+            var files = Files(k.Path, k.Kind).Where(f => ImageDecoder.Extensions.Contains(System.IO.Path.GetExtension(f))).ToList();
+            if (files.Count == 0) throw new AssetLoadException(k.Path, k.Kind, "the folder holds no image.");
             var builder = new SpriteAtlasBuilder();
             foreach (var file in files)
             {
-                var image = DecodeImage(file, "folder atlas");
-                builder.Add(System.IO.Path.GetFileNameWithoutExtension(file), image, pivot * new Vector2(image.Width, image.Height));
+                var image = DecodeImage(file, k.Kind);
+                builder.Add(System.IO.Path.GetFileNameWithoutExtension(file), image, k.Pivot * new Vector2(image.Width, image.Height));
             }
-            return builder.Build(_device, sampling);
+            return builder.Build(_device, k.Filter);
         });
     }
 
@@ -218,7 +225,8 @@ public sealed class AssetCache : IDisposable
     public ScalableFont Font(string path, FontOptions? options = null)
     {
         options ??= FontOptions.Default;
-        return Get(path, "font", Variant(options), () => OpenFont(path, Read(path, "font"), options));
+        var key = new AssetKey(Normalize(path), "font", default, default, options);
+        return Find<ScalableFont>(key) ?? Get(key, k => OpenFont(k.Path, Read(k.Path, k.Kind), (FontOptions)k.Options!));
     }
 
     /// <summary>The bytes of any content file (not cached).</summary>
@@ -232,9 +240,9 @@ public sealed class AssetCache : IDisposable
     /// <summary>Whether this scope or one of its parents has <paramref name="path"/> loaded (in any form).</summary>
     public bool IsLoaded(string path)
     {
-        string key = Normalize(path) + "|";
+        string normalized = Normalize(path);
         for (var scope = this; scope is not null; scope = scope._parent)
-            if (scope._entries.Keys.Any(k => k.StartsWith(key, StringComparison.Ordinal))) return true;
+            if (scope._entries.Keys.Any(k => k.Path == normalized)) return true;
         return false;
     }
 
@@ -256,8 +264,8 @@ public sealed class AssetCache : IDisposable
     /// <returns>Whether anything was released.</returns>
     public bool Unload(string path)
     {
-        string key = Normalize(path) + "|";
-        var keys = _entries.Keys.Where(k => k.StartsWith(key, StringComparison.Ordinal)).ToList();
+        string normalized = Normalize(path);
+        var keys = _entries.Keys.Where(k => k.Path == normalized).ToList();
         foreach (var k in keys)
         {
             _entries[k].Value.Dispose();
@@ -353,28 +361,30 @@ public sealed class AssetCache : IDisposable
 
     private void Finish(Pending pending)
     {
+        long finishing = Stopwatch.GetTimestamp();
         try
         {
             if (pending.Decoding is { } task) task.Wait();
             else pending.Decode(this);
             if (pending.Error is { } error) throw error;
             // The keys the direct calls use with default options, so Texture(path) finds a preloaded texture.
-            string key = Key(pending.Path, pending.Kind, pending.Kind switch
+            var key = pending.Kind switch
             {
-                "texture" => Variant(_device.DefaultFilter),
-                "atlas" => Variant(_device.DefaultFilter, AtlasOptions.Default),
-                _ => Variant(FontOptions.Default),
-            });
+                "texture" => new AssetKey(Normalize(pending.Path), "texture", _device.DefaultFilter, default, null),
+                "atlas" => new AssetKey(Normalize(pending.Path), "atlas", _device.DefaultFilter, default, AtlasOptions.Default),
+                _ => new AssetKey(Normalize(pending.Path), "font", default, default, FontOptions.Default),
+            };
             if (FindLoaded(pending.Path, pending.Kind) is null)
             {
-                long started = Stopwatch.GetTimestamp();
                 IDisposable value = pending.Kind switch
                 {
                     "texture" => _device.CreateTexture(pending.Image!, _device.DefaultFilter),
                     "atlas" => BuildAtlas(pending.Path, pending.Atlas!, pending.Image!, _device.DefaultFilter),
                     _ => OpenFont(pending.Path, pending.Bytes!, FontOptions.Default),
                 };
-                Store(key, pending.Path, pending.Kind, value, pending.DecodeMilliseconds + Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+                // The load time counts the worker's decoding; a hitch is only what this thread spent (all of it without workers).
+                double blocking = Stopwatch.GetElapsedTime(finishing).TotalMilliseconds;
+                Store(key, value, (pending.Decoding is null ? 0 : pending.DecodeMilliseconds) + blocking, blocking);
             }
             pending.Batch.Complete(null);
         }
@@ -416,44 +426,51 @@ public sealed class AssetCache : IDisposable
 
     // ---- Internals
 
-    private T Get<T>(string path, string kind, string variant, Func<T> load) where T : class, IDisposable
+    /// <summary>The asset under <paramref name="key"/> in this scope or a parent, or null; allocates nothing.</summary>
+    private T? Find<T>(in AssetKey key) where T : class
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        string key = Key(path, kind, variant);
         for (var scope = this; scope is not null; scope = scope._parent)
             if (scope._entries.TryGetValue(key, out var found)) return (T)found.Value;
+        return null;
+    }
+
+    private T Get<T>(AssetKey key, Func<AssetKey, T> load) where T : class, IDisposable
+    {
+        if (key.Path.Length == 0) throw new ArgumentException("An asset path is needed.", nameof(key));
         long started = Stopwatch.GetTimestamp();
         T value;
-        try { value = load(); }
+        try { value = load(key); }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
         {
-            throw new AssetLoadException(Normalize(path), kind, e.Message, e);
+            throw new AssetLoadException(key.Path, key.Kind, e.Message, e);
         }
-        Store(key, path, kind, value, Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+        Store(key, value, Stopwatch.GetElapsedTime(started).TotalMilliseconds);
         return value;
     }
 
-    private void Store(string key, string path, string kind, IDisposable value, double milliseconds)
+    /// <param name="milliseconds">The whole load, worker decoding included.</param>
+    /// <param name="blocking">The part spent on the game's thread, which is what a player sees as a hitch; the whole load when null.</param>
+    private void Store(AssetKey key, IDisposable value, double milliseconds, double? blocking = null)
     {
-        _entries[key] = new Entry(Normalize(path), kind, value, milliseconds, Playing);
-        if (Playing && SlowLoadMilliseconds > 0 && milliseconds >= SlowLoadMilliseconds && _warned.Add(key))
-            Console.Error.WriteLine($"assets: {kind} '{Normalize(path)}' was loaded during play and took {milliseconds:0.0} ms (a visible hitch); load it in Load, or Preload it behind a loading screen.");
+        _entries[key] = new Entry(key.Path, key.Kind, value, milliseconds, Playing);
+        double hitch = blocking ?? milliseconds;
+        if (Playing && SlowLoadMilliseconds > 0 && hitch >= SlowLoadMilliseconds && _warned.Add(key.Kind + "|" + key.Path))
+            Console.Error.WriteLine($"assets: {key.Kind} '{key.Path}' was loaded during play and took {hitch:0.0} ms (a visible hitch); load it in Load, or Preload it behind a loading screen.");
     }
 
     private IDisposable? FindLoaded(string path, string kind)
     {
-        string prefix = Normalize(path) + "|" + kind + "|";
+        string normalized = Normalize(path);
         for (var scope = this; scope is not null; scope = scope._parent)
             foreach (var (key, entry) in scope._entries)
-                if (key.StartsWith(prefix, StringComparison.Ordinal)) return entry.Value;
+                if (key.Path == normalized && key.Kind == kind) return entry.Value;
         return null;
     }
-
-    private static string Key(string path, string kind, string variant) => Normalize(path) + "|" + kind + "|" + variant;
-    private static string Variant(params object?[] parts) => string.Join(";", parts.Select(p => p?.ToString() ?? ""));
+    /// <summary>'/' separators, no leading '/' or "./"; the same string when nothing changes, so lookups allocate nothing.</summary>
     private static string Normalize(string path)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
         path = path.Replace('\\', '/').TrimStart('/');
         while (path.StartsWith("./", StringComparison.Ordinal)) path = path[2..];
         return path;
