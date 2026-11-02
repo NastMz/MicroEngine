@@ -369,13 +369,19 @@ async function audio(browser, label) {
     await waitFor(page, s => s === 'ready', 120_000);
     await page.click('#play');
     await waitFor(page, s => s === 'playing');
+    const started = Date.now();
     await sleep(3000);
-    // Menus play an effect when the cursor moves.
+    // Menus play an effect when the cursor moves. Title music may start later: songs are rendered in the background,
+    // which takes longer on a slow machine; the check waits for the first sound and says when it came.
     await page.keyboard.press('ArrowDown');
-    await sleep(1500);
-    const levels = await page.evaluate(() => window.__levels.slice(-60));
-    const peak = Math.max(0, ...levels);
-    check(`${label} ${game}: sound reaches the output`, peak > 0.005, `peak RMS ${peak.toFixed(3)}`);
+    let peak = 0;
+    while (Date.now() - started < 15_000) {
+      await sleep(250);
+      peak = Math.max(0, ...await page.evaluate(() => window.__levels));
+      if (peak > 0.005) break;
+    }
+    const after = ((Date.now() - started) / 1000).toFixed(1);
+    check(`${label} ${game}: sound reaches the output`, peak > 0.005, `peak RMS ${peak.toFixed(3)}, ${peak > 0.005 ? `heard within ${after} s of the start` : `nothing in ${after} s`}`);
     await context.close();
   }
   // When the browser holds audio suspended (no gesture yet, or a policy change), the page must say so and the

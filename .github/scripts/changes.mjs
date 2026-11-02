@@ -20,8 +20,9 @@
 //              uses free public runners (repository variable PUBLIC_RUNNERS=true); otherwise advisory
 //   mobile     advisory only: printed as a recommendation to run platforms.yml or validate.yml; daily CI never
 //              starts an Android emulator or an iOS simulator
-//   web        the browser engine suites (web/tests/run.mjs) on development packages in Chrome: frames compared with
-//              the desktop build, real key events, frame rate, audio level; for the engine, the raylib backend, the
+//   web        the browser engine suites (web/tests/run.mjs) on development packages in Chrome: loading, real key
+//              events, frame rate, audio level, the scripts replayed (frames compared with the desktop build and
+//              reported); for the engine, the raylib backend, the
 //              web build, a game's code or the suites themselves. Output `web_games`: the changed games when every
 //              such change is a game's own, otherwise all
 //
