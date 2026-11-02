@@ -82,6 +82,8 @@ public sealed class HeadlessInput : IInputSource
     /// <inheritdoc/>
     public bool PadConnected { get; set; }
     /// <inheritdoc/>
+    public GamepadStyle PadStyle { get; set; }
+    /// <inheritdoc/>
     public PointerState Pointer { get; set; }
     /// <summary>Presses or releases a key.</summary>
     public void Set(Key key, bool down) { if (down) _keys.Add(key); else _keys.Remove(key); }
@@ -156,7 +158,7 @@ public sealed class HeadlessTouchScreen(Vector2 size) : ITouchScreen
 public sealed class RecordingOverlayCanvas : IOverlayCanvas
 {
     /// <summary>One recorded drawing call.</summary>
-    /// <param name="Kind">"circle", "ring", "triangle", "rect" or "text".</param>
+    /// <param name="Kind">"circle", "ring", "triangle", "rect", "text" or "image".</param>
     /// <param name="Center">Centre of the shape (the centroid for a triangle).</param>
     /// <param name="Size">Radius for circles and rings, width for rectangles, the length of the first side for triangles, height for text.</param>
     /// <param name="Color">The colour drawn.</param>
@@ -174,6 +176,8 @@ public sealed class RecordingOverlayCanvas : IOverlayCanvas
     public void FillRect(RectF rect, Color color) => Shapes.Add(new("rect", rect.Center, rect.Width, color));
     /// <inheritdoc/>
     public void Text(string text, Vector2 center, float height, Color color) => Shapes.Add(new("text", center, height, color, text));
+    /// <inheritdoc/>
+    public void Image(PixelImage image, RectF destination, Color tint) => Shapes.Add(new("image", destination.Center, destination.Width, tint));
 }
 
 /// <summary>A graphics device for tests: textures keep their size but hold no pixels, and creations are counted.</summary>

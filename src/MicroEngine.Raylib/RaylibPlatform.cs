@@ -383,6 +383,8 @@ internal sealed class RaylibInput : IInputSource
 
     public bool PadConnected => Rl.IsGamepadAvailable(0);
 
+    public GamepadStyle PadStyle => PadConnected ? ActionPrompts.StyleFromName(Rl.GetGamepadName_(0)) : GamepadStyle.Xbox;
+
     /// <summary>Where the frame was drawn, set by the platform each frame to map the mouse onto the canvas.</summary>
     public RectF Frame { get; set; }
     public int CanvasWidth { get; init; } = 320;

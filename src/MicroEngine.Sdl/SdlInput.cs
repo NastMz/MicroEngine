@@ -125,6 +125,14 @@ internal sealed unsafe class SdlInput(SdlPlatform platform) : IInputSource, IDis
 
     public bool PadConnected => _pad != null;
 
+    public GamepadStyle PadStyle => _pad == null ? GamepadStyle.Xbox : SDL_GetGamepadType(_pad) switch
+    {
+        SDL_GamepadType.SDL_GAMEPAD_TYPE_PS3 or SDL_GamepadType.SDL_GAMEPAD_TYPE_PS4 or SDL_GamepadType.SDL_GAMEPAD_TYPE_PS5 => GamepadStyle.PlayStation,
+        SDL_GamepadType.SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO or SDL_GamepadType.SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT
+            or SDL_GamepadType.SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT or SDL_GamepadType.SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR => GamepadStyle.Nintendo,
+        _ => GamepadStyle.Xbox,
+    };
+
     public PointerState Pointer
     {
         get
