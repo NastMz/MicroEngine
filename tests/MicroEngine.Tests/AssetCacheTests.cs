@@ -92,6 +92,8 @@ public sealed class AssetCacheTests
         Assert.IsTrue(level.IsLoaded("atlases/tiles.xml"));
         Assert.IsFalse(assets.IsLoaded("atlases/tiles.xml"), "the parent does not see its children's assets");
         Assert.AreEqual(2, assets.Statistics.Count, "statistics include children");
+        Assert.AreEqual(2, assets.Count);
+        Assert.AreEqual(1, level.Count);
         level.Dispose();
         Assert.IsTrue(tiles.Texture.IsDisposed);
         Assert.IsFalse(shared.Texture.IsDisposed);

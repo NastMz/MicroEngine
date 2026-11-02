@@ -75,35 +75,60 @@ public sealed class GalleryScene(GalleryGame game) : Scene
         game.Ui.Draw(r, "HD canvas 1280x720, smooth scaling, files only", new Vector2(44, 104), Label, Color.Hex("e8eefc"));
 
         // Characters from the Starling atlas, walking in place at two scales.
-        for (int i = 0; i < Walkers.Length; i++)
+        for (int i = 0; i < _walks.Length; i++)
         {
-            var frames = game.Players.Frames(Walkers[i] + "_walk");
-            var frame = frames[(int)(Age * 10) % frames.Count];
-            r.DrawPivoted(frame, new Vector2(110 + i * 130, 400), scale: new Vector2(i == 0 ? 2.5f : 1.5f));
+            var frames = _walks[i];
+            r.DrawPivoted(frames[(int)(Age * 10) % frames.Count], new Vector2(110 + i * 130, 400), scale: new Vector2(i == 0 ? 2.5f : 1.5f));
         }
         // Enemies from the Aseprite export: each tag's clip, with the export's frame durations.
         for (int i = 0; i < Tags.Length; i++)
             r.DrawPivoted(game.Enemies.Clip(Tags[i]).FrameAt(Age), new Vector2(720 + i * 110, 400), scale: new Vector2(1.5f));
         // The folder atlas: one texture for every loose item image.
-        int n = 0;
-        foreach (var name in game.Items.Names.Order(StringComparer.Ordinal))
-            r.DrawPivoted(game.Items[name], new Vector2(700 + n++ * 56, 160 + MathF.Sin(Age * 3 + n) * 6));
+        for (int n = 0; n < _items.Length; n++)
+            r.DrawPivoted(_items[n], new Vector2(700 + n * 56, 160 + MathF.Sin(Age * 3 + n + 1) * 6));
         if (_tiles is not null)
             for (int x = 0; x < 640; x += 64) r.DrawStretched(_tiles.Texture, _tiles["tileGreen_02"].Source, new RectF(x, 416, 64, 64), Color.White);
 
         // Text: wrapped prose in a serif OTF, interface text in a TTF at several sizes, and the built-in pixel font.
+        // Strings are built when they change, not every frame: drawing prepared text allocates nothing.
         float y = 500;
-        foreach (var line in game.Serif.At(Prose).Wrap(Paragraph, 760))
+        foreach (var line in _paragraph)
         {
             game.Serif.Draw(r, line, new Vector2(40, y), Prose, Color.Hex("f4f1ea"));
             y += game.Serif.LineHeight(Prose);
         }
-        var stats = Assets.Statistics;
-        string memory = string.Create(CultureInfo.InvariantCulture, $"{stats.Count} assets, {stats.TextureBytes / 1048576.0:0.0} MB of textures, loaded in {stats.LoadMilliseconds:0} ms");
-        game.Ui.At(Body).DrawShadowed(r, memory, new Vector2(840, 506), Color.White, Color.Black, new Vector2(2));
-        game.Ui.Draw(r, $"Characters: {CharacterFilter} sampling (confirm switches)", new Vector2(840, 548), Small, Color.Hex("c9d3ea"));
-        game.Ui.Draw(r, $"Level scope: {(LevelLoaded ? "loaded" : _loading is not null ? "loading" : "released")} (action switches)", new Vector2(840, 576), Small, Color.Hex("c9d3ea"));
-        game.Ui.Draw(r, $"Glyph pages: {game.Ui.Pages + game.Bold.Pages + game.Serif.Pages}", new Vector2(840, 604), Small, Color.Hex("c9d3ea"));
+        var status = Status();
+        game.Ui.At(Body).DrawShadowed(r, status[0], new Vector2(840, 506), Color.White, Color.Black, new Vector2(2));
+        for (int i = 1; i < status.Length; i++) game.Ui.Draw(r, status[i], new Vector2(840, 520 + i * 28), Small, Color.Hex("c9d3ea"));
         Font.Draw(r, "THE BUILT-IN PIXEL FONT STILL WORKS", new Vector2(840, 650), Color.Hex("ffd966"), scale: 2);
+    }
+
+    private IReadOnlyList<Sprite>[] _walks = [];
+    private Sprite[] _items = [];
+    private IReadOnlyList<string> _paragraph = [];
+    private string[] _status = [];
+    private (int Assets, TextureFilter Filter, bool Level, bool Loading, int Pages) _shown = (-1, default, false, false, -1);
+
+    public override void Enter()
+    {
+        _walks = [.. Walkers.Select(w => game.Players.Frames(w + "_walk"))];
+        _items = [.. game.Items.Names.Order(StringComparer.Ordinal).Select(name => game.Items[name])];
+        _paragraph = game.Serif.At(Prose).Wrap(Paragraph, 760);
+    }
+
+    /// <summary>The status lines, rebuilt only when what they show changed.</summary>
+    private string[] Status()
+    {
+        var now = (Assets.Count, CharacterFilter, LevelLoaded, _loading is not null, game.Ui.Pages + game.Bold.Pages + game.Serif.Pages);
+        if (now == _shown) return _status;
+        _shown = now;
+        var stats = Assets.Statistics;
+        return _status =
+        [
+            string.Create(CultureInfo.InvariantCulture, $"{stats.Count} assets, {stats.TextureBytes / 1048576.0:0.0} MB of textures, loaded in {stats.LoadMilliseconds:0} ms"),
+            $"Characters: {CharacterFilter} sampling (confirm switches)",
+            $"Level scope: {(LevelLoaded ? "loaded" : _loading is not null ? "loading" : "released")} (action switches)",
+            $"Glyph pages: {now.Item5}",
+        ];
     }
 }

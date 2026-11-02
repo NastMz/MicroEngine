@@ -289,6 +289,17 @@ public sealed class AssetCache : IDisposable
 
     // ---- Diagnostics
 
+    /// <summary>How many assets this scope and its children hold; allocates nothing, so it can be checked every frame.</summary>
+    public int Count
+    {
+        get
+        {
+            int count = _entries.Count;
+            foreach (var child in _children) count += child.Count;
+            return count;
+        }
+    }
+
     /// <summary>The assets of this scope and its children, in load order within each scope.</summary>
     public IReadOnlyList<AssetInfo> Loaded =>
         [.. _entries.Values.Select(e => new AssetInfo(e.Path, e.Kind, e.Bytes, e.Milliseconds, e.DuringPlay)), .. _children.SelectMany(c => c.Loaded)];
