@@ -76,16 +76,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: Windows
-            runner: windows-latest
-            targets: windows,linux
-          - os: Linux
-            runner: ubuntu-latest
-            targets: linux,web,android
-          - os: macOS
-            runner: macos-latest
-            targets: macos,linux
+        # The repository variable MACOS_RUNNERS=off drops the macOS project while GitHub has no macOS runner to give
+        # (docs/ci.md): the check then covers Windows and Linux only.
+        include: ${{ fromJSON(vars.MACOS_RUNNERS == 'off'
+          && '[{"os":"Windows","runner":"windows-latest","targets":"windows,linux"},{"os":"Linux","runner":"ubuntu-latest","targets":"linux,web,android"}]'
+          || '[{"os":"Windows","runner":"windows-latest","targets":"windows,linux"},{"os":"Linux","runner":"ubuntu-latest","targets":"linux,web,android"},{"os":"macOS","runner":"macos-latest","targets":"macos,linux"}]') }}
     defaults:
       run:
         shell: bash
