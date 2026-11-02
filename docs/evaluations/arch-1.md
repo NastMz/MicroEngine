@@ -4,7 +4,9 @@ Status: **approved by the owner on 2026-11-02 with five amendments; Phase II und
 integrated in place, not appended: prototypes run before the decision they validate (§9), one complete graphics
 device contract validated by a tier-0/tier-1 spike (§6.4, §7, §9), the legacy `Entity` adapter is transitional and
 deleted at the end of stage 5 (§6.3, §6.5, §9), stage closure criteria and property-based validation (§8, §9), and a
-definition of done for Phase II with a 3D vertical slice and a physics substitution demonstration (§9.1). Phase I
+definition of done for Phase II with a 3D vertical slice and a physics substitution demonstration (§9.1). Prototypes
+P1, P3 and P4 have concluded; their verdicts and the decisions taken on them are written in §9 (prototype verdicts)
+and applied in place in §5, §6.1-§6.5, §7, §9 and §10, including the revised graphics contract (§6.4). Phase I
 changed nothing in `src/`, `games/`, `samples/`, `templates/` or the workflows. Audited code: `docs/arch-1` =
 `feat/asset-1` at 5706285 (the ASSET-1 work, since merged). Record and Phase II register:
 [`odd/tasks/arch-1.md`](../../odd/tasks/arch-1.md). Date: 2026-11-02.
@@ -141,7 +143,7 @@ Only lessons that move a decision are listed; sources are in the R annexes. [F] 
 | Lesson | Source | Consequence for MicroEngine |
 | --- | --- | --- |
 | Engines that wrote one backend per graphics API backed away: FNA dropped its Metal driver and moved onto SDL_GPU [F]; MonoGame 3.8.5 calls its dozen wrappers a problem and moves to one native library with Vulkan/DX12 [F]; SDL removed SDL_GPU's D3D11 backend for maintenance cost [F]. | R1 | Never write a renderer per API. Target a portable device layer (SDL_GPU on native). |
-| SDL 3.4 added a 2D renderer on top of SDL_GPU with custom fragment shaders (`SDL_CreateGPURenderState`), GPU texture interop and `SDL_SCALEMODE_PIXELART` [F]. | R1 | A staged path exists: today's SDL backend can move onto the `gpu` driver and share its device with engine-owned GPU passes. |
+| SDL 3.4 added a 2D renderer on top of SDL_GPU with custom fragment shaders (`SDL_CreateGPURenderState`), GPU texture interop and `SDL_SCALEMODE_PIXELART` [F]. | R1 | A staged path exists: today's SDL backend can move onto the `gpu` driver and share its device with engine-owned GPU passes. Measured since (§9, P1 and P3): the path is correct but not taken; tier 0 keeps SDL's default driver and tier 1 is pure SDL_GPU. The SDL the binding bundles is 3.5.0, a development series (§10). |
 | SDL_GPU has no web backend; its WebGPU backend is an unmerged draft (PR #16020) with no date; WebGPU is still not default on Firefox Linux/Android or most Chrome Linux [F]. Every layer that runs on web today keeps a GL/WebGL path [F]. Godot had to bring back an OpenGL renderer and it is its only web renderer [F]. | R1 | Plan for two GPU paths on the web for years. Do not make 3D or shaders depend on WebGPU. |
 | Godot's renderer rewrite lost 2D batching until 4.4 (573,440 → 36 draw calls on one map once restored) [F]. | R1 | Draw-call counts and batching are tested invariants, as deterministic counters, from day one. |
 | Pixel-art: render at base size, scale by whole factors (Godot `viewport` + integer) [F]; per-node "snap" flags cause jitter and gaps [F]. | R1 | Pixel vs smooth is one presentation policy, not per-sprite flags. MicroEngine's canvas idea is right; its coupling is wrong. |
@@ -155,7 +157,7 @@ Only lessons that move a decision are listed; sources are in the R annexes. [F] 
 | Unity rewrote input; its complexity cost adoption and it later added a default project-wide action asset [F]. Godot has no per-player map [F]. leafwing assigns pads per player explicitly; unassigned maps hear every pad [F]. SDL3 gives gamepad types, labels, player index [F]. | R2 | Per-player maps with explicit pairing, but a zero-setup default (player 1 gets every device). |
 | dEQP/VK-GL-CTS compare with thresholds and position tolerance [F]; wgpu uses NVIDIA FLIP with mean/percentile thresholds [F] (but silently adopts a missing reference: do not copy); Skia Gold keys baselines by configuration with several accepted images [F]; WPT declares fuzz per test [F]; Mesa replays traces with per-device checksums and flake lists [F]. | R3 | Per-test declared tolerances, a perceptual metric, references keyed by renderer family, a missing reference is a failure. |
 | `Microsoft.Extensions.DependencyInjection.Specification.Tests` and EF Core specification tests are suites a provider subclasses [F]. | R3 | A published backend conformance kit on the same pattern. |
-| lavapipe, llvmpipe, SwiftShader, WARP run real GPU APIs on GPU-less CI; SDL_GPU picks software Vulkan unless hardware is required; raylib 6 has the CPU `rlsw` renderer [F]. | R3 | GPU backends are testable on hosted runners. |
+| lavapipe, llvmpipe, SwiftShader, WARP run real GPU APIs on GPU-less CI; SDL_GPU picks software Vulkan unless hardware is required; raylib 6 has the CPU `rlsw` renderer [F]. | R3 | GPU backends are testable on hosted runners. Not yet shown for SDL_GPU: P3 found no lavapipe ICD locally and no way to request WARP through SDL_GPU (§10). |
 | Change-point detection raised useful perf alerts from 1 % to 67 % at MongoDB; Perfherder uses a t-test and a 2 % floor [F]. | R3 | Gate merges only on deterministic counters; time is an alert trend. |
 
 What we deliberately do not copy: a render graph or a second render world (yet), XNA-style effect files, data-file
@@ -167,12 +169,12 @@ auto-adoption of missing references.
 
 | Topic | A says | B says | Resolution |
 | --- | --- | --- | --- |
-| Graphics end state | A2: a device layer with tier 0 (SDL_Renderer, raylib) and tier 1 (SDL_GPU native, WebGPU/WebGL2 in browsers). | R1: keep `IRenderer` as the 2D contract, add an optional SDL_GPU device through SDL_Renderer's `gpu` driver; browsers stay on raylib; WebGPU later. | The **contract** is A2's (one device abstraction shaped after SDL_GPU/WebGPU concepts, with capabilities). The **implementation order** is R1's: tier 0 first on existing backends, tier 1 = SDL_GPU on native via the `gpu` driver; no engine-written WebGL or WebGPU backend until prototype P4 decides the web host. Today's `IRenderer` survives as a façade over the 2D batcher. |
+| Graphics end state | A2: a device layer with tier 0 (SDL_Renderer, raylib) and tier 1 (SDL_GPU native, WebGPU/WebGL2 in browsers). | R1: keep `IRenderer` as the 2D contract, add an optional SDL_GPU device through SDL_Renderer's `gpu` driver; browsers stay on raylib; WebGPU later. | The **contract** is A2's (one device abstraction shaped after SDL_GPU/WebGPU concepts, with capabilities). The **implementation order** is R1's: tier 0 first on existing backends, then tier 1 on native. Revised by P1 and P3 (§9): tier 1 is a pure SDL_GPU adapter with its own built-in 2D pipelines, **not** SDL_Renderer's `gpu` driver (deferred draw ordering, custom render-state shaders dropped silently on D3D12; start-up and memory cost), and tier-0 SDL keeps SDL's default renderer driver. No engine-written WebGL or WebGPU backend; P4 settled the web host (SDL, tier 0 on SDL_Renderer). Today's `IRenderer` survives as a façade over the 2D batcher. |
 | Physics timing | A3: contracts `IPhysicsWorld2D/3D` now, Box2D v3 adapter "prepare". | R2: prepare the boundary; avoid native dependencies before WebAssembly packaging and determinism are checked. | Contracts and a contract test suite in the foundation; the in-house tile mover becomes the first implementation of the 2D query/kinematic part; the Box2D adapter only after P6 (Box2D.NET managed port vs native Box2D in wasm). |
 | Entity model | A3: ids, 3D-capable transform, optional parent, typed attachments; ECS vs attachments needs a prototype. | R2: no core ECS; stable id before serialization. | No core ECS. One object model: generation-checked `EntityId`, `Transform` (3D storage with 2D helpers), optional parent, typed attachments (components without a scheduler). An ECS may be added later as a module that stores attachments, behind the same ids (P7 checks ergonomics on one demo). |
 | Package granularity | A1: many packages split by boundary, enforced by an architecture test. | R3: add an abstractions package only once third-party backends exist; version everything together. | Assemblies split by real boundary (enforced by tests) now; **published packages grouped** into fewer units with one version (`MicroEngine` metapackage for the default experience). Abstractions are a separate assembly from day one but are only published separately when a third-party backend needs it. |
 | Mixer location | A3: one managed engine mixer over PCM sinks. | R2: keep the engine mixer, device as sink; "mixer off" mode for middleware. | Agree; plus P5 must prove a pull-callback sink on the web (AudioWorklet) and phone output threads before the device contract is frozen. |
-| Raylib's place | A1/A2: can raylib's "window owns the context" fit a surface abstraction? | R1: raylib remains the browser backend for now. | Raylib is kept as an **integrated backend** (host + device fused, declared as such) until P4 decides whether SDL3 on Emscripten replaces it. The contract allows integrated backends: a backend may provide host and device together. |
+| Raylib's place | A1/A2: can raylib's "window owns the context" fit a surface abstraction? | R1: raylib remains the browser backend for now. Resolved by P4 (§9): the platform contract has **no "integrated backend" concept**; SDL is the single host for all six platforms (Windows, Linux, macOS, Android, iOS, browsers). A backend package may still provide a host plus a device factory that accepts only its own surfaces, declared through `IGraphicsBackendFactory.UnsupportedReason`; that needs no special contract shape. raylib on the web is retired in stage 5 in favour of an SDL browser launcher (gates in §9); raylib on desktop stays as the second tier-0 implementation, and its future is decided in stage 2a. |
 | Asset processing | A2: premultiplying, mipmaps, GPU formats push toward build-time processing, reopening ADR 0025. | A1/R2: keep raw files; optional processed mode later. | ADR 0025 holds for 2D defaults: premultiply and mip generation happen at load in managed code. A build-time importer seam is reserved; it becomes mandatory only for formats that cannot be decoded at load (compressed GPU textures, compiled shaders). |
 
 ## 6. Target architecture
@@ -190,8 +192,8 @@ auto-adoption of missing references.
    scale) with 2D helpers; math is `System.Numerics`.
 5. **Simulation never draws.** Entities and scenes produce state; presentation modules read it (interpolated).
 6. **Deterministic by construction.** The loop owns the clock; scripted runs inject device events, not actions.
-7. **Portable through layers we do not write.** SDL3 (and SDL_GPU) on native, raylib in browsers until P4; no engine
-   code per graphics API.
+7. **Portable through layers we do not write.** SDL3 on every platform, browsers included (P4), with SDL_GPU for tier
+   1 on native; raylib in browsers only until stage 5; no engine code per graphics API.
 8. **No reflection in the composition path** (NativeAOT, trimming, WebAssembly).
 
 ### 6.2 Logical layers
@@ -207,7 +209,7 @@ flowchart TB
   content["Content: sources, handles, loaders"]
   kernel["Kernel: builder, services, schedule, time, events, log, capabilities"]
   platform["Platform contracts: host, surface, input events, PCM sink, files, storage"]
-  backends["Backends: SDL3 (+ SDL_GPU) · raylib (integrated) · Testing (headless + reference rasterizer)"]
+  backends["Backends: SDL3 host on six platforms (+ SDL_GPU) · raylib (desktop tier 0) · Testing (headless + reference rasterizer)"]
   game --> defaults --> modules
   modules --> graphics & content & kernel
   graphics --> kernel
@@ -237,8 +239,8 @@ Assemblies (each is a project; arrows are the only allowed references, checked b
 | `MicroEngine.UI` | Widgets with focus, pointer, layout in screen units, theme; highest input layer | Graphics2D, Text, Input |
 | `MicroEngine.Saves`, `MicroEngine.Achievements` | Optional modules (`SaveStore` over `IStorage`; tracker and toasts) | Kernel, Platform (+ UI for toasts) |
 | `MicroEngine.Hosting` | One launcher model for desktop, web, phones and tests; command-line parsing; profile catalog; `Configure` entry point used by generated hosts instead of `MicroEngineGameFactory` | Kernel, Platform |
-| `MicroEngine.Backend.Sdl` | SDL3 host, input backend (all pads, events), PCM sink, tier-0 device on SDL_Renderer, later tier-1 SDL_GPU device | abstractions |
-| `MicroEngine.Backend.Raylib` | Integrated backend (host + device + sink) for browsers and as a desktop alternative | abstractions |
+| `MicroEngine.Backend.Sdl` | SDL3 host for all six platforms (callback or blocking loop on native, page-driven loop in browsers through the SDL browser launcher), input backend (all pads, events), PCM sink, tier-0 device on SDL_Renderer (SDL's default driver, P1), later the tier-1 device on pure SDL_GPU (P3); the engine's own P/Invoke declarations for the SDL functions the .NET wasm interpreter mis-calls (K-P4-1, §9) | abstractions |
+| `MicroEngine.Backend.Raylib` | A host, a tier-0 device whose factory accepts only raylib's own surfaces (`UnsupportedReason`), and a sink, in one assembly; no special contract shape. Desktop: the second tier-0 implementation (real substitution evidence), future decided in stage 2a. Browsers: until the SDL browser launcher replaces it in stage 5 | abstractions |
 | `MicroEngine.Testing` | Headless host, deterministic clock, device-event scripts, recording device + CPU reference rasterizer, conformance suites, architecture test helpers | abstractions + modules |
 | `MicroEngine` (metapackage) | Default modules, presets, `Game` façade | modules |
 | `MicroEngine.Migration.Entities` (transitional) | The legacy `Entity`/`EntityList` adapter over `IWorld`, `[Obsolete]` from its first commit; a non-packable project consumed only by the demos while they migrate; **deleted at the end of stage 5** | Scene, Graphics2D |
@@ -253,7 +255,7 @@ graphics, content, graphics2D, text, input, audio, scene, physics + tiles, UI, s
 The Box2D backend is not in the metapackage (its packaging follows P6); the migration adapter is never packaged.
 Individual module packages are published only when a consumer needs to leave one out (the abstraction assemblies
 already exist, so splitting a package later is not a breaking change for code). Native binaries move to `*.Native`
-packages only if P4 or the SDL_GPU work makes their size or RIDs a problem.
+packages only if the SDL_GPU work or the static `SDL3.a` the web build links (P4) makes their size or RIDs a problem.
 
 ### 6.4 Fundamental contracts (sketch)
 
@@ -261,6 +263,15 @@ The sketches with rationale are in A1 §4.2, A2 §6 and A3 §7; this is the inte
 contract below is the **complete, single contract** (it restores and amends A2 §6.1; the abbreviated version in the
 first draft of this dossier was an omission, not a decision). Shapes are sketches: they are frozen only at the gates
 in §9 (the graphics contract after the stage 1 spike, `IAudioSink` after P5, `IWorld` after P7, physics after P6).
+
+The graphics sketch carries the sixteen revisions P3 demanded (architect directive of 2026-11-02, §9 prototype
+verdicts): the tier-1 adapter is pure SDL_GPU with its own built-in 2D pipelines; buffers exist on every tier; the
+surface target is acquired per frame and may be absent; readback is fenced and offscreen-only; device loss is
+optional; passes declare attachments with load and store operations; pipelines carry vertex layout and target
+formats; buffer and texture updates, stage-qualified uniforms, non-indexed draws and index sizes; depth formats with
+per-format, per-usage support; custom shaders validated at creation; the backend identity checked after creation; and
+fixed numeric conventions. The platform sketch carries P4's decisions: no integrated-backend concept, and the
+page-driven host rules.
 
 ```csharp
 // Kernel ------------------------------------------------------------------
@@ -297,6 +308,11 @@ public interface IPlatformHost : IDisposable
     bool TryGetCapability<T>([NotNullWhen(true)] out T? capability) where T : class;
     bool CanBlock { get; }                            // page-driven hosts: false (SDL_AppIterate shape)
 }
+// Page-driven host rules (P4), part of the contract text: a host with CanBlock = false never blocks (no waits,
+// sleeps or precise delays; the page paces frames); it reads the surface size from the canvas after start, not from
+// the size requested at creation; it opens the audio sink inside the user gesture that starts the game.
+// There is no "integrated backend" kind: SDL is the single host for all six platforms. A backend package may still
+// ship a host plus a device factory that accepts only its own surfaces (declared through UnsupportedReason).
 
 public interface IAudioSink : IDisposable                 // pulled on the backend's audio thread
 {
@@ -307,43 +323,52 @@ public interface IAudioSink : IDisposable                 // pulled on the backe
 // Graphics: one device contract for every tier ------------------------------
 // Tiers differ only in declared capabilities, never in API shape. A request that needs an undeclared capability
 // fails with GraphicsCapabilityException; there is no silent degradation.
-public interface ISurface                                  // produced by the host; integrated backends provide both
+// Conventions (P3, measured on D3D12 and Vulkan): System.Numerics right-handed CreateLookAt /
+// CreatePerspectiveFieldOfView, row vectors (World * View * Projection); matrices uploaded as-is and applied as
+// mul(M, v) in HLSL (no transpose); counter-clockwise front faces; depth 0..1; NDC y up; pixel and texture row 0 at
+// the top.
+public interface ISurface                                  // produced by the host
 {
     nint NativeWindow { get; }                             // opaque; only backends read it
     (int Width, int Height) PixelSize { get; }
     float PixelDensity { get; }
     event Action? Resized;
-    event Action? Lost;                                    // mobile surface destroyed, GPU reset
+    event Action? Lost;                                    // mobile surface destroyed (device loss is separate)
 }
 
 public interface IGraphicsBackendFactory
 {
     string Name { get; }                                   // "sdl-renderer", "sdl-gpu", "raylib", "headless-ref"
-    string? UnsupportedReason(ISurface? surface);
+    string? UnsupportedReason(ISurface? surface);          // e.g. a surface from another backend's host
     IGraphicsDevice Create(ISurface? surface, GraphicsDeviceOptions options);
 }
 
-public enum GraphicsTier { Tier0, Tier1 }                  // 0: SDL_Renderer, raylib; 1: SDL_GPU (web tier 1 later)
+public enum GraphicsTier { Tier0, Tier1 }  // 0: SDL_Renderer, raylib (desktop); 1: pure SDL_GPU (web tier 1 later)
 
 [Flags] public enum GraphicsFeatures
 {
     None = 0, RenderTargets = 1, TexturedGeometry = 2, AddressModes = 4, Mipmaps = 8, CustomBlend = 16,
     Shaders = 32, DepthBuffer = 64, Instancing = 128, ComputeShaders = 256, CompressedTextures = 512, FloatTextures = 1024,
+    GpuResidentBuffers = 2048,                             // informational only (tier 1); never required by the batcher
 }
 
 [Flags] public enum ShaderFormat { None = 0, SpirV = 1, Dxil = 2, Msl = 4 }   // offline-compiled; formats per backend
 
 public sealed record GraphicsLimits(int MaxTextureSize, int MaxRenderTargetSize, int MaxTextureSlots,
-    int MaxUniformBytes, int MaxVertexAttributes);
+    int MaxUniformBytes, int MaxVertexAttributes, int MaxColorAttachments);
 
-public sealed record GraphicsCapabilities(
-    GraphicsTier Tier,
-    GraphicsFeatures Features,
-    ShaderFormat ShaderFormats,                            // None on tier 0
-    IReadOnlySet<TextureFormat> TextureFormats,
-    IReadOnlySet<BlendState> BuiltInBlendStates,           // blend states the built-in pipelines support
-    GraphicsLimits Limits,
-    string ApiName, string? Adapter);
+public sealed class GraphicsCapabilities
+{
+    public GraphicsTier Tier { get; }
+    public GraphicsFeatures Features { get; }
+    public ShaderFormat ShaderFormats { get; }             // None on tier 0
+    public IReadOnlySet<BlendState> BuiltInBlendStates { get; }   // blend states the built-in pipelines support
+    public GraphicsLimits Limits { get; }
+    public string ApiName { get; }                         // the API actually created ("direct3d12", "vulkan", ...),
+                                                           // read after creation: SDL's driver hint overrides requests
+    public string? Adapter { get; }
+    public bool Supports(TextureFormat format, TextureUsage usage);   // per format and usage: AMD Vulkan lacks D24
+}
 
 /// The one typed error for a missing capability: names the operation, the device and what it lacks.
 public sealed class GraphicsCapabilityException : NotSupportedException
@@ -358,31 +383,54 @@ public enum BuiltInPipeline { Sprite, TexturedGeometry }  // every tier implemen
 public interface IGraphicsDevice : IDisposable
 {
     GraphicsCapabilities Capabilities { get; }
-    event Action<DeviceLostReason>? DeviceLost;            // resources marked lost; restorable ones re-uploaded
+    event Action<DeviceLostReason>? DeviceLost;            // optional: raised only by backends that can detect loss
+                                                           // (SDL_GPU never raises it); resources marked lost,
+                                                           // restorable ones re-uploaded. Surface loss is ISurface.Lost
 
     // Resources: every resource knows its device; core validates ownership, disposal and generation first;
     // destruction is deferred until the last submitted frame that used the resource completes.
     Texture CreateTexture(in TextureDescription description, ReadOnlySpan<byte> initialData = default);
     RenderTarget CreateRenderTarget(in RenderTargetDescription description);   // requires RenderTargets
     Sampler GetSampler(in SamplerDescription description);                     // immutable value, cached; never texture state
-    GpuBuffer CreateBuffer(in BufferDescription description);                  // vertex, index, uniform; requires TexturedGeometry
-    Shader CreateShader(in ShaderDescription description);                     // requires Shaders and a declared ShaderFormat
-    Pipeline CreatePipeline(in PipelineDescription description);               // custom shaders, depth or custom blend: declared capabilities only
-    Pipeline GetBuiltInPipeline(BuiltInPipeline kind, BlendState blend);       // every tier; the 2D batcher needs nothing else
+    GpuBuffer CreateBuffer(in BufferDescription description, ReadOnlySpan<byte> initialData = default);
+        // every tier: tier 0 = device-owned CPU memory submitted to SDL_RenderGeometry / raylib geometry calls;
+        // tier 1 = GPU buffers. The same 2D batcher writes buffers on both tiers
+    Shader CreateShader(in ShaderDescription description);   // requires Shaders and a declared ShaderFormat;
+                                                             // validated here against the tool's reflection counts
+    Pipeline CreatePipeline(in PipelineDescription description);
+        // custom shaders, depth or custom blend: declared capabilities only. Validated at creation (the backend builds
+        // the pipeline now): failure is GraphicsCapabilityException or a creation error, never a dropped draw
+    Pipeline GetBuiltInPipeline(BuiltInPipeline kind, BlendState blend, TextureFormat colorFormat,
+        TextureFormat? depthFormat = null);                   // every tier; cached by (kind, blend, formats)
 
-    // Submission and presentation
+    // Frames, submission, presentation, readback
+    bool TryAcquireSurfaceTarget(out RenderTarget target);  // false: no back buffer this frame (e.g. minimised);
+                                                            // the frame then skips presentation
     CommandList BeginCommands();
     void Submit(CommandList commands);
-    void Present();                                         // swapchain of the device's surface
+    void Present();                                         // presents the target acquired this frame
+    ReadbackRequest ReadPixels(RenderTarget target, RectI region);
+        // offscreen render targets only, never the surface target: a capture renders offscreen, reads it back, then
+        // blits (a built-in sprite draw) to the surface target. Completed by a fence
 }
 
-public enum TextureFormat { Rgba8Unorm, Rgba8UnormSrgb, R8Unorm, Rg8Unorm, Rgba16Float, Bc7, Etc2Rgba8, Astc4x4, Depth24Stencil8 }
+public sealed class ReadbackRequest                         // for tests and captures
+{
+    public bool IsCompleted { get; }                        // the fence has signalled
+    public void Wait();
+    public ReadOnlySpan<byte> Pixels { get; }               // valid once completed; rows top-down
+}
+// MicroEngine.Testing adds a synchronous readback helper (ReadPixels + Wait) for tests and captures.
+
+public enum TextureFormat { Rgba8Unorm, Rgba8UnormSrgb, R8Unorm, Rg8Unorm, Rgba16Float, Bc7, Etc2Rgba8, Astc4x4,
+    D16Unorm, D24UnormS8, D32Float }                        // support is queried with Capabilities.Supports
 public enum AlphaMode { Premultiplied, Straight }
 [Flags] public enum TextureUsage { Sampled = 1, RenderTarget = 2, DepthStencil = 4 }
 public readonly record struct TextureDescription(int Width, int Height, TextureFormat Format = TextureFormat.Rgba8Unorm,
     int MipLevels = 1, TextureUsage Usage = TextureUsage.Sampled, AlphaMode Alpha = AlphaMode.Premultiplied, string? Name = null);
+    // a depth texture: a depth format with Usage = DepthStencil; requires DepthBuffer and Supports(format, DepthStencil)
 public readonly record struct RenderTargetDescription(int Width, int Height, TextureFormat Format = TextureFormat.Rgba8Unorm,
-    TextureFormat? Depth = null, string? Name = null);       // Depth requires DepthBuffer
+    string? Name = null);                                   // a colour target; depth is a separate attachment
 
 public enum Filter { Nearest, Linear }
 public enum AddressMode { Clamp, Repeat, Mirror }        // Repeat/Mirror require AddressModes
@@ -399,13 +447,26 @@ public sealed record BlendState(BlendFactor SrcColor, BlendFactor DstColor, Blen
     public static readonly BlendState AlphaPremultiplied, Additive, Multiply, Opaque;   // premultiplied is the default
 }
 
+public enum ShaderStage { Vertex, Fragment }
+public enum IndexSize { Bits16, Bits32 }
 public readonly record struct BufferDescription(int SizeInBytes, BufferUsage Usage, string? Name = null);   // Vertex | Index | Uniform
 public readonly record struct ShaderDescription(ShaderStage Stage, ShaderFormat Format, ReadOnlyMemory<byte> Code,
-    string EntryPoint, ShaderResources Resources);           // bytecode produced offline by the tool (P2)
+    string EntryPoint, ShaderResources Resources);           // bytecode and reflection (resource counts) produced
+                                                             // offline by the tool (P2); checked at creation
 public readonly record struct DepthState(bool Test, bool Write, CompareOp Compare);
-public readonly record struct RasterState(CullMode Cull, FrontFace Front, bool Scissor);
+public readonly record struct RasterState(CullMode Cull, FrontFace Front, bool Scissor);   // FrontFace default: CCW
 public sealed record PipelineDescription(Shader Vertex, Shader Fragment, VertexLayout Layout, BlendState Blend,
-    DepthState Depth, RasterState Raster, TextureFormat ColorFormat, TextureFormat? DepthFormat);
+    DepthState Depth, RasterState Raster, IReadOnlyList<TextureFormat> ColorFormats, TextureFormat? DepthFormat);
+    // usable only in passes whose attachments have these formats
+
+public enum LoadOp { Load, Clear, DontCare }
+public enum StoreOp { Store, DontCare }
+public readonly record struct ColorAttachment(RenderTarget Target, LoadOp Load = LoadOp.Clear,
+    StoreOp Store = StoreOp.Store, ColorF Clear = default);
+public readonly record struct DepthAttachment(Texture Target, LoadOp Load = LoadOp.Clear,
+    StoreOp Store = StoreOp.DontCare, float ClearDepth = 1, byte ClearStencil = 0);   // requires DepthBuffer
+public sealed record PassDescription(IReadOnlyList<ColorAttachment> Colors, DepthAttachment? Depth = null);
+    // up to Limits.MaxColorAttachments; a clear ignores the scissor. 2D over 3D: colour Load, no depth
 
 public abstract class GraphicsResource : IDisposable     // Texture, RenderTarget, Sampler, GpuBuffer, Shader, Pipeline
 {
@@ -416,22 +477,27 @@ public abstract class GraphicsResource : IDisposable     // Texture, RenderTarge
 
 public sealed class CommandList                           // recorded on the main thread, validated in core
 {
-    public void BeginPass(RenderTarget? target, in PassClear clear);   // null = surface back buffer; clear ignores scissor
+    public void UpdateBuffer(GpuBuffer buffer, int offset, ReadOnlySpan<byte> data);   // outside passes: copy pass
+    public void UpdateTexture(Texture texture, in RectI region, ReadOnlySpan<byte> data); // on tier 1, immediate on tier 0
+    public void BeginPass(in PassDescription pass);       // the surface target only when acquired this frame
     public void SetViewport(in RectF viewport);
     public void SetScissor(in RectF? scissor);
     public void SetPipeline(Pipeline pipeline);
     public void SetTexture(int slot, Texture texture, Sampler sampler);
-    public void SetVertices(GpuBuffer buffer); public void SetIndices(GpuBuffer buffer);
-    public void SetUniforms<T>(int slot, in T data) where T : unmanaged;
+    public void SetVertices(GpuBuffer buffer); public void SetIndices(GpuBuffer buffer, IndexSize size);
+    public void SetUniforms(ShaderStage stage, int slot, ReadOnlySpan<byte> data);
+    public void Draw(int vertexCount, int firstVertex = 0);
     public void DrawIndexed(int indexCount, int firstIndex = 0, int baseVertex = 0, int instances = 1);   // instances > 1 requires Instancing
     public void EndPass();
 }
 
-// Tier 0 (SDL_Renderer, raylib 2D batch) implements textures, samplers, render targets, scissor, textured geometry
-// and the built-in pipelines with each supported blend state; CreateShader, and CreatePipeline with custom shaders
-// or depth, throw GraphicsCapabilityException. Tier 1 (SDL_GPU on native) implements everything it declares.
-// "headless-ref" is the CPU reference rasterizer implementing the written rules (tier 0 feature set).
-// Raylib remains an integrated backend (host + device + sink) unless P4 decides otherwise.
+// Tier 0 (SDL_Renderer on SDL's default driver, raylib on desktop) implements textures, samplers, render targets,
+// scissor, CPU-backed buffers, textured geometry and the built-in pipelines with each supported blend state;
+// CreateShader, and CreatePipeline with custom shaders or depth, throw GraphicsCapabilityException. Tier 1 is a pure
+// SDL_GPU adapter with its own built-in 2D pipelines (not SDL_Renderer's gpu driver, P3) and implements everything
+// it declares. "headless-ref" is the CPU reference rasterizer implementing the written rules (tier 0 feature set).
+// Shader formats stay declared capabilities; the toolchain that produces them is P2's (HLSL source; DXC for DXIL and
+// SPIR-V; SPIRV-Cross for MSL and reflection).
 
 public sealed record Presentation                       // replaces the five-way CanvasScaling coupling
 {
@@ -452,7 +518,8 @@ public interface IRenderer2D                              // implemented once, i
     void PushState(in RenderState state); void PopState();
     void End();
 }
-// The batcher drives only built-in pipelines, so it runs unchanged on every tier. A Material with a custom shader
+// The batcher writes GpuBuffers (UpdateBuffer) and drives only built-in pipelines, so it runs unchanged on every
+// tier (tier 0 buffers are CPU memory; GpuResidentBuffers is never required). A Material with a custom shader
 // is accepted only where Capabilities declares Shaders (otherwise GraphicsCapabilityException). Today's IRenderer
 // survives as a façade over IRenderer2D.
 
@@ -513,14 +580,14 @@ public interface IPhysicsWorld2D
 | Subsystem | Implement now (Phase II foundation) | Prepare (contract in place, minimal or no implementation) | Later |
 | --- | --- | --- | --- |
 | Kernel | Builder, typed registry, phased schedule, loop-owned time, capability query (deletes `ComposedPlatform`), events, `ILog`; one composition path; `Game` façade keeps `Program.cs` one line | Job abstraction (inline on WASM), main-thread dispatcher | Multithreaded submission |
-| Graphics | The single device contract (§6.4) with capabilities and the typed capability error, validated by the stage 1 contract spike (tier-0 SDL_Renderer adapter + tier-1 SDL_GPU adapter, P3) before it is frozen; tier-0 devices on SDL_Renderer and raylib (built-in pipelines, textured geometry, blend states incl. premultiplied, samplers, render targets, scissor, wrap); written rasterization/alpha/resource rules; deferred destruction and generations; `Presentation` presets; views (world view + UI view at screen resolution); 2D batcher over built-in pipelines with `IRenderer` as a façade; `Camera2D` zoom/rotation; F11 as a rebindable action | Phase II completion (§9.1): the tier-1 SDL_GPU device, offline shader compilation in the tool (P2), one material, depth, a minimal glTF mesh path in the 3D vertical slice; device-loss recovery from retained CPU copies | Full 3D renderer, lighting, compressed GPU formats, SDF text, HDR, web tier 1 |
+| Graphics | The single device contract (§6.4) with capabilities and the typed capability error, validated by the stage 1 contract spike (tier-0 SDL_Renderer adapter + tier-1 pure SDL_GPU adapter, P3) before it is frozen; tier-0 devices on SDL_Renderer (SDL's default driver, P1) and on raylib for desktop (the second tier-0 implementation; its future decided in stage 2a) (built-in pipelines, CPU-backed buffers, textured geometry, blend states incl. premultiplied, samplers, render targets, scissor, wrap); fenced readback of offscreen targets; written rasterization/alpha/resource rules; deferred destruction and generations; `Presentation` presets; views (world view + UI view at screen resolution); 2D batcher over built-in pipelines with `IRenderer` as a façade; `Camera2D` zoom/rotation; F11 as a rebindable action | Phase II completion (§9.1): the tier-1 pure SDL_GPU device with its own built-in 2D pipelines, offline shader compilation in the tool (P2), one material, depth, a minimal glTF mesh path in the 3D vertical slice; device-loss recovery from retained CPU copies on backends that can detect loss | Full 3D renderer, lighting, compressed GPU formats, SDF text, HDR, web tier 1 |
 | Content | Typed handles, shared owners, loader registry, audio as assets, zip source, Android/browser sources from backends | Build-time `IAssetImporter` + sidecar settings | Hot reload, GUIDs, streaming, mod overlays |
 | Input | Device ids and timestamped events, all pads, text/IME channel, wheel, rumble, touches as pointers, input layers with consumption; player 1 owns every device by default | Multiple players with pairing and join policy, rebinding persistence, gesture recognizers | Network input sources |
 | Audio | One managed mixer over PCM sinks, handles, priorities, buses, multiple music streams, streaming off the simulation step | Listener/emitters (2D pan from emitters now, 3D later), effects on buses, "mixer off" for middleware | HRTF, FMOD/Wwise modules |
 | Scene/world | `EntityId`, `Transform` hierarchy, attachments, engine interpolation + teleport, per-scene step tracking (fixes D11's frozen-overlay blend), world clocks, scene results; the legacy `Entity`/`EntityList` only as a transitional, `[Obsolete]` migration adapter outside the engine packages, deleted at the end of stage 5 | Serialization of worlds | Prefabs, editor, data-oriented module |
 | Physics | Common contract + conformance suite, `PhysicsCapabilities` with capability-specific suites; tile mover fixed (true swept test, moving solids) as `Physics.Tiles`, the first backend | Phase II completion (§9.1): Box2D v3 backend after P6 and the substitution demonstration | Jolt (3D) |
 | UI | Pointer/touch, focus, layout in screen units, input layer; action names owned by the game with engine defaults declared | Text fields with IME | Rich text |
-| Platform | Split host / device / sink / input backend; SDL3 callback-shaped loop on every host; web host decided by P4 before the split is frozen | SDL3 on Emscripten if P4 favours it | Consoles (out of scope) |
+| Platform | Split host / device / sink / input backend; SDL3 callback-shaped loop on every host; SDL the single host for all six platforms, with no integrated-backend concept (P4); page-driven host rules (never block, size from the canvas after start, audio opened inside the user gesture) in the contract text | The SDL browser launcher replaces raylib on the web in stage 5 (gates in §9); a binding generated without the shapes the .NET wasm interpreter mis-calls (K-P4-1) | Consoles (out of scope) |
 
 ## 7. Architectural decisions and discarded alternatives
 
@@ -531,7 +598,7 @@ Approved by the owner on 2026-11-02 (§11). Each becomes an ADR in `docs/decisio
 | --- | --- | --- | --- |
 | 0026 | Kernel with modules, typed service registry, phased schedule; `Game` is a module façade. | Keep `Game` (S1 blocks every new subsystem); reflection DI container (AOT/WASM); a full ECS scheduler as the kernel (Unity's dual-model cost). | 0003, 0016 |
 | 0027 | The loop owns time; engine interpolation with teleport; world clocks. | Backends own time (D4); games interpolate (three copies today). | 0023 |
-| 0028 | **One complete graphics device contract** for every tier, modelled on SDL_GPU/WebGPU: textures, render targets, immutable samplers, buffers, shaders, pipelines, command lists with passes, presentation; explicit `GraphicsCapabilities` (tier, features, shader formats, limits); built-in pipelines on every tier; one typed `GraphicsCapabilityException`, never silent degradation; premultiplied alpha; 2D batcher over built-in pipelines; `IRenderer` as façade. Frozen only after the stage 1 contract spike (tier 0 on SDL_Renderer and tier 1 on SDL_GPU, P3) implements it without ad hoc exceptions. | Specialized 2D and 3D device interfaces (they fork the resource model; composing 2D over 3D would cross two APIs); per-mechanism queryable extensions (they fragment the contract into untested combinations); keep `IRenderer` as the only contract (S2); one renderer per graphics API (industry reversals); WebGPU everywhere now (web coverage, Rust/C++ dependency, overlaps SDL windowing); a render graph now (no consumer yet). | 0003, 0017, 0024 |
+| 0028 | **One complete graphics device contract** for every tier, modelled on SDL_GPU/WebGPU: textures, render targets, immutable samplers, buffers, shaders, pipelines, command lists with passes, presentation; explicit `GraphicsCapabilities` (tier, features, shader formats, limits); built-in pipelines on every tier; one typed `GraphicsCapabilityException`, never silent degradation; premultiplied alpha; 2D batcher over built-in pipelines; `IRenderer` as façade. Frozen only after the stage 1 contract spike (tier 0 on SDL_Renderer and tier 1 on pure SDL_GPU) implements it without ad hoc exceptions; P3 revised its shape before the freeze (§6.4). | Tier 1 through SDL_Renderer's `gpu` driver (P3: draw ordering deferred until present or readback, custom render-state shaders dropped silently on D3D12; P1: start-up and memory cost); specialized 2D and 3D device interfaces (they fork the resource model; composing 2D over 3D would cross two APIs); per-mechanism queryable extensions (they fragment the contract into untested combinations); keep `IRenderer` as the only contract (S2); one renderer per graphics API (industry reversals); WebGPU everywhere now (web coverage, Rust/C++ dependency, overlaps SDL windowing); a render graph now (no consumer yet). | 0003, 0017, 0024 |
 | 0029 | `Presentation` record replaces `CanvasScaling`; pixel art is a preset. | Per-sprite snap flags (Godot's experience); keep the five-way coupling. | 0024 |
 | 0030 | One object model: ids, 3D-storage transforms, hierarchy, attachments; no core ECS. The legacy `Entity` survives only as a transitional `[Obsolete]` migration adapter outside every engine package, deleted at the end of stage 5 and guarded by the architecture test; `IWorld` frozen after P7. | Core ECS; keep `Entity` as is (S6); two object models; keep `Entity` as a permanent compatibility layer (it would become a second object model and constrain the new one). | 0003 |
 | 0031 | Physics contract after Box2D v3, split into a **common contract** every backend passes (static colliders, kinematic collide-and-slide, layers, queries, sensors, contact normals, fixed-phase step) and **declared `PhysicsCapabilities`** with their own suites (tile geometry and one-way tiles; dynamic bodies, rotation, joints, friction/restitution, CCD, round and polygon shapes, mass); undeclared requests fail with a typed error; tile mover as the first backend; Box2D backend after P6, demonstrated by substitution (§9.1). | In-house rigid-body solver; bind Box2D first and abstract later (would leak Box2D's API to games); one contract presuming the tile mover and Box2D are functionally equivalent (they are not); silent emulation of missing capabilities. | — |
@@ -548,7 +615,7 @@ The goal changes from "output identical to a recording" to "each subsystem meets
 | Tier | What it proves | Runs | Blocks | Comparison |
 | --- | --- | --- | --- | --- |
 | T0 Simulation | Determinism: a state hash per fixed step, first diverging step reported; scripted device events | every PR, every OS | yes | exact |
-| T1 Conformance | Each backend meets its contract: lifecycle, input events, audio sink (offline buffer vs reference WAV), clock, storage, rendering rules (clip, rasterization, alpha, disposed and foreign resources, samplers, targets), capability declarations (an undeclared capability fails with the typed error) | every PR touching a backend or contract; SDL on lavapipe/WARP, raylib on llvmpipe/`rlsw` | yes | each assertion declares the property it checks; exact properties (positions, counts, state, command lists, resource and error behaviour) exactly; geometric invariants (bounding boxes, coverage, histograms) with tolerances only from a named source of variation the contract allows |
+| T1 Conformance | Each backend meets its contract: lifecycle, input events, audio sink (offline buffer vs reference WAV), clock, storage, rendering rules (clip, rasterization, alpha, disposed and foreign resources, samplers, targets), capability declarations (an undeclared capability fails with the typed error) | every PR touching a backend or contract; SDL on lavapipe/WARP (unproven for SDL_GPU, §10), raylib on llvmpipe/`rlsw` | yes | each assertion declares the property it checks; exact properties (positions, counts, state, command lists, resource and error behaviour) exactly; geometric invariants (bounding boxes, coverage, histograms) with tolerances only from a named source of variation the contract allows |
 | T2 Commands and reference | The engine emits the right draw commands (text, exact) and the CPU reference rasterizer turns them into the reference image | every PR | yes | commands exact; reference image by declared property, per the tolerance policy below |
 | T3 Scene goldens | Demos, gallery and integration scenarios look right on each renderer family | PRs touching rendering or a game | yes | declared properties first (geometry, coverage, colour, text legibility, state) checked as in T1; FLIP mean/percentile against references keyed by renderer family (not 7 OS sets) only for the appearance the contract does not specify; masks documented; a missing reference is a failure (candidate written) |
 | T4 Platforms and devices | Real GPUs, Metal, phones, browsers | scheduled/manual | no (report) | Gold-style, several accepted images |
@@ -592,31 +659,110 @@ prototype in the stage where it must conclude, with its gate.
 
 | Stage | Content | Prototypes and gates in this stage | Depends on | Parallel units |
 | --- | --- | --- | --- | --- |
-| 0. Repair and measure | D1-D4, D9-D11 fixes with tests; validate nightly on `main`; browser suite `web/tests/run.mjs` in CI; SDL keyboard and audio-output tests; conformance skeleton with the rules already agreed; recording device + CPU reference rasterizer; property-based goldens beside the fingerprint | P1, P3 and P4 start | — | three: defects, CI, validation tooling |
-| 1. Kernel and composition | `MicroEngine.Kernel`, `Platform`, `Hosting`; builder, schedule, time, capabilities, events, log; split `IPlatform` into host/device/sink/input backend; one composition path (desktop, web, phones, tests); `Game` façade; architecture test. **Ends with the graphics contract spike:** the single device contract (§6.4) implemented by a minimal tier-0 adapter on SDL_Renderer and a tier-1 adapter on SDL_GPU, both driving the same 2D batcher; the contract is frozen only when both implement it without ad hoc exceptions | P4 before the platform/device split is frozen (hosts consolidated): decides whether integrated backends must exist in the contract. P3 (the tier-1 half of the spike) before the graphics contract is frozen. P1 before stage 2a starts: decides the tier-0 SDL base driver | 0 | — (one shared contract; done first, alone; the spike's two adapters may run in parallel) |
-| 2a. Graphics foundation | Real tier-0 devices on SDL and raylib built on the frozen contract; built-in pipelines, samplers, premultiplied alpha, targets, deferred destruction, typed capability error; `Presentation` and presets; views; `IRenderer2D` batcher with `IRenderer` façade; camera transforms; conformance suite T1-render | P1 concluded (entry gate) | 1 (frozen graphics contract) | parallel with 2b, 2c |
+| 0. Repair and measure | D1-D4, D9-D11 fixes with tests; validate nightly on `main`; browser suite `web/tests/run.mjs` in CI; SDL keyboard and audio-output tests; conformance skeleton with the rules already agreed; recording device + CPU reference rasterizer; property-based goldens beside the fingerprint; the asset gallery's scripted captures on the deterministic clock (P1 finding) | P1, P3 and P4 start (all three concluded, verdicts below) | — | three: defects, CI, validation tooling |
+| 1. Kernel and composition | `MicroEngine.Kernel`, `Platform`, `Hosting`; builder, schedule, time, capabilities, events, log; split `IPlatform` into host/device/sink/input backend; one composition path (desktop, web, phones, tests); `Game` façade; architecture test. **Ends with the graphics contract spike:** the single device contract (§6.4) implemented by a minimal tier-0 adapter on SDL_Renderer and a tier-1 adapter on pure SDL_GPU with its own built-in 2D pipelines (P3), both driving the same 2D batcher through buffers on both tiers; the spike records the exact SDL version (3.5.0, a development series, §10) and the tier-1 conformance suite measures the present mode (K-P1-1); the contract is frozen only when both implement it without ad hoc exceptions | P4 concluded: no integrated backends; SDL the single host; page-driven host rules in the contract. P3 concluded: the contract revised (§6.4); the freeze still waits for the spike. P1 concluded: tier-0 SDL keeps SDL's default driver | 0 | — (one shared contract; done first, alone; the spike's two adapters may run in parallel) |
+| 2a. Graphics foundation | Real tier-0 devices on SDL (SDL's default renderer driver) and raylib (desktop) built on the frozen contract; decides raylib desktop's future; built-in pipelines, samplers, premultiplied alpha, targets, deferred destruction, typed capability error; `Presentation` and presets; views; `IRenderer2D` batcher with `IRenderer` façade; camera transforms; conformance suite T1-render | P1 concluded (entry gate met) | 1 (frozen graphics contract) | parallel with 2b, 2c |
 | 2b. Input | Device events and ids, all pads, text/IME, touches as pointers, layers, default player | — | 1 | parallel |
 | 2c. Audio and content | Managed mixer over sinks, handles, buses, streaming; content handles, loader registry, sources; audio as assets | P5 before `IAudioSink` is frozen: run at 2c start or earlier; 2c does not close without it | 1 | parallel |
 | 3. World and physics | `MicroEngine.Scene` (ids, transforms, attachments, interpolation, clocks, scene results); physics common contract, `PhysicsCapabilities` and suites; `Physics.Tiles` with the fixed mover as the first backend; the **transitional** `Entity` adapter (`[Obsolete]`, in the non-packable `MicroEngine.Migration.Entities`, consumed only by the demos) | P7 before the `IWorld` contract is frozen; P6 before the physics contract is frozen | 1, 2a (presentation reads transforms) | — |
 | 4. UI and modules | UI with pointer/focus/layout/screen-unit view; saves, achievements, touch controls as modules | — | 2a, 2b, 3 | parallel per module |
-| 5. Consumers | Migrate the four demos, gallery, samples, template; docs, snippets and API reference regenerated; CLI hosts on the `Configure` entry point; packages and SDK acceptance; release notes as a breaking Alpha (written, not published). **Deletes the `Entity` adapter** (the architecture test fails on any reference) and **empties the exclusion list**; the stage cannot close otherwise | — | 2-4 | per demo |
-| 6. Phase II completion | The tier-1 SDL_GPU device, offline shader toolchain and the 3D vertical slice; the Box2D v3 backend and the physics substitution demonstration; the final report (§9.1) | P2 before the tier-1 shader toolchain is fixed (inside the 3D vertical slice) | 2a, 3 (contracts it exercises), P2, P6; Phase II completes only with stages 0-5 closed | 3D slice and physics substitution in parallel |
+| 5. Consumers | Migrate the four demos, gallery, samples, template; docs, snippets and API reference regenerated; CLI hosts on the `Configure` entry point; packages and SDK acceptance; the SDL browser launcher replaces raylib on the web (gates under P4 below); release notes as a breaking Alpha (written, not published). **Deletes the `Entity` adapter** (the architecture test fails on any reference) and **empties the exclusion list**; the stage cannot close otherwise | — | 2-4 | per demo |
+| 6. Phase II completion | The tier-1 pure SDL_GPU device, offline shader toolchain and the 3D vertical slice; the Box2D v3 backend and the physics substitution demonstration; the final report (§9.1) | P2 before the tier-1 shader toolchain is fixed (inside the 3D vertical slice) | 2a, 3 (contracts it exercises), P2, P6; Phase II completes only with stages 0-5 closed | 3D slice and physics substitution in parallel |
 
 Prototypes (each a throwaway in `experiments/` or a draft PR, measured, recorded in the register; verdict written
 here before its gate):
 
-| P | Question | Decides | Must be resolved before |
-| --- | --- | --- | --- |
-| P1 | Do the four demos run on SDL_Renderer's `gpu` driver matching references (draw calls, frame and start-up time) on every desktop and phone? | The tier-0 SDL base driver; tier 1 path | Stage 2a starts |
-| P2 | One palette-swap and one full-screen effect with shaders compiled offline for every backend | Shader toolchain in the tool (toolchain, not contract shape, since P3 already exercises shaders) | The tier-1 shader toolchain is fixed (inside the 3D vertical slice) |
-| P3 | A depth-tested mesh drawn with SDL_GPU composited with 2D on the same device; System.Numerics projection handedness vs SDL_GPU clip space. It is also the tier-1 half of the graphics contract spike | Whether the proposed device has limits; 3D readiness of the contract | The graphics contract is frozen (end of the stage 1 spike, before 2a implementation) |
-| P4 | SDL3 built for .NET 10's Emscripten running one demo in a browser vs raylib (size, frame time, audio) | Whether raylib stays the browser backend, and whether integrated (fused host + device) backends must exist in the contract | The platform/device split of stage 1 is frozen (hosts consolidated) |
-| P5 | Pull-callback PCM sink on web (AudioWorklet), Android and iOS output threads | The shape of `IAudioSink` | `IAudioSink` is frozen (before stage 2c closes; run at 2c start or earlier) |
-| P6 | Box2D v3 in .NET on every target: Box2D.NET (managed, version unclear) vs native Box2D incl. WebAssembly; determinism flags | Physics backend choice; a native binding with wasm limits changes the contract | The physics contract of stage 3 is frozen |
-| P7 | Port one demo (Courtyard Key) to ids/transforms/attachments; compare code and ergonomics with today | Attachment API shape; real ergonomics of `IWorld` | The `IWorld` contract of stage 3 is frozen |
+| P | Question | Decides | Must be resolved before | Verdict |
+| --- | --- | --- | --- | --- |
+| P1 | Do the four demos run on SDL_Renderer's `gpu` driver matching references (draw calls, frame and start-up time) on every desktop and phone? | The tier-0 SDL base driver; tier 1 path | Stage 2a starts | Concluded 2026-11-02: tier-0 SDL keeps SDL's default driver; Windows only measured ([evidence](#p1-verdict)) |
+| P2 | One palette-swap and one full-screen effect with shaders compiled offline for every backend | Shader toolchain in the tool (toolchain, not contract shape, since P3 already exercises shaders) | The tier-1 shader toolchain is fixed (inside the 3D vertical slice) | Open; P3 supplied its input toolchain |
+| P3 | A depth-tested mesh drawn with SDL_GPU composited with 2D on the same device; System.Numerics projection handedness vs SDL_GPU clip space. It is also the tier-1 half of the graphics contract spike | Whether the proposed device has limits; 3D readiness of the contract | The graphics contract is frozen (end of the stage 1 spike, before 2a implementation) | Concluded 2026-11-02: viable with sixteen revisions, applied in §6.4 ([evidence](#p3-verdict)) |
+| P4 | SDL3 built for .NET 10's Emscripten running one demo in a browser vs raylib (size, frame time, audio) | Whether raylib stays the browser backend, and whether integrated (fused host + device) backends must exist in the contract | The platform/device split of stage 1 is frozen (hosts consolidated) | Concluded 2026-11-02: SDL runs the games in browsers; no integrated backends; raylib web retired in stage 5 ([evidence](#p4-verdict)) |
+| P5 | Pull-callback PCM sink on web (AudioWorklet), Android and iOS output threads | The shape of `IAudioSink` | `IAudioSink` is frozen (before stage 2c closes; run at 2c start or earlier) | Open |
+| P6 | Box2D v3 in .NET on every target: Box2D.NET (managed, version unclear) vs native Box2D incl. WebAssembly; determinism flags | Physics backend choice; a native binding with wasm limits changes the contract | The physics contract of stage 3 is frozen | Open |
+| P7 | Port one demo (Courtyard Key) to ids/transforms/attachments; compare code and ergonomics with today | Attachment API shape; real ergonomics of `IWorld` | The `IWorld` contract of stage 3 is frozen | Open |
 
-Raylib stays an integrated backend unless P4 says otherwise. A prototype whose verdict contradicts an approved
-decision reopens that decision with its evidence; the decision is not kept only because it was approved.
+A prototype whose verdict contradicts an approved decision reopens that decision with its evidence; the decision is
+not kept only because it was approved.
+
+**Prototype verdicts.** Each verdict below was accepted by the architect (directives of 2026-11-02) and is applied in
+place in this dossier. The evidence is the prototype's report under `experiments/arch-1/`.
+
+<a id="p3-verdict"></a>**P3 — SDL_GPU 3D composited with 2D** ([report](../../experiments/arch-1/p3-sdl-gpu-3d/README.md),
+[PR #25](https://github.com/NastMz/MicroEngine/pull/25)). 142/142 checks (18 numeric, 124 on pixels) on D3D12 and
+Vulkan, on an NVIDIA and an AMD adapter: SDL_GPU draws a depth-tested mesh with a perspective camera composited with 2D
+on one device, both as pure SDL_GPU passes and through SDL_Renderer's `gpu` driver (byte-identical frames). **Verdict:
+the single device contract is viable, with sixteen revisions made before the stage 1 freeze**, all in §6.4:
+
+1. The tier-1 adapter is pure SDL_GPU with its own built-in 2D pipelines, not SDL_Renderer's `gpu` driver (draw
+   ordering deferred until present or readback; custom render-state shaders can be dropped silently on D3D12).
+2. `CreateBuffer` exists on every tier: tier 0 implements buffers as device-owned CPU memory submitted to
+   SDL_RenderGeometry or raylib's geometry calls, tier 1 as GPU buffers; the same 2D batcher writes buffers and issues
+   built-in pipeline draws on both tiers. `GpuResidentBuffers` is informational, never required by the batcher.
+3. No `BeginPass(null)` back buffer: `TryAcquireSurfaceTarget` returns false when the surface has no back buffer this
+   frame (e.g. minimised) and the frame skips presentation. Readback works only on offscreen render targets: captures
+   render offscreen, read back, then blit to the surface.
+4. `ReadPixels(RenderTarget, RectI)` returns a `ReadbackRequest` completed by a fence (`IsCompleted`, `Wait()`), for
+   tests and captures; a synchronous helper lives in Testing.
+5. `DeviceLost` is optional: raised only by backends that can detect it; SDL_GPU never raises it. Mobile surface loss
+   stays `ISurface.Lost`.
+6. Pass attachments: colour attachments and an optional depth(-stencil) attachment, each with load (Load, Clear,
+   DontCare) and store (Store, DontCare) operations and clear values.
+7. Pipelines carry vertex layout, colour target formats and depth format.
+8. `CommandList.UpdateBuffer` and `UpdateTexture` (a copy pass on tier 1; immediate on tier 0).
+9. `SetUniforms(ShaderStage stage, int slot, ReadOnlySpan<byte> data)`.
+10. `Draw(vertexCount, firstVertex)` and `DrawIndexed(indexCount, firstIndex, baseVertex)`; `IndexSize` 16/32 on
+    `SetIndices`.
+11. Depth formats D16Unorm, D24UnormS8, D32Float; support queried per format and usage
+    (`Capabilities.Supports(TextureFormat, TextureUsage)`), because AMD's Vulkan driver lacks D24.
+12. Shader formats remain declared capabilities; custom shaders are validated at creation (reflection and resource
+    counts supplied by the tool), so failures surface as `GraphicsCapabilityException` or a creation error, never at
+    draw time.
+13. Backend identity is checked after creation (`Capabilities.ApiName`), since SDL's driver hint overrides requests.
+14. Conventions fixed: System.Numerics right-handed `CreateLookAt` / `CreatePerspectiveFieldOfView`; matrices uploaded
+    as-is, `mul(M, v)` in HLSL; counter-clockwise front faces; depth 0..1.
+15. Shader toolchain (input to P2): HLSL source; DXC from the `Microsoft.Direct3D.DXC` package (DXIL, SPIR-V);
+    SPIRV-Cross (`Silk.NET.SPIRV.Cross`) for MSL and reflection. Windows-only DXC binaries and unverified MSL are P2
+    risks.
+16. Risks recorded (§10): lavapipe/WARP untested, so the 3D slice's CI check must be proven on Linux lavapipe; the
+    binding (`ppy.SDL3-CS` 2026.1002.1) bundles SDL 3.5.0, a development series, and the stage 1 spike records the
+    exact SDL version.
+
+The graphics contract is **not frozen** by this verdict: it freezes at the end of the stage 1 spike (S1-2), when the
+tier-0 and tier-1 adapters implement the revised contract without ad hoc exceptions.
+
+<a id="p1-verdict"></a>**P1 — the demos on SDL_Renderer's `gpu` driver**
+([report](../../experiments/arch-1/p1-sdl-gpu-driver/README.md), [PR #26](https://github.com/NastMz/MicroEngine/pull/26)).
+The `gpu` driver reproduces all 138 demo captures exactly on NVIDIA (D3D12 and Vulkan) but costs start-up (+220-320 ms;
+renderer creation 163 → 401/573 ms) and memory (peak commit 173 → 222/358 MB), and in desktop full screen on D3D12 it
+waits for the display with VSync off. **Verdict: tier-0 SDL keeps its default SDL_Renderer driver** (Direct3D 11 on
+Windows; the platform default elsewhere). Consistent with P3: tier 1 is pure SDL_GPU, not the `gpu` driver. Only
+Windows was measured; other platforms keep their current defaults. Draw calls were not observable (SDL_Renderer
+exposes no statistics). Follow-ups: known issue K-P1-1 (SDL_GPU D3D12 desktop full screen ignores VSync off; the
+tier-1 device chooses the present mode explicitly and its conformance suite measures it); the asset gallery's tour
+shows wall-clock load times, so its scripted captures must use the deterministic clock (stage 0 validation); the
+bundled SDL 3.5.0 is a dependency risk (§10). The stage 2a entry gate is met.
+
+<a id="p4-verdict"></a>**P4 — SDL3 on .NET WebAssembly** ([report](../../experiments/arch-1/p4-sdl3-web/README.md),
+[PR #28](https://github.com/NastMz/MicroEngine/pull/28)). SDL3 runs MicroEngine games in browsers through .NET 10
+WebAssembly (Emscripten 3.1.56, a static `SDL3.a` linked through `NativeFileReference`, page-driven loop). Meadow Run
+and Courtyard Key ran on `SdlPlatform` in Chrome and Firefox with no game change; download 2544 vs 2696 KB (Brotli,
+binding trimmed), click to playing 727 vs 864 ms, equal frame time. **Verdict and decisions:**
+
+1. The platform contract has **no "integrated backend" concept**. SDL is the single host for all six platforms. A
+   backend package may still provide a host plus a device factory that only accepts its own surfaces (declared through
+   `IGraphicsBackendFactory.UnsupportedReason`); that needs no special contract shape (§5, §6.3, §6.4, §6.5).
+2. raylib for the web is **retired in stage 5** in favour of an SDL browser launcher, gated by: real phones and
+   Safari/iOS; the `web/tests` suites and reference frames; hidden-page suspension; gamepads; safe-area insets;
+   haptics; all four demos; binding trimming (SDL3-CS as `TrimmableAssembly`). raylib on desktop stays for now as the
+   second tier-0 implementation (real substitution evidence); its future is decided in stage 2a.
+3. The .NET wasm interpreter defects (64-bit enum P/Invoke parameters; `delegate* unmanaged` parameters) are worked
+   around in the engine's own P/Invoke declarations (`ulong`, `nint`) for the affected SDL functions: known issue
+   K-P4-1 (§10).
+4. The host rules for page-driven hosts are part of the platform contract text: never block (`CanBlock = false`), size
+   from the canvas after start, audio opened inside the user gesture (§6.4).
+
+The platform/device split is not frozen by this verdict: it freezes in stage 1, when the hosts are consolidated.
 
 ### 9.1 Definition of done for Phase II
 
@@ -625,11 +771,11 @@ for physics substitution:
 
 1. Stages 0-5 closed, including the `Entity` adapter deleted and the exclusion list empty: the four demos, the
    gallery, the samples and the template migrated and green.
-2. **3D vertical slice** on the tier-1 SDL_GPU device, exercising the new contracts end to end: a mesh loaded as an
+2. **3D vertical slice** on the tier-1 pure SDL_GPU device, exercising the new contracts end to end: a mesh loaded as an
    asset (minimal glTF), an entity with a transform hierarchy and engine interpolation, a camera with a perspective
    projection, depth testing, one material with a shader compiled offline (P2 toolchain), composited with 2D on the
-   same device; covered by conformance and property tests and run in CI on a software rasterizer (lavapipe/WARP).
-   Not a 3D game.
+   same device; covered by conformance and property tests and run in CI on a software rasterizer: Linux lavapipe, which must
+   first be proven to run SDL_GPU (P3 could not test it; WARP through SDL_GPU is unknown, §10). Not a 3D game.
 3. **Physics substitution demonstration** (below).
 4. The final report (state of the engine, implemented decisions, verified tests and platforms, pending capabilities,
    packages/demos/CLI/docs/CI state), delivered integrated in `main` without any release.
@@ -669,10 +815,14 @@ editor.
 | The graphics contract spike costs time before any real backend exists (two adapters, one of them on SDL_GPU at stage 1). | Both adapters are minimal (built-in pipelines and the 2D batcher, plus P3's depth-tested mesh for tier 1); they are the cheapest way to avoid building two real backends on a contract that would then change. |
 | The transitional `Entity` adapter becomes permanent. | `[Obsolete]` from the first commit, non-packable, outside the engine packages; the architecture test fails on any reference after stage 5. |
 | A physics abstraction leaks the backend's semantics (Godot/Jolt). | Common suite per backend; capability-specific suites only where declared; typed errors for undeclared capabilities; semantics the contract does not fix are documented in the substitution demonstration. |
-| SDL 3.4 GPU renderer fixes are recent; Android Vulkan driver quality varies; iOS simulator lacks SDL_GPU. | Tier 0 remains the default; P1 decides the tier-0 SDL driver; tier is a capability, not an assumption. |
+| SDL's GPU renderer (added in 3.4) and SDL_GPU fixes are recent; Android Vulkan driver quality varies; iOS simulator lacks SDL_GPU. | Tier 0 remains the default and keeps SDL's default renderer driver (P1); tier is a capability, not an assumption. |
+| The binding (`ppy.SDL3-CS` 2026.1002.1) bundles SDL 3.5.0 (`ea7a2da`), a development series that tracks SDL `main`; P1, P3 and P4 all ran on it, and results may move with point releases. | The stage 1 spike records the exact SDL version; binding updates are deliberate, re-run the conformance suites, and are paired with the web workload's Emscripten (P4). |
+| SDL_GPU's D3D12 backend ignores VSync off in desktop full screen (K-P1-1, measured by P1: 10 ms frames on a 100 Hz display). | The tier-1 device chooses the present mode explicitly and its conformance suite measures it. Not reported upstream: outward publication is not authorised; listed for the owner. |
+| .NET wasm interpreter defects: P/Invoke parameters of 64-bit enum type and `delegate* unmanaged` parameters fail at run time, not at build time (K-P4-1). | The engine's own P/Invoke declarations use `ulong` and `nint` for the affected SDL functions (P4 recommends a browser test for each such call). Not reported upstream: listed for the owner. |
+| Software rasterizers for SDL_GPU are unproven: P3 found no lavapipe ICD locally and SDL_GPU exposes no way to request WARP; whether hosted runners can run tier 1 is unknown. | The 3D slice's CI check must be proven on Linux lavapipe (§9.1). |
 | Two GPU paths on the web for years. | No engine-written web GPU backend in Phase II (web tier 1 is later); 3D marked unavailable on tier 0 through capabilities. |
 | Interpolation adds one step of visual latency and needs previous state. | Opt-out per entity; teleport API; input sampled per frame for UI. |
-| Shader toolchain adds native tools (DXC, SPIRV-Cross) to the SDK. | Offline only, in the tool (P2); games without shaders never need it. |
+| Shader toolchain adds native tools (DXC, SPIRV-Cross) to the SDK; the `Microsoft.Direct3D.DXC` package ships Windows binaries only, and MSL output was not executed (P3). | Offline only, in the tool (P2); games without shaders never need it; P2 settles non-Windows DXC and verifies MSL on Metal. |
 | Conformance kit becomes a published contract to version. | Versioned with the SDK; capability-based skips. |
 | Assembly split adds friction. | One metapackage, one version; the architecture test is the only new rule contributors meet. |
 | A post-merge workflow publishes or deploys during Phase II. | Automatic production site deployments from `main` are frozen for Phase II by a separate pull request merged first; validation CI keeps running. |
@@ -693,6 +843,13 @@ The owner approved the target architecture on 2026-11-02, with five amendments n
 
 With this, §6, the decisions in §7 (the basis for ADRs 0026-0036) and the stage plan in §9 are approved as the plan
 for Phase II.
+
+Decisions taken in Phase II on prototype evidence (the architect's directives of 2026-11-02, under the governance
+below; verdicts and evidence in §9): P3 revised the graphics contract in sixteen points before its freeze, with tier 1
+as pure SDL_GPU (§6.4); P1 kept SDL's default renderer driver for tier-0 SDL; P4 removed the integrated-backend
+concept, made SDL the single host for all six platforms, scheduled raylib's web retirement for stage 5 behind the
+listed gates, kept raylib on desktop as the second tier-0 implementation until stage 2a decides, and put the
+page-driven host rules into the platform contract.
 
 Governance for Phase II (the owner's protocol of 2026-11-02): the architect directs, reviews and merges; agents
 implement every unit through a pull request and never merge their own; the architect may merge to `main` after

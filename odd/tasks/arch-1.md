@@ -89,26 +89,28 @@ A stage's tasks are checked against the stage closure criteria in dossier §9.
 | T2 | S2 | delegated: 3 researchers (rendering, engine core/physics/assets/audio/input, validation/packaging) | done | — (in the Phase I PR) | annexes R1-R3 (230+ sources) |
 | T3 | S1-S9 | inline: cross-check, resolve contradictions, write `docs/evaluations/arch-1.md` | done | — (in the Phase I PR) | dossier; D1 and D4 spot-checked against source |
 | T4 | S10 | inline: present for approval | done: approved 2026-11-02 with five amendments | — | `L4`, `L5` |
-| T5 | S11-S13, S16 | delegated: documentation agent, branch `docs/arch-1-plan` | PR open | [#23](https://github.com/NastMz/MicroEngine/pull/23) | dossier amended (§6.3-§6.5, §7-§11, §9.1), annex notes, this register |
-| G1 | S15 | delegated: another agent, branch `fix/phase-ii-deploy-freeze` | in progress | — | freezes automatic production site deployments from `main`; merges first |
-| S0-D1 | S11 | delegated (unassigned) | pending | — | D1 `ComposedPlatform` forwarding, with tests |
-| S0-D2 | S11 | delegated (unassigned) | pending | — | D2 release-gating package checks red on `main` |
-| S0-D3 | S11 | delegated (unassigned) | pending | — | D3 fingerprint passes real regressions; lasting fix is S0-V3 |
-| S0-D4 | S11 | delegated (unassigned) | pending | — | D4 headless clock ignores `UpdateRate` |
-| S0-D9 | S11 | delegated (unassigned) | pending | — | D9 `AssetCache.Unload` with shared holders; duplicate loads |
-| S0-D11 | S11 | delegated (unassigned) | pending | — | D11 smaller defects (list in dossier §3.1) |
-| S0-C1 | S11, S15 | delegated (unassigned) | pending | — | validate nightly on `main` |
-| S0-C2 | S11 | delegated (unassigned) | pending | — | browser suite `web/tests/run.mjs` in CI (D10) |
-| S0-C3 | S11 | delegated (unassigned) | pending | — | SDL keyboard and audio-output tests (D10) |
-| S0-V1 | S11 | delegated (unassigned) | pending | — | conformance skeleton with the rules already agreed |
-| S0-V2 | S11 | delegated (unassigned) | pending | — | recording device + CPU reference rasterizer |
-| S0-V3 | S11 | delegated (unassigned) | pending | — | property-based goldens beside the fingerprint (dossier §8 tolerance policy) |
-| P1 | S11 | delegated (unassigned), `experiments/` or draft PR | pending (starts with stage 0) | — | gate: before stage 2a starts |
-| P3 | S11 | delegated (unassigned), `experiments/` or draft PR | pending (starts with stage 0) | — | gate: graphics contract frozen (end of stage 1 spike); tier-1 half of S1-2 |
-| P4 | S11 | delegated (unassigned), `experiments/` or draft PR | pending (starts with stage 0) | — | gate: platform/device split of stage 1 frozen |
-| S1-1 | S11 | delegated (unassigned) | pending | — | kernel, platform split, hosting, one composition path, architecture test |
-| S1-2 | S11 | delegated (unassigned) | pending | — | graphics contract spike: tier-0 SDL_Renderer + tier-1 SDL_GPU adapters driving one 2D batcher |
-| S2a | S11 | delegated (unassigned) | pending | — | graphics foundation on the frozen contract |
+| T5 | S11-S13, S16 | delegated: documentation agent, branch `docs/arch-1-plan` | done | [#23](https://github.com/NastMz/MicroEngine/pull/23), 986adc6 | dossier amended (§6.3-§6.5, §7-§11, §9.1), annex notes, this register |
+| T6 | S11, S16 | delegated: documentation agent, branch `docs/arch-1-prototype-verdicts` | PR open | `docs: ARCH-1 prototype verdicts (P1, P3, P4) and revised graphics contract` | dossier §9 prototype verdicts; §6.4 graphics contract revised per directive 2 (16 points); directive 3 decisions in §5, §6.1-§6.5, §7, §9, §10, §11; this register |
+| G1 | S15 | delegated: another agent, branch `fix/phase-ii-deploy-freeze` | done | [#22](https://github.com/NastMz/MicroEngine/pull/22), 9a8020e | automatic public publication frozen for Phase II (`.github/phase-freeze`); validation CI keeps running |
+| S0-D1 | S11 | delegated: stage 0 defects agent, branch `fix/arch-1-stage0-defects` | done | [#24](https://github.com/NastMz/MicroEngine/pull/24), 59fae72 | `ComposedPlatform` forwards every `IPlatform` member and exactly the backend's optional interfaces; tests RED first |
+| S0-D2 | S11 | delegated: stage 0 CI agent, branch `fix/arch-1-stage0-ci` | PR open | [#27](https://github.com/NastMz/MicroEngine/pull/27) | Windows WARP reference drift and the Debian 11 glibc check rule (`packaging/targets.mjs`) |
+| S0-D3 | S11 | delegated: stage 0 validation agent, branch `feat/arch-1-stage0-validation` | in progress (no PR yet) | — | D3 fingerprint passes real regressions; lasting fix is S0-V3 |
+| S0-D4 | S11 | delegated: stage 0 defects agent | done | [#24](https://github.com/NastMz/MicroEngine/pull/24), 59fae72 | `HeadlessPlatform.UpdateRate`; `Now` equals `Game.Time` at any rate. Limitation: `new HeadlessPlatform()` without settings still runs at 60 |
+| S0-D9 | S11 | delegated: stage 0 defects agent | done | [#24](https://github.com/NastMz/MicroEngine/pull/24), 59fae72 | one store per game, shared holds, disposal with the last holder; ADR 0025 amended (745221e) |
+| S0-D11 | S11 | delegated: stage 0 defects agent; CI agent for `docs/ci.md` | partly done | [#24](https://github.com/NastMz/MicroEngine/pull/24), [#27](https://github.com/NastMz/MicroEngine/pull/27) | done in #24: `EntityList` clear during update, glyph filter docs match the code, `AssetGalleryTests` 30 s deadline; `docs/ci.md` drift in #27 (open); frozen-overlay blend resolved by stage 3 (dossier §6.5 Scene row); QWERTY prompts open, unassigned |
+| S0-C1 | S11, S15 | delegated: stage 0 CI agent | PR open | [#27](https://github.com/NastMz/MicroEngine/pull/27) | `validate.yml` nightly on `main` (03:17 UTC), publishes nothing |
+| S0-C2 | S11 | delegated: stage 0 CI agent | PR open | [#27](https://github.com/NastMz/MicroEngine/pull/27) | `web/tests/run.mjs` per game in `checks.yml` (Chrome under Xvfb) (D10) |
+| S0-C3 | S11 | delegated: stage 0 CI agent | PR open | [#27](https://github.com/NastMz/MicroEngine/pull/27) | `SdlKeyboardTests` and `SdlAudioTests` in the Native Linux job (D10) |
+| S0-V1 | S11 | delegated: stage 0 validation agent, branch `feat/arch-1-stage0-validation` | in progress (no PR yet) | — | conformance skeleton with the rules already agreed |
+| S0-V2 | S11 | delegated: stage 0 validation agent | in progress (no PR yet) | — | recording device + CPU reference rasterizer |
+| S0-V3 | S11 | delegated: stage 0 validation agent | in progress (no PR yet) | — | property-based goldens beside the fingerprint (dossier §8 tolerance policy) |
+| S0-V4 | S11 | delegated (unassigned): the stage 0 validation PR or the next validation PR | pending | — | asset gallery deterministic clock: the gallery's tour shows wall-clock load times, so its scripted captures change between runs; under scripted/deterministic runs it must use the deterministic clock (P1 finding, directive 3) |
+| P1 | S11 | delegated: prototype agent, `experiments/arch-1/p1-sdl-gpu-driver` | concluded: verdict accepted | [#26](https://github.com/NastMz/MicroEngine/pull/26), 479d3af | tier-0 SDL keeps SDL's default driver (dossier §9 P1 verdict); stage 2a entry gate met |
+| P3 | S11 | delegated: prototype agent, `experiments/arch-1/p3-sdl-gpu-3d` | concluded: verdict accepted | [#25](https://github.com/NastMz/MicroEngine/pull/25), a5bad10 | 142/142 checks; graphics contract revised in 16 points (dossier §6.4, §9 P3 verdict); the freeze still waits for S1-2 |
+| P4 | S11 | delegated: prototype agent, `experiments/arch-1/p4-sdl3-web` | concluded: verdict accepted | [#28](https://github.com/NastMz/MicroEngine/pull/28), 3ef39c0 | SDL3 on .NET wasm; no integrated backends; SDL the single host; raylib web retired in stage 5 (dossier §9 P4 verdict) |
+| S1-1 | S11 | delegated (unassigned) | pending | — | kernel, platform split (no integrated-backend concept; page-driven host rules), hosting, one composition path, architecture test |
+| S1-2 | S11 | delegated (unassigned) | pending | — | graphics contract spike: tier-0 SDL_Renderer + tier-1 pure SDL_GPU adapters driving one 2D batcher, on the contract as revised by P3; records the exact SDL version |
+| S2a | S11 | delegated (unassigned) | pending | — | graphics foundation on the frozen contract; decides raylib desktop's future |
 | S2b | S11 | delegated (unassigned) | pending | — | input |
 | P5 | S11 | delegated (unassigned), `experiments/` or draft PR | pending | — | gate: `IAudioSink` frozen (before stage 2c closes) |
 | S2c | S11 | delegated (unassigned) | pending | — | audio and content |
@@ -116,9 +118,9 @@ A stage's tasks are checked against the stage closure criteria in dossier §9.
 | P7 | S11 | delegated (unassigned), `experiments/` or draft PR | pending | — | gate: `IWorld` contract of stage 3 frozen |
 | S3 | S11, S12 | delegated (unassigned) | pending | — | world, physics common contract + capabilities, `Physics.Tiles`, transitional `Entity` adapter |
 | S4 | S11 | delegated (unassigned) | pending | — | UI and modules |
-| S5 | S11 | delegated (unassigned) | pending | — | consumers migrated; `Entity` adapter deleted; exclusion list empty |
-| P2 | S11, S13 | delegated (unassigned), `experiments/` or draft PR | pending | — | gate: tier-1 shader toolchain fixed (inside the 3D vertical slice) |
-| S6-1 | S13 | delegated (unassigned) | pending | — | 3D vertical slice on tier-1 SDL_GPU (dossier §9.1 item 2) |
+| S5 | S11 | delegated (unassigned) | pending | — | consumers migrated; `Entity` adapter deleted; exclusion list empty; SDL browser launcher replaces raylib on the web behind the P4 gates (dossier §9) |
+| P2 | S11, S13 | delegated (unassigned), `experiments/` or draft PR | pending | — | gate: tier-1 shader toolchain fixed (inside the 3D vertical slice); input from P3: HLSL, DXC package, SPIRV-Cross; risks: Windows-only DXC, unverified MSL |
+| S6-1 | S13 | delegated (unassigned) | pending | — | 3D vertical slice on tier-1 pure SDL_GPU (dossier §9.1 item 2); CI check proven on Linux lavapipe first |
 | S6-2 | S12, S13 | delegated (unassigned) | pending | — | Box2D v3 backend and the physics substitution demonstration (§9.1 item 3) |
 | S6-3 | S13 | delegated (unassigned) | pending | — | final report, integrated in `main`, no release (§9.1 item 4) |
 
@@ -129,20 +131,21 @@ every unit is delegated by the owner's protocol (S14).
 ## Register
 
 Updated by agents at each merge, gate and stage closure (S16). Dates are ISO; PR numbers link to the pull request.
+Last update: 2026-11-02 (T6).
 
 ### Stage status
 
 | Stage | Status | Gates still open | Closure criteria met (dossier §9 a-e) |
 | --- | --- | --- | --- |
-| 0. Repair and measure | not started; ready once G1 merges | — | — |
-| 1. Kernel and composition | not started | P4 (split frozen), P3 + S1-2 (graphics contract frozen), P1 (before 2a) | — |
-| 2a. Graphics foundation | not started | P1 (entry) | — |
+| 0. Repair and measure | in progress: defects unit merged (#24); CI unit open (#27); validation tooling unit in progress; P1, P3, P4 concluded | — | closes when the CI and validation PRs merge and (a)-(e) are checked |
+| 1. Kernel and composition | not started | S1-2 spike (graphics contract freeze); platform/device split freeze (P4 concluded) | — |
+| 2a. Graphics foundation | not started | — (P1 entry gate met) | — |
 | 2b. Input | not started | — | — |
 | 2c. Audio and content | not started | P5 (`IAudioSink`) | — |
 | 3. World and physics | not started | P6 (physics contract), P7 (`IWorld`) | — |
 | 4. UI and modules | not started | — | — |
-| 5. Consumers | not started | `Entity` adapter deleted; exclusion list empty | — |
-| 6. Phase II completion | not started | P2 (shader toolchain) | — |
+| 5. Consumers | not started | `Entity` adapter deleted; exclusion list empty; raylib web retirement gates (P4) | — |
+| 6. Phase II completion | not started | P2 (shader toolchain); lavapipe proven for SDL_GPU | — |
 
 ### Approved decisions
 
@@ -153,7 +156,7 @@ it; "written" records the merged ADR file.
 | --- | --- | --- | --- |
 | 0026 | Kernel with modules, typed registry, phased schedule; `Game` façade | 1 | no |
 | 0027 | The loop owns time; engine interpolation with teleport; world clocks | 1, 3 | no |
-| 0028 | One complete graphics device contract with capabilities, built-in pipelines, typed capability error; frozen after the stage 1 spike | 1 (spike), 2a | no |
+| 0028 | One complete graphics device contract with capabilities, built-in pipelines, typed capability error; frozen after the stage 1 spike; tier 1 pure SDL_GPU (P3) | 1 (spike), 2a | no |
 | 0029 | `Presentation` replaces `CanvasScaling`; pixel art is a preset | 2a | no |
 | 0030 | One object model; transitional `Entity` adapter deleted at the end of stage 5 | 3 | no |
 | 0031 | Physics common contract + declared capabilities; tile backend first; Box2D after P6 | 3, 6 | no |
@@ -163,29 +166,47 @@ it; "written" records the merged ADR file.
 | 0035 | Validation by contract: declared properties, justified tolerances, closure criteria, exclusion list | 0 | no |
 | 0036 | Assemblies by boundary, architecture test; few packages, one version | 1 | no |
 
+Existing ADR amended in Phase II: 0025 (asset pipeline), for scopes that share assets (#24, 745221e).
+
+Architect decisions on prototype evidence (directives 2 and 3 of 2026-11-02; dossier §9 prototype verdicts, §11):
+
+| Source | Decision | Applied in dossier |
+| --- | --- | --- |
+| P3 | Graphics contract revised in 16 points before its freeze: tier 1 pure SDL_GPU with its own built-in 2D pipelines; buffers on every tier; `TryAcquireSurfaceTarget`; fenced readback of offscreen targets; optional `DeviceLost`; pass attachments with load/store; target formats in pipelines; `UpdateBuffer`/`UpdateTexture`; stage-qualified `SetUniforms`; `Draw`/`DrawIndexed` + `IndexSize`; depth formats and `Supports(format, usage)`; creation-time shader validation; `ApiName` checked after creation; numeric conventions; shader toolchain input to P2; risks recorded | §6.4, §9, §10 |
+| P1 | Tier-0 SDL keeps its default SDL_Renderer driver (Direct3D 11 on Windows; platform default elsewhere); only Windows measured | §5, §6.3, §6.5, §9 |
+| P4 | No integrated-backend concept; SDL the single host for six platforms; raylib web retired in stage 5 behind gates; raylib desktop kept as the second tier-0 implementation until stage 2a decides; wasm P/Invoke workarounds in the engine's own declarations; page-driven host rules in the platform contract | §5, §6.1-§6.5, §9, §10 |
+
 ### Contracts in force
 
 None is frozen yet. A contract is listed as frozen only after its gate passes and the freezing PR merges.
 
 | Contract | Freeze gate | Status |
 | --- | --- | --- |
-| Platform/device split (`IPlatformHost`, `ISurface`, integrated backends) | P4 concluded; stage 1 | draft (dossier §6.4) |
-| `IGraphicsDevice` and the graphics contract | S1-2 spike with P3: tier-0 and tier-1 adapters implement it without ad hoc exceptions; end of stage 1 | draft (dossier §6.4) |
+| Platform/device split (`IPlatformHost`, `ISurface`, page-driven host rules) | P4 concluded (no integrated backends); frozen in stage 1 when hosts are consolidated | draft, revised by P4 (dossier §6.4) |
+| `IGraphicsDevice` and the graphics contract | S1-2 spike: tier-0 and tier-1 adapters implement it without ad hoc exceptions; end of stage 1 | draft, revised by P3 in 16 points (dossier §6.4) |
 | `IAudioSink` | P5 concluded; before stage 2c closes | draft |
 | `IWorld` | P7 concluded; stage 3 | draft |
 | `IPhysicsWorld2D` common contract and `PhysicsCapabilities` | P6 concluded; stage 3 | draft |
-| Tier-1 shader toolchain | P2 concluded; inside the 3D vertical slice | draft |
+| Tier-1 shader toolchain | P2 concluded; inside the 3D vertical slice | draft (P3 input: HLSL, DXC, SPIRV-Cross) |
 
 ### Open PRs
 
 | PR | Task | Branch | Owner | Notes |
 | --- | --- | --- | --- | --- |
-| [#23](https://github.com/NastMz/MicroEngine/pull/23) | T5 | `docs/arch-1-plan` | documentation agent | Phase I dossier + approved amendments + this register; merges after G1 |
-| — | G1 | `fix/phase-ii-deploy-freeze` | another agent | deploy freeze; merges first |
+| [#27](https://github.com/NastMz/MicroEngine/pull/27) | S0-D2, S0-C1-C3, S0-D11 (`docs/ci.md`) | `fix/arch-1-stage0-ci` | stage 0 CI agent | stage 0 CI unit; in progress |
+| — (not yet opened) | S0-D3, S0-V1-V3 (S0-V4 if included) | `feat/arch-1-stage0-validation` | stage 0 validation agent | stage 0 validation tooling unit; in progress |
+| `docs: ARCH-1 prototype verdicts (P1, P3, P4) and revised graphics contract` | T6 | `docs/arch-1-prototype-verdicts` | documentation agent | this register update |
 
 ### Merged PRs
 
-None yet.
+| PR | Task | Merge commit | Merged | Content |
+| --- | --- | --- | --- | --- |
+| [#22](https://github.com/NastMz/MicroEngine/pull/22) | G1 | 9a8020e | 2026-11-02 | publication freeze for Phase II |
+| [#23](https://github.com/NastMz/MicroEngine/pull/23) | T5 | 986adc6 | 2026-11-02 | dossier, annexes, approved amendments, this register |
+| [#25](https://github.com/NastMz/MicroEngine/pull/25) | P3 | a5bad10 | 2026-11-02 | `experiments/arch-1/p3-sdl-gpu-3d` |
+| [#24](https://github.com/NastMz/MicroEngine/pull/24) | S0-D1, S0-D4, S0-D9, S0-D11 (subset) | 59fae72 | 2026-11-02 | stage 0 defects + ADR 0025 amendment |
+| [#26](https://github.com/NastMz/MicroEngine/pull/26) | P1 | 479d3af | 2026-11-02 | `experiments/arch-1/p1-sdl-gpu-driver` |
+| [#28](https://github.com/NastMz/MicroEngine/pull/28) | P4 | 3ef39c0 | 2026-11-02 | `experiments/arch-1/p4-sdl3-web` |
 
 ### Temporary incompatibilities
 
@@ -198,36 +219,66 @@ empties it.
 
 ### Validation results
 
-None yet for Phase II. Phase I evidence: dossier experiments (`docs/evaluations/arch-1/experiments/`).
+Phase I evidence: dossier experiments (`docs/evaluations/arch-1/experiments/`). Phase II:
+
+| Source | Result |
+| --- | --- |
+| #24 (stage 0 defects) | 14 new or changed tests RED first; focused 63 passed; `dotnet test MicroEngine.slnx -c Release` all passed (295 + 1 skipped in MicroEngine.Tests); API reference, snippets and site build checks passed (as reported in the PR) |
+| P3 (#25) | 142/142 checks on D3D12 and Vulkan, NVIDIA and AMD; D3D12 vs Vulkan 0 differing pixels; NVIDIA vs AMD ±1 only (named quantization source); lavapipe/WARP not run |
+| P1 (#26) | `gpu` driver: 138/138 demo captures exact on NVIDIA (D3D12, Vulkan); start-up 2006 → 2227/2326 ms; renderer creation 163 → 401/573 ms; peak commit 173 → 222/358 MB; D3D12 full screen waits for VSync when off; gallery captures non-deterministic (wall clock); Windows only |
+| P4 (#28) | Meadow Run and Courtyard Key on `SdlPlatform` in Chrome and Firefox; Brotli download 2544 vs 2696 KB (trimmed); click to playing 727 vs 864 ms; equal frame time; two interop defects worked around |
 
 ### Known problems
 
 Confirmed defects from the audit (dossier §3.1), all scheduled in stage 0 except D5-D8, which the redesign resolves:
 
-| ID | Summary | Task |
-| --- | --- | --- |
-| D1 | `ComposedPlatform` drops display pacing, timer, graphics menu, diagnostics | S0-D1 |
-| D2 | Release-gating package checks red on `main`; not run daily | S0-D2, S0-C1 |
-| D3 | Visual fingerprint passes real regressions, fails invisible shifts | S0-D3, S0-V3 |
-| D4 | Headless clock hard-codes 60 Hz | S0-D4 |
-| D5 | Backends disagree (clear vs clip, sub-pixel rows, disposed textures, capture alpha) | S0-V1, S2a |
-| D6 | `TileMotion` tunnels and embeds | S3 |
-| D7 | Straight alpha fringes | S2a |
-| D8 | Three mixers with three voice policies | S2c |
-| D9 | `AssetCache.Unload` disposes shared textures; duplicate loads | S0-D9 |
-| D10 | Browser suite not in CI; no SDL keyboard/audio-output test | S0-C2, S0-C3 |
-| D11 | Smaller defects (`EntityList` clear, font filter docs, flaky wait, `docs/ci.md` drift, frozen-overlay blend, QWERTY prompts) | S0-D11 |
+| ID | Summary | Task | Status |
+| --- | --- | --- | --- |
+| D1 | `ComposedPlatform` drops display pacing, timer, graphics menu, diagnostics | S0-D1 | fixed (#24) |
+| D2 | Release-gating package checks red on `main`; not run daily | S0-D2, S0-C1 | fix in PR #27 |
+| D3 | Visual fingerprint passes real regressions, fails invisible shifts | S0-D3, S0-V3 | in progress |
+| D4 | Headless clock hard-codes 60 Hz | S0-D4 | fixed (#24) |
+| D5 | Backends disagree (clear vs clip, sub-pixel rows, disposed textures, capture alpha) | S0-V1, S2a | open |
+| D6 | `TileMotion` tunnels and embeds | S3 | open |
+| D7 | Straight alpha fringes | S2a | open |
+| D8 | Three mixers with three voice policies | S2c | open |
+| D9 | `AssetCache.Unload` disposes shared textures; duplicate loads | S0-D9 | fixed (#24) |
+| D10 | Browser suite not in CI; no SDL keyboard/audio-output test | S0-C2, S0-C3 | fix in PR #27 |
+| D11 | Smaller defects (`EntityList` clear, font filter docs, flaky wait, `docs/ci.md` drift, frozen-overlay blend, QWERTY prompts) | S0-D11 | three fixed (#24); `docs/ci.md` in #27; frozen-overlay blend by stage 3; QWERTY prompts open |
+
+Found in Phase II:
+
+| ID | Summary | Handling | Status |
+| --- | --- | --- | --- |
+| K-P1-1 | SDL_GPU's D3D12 backend ignores VSync off in desktop full screen (P1: 10 ms frames on a 100 Hz display) | The tier-1 device chooses the present mode explicitly; its conformance suite measures it (S1-2, S6-1). Not reported upstream (owner item) | open |
+| K-P4-1 | .NET wasm interpreter mis-calls P/Invokes with 64-bit enum parameters and `delegate* unmanaged` parameters (run-time failure) | The engine's own P/Invoke declarations use `ulong` / `nint` for the affected SDL functions (SDL browser launcher, stage 5). Not reported upstream (owner item) | open |
+| R-SDL-3.5 | `ppy.SDL3-CS` 2026.1002.1 bundles SDL 3.5.0 (`ea7a2da`), a development series; P1, P3, P4 all ran on it | The stage 1 spike records the exact SDL version; dossier §10 risk | open (risk) |
+| R-SW-RAST | lavapipe/WARP for SDL_GPU unproven (no local lavapipe ICD; no SDL_GPU way to request WARP) | The 3D slice's CI check must be proven on Linux lavapipe (dossier §9.1, §10) | open (risk) |
+| P1-gallery | The asset gallery's captures embed wall-clock load times, so they change between runs | S0-V4 | open |
+
+### Items for the owner
+
+Outward publication is not authorised for agents or the architect (S15); these are listed for the owner to decide:
+
+1. SDL upstream: SDL_GPU's D3D12 backend ignores VSync off in desktop full screen (K-P1-1; evidence:
+   `experiments/arch-1/p1-sdl-gpu-driver/results/fullscreen-summary.md`, SDL 3.5.0 `ea7a2da`).
+2. dotnet/runtime upstream: the wasm interpreter's P/Invoke defects with 64-bit enum parameters ("function signature
+   mismatch") and `delegate* unmanaged` parameters (`mono_wasm_get_interp_to_native_trampoline`) (K-P4-1; evidence:
+   `experiments/arch-1/p4-sdl3-web/README.md`, "Blockers found").
 
 ### Blocks
 
-- Stage 0 merges wait for G1 (the deploy freeze); T5 also merges after G1, since a docs change on `main` can trigger
-  the production site deployment.
+- None. Stage 1 starts after stage 0 closes (dossier §9 closure criteria).
 
 ### Next steps
 
-1. Merge G1 (deploy freeze), then T5 (this dossier and register).
-2. Start stage 0's three units (defects, CI, validation tooling) and prototypes P1, P3, P4 in parallel.
-3. Record each prototype verdict in the dossier before its gate.
+1. Merge the stage 0 CI PR (#27) and open, review and merge the validation tooling PR (`feat/arch-1-stage0-validation`),
+   including or followed by S0-V4 (asset gallery deterministic clock); then close stage 0 against criteria (a)-(e).
+2. Stage 1: kernel and composition (S1-1) on the platform contract as revised by P4, then the graphics contract spike
+   (S1-2) on the contract as revised by P3; the spike records the exact SDL version and freezes the graphics contract.
+3. Schedule the remaining prototypes before their gates: P5 at stage 2c start or earlier; P6 and P7 before stage 3's
+   physics and `IWorld` contracts freeze; P2 inside the 3D vertical slice (stage 6).
+4. Owner items above stay listed until the owner decides.
 
 ## Log
 
@@ -707,3 +758,18 @@ Confirmed defects from the audit (dossier §3.1), all scheduled in stage 0 excep
   with the 3D vertical slice and the physics common-contract/capability split (§9.1, ADR 0031 row); risks and
   "decisions taken" (§10, §11). Annexes A2 and A3 carry a superseded-points note. This file became the Phase II
   register (S11-S16, Phase II tasks, `## Register`). Next: G1 merges, then this PR; stage 0 and P1/P3/P4 start.
+- L8 (2026-11-02) Merged since L7: #22 (G1, 9a8020e), #23 (T5, 986adc6), #25 (P3, a5bad10), #24 (stage 0 defects
+  D1, D4, D9, D11 subset + ADR 0025 amendment, 59fae72), #26 (P1, 479d3af), #28 (P4, 3ef39c0). Open: #27 (stage 0 CI
+  unit); the validation tooling unit (`feat/arch-1-stage0-validation`) is in progress with no PR yet. Prototypes P1,
+  P3 and P4 concluded; the architect's directives 2 (P3: sixteen graphics contract revisions) and 3 (P1 and P4
+  verdicts and decisions) were applied by T6 in the dossier: §9 prototype verdicts with evidence links and a Verdict
+  column; §6.4 graphics contract revised (`TryAcquireSurfaceTarget`, fenced readback, optional `DeviceLost`, pass
+  attachments with load/store, `UpdateBuffer`/`UpdateTexture`, stage-qualified `SetUniforms`, `Draw`/`DrawIndexed` +
+  `IndexSize`, depth formats and `Supports(format, usage)`, buffers on every tier, creation-time shader validation,
+  conventions); no integrated-backend concept, SDL the single host for six platforms, raylib web retired in stage 5
+  behind gates, raylib desktop kept pending stage 2a, wasm P/Invoke workarounds, page-driven host rules (§5,
+  §6.1-§6.5, §9, §10, §11); new risks: SDL 3.5.0 development series, D3D12 full-screen VSync (K-P1-1), wasm
+  interpreter defects (K-P4-1), lavapipe/WARP for SDL_GPU unproven. New task S0-V4 (asset gallery deterministic
+  clock). Owner items: SDL D3D12 VSync issue and dotnet/runtime wasm interpreter defects, not filed upstream. Next:
+  stage 0 closes when the CI and validation PRs merge; then stage 1 (S1-1, then the S1-2 spike); P5, P6, P7 before
+  their gates.
