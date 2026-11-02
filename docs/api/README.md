@@ -16,6 +16,7 @@ with the [tutorial](../tutorial/README.md).
 | [MicroEngine.Desktop](MicroEngine.Desktop.md) | The desktop launcher with the official desktop platforms (SDL 3, raylib, SDL software, headless). | [Backends and platforms](../manual/backends.md) |
 | [MicroEngine.Graphics](MicroEngine.Graphics.md) | Drawing: the renderer contract, images in code and from PNG, sprites and atlases, animation, camera, parallax, particles, light, the pixel font. | [Graphics](../manual/rendering.md) |
 | [MicroEngine.Input](MicroEngine.Input.md) | Input actions over keyboard, gamepad, mouse and touch: bindings, analog values, on-screen controls, custom sources. | [Input](../manual/input.md) |
+| [MicroEngine.Kernel](MicroEngine.Kernel.md) | The kernel: engine composition (builder, services, modules, capabilities), the frame schedule and its phases, loop-owned time, engine events, logging and generational handles. | [Game lifecycle and time](../manual/lifecycle.md) |
 | [MicroEngine.Raylib](MicroEngine.Raylib.md) | The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and browser storage. | [Backends and platforms](../manual/backends.md) |
 | [MicroEngine.Scenes](MicroEngine.Scenes.md) | The scene stack: scenes, transitions, coroutines and tweens. | [Scenes](../manual/scenes.md) |
 | [MicroEngine.Sdl](MicroEngine.Sdl.md) | The SDL 3 platform: Windows, Linux, macOS, Android and iOS. | [Backends and platforms](../manual/backends.md) |

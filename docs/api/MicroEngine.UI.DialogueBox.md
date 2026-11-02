@@ -144,7 +144,7 @@ public void Draw(IRenderer r, IFont font, RectF area)
 
 `font` [IFont](MicroEngine.Graphics.IFont.md)
 
-`area` [RectF](MicroEngine.RectF.md)
+`area` RectF
 
 ### <a id="MicroEngine_UI_DialogueBox_Show_System_String_System_String___"></a> Show\(string?, params string\[\]\)
 

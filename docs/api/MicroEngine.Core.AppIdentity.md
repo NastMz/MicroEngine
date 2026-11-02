@@ -59,7 +59,7 @@ public static readonly Color DefaultBackground
 
 #### Field Value
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_Core_AppIdentity_IconResource"></a> IconResource
 
@@ -143,7 +143,7 @@ public Color? SplashBackground { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)?
+ Color?
 
 ### <a id="MicroEngine_Core_AppIdentity_SplashBranding"></a> SplashBranding
 
@@ -167,7 +167,7 @@ public Color SplashColor { get; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_Core_AppIdentity_SplashImage"></a> SplashImage
 
@@ -256,7 +256,7 @@ public static Color EdgeColor(PixelImage image)
 
 #### Returns
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_Core_AppIdentity_Equals_System_Object_"></a> Equals\(object?\)
 

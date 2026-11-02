@@ -70,7 +70,7 @@ public ReadOnlySpan<Color> Pixels { get; }
 
 #### Property Value
 
- [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[Color](MicroEngine.Color.md)\>
+ [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<Color\>
 
 ### <a id="MicroEngine_Graphics_PixelImage_Width"></a> Width
 
@@ -94,7 +94,7 @@ public Color this[int x, int y] { get; set; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ## Methods
 
@@ -112,7 +112,7 @@ public void Blend(int x, int y, Color color)
 
 `y` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Graphics_PixelImage_Blit_MicroEngine_Graphics_PixelImage_System_Int32_System_Int32_System_Boolean_"></a> Blit\(PixelImage, int, int, bool\)
 
@@ -174,7 +174,7 @@ public PixelImage Clear(Color color)
 
 #### Parameters
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 #### Returns
 
@@ -277,7 +277,7 @@ public PixelImage DrawRect(int x, int y, int w, int h, Color color)
 
 `h` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 #### Returns
 
@@ -299,7 +299,7 @@ public PixelImage FillCircle(float cx, float cy, float radius, Color color)
 
 `radius` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 #### Returns
 
@@ -323,7 +323,7 @@ public PixelImage FillEllipse(float cx, float cy, float rx, float ry, Color colo
 
 `ry` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 #### Returns
 
@@ -347,7 +347,7 @@ public PixelImage FillRect(int x, int y, int w, int h, Color color)
 
 `h` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 #### Returns
 
@@ -405,7 +405,7 @@ public static PixelImage FromMap(IReadOnlyDictionary<char, Color> palette, param
 
 #### Parameters
 
-`palette` [IReadOnlyDictionary](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary\-2)<[char](https://learn.microsoft.com/dotnet/api/system.char), [Color](MicroEngine.Color.md)\>
+`palette` [IReadOnlyDictionary](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary\-2)<[char](https://learn.microsoft.com/dotnet/api/system.char), Color\>
 
 `rows` [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
 
@@ -471,7 +471,7 @@ public PixelImage Line(int x0, int y0, int x1, int y1, Color color)
 
 `y1` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 #### Returns
 
@@ -513,7 +513,7 @@ public PixelImage Map(Func<int, int, Color, Color> transform)
 
 #### Parameters
 
-`transform` [Func](https://learn.microsoft.com/dotnet/api/system.func\-4)<[int](https://learn.microsoft.com/dotnet/api/system.int32), [int](https://learn.microsoft.com/dotnet/api/system.int32), [Color](MicroEngine.Color.md), [Color](MicroEngine.Color.md)\>
+`transform` [Func](https://learn.microsoft.com/dotnet/api/system.func\-4)<[int](https://learn.microsoft.com/dotnet/api/system.int32), [int](https://learn.microsoft.com/dotnet/api/system.int32), Color, Color\>
 
 #### Returns
 
@@ -541,7 +541,7 @@ public PixelImage Outline(Color color, bool diagonals = false)
 
 #### Parameters
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 `diagonals` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
@@ -564,7 +564,7 @@ public PixelImage Paint(int dx, int dy, IReadOnlyDictionary<char, Color> palette
 
 `dy` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`palette` [IReadOnlyDictionary](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary\-2)<[char](https://learn.microsoft.com/dotnet/api/system.char), [Color](MicroEngine.Color.md)\>
+`palette` [IReadOnlyDictionary](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary\-2)<[char](https://learn.microsoft.com/dotnet/api/system.char), Color\>
 
 `rows` [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
 
@@ -582,9 +582,9 @@ public PixelImage Recolor(Color from, Color to)
 
 #### Parameters
 
-`from` [Color](MicroEngine.Color.md)
+`from` Color
 
-`to` [Color](MicroEngine.Color.md)
+`to` Color
 
 #### Returns
 
@@ -675,7 +675,7 @@ public PixelImage Silhouette(Color color)
 
 #### Parameters
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 #### Returns
 

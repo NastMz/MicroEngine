@@ -86,7 +86,7 @@ public Color Dim { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_UI_AchievementsScene_IsOverlay"></a> IsOverlay
 

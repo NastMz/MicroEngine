@@ -70,7 +70,7 @@ public RectF? Bounds { get; set; }
 
 #### Property Value
 
- [RectF](MicroEngine.RectF.md)?
+ RectF?
 
 ### <a id="MicroEngine_Graphics_Camera2D_Center"></a> Center
 
@@ -178,7 +178,7 @@ public RectF View { get; }
 
 #### Property Value
 
- [RectF](MicroEngine.RectF.md)
+ RectF
 
 ### <a id="MicroEngine_Graphics_Camera2D_ViewHeight"></a> ViewHeight
 
@@ -250,7 +250,7 @@ public bool IsVisible(RectF world, float margin = 0)
 
 #### Parameters
 
-`world` [RectF](MicroEngine.RectF.md)
+`world` RectF
 
 `margin` [float](https://learn.microsoft.com/dotnet/api/system.single)
 

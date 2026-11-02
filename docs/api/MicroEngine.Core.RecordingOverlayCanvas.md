@@ -59,7 +59,7 @@ public void FillCircle(Vector2 center, float radius, Color color)
 
 `radius` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Core_RecordingOverlayCanvas_FillRect_MicroEngine_RectF_MicroEngine_Color_"></a> FillRect\(RectF, Color\)
 
@@ -71,9 +71,9 @@ public void FillRect(RectF rect, Color color)
 
 #### Parameters
 
-`rect` [RectF](MicroEngine.RectF.md)
+`rect` RectF
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Core_RecordingOverlayCanvas_FillTriangle_System_Numerics_Vector2_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Color_"></a> FillTriangle\(Vector2, Vector2, Vector2, Color\)
 
@@ -91,7 +91,7 @@ public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
 
 `c` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Core_RecordingOverlayCanvas_Image_MicroEngine_Graphics_PixelImage_MicroEngine_RectF_MicroEngine_Color_"></a> Image\(PixelImage, RectF, Color\)
 
@@ -108,9 +108,9 @@ public void Image(PixelImage image, RectF destination, Color tint)
 
 `image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
-`destination` [RectF](MicroEngine.RectF.md)
+`destination` RectF
 
-`tint` [Color](MicroEngine.Color.md)
+`tint` Color
 
 ### <a id="MicroEngine_Core_RecordingOverlayCanvas_Ring_System_Numerics_Vector2_System_Single_System_Single_MicroEngine_Color_"></a> Ring\(Vector2, float, float, Color\)
 
@@ -128,7 +128,7 @@ public void Ring(Vector2 center, float radius, float thickness, Color color)
 
 `thickness` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Core_RecordingOverlayCanvas_Text_System_String_System_Numerics_Vector2_System_Single_MicroEngine_Color_"></a> Text\(string, Vector2, float, Color\)
 
@@ -146,6 +146,6 @@ public void Text(string text, Vector2 center, float height, Color color)
 
 `height` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 </div>

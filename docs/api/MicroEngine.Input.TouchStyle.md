@@ -69,7 +69,7 @@ public Color? Fill { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)?
+ Color?
 
 ### <a id="MicroEngine_Input_TouchStyle_Halo"></a> Halo
 
@@ -130,7 +130,7 @@ public Color? Label { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)?
+ Color?
 
 ### <a id="MicroEngine_Input_TouchStyle_Opacity"></a> Opacity
 
@@ -154,7 +154,7 @@ public Color? Outline { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)?
+ Color?
 
 ### <a id="MicroEngine_Input_TouchStyle_OutlineWidth"></a> OutlineWidth
 
@@ -178,7 +178,7 @@ public Color? PressedFill { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)?
+ Color?
 
 ### <a id="MicroEngine_Input_TouchStyle_PressedImage"></a> PressedImage
 
@@ -202,7 +202,7 @@ public Color? PressedOutline { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)?
+ Color?
 
 ### <a id="MicroEngine_Input_TouchStyle_PressedScale"></a> PressedScale
 

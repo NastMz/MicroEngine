@@ -51,11 +51,11 @@ Text with <code>{action}</code> names (see [Format](MicroEngine.Input.ActionProm
 
 Top-left of the line, in virtual pixels.
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 Colour of the plain text.
 
-`shadow` [Color](MicroEngine.Color.md)?
+`shadow` Color?
 
 A 1px shadow under the plain text; null draws none.
 
@@ -85,9 +85,9 @@ public static void DrawCentered(IRenderer r, BitmapFont font, ActionPrompts prom
 
 `y` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
-`shadow` [Color](MicroEngine.Color.md)?
+`shadow` Color?
 
 `style` [PromptGlyphStyle](MicroEngine.UI.PromptGlyphStyle.md)?
 

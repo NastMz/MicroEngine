@@ -92,7 +92,7 @@ Color Letterbox { get; set; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_Core_IPlatform_Now"></a> Now
 
