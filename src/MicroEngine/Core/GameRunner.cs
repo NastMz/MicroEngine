@@ -204,7 +204,7 @@ public sealed class GameLoop
             Stopwatch.GetElapsedTime(rendered, presented).TotalMilliseconds,
             (int)(_game.UpdateCount - updates),
             _game.Time,
-            _game.Time + _game.FrameBlend * _step,
+            _game.Time - (1 - _game.FrameBlend) * _step,
             GC.GetAllocatedBytesForCurrentThread() - allocated,
             GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2) - collections));
         if (_frames == 0) profiler.Phase("first frame");
@@ -264,7 +264,8 @@ public sealed class GameLoop
             if (capture is not null) break;
         }
         if (steps == 5) _accumulator = Math.Min(_accumulator, _step);
-        _game.FrameBlend = (float)Math.Clamp(_accumulator / _step, 0, 1);
+        // One step per frame leaves nothing between updates: the frame is the update (Lerp at 1 draws it exactly).
+        _game.FrameBlend = _platform.RealTime ? (float)Math.Clamp(_accumulator / _step, 0, 1) : 1;
         return (stop, capture);
     }
 

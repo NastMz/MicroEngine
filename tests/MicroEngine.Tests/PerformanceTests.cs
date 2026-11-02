@@ -144,7 +144,8 @@ public class PerformanceTests
 
         var headless = new StepGame();
         GameRunner.Run(headless, new HeadlessPlatform(), new RunOptions { MaxUpdates = 10 });
-        Assert.IsTrue(headless.Blends.All(b => b == 0), "one step per frame: nothing left to blend");
+        // Lerp(previous, current, 1) draws the current update: captures show exactly what the update produced.
+        Assert.IsTrue(headless.Blends.All(b => b == 1), "one step per frame: the frame is the update");
     }
 
     [TestMethod]

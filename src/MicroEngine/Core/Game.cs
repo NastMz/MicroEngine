@@ -58,8 +58,9 @@ public abstract class Game
     /// real time that has passed but not been simulated yet. Updates run at a fixed rate and frames at the display's, so
     /// on a display whose rate is not a multiple of <see cref="GameSettings.UpdateRate"/> (75, 100, 144 Hz...) some
     /// frames show no new update; drawing moving things at
-    /// <c>Vector2.Lerp(previousPosition, position, FrameBlend)</c> makes their motion even. Always 0 when time advances
-    /// one step per frame (headless, scripted runs), so captures stay exact.
+    /// <c>Vector2.Lerp(previousPosition, position, FrameBlend)</c> makes their motion even (drawn up to one update behind,
+    /// like every interpolating loop). Always 1 when time advances one step per frame (headless, scripted runs), so
+    /// captures show exactly the last update.
     /// </summary>
     public float FrameBlend { get; internal set; }
     /// <summary>Deterministic per-run randomness; seeded by the launcher.</summary>

@@ -154,8 +154,9 @@ rate is not a multiple of the update rate (75, 100, 144 Hz for 60 updates) some 
 that draws its last update shows the same picture twice: moving things judder although every frame is on time.
 `Game.FrameBlend` is how far the frame being drawn is between the last update and the next one, from 0 to 1. Keep
 each moving thing's position from the previous update and draw it at `Vector2.Lerp(previous, current, FrameBlend)`
-(the camera too). It is always 0 when time advances one step per frame (headless and scripted runs), so captures stay
-exact; it changes only what is drawn, never the rules.
+(the camera too). Motion is then drawn up to one update behind, as in every loop that interpolates. It is always 1
+when time advances one step per frame (headless and scripted runs), so captures show exactly the last update; it
+changes only what is drawn, never the rules.
 
 ## Measuring a game
 
