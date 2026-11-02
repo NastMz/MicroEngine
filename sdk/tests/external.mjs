@@ -191,7 +191,7 @@ function checkPackage(target, file, dist) {
       && (target === 'macos' ? has('Sample Game.app/Contents/Resources/Content/hero.png') : has('Content/hero.png')));
     if (target === 'linux') {
       const entry = has('com.example.sample.desktop') ? fs.readFileSync(path.join(top, 'com.example.sample.desktop'), 'utf8') : '';
-      check('linux: desktop entry and icon', /Name=Sample Game/.test(entry) && has('icon.png') && fs.readFileSync(path.join(top, 'icon.png')).readUInt32BE(16) === 256);
+      check('linux: desktop entry and icon', /Name=Sample Game/.test(entry) && /StartupWMClass=com\.example\.sample/.test(entry) && has('icon.png') && fs.readFileSync(path.join(top, 'icon.png')).readUInt32BE(16) === 256);
     }
     if (target === 'macos') {
       const plist = fs.readFileSync(path.join(top, 'Sample Game.app', 'Contents', 'Info.plist'), 'utf8');
