@@ -1,13 +1,40 @@
 using MicroEngine.Audio;
+using MicroEngine.NativeChecks;
 using MicroEngine.Sdl;
 
 namespace MicroEngine.Desktop.Tests;
 
-/// <summary>The SDL audio device through SDL's dummy driver: real streams and mixing, nothing heard.</summary>
+/// <summary>
+/// The SDL audio device: through SDL's dummy driver (real streams and mixing, nothing heard), and on this system's
+/// sound server, where a tone played through it is recorded from the monitor of a virtual PulseAudio sink
+/// (MICROENGINE_AUDIO_MONITOR, set up by the native CI job), as the raylib device is checked (AudioTests).
+/// </summary>
 [TestClass]
 [TestCategory("Native")]
 public sealed class SdlAudioTests
 {
+    [TestMethod]
+    [OSCondition(OperatingSystems.Linux, IgnoreMessage = "Signal capture uses a PulseAudio sink monitor.")]
+    public void A_played_tone_reaches_the_sound_server() => ToneReachesTheSoundServer(music: false);
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Linux, IgnoreMessage = "Signal capture uses a PulseAudio sink monitor.")]
+    public void A_tone_streamed_as_music_reaches_the_sound_server() => ToneReachesTheSoundServer(music: true);
+
+    /// <summary>The default SDL device, as a game opens it, plays a tone the sink hears (SinkTone).</summary>
+    private static void ToneReachesTheSoundServer(bool music)
+    {
+        var monitor = Environment.GetEnvironmentVariable("MICROENGINE_AUDIO_MONITOR");
+        Native.Require(!string.IsNullOrEmpty(monitor), "MICROENGINE_AUDIO_MONITOR names no PulseAudio monitor source.");
+        var device = SdlAudioDevice.TryCreate();
+        try
+        {
+            Native.Require(device is SdlAudioDevice, "SDL opened no audio output device (the engine fell back to silence).");
+            SinkTone.AssertReachesTheSink(device, monitor!, music);
+        }
+        finally { (device as IDisposable)?.Dispose(); }
+    }
+
     [TestMethod]
     public void Streaming_music_and_playing_sounds_allocate_nothing_per_update()
     {

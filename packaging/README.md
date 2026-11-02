@@ -81,8 +81,10 @@ node packaging/linux-distros.mjs --packages dist/packages --images ubuntu:22.04,
 ```
 
 SDL 3 needs glibc 2.34 (measured with `objdump -T`; `targets.json` promises it); raylib needs 2.38. On an older system
-(Debian 11, glibc 2.31) the game stops with `error: platform 'sdl' could not load its native library`, naming the
-missing glibc version; the check expects exactly that.
+(Debian 11, glibc 2.31) the launcher tries SDL, then raylib, then SDL's software renderer, and stops with
+`error: platform 'sdl-software' could not load its native library`, naming the missing glibc version; the check
+expects exactly that: the error it stops with is an SDL platform's, it names a missing glibc version, and the exit
+code is 1 (`glibcRefusal` in [`targets.mjs`](targets.mjs), tested by `node --test packaging/*.test.mjs`).
 
 ## Android signing
 

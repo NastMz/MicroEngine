@@ -51,6 +51,16 @@ test('inputs: the SDK check reads what the packages and the external project tes
     assert.equal(isInput('sdk', file), false, file);
 });
 
+test('inputs: the browser engine suites read what a development web package and the suites read', () => {
+  for (const file of ['src/Engine.cs', 'src/MicroEngine.Raylib/A.cs', 'src/MicroEngine.Cli/Hosts/web/wwwroot/main.js', 'games/Alpha/Game.cs',
+    'games/Alpha/Content/notes.md', 'games/Alpha/scripts/smoke.script', 'web/build.sh', 'web/tests/run.mjs', 'web/tests/reference/linux-x64.json',
+    'Directory.Build.props', '.github/workflows/checks.yml', 'newfolder/tool.cs'])
+    assert.equal(isInput('web', file), true, file);
+  for (const file of ['docs/guide.md', 'games/Alpha/README.md', 'site/src/page.astro', 'platforms/android/A.cs', 'tests/Alpha.Tests/A.cs',
+    'samples/Hello/Program.cs', 'sdk/tests/external.mjs', 'src/MicroEngine.Sdl/SdlPlatform.cs', 'odd/tasks/x.md'])
+    assert.equal(isInput('web', file), false, file);
+});
+
 test('keys: same content, same key; a change to an input changes it, other changes do not', () => {
   const root = repo();
   const dotnet = checkKey('dotnet', { root });
@@ -99,10 +109,11 @@ test('inputs agree with the planner: a file whose rule needs a check is an input
   const { planChecks } = await import('./changes.mjs');
   const files = ['src/MicroEngine/Core/A.cs', 'src/MicroEngine.Cli/Commands/A.cs', 'templates/Game/Program.cs', 'sdk/version.json',
     'sdk/version.mjs', 'sdk/tests/docs.mjs', 'sdk/tests/external.mjs', 'games/Alpha/Game.cs', 'tests/Alpha.Tests/A.cs',
-    'samples/Hello/Program.cs', 'web/toolchain.env', 'web/tests/package.json', 'web/tests/desktop.mjs', 'THIRD-PARTY-NOTICES.md', 'LICENSE'];
+    'samples/Hello/Program.cs', 'web/toolchain.env', 'web/tests/package.json', 'web/tests/desktop.mjs', 'THIRD-PARTY-NOTICES.md', 'LICENSE',
+    'web/tests/run.mjs', 'web/tests/scenarios.json', 'web/build.sh', 'web/serve.mjs', 'src/MicroEngine.Raylib/A.cs', 'src/MicroEngine.Cli/Hosts/web/main.js'];
   for (const file of files) {
     const checks = planChecks([file]);
-    for (const check of ['dotnet', 'windows', 'native', 'sdk']) {
+    for (const check of ['dotnet', 'windows', 'native', 'sdk', 'web']) {
       if (checks[check] === true) assert.equal(isInput(check, file), true, `${file} runs ${check}, so it must change its key`);
     }
   }

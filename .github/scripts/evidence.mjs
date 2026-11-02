@@ -43,6 +43,11 @@ export const scopes = {
   // The packages read the engine, the tool, the template, the build settings, the web toolchain and the notices they
   // ship; the external project test also reads web/ (its server and browser driver). Games, tests, samples and the
   // documentation never reach a package.
+  // The browser engine suites read a development web package (the engine, raylib, the web host, the games and their
+  // scripts, the web toolchain), the suites and the desktop build they compare with; never SDL, the site, the tests,
+  // the samples, the SDK checks or the documentation. The caller adds the games played to the key (--extra).
+  web: file => !always(file) && !docs(file) && !/^(site|platforms|tests|samples|sdk)\//.test(file)
+    && !/^src\/MicroEngine\.(Sdl\/|Cli\/Hosts\/(android|ios)\/)/.test(file),
   sdk: file => !always(file) && !/^(docs|site|platforms|games|tests|samples)\//.test(file)
     && (!/\.md$/i.test(file) || /^(src|templates|sdk)\//.test(file) || file === 'THIRD-PARTY-NOTICES.md'),
 };

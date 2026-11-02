@@ -5,9 +5,10 @@
 // Suites (default: platform scripts):
 //   platform  per game: loading, start by gesture, audio under a blocking autoplay policy, 60 updates/s, held,
 //             released and very short key presses, focus loss, browser keys, saves across reload, corrupt and
-//             blocked storage, end and restart without reloading
+//             blocked storage, end and restart without reloading (the storage checks use Neon Rift's and Meadow
+//             Run's saves and run only when --games includes them)
 //   scripts   replays the games' own input scripts (scenarios.json) and stores their captures in --out, to
-//             compare with desktop captures (compare.mjs)
+//             compare with desktop captures (desktop.mjs with the same --out compares them byte for byte)
 //   autopilot Neon Rift's built-in autopilot plays stages 1 to 3 until the ending
 //   audio     per game: the sound actually reaching the speakers (signal level of the page's audio output)
 //   framerate per game: updates per second while the page draws every frame, every 2nd and every 4th
@@ -15,8 +16,9 @@
 //             numbers) and checks that the game reaches the scene the scripted run ends in; page screenshots
 //             at the script's capture points go to --out for review
 //
-// Needs development packages (web/build.sh --dev --out dist/web-dev). Browsers are found in their default
-// install folders or through CHROME_PATH and FIREFOX_PATH.
+// Needs development packages (web/build.sh --dev --out dist/web-dev) of the games selected. Browsers are found in
+// their default install folders or through CHROME_PATH and FIREFOX_PATH. Exits 1 when any check failed. Daily CI
+// runs it on the games a change reaches (.github/workflows/checks.yml, browser-engine; docs/ci.md).
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -56,11 +58,40 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function launch(name) {
   const executablePath = executables[name].find(p => p && fs.existsSync(p));
   if (!executablePath) throw new Error(`${name} not found; set ${name.toUpperCase()}_PATH.`);
-  // Both browsers are told to require a user gesture before audio plays, as they do for real visitors.
-  return puppeteer.launch(name === 'chrome'
-    ? { browser: 'chrome', executablePath, headless: !headed, args: ['--autoplay-policy=user-gesture-required', '--no-first-run', '--window-size=1024,768'] }
+  // Both browsers are told to require a user gesture before audio plays, as they do for real visitors. CHROME_FLAGS
+  // adds Chrome switches (CI: --ignore-gpu-blocklist, so a headed Chrome on Xvfb draws WebGL with Mesa's llvmpipe,
+  // the desktop build's renderer, instead of refusing WebGL on a software GPU).
+  const chromeFlags = (process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean);
+  const options = name === 'chrome'
+    ? { browser: 'chrome', executablePath, headless: !headed, args: ['--autoplay-policy=user-gesture-required', '--no-first-run', '--window-size=1024,768', ...chromeFlags] }
     : { browser: 'firefox', executablePath, headless: !headed, args: ['--width=1024', '--height=768'],
-        extraPrefsFirefox: { 'media.autoplay.default': 1, 'media.autoplay.block-webaudio': true } });
+        extraPrefsFirefox: { 'media.autoplay.default': 1, 'media.autoplay.block-webaudio': true } };
+  // Starting a browser on a busy CI runner occasionally misses puppeteer's default 30 s for the browser to print its
+  // endpoint (a known flake of the site job, docs/ci.md "Troubleshooting"). The launch alone, never a check, gets a
+  // longer timeout and one retry; the retry prints the browser's own output, so a real failure says why.
+  try {
+    return await puppeteer.launch({ ...options, timeout: 90_000 });
+  } catch (e) {
+    console.log(`note ${name} did not start (${e.message.split('\n')[0]}); retrying once with its output shown`);
+    return puppeteer.launch({ ...options, timeout: 90_000, dumpio: true });
+  }
+}
+
+/** The renderer behind the browser's WebGL (which GPU or software rasterizer draws the frames), or why there is none. */
+async function webglRenderer(browser) {
+  const page = await browser.newPage();
+  try {
+    return await page.evaluate(() => {
+      const gl = document.createElement('canvas').getContext('webgl2') ?? document.createElement('canvas').getContext('webgl');
+      if (!gl) return 'unavailable';
+      const info = gl.getExtension('WEBGL_debug_renderer_info');
+      return info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    });
+  } catch (e) {
+    return `unknown (${e.message})`;
+  } finally {
+    await page.close();
+  }
 }
 
 /** Opens a game in a fresh profile and waits until it is ready to play. */
@@ -186,7 +217,8 @@ async function platform(browser, label, game) {
 
 /** Corrupt saves are set aside, blocked or full storage leaves the game running and says so. */
 async function storage(browser, label) {
-  {
+  // Each check uses one game's saves; with --games, only the checks of the games selected (their packages) run.
+  if (games.includes('NeonRift')) {
     const context = await browser.createBrowserContext();
     const page = await context.newPage();
     await page.goto(`${base}/NeonRift/`);
@@ -200,7 +232,7 @@ async function storage(browser, label) {
     check(`${label} storage: corrupt data is kept aside and the game runs`, kept === '{ not json' && await updates(page) > 0);
     await context.close();
   }
-  {
+  if (games.includes('MeadowRun')) {
     const context = await browser.createBrowserContext();
     const page = await context.newPage();
     await page.goto(`${base}/MeadowRun/`);
@@ -346,19 +378,25 @@ async function audio(browser, label) {
     await waitFor(page, s => s === 'ready', 120_000);
     await page.click('#play');
     await waitFor(page, s => s === 'playing');
+    const started = Date.now();
     await sleep(3000);
-    // Menus play an effect when the cursor moves.
+    // Menus play an effect when the cursor moves. Title music may start later: songs are rendered in the background,
+    // which takes longer on a slow machine; the check waits for the first sound and says when it came.
     await page.keyboard.press('ArrowDown');
-    await sleep(1500);
-    const levels = await page.evaluate(() => window.__levels.slice(-60));
-    const peak = Math.max(0, ...levels);
-    check(`${label} ${game}: sound reaches the output`, peak > 0.005, `peak RMS ${peak.toFixed(3)}`);
+    let peak = 0;
+    while (Date.now() - started < 15_000) {
+      await sleep(250);
+      peak = Math.max(0, ...await page.evaluate(() => window.__levels));
+      if (peak > 0.005) break;
+    }
+    const after = ((Date.now() - started) / 1000).toFixed(1);
+    check(`${label} ${game}: sound reaches the output`, peak > 0.005, `peak RMS ${peak.toFixed(3)}, ${peak > 0.005 ? `heard within ${after} s of the start` : `nothing in ${after} s`}`);
     await context.close();
   }
   // When the browser holds audio suspended (no gesture yet, or a policy change), the page must say so and the
   // next click must bring the sound back. The test suspends the context itself: whether a browser blocks audio
-  // under automation varies (Chrome over CDP counts navigation as user activation).
-  const { page, context } = await open(browser, 'NeonRift');
+  // under automation varies (Chrome over CDP counts navigation as user activation). Neon Rift, or the game selected.
+  const { page, context } = await open(browser, games.includes('NeonRift') ? 'NeonRift' : games[0]);
   await page.click('#play');
   await waitFor(page, s => s === 'playing');
   await sleep(1000);
@@ -429,12 +467,12 @@ await sleep(500);
 try {
   for (const label of browserNames) {
     const browser = await launch(label);
-    console.log(`== ${label} ${await browser.version()}`);
+    console.log(`== ${label} ${await browser.version()}; WebGL: ${await webglRenderer(browser)}`);
     try {
       if (suites.includes('platform')) {
         for (const game of games) await platform(browser, label, game).catch(e => check(`${label} ${game}: platform checks`, false, e.message));
         await storage(browser, label).catch(e => check(`${label} storage checks`, false, e.message));
-        if (label === 'firefox') await blockedStorage().catch(e => check('firefox blocked storage', false, e.message));
+        if (label === 'firefox' && games.includes('MeadowRun')) await blockedStorage().catch(e => check('firefox blocked storage', false, e.message));
       }
       if (suites.includes('scripts')) await scripts(browser, label).catch(e => check(`${label} scripts`, false, e.message));
       if (suites.includes('audio')) await audio(browser, label).catch(e => check(`${label} audio`, false, e.message));

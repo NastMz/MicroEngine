@@ -60,7 +60,7 @@ on:
         type: boolean
         default: false
       keys:
-        description: 'JSON object of evidence keys: {"dotnet": "...", "windows": "...", "native": "...", "site": "..."}'
+        description: 'JSON object of evidence keys: {"dotnet": "...", "windows": "...", "native": "...", "site": "...", "web": "..."}'
         type: string
         default: '{}'
       fork:
@@ -71,6 +71,11 @@ on:
       native-packages:
         description: 'JSON list of native packages to build, check and store: [{"game", "target", "runner"}] from
           `demos.mjs plan --native` (packaging/README.md). Never from a fork: storing needs contents write'
+        type: string
+        default: '[]'
+      web-games:
+        description: 'JSON list of games whose development web package the browser engine suites play in Chrome
+          (web/tests/run.mjs), empty for none'
         type: string
         default: '[]'
     secrets:
@@ -434,6 +439,113 @@ jobs:
             dist/captures
             dist/linux-distros
           retention-days: 7
+
+  # The browser build's engine for real (web/tests/run.mjs), one job per game: a development package played in Chrome
+  # on a virtual X server with a virtual sound server. Loading, starting by a gesture, 60 updates per second whatever
+  # the page's frame rate, real key events (held, released, shorter than a frame, focus loss, the scripts replayed
+  # through the keyboard), saves, the sound level reaching the output, the games' scripts replayed to their end: any
+  # failure fails the job. Then the same scripts on the desktop build (raylib under Mesa), whose captures are compared
+  # byte for byte with the browser's and reported.
+  browser-engine:
+    name: Browser engine ${{ matrix.game }} (Chrome)
+    if: inputs.web-games != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        game: ${{ fromJSON(inputs.web-games) }}
+    defaults:
+      run:
+        shell: bash # with pipefail, so `| tee` keeps a failure
+    env:
+      GAME: ${{ matrix.game }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Toolchain folder
+        run: echo "MICROENGINE_WEB_TOOLS=${{ runner.temp }}/web-tools" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/web-tools
+          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh') }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/tests/package-lock.json
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json', 'NuGet.config') }}
+      - name: Virtual display and sound server
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1 libglx-mesa0 libgl1-mesa-dri pulseaudio pulseaudio-utils
+          export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$RUNNER_TEMP/xdg}"
+          mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+          echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=microengine
+          pactl set-default-sink microengine
+      - run: bash web/setup.sh
+      - name: Development package
+        run: bash web/build.sh --dev --out dist/web-dev "$GAME"
+      - run: npm ci --prefix web/tests
+      - name: Desktop build (the frames to compare with)
+        run: dotnet build "games/$GAME/$GAME.csproj" -c Release
+      - name: Browser suites (platform, scripts, keyboard, frame rate, audio)
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          # A headed Chrome refuses WebGL on Mesa's software GPU unless told otherwise; with this it draws with
+          # llvmpipe, the renderer of the desktop build it is compared with.
+          CHROME_FLAGS: --ignore-gpu-blocklist
+        run: |
+          { echo "### Browser engine: $GAME"; echo; } >> "$GITHUB_STEP_SUMMARY"
+          status=0
+          xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/run.mjs platform scripts keyboard framerate audio \
+            --browsers chrome --games "$GAME" --headed --out web-tests | tee web-tests.log || status=$?
+          grep -E '^(==|FAIL|[0-9]+ passed)' web-tests.log | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY" || true
+          exit "$status"
+      # Measured, not yet a gate: the browser and desktop builds of the same script do not produce the same frames in
+      # every scene (the simulation drifts by a few pixels in some scrolling scenes), so a difference is reported in
+      # the summary and kept as an artifact without failing the job.
+      - name: Browser frames against the desktop build (measured, not a gate)
+        id: frames
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --out web-tests --games "$GAME" | tee -a "$GITHUB_STEP_SUMMARY"
+      - if: failure() || steps.frames.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-engine-${{ matrix.game }}
+          path: |
+            web-tests
+            web-tests.log
+          retention-days: 7
+
+  # One evidence for the browser engine suites, recorded only when every game's job passed.
+  browser-engine-evidence:
+    name: Browser engine evidence
+    needs: browser-engine
+    if: inputs.evidence && inputs.web-games != '[]' && needs.browser-engine.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          sparse-checkout: .github/scripts
+      - run: node .github/scripts/evidence.mjs record web "${{ fromJSON(inputs.keys).web }}" evidence.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evidence-web-${{ fromJSON(inputs.keys).web }}
+          path: evidence.json
+          retention-days: 30
+          overwrite: true
 
   site:
     name: Site (Chrome and Firefox)

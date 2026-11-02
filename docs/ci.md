@@ -4,20 +4,21 @@ How MicroEngine is checked and published, and what it costs. Internal document: 
 Decision: [ADR 0013](decisions/0013-ci-cost-and-manual-releases.md). Audit, costs and risks:
 [INFRA-1 evaluation](evaluations/infra-1.md). Site build and Vercel settings: [publishing the site](deployment.md).
 
-**In one sentence:** pull requests and `main` run the checks a change needs, once per content; everything else
-(full validation, experimental platforms, releases) runs only when someone starts it.
+**In one sentence:** pull requests and `main` run the checks a change needs, once per content; a full validation of
+`main` runs every night; everything else (manual validation, experimental platforms, releases) runs only when someone
+starts it (the experimental platforms also monthly).
 
 | Flow | Workflow | Starts | Publishes |
 | --- | --- | --- | --- |
 | Daily CI | [`ci.yml`](../.github/workflows/ci.yml) | every pull request, every push to `main` | site previews; production only when `main` changes the published site, always with the released demos |
-| Full validation | [`validate.yml`](../.github/workflows/validate.yml) | Actions → validate → Run workflow (any ref) | nothing |
+| Full validation | [`validate.yml`](../.github/workflows/validate.yml) | every night on `main` (every supported check); Actions → validate → Run workflow (any ref) | nothing |
 | Experimental platforms | [`platforms.yml`](../.github/workflows/platforms.yml) | manually, from validate, and on the 1st of each month | nothing |
 | Release | [`release.yml`](../.github/workflows/release.yml) | Actions → release → Run workflow (ref; version optional) | a demo release and the site that serves it |
 | SDK release | [`sdk-release.yml`](../.github/workflows/sdk-release.yml) | after ci passes on `main` (ends at once unless `main` documents an unpublished version), or by hand to resume | the SDK on nuget.org after the `nuget` environment's approval, then the site |
 | Rollback | [`rollback.yml`](../.github/workflows/rollback.yml) | manually | an earlier production deployment |
 
 The jobs themselves live in three reusable workflows: [`checks.yml`](../.github/workflows/checks.yml) (.NET, native
-Linux, demo builds, site and browsers), [`sdk.yml`](../.github/workflows/sdk.yml) (the SDK packages from outside the
+Linux, demo builds, site and browsers, browser engine suites), [`sdk.yml`](../.github/workflows/sdk.yml) (the SDK packages from outside the
 repository) and [`deploy-site.yml`](../.github/workflows/deploy-site.yml) (Vercel). How the three publications relate
 and how to run each: [Releasing](releasing.md); decision: [ADR 0022](decisions/0022-release-coordination.md).
 
@@ -34,11 +35,13 @@ flowchart LR
   linux --> windows[.NET Windows]
   linux --> native[Native Linux]
   plan --> build[Demo builds]
+  plan --> engine[Browser engine<br/>one job per game]
   plan --> sdk[SDK<br/>Windows, Linux, macOS]
   build --> site[Site and browsers]
   windows --> deploy[Deploy]
   native --> deploy
   site --> deploy
+  engine --> deploy
   deploy --> result[CI result]
   sdk --> result
 ```
@@ -50,7 +53,8 @@ flowchart LR
    demo builds ([`demos.mjs plan --policy ci`](../site/scripts/demos.mjs)).
 2. **Checks** run what is needed and not already proven. Windows and native Linux start only after the Linux tests
    pass, so a broken change never occupies a Windows runner. **SDK** (`sdk.yml`) runs beside them when a package
-   input changed: pack, check, and a game made from the packages on Windows, Linux and macOS.
+   input changed: pack, check, and a game made from the packages on Windows, Linux and macOS. The **browser engine**
+   suites run beside them too, one job per game the change reaches ([Browser tests](#browser-tests)).
 3. **Deploy**: a protected preview for pull requests that change the site or a demo; production for pushes to
    `main` that change the published site (documentation, site, game pages). Production always uses the latest
    demo release, and is held (the current deployment stays, with a warning) while the documentation presents an SDK
@@ -65,26 +69,26 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
 
 ### What runs for a change
 
-| Change | .NET Linux | .NET Windows | Native Linux | SDK | Demo builds | Browser suites | Deploy |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Engine core (`src/MicroEngine`) | yes | yes | yes | yes | the canary game | all | preview |
-| raylib backend (`src/MicroEngine.Raylib`) | yes | yes | yes | yes | the canary game | all | preview |
-| One game's code (`games/<Name>`) | that game's tests | — | that game's captures | — | that game | all | preview |
-| A game's Markdown or screenshots | — | — | — | — | — | layout | preview, production |
-| Engine or backend tests | those tests | yes | backend tests only | — | — | — | — |
-| One game's tests | those tests | — | — | — | — | — | — |
-| Samples | compile only | — | — | — | — | — | — |
-| The tool, the template, SDK tests (`src/MicroEngine.Cli`, `templates/`, `sdk/tests/external.mjs`) | the tool's and template's tests | the tool's | — | yes | — | — | — |
-| Documented SDK version (`sdk/version.json`, `sdk/version.mjs`, `sdk/tests/docs.mjs`) | all, with the documented samples | — | — | — | — | — | — |
-| Desktop capture scripts (`web/tests`) | — | — | yes | its browser driver only | — | — | — |
-| Web host or toolchain (`web/`) | — | — | — | toolchain, server | the canary game | all | preview, production |
-| Site (`site/`) | — | — | — | — | — | all | preview, production |
-| Documentation (`docs/`, other Markdown) | — | — | — | — | — | layout | preview, production |
-| Daily workflows (`sdk.yml` too), their scripts, build settings | yes | yes | yes | yes | as keys say | all | preview, production |
-| Manual workflows (validate, release, sdk-release, platforms, rollback) | lint only | — | — | — | — | — | — |
-| Mobile hosts (`platforms/`) | advisory only: run validate or platforms | — | — | — | — | — | — |
-| Task records, experiments (`odd/`, `experiments/`) | — | — | — | — | — | — | — |
-| A path no rule knows | everything | everything | everything | yes | as keys say | all | preview, production |
+| Change | .NET Linux | .NET Windows | Native Linux | SDK | Demo builds | Browser suites | Browser engine | Deploy |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Engine core (`src/MicroEngine`) | yes | yes | yes | yes | the canary game | all | all games | preview |
+| raylib backend (`src/MicroEngine.Raylib`) | yes | yes | yes | yes | the canary game | all | all games | preview |
+| One game's code (`games/<Name>`) | that game's tests | — | that game's captures | — | that game | all | that game | preview |
+| A game's Markdown or screenshots | — | — | — | — | — | layout | — | preview, production |
+| Engine or backend tests | those tests | yes | backend tests only | — | — | — | — | — |
+| One game's tests | those tests | — | — | — | — | — | — | — |
+| Samples | compile only | — | — | — | — | — | — | — |
+| The tool, the template, SDK tests (`src/MicroEngine.Cli`, `templates/`, `sdk/tests/external.mjs`) | the tool's and template's tests | the tool's | — | yes | — | — | browser host only | — |
+| Documented SDK version (`sdk/version.json`, `sdk/version.mjs`, `sdk/tests/docs.mjs`) | all, with the documented samples | — | — | — | — | — | — | — |
+| Desktop capture scripts and references (`web/tests`) | — | — | yes | its browser driver only | — | — | the scenarios, the desktop runner, the suites (`run.mjs`) and the browser driver | — |
+| Web host or toolchain (`web/`) | — | — | — | toolchain, server | the canary game | all | all games | preview, production |
+| Site (`site/`) | — | — | — | — | — | all | — | preview, production |
+| Documentation (`docs/`, other Markdown) | — | — | — | — | — | layout | — | preview, production |
+| Daily workflows (`sdk.yml` too), their scripts, build settings | yes | yes | yes | yes | as keys say | all | all games | preview, production |
+| Manual workflows (validate, release, sdk-release, platforms, rollback) | lint only | — | — | — | — | — | — | — |
+| Mobile hosts (`platforms/`) | advisory only: run validate or platforms | — | — | — | — | — | — | — |
+| Task records, experiments (`odd/`, `experiments/`) | — | — | — | — | — | — | — | — |
+| A path no rule knows | everything | everything | everything | yes | as keys say | all | all games | preview, production |
 
 - **Scope** comes from the project graph ([`projects.mjs`](../.github/scripts/projects.mjs), ADR 0014): the .NET jobs
   run the test projects that reference the changed project, directly or not, and native Linux compares the captures
@@ -98,6 +102,10 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
   Windows, and every demo build compiles them there.
 - **Browser suites** (`site/tests/browser.mjs --suites`): `layout` opens every page at three widths; `play` loads,
   plays, restarts and exits each demo; `touch` checks the touch panels. A rebuilt package is always played.
+- **Browser engine** (`web/tests/run.mjs`, [Browser tests](#browser-tests)): one job per game, on a development
+  package built in the job. It plays the games whose own folders changed when every change that needs it is a game's;
+  any other input (the engine, the raylib backend, the web host and build, the suites, an unknown path) plays all four.
+  The SDL backend and the desktop launcher are not part of the browser build and do not run it.
 
 ### Evidence: a check runs once per content
 
@@ -110,8 +118,10 @@ so a new folder is an input until a rule says otherwise; `.github/` is an input 
 | `native` | the same, but `web/tests/` is an input |
 | `site` | `src/`, `tests/`, `samples/`, `platforms/`, `odd/`, `experiments/`, game files other than Markdown and screenshots; the key adds the demo packages used and the browser suites |
 | `sdk` | `docs/`, `site/`, `platforms/`, `games/`, `tests/`, `samples/`, `odd/`, `experiments/`, Markdown outside `src/`, `templates/` and `sdk/` (except `THIRD-PARTY-NOTICES.md`, which the packages ship) |
+| `web` (browser engine) | `docs/`, `site/`, `platforms/`, `tests/`, `samples/`, `sdk/`, `odd/`, `experiments/`, `src/MicroEngine.Sdl`, the Android and iOS hosts, Markdown (except in a game's `Content/`); the key adds the games played |
 
-When a job passes it uploads the artifact `evidence-<check>-<key>` (kept 30 days). Plan skips a needed check when
+When a job passes it uploads the artifact `evidence-<check>-<key>` (kept 30 days); the browser engine check records
+its evidence only when the job of every game passed. Plan skips a needed check when
 such an artifact exists, is unexpired, and was produced by a commit with an identical `.github` folder. Examples:
 
 - A pull request that passed its engine tests and then gets a documentation fix runs only the site.
@@ -136,14 +146,22 @@ which.
 ## Full validation
 
 Actions → **validate** → Run workflow: a ref, and boxes for each part. Every selected check runs, whatever changed
-and whatever evidence exists; nothing is deployed.
+and whatever evidence exists; nothing is deployed or released. Demo packages (web and native downloads) that pass
+their checks are stored in the integration store (prerelease `demo-artifacts`), as daily CI stores them.
+
+**Nightly:** validate also runs every night at 03:17 UTC on `main` with every supported box (.NET, native Linux, web,
+SDK, native packages) and no experimental platform, so a drifted reference, runner image or toolchain shows within a
+day instead of at the next release. Packages are keyed by content: a night after a change to their inputs builds and
+checks them; a night with no such change finds them stored and does not rebuild them. A red nightly run is fixed like
+any failed check, by a pull request.
 
 | Box | Jobs | Support |
 | --- | --- | --- |
 | .NET | .NET tests on Linux and Windows | supported |
-| Native Linux | raylib under Xvfb: native tests, scripted captures against the Linux reference | supported |
-| Web | every missing demo package built; site; all browser suites in Chrome and Firefox | supported |
+| Native Linux | SDL and raylib under Xvfb: native tests, scripted captures against each backend's Linux reference | supported |
+| Web | every missing demo package built; site; all browser suites in Chrome and Firefox; the browser engine suites of all four games in Chrome | supported |
 | SDK | `sdk.yml`: the packages packed, checked and used from outside the repository on Windows, Linux and macOS | supported |
+| Packages | every missing native download built, checked as the file a player downloads (Linux packages also on other distributions) and stored | supported |
 | macOS | .NET tests, OpenGL probe, captures when a window can be opened | experimental |
 | Android | APK built with the NDK and played on an emulator | experimental |
 | iOS | the iOS host in the simulator, headless | experimental |
@@ -182,7 +200,8 @@ setup steps slowed by more than the boot (about 3.5 minutes) saved. The iOS job'
 plus the AOT build (about 2.7 minutes).
 
 Native Linux in daily CI checks both desktop platforms: raylib against `linux-x64.json` and SDL (OpenGL on Mesa
-llvmpipe) against `sdl-linux-x64.json`, plus the SDL platform tests (`tests/MicroEngine.Desktop.Tests`).
+llvmpipe) against `sdl-linux-x64.json`, plus the native tests of both (`tests/MicroEngine.Raylib.Tests`,
+`tests/MicroEngine.Desktop.Tests`): keyboard and sound-server output for each, SDL gamepads, renderer equivalence.
 
 ## SDK checks and releases
 
@@ -287,7 +306,7 @@ comment is the reason shown in run summaries. It needs no secret, variable or re
 | `sdk-release.yml` (after ci, or by hand) | **Preflight** ends with the decision `frozen` and a "Frozen" summary before asking nuget.org or GitHub ([`sdk/version.mjs`](../sdk/version.mjs) `release-plan`); check, draft, publish, verify and site are skipped. The run succeeds: a frozen merge is not a failure |
 | `release.yml` | refused in **Preflight**, dry run included, when the file exists on the ref or on `main`: nothing is built, drafted or deployed |
 | `rollback.yml` | unchanged: it only returns production to an earlier deployment |
-| `validate.yml`, `platforms.yml` | unchanged: they publish nothing |
+| `validate.yml` (nightly and manual), `platforms.yml` | unchanged: they publish nothing |
 
 Adding or removing the file is a change of its own for the planner (rule "publication freeze"): it builds the site and
 checks its page layouts, nothing else.
@@ -361,6 +380,8 @@ Every CI result and validate report includes the cost of its own run. Re-run att
 | sdk-release: "Nothing to release" | the normal outcome of every merge that is not an SDK release | nothing |
 | sdk-release refused, or stopped after publishing | a state its preflight cannot repair, or a failed verification | [Releasing, Recovering](releasing.md#recovering) |
 | `release-verify` fails | a deployed file differs from the release | nothing was published; inspect the build |
+| Site (Chrome and Firefox) fails with `TimeoutError: Timed out after 30000 ms while waiting for the WS endpoint URL to appear in stdout!` after its unit tests passed (known flake, ci run 41540582635) | a browser took longer than puppeteer's default 30 s to start on a busy runner; no check had run | re-run the failed job. The launcher is `launch()` in `site/tests/browser.mjs`, which has no longer timeout or retry yet; the browser engine suites (`web/tests/run.mjs`) give the launch alone 90 s and one retry that prints the browser's output, never retrying a check |
+| Browser engine job: a frame difference against the desktop build | the two builds drift in some scrolling scenes (see [Browser tests](#browser-tests)) | reported only; the job's own checks decide pass or fail |
 
 ## Engine checks beyond unit tests
 
@@ -374,22 +395,42 @@ virtual sound server (PulseAudio):
 
 | Check | What it shows | Where it runs |
 | --- | --- | --- |
-| Scripted scenarios on the desktop build | raylib and OpenGL draw the 15 browser-test scenarios (138 captures), compared with a per-system visual reference | Linux automatically; macOS attempted, completeness only |
-| Keyboard | Key events from the X server reach the game through raylib: a held key gives one press, stays down and gives one release; a tap shorter than a frame is still seen; two keys are independent | Linux |
+| Scripted scenarios on the desktop build | raylib and SDL draw the 15 browser-test scenarios (138 captures), each compared with its per-system visual reference | Linux automatically (both backends); macOS: SDL against its reference, raylib attempted |
+| Keyboard | Key events from the X server (XTEST) reach the game through raylib and through SDL: a held key gives one press, stays down and gives one release; a tap shorter than a frame is still seen; two keys are independent (`KeyboardTests`, `SdlKeyboardTests`) | Linux |
 | Audio device | The raylib audio device opens on the sound server instead of falling back to silence | Linux; macOS attempted |
-| Audio output | A 440 Hz tone played through the engine is recorded from the virtual sink and recognised by level and frequency | Linux |
+| Audio output | A 440 Hz tone played through the engine, as a sound and as streamed music, is recorded from the virtual sink and recognised by level and frequency, through raylib and through SDL's default device (`AudioTests`, `SdlAudioTests`) | Linux |
+| Gamepads | SDL's virtual pads connect, are recognised by family, press, and hand over when one is unplugged (`GamepadTests`) | Linux |
+| Native packages | The downloadable package played by its own executable against its target's SDL reference ([packaging](../packaging/README.md)) | validate (nightly on `main`) and release, on each target's runner |
+
+The keyboard and sound-server helpers are shared by both backends' tests (`tests/MicroEngine.Raylib.Tests/Shared`,
+linked into `MicroEngine.Desktop.Tests`).
 
 The visual reference keeps, for each capture, its size, a hash of its exact pixels and the mean colour of each cell of
 a 32 × 18 grid. A run passes when every capture is there with its size and no cell moved by more than 3 out of 255:
 another driver may round blending differently without failing, while a missing sprite, a wrong frame or a changed
 HUD digit fails. Exact pixel equality is reported. Windows and Linux are not expected to produce identical pixels,
-so each system gets its own reference. Gamepads are covered by none of these checks.
+so each system gets its own reference; hosted Windows runners have no GPU and render with WARP, so their package
+checks use `sdl-windows-ci.json`. A change that alters a capture on purpose re-records it in every reference that
+holds it (`desktop.mjs --write-reference`, or only the changed entries), the Windows runner one included: that one is
+read only by the package checks of validate and release.
 
 ### Browser tests
 
-The same scripts are replayed in Chrome and Firefox on desktop against development packages, and their captures
-are compared byte for byte with the desktop build. Each scenario names a game, a script and its environment; from
-the browser test scenarios:
+`web/tests/run.mjs` plays development packages (`web/build.sh --dev`) in real browsers. In daily CI (the **Browser
+engine** jobs, Chrome on a virtual X server with a virtual sound server, one job per game the change reaches) and in
+validate (all four games), it runs these suites, and the job fails when any of their checks fails:
+
+| Suite | What it shows |
+| --- | --- |
+| `platform` | loading, starting by a gesture, audio running after it, about 60 updates per second, held, released and sub-frame key presses, focus loss releasing keys, saves (corrupt and full storage, with Neon Rift's and Meadow Run's), playing again without reloading |
+| `scripts` | the games' scripts replayed in the browser to their end; their captures are then compared byte for byte with the same scripts on the desktop build (raylib on Mesa, `desktop.mjs` with the same `--out`). The comparison is **measured, not a gate**: on the first runs most captures were identical, but some scrolling scenes drift by a few pixels between the two builds (Meadow Run's level, Neon Rift's stage 1, a few Courtyard Key frames), so differences are listed in the job summary and kept as an artifact |
+| `keyboard` | the same scripts typed through the browser's real key events reach the scene the scripted run ends in |
+| `framerate` | 60 updates per second whether the page draws every frame, every second or every fourth |
+| `audio` | the sound reaching the page's audio output has a measurable level within 15 seconds of the start (the result says when it came: title music is rendered in the background, later on a slow runner); suspended audio is explained and resumed by one click |
+
+Firefox and the `autopilot` suite (Neon Rift's autopilot clearing stages 1 to 3) are run by hand:
+`node web/tests/run.mjs platform scripts autopilot --browsers chrome,firefox`. Each scenario names a game, a script
+and its environment; from the browser test scenarios:
 
 ```json
 { "game": "MeadowRun", "script": "smoke.script", "keyboard": true, "env": {} },

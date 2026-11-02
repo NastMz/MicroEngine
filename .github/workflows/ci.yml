@@ -2,7 +2,8 @@
 #   Plan       planner tests; changed paths decide the checks (.github/scripts/changes.mjs); evidence skips any check
 #              that already passed for identical inputs (.github/scripts/evidence.mjs); demo keys decide the builds
 #              (site/scripts/demos.mjs, ci policy: a changed game, or one canary game for an engine-wide change)
-#   checks     .NET on Linux, then Windows and native Linux; demo builds; the site and its browser suites
+#   checks     .NET on Linux, then Windows and native Linux; demo builds; the site and its browser suites; the
+#              browser engine suites (web/tests/run.mjs) on the games a change reaches
 #              (.github/workflows/checks.yml)
 #   sdk        the SDK packed, checked and used from outside the repository on Windows, Linux and macOS
 #              (.github/workflows/sdk.yml), when a package input changed; never published from here
@@ -50,6 +51,7 @@ jobs:
       games: ${{ steps.changes.outputs.games }}
       site: ${{ steps.decide.outputs.site }}
       suites: ${{ steps.decide.outputs.suites }}
+      web-games: ${{ steps.decide.outputs.web-games }}
       build: ${{ steps.demos.outputs.build }}
       keys: ${{ steps.decide.outputs.keys }}
       reused: ${{ steps.decide.outputs.reused }}
@@ -66,7 +68,7 @@ jobs:
           cache: npm
           cache-dependency-path: site/package-lock.json
       - name: Planner and release tool tests
-        run: node --test .github/scripts/*.test.mjs sdk/tests/version.test.mjs
+        run: node --test .github/scripts/*.test.mjs packaging/*.test.mjs sdk/tests/version.test.mjs
       # Every active documentation reference names the documented SDK version (docs/releasing.md, "Versions").
       - name: SDK version references
         shell: bash # with pipefail, so `| tee` keeps a failure
@@ -113,6 +115,8 @@ jobs:
           MACOS_RUNNERS: ${{ vars.MACOS_RUNNERS }}
           TESTS: ${{ steps.changes.outputs.tests }}
           GAMES: ${{ steps.changes.outputs.games }}
+          WEB: ${{ steps.changes.outputs.web }}
+          WEB_GAMES: ${{ steps.changes.outputs.web_games }}
           BROWSER: ${{ steps.changes.outputs.browser }}
           BUILD: ${{ steps.demos.outputs.build }}
           PACKAGES: ${{ steps.demos.outputs.packages }}
@@ -122,10 +126,12 @@ jobs:
           elif [ "$BROWSER" = layout ]; then suites=layout
           else suites=; fi
           site=$([ -n "$suites" ] && echo true || echo false)
+          # The browser engine suites' games: the changed games, or every game of the scenarios.
+          [ "$WEB_GAMES" = all ] && WEB_GAMES=$(node -e "console.log([...new Set(require('./web/tests/scenarios.json').scenarios.map(s => s.game))].join(','))")
           evidence=$(mktemp)
-          GITHUB_OUTPUT="$evidence" node .github/scripts/evidence.mjs plan --checks dotnet,windows,native,site,sdk \
+          GITHUB_OUTPUT="$evidence" node .github/scripts/evidence.mjs plan --checks dotnet,windows,native,site,sdk,web \
             --extra "dotnet=tests=$TESTS" --extra "windows=tests=$TESTS" --extra "native=games=$GAMES" \
-            --site-extra "suites=$suites $PACKAGES" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+            --extra "web=games=$WEB_GAMES" --site-extra "suites=$suites $PACKAGES" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
           get() { grep "^$1=" "$evidence" | cut -d= -f2-; }
           run() { [ "$1" = true ] && [ -z "$(get "reused_$2")" ] && echo true || echo false; }
           # Production for a push that changes the published site, unless .github/phase-freeze exists (publication
@@ -140,10 +146,11 @@ jobs:
             echo "macos=$([ "$MACOS" = true ] && [ "$PUBLIC_RUNNERS" = true ] && [ "$MACOS_RUNNERS" != off ] && echo true || echo false)"
             echo "site=$(run "$site" site)"
             echo "suites=$suites"
+            echo "web-games=$([ "$(run "$WEB" web)" = true ] && node -e "console.log(JSON.stringify(process.argv[1].split(',').filter(Boolean)))" "$WEB_GAMES" || echo '[]')"
             echo "deploy=$deploy"
-            echo "keys={\"dotnet\":\"$(get key_dotnet)\",\"windows\":\"$(get key_windows)\",\"native\":\"$(get key_native)\",\"site\":\"$(get key_site)\",\"sdk\":\"$(get key_sdk)\"}"
-            echo "reused={\"dotnet\":\"$(get reused_dotnet)\",\"windows\":\"$(get reused_windows)\",\"native\":\"$(get reused_native)\",\"site\":\"$(get reused_site)\",\"sdk\":\"$(get reused_sdk)\"}"
-            echo "needed={\"dotnet\":$DOTNET,\"windows\":$WINDOWS,\"native\":$NATIVE,\"site\":$site,\"sdk\":$SDK}"
+            echo "keys={\"dotnet\":\"$(get key_dotnet)\",\"windows\":\"$(get key_windows)\",\"native\":\"$(get key_native)\",\"site\":\"$(get key_site)\",\"sdk\":\"$(get key_sdk)\",\"web\":\"$(get key_web)\"}"
+            echo "reused={\"dotnet\":\"$(get reused_dotnet)\",\"windows\":\"$(get reused_windows)\",\"native\":\"$(get reused_native)\",\"site\":\"$(get reused_site)\",\"sdk\":\"$(get reused_sdk)\",\"web\":\"$(get reused_web)\"}"
+            echo "needed={\"dotnet\":$DOTNET,\"windows\":$WINDOWS,\"native\":$NATIVE,\"site\":$site,\"sdk\":$SDK,\"web\":$WEB}"
           } >> "$GITHUB_OUTPUT"
           echo "Deployment: $deploy" >> "$GITHUB_STEP_SUMMARY"
 
@@ -165,6 +172,7 @@ jobs:
       site: ${{ needs.plan.outputs.site == 'true' }}
       demo-source: candidates
       suites: ${{ needs.plan.outputs.suites }}
+      web-games: ${{ needs.plan.outputs.web-games }}
       # A fork's runs are never trusted as evidence (evidence.mjs ignores them), so they do not record any.
       evidence: ${{ needs.plan.outputs.fork != 'true' }}
       keys: ${{ needs.plan.outputs.keys }}
@@ -228,7 +236,7 @@ jobs:
           {
             echo "### CI result"; echo
             echo "| Check | Needed | Outcome |"; echo "| --- | --- | --- |"
-            for check in dotnet windows native site sdk; do
+            for check in dotnet windows native site sdk web; do
               is_needed=$(echo "$NEEDED" | jq -r ".$check // false"); proof=$(echo "$REUSED" | jq -r ".$check // \"\"")
               if [ "$is_needed" != true ]; then outcome="not needed for this change"
               elif [ -n "$proof" ]; then outcome="already passed for identical inputs in [run $proof]($RUN_URL/$proof)"
