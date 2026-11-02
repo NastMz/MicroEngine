@@ -85,15 +85,13 @@ export function releasedVersions(root = repoRoot) {
   return [...read(root, 'docs/guide/release-notes.md').matchAll(new RegExp(`^## (${semver})\\s*$`, 'gm'))].map(m => m[1]);
 }
 
-/** Character ranges of the paragraphs marked as history in a Markdown text. */
+/** Character ranges of the paragraphs marked as history in a Markdown text: the marker alone on its line, above them. */
 function historyRanges(text) {
   const ranges = [];
-  let at = text.indexOf(historyMarker);
-  while (at >= 0) {
-    const start = at + historyMarker.length;
+  for (const marker of text.matchAll(/^[ \t]*<!-- sdk-version: history -->[ \t]*\r?$/gm)) {
+    const start = marker.index + marker[0].length;
     const end = text.slice(start).search(/\n[ \t\r]*\n/); // a blank line; CRLF in a Windows checkout
     ranges.push([start, end < 0 ? text.length : start + end + 1]);
-    at = text.indexOf(historyMarker, start);
   }
   return ranges;
 }

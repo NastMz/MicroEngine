@@ -67,6 +67,11 @@ test('check: an unclassified mention of a known version fails; history and unkno
   assert.deepEqual(check(root), ['docs/manual/text.md:1: 0.4.0-alpha.2 is neither an active reference (sdk/version.mjs, references) nor marked "<!-- sdk-version: history -->".']);
 });
 
+test('check: a marker quoted in prose is not a marker', () => {
+  const root = fixture({ 'docs/manual/text.md': 'Mark it with `<!-- sdk-version: history -->` above the paragraph. Fonts in 0.4.0-alpha.2.\n' });
+  assert.equal(check(root).length, 1);
+});
+
 test('check: the documented version needs a release-notes section', () => {
   const root = fixture();
   release('0.4.0-alpha.3', root);

@@ -69,4 +69,7 @@ deploy) → one independent verifier at the feature's end. RDD is off globally (
   the live repository gave none / finish / refused / release as designed. actionlint with shellcheck clean.
 - L4 Not verified on GitHub: `workflow_run` start, the approval wait, Trusted Publishing under `workflow_run`, the
   deployment from sdk-release, evidence of the sdk check. They run after merge; no real publication was made.
-- L5 Next: independent verification (Risk item 5), then the PR. Deferred: prebuilding native demo packages on main.
+- L5 Independent verifier: 4 blockers (releasing.md failed `check`; publish accepted a draft skipped by a failed check;
+  nuget.org outage read as all pushed; docs.mjs files outside the .NET evidence key) and 8 advisories. One correction
+  batch fixed the blockers and advisories 2, 5, 6 (and documented 1, 4); recheck limited to those blockers green.
+- L6 Next: the PR. Deferred: prebuilding native demo packages on main.

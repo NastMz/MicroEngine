@@ -103,7 +103,7 @@ jobs:
           elif [ "$TARGET" = production ] && ! node ../sdk/version.mjs status --public --json | jq -e .documentedPublic > /dev/null; then
             # Between merging an SDK release and nuget.org serving it, the documentation presents a version nobody can
             # install yet: production keeps its deployment, and sdk-release.yml deploys main once the packages are public.
-            echo "::warning::The documentation presents SDK $(node ../sdk/version.mjs status --json | jq -r .documented), which nuget.org does not serve (yet), so production was left unchanged. sdk-release deploys it once it is published (docs/releasing.md)."
+            echo "::warning::The documentation presents SDK $(node ../sdk/version.mjs status --json | jq -r .documented), which nuget.org does not serve yet (or nuget.org could not be asked), so production was left unchanged. sdk-release deploys it once it is published (docs/releasing.md)."
             echo "ok=false" >> "$GITHUB_OUTPUT"
             [ -z "$RELEASE" ] || { echo "::error::A demo release cannot be published while the documentation presents an SDK version nuget.org does not serve."; exit 1; }
           else

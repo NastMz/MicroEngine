@@ -123,13 +123,22 @@ prose (fonts, phone hosts, the SemVer example, AGENTS.md) were rewritten not to 
 
 | What | Result |
 | --- | --- |
-| `node --test .github/scripts/*.test.mjs sdk/tests/version.test.mjs` | 62 pass: planner `sdk` rules, evidence scope, reference patterns, check, release rewrite (CRLF included), nuget.org state, wait-public, one test per release state (new version, nothing to do, re-approval, fix after draft, partial push 1/6 and 5/6, all pushed with draft, published, refusals) |
+| `node --test .github/scripts/*.test.mjs sdk/tests/version.test.mjs` | 64 pass: planner `sdk` rules, evidence scope, reference patterns, check, release rewrite (CRLF included), nuget.org state, wait-public, one test per release state (new version, nothing to do, re-approval, fix after draft, partial push 1/6 and 5/6, all pushed with draft, published, refusals), and planner rules agreeing with evidence inputs |
 | `node --test site/tests/demos.test.mjs` | 14 pass, `nextVersion` included |
 | `node sdk/version.mjs check` on this branch | RED before the docs were classified (9 unclassified mentions), then green |
 | `node sdk/tests/docs.mjs` with the docs at an unpublished 0.4.0-alpha.3 (a copy) | packs this commit, builds and plays all six samples against those packages |
 | `node sdk/tests/external.mjs --public --version 0.4.0-alpha.2 --targets linux` (the verify job's command) | all checks pass from nuget.org alone (run on Windows; the job runs it on Linux under Xvfb) |
 | `sdk/version.mjs release-plan` against the live repository, read only | after a merge: nothing to release; by hand: finish; a copy documenting 0.4.0-alpha.3 without notes: refused; with notes: release |
 | actionlint 1.7.7 with shellcheck on every workflow | clean |
+
+**Independent verification** (a separate reviewer with the feature document and the diff) found four blockers, all
+fixed in one correction: `docs/releasing.md` named concrete versions and failed `check` (now placeholders; a history
+marker counts only alone on its line); `publish` accepted a draft skipped because the check failed, so an older draft
+could be approved (now: a new draft must succeed, `skipped` only when the draft already existed; `verify` likewise);
+a nuget.org outage in the publish job read as "all pushed" and could publish the GitHub release with no packages
+(now the status call must succeed); the documented-version files ran the .NET check by rule but were not inputs of its
+evidence key, so evidence skipped `docs.mjs` (now inputs, with a test that every planner rule's check counts its file
+as an input, RED before the fix).
 
 Not run here, and why: the workflows on GitHub (they run after merge; a release would publish). The first real
 SDK release exercises `workflow_run`, the approval wait and the site deployment from `sdk-release`; every merge before
@@ -156,6 +165,8 @@ it exercises the preflight's "nothing to release" path.
   unchanged; the OIDC token of a `workflow_run` run carries the same workflow and environment claims. Not proven until
   the first release; if nuget.org refuses, the run stops before pushing and a manual run (`workflow_dispatch`, the
   event of every earlier release) resumes it.
+- **A held deployment is not retried.** If `main`'s own ci deployment was held and its ci run had not passed when
+  sdk-release finished, the site waits for the next site change or a manual sdk-release run (it then deploys).
 - **An sdk-release run per merge** (≈10 s, "nothing to release") is noise in the Actions list.
 - **nuget.org indexing** can exceed the 30-minute wait; the run then fails after publishing and a manual run resumes.
 - **macOS informative tests** still run on every main push even when evidence covers the commit (never evidence by

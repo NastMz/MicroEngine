@@ -27,7 +27,9 @@ const always = file => /^(odd|experiments)\//.test(file);
 // Markdown is documentation unless a game ships it as content.
 const docs = file => /^docs\//.test(file) || (/\.md$/i.test(file) && !/\/Content\//.test(file));
 // Host templates of the microengine tool are compiled only into packages, never by the .NET tests.
-const dotnetSkips = file => always(file) || docs(file) || /^(site|platforms|web|sdk)\//.test(file) || /^src\/MicroEngine\.Cli\/Hosts\//.test(file);
+// The documented SDK version and the samples check (sdk/tests/docs.mjs, in the .NET Linux job) are .NET inputs.
+const dotnetSkips = file => always(file) || docs(file) || /^(site|platforms|web)\//.test(file) || /^src\/MicroEngine\.Cli\/Hosts\//.test(file)
+  || (/^sdk\//.test(file) && !/^sdk\/(version\.|tests\/(docs|version)\.)/.test(file));
 
 /** Which files can affect each check. */
 export const scopes = {

@@ -94,3 +94,16 @@ test('evidence: accepted only when unexpired, produced by this repository and wi
   assert.equal(await findEvidence('dotnet', key, { root, api: listing([]) }), null);
   assert.equal(await findEvidence('dotnet', key, { root, api: async () => { throw new Error('HTTP 500'); } }), null, 'an API failure runs the check');
 });
+
+test('inputs agree with the planner: a file whose rule needs a check is an input of that check', async () => {
+  const { planChecks } = await import('./changes.mjs');
+  const files = ['src/MicroEngine/Core/A.cs', 'src/MicroEngine.Cli/Commands/A.cs', 'templates/Game/Program.cs', 'sdk/version.json',
+    'sdk/version.mjs', 'sdk/tests/docs.mjs', 'sdk/tests/external.mjs', 'games/Alpha/Game.cs', 'tests/Alpha.Tests/A.cs',
+    'samples/Hello/Program.cs', 'web/toolchain.env', 'web/tests/package.json', 'web/tests/desktop.mjs', 'THIRD-PARTY-NOTICES.md', 'LICENSE'];
+  for (const file of files) {
+    const checks = planChecks([file]);
+    for (const check of ['dotnet', 'windows', 'native', 'sdk']) {
+      if (checks[check] === true) assert.equal(isInput(check, file), true, `${file} runs ${check}, so it must change its key`);
+    }
+  }
+});

@@ -11,7 +11,7 @@ workflows: [CI](ci.md).
 | | SDK | Demo distribution | Site |
 | --- | --- | --- | --- |
 | What | six NuGet packages, one version (ADR 0019) | the four games: web packages and native downloads | documentation, landing, demo pages |
-| Identified by | SemVer `0.4.0-alpha.2`, tag `sdk-v<version>` | `v<version>` (`v0.4.0`): a release number, not an API promise; each game keeps its own `<Version>` | the Vercel deployment of a `main` commit |
+| Identified by | SemVer (`0.x.y-alpha.n` in Alpha), tag `sdk-v<version>` | `v<version>` (`v0.4.0`): a release number, not an API promise; each game keeps its own `<Version>` | the Vercel deployment of a `main` commit |
 | Source of truth | nuget.org (immutable) | the latest published GitHub release `v*` | the production deployment |
 | Starts | merging a pull request that documents a new version; the `nuget` environment's approval publishes it | by hand: Actions → release | every push to `main` that changes the site |
 | Workflow | `sdk-release.yml` | `release.yml` | `ci.yml` (and the two others, which deploy after publishing) |
@@ -47,7 +47,7 @@ Rules:
 - Active references (install commands, package references in the samples, "the current version is") follow the
   documented version: `node sdk/version.mjs check` fails in CI when one does not. Historical text never changes: the
   release notes, the migration notes, decisions, evaluations, and a paragraph in an active page marked with
-  `<!-- sdk-version: history -->` on the line above it ("from 0.4.0-alpha.2 every change waits").
+  `<!-- sdk-version: history -->` on the line above it ("from version N every change waits").
 - Raising `MicroEngineVersion` alone (to start the next cycle) publishes nothing: no page documents it yet.
 - The demo distribution's default version is the minor after the latest one; any new `x.y.z` can be given instead.
 
@@ -89,9 +89,9 @@ Once, before the first release (done for this repository):
 
 For every release, **one pull request and one approval**:
 
-1. On a branch: `node sdk/version.mjs release 0.4.0-alpha.3`. It sets `MicroEngineVersion` and `sdk/version.json` and
+1. On a branch: `node sdk/version.mjs release <version>`. It sets `MicroEngineVersion` and `sdk/version.json` and
    rewrites every active reference (the install pages, the tutorial, the samples' package references). Write the
-   version's section in [release notes](guide/release-notes.md) (`## 0.4.0-alpha.3`) and, when something breaks, in
+   version's section in [release notes](guide/release-notes.md) (`## <version>`) and, when something breaks, in
    the [migration notes](migrations.md); `node sdk/version.mjs check` passes when nothing is missing. Open the pull
    request. Its CI packs and checks the SDK, and builds the documented samples against those packages.
 2. Merge it. From then until the packages are public, production keeps its deployment (the documentation of `main`
@@ -104,8 +104,8 @@ For every release, **one pull request and one approval**:
    release; waits until nuget.org serves all six packages; creates, builds, runs and packages a game, and builds the
    documented samples, from nuget.org alone; then deploys production with `main`'s head.
 
-Nothing else is done by hand. To not publish: reject the deployment (step 4); the draft stays, nothing is public, and
-the next merge or a manual run re-drafts. To abandon the version, revert the release pull request.
+Nothing else is done by hand. To not publish: reject the deployment (step 4); the draft stays and nothing is public.
+A manual run of the same commit asks for approval of that draft again; the next merge with a new commit re-drafts. To abandon the version, revert the release pull request.
 
 ## Recovering
 
@@ -121,7 +121,7 @@ done and continues from there; the summary says what it found:
 | Documented version not public and not the prepared one | refused: a pull request must run `node sdk/version.mjs release` again |
 
 Packages on nuget.org are immutable: a pushed version is never overwritten or deleted. A defect in a published
-version is fixed by a new version (`0.4.0-alpha.4`), never by re-pushing; unlisting it on nuget.org (the package's
+version is fixed by a new version, never by re-pushing; unlisting it on nuget.org (the package's
 Manage page) is the owner's decision. Two cases need a person, and the preflight says so: packages on nuget.org with
 no draft to finish from (push the rest by hand with `dotnet nuget push`, from files that match the published ones),
 and a published GitHub release whose packages nuget.org lacks.
@@ -139,5 +139,7 @@ not serve yet: let sdk-release finish first.
 
 Merging is deploying: a push to `main` that changes the published site deploys production after its checks, with
 the latest demo release. An urgent fix is an ordinary pull request; it runs only the checks its files need
-([CI, What runs for a change](ci.md#what-runs-for-a-change)) and no package or release. Rollback: Actions →
+([CI, What runs for a change](ci.md#what-runs-for-a-change)) and no package or release. Exception: while an SDK
+release is merged but not yet approved, production is held for every deployment; approve the release, or revert its
+pull request, to let the fix through. Rollback: Actions →
 **rollback** ([publishing the site](deployment.md)).
