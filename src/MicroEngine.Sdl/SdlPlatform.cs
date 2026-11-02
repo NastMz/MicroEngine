@@ -18,7 +18,7 @@ namespace MicroEngine.Sdl;
 /// also reports the window's safe area and density; a system that sends the app to the background suspends it
 /// (<see cref="IPlatform.Suspended"/>).
 /// </summary>
-public sealed unsafe class SdlPlatform : IPlatform
+public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
 {
     private readonly GameSettings _settings;
     private readonly bool _fixedStep;
@@ -33,6 +33,7 @@ public sealed unsafe class SdlPlatform : IPlatform
     private readonly SdlTouchScreen _touch;
     private readonly ulong _start;
     private long _frames;
+    private readonly bool _vsync;
     private bool _closeRequested, _suspended, _disposed;
     // Written by the lifecycle watch on the thread the system uses to send the event.
     private volatile bool _background;
@@ -101,8 +102,10 @@ public sealed unsafe class SdlPlatform : IPlatform
             AppOrientation.Any => "LandscapeLeft LandscapeRight Portrait PortraitUpsideDown",
             _ => "LandscapeLeft LandscapeRight",
         });
-        if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO | SDL_InitFlags.SDL_INIT_GAMEPAD))
+        long started = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO))
             throw new InvalidOperationException($"SDL could not start its video subsystem: {SDL_GetError()}");
+        Mark("video", ref started);
         int scale = request.Scale ?? _settings.Scale;
         var flags = SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY;
         if (request.Hidden) flags |= SDL_WindowFlags.SDL_WINDOW_HIDDEN;
@@ -110,6 +113,14 @@ public sealed unsafe class SdlPlatform : IPlatform
         _window = SDL_CreateWindow(_settings.Title, _settings.VirtualWidth * scale, _settings.VirtualHeight * scale, flags);
         if (_window == null) throw Fail("SDL could not open a window");
         if (!mobile && request.Identity?.Icon is { } icon) SetWindowIcon(icon);
+        Mark("window", ref started);
+        // SDL can choose a GPU only for its Metal and GPU renderers; elsewhere the system decides (GpuPreference).
+        if (request.GpuPreference != GpuPreference.Automatic)
+        {
+            string lowPower = request.GpuPreference == GpuPreference.PowerSaving ? "1" : "0";
+            SDL_SetHint(SDL_HINT_RENDER_GPU_LOW_POWER, lowPower);
+            SDL_SetHint(SDL_HINT_RENDER_METAL_PREFER_LOW_POWER_DEVICE, lowPower);
+        }
         _sdl = renderer is null ? SDL_CreateRenderer(_window, (byte*)null) : SDL_CreateRenderer(_window, renderer);
         if (_sdl == null)
         {
@@ -117,11 +128,12 @@ public sealed unsafe class SdlPlatform : IPlatform
                 ? "SDL could not create a renderer"
                 : $"SDL could not create its '{renderer}' renderer (drivers here: {string.Join(", ", RenderDrivers)})");
             SDL_DestroyWindow(_window);
-            SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO | SDL_InitFlags.SDL_INIT_GAMEPAD);
+            SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
             throw error;
         }
+        Mark("renderer", ref started);
         SDL_SetWindowMinimumSize(_window, _settings.VirtualWidth, _settings.VirtualHeight);
-        if (!request.Hidden && !_fixedStep) SDL_SetRenderVSync(_sdl, 1);
+        _vsync = !request.Hidden && !_fixedStep && SDL_SetRenderVSync(_sdl, 1);
         _target = SDL_CreateTexture(_sdl, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, _settings.VirtualWidth, _settings.VirtualHeight);
         if (_target == null) { Dispose(); throw Fail("SDL could not create the frame texture"); }
         SDL_SetTextureScaleMode(_target, SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
@@ -129,7 +141,12 @@ public sealed unsafe class SdlPlatform : IPlatform
         _renderer = new SdlRenderer(_sdl, _settings.VirtualWidth, _settings.VirtualHeight);
         _touch = new SdlTouchScreen(_window, _sdl, mobile);
         _input = new SdlInput(this);
+        Mark("frame", ref started);
         _audio = request.OpensOwnAudio ? SdlAudioDevice.TryCreate() : new SilentAudioDevice();
+        Mark("audio", ref started);
+        // Only a start screen hides the gamepad subsystem's start (StartGamepads); without one, a window that showed the
+        // game's first frame and then froze would be worse than a window that appears a moment later.
+        if (!(request.Identity is { Splash: true } && !request.Hidden && !_fixedStep)) StartGamepads();
         _self = GCHandle.Alloc(this);
         SDL_AddEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
         _start = SDL_GetTicksNS();
@@ -140,6 +157,31 @@ public sealed unsafe class SdlPlatform : IPlatform
     public string RendererName { get; }
     /// <summary>"SDL renderer" followed by the name of the render driver in use.</summary>
     public override string ToString() => $"SDL renderer {RendererName}";
+
+    /// <inheritdoc/>
+    public IReadOnlyDictionary<string, string> Diagnostics
+    {
+        get
+        {
+            var facts = new Dictionary<string, string>
+            {
+                ["sdl"] = $"{SDL_GetVersion() / 1000000}.{SDL_GetVersion() / 1000 % 1000}.{SDL_GetVersion() % 1000}",
+                ["renderer"] = RendererName,
+                ["videoDriver"] = SDL_GetCurrentVideoDriver() ?? "unknown",
+            };
+            int vsync;
+            if (SDL_GetRenderVSync(_sdl, &vsync)) facts["vsync"] = vsync.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var display = SDL_GetDisplayForWindow(_window);
+            var mode = SDL_GetCurrentDisplayMode(display);
+            if (mode != null) facts["display"] = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{mode->w}x{mode->h} @ {mode->refresh_rate:0.##} Hz");
+            int w, h;
+            if (SDL_GetCurrentRenderOutputSize(_sdl, &w, &h)) facts["output"] = $"{w}x{h}";
+            if (Adapter() is { } adapter) facts["adapter"] = adapter;
+            foreach (var (step, ms) in _startSteps)
+                facts[$"start.{step}"] = ms.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms";
+            return facts;
+        }
+    }
     /// <inheritdoc/>
     public IGraphicsDevice Graphics => _graphics;
     /// <inheritdoc/>
@@ -152,6 +194,16 @@ public sealed unsafe class SdlPlatform : IPlatform
     public double Now => _fixedStep ? _frames / (double)_settings.UpdateRate : (SDL_GetTicksNS() - _start) / 1e9;
     /// <inheritdoc/>
     public bool RealTime => !_fixedStep;
+    /// <summary>The refresh rate of the display the window is on while VSync paces the frames; 0 otherwise.</summary>
+    public double DisplayRate
+    {
+        get
+        {
+            if (!_vsync) return 0;
+            var mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(_window));
+            return mode == null ? 0 : mode->refresh_rate;
+        }
+    }
     /// <inheritdoc/>
     public bool Suspended => _suspended;
     /// <inheritdoc/>
@@ -178,6 +230,57 @@ public sealed unsafe class SdlPlatform : IPlatform
                 break;
         }
         return true;
+    }
+
+    private readonly List<(string Step, double Milliseconds)> _startSteps = [];
+
+    /// <summary>The GPU the renderer draws with, when its graphics API can name it (Direct3D 11, SDL's GPU renderer); null otherwise.</summary>
+    private string? Adapter()
+    {
+        nint gpu = SDL_GetPointerProperty(SDL_GetRendererProperties(_sdl), SDL_PROP_RENDERER_GPU_DEVICE_POINTER, 0);
+        if (gpu != 0)
+        {
+            var props = SDL_GetGPUDeviceProperties((SDL_GPUDevice*)gpu);
+            string? name = SDL_GetStringProperty(props, SDL_PROP_GPU_DEVICE_NAME_STRING, null);
+            string? driver = SDL_GetStringProperty(props, SDL_PROP_GPU_DEVICE_DRIVER_NAME_STRING, null);
+            return name is null ? null : driver is null ? name : $"{name} ({driver})";
+        }
+        return OperatingSystem.IsWindows() ? Direct3DAdapter() : null;
+    }
+
+    /// <summary>
+    /// The graphics adapter SDL's Direct3D 11 renderer draws with, by its DXGI description (on a machine with two GPUs,
+    /// which one the game got); null with another renderer or when it cannot be read.
+    /// </summary>
+    private string? Direct3DAdapter()
+    {
+        nint device = SDL_GetPointerProperty(SDL_GetRendererProperties(_sdl), SDL_PROP_RENDERER_D3D11_DEVICE_POINTER, 0);
+        if (device == 0) return null;
+        nint dxgi = 0, adapter = 0;
+        try
+        {
+            // ID3D11Device → IDXGIDevice (IUnknown::QueryInterface, slot 0) → IDXGIDevice::GetAdapter (slot 7)
+            // → IDXGIAdapter::GetDesc (slot 8): DXGI_ADAPTER_DESC starts with the adapter's name in 128 UTF-16 units.
+            var iid = new Guid("54ec77fa-1377-44e6-8c32-88fd5f44c84c");
+            if (((delegate* unmanaged[Stdcall]<nint, Guid*, nint*, int>)(*(nint**)device)[0])(device, &iid, &dxgi) != 0) return null;
+            if (((delegate* unmanaged[Stdcall]<nint, nint*, int>)(*(nint**)dxgi)[7])(dxgi, &adapter) != 0) return null;
+            var desc = stackalloc byte[512];
+            if (((delegate* unmanaged[Stdcall]<nint, byte*, int>)(*(nint**)adapter)[8])(adapter, desc) != 0) return null;
+            return new string((char*)desc, 0, 128).TrimEnd('\0');
+        }
+        finally
+        {
+            if (adapter != 0) ((delegate* unmanaged[Stdcall]<nint, uint>)(*(nint**)adapter)[2])(adapter);
+            if (dxgi != 0) ((delegate* unmanaged[Stdcall]<nint, uint>)(*(nint**)dxgi)[2])(dxgi);
+        }
+    }
+
+    /// <summary>Records how long a step of the constructor took, for <see cref="Diagnostics"/>.</summary>
+    private void Mark(string step, ref long since)
+    {
+        long now = System.Diagnostics.Stopwatch.GetTimestamp();
+        _startSteps.Add((step, System.Diagnostics.Stopwatch.GetElapsedTime(since, now).TotalMilliseconds));
+        since = now;
     }
 
     private static InvalidOperationException Fail(string what) => new($"{what}: {SDL_GetError()}");
@@ -295,6 +398,24 @@ public sealed unsafe class SdlPlatform : IPlatform
         // The on-screen controls, over the letterboxed frame in window pixels (never in captures).
         _touch.Overlay?.Draw(_touch.Canvas);
         SDL_RenderPresent(_sdl);
+        if (!_gamepadsStarted) StartGamepads();
+    }
+
+    private bool _gamepadsStarted;
+
+    /// <summary>
+    /// Starts SDL's gamepad subsystem. A game with a start screen does it once that screen is shown, before the game
+    /// loads: on some Windows machines it takes about a second (measured in PERF-1, with every joystick driver of SDL
+    /// turned off as well), which would otherwise keep the window from appearing. SDL reports the pads already connected
+    /// as added, so none is missed.
+    /// </summary>
+    private void StartGamepads()
+    {
+        _gamepadsStarted = true;
+        long started = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (!SDL_InitSubSystem(SDL_InitFlags.SDL_INIT_GAMEPAD))
+            Console.Error.WriteLine($"input: gamepads unavailable ({SDL_GetError()})");
+        Mark("gamepad", ref started);
     }
 
     /// <inheritdoc/>
@@ -345,7 +466,8 @@ public sealed unsafe class SdlPlatform : IPlatform
         if (_target != null) SDL_DestroyTexture(_target);
         if (_sdl != null) SDL_DestroyRenderer(_sdl);
         if (_window != null) SDL_DestroyWindow(_window);
-        SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO | SDL_InitFlags.SDL_INIT_GAMEPAD);
+        if (_gamepadsStarted) SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_GAMEPAD);
+        SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
     }
 
     internal SDL_Window* Window => _window;
@@ -378,6 +500,10 @@ internal sealed unsafe class SdlGraphicsDevice(SDL_Renderer* renderer) : IGraphi
 internal sealed unsafe class SdlTexture(SDL_Texture* native, int width, int height) : Texture(width, height)
 {
     public SDL_Texture* Native { get; } = native;
+    /// <summary>The frame (<see cref="SdlRenderer"/>'s count) in which <see cref="Tint"/> and <see cref="Blend"/> were last applied.</summary>
+    public long StateFrame { get; set; } = -1;
+    public Color Tint { get; set; }
+    public SDL_BlendMode Blend { get; set; }
     protected override void Release() => SDL_DestroyTexture(Native);
 }
 
@@ -385,7 +511,15 @@ internal sealed unsafe class SdlTexture(SDL_Texture* native, int width, int heig
 internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int height) : IRenderer
 {
     private const int CircleSegments = 36;
+    /// <summary>The circle's rim as unit vectors, computed once.</summary>
+    private static readonly Vector2[] Rim = [.. Enumerable.Range(0, CircleSegments + 1).Select(i => new Vector2(MathF.Cos(i * MathF.Tau / CircleSegments), MathF.Sin(i * MathF.Tau / CircleSegments)))];
     private readonly Stack<Vector2> _offsets = new();
+    // State already set on the SDL renderer in this frame, so unchanged state is not set again for every draw. Anything
+    // else that draws with the renderer (the letterbox, the touch overlay) does so between frames, so each frame starts
+    // without assumptions.
+    private long _frame;
+    private SDL_BlendMode? _drawBlend;
+    private Color? _drawColor;
     private readonly SDL_Vertex[] _vertices = new SDL_Vertex[CircleSegments * 3];
     private Vector2 _offset;
     private SDL_BlendMode _blend = SDL_BlendMode.SDL_BLENDMODE_BLEND;
@@ -395,6 +529,9 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
 
     public void Begin()
     {
+        _frame++;
+        _drawBlend = null;
+        _drawColor = null;
         _offsets.Clear();
         _offset = Vector2.Zero;
         _blend = SDL_BlendMode.SDL_BLENDMODE_BLEND;
@@ -411,25 +548,56 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
 
     public void Clear(Color color)
     {
-        SDL_SetRenderDrawColor(sdl, color.R, color.G, color.B, color.A);
+        DrawColor(color);
         SDL_RenderClear(sdl);
     }
 
-    private void Tint(SDL_Texture* texture, Color tint)
+    private void DrawColor(Color color)
     {
-        SDL_SetTextureColorMod(texture, tint.R, tint.G, tint.B);
-        SDL_SetTextureAlphaMod(texture, tint.A);
-        SDL_SetTextureBlendMode(texture, _blend);
+        if (_drawColor == color) return;
+        _drawColor = color;
+        SDL_SetRenderDrawColor(sdl, color.R, color.G, color.B, color.A);
+    }
+
+    private void DrawBlend()
+    {
+        if (_drawBlend == _blend) return;
+        _drawBlend = _blend;
+        SDL_SetRenderDrawBlendMode(sdl, _blend);
+    }
+
+    private SDL_Texture* Tint(SdlTexture texture, Color tint)
+    {
+        var native = texture.Native;
+        bool fresh = texture.StateFrame != _frame;
+        if (fresh || texture.Tint != tint)
+        {
+            SDL_SetTextureColorMod(native, tint.R, tint.G, tint.B);
+            SDL_SetTextureAlphaMod(native, tint.A);
+            texture.Tint = tint;
+        }
+        if (fresh || texture.Blend != _blend)
+        {
+            SDL_SetTextureBlendMode(native, _blend);
+            texture.Blend = _blend;
+        }
+        texture.StateFrame = _frame;
+        return native;
     }
 
     public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default)
     {
-        var native = ((SdlTexture)texture).Native;
-        Tint(native, tint);
+        var native = Tint((SdlTexture)texture, tint);
         var scale = options.Scale ?? Vector2.One;
         var p = position + _offset;
         var src = new SDL_FRect { x = source.X, y = source.Y, w = source.Width, h = source.Height };
         var dst = new SDL_FRect { x = p.X, y = p.Y, w = source.Width * scale.X, h = source.Height * scale.Y };
+        if (options.Rotation == 0 && !options.FlipX && !options.FlipY)
+        {
+            // The origin only matters when rotating; without rotation or flips the plain copy draws the same pixels.
+            SDL_RenderTexture(sdl, native, &src, &dst);
+            return;
+        }
         var center = new SDL_FPoint { x = options.Origin.X * scale.X, y = options.Origin.Y * scale.Y };
         var flip = (options.FlipX ? SDL_FlipMode.SDL_FLIP_HORIZONTAL : 0) | (options.FlipY ? SDL_FlipMode.SDL_FLIP_VERTICAL : 0);
         SDL_RenderTextureRotated(sdl, native, &src, &dst, options.Rotation * 180.0 / Math.PI, &center, flip);
@@ -437,8 +605,7 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
 
     public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint)
     {
-        var native = ((SdlTexture)texture).Native;
-        Tint(native, tint);
+        var native = Tint((SdlTexture)texture, tint);
         var src = new SDL_FRect { x = source.X, y = source.Y, w = source.Width, h = source.Height };
         var dst = new SDL_FRect { x = destination.X + _offset.X, y = destination.Y + _offset.Y, w = destination.Width, h = destination.Height };
         SDL_RenderTexture(sdl, native, &src, &dst);
@@ -447,15 +614,15 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
     public void FillRect(RectF rect, Color color)
     {
         if (color.A == 0) return;
-        SDL_SetRenderDrawBlendMode(sdl, _blend);
-        SDL_SetRenderDrawColor(sdl, color.R, color.G, color.B, color.A);
+        DrawBlend();
+        DrawColor(color);
         var r = new SDL_FRect { x = rect.X + _offset.X, y = rect.Y + _offset.Y, w = rect.Width, h = rect.Height };
         SDL_RenderFillRect(sdl, &r);
     }
 
     public void FillCircle(Vector2 center, float radius, Color color)
     {
-        SDL_SetRenderDrawBlendMode(sdl, _blend);
+        DrawBlend();
         FillCircle(sdl, center + _offset, radius, F(color), _vertices);
     }
 
@@ -464,10 +631,9 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
         var v = buffer ?? new SDL_Vertex[CircleSegments * 3];
         for (int i = 0; i < CircleSegments; i++)
         {
-            float a0 = i * MathF.Tau / CircleSegments, a1 = (i + 1) * MathF.Tau / CircleSegments;
             v[i * 3] = Vertex(center, color);
-            v[i * 3 + 1] = Vertex(center + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * radius, color);
-            v[i * 3 + 2] = Vertex(center + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * radius, color);
+            v[i * 3 + 1] = Vertex(center + Rim[i] * radius, color);
+            v[i * 3 + 2] = Vertex(center + Rim[i + 1] * radius, color);
         }
         fixed (SDL_Vertex* p = v) SDL_RenderGeometry(sdl, null, p, CircleSegments * 3, null, 0);
     }
@@ -476,7 +642,7 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
 
     public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
     {
-        SDL_SetRenderDrawBlendMode(sdl, _blend);
+        DrawBlend();
         var f = F(color);
         var v = stackalloc SDL_Vertex[3] { Vertex(a + _offset, f), Vertex(b + _offset, f), Vertex(c + _offset, f) };
         SDL_RenderGeometry(sdl, null, v, 3, null, 0);
@@ -489,7 +655,7 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
         var n = Vector2.Normalize(new Vector2(-d.Y, d.X)) * (thickness / 2);
         var f = F(color);
         Vector2 a = from + _offset + n, b = from + _offset - n, c = to + _offset - n, e = to + _offset + n;
-        SDL_SetRenderDrawBlendMode(sdl, _blend);
+        DrawBlend();
         var v = stackalloc SDL_Vertex[6] { Vertex(a, f), Vertex(b, f), Vertex(c, f), Vertex(a, f), Vertex(c, f), Vertex(e, f) };
         SDL_RenderGeometry(sdl, null, v, 6, null, 0);
     }

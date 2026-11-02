@@ -31,11 +31,35 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
     }
 
     /// <summary>Opens the default playback device, or returns a silent device (and says why) when there is none.</summary>
-    public static IAudioDevice TryCreate()
+    public static IAudioDevice TryCreate() => Open(null);
+
+    /// <summary>
+    /// Opens the default playback device of SDL's audio driver <paramref name="driver"/>: "dummy" runs SDL's whole audio
+    /// path without any device or sound, for tests; "disk" writes the mixed output to a file (SDL's
+    /// <c>SDL_AUDIO_DISK_OUTPUT_FILE</c> hint). Returns a silent device (and says why) when the driver is unavailable
+    /// or SDL's audio was already started with another driver.
+    /// </summary>
+    public static IAudioDevice TryCreate(string driver)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(driver);
+        return Open(driver);
+    }
+
+    private static IAudioDevice Open(string? driver)
     {
         try
         {
-            if (!SDL_InitSubSystem(SDL_InitFlags.SDL_INIT_AUDIO))
+            if (driver is not null) SDL_SetHint(SDL_HINT_AUDIO_DRIVER, driver);
+            bool started;
+            try { started = SDL_InitSubSystem(SDL_InitFlags.SDL_INIT_AUDIO); }
+            finally { if (driver is not null) SDL_ResetHint(SDL_HINT_AUDIO_DRIVER); }
+            if (started && driver is not null && SDL_GetCurrentAudioDriver() != driver)
+            {
+                Console.Error.WriteLine($"audio: SDL audio already runs with the '{SDL_GetCurrentAudioDriver()}' driver, not '{driver}'; continuing silently");
+                SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_AUDIO);
+                return new SilentAudioDevice();
+            }
+            if (!started)
             {
                 Console.Error.WriteLine($"audio: {SDL_GetError()}, continuing silently");
                 return new SilentAudioDevice();
@@ -57,7 +81,7 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         }
     }
 
-    /// <summary>Always true: a device that could not open is replaced by a silent one in <see cref="TryCreate"/>.</summary>
+    /// <summary>Always true: a device that could not open is replaced by a silent one in <see cref="TryCreate()"/>.</summary>
     public bool IsAvailable => true;
     /// <inheritdoc/>
     public MusicHandle? CurrentMusic { get; private set; }

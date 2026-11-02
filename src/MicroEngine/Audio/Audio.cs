@@ -205,6 +205,7 @@ public sealed class AudioMixer
     private readonly IAudioDevice _device;
     private readonly Dictionary<string, SoundHandle> _sounds = new(StringComparer.Ordinal);
     private readonly Dictionary<string, MusicHandle> _music = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (Task<AudioClip> Render, bool Loop)> _songs = new(StringComparer.Ordinal);
     private readonly Dictionary<string, int> _lastPlayedFrame = new(StringComparer.Ordinal);
     private readonly Random _random = new(7);
     private float _musicVolume = 1f, _fade = 1f, _fadeSpeed;
@@ -230,11 +231,46 @@ public sealed class AudioMixer
     /// <param name="name">Name used by <see cref="PlayMusic"/>.</param>
     /// <param name="clip">The music samples.</param>
     /// <param name="loop">Whether the music restarts when it reaches its end.</param>
-    public void AddMusic(string name, AudioClip clip, bool loop = true) => _music[name] = _device.LoadMusic(name, clip, loop);
+    public void AddMusic(string name, AudioClip clip, bool loop = true)
+    {
+        _songs.Remove(name);
+        _music[name] = _device.LoadMusic(name, clip, loop);
+    }
+
+    /// <summary>
+    /// Registers a <see cref="Song"/> under <paramref name="name"/> without waiting for it to be rendered: songs render
+    /// in the background, side by side, and each is handed to the device the first time it plays (waiting then only for
+    /// that song if it is not ready yet). Registering every song of a game this way keeps their synthesis out of
+    /// <c>Load</c>. Where the runtime has no background threads (browsers), the song renders here instead.
+    /// </summary>
+    /// <param name="name">Name used by <see cref="PlayMusic"/>.</param>
+    /// <param name="song">The song; do not change it after registering it. A song that cannot be rendered is reported
+    /// when it first plays, not here; render it with <see cref="Song.Render"/> in <c>Load</c> to fail there instead.</param>
+    /// <param name="loop">Whether the music restarts when it reaches its end.</param>
+    public void AddMusic(string name, Song song, bool loop = true)
+    {
+        ArgumentNullException.ThrowIfNull(song);
+        if (OperatingSystem.IsBrowser()) { AddMusic(name, song.Render(), loop); return; }
+        _music.Remove(name);
+        _songs[name] = (Task.Run(() => song.Render()), loop);
+    }
+
+    /// <summary>The handle of music <paramref name="name"/>, handing a background-rendered song to the device first if needed.</summary>
+    private MusicHandle Music(string name)
+    {
+        if (_songs.Remove(name, out var song))
+        {
+            AudioClip clip;
+            try { clip = song.Render.GetAwaiter().GetResult(); }
+            catch (Exception e) { throw new InvalidOperationException($"Music '{name}' could not be rendered: {e.Message}", e); }
+            _music[name] = _device.LoadMusic(name, clip, song.Loop);
+        }
+        return _music[name];
+    }
     /// <summary>Whether a sound effect is registered under <paramref name="name"/>.</summary>
     public bool HasSound(string name) => _sounds.ContainsKey(name);
     /// <summary>Whether music is registered under <paramref name="name"/>.</summary>
-    public bool HasMusic(string name) => _music.ContainsKey(name);
+    public bool HasMusic(string name) => _music.ContainsKey(name) || _songs.ContainsKey(name);
 
     /// <summary>Registers a WAV file as a sound effect.</summary>
     /// <exception cref="FileNotFoundException">The file does not exist.</exception>
@@ -248,6 +284,7 @@ public sealed class AudioMixer
     {
         var bytes = File.ReadAllBytes(path);
         var format = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
+        _songs.Remove(name);
         _music[name] = format == "wav"
             ? _device.LoadMusic(name, AudioClip.FromWav(bytes), loop)
             : _device.LoadMusicStream(name, bytes, format, loop);
@@ -276,9 +313,12 @@ public sealed class AudioMixer
     /// <summary>Switches music. With a fade, the current track fades out before the new one starts.</summary>
     /// <remarks>With a fade, music starting from silence rises over about a quarter of a second; with <paramref name="fadeSeconds"/> 0 or less it starts at full volume at once. Asking for the music that is already playing does nothing; asking for it while it fades out (towards another track or silence) cancels the fade and brings it back, without restarting it.</remarks>
     /// <exception cref="KeyNotFoundException">No music is registered under <paramref name="name"/>.</exception>
+    /// <exception cref="InvalidOperationException">A song registered with <see cref="AddMusic(string, Song, bool)"/>
+    /// could not be rendered (an invalid note, no steps); its name is then unregistered. With a fade, this surfaces from
+    /// <see cref="Update"/> when the song is due to start.</exception>
     public void PlayMusic(string name, float fadeSeconds = 0.4f)
     {
-        if (!_music.ContainsKey(name)) throw new KeyNotFoundException($"Music '{name}' is not registered.");
+        if (!HasMusic(name)) throw new KeyNotFoundException($"Music '{name}' is not registered.");
         if (_device.CurrentMusic?.Name == name)
         {
             if (_pendingMusic is null) return;
@@ -317,7 +357,7 @@ public sealed class AudioMixer
         _pendingMusic = null;
         _fade = fadeIn ? 0.05f : 1f;
         _fadeSpeed = fadeIn ? 4f : 0f;
-        _device.PlayMusic(_music[name], _musicVolume * _fade);
+        _device.PlayMusic(Music(name), _musicVolume * _fade);
     }
 
     private void Apply() => _device.SetMusicVolume(_musicVolume * _fade);

@@ -27,6 +27,7 @@ public sealed class RaylibPlatform : IPlatform
 {
     private readonly GameSettings _settings;
     private readonly bool _fixedStep;
+    private readonly double _displayRate;
     private readonly int _captureScale;
     private readonly Raylib_cs.RenderTexture2D _target;
     private readonly RaylibRenderer _renderer;
@@ -56,8 +57,10 @@ public sealed class RaylibPlatform : IPlatform
         ArgumentNullException.ThrowIfNull(options);
         _fixedStep = options.FixedStep;
         _captureScale = Math.Max(1, options.CaptureScale);
-        var flags = Raylib_cs.ConfigFlags.ResizableWindow | Raylib_cs.ConfigFlags.VSyncHint;
+        var flags = Raylib_cs.ConfigFlags.ResizableWindow;
+        // A hidden window is never looked at: waiting for the display there only slows scripted checks down.
         if (options.Hidden) flags |= Raylib_cs.ConfigFlags.HiddenWindow;
+        else flags |= Raylib_cs.ConfigFlags.VSyncHint;
         Rl.SetTraceLogLevel(Raylib_cs.TraceLogLevel.Warning);
         Rl.SetConfigFlags(flags);
         int scale = options.Scale ?? settings.Scale;
@@ -71,7 +74,12 @@ public sealed class RaylibPlatform : IPlatform
         if (options.Icon is { } icon && !OperatingSystem.IsBrowser()) SetWindowIcon(icon);
         // On Android raylib's GetCurrentMonitor detaches the calling thread from the JVM, which aborts a thread that is
         // running .NET code (the experimental host, platforms/android); the display's vsync paces frames there instead.
-        if (!options.Hidden && !OperatingSystem.IsBrowser() && !OperatingSystem.IsAndroid()) Rl.SetTargetFPS(Math.Max(60, Rl.GetMonitorRefreshRate(Rl.GetCurrentMonitor())));
+        if (!options.Hidden && !OperatingSystem.IsBrowser() && !OperatingSystem.IsAndroid())
+        {
+            int refresh = Rl.GetMonitorRefreshRate(Rl.GetCurrentMonitor());
+            Rl.SetTargetFPS(Math.Max(60, refresh));
+            if (!_fixedStep && refresh >= 60) _displayRate = refresh;
+        }
         _target = Rl.LoadRenderTexture(settings.VirtualWidth, settings.VirtualHeight);
         Rl.SetTextureFilter(_target.Texture, Raylib_cs.TextureFilter.Point);
         _renderer = new RaylibRenderer(settings.VirtualWidth, settings.VirtualHeight);
@@ -90,6 +98,8 @@ public sealed class RaylibPlatform : IPlatform
     public double Now => _fixedStep ? _frames / (double)_settings.UpdateRate : Rl.GetTime();
     /// <inheritdoc/>
     public bool RealTime => !_fixedStep;
+    /// <summary>The monitor's refresh rate when frames are paced to it (a visible real-time desktop window); 0 otherwise.</summary>
+    public double DisplayRate => _displayRate;
     /// <inheritdoc/>
     public ITouchScreen Touch => _touch;
     /// <summary>In a browser, a hidden page (<see cref="BrowserLifecycle.Hidden"/>); a desktop window never suspends.</summary>

@@ -18,6 +18,15 @@ Not published yet. Behaviour that changes:
   `<MicroEngineSplash>false</MicroEngineSplash>`.
 - `IInputSource.PadStyle`, `IOverlayCanvas.Image` and `IPlatform.Letterbox` are new interface members with defaults:
   existing implementations compile unchanged (a custom overlay canvas draws no images until it implements `Image`).
+- Runs with `--hidden`, `--script` (any fixed-step run) open no sound device: `--report` prints `audio: unavailable`
+  there. **Migration:** a check that must prove a device opens passes `--audio device`
+  (`PlatformRequest.AudioOutput = AudioOutput.Device` for hosts).
+- Without `--platform` or `MICROENGINE_PLATFORM`, a default platform that cannot start no longer ends the launch: the
+  next one is tried (desktop: SDL, raylib, SDL's software renderer) and the reason is printed. A named platform still
+  fails with exit code 1.
+- With VSync, real-time runs count frame time in refresh periods (`IPlatform.DisplayRate`). A custom platform keeps the
+  old timing until it reports a rate; `--pacing measured` keeps it for any run.
+- `IPlatform.DisplayRate` is a new interface member with a default (0): existing implementations compile unchanged.
 
 ## 0.4.0-alpha.2
 

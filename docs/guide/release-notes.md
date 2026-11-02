@@ -23,9 +23,24 @@ Not published yet: merged on `main` after 0.4.0-alpha.2, in the next SDK version
   packages.
 - `GameSettings.Letterbox` (the colour around the frame), `AchievementToasts.Bottom`, `PixelImage.Resized`,
   `PixelImage.FitInside`, `○ □ △` in the built-in font.
+- [Frame pacing](../manual/lifecycle.md#fixed-step-and-frame-order): with VSync, frame time is counted in refresh
+  periods (`IPlatform.DisplayRate`, `RunOptions.PaceToDisplay`, `--pacing`), so irregular wake-ups no longer give
+  frames with no update followed by frames with two; `Game.FrameBlend` for drawing between updates on 75, 100 or
+  144 Hz displays.
+- [Measuring a game](../manual/lifecycle.md#measuring-a-game): `--profile FILE` (`FrameProfiler`, `FrameSummary`,
+  `IPlatformDiagnostics`), per-frame times, allocations and start phases as JSON or CSV.
+- [Audio for tests](../manual/audio.md#devices-and-silence): `--audio auto|device|silent` (`AudioOutput`),
+  `--audio-capture FILE` and `CaptureAudioDevice`, `SdlAudioDevice.TryCreate(driver)`.
+- `AudioMixer.AddMusic(name, Song)` renders songs in the background, out of `Load`.
+- [Choosing a platform](../manual/backends.md#choosing-a-platform): the launcher tries the next platform when the
+  default one cannot start; `--gpu` (`GpuPreference`).
 
 **Changed**: `DialogueBox` continues a page that does not fit instead of cutting it; `BitmapFont.Wrap` breaks words
-wider than a line; see the [migration notes](../migrations.md#next-release).
+wider than a line; hidden and scripted runs open no sound device; see the [migration notes](../migrations.md#next-release).
+
+**Faster**: the SDL window appears about a second sooner on some Windows machines (gamepads start behind the start
+screen); the SDL renderer skips unchanged state; input sampling and touch controls allocate nothing per frame; hidden
+raylib windows no longer wait for the display.
 
 ## 0.4.0-alpha.2
 

@@ -27,3 +27,4 @@ maintainer's archive, not in the public history.
 | [0020](0020-unified-input-and-touch-controls.md) | Unified digital and analog input; engine-owned touch controls on every platform (amends 0017) | Accepted |
 | [0021](0021-sdk-toolchain.md) | The SDK toolchain: identity in the game's project, one `microengine` tool, demos as its consumers (amends 0018, 0019) | Accepted |
 | [0022](0022-release-coordination.md) | Three releases with explicit contracts; an SDK released by one pull request and one approval (amends 0013, 0019) | Accepted |
+| [0023](0023-frame-pacing-and-measurement.md) | Frames paced to the display, measured by the engine; checks that are never heard | Accepted |

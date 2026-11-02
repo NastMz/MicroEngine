@@ -52,7 +52,10 @@ Audio.AddMusic("theme", new Song(120).Track(Instrument.Lead, "C5 - E5 - G5 - E5 
 
 Source: [`samples/HelloEngine/Program.cs`](../../samples/HelloEngine/Program.cs)
 
-Rendering happens on the CPU at load time; long songs add to start-up time, so render them once in `Load`.
+Rendering happens on the CPU at load time; long songs add to start-up time, so render them once in `Load`. Next SDK
+version (not published yet: arrives with the next SDK version): `Audio.AddMusic(name, song)` with the `Song` itself (no `Render()`) renders it in the
+background, songs side by side, and hands it to the device the first time it plays, waiting then only for that song;
+in browsers, which have no background threads, it renders at once. Do not change a song after registering it.
 
 ## The mixer
 
@@ -114,6 +117,18 @@ Both platforms fall back to `SilentAudioDevice` when no audio device is availabl
 continuing silently`), so a machine without sound still runs the game. Each sound keeps several voices so rapid
 repeats overlap instead of cutting each other off. `--mute` on desktop (or `RunOptions.Mute`) sets both volumes to zero and uses the silent device.
 `HeadlessPlatform` exposes its `SilentAudioDevice`, whose `Played` list lets tests assert which cues fired.
+
+Next SDK version (not published yet: arrives with the next SDK version):
+
+- Runs nobody listens to are silent: `PlatformRequest.AudioOutput` (`--audio`) opens a sound device only for visible
+  real-time runs by default, never for `--hidden`, `--script` or headless runs. `AudioOutput.Device` (`--audio device`)
+  asks for one anyway; `AudioOutput.Silent` never opens one.
+- `CaptureAudioDevice` records what would have been heard: it mixes sound effects (volume, pitch, balance panning) and
+  music (looping, pause, volume) one game step per update, so the same run always gives the same samples. Tests read
+  its `Output` clip (waves, durations, silences, amplitudes) and `Played` list; `--audio-capture FILE` writes it as a
+  WAV. It does not decode compressed music streams other than WAV (they are captured as silence).
+- `SdlAudioDevice.TryCreate("dummy")` runs SDL's whole audio path with no device or sound; `"disk"` writes SDL's mix
+  to a file.
 
 ## In the browser
 

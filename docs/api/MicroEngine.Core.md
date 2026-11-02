@@ -50,6 +50,19 @@ broken install or a typo is obvious.
 
 One JSON file per slot in a directory (desktop and tests).
 
+ [FrameProfiler](MicroEngine.Core.FrameProfiler.md)
+
+Measures a run frame by frame and the phases of its start, for <code>--profile</code> and benchmarks. It only measures
+what the engine itself sees: when [EndFrame](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_EndFrame) returns, not when the display shows the frame
+(presentation times need the platform's own tools). Samples go into a buffer allocated up front, so profiling
+adds no allocations to the frames it measures; a run without a profiler does not measure anything.
+
+ [FrameSummary](MicroEngine.Core.FrameSummary.md)
+
+What a profiled run looked like. [MotionError](MicroEngine.Core.FrameSummary.md#MicroEngine_Core_FrameSummary_MotionError) is the measure of uneven motion: for every frame, how far
+the game time it advanced differs from the wall time that passed, so a frame that repeats the previous picture or
+jumps two steps counts even when every frame took the same time.
+
  [Game](MicroEngine.Core.Game.md)
 
 Base class for a game. Subclasses declare [Settings](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Settings), build content in
@@ -60,7 +73,12 @@ Base class for a game. Subclasses declare [Settings](MicroEngine.Core.Game.md#Mi
 The command line every desktop game accepts, on any backend. Supported arguments:
 
 <ul><li><code>--script FILE</code> play scripted input (see [InputScript](MicroEngine.Core.InputScript.md)); implies a fixed step.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
-first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>.</li><li><code>--hidden</code> render in a hidden window (captures still work).</li><li><code>--frames N</code> stop after N updates; <code>--seed N</code>; <code>--scale N</code>; <code>--mute</code>.</li><li><code>--report</code> print the platform that runs and whether it has audio before the game starts (package checks).</li></ul>
+first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>.</li><li><code>--hidden</code> render in a hidden window (captures still work).</li><li><code>--frames N</code> stop after N updates; <code>--seed N</code>; <code>--scale N</code>; <code>--mute</code>.</li><li><code>--report</code> print the platform that runs and whether it has audio before the game starts (package checks).</li><li><code>--audio auto|device|silent</code> where sound may go ([AudioOutput](MicroEngine.Core.AudioOutput.md)); by default hidden and
+scripted runs open no physical device, so checks and tests are never heard.</li><li><code>--audio-capture FILE</code> play nothing aloud and write what would have been heard as a WAV
+([CaptureAudioDevice](MicroEngine.Audio.CaptureAudioDevice.md)).</li><li><code>--gpu auto|high-performance|power-saving</code> the GPU to ask for on a machine with two
+([GpuPreference](MicroEngine.Core.GpuPreference.md)).</li><li><code>--pacing display|measured</code> count frame time in refresh periods of the display (the default) or as
+measured ([PaceToDisplay](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_PaceToDisplay)).</li><li><code>--profile FILE</code> measure every frame and the start phases ([FrameProfiler](MicroEngine.Core.FrameProfiler.md)), print a summary and
+write the results as JSON, or CSV when FILE ends in .csv.</li></ul>
 
 Returns a process exit code: 0 on success, 1 on a game or platform error, 2 on bad arguments.
 
@@ -197,6 +215,14 @@ delay, and an error while loading is reported as before.
 
 A snapshot of one achievement: its definition, accumulated progress and whether it is unlocked.
 
+ [FrameSample](MicroEngine.Core.FrameSample.md)
+
+One frame as [FrameProfiler](MicroEngine.Core.FrameProfiler.md) measured it. Times are in milliseconds.
+
+ [Percentiles](MicroEngine.Core.Percentiles.md)
+
+Percentiles of one frame measurement, in milliseconds.
+
  [RecordingOverlayCanvas.Shape](MicroEngine.Core.RecordingOverlayCanvas.Shape.md)
 
 One recorded drawing call.
@@ -208,6 +234,11 @@ One recorded drawing call.
 Everything a backend provides: a window (or nothing, headless), input devices, audio,
 texture creation and a renderer that draws into the virtual canvas.
 
+ [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md)
+
+Facts a platform can report about itself for logs and profiles: the graphics API in use, VSync, the graphics adapter
+when the backend can name it. Keys are short lower-case words; values are free text.
+
  [ISaveStorage](MicroEngine.Core.ISaveStorage.md)
 
 Where a [SaveStore](MicroEngine.Core.SaveStore.md) keeps its slots: named texts that are written whole. Failures surface
@@ -218,6 +249,17 @@ as `IOException` or `UnauthorizedAccessException`.
  [AppOrientation](MicroEngine.Core.AppOrientation.md)
 
 Screen orientations a game allows on phones (<code>MicroEngineOrientation</code> in its project).
+
+ [AudioOutput](MicroEngine.Core.AudioOutput.md)
+
+Where a run's sound may go ([AudioOutput](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_AudioOutput), the launcher's <code>--audio</code>).
+
+ [GpuPreference](MicroEngine.Core.GpuPreference.md)
+
+Which GPU a game prefers on machines with an integrated and a dedicated one. The system has the last word: on
+Windows, Direct3D 11 and OpenGL use the adapter Windows assigns to the application (Settings, Display, Graphics), which
+no backend overrides; SDL passes the preference to its Metal (macOS, iOS) and GPU (Direct3D 12, Vulkan, Metal)
+renderers; raylib's OpenGL ignores it.
 
  [PlatformParts](MicroEngine.Core.PlatformParts.md)
 

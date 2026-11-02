@@ -68,6 +68,18 @@ public bool CloseRequested { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Raylib_RaylibPlatform_DisplayRate"></a> DisplayRate
+
+The monitor's refresh rate when frames are paced to it (a visible real-time desktop window); 0 otherwise.
+
+```csharp
+public double DisplayRate { get; }
+```
+
+#### Property Value
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Graphics"></a> Graphics
 
 Creates textures.

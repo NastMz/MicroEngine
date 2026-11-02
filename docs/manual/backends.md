@@ -62,7 +62,9 @@ Source: [`games/NeonRift/Program.cs`](../../games/NeonRift/Program.cs)
 
 Its catalog offers, in order of preference: `sdl`, `raylib`, `sdl-software` and `headless`. The first that can run
 is the default; `--platform NAME` or the `MICROENGINE_PLATFORM` variable picks another, and `--list-platforms` prints
-them:
+them. Next SDK version (not published yet: arrives with the next SDK version): when nobody names a platform and the default cannot start (no usable
+graphics, a library the system cannot load), the launcher tries the next platform that can run here, except
+`headless`, and prints `platform: sdl could not start (...); trying raylib`:
 
 ```text
 $ MeadowRun --list-platforms
@@ -128,6 +130,11 @@ draws through SDL's renderer into a texture of the virtual size and scales it by
 inside the window's safe area (`FrameLayout`).
 SDL chooses the graphics API for the system; `SdlPlatform.CreateProfile("vulkan")` (or `direct3d11`, `direct3d12`,
 `metal`, `opengl`, `opengles2`, `software`) fixes one, and `SdlPlatform.RenderDrivers` lists what this build offers.
+Next SDK version (not published yet: arrives with the next SDK version): `--gpu power-saving` (`PlatformRequest.GpuPreference`) asks for the low-power GPU
+of a machine with two; SDL can choose only for its Metal and GPU renderers, while Direct3D 11 and OpenGL use the GPU the
+system assigns to the application (on Windows: Settings, Display, Graphics). `--profile` records the renderer and GPU
+in use. A game with a start screen starts SDL's gamepad support once that screen is shown, because it can take about
+a second on some Windows machines; pads already connected are reported as usual.
 Keyboard, mouse, the first gamepad (the next one takes over when it is unplugged) and touch are read; F11 and
 Alt+Enter toggle fullscreen on desktops; losing focus releases keys and fingers. Audio uses SDL audio streams: wav and
 ogg music, silence when no device exists. `SdlTouchScreen` reports finger events, `SDL_GetWindowSafeArea` and the

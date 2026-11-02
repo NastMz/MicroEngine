@@ -67,6 +67,30 @@ public LaunchArguments(string? ScriptPath, string CaptureDirectory, bool Headles
 
 ## Properties
 
+### <a id="MicroEngine_Core_LaunchArguments_Audio"></a> Audio
+
+<code>--audio</code>: where sound may go.
+
+```csharp
+public AudioOutput Audio { get; init; }
+```
+
+#### Property Value
+
+ [AudioOutput](MicroEngine.Core.AudioOutput.md)
+
+### <a id="MicroEngine_Core_LaunchArguments_AudioCapturePath"></a> AudioCapturePath
+
+<code>--audio-capture</code>: the WAV file to write what would have been heard to, or null.
+
+```csharp
+public string? AudioCapturePath { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
 ### <a id="MicroEngine_Core_LaunchArguments_CaptureDirectory"></a> CaptureDirectory
 
 <code>--captures</code>: where script captures are written ("captures" by default).
@@ -90,6 +114,18 @@ public long Frames { get; init; }
 #### Property Value
 
  [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+### <a id="MicroEngine_Core_LaunchArguments_Gpu"></a> Gpu
+
+<code>--gpu</code>: the GPU to ask for.
+
+```csharp
+public GpuPreference Gpu { get; init; }
+```
+
+#### Property Value
+
+ [GpuPreference](MicroEngine.Core.GpuPreference.md)
 
 ### <a id="MicroEngine_Core_LaunchArguments_Headless"></a> Headless
 
@@ -139,12 +175,36 @@ public bool Mute { get; init; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_LaunchArguments_PaceToDisplay"></a> PaceToDisplay
+
+<code>--pacing</code>: false for <code>measured</code>, true (the default) for <code>display</code>.
+
+```csharp
+public bool PaceToDisplay { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Core_LaunchArguments_Platform"></a> Platform
 
 The platform named with <code>--platform</code>, or null for the default.
 
 ```csharp
 public string? Platform { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
+### <a id="MicroEngine_Core_LaunchArguments_ProfilePath"></a> ProfilePath
+
+<code>--profile</code>: the file to write frame measurements to, or null to measure nothing.
+
+```csharp
+public string? ProfilePath { get; init; }
 ```
 
 #### Property Value

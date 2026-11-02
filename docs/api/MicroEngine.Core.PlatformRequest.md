@@ -51,6 +51,19 @@ public Func<IAudioDevice>? Audio { get; init; }
 
  [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[IAudioDevice](MicroEngine.Audio.IAudioDevice.md)\>?
 
+### <a id="MicroEngine_Core_PlatformRequest_AudioOutput"></a> AudioOutput
+
+Whether the backend may open a physical audio device. [Automatic](MicroEngine.Core.AudioOutput.md) (the default) opens one
+only for runs a player watches: not for hidden windows or fixed-step (scripted) runs, which are checks and tests.
+
+```csharp
+public AudioOutput AudioOutput { get; init; }
+```
+
+#### Property Value
+
+ [AudioOutput](MicroEngine.Core.AudioOutput.md)
+
 ### <a id="MicroEngine_Core_PlatformRequest_CaptureScale"></a> CaptureScale
 
 Size factor of the PNGs written by [SaveScreenshot](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_SaveScreenshot_System_String_).
@@ -86,6 +99,19 @@ public bool FixedStep { get; init; }
 #### Property Value
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_PlatformRequest_GpuPreference"></a> GpuPreference
+
+Which GPU the backend should ask for on a machine with two ([GpuPreference](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_GpuPreference), the launcher's
+<code>--gpu</code>). A preference, not a guarantee: backends pass it on only where their graphics API lets them choose.
+
+```csharp
+public GpuPreference GpuPreference { get; init; }
+```
+
+#### Property Value
+
+ [GpuPreference](MicroEngine.Core.GpuPreference.md)
 
 ### <a id="MicroEngine_Core_PlatformRequest_Hidden"></a> Hidden
 

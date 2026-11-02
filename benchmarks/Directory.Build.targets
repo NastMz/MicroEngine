@@ -1,0 +1,7 @@
+<Project>
+  <!-- Benchmarks measure the engine (docs/guide/performance.md); they are not SDK packages. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <Import Project="../src/MicroEngine/build/MicroEngine.targets" />
+</Project>

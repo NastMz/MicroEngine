@@ -93,6 +93,23 @@ public BitmapFont Font { get; }
 
  [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
+### <a id="MicroEngine_Core_Game_FrameBlend"></a> FrameBlend
+
+How far the frame being drawn is between the last update and the next one, from 0 to 1: the part of a step of
+real time that has passed but not been simulated yet. Updates run at a fixed rate and frames at the display's, so
+on a display whose rate is not a multiple of [UpdateRate](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_UpdateRate) (75, 100, 144 Hz...) some
+frames show no new update; drawing moving things at
+<code>Vector2.Lerp(previousPosition, position, FrameBlend)</code> makes their motion even. Always 0 when time advances
+one step per frame (headless, scripted runs), so captures stay exact.
+
+```csharp
+public float FrameBlend { get; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_Core_Game_Graphics"></a> Graphics
 
 Creates textures from images ([PixelImage](MicroEngine.Graphics.PixelImage.md), atlases, fonts). Available from [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) on; throws `InvalidOperationException` before.

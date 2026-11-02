@@ -27,6 +27,14 @@ public sealed record RunOptions
     /// loop's thread. Phone hosts use it to keep the system's launch screen up until the game has something to show.
     /// </summary>
     public Action? FirstFrame { get; init; }
+    /// <summary>
+    /// Whether real-time runs count elapsed time in refresh periods of the display that paces them
+    /// (<see cref="IPlatform.DisplayRate"/>), which removes the stutter of an irregular wake-up (true by default). False
+    /// takes every frame's time as measured (the launcher's <c>--pacing measured</c>), for comparisons.
+    /// </summary>
+    public bool PaceToDisplay { get; init; } = true;
+    /// <summary>Measures every frame and the phases of the start (the launcher's <c>--profile</c>), or null to measure nothing.</summary>
+    public FrameProfiler? Profiler { get; init; }
 }
 
 /// <summary>How a run ended.</summary>
@@ -93,8 +101,12 @@ public sealed class GameLoop
         if (_result is not null || _running) throw new InvalidOperationException("The loop was already started.");
         try
         {
+            var profiler = _options.Profiler;
             ShowStartScreen();
+            profiler?.Phase("start screen");
             _game.Initialize(_platform, _options.Seed);
+            profiler?.Phase("load");
+            if (profiler is not null) profiler.DisplayRate = _platform.DisplayRate;
             _platform.Letterbox = _game.Settings.Letterbox;
             if (_options.Mute) _game.Audio.SfxVolume = 0;
             if (_options.Mute) _game.Audio.MusicVolume = 0;
@@ -156,7 +168,52 @@ public sealed class GameLoop
     /// <returns>True when the run must stop after this frame.</returns>
     private bool Frame()
     {
+        if (_options.Profiler is { } profiler) return ProfiledFrame(profiler);
         _platform.PollEvents();
+        if (FollowSuspension()) return _platform.CloseRequested || _game.QuitRequested;
+        var (stop, capture) = Update();
+        Render();
+        return EndOfFrame(stop, capture);
+    }
+
+    private long _frameStart;
+
+    /// <summary><see cref="Frame"/> with each phase timed into <paramref name="profiler"/>.</summary>
+    private bool ProfiledFrame(FrameProfiler profiler)
+    {
+        long start = Stopwatch.GetTimestamp();
+        long allocated = GC.GetAllocatedBytesForCurrentThread();
+        int collections = GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2);
+        double interval = _frameStart == 0 ? 0 : Stopwatch.GetElapsedTime(_frameStart, start).TotalMilliseconds;
+        _frameStart = start;
+        _platform.PollEvents();
+        long polled = Stopwatch.GetTimestamp();
+        if (FollowSuspension()) return _platform.CloseRequested || _game.QuitRequested;
+        long updates = _game.UpdateCount;
+        var (stop, capture) = Update();
+        long updated = Stopwatch.GetTimestamp();
+        var renderer = _platform.BeginFrame();
+        _game.Render(renderer);
+        long rendered = Stopwatch.GetTimestamp();
+        _platform.EndFrame();
+        long presented = Stopwatch.GetTimestamp();
+        profiler.Add(new FrameSample(interval,
+            Stopwatch.GetElapsedTime(start, polled).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(polled, updated).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(updated, rendered).TotalMilliseconds,
+            Stopwatch.GetElapsedTime(rendered, presented).TotalMilliseconds,
+            (int)(_game.UpdateCount - updates),
+            _game.Time,
+            _game.Time + _game.FrameBlend * _step,
+            GC.GetAllocatedBytesForCurrentThread() - allocated,
+            GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2) - collections));
+        if (_frames == 0) profiler.Phase("first frame");
+        return EndOfFrame(stop, capture);
+    }
+
+    /// <summary>Follows the platform into and out of suspension; true while suspended (nothing runs).</summary>
+    private bool FollowSuspension()
+    {
         if (_platform.Suspended != _suspended)
         {
             _suspended = !_suspended;
@@ -169,11 +226,16 @@ public sealed class GameLoop
                 _game.Resume();
             }
         }
-        if (_suspended) return _platform.CloseRequested || _game.QuitRequested;
+        return _suspended;
+    }
+
+    /// <summary>Runs the fixed steps the elapsed time calls for; returns whether the run must stop and the capture due.</summary>
+    private (bool Stop, string? Capture) Update()
+    {
         if (_platform.RealTime)
         {
             double now = _platform.Now;
-            _accumulator += Math.Min(now - _last, 0.25);
+            _accumulator += Paced(Math.Min(now - _last, 0.25));
             _last = now;
         }
         else _accumulator += _step;
@@ -202,10 +264,43 @@ public sealed class GameLoop
             if (capture is not null) break;
         }
         if (steps == 5) _accumulator = Math.Min(_accumulator, _step);
+        _game.FrameBlend = (float)Math.Clamp(_accumulator / _step, 0, 1);
+        return (stop, capture);
+    }
 
+    private double _drift;
+
+    /// <summary>
+    /// The time a frame stands for. When the platform paces frames to a display (<see cref="IPlatform.DisplayRate"/>),
+    /// each frame stays on screen for a whole number of refresh periods, however irregularly the loop wakes up around
+    /// them; counting elapsed time in those periods keeps that jitter from turning into frames with no step followed by
+    /// frames with two, the stutter of a display whose rate matches the update rate. The remainder is carried to the next
+    /// frame, so a clock that disagrees with the reported rate still adds up to real time. Frames much shorter than a
+    /// period (VSync not honoured) are taken as measured.
+    /// </summary>
+    private double Paced(double elapsed)
+    {
+        double rate = _options.PaceToDisplay ? _platform.DisplayRate : 0;
+        if (rate <= 0) return elapsed;
+        double period = 1 / rate, time = elapsed + _drift;
+        // A short frame keeps the debt of an earlier frame rounded up, or frames faster than the reported rate would
+        // each count as a whole period and the game would run fast.
+        if (time < period / 2) { _drift = 0; return Math.Max(0, time); }
+        double shown = Math.Round(time / period) * period;
+        _drift = Math.Clamp(time - shown, -period, period);
+        return shown;
+    }
+
+    private void Render()
+    {
         var renderer = _platform.BeginFrame();
         _game.Render(renderer);
         _platform.EndFrame();
+    }
+
+    /// <summary>Counts the frame, writes its capture, and returns whether the run stops after it.</summary>
+    private bool EndOfFrame(bool stop, string? capture)
+    {
         _frames++;
         Presented();
         if (capture is not null)

@@ -171,7 +171,7 @@ export async function verifyPackage(file, { game: gameId, target: targetId, key,
       level('platforms', listed.status === 0 && Boolean(sdlLine), listed.status === 0 ? `started; ${sdlLine ? 'SDL can run here' : 'SDL is unavailable here'}` : `exit ${listed.status ?? listed.signal}: ${listed.stderr.trim()}`);
       const saves = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'microengine-saves-'));
       const saveVar = { MeadowRun: 'MEADOW_SAVE_DIR', CourtyardKey: 'COURTYARD_SAVE_DIR', TrailDuel: 'TRAIL_SAVE_DIR', NeonRift: 'RIFT_SAVE_DIR' }[gameId];
-      const report = spawnSync(exe, ['--report', '--hidden', '--frames', '120'], { encoding: 'utf8', env: { ...env, [saveVar]: saves }, cwd: os.tmpdir(), timeout: 120000 });
+      const report = spawnSync(exe, ['--report', '--hidden', '--audio', 'device', '--frames', '120'], { encoding: 'utf8', env: { ...env, [saveVar]: saves }, cwd: os.tmpdir(), timeout: 120000 });
       const platform = report.stdout.match(/^platform: (.*)$/m)?.[1], audio = report.stdout.match(/^audio: (.*)$/m)?.[1];
       record.platform = platform; record.audio = audio;
       // A machine without a sound device (hosted Windows runners) cannot show that audio opens: with --audio optional

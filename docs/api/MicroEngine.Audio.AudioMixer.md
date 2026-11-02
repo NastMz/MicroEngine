@@ -142,6 +142,32 @@ The music samples.
 
 Whether the music restarts when it reaches its end.
 
+### <a id="MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_Song_System_Boolean_"></a> AddMusic\(string, Song, bool\)
+
+Registers a [Song](MicroEngine.Audio.Song.md) under <code class="paramref">name</code> without waiting for it to be rendered: songs render
+in the background, side by side, and each is handed to the device the first time it plays (waiting then only for
+that song if it is not ready yet). Registering every song of a game this way keeps their synthesis out of
+<code>Load</code>. Where the runtime has no background threads (browsers), the song renders here instead.
+
+```csharp
+public void AddMusic(string name, Song song, bool loop = true)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+Name used by [PlayMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusic_System_String_System_Single_).
+
+`song` [Song](MicroEngine.Audio.Song.md)
+
+The song; do not change it after registering it. A song that cannot be rendered is reported
+            when it first plays, not here; render it with [Render](MicroEngine.Audio.Song.md#MicroEngine_Audio_Song_Render_System_Int32_) in <code>Load</code> to fail there instead.
+
+`loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the music restarts when it reaches its end.
+
 ### <a id="MicroEngine_Audio_AudioMixer_AddMusicFile_System_String_System_String_System_Boolean_"></a> AddMusicFile\(string, string, bool\)
 
 Registers a music file. WAV is decoded here; other formats are streamed by the device.
@@ -300,6 +326,12 @@ With a fade, music starting from silence rises over about a quarter of a second;
  [KeyNotFoundException](https://learn.microsoft.com/dotnet/api/system.collections.generic.keynotfoundexception)
 
 No music is registered under <code class="paramref">name</code>.
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+A song registered with [AddMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_AudioClip_System_Boolean_)
+            could not be rendered (an invalid note, no steps); its name is then unregistered. With a fade, this surfaces from
+            [Update](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Update_System_Single_) when the song is due to start.
 
 ### <a id="MicroEngine_Audio_AudioMixer_StopMusic_System_Single_"></a> StopMusic\(float\)
 

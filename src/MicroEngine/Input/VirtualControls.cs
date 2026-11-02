@@ -177,6 +177,8 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
     private sealed class Placed(TouchControl control)
     {
         public TouchControl Control { get; } = control;
+        /// <summary>The control's actions, read once (a control's own list is built on every read).</summary>
+        public string[] ActionNames { get; } = [.. control.ActionNames];
         public Vector2 Center;
         public float Radius;
         public bool Manual = control.Visible;   // SetVisible
@@ -214,6 +216,10 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
     private readonly HashSet<string> _held = new(StringComparer.Ordinal);
     private readonly Dictionary<string, float> _values = new(StringComparer.Ordinal);
     private readonly Dictionary<string, int> _taps = new(StringComparer.Ordinal);
+    // Reused every frame, so reading the controls allocates nothing.
+    private readonly HashSet<string> _context = new(StringComparer.Ordinal);
+    private readonly List<string> _keys = [];
+    private string[] _actions = [];
     private readonly HashSet<string> _sampled = new(StringComparer.Ordinal);
     private TouchLayout _layout;
     private Vector2 _size;
@@ -246,7 +252,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
     /// <summary>Always <see cref="InputDevice.Touch"/>.</summary>
     public InputDevice Device => InputDevice.Touch;
     /// <summary>Every action a control of the layout can press.</summary>
-    public IEnumerable<string> Actions => _layout.Controls.SelectMany(c => c.ActionNames).Distinct(StringComparer.Ordinal);
+    public IEnumerable<string> Actions => _actions;
     /// <summary>Whether the controls are drawn this frame.</summary>
     public bool Shown { get; private set; }
     /// <summary>Whether the screen they were last laid out for is touch-first.</summary>
@@ -260,6 +266,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
 
     private void Build()
     {
+        _actions = [.. _layout.Controls.SelectMany(c => c.ActionNames).Distinct(StringComparer.Ordinal)];
         _controls.Clear();
         foreach (var c in _layout.Controls)
         {
@@ -292,17 +299,34 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
     /// </summary>
     public void SetContext(IEnumerable<string>? actions)
     {
-        var needed = actions is null ? null : new HashSet<string>(actions, StringComparer.Ordinal);
+        // Called every frame: the set is reused rather than built anew.
+        HashSet<string>? needed = null;
+        if (actions is not null)
+        {
+            needed = _context;
+            needed.Clear();
+            if (actions is IList<string> list)
+                for (int i = 0; i < list.Count; i++) needed.Add(list[i]); // no enumerator to allocate
+            else
+                foreach (var a in actions) needed.Add(a);
+        }
         bool changed = false;
         foreach (var p in _controls)
         {
-            bool inContext = needed is null || p.Control.ActionNames.Any(needed.Contains);
+            bool inContext = needed is null || Needs(needed, p.ActionNames);
             if (inContext == p.InContext) continue;
             p.InContext = inContext;
             if (!inContext) Release(p);
             changed = true;
         }
         if (changed) RecomputeActions();
+    }
+
+    private static bool Needs(HashSet<string> needed, string[] actions)
+    {
+        foreach (var a in actions)
+            if (needed.Contains(a)) return true;
+        return false;
     }
 
     /// <summary>
@@ -435,7 +459,9 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
     {
         foreach (var a in _sampled) _taps.Remove(a);
         _sampled.Clear();
-        foreach (var a in _taps.Keys.ToList())
+        _keys.Clear();
+        _keys.AddRange(_taps.Keys);
+        foreach (var a in _keys)
             if (--_taps[a] <= 0) _taps.Remove(a);
 
         _screen = screen;
@@ -674,7 +700,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
         switch (p.Control)
         {
             case TouchButton b:
-                if (!was && p.Pressed) newly.AddRange(b.ActionNames);
+                if (!was && p.Pressed) newly.AddRange(p.ActionNames);
                 break;
             case TouchDPad d:
                 foreach (var dir in p.Directions) if (!p.Reported.Contains(dir)) newly.Add(Name(d.Left, d.Right, d.Up, d.Down, dir));
@@ -715,7 +741,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
             {
                 case TouchButton b:
                     if (p.Pressed)
-                        foreach (var a in b.ActionNames) { _held.Add(a); _values[a] = 1; }
+                        foreach (var a in p.ActionNames) { _held.Add(a); _values[a] = 1; }
                     break;
                 case TouchDPad d:
                     foreach (var dir in p.Directions) { var a = Name(d.Left, d.Right, d.Up, d.Down, dir); _held.Add(a); _values[a] = 1; }

@@ -80,6 +80,32 @@ public bool Mute { get; init; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_RunOptions_PaceToDisplay"></a> PaceToDisplay
+
+Whether real-time runs count elapsed time in refresh periods of the display that paces them
+([DisplayRate](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_DisplayRate)), which removes the stutter of an irregular wake-up (true by default). False
+takes every frame's time as measured (the launcher's <code>--pacing measured</code>), for comparisons.
+
+```csharp
+public bool PaceToDisplay { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_RunOptions_Profiler"></a> Profiler
+
+Measures every frame and the phases of the start (the launcher's <code>--profile</code>), or null to measure nothing.
+
+```csharp
+public FrameProfiler? Profiler { get; init; }
+```
+
+#### Property Value
+
+ [FrameProfiler](MicroEngine.Core.FrameProfiler.md)?
+
 ### <a id="MicroEngine_Core_RunOptions_Script"></a> Script
 
 Scripted input to play, or null for none.

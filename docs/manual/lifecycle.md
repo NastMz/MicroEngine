@@ -116,7 +116,12 @@ Each `Tick` runs one frame:
 
 1. `platform.PollEvents()`.
 2. Accumulate time. Real-time platforms add wall-clock time (capped at 0.25 s per frame); headless and
-   fixed-step platforms add exactly one step.
+   fixed-step platforms add exactly one step. Next SDK version (not published yet: arrives with the next SDK version): when the platform reports the rate
+   VSync paces it to (`IPlatform.DisplayRate`, SDL and desktop raylib windows), a frame counts as the whole number of
+   refresh periods nearest to its measured time, the remainder carried to the next frame. Frames reach the loop up to
+   a few milliseconds early or late around each refresh; counted as measured, that jitter made some frames run no
+   step and the next run two when the display rate matches `UpdateRate`. `RunOptions.PaceToDisplay = false`
+   (`--pacing measured`) keeps the measured time.
 3. Run fixed steps of `1 / UpdateRate` seconds, **at most five per frame**. Each step applies the input script,
    samples devices into the `InputMap`, then `Game.Step` updates scenes, the audio mixer and achievement banners,
    flushes achievement progress about once a second, and advances input edge detection.
@@ -141,6 +146,35 @@ Source: [`src/MicroEngine/Core/GameRunner.cs`](../../src/MicroEngine/Core/GameRu
 When the machine falls behind, the cap drops the backlog instead of spiralling, so the game slows down rather
 than freezing. Because simulation only ever advances in whole steps, scripted runs on headless or fixed-step
 platforms are deterministic.
+
+### Drawing between updates
+
+Next SDK version (not published yet: arrives with the next SDK version). Updates run at `UpdateRate` and frames at the display's rate. On a display whose
+rate is not a multiple of the update rate (75, 100, 144 Hz for 60 updates) some frames have no new update, and a game
+that draws its last update shows the same picture twice: moving things judder although every frame is on time.
+`Game.FrameBlend` is how far the frame being drawn is between the last update and the next one, from 0 to 1. Keep
+each moving thing's position from the previous update and draw it at `Vector2.Lerp(previous, current, FrameBlend)`
+(the camera too). It is always 0 when time advances one step per frame (headless and scripted runs), so captures stay
+exact; it changes only what is drawn, never the rules.
+
+## Measuring a game
+
+Next SDK version (not published yet: arrives with the next SDK version). `--profile FILE` measures every frame and the start, prints a summary and writes the
+results (`FrameProfiler`):
+
+- per frame: the time since the previous frame started, polling events, the updates, drawing, presenting (with VSync,
+  mostly the wait for the display), the number of updates, game time, bytes allocated and garbage collections;
+- start phases: creating the platform, the start screen, `Load`, the first frame;
+- facts the platform reports (`IPlatformDiagnostics`): on SDL its version, renderer, video driver, VSync, display mode,
+  window size, the GPU (Direct3D 11 and SDL's GPU renderer) and how long each step of its start took.
+
+The summary gives mean, median (p50), p95, p99, p99.9 and maximum per measure, how many frames ran 0, 1, 2... updates,
+hitches (frames longer than 1.5 times the median) and the motion error: per frame, how far the game time it showed
+moved from the time it stood on screen, for the last update and for a game drawing with `FrameBlend`. The JSON keeps
+every frame (CSV when the file ends in `.csv`) for comparing runs; compare only runs on the same machine, platform,
+window size and scene. The engine sees when presenting returns, not when the display shows the frame: for that, use the
+system's tools (PresentMon on Windows, Perfetto on Android, Instruments on Apple systems, the browser's performance
+panel). A run without `--profile` measures nothing.
 
 ## Quitting and shutdown
 
