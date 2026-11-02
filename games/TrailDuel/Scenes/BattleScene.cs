@@ -131,6 +131,12 @@ internal sealed partial class BattleScene : Scene
 
     public override void Update(float dt)
     {
+        Advance(dt);
+        RecordDrawn(Game.UpdateCount);
+    }
+
+    private void Advance(float dt)
+    {
         _menuTime += dt;
         _text.Update(dt, Input);
         UpdateEffects(dt);

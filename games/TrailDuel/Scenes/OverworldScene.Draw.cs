@@ -14,7 +14,24 @@ internal sealed partial class OverworldScene
 {
     private readonly List<Actor> _rowActors = [];
 
+    /// <summary>Update the drawn positions belong to and how far the frame is past it (1 in fixed-step runs).</summary>
+    private long DrawUpdate => Game.UpdateCount;
+    private float Blend => Game.FrameBlend;
+
+    /// <summary>The camera position drawn at <paramref name="blend"/>, between the previous update's and the current one.</summary>
+    internal Vector2 CameraDrawPosition(float blend) => _drawnCamera.At(_camera.Position, DrawUpdate, blend);
+
     public override void Draw(IRenderer r)
+    {
+        // The camera is drawn between updates like the characters it follows, then put back.
+        var cameraPosition = _camera.Position;
+        _camera.Position = CameraDrawPosition(Blend);
+        DrawWorld(r);
+        _camera.Position = cameraPosition;
+        DrawHud(r);
+    }
+
+    private void DrawWorld(IRenderer r)
     {
         var view = _camera.View;
         int x0 = Math.Max(0, (int)MathF.Floor(view.X / 16) - 1), x1 = Math.Min(_map.Width - 1, (int)MathF.Ceiling(view.Right / 16) + 1);
@@ -52,12 +69,10 @@ internal sealed partial class OverworldScene
         if (_bubbleOn is { } bubbleActor)
         {
             float pop = _bubbleTime < 0.12f ? _bubbleTime / 0.12f : 1;
-            var p = bubbleActor.PixelPosition + new Vector2(2, -20 + (1 - pop) * 6);
+            var p = bubbleActor.DrawPosition(DrawUpdate, Blend) + new Vector2(2, -20 + (1 - pop) * 6);
             r.Draw(_game.Sprite("bubble"), new Vector2(MathF.Round(p.X), MathF.Round(p.Y)));
         }
         r.PopCamera();
-
-        DrawHud(r);
     }
 
     private void DrawGround(IRenderer r, int x, int y)
@@ -154,12 +169,12 @@ internal sealed partial class OverworldScene
 
     private void DrawActor(IRenderer r, Actor a)
     {
-        var p = a.PixelPosition;
+        var p = a.DrawPosition(DrawUpdate, Blend);
         r.Draw(_game.Sprite("t:shadow"), p + new Vector2(0, 1));
         int frame = a.Frame;
         if (a == _player && !a.Moving && _bumpTimer > 0 && !Busy && AnyDirectionHeld()) frame = a.BumpFrame(Age);
         var sprite = _game.Sprite(a.SpriteKey(frame));
-        r.Draw(sprite, new Vector2(MathF.Round(p.X), MathF.Round(p.Y - a.Lift)));
+        r.Draw(sprite, new Vector2(MathF.Round(p.X), MathF.Round(p.Y - a.DrawLift(DrawUpdate, Blend))));
         // Tall grass hides the feet of anyone standing in it.
         if (!a.Hopping && _map.KindAt(a.X, a.Y) == TileKind.TallGrass && !a.Moving)
             r.Draw(_game.Sprite("t:tallover"), new Vector2(a.X * 16, a.Y * 16));

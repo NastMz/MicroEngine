@@ -13,6 +13,34 @@ internal sealed partial class BattleScene
 {
     private string PlatformSuffix => _setup.Backdrop switch { Backdrop.Forest => "forest", Backdrop.Hall => "hall", Backdrop.Indoor => "indoor", _ => "" };
 
+    private Vector2 EnemyPlatform => EnemyBase + new Vector2(-(1 - _introT) * 330, 0);
+    private Vector2 PlayerPlatform => PlayerBase + new Vector2((1 - _introT) * 330, 0);
+    private Vector2 EnemyTrainerOffset => new(_enemyTrainerX * 120, 0);
+    private Vector2 PlayerTrainerOffset => new(-_playerTrainerX * 140, -2);
+
+    /// <summary>Keeps where everything that slides ended update <paramref name="update"/>; hidden things snap so they never streak.</summary>
+    private void RecordDrawn(long update)
+    {
+        _drawnEnemyPlatform.Record(EnemyPlatform, update);
+        _drawnPlayerPlatform.Record(PlayerPlatform, update);
+        _drawnEnemyTrainer.Record(EnemyTrainerOffset, update);
+        _drawnPlayerTrainer.Record(PlayerTrainerOffset, update);
+        RecordOffset(_enemy, update);
+        RecordOffset(_player, update);
+        // A thrown orb appears at its start: never draw it sliding from where the last one rested.
+        if (!_orbWasVisible) _drawnOrb.Snap();
+        _drawnOrb.Record(_orbPos, update);
+        _orbWasVisible = _orbVisible;
+    }
+
+    private static void RecordOffset(Display d, long update)
+    {
+        if (!d.Visible) d.DrawnOffset.Snap();
+        d.DrawnOffset.Record(d.Offset, update);
+    }
+
+    private Vector2 Drawn(in Interpolated drawn, Vector2 current) => drawn.At(current, Game.UpdateCount, Game.FrameBlend);
+
     public override void Draw(IRenderer r)
     {
         var shake = _shake > 0 ? new Vector2(MathF.Round(MathF.Sin(Age * 90) * 3 * _shake), 0) : Vector2.Zero;
@@ -32,9 +60,8 @@ internal sealed partial class BattleScene
                 r.Draw(_game.Sprite("mote"), new Vector2(MathF.Round(x), MathF.Round(y)), Color.White.WithAlpha(0.45f + 0.4f * MathF.Sin(Age * 2 + i * 1.7f)));
             }
 
-        float slide = 1 - _introT;
-        var enemyPlat = EnemyBase + new Vector2(-slide * 330, 0) + shake;
-        var playerPlat = PlayerBase + new Vector2(slide * 330, 0) + shake;
+        var enemyPlat = Drawn(_drawnEnemyPlatform, EnemyPlatform) + shake;
+        var playerPlat = Drawn(_drawnPlayerPlatform, PlayerPlatform) + shake;
         r.Draw(_game.Sprite("platform:enemy" + PlatformSuffix), enemyPlat + new Vector2(0, -2));
         r.Draw(_game.Sprite("platform:player" + PlatformSuffix), playerPlat + new Vector2(0, -10));
 
@@ -42,10 +69,10 @@ internal sealed partial class BattleScene
         if (_setup.Trainer is { } trainerDef && _enemyTrainerX < 1)
         {
             var look = LookFor(trainerDef);
-            r.Draw(_game.Sprite(CharacterArt.PortraitKey(look.Key, Direction.Down)), enemyPlat + new Vector2(_enemyTrainerX * 120, 0));
+            r.Draw(_game.Sprite(CharacterArt.PortraitKey(look.Key, Direction.Down)), enemyPlat + Drawn(_drawnEnemyTrainer, EnemyTrainerOffset));
         }
         if (_playerTrainerX < 1)
-            r.Draw(_game.Sprite(CharacterArt.PortraitKey("player", Direction.Up)), playerPlat + new Vector2(-_playerTrainerX * 140, -2));
+            r.Draw(_game.Sprite(CharacterArt.PortraitKey("player", Direction.Up)), playerPlat + Drawn(_drawnPlayerTrainer, PlayerTrainerOffset));
 
         DrawCreature(r, _enemy, "front:", "white:", enemyPlat, clipBottom: enemyPlat.Y + 2);
         DrawCreature(r, _player, "back:", "whiteback:", playerPlat, clipBottom: 180);
@@ -53,7 +80,7 @@ internal sealed partial class BattleScene
         if (_orbVisible)
         {
             var orb = _game.Sprite(_orbOpen ? "orbopen" : _orbSprite);
-            r.Draw(orb.Texture, orb.Source, _orbPos - orb.Origin, Color.White, new DrawOptions(Rotation: _orbAngle, Origin: orb.Origin));
+            r.Draw(orb.Texture, orb.Source, Drawn(_drawnOrb, _orbPos) - orb.Origin, Color.White, new DrawOptions(Rotation: _orbAngle, Origin: orb.Origin));
         }
         _sprites.Draw(r);
         _fx.Draw(r);
@@ -84,7 +111,7 @@ internal sealed partial class BattleScene
     {
         if (!d.Visible || d.Blink) return;
         bool player = prefix == "back:";
-        var anchor = platform + (player ? new Vector2(0, 0) : new Vector2(0, -2)) + d.Offset;
+        var anchor = platform + (player ? new Vector2(0, 0) : new Vector2(0, -2)) + Drawn(d.DrawnOffset, d.Offset);
         var white = _game.Sprite(whitePrefix + d.Creature.SpeciesId);
         if (!player && d.SinkDepth <= 0)
         {

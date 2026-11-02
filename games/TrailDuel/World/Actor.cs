@@ -31,6 +31,7 @@ internal sealed class Actor
     private float _progress, _duration;
     private int _stride;
     private float _walkClock;
+    private Interpolated _drawnPosition, _drawnLift;
 
     public Actor(CharacterLook look, int x, int y, Direction facing)
     {
@@ -58,7 +59,22 @@ internal sealed class Actor
         (X, Y, _fromX, _fromY) = (x, y, x, y);
         Moving = Hopping = false;
         Lift = 0;
+        _drawnPosition.Snap();
+        _drawnLift.Snap();
     }
+
+    /// <summary>Keeps where the actor is at the end of update <paramref name="update"/>, to draw it between updates.</summary>
+    public void RecordDrawn(long update)
+    {
+        _drawnPosition.Record(PixelPosition, update);
+        _drawnLift.Record(new Vector2(0, Lift), update);
+    }
+
+    /// <summary>The pixel position to draw at <paramref name="blend"/> (<c>Game.FrameBlend</c>) of update <paramref name="update"/>.</summary>
+    public Vector2 DrawPosition(long update, float blend) => _drawnPosition.At(PixelPosition, update, blend);
+
+    /// <summary>The hop lift to draw at <paramref name="blend"/> of update <paramref name="update"/>.</summary>
+    public float DrawLift(long update, float blend) => _drawnLift.At(new Vector2(0, Lift), update, blend).Y;
 
     public void StartStep(Direction dir, float duration)
     {

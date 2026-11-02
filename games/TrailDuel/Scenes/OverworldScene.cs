@@ -22,6 +22,7 @@ internal sealed partial class OverworldScene : Scene
     private readonly TrailDuelGame _game;
     private readonly bool _intro;
     private readonly Camera2D _camera = new(320, 180) { FollowSharpness = 0 };
+    private Interpolated _drawnCamera;
     private readonly ParticleSystem _dust = new(128, 17);
     private readonly List<(int X, int Y, float Time)> _rustles = [];
     private readonly Random _rng;
@@ -87,9 +88,23 @@ internal sealed partial class OverworldScene : Scene
         if (newArea && !def.Indoor) { _bannerText = def.Name; _bannerTime = 0; }
     }
 
-    private void SnapCamera() => _camera.CenterOn(_player.PixelPosition + new Vector2(8, 8));
+    private void SnapCamera()
+    {
+        _camera.CenterOn(_player.PixelPosition + new Vector2(8, 8));
+        _drawnCamera.Snap();
+    }
 
     public override void Update(float dt)
+    {
+        Advance(dt);
+        // Where everything ended this update, to draw it between updates (Game.FrameBlend).
+        long update = Game.UpdateCount;
+        _drawnCamera.Record(_camera.Position, update);
+        _player.RecordDrawn(update);
+        foreach (var npc in _map.Npcs) npc.RecordDrawn(update);
+    }
+
+    private void Advance(float dt)
     {
         State.PlaySeconds += dt;
         _bannerTime += dt;

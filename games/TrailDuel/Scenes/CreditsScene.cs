@@ -5,6 +5,7 @@ using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
 using TrailDuel.Visuals;
+using TrailDuel.World;
 
 namespace TrailDuel.Scenes;
 
@@ -24,6 +25,8 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
 
     private const float LineHeight = 14;
     private float _scroll;
+    /// <summary>The scroll kept from the previous update, to draw the rolling credits between updates.</summary>
+    private Interpolated _drawnScroll;
     private bool _champion = true;
     private float _phase;
     private bool _leaving;
@@ -31,6 +34,12 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
     public override void Enter() => Audio.PlayMusic("victory", 0f);
 
     public override void Update(float dt)
+    {
+        Advance(dt);
+        _drawnScroll.Record(new Vector2(0, _scroll), Game.UpdateCount);
+    }
+
+    private void Advance(float dt)
     {
         _phase += dt;
         if (_champion)
@@ -80,9 +89,10 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
             }
             return;
         }
+        float scroll = _drawnScroll.At(new Vector2(0, _scroll), Game.UpdateCount, Game.FrameBlend).Y;
         for (int i = 0; i < Lines.Length; i++)
         {
-            float y = 180 + i * LineHeight - _scroll;
+            float y = 180 + i * LineHeight - scroll;
             if (y < -10 || y > 140) continue;
             bool header = Lines[i] == Lines[i].ToUpperInvariant() && Lines[i].Length > 0;
             UiKit.Title(r, Font, Lines[i], new Vector2(160, y), Lines[i] is "TRAIL DUEL" or "THE END" ? 2 : 1, header ? Pal.Gold : Pal.White);
