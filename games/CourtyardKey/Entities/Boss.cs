@@ -177,7 +177,7 @@ public sealed class Warden : Enemy
     public override void DrawShadow(IRenderer r)
     {
         float scale = 1 - Height / 80f;
-        r.DrawPivoted(Art["shadow_l"], Position, 0, new Vector2(scale));
+        r.DrawPivoted(Art["shadow_l"], DrawPosition, 0, new Vector2(scale));
     }
 
     public override void Draw(IRenderer r)
@@ -188,7 +188,7 @@ public sealed class Warden : Enemy
             WardenState.Dazed or WardenState.Dying => "boss_dazed",
             _ => (Enraged ? "boss_rage" : "boss_idle") + ((int)(Time * 3) % 2),
         };
-        var at = Position + new Vector2(0, -Height);
+        var at = DrawPosition + new Vector2(0, -Height);
         if (State is WardenState.TellCharge or WardenState.TellVolley || State == WardenState.Dying) at.X += (int)(Time * 40) % 2 * 2 - 1;
         if (State == WardenState.Intro) at.Y += MathF.Max(0, 1.2f - _stateTime) * 20;
         DrawSprite(r, Flashing(name), at);

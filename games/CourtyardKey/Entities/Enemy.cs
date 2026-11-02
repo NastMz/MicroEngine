@@ -111,7 +111,7 @@ public abstract class Enemy : Actor, IHittable
         for (int i = 0; i < 3; i++)
         {
             float a = Time * 6 + i * MathF.Tau / 3;
-            var p = Position + new Vector2(MathF.Cos(a) * 7, -height + MathF.Sin(a) * 2.5f);
+            var p = DrawPosition + new Vector2(MathF.Cos(a) * 7, -height + MathF.Sin(a) * 2.5f);
             World.Font.Draw(r, "★", p - new Vector2(3, 4), Visuals.Pal.Gold[3]);
         }
     }

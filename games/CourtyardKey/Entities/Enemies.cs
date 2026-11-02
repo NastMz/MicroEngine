@@ -48,13 +48,13 @@ public sealed class Slime : Enemy
         World.Audio.Play("hop", 0.5f, 1f, 0.15f);
     }
 
-    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_m"], Position);
+    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_m"], DrawPosition);
 
     public override void Draw(IRenderer r)
     {
         string frame = _hop >= 0 ? "slime2" : _wait < 0.18f && !Stunned ? "slime1" : "slime0";
         float wobble = _hop < 0 ? MathF.Round(MicroEngine.MathX.Wave(Time, 1.5f, 0.6f)) : 0;
-        DrawSprite(r, Flashing(frame), Position + new Vector2(0, -Height + wobble));
+        DrawSprite(r, Flashing(frame), DrawPosition + new Vector2(0, -Height + wobble));
         DrawStunStars(r, 16);
     }
 }
@@ -104,12 +104,12 @@ public sealed class Bat : Enemy
         if (_flight <= 0) _rest = 0.8f + (float)World.Rng.NextDouble() * 1.4f;
     }
 
-    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_s"], Position);
+    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_s"], DrawPosition);
 
     public override void Draw(IRenderer r)
     {
         int f = Resting || Stunned ? 1 : (int)(Time * 14) % 3;
-        DrawSprite(r, Flashing($"bat{f}"), Position + new Vector2(0, -Altitude));
+        DrawSprite(r, Flashing($"bat{f}"), DrawPosition + new Vector2(0, -Altitude));
         DrawStunStars(r, Altitude + 8);
     }
 }
@@ -193,13 +193,13 @@ public sealed class Knight : Enemy
         _anim += dt;
     }
 
-    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_m"], Position);
+    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_m"], DrawPosition);
 
     public override void Draw(IRenderer r)
     {
         string dir = _facing switch { Dir.Down => "down", Dir.Up => "up", _ => "side" };
         int f = Stunned ? 0 : (int)(_anim * 5) % 2;
-        var at = Position + (Stunned ? new Vector2((int)(Time * 20) % 2, 0) : Vector2.Zero);
+        var at = DrawPosition + (Stunned ? new Vector2((int)(Time * 20) % 2, 0) : Vector2.Zero);
         DrawSprite(r, Flashing($"knight_{dir}{f}"), at, _facing == Dir.Left);
         DrawStunStars(r, 18);
     }
@@ -237,5 +237,9 @@ public sealed class Projectile : Actor
         Destroy();
     }
 
-    public override void Draw(IRenderer r) => r.Draw(Art[_sprite], new Vector2(MathF.Round(Position.X), MathF.Round(Position.Y - 4)));
+    public override void Draw(IRenderer r)
+    {
+        var at = DrawPosition;
+        r.Draw(Art[_sprite], new Vector2(MathF.Round(at.X), MathF.Round(at.Y - 4)));
+    }
 }

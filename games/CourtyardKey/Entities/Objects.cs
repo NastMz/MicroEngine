@@ -53,7 +53,7 @@ public sealed class Pickup : Actor
 
     public override void DrawShadow(IRenderer r)
     {
-        if (!Carried) r.Draw(Art["shadow_s"], Position);
+        if (!Carried) r.Draw(Art["shadow_s"], DrawPosition);
     }
 
     public override void Draw(IRenderer r)
@@ -69,7 +69,7 @@ public sealed class Pickup : Actor
         };
         float bob = Carried ? 0 : MathF.Round(MathX.Wave(_age, 1.2f, 1));
         var s = Art[sprite];
-        r.Draw(s, Position + new Vector2(0, -s.Height / 2f - 1 - Lift + bob));
+        r.Draw(s, DrawPosition + new Vector2(0, -s.Height / 2f - 1 - Lift + bob));
     }
 
     public override void EmitLight(LightMap light) => light.Add(Center, 16, 0.4f);
@@ -142,7 +142,7 @@ public sealed class Boomerang : Actor
         foreach (var p in _carried) p.Carried = false;
     }
 
-    public override void Draw(IRenderer r) => r.DrawPivoted(Art["boomerang"], Position, _time * 22);
+    public override void Draw(IRenderer r) => r.DrawPivoted(Art["boomerang"], DrawPosition, _time * 22);
     public override void EmitLight(LightMap light) => light.Add(Position, 26, 0.6f, Pal.Spirit[2]);
 }
 
@@ -289,7 +289,11 @@ public sealed class PushBlock : Actor
         }
     }
 
-    public override void Draw(IRenderer r) => r.Draw(Art["block"], new Vector2(MathF.Round(Position.X), MathF.Round(Position.Y - 16)));
+    public override void Draw(IRenderer r)
+    {
+        var at = DrawPosition;
+        r.Draw(Art["block"], new Vector2(MathF.Round(at.X), MathF.Round(at.Y - 16)));
+    }
 }
 
 public enum DoorKind { Open, Locked, Shutter, Big }

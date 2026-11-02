@@ -85,6 +85,7 @@ public sealed partial class PlayScene : Scene
 
     public override void Update(float dt)
     {
+        RememberDrawPositions();
         Progress.PlaySeconds += dt;
         Camera.Update(dt);
         Particles.Update(dt);

@@ -33,6 +33,7 @@ public sealed partial class PlayScene
         Hero.Position = Room.TileToWorld(cp.TileX, cp.TileY);
         Hero.Facing = cp.Facing;
         Camera.Position = CameraFor(Room);
+        SnapDrawPositions();
         Mode = PlayMode.Play;
         OnRoomSettled(fromEdge: null);
         Audio.PlayMusic(MusicForRoom());

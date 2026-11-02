@@ -14,7 +14,47 @@ public sealed partial class PlayScene
     private Func<int, int, bool>? _platePressed;
     private static readonly Func<int, int, bool> NoPlates = (_, _) => false;
 
+    private Vector2 _previousCamera;
+    private bool _hasPreviousCamera;
+    private long _rememberedUpdate = -1;
+
+    /// <summary>
+    /// How far this frame is between the previous update and the current one (<see cref="Game.FrameBlend"/>), or 1
+    /// when this scene did not run the latest update (paused, under a dialogue or a transition), so a frozen room
+    /// does not rock between its last two updates.
+    /// </summary>
+    public float DrawBlend => Game.UpdateCount == _rememberedUpdate ? Game.FrameBlend : 1;
+
+    /// <summary>The camera position drawn at <paramref name="blend"/> between the previous update and the current one.</summary>
+    public Vector2 CameraDrawPositionAt(float blend) => Actor.Blend(_hasPreviousCamera ? _previousCamera : Camera.Position, Camera.Position, blend);
+
+    /// <summary>Called first in every update: the positions every moving thing is drawn from until the next one.</summary>
+    private void RememberDrawPositions()
+    {
+        _rememberedUpdate = Game.UpdateCount;
+        _previousCamera = Camera.Position;
+        _hasPreviousCamera = true;
+        Hero.RememberPosition();
+        // Actors drawn last frame; one spawned since is drawn where it is until the next update.
+        foreach (var a in _drawList) a.RememberPosition();
+    }
+
+    /// <summary>After a jump (scene entry, checkpoint, area change) the camera and hero are drawn where they are.</summary>
+    private void SnapDrawPositions()
+    {
+        _hasPreviousCamera = false;
+        Hero.SnapDrawPosition();
+    }
+
     public override void Draw(IRenderer r)
+    {
+        var camera = Camera.Position;
+        Camera.Position = CameraDrawPositionAt(DrawBlend);
+        try { DrawWorld(r); }
+        finally { Camera.Position = camera; }
+    }
+
+    private void DrawWorld(IRenderer r)
     {
         _platePressed ??= PlatePressed;
         r.PushCamera(Camera);

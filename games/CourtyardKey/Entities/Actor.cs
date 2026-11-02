@@ -34,6 +34,32 @@ public abstract class Actor(PlayScene world) : Entity
     /// <summary>Adds light in dark rooms.</summary>
     public virtual void EmitLight(LightMap light) { }
 
+    private Vector2 _previousPosition;
+    private bool _hasPrevious;
+
+    /// <summary>Remembers the position at the start of an update: the start of the motion drawn between updates.</summary>
+    public void RememberPosition()
+    {
+        _previousPosition = Position;
+        _hasPrevious = true;
+    }
+
+    /// <summary>Draws at the current position until the next update, so a jump (teleport, room change) never streaks.</summary>
+    public void SnapDrawPosition() => _hasPrevious = false;
+
+    /// <summary>
+    /// Where to draw the actor <paramref name="blend"/> (0..1) of the way from the previous update to the current
+    /// one. At 1 (fixed-step runs) it is exactly <see cref="Entity.Position"/>.
+    /// </summary>
+    public Vector2 DrawPositionAt(float blend) => Blend(_hasPrevious ? _previousPosition : Position, Position, blend);
+
+    /// <summary>The position to draw this frame (<see cref="DrawPositionAt"/> at the scene's blend).</summary>
+    protected Vector2 DrawPosition => DrawPositionAt(World.DrawBlend);
+
+    /// <summary>Lerp that returns <paramref name="current"/> exactly when there is nothing to blend.</summary>
+    public static Vector2 Blend(Vector2 previous, Vector2 current, float blend)
+        => blend >= 1 || previous == current ? current : Vector2.Lerp(previous, current, blend);
+
     protected void DrawSprite(IRenderer r, Sprite sprite, Vector2 at, bool flipX = false, Color? tint = null)
         => r.Draw(sprite, new Vector2(MathF.Round(at.X), MathF.Round(at.Y)), tint, flipX);
 
@@ -82,7 +108,7 @@ public sealed class Effect : Actor
     public override void Draw(IRenderer r)
     {
         int f = Math.Min(_frames.Length - 1, (int)(_time * _fps));
-        DrawSprite(r, _frames[f], Position);
+        DrawSprite(r, _frames[f], DrawPosition);
     }
 }
 
