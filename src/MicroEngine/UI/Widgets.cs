@@ -71,8 +71,9 @@ public sealed class DialogueBox
     private float _time;
     private string _page = "";
     private IReadOnlyList<string>? _wrapped;
-    private int _first, _wrapWidth, _promptVersion;
-    private BitmapFont? _wrapFont;
+    private int _first, _promptVersion;
+    private float _wrapWidth;
+    private IFont? _wrapFont;
     /// <summary>Resolves <c>{action}</c> in pages to the player's controls (null: pages are shown as written). Games pass <see cref="Core.Game.Prompts"/>.</summary>
     public ActionPrompts? Prompts { get; set; }
     /// <summary>Colours of the box (<see cref="UiTheme.Default"/> by default).</summary>
@@ -123,7 +124,7 @@ public sealed class DialogueBox
     private string Display() => Prompts is { } p ? p.Format(_page) : _page;
 
     /// <summary>Wraps the page for <paramref name="font"/> and <paramref name="width"/> and shows the lines from <see cref="_first"/>, keeping what was revealed.</summary>
-    private void Layout(BitmapFont font, int width)
+    private void Layout(IFont font, float width)
     {
         int version = Prompts?.Version ?? 0;
         if (_wrapped is not null && font == _wrapFont && width == _wrapWidth && version == _promptVersion) return;
@@ -158,31 +159,41 @@ public sealed class DialogueBox
         return true;
     }
 
-    /// <summary>Draws the current page in <paramref name="area"/> (virtual pixels), wrapped to its width; draws nothing when closed.</summary>
-    public void Draw(IRenderer r, BitmapFont font, RectF area)
+    /// <summary>
+    /// Draws the current page in <paramref name="area"/> (virtual pixels), wrapped to its width; draws nothing when closed.
+    /// Margins grow with the font: the built-in 10-pixel-high pixel font gets the pixel-art layout, a
+    /// <see cref="ScalableFont"/> size with 40-pixel lines gets margins four times as wide.
+    /// </summary>
+    public void Draw(IRenderer r, IFont font, RectF area)
     {
+        ArgumentNullException.ThrowIfNull(font);
         if (!Active) return;
+        float u = UiUnit(font);
         r.Panel(area, Theme.Panel);
-        Layout(font, (int)area.Width - 16);
+        Layout(font, area.Width - 16 * u);
         int shown = _typewriter.VisibleCount;
-        float y = area.Y + 7;
+        float y = area.Y + 7 * u;
+        var shadow = new Vector2(u);
         foreach (var line in _typewriter.Text.Split('\n'))
         {
             var visible = line[..Math.Min(line.Length, Math.Max(0, shown))];
             shown -= line.Length + 1;
-            font.DrawShadowed(r, visible, new Vector2(area.X + 8, y), Theme.Text, Theme.TextShadow);
-            y += font.LineHeight + 1;
+            font.DrawShadowed(r, visible, new Vector2(area.X + 8 * u, y), Theme.Text, Theme.TextShadow, shadow);
+            y += font.LineHeight + u;
         }
         if (Speaker is { Length: > 0 } name)
         {
-            int w = font.MeasureWidth(name) + 10;
-            var tag = new RectF(area.X + 6, area.Y - 9, w, 12);
+            float w = font.MeasureWidth(name) + 10 * u;
+            var tag = new RectF(area.X + 6 * u, area.Y - 9 * u, w, 12 * u);
             r.Panel(tag, Theme.Panel with { Fill = Theme.Accent, Highlight = default });
-            font.Draw(r, name, new Vector2(tag.X + 5, tag.Y + 2), Theme.Panel.Fill);
+            font.Draw(r, name, new Vector2(tag.X + 5 * u, tag.Y + 2 * u), Theme.Panel.Fill);
         }
         if (_typewriter.Complete && (int)(_time * 3) % 2 == 0)
-            font.Draw(r, "▼", new Vector2(area.Right - 12, area.Bottom - 10), Theme.Accent);
+            font.Draw(r, "▼", new Vector2(area.Right - 12 * u, area.Bottom - 10 * u), Theme.Accent);
     }
+
+    /// <summary>The widgets' layout unit for <paramref name="font"/>: 1 for the built-in pixel font (10-pixel lines), proportionally more for larger fonts, never less than 1.</summary>
+    internal static float UiUnit(IFont font) => MathF.Max(1, MathF.Round(font.LineHeight / 10f));
 }
 
 /// <summary>A vertical list of options navigated with up/down and chosen with confirm.</summary>
@@ -244,17 +255,20 @@ public sealed class SelectionList
     /// <param name="position">Top-left of the list, in virtual pixels.</param>
     /// <param name="theme">Colours.</param>
     /// <param name="time">Seconds, for the cursor's bobbing (for example <see cref="Scenes.Scene.Age"/>).</param>
-    /// <param name="lineHeight">Distance between options in pixels.</param>
-    public void Draw(IRenderer r, BitmapFont font, Vector2 position, UiTheme theme, float time, int lineHeight = 12)
+    /// <param name="lineHeight">Distance between options in pixels; null for the font's line height plus a fifth (12 for the built-in font).</param>
+    public void Draw(IRenderer r, IFont font, Vector2 position, UiTheme theme, float time, float? lineHeight = null)
     {
+        ArgumentNullException.ThrowIfNull(font);
+        float u = DialogueBox.UiUnit(font), step = lineHeight ?? font.LineHeight + 2 * u;
+        var shadow = new Vector2(u);
         for (int i = 0; i < _options.Count; i++)
         {
             bool selected = i == Index;
             var color = !IsEnabled(i) ? theme.Muted : selected ? theme.Accent : theme.Text;
-            float bob = selected ? MathF.Round(MathX.Wave(time, 2f, 1f)) : 0;
-            var pos = position + new Vector2(selected ? 10 : 8, i * lineHeight);
+            float bob = selected ? MathF.Round(MathX.Wave(time, 2f, 1f) * u) : 0;
+            var pos = position + new Vector2((selected ? 10 : 8) * u, i * step);
             if (selected) font.Draw(r, "▶", new Vector2(position.X + bob, pos.Y), theme.Accent);
-            font.DrawShadowed(r, _options[i], pos, color, theme.TextShadow);
+            font.DrawShadowed(r, _options[i], pos, color, theme.TextShadow, shadow);
         }
     }
 }

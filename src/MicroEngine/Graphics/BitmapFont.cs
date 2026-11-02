@@ -9,10 +9,11 @@ namespace MicroEngine.Graphics;
 /// empty columns, so narrow letters like 'i' take less space.
 /// </summary>
 /// <remarks>
-/// Every game has the built-in face in <see cref="Core.Game.Font"/>. Text is drawn in white glyphs multiplied by the
+/// Every game has the built-in face in <see cref="Core.Game.Font"/>. It is an <see cref="IFont"/> (at scale 1), like a
+/// <see cref="ScalableFont"/> at a size, so widgets and layout code take either. Text is drawn in white glyphs multiplied by the
 /// colour given, so any colour works. Characters without a glyph are drawn as '?'; '\n' starts a new line.
 /// </remarks>
-public sealed class BitmapFont : IDisposable
+public sealed class BitmapFont : IFont, IDisposable
 {
     private readonly Dictionary<char, Glyph> _glyphs;
     private readonly Texture? _texture;
@@ -158,6 +159,10 @@ public sealed class BitmapFont : IDisposable
         if (shadow is { } s) DrawShadowed(renderer, text, pos, color, s, scale);
         else Draw(renderer, text, pos, color, scale);
     }
+
+    float IFont.LineHeight => LineHeight;
+    Vector2 IFont.Measure(string text) => Measure(text);
+    void IFont.Draw(IRenderer renderer, string text, Vector2 position, Color color) => Draw(renderer, text, position, color);
 
     /// <summary>Releases the font's texture. The engine disposes <see cref="Core.Game.Font"/> itself.</summary>
     public void Dispose() => _texture?.Dispose();
