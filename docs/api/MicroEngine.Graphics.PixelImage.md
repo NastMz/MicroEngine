@@ -330,6 +330,24 @@ public PixelImage FillRect(int x, int y, int w, int h, Color color)
 
  [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
+### <a id="MicroEngine_Graphics_PixelImage_FitInside_System_Int32_System_Int32_"></a> FitInside\(int, int\)
+
+The largest size of this image that fits inside <code class="paramref">maxWidth</code> by <code class="paramref">maxHeight</code>, keeping its shape (at least 1 by 1).
+
+```csharp
+public (int Width, int Height) FitInside(int maxWidth, int maxHeight)
+```
+
+#### Parameters
+
+`maxWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`maxHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ \([int](https://learn.microsoft.com/dotnet/api/system.int32) [Width](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.int32,system.int32\-.width), [int](https://learn.microsoft.com/dotnet/api/system.int32) [Height](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.int32,system.int32\-.height)\)
+
 ### <a id="MicroEngine_Graphics_PixelImage_FlipX"></a> FlipX\(\)
 
 Returns a copy mirrored horizontally.
@@ -552,6 +570,33 @@ public PixelImage Recolor(Color from, Color to)
 #### Returns
 
  [PixelImage](MicroEngine.Graphics.PixelImage.md)
+
+### <a id="MicroEngine_Graphics_PixelImage_Resized_System_Int32_System_Int32_"></a> Resized\(int, int\)
+
+A copy at <code class="paramref">width</code> by <code class="paramref">height</code> pixels. Whole-number enlargements repeat pixels,
+so pixel art stays sharp; other sizes average the source area under each pixel (weighted by opacity, so
+transparent pixels do not darken edges), so a 1024-pixel icon reduced for a launcher or a start screen keeps its
+detail instead of dropping rows.
+
+```csharp
+public PixelImage Resized(int width, int height)
+```
+
+#### Parameters
+
+`width` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+A size is not positive.
 
 ### <a id="MicroEngine_Graphics_PixelImage_Rotate90"></a> Rotate90\(\)
 

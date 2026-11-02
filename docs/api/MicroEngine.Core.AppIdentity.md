@@ -49,12 +49,36 @@ public AppIdentity(string Title, string? Id, string Version, AppOrientation Orie
 
 ## Fields
 
+### <a id="MicroEngine_Core_AppIdentity_DefaultBackground"></a> DefaultBackground
+
+The background used when nothing gives one.
+
+```csharp
+public static readonly Color DefaultBackground
+```
+
+#### Field Value
+
+ [Color](MicroEngine.Color.md)
+
 ### <a id="MicroEngine_Core_AppIdentity_IconResource"></a> IconResource
 
 Name of the embedded PNG resource holding the icon.
 
 ```csharp
 public const string IconResource = "MicroEngine.AppIcon.png"
+```
+
+#### Field Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+### <a id="MicroEngine_Core_AppIdentity_SplashImageResource"></a> SplashImageResource
+
+Name of the embedded PNG resource holding the start screen's image (<code>MicroEngineSplashImage</code>).
+
+```csharp
+public const string SplashImageResource = "MicroEngine.SplashImage.png"
 ```
 
 #### Field Value
@@ -94,6 +118,80 @@ public AppOrientation Orientation { get; init; }
 #### Property Value
 
  [AppOrientation](MicroEngine.Core.AppOrientation.md)
+
+### <a id="MicroEngine_Core_AppIdentity_Splash"></a> Splash
+
+Whether the game opens on its start screen (<code>MicroEngineSplash</code>, true by default): the system's launch
+screen on phones and the loading screen in browsers show [SplashImage](MicroEngine.Core.AppIdentity.md#MicroEngine_Core_AppIdentity_SplashImage) on [SplashColor](MicroEngine.Core.AppIdentity.md#MicroEngine_Core_AppIdentity_SplashColor),
+and the engine keeps showing it while the game loads, so no black screen comes before the first frame.
+
+```csharp
+public bool Splash { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_AppIdentity_SplashBackground"></a> SplashBackground
+
+The start screen's background (<code>MicroEngineSplashColor</code>); null: [EdgeColor](MicroEngine.Core.AppIdentity.md#MicroEngine_Core_AppIdentity_EdgeColor_MicroEngine_Graphics_PixelImage_) of the image.
+
+```csharp
+public Color? SplashBackground { get; init; }
+```
+
+#### Property Value
+
+ [Color](MicroEngine.Color.md)?
+
+### <a id="MicroEngine_Core_AppIdentity_SplashBranding"></a> SplashBranding
+
+Whether the start screen says "Made with MicroEngine" (<code>MicroEngineSplashBranding</code>, false by default).
+
+```csharp
+public bool SplashBranding { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_AppIdentity_SplashColor"></a> SplashColor
+
+The start screen's background colour: [SplashBackground](MicroEngine.Core.AppIdentity.md#MicroEngine_Core_AppIdentity_SplashBackground), else the edge of its image, else near black.
+
+```csharp
+public Color SplashColor { get; }
+```
+
+#### Property Value
+
+ [Color](MicroEngine.Color.md)
+
+### <a id="MicroEngine_Core_AppIdentity_SplashImage"></a> SplashImage
+
+The image the start screen shows: [SplashImageOverride](MicroEngine.Core.AppIdentity.md#MicroEngine_Core_AppIdentity_SplashImageOverride), else the icon (null when there is neither).
+
+```csharp
+public PixelImage? SplashImage { get; }
+```
+
+#### Property Value
+
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)?
+
+### <a id="MicroEngine_Core_AppIdentity_SplashImageOverride"></a> SplashImageOverride
+
+The start screen's own image (<code>MicroEngineSplashImage</code>); null: the icon.
+
+```csharp
+public PixelImage? SplashImageOverride { get; init; }
+```
+
+#### Property Value
+
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)?
 
 ### <a id="MicroEngine_Core_AppIdentity_Title"></a> Title
 
@@ -142,6 +240,23 @@ public void Deconstruct(out string Title, out string? Id, out string Version, ou
 `Version` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 `Orientation` [AppOrientation](MicroEngine.Core.AppOrientation.md)
+
+### <a id="MicroEngine_Core_AppIdentity_EdgeColor_MicroEngine_Graphics_PixelImage_"></a> EdgeColor\(PixelImage\)
+
+The average opaque colour along an image's border: a background that continues a full-bleed icon (Android's
+adaptive icon, launch screens). Transparent borders give [DefaultBackground](MicroEngine.Core.AppIdentity.md#MicroEngine_Core_AppIdentity_DefaultBackground).
+
+```csharp
+public static Color EdgeColor(PixelImage image)
+```
+
+#### Parameters
+
+`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
+
+#### Returns
+
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Core_AppIdentity_Equals_System_Object_"></a> Equals\(object?\)
 

@@ -67,6 +67,19 @@ IInputSource Input { get; }
 
  [IInputSource](MicroEngine.Input.IInputSource.md)
 
+### <a id="MicroEngine_Core_IPlatform_Letterbox"></a> Letterbox
+
+Colour of the window around the frame. Starts as [Letterbox](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Letterbox); the start screen sets its
+own colour while it shows. Platforms without a window keep the default, which ignores changes.
+
+```csharp
+Color Letterbox { get; set; }
+```
+
+#### Property Value
+
+ [Color](MicroEngine.Color.md)
+
 ### <a id="MicroEngine_Core_IPlatform_Now"></a> Now
 
 Monotonic time in seconds.

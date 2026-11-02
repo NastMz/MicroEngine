@@ -12,6 +12,22 @@ Guide: [Input](../manual/input.md)
 
 What an action is bound to, for display or a rebinding screen ([GetBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_GetBindings_System_String_)).
 
+ [ActionPrompts](MicroEngine.Input.ActionPrompts.md)
+
+Tells the player which control presses an action on the device they are using, so dialogues, tutorials, help
+screens and hints never name a key the player does not have. The text follows the active device (the one that last
+pressed an action, touch while the on-screen controls are shown), the action's current bindings (remapping included)
+and the touch layout, and changes as soon as the player switches device: read it every frame, or when
+[Version](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Version) changes. Games get one in [Prompts](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Prompts).
+
+ [DefaultTouchSkin](MicroEngine.Input.DefaultTouchSkin.md)
+
+The built-in look, shaped by [TouchStyle](MicroEngine.Input.TouchStyle.md). Idle controls are an outlined shape at the style's opacity;
+a pressed one is filled, outlined thicker and drawn slightly smaller (pressed in), so the press reads by shape as
+well as colour, even at low opacity. A dark halo keeps outlines legible on light scenes. A d-pad lights the arrows
+it presses and marks where the thumb is; a joystick shows its base, its dead zone, the knob at the thumb's
+deflection and an arrow on the rim whose opacity follows the intensity. Images replace fills and outlines.
+
  [FrameLayout](MicroEngine.Input.FrameLayout.md)
 
 Where the virtual canvas goes in a window: the shared letterbox rule of every backend.
@@ -24,6 +40,10 @@ scripted input stay in one place. Every action is both digital ([Down](MicroEngi
 [Released](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Released_System_String_)) and analog ([Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_), [Vector](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Vector_System_String_System_String_System_String_System_String_)): a key is 0 or 1, a stick or a
 virtual joystick gives the deflection beyond its dead zone.
 Edge states (pressed/released) are computed per fixed update, so a tap is never lost or doubled.
+
+ [OverlayShapes](MicroEngine.Input.OverlayShapes.md)
+
+Shapes built from [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md) triangles and rectangles, which never overlap, so translucent colours stay even.
 
  [TouchButton](MicroEngine.Input.TouchButton.md)
 
@@ -49,6 +69,14 @@ A game's on-screen controls: which controls, where, and how they look and feel. 
 An analog joystick: a 2D value with intensity ([Vector](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Vector_System_String_System_String_System_String_System_String_)) and, beyond [Threshold](MicroEngine.Input.TouchStick.md#MicroEngine_Input_TouchStick_Threshold),
 the four direction actions as well, so digital code keeps working.
 
+ [TouchStyle](MicroEngine.Input.TouchStyle.md)
+
+How touch controls look: shape, colours of each state, outline, press feedback and optional images. Only the
+drawing changes: hit areas, finger tracking and actions stay those of the layout, so a restyled control behaves
+exactly as before. Colours left null follow [Tint](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_Tint) and [PressedTint](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_PressedTint).
+Set one style for every control kind ([ButtonStyle](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_ButtonStyle), [DPadStyle](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_DPadStyle),
+[StickStyle](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_StickStyle)) or for one control ([Style](MicroEngine.Input.TouchControl.md#MicroEngine_Input_TouchControl_Style)).
+
  [VirtualControls](MicroEngine.Input.VirtualControls.md)
 
 On-screen controls at run time: hit testing, finger tracking, d-pad and joystick values, tap latching, haptics and
@@ -58,9 +86,19 @@ until it lifts, so two thumbs work independently and a thumb that slides a littl
 
 ### Structs
 
+ [ActionPrompt](MicroEngine.Input.ActionPrompt.md)
+
+How to show one action to the player on one device: <code>"Z"</code> on a keyboard, <code>"A"</code> on an Xbox pad,
+<code>"×"</code> on a PlayStation pad, the button's own label on a touch screen. [Text](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Text) is what to print;
+[Kind](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Kind) and the other members let a game draw a glyph instead (a key cap, a coloured pad button).
+
  [PointerState](MicroEngine.Input.PointerState.md)
 
 The mouse (or another pointer) over the game's virtual canvas.
+
+ [TouchControlView](MicroEngine.Input.TouchControlView.md)
+
+Everything a skin needs to draw one control as it is this frame, in screen pixels.
 
  [TouchEvent](MicroEngine.Input.TouchEvent.md)
 
@@ -94,7 +132,17 @@ drawn over the game for on-screen controls. Coordinates are drawable pixels with
 SDL reports phones and touch screens, the browser host reports Pointer Events, the headless platform lets tests
 touch it ([HeadlessTouchScreen](MicroEngine.Core.HeadlessTouchScreen.md)).
 
+ [ITouchSkin](MicroEngine.Input.ITouchSkin.md)
+
+Draws touch controls. The engine calls it for each shown control with its state; a game may replace the whole look
+([Skin](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_Skin)) and still delegate kinds it does not change to [Instance](MicroEngine.Input.DefaultTouchSkin.md#MicroEngine_Input_DefaultTouchSkin_Instance).
+
 ### Enums
+
+ [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
+
+The button names of a gamepad family, for prompts ([ActionPrompts](MicroEngine.Input.ActionPrompts.md)): [PadButton](MicroEngine.Input.PadButton.md) uses Xbox
+names, which PlayStation pads show as shapes and Nintendo pads with A/B and X/Y swapped.
 
  [InputDevice](MicroEngine.Input.InputDevice.md)
 
@@ -111,6 +159,10 @@ Analog gamepad axes. Sticks are -1..1 (right and down positive), triggers 0..1.
  [PadButton](MicroEngine.Input.PadButton.md)
 
 Gamepad buttons using Xbox layout names; backends map their own codes.
+
+ [PromptKind](MicroEngine.Input.PromptKind.md)
+
+What an [ActionPrompt](MicroEngine.Input.ActionPrompt.md) shows: a key, a gamepad control, an on-screen control, or a plain label.
 
  [InputMap.StickDirection](MicroEngine.Input.InputMap.StickDirection.md)
 
@@ -138,6 +190,10 @@ How a touch button drives its action.
 
 What happened to a finger in a [TouchEvent](MicroEngine.Input.TouchEvent.md): it touched the screen (<code>Began</code>), moved (<code>Moved</code>),
 was lifted (<code>Ended</code>), or the system took it away, for example when the game left the screen (<code>Canceled</code>).
+
+ [TouchShape](MicroEngine.Input.TouchShape.md)
+
+The outline of a drawn touch control.
 
  [TouchVisibility](MicroEngine.Input.TouchVisibility.md)
 

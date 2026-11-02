@@ -246,7 +246,8 @@ public int MeasureWidth(string text)
 
 ### <a id="MicroEngine_Graphics_BitmapFont_Wrap_System_String_System_Int32_"></a> Wrap\(string, int\)
 
-Greedy word wrap that respects explicit newlines.
+Greedy word wrap that respects explicit newlines. A word wider than <code class="paramref">maxWidth</code> on its own (a long
+name, a URL) is broken between characters, so no line is wider than <code class="paramref">maxWidth</code>.
 
 ```csharp
 public IReadOnlyList<string> Wrap(string text, int maxWidth)

@@ -93,6 +93,25 @@ public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
 
 `color` [Color](MicroEngine.Color.md)
 
+### <a id="MicroEngine_Core_RecordingOverlayCanvas_Image_MicroEngine_Graphics_PixelImage_MicroEngine_RectF_MicroEngine_Color_"></a> Image\(PixelImage, RectF, Color\)
+
+Draws <code class="paramref">image</code> stretched over <code class="paramref">destination</code> without smoothing, multiplied by
+<code class="paramref">tint</code> (white keeps its colours; the alpha fades it). Backends keep one texture per image, so the
+same [PixelImage](MicroEngine.Graphics.PixelImage.md) instance should be passed every frame. Canvases that cannot draw images
+keep the default, which draws nothing.
+
+```csharp
+public void Image(PixelImage image, RectF destination, Color tint)
+```
+
+#### Parameters
+
+`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
+
+`destination` [RectF](MicroEngine.RectF.md)
+
+`tint` [Color](MicroEngine.Color.md)
+
 ### <a id="MicroEngine_Core_RecordingOverlayCanvas_Ring_System_Numerics_Vector2_System_Single_System_Single_MicroEngine_Color_"></a> Ring\(Vector2, float, float, Color\)
 
 A circle outline of the given thickness, drawn inward from <code class="paramref">radius</code>.

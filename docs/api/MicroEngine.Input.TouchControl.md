@@ -115,6 +115,18 @@ public float Radius { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Input_TouchControl_Style"></a> Style
+
+How this control looks (null: its kind's style in the layout). Changes the drawing only, never the hit area.
+
+```csharp
+public TouchStyle? Style { get; init; }
+```
+
+#### Property Value
+
+ [TouchStyle](MicroEngine.Input.TouchStyle.md)?
+
 ### <a id="MicroEngine_Input_TouchControl_Visible"></a> Visible
 
 Shown and touchable when the layout starts (see [SetVisible](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_SetVisible_System_String_System_Boolean_)).

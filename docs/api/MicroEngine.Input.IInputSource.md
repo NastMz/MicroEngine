@@ -38,6 +38,18 @@ bool PadConnected { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Input_IInputSource_PadStyle"></a> PadStyle
+
+The family of the connected gamepad, for button names in prompts; sources that cannot tell keep Xbox.
+
+```csharp
+GamepadStyle PadStyle { get; }
+```
+
+#### Property Value
+
+ [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
+
 ### <a id="MicroEngine_Input_IInputSource_Pointer"></a> Pointer
 
 The mouse over the virtual canvas; sources without one keep the default (not present).

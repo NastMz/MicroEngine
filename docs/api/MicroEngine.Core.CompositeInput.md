@@ -61,6 +61,18 @@ public bool PadConnected { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_CompositeInput_PadStyle"></a> PadStyle
+
+The style of the first source with a connected gamepad.
+
+```csharp
+public GamepadStyle PadStyle { get; }
+```
+
+#### Property Value
+
+ [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
+
 ### <a id="MicroEngine_Core_CompositeInput_Pointer"></a> Pointer
 
 The pointer of the first source whose pointer is present.

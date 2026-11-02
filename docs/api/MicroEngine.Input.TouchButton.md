@@ -36,6 +36,7 @@ public sealed record TouchButton : TouchControl, IEquatable<TouchControl>, IEqua
 [TouchControl.Offset](MicroEngine.Input.TouchControl.md\#MicroEngine\_Input\_TouchControl\_Offset), 
 [TouchControl.Radius](MicroEngine.Input.TouchControl.md\#MicroEngine\_Input\_TouchControl\_Radius), 
 [TouchControl.Visible](MicroEngine.Input.TouchControl.md\#MicroEngine\_Input\_TouchControl\_Visible), 
+[TouchControl.Style](MicroEngine.Input.TouchControl.md\#MicroEngine\_Input\_TouchControl\_Style), 
 [object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
 [object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 
 [object.Equals\(object?\)](https://learn.microsoft.com/dotnet/api/system.object.equals\#system\-object\-equals\(system\-object\)), 

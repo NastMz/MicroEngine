@@ -30,7 +30,7 @@ public Shape(string Kind, Vector2 Center, float Size, Color Color, string? Text 
 
 `Kind` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-"circle", "ring", "triangle", "rect" or "text".
+"circle", "ring", "triangle", "rect", "text" or "image".
 
 `Center` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
@@ -76,7 +76,7 @@ public Color Color { get; init; }
 
 ### <a id="MicroEngine_Core_RecordingOverlayCanvas_Shape_Kind"></a> Kind
 
-"circle", "ring", "triangle", "rect" or "text".
+"circle", "ring", "triangle", "rect", "text" or "image".
 
 ```csharp
 public string Kind { get; init; }
