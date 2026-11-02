@@ -17,6 +17,8 @@ public sealed record GameSettings(string Title, int VirtualWidth = 320, int Virt
     public Color Background { get; init; } = Color.Black;
     /// <summary>Colour of the window around the frame when the window's shape differs from the canvas (black by default).</summary>
     public Color Letterbox { get; init; } = Color.Black;
+    /// <summary>Graphics options: platform, graphics API, VSync, frame limit, GPU, window mode and display (all automatic by default).</summary>
+    public GraphicsSettings Graphics { get; init; } = new();
 }
 
 /// <summary>
@@ -59,6 +61,17 @@ public interface IPlatform : IDisposable
     /// Platforms without such a state keep the default.
     /// </summary>
     bool Suspended => false;
+    /// <summary>
+    /// Blocks for about <paramref name="seconds"/>, precisely enough to pace frames (the frame limit,
+    /// <see cref="GraphicsSettings.FrameRateLimit"/>); returns false when the platform cannot block its thread (a browser,
+    /// whose page drives the frames), and the loop then skips the frames that come early instead. The default sleeps and
+    /// then spins for the last milliseconds; backends override it with their precise timers.
+    /// </summary>
+    bool Wait(double seconds)
+    {
+        FrameTimer.Delay(seconds);
+        return true;
+    }
     /// <summary>
     /// The touch screen, if the platform has one: touches for <see cref="VirtualControls"/>, the safe area and a layer
     /// drawn over the frame. Platforms without touch keep the default (null).

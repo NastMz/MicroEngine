@@ -35,6 +35,11 @@ public sealed record RunOptions
     public bool PaceToDisplay { get; init; } = true;
     /// <summary>Measures every frame and the phases of the start (the launcher's <c>--profile</c>), or null to measure nothing.</summary>
     public FrameProfiler? Profiler { get; init; }
+    /// <summary>
+    /// The graphics options the run started with, after the launcher's overrides (<see cref="Game.Screen"/> starts from
+    /// them); null uses <see cref="GameSettings.Graphics"/>.
+    /// </summary>
+    public GraphicsSettings? Graphics { get; init; }
 }
 
 /// <summary>How a run ended.</summary>
@@ -104,7 +109,7 @@ public sealed class GameLoop
             var profiler = _options.Profiler;
             ShowStartScreen();
             profiler?.Phase("start screen");
-            _game.Initialize(_platform, _options.Seed);
+            _game.Initialize(_platform, _options.Seed, _options.Graphics ?? _game.Settings.Graphics);
             profiler?.Phase("load");
             if (profiler is not null) profiler.DisplayRate = _platform.DisplayRate;
             _platform.Letterbox = _game.Settings.Letterbox;
@@ -168,6 +173,7 @@ public sealed class GameLoop
     /// <returns>True when the run must stop after this frame.</returns>
     private bool Frame()
     {
+        if (!Limit()) return false;
         if (_options.Profiler is { } profiler) return ProfiledFrame(profiler);
         _platform.PollEvents();
         if (FollowSuspension()) return _platform.CloseRequested || _game.QuitRequested;
@@ -269,7 +275,41 @@ public sealed class GameLoop
         return (stop, capture);
     }
 
-    private double _drift;
+    private double _drift, _nextFrame;
+
+    /// <summary>
+    /// Holds the frame back until the frame limit (<see cref="GameScreen.FrameRateLimit"/>) allows it, on an absolute
+    /// schedule so the rate does not drift; false when the frame must be skipped (a platform that cannot block, called
+    /// too early). Fixed-step runs are never limited.
+    /// </summary>
+    private bool Limit()
+    {
+        int limit = _game.Screen.FrameRateLimit;
+        if (limit <= 0 || !_platform.RealTime) { _nextFrame = 0; return true; }
+        double period = 1.0 / limit, now = _platform.Now;
+        // The first limited frame, one late by more than a period (a hitch), or a schedule further ahead than a period
+        // (the limit was raised): start a new schedule. The margin keeps a frame that took no time on the schedule.
+        if (_nextFrame == 0 || now - _nextFrame > period || _nextFrame - now > period * 1.01) _nextFrame = now;
+        else if (now < _nextFrame && !_platform.Wait(_nextFrame - now))
+        {
+            // Within a millisecond the frame is on time; earlier, a page-driven host draws nothing this time.
+            if (_nextFrame - now > 0.001) return false;
+        }
+        _nextFrame += period;
+        return true;
+    }
+
+    /// <summary>
+    /// The rate frames are paced to: the display's while VSync paces them, else the frame limit's (the loop waits for it
+    /// itself, with the same small irregularity around each period); 0 when nothing paces them.
+    /// </summary>
+    private double PaceRate()
+    {
+        double display = _platform.DisplayRate;
+        if (display > 0) return display;
+        int limit = _game.Screen.FrameRateLimit;
+        return limit > 0 && _platform.RealTime ? limit : 0;
+    }
 
     /// <summary>
     /// The time a frame stands for. When the platform paces frames to a display (<see cref="IPlatform.DisplayRate"/>),
@@ -281,7 +321,7 @@ public sealed class GameLoop
     /// </summary>
     private double Paced(double elapsed)
     {
-        double rate = _options.PaceToDisplay ? _platform.DisplayRate : 0;
+        double rate = _options.PaceToDisplay ? PaceRate() : 0;
         if (rate <= 0) return elapsed;
         double period = 1 / rate, time = elapsed + _drift;
         // A short frame keeps the debt of an earlier frame rounded up, or frames faster than the reported rate would

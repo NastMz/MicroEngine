@@ -133,7 +133,7 @@ public sealed class PlatformSelectionTests
     [TestMethod]
     public void Gpu_preference_reaches_the_platform_request()
     {
-        Assert.AreEqual(GpuPreference.Automatic, LaunchArguments.Parse([]).Gpu);
+        Assert.IsNull(LaunchArguments.Parse([]).Gpu, "no option keeps the game's choice");
         Assert.AreEqual(GpuPreference.HighPerformance, LaunchArguments.Parse(["--gpu", "high-performance"]).Gpu);
         Assert.AreEqual(GpuPreference.PowerSaving, LaunchArguments.Parse(["--gpu", "power-saving"]).Gpu);
         Assert.ThrowsExactly<FormatException>(() => LaunchArguments.Parse(["--gpu", "nvidia"]));
@@ -142,6 +142,6 @@ public sealed class PlatformSelectionTests
         var catalog = new PlatformCatalog().Add(new PlatformProfile("probe", "", request => { seen = request; return new HeadlessPlatform(); }));
         var (code, errors) = Run(catalog, "--gpu", "power-saving", "--frames", "1");
         Assert.AreEqual(0, code, errors);
-        Assert.AreEqual(GpuPreference.PowerSaving, seen?.GpuPreference);
+        Assert.AreEqual(GpuPreference.PowerSaving, seen?.Settings.Graphics.Gpu);
     }
 }

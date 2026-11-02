@@ -19,6 +19,12 @@ namespace MicroEngine.Core;
 /// (<see cref="Audio.CaptureAudioDevice"/>).</item>
 /// <item><c>--gpu auto|high-performance|power-saving</c> the GPU to ask for on a machine with two
 /// (<see cref="GpuPreference"/>).</item>
+/// <item><c>--renderer NAME[,NAME...]</c> graphics APIs to try first (<see cref="GraphicsSettings.Renderers"/>).</item>
+/// <item><c>--vsync on|off</c> wait for the display's refresh or not (<see cref="GraphicsSettings.VSync"/>).</item>
+/// <item><c>--fps-limit N</c> draw at most N frames per second; 0 removes the game's limit
+/// (<see cref="GraphicsSettings.FrameRateLimit"/>).</item>
+/// <item><c>--window windowed|fullscreen|exclusive</c> the window mode (<see cref="GraphicsSettings.WindowMode"/>).</item>
+/// <item><c>--display N</c> open on display N, counted from 0 (<see cref="GraphicsSettings.Display"/>).</item>
 /// <item><c>--pacing display|measured</c> count frame time in refresh periods of the display (the default) or as
 /// measured (<see cref="RunOptions.PaceToDisplay"/>).</item>
 /// <item><c>--profile FILE</c> measure every frame and the start phases (<see cref="FrameProfiler"/>), print a summary and
@@ -29,7 +35,7 @@ namespace MicroEngine.Core;
 public static class GameLauncher
 {
     /// <summary>The one-line usage text printed after an argument error.</summary>
-    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--pacing display|measured] [--profile FILE]";
+    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE]";
 
     /// <param name="configure">Changes the platform request before the platform is built: an audio device or input
     /// sources of the host's own (see <see cref="PlatformRequest"/>).</param>
@@ -54,8 +60,10 @@ public static class GameLauncher
         }
 
         var profiler = parsed.ProfilePath is null ? null : new FrameProfiler();
+        var graphics = parsed.ApplyTo(game.Settings.Graphics);
         var options = new RunOptions
         {
+            Graphics = graphics,
             Profiler = profiler,
             PaceToDisplay = parsed.PaceToDisplay,
             Script = parsed.ScriptPath is { } path ? InputScript.Parse(File.ReadAllText(path)) : null,
@@ -64,14 +72,13 @@ public static class GameLauncher
             Seed = parsed.Seed,
             Mute = parsed.Mute,
         };
-        var request = new PlatformRequest(game.Settings)
+        var request = new PlatformRequest(game.Settings with { Graphics = graphics })
         {
             Scale = parsed.Scale,
             Hidden = parsed.Hidden,
             FixedStep = parsed.ScriptPath is not null || parsed.Hidden,
             Mute = parsed.Mute,
             AudioOutput = parsed.Audio,
-            GpuPreference = parsed.Gpu,
             Identity = AppIdentity.Of(game),
         };
         if (configure is not null) request = configure(request);
@@ -86,7 +93,8 @@ public static class GameLauncher
         {
             string? name = parsed.Headless ? HeadlessPlatform.Profile.Name : parsed.Platform ?? Environment.GetEnvironmentVariable("MICROENGINE_PLATFORM");
             candidates = parsed.Headless && catalog.Find(HeadlessPlatform.Profile.Name) is null ? [HeadlessPlatform.Profile]
-                : name is null ? Fallbacks(catalog) : [catalog.Resolve(name)];
+                : name is not null ? [catalog.Resolve(name)]
+                : Preferred(catalog, graphics.Backend);
         }
         catch (PlatformConfigurationException e)
         {
@@ -161,6 +169,24 @@ public static class GameLauncher
         return windowed.Count > 0 ? windowed : [catalog.Default];
     }
 
+    /// <summary>
+    /// The platforms tried when the game prefers <paramref name="backend"/> (<see cref="GraphicsSettings.Backend"/>) and
+    /// nobody named one: that platform first, then the <see cref="Fallbacks"/>. A preference this catalog lacks or that
+    /// cannot run here is reported and skipped.
+    /// </summary>
+    public static IReadOnlyList<PlatformProfile> Preferred(PlatformCatalog catalog, string? backend)
+    {
+        var fallbacks = Fallbacks(catalog);
+        if (backend is null) return fallbacks;
+        var preferred = catalog.Find(backend);
+        if (preferred is null || preferred.UnsupportedReason is not null)
+        {
+            Console.Error.WriteLine($"platform: the game prefers '{backend}', which {(preferred is null ? "is not in this build" : $"is unavailable here ({preferred.UnsupportedReason})")}; choosing automatically");
+            return fallbacks;
+        }
+        return [preferred, .. fallbacks.Where(p => p != preferred)];
+    }
+
     /// <summary>Frames of a profiled run left out of its summary: the first second or so, while the JIT compiles and caches warm up.</summary>
     public const int ProfileWarmupFrames = 60;
 
@@ -217,8 +243,34 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
     public AudioOutput Audio { get; init; }
     /// <summary><c>--audio-capture</c>: the WAV file to write what would have been heard to, or null.</summary>
     public string? AudioCapturePath { get; init; }
-    /// <summary><c>--gpu</c>: the GPU to ask for.</summary>
-    public GpuPreference Gpu { get; init; }
+    /// <summary><c>--gpu</c>: the GPU to ask for, or null to keep the game's choice.</summary>
+    public GpuPreference? Gpu { get; init; }
+    /// <summary><c>--renderer</c>: graphics APIs to try first, or null to keep the game's choice.</summary>
+    public IReadOnlyList<string>? Renderers { get; init; }
+    /// <summary><c>--vsync</c>: on or off, or null to keep the game's choice.</summary>
+    public bool? VSync { get; init; }
+    /// <summary><c>--fps-limit</c>: the frame limit (0 for none), or null to keep the game's choice.</summary>
+    public int? FrameRateLimit { get; init; }
+    /// <summary><c>--window</c>: the window mode, or null to keep the game's choice.</summary>
+    public WindowMode? WindowMode { get; init; }
+    /// <summary><c>--display</c>: the display to open on, or null to keep the game's choice.</summary>
+    public int? Display { get; init; }
+
+    /// <summary>The game's graphics options with the ones given on the command line in their place.</summary>
+    public GraphicsSettings ApplyTo(GraphicsSettings graphics)
+    {
+        ArgumentNullException.ThrowIfNull(graphics);
+        return graphics with
+        {
+            Backend = Platform ?? graphics.Backend,
+            Renderers = Renderers ?? graphics.Renderers,
+            VSync = VSync ?? graphics.VSync,
+            FrameRateLimit = FrameRateLimit ?? graphics.FrameRateLimit,
+            Gpu = Gpu ?? graphics.Gpu,
+            WindowMode = WindowMode ?? graphics.WindowMode,
+            Display = Display ?? graphics.Display,
+        };
+    }
     /// <summary><c>--pacing</c>: false for <c>measured</c>, true (the default) for <c>display</c>.</summary>
     public bool PaceToDisplay { get; init; } = true;
     /// <summary><c>--profile</c>: the file to write frame measurements to, or null to measure nothing.</summary>
@@ -231,7 +283,11 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
         string? script = null, captures = "captures", platform = null, audioCapture = null, profile = null;
         var audio = AudioOutput.Automatic;
         bool paceToDisplay = true;
-        var gpu = GpuPreference.Automatic;
+        GpuPreference? gpu = null;
+        IReadOnlyList<string>? renderers = null;
+        bool? vsync = null;
+        int? fpsLimit = null, display = null;
+        WindowMode? window = null;
         bool headless = false, hidden = false, mute = false, list = false, report = false;
         long frames = 0;
         int? seed = null;
@@ -244,6 +300,12 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
                 string option = args[i], value = Next();
                 return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) && v > 0 ? v
                     : throw new FormatException($"{option} needs a positive integer, not '{value}'.");
+            }
+            int Count()
+            {
+                string option = args[i], value = Next();
+                return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) && v >= 0 ? v
+                    : throw new FormatException($"{option} needs 0 or a positive integer, not '{value}'.");
             }
             switch (args[i])
             {
@@ -278,6 +340,29 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
                         var other => throw new FormatException($"--gpu needs auto, high-performance or power-saving, not '{other}'."),
                     };
                     break;
+                case "--renderer":
+                    renderers = Next().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    if (renderers.Count == 0) throw new FormatException("--renderer needs at least one name.");
+                    break;
+                case "--vsync":
+                    vsync = Next() switch
+                    {
+                        "on" => true,
+                        "off" => false,
+                        var other => throw new FormatException($"--vsync needs on or off, not '{other}'."),
+                    };
+                    break;
+                case "--fps-limit": fpsLimit = Count(); break;
+                case "--display": display = Count(); break;
+                case "--window":
+                    window = Next() switch
+                    {
+                        "windowed" => Core.WindowMode.Windowed,
+                        "fullscreen" => Core.WindowMode.Fullscreen,
+                        "exclusive" => Core.WindowMode.ExclusiveFullscreen,
+                        var other => throw new FormatException($"--window needs windowed, fullscreen or exclusive, not '{other}'."),
+                    };
+                    break;
                 case "--pacing":
                     paceToDisplay = Next() switch
                     {
@@ -302,6 +387,11 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
             ProfilePath = profile,
             PaceToDisplay = paceToDisplay,
             Gpu = gpu,
+            Renderers = renderers,
+            VSync = vsync,
+            FrameRateLimit = fpsLimit,
+            WindowMode = window,
+            Display = display,
         };
     }
 }

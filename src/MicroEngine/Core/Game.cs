@@ -63,6 +63,11 @@ public abstract class Game
     /// captures show exactly the last update.
     /// </summary>
     public float FrameBlend { get; internal set; }
+    /// <summary>
+    /// The screen while the game runs: displays, VSync, frame limit, window mode, and the graphics API and GPU in use
+    /// (<see cref="GraphicsSettings"/> for the options it starts with). Available from <c>Load</c>.
+    /// </summary>
+    public GameScreen Screen { get; private set; } = null!;
     /// <summary>Deterministic per-run randomness; seeded by the launcher.</summary>
     public Random Random { get; private set; } = new(1);
     /// <summary>True after <see cref="Quit"/>; the loop stops at the end of the current frame.</summary>
@@ -113,9 +118,12 @@ public abstract class Game
         return _achievements;
     }
 
-    internal void Initialize(IPlatform platform, int seed)
+    internal void Initialize(IPlatform platform, int seed) => Initialize(platform, seed, Settings.Graphics);
+
+    internal void Initialize(IPlatform platform, int seed, GraphicsSettings graphics)
     {
         _platform = platform;
+        Screen = new GameScreen(platform, graphics);
         Random = new Random(seed);
         Input = CreateInput();
         Touch = new VirtualControls(CreateTouchLayout());
