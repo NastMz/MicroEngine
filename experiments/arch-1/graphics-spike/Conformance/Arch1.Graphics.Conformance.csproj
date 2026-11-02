@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 graphics contract spike: the abstract conformance suite and its runs against both adapters (tier 0
+       SDL_Renderer on Direct3D 11; tier 1 SDL_GPU on Direct3D 12 and Vulkan). Throwaway experiment; not part of
+       MicroEngine.slnx or CI. Same test stack as tests/MicroEngine.Desktop.Tests. -->
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Arch1.Graphics.Conformance</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.4.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Contract/Arch1.Graphics.Contract.csproj" />
+    <ProjectReference Include="../Batcher/Arch1.Graphics.Batcher.csproj" />
+    <ProjectReference Include="../Host/Arch1.Graphics.SdlHost.csproj" />
+    <ProjectReference Include="../Tier0Sdl/Arch1.Graphics.Tier0Sdl.csproj" />
+    <ProjectReference Include="../Tier1SdlGpu/Arch1.Graphics.Tier1SdlGpu.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Custom shaders for the depth test (P3's mesh shaders, compiled offline). -->
+    <None Include="../shaders/compiled/mesh.vert.*;../shaders/compiled/color.frag.*" Link="shaders/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

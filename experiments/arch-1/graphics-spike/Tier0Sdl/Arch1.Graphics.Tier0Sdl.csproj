@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 graphics contract spike: the tier-0 adapter on SDL_Renderer (default driver per P1: Direct3D 11 on
+       Windows). Throwaway experiment; not part of MicroEngine.slnx or CI. -->
+  <PropertyGroup>
+    <RootNamespace>Arch1.Graphics.Tier0Sdl</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Contract/Arch1.Graphics.Contract.csproj" />
+  </ItemGroup>
+</Project>

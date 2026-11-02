@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 graphics contract spike: the tier-1 adapter on pure SDL_GPU (per P3), with its own built-in 2D
+       pipelines. Throwaway experiment; not part of MicroEngine.slnx or CI. -->
+  <PropertyGroup>
+    <RootNamespace>Arch1.Graphics.Tier1SdlGpu</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Contract/Arch1.Graphics.Contract.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The built-in 2D pipeline's shaders (P3's sprite shaders, compiled offline by P3's ShaderBuild). -->
+    <EmbeddedResource Include="../shaders/compiled/sprite.*" LogicalName="builtin/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

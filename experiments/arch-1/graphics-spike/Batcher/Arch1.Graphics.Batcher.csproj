@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 graphics contract spike: the minimal 2D batcher, written once over IGraphicsDevice with no reference to
+       any backend. Throwaway experiment; not part of MicroEngine.slnx or CI. -->
+  <PropertyGroup>
+    <RootNamespace>Arch1.Graphics.Batching</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Contract/Arch1.Graphics.Contract.csproj" />
+  </ItemGroup>
+</Project>
