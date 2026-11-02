@@ -134,7 +134,7 @@ public sealed class PlatformProfile
         try
         {
             audio = request.Audio?.Invoke();
-            return new ComposedPlatform(platform, audio, request.ExtraInput);
+            return ComposedPlatform.Create(platform, audio, request.ExtraInput);
         }
         catch
         {
@@ -193,19 +193,33 @@ public sealed class PlatformCatalog
 /// <summary>A platform request that cannot be met: unknown or unsupported profile, or a part the profile does not let a host replace.</summary>
 public sealed class PlatformConfigurationException(string message) : Exception(message);
 
-/// <summary>A backend platform with a replaced audio device and/or extra input sources; it owns all of them.</summary>
-internal sealed class ComposedPlatform : IPlatform
+/// <summary>
+/// A backend platform with a replaced audio device and/or extra input sources; it owns all of them. Everything else is
+/// the backend's: every <see cref="IPlatform"/> member is forwarded (none is left to the interface's defaults), and the
+/// wrapper implements exactly the optional interfaces the backend implements (<see cref="IDisplayControl"/>,
+/// <see cref="IPlatformDiagnostics"/>), since the engine finds those by type tests.
+/// </summary>
+internal class ComposedPlatform : IPlatform
 {
     private readonly IPlatform _inner;
     private readonly IAudioDevice? _audio;
     private readonly IInputSource _input;
 
-    public ComposedPlatform(IPlatform inner, IAudioDevice? audio, IReadOnlyList<IInputSource> extraInput)
+    private ComposedPlatform(IPlatform inner, IAudioDevice? audio, IReadOnlyList<IInputSource> extraInput)
     {
         _inner = inner;
         _audio = audio;
         _input = extraInput.Count == 0 ? inner.Input : new CompositeInput([inner.Input, .. extraInput]);
     }
+
+    /// <summary>Wraps <paramref name="inner"/> in the composition that has the same optional capabilities.</summary>
+    public static ComposedPlatform Create(IPlatform inner, IAudioDevice? audio, IReadOnlyList<IInputSource> extraInput) => inner switch
+    {
+        IDisplayControl and IPlatformDiagnostics => new WithDisplayAndDiagnostics(inner, audio, extraInput),
+        IDisplayControl => new WithDisplay(inner, audio, extraInput),
+        IPlatformDiagnostics => new WithDiagnostics(inner, audio, extraInput),
+        _ => new ComposedPlatform(inner, audio, extraInput),
+    };
 
     public IGraphicsDevice Graphics => _inner.Graphics;
     public IAudioDevice Audio => _audio ?? _inner.Audio;
@@ -213,7 +227,9 @@ internal sealed class ComposedPlatform : IPlatform
     public bool CloseRequested => _inner.CloseRequested;
     public double Now => _inner.Now;
     public bool RealTime => _inner.RealTime;
+    public double DisplayRate => _inner.DisplayRate;
     public bool Suspended => _inner.Suspended;
+    public bool Wait(double seconds) => _inner.Wait(seconds);
     public ITouchScreen? Touch => _inner.Touch;
     public void PollEvents() => _inner.PollEvents();
     public IRenderer BeginFrame() => _inner.BeginFrame();
@@ -226,6 +242,33 @@ internal sealed class ComposedPlatform : IPlatform
     {
         try { (_audio as IDisposable)?.Dispose(); }
         finally { _inner.Dispose(); }
+    }
+
+    private class WithDisplay(IPlatform inner, IAudioDevice? audio, IReadOnlyList<IInputSource> extraInput)
+        : ComposedPlatform(inner, audio, extraInput), IDisplayControl
+    {
+        private readonly IDisplayControl _display = (IDisplayControl)inner;
+        public IReadOnlyList<DisplayInfo> Displays => _display.Displays;
+        public int CurrentDisplay => _display.CurrentDisplay;
+        public bool VSync => _display.VSync;
+        public bool SetVSync(bool on) => _display.SetVSync(on);
+        public WindowMode WindowMode => _display.WindowMode;
+        public bool SetWindowMode(WindowMode mode) => _display.SetWindowMode(mode);
+        public bool MoveToDisplay(int index) => _display.MoveToDisplay(index);
+    }
+
+    private sealed class WithDisplayAndDiagnostics(IPlatform inner, IAudioDevice? audio, IReadOnlyList<IInputSource> extraInput)
+        : WithDisplay(inner, audio, extraInput), IPlatformDiagnostics
+    {
+        private readonly IPlatformDiagnostics _diagnostics = (IPlatformDiagnostics)inner;
+        public IReadOnlyDictionary<string, string> Diagnostics => _diagnostics.Diagnostics;
+    }
+
+    private sealed class WithDiagnostics(IPlatform inner, IAudioDevice? audio, IReadOnlyList<IInputSource> extraInput)
+        : ComposedPlatform(inner, audio, extraInput), IPlatformDiagnostics
+    {
+        private readonly IPlatformDiagnostics _diagnostics = (IPlatformDiagnostics)inner;
+        public IReadOnlyDictionary<string, string> Diagnostics => _diagnostics.Diagnostics;
     }
 }
 

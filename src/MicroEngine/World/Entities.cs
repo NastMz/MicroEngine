@@ -62,7 +62,12 @@ public sealed class EntityList<T> : IEnumerable<T> where T : Entity
         _updating = true;
         try
         {
-            foreach (var e in _items) if (e.Alive) e.Update(dt);
+            // By index: an entity may clear the list while it updates (additions wait in _added, removals are marks).
+            for (int i = 0; i < _items.Count; i++)
+            {
+                var e = _items[i];
+                if (e.Alive) e.Update(dt);
+            }
         }
         finally { _updating = false; }
         Flush();
@@ -102,7 +107,11 @@ public sealed class EntityList<T> : IEnumerable<T> where T : Entity
     /// count), in insertion order; <c>foreach</c> over them allocates nothing.
     /// </summary>
     public OverlappingEntities Overlapping(RectF area) => new(_items, area);
-    /// <summary>Removes every entity at once, without calling <see cref="Entity.Removed"/>.</summary>
+    /// <summary>
+    /// Removes every entity at once, without calling <see cref="Entity.Removed"/>. An entity may call it during
+    /// <see cref="Update"/>: the entities not yet updated are skipped, and those added after the call join at the end of
+    /// the update as usual.
+    /// </summary>
     public void Clear() { _items.Clear(); _added.Clear(); }
     /// <summary>
     /// Enumerates the living entities in insertion order (deferred additions excluded until flushed). <c>foreach</c>

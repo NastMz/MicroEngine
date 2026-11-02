@@ -44,7 +44,8 @@ Assets started by [Preload](MicroEngine.Core.AssetCache.md#MicroEngine_Core_Asse
 
 Loads, shares and releases a game's content files (<code>Game.Assets</code>): images as textures, packing tools' atlases,
 folders of images packed into one atlas, and TTF/OTF fonts. The same request returns the same object, so a texture
-used by ten scenes is decoded and uploaded once; everything a scope loaded is disposed with it.
+used by ten scenes is decoded and uploaded once, whichever scopes ask for it; an asset is disposed when the last scope
+holding it releases it.
 
  [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 

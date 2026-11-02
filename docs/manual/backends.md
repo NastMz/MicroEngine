@@ -225,7 +225,8 @@ bundle resources on iOS, both through `ContentFolder.DefaultRoot`). See [Platfor
 ## Headless platform
 
 `HeadlessPlatform(width, height)` has deterministic time (one step per frame), no window, silent audio and
-keyboard state you set from code. `HeadlessPlatform.For(settings)` sizes it from a game. Tests use it two ways.
+keyboard state you set from code. `HeadlessPlatform.For(settings)` sizes it from a game and sets its `UpdateRate`
+from the game's, so its time equals `Game.Time`. Tests use it two ways.
 
 Stepping a game directly:
 

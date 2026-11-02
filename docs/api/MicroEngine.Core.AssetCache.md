@@ -8,7 +8,8 @@ Guide: [Game lifecycle and time](../manual/lifecycle.md)
 
 Loads, shares and releases a game's content files (<code>Game.Assets</code>): images as textures, packing tools' atlases,
 folders of images packed into one atlas, and TTF/OTF fonts. The same request returns the same object, so a texture
-used by ten scenes is decoded and uploaded once; everything a scope loaded is disposed with it.
+used by ten scenes is decoded and uploaded once, whichever scopes ask for it; an asset is disposed when the last scope
+holding it releases it.
 
 ```csharp
 public sealed class AssetCache : IDisposable
@@ -42,8 +43,10 @@ on every system, because Linux, Android and browsers would not find "Hero.png" f
 </p>
 <p>
 <code>Game.Assets</code> lives as long as the game and is disposed after <code>Unload</code>. For assets of one level or scene,
-create a child with [CreateScope](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_CreateScope_System_String_) and dispose it when the level ends: a child finds what its parents
-already loaded instead of loading it again, and releases only its own. Loading belongs in <code>Load</code>, a scene's
+create a child with [CreateScope](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_CreateScope_System_String_) and dispose it when the level ends. Scopes share: a scope that asks for
+an asset another scope (a parent, a sibling) already loaded gets the same object instead of loading it again, and holds
+it too; disposing a scope or calling [Unload](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Unload_System_String_) releases its hold, and an asset is disposed when no scope
+holds it any more. Loading belongs in <code>Load</code>, a scene's
 <code>Enter</code> or a loading screen; a load during play is reported, because decoding a large image takes longer than a
 frame. [Preload](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Preload_System_String___) decodes on worker threads where the platform has them and uploads within a time budget
 per frame, for loading screens.
@@ -104,7 +107,9 @@ The folder does not exist.
 
 ### <a id="MicroEngine_Core_AssetCache_Count"></a> Count
 
-How many assets this scope and its children hold; allocates nothing, so it can be checked every frame.
+How many assets this scope and its children hold: those they loaded and those they asked for that another scope
+(a parent included) had loaded, an asset several of them share counting once. On the root scope, every asset of
+the game. Allocates nothing, so it can be checked every frame.
 
 ```csharp
 public int Count { get; }
@@ -128,7 +133,7 @@ public double FrameBudgetMilliseconds { get; set; }
 
 ### <a id="MicroEngine_Core_AssetCache_Loaded"></a> Loaded
 
-The assets of this scope and its children, in load order within each scope.
+The assets of this scope and its children, each once, in the order each scope asked for them.
 
 ```csharp
 public IReadOnlyList<AssetInfo> Loaded { get; }
@@ -280,8 +285,9 @@ The file is missing or wrongly cased.
 
 ### <a id="MicroEngine_Core_AssetCache_CreateScope_System_String_"></a> CreateScope\(string?\)
 
-A child scope: it reuses what this scope (and its parents) loaded and disposes only what it loads itself, when it is
-disposed. Use one per level or scene whose assets should be freed when it ends.
+A child scope: an asset it asks for that another scope already loaded is the same object, and disposing the scope
+releases what it holds, disposing only what no other scope holds. Use one per level or scene whose assets should be
+freed when it ends.
 
 ```csharp
 public AssetCache CreateScope(string? name = null)
@@ -297,7 +303,8 @@ public AssetCache CreateScope(string? name = null)
 
 ### <a id="MicroEngine_Core_AssetCache_Dispose"></a> Dispose\(\)
 
-Disposes every asset of this scope and of its child scopes. The root scope is disposed by the engine after <code>Game.Unload</code>.
+Releases every asset this scope and its child scopes hold, disposing those no other scope holds. The root scope is
+disposed by the engine after <code>Game.Unload</code>.
 
 ```csharp
 public void Dispose()
@@ -435,7 +442,8 @@ The file is missing, wrongly cased or not an image the engine reads.
 
 ### <a id="MicroEngine_Core_AssetCache_Unload_System_String_"></a> Unload\(string\)
 
-Disposes everything this scope loaded from <code class="paramref">path</code>; it loads again if asked for later. Parents' assets are not touched.
+Releases what this scope holds from <code class="paramref">path</code> (in any form): each object is disposed unless another
+scope still holds it, and loads again if asked for later. What only other scopes hold is not touched.
 
 ```csharp
 public bool Unload(string path)
@@ -449,7 +457,7 @@ public bool Unload(string path)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-Whether anything was released.
+Whether this scope held anything from the file.
 
 ### <a id="MicroEngine_Core_AssetCache_Update"></a> Update\(\)
 

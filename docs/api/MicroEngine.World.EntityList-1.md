@@ -75,7 +75,9 @@ public TEntity Add<TEntity>(TEntity entity) where TEntity : T
 
 ### <a id="MicroEngine_World_EntityList_1_Clear"></a> Clear\(\)
 
-Removes every entity at once, without calling [Removed](MicroEngine.World.Entity.md#MicroEngine_World_Entity_Removed).
+Removes every entity at once, without calling [Removed](MicroEngine.World.Entity.md#MicroEngine_World_Entity_Removed). An entity may call it during
+[Update](MicroEngine.World.md): the entities not yet updated are skipped, and those added after the call join at the end of
+the update as usual.
 
 ```csharp
 public void Clear()
