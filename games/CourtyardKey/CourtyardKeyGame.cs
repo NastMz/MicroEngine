@@ -58,8 +58,9 @@ public sealed class CourtyardKeyGame : Game
         SoundBank.Register(Audio);
         MusicBank.Register(Audio);
         UseAchievements(CourtyardAchievements.Catalog, Saves.Store, UI.UiStyle.Theme);
-        // Banners rise from the bottom: the top holds the hearts, the item slots, the room name and the boss's bar.
-        AchievementToasts!.Bottom = 4;
+        // Banners stay at the top, over the HUD's edge rather than the play field (the bottom of a room is where the
+        // hero enters, the middle is where bosses stand); the room name waits while one shows.
+        AchievementToasts!.Top = PlayScene.HudHeight + 3;
         Achievements.Unlocked += _ => Audio.Play("secret", 0.8f);
         if (_start is { Length: > 0 } name)
         {
