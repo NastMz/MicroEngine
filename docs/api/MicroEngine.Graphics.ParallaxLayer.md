@@ -97,7 +97,7 @@ public Color Tint { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_Graphics_ParallaxLayer_VerticalFactor"></a> VerticalFactor
 

@@ -51,7 +51,7 @@ public RectF Bounds { get; }
 
 #### Property Value
 
- [RectF](MicroEngine.RectF.md)
+ RectF
 
 ### <a id="MicroEngine_World_Entity_Center"></a> Center
 
@@ -87,7 +87,7 @@ public RectF Hitbox { get; set; }
 
 #### Property Value
 
- [RectF](MicroEngine.RectF.md)
+ RectF
 
 ### <a id="MicroEngine_World_Entity_Position"></a> Position
 

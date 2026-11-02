@@ -18,6 +18,8 @@ Guide: [Graphics](../manual/rendering.md)
 
  [MicroEngine.Input](MicroEngine.Input.md)
 
+ [MicroEngine.Kernel](MicroEngine.Kernel.md)
+
  [MicroEngine.Raylib](MicroEngine.Raylib.md)
 
  [MicroEngine.Scenes](MicroEngine.Scenes.md)
@@ -43,6 +45,12 @@ Small numeric helpers that games repeatedly need for feel and motion.
  [Color](MicroEngine.Color.md)
 
 An 8-bit-per-channel, non-premultiplied RGBA color.
+
+ [ColorF](MicroEngine.ColorF.md)
+
+A floating-point RGBA colour in linear light, for blending, lighting and anything that adds or scales colours.
+Channels are not clamped (values above 1 are brighter than white). [Color](MicroEngine.Color.md) is the 8-bit sRGB form used
+to store and name colours; convert with [FromSrgb](MicroEngine.ColorF.md#MicroEngine_ColorF_FromSrgb_MicroEngine_Color_) and [ToSrgb](MicroEngine.ColorF.md#MicroEngine_ColorF_ToSrgb).
 
  [RectF](MicroEngine.RectF.md)
 

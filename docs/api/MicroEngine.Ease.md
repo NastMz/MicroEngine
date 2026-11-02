@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine](MicroEngine.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Kernel.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 Standard easing curves mapping 0..1 to 0..1 (some overshoot).
@@ -165,7 +165,7 @@ public static float OutElastic(float t)
 
 ### <a id="MicroEngine_Ease_OutQuad_System_Single_"></a> OutQuad\(float\)
 
-Starts fast, ends slow (quadratic); the default of [Add](MicroEngine.Scenes.Tweener.md#MicroEngine_Scenes_Tweener_Add_System_Single_System_Action_System_Single__System_Func_System_Single_System_Single__System_Action_System_Single_).
+Starts fast, ends slow (quadratic); the default of <code>Tweener.Add</code>.
 
 ```csharp
 public static float OutQuad(float t)

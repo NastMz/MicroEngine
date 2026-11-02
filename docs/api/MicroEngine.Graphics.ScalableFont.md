@@ -202,7 +202,7 @@ public void Draw(IRenderer renderer, string text, Vector2 position, float size, 
 
 `size` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Graphics_ScalableFont_FromBytes_MicroEngine_Graphics_IGraphicsDevice_System_Byte___MicroEngine_Graphics_FontOptions_System_String_"></a> FromBytes\(IGraphicsDevice, byte\[\], FontOptions?, string?\)
 

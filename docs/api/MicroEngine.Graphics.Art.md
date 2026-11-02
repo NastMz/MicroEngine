@@ -74,7 +74,7 @@ public static Dictionary<char, Color> Palette(params string[] entries)
 
 #### Returns
 
- [Dictionary](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary\-2)<[char](https://learn.microsoft.com/dotnet/api/system.char), [Color](MicroEngine.Color.md)\>
+ [Dictionary](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary\-2)<[char](https://learn.microsoft.com/dotnet/api/system.char), Color\>
 
 ### <a id="MicroEngine_Graphics_Art_Ramp_System_Collections_Generic_IReadOnlyList_MicroEngine_Color__System_Single_System_Int32_System_Int32_"></a> Ramp\(IReadOnlyList<Color\>, float, int, int\)
 
@@ -86,7 +86,7 @@ public static Color Ramp(IReadOnlyList<Color> ramp, float value, int x, int y)
 
 #### Parameters
 
-`ramp` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[Color](MicroEngine.Color.md)\>
+`ramp` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<Color\>
 
 `value` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
@@ -96,7 +96,7 @@ public static Color Ramp(IReadOnlyList<Color> ramp, float value, int x, int y)
 
 #### Returns
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_Graphics_Art_ValueNoise_System_Single_System_Single_System_Single_System_Int32_"></a> ValueNoise\(float, float, float, int\)
 

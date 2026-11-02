@@ -73,7 +73,7 @@ void Clear(Color color)
 
 #### Parameters
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Graphics_IRenderer_Draw_MicroEngine_Graphics_Texture_MicroEngine_RectF_System_Numerics_Vector2_MicroEngine_Color_MicroEngine_Graphics_DrawOptions__"></a> Draw\(Texture, RectF, Vector2, Color, in DrawOptions\)
 
@@ -89,7 +89,7 @@ void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOp
 
 A texture of this renderer's graphics device, not disposed.
 
-`source` [RectF](MicroEngine.RectF.md)
+`source` RectF
 
 The rectangle of the texture to draw, in texture pixels.
 
@@ -97,7 +97,7 @@ The rectangle of the texture to draw, in texture pixels.
 
 Where the top-left of the unrotated, scaled source lands, in virtual pixels (world pixels under a camera).
 
-`tint` [Color](MicroEngine.Color.md)
+`tint` Color
 
 Colour multiplier; [White](MicroEngine.Color.md#MicroEngine_Color_White) draws the texture unchanged.
 
@@ -131,7 +131,7 @@ void DrawLine(Vector2 from, Vector2 to, float thickness, Color color)
 
 `thickness` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Graphics_IRenderer_DrawStretched_MicroEngine_Graphics_Texture_MicroEngine_RectF_MicroEngine_RectF_MicroEngine_Color_"></a> DrawStretched\(Texture, RectF, RectF, Color\)
 
@@ -145,11 +145,11 @@ void DrawStretched(Texture texture, RectF source, RectF destination, Color tint)
 
 `texture` [Texture](MicroEngine.Graphics.Texture.md)
 
-`source` [RectF](MicroEngine.RectF.md)
+`source` RectF
 
-`destination` [RectF](MicroEngine.RectF.md)
+`destination` RectF
 
-`tint` [Color](MicroEngine.Color.md)
+`tint` Color
 
 #### Exceptions
 
@@ -175,7 +175,7 @@ void FillCircle(Vector2 center, float radius, Color color)
 
 `radius` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Graphics_IRenderer_FillRect_MicroEngine_RectF_MicroEngine_Color_"></a> FillRect\(RectF, Color\)
 
@@ -187,9 +187,9 @@ void FillRect(RectF rect, Color color)
 
 #### Parameters
 
-`rect` [RectF](MicroEngine.RectF.md)
+`rect` RectF
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Graphics_IRenderer_FillTriangle_System_Numerics_Vector2_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Color_"></a> FillTriangle\(Vector2, Vector2, Vector2, Color\)
 
@@ -207,7 +207,7 @@ void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
 
 `c` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Graphics_IRenderer_PopCamera"></a> PopCamera\(\)
 
@@ -261,6 +261,6 @@ void SetClip(RectF? screenRect)
 
 #### Parameters
 
-`screenRect` [RectF](MicroEngine.RectF.md)?
+`screenRect` RectF?
 
 </div>

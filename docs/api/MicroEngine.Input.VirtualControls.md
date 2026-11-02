@@ -107,7 +107,7 @@ public RectF LastFrame { get; }
 
 #### Property Value
 
- [RectF](MicroEngine.RectF.md)
+ RectF
 
 ### <a id="MicroEngine_Input_VirtualControls_Layout"></a> Layout
 
@@ -220,7 +220,7 @@ public RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtual
 
 `window` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`safeArea` [RectF](MicroEngine.RectF.md)
+`safeArea` RectF
 
 `virtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
@@ -230,7 +230,7 @@ public RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtual
 
 #### Returns
 
- [RectF](MicroEngine.RectF.md)
+ RectF
 
 ### <a id="MicroEngine_Input_VirtualControls_Geometry_System_String_"></a> Geometry\(string\)
 

@@ -64,7 +64,7 @@ RectF SafeArea { get; }
 
 #### Property Value
 
- [RectF](MicroEngine.RectF.md)
+ RectF
 
 ### <a id="MicroEngine_Input_ITouchScreen_Size"></a> Size
 

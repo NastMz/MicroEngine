@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine](MicroEngine.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Kernel.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 Small numeric helpers that games repeatedly need for feel and motion.
