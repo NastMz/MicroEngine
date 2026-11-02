@@ -4,8 +4,23 @@
     {
       "name": "site-preview",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "site", "run", "preview"],
+      "runtimeArgs": [
+        "--prefix",
+        "site",
+        "run",
+        "preview"
+      ],
       "port": 4321
+    },
+    {
+      "name": "web-dist",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "web/serve.mjs",
+        "dist",
+        "8080"
+      ],
+      "port": 8080
     }
   ]
 }
