@@ -50,8 +50,7 @@ if (!onNuget) {
   // Not published yet: the packages of this commit, packed into the copy's folder (never a shared package cache).
   const feed = path.join(work, 'feed');
   const r = spawnSync('dotnet', ['pack', path.join(repo, 'MicroEngine.slnx'), '-c', 'Release', '-o', feed, '-v', 'q', '-nologo'], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
-  if (!check(`${published} is not on nuget.org yet: packs this commit's packages`, r.status === 0, r.status === 0 ? feed : `${r.stdout}${r.stderr}`.trim().split('
-').slice(-4).join(' | '))) process.exit(1);
+  if (!check(`${published} is not on nuget.org yet: packs this commit's packages`, r.status === 0, r.status === 0 ? feed : tail(`${r.stdout}${r.stderr}`))) process.exit(1);
   localFeed = `<add key="this commit" value="${feed}" />`;
 }
 console.log(`samples copied to ${work}, packages from ${onNuget ? 'nuget.org only' : "this commit's packages and nuget.org"}`);
