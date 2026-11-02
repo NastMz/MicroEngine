@@ -12,11 +12,15 @@ namespace MeadowRun.Scenes;
 /// <summary>Draws a scrolling meadow diorama shared by the title and credits screens.</summary>
 internal static class Diorama
 {
+    private static readonly IReadOnlyList<BackdropLayer> Layers = BackdropArt.Layers(Biome.Meadow);
+    private static readonly string[] Decos = DecoArt.For(Biome.Meadow);
+
     public static void Draw(IRenderer r, Assets art, float time, float scroll)
     {
         r.Draw(art["sky_meadow"], Vector2.Zero);
-        foreach (var layer in BackdropArt.Layers(Biome.Meadow))
+        for (int i = 0; i < Layers.Count; i++)
         {
+            var layer = Layers[i];
             var s = art[layer.Sprite];
             float x = -((scroll * layer.FactorX + time * layer.Drift) % s.Width);
             float y = layer.Bottom - s.Height - 6;
@@ -31,8 +35,7 @@ internal static class Diorama
             r.Draw(art.Ground(Biome.Meadow, 2 | 8 | 4, (int)(MicroEngine.Graphics.Art.Hash(world, 1, 3) * 3)), new Vector2(x, 164));
             r.Draw(art.Ground(Biome.Meadow, 1 | 2 | 8 | 4, 1), new Vector2(x, 180));
             float h = MicroEngine.Graphics.Art.Hash(world, 2, 9);
-            var decos = DecoArt.For(Biome.Meadow);
-            if (h < 0.6f) r.Draw(art[decos[(int)(MicroEngine.Graphics.Art.Hash(world, 7, 4) * decos.Length)]], new Vector2(x + 8, 164));
+            if (h < 0.6f) r.Draw(art[Decos[(int)(MicroEngine.Graphics.Art.Hash(world, 7, 4) * Decos.Length)]], new Vector2(x + 8, 164));
         }
     }
 }

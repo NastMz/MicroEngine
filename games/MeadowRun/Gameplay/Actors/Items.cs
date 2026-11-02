@@ -125,8 +125,10 @@ internal sealed class PowerItem : Actor
 internal sealed class Shard : Actor
 {
     private readonly float _spin;
+    private readonly string _sprite;
     public Shard(Stage stage, Vector2 position, Vector2 velocity) : base(stage, position)
     {
+        _sprite = "shard_" + Assets.Key(stage.Level.Biome);
         Velocity = velocity;
         _spin = velocity.X * 0.08f;
     }
@@ -142,7 +144,7 @@ internal sealed class Shard : Actor
 
     public override void Render(IRenderer r, Assets a, float time)
     {
-        var s = a["shard_" + Assets.Key(Stage.Level.Biome)];
+        var s = a[_sprite];
         r.Draw(s.Texture, s.Source, Snap(Position) - s.Origin, Color.White, new DrawOptions(Rotation: Age * _spin, Origin: s.Origin));
     }
 }

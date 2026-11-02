@@ -103,7 +103,10 @@ internal sealed class Assets : IDisposable
             _pip[(form, clip)] = _atlas.Frames($"pip_{form}_{clip}");
     }
 
-    public static string Key(Biome biome) => biome.ToString().ToLowerInvariant();
+    private static readonly string[] Keys = Array.ConvertAll(Enum.GetValues<Biome>(), b => b.ToString().ToLowerInvariant());
+
+    /// <summary>The biome's lower-case name used in sprite names (cached: it is looked up while drawing).</summary>
+    public static string Key(Biome biome) => Keys[(int)biome];
 
     public Sprite this[string name] => _atlas[name];
     public Sprite[] Frames(string name) => _atlas.Frames(name);

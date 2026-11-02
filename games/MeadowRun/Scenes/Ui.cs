@@ -50,14 +50,14 @@ internal static class Ui
     }
 
     /// <summary>The in-level HUD: lives, coins, score, power and timer along the top edge.</summary>
-    public static void Hud(IRenderer r, BitmapFont font, Assets art, Session session, Stage stage, float time)
+    public static void Hud(IRenderer r, BitmapFont font, Assets art, Session session, Stage stage, float time, HudLabels labels)
     {
         r.FillGradient(new RectF(0, 0, 320, 16), Pal.Ink.WithAlpha(0.55f), Pal.Ink.WithAlpha(0f), 4);
         r.Draw(art["icon_life"], new Vector2(5, 3));
-        Text(r, font, "×" + N(session.Lives, 2), new Vector2(18, 4));
+        Text(r, font, labels.Lives.For(session.Lives), new Vector2(18, 4));
         r.Draw(art["icon_coin"], new Vector2(46, 4));
-        Text(r, font, "×" + N(session.Coins, 2), new Vector2(56, 4), Pal.Butter);
-        Centered(r, font, N(session.Score, 7), 160, 4);
+        Text(r, font, labels.Coins.For(session.Coins), new Vector2(56, 4), Pal.Butter);
+        Centered(r, font, labels.Score.For(session.Score), 160, 4);
         // Power state: a small form badge.
         var badge = art.Pip(stage.Player.Form, "idle")[0];
         r.Draw(badge.Texture, badge.Source, new Vector2(246, 1), Color.White, new DrawOptions(Scale: new Vector2(0.6f)));
@@ -65,6 +65,32 @@ internal static class Ui
         bool hurry = t <= 100 && stage.Phase == StagePhase.Playing;
         r.Draw(art["icon_clock"], new Vector2(266, 3));
         var color = hurry && (int)(time * 4) % 2 == 0 ? Pal.Coral : Pal.Cream;
-        Text(r, font, N(t, 3), new Vector2(278, 4), color);
+        Text(r, font, labels.Time.For(t), new Vector2(278, 4), color);
     }
+}
+
+/// <summary>A number drawn as text every frame, formatted again only when it changes.</summary>
+internal sealed class NumberLabel(string prefix = "", int digits = 0)
+{
+    private int _value;
+    private string? _text;
+
+    public string For(int value)
+    {
+        if (_text is null || value != _value)
+        {
+            _value = value;
+            _text = prefix + Ui.N(value, digits);
+        }
+        return _text;
+    }
+}
+
+/// <summary>The HUD's numbers, kept by the scene that draws it.</summary>
+internal sealed class HudLabels
+{
+    public NumberLabel Lives { get; } = new("×", 2);
+    public NumberLabel Coins { get; } = new("×", 2);
+    public NumberLabel Score { get; } = new(digits: 7);
+    public NumberLabel Time { get; } = new(digits: 3);
 }

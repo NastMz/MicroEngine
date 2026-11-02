@@ -74,7 +74,8 @@ internal sealed class StageMotion
         _cameraFrom = stage.Camera.Position;
         _pipFrom = stage.Player.Position;
         foreach (var a in stage.Actors) a.PreviousPosition = a.Position;
-        foreach (var p in stage.Platforms) p.PreviousPosition = p.Position;
+        var platforms = stage.Platforms;
+        for (int i = 0; i < platforms.Count; i++) platforms[i].PreviousPosition = platforms[i].Position;
     }
 
     /// <summary>Moves everything to where it is drawn at <paramref name="blend"/>; <see cref="Restore"/> undoes it. Nothing moves at blend 1.</summary>
@@ -86,7 +87,8 @@ internal sealed class StageMotion
         _movers.Clear();
         _held.Clear();
         foreach (var a in stage.Actors) _movers.Add(a);
-        foreach (var p in stage.Platforms) _movers.Add(p);
+        var platforms = stage.Platforms;
+        for (int i = 0; i < platforms.Count; i++) _movers.Add(platforms[i]);
         foreach (var a in _movers)
         {
             _held.Add(a.Position);

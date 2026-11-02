@@ -180,8 +180,9 @@ public sealed class Player
         // Moving platforms behave like one-way floors.
         Riding = null;
         if (Velocity.Y >= 0 && rideables is not null)
-            foreach (var r in rideables)
+            for (int i = 0; i < rideables.Count; i++)
             {
+                var r = rideables[i];
                 var b = r.Bounds;
                 if (Bounds.Right <= b.Left + 1 || Bounds.Left >= b.Right - 1) continue;
                 float top = b.Top;
@@ -218,7 +219,7 @@ public sealed class Player
         var up = Bounds.Offset(0, dy);
         if (!Overlaps(up, grid)) return;
         for (int s = 1; s <= Tuning.CornerCorrection; s++)
-            foreach (int dir in new[] { -1, 1 })
+            for (int dir = -1; dir <= 1; dir += 2)
             {
                 var shifted = up.Offset(dir * s, 0);
                 if (!Overlaps(shifted, grid) && !Overlaps(Bounds.Offset(dir * s, 0), grid))

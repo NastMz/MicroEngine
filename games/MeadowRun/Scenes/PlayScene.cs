@@ -16,6 +16,8 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
     private StageView _view = null!;
     private bool _leaving;
     private readonly StepBlend _step = new();
+    private readonly HudLabels _hud = new();
+    private readonly NumberLabel _flag = new(), _bonus = new(), _total = new();
     private int _coinsAtStart, _scoreAtStart;
 
     public Stage Stage => _stage;
@@ -109,7 +111,7 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
     public override void Draw(IRenderer r)
     {
         _view.Draw(r, _stage, _step.Time(Game, Age), _step.Blend(Game));
-        Ui.Hud(r, Font, game.Art, game.Session, _stage, Age);
+        Ui.Hud(r, Font, game.Art, game.Session, _stage, Age, _hud);
         if (_stage.Phase == StagePhase.Tally) DrawTally(r);
         if (_stage.Phase == StagePhase.Victory)
             Ui.Centered(r, Font, "THE SUNSTONE IS HOME!", 160, 60, Pal.Butter, 2);
@@ -121,11 +123,12 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
         r.Panel(box, Ui.Card);
         Ui.Centered(r, Font, "COURSE CLEAR!", 160, 54, Pal.Butter);
         Ui.Text(r, Font, "Flag", new Vector2(104, 70), Pal.Haze);
-        Ui.Text(r, Font, Ui.N(_stage.FlagScore), new Vector2(214 - Font.MeasureWidth(Ui.N(_stage.FlagScore)), 70));
+        string flag = _flag.For(_stage.FlagScore), bonus = _bonus.For(_stage.TimeBonus);
+        Ui.Text(r, Font, flag, new Vector2(214 - Font.MeasureWidth(flag), 70));
         Ui.Text(r, Font, "Time", new Vector2(104, 82), Pal.Haze);
-        Ui.Text(r, Font, Ui.N(_stage.TimeBonus), new Vector2(214 - Font.MeasureWidth(Ui.N(_stage.TimeBonus)), 82));
+        Ui.Text(r, Font, bonus, new Vector2(214 - Font.MeasureWidth(bonus), 82));
         r.FillRect(new RectF(104, 94, 112, 1), Pal.Gold.WithAlpha(0.6f));
-        string total = Ui.N(game.Session.Score);
+        string total = _total.For(game.Session.Score);
         Ui.Text(r, Font, "Score", new Vector2(104, 98), Pal.Gold);
         Ui.Text(r, Font, total, new Vector2(214 - Font.MeasureWidth(total), 98), Pal.Butter);
     }
@@ -136,8 +139,16 @@ internal sealed class LevelCardScene(MeadowGame game, int levelIndex, int checkp
 {
     private const float Duration = 2.0f;
     private bool _started;
+    private string _world = "", _name = "", _lives = "";
 
-    public override void Enter() => game.Music("");
+    public override void Enter()
+    {
+        var def = Levels.All[levelIndex];
+        _world = $"WORLD {def.Number}";
+        _name = def.Name.ToUpperInvariant();
+        _lives = "×  " + Ui.N(game.Session.Lives);
+        game.Music("");
+    }
 
     public override void Update(float dt)
     {
@@ -159,12 +170,12 @@ internal sealed class LevelCardScene(MeadowGame game, int levelIndex, int checkp
         r.FillRect(new RectF(0, 58, 320 * slide, 40), ribbon);
         r.FillRect(new RectF(0, 58, 320 * slide, 2), ribbon.Shade(1.4f));
         r.FillRect(new RectF(0, 96, 320 * slide, 2), ribbon.Shade(0.6f));
-        Ui.Centered(r, Font, $"WORLD {def.Number}", 160, 46, Pal.Haze);
-        Ui.Centered(r, Font, def.Name.ToUpperInvariant(), 160, 66, Pal.Butter, 2);
+        Ui.Centered(r, Font, _world, 160, 46, Pal.Haze);
+        Ui.Centered(r, Font, _name, 160, 66, Pal.Butter, 2);
         Ui.Centered(r, Font, def.Subtitle, 160, 86, Pal.Cream);
         var pip = game.Art.Pip(game.Session.Form, "idle")[(int)(Age * 1.6f) % 2];
         r.Draw(pip, new Vector2(142, 136));
-        Ui.Text(r, Font, "×  " + Ui.N(game.Session.Lives), new Vector2(156, 124));
+        Ui.Text(r, Font, _lives, new Vector2(156, 124));
         if (checkpoint > 0) Ui.Centered(r, Font, "from the checkpoint", 160, 146, Pal.Dusk);
     }
 }
