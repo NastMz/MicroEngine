@@ -86,6 +86,29 @@ public bool Exists(string relative)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_ContentFolder_Files_System_String_"></a> Files\(string\)
+
+The files directly inside <code class="paramref">folder</code> (relative to the root, '/' separators; "" for the root), as
+'/'-separated paths relative to the root, in ordinal order.
+
+```csharp
+public IReadOnlyList<string> Files(string folder)
+```
+
+#### Parameters
+
+`folder` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
+
+#### Exceptions
+
+ [DirectoryNotFoundException](https://learn.microsoft.com/dotnet/api/system.io.directorynotfoundexception)
+
+The folder does not exist.
+
 ### <a id="MicroEngine_Core_ContentFolder_Image_System_String_"></a> Image\(string\)
 
 Decodes a PNG file into an image (see [Load](MicroEngine.Graphics.PixelImage.md#MicroEngine_Graphics_PixelImage_Load_System_String_)).
@@ -110,7 +133,9 @@ The file does not exist.
 
 ### <a id="MicroEngine_Core_ContentFolder_PathOf_System_String_"></a> PathOf\(string\)
 
-Full path of a file given relative to the root with '/' separators.
+Full path of a file given relative to the root with '/' separators. The name must match the file's letter case
+exactly, on every system: "Hero.png" for "hero.png" works on Windows and macOS but not on Linux, Android or in
+browsers, so it fails everywhere, naming the file's real spelling.
 
 ```csharp
 public string PathOf(string relative)
@@ -123,6 +148,16 @@ public string PathOf(string relative)
 #### Returns
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+The path leaves the content folder.
+
+ [FileNotFoundException](https://learn.microsoft.com/dotnet/api/system.io.filenotfoundexception)
+
+No such file, or its name is spelled with another letter case.
 
 ### <a id="MicroEngine_Core_ContentFolder_ReadBytes_System_String_"></a> ReadBytes\(string\)
 

@@ -1,4 +1,5 @@
 using System.Numerics;
+using MicroEngine.Graphics;
 
 namespace MicroEngine.Input;
 
@@ -50,7 +51,7 @@ public interface ITouchOverlay
     /// the plain letterbox rule (<see cref="FrameLayout.Fit"/>); <see cref="VirtualControls"/> fits the frame around
     /// its controls.
     /// </summary>
-    RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight) => FrameLayout.Fit(window, safeArea, virtualWidth, virtualHeight);
+    RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, CanvasScaling scaling = CanvasScaling.Pixel) => FrameLayout.Fit(window, safeArea, virtualWidth, virtualHeight, scaling);
 }
 
 /// <summary>Primitive drawing in screen pixels, implemented by each backend for <see cref="ITouchOverlay"/>.</summary>
@@ -82,14 +83,14 @@ public static class FrameLayout
     /// The largest integer scale of the canvas that fits inside the safe area, centred in it, so pixels stay square and
     /// even. When the largest integer scale would fill less than 80 % of what fits (a 480×270 game on a 412-pixel-high
     /// phone browser is 1× of a possible 1.5×), the frame scales fractionally instead: on small screens size matters
-    /// more than even pixels. On a portrait screen the frame sits at the top of the safe area, so on-screen controls get
-    /// the space below.
+    /// more than even pixels. With <see cref="CanvasScaling.Smooth"/> the frame always takes the largest size that fits.
+    /// On a portrait screen the frame sits at the top of the safe area, so on-screen controls get the space below.
     /// </summary>
-    public static RectF Fit(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight)
+    public static RectF Fit(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, CanvasScaling scaling = CanvasScaling.Pixel)
     {
         if (safeArea.Width <= 0 || safeArea.Height <= 0) safeArea = new RectF(0, 0, window.X, window.Y);
         float scale = MathF.Min(safeArea.Width / virtualWidth, safeArea.Height / virtualHeight);
-        if (scale >= 1 && MathF.Floor(scale) >= scale * 0.8f) scale = MathF.Floor(scale);
+        if (scaling == CanvasScaling.Pixel && scale >= 1 && MathF.Floor(scale) >= scale * 0.8f) scale = MathF.Floor(scale);
         float w = virtualWidth * scale, h = virtualHeight * scale;
         float x = MathF.Floor(safeArea.X + (safeArea.Width - w) / 2);
         bool portrait = window.Y > window.X * 1.1f;

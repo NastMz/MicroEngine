@@ -36,6 +36,20 @@ The application identity a game declares once, in its project file (docs/guide/a
 <code>MicroEngineOrientation</code>. The MicroEngine build targets write it into the game assembly; packaging turns it into
 each system's metadata, and platforms read it at run time (application name, window icon, phone orientation).
 
+ [AssetBatch](MicroEngine.Core.AssetBatch.md)
+
+Assets started by [Preload](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Preload_System_String___): progress for a loading screen, errors, and a way to wait.
+
+ [AssetCache](MicroEngine.Core.AssetCache.md)
+
+Loads, shares and releases a game's content files (<code>Game.Assets</code>): images as textures, packing tools' atlases,
+folders of images packed into one atlas, and TTF/OTF fonts. The same request returns the same object, so a texture
+used by ten scenes is decoded and uploaded once; everything a scope loaded is disposed with it.
+
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+
+A content file that could not be loaded: missing, unreadable, in an unsupported format, or named with the wrong letter case.
+
  [CompositeInput](MicroEngine.Core.CompositeInput.md)
 
 Several input sources read as one: a key or button is down when any source has it down; the stick or axis with the largest deflection wins.
@@ -115,7 +129,8 @@ host can show its own screen and start again without reloading.
 
  [GameSettings](MicroEngine.Core.GameSettings.md)
 
-Window/backbuffer settings a game declares. The virtual size is the pixel-art canvas.
+Window/backbuffer settings a game declares. The virtual size is the canvas everything is drawn on: 320×180 pixel art
+by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with [Smooth](MicroEngine.Graphics.CanvasScaling.md).
 
  [GraphicsSettings](MicroEngine.Core.GraphicsSettings.md)
 
@@ -128,7 +143,7 @@ are independent: VSync waits for the display, the limit caps frames per second, 
 
  [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md)
 
-A graphics device for tests: textures keep their size but hold no pixels, and creations are counted.
+A graphics device for tests: textures keep their size and filter but hold no pixels; creations, uploads and live textures are counted.
 
  [HeadlessInput](MicroEngine.Core.HeadlessInput.md)
 
@@ -229,11 +244,23 @@ starts (launch screens, the loading page), so the player sees one continuous scr
 [GameLoop](MicroEngine.Core.GameLoop.md) draws it once, before [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load), on platforms that run in real time; it adds no
 delay, and an error while loading is reported as before.
 
+ [WindowSizing](MicroEngine.Core.WindowSizing.md)
+
+The window sizes desktop platforms open and allow, shared by every backend so they agree.
+
 ### Structs
 
  [AchievementStatus](MicroEngine.Core.AchievementStatus.md)
 
 A snapshot of one achievement: its definition, accumulated progress and whether it is unlocked.
+
+ [AssetInfo](MicroEngine.Core.AssetInfo.md)
+
+One loaded asset, as [Loaded](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Loaded) lists it.
+
+ [AssetStatistics](MicroEngine.Core.AssetStatistics.md)
+
+Totals over a scope and its children ([Statistics](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Statistics)).
 
  [FrameSample](MicroEngine.Core.FrameSample.md)
 

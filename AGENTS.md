@@ -19,7 +19,8 @@ sufficient without previous chats or agent memory.
   hashes and Actions run IDs quoted in older records point there. Never push branches from an old clone.
 - The active rebuild record (specs, tasks, log) is [`odd/tasks/engine-rebuild.md`](odd/tasks/engine-rebuild.md); the latest
   feature records are [`odd/tasks/docs-1.md`](odd/tasks/docs-1.md), [`odd/tasks/sdk-1.md`](odd/tasks/sdk-1.md),
-  [`odd/tasks/input-1.md`](odd/tasks/input-1.md) and [`odd/tasks/product-1.md`](odd/tasks/product-1.md).
+  [`odd/tasks/input-1.md`](odd/tasks/input-1.md), [`odd/tasks/product-1.md`](odd/tasks/product-1.md) and
+  [`odd/tasks/asset-1.md`](odd/tasks/asset-1.md) (the asset pipeline, ADR 0025).
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence),
   the SDK check included; `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual
   macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos

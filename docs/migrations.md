@@ -36,6 +36,24 @@ Not published yet. Behaviour that changes:
   `Sprite[]` per call. **Migration:** use `Count` instead of `Length`, and `IReadOnlyList<Sprite>` for fields that held
   the array.
 - A game without any scene runs (it used to fail with an index error).
+- Content file names must match their letter case exactly on every system: `ContentFolder` (and `Game.Assets`) refuse
+  `Hero.png` for a file named `hero.png` on Windows and macOS too, naming the real spelling, because Linux, Android and
+  browsers never found it. **Migration:** correct the spelling in the code or rename the file.
+- Every file under `Content/` is copied to the output and to packages without a project item. **Migration:** the
+  `<None Include="Content/**" ... />` item can be removed (keeping it does no harm); a project that must not ship its
+  `Content` folder sets `<MicroEngineContentItems>false</MicroEngineContentItems>`. Two files whose names differ only in
+  letter case fail the build (ME0010).
+- `IGraphicsDevice` has `DefaultFilter` and `CreateTexture(image, filter)`; `Texture` subclasses implement
+  `Upload(x, y, width, height, pixels)` and `ApplyFilter(filter)`. **Migration:** custom graphics devices and textures
+  (tests' fakes, your own platform) implement them; `CreateTexture(image)` keeps working through the default filter.
+- `PixelImage.FromPng` and `PixelImage.Load` read 16-bit and interlaced PNGs (they used to throw
+  `NotSupportedException`), and `Load` reads JPEG, BMP, TGA, GIF and PSD too.
+- `DialogueBox.Draw` and `SelectionList.Draw` take an `IFont`; `SelectionList.Draw`'s `lineHeight` is a `float?` whose
+  default (the font's line height plus a fifth) is 12 for the built-in font, as before. Calls with `BitmapFont` compile
+  and draw unchanged.
+- `SpriteAtlas.Frames(name)` also finds frames numbered from 1 when there is no `name0`.
+- Windows larger than the display open at the largest size that fits (a `Scale` of 4 on a small laptop used to open a
+  window bigger than the screen).
 
 ## 0.4.0-alpha.2
 

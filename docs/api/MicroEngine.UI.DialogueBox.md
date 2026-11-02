@@ -9,7 +9,7 @@ Guide: [UI widgets](../manual/ui.md)
 A queue of dialogue pages shown in a panel with a typewriter and a speaker name tag. A page longer than
 [Lines](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Lines) wrapped lines continues on the next confirm, so no text is ever cut. With [Prompts](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Prompts)
 set, <code>{action}</code> in a page names the control that presses it on the player's device, and follows a device change
-while the page is showing. Games call [Update](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Update_System_Single_MicroEngine_Input_InputMap_System_String_) and [Draw](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_BitmapFont_MicroEngine_RectF_) from their own scene.
+while the page is showing. Games call [Update](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Update_System_Single_MicroEngine_Input_InputMap_System_String_) and [Draw](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IFont_MicroEngine_RectF_) from their own scene.
 
 ```csharp
 public sealed class DialogueBox
@@ -128,19 +128,21 @@ public IReadOnlyList<string> VisibleLines { get; }
 
 ## Methods
 
-### <a id="MicroEngine_UI_DialogueBox_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_BitmapFont_MicroEngine_RectF_"></a> Draw\(IRenderer, BitmapFont, RectF\)
+### <a id="MicroEngine_UI_DialogueBox_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IFont_MicroEngine_RectF_"></a> Draw\(IRenderer, IFont, RectF\)
 
 Draws the current page in <code class="paramref">area</code> (virtual pixels), wrapped to its width; draws nothing when closed.
+Margins grow with the font: the built-in 10-pixel-high pixel font gets the pixel-art layout, a
+[ScalableFont](MicroEngine.Graphics.ScalableFont.md) size with 40-pixel lines gets margins four times as wide.
 
 ```csharp
-public void Draw(IRenderer r, BitmapFont font, RectF area)
+public void Draw(IRenderer r, IFont font, RectF area)
 ```
 
 #### Parameters
 
 `r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
+`font` [IFont](MicroEngine.Graphics.IFont.md)
 
 `area` [RectF](MicroEngine.RectF.md)
 

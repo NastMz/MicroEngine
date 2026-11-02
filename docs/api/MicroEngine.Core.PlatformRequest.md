@@ -66,7 +66,8 @@ public AudioOutput AudioOutput { get; init; }
 
 ### <a id="MicroEngine_Core_PlatformRequest_CaptureScale"></a> CaptureScale
 
-Size factor of the PNGs written by [SaveScreenshot](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_SaveScreenshot_System_String_).
+Size factor of the PNGs written by [SaveScreenshot](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_SaveScreenshot_System_String_): 3 for pixel-art canvases (so their
+pixels are visible), 1 for smoothly scaled ones (already high-resolution).
 
 ```csharp
 public int CaptureScale { get; init; }

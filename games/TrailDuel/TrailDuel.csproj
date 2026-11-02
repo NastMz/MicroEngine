@@ -14,9 +14,6 @@
     <MicroEngineGameFactory>new TrailDuel.TrailDuelGame()</MicroEngineGameFactory>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="Content/**" Exclude="Content/**/*.cs" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />
-  </ItemGroup>
-  <ItemGroup>
     <InternalsVisibleTo Include="TrailDuel.Tests" />
   </ItemGroup>
   <ItemGroup>

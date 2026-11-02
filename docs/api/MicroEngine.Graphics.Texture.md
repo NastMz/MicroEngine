@@ -23,12 +23,12 @@ public abstract class Texture : IDisposable
 
 ## Constructors
 
-### <a id="MicroEngine_Graphics_Texture__ctor_System_Int32_System_Int32_"></a> Texture\(int, int\)
+### <a id="MicroEngine_Graphics_Texture__ctor_System_Int32_System_Int32_MicroEngine_Graphics_TextureFilter_"></a> Texture\(int, int, TextureFilter\)
 
-Records the size of a texture created by a graphics device.
+Records the size and filter of a texture created by a graphics device.
 
 ```csharp
-protected Texture(int width, int height)
+protected Texture(int width, int height, TextureFilter filter = TextureFilter.Nearest)
 ```
 
 #### Parameters
@@ -36,6 +36,8 @@ protected Texture(int width, int height)
 `width` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 `height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 ## Properties
 
@@ -50,6 +52,18 @@ public RectF Bounds { get; }
 #### Property Value
 
  [RectF](MicroEngine.RectF.md)
+
+### <a id="MicroEngine_Graphics_Texture_Filter"></a> Filter
+
+How the texture is sampled; it can change at any time and applies to the next draws.
+
+```csharp
+public TextureFilter Filter { get; set; }
+```
+
+#### Property Value
+
+ [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 ### <a id="MicroEngine_Graphics_Texture_Height"></a> Height
 
@@ -75,6 +89,18 @@ public bool IsDisposed { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Graphics_Texture_SizeInBytes"></a> SizeInBytes
+
+Memory the texture's pixels take on the device, in bytes (4 per pixel).
+
+```csharp
+public long SizeInBytes { get; }
+```
+
+#### Property Value
+
+ [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
 ### <a id="MicroEngine_Graphics_Texture_Width"></a> Width
 
 Width in pixels.
@@ -88,6 +114,18 @@ public int Width { get; }
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ## Methods
+
+### <a id="MicroEngine_Graphics_Texture_ApplyFilter_MicroEngine_Graphics_TextureFilter_"></a> ApplyFilter\(TextureFilter\)
+
+Applies a new filter on the device; called by [Filter](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Filter) when it changes.
+
+```csharp
+protected abstract void ApplyFilter(TextureFilter filter)
+```
+
+#### Parameters
+
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 ### <a id="MicroEngine_Graphics_Texture_Dispose"></a> Dispose\(\)
 
@@ -104,5 +142,72 @@ Frees the device resource; called once by [Dispose](MicroEngine.Graphics.Texture
 ```csharp
 protected abstract void Release()
 ```
+
+### <a id="MicroEngine_Graphics_Texture_Update_System_Int32_System_Int32_System_Int32_System_Int32_System_ReadOnlySpan_MicroEngine_Color__"></a> Update\(int, int, int, int, ReadOnlySpan<Color\>\)
+
+Replaces the pixels of a rectangle of the texture (glyphs added to a font page, a painted canvas). The pixels are
+row-major, <code class="paramref">width</code> per row.
+
+```csharp
+public void Update(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)
+```
+
+#### Parameters
+
+`x` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`y` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`width` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`pixels` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[Color](MicroEngine.Color.md)\>
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The rectangle leaves the texture.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">pixels</code> holds fewer than <code class="paramref">width</code> × <code class="paramref">height</code> colours.
+
+### <a id="MicroEngine_Graphics_Texture_Update_MicroEngine_Graphics_PixelImage_System_Int32_System_Int32_"></a> Update\(PixelImage, int, int\)
+
+Copies a whole image into the texture at (<code class="paramref">x</code>, <code class="paramref">y</code>).
+
+```csharp
+public void Update(PixelImage image, int x = 0, int y = 0)
+```
+
+#### Parameters
+
+`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
+
+`x` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`y` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Graphics_Texture_Upload_System_Int32_System_Int32_System_Int32_System_Int32_System_ReadOnlySpan_MicroEngine_Color__"></a> Upload\(int, int, int, int, ReadOnlySpan<Color\>\)
+
+Sends <code class="paramref">pixels</code> (exactly width × height, already checked) to the device.
+
+```csharp
+protected abstract void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)
+```
+
+#### Parameters
+
+`x` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`y` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`width` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`pixels` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[Color](MicroEngine.Color.md)\>
 
 </div>

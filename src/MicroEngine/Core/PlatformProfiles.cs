@@ -36,8 +36,11 @@ public sealed record PlatformRequest(GameSettings Settings)
     /// only for runs a player watches: not for hidden windows or fixed-step (scripted) runs, which are checks and tests.
     /// </summary>
     public AudioOutput AudioOutput { get; init; }
-    /// <summary>Size factor of the PNGs written by <see cref="IPlatform.SaveScreenshot"/>.</summary>
-    public int CaptureScale { get; init; } = 3;
+    /// <summary>
+    /// Size factor of the PNGs written by <see cref="IPlatform.SaveScreenshot"/>: 3 for pixel-art canvases (so their
+    /// pixels are visible), 1 for smoothly scaled ones (already high-resolution).
+    /// </summary>
+    public int CaptureScale { get; init; } = Settings.Scaling == Graphics.CanvasScaling.Smooth ? 1 : 3;
     /// <summary>Creates the audio device used instead of the backend's; the platform disposes it.</summary>
     public Func<IAudioDevice>? Audio { get; init; }
     /// <summary>Input sources read together with the backend's (an on-screen pad, a network peer, a test).</summary>

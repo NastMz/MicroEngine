@@ -85,11 +85,52 @@
            Text="MicroEngineSplashColor and MicroEngineIconBackground are colours written #RRGGBB, for example #1c1b2e (got '$(MicroEngineSplashColor)$(MicroEngineIconBackground)')." />
     <Error Code="ME0007" Condition="'$(_MicroEngineSplashImagePath)' != '' and !Exists('$(_MicroEngineSplashImagePath)')"
            Text="MicroEngineSplashImage '$(MicroEngineSplashImage)' does not exist (looked for $(_MicroEngineSplashImagePath))." />
-    <Error Code="ME0008" Condition="'$(MicroEngineSplash)' != 'true' and '$(MicroEngineSplash)' != 'false' or '$(MicroEngineSplashBranding)' != 'true' and '$(MicroEngineSplashBranding)' != 'false'"
+    <Error Code="ME0008" Condition="('$(MicroEngineSplash)' != 'true' and '$(MicroEngineSplash)' != 'false') or ('$(MicroEngineSplashBranding)' != 'true' and '$(MicroEngineSplashBranding)' != 'false')"
            Text="MicroEngineSplash and MicroEngineSplashBranding are true or false." />
     <MicroEngineWriteIcon Condition="'$(_MicroEngineIco)' != ''" Source="$(_MicroEngineIconPath)" Ico="$(_MicroEngineIco)" />
     <ItemGroup Condition="'$(_MicroEngineIco)' != ''">
       <FileWrites Include="$(_MicroEngineIco)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- The game's content files (ADR 0025): everything under MicroEngineContentDir (Content/ by default) is copied next to
+       the executable and into published builds, at the same relative path, without an item in the project file; C#
+       files there compile as code instead. MicroEngineContentItems=false turns it off. Files the project already lists
+       itself are left as the project lists them, so older projects get each file once. The build fails on names that
+       differ only in letter case: Windows and macOS keep one of them, Linux, Android and browsers keep both, so the game
+       would load different files on different systems. -->
+  <Target Name="MicroEngineContent" BeforeTargets="AssignTargetPaths"
+          Condition="'$(_MicroEngineGame)' == 'true' and '$(MicroEngineContentItems)' != 'false' and Exists('$(MicroEngineContentDir)')">
+    <ItemGroup>
+      <_MicroEngineContentFound Include="$(MicroEngineContentDir)**" Exclude="$(MicroEngineContentDir)**/*.cs" />
+      <_MicroEngineContentFile Include="@(_MicroEngineContentFound->'%(FullPath)')" />
+      <!-- Files the project already copies (its own Content/** item) stay as they are. -->
+      <_MicroEngineContentCopied Include="@(None->'%(FullPath)')" Condition="'%(None.CopyToOutputDirectory)' != '' and '%(None.CopyToOutputDirectory)' != 'Never'" />
+      <_MicroEngineContentCopied Include="@(Content->'%(FullPath)')" Condition="'%(Content.CopyToOutputDirectory)' != '' and '%(Content.CopyToOutputDirectory)' != 'Never'" />
+      <_MicroEngineContentFile Remove="@(_MicroEngineContentCopied)" />
+      <_MicroEngineContentDistinct Include="@(_MicroEngineContentFound->'%(FullPath)'->Distinct())" />
+      <!-- The SDK's default None items for content files (listed, not copied) give way to copied ones. Removing by name
+           also removes the project's own items for the same files, so those are kept aside and put back unchanged. -->
+      <_MicroEngineContentReplaced Include="@(None)" Condition="$([System.String]::Copy('%(FullPath)').StartsWith($([System.IO.Path]::GetFullPath('$(MicroEngineContentDir)'))))" />
+      <_MicroEngineContentKept Include="@(_MicroEngineContentReplaced)" Condition="'%(_MicroEngineContentReplaced.CopyToOutputDirectory)' != '' and '%(_MicroEngineContentReplaced.CopyToOutputDirectory)' != 'Never'" />
+      <None Remove="@(_MicroEngineContentReplaced)" />
+      <None Include="@(_MicroEngineContentKept)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_MicroEngineContentCount>@(_MicroEngineContentFound->Count())</_MicroEngineContentCount>
+      <_MicroEngineContentDistinctCount>@(_MicroEngineContentDistinct->Count())</_MicroEngineContentDistinctCount>
+    </PropertyGroup>
+    <Error Code="ME0010" Condition="'$(_MicroEngineContentCount)' != '$(_MicroEngineContentDistinctCount)'"
+           Text="Two content files in $(MicroEngineContentDir) have names that differ only in letter case. Windows and macOS keep one of them, Linux, Android and browsers keep both, so the game would load different files on different systems: rename one." />
+    <ItemGroup>
+      <None Include="@(_MicroEngineContentFile)" Link="Content/$([MSBuild]::MakeRelative('$(MicroEngineContentDir)', '%(FullPath)'))"
+            CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+      <_MicroEngineContentFound Remove="@(_MicroEngineContentFound)" />
+      <_MicroEngineContentFile Remove="@(_MicroEngineContentFile)" />
+      <_MicroEngineContentCopied Remove="@(_MicroEngineContentCopied)" />
+      <_MicroEngineContentDistinct Remove="@(_MicroEngineContentDistinct)" />
+      <_MicroEngineContentKept Remove="@(_MicroEngineContentKept)" />
+      <_MicroEngineContentReplaced Remove="@(_MicroEngineContentReplaced)" />
     </ItemGroup>
   </Target>
 

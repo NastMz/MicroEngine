@@ -11,7 +11,7 @@ has crisp, license-free text without loading files. Glyph widths are derived by 
 empty columns, so narrow letters like 'i' take less space.
 
 ```csharp
-public sealed class BitmapFont : IDisposable
+public sealed class BitmapFont : IFont, IDisposable
 ```
 
 #### Inheritance
@@ -21,11 +21,20 @@ public sealed class BitmapFont : IDisposable
 
 #### Implements
 
+[IFont](MicroEngine.Graphics.IFont.md), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
+
+#### Extension Methods
+
+[FontExtensions.DrawCentered\(IFont, IRenderer, string, Vector2, Color\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_DrawCentered\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_IRenderer\_System\_String\_System\_Numerics\_Vector2\_MicroEngine\_Color\_), 
+[FontExtensions.DrawShadowed\(IFont, IRenderer, string, Vector2, Color, Color, Vector2?\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_DrawShadowed\_MicroEngine\_Graphics\_IFont\_MicroEngine\_Graphics\_IRenderer\_System\_String\_System\_Numerics\_Vector2\_MicroEngine\_Color\_MicroEngine\_Color\_System\_Nullable\_System\_Numerics\_Vector2\_\_), 
+[FontExtensions.MeasureWidth\(IFont, string\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_MeasureWidth\_MicroEngine\_Graphics\_IFont\_System\_String\_), 
+[FontExtensions.Wrap\(IFont, string, float\)](MicroEngine.Graphics.FontExtensions.md\#MicroEngine\_Graphics\_FontExtensions\_Wrap\_MicroEngine\_Graphics\_IFont\_System\_String\_System\_Single\_)
 
 ## Remarks
 
-Every game has the built-in face in [Font](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Font). Text is drawn in white glyphs multiplied by the
+Every game has the built-in face in [Font](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Font). It is an [IFont](MicroEngine.Graphics.IFont.md) (at scale 1), like a
+[ScalableFont](MicroEngine.Graphics.ScalableFont.md) at a size, so widgets and layout code take either. Text is drawn in white glyphs multiplied by the
 colour given, so any colour works. Characters without a glyph are drawn as '?'; '\n' starts a new line.
 
 ## Properties

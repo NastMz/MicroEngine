@@ -6,7 +6,7 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
-A graphics device for tests: textures keep their size but hold no pixels, and creations are counted.
+A graphics device for tests: textures keep their size and filter but hold no pixels; creations, uploads and live textures are counted.
 
 ```csharp
 public sealed class HeadlessGraphicsDevice : IGraphicsDevice
@@ -31,6 +31,43 @@ public HeadlessGraphicsDevice()
 
 ## Properties
 
+### <a id="MicroEngine_Core_HeadlessGraphicsDevice_DefaultFilter"></a> DefaultFilter
+
+The filter of textures created without one: [CreateTexture](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_CreateTexture_MicroEngine_Graphics_PixelImage_MicroEngine_Graphics_TextureFilter_), atlases, fonts. The engine
+sets it from [TextureFilter](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_TextureFilter) before <code>Game.Load</code>.
+
+```csharp
+public TextureFilter DefaultFilter { get; set; }
+```
+
+#### Property Value
+
+ [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
+
+### <a id="MicroEngine_Core_HeadlessGraphicsDevice_LiveTextures"></a> LiveTextures
+
+Number of textures created and not disposed yet.
+
+```csharp
+public int LiveTextures { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_HeadlessGraphicsDevice_PixelsUploaded"></a> PixelsUploaded
+
+Pixels sent by creations and updates so far.
+
+```csharp
+public long PixelsUploaded { get; }
+```
+
+#### Property Value
+
+ [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
 ### <a id="MicroEngine_Core_HeadlessGraphicsDevice_TexturesCreated"></a> TexturesCreated
 
 Number of textures created so far.
@@ -43,11 +80,23 @@ public int TexturesCreated { get; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Core_HeadlessGraphicsDevice_Updates"></a> Updates
+
+Number of region updates ([Update](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Update_System_Int32_System_Int32_System_Int32_System_Int32_System_ReadOnlySpan_MicroEngine_Color__)) so far.
+
+```csharp
+public int Updates { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ## Methods
 
 ### <a id="MicroEngine_Core_HeadlessGraphicsDevice_CreateTexture_MicroEngine_Graphics_PixelImage_"></a> CreateTexture\(PixelImage\)
 
-Uploads <code class="paramref">image</code> as a texture. The caller owns the texture and disposes it.
+Uploads <code class="paramref">image</code> as a texture sampled with [DefaultFilter](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_DefaultFilter). The caller owns the texture and disposes it.
 
 ```csharp
 public Texture CreateTexture(PixelImage image)
@@ -56,6 +105,24 @@ public Texture CreateTexture(PixelImage image)
 #### Parameters
 
 `image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
+
+#### Returns
+
+ [Texture](MicroEngine.Graphics.Texture.md)
+
+### <a id="MicroEngine_Core_HeadlessGraphicsDevice_CreateTexture_MicroEngine_Graphics_PixelImage_MicroEngine_Graphics_TextureFilter_"></a> CreateTexture\(PixelImage, TextureFilter\)
+
+Uploads <code class="paramref">image</code> as a texture sampled with <code class="paramref">filter</code>. The caller owns the texture and disposes it.
+
+```csharp
+public Texture CreateTexture(PixelImage image, TextureFilter filter)
+```
+
+#### Parameters
+
+`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
+
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 #### Returns
 

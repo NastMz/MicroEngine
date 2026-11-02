@@ -1,8 +1,8 @@
 # Graphics
 
-Scenes draw in immediate mode into a fixed-size virtual canvas (320×180 by default) through the `IRenderer`
-interface. Art is prepared once on the CPU as `PixelImage`s, packed into textures with `SpriteAtlasBuilder`,
-and drawn as `Sprite`s. On top of that the engine provides animation clips, a 2D camera, parallax layers,
+Scenes draw in immediate mode into a fixed-size virtual canvas (320×180 by default, or an HD canvas such as 1280×720)
+through the `IRenderer` interface. Art is loaded from files ([Assets](assets.md)) or prepared on the CPU as
+`PixelImage`s, packed into textures with `SpriteAtlasBuilder` or by a packing tool, and drawn as `Sprite`s. On top of that the engine provides animation clips, a 2D camera, parallax layers,
 particles, a light map, a built-in pixel font and a tile renderer. All of it is in the `MicroEngine.Graphics`
 and `MicroEngine.World` namespaces and never references the backend.
 
@@ -14,15 +14,52 @@ whole factor that fits and letterboxes the rest, so pixels stay square. When the
 smaller than the canvas it scales down (never crops). On desktop F11 or Alt+Enter toggles borderless
 fullscreen; in a browser the page owns fullscreen ([Embedding](../examples/embedding.md#the-iframe)).
 
-The raylib platform's scaling, for example:
+The rule is shared by every platform (`FrameLayout.Fit`): the largest whole factor, or a fractional one when whole
+factors would waste a fifth of a small screen.
+
+### HD canvases and smooth scaling
+
+Next SDK version (not published yet: arrives with the next SDK version). Pixel-perfect scaling is the default, not a
+rule: `GameSettings.Scaling` chooses how the canvas reaches the window.
+
+| `Scaling` | The frame | Sampling | For |
+| --- | --- | --- | --- |
+| `CanvasScaling.Pixel` (default) | whole factors when they fill enough of the window | nearest | pixel art: square, even pixels |
+| `CanvasScaling.Smooth` | the largest size of the canvas's shape that fits | linear | HD art, photos, vector-style art, scalable text |
 
 ```csharp
-int sw = Rl.GetRenderWidth(), sh = Rl.GetRenderHeight();
-float scale = MathF.Min(sw / (float)_settings.VirtualWidth, sh / (float)_settings.VirtualHeight);
-if (scale >= 1) scale = MathF.Floor(scale);
+public override GameSettings Settings { get; } = new("My HD Game", 1280, 720, 1)
+{
+    Scaling = CanvasScaling.Smooth,          // textures default to linear sampling too
+};
 ```
 
-Source: [`src/MicroEngine.Raylib/RaylibPlatform.cs`](../../src/MicroEngine.Raylib/RaylibPlatform.cs)
+An HD canvas is drawn at its own resolution and scaled to the window in one step, so a 1280×720 game fills a 1920×1080
+or a 2560×1440 screen smoothly and shrinks into a smaller window. A window that would not fit the display opens at the
+largest size that does, and HD canvases allow windows down to a quarter of their size. Captures (`--captures`) of a
+smooth canvas are written at its size; pixel-art captures stay three times larger (`PlatformRequest.CaptureScale`).
+
+### Filtering: nearest or linear
+
+Next SDK version (not published yet: arrives with the next SDK version). Every texture has a `TextureFilter`:
+`Nearest` keeps hard pixel edges, `Linear` blends neighbouring pixels when a texture is drawn scaled, rotated or between
+pixels. The game's default (`GameSettings.TextureFilter`, or nearest for `Pixel` scaling and linear for `Smooth`) applies
+to every texture, atlas and font page created without a filter of its own; each one can choose:
+
+```csharp
+var photo = Assets.Texture("backgrounds/sky.jpg", TextureFilter.Linear);
+var tiles = Assets.Atlas("atlases/tiles.json", filter: TextureFilter.Nearest);   // crisp pixel tiles in an HD game
+hero.Texture.Filter = TextureFilter.Nearest;                                       // changes at any time
+var page = Graphics.CreateTexture(image, TextureFilter.Linear);
+```
+
+The built-in pixel font is always nearest. Atlases packed at run time and sampled linearly get extruded edges, so
+neighbouring sprites never bleed into each other. Linear sampling does not replace art made for the size it is shown
+at: there are no mipmaps, so drawing a large image much smaller than its pixels shimmers; keep art within about twice
+the size it is drawn at.
+
+`Texture.Update(x, y, width, height, pixels)` replaces a rectangle of a texture (glyph pages use it), and
+`Texture.SizeInBytes` gives its device memory.
 
 ## `IRenderer`
 
@@ -100,6 +137,9 @@ padding) when you call `Build(Graphics)`:
 | `Add(name, image, origin?)` | One sprite; `origin` is its pivot (for example the feet) |
 | `AddFrames(name, frames, origin?)` | `name0`, `name1`, ... sharing one origin |
 | `AddGrid(name, sheet, cellWidth, cellHeight, count?, origin?)` | Slices a row-major sheet into `name0..N` |
+
+Atlases made by TexturePacker, Aseprite, ShoeBox and similar tools load with `Assets.Atlas` or `SpriteAtlas.Load`,
+with trimming, pivots and Aseprite animation tags ([Assets](assets.md#atlases-from-packing-tools), next SDK version).
 
 The resulting `SpriteAtlas` returns `Sprite`s by name (`atlas["star"]`), lists `Names`, collects animation frames
 with `Frames("walk")`, and owns the texture (`Dispose` it in `Unload`). A `Sprite` is a texture region plus its
@@ -191,8 +231,8 @@ Every game gets `Game.Font`, the built-in proportional "Micro 5x7" face authored
 `DrawShadowed`, `DrawOutlined`, `DrawCentered`, `Measure`, `MeasureWidth` and greedy `Wrap(text, maxWidth)`, all
 with an optional `scale`. Unknown characters render as `?`.
 
-Limitation: `BitmapFont.CreateDefault` is the only constructor; loading other fonts (TTF or bitmap sheets) is not
-supported today.
+TrueType and OpenType fonts at any size are `ScalableFont`s, loaded with `Assets.Font` (next SDK version); both kinds
+implement `IFont`.
 
 Characters, measuring, wrapping and limits: [Text](text.md).
 
@@ -213,5 +253,6 @@ Collision over the same layers (`TileGrid`, `TileMotion`) is described in [Tile 
 ## Limitations
 
 - No shaders, render targets or post-processing are exposed through `IRenderer`.
+- No mipmaps or compressed GPU texture formats; textures are 32-bit RGBA.
 - No sprite batching control beyond packing art into atlases; draw order is call order.
 - Tile maps come from code (ASCII rows); there is no map editor or Tiled importer.

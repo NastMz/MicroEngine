@@ -6,7 +6,7 @@ Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)
 Assembly: MicroEngine.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
-An immutable sequence of sprites played at a fixed rate.
+An immutable sequence of sprites played at a fixed rate, or with a duration per frame (Aseprite timing).
 
 ```csharp
 public sealed class AnimationClip
@@ -18,6 +18,38 @@ public sealed class AnimationClip
 [AnimationClip](MicroEngine.Graphics.AnimationClip.md)
 
 ## Constructors
+
+### <a id="MicroEngine_Graphics_AnimationClip__ctor_System_Collections_Generic_IEnumerable_MicroEngine_Graphics_Sprite__System_Collections_Generic_IEnumerable_System_Single__System_Boolean_"></a> AnimationClip\(IEnumerable<Sprite\>, IEnumerable<float\>, bool\)
+
+Creates a clip whose frames each show for their own time, in seconds; frames and durations are copied.
+
+```csharp
+public AnimationClip(IEnumerable<Sprite> frames, IEnumerable<float> frameDurations, bool loop = true)
+```
+
+#### Parameters
+
+`frames` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[Sprite](MicroEngine.Graphics.Sprite.md)\>
+
+The frames in playing order.
+
+`frameDurations` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[float](https://learn.microsoft.com/dotnet/api/system.single)\>
+
+One positive duration per frame, in seconds.
+
+`loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the clip repeats.
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+No frames, or not one duration per frame.
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+A duration is not positive.
 
 ### <a id="MicroEngine_Graphics_AnimationClip__ctor_System_Collections_Generic_IEnumerable_MicroEngine_Graphics_Sprite__System_Single_System_Boolean_"></a> AnimationClip\(IEnumerable<Sprite\>, float, bool\)
 
@@ -65,6 +97,18 @@ public float Duration { get; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Graphics_AnimationClip_FrameDurations"></a> FrameDurations
+
+How long each frame shows, in seconds (all equal for a clip with a fixed rate).
+
+```csharp
+public IReadOnlyList<float> FrameDurations { get; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[float](https://learn.microsoft.com/dotnet/api/system.single)\>
+
 ### <a id="MicroEngine_Graphics_AnimationClip_Frames"></a> Frames
 
 The frames in playing order (at least one).
@@ -79,7 +123,7 @@ public IReadOnlyList<Sprite> Frames { get; }
 
 ### <a id="MicroEngine_Graphics_AnimationClip_FramesPerSecond"></a> FramesPerSecond
 
-Playback rate in frames per second.
+Playback rate in frames per second; for a clip with a duration per frame, its average rate.
 
 ```csharp
 public float FramesPerSecond { get; }

@@ -36,6 +36,8 @@ public abstract class Scene
     public AudioMixer Audio => Game.Audio;
     /// <summary>The game's built-in font (<see cref="Core.Game.Font"/>).</summary>
     public BitmapFont Font => Game.Font;
+    /// <summary>The game's content files (<see cref="Core.Game.Assets"/>).</summary>
+    public Core.AssetCache Assets => Game.Assets;
     /// <summary>Coroutines owned by this scene. They advance before <see cref="Update"/> while the scene is updated and stop when it leaves the stack.</summary>
     public CoroutineRunner Coroutines { get; } = new();
     /// <summary>Tweens owned by this scene. They advance before <see cref="Update"/> while the scene is updated and are cleared when it leaves the stack.</summary>

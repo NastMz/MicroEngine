@@ -238,6 +238,8 @@ public sealed class GameLoop
     /// <summary>Runs the fixed steps the elapsed time calls for; returns whether the run must stop and the capture due.</summary>
     private (bool Stop, string? Capture) Update()
     {
+        // Preloaded assets finish within their per-frame budget before the frame's updates.
+        _game.Assets.Update();
         if (_platform.RealTime)
         {
             double now = _platform.Now;
@@ -389,6 +391,14 @@ public sealed class GameLoop
     {
         if (_result is not null) return _result;
         _running = false;
+        if (_options.Profiler is { } profiler && _game.Assets is { } assets)
+        {
+            var stats = assets.Statistics;
+            profiler.Environment["assets.loaded"] = stats.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            profiler.Environment["assets.textureMB"] = (stats.TextureBytes / 1048576.0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+            profiler.Environment["assets.loadMs"] = stats.LoadMilliseconds.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+            profiler.Environment["assets.loadsDuringPlay"] = stats.LoadsDuringPlay.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
         try { _game.Shutdown(); }
         catch (Exception e) { _error ??= e; }
         return _result = new RunResult(_game.UpdateCount, _frames, _captures, _error);

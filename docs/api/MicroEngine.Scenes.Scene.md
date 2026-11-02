@@ -60,6 +60,18 @@ public float Age { get; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Scenes_Scene_Assets"></a> Assets
+
+The game's content files ([Assets](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Assets)).
+
+```csharp
+public AssetCache Assets { get; }
+```
+
+#### Property Value
+
+ [AssetCache](MicroEngine.Core.AssetCache.md)
+
 ### <a id="MicroEngine_Scenes_Scene_Audio"></a> Audio
 
 The game's audio mixer ([Audio](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Audio)).

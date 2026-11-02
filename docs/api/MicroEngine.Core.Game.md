@@ -69,6 +69,20 @@ public AchievementTracker Achievements { get; }
 
  [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
 
+### <a id="MicroEngine_Core_Game_Assets"></a> Assets
+
+The game's content files: textures, atlases and fonts loaded from <code>Content/</code>, shared and released by the
+engine ([AssetCache](MicroEngine.Core.AssetCache.md)). Created before [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load); everything it loaded is disposed after
+[Unload](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Unload).
+
+```csharp
+public AssetCache Assets { get; }
+```
+
+#### Property Value
+
+ [AssetCache](MicroEngine.Core.AssetCache.md)
+
 ### <a id="MicroEngine_Core_Game_Audio"></a> Audio
 
 The mixer that loads and plays sound effects and music. Created before [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load).
@@ -80,6 +94,19 @@ public AudioMixer Audio { get; }
 #### Property Value
 
  [AudioMixer](MicroEngine.Audio.AudioMixer.md)
+
+### <a id="MicroEngine_Core_Game_ContentRoot"></a> ContentRoot
+
+The content folder [Assets](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Assets) reads; null (the default) for [DefaultRoot](MicroEngine.Core.ContentFolder.md#MicroEngine_Core_ContentFolder_DefaultRoot) or the
+<code>Content</code> folder next to the executable. Tests override it to point at the game's sources.
+
+```csharp
+protected virtual string? ContentRoot { get; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
 ### <a id="MicroEngine_Core_Game_Font"></a> Font
 

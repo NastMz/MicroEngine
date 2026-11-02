@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Plays the samples the documentation quotes: the tutorial's finished game and the focused examples. -->
+  <!-- Plays the samples: the tutorial's finished game and the focused examples the documentation quotes, and the asset
+       pipeline's HD gallery. -->
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
     <IsPackable>false</IsPackable>
@@ -12,5 +13,6 @@
   <ItemGroup>
     <ProjectReference Include="../../samples/GemGarden/part4-complete/GemGarden.csproj" />
     <ProjectReference Include="../../samples/Examples/Examples.csproj" />
+    <ProjectReference Include="../../samples/AssetGallery/AssetGallery.csproj" />
   </ItemGroup>
 </Project>

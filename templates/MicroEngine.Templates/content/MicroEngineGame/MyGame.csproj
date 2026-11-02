@@ -25,8 +25,6 @@
     <PackageReference Include="MicroEngine.Desktop" Version="MICROENGINE_VERSION" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Asset files, copied next to the executable (ContentFolder reads them there). -->
-    <None Include="Content/**" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />
-  </ItemGroup>
+  <!-- Files under Content/ (images, atlases, fonts, sounds) ship with the game on every platform without an item here;
+       Game.Assets loads them. -->
 </Project>

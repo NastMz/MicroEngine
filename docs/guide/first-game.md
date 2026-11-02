@@ -27,7 +27,7 @@ StarCourier/
   Program.cs            the entry point: one line that starts the game on the desktop platforms
   MainGame.cs           the game class: settings, assets every scene shares, the first scene
   Scenes/PlayScene.cs   the first scene: input, movement, drawing
-  Content/hero.png      asset files, copied next to the executable and read with ContentFolder
+  Content/hero.png      asset files, shipped with the game and loaded through Game.Assets
   icon.png              the game's icon (square PNG, 256, 512 or 1024 pixels)
   README.md             the commands above
   .gitignore            keeps bin/, obj/ and dist/ out of source control
@@ -67,10 +67,8 @@ template's files, with `MyGame` where your project's name goes.
     <PackageReference Include="MicroEngine.Desktop" Version="MICROENGINE_VERSION" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Asset files, copied next to the executable (ContentFolder reads them there). -->
-    <None Include="Content/**" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />
-  </ItemGroup>
+  <!-- Files under Content/ (images, atlases, fonts, sounds) ship with the game on every platform without an item here;
+       Game.Assets loads them. -->
 </Project>
 ```
 
@@ -118,10 +116,9 @@ public sealed class MainGame : Game
 
     protected override void Load()
     {
-        // An image file from the Content folder, and a sound made in code.
-        var content = new ContentFolder();
+        // An image file from the Content folder (Assets reads it), and a sound made in code.
         Sprites = new SpriteAtlasBuilder()
-            .Add("hero", content.Image("hero.png"), new Vector2(8, 8))
+            .Add("hero", Assets.Image("hero.png"), new Vector2(8, 8))
             .Build(Graphics);
         Audio.AddSound("coin", Synth.Render(new SfxParams { Wave = Wave.Square, Frequency = 988, Arpeggio = [1f, 1.33f], Sustain = 0.04f, Decay = 0.15f }));
         Scenes.Push(new PlayScene(this));

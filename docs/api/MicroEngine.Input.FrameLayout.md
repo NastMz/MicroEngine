@@ -19,16 +19,16 @@ public static class FrameLayout
 
 ## Methods
 
-### <a id="MicroEngine_Input_FrameLayout_Fit_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_"></a> Fit\(Vector2, RectF, int, int\)
+### <a id="MicroEngine_Input_FrameLayout_Fit_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_CanvasScaling_"></a> Fit\(Vector2, RectF, int, int, CanvasScaling\)
 
 The largest integer scale of the canvas that fits inside the safe area, centred in it, so pixels stay square and
 even. When the largest integer scale would fill less than 80 % of what fits (a 480×270 game on a 412-pixel-high
 phone browser is 1× of a possible 1.5×), the frame scales fractionally instead: on small screens size matters
-more than even pixels. On a portrait screen the frame sits at the top of the safe area, so on-screen controls get
-the space below.
+more than even pixels. With [Smooth](MicroEngine.Graphics.CanvasScaling.md) the frame always takes the largest size that fits.
+On a portrait screen the frame sits at the top of the safe area, so on-screen controls get the space below.
 
 ```csharp
-public static RectF Fit(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight)
+public static RectF Fit(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, CanvasScaling scaling = CanvasScaling.Pixel)
 ```
 
 #### Parameters
@@ -40,6 +40,8 @@ public static RectF Fit(Vector2 window, RectF safeArea, int virtualWidth, int vi
 `virtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 `virtualHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`scaling` [CanvasScaling](MicroEngine.Graphics.CanvasScaling.md)
 
 #### Returns
 

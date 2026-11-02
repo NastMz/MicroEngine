@@ -1,0 +1,631 @@
+{
+ "frames": [
+  {
+   "filename": "enemyFloating_1",
+   "frame": {
+    "x": 110,
+    "y": 72,
+    "w": 42,
+    "h": 40
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 42,
+    "h": 40
+   },
+   "sourceSize": {
+    "w": 42,
+    "h": 40
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyFloating_2",
+   "frame": {
+    "x": 61,
+    "y": 147,
+    "w": 55,
+    "h": 55
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 55,
+    "h": 55
+   },
+   "sourceSize": {
+    "w": 55,
+    "h": 55
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyFloating_3",
+   "frame": {
+    "x": 117,
+    "y": 113,
+    "w": 40,
+    "h": 40
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 40,
+    "h": 40
+   },
+   "sourceSize": {
+    "w": 40,
+    "h": 40
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyFloating_4",
+   "frame": {
+    "x": 115,
+    "y": 0,
+    "w": 42,
+    "h": 40
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 42,
+    "h": 40
+   },
+   "sourceSize": {
+    "w": 42,
+    "h": 40
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyFlyingAlt_1",
+   "frame": {
+    "x": 0,
+    "y": 203,
+    "w": 52,
+    "h": 36
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 52,
+    "h": 36
+   },
+   "sourceSize": {
+    "w": 52,
+    "h": 36
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyFlyingAlt_2",
+   "frame": {
+    "x": 0,
+    "y": 122,
+    "w": 63,
+    "h": 24
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 63,
+    "h": 24
+   },
+   "sourceSize": {
+    "w": 63,
+    "h": 24
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyFlyingAlt_3",
+   "frame": {
+    "x": 53,
+    "y": 203,
+    "w": 52,
+    "h": 29
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 52,
+    "h": 29
+   },
+   "sourceSize": {
+    "w": 52,
+    "h": 29
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyFlyingAlt_4",
+   "frame": {
+    "x": 0,
+    "y": 173,
+    "w": 60,
+    "h": 29
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 60,
+    "h": 29
+   },
+   "sourceSize": {
+    "w": 60,
+    "h": 29
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyFlying_1",
+   "frame": {
+    "x": 0,
+    "y": 83,
+    "w": 64,
+    "h": 38
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 38
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 38
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyFlying_2",
+   "frame": {
+    "x": 0,
+    "y": 44,
+    "w": 64,
+    "h": 38
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 38
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 38
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyFlying_3",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 43
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 43
+   },
+   "sourceSize": {
+    "w": 64,
+    "h": 43
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyFlying_4",
+   "frame": {
+    "x": 0,
+    "y": 147,
+    "w": 60,
+    "h": 25
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 60,
+    "h": 25
+   },
+   "sourceSize": {
+    "w": 60,
+    "h": 25
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemySpikey_1",
+   "frame": {
+    "x": 158,
+    "y": 0,
+    "w": 32,
+    "h": 40
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 40
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 40
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemySpikey_2",
+   "frame": {
+    "x": 112,
+    "y": 41,
+    "w": 32,
+    "h": 28
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 28
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 28
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemySpikey_3",
+   "frame": {
+    "x": 153,
+    "y": 41,
+    "w": 32,
+    "h": 64
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 64
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 64
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemySpikey_4",
+   "frame": {
+    "x": 151,
+    "y": 196,
+    "w": 32,
+    "h": 40
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 40
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 40
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemySwimming_1",
+   "frame": {
+    "x": 65,
+    "y": 105,
+    "w": 44,
+    "h": 32
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 44,
+    "h": 32
+   },
+   "sourceSize": {
+    "w": 44,
+    "h": 32
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemySwimming_2",
+   "frame": {
+    "x": 106,
+    "y": 203,
+    "w": 44,
+    "h": 32
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 44,
+    "h": 32
+   },
+   "sourceSize": {
+    "w": 44,
+    "h": 32
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemySwimming_3",
+   "frame": {
+    "x": 65,
+    "y": 39,
+    "w": 46,
+    "h": 32
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 46,
+    "h": 32
+   },
+   "sourceSize": {
+    "w": 46,
+    "h": 32
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemySwimming_4",
+   "frame": {
+    "x": 65,
+    "y": 72,
+    "w": 44,
+    "h": 32
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 44,
+    "h": 32
+   },
+   "sourceSize": {
+    "w": 44,
+    "h": 32
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyWalking_1",
+   "frame": {
+    "x": 158,
+    "y": 106,
+    "w": 32,
+    "h": 44
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 44
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 44
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyWalking_2",
+   "frame": {
+    "x": 158,
+    "y": 151,
+    "w": 32,
+    "h": 42
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 42
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 42
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyWalking_3",
+   "frame": {
+    "x": 65,
+    "y": 0,
+    "w": 49,
+    "h": 38
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 49,
+    "h": 38
+   },
+   "sourceSize": {
+    "w": 49,
+    "h": 38
+   },
+   "duration": 120
+  },
+  {
+   "filename": "enemyWalking_4",
+   "frame": {
+    "x": 117,
+    "y": 154,
+    "w": 35,
+    "h": 41
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 35,
+    "h": 41
+   },
+   "sourceSize": {
+    "w": 35,
+    "h": 41
+   },
+   "duration": 120
+  }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3",
+  "image": "enemies.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 256,
+   "h": 256
+  },
+  "scale": "1",
+  "frameTags": [
+   {
+    "name": "floating",
+    "from": 0,
+    "to": 2,
+    "direction": "pingpong",
+    "color": "#000000ff"
+   },
+   {
+    "name": "floating-defeated",
+    "from": 3,
+    "to": 3,
+    "direction": "forward",
+    "color": "#000000ff"
+   },
+   {
+    "name": "flying",
+    "from": 8,
+    "to": 10,
+    "direction": "pingpong",
+    "color": "#000000ff"
+   },
+   {
+    "name": "flying-defeated",
+    "from": 11,
+    "to": 11,
+    "direction": "forward",
+    "color": "#000000ff"
+   },
+   {
+    "name": "flyingalt",
+    "from": 4,
+    "to": 6,
+    "direction": "pingpong",
+    "color": "#000000ff"
+   },
+   {
+    "name": "flyingalt-defeated",
+    "from": 7,
+    "to": 7,
+    "direction": "forward",
+    "color": "#000000ff"
+   },
+   {
+    "name": "spikey",
+    "from": 12,
+    "to": 14,
+    "direction": "forward",
+    "color": "#000000ff"
+   },
+   {
+    "name": "spikey-defeated",
+    "from": 15,
+    "to": 15,
+    "direction": "forward",
+    "color": "#000000ff"
+   },
+   {
+    "name": "swimming",
+    "from": 16,
+    "to": 18,
+    "direction": "forward",
+    "color": "#000000ff"
+   },
+   {
+    "name": "swimming-defeated",
+    "from": 19,
+    "to": 19,
+    "direction": "forward",
+    "color": "#000000ff"
+   },
+   {
+    "name": "walking",
+    "from": 20,
+    "to": 22,
+    "direction": "forward",
+    "color": "#000000ff"
+   },
+   {
+    "name": "walking-defeated",
+    "from": 23,
+    "to": 23,
+    "direction": "forward",
+    "color": "#000000ff"
+   }
+  ],
+  "layers": [],
+  "slices": []
+ }
+}

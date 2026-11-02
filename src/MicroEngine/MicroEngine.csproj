@@ -6,6 +6,12 @@
   <ItemGroup>
     <InternalsVisibleTo Include="MicroEngine.Tests" />
   </ItemGroup>
+  <!-- Managed and permissively licensed (ADR 0025, THIRD-PARTY-NOTICES.md): image decoding (StbImageSharp) and scalable
+       fonts (FontStashSharp over StbTrueTypeSharp). No native code, so every platform and headless tests decode alike. -->
+  <ItemGroup>
+    <PackageReference Include="StbImageSharp" Version="[2.30.15]" />
+    <PackageReference Include="FontStashSharp" Version="[1.3.10]" />
+  </ItemGroup>
   <!-- The application-identity targets (build/MicroEngine.targets) apply to every game that references the package,
        directly or through a backend package. -->
   <ItemGroup>

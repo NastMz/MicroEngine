@@ -41,7 +41,7 @@ function unzip(file) {
 }
 
 const expected = {
-  MicroEngine: { deps: [], files: ['lib/net10.0/MicroEngine.dll', 'build/MicroEngine.targets', 'buildTransitive/MicroEngine.targets', 'buildTransitive/MicroEngine.props'] },
+  MicroEngine: { deps: ['StbImageSharp', 'FontStashSharp'], files: ['lib/net10.0/MicroEngine.dll', 'build/MicroEngine.targets', 'buildTransitive/MicroEngine.targets', 'buildTransitive/MicroEngine.props'] },
   'MicroEngine.Sdl': { deps: ['MicroEngine', 'ppy.SDL3-CS', 'NVorbis'], files: ['lib/net10.0/MicroEngine.Sdl.dll'] },
   'MicroEngine.Raylib': { deps: ['MicroEngine', 'Raylib-cs'], files: ['lib/net10.0/MicroEngine.Raylib.dll', 'native/browser-wasm/raylib.a', 'buildTransitive/MicroEngine.Raylib.props'] },
   'MicroEngine.Desktop': { deps: ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib'], files: ['lib/net10.0/MicroEngine.Desktop.dll'] },

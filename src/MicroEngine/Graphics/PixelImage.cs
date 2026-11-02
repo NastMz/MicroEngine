@@ -2,7 +2,7 @@ namespace MicroEngine.Graphics;
 
 /// <summary>
 /// A CPU-side RGBA image. Games author procedural art with it and hand it to
-/// <see cref="IGraphicsDevice.CreateTexture"/>; it also backs the built-in font.
+/// <see cref="IGraphicsDevice.CreateTexture(PixelImage)"/>; it also backs the built-in font.
 /// </summary>
 /// <remarks>
 /// Drawing methods change this image and return it, so calls chain; methods that build a new image (<see cref="Clone"/>,
@@ -25,6 +25,14 @@ public sealed class PixelImage
         Width = width;
         Height = height;
         _pixels = new Color[width * height];
+    }
+
+    /// <summary>Wraps decoded pixels without copying them (decoders).</summary>
+    internal PixelImage(int width, int height, Color[] pixels)
+    {
+        if (width <= 0 || height <= 0) throw new ArgumentOutOfRangeException(nameof(width), "Image size must be positive.");
+        if (pixels.Length != width * height) throw new ArgumentException("The pixels do not match the size.", nameof(pixels));
+        (Width, Height, _pixels) = (width, height, pixels);
     }
 
     /// <summary>The pixels, row by row from the top-left.</summary>
@@ -298,18 +306,25 @@ public sealed class PixelImage
         return copy;
     }
 
-    /// <summary>Decodes a PNG (8-bit grey/RGB/RGBA or paletted, non-interlaced).</summary>
-    /// <exception cref="InvalidDataException">The data is not a valid PNG.</exception>
-    /// <exception cref="NotSupportedException">The PNG uses a format the decoder does not support.</exception>
-    public static PixelImage FromPng(ReadOnlySpan<byte> data) => PngDecoder.Decode(data);
+    /// <summary>Decodes a PNG: any colour type and bit depth, interlaced or not.</summary>
+    /// <exception cref="InvalidDataException">The data is not a PNG the engine can read.</exception>
+    public static PixelImage FromPng(ReadOnlySpan<byte> data) =>
+        data.Length >= 8 && data[0] == 0x89 && data[1] == (byte)'P' ? ImageDecoder.Decode(data) : throw new InvalidDataException("Not a PNG file.");
 
-    /// <summary>Loads a PNG file; the message names the path when decoding fails.</summary>
+    /// <summary>
+    /// Decodes an image file held in memory: PNG (any variant), JPEG (baseline and progressive), BMP, TGA, GIF (its first
+    /// frame) or PSD (the composited image), recognised by its content rather than a name.
+    /// </summary>
+    /// <exception cref="InvalidDataException">The data is not an image in one of those formats.</exception>
+    public static PixelImage Decode(ReadOnlySpan<byte> data) => ImageDecoder.Decode(data);
+
+    /// <summary>Loads an image file in any format <see cref="Decode"/> reads; the message names the path when decoding fails.</summary>
     /// <exception cref="FileNotFoundException">The file does not exist.</exception>
-    /// <exception cref="InvalidDataException">The file is not a PNG the decoder supports.</exception>
+    /// <exception cref="InvalidDataException">The file is not an image the engine can read.</exception>
     public static PixelImage Load(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        try { return PngDecoder.Decode(File.ReadAllBytes(path)); }
+        try { return ImageDecoder.Decode(File.ReadAllBytes(path)); }
         catch (Exception e) when (e is InvalidDataException or NotSupportedException)
         {
             throw new InvalidDataException($"{path}: {e.Message}", e);

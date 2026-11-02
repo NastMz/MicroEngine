@@ -1,0 +1,9 @@
+# The gallery as loaded, then with nearest sampling and the level scope loaded, then both switched back.
+30 capture gallery.png
+40 press confirm
+44 press action
+70 capture nearest-level.png
+80 press confirm
+84 press action
+110 capture back.png
+112 quit

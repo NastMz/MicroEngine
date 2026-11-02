@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>AssetBench</RootNamespace>
+    <Description>Times the asset pipeline: image decoding, texture uploads, atlases, fonts and glyph rasterization.</Description>
+    <!-- It reads the AssetGallery sample's files in place; it ships none of its own. -->
+    <MicroEngineContentItems>false</MicroEngineContentItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
+  </ItemGroup>
+</Project>
