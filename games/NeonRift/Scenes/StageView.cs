@@ -12,7 +12,16 @@ internal sealed class StageView(Assets art, BitmapFont font)
 {
     public void Draw(IRenderer r, Stage stage)
     {
+        // The scroll is drawn between updates too: the camera stands at its blended position while drawing only.
         var cam = stage.Camera;
+        var position = cam.Position;
+        cam.Position = stage.Between(stage.PreviousCameraPosition, position);
+        try { DrawWorld(r, stage, cam); }
+        finally { cam.Position = position; }
+    }
+
+    private void DrawWorld(IRenderer r, Stage stage, Camera2D cam)
+    {
         DrawBackdrop(r, stage.Def.Theme, cam.Position, stage.Time, foreground: false);
 
         r.PushCamera(cam);

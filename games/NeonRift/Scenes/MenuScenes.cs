@@ -13,6 +13,7 @@ internal sealed class TitleScene(RiftGame game) : Scene
 {
     private readonly SelectionList _menu = new("START", "CONTROLS", "ACHIEVEMENTS", "QUIT");
     private bool _controls, _leaving;
+    private DrawBlend _blend;
 
     public override void Enter()
     {
@@ -22,6 +23,7 @@ internal sealed class TitleScene(RiftGame game) : Scene
 
     public override void Update(float dt)
     {
+        _blend.Mark(Game);
         if (_leaving) return;
         if (_controls)
         {
@@ -51,7 +53,7 @@ internal sealed class TitleScene(RiftGame game) : Scene
     public override void Draw(IRenderer r)
     {
         var view = new StageView(game.Art, Font);
-        view.DrawBackdrop(r, "city", new Vector2(Age * 40, 0), Age, false);
+        view.DrawBackdrop(r, "city", new Vector2(_blend.Age(this) * 40, 0), Age, false);
         r.FillGradient(new RectF(0, 150, r.Width, 120), Ui.Ink.WithAlpha(0f), Ui.Ink.WithAlpha(0.9f), 8);
         r.Draw(game.Art.Frames("hero_idle")[(int)(Age * 6) % 4], new Vector2(70, 250));
         r.Draw(game.Art.Frames("trooper_idle")[(int)(Age * 5) % 3], new Vector2(410, 250));
@@ -201,11 +203,13 @@ internal sealed class EndingScene(RiftGame game) : Scene
     ];
 
     private bool _leaving;
+    private DrawBlend _blend;
 
     public override void Enter() => game.Music("ending");
 
     public override void Update(float dt)
     {
+        _blend.Mark(Game);
         if (_leaving || Age < 4 || !(Input.Pressed("confirm") || Input.Pressed("pause"))) return;
         _leaving = true;
         Game.Scenes.Reset(new TitleScene(game), Transition.Fade(1f));
@@ -214,9 +218,10 @@ internal sealed class EndingScene(RiftGame game) : Scene
     public override void Draw(IRenderer r)
     {
         var view = new StageView(game.Art, Font);
-        view.DrawBackdrop(r, "city", new Vector2(Age * 20, 0), Age, false);
+        float age = _blend.Age(this);
+        view.DrawBackdrop(r, "city", new Vector2(age * 20, 0), Age, false);
         r.FillRect(new RectF(0, 0, r.Width, r.Height), Ui.Ink.WithAlpha(0.45f));
-        float y = r.Height - Age * 22;
+        float y = r.Height - age * 22;
         for (int i = 0; i < Credits.Length; i++)
         {
             float ly = y + i * 16;
@@ -230,7 +235,7 @@ internal sealed class EndingScene(RiftGame game) : Scene
             Ui.Centered(r, Font, $"FINAL SCORE {Ui.N(game.Session.Score, 7)}   DEATHS {game.Session.Deaths}", r.Width / 2f, 120, Ui.Gold);
             if ((int)(Age * 2) % 2 == 0) Ui.Centered(r, Font, Game.Prompts.Format("PRESS {confirm}").ToUpperInvariant(), r.Width / 2f, 150, Ui.Text);
         }
-        r.Draw(game.Art.Frames("hero_run")[(int)(Age * 10) % 8], new Vector2(60 + (Age * 8 % 400), 262));
+        r.Draw(game.Art.Frames("hero_run")[(int)(Age * 10) % 8], new Vector2(60 + (age * 8 % 400), 262));
         Ui.Scanlines(r);
     }
 }

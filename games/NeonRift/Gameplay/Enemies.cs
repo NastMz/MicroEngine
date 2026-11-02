@@ -55,7 +55,7 @@ public sealed class Trooper : Enemy
     {
         var sprite = _pause > 0 || !_body.Grounded ? art.Frames("trooper_idle")[0] : art.Frames("trooper_run")[(int)(Age * 14) % 10];
         // The robot sheets face left; mirror them when moving right.
-        DrawFlashing(r, sprite, Vector2.Round(Position), _dir > 0, Flash);
+        DrawFlashing(r, sprite, Vector2.Round(DrawPosition), _dir > 0, Flash);
     }
 }
 
@@ -128,9 +128,9 @@ public sealed class Gunner : Enemy
     internal override void Render(IRenderer r, Assets art)
     {
         var sprite = art.Frames("trooper_idle")[(int)(Age * 5) % 3];
-        DrawFlashing(r, sprite, Vector2.Round(Position), _facing > 0, Flash);
+        DrawFlashing(r, sprite, Vector2.Round(DrawPosition), _facing > 0, Flash);
         // A red visor stripe marks riflemen apart from runners.
-        r.FillRect(new RectF(MathF.Round(Position.X) + (_facing < 0 ? -9 : 4), MathF.Round(Position.Y) - 54, 5, 1), Color.Hex("ff3860"));
+        r.FillRect(new RectF(MathF.Round(DrawPosition.X) + (_facing < 0 ? -9 : 4), MathF.Round(DrawPosition.Y) - 54, 5, 1), Color.Hex("ff3860"));
     }
 }
 
@@ -178,7 +178,7 @@ public sealed class Drone : Enemy
 
     internal override void Render(IRenderer r, Assets art)
         // The drone sheet looks left; mirror it only while diving to the right.
-        => DrawFlashing(r, art.Frames("drone")[(int)(Age * 12) % 4], Vector2.Round(Position), _diving && _dive.X > 0, Flash);
+        => DrawFlashing(r, art.Frames("drone")[(int)(Age * 12) % 4], Vector2.Round(DrawPosition), _diving && _dive.X > 0, Flash);
 }
 
 /// <summary>Bolted gun emplacement: aims at the player and fires, three-way when the player is close.</summary>
@@ -226,7 +226,7 @@ public sealed class Turret : Enemy
     internal override void Render(IRenderer r, Assets art)
     {
         // Frame 0 looks left (the rest of the sheet is a full head spin); a one-pixel dip sells the recoil.
-        var at = Vector2.Round(Position) + new Vector2(0, _anim < 0.12f ? 1 : 0);
+        var at = Vector2.Round(DrawPosition) + new Vector2(0, _anim < 0.12f ? 1 : 0);
         DrawFlashing(r, art.Frames("turret")[0], at, Stage.Player.Position.X > Position.X, Flash);
     }
 }
@@ -274,7 +274,7 @@ public sealed class EggPod : Enemy
             sprite = frames[Math.Clamp(frame, 0, 3)];
         }
         // The gun port is drawn on the left; turn it towards a player on the right.
-        DrawFlashing(r, sprite, Vector2.Round(Position), Stage.Player.Position.X > Position.X, Flash);
+        DrawFlashing(r, sprite, Vector2.Round(DrawPosition), Stage.Player.Position.X > Position.X, Flash);
     }
 }
 
@@ -308,7 +308,7 @@ public sealed class Skiff : Enemy
     }
 
     internal override void Render(IRenderer r, Assets art)
-        => DrawFlashing(r, art.Frames("skiff")[(int)(Age * 10) % 5], Vector2.Round(Position), false, Flash);
+        => DrawFlashing(r, art.Frames("skiff")[(int)(Age * 10) % 5], Vector2.Round(DrawPosition), false, Flash);
 }
 
 /// <summary>Supply ship that crosses the screen once; shooting it releases a weapon capsule.</summary>
@@ -345,7 +345,7 @@ public sealed class Carrier : Enemy
 
     internal override void Render(IRenderer r, Assets art)
     {
-        var at = Vector2.Round(Position);
+        var at = Vector2.Round(DrawPosition);
         DrawFlashing(r, art.Frames("skiff")[(int)(Age * 10) % 5], at, true, Flash);
         Capsule.DrawPod(r, art, at + new Vector2(0, 13), _letter, Age);
     }

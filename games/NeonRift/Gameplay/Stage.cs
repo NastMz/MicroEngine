@@ -47,6 +47,7 @@ public sealed class Stage
         CheckpointIndex = checkpoint > 0 && checkpoint <= checkpoints.Count ? checkpoint : 0;
         Camera.Position = new Vector2(MathF.Max(0, startX - 80), def.PixelHeight - 270);
         Camera.Clamp();
+        PreviousCameraPosition = Camera.Position;
         _lockLeft = Camera.Position.X;
         // Skip spawns already behind the starting screen.
         while (_nextSpawn < def.Spawns.Count && def.Spawns[_nextSpawn].X < Camera.View.Left) _nextSpawn++;
@@ -74,6 +75,16 @@ public sealed class Stage
     public bool InArena => Camera.Position.X >= Def.ArenaX - 0.5f;
     /// <summary>Seconds since the screen last scrolled forward.</summary>
     public float IdleTime => _idleTime;
+    /// <summary>The camera position at the start of the latest update, for drawing the scroll between updates.</summary>
+    public Vector2 PreviousCameraPosition { get; private set; }
+    /// <summary>
+    /// Drawing only: how far between the previous and the current update the next draw shows (0..1, see
+    /// <c>Game.FrameBlend</c>). 1 draws exactly the current state; rules never read it.
+    /// </summary>
+    internal float Blend { get; set; } = 1;
+
+    /// <summary>The point <see cref="Blend"/> of the way from <paramref name="previous"/> to <paramref name="current"/>; exactly <paramref name="current"/> at blend 1.</summary>
+    internal Vector2 Between(Vector2 previous, Vector2 current) => Blend >= 1 ? current : Vector2.Lerp(previous, current, Blend);
 
     public Action<string, float, float, float>? SoundSink { get; set; }
     public Action<string>? MusicSink { get; set; }
@@ -84,6 +95,7 @@ public sealed class Stage
 
     public void Update(float dt, PlayerInput input)
     {
+        PreviousCameraPosition = Camera.Position;
         _time += dt;
         _phaseTime += dt;
         for (int i = _scheduled.Count - 1; i >= 0; i--)

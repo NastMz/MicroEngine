@@ -203,6 +203,7 @@ public sealed class Player : Actor
     public void Respawn(float x, WeaponKind weapon)
     {
         Position = new Vector2(x, Stage.Camera.View.Top + 40);
+        Snap();
         Velocity = Vector2.Zero;
         State = PlayerState.Alive;
         _stateTime = 0;
@@ -217,7 +218,7 @@ public sealed class Player : Actor
     {
         if (State == PlayerState.Waiting) return;
         if (Invulnerable > 0 && State == PlayerState.Alive && (int)(Invulnerable * 20) % 2 == 0) return;
-        var feet = Vector2.Round(Position);
+        var feet = Vector2.Round(DrawPosition);
         bool flip = Facing < 0;
         if (Barrier > 0 && (Barrier > 2 || (int)(Barrier * 10) % 2 == 0))
         {

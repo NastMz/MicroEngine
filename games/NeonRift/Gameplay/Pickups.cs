@@ -56,7 +56,7 @@ public sealed class Capsule : Actor
     internal override void Render(IRenderer r, Assets art)
     {
         if (Age > Lifetime - 3 && (int)(Age * 8) % 2 == 0) return;
-        DrawPod(r, art, Vector2.Round(Position), Letter, Age);
+        DrawPod(r, art, Vector2.Round(DrawPosition), Letter, Age);
     }
 
     /// <summary>A glowing energy cell with the weapon letter, shared with the carrier that holds it.</summary>
