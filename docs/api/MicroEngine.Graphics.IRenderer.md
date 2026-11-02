@@ -23,6 +23,16 @@ public interface IRenderer
 [RendererExtensions.FillGradient\(IRenderer, RectF, Color, Color, int\)](MicroEngine.Graphics.RendererExtensions.md\#MicroEngine\_Graphics\_RendererExtensions\_FillGradient\_MicroEngine\_Graphics\_IRenderer\_MicroEngine\_RectF\_MicroEngine\_Color\_MicroEngine\_Color\_System\_Int32\_), 
 [RendererExtensions.Panel\(IRenderer, RectF, PanelStyle\)](MicroEngine.Graphics.RendererExtensions.md\#MicroEngine\_Graphics\_RendererExtensions\_Panel\_MicroEngine\_Graphics\_IRenderer\_MicroEngine\_RectF\_MicroEngine\_Graphics\_PanelStyle\_)
 
+## Remarks
+
+Every renderer follows the same rules. Pixel (x, y) is the square from (x, y) to (x + 1, y + 1) and its centre is
+(x + 0.5, y + 0.5). A rectangle or an unrotated sprite covers exactly the pixels whose centre lies inside it, a
+centre on its left or top edge counting as inside and one on its right or bottom edge as outside (the top-left rule
+of Direct3D and Vulkan): a 1 × 1 rectangle at (2.5, 2.5) covers pixel (2, 2) only. A sprite pixel shows the texel
+under its centre (nearest) or the bilinear mix of the four texels around it (linear, clamped at the texture's edge).
+Colours are straight (not premultiplied) alpha with 8-bit results rounded to nearest. Circles, lines and triangles
+cover their shape's area but their edge pixels may differ between renderers.
+
 ## Properties
 
 ### <a id="MicroEngine_Graphics_IRenderer_Height"></a> Height
@@ -53,7 +63,9 @@ int Width { get; }
 
 ### <a id="MicroEngine_Graphics_IRenderer_Clear_MicroEngine_Color_"></a> Clear\(Color\)
 
-Fills the whole canvas with <code class="paramref">color</code>. The game clears to [Background](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Background) before the scenes draw.
+Replaces every pixel of the canvas with <code class="paramref">color</code>, alpha included, whatever the clip
+([SetClip](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetClip_System_Nullable_MicroEngine_RectF__)) and blend mode, and replaces what was drawn before it in the frame. The clip still applies
+to the draws after it. The game clears to [Background](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Background) before the scenes draw.
 
 ```csharp
 void Clear(Color color)
@@ -75,7 +87,7 @@ void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOp
 
 `texture` [Texture](MicroEngine.Graphics.Texture.md)
 
-The texture; must not be disposed.
+A texture of this renderer's graphics device, not disposed.
 
 `source` [RectF](MicroEngine.RectF.md)
 
@@ -92,6 +104,16 @@ Colour multiplier; [White](MicroEngine.Color.md#MicroEngine_Color_White) draws t
 `options` [DrawOptions](MicroEngine.Graphics.DrawOptions.md)
 
 Flip, rotation, pivot and scale.
+
+#### Exceptions
+
+ [ObjectDisposedException](https://learn.microsoft.com/dotnet/api/system.objectdisposedexception)
+
+<code class="paramref">texture</code> was disposed; nothing is drawn.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+Another graphics device created <code class="paramref">texture</code>; nothing is drawn.
 
 ### <a id="MicroEngine_Graphics_IRenderer_DrawLine_System_Numerics_Vector2_System_Numerics_Vector2_System_Single_MicroEngine_Color_"></a> DrawLine\(Vector2, Vector2, float, Color\)
 
@@ -129,6 +151,16 @@ void DrawStretched(Texture texture, RectF source, RectF destination, Color tint)
 
 `tint` [Color](MicroEngine.Color.md)
 
+#### Exceptions
+
+ [ObjectDisposedException](https://learn.microsoft.com/dotnet/api/system.objectdisposedexception)
+
+<code class="paramref">texture</code> was disposed; nothing is drawn.
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+Another graphics device created <code class="paramref">texture</code>; nothing is drawn.
+
 ### <a id="MicroEngine_Graphics_IRenderer_FillCircle_System_Numerics_Vector2_System_Single_MicroEngine_Color_"></a> FillCircle\(Vector2, float, Color\)
 
 Fills a circle; <code class="paramref">radius</code> is in pixels.
@@ -147,7 +179,7 @@ void FillCircle(Vector2 center, float radius, Color color)
 
 ### <a id="MicroEngine_Graphics_IRenderer_FillRect_MicroEngine_RectF_MicroEngine_Color_"></a> FillRect\(RectF, Color\)
 
-Fills a rectangle.
+Fills a rectangle: the pixels whose centre lies inside it (see the rules of [IRenderer](MicroEngine.Graphics.IRenderer.md)). A fully transparent colour draws nothing.
 
 ```csharp
 void FillRect(RectF rect, Color color)
@@ -206,7 +238,9 @@ void PushCamera(Camera2D camera)
 
 ### <a id="MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_"></a> SetBlendMode\(BlendMode\)
 
-Sets how later draws combine with the canvas. Every frame starts with [Alpha](MicroEngine.Graphics.BlendMode.md).
+Sets how later draws combine with the canvas. Every frame starts with [Alpha](MicroEngine.Graphics.BlendMode.md). With source
+colour s (after the tint), its alpha a and canvas colour d: <code>Alpha</code> writes s·a + d·(1 − a),
+<code>Additive</code> s·a + d, <code>Multiply</code> s·d + d·(1 − a), each channel clamped to 0..1.
 
 ```csharp
 void SetBlendMode(BlendMode mode)
@@ -218,7 +252,8 @@ void SetBlendMode(BlendMode mode)
 
 ### <a id="MicroEngine_Graphics_IRenderer_SetClip_System_Nullable_MicroEngine_RectF__"></a> SetClip\(RectF?\)
 
-Restricts drawing to a screen-space rectangle; pass null to remove.
+Restricts drawing to a screen-space rectangle (the camera does not move it); pass null to remove. X, Y, Width and
+Height are truncated to whole pixels. [Clear](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_Clear_MicroEngine_Color_) ignores the clip.
 
 ```csharp
 void SetClip(RectF? screenRect)

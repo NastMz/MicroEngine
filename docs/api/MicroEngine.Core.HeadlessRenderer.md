@@ -6,7 +6,9 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
-Counts draw calls and tracks camera balance so tests can assert rendering ran correctly.
+Counts draw calls and tracks camera balance so tests can assert rendering ran correctly. Created with a graphics
+device, it also rasterizes: it records each draw as a line of text ([Commands](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Commands)) and draws it on
+[Frame](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Frame) with the CPU reference rasterizer, which follows the engine's rendering rules exactly.
 
 ```csharp
 public sealed class HeadlessRenderer : IRenderer
@@ -35,7 +37,7 @@ public sealed class HeadlessRenderer : IRenderer
 
 ### <a id="MicroEngine_Core_HeadlessRenderer__ctor_System_Int32_System_Int32_"></a> HeadlessRenderer\(int, int\)
 
-Counts draw calls and tracks camera balance so tests can assert rendering ran correctly.
+A counting renderer: nothing is drawn, every texture of any headless device is accepted.
 
 ```csharp
 public HeadlessRenderer(int width, int height)
@@ -46,6 +48,29 @@ public HeadlessRenderer(int width, int height)
 `width` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 `height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_HeadlessRenderer__ctor_System_Int32_System_Int32_MicroEngine_Core_HeadlessGraphicsDevice_"></a> HeadlessRenderer\(int, int, HeadlessGraphicsDevice\)
+
+A rasterizing renderer for <code class="paramref">device</code>: it draws only that device's textures, which must keep
+their pixels ([KeepsPixels](MicroEngine.Core.HeadlessGraphicsDevice.md#MicroEngine_Core_HeadlessGraphicsDevice_KeepsPixels)).
+
+```csharp
+public HeadlessRenderer(int width, int height, HeadlessGraphicsDevice device)
+```
+
+#### Parameters
+
+`width` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`device` [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md)
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">device</code> does not keep pixels.
 
 ## Properties
 
@@ -61,6 +86,20 @@ public int CameraDepth { get; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Core_HeadlessRenderer_Commands"></a> Commands
+
+This frame's draws as text, one line per call, in screen pixels after the camera offset (a backend-neutral form
+tests can compare exactly): <code>clear</code>, <code>rect</code>, <code>sprite</code>, <code>circle</code>, <code>triangle</code>,
+<code>line</code>, <code>blend</code>, <code>clip</code>, <code>camera</code>. Empty when the renderer does not rasterize.
+
+```csharp
+public IReadOnlyList<string> Commands { get; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
+
 ### <a id="MicroEngine_Core_HeadlessRenderer_DrawCalls"></a> DrawCalls
 
 Draw calls since the frame began (cleared by [Reset](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Reset)).
@@ -73,6 +112,19 @@ public int DrawCalls { get; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Core_HeadlessRenderer_Frame"></a> Frame
+
+A copy of the canvas as a capture stores it (opaque), or null when the renderer does not rasterize. The canvas
+keeps its pixels between frames, as a backend's does.
+
+```csharp
+public PixelImage? Frame { get; }
+```
+
+#### Property Value
+
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)?
+
 ### <a id="MicroEngine_Core_HeadlessRenderer_Height"></a> Height
 
 Height of the virtual canvas in pixels.
@@ -84,6 +136,18 @@ public int Height { get; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_HeadlessRenderer_Rasterizes"></a> Rasterizes
+
+Whether this renderer rasterizes (it was created with a graphics device).
+
+```csharp
+public bool Rasterizes { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Core_HeadlessRenderer_Width"></a> Width
 
@@ -101,7 +165,9 @@ public int Width { get; }
 
 ### <a id="MicroEngine_Core_HeadlessRenderer_Clear_MicroEngine_Color_"></a> Clear\(Color\)
 
-Fills the whole canvas with <code class="paramref">color</code>. The game clears to [Background](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Background) before the scenes draw.
+Replaces every pixel of the canvas with <code class="paramref">color</code>, alpha included, whatever the clip
+([SetClip](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetClip_System_Nullable_MicroEngine_RectF__)) and blend mode, and replaces what was drawn before it in the frame. The clip still applies
+to the draws after it. The game clears to [Background](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Background) before the scenes draw.
 
 ```csharp
 public void Clear(Color color)
@@ -113,7 +179,7 @@ public void Clear(Color color)
 
 ### <a id="MicroEngine_Core_HeadlessRenderer_Draw_MicroEngine_Graphics_Texture_MicroEngine_RectF_System_Numerics_Vector2_MicroEngine_Color_MicroEngine_Graphics_DrawOptions__"></a> Draw\(Texture, RectF, Vector2, Color, in DrawOptions\)
 
-Counts the call; throws `ObjectDisposedException` for a disposed texture, as real renderers fail.
+Counts the call (and rasterizes it); throws `ObjectDisposedException` for a disposed texture and, when rasterizing, `ArgumentException` for another device's texture.
 
 ```csharp
 public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default)
@@ -151,7 +217,7 @@ public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color)
 
 ### <a id="MicroEngine_Core_HeadlessRenderer_DrawStretched_MicroEngine_Graphics_Texture_MicroEngine_RectF_MicroEngine_RectF_MicroEngine_Color_"></a> DrawStretched\(Texture, RectF, RectF, Color\)
 
-Draws the <code class="paramref">source</code> part of <code class="paramref">texture</code> scaled to fill <code class="paramref">destination</code>.
+Counts the call (and rasterizes it), with the checks of [Draw](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Draw_MicroEngine_Graphics_Texture_MicroEngine_RectF_System_Numerics_Vector2_MicroEngine_Color_MicroEngine_Graphics_DrawOptions__).
 
 ```csharp
 public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint)
@@ -185,7 +251,7 @@ public void FillCircle(Vector2 center, float radius, Color color)
 
 ### <a id="MicroEngine_Core_HeadlessRenderer_FillRect_MicroEngine_RectF_MicroEngine_Color_"></a> FillRect\(RectF, Color\)
 
-Fills a rectangle.
+Fills a rectangle: the pixels whose centre lies inside it (see the rules of [IRenderer](MicroEngine.Graphics.IRenderer.md)). A fully transparent colour draws nothing.
 
 ```csharp
 public void FillRect(RectF rect, Color color)
@@ -244,7 +310,7 @@ public void PushCamera(Camera2D camera)
 
 ### <a id="MicroEngine_Core_HeadlessRenderer_Reset"></a> Reset\(\)
 
-Starts a new frame: clears [DrawCalls](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_DrawCalls).
+Starts a new frame: clears [DrawCalls](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_DrawCalls) and [Commands](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Commands), blending returns to [Alpha](MicroEngine.Graphics.BlendMode.md) and the clip is removed.
 
 ```csharp
 public void Reset()
@@ -258,7 +324,9 @@ The previous frame pushed a camera it did not pop.
 
 ### <a id="MicroEngine_Core_HeadlessRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_"></a> SetBlendMode\(BlendMode\)
 
-Sets how later draws combine with the canvas. Every frame starts with [Alpha](MicroEngine.Graphics.BlendMode.md).
+Sets how later draws combine with the canvas. Every frame starts with [Alpha](MicroEngine.Graphics.BlendMode.md). With source
+colour s (after the tint), its alpha a and canvas colour d: <code>Alpha</code> writes s·a + d·(1 − a),
+<code>Additive</code> s·a + d, <code>Multiply</code> s·d + d·(1 − a), each channel clamped to 0..1.
 
 ```csharp
 public void SetBlendMode(BlendMode mode)
@@ -270,7 +338,8 @@ public void SetBlendMode(BlendMode mode)
 
 ### <a id="MicroEngine_Core_HeadlessRenderer_SetClip_System_Nullable_MicroEngine_RectF__"></a> SetClip\(RectF?\)
 
-Restricts drawing to a screen-space rectangle; pass null to remove.
+Restricts drawing to a screen-space rectangle (the camera does not move it); pass null to remove. X, Y, Width and
+Height are truncated to whole pixels. [Clear](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_Clear_MicroEngine_Color_) ignores the clip.
 
 ```csharp
 public void SetClip(RectF? screenRect)

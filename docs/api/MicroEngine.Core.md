@@ -144,7 +144,8 @@ are independent: VSync waits for the display, the limit caps frames per second, 
 
  [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md)
 
-A graphics device for tests: textures keep their size and filter but hold no pixels; creations, uploads and live textures are counted.
+A graphics device for tests: textures keep their size and filter but hold no pixels (unless [KeepsPixels](MicroEngine.Core.HeadlessGraphicsDevice.md#MicroEngine_Core_HeadlessGraphicsDevice_KeepsPixels));
+creations, uploads and live textures are counted.
 
  [HeadlessInput](MicroEngine.Core.HeadlessInput.md)
 
@@ -152,12 +153,15 @@ Keys, a gamepad and a pointer that tests set by hand.
 
  [HeadlessPlatform](MicroEngine.Core.HeadlessPlatform.md)
 
-A windowless platform: deterministic time, no devices, and a renderer that only counts
-calls. Used by automated tests and CI to play whole games through scripts.
+A windowless platform: deterministic time, no devices, and a renderer that counts calls (or, with
+[Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize), also records them and draws them with the CPU reference rasterizer). Used by automated tests
+and CI to play whole games through scripts.
 
  [HeadlessRenderer](MicroEngine.Core.HeadlessRenderer.md)
 
-Counts draw calls and tracks camera balance so tests can assert rendering ran correctly.
+Counts draw calls and tracks camera balance so tests can assert rendering ran correctly. Created with a graphics
+device, it also rasterizes: it records each draw as a line of text ([Commands](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Commands)) and draws it on
+[Frame](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Frame) with the CPU reference rasterizer, which follows the engine's rendering rules exactly.
 
  [HeadlessTouchScreen](MicroEngine.Core.HeadlessTouchScreen.md)
 

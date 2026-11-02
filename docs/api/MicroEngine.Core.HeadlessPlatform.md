@@ -6,8 +6,9 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Testing your game](../examples/testing.md)  
 
-A windowless platform: deterministic time, no devices, and a renderer that only counts
-calls. Used by automated tests and CI to play whole games through scripts.
+A windowless platform: deterministic time, no devices, and a renderer that counts calls (or, with
+[Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize), also records them and draws them with the CPU reference rasterizer). Used by automated tests
+and CI to play whole games through scripts.
 
 ```csharp
 public sealed class HeadlessPlatform : IPlatform, IDisposable
@@ -67,7 +68,7 @@ public bool CloseRequested { get; set; }
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Graphics"></a> Graphics
 
-A [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md): textures have a size but no pixels.
+A [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md): textures have a size but no pixels, unless [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize) is on.
 
 ```csharp
 public IGraphicsDevice Graphics { get; }
@@ -125,6 +126,21 @@ public static PlatformProfile Profile { get; }
 
  [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
 
+### <a id="MicroEngine_Core_HeadlessPlatform_Rasterize"></a> Rasterize
+
+When true, textures keep their pixels and the renderer records each frame's draws
+([Commands](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Commands)) and draws them on [Frame](MicroEngine.Core.HeadlessRenderer.md#MicroEngine_Core_HeadlessRenderer_Frame) with the CPU
+reference rasterizer, following the engine's rendering rules; [SaveScreenshot](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_SaveScreenshot_System_String_) then writes that frame
+as a PNG (at scale 1). False by default: the renderer only counts. Set it when creating the platform.
+
+```csharp
+public bool Rasterize { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Core_HeadlessPlatform_RealTime"></a> RealTime
 
 Always false: the loop advances exactly one update per frame.
@@ -151,7 +167,7 @@ public HeadlessRenderer Renderer { get; }
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Screenshots"></a> Screenshots
 
-Paths of the screenshots requested, in order; no file is written.
+Paths of the screenshots requested, in order; a file is written only when [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize) is on.
 
 ```csharp
 public List<string> Screenshots { get; }
@@ -262,6 +278,24 @@ public static HeadlessPlatform For(GameSettings settings)
 
  [HeadlessPlatform](MicroEngine.Core.HeadlessPlatform.md)
 
+### <a id="MicroEngine_Core_HeadlessPlatform_For_MicroEngine_Core_GameSettings_System_Boolean_"></a> For\(GameSettings, bool\)
+
+A headless platform with the virtual size and update rate of <code class="paramref">settings</code>, rasterizing when <code class="paramref">rasterize</code> is true (see [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize)).
+
+```csharp
+public static HeadlessPlatform For(GameSettings settings, bool rasterize)
+```
+
+#### Parameters
+
+`settings` [GameSettings](MicroEngine.Core.GameSettings.md)
+
+`rasterize` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Returns
+
+ [HeadlessPlatform](MicroEngine.Core.HeadlessPlatform.md)
+
 ### <a id="MicroEngine_Core_HeadlessPlatform_PollEvents"></a> PollEvents\(\)
 
 Advances simulated time by one frame.
@@ -272,7 +306,8 @@ public void PollEvents()
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_SaveScreenshot_System_String_"></a> SaveScreenshot\(string\)
 
-Records <code class="paramref">path</code> in [Screenshots](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Screenshots) without writing a file.
+Records <code class="paramref">path</code> in [Screenshots](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Screenshots); with [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize) on, also writes the
+rasterized frame there as an opaque PNG at scale 1.
 
 ```csharp
 public void SaveScreenshot(string path)
