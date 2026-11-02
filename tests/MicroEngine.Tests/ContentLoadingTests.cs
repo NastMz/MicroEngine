@@ -82,10 +82,12 @@ public sealed class ContentLoadingTests
     }
 
     [TestMethod]
-    public void Png_rejects_unsupported_or_corrupt_files()
+    public void Png_rejects_corrupt_files_and_reads_16_bit_channels()
     {
         Assert.ThrowsExactly<InvalidDataException>(() => PixelImage.FromPng([1, 2, 3]));
-        Assert.ThrowsExactly<NotSupportedException>(() => PixelImage.FromPng(Png(1, 1, 2, 16, _ => [0, 0, 0, 0, 0, 0])));
+        // 16-bit channels go through the fallback decoder: the high byte of each channel is the 8-bit value.
+        var deep = PixelImage.FromPng(Png(1, 1, 2, 16, _ => [0xFF, 0x10, 0x80, 0x20, 0x00, 0x30]));
+        Assert.AreEqual(new Color(255, 128, 0), deep[0, 0]);
     }
 
     [TestMethod]
