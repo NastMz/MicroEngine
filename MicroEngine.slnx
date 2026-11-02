@@ -12,6 +12,9 @@
     <Project Path="games/NeonRift/NeonRift.csproj" />
     <Project Path="games/TrailDuel/TrailDuel.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/PerfBench/PerfBench.csproj" />
+  </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/HelloEngine/HelloEngine.csproj" />
     <Project Path="samples/Examples/Examples.csproj" />

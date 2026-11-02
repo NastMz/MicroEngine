@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>PerfBench</RootNamespace>
+    <Version>1.0.0</Version>
+    <ApplicationTitle>MicroEngine PerfBench</ApplicationTitle>
+    <ApplicationId>dev.microengine.perfbench</ApplicationId>
+    <MicroEngineSplash>false</MicroEngineSplash>
+    <Description>Synthetic frame pacing and rendering load for measuring MicroEngine.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
+  </ItemGroup>
+</Project>
