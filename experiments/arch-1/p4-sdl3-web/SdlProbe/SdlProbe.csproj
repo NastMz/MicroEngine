@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!-- ARCH-1 P4 probe: SDL3 (built by build-sdl3-wasm.sh with the workload's emscripten) linked into a .NET 10
+       browser-wasm app, driven from requestAnimationFrame. Not in MicroEngine.slnx and not built by CI. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <WasmBuildNative>true</WasmBuildNative>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The binding the engine uses; its native SDL3 is replaced by the static wasm build (no browser-wasm asset in the package). -->
+    <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Sdl3WasmLib)' != ''">
+    <!-- File name SDL3.a so the P/Invoke module "SDL3" binds to it. -->
+    <NativeFileReference Include="$(Sdl3WasmLib)" />
+  </ItemGroup>
+  <PropertyGroup>
+    <!-- SDL_Renderer's OpenGL ES 2 driver on WebGL; WebGL 2 allowed when SDL asks for it. -->
+    <EmccExtraLDFlags>$(EmccExtraLDFlags) -sMAX_WEBGL_VERSION=2</EmccExtraLDFlags>
+  </PropertyGroup>
+  <!-- -p:ProbeSymbols=true keeps function names in the wasm, so browser stack traces name the C function. -->
+  <PropertyGroup Condition="'$(ProbeSymbols)' == 'true'">
+    <WasmNativeStrip>false</WasmNativeStrip>
+    <EmccExtraLDFlags>$(EmccExtraLDFlags) --profiling-funcs</EmccExtraLDFlags>
+  </PropertyGroup>
+</Project>

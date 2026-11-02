@@ -1,0 +1,172 @@
+diff -ru --strip-trailing-cr a/src/MicroEngine.Cli/Hosts/web/Host.csproj b/src/MicroEngine.Cli/Hosts/web/Host.csproj
+--- a/src/MicroEngine.Cli/Hosts/web/Host.csproj	2026-11-02 17:11:15.725566100 -0500
++++ b/src/MicroEngine.Cli/Hosts/web/Host.csproj	2026-11-02 17:24:45.634772400 -0500
+@@ -32,8 +32,21 @@
+   </ItemGroup>
+   <!-- Raylib-cs ships a browser raylib.a built by a newer emscripten than .NET's (wasm-opt rejects it), so link the copy
+        built with the workload's own emscripten: from the MicroEngine.Raylib package, or web/setup.sh's. -->
++  <!-- ARCH-1 P4: link SDL3.a (experiments/arch-1/p4-sdl3-web/build-sdl3-wasm.sh, passed as the raylib-wasm option) instead of
++       raylib: the package's raylib.a and its GLFW JavaScript library are dropped, WebGL 2 is allowed for SDL_Renderer. -->
++  <PropertyGroup>
++    <EmccExtraLDFlags>$(EmccExtraLDFlags) -sMAX_WEBGL_VERSION=2</EmccExtraLDFlags>
++  </PropertyGroup>
++  <!-- With TrimMode=partial SDL3-CS is kept whole, so all of its ~1300 P/Invokes reach the native link and pull in
++       every SDL function. P4TrimSdl=true (an environment variable is enough) lets the trimmer remove the unused ones. -->
++  <ItemGroup Condition="'$(P4TrimSdl)' == 'true'">
++    <TrimmableAssembly Include="SDL3-CS" />
++  </ItemGroup>
+   <Target Name="_UseWorkloadRaylib" BeforeTargets="_PrepareForBrowserWasmBuildNative">
+-    <Error Condition="!Exists('$(RaylibWasmLib)')" Text="raylib for the web is missing ($(RaylibWasmLib)). It comes with the MicroEngine.Raylib package; in a MicroEngine checkout run web/setup.sh, or pass --raylib-wasm &lt;path&gt;." />
++    <Error Condition="!Exists('$(RaylibWasmLib)')" Text="SDL3.a is missing ($(RaylibWasmLib))." />
++    <PropertyGroup>
++      <EmccFlags>$(EmccFlags.Replace('-sUSE_GLFW=3', ''))</EmccFlags>
++    </PropertyGroup>
+     <ItemGroup>
+       <NativeFileReference Remove="@(NativeFileReference)" Condition="'%(Filename)' == 'raylib'" />
+       <NativeFileReference Include="$(RaylibWasmLib)" />
+diff -ru --strip-trailing-cr a/src/MicroEngine.Cli/Hosts/web/Program.cs b/src/MicroEngine.Cli/Hosts/web/Program.cs
+--- a/src/MicroEngine.Cli/Hosts/web/Program.cs	2026-11-02 17:11:15.746270100 -0500
++++ b/src/MicroEngine.Cli/Hosts/web/Program.cs	2026-11-02 17:12:00.138263700 -0500
+@@ -14,7 +14,15 @@
+ /// </summary>
+ public static partial class WebHost
+ {
+-    private static readonly GameSession Session = BrowserLauncher.CreateSession(GameEntry.Create);
++    // ARCH-1 P4: the game runs on MicroEngine.Sdl (SDL3 compiled to WebAssembly) instead of raylib. Saves still use
++    // localStorage through MicroEngine.Raylib's BrowserSaveStorage (pure JavaScript interop, no raylib code).
++    private static readonly GameSession Session = CreateSdlSession(GameEntry.Create);
++
++    private static GameSession CreateSdlSession(Func<Game> createGame)
++    {
++        SaveStore.DefaultStorage = gameId => new BrowserSaveStorage(gameId);
++        return new GameSession(createGame, game => new MicroEngine.Sdl.SdlPlatform(new PlatformRequest(game.Settings)));
++    }
+ 
+     /// <summary>
+     /// Starts a new run; returns "" on success, otherwise the error. In development packages a non-empty
+@@ -51,16 +59,15 @@
+     /// pixels. It reaches the game's on-screen controls through the raylib platform's touch screen.
+     /// </summary>
+     [JSExport]
+-    public static void Pointer(double id, int phase, double x, double y) => BrowserTouch.Pointer((long)id, phase, (float)x, (float)y);
++    public static void Pointer(double id, int phase, double x, double y) { } // SDL reads touch events from the canvas itself.
+ 
+     /// <summary>The page's safe-area insets in canvas pixels, canvas pixels per CSS pixel, and whether touch is the main input.</summary>
+     [JSExport]
+-    public static void Screen(double left, double top, double right, double bottom, double pixelsPerDp, bool touchFirst) =>
+-        BrowserTouch.Screen((float)left, (float)top, (float)right, (float)bottom, (float)pixelsPerDp, touchFirst);
++    public static void Screen(double left, double top, double right, double bottom, double pixelsPerDp, bool touchFirst) { } // not wired for SDL in P4
+ 
+     /// <summary>The page was hidden or shown again: a hidden page suspends the game (music paused, fingers released).</summary>
+     [JSExport]
+-    public static void Visibility(bool hidden) => BrowserLifecycle.Hidden = hidden;
++    public static void Visibility(bool hidden) { } // SDL sends SDL_EVENT_WINDOW_HIDDEN/SHOWN from visibilitychange
+ 
+     /// <summary>Diagnostics for tests and validation: "updates frames" of the current or last run.</summary>
+     [JSExport]
+diff -ru --strip-trailing-cr a/src/MicroEngine.Cli/Hosts/web/wwwroot/main.js b/src/MicroEngine.Cli/Hosts/web/wwwroot/main.js
+--- a/src/MicroEngine.Cli/Hosts/web/wwwroot/main.js	2026-11-02 17:31:30.951606900 -0500
++++ b/src/MicroEngine.Cli/Hosts/web/wwwroot/main.js	2026-11-02 17:31:45.283741100 -0500
+@@ -77,7 +77,9 @@
+ // Audio: raylib's backend (miniaudio) creates its AudioContext when the game starts, which happens inside the
+ // click or key press that starts it, so browsers let it play. If a browser still holds it suspended, every
+ // later key or click resumes it and a button says why the game is silent.
+-const audioContexts = () => (window.miniaudio?.devices ?? []).map(d => d?.webaudio).filter(Boolean);
++// ARCH-1 P4: SDL keeps its AudioContext in Module.SDL3.audioContext.
++let emscriptenModule;
++const audioContexts = () => [...(window.miniaudio?.devices ?? []).map(d => d?.webaudio), emscriptenModule?.SDL3?.audioContext].filter(Boolean);
+ function resumeAudio() {
+   for (const context of audioContexts()) if (context.state === 'suspended') context.resume().then(updateSound, () => {});
+ }
+@@ -214,6 +216,9 @@
+   catch (e) { error = e; }
+   if (error) return fail(`${game.title} could not start.`, error);
+   setState('playing');
++  // ARCH-1 P4: SDL's Emscripten window takes the size SDL_CreateWindow asked for, not the canvas's CSS size, until
++  // the page's next resize event; send one so the canvas backing store matches the page from the first frame.
++  window.dispatchEvent(new Event('resize'));
+   sendScreen();
+   updateSound();
+   requestAnimationFrame(frame);
+@@ -286,6 +291,7 @@
+     .withModuleConfig({ canvas, onDownloadResourceProgress: (done, total) => setProgress(done, total) })
+     .withEnvironmentVariables(environment)
+     .create();
++  emscriptenModule = runtime.Module;
+   runtime.setModuleImports('microengine', {
+     storage: storageImports,
+     // Touch-control haptics. Android browsers vibrate; Safari on iOS has no Vibration API, so this returns false there.
+diff -ru --strip-trailing-cr a/src/MicroEngine.Sdl/SdlPlatform.cs b/src/MicroEngine.Sdl/SdlPlatform.cs
+--- a/src/MicroEngine.Sdl/SdlPlatform.cs	2026-11-02 17:11:20.298803700 -0500
++++ b/src/MicroEngine.Sdl/SdlPlatform.cs	2026-11-02 17:19:55.960456900 -0500
+@@ -117,7 +117,10 @@
+         if (request.Hidden || placed) flags |= SDL_WindowFlags.SDL_WINDOW_HIDDEN;
+         if (mobile) flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
+         var (windowWidth, windowHeight) = mobile ? (_settings.VirtualWidth * scale, _settings.VirtualHeight * scale) : InitialWindowSize(scale);
+-        _window = SDL_CreateWindow(_settings.Title, windowWidth, windowHeight, flags);
++        // ARCH-1 P4: SDL3-CS types the flags as a 64-bit enum, which .NET's wasm interpreter passes in a 32-bit slot
++        // (RuntimeError "function signature mismatch"); a plain ulong parameter is passed correctly.
++        fixed (byte* title = System.Text.Encoding.UTF8.GetBytes(_settings.Title + "\0"))
++            _window = CreateWindowRaw(title, windowWidth, windowHeight, (ulong)flags);
+         if (_window == null) throw Fail("SDL could not open a window");
+         if (placed)
+         {
+@@ -171,11 +174,22 @@
+         // game's first frame and then froze would be worse than a window that appears a moment later.
+         if (!(request.Identity is { Splash: true } && !request.Hidden && !_fixedStep)) StartGamepads();
+         _self = GCHandle.Alloc(this);
+-        SDL_AddEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
++        // ARCH-1 P4: SDL3-CS types the filter as delegate* unmanaged (MONO_TYPE_FNPTR), which the wasm interpreter cannot
++        // translate ("CANNOT HANDLE INTERP ICALL SIG"); the same pointer as nint works, and the callback still arrives.
++        AddEventWatchRaw((nint)(delegate* unmanaged[Cdecl]<IntPtr, SDL_Event*, SDLBool>)&WatchLifecycle, GCHandle.ToIntPtr(_self));
+         _start = SDL_GetTicksNS();
+         RendererName = SDL_GetRendererName(_sdl) ?? "unknown";
+     }
+ 
++    [DllImport("SDL3", EntryPoint = "SDL_CreateWindow")]
++    private static extern SDL_Window* CreateWindowRaw(byte* title, int w, int h, ulong flags);
++    [DllImport("SDL3", EntryPoint = "SDL_GetWindowFlags")]
++    private static extern ulong GetWindowFlagsRaw(SDL_Window* window);
++    [DllImport("SDL3", EntryPoint = "SDL_AddEventWatch")]
++    private static extern byte AddEventWatchRaw(nint filter, nint userdata);
++    [DllImport("SDL3", EntryPoint = "SDL_RemoveEventWatch")]
++    private static extern void RemoveEventWatchRaw(nint filter, nint userdata);
++
+     /// <summary>The graphics API SDL chose ("direct3d11", "metal", "opengl", "software"...), for logs and tests.</summary>
+     public string RendererName { get; }
+     /// <summary>"SDL renderer" followed by the name of the render driver in use.</summary>
+@@ -392,7 +406,7 @@
+             }
+         }
+         // A suspended app draws nothing (a phone may have taken its surface away); wait instead of spinning.
+-        if (_suspended) SDL_Delay(50);
++        if (_suspended && !OperatingSystem.IsBrowser()) SDL_Delay(50); // ARCH-1 P4: a page cannot block
+     }
+ 
+     private void ReleaseAll()
+@@ -491,6 +505,7 @@
+     /// <summary>Waits with SDL's precise delay (a high-resolution timer, then a short spin).</summary>
+     public bool Wait(double seconds)
+     {
++        if (OperatingSystem.IsBrowser()) return false; // ARCH-1 P4: the browser paces frames (requestAnimationFrame)
+         if (seconds > 0) SDL_DelayPrecise((ulong)(seconds * 1e9));
+         return true;
+     }
+@@ -553,7 +568,7 @@
+     {
+         get
+         {
+-            if ((SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) == 0) return WindowMode.Windowed;
++            if ((GetWindowFlagsRaw(_window) & (ulong)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) == 0) return WindowMode.Windowed;
+             return SDL_GetWindowFullscreenMode(_window) == null ? WindowMode.Fullscreen : WindowMode.ExclusiveFullscreen;
+         }
+     }
+@@ -596,7 +611,7 @@
+         _disposed = true;
+         if (_self.IsAllocated)
+         {
+-            SDL_RemoveEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
++            RemoveEventWatchRaw((nint)(delegate* unmanaged[Cdecl]<IntPtr, SDL_Event*, SDLBool>)&WatchLifecycle, GCHandle.ToIntPtr(_self));
+             _self.Free();
+         }
+         (_audio as IDisposable)?.Dispose();
