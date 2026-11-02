@@ -44,7 +44,7 @@ smooth canvas are written at its size; pixel-art captures stay three times large
 Next SDK version (not published yet: arrives with the next SDK version). Every texture has a `TextureFilter`:
 `Nearest` keeps hard pixel edges, `Linear` blends neighbouring pixels when a texture is drawn scaled, rotated or between
 pixels. The game's default (`GameSettings.TextureFilter`, or nearest for `Pixel` scaling and linear for `Smooth`) applies
-to every texture, atlas and font page created without a filter of its own; each one can choose:
+to every texture and atlas created without a filter of its own; each one can choose:
 
 ```csharp
 var photo = Assets.Texture("backgrounds/sky.jpg", TextureFilter.Linear);
@@ -53,7 +53,9 @@ hero.Texture.Filter = TextureFilter.Nearest;                                    
 var page = Graphics.CreateTexture(image, TextureFilter.Linear);
 ```
 
-The built-in pixel font is always nearest. Atlases packed at run time and sampled linearly get extruded edges, so
+Glyph pages of TTF/OTF fonts do not follow the game's default: their filter is `FontOptions.Filter`, or, when that is
+null, linear for antialiased text (`FontOptions.Antialiasing`, the default) and nearest otherwise; `ScalableFont.Filter`
+changes it later. The built-in pixel font is always nearest. Atlases packed at run time and sampled linearly get extruded edges, so
 neighbouring sprites never bleed into each other. Linear sampling does not replace art made for the size it is shown
 at: there are no mipmaps, so drawing a large image much smaller than its pixels shimmers; keep art within about twice
 the size it is drawn at.

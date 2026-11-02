@@ -24,8 +24,10 @@ public sealed record GameSettings(string Title, int VirtualWidth = 320, int Virt
     /// </summary>
     public CanvasScaling Scaling { get; init; } = CanvasScaling.Pixel;
     /// <summary>
-    /// The filter of textures created without one (images, atlases, fonts). Null (the default) follows
+    /// The filter of textures created without one (images, atlases). Null (the default) follows
     /// <see cref="Scaling"/>: nearest for pixel art, linear for smooth scaling. Each texture can still choose its own.
+    /// Glyph pages of TTF/OTF fonts do not follow it: their filter is <see cref="FontOptions.Filter"/>, or linear for
+    /// antialiased text and nearest otherwise.
     /// </summary>
     public TextureFilter? TextureFilter { get; init; }
     /// <summary>The filter textures get when they do not choose one: <see cref="TextureFilter"/>, or the one <see cref="Scaling"/> implies.</summary>

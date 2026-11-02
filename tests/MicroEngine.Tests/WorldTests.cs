@@ -164,6 +164,52 @@ public sealed class WorldTests
     }
 
     [TestMethod]
+    public void An_entity_can_clear_its_list_during_update()
+    {
+        var list = new EntityList<Entity>();
+        var log = new List<string>();
+        var before = list.Add(new Probe(0) { Log = log });
+        var clearer = list.Add(new Probe(0) { Log = log });
+        var after = list.Add(new Probe(0) { Log = log });
+        var spawnedBefore = new Probe(0);
+        var spawnedAfter = new Probe(0);
+        clearer.OnUpdate = () =>
+        {
+            list.Add(spawnedBefore);
+            list.Clear();
+            Assert.AreEqual(0, list.Count, "cleared at once");
+            Assert.IsFalse(list.Any(), "nothing left to walk");
+            list.Add(spawnedAfter);
+        };
+        list.Update(0.016f);
+        Assert.AreEqual(1, before.Updates);
+        Assert.AreEqual(1, clearer.Updates);
+        Assert.AreEqual(0, after.Updates, "entities not yet updated when the list was cleared are skipped");
+        CollectionAssert.AreEqual(new[] { spawnedAfter }, list.ToList(), "an entity added after the clear joins at the end of the update");
+        Assert.AreEqual(0, log.Count, "clearing does not call Removed");
+        list.Update(0.016f);
+        Assert.AreEqual(1, spawnedAfter.Updates);
+        Assert.AreEqual(0, spawnedBefore.Updates);
+    }
+
+    [TestMethod]
+    public void An_entity_can_destroy_others_during_update()
+    {
+        var list = new EntityList<Entity>();
+        var log = new List<string>();
+        var killer = list.Add(new Probe(0));
+        var earlier = new Probe(0) { Log = log };
+        var later = new Probe(0) { Log = log };
+        list.Add(earlier);
+        list.Add(later);
+        killer.OnUpdate = () => { earlier.Destroy(); later.Destroy(); killer.Destroy(); };
+        list.Update(0.016f);
+        Assert.AreEqual(0, earlier.Updates + later.Updates, "destroyed entities stop updating at once");
+        Assert.AreEqual(0, list.Count);
+        CollectionAssert.AreEqual(new[] { "removed", "removed" }, log, "each removed once, at the end of the update");
+    }
+
+    [TestMethod]
     public void Destroyed_entities_are_removed_and_notified_once()
     {
         var list = new EntityList<Entity>();

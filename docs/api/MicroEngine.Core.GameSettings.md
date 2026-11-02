@@ -131,8 +131,10 @@ public CanvasScaling Scaling { get; init; }
 
 ### <a id="MicroEngine_Core_GameSettings_TextureFilter"></a> TextureFilter
 
-The filter of textures created without one (images, atlases, fonts). Null (the default) follows
+The filter of textures created without one (images, atlases). Null (the default) follows
 [Scaling](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scaling): nearest for pixel art, linear for smooth scaling. Each texture can still choose its own.
+Glyph pages of TTF/OTF fonts do not follow it: their filter is [Filter](MicroEngine.Graphics.FontOptions.md#MicroEngine_Graphics_FontOptions_Filter), or linear for
+antialiased text and nearest otherwise.
 
 ```csharp
 public TextureFilter? TextureFilter { get; init; }

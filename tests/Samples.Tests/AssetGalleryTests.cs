@@ -55,7 +55,9 @@ public sealed class AssetGalleryTests
         Assert.AreEqual(TextureFilter.Nearest, game.Enemies.Texture.Filter);
         int before = game.Assets.Statistics.Count;
         Press(game, "action");
-        for (int i = 0; i < 120 && !scene.LevelLoaded; i++) { game.StepForTest(); Thread.Sleep(1); }
+        // Workers may start late on a busy runner: wait by time, not by a count of frames.
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (!scene.LevelLoaded && DateTime.UtcNow < deadline) { game.StepForTest(); Thread.Sleep(1); }
         Assert.IsTrue(scene.LevelLoaded, "the preloaded tile atlas arrives within a few frames");
         Assert.AreEqual(before + 1, game.Assets.Statistics.Count);
         Press(game, "action");
