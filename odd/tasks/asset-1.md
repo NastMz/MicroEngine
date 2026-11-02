@@ -58,9 +58,9 @@ Quoted fragments are the owner's request (2026-11-02), verbatim.
 | T6 Asset manager: cache, scopes, diagnostics, preload | S5, S8 | inline | done | 1013200 |
 | T7 Build integration: automatic Content items, checks, template | S6 | inline | done | aafe9fa |
 | T8 Consumer project and external check | S9, S7 | inline | done | 5f88da0, f253579 |
-| T9 Packaging on every platform | S7 | inline + CI | local done; CI pending | validate and platforms runs on the branch |
+| T9 Packaging on every platform | S7 | inline + CI | done | platforms run 41515353091 (success), validate 41515347239 |
 | T10 Measurements | S8 | inline | done | c8f1531 (benchmarks/AssetBench) |
-| T11 Documentation, evaluation, PR | S10, S11 | inline | done except the PR | 0b9b302 |
+| T11 Documentation, evaluation, PR | S10, S11 | inline | done | 0b9b302, PR |
 
 Route evidence: no writer trigger holds (units depend on each other's contracts: textures → fonts → assets), so the
 parent writes inline following this logbook.
@@ -87,3 +87,8 @@ parent writes inline following this logbook.
   and were fixed (loaded in `Load`); remaining failures are environmental (local pack without
   `-p:MicroEngineRelease=true`, `ANDROID_HOME` unset). CI dispatched: validate (all checks) and platforms (macOS,
   Android emulator, iOS simulator). Next: CI results, then the pull request.
+- L6 (2026-11-02) Independent verifier (read-only, against 98b1a7d): no blockers, 58 SDL and 15 raylib demo captures
+  byte-identical to `main`; five advisories fixed in 03ced9f. CI on 0fb1729: platforms (macOS, Android emulator, iOS
+  simulator, mobile web) passed; validate: all .NET suites pass on Linux and Windows, the job failed only on a stale API
+  page (fixed). Demo package jobs fail identically on `main` (validate run 41515138843 on 98b1a7d): Windows WARP capture
+  references recorded before PERF-2 and the Debian 11 glibc message check; not caused by ASSET-1, left to their owners.
