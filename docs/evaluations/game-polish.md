@@ -30,6 +30,7 @@ No physical phone, iPhone, Mac or Linux desktop was used: nothing here claims a 
 | 14 | Linux desktop entries did not name the window class, so an installed entry's icon did not belong to the running game | desk (freedesktop spec, SDL app id) | `StartupWMClass=<ApplicationId>` | SDK tool |
 | 15 | The browser loading page was black with grey text before the game | browser | The game's colour, image, title, progress and optional branding, readable on any colour; web app manifest | browser host |
 | 16 | Prompt text on the loading page and branding overlapped the page's Fullscreen button at phone width | browser, 375×812 | Branding raised above the page's buttons on touch screens | browser host |
+| 17 | iOS packages built since SDK-1 could not be restored ("Ambiguous project name") and, once restored, stopped at start ("Attempting to JIT compile ... GameEntry:Create" in AOT-only mode) | CI (platform runs 41378384819, 41379731953) | The iOS host assembly is `<Game>.iOS`, so the app no longer holds two assemblies named after the game | SDK tool |
 
 Audited and found fine: the four demos' scripted runs (36 scripts, every one exits 0 with isolated saves and its
 debug start), pause menus, dialogue paging in the existing texts, Trail Duel's battle and shrine flows, Neon Rift's
@@ -76,7 +77,7 @@ changes (dialogue paging, long-word wrapping, the start screen on by default, th
 | Linux | desktop entry `Name`, window app id (SDL) | `icon.png`, window icon | `StartupWMClass`, id file name | run: packaged, entry read; not run on a Linux desktop here |
 | macOS | bundle name, Dock | `AppIcon.icns` | bundle id, version, ad hoc signature | unchanged by this branch; checked by the SDK test on CI |
 | Android | launcher, recents, app info | adaptive and round icons | package id unchanged (update installs over earlier builds), launch screen | emulator, `aapt` |
-| iOS | home screen | asset catalog icon | bundle id, `UILaunchScreen` | desk; needs CI (no Mac here) |
+| iOS | home screen | asset catalog icon | bundle id, `UILaunchScreen` | CI: the simulator app installs, starts, renders, plays sound, takes scripted touches and resumes after suspension (platform run 41381187401); not on an iPhone |
 | Web | tab title | favicon, manifest icon | manifest name, colours, orientation; start screen | browser (loading page and start); the tool's web build needs the `wasm-tools` workload, not installed here: CI |
 
 The four demos keep distinct names, ids (`dev.microengine.<game>`) and icons; their start-screen colours come from
@@ -90,10 +91,12 @@ their own palettes.
 | Meadow Run, Courtyard Key, Trail Duel, Neon Rift | 47, 31, 88, 33 passed |
 | Samples, desktop, raylib | 9, 8 passed; raylib 1 passed, 4 skipped (native window not available) |
 | Site build and content checks | 204 pages, quoted code blocks equal their sources |
+| Visual references | only intended captures re-recorded: 8 per desktop reference (Windows, Linux raylib and SDL, macOS), 26 on Android and in the iOS simulator (touch names); every other capture unchanged |
+| Platform run 41381187401 | macOS, Android (four games), iOS simulator (four games: installed, started, rendered, audio, touch, lifecycle), web demos on emulated phones |
 
 ## 6. Limitations and follow-ups
 
-- iOS launch screen and identity are verified by the CI build only; nothing ran on an iPhone.
+- iOS ran in the simulator on CI only; nothing ran on an iPhone, and the launch screen was not looked at.
 - Linux and macOS identity were not looked at on those desktops here.
 - Sound was reviewed in code, not listened to.
 - Start-up on the emulator takes about 4 s from launch to Meadow Run's title (logcat); the start screen covers it.

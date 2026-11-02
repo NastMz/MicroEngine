@@ -103,3 +103,8 @@ inline following this record.
   the new page applied (the `wasm-tools` workload is not installed here, so the tool's own web build runs in CI):
   colour, image, title, progress, branding; status text unreadable on light colours and branding under the Fullscreen
   button at phone width, both fixed. `AudioMixer.PlayMusic` restarted a fading track (RED test, fixed, f7ddfa5).
+- L9 CI on PR #18: the version check refused version numbers in docs (reworded); the API reference needed
+  regenerating; iOS packaging was broken since SDK-1 (restore, then AOT at start: host assembly renamed <Game>.iOS);
+  a bottom banner in Courtyard Key covered the hero entering the boss room (back at the top, the room name waits).
+  Visual references re-recorded only for intended captures, each checked by eye first (merge script refuses any
+  other difference). Platform run 41381187401: macOS, Android x4, iOS simulator x4 functional checks, mobile web pass.
