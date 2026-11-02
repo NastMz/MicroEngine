@@ -48,7 +48,7 @@ public class MusicLoadingTests
 
     [TestMethod]
     [DoNotParallelize]
-    public void Without_threads_songs_render_a_few_milliseconds_per_update_and_play_unchanged()
+    public void Without_threads_songs_render_a_few_milliseconds_per_update_and_start_when_ready()
     {
         bool threads = AudioMixer.RenderSongsOnThreads;
         var budget = AudioMixer.SliceBudget;
@@ -65,26 +65,27 @@ public class MusicLoadingTests
             mixer.Update(1f / 60);
             Assert.IsNull(device.CurrentMusic, "rendering does not play anything");
 
-            // Asked for before its turn: the rest renders at once, and it sounds as if rendered in Load.
+            // Asked for before its turn: it goes first and starts once rendered; nothing freezes or plays meanwhile.
             mixer.PlayMusic("second", fadeSeconds: 0);
-            for (int i = 0; i < 30; i++) mixer.Update(1f / 60);
-            var expected = new CaptureAudioDevice();
-            var reference = new AudioMixer(expected);
-            reference.AddMusic("second", Tune().Render(), loop: false);
-            reference.Update(1f / 60);
-            reference.Update(1f / 60);
-            reference.PlayMusic("second", fadeSeconds: 0);
-            for (int i = 0; i < 30; i++) reference.Update(1f / 60);
-            CollectionAssert.AreEqual(expected.Output.Samples, device.Output.Samples);
-
-            // The first song keeps rendering a slice per update until it is ready.
-            Assert.AreEqual(1, mixer.SlicedSongs);
+            Assert.IsNull(mixer.CurrentMusic, "waits for its slices");
             int updates = 0;
+            while (mixer.CurrentMusic is null && updates < 100_000) { mixer.Update(1f / 60); updates++; }
+            Assert.AreEqual("second", mixer.CurrentMusic);
+            Assert.AreEqual(1, mixer.SlicedSongs, "it started before the song registered first finished");
+            mixer.PlayMusic("second", fadeSeconds: 0);
+            Assert.AreEqual("second", mixer.CurrentMusic, "asking again changes nothing");
+
+            // Stopped while waiting: it never starts.
+            mixer.PlayMusic("first", fadeSeconds: 0);
+            Assert.IsNull(mixer.CurrentMusic);
+            mixer.StopMusic(0);
+            updates = 0;
             while (mixer.SlicedSongs > 0 && updates < 100_000) { mixer.Update(1f / 60); updates++; }
             Assert.AreEqual(0, mixer.SlicedSongs, "rendered by updates alone");
             Assert.IsTrue(updates > 20, $"over many updates ({updates})");
+            Assert.IsNull(mixer.CurrentMusic, "a stopped request stays stopped");
             mixer.PlayMusic("first", fadeSeconds: 0);
-            Assert.AreEqual("first", mixer.CurrentMusic);
+            Assert.AreEqual("first", mixer.CurrentMusic, "ready songs start at once");
         }
         finally
         {

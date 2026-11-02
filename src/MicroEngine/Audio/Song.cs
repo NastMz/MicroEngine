@@ -121,7 +121,7 @@ public sealed class Song
     /// </summary>
     internal IEnumerator<AudioClip?> RenderInSlices(int sampleRate = AudioClip.DefaultSampleRate)
     {
-        const int Block = 32768;
+        const int Block = SliceSamples;
         int steps = LengthInSteps;
         if (steps == 0) throw new InvalidOperationException("Song has no steps.");
         double stepSamples = StepSeconds * sampleRate;
@@ -163,7 +163,10 @@ public sealed class Song
         yield return new AudioClip(interleaved, sampleRate, 2);
     }
 
-    /// <summary>Renders one track into the buffers, yielding after each note.</summary>
+    /// <summary>Samples rendered between two slices: about a millisecond of work in a browser.</summary>
+    private const int SliceSamples = 2048;
+
+    /// <summary>Renders one track into the buffers, yielding every <see cref="SliceSamples"/> samples and after each note.</summary>
     private static IEnumerable<int> RenderTrack(Instrument ins, string[] track, int steps, double stepSamples, int rate, float[] left, float[] right)
     {
         int total = left.Length;
@@ -199,6 +202,7 @@ public sealed class Song
                 int index = (start + i) % total;
                 left[index] += filtered * (1 - ins.Pan) * 2 * 0.7f;
                 right[index] += filtered * ins.Pan * 2 * 0.7f;
+                if (i % SliceSamples == SliceSamples - 1) yield return s;
             }
             s += length;
             yield return s;

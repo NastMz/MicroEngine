@@ -215,6 +215,8 @@ public sealed class AudioMixer
     internal static TimeSpan SliceBudget { get; set; } = TimeSpan.FromMilliseconds(4);
     /// <summary>Songs still rendering in slices.</summary>
     internal int SlicedSongs => _sliced.Count;
+    // A song asked to play while it still renders in slices: it starts once rendered, instead of freezing the game.
+    private (string Name, bool FadeIn)? _waiting;
     private readonly Dictionary<string, int> _lastPlayedFrame = new(StringComparer.Ordinal);
     private readonly Random _random = new(7);
     private float _musicVolume = 1f, _fade = 1f, _fadeSpeed;
@@ -278,7 +280,7 @@ public sealed class AudioMixer
         int sliced = _sliced.FindIndex(s => s.Name == name);
         if (sliced >= 0)
         {
-            // Asked for before its turn finished: the rest of it renders now.
+            // Needed now (a direct request for the handle): the rest of it renders at once.
             var (_, slices, loop) = _sliced[sliced];
             _sliced.RemoveAt(sliced);
             AudioClip? clip = null;
@@ -348,6 +350,7 @@ public sealed class AudioMixer
     public void PlayMusic(string name, float fadeSeconds = 0.4f)
     {
         if (!HasMusic(name)) throw new KeyNotFoundException($"Music '{name}' is not registered.");
+        if (_waiting?.Name == name) return;
         if (_device.CurrentMusic?.Name == name)
         {
             if (_pendingMusic is null) return;
@@ -366,6 +369,7 @@ public sealed class AudioMixer
     /// <summary>Stops the music, fading it out over <paramref name="fadeSeconds"/>; 0 or less stops it at once.</summary>
     public void StopMusic(float fadeSeconds = 0.4f)
     {
+        _waiting = null;
         if (fadeSeconds <= 0) { _device.StopMusic(); _pendingMusic = null; return; }
         _pendingMusic = "";
         _fadeSpeed = -1f / fadeSeconds;
@@ -384,6 +388,18 @@ public sealed class AudioMixer
     private void StartMusic(string name, bool fadeIn = true)
     {
         _pendingMusic = null;
+        _waiting = null;
+        int sliced = _sliced.FindIndex(s => s.Name == name);
+        if (sliced >= 0)
+        {
+            // Still rendering without threads: it goes first and starts when ready; meanwhile nothing plays.
+            var song = _sliced[sliced];
+            _sliced.RemoveAt(sliced);
+            _sliced.Insert(0, song);
+            _waiting = (name, fadeIn);
+            _device.StopMusic();
+            return;
+        }
         _fade = fadeIn ? 0.05f : 1f;
         _fadeSpeed = fadeIn ? 4f : 0f;
         _device.PlayMusic(Music(name), _musicVolume * _fade);
@@ -403,6 +419,7 @@ public sealed class AudioMixer
             {
                 _sliced.RemoveAt(0);
                 _music[name] = _device.LoadMusic(name, clip, loop);
+                if (_waiting is { } waiting && waiting.Name == name) StartMusic(name, waiting.FadeIn);
             }
         }
     }
