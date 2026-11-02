@@ -88,7 +88,24 @@ public sealed class Song
         .Where(t => t != "|")
         .ToArray();
 
+    /// <summary>
+    /// Throws what <see cref="Render"/> would throw for the song's content, without rendering it (a few microseconds):
+    /// songs that render in the background report their mistakes where they are registered.
+    /// </summary>
+    internal void Validate()
+    {
+        if (LengthInSteps == 0) throw new InvalidOperationException("Song has no steps.");
+        foreach (var (_, track) in _tracks)
+            foreach (var token in track)
+                if (token is not ("." or "-")) Synth.NoteFrequency(token);
+        foreach (var drum in _drums)
+            foreach (var token in drum)
+                if (token is not ("." or "-" or "k" or "s" or "h" or "o")) throw new FormatException($"Unknown drum '{token}'.");
+    }
+
     /// <summary>Renders the whole song to stereo PCM, sized to loop seamlessly (echo tails wrap around).</summary>
+    /// <exception cref="InvalidOperationException">The song has no steps.</exception>
+    /// <exception cref="FormatException">A track has an invalid note or a drum track an unknown drum.</exception>
     public AudioClip Render(int sampleRate = AudioClip.DefaultSampleRate)
     {
         int steps = LengthInSteps;

@@ -53,6 +53,22 @@ public sealed class SceneTests
     }
 
     [TestMethod]
+    public void An_empty_stack_updates_and_draws_nothing()
+    {
+        var log = new List<string>();
+        var level = new Probe("level", log);
+        var (game, platform) = Start(level);
+        game.StepForTest();
+        game.Scenes.Pop();
+        game.StepForTest();
+        game.StepForTest();
+        game.Render(platform.BeginFrame());
+        Assert.AreEqual(0, game.Scenes.Count);
+        Assert.AreEqual(1, level.Updates, "the popped scene is not updated again");
+        Assert.AreEqual(2, game.UpdateCount - 1, "steps keep running without a scene");
+    }
+
+    [TestMethod]
     public void Non_blocking_overlay_lets_the_scene_below_keep_running()
     {
         var log = new List<string>();

@@ -175,7 +175,7 @@ public sealed class SceneManager
             // Scenes keep animating during the "in" half so the new scene is alive when revealed.
             if (!_swapped) return;
         }
-        int first = _stack.Count - 1;
+        int first = Math.Max(_stack.Count - 1, 0); // an empty stack updates nothing
         while (first > 0 && _stack[first].IsOverlay && !_stack[first].BlocksUpdateBelow) first--;
         for (int i = first; i < _stack.Count; i++) _stack[i].Tick(dt);
         ApplyPending();

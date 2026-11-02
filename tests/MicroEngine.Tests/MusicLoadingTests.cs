@@ -31,4 +31,21 @@ public class MusicLoadingTests
         mixer.AddMusic("tune", Tune().Render());
         Assert.IsTrue(mixer.HasMusic("tune"), "a clip registered later replaces the song");
     }
+
+    [TestMethod]
+    public void A_song_that_cannot_be_rendered_fails_when_registered_not_when_it_plays()
+    {
+        var mixer = new AudioMixer(new CaptureAudioDevice());
+        var badNote = new Song(120).Track(new Instrument(Wave.Square, 0.3f), "C4 H9 G4");
+        var badDrum = new Song(120).Drums("k . x .");
+        var empty = new Song(120);
+        Assert.ThrowsExactly<FormatException>(() => mixer.AddMusic("note", badNote));
+        Assert.ThrowsExactly<FormatException>(() => mixer.AddMusic("drum", badDrum));
+        Assert.ThrowsExactly<InvalidOperationException>(() => mixer.AddMusic("empty", empty));
+        Assert.IsFalse(mixer.HasMusic("note") || mixer.HasMusic("drum") || mixer.HasMusic("empty"), "nothing registered");
+        // The same errors Song.Render reports.
+        Assert.ThrowsExactly<FormatException>(() => badNote.Render());
+        Assert.ThrowsExactly<FormatException>(() => badDrum.Render());
+        Assert.ThrowsExactly<InvalidOperationException>(() => empty.Render());
+    }
 }
