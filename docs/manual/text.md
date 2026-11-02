@@ -138,6 +138,8 @@ small font (SDL's 8x8 debug font, raylib's default font).
 - Scalable text is rasterized at each size it is drawn: text drawn at many sizes (a zooming title) fills glyph pages;
   draw it at one size and scale the drawing, or `Reset` the font when a scene ends.
 - No signed-distance-field text: very large or freely zoomed text is rasterized per size, not scaled from one bitmap.
+- Font files are trusted content shipped with the game: truncated or foreign files are refused, but fonts from players
+  or the network should not be loaded.
 
 ## Common mistakes
 

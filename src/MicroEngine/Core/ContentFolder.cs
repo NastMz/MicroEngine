@@ -36,8 +36,9 @@ public sealed class ContentFolder
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(relative);
         var path = Resolve(relative) ?? throw new ArgumentException($"'{relative}' is outside the content folder.", nameof(relative));
-        if (!File.Exists(path)) throw new FileNotFoundException($"Content file not found: {path}", path);
+        // On a case-sensitive system a wrong spelling is simply missing; CheckCase then names the real one.
         CheckCase(path);
+        if (!File.Exists(path)) throw new FileNotFoundException($"Content file not found: {path}", path);
         return path;
     }
 
@@ -66,6 +67,7 @@ public sealed class ContentFolder
         string current = Root;
         foreach (var part in parts)
         {
+            if (!Directory.Exists(current)) return;
             var names = _listings.GetOrAdd(current, dir => new HashSet<string>(Directory.EnumerateFileSystemEntries(dir).Select(Path.GetFileName)!, StringComparer.Ordinal));
             if (!names.Contains(part))
             {

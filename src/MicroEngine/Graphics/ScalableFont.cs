@@ -137,11 +137,43 @@ public sealed class ScalableFont : IDisposable
 
     private void Add(byte[] data, string name)
     {
+        // The rasterizer reads a font through raw pointers without bounds checks: a truncated or foreign file makes it
+        // read past the array (hanging or crashing the game). Its table directory is checked here first.
+        if (CheckStructure(data) is { } problem) throw new InvalidDataException($"{name} is not a TrueType or OpenType font the engine can read ({problem}).");
         try { _system.AddFont(data); }
         catch (Exception e) when (e is not OutOfMemoryException and not ObjectDisposedException)
         {
             throw new InvalidDataException($"{name} is not a TrueType or OpenType font the engine can read ({e.Message}).", e);
         }
+    }
+
+    /// <summary>
+    /// What is wrong with the file's structure, or null when every table of its (first) font lies inside the data: a
+    /// TrueType ("\0\x01\0\0", "true") or OpenType ("OTTO") header, or a collection ("ttcf") whose first font is one.
+    /// </summary>
+    internal static string? CheckStructure(ReadOnlySpan<byte> data)
+    {
+        static uint U32(ReadOnlySpan<byte> d, int at) => System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(d[at..]);
+        if (data.Length < 12) return "the file is too short";
+        int start = 0;
+        if (U32(data, 0) == 0x74746366) // "ttcf": a collection; the rasterizer opens its first font.
+        {
+            if (data.Length < 16) return "the collection header is cut short";
+            uint first = U32(data, 12);
+            if (first > (uint)data.Length - 12) return "the collection points outside the file";
+            start = (int)first;
+        }
+        uint version = U32(data, start);
+        if (version is not (0x00010000 or 0x4F54544F or 0x74727565)) return "no TrueType or OpenType header";
+        int tables = System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(data[(start + 4)..]);
+        if (tables == 0 || start + 12 + (long)tables * 16 > data.Length) return "the table directory is cut short";
+        for (int i = 0; i < tables; i++)
+        {
+            int entry = start + 12 + i * 16;
+            ulong offset = U32(data, entry + 8), length = U32(data, entry + 12);
+            if (offset + length > (ulong)data.Length) return "a table lies outside the file";
+        }
+        return null;
     }
 
     /// <summary>The font at <paramref name="size"/> (pixels per em), as an <see cref="IFont"/>; the same object for the same size.</summary>

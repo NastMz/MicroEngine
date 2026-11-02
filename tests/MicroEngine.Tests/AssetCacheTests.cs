@@ -45,10 +45,16 @@ public sealed class AssetCacheTests
         assets.Atlas("atlases/players.xml");
         assets.Font("fonts/Inter-Regular.ttf");
         var scope = assets.CreateScope();
-        for (int i = 0; i < 10; i++) Lookups(scope);
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 1000; i++) Lookups(scope);
-        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before, "games may ask for assets in Draw, every frame");
+        for (int i = 0; i < 100; i++) Lookups(scope);
+        // Steady garbage repeats in every round; the runtime's one-off work (tiered compilation) lands in one at most.
+        var rounds = new List<long>();
+        for (int round = 0; round < 3; round++)
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 1000; i++) Lookups(scope);
+            rounds.Add(GC.GetAllocatedBytesForCurrentThread() - before);
+        }
+        Assert.AreEqual(0, rounds.Min(), $"games may ask for assets in Draw, every frame (rounds: {string.Join(", ", rounds)})");
 
         static void Lookups(AssetCache scope)
         {
@@ -171,7 +177,9 @@ public sealed class AssetCacheTests
         var batch = assets.Preload("backgrounds/set1_background.png", "atlases/enemies.json", "fonts/SourceSerif4-Regular.otf", "items/none.png");
         Assert.AreEqual(4, batch.Count);
         Assert.AreEqual(0, device.TexturesCreated, "nothing reaches the device before the engine's update");
-        for (int frame = 0; frame < 200 && !batch.IsDone; frame++)
+        // Workers may start late on a busy two-core runner: wait by time, one asset per Update.
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (!batch.IsDone && DateTime.UtcNow < deadline)
         {
             assets.Update();
             if (!batch.IsDone) Thread.Sleep(1);

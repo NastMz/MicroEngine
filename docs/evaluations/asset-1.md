@@ -107,8 +107,20 @@ frame.
 | macOS, iOS | Through CI (SDK external check on macOS, platform workflow on the iOS simulator), demos only for iOS |
 
 Local environmental failures, not caused by this work: `sdk/tests/packages.mjs` reports build-machine paths for a local
-pack without `-p:MicroEngineRelease=true` (as CI passes), and the APK check needs `ANDROID_HOME`. One run of the core
-tests stalled once right after a rebuild and did not reproduce in six later runs.
+pack without `-p:MicroEngineRelease=true` (as CI passes), and the APK check needs `ANDROID_HOME`.
+
+**A defect found by a stalled test run.** The core tests stalled in about one run in five. Thread stacks of a stalled
+run (`dotnet-stack`) showed StbTrueTypeSharp inside `stbtt__find_table` for the eight garbage bytes of the "not a font"
+test: stb_truetype reads fonts through raw pointers without bounds checks, so a truncated or foreign file reads past its
+array and hangs or crashes depending on the memory behind it. `ScalableFont` now checks the header and that every table
+of the directory lies inside the file before the rasterizer sees it; fifteen runs in a row then passed. Fonts and images
+remain trusted content shipped with the game: the check refuses broken files, it does not make the rasterizer safe for
+deliberately crafted ones.
+
+**A visual reference that predates PERF-2.** The validation run failed CourtyardKey's Windows capture comparison (6 of
+26 captures, against a reference recorded from the PRODUCT-1 packages). Playing the same scripts with `main` (98b1a7d)
+and with this branch gave byte-identical captures with hardware Direct3D 11 and with WARP, so the mismatch reproduces on
+`main` and is left to whoever re-records the reference.
 
 ## Limitations
 

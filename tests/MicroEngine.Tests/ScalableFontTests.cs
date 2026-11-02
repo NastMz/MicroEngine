@@ -123,6 +123,25 @@ public sealed class ScalableFontTests
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => font.At(float.NaN));
     }
 
+    /// <summary>
+    /// The rasterizer trusts its input and reads out of bounds on a broken file (it hung this suite once in five runs):
+    /// broken files must be refused before it sees them.
+    /// </summary>
+    [TestMethod]
+    public void Truncated_or_foreign_files_are_refused_before_the_rasterizer_reads_them()
+    {
+        var inter = File.ReadAllBytes(Gallery("fonts/Inter-Regular.ttf"));
+        Assert.IsNull(ScalableFont.CheckStructure(inter));
+        Assert.IsNull(ScalableFont.CheckStructure(File.ReadAllBytes(Gallery("fonts/SourceSerif4-Regular.otf"))));
+        StringAssert.Contains(ScalableFont.CheckStructure([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]), "header");
+        StringAssert.Contains(ScalableFont.CheckStructure([0, 1, 0, 0]), "too short");
+        StringAssert.Contains(ScalableFont.CheckStructure(inter.AsSpan(0, 40)), "cut short");
+        StringAssert.Contains(ScalableFont.CheckStructure(inter.AsSpan(0, 4000)), "outside the file");
+        var device = new HeadlessGraphicsDevice();
+        for (int i = 0; i < 50; i++)
+            Assert.ThrowsExactly<InvalidDataException>(() => ScalableFont.FromBytes(device, inter[..(400 + i * 37)]));
+    }
+
     [TestMethod]
     public void Bitmap_and_scalable_fonts_share_layout_through_IFont()
     {
