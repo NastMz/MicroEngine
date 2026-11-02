@@ -205,7 +205,8 @@ public sealed class PlatformEquivalenceTests
         IPlatform platform;
         try
         {
-            platform = RaylibPlatform.Profile.Create(Request(game) with { Mute = false, Audio = SdlAudioDevice.TryCreate });
+            // SDL's dummy driver runs its whole audio path without a sound card, so the 30 sounds are never heard.
+            platform = RaylibPlatform.Profile.Create(Request(game) with { Mute = false, Audio = () => SdlAudioDevice.TryCreate("dummy") });
         }
         catch (InvalidOperationException e)
         {
@@ -214,7 +215,7 @@ public sealed class PlatformEquivalenceTests
         }
         using (platform)
         {
-            Native.Require(platform.Audio is SdlAudioDevice, "no audio output device here");
+            Native.Require(platform.Audio is SdlAudioDevice, "SDL's dummy audio driver is unavailable here");
             Assert.IsFalse(Raylib_cs.Raylib.IsAudioDeviceReady(), "raylib must not open its own device when audio is replaced");
             var result = GameRunner.Run(game, platform, new RunOptions { MaxUpdates = 30 });
             Assert.IsNull(result.Error, result.Error?.ToString());

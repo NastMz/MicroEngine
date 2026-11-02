@@ -20,6 +20,16 @@ public sealed record GameSettings(string Title, int VirtualWidth = 320, int Virt
 }
 
 /// <summary>
+/// Facts a platform can report about itself for logs and profiles: the graphics API in use, VSync, the graphics adapter
+/// when the backend can name it. Keys are short lower-case words; values are free text.
+/// </summary>
+public interface IPlatformDiagnostics
+{
+    /// <summary>The facts, read when asked (a value may change, such as the display's refresh rate).</summary>
+    IReadOnlyDictionary<string, string> Diagnostics { get; }
+}
+
+/// <summary>
 /// Everything a backend provides: a window (or nothing, headless), input devices, audio,
 /// texture creation and a renderer that draws into the virtual canvas.
 /// </summary>
@@ -37,6 +47,12 @@ public interface IPlatform : IDisposable
     double Now { get; }
     /// <summary>Whether time advances with the wall clock (desktop) or one step per frame (headless).</summary>
     bool RealTime { get; }
+    /// <summary>
+    /// The refresh rate in Hz of the display that paces the frames (VSync), or 0 when frames are not paced to a display
+    /// or its rate is unknown (the default). The loop then counts elapsed time in refresh periods, which removes the
+    /// stutter of waking up irregularly around them.
+    /// </summary>
+    double DisplayRate => 0;
     /// <summary>
     /// Whether the system took the game away (a phone app sent to the background): while true the loop neither
     /// simulates nor renders, music is paused and the game is told through <c>OnSuspended</c>/<c>OnResumed</c>.

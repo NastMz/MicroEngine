@@ -18,7 +18,7 @@ namespace MicroEngine.Sdl;
 /// also reports the window's safe area and density; a system that sends the app to the background suspends it
 /// (<see cref="IPlatform.Suspended"/>).
 /// </summary>
-public sealed unsafe class SdlPlatform : IPlatform
+public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
 {
     private readonly GameSettings _settings;
     private readonly bool _fixedStep;
@@ -33,6 +33,7 @@ public sealed unsafe class SdlPlatform : IPlatform
     private readonly SdlTouchScreen _touch;
     private readonly ulong _start;
     private long _frames;
+    private readonly bool _vsync;
     private bool _closeRequested, _suspended, _disposed;
     // Written by the lifecycle watch on the thread the system uses to send the event.
     private volatile bool _background;
@@ -101,8 +102,10 @@ public sealed unsafe class SdlPlatform : IPlatform
             AppOrientation.Any => "LandscapeLeft LandscapeRight Portrait PortraitUpsideDown",
             _ => "LandscapeLeft LandscapeRight",
         });
-        if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO | SDL_InitFlags.SDL_INIT_GAMEPAD))
+        long started = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO))
             throw new InvalidOperationException($"SDL could not start its video subsystem: {SDL_GetError()}");
+        Mark("video", ref started);
         int scale = request.Scale ?? _settings.Scale;
         var flags = SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY;
         if (request.Hidden) flags |= SDL_WindowFlags.SDL_WINDOW_HIDDEN;
@@ -110,6 +113,7 @@ public sealed unsafe class SdlPlatform : IPlatform
         _window = SDL_CreateWindow(_settings.Title, _settings.VirtualWidth * scale, _settings.VirtualHeight * scale, flags);
         if (_window == null) throw Fail("SDL could not open a window");
         if (!mobile && request.Identity?.Icon is { } icon) SetWindowIcon(icon);
+        Mark("window", ref started);
         _sdl = renderer is null ? SDL_CreateRenderer(_window, (byte*)null) : SDL_CreateRenderer(_window, renderer);
         if (_sdl == null)
         {
@@ -117,11 +121,12 @@ public sealed unsafe class SdlPlatform : IPlatform
                 ? "SDL could not create a renderer"
                 : $"SDL could not create its '{renderer}' renderer (drivers here: {string.Join(", ", RenderDrivers)})");
             SDL_DestroyWindow(_window);
-            SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO | SDL_InitFlags.SDL_INIT_GAMEPAD);
+            SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
             throw error;
         }
+        Mark("renderer", ref started);
         SDL_SetWindowMinimumSize(_window, _settings.VirtualWidth, _settings.VirtualHeight);
-        if (!request.Hidden && !_fixedStep) SDL_SetRenderVSync(_sdl, 1);
+        _vsync = !request.Hidden && !_fixedStep && SDL_SetRenderVSync(_sdl, 1);
         _target = SDL_CreateTexture(_sdl, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, _settings.VirtualWidth, _settings.VirtualHeight);
         if (_target == null) { Dispose(); throw Fail("SDL could not create the frame texture"); }
         SDL_SetTextureScaleMode(_target, SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
@@ -129,7 +134,9 @@ public sealed unsafe class SdlPlatform : IPlatform
         _renderer = new SdlRenderer(_sdl, _settings.VirtualWidth, _settings.VirtualHeight);
         _touch = new SdlTouchScreen(_window, _sdl, mobile);
         _input = new SdlInput(this);
+        Mark("frame", ref started);
         _audio = request.OpensOwnAudio ? SdlAudioDevice.TryCreate() : new SilentAudioDevice();
+        Mark("audio", ref started);
         _self = GCHandle.Alloc(this);
         SDL_AddEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
         _start = SDL_GetTicksNS();
@@ -140,6 +147,30 @@ public sealed unsafe class SdlPlatform : IPlatform
     public string RendererName { get; }
     /// <summary>"SDL renderer" followed by the name of the render driver in use.</summary>
     public override string ToString() => $"SDL renderer {RendererName}";
+
+    /// <inheritdoc/>
+    public IReadOnlyDictionary<string, string> Diagnostics
+    {
+        get
+        {
+            var facts = new Dictionary<string, string>
+            {
+                ["sdl"] = $"{SDL_GetVersion() / 1000000}.{SDL_GetVersion() / 1000 % 1000}.{SDL_GetVersion() % 1000}",
+                ["renderer"] = RendererName,
+                ["videoDriver"] = SDL_GetCurrentVideoDriver() ?? "unknown",
+            };
+            int vsync;
+            if (SDL_GetRenderVSync(_sdl, &vsync)) facts["vsync"] = vsync.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var display = SDL_GetDisplayForWindow(_window);
+            var mode = SDL_GetCurrentDisplayMode(display);
+            if (mode != null) facts["display"] = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{mode->w}x{mode->h} @ {mode->refresh_rate:0.##} Hz");
+            int w, h;
+            if (SDL_GetCurrentRenderOutputSize(_sdl, &w, &h)) facts["output"] = $"{w}x{h}";
+            foreach (var (step, ms) in _startSteps)
+                facts[$"start.{step}"] = ms.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms";
+            return facts;
+        }
+    }
     /// <inheritdoc/>
     public IGraphicsDevice Graphics => _graphics;
     /// <inheritdoc/>
@@ -152,6 +183,16 @@ public sealed unsafe class SdlPlatform : IPlatform
     public double Now => _fixedStep ? _frames / (double)_settings.UpdateRate : (SDL_GetTicksNS() - _start) / 1e9;
     /// <inheritdoc/>
     public bool RealTime => !_fixedStep;
+    /// <summary>The refresh rate of the display the window is on while VSync paces the frames; 0 otherwise.</summary>
+    public double DisplayRate
+    {
+        get
+        {
+            if (!_vsync) return 0;
+            var mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(_window));
+            return mode == null ? 0 : mode->refresh_rate;
+        }
+    }
     /// <inheritdoc/>
     public bool Suspended => _suspended;
     /// <inheritdoc/>
@@ -178,6 +219,16 @@ public sealed unsafe class SdlPlatform : IPlatform
                 break;
         }
         return true;
+    }
+
+    private readonly List<(string Step, double Milliseconds)> _startSteps = [];
+
+    /// <summary>Records how long a step of the constructor took, for <see cref="Diagnostics"/>.</summary>
+    private void Mark(string step, ref long since)
+    {
+        long now = System.Diagnostics.Stopwatch.GetTimestamp();
+        _startSteps.Add((step, System.Diagnostics.Stopwatch.GetElapsedTime(since, now).TotalMilliseconds));
+        since = now;
     }
 
     private static InvalidOperationException Fail(string what) => new($"{what}: {SDL_GetError()}");
@@ -295,6 +346,23 @@ public sealed unsafe class SdlPlatform : IPlatform
         // The on-screen controls, over the letterboxed frame in window pixels (never in captures).
         _touch.Overlay?.Draw(_touch.Canvas);
         SDL_RenderPresent(_sdl);
+        if (!_gamepadsStarted) StartGamepads();
+    }
+
+    private bool _gamepadsStarted;
+
+    /// <summary>
+    /// Starts SDL's gamepad subsystem once the first frame is on screen: on some Windows machines it takes about a second
+    /// (measured in PERF-1, with every joystick driver of SDL turned off as well), which would otherwise keep the window
+    /// from appearing. SDL reports the pads already connected as added, so none is missed.
+    /// </summary>
+    private void StartGamepads()
+    {
+        _gamepadsStarted = true;
+        long started = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (!SDL_InitSubSystem(SDL_InitFlags.SDL_INIT_GAMEPAD))
+            Console.Error.WriteLine($"input: gamepads unavailable ({SDL_GetError()})");
+        Mark("gamepad", ref started);
     }
 
     /// <inheritdoc/>
@@ -345,7 +413,8 @@ public sealed unsafe class SdlPlatform : IPlatform
         if (_target != null) SDL_DestroyTexture(_target);
         if (_sdl != null) SDL_DestroyRenderer(_sdl);
         if (_window != null) SDL_DestroyWindow(_window);
-        SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO | SDL_InitFlags.SDL_INIT_GAMEPAD);
+        if (_gamepadsStarted) SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_GAMEPAD);
+        SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
     }
 
     internal SDL_Window* Window => _window;

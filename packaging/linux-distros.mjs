@@ -42,7 +42,7 @@ const play = [
   'echo "glibc $(ldd --version | head -1 | grep -oE "[0-9]+\\.[0-9]+$")"',
   ...games.flatMap(g => [
     `mkdir -p /tmp/p && tar -xzf /packages/${g}-linux-x64.tar.gz -C /tmp/p`,
-    `echo "== ${g}"; /tmp/p/${g}/${g} --report --hidden --frames 60 2>&1 | grep -E "^(platform|audio|done|error)" | head -4; echo "exit $?"`,
+    `echo "== ${g}"; /tmp/p/${g}/${g} --report --hidden --audio device --frames 60 2>&1 | grep -E "^(platform|audio|done|error)" | head -4; echo "exit $?"`,
     ...scenarios.filter(s => s.game === g).map(s => {
       const name = path.basename(s.script, '.script');
       const env = Object.entries({ ...s.env, [saveDir[g]]: `/tmp/saves-${name}` }).map(([k, v]) => `${k}=${quote(v)}`).join(' ');

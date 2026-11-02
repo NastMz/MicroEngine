@@ -31,6 +31,11 @@ public sealed record PlatformRequest(GameSettings Settings)
     public bool FixedStep { get; init; }
     /// <summary>No sound: the backend opens no audio device.</summary>
     public bool Mute { get; init; }
+    /// <summary>
+    /// Whether the backend may open a physical audio device. <see cref="AudioOutput.Automatic"/> (the default) opens one
+    /// only for runs a player watches: not for hidden windows or fixed-step (scripted) runs, which are checks and tests.
+    /// </summary>
+    public AudioOutput AudioOutput { get; init; }
     /// <summary>Size factor of the PNGs written by <see cref="IPlatform.SaveScreenshot"/>.</summary>
     public int CaptureScale { get; init; } = 3;
     /// <summary>Creates the audio device used instead of the backend's; the platform disposes it.</summary>
@@ -41,7 +46,23 @@ public sealed record PlatformRequest(GameSettings Settings)
     public AppIdentity? Identity { get; init; }
 
     /// <summary>Whether the backend should open its own audio device.</summary>
-    public bool OpensOwnAudio => Audio is null && !Mute;
+    public bool OpensOwnAudio => Audio is null && !Mute && AudioOutput switch
+    {
+        AudioOutput.Device => true,
+        AudioOutput.Silent => false,
+        _ => !Hidden && !FixedStep,
+    };
+}
+
+/// <summary>Where a run's sound may go (<see cref="PlatformRequest.AudioOutput"/>, the launcher's <c>--audio</c>).</summary>
+public enum AudioOutput
+{
+    /// <summary>A physical device for runs a player watches; none for hidden windows and fixed-step (scripted) runs.</summary>
+    Automatic,
+    /// <summary>Always a physical device, for listening checks and package checks that must prove a device opens.</summary>
+    Device,
+    /// <summary>Never a physical device.</summary>
+    Silent,
 }
 
 /// <summary>

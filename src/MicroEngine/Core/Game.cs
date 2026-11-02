@@ -53,6 +53,15 @@ public abstract class Game
     public float Time { get; private set; }
     /// <summary>Number of fixed updates simulated since start (0 during <see cref="Load"/>).</summary>
     public long UpdateCount { get; private set; }
+    /// <summary>
+    /// How far the frame being drawn is between the last update and the next one, from 0 to 1: the part of a step of
+    /// real time that has passed but not been simulated yet. Updates run at a fixed rate and frames at the display's, so
+    /// on a display whose rate is not a multiple of <see cref="GameSettings.UpdateRate"/> (75, 100, 144 Hz...) some
+    /// frames show no new update; drawing moving things at
+    /// <c>Vector2.Lerp(previousPosition, position, FrameBlend)</c> makes their motion even. Always 0 when time advances
+    /// one step per frame (headless, scripted runs), so captures stay exact.
+    /// </summary>
+    public float FrameBlend { get; internal set; }
     /// <summary>Deterministic per-run randomness; seeded by the launcher.</summary>
     public Random Random { get; private set; } = new(1);
     /// <summary>True after <see cref="Quit"/>; the loop stops at the end of the current frame.</summary>

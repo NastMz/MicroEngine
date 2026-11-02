@@ -61,7 +61,7 @@ public static unsafe class Program
             return 2;
         }
         return MobileRun.Run(launch,
-            (game, scripted) => SdlPlatform.Profile.Create(new PlatformRequest(game.Settings) { FixedStep = scripted, Identity = AppIdentity.Of(game) }),
+            (game, scripted) => SdlPlatform.Profile.Create(new PlatformRequest(game.Settings) { FixedStep = scripted, AudioOutput = AudioOutput.Device, Identity = AppIdentity.Of(game) }),
             Console.WriteLine);
     }
 }
