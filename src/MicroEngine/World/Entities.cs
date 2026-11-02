@@ -41,6 +41,7 @@ public sealed class EntityList<T> : IEnumerable<T> where T : Entity
 {
     private readonly List<T> _items = [];
     private readonly List<T> _added = [];
+    private readonly List<(float Depth, int Order, T Entity)> _drawn = [];
     private bool _updating;
 
     /// <summary>Number of entities held, including dead ones not yet flushed and additions not yet applied.</summary>
@@ -79,9 +80,20 @@ public sealed class EntityList<T> : IEnumerable<T> where T : Entity
     /// <summary>Draws living entities sorted by <see cref="Entity.Depth"/> (stable for equal depth).</summary>
     public void Draw(IRenderer renderer, Camera2D? camera = null, float cullMargin = 32)
     {
-        foreach (var e in _items.Where(e => e.Alive && (camera is null || camera.IsVisible(e.Bounds, cullMargin))).OrderBy(e => e.Depth))
-            e.Draw(renderer);
+        // Called every frame: the sort buffer is reused, and insertion order breaks ties so the sort stays stable.
+        _drawn.Clear();
+        for (int i = 0; i < _items.Count; i++)
+        {
+            var e = _items[i];
+            if (e.Alive && (camera is null || camera.IsVisible(e.Bounds, cullMargin))) _drawn.Add((e.Depth, i, e));
+        }
+        _drawn.Sort(ByDepth);
+        foreach (var (_, _, e) in _drawn) e.Draw(renderer);
+        _drawn.Clear();
     }
+
+    private static readonly Comparison<(float Depth, int Order, T Entity)> ByDepth = static (a, b) =>
+        a.Depth.CompareTo(b.Depth) is var c and not 0 ? c : a.Order.CompareTo(b.Order);
 
     /// <summary>Living entities of type <typeparamref name="TEntity"/>.</summary>
     public IEnumerable<TEntity> OfType<TEntity>() where TEntity : T => _items.OfType<TEntity>().Where(e => e.Alive);
@@ -89,7 +101,37 @@ public sealed class EntityList<T> : IEnumerable<T> where T : Entity
     public IEnumerable<T> Overlapping(RectF area) => _items.Where(e => e.Alive && e.Bounds.Intersects(area));
     /// <summary>Removes every entity at once, without calling <see cref="Entity.Removed"/>.</summary>
     public void Clear() { _items.Clear(); _added.Clear(); }
-    /// <summary>Enumerates the living entities in insertion order (deferred additions excluded until flushed).</summary>
-    public IEnumerator<T> GetEnumerator() => _items.Where(e => e.Alive).GetEnumerator();
+    /// <summary>
+    /// Enumerates the living entities in insertion order (deferred additions excluded until flushed). <c>foreach</c>
+    /// over the list allocates nothing.
+    /// </summary>
+    public Enumerator GetEnumerator() => new(_items);
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+
+    /// <summary>Walks the living entities of an <see cref="EntityList{T}"/> without allocating.</summary>
+    public struct Enumerator : IEnumerator<T>
+    {
+        private readonly List<T> _items;
+        private int _index;
+
+        internal Enumerator(List<T> items) => (_items, _index, Current) = (items, -1, null!);
+
+        /// <summary>The current entity.</summary>
+        public T Current { get; private set; }
+        readonly object System.Collections.IEnumerator.Current => Current;
+
+        /// <summary>Moves to the next living entity.</summary>
+        public bool MoveNext()
+        {
+            while (++_index < _items.Count)
+                if (_items[_index].Alive) { Current = _items[_index]; return true; }
+            return false;
+        }
+
+        /// <summary>Starts over.</summary>
+        public void Reset() => _index = -1;
+        /// <summary>Nothing to release.</summary>
+        public readonly void Dispose() { }
+    }
 }

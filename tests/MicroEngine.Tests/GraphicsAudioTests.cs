@@ -65,6 +65,13 @@ public sealed class GraphicsTests
             for (int b = a + 1; b < rects.Count; b++) Assert.IsFalse(rects[a].Intersects(rects[b]));
         }
         Assert.AreEqual(2, atlas.Frames("walk").Length);
+        // Collected once: games call it every frame.
+        atlas.Frames("walk");
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        var again = atlas.Frames("walk");
+        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        Assert.AreSame(again, atlas.Frames("walk"));
+        Assert.ThrowsExactly<KeyNotFoundException>(() => atlas.Frames("run"));
         Assert.ThrowsExactly<ArgumentException>(() => new SpriteAtlasBuilder().Add("a", new PixelImage(1, 1)).Add("a", new PixelImage(1, 1)));
     }
 

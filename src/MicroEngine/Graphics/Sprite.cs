@@ -124,6 +124,7 @@ public sealed class SpriteAtlasBuilder
 public sealed class SpriteAtlas : IDisposable
 {
     private readonly Dictionary<string, Sprite> _sprites;
+    private readonly Dictionary<string, Sprite[]> _frames = new(StringComparer.Ordinal);
     /// <summary>The packed texture shared by every sprite of the atlas.</summary>
     public Texture Texture { get; }
     internal SpriteAtlas(Texture texture, Dictionary<string, Sprite> sprites) => (Texture, _sprites) = (texture, sprites);
@@ -136,13 +137,19 @@ public sealed class SpriteAtlas : IDisposable
     /// <summary>Names of every sprite in the atlas.</summary>
     public IReadOnlyCollection<string> Names => _sprites.Keys;
 
-    /// <summary>Collects "name0".."nameN" frames added through <see cref="SpriteAtlasBuilder.AddFrames"/>.</summary>
+    /// <summary>
+    /// Collects "name0".."nameN" frames added through <see cref="SpriteAtlasBuilder.AddFrames"/>. Collected once per
+    /// name: every call returns the same array, so it can be called every frame; do not change its elements.
+    /// </summary>
+    /// <exception cref="KeyNotFoundException">No sprite is named <paramref name="name"/> followed by 0.</exception>
     public Sprite[] Frames(string name)
     {
+        ArgumentNullException.ThrowIfNull(name);
+        if (_frames.TryGetValue(name, out var cached)) return cached;
         var list = new List<Sprite>();
         for (int i = 0; _sprites.TryGetValue(name + i, out var s); i++) list.Add(s);
         if (list.Count == 0) throw new KeyNotFoundException($"No frames named '{name}N'.");
-        return list.ToArray();
+        return _frames[name] = list.ToArray();
     }
 
     /// <summary>Disposes the texture; sprites of this atlas must not be drawn afterwards.</summary>
