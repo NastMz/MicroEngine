@@ -13,6 +13,7 @@
 //                                                     active reference rewritten (never a release or migration note)
 //   node sdk/version.mjs wait-public <version> [--timeout <seconds>]   until nuget.org serves all six packages
 //   node sdk/version.mjs packages                     the package ids, in push order
+//   node sdk/version.mjs release-plan --sha <commit> [--event <event>]   what sdk-release.yml has left to do
 //
 // Active references are found by pattern (`references` below) in the documentation, the samples' project files and
 // the contributor entry point; historical files (release and migration notes, decisions, evaluations, the generated
@@ -22,6 +23,7 @@
 // that the next release would leave stale.
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -191,6 +193,58 @@ export async function waitPublic(version, { timeoutSeconds = 1800, intervalSecon
   }
 }
 
+/**
+ * What an sdk-release run has left to do (.github/workflows/sdk-release.yml, preflight). `state`:
+ *   documented, prepared  the versions of the commit the run is for (`sha`)
+ *   packages              { [id]: served by nuget.org at `documented` }
+ *   release               the GitHub release sdk-v<documented>: null, or { draft, target } (target: the commit drafted)
+ *   notes                 the release notes have a section for `documented`
+ *   event                 'workflow_run' (after ci passed on main) or 'workflow_dispatch' (by hand)
+ *   isAncestor(commit)    `commit` is in the history of `sha`
+ * Returns { action, lines }: none (nothing to release), release (check, draft, publish), publish (finish the existing
+ * draft: push what nuget.org lacks, publish the GitHub release), finish (verify nuget.org, deploy the site). Throws
+ * when no run can continue without a person: the message says what to do.
+ */
+export function releasePlan({ documented, prepared, packages, release, notes, event, sha, isAncestor }) {
+  const onNuget = packageIds.filter(id => packages[id]).length, all = onNuget === packageIds.length;
+  const shown = !release ? 'none' : release.draft ? `draft of ${release.target.slice(0, 12)}` : 'published';
+  const lines = [`nuget.org has ${onNuget} of ${packageIds.length} packages; GitHub release sdk-v${documented}: ${shown}`];
+  const done = (action, line) => ({ action, lines: [...lines, line] });
+  if (documented !== prepared) {
+    // MicroEngineVersion moved on for the next release while the documentation still presents a published one.
+    if (!all) fail(`The documentation presents ${documented}, which nuget.org does not serve, but this commit packs ${prepared}: nothing can publish it. Run node sdk/version.mjs release <version> in a pull request.`);
+    return done('none', `Nothing to release: ${documented} is published; this commit packs ${prepared}, which nothing documents yet.`);
+  }
+  if (!notes) fail(`docs/guide/release-notes.md has no "## ${documented}" section.`);
+  if (release && !release.draft) {
+    if (!all) fail(`sdk-v${documented} is published on GitHub but nuget.org lacks ${packageIds.filter(id => !packages[id]).join(', ')}: push them by hand from the release's files (docs/releasing.md, "Recovering").`);
+    return event === 'workflow_run' ? done('none', `Nothing to release: ${documented} is published.`)
+      : done('finish', 'Published: verifying nuget.org and deploying the site again.');
+  }
+  if (onNuget > 0 || (release?.draft && release.target === sha)) {
+    // Publishing started, or this very commit is drafted: finish that draft. Its files were checked; never rebuilt.
+    if (!release) fail(`nuget.org has ${onNuget} of ${packageIds.length} packages of ${documented} but there is no draft sdk-v${documented} to finish from: push the rest by hand (docs/releasing.md, "Recovering").`);
+    if (!isAncestor(release.target)) fail(`The draft sdk-v${documented} was made from ${release.target}, which is not in the history of ${sha}.`);
+    return done('publish', "Publishing the draft (the `nuget` environment's reviewers approve).");
+  }
+  // Nothing is public: check and draft this commit, replacing a draft of an earlier one (a fix merged after it).
+  if (release) lines.push(`The draft of ${release.target.slice(0, 12)} is replaced by one of this commit.`);
+  return done('release', 'Checking and drafting this commit, then publishing after approval.');
+}
+
+async function githubRelease(tag, env = process.env) {
+  const base = `${env.GITHUB_API_URL ?? 'https://api.github.com'}/repos/${env.GITHUB_REPOSITORY}`;
+  // Drafts have no tag yet, so releases are listed rather than looked up by tag; drafts need a token that can write.
+  for (let page = 1; ; page++) {
+    const response = await fetch(`${base}/releases?per_page=100&page=${page}`, { headers: { Authorization: `Bearer ${env.GH_TOKEN ?? env.GITHUB_TOKEN}`, Accept: 'application/vnd.github+json' } });
+    if (!response.ok) fail(`GitHub releases: HTTP ${response.status}`);
+    const list = await response.json();
+    const found = list.find(r => r.tag_name === tag);
+    if (found) return { draft: found.draft, target: found.target_commitish };
+    if (list.length < 100) return null;
+  }
+}
+
 async function main([command, ...args]) {
   const value = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
   if (command === 'status') {
@@ -217,6 +271,23 @@ async function main([command, ...args]) {
     const timeout = Number(value('--timeout') ?? 1800);
     await waitPublic(args[0], { timeoutSeconds: timeout, log: message => console.log(message) });
     console.log(`nuget.org serves every package at ${args[0]}`);
+  } else if (command === 'release-plan') {
+    // In sdk-release.yml: the state of the documented version, then releasePlan. Writes version and action to
+    // GITHUB_OUTPUT, the explanation to stdout (Markdown for the run summary).
+    const sha = value('--sha') ?? fail('release-plan needs --sha.');
+    const documented = documentedVersion();
+    const git = gitArgs => spawnSync('git', gitArgs, { cwd: repoRoot, encoding: 'utf8' });
+    const release = await githubRelease(`sdk-v${documented}`);
+    const plan = releasePlan({
+      documented, prepared: preparedVersion(), packages: await publicState(documented), release,
+      notes: releasedVersions().includes(documented), event: value('--event') ?? 'workflow_dispatch', sha,
+      isAncestor: commit => git(['merge-base', '--is-ancestor', commit, sha]).status === 0,
+    });
+    console.log([`### SDK ${documented} from \`${sha.slice(0, 12)}\``, '', ...plan.lines.map(l => `- ${l}`), ''].join('\n'));
+    if (plan.action === 'publish' && release.target !== sha) {
+      console.log([`The draft was made from ${release.target.slice(0, 12)}; main has moved on since:`, '', '```', git(['log', '--oneline', `${release.target}..${sha}`]).stdout.trim(), '```', ''].join('\n'));
+    }
+    if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${documented}\naction=${plan.action}\n`);
   } else if (command === 'packages') {
     console.log(packageIds.join(' '));
   } else {

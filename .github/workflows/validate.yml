@@ -24,6 +24,10 @@ on:
         description: Build every missing demo package, then the site and all browser suites (supported)
         type: boolean
         default: true
+      sdk:
+        description: The SDK packed, checked and used from outside the repository on Windows, Linux and macOS (supported)
+        type: boolean
+        default: true
       packages:
         description: Build, check and store every missing native download (Windows, Linux, macOS; Android with the signing key)
         type: boolean
@@ -114,6 +118,14 @@ jobs:
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
+  sdk:
+    name: SDK
+    needs: resolve
+    if: inputs.sdk
+    uses: ./.github/workflows/sdk.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
   platforms:
     name: Experimental
     needs: resolve
@@ -127,7 +139,7 @@ jobs:
 
   report:
     name: Report by platform
-    needs: [resolve, checks, platforms]
+    needs: [resolve, checks, sdk, platforms]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -144,7 +156,9 @@ jobs:
       - name: Supported checks must pass
         env:
           SUPPORTED: ${{ needs.checks.result }}
+          SDK: ${{ needs.sdk.result }}
           EXPERIMENTAL: ${{ needs.platforms.result }}
         run: |
           echo "Experimental platforms: $EXPERIMENTAL (informative; never a release gate)." >> "$GITHUB_STEP_SUMMARY"
           [ "$SUPPORTED" = success ] || { echo "::error::Supported checks: $SUPPORTED."; exit 1; }
+          [ "$SDK" = success ] || [ "$SDK" = skipped ] || { echo "::error::SDK: $SDK."; exit 1; }

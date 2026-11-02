@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { check, release, findReferences, activeFiles, documentedVersion, preparedVersion, publicState, isPublic, waitPublic, packageIds } from '../version.mjs';
+import { check, release, findReferences, activeFiles, documentedVersion, preparedVersion, publicState, isPublic, waitPublic, packageIds, releasePlan } from '../version.mjs';
 
 function fixture(files = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdk-version-'));
@@ -121,4 +121,48 @@ test('wait-public: polls until all six are served, survives a failed request, gi
   const state = await waitPublic('1.0.0', { fetchJson, sleep: async () => {}, timeoutSeconds: 60 });
   assert.equal(isPublic(state), true);
   await assert.rejects(waitPublic('1.0.0', { fetchJson: async () => index([]), sleep: async () => {}, timeoutSeconds: 0 }), /does not serve MicroEngine, MicroEngine\.Sdl/);
+});
+
+// sdk-release.yml's preflight: one test per state a release can be found in.
+const all = value => Object.fromEntries(packageIds.map(id => [id, value]));
+const some = n => Object.fromEntries(packageIds.map((id, i) => [id, i < n]));
+const state = over => ({ documented: '0.5.0-alpha.1', prepared: '0.5.0-alpha.1', packages: all(false), release: null, notes: true,
+  event: 'workflow_run', sha: 'b'.repeat(40), isAncestor: () => true, ...over });
+
+test('release plan: a merge that documents a new version checks, drafts and publishes it', () => {
+  const plan = releasePlan(state());
+  assert.equal(plan.action, 'release');
+  assert.deepEqual(plan.lines, ['nuget.org has 0 of 6 packages; GitHub release sdk-v0.5.0-alpha.1: none', 'Checking and drafting this commit, then publishing after approval.']);
+});
+
+test('release plan: any other merge after the release has nothing to do; by hand it verifies and deploys again', () => {
+  const published = { packages: all(true), release: { draft: false, target: 'a'.repeat(40) } };
+  assert.equal(releasePlan(state(published)).action, 'none');
+  assert.equal(releasePlan(state({ ...published, event: 'workflow_dispatch' })).action, 'finish');
+  // MicroEngineVersion raised for the next cycle, documentation still on the published version: nothing to do.
+  assert.equal(releasePlan(state({ prepared: '0.5.0-alpha.2', packages: all(true), release: { draft: false, target: 'a' } })).action, 'none');
+});
+
+test('release plan: a draft of this very commit is published, never rebuilt (rejected approval, run again)', () => {
+  assert.equal(releasePlan(state({ release: { draft: true, target: 'b'.repeat(40) } })).action, 'publish');
+});
+
+test('release plan: a fix merged after the draft replaces it while nothing is public', () => {
+  const plan = releasePlan(state({ release: { draft: true, target: 'a'.repeat(40) } }));
+  assert.equal(plan.action, 'release');
+  assert.match(plan.lines.join('\n'), /The draft of aaaaaaaaaaaa is replaced by one of this commit/);
+});
+
+test('release plan: a publication that stopped part way finishes from its draft, whatever main is now', () => {
+  for (const packages of [some(1), some(5), all(true)]) {
+    assert.equal(releasePlan(state({ packages, release: { draft: true, target: 'a'.repeat(40) } })).action, 'publish');
+  }
+  assert.throws(() => releasePlan(state({ packages: some(3), release: { draft: true, target: 'a'.repeat(40) }, isAncestor: () => false })), /not in the history of b{40}/);
+});
+
+test('release plan: states no run can repair are refused with what to do', () => {
+  assert.throws(() => releasePlan(state({ packages: some(2) })), /2 of 6 packages of 0\.5\.0-alpha\.1 but there is no draft .* by hand/);
+  assert.throws(() => releasePlan(state({ packages: some(4), release: { draft: false, target: 'a' } })), /published on GitHub but nuget\.org lacks MicroEngine\.Cli, MicroEngine\.Templates/);
+  assert.throws(() => releasePlan(state({ prepared: '0.5.0-alpha.2' })), /presents 0\.5\.0-alpha\.1, which nuget\.org does not serve, but this commit packs 0\.5\.0-alpha\.2/);
+  assert.throws(() => releasePlan(state({ notes: false })), /no "## 0\.5\.0-alpha\.1" section/);
 });

@@ -659,6 +659,18 @@ export function versionTag(version) {
 }
 
 /**
+ * The release workflow's default version: the minor after the newest demo release `v<major>.<minor>.<patch>`
+ * (`v0.4.0` → `0.5.0`), or `0.1.0` before the first. Pre-release tags and other series (`sdk-v*`) never count.
+ */
+export function nextVersion(tags) {
+  const versions = tags.map(tag => /^v(\d+)\.(\d+)\.(\d+)$/.exec(tag)).filter(Boolean).map(m => m.slice(1).map(Number));
+  if (!versions.length) return '0.1.0';
+  versions.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
+  const [major, minor] = versions.at(-1);
+  return `${major}.${minor + 1}.0`;
+}
+
+/**
  * Creates the draft release `tag` for the commit checked out at `root`: every game's package for that commit's key,
  * copied from the integration store after checking the archive against its manifest, plus release.json. Fails,
  * leaving no draft behind, when a package is missing or altered or the tag already belongs to a published release;
@@ -838,6 +850,8 @@ async function main(argv) {
     const result = await fetchDemos(process.env, { store });
     if (result.skipped) console.log('demos: skipped (SITE_DEMOS=none); demo pages will say the games are not in this build.');
     else console.log(`demos: ${Object.entries(result.games).map(([id, g]) => `${id} ${g.key}`).join(', ')} from ${result.source}`);
+  } else if (command === 'next-version') {
+    console.log(nextVersion(rest));
   } else if (command === 'key') {
     const { key, inputs } = demoKey(rest[0] ?? fail('key needs a game id.'));
     console.log(`${key}\n${inputs.length} input files:\n${inputs.join('\n')}`);
@@ -848,6 +862,7 @@ async function main(argv) {
       '  publish-native --file F --verification V                     add a checked native package (packaging/verify.mjs --record)',
       '  fetch                                                        packages for the site build (DEMOS_SOURCE)',
       '  key <Game>                                                   one key and its input files',
+      '  next-version <tag...>                                        the version after the newest v<x.y.z> among these tags',
       '  release-create --version <1.2.0> [--targets <ids>]           draft release of this commit\'s packages (and native downloads)',
       '  release-verify [--tag <v1.2.0>|latest] [--dir <play folder>] [--downloads]   check built files (and downloads) against a release',
       '  release-downloads --tag <v1.2.0>                             the published downloads answer at their public addresses',
