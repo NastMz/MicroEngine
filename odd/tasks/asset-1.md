@@ -50,17 +50,17 @@ Quoted fragments are the owner's request (2026-11-02), verbatim.
 
 | ID | Specs | Route | Status | Commit |
 | --- | --- | --- | --- | --- |
-| T1 Research and ADR 0025 | S1, S5, S6 | inline | pending | |
-| T2 Texture filtering, smooth canvas scaling, HD windows, texture updates | S3, S8 | inline | pending | |
-| T3 Image formats (StbImageSharp) and zero-copy uploads | S3, S8 | inline | pending | |
-| T4 Scalable fonts (FontStashSharp), `IFont`, widgets | S2, S8 | inline | pending | |
-| T5 Atlas import (TexturePacker/Aseprite JSON, Starling XML), timed animations | S4 | inline | pending | |
-| T6 Asset manager: cache, scopes, diagnostics, preload | S5, S8 | inline | pending | |
-| T7 Build integration: automatic Content items, checks, template | S6 | inline | pending | |
-| T8 Consumer project and external check | S9, S7 | inline | pending | |
-| T9 Packaging on every platform | S7 | inline + CI | pending | |
-| T10 Measurements | S8 | inline | pending | |
-| T11 Documentation, evaluation, PR | S10, S11 | inline | pending | |
+| T1 Research and ADR 0025 | S1, S5, S6 | inline | done | 777ff31, 0b9b302 |
+| T2 Texture filtering, smooth canvas scaling, HD windows, texture updates | S3, S8 | inline | done | 4ae1b52 |
+| T3 Image formats (StbImageSharp) and zero-copy uploads | S3, S8 | inline | done | 983b805, c8f1531 |
+| T4 Scalable fonts (FontStashSharp), `IFont`, widgets | S2, S8 | inline | done | 59af893 |
+| T5 Atlas import (TexturePacker/Aseprite JSON, Starling XML), timed animations | S4 | inline | done | 70c6143 |
+| T6 Asset manager: cache, scopes, diagnostics, preload | S5, S8 | inline | done | 1013200 |
+| T7 Build integration: automatic Content items, checks, template | S6 | inline | done | aafe9fa |
+| T8 Consumer project and external check | S9, S7 | inline | done | 5f88da0, f253579 |
+| T9 Packaging on every platform | S7 | inline + CI | local done; CI pending | validate and platforms runs on the branch |
+| T10 Measurements | S8 | inline | done | c8f1531 (benchmarks/AssetBench) |
+| T11 Documentation, evaluation, PR | S10, S11 | inline | done except the PR | 0b9b302 |
 
 Route evidence: no writer trigger holds (units depend on each other's contracts: textures → fonts → assets), so the
 parent writes inline following this logbook.
@@ -73,3 +73,17 @@ parent writes inline following this logbook.
   render target presented nearest with an integer-first fit (`FrameLayout.Fit`), `BitmapFont` is code-built only,
   `SpriteAtlasBuilder` packs `PixelImage`s at run time, `ContentFolder` resolves `Content/` (unpacked on Android, copied
   into the browser's virtual file system from `content.txt`). Every game declares its own `Content/**` item.
+- L3 (2026-11-02) Delivered T1-T8 and T10 inline as work-unit commits (no writer trigger: each unit built on the previous
+  one's contracts). Decisions as built: StbImageSharp for every image format, FontStashSharp for fonts, imported JSON and
+  Starling XML atlases, `Game.Assets` (`AssetCache`, renamed from `Assets` because two demos already have an `Assets`
+  class), `Content/**` shipped by the SDK targets, exact letter case checked at run time from directory listings (no
+  build-written file list).
+- L4 (2026-11-02) Measurements (docs/evaluations/asset-1.md): the engine's PNG decoder was five to seven times slower
+  than StbImageSharp with identical pixels on all 245 PNGs of the repository, so it was removed; glyph pages default to
+  512² (the gallery went from 16.8 to 7.8 MB of textures); cache lookups allocate nothing; the gallery draws with about
+  200 bytes of garbage per frame.
+- L5 (2026-11-02) Verification: all .NET suites pass locally (core 275, demos, desktop natives, samples 12);
+  `sdk/tests/external.mjs` from a local feed: 60 checks pass, the gallery's backdrop loads during play failed it once
+  and were fixed (loaded in `Load`); remaining failures are environmental (local pack without
+  `-p:MicroEngineRelease=true`, `ANDROID_HOME` unset). CI dispatched: validate (all checks) and platforms (macOS,
+  Android emulator, iOS simulator). Next: CI results, then the pull request.
