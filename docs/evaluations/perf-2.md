@@ -26,7 +26,7 @@ same build opens on the 100 Hz primary display today (SDL centres new windows on
 | --- | --- |
 | `FrameBlend` in the demos | Done in all four (camera and every moving actor; Trail Duel also battle slides and orbs). Found first: PERF-1 documented `FrameBlend` as 0 in fixed-step runs, but `Lerp(previous, current, 0)` draws the *previous* update, so adopting it would have shifted every capture by one step. Fixed-step runs now report 1 (test checked failing first). Scenes not updated in the latest update (paused, under an overlay, in a transition) draw at 1, or they rock between their last two positions. Fixed-step captures: 138/138 of the shared scenarios byte-identical to the base build (run), and every script of every demo identical per demo. |
 | Missed refresh ~1.9 s after an SDL window appears | Identified (run, PresentMon). On DISPLAY1 the window starts as **Composed: Flip** and Windows' compositor promotes it to **Hardware Composed: Independent Flip** about 0.3 s after its first frame; at that moment 1 to 3 frames are shown for 20 to 42 ms (4 of 4 runs), and the engine sees one 26.5 ms frame with 13 ms blocked in present. PERF-1's 1.9 s = ~1.5 s of gamepad start before the first frame + 0.3 s. On the primary display the window stays composed (1 frame of 20 ms in 1 of 7 runs). It is the system's, once per window; borderless full screen reaches independent flip from the third frame, where it cannot be seen. Not changed. |
-| Gamepad start (about a second) | Cause found (run): sampling the main thread inside `SDL_InitSubSystem(GAMEPAD)` showed `GameInputRedist.dll!GameInputInitialize` sleeping ~950 ms; the GameInput service is installed but stopped here. Disabling every joystick driver hint left 965 ms, because SDL starts GameInput unless both `SDL_JOYSTICK_GAMEINPUT` and `SDL_JOYSTICK_GAMEINPUT_RAW` are off ([SDL source][sdl-gameinput]). With both off (SDL's RawInput, XInput and WGI drivers, its default before 3.4): gamepad step 1,065–1,120 → 105–125 ms, SDL platform start 1,450–1,570 → 440–470 ms (PerfBench, 3 runs each). The environment variables still restore GameInput (checked: 1,065 ms). Not tested with a physical controller: none was connected. |
+| Gamepad start (about a second) | Cause found (run): sampling the main thread inside `SDL_InitSubSystem(GAMEPAD)` showed `GameInputRedist.dll!GameInputInitialize` sleeping ~950 ms; the GameInput service is installed but stopped here, and SDL starts GameInput unless both `SDL_JOYSTICK_GAMEINPUT` and `SDL_JOYSTICK_GAMEINPUT_RAW` are off ([SDL source][sdl-gameinput]); with both off the gamepad step took 105–125 ms instead of 1,065–1,120. **Kept on** after review: GameInput is SDL 3.4+'s default pad path on Windows and the only one for raw GIP devices; its second is spent once, behind the start screen, never during play (section 11). |
 | Avoidable allocations in the demos | See the table below. |
 | `SceneManager` without scenes | A game with an empty stack updated index -1; it now updates and draws nothing (test checked failing first). |
 | Late music errors | A song registered with `AddMusic(name, Song)` and an invalid note or drum failed only when first played (possibly mid-game, from inside `Update` with a fade). Its notes and drums are now validated in `AddMusic`, in `Load`, with the exceptions `Song.Render` throws; only a failure of the machine itself (memory) can still surface at play time. Test checked failing first. |
@@ -96,8 +96,7 @@ here. raylib keeps its own limiter at the monitor's rate with VSync and frees it
 So on Windows a composed window runs at the compositor's rate, not always its display's, and the engine cannot know
 which from the display mode. Counted in the reported display's periods, 10 ms frames became 16.7 ms then 3.3 ms of drawn
 time (judder with interpolation, though time stayed real). The loop now trusts the reported rate only while the median
-of the last 16 frames is within 15% of its period (test checked failing first); on DISPLAY2 the drawn time then advances
-9.75–10.27 ms per frame (p5–p95). Display identification (index, name, mode, scale, primary) comes from SDL and GLFW; all
+of the last 16 frames is within 15% of its period, and otherwise paces to the frames' own cadence (section 11). Display identification (index, name, mode, scale, primary) comes from SDL and GLFW; all
 three displays here are at 100% scale, so scaling was not exercised beyond reading it (`DisplayInfo.Scale`).
 
 ## 6. Two GPUs (S13)
@@ -147,9 +146,8 @@ The base build's frame pacing was already perfect (interval p50 10.00, p99 10.10
 registered with `AddMusic(name, Song)` rendered inside `Load` on the browser's only thread. Songs now render in slices
 of 2,048 samples for up to 4 ms per update (first attempt: 32,768-sample slices and synchronous completion gave frame
 work p99 21–61 ms and 300 ms freezes; rejected), and a song asked for before it is ready starts once rendered. The cost:
-about 4 ms more work per update while songs render (the first 10–30 s), and one frame of 220–420 ms each time a finished
-song reaches raylib's audio device (6–10 in the measured window), most likely `RaylibAudioDevice.LoadMusic` converting
-the whole clip to WAV (`AudioClip.ToWav`) in interpreted WebAssembly (not profiled). JS heap 4.8–16.9 MB, unchanged.
+about 4 ms more work per update while songs render (the first 10–30 s). The 220–420 ms frames seen when each song
+reached raylib's audio device are fixed (section 11). JS heap 4.8–16.9 MB, unchanged.
 Download sizes are unchanged (Meadow Run 12 MB uncompressed). Mono's AOT compiler for WebAssembly crashed on
 `SDL3-CS.dll` (sgen assertion) with the pinned toolchain: not adopted.
 
@@ -161,9 +159,8 @@ iPadOS and mobile browsers: no device.
 
 ## 9. Validation (S16)
 
-- `dotnet test MicroEngine.slnx -c Release` on Windows, native tests included: every suite passes (core 235 + 1
-  skipped, desktop 8 of which 5 native, raylib 1 + 4 skipped (Linux-only), samples 9, Meadow Run 53, Courtyard Key 35,
-  Trail Duel 100, Neon Rift 38). Site: unit tests 43/43, quoted code blocks match their samples.
+- `dotnet test MicroEngine.slnx -c Release` on Windows, native tests included: see section 11 for the final counts.
+  Site: unit tests 43/43, quoted code blocks match their samples.
 - New tests: graphics options and launcher overrides, backend preference and fallback, frame limit (cap, jitter
   pacing, page-driven skip, fixed-step), `Game.Screen` changes and headless refusals, wrong display rate, `FrameBlend`
   in fixed-step runs, empty scene stack, song validation, sliced song rendering (sample-identical) and the mixer without
@@ -174,11 +171,13 @@ iPadOS and mobile browsers: no device.
 
 ## 10. Open
 
-- The demos' interpolation was checked by tests and identical captures, not watched on screen at 75/100/144 Hz.
-- Gamepads on Windows without GameInput: no physical controller was connected to try one.
+- No physical controller was connected: pads are tested through SDL's virtual devices (section 11).
 - Phones, iPad, iPhone, Mac and Linux desktops: not measured (emulator only for Android).
-- Browsers: one 220–420 ms frame when each sliced song reaches raylib's audio device (WAV conversion of the whole clip
-  suspected, not profiled); worth slicing too.
+- Browsers: a 20–45 ms frame the first time a scene is built (the interpreter running that code for the first time;
+  no collection, under 1 ms on desktop), during the scene's transition.
+- SDL with ogg music: NVorbis allocates about 4.6 KB per frame while decoding (3 gen-0 collections a minute, no
+  measured hitch).
+- `ActionPrompts.Text` builds its prompt list per call (about 560 B); caching it needs a revision of the bindings.
 - WebAssembly AOT: Mono's AOT compiler crashed on `SDL3-CS.dll` (an sgen assertion) with the pinned toolchain; not
   adopted, worth retrying with SDL excluded from the web package's AOT inputs.
 - The compositor's promotion hitch on secondary displays and composed windows running at another display's rate are
@@ -190,3 +189,80 @@ iPadOS and mobile browsers: no device.
 [sdl-gpudriver]: https://wiki.libsdl.org/SDL3/SDL_HINT_GPU_DRIVER
 [webgpu-web]: https://web.dev/blog/webgpu-supported-major-browsers
 [webgpu-wiki]: https://en.wikipedia.org/wiki/WebGPU
+
+## 11. Review before the pull request
+
+The owner's review (2026-11-02) asked to fix the browser music freeze, validate the interpolation visually, validate
+the three displays, reconsider GameInput, redesign the Alpha APIs freely and review sustained performance.
+
+**Browser music freeze (run).** An instrumented web build timed each song handed to raylib: `AudioClip.ToWav` took
+50–415 ms (about 120 ns per sample in interpreted WebAssembly; 1.5 M samples, 184 ms; 3.4 M, 415 ms) and raylib's
+stream setup about 1 ms; every freeze matched one of these calls. Decoded music now plays through a raylib
+`AudioStream` refilled from the float samples a 4,096-frame buffer at a time from `Update` (as SDL's device already
+did); sound effects load from the samples without a WAV either. After: Meadow Run 2 frames over 20 ms in 30 s of play
+(48 and 22 ms), Trail Duel 0, Courtyard Key 1 (39 ms), against one 50–418 ms frame per song before; the remaining ones
+are the scene-building frames listed in section 10. The browser suite (`web/tests/run.mjs audio framerate`, headed
+Chrome) passes 17/17: sound reaches the output in every game and 60 updates per second hold at 100, 50 and 25 frames
+per second. A Linux signal test covers streamed music.
+
+**Interpolation, looked at (run).** A diagnostic build (not committed) saved every presented frame of visible
+real-time runs with its time, at 100, 74.97 and 60 Hz, for the four demos, and the same runs of the build before the
+demos interpolated (e4f0dae). The frames were looked at (no ghosting, no streaks, no frozen scenes) and measured:
+
+| Demo, what moves | Before (100 Hz) | Branch: 100 / 74.97 / 60 Hz display |
+| --- | --- | --- |
+| Neon Rift, camera (pixel shift between frames, 300 frames) | alternating 2 and 0 px: 119 repeated frames while moving | 1–2 px steps of a steady 117 px/s; 2 / 1 / 2 repeated frames |
+| Courtyard Key, hero (85 px/s) | 35 jumps of 2 px, irregular repeats | 0 jumps of 2 px on all three; a repeat every ~5 frames, the pixel rounding of 0.85 px a frame |
+| Trail Duel, hero (63 px/s) | 46% repeated positions | 39–41% (pixel rounding alone: 36–37%) |
+| Meadow Run, camera | — | accelerates at under 1 px a frame, then 1 px a frame, no repeat while at speed |
+
+Found and fixed while doing it: scene transitions (fades, irises, diamonds, wipes) advanced per update, so some frames
+repeated their cover; `Transition.Cover` now follows the frame between the last two updates while drawing. Particles
+were drawn at their last update; `ParticleSystem.Draw(renderer, blend)` draws them between their last two updates
+(Meadow Run and Courtyard Key pass their scene's blend). Fixed-step captures stay identical (blend 1).
+
+**Three displays (run).** On DISPLAY2 the window runs at the primary's 100 Hz: falling back to measured time let the
+wake-up jitter through (a 2-0-2 camera pattern every ~30 frames in Neon Rift). The loop now paces to the cadence frames
+really arrive at, starting from their median and following the carried remainder (a median a little off the true period
+would otherwise slip a frame now and then). Drawn time per frame, PerfBench, p1 / p50 / p99:
+
+| Configuration | Drawn step |
+| --- | --- |
+| Window on DISPLAY1 (75 Hz, independent flip) | 13.34 / 13.34 / 13.34 ms |
+| Window on DISPLAY2 (composed at 100 Hz) | 9.88 / 10.01 / 10.12 ms |
+| DISPLAY1, VSync off, limit 60 | 16.67 / 16.67 / 16.67 ms |
+| DISPLAY2, VSync off, limit 144 | 6.94 / 6.94 / 6.95 ms |
+| DISPLAY1, VSync, limit 50 | 19.72 / 20.01 / 20.28 ms (50 frames on 75 Hz cannot be shown evenly: choose a divisor) |
+| Borderless full screen on DISPLAY2 / DISPLAY1 | 16.67 / 13.34 ms, every frame |
+| Window moved from the primary to DISPLAY2 at 3 s | 10.00 ms before and 9.99 / 10.00 / 10.02 ms after |
+
+Neon Rift's camera on DISPLAY2 then repeats 2 frames in 300, as on the primary. What a composed window's display shows is
+the compositor's: PresentMon reports its 100 Hz composition for DISPLAY2 too, and limiting to 60 frames per second made
+it less even (11/19/20 ms instead of 6–14 ms); borderless full screen presents at the display's own 60 Hz.
+
+**GameInput (decision reversed).** SDL's default stays: GameInput on. Its start costs about a second on the reference
+machine, once, while the start screen shows. A native test drives SDL's virtual pads with it on: a pad with Sony's ids
+connects and is named PlayStation, its south button reads as A and releases, a second (Xbox) pad stays idle until the
+first is unplugged and then takes over, and none remains after both are unplugged. No physical controller was
+available.
+
+**Alpha APIs.** `SpriteAtlas.Frames` returns a shared `IReadOnlyList<Sprite>` (as `AnimationClip.Frames` does) and
+`EntityList.OfType` and `Overlapping` return struct enumerables, walked without allocating (tested); the demos' own frame
+caches, written around the old per-call arrays, are gone. No compatibility layer was kept.
+
+**Sustained performance (run).** 60 s of Neon Rift's autopilot, visible, primary display:
+
+| | SDL before | SDL after | raylib |
+| --- | --- | --- | --- |
+| Allocated per frame / collections | 36,018 B / 13 | 5,663 B / 3 | 1,043 B / 0 |
+| Interval p50 / p99 / p99.9 / max | 10.00 / 12.93 / 13.78 / 28.1 ms | 10.00 / 12.83 / 13.92 / 27.2 ms | 10.00 / 10.57 / 10.95 / 25.3 ms |
+| Work p99 / p99.9 | 0.80 / 3.64 ms | 0.78 / 3.10 ms | 0.59 / 1.43 ms |
+
+`SdlAudioDevice.Update` allocated a new eighth of a second of music on every call and `Play` a panned copy of each
+sound; both now reuse memory (tested: 120 updates and 20 sounds allocate nothing). Meadow Run (PCM music) for 25 s:
+594 B per frame on SDL, 222 on raylib, no collection. SDL's wider interval spread is its presentation's wake-up jitter,
+which the pacing absorbs (drawn steps above). The one long frame of each run is the first after the start.
+
+**Final checks.** `dotnet test MicroEngine.slnx -c Release` on Windows, native tests included: every suite passes (core 237 + 1 skipped, desktop 10 of which 7 native, raylib 1 + 5 skipped
+(Linux-only signal tests), samples 9, Meadow Run 53, Courtyard Key 35, Trail Duel 100, Neon Rift 38). The 15 shared
+scenarios give 138 captures, byte-identical to the base build.

@@ -84,13 +84,13 @@ Quoted fragments are the owner's request (2026-11-02), verbatim.
 | T9 | S14 | inline | done | evaluation section 7; GRAPHICS-1 decided as a separate mission (ADR 0024) |
 | T10 | S15 | inline | done | 291d6a1, f720501 (songs render in slices in browsers); Android emulator start, memory, stability; evaluation section 8 |
 | T11 | S16 | inline | done | docs/evaluations/perf-2.md; all suites pass (native included); PR pending the owner |
-| T12 | S17 | inline | pending | |
-| T13 | S20 | inline | pending | |
-| T14 | S18 | inline | pending | |
-| T15 | S19 | inline | pending | |
-| T16 | S21 | inline | pending | |
-| T17 | S22 | inline | pending | |
-| T18 | S23 | inline | pending | |
+| T12 | S17 | inline | done | 7bfcc8b (raylib streams decoded music; ToWav measured at 50-415 ms per song) |
+| T13 | S20 | inline | done | 178ce59 (GameInput kept), 8b76653 (virtual pad hotplug test) |
+| T14 | S18 | inline | done | recorded frames looked at and measured; 2a4953b (particles), 2a5de79 (transitions) |
+| T15 | S19 | inline | done | 2660c9c (cadence pacing); evaluation section 11 |
+| T16 | S21 | inline | done | 44ab31e (IReadOnlyList frames, struct entity queries) |
+| T17 | S22 | inline | done | e46532d (SDL audio garbage 36 KB -> 5.7 KB per frame) |
+| T18 | S23 | inline | in progress | evaluation section 11; push, PR, CI |
 
 ## Log
 
@@ -133,3 +133,8 @@ Quoted fragments are the owner's request (2026-11-02), verbatim.
   abrir el PR, quiero resolver y validar los siguientes aspectos." ... "No queremos sacrificar compatibilidad o calidad
   arquitectónica para obtener mejoras marginales en los tiempos de arranque."); quoted fragments in S17-S23. It reverses
   the GameInput decision of 51cece6 and authorizes pushing the branch and opening the PR.
+- L12 Review work: the browser freeze was AudioClip.ToWav (instrumented build); the interpolation was recorded frame by
+  frame on the three displays and looked at; transitions and particles were the two things still moving per update;
+  composed windows on the 60 Hz display needed pacing to their own cadence; GameInput kept; Frames and entity queries
+  redesigned; SDL audio allocated 36 KB per frame. A commit (particles) first broke Meadow Run's build; it was amended
+  before publishing and the whole solution is now built before each commit.
