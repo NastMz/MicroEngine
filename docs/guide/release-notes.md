@@ -44,8 +44,8 @@ Not published yet: merged on `main` after 0.4.0-alpha.2, in the next SDK version
 **Changed**: `DialogueBox` continues a page that does not fit instead of cutting it; `BitmapFont.Wrap` breaks words
 wider than a line; hidden and scripted runs open no sound device; see the [migration notes](../migrations.md#next-release).
 
-**Faster**: SDL starts about a second sooner on some Windows machines (gamepads start without GameInput, behind the
-start screen); the SDL renderer skips unchanged state; input sampling, touch controls, `EntityList` loops and drawing,
+**Faster**: the SDL window appears about a second sooner on some Windows machines (gamepads start behind the start
+screen); the SDL renderer skips unchanged state; input sampling, touch controls, `EntityList` loops and drawing,
 `SpriteAtlas.Frames` and `BitmapFont.Measure` allocate nothing per frame; hidden raylib windows no longer wait for the
 display.
 

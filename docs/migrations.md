@@ -32,8 +32,6 @@ Not published yet. Behaviour that changes:
   `foreach` allocates nothing. Source code compiles unchanged; rebuild games against the new SDK.
 - `SpriteAtlas.Frames` returns the same array on every call for a name. **Migration:** a game that changed the
   elements of the returned array copies it first (`Frames(name).ToArray()`).
-- On Windows, SDL reads gamepads through its RawInput, XInput and Windows.Gaming.Input drivers instead of GameInput.
-  **Migration:** to keep GameInput, set the environment variable `SDL_JOYSTICK_GAMEINPUT=1`.
 - A game without any scene runs (it used to fail with an index error).
 
 ## 0.4.0-alpha.2

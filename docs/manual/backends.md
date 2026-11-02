@@ -178,10 +178,10 @@ use the GPU the system assigns to the application (on Windows: Settings, Display
 `--profile` report the GPU in use, and `--profile` the display the window is on. On Windows a window can be shown at
 another display's rate than its own (the desktop composes windows on slower displays, and windows moved between
 displays, at the fastest display's rate); the loop counts frame time in refresh periods only while frames really
-arrive at the display's rate, and as measured otherwise. Full screen always runs at its display's rate. On Windows, SDL reaches gamepads through its RawInput,
-XInput and Windows.Gaming.Input drivers rather than Microsoft's GameInput, whose start can take about a second;
-`SDL_JOYSTICK_GAMEINPUT=1` in the environment brings GameInput back. A game with a start screen starts gamepad support
-once that screen is shown; pads already connected are reported as usual.
+arrive at the display's rate, and as measured otherwise. Full screen always runs at its display's rate. On Windows, SDL reads gamepads through Microsoft's GameInput
+(its default since SDL 3.4), whose start can take about a second on machines where the GameInput service is not
+running; a game with a start screen starts gamepad support once that screen is shown, so the window appears first.
+Pads already connected are reported as usual.
 Keyboard, mouse, the first gamepad (the next one takes over when it is unplugged) and touch are read; F11 and
 Alt+Enter toggle fullscreen on desktops; losing focus releases keys and fingers. Audio uses SDL audio streams: wav and
 ogg music, silence when no device exists. `SdlTouchScreen` reports finger events, `SDL_GetWindowSafeArea` and the

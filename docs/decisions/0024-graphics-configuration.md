@@ -37,9 +37,10 @@ menu needs to change these while running. The reference machine has three displa
   display, and a window moved between displays keeps its first rate, while full screen and windows the desktop
   promotes to independent flip run at their display's rate. The loop paces to the reported rate only while the median
   of the recent frames matches it, and counts time as measured otherwise.
-- **Windows gamepads start without GameInput** (SDL's RawInput, XInput and WGI drivers, its default before SDL 3.4):
-  GameInput's start waited about a second for its service on the reference machine. The SDL environment variables
-  still override this.
+- **Windows gamepads keep SDL's default, GameInput.** Its start waits about a second for its service on the reference
+  machine (measured), once, behind the start screen; turning it off would save that second but fall back to drivers
+  that do not handle every device (raw GIP devices such as Xbox One guitars need GameInput). Device support comes
+  before start time.
 - **A capability-based renderer is a separate mission (GRAPHICS-1).** Selecting graphics paths by capability (shaders,
   render targets, compute, 3D) means a renderer on SDL_GPU (with SDL_shadercross or precompiled shaders per backend)
   next to SDL_Renderer and raylib's WebGL, an interface for capabilities games can query, and measurements on phones,
@@ -53,5 +54,5 @@ menu needs to change these while running. The reference machine has three displa
 - The launcher's options become overrides of the game's choices; `PlatformRequest.GpuPreference` (never published) moved
   to `GraphicsSettings.Gpu`.
 - A platform that cannot change something reports it instead of failing; games read properties back.
-- Gamepads on Windows go through a different SDL path than SDL 3.4's default, which was not tested with a physical
-  controller on the reference machine (none was connected).
+- Connection, recognition, presses and hand-over between pads are tested with SDL's virtual pads; no physical
+  controller was connected on the reference machine.
