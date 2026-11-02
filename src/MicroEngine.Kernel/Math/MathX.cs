@@ -54,7 +54,7 @@ public static class Ease
     public static float Linear(float t) => t;
     /// <summary>Starts slow, ends fast (quadratic).</summary>
     public static float InQuad(float t) => t * t;
-    /// <summary>Starts fast, ends slow (quadratic); the default of <see cref="Scenes.Tweener.Add"/>.</summary>
+    /// <summary>Starts fast, ends slow (quadratic); the default of <c>Tweener.Add</c>.</summary>
     public static float OutQuad(float t) => 1 - (1 - t) * (1 - t);
     /// <summary>Slow at both ends (quadratic).</summary>
     public static float InOutQuad(float t) => t < 0.5f ? 2 * t * t : 1 - MathF.Pow(-2 * t + 2, 2) / 2;
