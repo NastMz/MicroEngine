@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 P1 measurement helper (Windows only). Not part of MicroEngine.slnx or CI.
+       Built by run.mjs into a scratch artifacts path (see README.md). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>
