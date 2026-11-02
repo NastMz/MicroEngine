@@ -431,6 +431,7 @@ public sealed class AssetCache : IDisposable
                 }
             }
             catch (AssetLoadException e) { Error = e; }
+            catch (Exception e) when (e is not OutOfMemoryException) { Error = new AssetLoadException(Path, Kind, e.Message, e); }
             DecodeMilliseconds = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
         }
     }
@@ -483,8 +484,17 @@ public sealed class AssetCache : IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         path = path.Replace('\\', '/').TrimStart('/');
-        while (path.StartsWith("./", StringComparison.Ordinal)) path = path[2..];
-        return path;
+        if (!path.StartsWith("./", StringComparison.Ordinal) && !path.Contains("/.", StringComparison.Ordinal) && !path.StartsWith("../", StringComparison.Ordinal))
+            return path;
+        // "a/../b" and "./b" name "b": one cache entry per file. A ".." that leaves the folder stays, so it is refused.
+        var parts = new List<string>();
+        foreach (var part in path.Split('/'))
+        {
+            if (part is "." or "") continue;
+            if (part == ".." && parts.Count > 0 && parts[^1] != "..") parts.RemoveAt(parts.Count - 1);
+            else parts.Add(part);
+        }
+        return string.Join('/', parts);
     }
 
     private byte[] Read(string path, string kind)

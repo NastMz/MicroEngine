@@ -303,7 +303,6 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         }
     }
 
-    /// <summary>Records how long a step of the constructor took, for <see cref="Diagnostics"/>.</summary>
     /// <summary>The window size for <paramref name="scale"/>, kept inside the display the window opens on (<see cref="WindowSizing.Initial"/>).</summary>
     private (int Width, int Height) InitialWindowSize(int scale)
     {
@@ -320,6 +319,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         return WindowSizing.Initial(_settings, scale, known ? usable.w : 0, known ? usable.h : 0);
     }
 
+    /// <summary>Records how long a step of the constructor took, for <see cref="Diagnostics"/>.</summary>
     private void Mark(string step, ref long since)
     {
         long now = System.Diagnostics.Stopwatch.GetTimestamp();

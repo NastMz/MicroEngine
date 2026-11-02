@@ -74,10 +74,12 @@ public sealed class ScalableFontTests
         pixel.Filter = TextureFilter.Linear;
         Assert.AreEqual(TextureFilter.Linear, pixel.Filter);
         Assert.AreEqual(2, device.LiveTextures);
+        var kept = pixel.At(16);
         smooth.Dispose();
         pixel.Dispose();
         Assert.AreEqual(0, device.LiveTextures);
         Assert.ThrowsExactly<ObjectDisposedException>(() => smooth.At(12));
+        Assert.ThrowsExactly<ObjectDisposedException>(() => kept.Measure("abc"), "a size kept from before refuses too");
     }
 
     [TestMethod]

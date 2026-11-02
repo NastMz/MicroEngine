@@ -116,6 +116,9 @@ public sealed class AtlasImportTests
         StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => AtlasData.Parse("<root/>")).Message, "TextureAtlas");
         StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => AtlasData.Parse(
             """{"frames":[{"filename":"a","frame":{"x":0,"y":0,"w":4,"h":4}}],"meta":{"frameTags":[{"name":"t","from":0,"to":3}]}}""")).Message, "frames 0-3");
+        StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => AtlasData.Parse(
+            """{"frames":{"a":{"frame":{"x":0,"y":0,"w":4,"h":4},"spriteSourceSize":null}}}""")).Message, "structure");
+        StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => AtlasData.Parse("""{"frames":{}}""")).Message, "no frames");
         var device = new HeadlessGraphicsDevice();
         var tooSmall = device.CreateTexture(new PixelImage(8, 8));
         StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => SpriteAtlas.Create(tooSmall, AtlasData.Parse(TexturePackerHash))).Message, "outside");

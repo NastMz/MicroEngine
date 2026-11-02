@@ -100,6 +100,7 @@ public sealed class AtlasData
         try { document = JsonDocument.Parse(text, new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip }); }
         catch (JsonException e) { throw new InvalidDataException($"Invalid JSON: {e.Message}", e); }
         using (document)
+        try
         {
             var root = document.RootElement;
             if (!root.TryGetProperty("frames", out var frames)) throw new InvalidDataException("The JSON has no \"frames\".");
@@ -133,8 +134,11 @@ public sealed class AtlasData
                         animations.Add(new AtlasAnimation(name, from, to, direction));
                     }
             }
+            if (regions.Count == 0) throw new InvalidDataException("The atlas has no frames.");
             return new AtlasData(image, regions, animations);
         }
+        // A value of the wrong kind where an object or a number is expected ("spriteSourceSize": null).
+        catch (InvalidOperationException e) { throw new InvalidDataException($"Unexpected JSON structure: {e.Message}", e); }
     }
 
     private static AtlasRegion JsonFrame(string rawName, JsonElement frame, AtlasOptions options)

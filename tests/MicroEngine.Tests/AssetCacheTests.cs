@@ -24,6 +24,7 @@ public sealed class AssetCacheTests
         var a = assets.Texture("backgrounds/set1_background.png");
         var b = assets.Texture("./backgrounds/set1_background.png");
         Assert.AreSame(a, b);
+        Assert.AreSame(a, assets.Texture("items/../backgrounds/./set1_background.png"), "one entry per file, however it is spelled");
         Assert.AreEqual(1, device.TexturesCreated);
         Assert.AreEqual(640, a.Width);
         var smooth = assets.Texture("backgrounds/set1_background.png", TextureFilter.Linear);

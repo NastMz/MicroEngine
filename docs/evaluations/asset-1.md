@@ -122,6 +122,12 @@ deliberately crafted ones.
 and with this branch gave byte-identical captures with hardware Direct3D 11 and with WARP, so the mismatch reproduces on
 `main` and is left to whoever re-records the reference.
 
+**Independent verification** (a separate agent, read-only, against 98b1a7d): no blockers; 58 SDL and 15 raylib demo
+captures byte-identical to `main`; build targets checked for default, explicit-item and turned-off projects and for
+ME0010 on a case-sensitive folder. Its advisories were fixed: malformed atlas JSON raised the wrong exception (and could
+escape `Update` in browsers), `a/../b` spellings loaded a file twice, an empty JSON atlas was accepted, a kept
+`SizedFont` measured after its font was disposed, and a misplaced documentation comment.
+
 ## Limitations
 
 - No build-time conversion: no GPU-compressed textures (BCn, ASTC, ETC2), no mipmaps (art drawn far smaller than its
@@ -134,6 +140,8 @@ and with this branch gave byte-identical captures with hardware Direct3D 11 and 
   released with it even if another scope's code kept a reference).
 - The UI widgets scale their margins with the font, but other UI measures (panels, toasts, achievement views) are
   still in pixel-art units.
+- raylib has no "usable area" query: its windows shrink to fit the whole monitor, SDL's to the area without the
+  taskbar, so the two backends can open slightly different window sizes on the same display.
 - The gallery runs on desktops and its web package is built; it is not part of the phone experiments, which play the
   demos.
 

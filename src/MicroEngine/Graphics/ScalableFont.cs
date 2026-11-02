@@ -186,6 +186,8 @@ public sealed class ScalableFont : IDisposable
         return _sizes[size] = new SizedFont(this, size);
     }
 
+    internal void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
+
     /// <summary>Increases when <see cref="Reset"/> drops the rasterizer's fonts, so sizes fetch theirs again.</summary>
     internal int Generation { get; private set; }
 
@@ -330,6 +332,7 @@ public sealed class SizedFont : IFont
     {
         get
         {
+            Family.ThrowIfDisposed();
             if (_generation != Family.Generation)
             {
                 _font = Family.Rasterizer(Size);
