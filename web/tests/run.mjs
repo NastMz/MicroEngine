@@ -62,10 +62,19 @@ async function launch(name) {
   // adds Chrome switches (CI: --ignore-gpu-blocklist, so a headed Chrome on Xvfb draws WebGL with Mesa's llvmpipe,
   // the desktop build's renderer, instead of refusing WebGL on a software GPU).
   const chromeFlags = (process.env.CHROME_FLAGS ?? '').split(/\s+/).filter(Boolean);
-  return puppeteer.launch(name === 'chrome'
+  const options = name === 'chrome'
     ? { browser: 'chrome', executablePath, headless: !headed, args: ['--autoplay-policy=user-gesture-required', '--no-first-run', '--window-size=1024,768', ...chromeFlags] }
     : { browser: 'firefox', executablePath, headless: !headed, args: ['--width=1024', '--height=768'],
-        extraPrefsFirefox: { 'media.autoplay.default': 1, 'media.autoplay.block-webaudio': true } });
+        extraPrefsFirefox: { 'media.autoplay.default': 1, 'media.autoplay.block-webaudio': true } };
+  // Starting a browser on a busy CI runner occasionally misses puppeteer's default 30 s for the browser to print its
+  // endpoint (a known flake of the site job, docs/ci.md "Troubleshooting"). The launch alone, never a check, gets a
+  // longer timeout and one retry; the retry prints the browser's own output, so a real failure says why.
+  try {
+    return await puppeteer.launch({ ...options, timeout: 90_000 });
+  } catch (e) {
+    console.log(`note ${name} did not start (${e.message.split('\n')[0]}); retrying once with its output shown`);
+    return puppeteer.launch({ ...options, timeout: 90_000, dumpio: true });
+  }
 }
 
 /** The renderer behind the browser's WebGL (which GPU or software rasterizer draws the frames), or why there is none. */

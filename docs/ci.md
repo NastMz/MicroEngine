@@ -380,6 +380,8 @@ Every CI result and validate report includes the cost of its own run. Re-run att
 | sdk-release: "Nothing to release" | the normal outcome of every merge that is not an SDK release | nothing |
 | sdk-release refused, or stopped after publishing | a state its preflight cannot repair, or a failed verification | [Releasing, Recovering](releasing.md#recovering) |
 | `release-verify` fails | a deployed file differs from the release | nothing was published; inspect the build |
+| Site (Chrome and Firefox) fails with `TimeoutError: Timed out after 30000 ms while waiting for the WS endpoint URL to appear in stdout!` after its unit tests passed (known flake, ci run 41540582635) | a browser took longer than puppeteer's default 30 s to start on a busy runner; no check had run | re-run the failed job. The launcher is `launch()` in `site/tests/browser.mjs`, which has no longer timeout or retry yet; the browser engine suites (`web/tests/run.mjs`) give the launch alone 90 s and one retry that prints the browser's output, never retrying a check |
+| Browser engine job: a frame difference against the desktop build | the two builds drift in some scrolling scenes (see [Browser tests](#browser-tests)) | reported only; the job's own checks decide pass or fail |
 
 ## Engine checks beyond unit tests
 
