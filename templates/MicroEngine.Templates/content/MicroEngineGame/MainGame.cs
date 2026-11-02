@@ -17,10 +17,9 @@ public sealed class MainGame : Game
 
     protected override void Load()
     {
-        // An image file from the Content folder, and a sound made in code.
-        var content = new ContentFolder();
+        // An image file from the Content folder (Assets reads it), and a sound made in code.
         Sprites = new SpriteAtlasBuilder()
-            .Add("hero", content.Image("hero.png"), new Vector2(8, 8))
+            .Add("hero", Assets.Image("hero.png"), new Vector2(8, 8))
             .Build(Graphics);
         Audio.AddSound("coin", Synth.Render(new SfxParams { Wave = Wave.Square, Frequency = 988, Arpeggio = [1f, 1.33f], Sustain = 0.04f, Decay = 0.15f }));
         Scenes.Push(new PlayScene(this));
