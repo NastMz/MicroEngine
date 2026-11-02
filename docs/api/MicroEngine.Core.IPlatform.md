@@ -195,4 +195,23 @@ Switches between window and full screen where the platform has a window; does no
 void ToggleFullscreen()
 ```
 
+### <a id="MicroEngine_Core_IPlatform_Wait_System_Double_"></a> Wait\(double\)
+
+Blocks for about <code class="paramref">seconds</code>, precisely enough to pace frames (the frame limit,
+[FrameRateLimit](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_FrameRateLimit)); returns false when the platform cannot block its thread (a browser,
+whose page drives the frames), and the loop then skips the frames that come early instead. The default sleeps and
+then spins for the last milliseconds; backends override it with their precise timers.
+
+```csharp
+bool Wait(double seconds)
+```
+
+#### Parameters
+
+`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 </div>

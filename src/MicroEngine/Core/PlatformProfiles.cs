@@ -36,11 +36,6 @@ public sealed record PlatformRequest(GameSettings Settings)
     /// only for runs a player watches: not for hidden windows or fixed-step (scripted) runs, which are checks and tests.
     /// </summary>
     public AudioOutput AudioOutput { get; init; }
-    /// <summary>
-    /// Which GPU the backend should ask for on a machine with two (<see cref="GpuPreference"/>, the launcher's
-    /// <c>--gpu</c>). A preference, not a guarantee: backends pass it on only where their graphics API lets them choose.
-    /// </summary>
-    public GpuPreference GpuPreference { get; init; }
     /// <summary>Size factor of the PNGs written by <see cref="IPlatform.SaveScreenshot"/>.</summary>
     public int CaptureScale { get; init; } = 3;
     /// <summary>Creates the audio device used instead of the backend's; the platform disposes it.</summary>

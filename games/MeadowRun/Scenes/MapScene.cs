@@ -15,12 +15,19 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
 {
     public static readonly Vector2[] Nodes = [new(58, 122), new(132, 98), new(196, 68), new(238, 128), new(272, 96)];
     private const int DotsPerPath = 7;
+    private static readonly string[] NodeSprites = ["node0", "node1", "node2", "node3"];
+    private static readonly string[] NodeNumbers = [.. Enumerable.Range(1, Nodes.Length).Select(n => Ui.N(n))];
 
     private int _node = Math.Clamp(startNode, 0, Nodes.Length - 1);
     private int _target;
     private float _walk = 1;
     private float _revealed = 1;
     private bool _leaving;
+    private readonly StepBlend _step = new();
+    private Vector2 _pipFrom;
+    private readonly NumberLabel _lives = new("×", 2), _score = new(digits: 7);
+    private int _infoLevel = -1, _infoBest;
+    private string _infoTitle = "", _infoScore = "";
     private int Unlocked => game.Save.Unlocked;
 
     public int Node => _node;
@@ -43,6 +50,8 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
 
     public override void Update(float dt)
     {
+        _step.Stepped(Game, dt);
+        _pipFrom = PipPosition;
         if (_leaving) return;
         if (_walk < 1)
         {
@@ -91,11 +100,12 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
     public override void Draw(IRenderer r)
     {
         r.Draw(game.Art["map"], Vector2.Zero);
+        float time = _step.Time(Game, Age);
         // Water shimmer.
         for (int i = 0; i < 14; i++)
         {
-            float x = (i * 53 + Age * 6) % 330 - 5, y = 10 + (i * 37) % 160;
-            if (x < 20 || x > 300 || y < 24 || y > 170) r.FillRect(new RectF(MathF.Round(x), y, 4, 1), Pal.Cloud.WithAlpha(0.5f + MathX.Wave(Age + i, 0.5f, 0.3f)));
+            float x = (i * 53 + time * 6) % 330 - 5, y = 10 + (i * 37) % 160;
+            if (x < 20 || x > 300 || y < 24 || y > 170) r.FillRect(new RectF(MathF.Round(x), y, 4, 1), Pal.Cloud.WithAlpha(0.5f + MathX.Wave(time + i, 0.5f, 0.3f)));
         }
         for (int p = 0; p < Nodes.Length - 1; p++)
         {
@@ -115,17 +125,17 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
         {
             int state = i >= Unlocked || (i == justUnlocked && _revealed < 1) ? 0 : game.Save.BestScores[i] > 0 ? 2 : i == Nodes.Length - 1 ? 3 : 1;
             float pop = i == justUnlocked && _revealed >= 1 ? MathF.Max(0, 1 - (Age - 1.8f) * 3) * 3 : 0;
-            r.Draw(game.Art["node" + state], Nodes[i] + new Vector2(0, -MathF.Round(pop)));
-            Ui.Centered(r, Font, Ui.N(i + 1), Nodes[i].X, Nodes[i].Y + 7, state == 0 ? Pal.Dusk : Pal.Cream);
+            r.Draw(game.Art[NodeSprites[state]], Nodes[i] + new Vector2(0, -MathF.Round(pop)));
+            Ui.Centered(r, Font, NodeNumbers[i], Nodes[i].X, Nodes[i].Y + 7, state == 0 ? Pal.Dusk : Pal.Cream);
         }
 
-        var pip = PipPosition;
+        var pip = Motion.Between(_pipFrom, PipPosition, _step.Blend(Game));
         bool walking = _walk < 1;
         var frames = game.Art.Pip(game.Session.Form, walking ? "run" : "idle");
         float hop = walking ? MathF.Abs(MathF.Sin(_walk * MathF.PI * 4)) * 3 : 0;
         bool flip = walking && Nodes[_target].X < Nodes[_node].X;
         r.FillRect(new RectF(MathF.Round(pip.X) - 5, MathF.Round(pip.Y) + 1, 10, 2), Pal.Ink.WithAlpha(0.4f));
-        r.Draw(frames[(int)(Age * (walking ? 10 : 1.6f)) % frames.Length], new Vector2(MathF.Round(pip.X), MathF.Round(pip.Y - hop + 2)), null, flip);
+        r.Draw(frames[(int)(Age * (walking ? 10 : 1.6f)) % frames.Count], new Vector2(MathF.Round(pip.X), MathF.Round(pip.Y - hop + 2)), null, flip);
 
         DrawHeader(r);
         DrawInfo(r);
@@ -136,8 +146,9 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
         r.FillGradient(new RectF(0, 0, 320, 18), Pal.Ink.WithAlpha(0.7f), Pal.Ink.WithAlpha(0f), 4);
         Ui.Text(r, Font, "MEADOW ISLE", new Vector2(8, 5), Pal.Butter);
         r.Draw(game.Art["icon_life"], new Vector2(212, 4));
-        Ui.Text(r, Font, "×" + Ui.N(game.Session.Lives, 2), new Vector2(225, 5));
-        Ui.Text(r, Font, Ui.N(game.Session.Score, 7), new Vector2(312 - Font.MeasureWidth(Ui.N(game.Session.Score, 7)), 5));
+        Ui.Text(r, Font, _lives.For(game.Session.Lives), new Vector2(225, 5));
+        string score = _score.For(game.Session.Score);
+        Ui.Text(r, Font, score, new Vector2(312 - Font.MeasureWidth(score), 5));
     }
 
     private void DrawInfo(IRenderer r)
@@ -146,9 +157,17 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
         var def = Levels.All[i];
         var box = new RectF(8, 146, 304, 28);
         r.Panel(box, Ui.Card);
-        Ui.Text(r, Font, $"{def.Number}  {def.Name}", new Vector2(16, 151), Pal.Butter);
+        int bestScore = game.Save.BestScores[i];
+        if (i != _infoLevel || bestScore != _infoBest)
+        {
+            _infoLevel = i;
+            _infoBest = bestScore;
+            _infoTitle = $"{def.Number}  {def.Name}";
+            _infoScore = bestScore > 0 ? "Best " + Ui.N(bestScore) : "Not cleared yet";
+        }
+        Ui.Text(r, Font, _infoTitle, new Vector2(16, 151), Pal.Butter);
         Ui.Text(r, Font, def.Subtitle, new Vector2(16, 162), Pal.Haze);
-        string best = game.Save.BestScores[i] > 0 ? "Best " + Ui.N(game.Save.BestScores[i]) : "Not cleared yet";
+        string best = _infoScore;
         Ui.Text(r, Font, best, new Vector2(304 - Font.MeasureWidth(best), 151), game.Save.BestScores[i] > 0 ? Pal.Cream : Pal.Dusk);
         if ((int)(Age * 2) % 2 == 0 && _walk >= 1 && _revealed >= 1)
         {

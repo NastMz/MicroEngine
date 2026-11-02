@@ -9,10 +9,16 @@ public static class MoveText
     public static string Category(MoveData move) => move.Category.ToString();
 
     /// <summary>Power, or "-" for moves that deal no direct damage.</summary>
-    public static string Power(MoveData move) => move.IsDamaging ? move.Power.ToString() : "-";
+    public static string Power(MoveData move) => move.IsDamaging ? Number(PowerTexts, move.Power, "") : "-";
 
     /// <summary>Hit chance, or "-" for moves that never miss.</summary>
-    public static string Accuracy(MoveData move) => move.NeverMisses ? "-" : move.Accuracy + "%";
+    public static string Accuracy(MoveData move) => move.NeverMisses ? "-" : Number(AccuracyTexts, move.Accuracy, "%");
+
+    // Move cards show these every frame: each number's text is built once.
+    private static readonly string?[] PowerTexts = new string?[256], AccuracyTexts = new string?[256];
+
+    private static string Number(string?[] texts, int value, string suffix)
+        => (uint)value < (uint)texts.Length ? texts[value] ??= value + suffix : value + suffix;
 
     /// <summary>How the move's type fares against a foe of <paramref name="foe"/> type; null when neutral or not an attack.</summary>
     public static string? Matchup(MoveData move, ElementType foe)

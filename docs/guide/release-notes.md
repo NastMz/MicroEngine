@@ -26,21 +26,29 @@ Not published yet: merged on `main` after 0.4.0-alpha.2, in the next SDK version
 - [Frame pacing](../manual/lifecycle.md#fixed-step-and-frame-order): with VSync, frame time is counted in refresh
   periods (`IPlatform.DisplayRate`, `RunOptions.PaceToDisplay`, `--pacing`), so irregular wake-ups no longer give
   frames with no update followed by frames with two; `Game.FrameBlend` for drawing between updates on 75, 100 or
-  144 Hz displays.
+  144 Hz displays; scene transitions and `ParticleSystem.Draw(renderer, blend)` draw between updates too.
 - [Measuring a game](../manual/lifecycle.md#measuring-a-game): `--profile FILE` (`FrameProfiler`, `FrameSummary`,
   `IPlatformDiagnostics`), per-frame times, allocations and start phases as JSON or CSV.
 - [Audio for tests](../manual/audio.md#devices-and-silence): `--audio auto|device|silent` (`AudioOutput`),
   `--audio-capture FILE` and `CaptureAudioDevice`, `SdlAudioDevice.TryCreate(driver)`.
-- `AudioMixer.AddMusic(name, Song)` renders songs in the background, out of `Load`.
+- `AudioMixer.AddMusic(name, Song)` renders songs in the background, out of `Load` (in browsers, a few milliseconds per
+  update); a song with an invalid note or drum fails there, in `Load`.
 - [Choosing a platform](../manual/backends.md#choosing-a-platform): the launcher tries the next platform when the
-  default one cannot start; `--gpu` (`GpuPreference`).
+  default one cannot start.
+- [Graphics options](../manual/backends.md#graphics-options): `GameSettings.Graphics` (`GraphicsSettings`) chooses the
+  platform, graphics APIs, VSync, a frame limit independent of VSync, the GPU (`GpuPreference`), the window mode
+  (`WindowMode`) and the display; `Game.Screen` (`GameScreen`, `DisplayInfo`, `IDisplayControl`) lists the displays and
+  changes VSync, the frame limit, the window mode and the display while the game runs; launcher options `--renderer`,
+  `--vsync`, `--fps-limit`, `--gpu`, `--window`, `--display`.
 
 **Changed**: `DialogueBox` continues a page that does not fit instead of cutting it; `BitmapFont.Wrap` breaks words
 wider than a line; hidden and scripted runs open no sound device; see the [migration notes](../migrations.md#next-release).
 
 **Faster**: the SDL window appears about a second sooner on some Windows machines (gamepads start behind the start
-screen); the SDL renderer skips unchanged state; input sampling and touch controls allocate nothing per frame; hidden
-raylib windows no longer wait for the display.
+screen); the SDL renderer skips unchanged state; input sampling, touch controls, `EntityList` loops and drawing,
+`SpriteAtlas.Frames` and `BitmapFont.Measure` allocate nothing per frame; SDL's audio streams music and plays sounds
+without per-frame garbage; raylib streams rendered songs from their samples (browsers no longer freeze for a song);
+hidden raylib windows no longer wait for the display.
 
 ## 0.4.0-alpha.2
 

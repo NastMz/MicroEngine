@@ -13,6 +13,9 @@ internal sealed class TitleScene(RiftGame game) : Scene
 {
     private readonly SelectionList _menu = new("START", "CONTROLS", "ACHIEVEMENTS", "QUIT");
     private bool _controls, _leaving;
+    private DrawBlend _blend;
+    private StageView? _view;
+    private readonly NumberText _high = new(static (high, _) => "HI " + Ui.N(high, 7));
 
     public override void Enter()
     {
@@ -22,6 +25,7 @@ internal sealed class TitleScene(RiftGame game) : Scene
 
     public override void Update(float dt)
     {
+        _blend.Mark(Game);
         if (_leaving) return;
         if (_controls)
         {
@@ -50,8 +54,8 @@ internal sealed class TitleScene(RiftGame game) : Scene
 
     public override void Draw(IRenderer r)
     {
-        var view = new StageView(game.Art, Font);
-        view.DrawBackdrop(r, "city", new Vector2(Age * 40, 0), Age, false);
+        _view ??= new StageView(game.Art, Font);
+        _view.DrawBackdrop(r, "city", new Vector2(_blend.Age(this) * 40, 0), Age, false);
         r.FillGradient(new RectF(0, 150, r.Width, 120), Ui.Ink.WithAlpha(0f), Ui.Ink.WithAlpha(0.9f), 8);
         r.Draw(game.Art.Frames("hero_idle")[(int)(Age * 6) % 4], new Vector2(70, 250));
         r.Draw(game.Art.Frames("trooper_idle")[(int)(Age * 5) % 3], new Vector2(410, 250));
@@ -99,7 +103,7 @@ internal sealed class TitleScene(RiftGame game) : Scene
         else
         {
             Ui.Menu(r, Font, _menu, r.Width / 2f, 150, Age);
-            Ui.Centered(r, Font, "HI " + Ui.N(Math.Max(game.Session.HighScore, 30000), 7), r.Width / 2f, 220, Ui.Muted);
+            Ui.Centered(r, Font, _high.Get(Math.Max(game.Session.HighScore, 30000)), r.Width / 2f, 220, Ui.Muted);
         }
         Ui.Centered(r, Font, "ART & AUDIO: ANSIMUZ, JUHANI JUNKALA (CC0)  -  ENGINE: MICROENGINE", r.Width / 2f, 256, Ui.Muted);
         Ui.Scanlines(r);
@@ -109,7 +113,9 @@ internal sealed class TitleScene(RiftGame game) : Scene
 /// <summary>Stage introduction card with the hero running in place.</summary>
 internal sealed class StageCardScene(RiftGame game, int stageIndex) : Scene
 {
+    private static readonly string[] StageTitles = [.. Enumerable.Range(1, Stages.Count).Select(n => $"STAGE {n}")];
     private bool _leaving;
+    private readonly NumberText _rest = new(static (lives, score) => $"REST {lives}   SCORE {Ui.N(score, 7)}");
 
     public override void Enter() => game.Music("");
 
@@ -124,12 +130,12 @@ internal sealed class StageCardScene(RiftGame game, int stageIndex) : Scene
     {
         var def = Stages.All[stageIndex];
         r.FillRect(new RectF(0, 0, r.Width, r.Height), Ui.Ink);
-        Ui.Centered(r, Font, $"STAGE {stageIndex + 1}", r.Width / 2f, 70, Ui.Cyan, 2);
+        Ui.Centered(r, Font, StageTitles[stageIndex], r.Width / 2f, 70, Ui.Cyan, 2);
         Ui.Neon(r, Font, def.Name, r.Width / 2f, 96, 3, Ui.Magenta, Age);
         Ui.Centered(r, Font, def.Subtitle, r.Width / 2f, 128, Ui.Muted);
         r.Draw(game.Art.Frames("hero_run")[(int)(Age * 12) % 8], new Vector2(r.Width / 2f, 214));
         r.FillRect(new RectF(r.Width / 2f - 60, 214, 120, 1), Ui.Magenta.WithAlpha(0.6f));
-        Ui.Centered(r, Font, $"REST {game.Session.Lives}   SCORE {Ui.N(game.Session.Score, 7)}", r.Width / 2f, 232, Ui.Text);
+        Ui.Centered(r, Font, _rest.Get(game.Session.Lives, game.Session.Score), r.Width / 2f, 232, Ui.Text);
         Ui.Scanlines(r);
     }
 }
@@ -138,6 +144,8 @@ internal sealed class StageCardScene(RiftGame game, int stageIndex) : Scene
 internal sealed class GameOverScene(RiftGame game, int stageIndex, int checkpoint = 0) : Scene
 {
     private readonly SelectionList _menu = new("CONTINUE", "QUIT");
+    private readonly NumberText _score = new(static (score, _) => $"SCORE {Ui.N(score, 7)}");
+    private readonly NumberText _continues = new(static (left, _) => $"CONTINUES LEFT {left}");
     private bool _leaving;
 
     public override void Enter()
@@ -163,8 +171,8 @@ internal sealed class GameOverScene(RiftGame game, int stageIndex, int checkpoin
     {
         r.FillRect(new RectF(0, 0, r.Width, r.Height), Ui.Ink);
         Ui.Neon(r, Font, "GAME OVER", r.Width / 2f, 80, 4, Color.Hex("ff3050"), Age);
-        Ui.Centered(r, Font, $"SCORE {Ui.N(game.Session.Score, 7)}", r.Width / 2f, 130, Ui.Text);
-        Ui.Centered(r, Font, $"CONTINUES LEFT {game.Session.Continues}", r.Width / 2f, 146, Ui.Muted);
+        Ui.Centered(r, Font, _score.Get(game.Session.Score), r.Width / 2f, 130, Ui.Text);
+        Ui.Centered(r, Font, _continues.Get(game.Session.Continues), r.Width / 2f, 146, Ui.Muted);
         Ui.Menu(r, Font, _menu, r.Width / 2f, 180, Age);
         Ui.Scanlines(r);
     }
@@ -201,11 +209,15 @@ internal sealed class EndingScene(RiftGame game) : Scene
     ];
 
     private bool _leaving;
+    private DrawBlend _blend;
+    private StageView? _view;
+    private readonly NumberText _final = new(static (score, deaths) => $"FINAL SCORE {Ui.N(score, 7)}   DEATHS {deaths}");
 
     public override void Enter() => game.Music("ending");
 
     public override void Update(float dt)
     {
+        _blend.Mark(Game);
         if (_leaving || Age < 4 || !(Input.Pressed("confirm") || Input.Pressed("pause"))) return;
         _leaving = true;
         Game.Scenes.Reset(new TitleScene(game), Transition.Fade(1f));
@@ -213,10 +225,11 @@ internal sealed class EndingScene(RiftGame game) : Scene
 
     public override void Draw(IRenderer r)
     {
-        var view = new StageView(game.Art, Font);
-        view.DrawBackdrop(r, "city", new Vector2(Age * 20, 0), Age, false);
+        _view ??= new StageView(game.Art, Font);
+        float age = _blend.Age(this);
+        _view.DrawBackdrop(r, "city", new Vector2(age * 20, 0), Age, false);
         r.FillRect(new RectF(0, 0, r.Width, r.Height), Ui.Ink.WithAlpha(0.45f));
-        float y = r.Height - Age * 22;
+        float y = r.Height - age * 22;
         for (int i = 0; i < Credits.Length; i++)
         {
             float ly = y + i * 16;
@@ -227,10 +240,10 @@ internal sealed class EndingScene(RiftGame game) : Scene
         float end = Credits.Length * 16 + r.Height;
         if (Age * 22 > end - 60)
         {
-            Ui.Centered(r, Font, $"FINAL SCORE {Ui.N(game.Session.Score, 7)}   DEATHS {game.Session.Deaths}", r.Width / 2f, 120, Ui.Gold);
+            Ui.Centered(r, Font, _final.Get(game.Session.Score, game.Session.Deaths), r.Width / 2f, 120, Ui.Gold);
             if ((int)(Age * 2) % 2 == 0) Ui.Centered(r, Font, Game.Prompts.Format("PRESS {confirm}").ToUpperInvariant(), r.Width / 2f, 150, Ui.Text);
         }
-        r.Draw(game.Art.Frames("hero_run")[(int)(Age * 10) % 8], new Vector2(60 + (Age * 8 % 400), 262));
+        r.Draw(game.Art.Frames("hero_run")[(int)(Age * 10) % 8], new Vector2(60 + (age * 8 % 400), 262));
         Ui.Scanlines(r);
     }
 }

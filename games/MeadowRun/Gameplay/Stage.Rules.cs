@@ -8,6 +8,12 @@ namespace MeadowRun.Gameplay;
 
 internal sealed partial class Stage
 {
+    // Scratch lists for the per-step rules, reused so a step allocates nothing for them.
+    private readonly List<Actor> _touched = [];
+    private readonly List<SeedShot> _seeds = [];
+    private readonly List<Enemy> _enemies = [], _walkers = [];
+    private readonly List<FireBar> _fireBars = [];
+
     private void SpawnFromLevel(int checkpoint)
     {
         int cpIndex = 0, barIndex = 0;
@@ -75,7 +81,9 @@ internal sealed partial class Stage
     private void ResolveItems()
     {
         var pb = Player.Bounds;
-        foreach (var actor in Actors.Overlapping(pb).ToList())
+        _touched.Clear();
+        foreach (var actor in Actors.Overlapping(pb)) _touched.Add(actor);
+        foreach (var actor in _touched)
         {
             switch (actor)
             {
@@ -153,8 +161,21 @@ internal sealed partial class Stage
     private void ResolveEnemies(float previousBottom)
     {
         var pb = Player.Bounds;
-        var seeds = Actors.OfType<SeedShot>().ToList();
-        var enemies = Actors.OfType<Enemy>().Where(e => !e.Dead && e.Awake).ToList();
+        // Reused lists, filled in one pass (in actor order) before any rule runs.
+        var seeds = _seeds;
+        var enemies = _enemies;
+        seeds.Clear();
+        enemies.Clear();
+        _fireBars.Clear();
+        foreach (var actor in Actors)
+        {
+            switch (actor)
+            {
+                case SeedShot seed: seeds.Add(seed); break;
+                case Enemy e when !e.Dead && e.Awake: enemies.Add(e); break;
+                case FireBar bar: _fireBars.Add(bar); break;
+            }
+        }
         foreach (var enemy in enemies)
         {
             foreach (var seed in seeds)
@@ -192,7 +213,9 @@ internal sealed partial class Stage
         }
 
         // Walkers turn when they meet so they do not overlap into a single blob.
-        var walkers = enemies.Where(e => e.Walker && !e.Dead).ToList();
+        var walkers = _walkers;
+        walkers.Clear();
+        foreach (var e in enemies) if (e.Walker && !e.Dead) walkers.Add(e);
         for (int i = 0; i < walkers.Count; i++)
         for (int j = i + 1; j < walkers.Count; j++)
         {
@@ -202,7 +225,7 @@ internal sealed partial class Stage
             b.Facing = -a.Facing;
         }
 
-        foreach (var bar in Actors.OfType<FireBar>())
+        foreach (var bar in _fireBars)
             if (bar.Touches(pb)) Hurt("firebar");
     }
 

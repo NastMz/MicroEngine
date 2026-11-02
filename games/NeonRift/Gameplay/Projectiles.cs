@@ -33,7 +33,11 @@ public sealed class PlayerShot : Actor
             Destroy();
             return;
         }
-        foreach (var enemy in Stage.Enemies.Overlapping(Bounds.Inflate(Weapon.Kind == WeaponKind.Lance ? 6 : 0)).OfType<Enemy>().ToList())
+        // Copied first: a hit can spawn or destroy enemies. The stage's buffer is reused instead of a new list per shot.
+        var targets = Stage.HitBuffer;
+        targets.Clear();
+        foreach (var e in Stage.Enemies.Overlapping(Bounds.Inflate(Weapon.Kind == WeaponKind.Lance ? 6 : 0))) targets.Add(e);
+        foreach (var enemy in targets)
         {
             if (_hit.Contains(enemy)) continue;
             if (!enemy.Hit(Weapon.Damage, Position)) continue;
@@ -46,17 +50,17 @@ public sealed class PlayerShot : Actor
     internal override void Render(IRenderer r, Assets art)
     {
         var frames = art.Frames(Weapon.Sprite);
-        var frame = frames[(int)(Age * 18) % frames.Length];
+        var frame = frames[(int)(Age * 18) % frames.Count];
         float angle = MathF.Atan2(Velocity.Y, Velocity.X);
         r.SetBlendMode(BlendMode.Additive);
         if (Weapon.Kind == WeaponKind.Spread)
-            r.DrawPivoted(frame, Vector2.Round(Position), Age * 14f, new Vector2(0.45f));
+            r.DrawPivoted(frame, Vector2.Round(DrawPosition), Age * 14f, new Vector2(0.45f));
         else if (Weapon.Kind == WeaponKind.Lance)
-            r.DrawPivoted(frame, Vector2.Round(Position), angle, new Vector2(0.6f, 0.5f));
+            r.DrawPivoted(frame, Vector2.Round(DrawPosition), angle, new Vector2(0.6f, 0.5f));
         else if (Weapon.Kind == WeaponKind.Rapid)
-            r.DrawPivoted(frame, Vector2.Round(Position), angle, new Vector2(0.45f, 0.4f));
+            r.DrawPivoted(frame, Vector2.Round(DrawPosition), angle, new Vector2(0.45f, 0.4f));
         else
-            r.DrawPivoted(frame, Vector2.Round(Position), angle);
+            r.DrawPivoted(frame, Vector2.Round(DrawPosition), angle);
         r.SetBlendMode(BlendMode.Alpha);
     }
 }
@@ -93,9 +97,9 @@ public sealed class EnemyShot : Actor
     internal override void Render(IRenderer r, Assets art)
     {
         var frames = art.Frames("enemy_bullet");
-        var frame = frames[(int)(Age * 12) % frames.Length];
+        var frame = frames[(int)(Age * 12) % frames.Count];
         r.SetBlendMode(BlendMode.Additive);
-        r.DrawPivoted(frame, Vector2.Round(Position), 0, new Vector2(Heavy ? 1.4f : 0.85f), Heavy ? Color.Hex("ff9a5a") : Color.Hex("ff6a8a"));
+        r.DrawPivoted(frame, Vector2.Round(DrawPosition), 0, new Vector2(Heavy ? 1.4f : 0.85f), Heavy ? Color.Hex("ff9a5a") : Color.Hex("ff6a8a"));
         r.SetBlendMode(BlendMode.Alpha);
     }
 }

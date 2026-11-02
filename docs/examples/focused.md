@@ -92,9 +92,12 @@ public override void Exit() => _atlas.Dispose();
 ```csharp
 // Draw puts the sprite's origin at the position: here the feet stand on the line.
 r.DrawLine(new Vector2(20, 80), new Vector2(300, 80), 1, Color.Hex("566c86"));
-var frames = _atlas.Frames("hero");
-for (int i = 0; i < frames.Length; i++)
-    r.Draw(frames[i], new Vector2(40 + i * 32, 80));
+float x = 40;
+foreach (var frame in _atlas.Frames("hero"))
+{
+    r.Draw(frame, new Vector2(x, 80));
+    x += 32;
+}
 r.Draw(_atlas["hero0"], new Vector2(200, 80), flipX: true);                         // mirrored
 r.Draw(_atlas["hero0"], new Vector2(240, 80), tint: Color.Hex("ef7d57"));          // tinted
 r.DrawPivoted(_atlas["hero0"], new Vector2(280, 80), rotation: 0, scale: new Vector2(2, 2 + MathF.Sin(Age * 4) * 0.2f));

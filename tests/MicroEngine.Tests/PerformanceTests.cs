@@ -15,11 +15,17 @@ public class PerformanceTests
     {
         public override GameSettings Settings { get; } = new("pacing") { UpdateRate = 60 };
         public List<float> Blends { get; } = [];
+        /// <summary>Game time drawn at each frame: between the previous and the last update, as Lerp(previous, current, FrameBlend) draws.</summary>
+        public List<double> Drawn { get; } = [];
         protected override void Load() => Scenes.Push(new BlendScene(this));
         private sealed class BlendScene(StepGame game) : Scene
         {
             public override void Update(float dt) { }
-            public override void Draw(IRenderer renderer) => game.Blends.Add(game.FrameBlend);
+            public override void Draw(IRenderer renderer)
+            {
+                game.Blends.Add(game.FrameBlend);
+                game.Drawn.Add((game.UpdateCount - 1 + game.FrameBlend) / 60.0);
+            }
         }
     }
 
@@ -127,6 +133,31 @@ public class PerformanceTests
     }
 
     [TestMethod]
+    public void A_wrong_display_rate_gives_way_to_the_cadence_frames_really_arrive_at()
+    {
+        // A window on a 60 Hz display composed at another display's 100 Hz (measured on Windows): frames come every
+        // 10 ms, waking up to 2 ms early or late, while the display says 60 Hz. Counting them in 60 Hz periods would
+        // draw game time advancing 16.7 ms, then 3.3 ms; counting them as measured lets the wake-up jitter through
+        // (4 to 16 ms). Paced to the cadence they really arrive at, drawn time advances 10 ms a frame.
+        var game = new StepGame();
+        var platform = new DisplayPlatform(60);
+        var loop = new GameLoop(game, platform);
+        loop.Start();
+        var jitter = new Random(7);
+        for (int frame = 1; frame <= 600; frame++)
+        {
+            platform.Now = frame / 100.0 + (jitter.NextDouble() * 4 - 2) * 0.001;
+            loop.Tick();
+        }
+        Assert.AreEqual(360, game.UpdateCount, 2, "real time");
+        var steps = game.Drawn.Skip(100).Zip(game.Drawn.Skip(101), (a, b) => (b - a) * 1000).ToList();
+        Assert.IsTrue(steps.All(d => d > 9 && d < 11), $"drawn time follows the cadence: {string.Join(" ", steps.Where(d => d <= 9 || d >= 11).Take(12).Select(d => d.ToString("0.0")))}");
+
+        // Frames that do arrive at the display's rate are still paced to it.
+        Assert.AreEqual(0, JitteredRun(paceToDisplay: true, displayRate: 60).Skip(1).Count(s => s != 1));
+    }
+
+    [TestMethod]
     public void Frame_blend_is_the_unsimulated_part_of_a_step()
     {
         var game = new StepGame();
@@ -144,7 +175,8 @@ public class PerformanceTests
 
         var headless = new StepGame();
         GameRunner.Run(headless, new HeadlessPlatform(), new RunOptions { MaxUpdates = 10 });
-        Assert.IsTrue(headless.Blends.All(b => b == 0), "one step per frame: nothing left to blend");
+        // Lerp(previous, current, 1) draws the current update: captures show exactly what the update produced.
+        Assert.IsTrue(headless.Blends.All(b => b == 1), "one step per frame: the frame is the update");
     }
 
     [TestMethod]

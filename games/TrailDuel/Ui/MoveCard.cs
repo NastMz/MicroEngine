@@ -39,7 +39,7 @@ internal static class MoveCard
         }
         Stat("POW", MoveText.Power(move));
         Stat("ACC", MoveText.Accuracy(move));
-        Stat("PP", pp is { } current ? $"{current}/{move.Pp}" : move.Pp.ToString());
+        Stat("PP", pp is { } current ? NumberTexts.Ratio(current, move.Pp) : NumberTexts.Of(move.Pp));
 
         row += 11;
         if (Matchup(move, foe) is { } matchup)
@@ -56,9 +56,25 @@ internal static class MoveCard
         }
     }
 
-    private static IReadOnlyList<string> Lines(BitmapFont font, MoveData move, float width) => font.Wrap(MoveText.Describe(move), (int)width - 16);
+    // The card is drawn every frame while open: the last wrap, matchup line and PP text are kept until they change.
+    private static (BitmapFont? Font, MoveData? Move, int Width, IReadOnlyList<string> Lines) _wrapped;
+    private static (MoveData? Move, Foe? Foe, (string Text, Color Color)? Line) _matchup;
+
+    private static IReadOnlyList<string> Lines(BitmapFont font, MoveData move, float width)
+    {
+        int w = (int)width - 16;
+        if (!ReferenceEquals(_wrapped.Font, font) || !ReferenceEquals(_wrapped.Move, move) || _wrapped.Width != w)
+            _wrapped = (font, move, w, font.Wrap(MoveText.Describe(move), w));
+        return _wrapped.Lines;
+    }
 
     private static (string Text, Color Color)? Matchup(MoveData move, Foe? foe)
+    {
+        if (!ReferenceEquals(_matchup.Move, move) || _matchup.Foe != foe) _matchup = (move, foe, BuildMatchup(move, foe));
+        return _matchup.Line;
+    }
+
+    private static (string Text, Color Color)? BuildMatchup(MoveData move, Foe? foe)
     {
         if (foe is not { } f || MoveText.Matchup(move, f.Type) is not { } label) return null;
         var color = label switch

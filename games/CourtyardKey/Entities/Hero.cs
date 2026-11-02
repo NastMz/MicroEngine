@@ -189,14 +189,14 @@ public sealed class Hero : Actor
         SetState(HeroState.Walk);
     }
 
-    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_s"], Position);
+    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_s"], DrawPosition);
 
     public override void Draw(IRenderer r)
     {
         // Invulnerability flicker (skipped while posing so the item-get moment reads clearly).
         if (Health.IsInvulnerable && State != HeroState.Dead && (int)(Health.Invulnerable * 20) % 2 == 0) return;
         if (State == HeroState.Swing) DrawSword(r, behind: Facing == Dir.Up);
-        DrawSprite(r, BodySprite(out bool flip), Position + LungeOffset(), flip);
+        DrawSprite(r, BodySprite(out bool flip), DrawPosition + LungeOffset(), flip);
         if (State == HeroState.Swing) DrawSword(r, behind: false);
     }
 
@@ -237,7 +237,7 @@ public sealed class Hero : Actor
         float eased = 1 - (1 - t) * (1 - t);
         float baseAngle = Facing.Angle();
         float angle = baseAngle - 1.25f + eased * 2.3f;
-        var pivot = Position + new Vector2(0, -7) + Facing.ToVector() * 3;
+        var pivot = DrawPosition + new Vector2(0, -7) + Facing.ToVector() * 3;
         if (_stateTime < 0.2f)
         {
             var swoosh = Art["swoosh"];

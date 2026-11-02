@@ -56,6 +56,19 @@ public Action? FirstFrame { get; init; }
 
  [Action](https://learn.microsoft.com/dotnet/api/system.action)?
 
+### <a id="MicroEngine_Core_RunOptions_Graphics"></a> Graphics
+
+The graphics options the run started with, after the launcher's overrides ([Screen](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Screen) starts from
+them); null uses [Graphics](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Graphics).
+
+```csharp
+public GraphicsSettings? Graphics { get; init; }
+```
+
+#### Property Value
+
+ [GraphicsSettings](MicroEngine.Core.GraphicsSettings.md)?
+
 ### <a id="MicroEngine_Core_RunOptions_MaxUpdates"></a> MaxUpdates
 
 Stops after this many updates (0 = unlimited).

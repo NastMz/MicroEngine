@@ -103,7 +103,8 @@ padding) when you call `Build(Graphics)`:
 
 The resulting `SpriteAtlas` returns `Sprite`s by name (`atlas["star"]`), lists `Names`, collects animation frames
 with `Frames("walk")`, and owns the texture (`Dispose` it in `Unload`). A `Sprite` is a texture region plus its
-origin. Duplicate names and unknown names throw.
+origin. Next SDK version (not published yet: arrives with the next SDK version): `Frames` returns a shared, read-only `IReadOnlyList<Sprite>`, collected once per name, so it can be
+called while drawing. Duplicate names and unknown names throw.
 
 ## Animation
 

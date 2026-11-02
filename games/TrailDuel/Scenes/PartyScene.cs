@@ -120,6 +120,8 @@ internal sealed class PartyScene : Scene
         _menu?.Draw(r, new Vector2(316, 152));
     }
 
+    private static readonly PrefixedKeys MiniKeys = new("mini:"), Mini2Keys = new("mini2:");
+
     private void DrawSlot(IRenderer r, int i)
     {
         var c = Party[i];
@@ -129,15 +131,15 @@ internal sealed class PartyScene : Scene
         UiKit.Box(r, rect, fill);
         if (selected) r.DrawRect(new RectF(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2), Pal.Coral);
         if (i == _swapFrom) r.DrawRect(new RectF(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2), Color.Hex("4a7ad8"));
-        string icon = (selected && !c.Fainted && (int)(Age * 4) % 2 == 0 ? "mini2:" : "mini:") + c.SpeciesId;
+        string icon = (selected && !c.Fainted && (int)(Age * 4) % 2 == 0 ? Mini2Keys : MiniKeys)[c.SpeciesId];
         r.Draw(_game.Sprite(icon), new Vector2(rect.X + 16, rect.Y + 11));
         UiKit.Text(r, Font, c.Name, rect.X + 32, rect.Y + 4);
-        UiKit.Text(r, Font, "Lv" + c.Level, rect.X + 32, rect.Y + 13, UiKit.Muted);
+        UiKit.Text(r, Font, NumberTexts.Level(c.Level), rect.X + 32, rect.Y + 13, UiKit.Muted);
         UiKit.TypeBadge(r, Font, c.Type, rect.X + 92, rect.Y + 3);
         UiKit.StatusBadge(r, Font, c.Fainted ? StatusCondition.None : c.Status, rect.X + 92, rect.Y + 13);
         if (c.Fainted) UiKit.Text(r, Font, "FNT", rect.X + 94, rect.Y + 13, Color.Hex("c8504a"));
         if (i == _activeIndex) UiKit.Text(r, Font, "★", rect.X + 140, rect.Y + 4, Pal.Gold);
         UiKit.HpBar(r, Font, rect.X + 160, rect.Y + 4, 100, c.HpFraction);
-        UiKit.TextRight(r, Font, $"{c.Hp}/{c.MaxHp}", rect.Right - 8, rect.Y + 13);
+        UiKit.TextRight(r, Font, NumberTexts.Ratio(c.Hp, c.MaxHp), rect.Right - 8, rect.Y + 13);
     }
 }

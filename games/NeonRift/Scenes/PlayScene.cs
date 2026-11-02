@@ -15,6 +15,7 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
     private bool _leaving;
     private readonly Autopilot? _autopilot = game.Launch.Auto ? new Autopilot() : null;
     private int _deathsAtStart;
+    private DrawBlend _blend;
 
     public Stage Stage => _stage;
     public override string? Describe() => _stage is null ? null
@@ -61,6 +62,7 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
             Input.Down("left"), Input.Down("right"), Input.Down("up"), Input.Down("down"),
             Input.Pressed("jump"), Input.Down("jump"), Input.Down("fire"), Input.Down("lock"));
         _stage.Update(dt, input);
+        _blend.Mark(Game);
 
         if (_stage.Finished)
         {
@@ -86,6 +88,7 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
 
     public override void Draw(IRenderer r)
     {
+        _stage.Blend = _blend.Of(Game);
         _view.Draw(r, _stage);
         Ui.Scanlines(r);
     }

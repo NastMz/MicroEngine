@@ -63,6 +63,18 @@ public Color Background { get; init; }
 
  [Color](MicroEngine.Color.md)
 
+### <a id="MicroEngine_Core_GameSettings_Graphics"></a> Graphics
+
+Graphics options: platform, graphics API, VSync, frame limit, GPU, window mode and display (all automatic by default).
+
+```csharp
+public GraphicsSettings Graphics { get; init; }
+```
+
+#### Property Value
+
+ [GraphicsSettings](MicroEngine.Core.GraphicsSettings.md)
+
 ### <a id="MicroEngine_Core_GameSettings_Letterbox"></a> Letterbox
 
 Colour of the window around the frame when the window's shape differs from the canvas (black by default).

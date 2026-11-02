@@ -53,6 +53,22 @@ public sealed class SceneTests
     }
 
     [TestMethod]
+    public void An_empty_stack_updates_and_draws_nothing()
+    {
+        var log = new List<string>();
+        var level = new Probe("level", log);
+        var (game, platform) = Start(level);
+        game.StepForTest();
+        game.Scenes.Pop();
+        game.StepForTest();
+        game.StepForTest();
+        game.Render(platform.BeginFrame());
+        Assert.AreEqual(0, game.Scenes.Count);
+        Assert.AreEqual(1, level.Updates, "the popped scene is not updated again");
+        Assert.AreEqual(2, game.UpdateCount - 1, "steps keep running without a scene");
+    }
+
+    [TestMethod]
     public void Non_blocking_overlay_lets_the_scene_below_keep_running()
     {
         var log = new List<string>();
@@ -89,6 +105,31 @@ public sealed class SceneTests
         Assert.AreEqual(30, steps, 1, "A 1 s fade swaps after ~0.5 s at 60 Hz.");
         while (game.Scenes.InTransition) game.StepForTest();
         CollectionAssert.AreEqual(new[] { "enter a", "exit a", "enter b" }, log);
+    }
+
+    private sealed class CoverProbe(float duration) : Transition(duration)
+    {
+        public float Drawn;
+        public override void Draw(IRenderer renderer) => Drawn = Cover;
+    }
+
+    [TestMethod]
+    public void A_transition_is_drawn_between_its_last_two_updates()
+    {
+        var (game, platform) = Start(new Probe("a", []));
+        var fade = new CoverProbe(1f);
+        game.Scenes.Replace(new Probe("b", []), fade);
+        for (int i = 0; i < 6; i++) game.StepForTest(); // 0.1 s of a 1 s transition: covering
+        float before = fade.Cover;
+        game.StepForTest();
+        float after = fade.Cover;
+        game.FrameBlend = 0.5f;
+        game.Render(platform.BeginFrame());
+        Assert.IsTrue(fade.Drawn > before && fade.Drawn < after, $"drawn {fade.Drawn} between {before} and {after}");
+        game.FrameBlend = 1;
+        game.Render(platform.BeginFrame());
+        Assert.AreEqual(after, fade.Drawn, 1e-6, "at 1, the last update");
+        Assert.AreEqual(after, fade.Cover, 1e-6, "outside drawing, the last update");
     }
 
     [TestMethod]

@@ -9,7 +9,7 @@ internal sealed class SpriteFx
 {
     private sealed class Playing
     {
-        public required Sprite[] Frames;
+        public required IReadOnlyList<Sprite> Frames;
         public Vector2 At;
         public float Time;
         public float Delay;
@@ -30,7 +30,7 @@ internal sealed class SpriteFx
         => _playing.Add(new Playing { Frames = _atlas.Frames("fx:" + name), At = at, Fps = fps, Delay = delay, FlipX = flipX, Tint = tint ?? Color.White });
 
     /// <summary>How long effect <paramref name="name"/> runs at <paramref name="fps"/>.</summary>
-    public float Duration(string name, float fps = 16) => _atlas.Frames("fx:" + name).Length / fps;
+    public float Duration(string name, float fps = 16) => _atlas.Frames("fx:" + name).Count / fps;
 
     public void Update(float dt)
     {
@@ -39,7 +39,7 @@ internal sealed class SpriteFx
             if (p.Delay > 0) p.Delay -= dt;
             else p.Time += dt;
         }
-        _playing.RemoveAll(p => p.Time * p.Fps >= p.Frames.Length);
+        _playing.RemoveAll(p => p.Time * p.Fps >= p.Frames.Count);
     }
 
     public void Draw(IRenderer r)
@@ -47,7 +47,7 @@ internal sealed class SpriteFx
         foreach (var p in _playing)
         {
             if (p.Delay > 0) continue;
-            var f = p.Frames[Math.Min(p.Frames.Length - 1, (int)(p.Time * p.Fps))];
+            var f = p.Frames[Math.Min(p.Frames.Count - 1, (int)(p.Time * p.Fps))];
             var at = new Vector2(MathF.Round(p.At.X), MathF.Round(p.At.Y));
             r.Draw(f.Texture, f.Source, at - (p.FlipX ? new Vector2(f.Width - f.Origin.X, f.Origin.Y) : f.Origin), p.Tint, new DrawOptions(FlipX: p.FlipX));
         }

@@ -168,6 +168,16 @@ public AudioClip Render(int sampleRate = 44100)
 
  [AudioClip](MicroEngine.Audio.AudioClip.md)
 
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The song has no steps.
+
+ [FormatException](https://learn.microsoft.com/dotnet/api/system.formatexception)
+
+A track has an invalid note or a drum track an unknown drum.
+
 ### <a id="MicroEngine_Audio_Song_Track_MicroEngine_Audio_Instrument_System_String___"></a> Track\(Instrument, params string\[\]\)
 
 Adds a melodic track. The patterns are joined in order into one sequence of steps.

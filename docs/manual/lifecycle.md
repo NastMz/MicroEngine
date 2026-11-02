@@ -121,7 +121,9 @@ Each `Tick` runs one frame:
    refresh periods nearest to its measured time, the remainder carried to the next frame. Frames reach the loop up to
    a few milliseconds early or late around each refresh; counted as measured, that jitter made some frames run no
    step and the next run two when the display rate matches `UpdateRate`. `RunOptions.PaceToDisplay = false`
-   (`--pacing measured`) keeps the measured time.
+   (`--pacing measured`) keeps the measured time. With VSync off and a frame limit
+   (`GraphicsSettings.FrameRateLimit`, `Game.Screen.FrameRateLimit`), the loop waits for the limit before each frame
+   and counts time in its periods the same way; the limit never changes `UpdateRate`.
 3. Run fixed steps of `1 / UpdateRate` seconds, **at most five per frame**. Each step applies the input script,
    samples devices into the `InputMap`, then `Game.Step` updates scenes, the audio mixer and achievement banners,
    flushes achievement progress about once a second, and advances input edge detection.
@@ -154,8 +156,13 @@ rate is not a multiple of the update rate (75, 100, 144 Hz for 60 updates) some 
 that draws its last update shows the same picture twice: moving things judder although every frame is on time.
 `Game.FrameBlend` is how far the frame being drawn is between the last update and the next one, from 0 to 1. Keep
 each moving thing's position from the previous update and draw it at `Vector2.Lerp(previous, current, FrameBlend)`
-(the camera too). It is always 0 when time advances one step per frame (headless and scripted runs), so captures stay
-exact; it changes only what is drawn, never the rules.
+(the camera too). Motion is then drawn up to one update behind, as in every loop that interpolates. It is always 1
+when time advances one step per frame (headless and scripted runs), so captures show exactly the last update; it
+changes only what is drawn, never the rules. Scene transitions are drawn between updates by the engine;
+`ParticleSystem.Draw(renderer, blend)` draws particles between their last two updates when given the blend. A scene
+that did not update in the latest update (paused under an overlay, waiting during a transition) draws its last state:
+compare `Game.UpdateCount` with the one it saw in its own `Update`, and use 1 when they differ, or it would rock between
+its last two positions.
 
 ## Measuring a game
 

@@ -9,13 +9,17 @@ using MicroEngine.Scenes;
 // Synthetic load for measuring the engine (docs/guide/performance.md). Its own options come first; every other argument
 // goes to the launcher, so `--profile FILE`, `--platform NAME`, `--frames N` and the rest work as in any game:
 //
-//   PerfBench [--rate N] [--sprites N] [--shapes N] [--text N] [--particles N] [--interpolate] [--canvas WxH] <launcher args>
+//   PerfBench [--rate N] [--sprites N] [--shapes N] [--text N] [--particles N] [--interpolate] [--canvas WxH]
+//             [--move-to DISPLAY@SECONDS] <launcher args>
+// --move-to moves the window to another display while running (Game.Screen.MoveToDisplay), to measure repacing.
 var options = BenchOptions.Parse(args, out var rest);
 return DesktopLauncher.Run(new BenchGame(options), rest);
 
 /// <summary>The load a run draws, from the command line.</summary>
 internal sealed record BenchOptions(int Rate, int Sprites, int Shapes, int Text, int Particles, bool Interpolate, int Width, int Height)
 {
+    public int MoveTo { get; init; } = -1;
+    public float MoveAt { get; init; }
     public static BenchOptions Parse(string[] args, out string[] rest)
     {
         var o = new BenchOptions(60, 200, 50, 10, 300, false, 320, 180);
@@ -31,6 +35,10 @@ internal sealed record BenchOptions(int Rate, int Sprites, int Shapes, int Text,
                 case "--text": o = o with { Text = Int() }; break;
                 case "--particles": o = o with { Particles = Int() }; break;
                 case "--interpolate": o = o with { Interpolate = true }; break;
+                case "--move-to":
+                    var move = args[++i].Split('@');
+                    o = o with { MoveTo = int.Parse(move[0], CultureInfo.InvariantCulture), MoveAt = float.Parse(move[1], CultureInfo.InvariantCulture) };
+                    break;
                 case "--canvas":
                     var size = args[++i].Split('x');
                     o = o with { Width = int.Parse(size[0], CultureInfo.InvariantCulture), Height = int.Parse(size[1], CultureInfo.InvariantCulture) };
@@ -94,8 +102,15 @@ internal sealed class BenchScene(BenchGame game) : Scene
         }
     }
 
+    private bool _moved;
+
     public override void Update(float dt)
     {
+        if (game.Options.MoveTo >= 0 && game.Time >= game.Options.MoveAt && !_moved)
+        {
+            _moved = true;
+            Console.WriteLine($"move to display {game.Options.MoveTo} at {game.Time:0.00} s: {game.Screen.MoveToDisplay(game.Options.MoveTo)}");
+        }
         _previousBar = _bar;
         _bar = (_bar + BarSpeed * dt) % game.Width;
         for (int i = 0; i < _position.Length; i++)

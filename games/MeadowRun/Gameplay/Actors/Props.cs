@@ -70,6 +70,7 @@ internal sealed class GoalPole : Actor
 internal abstract class PlatformActor(Stage stage, Vector2 position, int tiles) : Actor(stage, position), IRideable
 {
     protected readonly Vector2 Origin = position;
+    private readonly string[] _parts = [.. Enumerable.Range(0, 3).Select(part => $"platform_{Assets.Key(stage.Level.Biome)}_{part}")];
     public int Tiles { get; } = tiles;
     public Vector2 Delta { get; protected set; }
     public bool StoodThisStep { get; private set; }
@@ -79,12 +80,11 @@ internal abstract class PlatformActor(Stage stage, Vector2 position, int tiles) 
 
     protected void DrawPlatform(IRenderer r, Assets a, Vector2 offset)
     {
-        string k = Assets.Key(Stage.Level.Biome);
         var p = Snap(Position + offset);
         for (int i = 0; i < Tiles; i++)
         {
             int part = i == 0 ? 0 : i == Tiles - 1 ? 2 : 1;
-            r.Draw(a[$"platform_{k}_{part}"], p + new Vector2(i * 16, 0));
+            r.Draw(a[_parts[part]], p + new Vector2(i * 16, 0));
         }
     }
 }

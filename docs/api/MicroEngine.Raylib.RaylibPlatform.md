@@ -13,7 +13,7 @@ raylib's frame limiter is left off, because both would block the only thread; th
 fullscreen, and the canvas has no minimum size.
 
 ```csharp
-public sealed class RaylibPlatform : IPlatform, IDisposable
+public sealed class RaylibPlatform : IPlatform, IDisposable, IDisplayControl
 ```
 
 #### Inheritance
@@ -24,7 +24,8 @@ public sealed class RaylibPlatform : IPlatform, IDisposable
 #### Implements
 
 IPlatform, 
-[IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
+[IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable), 
+IDisplayControl
 
 ## Constructors
 
@@ -68,9 +69,21 @@ public bool CloseRequested { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Raylib_RaylibPlatform_CurrentDisplay"></a> CurrentDisplay
+
+Index in [Displays](MicroEngine.Core.IDisplayControl.md#MicroEngine_Core_IDisplayControl_Displays) of the display the window is on; -1 when unknown.
+
+```csharp
+public int CurrentDisplay { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Raylib_RaylibPlatform_DisplayRate"></a> DisplayRate
 
-The monitor's refresh rate when frames are paced to it (a visible real-time desktop window); 0 otherwise.
+The monitor's refresh rate when frames are paced to it (a visible real-time desktop window with VSync); 0 otherwise.
 
 ```csharp
 public double DisplayRate { get; }
@@ -79,6 +92,18 @@ public double DisplayRate { get; }
 #### Property Value
 
  [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+### <a id="MicroEngine_Raylib_RaylibPlatform_Displays"></a> Displays
+
+The monitors GLFW reports (none in a browser or on Android); GLFW lists the primary one first.
+
+```csharp
+public IReadOnlyList<DisplayInfo> Displays { get; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<DisplayInfo\>
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Graphics"></a> Graphics
 
@@ -179,6 +204,30 @@ public ITouchScreen Touch { get; }
 
  ITouchScreen
 
+### <a id="MicroEngine_Raylib_RaylibPlatform_VSync"></a> VSync
+
+Whether frames wait for the display's refresh.
+
+```csharp
+public bool VSync { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Raylib_RaylibPlatform_WindowMode"></a> WindowMode
+
+The window's current mode.
+
+```csharp
+public WindowMode WindowMode { get; }
+```
+
+#### Property Value
+
+ WindowMode
+
 ## Methods
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_BeginFrame"></a> BeginFrame\(\)
@@ -209,6 +258,22 @@ Finishes the frame and presents it.
 public void EndFrame()
 ```
 
+### <a id="MicroEngine_Raylib_RaylibPlatform_MoveToDisplay_System_Int32_"></a> MoveToDisplay\(int\)
+
+Moves the window to monitor <code class="paramref">index</code> (GLFW's order) on desktop.
+
+```csharp
+public bool MoveToDisplay(int index)
+```
+
+#### Parameters
+
+`index` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Raylib_RaylibPlatform_PollEvents"></a> PollEvents\(\)
 
 Processes pending system events (window, keyboard, gamepad, touch). Called at the start of every frame.
@@ -229,12 +294,60 @@ public void SaveScreenshot(string path)
 
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_Raylib_RaylibPlatform_SetVSync_System_Boolean_"></a> SetVSync\(bool\)
+
+Turns VSync on or off on a visible desktop window; browsers and Android follow the display.
+
+```csharp
+public bool SetVSync(bool on)
+```
+
+#### Parameters
+
+`on` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Raylib_RaylibPlatform_SetWindowMode_MicroEngine_Core_WindowMode_"></a> SetWindowMode\(WindowMode\)
+
+Changes the window's mode on desktop (raylib's full screen is exclusive, its borderless mode is [Fullscreen](MicroEngine.Core.WindowMode.md)).
+
+```csharp
+public bool SetWindowMode(WindowMode mode)
+```
+
+#### Parameters
+
+`mode` WindowMode
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Raylib_RaylibPlatform_ToggleFullscreen"></a> ToggleFullscreen\(\)
 
-Switches between the window and a borderless full-screen window.
+Switches between the window and a borderless full-screen window (exclusive full screen goes back to the window).
 
 ```csharp
 public void ToggleFullscreen()
 ```
+
+### <a id="MicroEngine_Raylib_RaylibPlatform_Wait_System_Double_"></a> Wait\(double\)
+
+Waits with raylib's timer (a sleep, then a short spin); a browser page cannot be blocked.
+
+```csharp
+public bool Wait(double seconds)
+```
+
+#### Parameters
+
+`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 </div>

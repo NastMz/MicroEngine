@@ -44,9 +44,29 @@ Draws the visible part of a layer, asking the game which sprite each tile uses.
 
 ### Structs
 
+ [EntityList<T\>.TypedEntities<TEntity\>.Enumerator](MicroEngine.World.EntityList\-1.TypedEntities\-1.Enumerator.md)
+
+Walks the living entities of type <code class="typeparamref">TEntity</code>.
+
+ [EntityList<T\>.Enumerator](MicroEngine.World.EntityList\-1.Enumerator.md)
+
+Walks the living entities of an [EntityList`1](MicroEngine.World.md) without allocating.
+
+ [EntityList<T\>.OverlappingEntities.Enumerator](MicroEngine.World.EntityList\-1.OverlappingEntities.Enumerator.md)
+
+Walks the living entities overlapping the area.
+
  [MoveResult](MicroEngine.World.MoveResult.md)
 
 What happened during a [Move](MicroEngine.World.TileMotion.md#MicroEngine_World_TileMotion_Move_MicroEngine_RectF_System_Numerics_Vector2_MicroEngine_World_ICollisionGrid_System_Collections_Generic_IReadOnlyList_MicroEngine_RectF__System_Boolean_).
+
+ [EntityList<T\>.OverlappingEntities](MicroEngine.World.EntityList\-1.OverlappingEntities.md)
+
+The living entities overlapping an area ([Overlapping](MicroEngine.World.md)), walked without allocating.
+
+ [EntityList<T\>.TypedEntities<TEntity\>](MicroEngine.World.EntityList\-1.TypedEntities\-1.md)
+
+The living entities of one type ([OfType``1](MicroEngine.World.md)), walked without allocating.
 
 ### Interfaces
 

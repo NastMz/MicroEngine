@@ -29,7 +29,7 @@ the developer's speakers. A failing default platform ended the launch.
 - **Interpolation is the game's choice.** `Game.FrameBlend` exposes the unsimulated part of a step; drawing between the
   previous and current state removes the repeated frames of 75/100/144 Hz displays. The engine does not interpolate on
   the game's behalf (it does not own the positions games draw), and existing games keep their rules; fixed-step runs
-  see 0, so captures stay exact.
+  see 1 (the last update, drawn exactly), so captures stay exact.
 - **The fixed update rate stays.** Variable timesteps and update rates following the display were rejected: they make
   runs non-deterministic and change every game's tuning.
 - **SDL_Renderer stays the native renderer, Direct3D 11 stays SDL's choice on Windows.** No driver was measurably better;

@@ -19,6 +19,7 @@ public sealed class Stage
     public const float WarningTime = 2.6f, ClearTime = 5.5f, RespawnDelay = 0.6f;
     private readonly Session _session;
     private readonly List<(float At, Action Action)> _scheduled = [];
+    private readonly float[] _checkpoints;
     private int _nextSpawn;
     private float _phaseTime, _waitTime, _time;
     private float _lockLeft;
@@ -42,11 +43,12 @@ public sealed class Stage
             OutsideRule = (x, y) => x < 0 || x >= def.Layer.Width ? TileFlags.Solid : TileFlags.None,
         };
         Camera = new Camera2D(480, 270) { Bounds = new RectF(0, 0, def.PixelWidth, def.PixelHeight), FollowSharpness = 0 };
-        var checkpoints = def.Checkpoints.ToList();
-        float startX = checkpoint > 0 && checkpoint <= checkpoints.Count ? checkpoints[checkpoint - 1] : 48;
-        CheckpointIndex = checkpoint > 0 && checkpoint <= checkpoints.Count ? checkpoint : 0;
+        var checkpoints = _checkpoints = def.Checkpoints.ToArray();
+        float startX = checkpoint > 0 && checkpoint <= checkpoints.Length ? checkpoints[checkpoint - 1] : 48;
+        CheckpointIndex = checkpoint > 0 && checkpoint <= checkpoints.Length ? checkpoint : 0;
         Camera.Position = new Vector2(MathF.Max(0, startX - 80), def.PixelHeight - 270);
         Camera.Clamp();
+        PreviousCameraPosition = Camera.Position;
         _lockLeft = Camera.Position.X;
         // Skip spawns already behind the starting screen.
         while (_nextSpawn < def.Spawns.Count && def.Spawns[_nextSpawn].X < Camera.View.Left) _nextSpawn++;
@@ -74,6 +76,16 @@ public sealed class Stage
     public bool InArena => Camera.Position.X >= Def.ArenaX - 0.5f;
     /// <summary>Seconds since the screen last scrolled forward.</summary>
     public float IdleTime => _idleTime;
+    /// <summary>The camera position at the start of the latest update, for drawing the scroll between updates.</summary>
+    public Vector2 PreviousCameraPosition { get; private set; }
+    /// <summary>
+    /// Drawing only: how far between the previous and the current update the next draw shows (0..1, see
+    /// <c>Game.FrameBlend</c>). 1 draws exactly the current state; rules never read it.
+    /// </summary>
+    internal float Blend { get; set; } = 1;
+
+    /// <summary>The point <see cref="Blend"/> of the way from <paramref name="previous"/> to <paramref name="current"/>; exactly <paramref name="current"/> at blend 1.</summary>
+    internal Vector2 Between(Vector2 previous, Vector2 current) => Blend >= 1 ? current : Vector2.Lerp(previous, current, Blend);
 
     public Action<string, float, float, float>? SoundSink { get; set; }
     public Action<string>? MusicSink { get; set; }
@@ -81,9 +93,12 @@ public sealed class Stage
     public Action<Enemy>? DefeatSink { get; set; }
     /// <summary>Optional lookup of the hero's arm rigs so bullets leave the drawn gun; tests can leave it null.</summary>
     internal Func<string, ArmRig?>? Rigs { get; set; }
+    /// <summary>Scratch list player shots fill with the enemies they touch, reused every update.</summary>
+    internal List<Enemy> HitBuffer { get; } = [];
 
     public void Update(float dt, PlayerInput input)
     {
+        PreviousCameraPosition = Camera.Position;
         _time += dt;
         _phaseTime += dt;
         for (int i = _scheduled.Count - 1; i >= 0; i--)
@@ -214,8 +229,7 @@ public sealed class Stage
         }
 
         // Checkpoints only matter for continues; Vela respawns where she fell.
-        var checkpoints = Def.Checkpoints.ToList();
-        while (CheckpointIndex < checkpoints.Count && Player.Position.X >= checkpoints[CheckpointIndex]) CheckpointIndex++;
+        while (CheckpointIndex < _checkpoints.Length && Player.Position.X >= _checkpoints[CheckpointIndex]) CheckpointIndex++;
     }
 
     private void UpdatePhase(float dt)

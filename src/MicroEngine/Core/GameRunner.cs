@@ -35,6 +35,11 @@ public sealed record RunOptions
     public bool PaceToDisplay { get; init; } = true;
     /// <summary>Measures every frame and the phases of the start (the launcher's <c>--profile</c>), or null to measure nothing.</summary>
     public FrameProfiler? Profiler { get; init; }
+    /// <summary>
+    /// The graphics options the run started with, after the launcher's overrides (<see cref="Game.Screen"/> starts from
+    /// them); null uses <see cref="GameSettings.Graphics"/>.
+    /// </summary>
+    public GraphicsSettings? Graphics { get; init; }
 }
 
 /// <summary>How a run ended.</summary>
@@ -104,7 +109,7 @@ public sealed class GameLoop
             var profiler = _options.Profiler;
             ShowStartScreen();
             profiler?.Phase("start screen");
-            _game.Initialize(_platform, _options.Seed);
+            _game.Initialize(_platform, _options.Seed, _options.Graphics ?? _game.Settings.Graphics);
             profiler?.Phase("load");
             if (profiler is not null) profiler.DisplayRate = _platform.DisplayRate;
             _platform.Letterbox = _game.Settings.Letterbox;
@@ -168,6 +173,7 @@ public sealed class GameLoop
     /// <returns>True when the run must stop after this frame.</returns>
     private bool Frame()
     {
+        if (!Limit()) return false;
         if (_options.Profiler is { } profiler) return ProfiledFrame(profiler);
         _platform.PollEvents();
         if (FollowSuspension()) return _platform.CloseRequested || _game.QuitRequested;
@@ -204,7 +210,7 @@ public sealed class GameLoop
             Stopwatch.GetElapsedTime(rendered, presented).TotalMilliseconds,
             (int)(_game.UpdateCount - updates),
             _game.Time,
-            _game.Time + _game.FrameBlend * _step,
+            _game.Time - (1 - _game.FrameBlend) * _step,
             GC.GetAllocatedBytesForCurrentThread() - allocated,
             GC.CollectionCount(0) + GC.CollectionCount(1) + GC.CollectionCount(2) - collections));
         if (_frames == 0) profiler.Phase("first frame");
@@ -264,11 +270,49 @@ public sealed class GameLoop
             if (capture is not null) break;
         }
         if (steps == 5) _accumulator = Math.Min(_accumulator, _step);
-        _game.FrameBlend = (float)Math.Clamp(_accumulator / _step, 0, 1);
+        // One step per frame leaves nothing between updates: the frame is the update (Lerp at 1 draws it exactly).
+        _game.FrameBlend = _platform.RealTime ? (float)Math.Clamp(_accumulator / _step, 0, 1) : 1;
         return (stop, capture);
     }
 
-    private double _drift;
+    private double _drift, _nextFrame;
+    private readonly double[] _recent = new double[16]; // the last measured frame times, to check the reported rate
+    private double _cadence, _cadenceMedian; // the period frames arrive at when it is not the reported rate's; 0 otherwise
+    private int _recentCount;
+
+    /// <summary>
+    /// Holds the frame back until the frame limit (<see cref="GameScreen.FrameRateLimit"/>) allows it, on an absolute
+    /// schedule so the rate does not drift; false when the frame must be skipped (a platform that cannot block, called
+    /// too early). Fixed-step runs are never limited.
+    /// </summary>
+    private bool Limit()
+    {
+        int limit = _game.Screen.FrameRateLimit;
+        if (limit <= 0 || !_platform.RealTime) { _nextFrame = 0; return true; }
+        double period = 1.0 / limit, now = _platform.Now;
+        // The first limited frame, one late by more than a period (a hitch), or a schedule further ahead than a period
+        // (the limit was raised): start a new schedule. The margin keeps a frame that took no time on the schedule.
+        if (_nextFrame == 0 || now - _nextFrame > period || _nextFrame - now > period * 1.01) _nextFrame = now;
+        else if (now < _nextFrame && !_platform.Wait(_nextFrame - now))
+        {
+            // Within a millisecond the frame is on time; earlier, a page-driven host draws nothing this time.
+            if (_nextFrame - now > 0.001) return false;
+        }
+        _nextFrame += period;
+        return true;
+    }
+
+    /// <summary>
+    /// The rate frames are paced to: the display's while VSync paces them, else the frame limit's (the loop waits for it
+    /// itself, with the same small irregularity around each period); 0 when nothing paces them.
+    /// </summary>
+    private double PaceRate()
+    {
+        double display = _platform.DisplayRate;
+        if (display > 0) return display;
+        int limit = _game.Screen.FrameRateLimit;
+        return limit > 0 && _platform.RealTime ? limit : 0;
+    }
 
     /// <summary>
     /// The time a frame stands for. When the platform paces frames to a display (<see cref="IPlatform.DisplayRate"/>),
@@ -280,14 +324,41 @@ public sealed class GameLoop
     /// </summary>
     private double Paced(double elapsed)
     {
-        double rate = _options.PaceToDisplay ? _platform.DisplayRate : 0;
+        double rate = _options.PaceToDisplay ? PaceRate() : 0;
+        _recent[_recentCount++ % _recent.Length] = elapsed;
         if (rate <= 0) return elapsed;
         double period = 1 / rate, time = elapsed + _drift;
+        // A rate the frames do not arrive at (a window composed at another display's rate, a moved window) would count
+        // 10 ms frames as 16.7 ms then 3.3 ms: time stays real but motion judders. Trust it only while the median of the
+        // recent frames is near its period; otherwise pace to the cadence they do arrive at (measured time would let the
+        // wake-up jitter back in). That cadence starts at their median and follows the carried remainder, so a median a
+        // little off the true period does not slip a frame now and then. The remainder is carried either way: time stays
+        // real.
+        bool cadence = false;
+        if (_recentCount >= 5)
+        {
+            Span<double> sorted = stackalloc double[16];
+            int n = Math.Min(_recentCount, _recent.Length);
+            _recent.AsSpan(0, n).CopyTo(sorted);
+            sorted[..n].Sort();
+            double median = sorted[n / 2];
+            if (median <= 0) { _drift = 0; return elapsed; }
+            if (median < period * 0.85 || median > period * 1.15)
+            {
+                if (_cadence <= 0 || Math.Abs(_cadence - median) > median * 0.15) _cadence = median;
+                _cadenceMedian = median;
+                period = _cadence;
+                cadence = true;
+            }
+            else _cadence = 0;
+        }
         // A short frame keeps the debt of an earlier frame rounded up, or frames faster than the reported rate would
         // each count as a whole period and the game would run fast.
         if (time < period / 2) { _drift = 0; return Math.Max(0, time); }
         double shown = Math.Round(time / period) * period;
         _drift = Math.Clamp(time - shown, -period, period);
+        // A remainder that keeps one sign means the cadence is a little off: move it a small step towards the frames.
+        if (cadence) _cadence = Math.Clamp(_cadence + _drift * 0.005, _cadenceMedian * 0.9, _cadenceMedian * 1.1);
         return shown;
     }
 

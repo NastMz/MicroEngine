@@ -16,10 +16,13 @@ internal abstract class Actor : Entity
     {
         Stage = stage;
         Position = position;
+        PreviousPosition = position;
     }
 
     public Stage Stage { get; }
     public Vector2 Velocity;
+    /// <summary>Where the actor was before the last stage update; frames are drawn between it and <see cref="Entity.Position"/>. Never read by the rules.</summary>
+    public Vector2 PreviousPosition;
     public float Age { get; private set; }
     /// <summary>Actors sleep until the camera approaches them, so encounters play out as designed.</summary>
     public virtual bool AlwaysActive => false;

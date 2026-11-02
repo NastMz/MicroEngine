@@ -23,7 +23,7 @@ internal sealed class Coin : Actor
     {
         var frames = a.Frames("coin");
         // Coins spin in a slow wave across the level instead of in lockstep.
-        int f = (int)((time + _phase) * 8) % frames.Length;
+        int f = (int)((time + _phase) * 8) % frames.Count;
         r.Draw(frames[f], Snap(Position + new Vector2(8, 8)));
     }
 }
@@ -48,7 +48,7 @@ internal sealed class PopCoin : Actor
     public override void Render(IRenderer r, Assets a, float time)
     {
         var frames = a.Frames("coin");
-        r.Draw(frames[(int)(Age * 24) % frames.Length], Snap(Position));
+        r.Draw(frames[(int)(Age * 24) % frames.Count], Snap(Position));
     }
 }
 
@@ -125,8 +125,10 @@ internal sealed class PowerItem : Actor
 internal sealed class Shard : Actor
 {
     private readonly float _spin;
+    private readonly string _sprite;
     public Shard(Stage stage, Vector2 position, Vector2 velocity) : base(stage, position)
     {
+        _sprite = "shard_" + Assets.Key(stage.Level.Biome);
         Velocity = velocity;
         _spin = velocity.X * 0.08f;
     }
@@ -142,7 +144,7 @@ internal sealed class Shard : Actor
 
     public override void Render(IRenderer r, Assets a, float time)
     {
-        var s = a["shard_" + Assets.Key(Stage.Level.Biome)];
+        var s = a[_sprite];
         r.Draw(s.Texture, s.Source, Snap(Position) - s.Origin, Color.White, new DrawOptions(Rotation: Age * _spin, Origin: s.Origin));
     }
 }

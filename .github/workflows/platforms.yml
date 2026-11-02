@@ -86,7 +86,7 @@ env:
 jobs:
   macos:
     name: macOS (SDL with Metal; raylib OpenGL diagnosis)
-    if: github.event_name == 'schedule' || inputs.macos
+    if: (github.event_name == 'schedule' || inputs.macos) && vars.MACOS_RUNNERS != 'off'
     runs-on: macos-latest
     timeout-minutes: 30
     defaults:
@@ -208,7 +208,7 @@ jobs:
 
   ios:
     name: iOS ${{ matrix.game }} (SDL with Metal; simulator)
-    if: github.event_name == 'schedule' || inputs.ios
+    if: (github.event_name == 'schedule' || inputs.ios) && vars.MACOS_RUNNERS != 'off'
     runs-on: macos-latest
     timeout-minutes: 30
     strategy:

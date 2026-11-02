@@ -1,0 +1,276 @@
+using MicroEngine.Audio;
+using MicroEngine.Core;
+using MicroEngine.Graphics;
+using MicroEngine.Input;
+using MicroEngine.Scenes;
+
+namespace MicroEngine.Tests;
+
+/// <summary>PERF-2: the graphics options a game chooses, the launcher's overrides, the frame limit and <see cref="Game.Screen"/>.</summary>
+[TestClass]
+[DoNotParallelize] // redirects the console
+public sealed class GraphicsSettingsTests
+{
+    private sealed class FrameGame(GraphicsSettings? graphics = null) : Game
+    {
+        public override GameSettings Settings { get; } = new("graphics", 8, 8) { Graphics = graphics ?? new() };
+        public int Draws;
+        public List<long> Steps { get; } = [];
+        private long _last;
+        protected override void Load() => Scenes.Push(new Counter(this));
+        private sealed class Counter(FrameGame game) : Scene
+        {
+            public override void Update(float dt) { }
+            public override void Draw(IRenderer renderer)
+            {
+                game.Draws++;
+                game.Steps.Add(game.UpdateCount - game._last);
+                game._last = game.UpdateCount;
+            }
+        }
+    }
+
+    /// <summary>
+    /// A real-time platform on a simulated clock: each frame costs <c>work</c> seconds plus the jitter the test gives,
+    /// and <see cref="IPlatform.Wait"/> advances the clock (or refuses, like a browser page).
+    /// </summary>
+    private sealed class ClockPlatform(double work, bool canWait = true, double displayRate = 0) : IPlatform, IDisplayControl
+    {
+        private readonly HeadlessPlatform _inner = new();
+        public double Now { get; set; }
+        public Func<int, double> Jitter { get; set; } = _ => 0;
+        public int Frames;
+        public double Waited;
+        public bool RealTime => true;
+        public double DisplayRate => _vsync ? displayRate : 0;
+        public IGraphicsDevice Graphics => _inner.Graphics;
+        public IAudioDevice Audio => _inner.Audio;
+        public IInputSource Input => _inner.Input;
+        public bool CloseRequested => false;
+        public void PollEvents() { }
+        public IRenderer BeginFrame() => _inner.BeginFrame();
+        public void EndFrame() => Now += work;
+        public void SaveScreenshot(string path) { }
+        public void ToggleFullscreen() { }
+        public void Dispose() => _inner.Dispose();
+        public bool Wait(double seconds)
+        {
+            // A page is called back at its next animation frame, after the skipped one.
+            if (!canWait) { Now += work; return false; }
+            Waited += seconds;
+            Now += seconds + Jitter(++Frames);
+            return true;
+        }
+
+        private bool _vsync = displayRate > 0;
+        public IReadOnlyList<DisplayInfo> Displays { get; } =
+            [new(0, "main", 1920, 1080, 100, 1, true), new(1, "side", 1920, 1080, 75, 1.25f, false)];
+        public int CurrentDisplay { get; private set; }
+        public bool VSync => _vsync;
+        public bool SetVSync(bool on) { _vsync = on; return true; }
+        public WindowMode WindowMode { get; private set; }
+        public bool SetWindowMode(WindowMode mode) { WindowMode = mode; return true; }
+        public bool MoveToDisplay(int index)
+        {
+            if (index < 0 || index >= Displays.Count) return false;
+            CurrentDisplay = index;
+            return true;
+        }
+    }
+
+    private static (FrameGame Game, ClockPlatform Platform, GameLoop Loop) Start(ClockPlatform platform, GraphicsSettings? graphics = null, bool pace = true)
+    {
+        var game = new FrameGame(graphics);
+        var loop = new GameLoop(game, platform, new RunOptions { PaceToDisplay = pace });
+        Assert.IsTrue(loop.Start());
+        return (game, platform, loop);
+    }
+
+    private static void RunFor(GameLoop loop, ClockPlatform platform, double seconds)
+    {
+        double end = platform.Now + seconds;
+        while (platform.Now < end) loop.Tick();
+    }
+
+    [TestMethod]
+    public void The_frame_limit_caps_frames_per_second_without_changing_the_update_rate()
+    {
+        // Frames that take 2 ms could run at 500 per second; the limit holds them to 50.
+        var (game, platform, loop) = Start(new ClockPlatform(work: 0.002), new GraphicsSettings { FrameRateLimit = 50 });
+        RunFor(loop, platform, 10);
+        Assert.AreEqual(500, game.Draws, 2, "50 frames per second for 10 s");
+        Assert.AreEqual(600, game.UpdateCount, 2, "the simulation still runs 60 updates per second");
+        Assert.IsTrue(platform.Waited > 8, "the loop waited instead of drawing");
+    }
+
+    [TestMethod]
+    public void A_limited_frame_rate_equal_to_the_update_rate_runs_one_step_per_frame_despite_jitter()
+    {
+        // VSync off, limit 60, updates 60: the timer wakes up to 1 ms late or early around each period.
+        static double Jitter(int f) => (f * 7919 % 3 - 1) * 0.001;
+        int Uneven(bool pace)
+        {
+            var platform = new ClockPlatform(work: 0.001) { Jitter = Jitter };
+            var (game, _, loop) = Start(platform, new GraphicsSettings { FrameRateLimit = 60 }, pace);
+            RunFor(loop, platform, 10);
+            Assert.AreEqual(600, game.UpdateCount, 2, "real time either way");
+            return game.Steps.Skip(5).Count(s => s != 1);
+        }
+        Assert.IsTrue(Uneven(pace: false) > 0, "measured time turns the wake-up jitter into frames of 0 and 2 updates");
+        Assert.AreEqual(0, Uneven(pace: true), "paced to the limit, every frame stands for one update");
+    }
+
+    [TestMethod]
+    public void A_page_that_cannot_wait_skips_early_frames_instead()
+    {
+        var (game, platform, loop) = Start(new ClockPlatform(work: 0.004, canWait: false), new GraphicsSettings { FrameRateLimit = 30 });
+        RunFor(loop, platform, 10);
+        Assert.AreEqual(300, game.Draws, 30, "about 30 frames drawn per second of 250 offered");
+        Assert.AreEqual(0, platform.Waited);
+    }
+
+    [TestMethod]
+    public void Fixed_step_runs_ignore_the_frame_limit()
+    {
+        var game = new FrameGame(new GraphicsSettings { FrameRateLimit = 10 });
+        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { MaxUpdates = 100 });
+        Assert.IsNull(result.Error);
+        Assert.AreEqual(100, game.Draws, "one frame per update, as fast as possible");
+    }
+
+    [TestMethod]
+    public void The_screen_changes_vsync_window_display_and_limit_while_running_and_reports_them()
+    {
+        var (game, platform, loop) = Start(new ClockPlatform(work: 0.002, displayRate: 100),
+            new GraphicsSettings { Backend = "probe", Renderers = ["vulkan"], Gpu = GpuPreference.PowerSaving });
+        var screen = game.Screen;
+        Assert.IsTrue(screen.CanChange);
+        Assert.AreEqual(2, screen.Displays.Count);
+        Assert.AreEqual("main", screen.Display?.Name);
+        Assert.IsTrue(screen.VSync);
+        Assert.AreEqual(100, screen.RefreshRate);
+
+        screen.VSync = false;
+        screen.WindowMode = WindowMode.Fullscreen;
+        Assert.IsTrue(screen.MoveToDisplay(1));
+        Assert.IsFalse(screen.MoveToDisplay(5), "a display the system does not have");
+        screen.FrameRateLimit = 75;
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => screen.FrameRateLimit = -1);
+        RunFor(loop, platform, 2);
+
+        Assert.IsFalse(platform.VSync);
+        Assert.AreEqual(0, screen.RefreshRate, "nothing paces frames to the display with VSync off");
+        Assert.AreEqual(WindowMode.Fullscreen, platform.WindowMode);
+        Assert.AreEqual("side", screen.Display?.Name);
+        Assert.AreEqual(150, game.Draws, 3, "the limit applies at once");
+        var saved = screen.Current;
+        Assert.IsFalse(saved.VSync);
+        Assert.AreEqual(75, saved.FrameRateLimit);
+        Assert.AreEqual(WindowMode.Fullscreen, saved.WindowMode);
+        Assert.AreEqual(1, saved.Display);
+        Assert.AreEqual("probe", saved.Backend, "start-only options as the game started");
+        CollectionAssert.AreEqual(new[] { "vulkan" }, saved.Renderers.ToArray());
+        Assert.AreEqual(GpuPreference.PowerSaving, saved.Gpu);
+    }
+
+    [TestMethod]
+    public void A_headless_screen_cannot_change_and_says_so()
+    {
+        var game = new FrameGame(new GraphicsSettings { WindowMode = WindowMode.Fullscreen, Display = 2 });
+        game.InitializeForTest(new HeadlessPlatform());
+        var screen = game.Screen;
+        Assert.IsFalse(screen.CanChange);
+        Assert.AreEqual(0, screen.Displays.Count);
+        Assert.IsNull(screen.Display);
+        Assert.IsFalse(screen.MoveToDisplay(0));
+        screen.VSync = true;
+        Assert.IsFalse(screen.VSync);
+        Assert.IsNull(screen.Renderer);
+        Assert.AreEqual(WindowMode.Fullscreen, screen.Current.WindowMode, "kept as the game asked");
+        Assert.AreEqual(2, screen.Current.Display);
+    }
+
+    [TestMethod]
+    public void Launcher_options_parse_and_override_only_what_they_name()
+    {
+        var parsed = LaunchArguments.Parse(["--renderer", "vulkan, direct3d11", "--vsync", "off", "--fps-limit", "0",
+            "--window", "exclusive", "--display", "1", "--gpu", "high-performance", "--platform", "raylib"]);
+        var game = new GraphicsSettings { VSync = true, FrameRateLimit = 30, WindowMode = WindowMode.Fullscreen };
+        var merged = parsed.ApplyTo(game);
+        CollectionAssert.AreEqual(new[] { "vulkan", "direct3d11" }, merged.Renderers.ToArray());
+        Assert.IsFalse(merged.VSync);
+        Assert.AreEqual(0, merged.FrameRateLimit, "0 removes the game's limit");
+        Assert.AreEqual(WindowMode.ExclusiveFullscreen, merged.WindowMode);
+        Assert.AreEqual(1, merged.Display);
+        Assert.AreEqual(GpuPreference.HighPerformance, merged.Gpu);
+        Assert.AreEqual("raylib", merged.Backend);
+
+        var kept = LaunchArguments.Parse([]).ApplyTo(game);
+        Assert.AreEqual(game, kept, "no option changes nothing");
+
+        foreach (var bad in new[] { new[] { "--vsync", "maybe" }, ["--fps-limit", "-5"], ["--window", "big"], ["--display", "x"], ["--renderer", ","] })
+            Assert.ThrowsExactly<FormatException>(() => LaunchArguments.Parse(bad), string.Join(' ', bad));
+    }
+
+    private static (int Code, string Errors, PlatformRequest? Request, List<string> Started) Launch(GraphicsSettings graphics, params string[] args)
+    {
+        var started = new List<string>();
+        PlatformRequest? seen = null;
+        PlatformProfile Working(string name) => new(name, "", request => { started.Add(name); seen = request; return new HeadlessPlatform(); });
+        var catalog = new PlatformCatalog()
+            .Add(Working("first"))
+            .Add(new PlatformProfile("broken", "", _ => throw new InvalidOperationException("broken has no display")))
+            .Add(Working("second"));
+        var errors = new StringWriter();
+        var previousError = Console.Error;
+        var previousOut = Console.Out;
+        Console.SetError(errors);
+        Console.SetOut(new StringWriter());
+        try
+        {
+            int code = GameLauncher.Run(new FrameGame(graphics), [.. args, "--frames", "1"], catalog);
+            return (code, errors.ToString(), seen, started);
+        }
+        finally
+        {
+            Console.SetError(previousError);
+            Console.SetOut(previousOut);
+        }
+    }
+
+    [TestMethod]
+    public void The_game_s_graphics_options_reach_the_platform_with_the_command_line_on_top()
+    {
+        var graphics = new GraphicsSettings { VSync = false, Renderers = ["opengl"], Display = 1 };
+        var (code, errors, request, _) = Launch(graphics, "--window", "fullscreen");
+        Assert.AreEqual(0, code, errors);
+        Assert.IsFalse(request!.Settings.Graphics.VSync);
+        CollectionAssert.AreEqual(new[] { "opengl" }, request.Settings.Graphics.Renderers.ToArray());
+        Assert.AreEqual(1, request.Settings.Graphics.Display);
+        Assert.AreEqual(WindowMode.Fullscreen, request.Settings.Graphics.WindowMode);
+    }
+
+    [TestMethod]
+    public void A_preferred_backend_starts_first_and_falls_back_when_it_cannot()
+    {
+        var (code, errors, _, started) = Launch(new GraphicsSettings { Backend = "second" });
+        Assert.AreEqual(0, code, errors);
+        CollectionAssert.AreEqual(new[] { "second" }, started);
+
+        (code, errors, _, started) = Launch(new GraphicsSettings { Backend = "broken" });
+        Assert.AreEqual(0, code, errors);
+        CollectionAssert.AreEqual(new[] { "first" }, started);
+        StringAssert.Contains(errors, "platform: broken could not start (broken has no display); trying first");
+
+        (code, errors, _, started) = Launch(new GraphicsSettings { Backend = "vulkan9" });
+        Assert.AreEqual(0, code, errors);
+        CollectionAssert.AreEqual(new[] { "first" }, started);
+        StringAssert.Contains(errors, "the game prefers 'vulkan9', which is not in this build; choosing automatically");
+
+        // Named on the command line, a platform does not fall back.
+        (code, errors, _, started) = Launch(new GraphicsSettings { Backend = "second" }, "--platform", "broken");
+        Assert.AreEqual(1, code);
+        Assert.AreEqual(0, started.Count);
+        StringAssert.Contains(errors, "broken has no display");
+    }
+}

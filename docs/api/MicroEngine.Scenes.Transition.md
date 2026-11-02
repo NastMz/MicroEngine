@@ -37,7 +37,8 @@ protected Transition(float duration)
 
 ### <a id="MicroEngine_Scenes_Transition_Cover"></a> Cover
 
-0 = nothing covered, 1 = fully covered.
+0 = nothing covered, 1 = fully covered. While drawing, it follows the frame between the last two updates
+([FrameBlend](MicroEngine.Core.Game.md#MicroEngine_Core_Game_FrameBlend)), so the effect moves evenly on displays of any rate.
 
 ```csharp
 public float Cover { get; }

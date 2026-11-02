@@ -57,7 +57,9 @@ Daily CI runs the SDK check (`sdk.yml`) whenever a package input changes, and **
 
 1. **Packages** (`sdk/tests/packages.mjs`): one version everywhere, MIT, README and repository metadata, exactly the
    dependencies each package should have (no raylib in `MicroEngine.Sdl`), the files that make each one work (the
-   identity targets, raylib for WebAssembly, the hosts, the template), no build-machine path, no demo file.
+   identity targets, raylib for WebAssembly, the hosts, the template), no build-machine path, no demo file. To run it
+   on a local feed, pack as the workflow does (`dotnet pack MicroEngine.slnx -c Release -o <feed>
+   -p:MicroEngineRelease=true`): without that flag the build keeps this machine's paths and the path check fails.
 2. **An external project** (`sdk/tests/external.mjs`) on Windows, Linux and macOS: in a folder outside the
    repository, with only the package feed and nuget.org, it installs `microengine`, creates a game with
    `microengine new`, gives it its own name, id, version and icon, builds it, runs it with scripted input (the

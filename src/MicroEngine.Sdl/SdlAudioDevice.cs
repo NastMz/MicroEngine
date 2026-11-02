@@ -16,6 +16,7 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
     private const int Rate = 48000;
     private readonly SDL_AudioDeviceID _device;
     private readonly SDL_AudioStream*[] _voices = new SDL_AudioStream*[Voices];
+    private float[] _musicBuffer = [];
     private readonly List<AudioClip> _sounds = [];
     private readonly List<Func<MusicSource>> _music = [];
     private SDL_AudioStream* _musicStream;
@@ -140,30 +141,38 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         var clip = _sounds[sound.Id];
         var voice = _voices[_nextVoice];
         _nextVoice = (_nextVoice + 1) % Voices;
-        var samples = Pan(clip, pan);
-        var source = new SDL_AudioSpec { format = SDL_AudioFormat.SDL_AUDIO_F32LE, channels = 2, freq = clip.SampleRate };
-        SDL_ClearAudioStream(voice);
-        SDL_SetAudioStreamFormat(voice, &source, null);
-        SDL_SetAudioStreamGain(voice, Math.Clamp(volume, 0, 1));
-        SDL_SetAudioStreamFrequencyRatio(voice, Math.Clamp(pitch, 0.01f, 100f));
-        fixed (float* p = samples) SDL_PutAudioStreamData(voice, (nint)p, samples.Length * sizeof(float));
-        SDL_FlushAudioStream(voice);
+        // SDL copies the samples it is given, so the panned copy lives in a pooled buffer only for this call.
+        int length = clip.Samples.Length / clip.Channels * 2;
+        var samples = System.Buffers.ArrayPool<float>.Shared.Rent(length);
+        try
+        {
+            Pan(clip, pan, samples);
+            var source = new SDL_AudioSpec { format = SDL_AudioFormat.SDL_AUDIO_F32LE, channels = 2, freq = clip.SampleRate };
+            SDL_ClearAudioStream(voice);
+            SDL_SetAudioStreamFormat(voice, &source, null);
+            SDL_SetAudioStreamGain(voice, Math.Clamp(volume, 0, 1));
+            SDL_SetAudioStreamFrequencyRatio(voice, Math.Clamp(pitch, 0.01f, 100f));
+            fixed (float* p = samples) SDL_PutAudioStreamData(voice, (nint)p, length * sizeof(float));
+            SDL_FlushAudioStream(voice);
+        }
+        finally { System.Buffers.ArrayPool<float>.Shared.Return(samples); }
     }
 
-    /// <summary>Stereo copy of the clip with balance panning (0 = left, 0.5 = centre, 1 = right), as raylib's miniaudio applies it.</summary>
-    internal static float[] Pan(AudioClip clip, float pan)
+    /// <summary>
+    /// Writes a stereo copy of the clip with balance panning (0 = left, 0.5 = centre, 1 = right), as raylib's miniaudio
+    /// applies it, into the start of <paramref name="stereo"/>.
+    /// </summary>
+    internal static void Pan(AudioClip clip, float pan, float[] stereo)
     {
         pan = Math.Clamp(pan, 0, 1);
         float left = Math.Min(1, 2 * (1 - pan)), right = Math.Min(1, 2 * pan);
         int frames = clip.Samples.Length / clip.Channels;
-        var stereo = new float[frames * 2];
         for (int i = 0; i < frames; i++)
         {
             float l = clip.Samples[i * clip.Channels], r = clip.Channels == 2 ? clip.Samples[i * 2 + 1] : l;
             stereo[i * 2] = l * left;
             stereo[i * 2 + 1] = r * right;
         }
-        return stereo;
     }
 
     /// <inheritdoc/>
@@ -212,7 +221,10 @@ public sealed unsafe class SdlAudioDevice : IAudioDevice, IDisposable
         if (_current is null || _musicStream == null || _paused) return;
         int bytesPerFrame = _current.Channels * sizeof(float);
         int target = _current.SampleRate / 4 * bytesPerFrame;
-        var buffer = new float[_current.SampleRate / 8 * _current.Channels];
+        // Called every update: the eighth of a second read at a time is read into the same buffer.
+        int size = _current.SampleRate / 8 * _current.Channels;
+        if (_musicBuffer.Length != size) _musicBuffer = new float[size];
+        var buffer = _musicBuffer;
         while (SDL_GetAudioStreamQueued(_musicStream) < target)
         {
             int read = _current.Read(buffer);

@@ -14,7 +14,7 @@ internal sealed class Assets : IDisposable
     private readonly SpriteAtlas _atlas;
     private readonly Sprite[,,] _ground;
     private readonly Dictionary<(Biome, int), Sprite> _tiles = [];
-    private readonly Dictionary<(PipForm, string), Sprite[]> _pip = [];
+    private readonly Dictionary<(PipForm, string), IReadOnlyList<Sprite>> _pip = [];
 
     public Assets(IGraphicsDevice device)
     {
@@ -103,15 +103,18 @@ internal sealed class Assets : IDisposable
             _pip[(form, clip)] = _atlas.Frames($"pip_{form}_{clip}");
     }
 
-    public static string Key(Biome biome) => biome.ToString().ToLowerInvariant();
+    private static readonly string[] Keys = Array.ConvertAll(Enum.GetValues<Biome>(), b => b.ToString().ToLowerInvariant());
+
+    /// <summary>The biome's lower-case name used in sprite names (cached: it is looked up while drawing).</summary>
+    public static string Key(Biome biome) => Keys[(int)biome];
 
     public Sprite this[string name] => _atlas[name];
-    public Sprite[] Frames(string name) => _atlas.Frames(name);
+    public IReadOnlyList<Sprite> Frames(string name) => _atlas.Frames(name);
     public Sprite Ground(Biome biome, int mask, int variant) => _ground[(int)biome, mask, variant];
     public const int BackWallVariants = 4;
 
     public Sprite? TileSprite(Biome biome, int id) => _tiles.TryGetValue((biome, id), out var s) ? s : null;
-    public Sprite[] Pip(PipForm form, string clip) => _pip[(form, clip)];
+    public IReadOnlyList<Sprite> Pip(PipForm form, string clip) => _pip[(form, clip)];
 
     public void Dispose() => _atlas.Dispose();
 }

@@ -48,13 +48,13 @@ public sealed class Slime : Enemy
         World.Audio.Play("hop", 0.5f, 1f, 0.15f);
     }
 
-    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_m"], Position);
+    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_m"], DrawPosition);
 
     public override void Draw(IRenderer r)
     {
         string frame = _hop >= 0 ? "slime2" : _wait < 0.18f && !Stunned ? "slime1" : "slime0";
         float wobble = _hop < 0 ? MathF.Round(MicroEngine.MathX.Wave(Time, 1.5f, 0.6f)) : 0;
-        DrawSprite(r, Flashing(frame), Position + new Vector2(0, -Height + wobble));
+        DrawSprite(r, Flashing(frame), DrawPosition + new Vector2(0, -Height + wobble));
         DrawStunStars(r, 16);
     }
 }
@@ -71,6 +71,8 @@ public sealed class Bat : Enemy
         Hitbox = new RectF(-6, -8, 12, 8);
         _rest = 0.5f + (float)world.Rng.NextDouble() * 1.2f;
     }
+
+    private static readonly string[] Frames = ["bat0", "bat1", "bat2"];
 
     public override bool Flies => true;
     protected override bool FragileToBoomerang => true;
@@ -104,12 +106,12 @@ public sealed class Bat : Enemy
         if (_flight <= 0) _rest = 0.8f + (float)World.Rng.NextDouble() * 1.4f;
     }
 
-    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_s"], Position);
+    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_s"], DrawPosition);
 
     public override void Draw(IRenderer r)
     {
         int f = Resting || Stunned ? 1 : (int)(Time * 14) % 3;
-        DrawSprite(r, Flashing($"bat{f}"), Position + new Vector2(0, -Altitude));
+        DrawSprite(r, Flashing(Frames[f]), DrawPosition + new Vector2(0, -Altitude));
         DrawStunStars(r, Altitude + 8);
     }
 }
@@ -125,6 +127,8 @@ public sealed class Spitter : Enemy
         Hitbox = new RectF(-6, -12, 12, 12);
         _cycle = (float)world.Rng.NextDouble() * Idle;
     }
+
+    private static readonly string[] Frames = ["spitter0", "spitter1", "spitter2"];
 
     protected override float KnockbackScale => 0;
     public override bool IsSolid => true;
@@ -149,7 +153,7 @@ public sealed class Spitter : Enemy
     {
         int f = _cycle < Idle ? 0 : _cycle < Idle + Swell ? 1 : 2;
         var shake = f == 1 ? new Vector2((int)(Time * 30) % 2, 0) : Vector2.Zero;
-        DrawSprite(r, Flashing($"spitter{f}"), Position + shake);
+        DrawSprite(r, Flashing(Frames[f]), Position + shake);
         DrawStunStars(r, 16);
     }
 }
@@ -165,6 +169,10 @@ public sealed class Knight : Enemy
     private Dir _facing = Dir.Down;
 
     public Knight(PlayScene world, Vector2 at) : base(world, at, 4) => Hitbox = new RectF(-6, -10, 12, 10);
+
+    private static readonly string[] DownFrames = ["knight_down0", "knight_down1"];
+    private static readonly string[] UpFrames = ["knight_up0", "knight_up1"];
+    private static readonly string[] SideFrames = ["knight_side0", "knight_side1"];
 
     public override int ContactDamage => 2;
     protected override float KnockbackScale => 0.6f;
@@ -193,14 +201,14 @@ public sealed class Knight : Enemy
         _anim += dt;
     }
 
-    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_m"], Position);
+    public override void DrawShadow(IRenderer r) => r.Draw(Art["shadow_m"], DrawPosition);
 
     public override void Draw(IRenderer r)
     {
-        string dir = _facing switch { Dir.Down => "down", Dir.Up => "up", _ => "side" };
+        var frames = _facing switch { Dir.Down => DownFrames, Dir.Up => UpFrames, _ => SideFrames };
         int f = Stunned ? 0 : (int)(_anim * 5) % 2;
-        var at = Position + (Stunned ? new Vector2((int)(Time * 20) % 2, 0) : Vector2.Zero);
-        DrawSprite(r, Flashing($"knight_{dir}{f}"), at, _facing == Dir.Left);
+        var at = DrawPosition + (Stunned ? new Vector2((int)(Time * 20) % 2, 0) : Vector2.Zero);
+        DrawSprite(r, Flashing(frames[f]), at, _facing == Dir.Left);
         DrawStunStars(r, 18);
     }
 }
@@ -237,5 +245,9 @@ public sealed class Projectile : Actor
         Destroy();
     }
 
-    public override void Draw(IRenderer r) => r.Draw(Art[_sprite], new Vector2(MathF.Round(Position.X), MathF.Round(Position.Y - 4)));
+    public override void Draw(IRenderer r)
+    {
+        var at = DrawPosition;
+        r.Draw(Art[_sprite], new Vector2(MathF.Round(at.X), MathF.Round(at.Y - 4)));
+    }
 }

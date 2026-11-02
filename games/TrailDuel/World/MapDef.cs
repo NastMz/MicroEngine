@@ -97,7 +97,9 @@ public sealed class MapDef
     public List<ItemBallDef> Items { get; init; } = [];
     public EncounterTable? Encounters { get; init; }
 
-    public int Width => Rows.Max(r => r.Length);
+    /// <summary>The widest row, measured once (the map is drawn and walked every frame).</summary>
+    public int Width => _width ??= Rows.Max(r => r.Length);
+    private int? _width;
     public int Height => Rows.Length;
 
     public TileKind KindAt(int x, int y)

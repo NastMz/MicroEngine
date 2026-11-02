@@ -46,6 +46,10 @@ Locates a game's asset files. By default the root is the <code>Content</code> fo
 executable (games copy it there at build time). Missing files fail with the full path so a
 broken install or a typo is obvious.
 
+ [DisplayInfo](MicroEngine.Core.DisplayInfo.md)
+
+A display (monitor) as the system reports it.
+
  [FileSaveStorage](MicroEngine.Core.FileSaveStorage.md)
 
 One JSON file per slot in a directory (desktop and tests).
@@ -76,7 +80,8 @@ The command line every desktop game accepts, on any backend. Supported arguments
 first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>.</li><li><code>--hidden</code> render in a hidden window (captures still work).</li><li><code>--frames N</code> stop after N updates; <code>--seed N</code>; <code>--scale N</code>; <code>--mute</code>.</li><li><code>--report</code> print the platform that runs and whether it has audio before the game starts (package checks).</li><li><code>--audio auto|device|silent</code> where sound may go ([AudioOutput](MicroEngine.Core.AudioOutput.md)); by default hidden and
 scripted runs open no physical device, so checks and tests are never heard.</li><li><code>--audio-capture FILE</code> play nothing aloud and write what would have been heard as a WAV
 ([CaptureAudioDevice](MicroEngine.Audio.CaptureAudioDevice.md)).</li><li><code>--gpu auto|high-performance|power-saving</code> the GPU to ask for on a machine with two
-([GpuPreference](MicroEngine.Core.GpuPreference.md)).</li><li><code>--pacing display|measured</code> count frame time in refresh periods of the display (the default) or as
+([GpuPreference](MicroEngine.Core.GpuPreference.md)).</li><li><code>--renderer NAME[,NAME...]</code> graphics APIs to try first ([Renderers](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Renderers)).</li><li><code>--vsync on|off</code> wait for the display's refresh or not ([VSync](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_VSync)).</li><li><code>--fps-limit N</code> draw at most N frames per second; 0 removes the game's limit
+([FrameRateLimit](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_FrameRateLimit)).</li><li><code>--window windowed|fullscreen|exclusive</code> the window mode ([WindowMode](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_WindowMode)).</li><li><code>--display N</code> open on display N, counted from 0 ([Display](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Display)).</li><li><code>--pacing display|measured</code> count frame time in refresh periods of the display (the default) or as
 measured ([PaceToDisplay](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_PaceToDisplay)).</li><li><code>--profile FILE</code> measure every frame and the start phases ([FrameProfiler](MicroEngine.Core.FrameProfiler.md)), print a summary and
 write the results as JSON, or CSV when FILE ends in .csv.</li></ul>
 
@@ -95,6 +100,12 @@ from <code>requestAnimationFrame</code>, call [Tick](MicroEngine.Core.GameLoop.m
 Runs a game to completion on platforms that own their thread (desktop, headless):
 [GameLoop](MicroEngine.Core.GameLoop.md) ticked in a blocking loop.
 
+ [GameScreen](MicroEngine.Core.GameScreen.md)
+
+The game's screen while it runs ([Screen](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Screen)): the displays, which one the game is on, and the options
+that can change without restarting. Changes apply where the platform allows; read a property back to see what applies
+(a browser or phone keeps its own window, a headless run has none).
+
  [GameSession](MicroEngine.Core.GameSession.md)
 
 Runs one game at a time for hosts that drive frames themselves and outlive a run, such as a browser
@@ -105,6 +116,15 @@ host can show its own screen and start again without reloading.
  [GameSettings](MicroEngine.Core.GameSettings.md)
 
 Window/backbuffer settings a game declares. The virtual size is the pixel-art canvas.
+
+ [GraphicsSettings](MicroEngine.Core.GraphicsSettings.md)
+
+The graphics options a game starts with ([Graphics](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Graphics)). Every option has a sensible automatic
+default; the launcher's options (<code>--platform</code>, <code>--renderer</code>, <code>--vsync</code>, <code>--fps-limit</code>, <code>--gpu</code>,
+<code>--window</code>, <code>--display</code>) override them for one run, and [Screen](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Screen) changes the ones a platform
+can change while the game runs. A game that offers a graphics menu saves [Current](MicroEngine.Core.GameScreen.md#MicroEngine_Core_GameScreen_Current) and returns
+it from [Settings](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Settings) at its next start. VSync, the frame limit and [UpdateRate](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_UpdateRate)
+are independent: VSync waits for the display, the limit caps frames per second, the update rate is the simulation's.
 
  [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md)
 
@@ -229,6 +249,12 @@ One recorded drawing call.
 
 ### Interfaces
 
+ [IDisplayControl](MicroEngine.Core.IDisplayControl.md)
+
+What a platform can change about its window and presentation while the game runs ([Screen](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Screen) uses it).
+Platforms without a window (headless) or whose host owns these choices (browsers, phones) leave it out or report
+that a change did not apply.
+
  [IPlatform](MicroEngine.Core.IPlatform.md)
 
 Everything a backend provides: a window (or nothing, headless), input devices, audio,
@@ -264,5 +290,9 @@ renderers; raylib's OpenGL ignores it.
  [PlatformParts](MicroEngine.Core.PlatformParts.md)
 
 The subsystems a host may supply to a profile instead of the profile's own.
+
+ [WindowMode](MicroEngine.Core.WindowMode.md)
+
+How the game's window covers the screen ([WindowMode](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_WindowMode), [WindowMode](MicroEngine.Core.GameScreen.md#MicroEngine_Core_GameScreen_WindowMode)).
 
 </div>

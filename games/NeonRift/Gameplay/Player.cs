@@ -57,6 +57,8 @@ public sealed class Player : Actor
         Weapon = WeaponSpec.Of(weapon);
     }
 
+    private static readonly float[] FootProbes = [-5f, 0, 5f];
+
     public void Equip(WeaponKind kind) => Weapon = WeaponSpec.Of(kind);
 
     public void Step(float dt, PlayerInput input)
@@ -138,7 +140,7 @@ public sealed class Player : Actor
         var feet = Position + new Vector2(0, 1);
         int y = (int)MathF.Floor(feet.Y / ts);
         bool any = false;
-        foreach (float dx in new[] { -5f, 0, 5f })
+        foreach (float dx in FootProbes)
         {
             var flags = Stage.Grid.FlagsAt((int)MathF.Floor((feet.X + dx) / ts), y);
             if ((flags & MicroEngine.World.TileFlags.Solid) != 0) return false;
@@ -203,6 +205,7 @@ public sealed class Player : Actor
     public void Respawn(float x, WeaponKind weapon)
     {
         Position = new Vector2(x, Stage.Camera.View.Top + 40);
+        Snap();
         Velocity = Vector2.Zero;
         State = PlayerState.Alive;
         _stateTime = 0;
@@ -217,7 +220,7 @@ public sealed class Player : Actor
     {
         if (State == PlayerState.Waiting) return;
         if (Invulnerable > 0 && State == PlayerState.Alive && (int)(Invulnerable * 20) % 2 == 0) return;
-        var feet = Vector2.Round(Position);
+        var feet = Vector2.Round(DrawPosition);
         bool flip = Facing < 0;
         if (Barrier > 0 && (Barrier > 2 || (int)(Barrier * 10) % 2 == 0))
         {

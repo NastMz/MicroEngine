@@ -16,7 +16,7 @@ public sealed class PresentationTests
             foreach (bool big in new[] { false, true })
             {
                 var frames = h.Game.Atlas.Frames("fx:" + FxArt.Impact(type, big));
-                Assert.IsTrue(frames.Length >= 4, $"{type} (big={big}) should animate, got {frames.Length} frames.");
+                Assert.IsTrue(frames.Count >= 4, $"{type} (big={big}) should animate, got {frames.Count} frames.");
             }
     }
 

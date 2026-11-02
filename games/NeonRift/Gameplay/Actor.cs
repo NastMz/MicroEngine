@@ -12,8 +12,24 @@ public abstract class Actor : Entity
     public Stage Stage { get; internal set; } = null!;
     public Vector2 Velocity { get; set; }
     public float Age { get; protected set; }
+    private Vector2 _previous;
+    private bool _hasPrevious;
 
-    public override void Update(float dt) => Age += dt;
+    /// <summary>Records the position this update starts from (for drawing between updates), then ages the actor.</summary>
+    public override void Update(float dt)
+    {
+        _previous = Position;
+        _hasPrevious = true;
+        Age += dt;
+    }
+
+    /// <summary>Where to draw the actor: <see cref="Stage.Blend"/> of the way from its previous position to the current one.
+    /// Before its first update, or after <see cref="Snap"/>, there is no previous position and it is drawn where it is.</summary>
+    internal Vector2 DrawPosition => _hasPrevious ? Stage.Between(_previous, Position) : Position;
+
+    /// <summary>Forgets the previous position after a jump (respawn, teleport) so the actor is not drawn streaking across.</summary>
+    public void Snap() => _hasPrevious = false;
+
     internal virtual void Render(IRenderer r, Assets art) { }
 
     /// <summary>Draws a sprite and, while <paramref name="flash"/> is positive, an additive copy for a hit flash.</summary>
@@ -102,9 +118,9 @@ public sealed class Effect : Actor
     internal override void Render(IRenderer r, Assets art)
     {
         var frames = art.Frames(_sprite);
-        _frames = frames.Length;
-        int i = Math.Min((int)(Age * _fps), frames.Length - 1);
-        r.DrawPivoted(frames[i], Vector2.Round(Position), _rotation, new Vector2(Scale), flipX: _flipX);
+        _frames = frames.Count;
+        int i = Math.Min((int)(Age * _fps), frames.Count - 1);
+        r.DrawPivoted(frames[i], Vector2.Round(DrawPosition), _rotation, new Vector2(Scale), flipX: _flipX);
     }
 }
 

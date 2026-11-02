@@ -18,7 +18,7 @@ namespace MicroEngine.Sdl;
 /// also reports the window's safe area and density; a system that sends the app to the background suspends it
 /// (<see cref="IPlatform.Suspended"/>).
 /// </summary>
-public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
+public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDisplayControl
 {
     private readonly GameSettings _settings;
     private readonly bool _fixedStep;
@@ -33,7 +33,9 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
     private readonly SdlTouchScreen _touch;
     private readonly ulong _start;
     private long _frames;
-    private readonly bool _vsync;
+    private readonly bool _paced; // a visible real-time window: the only kind VSync applies to
+    private readonly bool _mobile;
+    private bool _vsync;
     private bool _closeRequested, _suspended, _disposed;
     // Written by the lifecycle watch on the thread the system uses to send the event.
     private volatile bool _background;
@@ -94,7 +96,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
         // mobile hosts .NET's environment variables never reach the native environment SDL reads its hints from.
         if (Environment.GetEnvironmentVariable("MICROENGINE_SDL_EVENT_LOGGING") is { Length: > 0 } logging)
             SDL_SetHint(SDL_HINT_EVENT_LOGGING, logging);
-        bool mobile = OperatingSystem.IsAndroid() || OperatingSystem.IsIOS();
+        bool mobile = _mobile = OperatingSystem.IsAndroid() || OperatingSystem.IsIOS();
+        var graphics = _settings.Graphics;
         // Pixel-art games are wide; without this SDL lets a phone turn the window to portrait.
         if (mobile) SDL_SetHint(SDL_HINT_ORIENTATIONS, (request.Identity?.Orientation ?? AppOrientation.Landscape) switch
         {
@@ -108,20 +111,36 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
         Mark("video", ref started);
         int scale = request.Scale ?? _settings.Scale;
         var flags = SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY;
-        if (request.Hidden) flags |= SDL_WindowFlags.SDL_WINDOW_HIDDEN;
-        if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS()) flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
+        // A window placed on a chosen display or opened full screen is shown once it is there, so it never appears
+        // first where the system would have put it.
+        bool placed = !mobile && (graphics.Display is not null || graphics.WindowMode != WindowMode.Windowed);
+        if (request.Hidden || placed) flags |= SDL_WindowFlags.SDL_WINDOW_HIDDEN;
+        if (mobile) flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
         _window = SDL_CreateWindow(_settings.Title, _settings.VirtualWidth * scale, _settings.VirtualHeight * scale, flags);
         if (_window == null) throw Fail("SDL could not open a window");
+        if (placed)
+        {
+            if (graphics.Display is { } index) MoveToDisplay(index);
+            if (graphics.WindowMode != WindowMode.Windowed) SetWindowMode(graphics.WindowMode);
+            if (!request.Hidden) SDL_ShowWindow(_window);
+        }
         if (!mobile && request.Identity?.Icon is { } icon) SetWindowIcon(icon);
         Mark("window", ref started);
         // SDL can choose a GPU only for its Metal and GPU renderers; elsewhere the system decides (GpuPreference).
-        if (request.GpuPreference != GpuPreference.Automatic)
+        if (graphics.Gpu != GpuPreference.Automatic)
         {
-            string lowPower = request.GpuPreference == GpuPreference.PowerSaving ? "1" : "0";
+            string lowPower = graphics.Gpu == GpuPreference.PowerSaving ? "1" : "0";
             SDL_SetHint(SDL_HINT_RENDER_GPU_LOW_POWER, lowPower);
             SDL_SetHint(SDL_HINT_RENDER_METAL_PREFER_LOW_POWER_DEVICE, lowPower);
         }
-        _sdl = renderer is null ? SDL_CreateRenderer(_window, (byte*)null) : SDL_CreateRenderer(_window, renderer);
+        // The game's preferred APIs first (SDL tries a comma-separated list in order), then SDL's own choice.
+        if (renderer is null && graphics.Renderers.Count > 0)
+        {
+            _sdl = SDL_CreateRenderer(_window, string.Join(',', graphics.Renderers));
+            if (_sdl == null)
+                Console.Error.WriteLine($"platform: none of the preferred renderers ({string.Join(", ", graphics.Renderers)}) could start here ({SDL_GetError()}); SDL chooses (drivers here: {string.Join(", ", RenderDrivers)})");
+        }
+        if (_sdl == null) _sdl = renderer is null ? SDL_CreateRenderer(_window, (byte*)null) : SDL_CreateRenderer(_window, renderer);
         if (_sdl == null)
         {
             var error = Fail(renderer is null
@@ -133,7 +152,9 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
         }
         Mark("renderer", ref started);
         SDL_SetWindowMinimumSize(_window, _settings.VirtualWidth, _settings.VirtualHeight);
-        _vsync = !request.Hidden && !_fixedStep && SDL_SetRenderVSync(_sdl, 1);
+        _paced = !request.Hidden && !_fixedStep;
+        _vsync = _paced && graphics.VSync && SDL_SetRenderVSync(_sdl, 1);
+        if (_paced && !graphics.VSync) SDL_SetRenderVSync(_sdl, 0);
         _target = SDL_CreateTexture(_sdl, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, _settings.VirtualWidth, _settings.VirtualHeight);
         if (_target == null) { Dispose(); throw Fail("SDL could not create the frame texture"); }
         SDL_SetTextureScaleMode(_target, SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
@@ -171,9 +192,14 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
             };
             int vsync;
             if (SDL_GetRenderVSync(_sdl, &vsync)) facts["vsync"] = vsync.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            var display = SDL_GetDisplayForWindow(_window);
-            var mode = SDL_GetCurrentDisplayMode(display);
-            if (mode != null) facts["display"] = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{mode->w}x{mode->h} @ {mode->refresh_rate:0.##} Hz");
+            if (CurrentDisplay is >= 0 and var current && Displays is var displays && current < displays.Count)
+            {
+                var d = displays[current];
+                facts["display"] = string.Create(System.Globalization.CultureInfo.InvariantCulture,
+                    $"{d.Width}x{d.Height} @ {d.RefreshRate:0.##} Hz, #{d.Index}{(d.Primary ? " primary" : "")} \"{d.Name}\", scale {d.Scale:0.##}");
+                facts["displays"] = displays.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            facts["windowMode"] = WindowMode.ToString();
             int w, h;
             if (SDL_GetCurrentRenderOutputSize(_sdl, &w, &h)) facts["output"] = $"{w}x{h}";
             if (Adapter() is { } adapter) facts["adapter"] = adapter;
@@ -441,12 +467,108 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
         finally { SDL_DestroySurface(rgba); }
     }
 
-    /// <inheritdoc/>
-    public void ToggleFullscreen()
+    /// <summary>Switches between the window and borderless full screen (exclusive full screen goes back to the window).</summary>
+    public void ToggleFullscreen() => SetWindowMode(WindowMode == WindowMode.Windowed ? WindowMode.Fullscreen : WindowMode.Windowed);
+
+    /// <summary>Waits with SDL's precise delay (a high-resolution timer, then a short spin).</summary>
+    public bool Wait(double seconds)
     {
-        if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS()) return;
-        bool full = (SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0;
-        SDL_SetWindowFullscreen(_window, !full);
+        if (seconds > 0) SDL_DelayPrecise((ulong)(seconds * 1e9));
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public IReadOnlyList<DisplayInfo> Displays
+    {
+        get
+        {
+            var list = new List<DisplayInfo>();
+            int count;
+            var ids = SDL_GetDisplays(&count);
+            if (ids == null) return list;
+            try
+            {
+                var primary = SDL_GetPrimaryDisplay();
+                for (int i = 0; i < count; i++)
+                {
+                    var mode = SDL_GetCurrentDisplayMode(ids[i]);
+                    list.Add(new DisplayInfo(i, SDL_GetDisplayName(ids[i]) ?? "", mode == null ? 0 : mode->w, mode == null ? 0 : mode->h,
+                        mode == null ? 0 : mode->refresh_rate, SDL_GetDisplayContentScale(ids[i]), ids[i] == primary));
+                }
+            }
+            finally { SDL_free(ids); }
+            return list;
+        }
+    }
+
+    /// <inheritdoc/>
+    public int CurrentDisplay
+    {
+        get
+        {
+            var current = SDL_GetDisplayForWindow(_window);
+            int count;
+            var ids = SDL_GetDisplays(&count);
+            if (ids == null) return -1;
+            try
+            {
+                for (int i = 0; i < count; i++) if (ids[i] == current) return i;
+                return -1;
+            }
+            finally { SDL_free(ids); }
+        }
+    }
+
+    /// <inheritdoc/>
+    public bool VSync => _vsync;
+
+    /// <summary>Turns VSync on or off; hidden and fixed-step (scripted) runs keep it off.</summary>
+    public bool SetVSync(bool on)
+    {
+        if (!_paced) return !on;
+        if (SDL_SetRenderVSync(_sdl, on ? 1 : 0)) _vsync = on;
+        return _vsync == on;
+    }
+
+    /// <inheritdoc/>
+    public WindowMode WindowMode
+    {
+        get
+        {
+            if ((SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) == 0) return WindowMode.Windowed;
+            return SDL_GetWindowFullscreenMode(_window) == null ? WindowMode.Fullscreen : WindowMode.ExclusiveFullscreen;
+        }
+    }
+
+    /// <summary>Changes the window's mode; phones keep theirs (always full screen).</summary>
+    public bool SetWindowMode(WindowMode mode)
+    {
+        if (_mobile) return mode != WindowMode.Windowed;
+        if (mode == WindowMode.Windowed) return SDL_SetWindowFullscreen(_window, false);
+        // Exclusive: the display's desktop mode (its native resolution and refresh rate); null: borderless.
+        var exclusive = mode == WindowMode.ExclusiveFullscreen ? SDL_GetDesktopDisplayMode(SDL_GetDisplayForWindow(_window)) : null;
+        return SDL_SetWindowFullscreenMode(_window, exclusive) && SDL_SetWindowFullscreen(_window, true);
+    }
+
+    /// <summary>Moves the window to the centre of display <paramref name="index"/>; a full-screen window follows to that display.</summary>
+    public bool MoveToDisplay(int index)
+    {
+        if (_mobile) return false;
+        int count;
+        var ids = SDL_GetDisplays(&count);
+        if (ids == null) return false;
+        try
+        {
+            if (index < 0 || index >= count) return false;
+            var mode = WindowMode;
+            if (mode != WindowMode.Windowed) SDL_SetWindowFullscreen(_window, false);
+            int position = (int)SDL_WINDOWPOS_CENTERED_DISPLAY(ids[index]);
+            bool moved = SDL_SetWindowPosition(_window, position, position);
+            SDL_SyncWindow(_window);
+            if (mode != WindowMode.Windowed) SetWindowMode(mode);
+            return moved;
+        }
+        finally { SDL_free(ids); }
     }
 
     /// <summary>Closes the window, the renderer and the audio device the platform opened.</summary>

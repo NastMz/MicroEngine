@@ -5,6 +5,7 @@ using MicroEngine.Graphics;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Visuals;
+using TrailDuel.World;
 
 namespace TrailDuel.Scenes;
 
@@ -30,6 +31,8 @@ internal sealed partial class BattleScene
         public float TintAlpha;
         public bool Blink;
         public float SinkDepth;
+        /// <summary><see cref="Offset"/> kept from the previous update, to draw lunges and knockbacks between updates.</summary>
+        public Interpolated DrawnOffset;
     }
 
     private Display _enemy = null!, _player = null!;
@@ -40,6 +43,9 @@ internal sealed partial class BattleScene
     private bool _orbVisible;
     private Vector2 _orbPos;
     private float _orbAngle;
+    // Sliding things kept from the previous update, to draw them between updates (Game.FrameBlend).
+    private Interpolated _drawnEnemyPlatform, _drawnPlayerPlatform, _drawnEnemyTrainer, _drawnPlayerTrainer, _drawnOrb;
+    private bool _orbWasVisible;
     private bool _orbOpen;
     private string _orbSprite = "orb";
     private LevelUp? _levelPanel;

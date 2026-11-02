@@ -55,7 +55,10 @@ Source: [`samples/HelloEngine/Program.cs`](../../samples/HelloEngine/Program.cs)
 Rendering happens on the CPU at load time; long songs add to start-up time, so render them once in `Load`. Next SDK
 version (not published yet: arrives with the next SDK version): `Audio.AddMusic(name, song)` with the `Song` itself (no `Render()`) renders it in the
 background, songs side by side, and hands it to the device the first time it plays, waiting then only for that song;
-in browsers, which have no background threads, it renders at once. Do not change a song after registering it.
+in browsers, which have no background threads, songs render a few milliseconds per update, in the order they were
+registered; a song asked to play before it is ready goes first and starts once rendered (`CurrentMusic` is null
+until then), so the game never freezes for it. A song with an invalid note or drum fails in
+`AddMusic`. Do not change a song after registering it.
 
 ## The mixer
 

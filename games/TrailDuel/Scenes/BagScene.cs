@@ -16,7 +16,24 @@ internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string
     private float _messageTime;
     private bool _closed;
 
-    private List<(ItemData Item, int Count)> Items => game.State.Bag.Owned().ToList();
+    private readonly List<(ItemData Item, int Count)> _items = [];
+    private CachedText _hint;
+
+    /// <summary>The owned items in dex order (as Bag.Owned), refilled into one list instead of a new one per frame.</summary>
+    private List<(ItemData Item, int Count)> Items
+    {
+        get
+        {
+            _items.Clear();
+            for (int i = 0; i < ItemDex.All.Count; i++)
+            {
+                var item = ItemDex.All[i];
+                int count = game.State.Bag.Count(item.Id);
+                if (count > 0) _items.Add((item, count));
+            }
+            return _items;
+        }
+    }
 
     public override void Update(float dt)
     {
@@ -66,7 +83,7 @@ internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string
         // The satchel bobs gently on the left.
         r.Draw(game.Sprite("satchel"), new Vector2(56, 60 + MathF.Round(MathX.Wave(Age, 0.6f, 1.5f))));
         UiKit.Title(r, Font, "BAG", new Vector2(56, 102));
-        UiKit.Title(r, Font, $"${game.State.Money}", new Vector2(56, 116), 1, Pal.Gold);
+        UiKit.Title(r, Font, NumberTexts.Money(game.State.Money), new Vector2(56, 116), 1, Pal.Gold);
 
         var list = new RectF(112, 8, 202, 120);
         UiKit.Box(r, list);
@@ -76,15 +93,15 @@ internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string
         {
             var (item, count) = items[i];
             float y = list.Y + 8 + i * 16;
-            r.Draw(game.Sprite("icon:" + item.Id), new Vector2(list.X + 16, y - 2));
+            r.Draw(game.Sprite(SpriteKeys.Icon[item.Id]), new Vector2(list.X + 16, y - 2));
             UiKit.Text(r, Font, item.Name, list.X + 34, y);
-            UiKit.TextRight(r, Font, "×" + count, list.Right - 10, y);
+            UiKit.TextRight(r, Font, NumberTexts.Count(count), list.Right - 10, y);
             if (i == _index) UiKit.Cursor(r, Font, list.X + 5, y, Age);
         }
         var desc = new RectF(4, 134, 312, 42);
         UiKit.Box(r, desc);
         string text = _messageTime > 0 && _message is not null ? _message : items.Count > 0 ? items[Math.Clamp(_index, 0, items.Count - 1)].Item.Description : "";
         UiKit.Text(r, Font, text, desc.X + 10, desc.Y + 9);
-        UiKit.Text(r, Font, Game.Prompts.Format("{confirm}: use   {cancel}: back"), desc.X + 10, desc.Y + 23, UiKit.Muted);
+        UiKit.Text(r, Font, _hint.Get(Game.Prompts.Version, Game.Prompts, static p => p.Format("{confirm}: use   {cancel}: back")), desc.X + 10, desc.Y + 23, UiKit.Muted);
     }
 }

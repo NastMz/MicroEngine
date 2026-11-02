@@ -26,7 +26,14 @@ public sealed class AudioTests
 
     [TestMethod]
     [OSCondition(OperatingSystems.Linux, IgnoreMessage = "Signal capture uses a PulseAudio sink monitor.")]
-    public void A_played_tone_reaches_the_sound_server()
+    public void A_played_tone_reaches_the_sound_server() => ToneReachesTheSoundServer(music: false);
+
+    [TestMethod]
+    [OSCondition(OperatingSystems.Linux, IgnoreMessage = "Signal capture uses a PulseAudio sink monitor.")]
+    public void A_tone_streamed_as_music_reaches_the_sound_server() => ToneReachesTheSoundServer(music: true);
+
+    /// <summary>Plays a 0.5 sine as a sound effect or as music streamed from its samples, and checks the sink hears it.</summary>
+    private static void ToneReachesTheSoundServer(bool music)
     {
         var monitor = Environment.GetEnvironmentVariable("MICROENGINE_AUDIO_MONITOR");
         Native.Require(!string.IsNullOrEmpty(monitor), "MICROENGINE_AUDIO_MONITOR names no PulseAudio monitor source.");
@@ -36,7 +43,9 @@ public sealed class AudioTests
             Native.Require(device.IsAvailable, "No audio output device.");
             var tone = new float[Rate];
             for (int i = 0; i < tone.Length; i++) tone[i] = 0.5f * MathF.Sin(2 * MathF.PI * Frequency * i / Rate);
-            var sound = device.LoadSound("tone", new AudioClip(tone));
+            var clip = new AudioClip(tone);
+            var sound = music ? null : device.LoadSound("tone", clip);
+            var song = music ? device.LoadMusic("tone", clip, loop: false) : null;
 
             using var recorder = Process.Start(new ProcessStartInfo("parec", $"--device={monitor} --raw --format=s16le --channels=1 --rate={Rate}")
             {
@@ -48,7 +57,8 @@ public sealed class AudioTests
             for (var wait = Stopwatch.StartNew(); recorded.Length < Rate / 2 && wait.ElapsedMilliseconds < 5000;) Thread.Sleep(20);
             long silenceEnds = recorded.Length;
             Assert.IsTrue(silenceEnds >= Rate / 2, $"The sink monitor delivers audio before the tone ({silenceEnds} bytes in 5 s).");
-            device.Play(sound);
+            if (sound is not null) device.Play(sound);
+            else device.PlayMusic(song!);
             for (var watch = Stopwatch.StartNew(); watch.ElapsedMilliseconds < 1500;) { device.Update(); Thread.Sleep(10); }
             recorder.Kill();
             reading.Wait(2000);

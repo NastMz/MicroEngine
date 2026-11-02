@@ -93,13 +93,27 @@ internal sealed class TextPanel
         while (Active) yield return null;
     }
 
+    private string? _linesText;
+    private int _linesCount = -1;
+    private string[] _lines = [];
+
+    /// <summary>The revealed lines, split again only when another character shows (not every frame).</summary>
+    private string[] VisibleLines()
+    {
+        if (!ReferenceEquals(_linesText, _typewriter.Text) || _linesCount != _typewriter.VisibleCount)
+        {
+            (_linesText, _linesCount) = (_typewriter.Text, _typewriter.VisibleCount);
+            _lines = _typewriter.Visible.Split('\n');
+        }
+        return _lines;
+    }
+
     public void Draw(IRenderer r)
     {
         if (!Active) return;
         UiKit.Box(r, Area);
-        var visible = _typewriter.Visible;
         float y = Area.Y + 9;
-        foreach (var line in visible.Split('\n'))
+        foreach (var line in VisibleLines())
         {
             UiKit.Text(r, _font, line, Area.X + 10, y);
             y += 13;
@@ -128,6 +142,7 @@ internal sealed class ChoiceMenu
     private readonly BitmapFont _font;
     private readonly AudioMixer _audio;
     private float _time;
+    private int _width = -1;
     public int Index { get; set; }
     public bool CanCancel { get; init; } = true;
     public int? Result { get; private set; }
@@ -141,7 +156,8 @@ internal sealed class ChoiceMenu
 
     public RectF Bounds(Vector2 anchorBottomRight)
     {
-        int w = _options.Max(o => _font.MeasureWidth(o)) + 24;
+        if (_width < 0) _width = _options.Max(o => _font.MeasureWidth(o)) + 24;
+        int w = _width;
         int h = _options.Length * 12 + 10;
         return new RectF(anchorBottomRight.X - w, anchorBottomRight.Y - h, w, h);
     }

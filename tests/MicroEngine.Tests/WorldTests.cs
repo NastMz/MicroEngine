@@ -122,6 +122,47 @@ public sealed class WorldTests
         Assert.AreEqual(1, child.Updates);
     }
 
+    private sealed class DrawLog(List<string> log, string name, float depth) : Entity
+    {
+        public override float Depth => depth;
+        public override void Draw(MicroEngine.Graphics.IRenderer renderer) => log.Add(name);
+    }
+
+    [TestMethod]
+    public void Walking_querying_and_drawing_an_entity_list_allocates_nothing_and_keeps_depth_order_stable()
+    {
+        var list = new EntityList<Entity>();
+        var drawn = new List<string>(64);
+        list.Add(new DrawLog(drawn, "b1", 2));
+        list.Add(new DrawLog(drawn, "a", 1));
+        list.Add(new DrawLog(drawn, "b2", 2)).Destroy();
+        list.Add(new DrawLog(drawn, "b3", 2));
+        list.Add(new DrawLog(drawn, "c", 0));
+        var renderer = new MicroEngine.Core.HeadlessRenderer(320, 180);
+        list.Draw(renderer);
+        CollectionAssert.AreEqual(new[] { "c", "a", "b1", "b3" }, drawn, "by depth, insertion order for equal depth, living only");
+
+        int alive = 0;
+        foreach (var e in list) alive++;
+        Assert.AreEqual(4, alive);
+
+        Assert.AreEqual(4, list.OfType<DrawLog>().Count(), "OfType skips the dead");
+        Assert.AreEqual(4, list.Overlapping(new RectF(-1, -1, 18, 18)).Count(), "every living entity overlaps its own corner");
+        Assert.AreEqual(0, list.Overlapping(new RectF(100, 100, 4, 4)).Count());
+
+        drawn.Clear();
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int frame = 0; frame < 100; frame++)
+        {
+            foreach (var e in list) alive += e.Alive ? 0 : 1;
+            foreach (var e in list.OfType<DrawLog>()) alive += e.Alive ? 0 : 1;
+            foreach (var e in list.Overlapping(new RectF(0, 0, 8, 8))) alive += e.Alive ? 0 : 1;
+            list.Draw(renderer);
+            drawn.Clear();
+        }
+        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before, "every frame reuses what it needs");
+    }
+
     [TestMethod]
     public void Destroyed_entities_are_removed_and_notified_once()
     {

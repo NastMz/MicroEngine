@@ -64,8 +64,25 @@ public sealed class GraphicsTests
             Assert.IsTrue(rects[a].Right <= atlas.Texture.Width && rects[a].Bottom <= atlas.Texture.Height);
             for (int b = a + 1; b < rects.Count; b++) Assert.IsFalse(rects[a].Intersects(rects[b]));
         }
-        Assert.AreEqual(2, atlas.Frames("walk").Length);
+        Assert.AreEqual(2, atlas.Frames("walk").Count);
+        // Collected once: games call it every frame.
+        atlas.Frames("walk");
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        var again = atlas.Frames("walk");
+        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        Assert.AreSame(again, atlas.Frames("walk"));
+        Assert.ThrowsExactly<KeyNotFoundException>(() => atlas.Frames("run"));
         Assert.ThrowsExactly<ArgumentException>(() => new SpriteAtlasBuilder().Add("a", new PixelImage(1, 1)).Add("a", new PixelImage(1, 1)));
+    }
+
+    [TestMethod]
+    public void Measuring_text_allocates_nothing()
+    {
+        var font = BitmapFont.CreateDefault(null);
+        Assert.AreEqual(new System.Numerics.Vector2(font.MeasureWidth("ab\ncdef"), 18), font.Measure("ab\ncdef"));
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < 100; i++) font.Measure("HP 12/20\nLv 5");
+        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before);
     }
 
     [TestMethod]
@@ -137,6 +154,46 @@ public sealed class GraphicsTests
         Assert.AreEqual(16, particles.Count, "Capacity bounds the pool.");
         for (int i = 0; i < 10; i++) particles.Update(0.02f);
         Assert.AreEqual(0, particles.Count);
+    }
+
+    private sealed class RectRecorder : IRenderer
+    {
+        public List<RectF> Rects { get; } = [];
+        public int Width => 320;
+        public int Height => 180;
+        public void Clear(Color color) { }
+        public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default) { }
+        public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint) { }
+        public void FillRect(RectF rect, Color color) => Rects.Add(rect);
+        public void FillCircle(Vector2 center, float radius, Color color) { }
+        public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color) { }
+        public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color) { }
+        public void PushCamera(Camera2D camera) { }
+        public void PopCamera() { }
+        public void SetBlendMode(BlendMode mode) { }
+        public void SetClip(RectF? screenRect) { }
+    }
+
+    [TestMethod]
+    public void Particles_are_drawn_between_their_last_two_updates()
+    {
+        // One particle moving right at 60 px/s, one update of 1/6 s: from x=100 to x=110.
+        var particles = new ParticleSystem(4);
+        var spec = new ParticleSpec { Life = (5, 5), Speed = (60, 60), Angle = (0, 0), Size = (1, 1), Drag = 1 };
+        particles.Emit(new Vector2(100, 50), spec);
+        // Squares are pixel-aligned (rounded), hence the 1 px tolerance.
+        float X(float? blend)
+        {
+            var r = new RectRecorder();
+            if (blend is { } b) particles.Draw(r, b); else particles.Draw(r);
+            return r.Rects[0].X;
+        }
+        Assert.AreEqual(100, X(0.5f), 1, "a new particle starts where it appears");
+        particles.Update(1f / 6);
+        Assert.AreEqual(110, X(null), 1, "by default, the last update");
+        Assert.AreEqual(110, X(1), 1);
+        Assert.AreEqual(105, X(0.5f), 1, "halfway between the last two updates");
+        Assert.AreEqual(100, X(0), 1);
     }
 
     [TestMethod]

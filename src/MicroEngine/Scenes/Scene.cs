@@ -175,7 +175,7 @@ public sealed class SceneManager
             // Scenes keep animating during the "in" half so the new scene is alive when revealed.
             if (!_swapped) return;
         }
-        int first = _stack.Count - 1;
+        int first = Math.Max(_stack.Count - 1, 0); // an empty stack updates nothing
         while (first > 0 && _stack[first].IsOverlay && !_stack[first].BlocksUpdateBelow) first--;
         for (int i = first; i < _stack.Count; i++) _stack[i].Tick(dt);
         ApplyPending();
@@ -186,7 +186,7 @@ public sealed class SceneManager
         int first = _stack.Count - 1;
         while (first > 0 && _stack[first].IsOverlay) first--;
         for (int i = Math.Max(first, 0); i < _stack.Count; i++) _stack[i].Draw(renderer);
-        _transition?.Draw(renderer);
+        _transition?.DrawAt(renderer, _game.FrameBlend);
     }
 
     internal void Clear()
@@ -212,9 +212,34 @@ public abstract class Transition(float duration)
     public float Progress => Math.Clamp(Elapsed / Duration, 0, 1);
     /// <summary>Whether the transition has played to the end.</summary>
     public bool Finished => Elapsed >= Duration;
-    /// <summary>0 = nothing covered, 1 = fully covered.</summary>
-    public float Cover => Progress < 0.5f ? Ease.InOutQuad(Progress * 2) : Ease.InOutQuad((1 - Progress) * 2);
-    internal void Advance(float dt) => Elapsed += dt;
+    /// <summary>
+    /// 0 = nothing covered, 1 = fully covered. While drawing, it follows the frame between the last two updates
+    /// (<see cref="Core.Game.FrameBlend"/>), so the effect moves evenly on displays of any rate.
+    /// </summary>
+    public float Cover
+    {
+        get
+        {
+            float progress = _blend >= 1 ? Progress : Math.Clamp(float.Lerp(_previous, Elapsed, _blend) / Duration, 0, 1);
+            return progress < 0.5f ? Ease.InOutQuad(progress * 2) : Ease.InOutQuad((1 - progress) * 2);
+        }
+    }
+
+    private float _previous, _blend = 1;
+
+    internal void Advance(float dt)
+    {
+        _previous = Elapsed;
+        Elapsed += dt;
+    }
+
+    /// <summary>Draws the effect <paramref name="blend"/> of the way from the previous update to the last.</summary>
+    internal void DrawAt(IRenderer renderer, float blend)
+    {
+        _blend = blend;
+        try { Draw(renderer); }
+        finally { _blend = 1; }
+    }
     /// <summary>Draws the effect over the scenes, using <see cref="Cover"/>.</summary>
     public abstract void Draw(IRenderer renderer);
 

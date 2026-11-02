@@ -22,6 +22,14 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
     private IReadOnlyList<BackdropLayer> _layers = [];
     private string[] _decos = [];
     private Biome _biome;
+    private readonly StageMotion _motion = new();
+    private readonly List<Actor> _actors = [];
+    // Sprite names looked up per tile every frame, built once instead of concatenated each time.
+    private static readonly string[] QuestionNames = Names("question", 5), LavaTopNames = Names("lava_top", 4), LavaBodyNames = Names("lava_body", 2);
+    private static readonly string[] BackWallNames = Names("backwall", Assets.BackWallVariants);
+    private static readonly (string Name, int Dx, int Dy)[] WallFrames = [("wallframe1", 0, -1), ("wallframe2", 1, 0), ("wallframe4", 0, 1), ("wallframe8", -1, 0)];
+
+    private static string[] Names(string prefix, int count) => [.. Enumerable.Range(0, count).Select(i => prefix + i)];
 
     public void Bind(Stage stage)
     {
@@ -42,29 +50,46 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         _runFrame += dt * (6 + speed * 0.075f);
     }
 
-    public void Draw(IRenderer r, Stage stage, float time)
+    /// <summary>Call just before every stage update, so frames drawn until the next one can place things between.</summary>
+    public void Remember(Stage stage) => _motion.Remember(stage);
+
+    /// <summary>Draws the stage <paramref name="blend"/> of the way from the previous update to the current one (1: the current state).</summary>
+    public void Draw(IRenderer r, Stage stage, float time, float blend = 1)
     {
+        _motion.Place(stage, blend);
+        try { DrawStage(r, stage, time, blend); }
+        finally { _motion.Restore(stage); }
+    }
+
+    private void DrawStage(IRenderer r, Stage stage, float time, float blend)
+    {
+        // One pass over the actors per frame; the layers and the light pass reuse it.
+        _actors.Clear();
+        foreach (var a in stage.Actors) _actors.Add(a);
         var cam = stage.Camera;
         DrawBackdrop(r, stage, time);
         r.PushCamera(cam);
         DrawTiles(r, stage, time, background: true);
         DrawDecorations(r, stage);
-        foreach (var p in stage.Platforms) if (cam.IsVisible(p.Bounds, 16)) p.Render(r, art, time);
+        var platforms = stage.Platforms;
+        for (int i = 0; i < platforms.Count; i++) if (cam.IsVisible(platforms[i].Bounds, 16)) platforms[i].Render(r, art, time);
         DrawActors(r, stage, time, layer: 0);
         DrawTiles(r, stage, time, background: false);
         DrawActors(r, stage, time, layer: 1);
         DrawActors(r, stage, time, layer: 2);
         DrawPlayer(r, stage, time);
         DrawActors(r, stage, time, layer: 3);
-        stage.Particles.Draw(r);
+        stage.Particles.Draw(r, blend);
         r.PopCamera();
 
         DrawLighting(r, stage, time);
 
         r.PushCamera(cam);
         stage.Glints.Draw(r);
-        foreach (var popup in stage.Popups)
+        var popups = stage.Popups;
+        for (int i = 0; i < popups.Count; i++)
         {
+            var popup = popups[i];
             var c = popup.Color.WithAlpha(popup.Age < 0.6f ? 1f : 1 - (popup.Age - 0.6f) / 0.3f);
             var size = font.Measure(popup.Text);
             font.DrawOutlined(r, popup.Text, new Vector2(MathF.Round(popup.Position.X - size.X / 2), MathF.Round(popup.Position.Y)), c, Pal.Ink.WithAlpha(c.A));
@@ -77,8 +102,9 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         r.Draw(art[_sky], Vector2.Zero);
         var cam = stage.Camera;
         float maxY = MathF.Max(0, stage.Level.PixelHeight - 180);
-        foreach (var layer in _layers)
+        for (int i = 0; i < _layers.Count; i++)
         {
+            var layer = _layers[i];
             var s = art[layer.Sprite];
             float scroll = cam.Position.X * layer.FactorX + time * layer.Drift;
             float x = -(scroll % s.Width);
@@ -111,8 +137,8 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
             Sprite? sprite = id switch
             {
                 Tile.Ground => art.Ground(_biome, Autotile.Mask4(tiles, x, y, t => t == Tile.Ground), (int)(MicroEngine.Graphics.Art.Hash(x, y, 5) * Assets.GroundVariants)),
-                Tile.CoinBlock or Tile.PowerBlock or Tile.LifeBlock => art["question" + questionFrame],
-                Tile.Lava => art[(tiles[x, y - 1] == Tile.Lava ? "lava_body" + lavaFrame % 2 : "lava_top" + lavaFrame)],
+                Tile.CoinBlock or Tile.PowerBlock or Tile.LifeBlock => art[QuestionNames[questionFrame]],
+                Tile.Lava => art[tiles[x, y - 1] == Tile.Lava ? LavaBodyNames[lavaFrame % 2] : LavaTopNames[lavaFrame]],
                 _ => art.TileSprite(_biome, id),
             };
             if (sprite is null) continue;
@@ -121,9 +147,9 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
                 // Mostly plain stone, with an occasional pale, cracked or mossy block; framed where it meets an opening.
                 float h = MicroEngine.Graphics.Art.Hash(x, y, 17);
                 var at = new Vector2(x * 16, y * 16);
-                r.Draw(art["backwall" + (h < 0.7f ? 0 : 1 + (int)((h - 0.7f) / 0.1f))], at);
-                foreach (var (side, dx, dy) in new[] { (1, 0, -1), (2, 1, 0), (4, 0, 1), (8, -1, 0) })
-                    if (OpenInterior(tiles, x + dx, y + dy)) r.Draw(art["wallframe" + side], at);
+                r.Draw(art[BackWallNames[h < 0.7f ? 0 : 1 + (int)((h - 0.7f) / 0.1f)]], at);
+                foreach (var (frame, dx, dy) in WallFrames)
+                    if (OpenInterior(tiles, x + dx, y + dy)) r.Draw(art[frame], at);
                 continue;
             }
             float bump = stage.BumpOffset(x, y);
@@ -143,8 +169,10 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
     {
         var view = stage.Camera.View.Inflate(16);
         var tiles = stage.Level.Tiles;
-        foreach (var (deco, x, y) in stage.Level.Decorations)
+        var decorations = stage.Level.Decorations;
+        for (int i = 0; i < decorations.Count; i++)
         {
+            var (deco, x, y) = decorations[i];
             if (x * 16 < view.Left || x * 16 > view.Right || y * 16 < view.Top - 16 || y * 16 > view.Bottom) continue;
             // Decorations vanish if the ground under them was removed.
             if (tiles[x, y + 1] != Tile.Ground || tiles[x, y] != Tile.Empty) continue;
@@ -163,7 +191,7 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
     private void DrawActors(IRenderer r, Stage stage, float time, int layer)
     {
         var cam = stage.Camera;
-        foreach (var a in stage.Actors)
+        foreach (var a in _actors)
         {
             if (LayerOf(a) != layer) continue;
             if (a is not (FireBar or GoalPole or Grumbold) && !cam.IsVisible(a.Bounds, 24)) continue;
@@ -179,9 +207,9 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         var frames = art.Pip(p.Form, clip);
         int index = clip switch
         {
-            "run" => (int)_runFrame % frames.Length,
-            "idle" => (int)(time * 1.6f) % frames.Length,
-            "victory" => (int)(time * 4) % frames.Length,
+            "run" => (int)_runFrame % frames.Count,
+            "idle" => (int)(time * 1.6f) % frames.Count,
+            "victory" => (int)(time * 4) % frames.Count,
             _ => 0,
         };
         var sprite = frames[index];
@@ -231,7 +259,7 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         // Pip carries a faint glow of his own so he never gets lost in the dark.
         var color = stage.Player.Form == PipForm.Ember ? Pal.Flame : _biome == Biome.Caves ? Pal.Teal : Pal.Amber;
         lights.Add(stage.Player.Center, GlowRadius, 0, color.WithAlpha(0.35f));
-        foreach (var a in stage.Actors)
+        foreach (var a in _actors)
         {
             if (a is LightProp or Checkpoint { Lit: true } or SeedShot or FireBar or Sunstone && stage.Camera.IsVisible(a.Bounds, 40))
             {

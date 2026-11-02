@@ -12,7 +12,8 @@
 #              check included); after it passes on main, sdk-release.yml starts if main documents a new SDK version
 #   project graph  .NET tests and native captures are narrowed to the test projects and games that depend on the
 #              changed files (.github/scripts/projects.mjs); a file outside every project runs them all
-# macOS: headless tests, informative only, when the repository variable PUBLIC_RUNNERS is true (free public runners).
+# macOS: headless tests, informative only, when the repository variable PUBLIC_RUNNERS is true (free public runners)
+#          and MACOS_RUNNERS is not "off" (the switch that skips every macOS runner while GitHub has none to give).
 # Never here: the Android emulator, the iOS simulator (validate.yml, platforms.yml), releases (release.yml).
 name: ci
 
@@ -108,6 +109,7 @@ jobs:
           SDK: ${{ steps.changes.outputs.sdk }}
           MACOS: ${{ steps.changes.outputs.macos }}
           PUBLIC_RUNNERS: ${{ vars.PUBLIC_RUNNERS }}
+          MACOS_RUNNERS: ${{ vars.MACOS_RUNNERS }}
           TESTS: ${{ steps.changes.outputs.tests }}
           GAMES: ${{ steps.changes.outputs.games }}
           BROWSER: ${{ steps.changes.outputs.browser }}
@@ -135,7 +137,7 @@ jobs:
             echo "native=$(run "$NATIVE" native)"
             echo "sdk=$(run "$SDK" sdk)"
             # Informative and free only on a public repository's standard runners; never evidence, never a gate.
-            echo "macos=$([ "$MACOS" = true ] && [ "$PUBLIC_RUNNERS" = true ] && echo true || echo false)"
+            echo "macos=$([ "$MACOS" = true ] && [ "$PUBLIC_RUNNERS" = true ] && [ "$MACOS_RUNNERS" != off ] && echo true || echo false)"
             echo "site=$(run "$site" site)"
             echo "suites=$suites"
             echo "deploy=$deploy"

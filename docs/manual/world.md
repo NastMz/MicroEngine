@@ -128,7 +128,8 @@ A top-down game uses the same call without gravity: see the gardener and the sli
 rectangles: `a.Intersects(b)` is true when they overlap (sharing an edge does not count). `RectF.FromCenter`,
 `Offset`, `Inflate` and `Intersection` build and adjust the rectangles.
 
-With an `EntityList`, `list.Overlapping(rect)` returns the living entities whose bounds overlap a rectangle. There is no
+With an `EntityList`, `list.Overlapping(rect)` returns the living entities whose bounds overlap a rectangle. Next SDK version (not published yet: arrives with the next SDK version):
+walking an `EntityList`, `OfType<T>()` or `Overlapping` with `foreach` allocates nothing. There is no
 spatial index: checking every pair is fast for the few hundred objects a scene of a pixel-art game holds.
 A game with thousands of objects would bucket them by tile itself.
 

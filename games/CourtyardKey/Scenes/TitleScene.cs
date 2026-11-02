@@ -14,6 +14,8 @@ namespace CourtyardKey.Scenes;
 /// <summary>Shared dusk backdrop: gradient sky, drifting clouds, hills and the ruined courtyard.</summary>
 public static class Backdrop
 {
+    private static readonly string[] Clouds = ["cloud0", "cloud1", "cloud2"];
+
     public static void Draw(IRenderer r, Sprites art, float time, float sunset = 0)
     {
         var top = Color.Lerp(Color.Hex("2a2050"), Color.Hex("1a1a3a"), sunset);
@@ -26,7 +28,7 @@ public static class Backdrop
         for (int i = 0; i < 3; i++)
         {
             float x = (i * 130 + time * (5 + i * 3)) % 400 - 60;
-            r.Draw(art[$"cloud{i}"], new Vector2(MathF.Round(x), 18 + i * 17));
+            r.Draw(art[Clouds[i]], new Vector2(MathF.Round(x), 18 + i * 17));
         }
         r.Draw(art["hills_far"], new Vector2(0, 76));
         r.Draw(art["ruins"], new Vector2(80, 84));
@@ -43,6 +45,8 @@ public sealed class TitleScene : Scene
     private readonly ParticleSystem _motes = new(200, 21) { Additive = true };
     private bool _showControls;
     private float _spawn;
+    private (string Key, string What)[]? _controlRows;
+    private int _controlRowsVersion;
 
     public TitleScene(CourtyardKeyGame game)
     {
@@ -121,16 +125,27 @@ public sealed class TitleScene : Scene
     {
         // The controls of the device being played: keys, a gamepad's buttons, or the on-screen controls.
         var prompts = Game.Prompts;
-        bool touch = prompts.Device == InputDevice.Touch;
-        (string Key, string What)[] rows =
-        [
-            (prompts.Directions(separator: " / "), touch ? "Move; push less, go slow" : "Move"),
-            (prompts.TextAll("confirm"), "Sword, talk, read, open"),
-            (prompts.TextAll("action"), "Throw the boomerang"),
-            (prompts.TextAll("pause"), "Pause, map and inventory"),
-        ];
+        // Built again only when the prompts may have changed (another device or pad family).
+        if (_controlRows is null || prompts.Version != _controlRowsVersion)
+        {
+            bool touch = prompts.Device == InputDevice.Touch;
+            _controlRows =
+            [
+                (prompts.Directions(separator: " / "), touch ? "Move; push less, go slow" : "Move"),
+                (prompts.TextAll("confirm"), "Sword, talk, read, open"),
+                (prompts.TextAll("action"), "Throw the boomerang"),
+                (prompts.TextAll("pause"), "Pause, map and inventory"),
+            ];
+            _controlRowsVersion = prompts.Version;
+        }
+        var rows = _controlRows;
         // Columns sized from the text, so long key names never run into their descriptions or out of the panel.
-        int keys = rows.Max(row => UiStyle.KeyCapWidth(Font, row.Key)), texts = rows.Max(row => Font.MeasureWidth(row.What));
+        int keys = 0, texts = 0;
+        foreach (var row in rows)
+        {
+            keys = Math.Max(keys, UiStyle.KeyCapWidth(Font, row.Key));
+            texts = Math.Max(texts, Font.MeasureWidth(row.What));
+        }
         float width = MathF.Min(r.Width - 8, 10 + keys + 8 + texts + 10);
         var panel = new RectF(MathF.Round((r.Width - width) / 2), 112, width, 64);
         UiStyle.Frame(r, panel);
@@ -168,6 +183,10 @@ public sealed class EndingScene : Scene
         "",
         "Thank you for playing!",
     ];
+
+    private string? _stats;
+    private (double, int, int) _statsOf;
+    private CachedPrompt? _theEnd;
 
     public EndingScene(CourtyardKeyGame game, Progress progress)
     {
@@ -217,9 +236,16 @@ public sealed class EndingScene : Scene
         if (t > 9)
         {
             float a = MathF.Min(1, (t - 9) / 1.5f);
-            var time = TimeSpan.FromSeconds(_progress.PlaySeconds);
-            Font.DrawCentered(r, $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}  ·  Gems {_progress.Gems}  ·  Falls {_progress.Deaths}", new Vector2(160, 150), Pal.Gold[2].WithAlpha(a), 1, Pal.Ink);
-            if (t > 14 && (int)(Age * 2) % 2 == 0) Font.DrawCentered(r, Game.Prompts.Format("THE END  ·  press {confirm}"), new Vector2(160, 166), Pal.White, 1, Pal.Ink);
+            var shown = (_progress.PlaySeconds, _progress.Gems, _progress.Deaths);
+            if (_stats is null || shown != _statsOf)
+            {
+                var time = TimeSpan.FromSeconds(_progress.PlaySeconds);
+                _stats = $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}  ·  Gems {_progress.Gems}  ·  Falls {_progress.Deaths}";
+                _statsOf = shown;
+            }
+            Font.DrawCentered(r, _stats, new Vector2(160, 150), Pal.Gold[2].WithAlpha(a), 1, Pal.Ink);
+            _theEnd ??= new CachedPrompt(Game.Prompts, "THE END  ·  press {confirm}");
+            if (t > 14 && (int)(Age * 2) % 2 == 0) Font.DrawCentered(r, _theEnd.Text, new Vector2(160, 166), Pal.White, 1, Pal.Ink);
         }
     }
 }

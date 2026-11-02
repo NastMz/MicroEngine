@@ -278,6 +278,11 @@ What changes when the repository is public (decision: ADR 0014; publication step
   or backend changes: informative, `continue-on-error`, never evidence. Android and iOS stay in `platforms.yml`.
   The same variable switches the demo plan from one canary game to every game whose key changed (`--policy all`):
   an engine change builds and plays all four packages, still once per key, and the next release copies them all.
+- **macOS runners switched off.** When GitHub has no macOS runner to give (jobs queued until they are cancelled, as
+  during its macOS fleet migration on 2026-11-02), set the repository variable `MACOS_RUNNERS=off`: daily CI skips
+  the informative macOS tests, the SDK check runs its external project on Windows and Linux only, and the macOS and
+  iOS jobs of `platforms.yml` are skipped. Delete the variable to turn them back on; nothing else changes. Native
+  macOS and iOS packages (releases) still need a macOS runner and are not skipped.
 - **Fork pull requests are untrusted code.** They run under `pull_request` with a read-only token and no secrets;
   no workflow uses `pull_request_target`, and no self-hosted runner exists. Their runs are never accepted as evidence
   and record none; their demo packages stay in the run (workflow artifacts read through `DEMOS_OVERLAY`), never in

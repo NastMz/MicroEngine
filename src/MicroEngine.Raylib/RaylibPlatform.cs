@@ -23,11 +23,16 @@ public sealed record DesktopOptions(int? Scale = null, bool Hidden = false, bool
 /// raylib's frame limiter is left off, because both would block the only thread; the page also owns
 /// fullscreen, and the canvas has no minimum size.
 /// </summary>
-public sealed class RaylibPlatform : IPlatform
+public sealed class RaylibPlatform : IPlatform, IDisplayControl
 {
     private readonly GameSettings _settings;
     private readonly bool _fixedStep;
-    private readonly double _displayRate;
+    // A visible real-time desktop window: the only kind whose VSync, window and monitor the platform changes. Browsers
+    // and Android leave those to the page and the system.
+    private readonly bool _desktop;
+    private double _displayRate;
+    private bool _vsync;
+    private int _monitor = -1;
     private readonly int _captureScale;
     private readonly Raylib_cs.RenderTexture2D _target;
     private readonly RaylibRenderer _renderer;
@@ -57,10 +62,12 @@ public sealed class RaylibPlatform : IPlatform
         ArgumentNullException.ThrowIfNull(options);
         _fixedStep = options.FixedStep;
         _captureScale = Math.Max(1, options.CaptureScale);
+        var graphics = settings.Graphics;
+        _desktop = !options.Hidden && !_fixedStep && !OperatingSystem.IsBrowser() && !OperatingSystem.IsAndroid();
         var flags = Raylib_cs.ConfigFlags.ResizableWindow;
         // A hidden window is never looked at: waiting for the display there only slows scripted checks down.
         if (options.Hidden) flags |= Raylib_cs.ConfigFlags.HiddenWindow;
-        else flags |= Raylib_cs.ConfigFlags.VSyncHint;
+        else if (graphics.VSync) flags |= Raylib_cs.ConfigFlags.VSyncHint;
         Rl.SetTraceLogLevel(Raylib_cs.TraceLogLevel.Warning);
         Rl.SetConfigFlags(flags);
         int scale = options.Scale ?? settings.Scale;
@@ -76,9 +83,10 @@ public sealed class RaylibPlatform : IPlatform
         // running .NET code (the experimental host, platforms/android); the display's vsync paces frames there instead.
         if (!options.Hidden && !OperatingSystem.IsBrowser() && !OperatingSystem.IsAndroid())
         {
-            int refresh = Rl.GetMonitorRefreshRate(Rl.GetCurrentMonitor());
-            Rl.SetTargetFPS(Math.Max(60, refresh));
-            if (!_fixedStep && refresh >= 60) _displayRate = refresh;
+            if (_desktop && graphics.Display is { } display) MoveToDisplay(display);
+            if (_desktop && graphics.WindowMode != WindowMode.Windowed) SetWindowMode(graphics.WindowMode);
+            _vsync = graphics.VSync;
+            Pace();
         }
         _target = Rl.LoadRenderTexture(settings.VirtualWidth, settings.VirtualHeight);
         Rl.SetTextureFilter(_target.Texture, Raylib_cs.TextureFilter.Point);
@@ -98,8 +106,20 @@ public sealed class RaylibPlatform : IPlatform
     public double Now => _fixedStep ? _frames / (double)_settings.UpdateRate : Rl.GetTime();
     /// <inheritdoc/>
     public bool RealTime => !_fixedStep;
-    /// <summary>The monitor's refresh rate when frames are paced to it (a visible real-time desktop window); 0 otherwise.</summary>
+    /// <summary>The monitor's refresh rate when frames are paced to it (a visible real-time desktop window with VSync); 0 otherwise.</summary>
     public double DisplayRate => _displayRate;
+
+    /// <summary>
+    /// With VSync, raylib's own limiter paces frames to the monitor's rate (the steadiest wake-ups measured); without
+    /// it, frames run free and the engine's frame limit, if any, paces them.
+    /// </summary>
+    private void Pace()
+    {
+        _monitor = Rl.GetCurrentMonitor();
+        int refresh = Rl.GetMonitorRefreshRate(_monitor);
+        Rl.SetTargetFPS(_vsync ? Math.Max(60, refresh) : 0);
+        _displayRate = _vsync && !_fixedStep && refresh >= 60 ? refresh : 0;
+    }
     /// <inheritdoc/>
     public ITouchScreen Touch => _touch;
     /// <summary>In a browser, a hidden page (<see cref="BrowserLifecycle.Hidden"/>); a desktop window never suspends.</summary>
@@ -113,6 +133,8 @@ public sealed class RaylibPlatform : IPlatform
         _input.Frame = FrameRect();
         // In a browser, fullscreen needs a user gesture, so the page handles it (F11 belongs to the browser).
         if (OperatingSystem.IsBrowser()) return;
+        // A window moved to another monitor is paced to that monitor's rate (checked twice a second: the query walks the monitors).
+        if (_desktop && _frames % 30 == 0 && Rl.GetCurrentMonitor() != _monitor) Pace();
         if (Rl.IsKeyPressed(Raylib_cs.KeyboardKey.F11) || (Rl.IsKeyDown(Raylib_cs.KeyboardKey.LeftAlt) && Rl.IsKeyPressed(Raylib_cs.KeyboardKey.Enter)))
             ToggleFullscreen();
     }
@@ -156,8 +178,77 @@ public sealed class RaylibPlatform : IPlatform
         Rl.UnloadImage(image);
     }
 
-    /// <summary>Switches between the window and a borderless full-screen window.</summary>
-    public void ToggleFullscreen() => Rl.ToggleBorderlessWindowed();
+    /// <summary>Switches between the window and a borderless full-screen window (exclusive full screen goes back to the window).</summary>
+    public void ToggleFullscreen() => SetWindowMode(WindowMode == WindowMode.Windowed ? WindowMode.Fullscreen : WindowMode.Windowed);
+
+    /// <summary>Waits with raylib's timer (a sleep, then a short spin); a browser page cannot be blocked.</summary>
+    public bool Wait(double seconds)
+    {
+        if (OperatingSystem.IsBrowser()) return false;
+        if (seconds > 0) Rl.WaitTime(seconds);
+        return true;
+    }
+
+    /// <summary>The monitors GLFW reports (none in a browser or on Android); GLFW lists the primary one first.</summary>
+    public IReadOnlyList<DisplayInfo> Displays
+    {
+        get
+        {
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsAndroid()) return [];
+            var list = new List<DisplayInfo>();
+            int current = Rl.GetCurrentMonitor();
+            float scale = Rl.GetWindowScaleDPI().X;
+            for (int i = 0, n = Rl.GetMonitorCount(); i < n; i++)
+                list.Add(new DisplayInfo(i, Rl.GetMonitorName_(i), Rl.GetMonitorWidth(i), Rl.GetMonitorHeight(i),
+                    Rl.GetMonitorRefreshRate(i), i == current ? scale : 1, i == 0));
+            return list;
+        }
+    }
+
+    /// <inheritdoc/>
+    public int CurrentDisplay => OperatingSystem.IsBrowser() || OperatingSystem.IsAndroid() ? -1 : Rl.GetCurrentMonitor();
+
+    /// <inheritdoc/>
+    public bool VSync => _vsync;
+
+    /// <summary>Turns VSync on or off on a visible desktop window; browsers and Android follow the display.</summary>
+    public bool SetVSync(bool on)
+    {
+        if (!_desktop) return on == _vsync;
+        if (on) Rl.SetWindowState(Raylib_cs.ConfigFlags.VSyncHint);
+        else Rl.ClearWindowState(Raylib_cs.ConfigFlags.VSyncHint);
+        _vsync = on;
+        Pace();
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public WindowMode WindowMode => Rl.IsWindowFullscreen() ? WindowMode.ExclusiveFullscreen
+        : Rl.IsWindowState(Raylib_cs.ConfigFlags.BorderlessWindowMode) ? WindowMode.Fullscreen : WindowMode.Windowed;
+
+    /// <summary>Changes the window's mode on desktop (raylib's full screen is exclusive, its borderless mode is <see cref="WindowMode.Fullscreen"/>).</summary>
+    public bool SetWindowMode(WindowMode mode)
+    {
+        if (OperatingSystem.IsBrowser() || OperatingSystem.IsAndroid()) return false;
+        var current = WindowMode;
+        if (current == mode) return true;
+        // raylib toggles: leave the current full-screen mode first.
+        if (current == WindowMode.ExclusiveFullscreen) Rl.ToggleFullscreen();
+        if (current == WindowMode.Fullscreen) Rl.ToggleBorderlessWindowed();
+        if (mode == WindowMode.ExclusiveFullscreen) Rl.ToggleFullscreen();
+        if (mode == WindowMode.Fullscreen) Rl.ToggleBorderlessWindowed();
+        if (_desktop) Pace();
+        return WindowMode == mode;
+    }
+
+    /// <summary>Moves the window to monitor <paramref name="index"/> (GLFW's order) on desktop.</summary>
+    public bool MoveToDisplay(int index)
+    {
+        if (OperatingSystem.IsBrowser() || OperatingSystem.IsAndroid() || index < 0 || index >= Rl.GetMonitorCount()) return false;
+        Rl.SetWindowMonitor(index);
+        if (_desktop) Pace();
+        return true;
+    }
 
     private static unsafe void SetWindowIcon(PixelImage icon)
     {

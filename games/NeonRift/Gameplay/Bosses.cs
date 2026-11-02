@@ -113,7 +113,7 @@ public sealed class Gunship : Boss
 
     internal override void Render(IRenderer r, Assets art)
     {
-        var at = Vector2.Round(Position);
+        var at = Vector2.Round(DrawPosition);
         r.SetBlendMode(BlendMode.Additive);
         r.DrawPivoted(art.Frames("gunship_thrust")[(int)(Age * 14) % 3], at + new Vector2(84, -6), 0, flipX: true);
         r.SetBlendMode(BlendMode.Alpha);
@@ -185,7 +185,7 @@ public sealed class Interceptor : Boss
 
     internal override void Render(IRenderer r, Assets art)
     {
-        var at = Vector2.Round(Position);
+        var at = Vector2.Round(DrawPosition);
         bool flip = _facing > 0;
         r.SetBlendMode(BlendMode.Additive);
         r.DrawPivoted(art.Frames("interceptor_thrust")[(int)(Age * 14) % 3], at + new Vector2(flip ? -78 : 78, -2), 0, flipX: !flip);
@@ -200,6 +200,7 @@ public sealed class Interceptor : Boss
 /// </summary>
 public sealed class Dreadnought : Boss
 {
+    private static readonly Vector2[] TurretOffsets = [new(-150, -28), new(-128, 22), new(-70, 76)];
     private readonly List<DreadTurret> _turrets = [];
     private float _timer = 1.5f;
     private int _pattern;
@@ -212,14 +213,21 @@ public sealed class Dreadnought : Boss
     }
 
     public override string Title => "LEVIATHAN";
-    public bool CoreOpen => _turrets.All(t => !t.Alive);
+    public bool CoreOpen
+    {
+        get
+        {
+            foreach (var t in _turrets) if (t.Alive) return false;
+            return true;
+        }
+    }
     public IReadOnlyList<DreadTurret> Turrets => _turrets;
 
     public override void Update(float dt)
     {
         base.Update(dt);
         if (_turrets.Count == 0)
-            foreach (var offset in new[] { new Vector2(-150, -28), new Vector2(-128, 22), new Vector2(-70, 76) })
+            foreach (var offset in TurretOffsets)
                 _turrets.Add(Stage.Spawn(new DreadTurret(this, offset)));
         Armored = !CoreOpen;
         if (Entering)
@@ -270,7 +278,7 @@ public sealed class Dreadnought : Boss
 
     internal override void Render(IRenderer r, Assets art)
     {
-        var at = Vector2.Round(Position);
+        var at = Vector2.Round(DrawPosition);
         r.SetBlendMode(BlendMode.Additive);
         r.DrawPivoted(art.Frames("dread_thrust_back")[(int)(Age * 14) % 3], at + new Vector2(170, -30), 0, flipX: true);
         r.SetBlendMode(BlendMode.Alpha);
@@ -326,7 +334,7 @@ public sealed class DreadTurret : Enemy
 
     internal override void Render(IRenderer r, Assets art)
     {
-        var at = Vector2.Round(Position);
+        var at = Vector2.Round(DrawPosition);
         r.FillCircle(at, 12, Color.Hex("1b1630"));
         var frames = art.Frames("turret");
         // Hung upside down: the half-turn already mirrors the left-facing frame, so flip when the player is left.

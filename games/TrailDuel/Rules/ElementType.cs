@@ -22,7 +22,10 @@ public static class TypeChart
 
     public static float Effectiveness(ElementType attack, ElementType defend) => Chart[(int)attack, (int)defend];
 
-    public static string Name(ElementType type) => type.ToString().ToUpperInvariant();
+    public static string Name(ElementType type) => (uint)type < (uint)Names.Length ? Names[(int)type] : type.ToString().ToUpperInvariant();
+
+    // Built once: type badges show the name every frame.
+    private static readonly string[] Names = Enum.GetValues<ElementType>().Select(t => t.ToString().ToUpperInvariant()).ToArray();
 
     /// <summary>The battle message for an effectiveness multiplier, or null for neutral hits.</summary>
     public static string? Message(float multiplier) => multiplier switch
