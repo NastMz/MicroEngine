@@ -245,7 +245,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics
             if (((delegate* unmanaged[Stdcall]<nint, nint*, int>)(*(nint**)dxgi)[7])(dxgi, &adapter) != 0) return null;
             var desc = stackalloc byte[512];
             if (((delegate* unmanaged[Stdcall]<nint, byte*, int>)(*(nint**)adapter)[8])(adapter, desc) != 0) return null;
-            return new string((char*)desc, 0, 128).TrimEnd(' ');
+            return new string((char*)desc, 0, 128).TrimEnd('\0');
         }
         finally
         {
@@ -479,6 +479,10 @@ internal sealed unsafe class SdlGraphicsDevice(SDL_Renderer* renderer) : IGraphi
 internal sealed unsafe class SdlTexture(SDL_Texture* native, int width, int height) : Texture(width, height)
 {
     public SDL_Texture* Native { get; } = native;
+    /// <summary>The frame (<see cref="SdlRenderer"/>'s count) in which <see cref="Tint"/> and <see cref="Blend"/> were last applied.</summary>
+    public long StateFrame { get; set; } = -1;
+    public Color Tint { get; set; }
+    public SDL_BlendMode Blend { get; set; }
     protected override void Release() => SDL_DestroyTexture(Native);
 }
 
@@ -486,7 +490,15 @@ internal sealed unsafe class SdlTexture(SDL_Texture* native, int width, int heig
 internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int height) : IRenderer
 {
     private const int CircleSegments = 36;
+    /// <summary>The circle's rim as unit vectors, computed once.</summary>
+    private static readonly Vector2[] Rim = [.. Enumerable.Range(0, CircleSegments + 1).Select(i => new Vector2(MathF.Cos(i * MathF.Tau / CircleSegments), MathF.Sin(i * MathF.Tau / CircleSegments)))];
     private readonly Stack<Vector2> _offsets = new();
+    // State already set on the SDL renderer in this frame, so unchanged state is not set again for every draw. Anything
+    // else that draws with the renderer (the letterbox, the touch overlay) does so between frames, so each frame starts
+    // without assumptions.
+    private long _frame;
+    private SDL_BlendMode? _drawBlend;
+    private Color? _drawColor;
     private readonly SDL_Vertex[] _vertices = new SDL_Vertex[CircleSegments * 3];
     private Vector2 _offset;
     private SDL_BlendMode _blend = SDL_BlendMode.SDL_BLENDMODE_BLEND;
@@ -496,6 +508,9 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
 
     public void Begin()
     {
+        _frame++;
+        _drawBlend = null;
+        _drawColor = null;
         _offsets.Clear();
         _offset = Vector2.Zero;
         _blend = SDL_BlendMode.SDL_BLENDMODE_BLEND;
@@ -512,25 +527,56 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
 
     public void Clear(Color color)
     {
-        SDL_SetRenderDrawColor(sdl, color.R, color.G, color.B, color.A);
+        DrawColor(color);
         SDL_RenderClear(sdl);
     }
 
-    private void Tint(SDL_Texture* texture, Color tint)
+    private void DrawColor(Color color)
     {
-        SDL_SetTextureColorMod(texture, tint.R, tint.G, tint.B);
-        SDL_SetTextureAlphaMod(texture, tint.A);
-        SDL_SetTextureBlendMode(texture, _blend);
+        if (_drawColor == color) return;
+        _drawColor = color;
+        SDL_SetRenderDrawColor(sdl, color.R, color.G, color.B, color.A);
+    }
+
+    private void DrawBlend()
+    {
+        if (_drawBlend == _blend) return;
+        _drawBlend = _blend;
+        SDL_SetRenderDrawBlendMode(sdl, _blend);
+    }
+
+    private SDL_Texture* Tint(SdlTexture texture, Color tint)
+    {
+        var native = texture.Native;
+        bool fresh = texture.StateFrame != _frame;
+        if (fresh || texture.Tint != tint)
+        {
+            SDL_SetTextureColorMod(native, tint.R, tint.G, tint.B);
+            SDL_SetTextureAlphaMod(native, tint.A);
+            texture.Tint = tint;
+        }
+        if (fresh || texture.Blend != _blend)
+        {
+            SDL_SetTextureBlendMode(native, _blend);
+            texture.Blend = _blend;
+        }
+        texture.StateFrame = _frame;
+        return native;
     }
 
     public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default)
     {
-        var native = ((SdlTexture)texture).Native;
-        Tint(native, tint);
+        var native = Tint((SdlTexture)texture, tint);
         var scale = options.Scale ?? Vector2.One;
         var p = position + _offset;
         var src = new SDL_FRect { x = source.X, y = source.Y, w = source.Width, h = source.Height };
         var dst = new SDL_FRect { x = p.X, y = p.Y, w = source.Width * scale.X, h = source.Height * scale.Y };
+        if (options.Rotation == 0 && !options.FlipX && !options.FlipY)
+        {
+            // The origin only matters when rotating; without rotation or flips the plain copy draws the same pixels.
+            SDL_RenderTexture(sdl, native, &src, &dst);
+            return;
+        }
         var center = new SDL_FPoint { x = options.Origin.X * scale.X, y = options.Origin.Y * scale.Y };
         var flip = (options.FlipX ? SDL_FlipMode.SDL_FLIP_HORIZONTAL : 0) | (options.FlipY ? SDL_FlipMode.SDL_FLIP_VERTICAL : 0);
         SDL_RenderTextureRotated(sdl, native, &src, &dst, options.Rotation * 180.0 / Math.PI, &center, flip);
@@ -538,8 +584,7 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
 
     public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint)
     {
-        var native = ((SdlTexture)texture).Native;
-        Tint(native, tint);
+        var native = Tint((SdlTexture)texture, tint);
         var src = new SDL_FRect { x = source.X, y = source.Y, w = source.Width, h = source.Height };
         var dst = new SDL_FRect { x = destination.X + _offset.X, y = destination.Y + _offset.Y, w = destination.Width, h = destination.Height };
         SDL_RenderTexture(sdl, native, &src, &dst);
@@ -548,15 +593,15 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
     public void FillRect(RectF rect, Color color)
     {
         if (color.A == 0) return;
-        SDL_SetRenderDrawBlendMode(sdl, _blend);
-        SDL_SetRenderDrawColor(sdl, color.R, color.G, color.B, color.A);
+        DrawBlend();
+        DrawColor(color);
         var r = new SDL_FRect { x = rect.X + _offset.X, y = rect.Y + _offset.Y, w = rect.Width, h = rect.Height };
         SDL_RenderFillRect(sdl, &r);
     }
 
     public void FillCircle(Vector2 center, float radius, Color color)
     {
-        SDL_SetRenderDrawBlendMode(sdl, _blend);
+        DrawBlend();
         FillCircle(sdl, center + _offset, radius, F(color), _vertices);
     }
 
@@ -565,10 +610,9 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
         var v = buffer ?? new SDL_Vertex[CircleSegments * 3];
         for (int i = 0; i < CircleSegments; i++)
         {
-            float a0 = i * MathF.Tau / CircleSegments, a1 = (i + 1) * MathF.Tau / CircleSegments;
             v[i * 3] = Vertex(center, color);
-            v[i * 3 + 1] = Vertex(center + new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * radius, color);
-            v[i * 3 + 2] = Vertex(center + new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * radius, color);
+            v[i * 3 + 1] = Vertex(center + Rim[i] * radius, color);
+            v[i * 3 + 2] = Vertex(center + Rim[i + 1] * radius, color);
         }
         fixed (SDL_Vertex* p = v) SDL_RenderGeometry(sdl, null, p, CircleSegments * 3, null, 0);
     }
@@ -577,7 +621,7 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
 
     public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
     {
-        SDL_SetRenderDrawBlendMode(sdl, _blend);
+        DrawBlend();
         var f = F(color);
         var v = stackalloc SDL_Vertex[3] { Vertex(a + _offset, f), Vertex(b + _offset, f), Vertex(c + _offset, f) };
         SDL_RenderGeometry(sdl, null, v, 3, null, 0);
@@ -590,7 +634,7 @@ internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, int width, int heigh
         var n = Vector2.Normalize(new Vector2(-d.Y, d.X)) * (thickness / 2);
         var f = F(color);
         Vector2 a = from + _offset + n, b = from + _offset - n, c = to + _offset - n, e = to + _offset + n;
-        SDL_SetRenderDrawBlendMode(sdl, _blend);
+        DrawBlend();
         var v = stackalloc SDL_Vertex[6] { Vertex(a, f), Vertex(b, f), Vertex(c, f), Vertex(a, f), Vertex(c, f), Vertex(e, f) };
         SDL_RenderGeometry(sdl, null, v, 6, null, 0);
     }
