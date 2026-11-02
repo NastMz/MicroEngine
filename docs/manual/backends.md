@@ -178,7 +178,8 @@ use the GPU the system assigns to the application (on Windows: Settings, Display
 `--profile` report the GPU in use, and `--profile` the display the window is on. On Windows a window can be shown at
 another display's rate than its own (the desktop composes windows on slower displays, and windows moved between
 displays, at the fastest display's rate); the loop counts frame time in refresh periods only while frames really
-arrive at the display's rate, and as measured otherwise. Full screen always runs at its display's rate. On Windows, SDL reads gamepads through Microsoft's GameInput
+arrive at the display's rate, and in the periods they do arrive at otherwise, so motion stays even on every display.
+Full screen always runs at its display's rate, and is the way to show a game at a secondary display's own rate. On Windows, SDL reads gamepads through Microsoft's GameInput
 (its default since SDL 3.4), whose start can take about a second on machines where the GameInput service is not
 running; a game with a start screen starts gamepad support once that screen is shown, so the window appears first.
 Pads already connected are reported as usual.

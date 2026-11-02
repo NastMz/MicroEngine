@@ -26,7 +26,7 @@ Not published yet: merged on `main` after 0.4.0-alpha.2, in the next SDK version
 - [Frame pacing](../manual/lifecycle.md#fixed-step-and-frame-order): with VSync, frame time is counted in refresh
   periods (`IPlatform.DisplayRate`, `RunOptions.PaceToDisplay`, `--pacing`), so irregular wake-ups no longer give
   frames with no update followed by frames with two; `Game.FrameBlend` for drawing between updates on 75, 100 or
-  144 Hz displays.
+  144 Hz displays; scene transitions and `ParticleSystem.Draw(renderer, blend)` draw between updates too.
 - [Measuring a game](../manual/lifecycle.md#measuring-a-game): `--profile FILE` (`FrameProfiler`, `FrameSummary`,
   `IPlatformDiagnostics`), per-frame times, allocations and start phases as JSON or CSV.
 - [Audio for tests](../manual/audio.md#devices-and-silence): `--audio auto|device|silent` (`AudioOutput`),
@@ -46,8 +46,9 @@ wider than a line; hidden and scripted runs open no sound device; see the [migra
 
 **Faster**: the SDL window appears about a second sooner on some Windows machines (gamepads start behind the start
 screen); the SDL renderer skips unchanged state; input sampling, touch controls, `EntityList` loops and drawing,
-`SpriteAtlas.Frames` and `BitmapFont.Measure` allocate nothing per frame; hidden raylib windows no longer wait for the
-display.
+`SpriteAtlas.Frames` and `BitmapFont.Measure` allocate nothing per frame; SDL's audio streams music and plays sounds
+without per-frame garbage; raylib streams rendered songs from their samples (browsers no longer freeze for a song);
+hidden raylib windows no longer wait for the display.
 
 ## 0.4.0-alpha.2
 

@@ -73,17 +73,24 @@ Removes every particle.
 public void Clear()
 ```
 
-### <a id="MicroEngine_Graphics_ParticleSystem_Draw_MicroEngine_Graphics_IRenderer_"></a> Draw\(IRenderer\)
+### <a id="MicroEngine_Graphics_ParticleSystem_Draw_MicroEngine_Graphics_IRenderer_System_Single_"></a> Draw\(IRenderer, float\)
 
 Draws every live particle. With [Additive](MicroEngine.Graphics.ParticleSystem.md#MicroEngine_Graphics_ParticleSystem_Additive), the blend mode is set to additive and back to [Alpha](MicroEngine.Graphics.BlendMode.md) afterwards.
 
 ```csharp
-public void Draw(IRenderer renderer)
+public void Draw(IRenderer renderer, float blend = 1)
 ```
 
 #### Parameters
 
 `renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+The renderer.
+
+`blend` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+How far between the last two updates to draw them ([FrameBlend](MicroEngine.Core.Game.md#MicroEngine_Core_Game_FrameBlend), or 1 for
+            the last update, the default): with the game's blend they move evenly on displays of any rate.
 
 ### <a id="MicroEngine_Graphics_ParticleSystem_Emit_System_Numerics_Vector2_MicroEngine_Graphics_ParticleSpec_System_Int32_System_Numerics_Vector2_"></a> Emit\(Vector2, ParticleSpec, int, Vector2\)
 

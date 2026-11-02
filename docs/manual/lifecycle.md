@@ -158,7 +158,11 @@ that draws its last update shows the same picture twice: moving things judder al
 each moving thing's position from the previous update and draw it at `Vector2.Lerp(previous, current, FrameBlend)`
 (the camera too). Motion is then drawn up to one update behind, as in every loop that interpolates. It is always 1
 when time advances one step per frame (headless and scripted runs), so captures show exactly the last update; it
-changes only what is drawn, never the rules.
+changes only what is drawn, never the rules. Scene transitions are drawn between updates by the engine;
+`ParticleSystem.Draw(renderer, blend)` draws particles between their last two updates when given the blend. A scene
+that did not update in the latest update (paused under an overlay, waiting during a transition) draws its last state:
+compare `Game.UpdateCount` with the one it saw in its own `Update`, and use 1 when they differ, or it would rock between
+its last two positions.
 
 ## Measuring a game
 
