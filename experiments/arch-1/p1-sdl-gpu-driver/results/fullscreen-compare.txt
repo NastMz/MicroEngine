@@ -1,0 +1,15 @@
+base: default, 13 captures
+
+gpu vs default: 13/13 exact
+
+gpu-vulkan vs default: 13/13 exact
+
+determinism (later runs vs run 1, same driver):
+  default: 0/0 identical over 1 runs
+  gpu: 0/0 identical over 1 runs
+  gpu-vulkan: 0/0 identical over 1 runs
+
+reference:
+  default vs web/tests/reference/sdl.json: 13/13 exact of 138 expected, 125 beyond tolerance: MeadowRun/menus/card.png: missing; MeadowRun/menus/controls.png: missing; MeadowRun/menus/map.png: missing; MeadowRun/menus/pause.png: missing; MeadowRun/showcase/meadow.png: missing
+  gpu vs web/tests/reference/sdl.json: 13/13 exact of 138 expected, 125 beyond tolerance: MeadowRun/menus/card.png: missing; MeadowRun/menus/controls.png: missing; MeadowRun/menus/map.png: missing; MeadowRun/menus/pause.png: missing; MeadowRun/showcase/meadow.png: missing
+  gpu-vulkan vs web/tests/reference/sdl.json: 13/13 exact of 138 expected, 125 beyond tolerance: MeadowRun/menus/card.png: missing; MeadowRun/menus/controls.png: missing; MeadowRun/menus/map.png: missing; MeadowRun/menus/pause.png: missing; MeadowRun/showcase/meadow.png: missing

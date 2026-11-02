@@ -1,0 +1,14 @@
+base: gpu-lowpower, 141 captures
+
+gpu-vulkan-lowpower vs gpu-lowpower: 138/141 exact
+  AssetGallery/tour/back.png: 604/921600 px (0.066%), max 255, on edges 603 (99.8%; edge mask covers 12.9% of the image), bands 1:20 2-3:29 4-15:97 16+:458, box 1174,510,1227,526
+  AssetGallery/tour/gallery.png: 604/921600 px (0.066%), max 255, on edges 603 (99.8%; edge mask covers 12.8% of the image), bands 1:20 2-3:29 4-15:97 16+:458, box 1174,510,1227,526
+  AssetGallery/tour/nearest-level.png: 150/921600 px (0.016%), max 242, on edges 150 (100.0%; edge mask covers 14.9% of the image), bands 1:7 2-3:14 4-15:40 16+:89, box 1202,510,1213,526
+
+determinism (later runs vs run 1, same driver):
+  gpu-lowpower: 552/564 identical over 5 runs; differ: run2 AssetGallery/tour/back.png, run2 AssetGallery/tour/gallery.png, run2 AssetGallery/tour/nearest-level.png, run3 AssetGallery/tour/back.png, run3 AssetGallery/tour/gallery.png, run3 AssetGallery/tour/nearest-level.png, run4 AssetGallery/tour/back.png, run4 AssetGallery/tour/gallery.png, run4 AssetGallery/tour/nearest-level.png, run5 AssetGallery/tour/back.png, run5 AssetGallery/tour/gallery.png, run5 AssetGallery/tour/nearest-level.png
+  gpu-vulkan-lowpower: 0/0 identical over 1 runs
+
+reference:
+  gpu-lowpower vs web/tests/reference/sdl-macos-arm64.json: 12/138 exact of 138 expected, 0 beyond tolerance
+  gpu-vulkan-lowpower vs web/tests/reference/sdl-macos-arm64.json: 12/138 exact of 138 expected, 0 beyond tolerance
