@@ -54,16 +54,16 @@ Quoted fragments are the owner's request (2026-11-01), verbatim.
 
 | ID | Specs | Route | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| T1 | S11 | inline | pending | |
-| T2 | S4 S13 | inline | pending | frame statistics in the loop, exported per run |
-| T3 | S12 S13 | inline | pending | startup phases |
-| T4 | S3 | inline | pending | synthetic stress scene |
-| T5 | S3 S4 | inline | pending | Windows baseline |
-| T6 | S4 S10 | inline | pending | stutter cause and fix |
-| T7 | S7 S8 | inline | pending | backend selection, fallback, adapter diagnostics |
-| T8 | S9 | inline | pending | renderer measurements and changes |
-| T9 | S5 S6 S8 | inline | pending | API, web and mobile evaluation (docs/evaluations/perf-1.md) |
-| T10 | S14 S16 | inline | pending | docs, ADR, PR |
+| T1 | S11 | inline | done | 8f6f076 (AudioOutput, CaptureAudioDevice, --audio, --audio-capture, SdlAudioDevice.TryCreate(driver)) |
+| T2 | S4 S13 | inline | done | 8f6f076 (FrameProfiler, --profile, IPlatformDiagnostics) |
+| T3 | S12 S13 | inline | done | 8f6f076 + 257f8b4 (gamepads behind the start screen), e51f90e (songs in the background) |
+| T4 | S3 | inline | done | 6085dc8 (benchmarks/PerfBench) |
+| T5 | S3 S4 | inline | done (Windows only) | docs/evaluations/perf-1.md sections 1, 3 |
+| T6 | S4 S10 | inline | done | 8f6f076 (display pacing, FrameBlend), c3653bc (raylib rate); demos do not interpolate yet |
+| T7 | S7 S8 | inline | done | 318d70a (fallback, --gpu), 257f8b4 (adapter diagnostics) |
+| T8 | S9 | inline | done | df612e3 (SDL renderer state), 018b74c (input allocations), c3653bc (raylib hidden VSync) |
+| T9 | S5 S6 S8 | inline | done (desk + Windows); phones and web frame timing pending hardware | docs/evaluations/perf-1.md sections 5, 8, 10 |
+| T10 | S14 S16 | inline | in progress | ADR 0023, public docs, PR |
 
 ## Log
 
@@ -73,3 +73,11 @@ Quoted fragments are the owner's request (2026-11-01), verbatim.
   default, no demo overrides it), up to five per frame, and renders once per frame with no interpolation. The machine
   of this session is the reference machine (Ryzen 5 7600X, RTX 4070 Ti SUPER plus Radeon iGPU, 31 GB, Windows 11),
   display reporting 74 Hz. No Android device or adb on this machine.
+- L3 Measurements and findings are in docs/evaluations/perf-1.md (environment, baseline, three stutter causes, driver
+  comparison, start, renderer, selection, audio). Tests were written after each implementation, not RED-first; the
+  allocation test was checked RED (3,544 bytes per frame) before its fix.
+- L4 Risk: item 4 (concurrency: songs render on the thread pool, e51f90e); item 3 is touched by requested behaviour
+  changes (hidden/scripted runs silent, platform fallback, display pacing) recorded in docs/migrations.md. RDD is off
+  (global), so no native review ran.
+- L5 Not available here: Android/iOS hardware, adb, the wasm-tools workload, a visible browser pane for frame timing,
+  PresentMon. Pending measurements are listed in the evaluation, section 10.
