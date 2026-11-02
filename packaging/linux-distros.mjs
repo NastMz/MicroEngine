@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { repoRoot, target } from './targets.mjs';
+import { glibcRefusal, repoRoot, target } from './targets.mjs';
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : fallback; };
@@ -62,7 +62,8 @@ for (const image of selected) {
   const mounts = ['-v', `${packages}:/packages:ro`, '-v', `${dir}:/out`, ...games.flatMap(g => ['-v', `${path.join(repoRoot, 'games', g, 'scripts')}:/scripts/${g}:ro`])];
   const expectStart = spec.glibc.localeCompare(t.glibc, 'en', { numeric: true }) >= 0;
   // On an older glibc nothing needs installing: starting the game loads SDL, which must fail on a missing glibc symbol
-  // version with the launcher's error. Anything else (no package, a crash, an install error) is not that evidence.
+  // version with the launcher's error (targets.mjs glibcRefusal). Anything else (no package, a crash, an install
+  // error) is not that evidence.
   const game = games[0];
   const command = expectStart ? `${spec.install} && xvfb-run -a -s "-screen 0 1280x720x24" bash /out/play.sh`
     : `mkdir -p /tmp/p && tar -xzf /packages/${game}-linux-x64.tar.gz -C /tmp/p && /tmp/p/${game}/${game} --frames 1 --mute; echo "exit $?"`;
@@ -73,9 +74,9 @@ for (const image of selected) {
   const audio = [...log.matchAll(/^audio: (\w+)/gm)].map(m => m[1]);
   let result;
   if (!expectStart) {
-    const refused = /^error: platform 'sdl' could not load its native library/m.test(log) && /GLIBC_[\d.]+' not found/.test(log) && /^exit 1$/m.test(log);
-    result = refused ? `PASS: SDL refused to load, as promised (glibc ${spec.glibc} < ${t.glibc}): ${log.match(/GLIBC_[\d.]+' not found/)?.[0]}`
-      : `FAIL: expected SDL to report a missing glibc version; got: ${log.trim().split('\n').slice(-3).join(' | ')}`;
+    const { refused, detail } = glibcRefusal(log);
+    result = refused ? `PASS: SDL refused to load, as promised (glibc ${spec.glibc} < ${t.glibc}): ${detail}`
+      : `FAIL: expected SDL to report a missing glibc version; got: ${detail}`;
     if (!refused) failures++;
   } else {
     const compare = spawnSync('node', [path.join(repoRoot, 'web/tests/desktop.mjs'), '--skip-run', '--games', games.join(','), '--out', dir, '--reference', path.join(repoRoot, t.reference)], { encoding: 'utf8' });

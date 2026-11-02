@@ -13,6 +13,19 @@ class PackageError extends Error {}
 export { PackageError };
 export const fail = message => { throw new PackageError(message); };
 
+/**
+ * Whether a Linux package started on a system older than its glibc promise refused as promised
+ * (linux-distros.mjs): the error the launcher stops with is an SDL platform (`sdl`, or `sdl-software`, the last one it
+ * falls back to) failing to load its library, that error names the missing glibc symbol version, and the process exits
+ * with 1. `detail` is that glibc message, or the last lines seen instead.
+ */
+export function glibcRefusal(log) {
+  const error = log.match(/^error: platform 'sdl(?:-software)?' could not load its native library[\s\S]*/m)?.[0] ?? '';
+  const missing = error.match(/GLIBC_[\d.]+' not found/)?.[0];
+  const refused = Boolean(missing) && /^exit 1$/m.test(log);
+  return { refused, detail: refused ? missing : log.trim().split('\n').slice(-3).join(' | ') };
+}
+
 /** The target with this id; fails for an unknown one. */
 export function target(id) {
   return targets.find(t => t.id === id) ?? fail(`unknown target "${id}"; known targets: ${targets.map(t => t.id).join(', ')} (packaging/targets.json).`);
