@@ -49,17 +49,17 @@ Quoted fragments are the owner's request (2026-11-02), verbatim.
 
 | ID | Specs | Route | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| T1 | S9 S1 | inline | pending | FrameBlend is 1 in fixed-step runs (Lerp at 0 drew the previous state); pacing and capture re-checked |
-| T2 | S5 S6 | inline | pending | |
-| T3 | S1 | inline | pending | four demos draw between updates; fixed-step captures unchanged |
-| T4 | S4 S8 | inline | pending | |
-| T5 | S2 S3 | inline | pending | PresentMon, gamepad start |
-| T6 | S7 | inline | pending | |
-| T7 | S10 S11 | inline | pending | graphics options API, VSync, frame limit, window mode, display, runtime changes |
-| T8 | S12 S13 | inline | pending | |
-| T9 | S14 | inline | pending | evaluation, GRAPHICS-1 decision |
-| T10 | S15 | inline | pending | Android (emulator only: no device connected), WebAssembly |
-| T11 | S16 | inline | pending | evaluation, ADR, docs, checks, PR |
+| T1 | S9 S1 | inline | done | 1b2aae9 (FrameBlend 1 in fixed-step runs); pacing and capture fixes re-checked by their tests and on hardware |
+| T2 | S5 S6 | inline | done | e4f0dae (empty scene stack; songs validated in AddMusic), tests checked RED first |
+| T3 | S1 | delegated (4 parallel writers, one per demo, own worktrees: Writer trigger a) | done | b759ee3, fcc1f19, 63c93ae, ca1cbdb; captures byte-identical per demo |
+| T4 | S4 S8 | delegated (same writers) + inline (engine) | done | 870bbbe, a6ed56a, 836918a, 5133812 (demos); abdc34c, edddd0e (engine); S8: capture variance was saved achievement progress, none with a fresh save folder; 138/138 shared captures identical to e4f0dae |
+| T5 | S2 S3 | inline | done | PresentMon: DWM promotes the window to independent flip ~0.3 s after its first frame on DISPLAY1; 51cece6 (GameInput off: gamepad start 1,070 -> 110 ms) |
+| T6 | S7 | inline | done | ddc67b7: the five failures were a local pack without -p:MicroEngineRelease=true; with it every package check passes |
+| T7 | S10 S11 | inline | done | 92550f9 (GraphicsSettings, launcher options, Game.Screen, frame limit), ebf5fe6 (docs, ADR 0024); measured in docs/evaluations/perf-2.md section 4 |
+| T8 | S12 S13 | inline | done | 2f4263c (pace only while frames arrive at the reported rate); evaluation sections 5-6 |
+| T9 | S14 | inline | done | evaluation section 7; GRAPHICS-1 decided as a separate mission (ADR 0024) |
+| T10 | S15 | inline | done | 291d6a1, f720501 (songs render in slices in browsers); Android emulator start, memory, stability; evaluation section 8 |
+| T11 | S16 | inline | done | docs/evaluations/perf-2.md; all suites pass (native included); PR pending the owner |
 
 ## Log
 
@@ -72,3 +72,29 @@ Quoted fragments are the owner's request (2026-11-02), verbatim.
 - L3 Found while exploring: PERF-1 documented `FrameBlend` as 0 in fixed-step runs "so captures stay exact", but with
   the documented `Lerp(previous, current, FrameBlend)` a blend of 0 draws the previous update: adopting it would shift
   every capture by one step. Fixed in T1.
+- L4 T3/T4 routing: the four demos are independent units with disjoint edit surfaces (games/<Name>, tests/<Name>.Tests),
+  each several minutes of work: four writers ran in parallel in worktrees under C:/Proyectos/MicroEngine-worktrees,
+  their commits cherry-picked. Each kept every scripted capture byte-identical (Meadow 43/44 with the 44th varying by
+  itself: saved achievement progress; Courtyard 43/43; Trail 118/118; Neon 107/107). Allocations per frame: Meadow level
+  2,816 -> 384 B (with the engine fixes), Neon stage 14,176 -> ~1,010 B, Courtyard road 2,270 -> 469 B, Trail route
+  22,361 -> 286 B.
+- L5 Gamepad start: sampling the main thread during SDL_InitSubSystem(GAMEPAD) showed GameInputRedist.dll
+  GameInputInitialize sleeping ~950 ms (GameInputSvc installed but stopped here). SDL starts GameInput unless both
+  SDL_JOYSTICK_GAMEINPUT and SDL_JOYSTICK_GAMEINPUT_RAW are 0. Not tested with a physical controller (none connected).
+- L6 Missed refresh (S2): PresentMon 2.6 runs without elevation here. Windowed SDL D3D11 presents as Composed: Flip
+  (display latency ~29.5 ms at 100 Hz). On DISPLAY1 (75 Hz) DWM promotes the window to Hardware Composed: Independent
+  Flip ~0.3 s after the first frame; 1-3 frames are shown 20-42 ms at that moment, and the engine sees one 26.5 ms frame.
+  PERF-1's "1.9 s after the window appears" = ~1.5 s of gamepad start before the first frame + 0.3 s. Borderless full
+  screen reaches independent flip from the third frame (latency 19.7 ms); SDL's exclusive mode stays composed here.
+- L7 Multi-monitor (run): a window composed by the desktop runs at the 100 Hz primary's rate on the 60 Hz display, and
+  a window moved from the primary to the 75 Hz display keeps 100 Hz (re-applying VSync did not change it); full screen
+  and windows promoted to independent flip run at their display's rate. Counted in the reported display's periods, drawn
+  time alternated 16.7 / 3.3 ms; the loop now paces only while the median of the last 16 frames matches (2f4263c).
+- L8 WebAssembly (run, headed Chrome, 100 Hz): frame pacing perfect in all four demos and frame work 0.6-1 ms, but Play to
+  playing took 5.0-8.7 s in the three demos with synthesized music (Neon Rift, music from files: 1.0 s): every song
+  rendered inside Load on the single thread. Songs now render in slices from AudioMixer.Update. Mono AOT for wasm
+  crashed on SDL3-CS.dll with the pinned toolchain (not adopted).
+- L9 S7: the "five environmental failures" are packages.mjs's no-build-machine-path check after a local pack without
+  -p:MicroEngineRelease=true (ContinuousIntegrationBuild maps paths only in CI or with that flag).
+- L10 Android: emulator only (no phone connected); Meadow Run cold start 0.96-1.55 s (am start -W), engine start to title
+  2.15 s, PSS 159 MB, no fatal error in a 20 s run. Not a phone measurement.
