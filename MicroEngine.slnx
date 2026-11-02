@@ -13,6 +13,7 @@
     <Project Path="games/TrailDuel/TrailDuel.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/AssetBench/AssetBench.csproj" />
     <Project Path="benchmarks/PerfBench/PerfBench.csproj" />
   </Folder>
   <Folder Name="/samples/">

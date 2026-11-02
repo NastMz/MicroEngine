@@ -4,9 +4,9 @@ using StbImageSharp;
 namespace MicroEngine.Graphics;
 
 /// <summary>
-/// Decodes image files in managed code, the same on every platform and in headless tests. PNGs go through the engine's
-/// own decoder (the common case, and the fastest); JPEG, BMP, TGA, GIF (first frame), PSD (composited) and the PNG
-/// variants the engine's decoder does not read (16-bit channels, interlacing) go through StbImageSharp.
+/// Decodes image files in managed code with StbImageSharp, the same on every platform and in headless tests: PNG (every
+/// colour type and bit depth, interlaced or not), JPEG, BMP, TGA, GIF (first frame) and PSD (composited). It replaced the
+/// engine's own PNG decoder after decoding every PNG of the repository identically, about seven times faster (ASSET-1).
 /// </summary>
 internal static class ImageDecoder
 {
@@ -14,18 +14,6 @@ internal static class ImageDecoder
     public static readonly IReadOnlySet<string> Extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".gif", ".psd" };
 
     public static PixelImage Decode(ReadOnlySpan<byte> data)
-    {
-        if (IsPng(data))
-        {
-            try { return PngDecoder.Decode(data); }
-            catch (NotSupportedException) { /* 16-bit or interlaced: StbImageSharp reads those. */ }
-        }
-        return DecodeWithStb(data);
-    }
-
-    private static bool IsPng(ReadOnlySpan<byte> data) => data.Length >= 8 && data[0] == 0x89 && data[1] == (byte)'P' && data[2] == (byte)'N' && data[3] == (byte)'G';
-
-    private static PixelImage DecodeWithStb(ReadOnlySpan<byte> data)
     {
         if (data.Length == 0) throw new InvalidDataException("The file is empty.");
         ImageResult result;
