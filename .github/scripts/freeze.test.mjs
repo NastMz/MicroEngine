@@ -54,7 +54,7 @@ test('sdk/version.mjs reads the same freeze file the same way (it cannot import 
 });
 
 test('the freeze changes no check: only the site layout runs for it, so lifting it deploys main', () => {
-  const none = { dotnet: false, windows: false, native: false, browser: 'none', workflows: false, sdk: false, macos: false, mobile: false };
+  const none = { dotnet: false, windows: false, native: false, browser: 'none', workflows: false, sdk: false, macos: false, mobile: false, web: false };
   assert.deepEqual(planChecks([freezeFile]), { ...none, browser: 'layout' });
   // Every other path keeps its checks whether or not the freeze is in the same change.
   for (const file of ['src/MicroEngine/Core/GameLoop.cs', 'docs/guide/platforms.md', 'games/MeadowRun/MeadowRunGame.cs', '.github/copilot-instructions.md']) {

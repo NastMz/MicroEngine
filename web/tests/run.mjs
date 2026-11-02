@@ -5,9 +5,10 @@
 // Suites (default: platform scripts):
 //   platform  per game: loading, start by gesture, audio under a blocking autoplay policy, 60 updates/s, held,
 //             released and very short key presses, focus loss, browser keys, saves across reload, corrupt and
-//             blocked storage, end and restart without reloading
+//             blocked storage, end and restart without reloading (the storage checks use Neon Rift's and Meadow
+//             Run's saves and run only when --games includes them)
 //   scripts   replays the games' own input scripts (scenarios.json) and stores their captures in --out, to
-//             compare with desktop captures (compare.mjs)
+//             compare with desktop captures (desktop.mjs with the same --out compares them byte for byte)
 //   autopilot Neon Rift's built-in autopilot plays stages 1 to 3 until the ending
 //   audio     per game: the sound actually reaching the speakers (signal level of the page's audio output)
 //   framerate per game: updates per second while the page draws every frame, every 2nd and every 4th
@@ -15,8 +16,9 @@
 //             numbers) and checks that the game reaches the scene the scripted run ends in; page screenshots
 //             at the script's capture points go to --out for review
 //
-// Needs development packages (web/build.sh --dev --out dist/web-dev). Browsers are found in their default
-// install folders or through CHROME_PATH and FIREFOX_PATH.
+// Needs development packages (web/build.sh --dev --out dist/web-dev) of the games selected. Browsers are found in
+// their default install folders or through CHROME_PATH and FIREFOX_PATH. Exits 1 when any check failed. Daily CI
+// runs it on the games a change reaches (.github/workflows/checks.yml, browser-engine; docs/ci.md).
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -186,7 +188,8 @@ async function platform(browser, label, game) {
 
 /** Corrupt saves are set aside, blocked or full storage leaves the game running and says so. */
 async function storage(browser, label) {
-  {
+  // Each check uses one game's saves; with --games, only the checks of the games selected (their packages) run.
+  if (games.includes('NeonRift')) {
     const context = await browser.createBrowserContext();
     const page = await context.newPage();
     await page.goto(`${base}/NeonRift/`);
@@ -200,7 +203,7 @@ async function storage(browser, label) {
     check(`${label} storage: corrupt data is kept aside and the game runs`, kept === '{ not json' && await updates(page) > 0);
     await context.close();
   }
-  {
+  if (games.includes('MeadowRun')) {
     const context = await browser.createBrowserContext();
     const page = await context.newPage();
     await page.goto(`${base}/MeadowRun/`);
@@ -357,8 +360,8 @@ async function audio(browser, label) {
   }
   // When the browser holds audio suspended (no gesture yet, or a policy change), the page must say so and the
   // next click must bring the sound back. The test suspends the context itself: whether a browser blocks audio
-  // under automation varies (Chrome over CDP counts navigation as user activation).
-  const { page, context } = await open(browser, 'NeonRift');
+  // under automation varies (Chrome over CDP counts navigation as user activation). Neon Rift, or the game selected.
+  const { page, context } = await open(browser, games.includes('NeonRift') ? 'NeonRift' : games[0]);
   await page.click('#play');
   await waitFor(page, s => s === 'playing');
   await sleep(1000);
@@ -434,7 +437,7 @@ try {
       if (suites.includes('platform')) {
         for (const game of games) await platform(browser, label, game).catch(e => check(`${label} ${game}: platform checks`, false, e.message));
         await storage(browser, label).catch(e => check(`${label} storage checks`, false, e.message));
-        if (label === 'firefox') await blockedStorage().catch(e => check('firefox blocked storage', false, e.message));
+        if (label === 'firefox' && games.includes('MeadowRun')) await blockedStorage().catch(e => check('firefox blocked storage', false, e.message));
       }
       if (suites.includes('scripts')) await scripts(browser, label).catch(e => check(`${label} scripts`, false, e.message));
       if (suites.includes('audio')) await audio(browser, label).catch(e => check(`${label} audio`, false, e.message));

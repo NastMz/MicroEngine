@@ -20,6 +20,10 @@
 //              uses free public runners (repository variable PUBLIC_RUNNERS=true); otherwise advisory
 //   mobile     advisory only: printed as a recommendation to run platforms.yml or validate.yml; daily CI never
 //              starts an Android emulator or an iOS simulator
+//   web        the browser engine suites (web/tests/run.mjs) on development packages in Chrome: frames compared with
+//              the desktop build, real key events, frame rate, audio level; for the engine, the raylib backend, the
+//              web build, a game's code or the suites themselves. Output `web_games`: the changed games when every
+//              such change is a game's own, otherwise all
 //
 // Scope (projects.mjs): the .NET project graph narrows `dotnet`, `windows` and `macos` to the test projects that
 // depend on the changed files (output `tests`), and the native captures to the affected games (output `games`).
@@ -30,8 +34,8 @@ import { fileURLToPath } from 'node:url';
 import { readGraph, affectedScope, scopeText } from './projects.mjs';
 
 const levels = ['none', 'layout', 'full'];
-export const everything = Object.freeze({ dotnet: true, windows: true, native: true, browser: 'full', workflows: true, sdk: true, macos: true, mobile: true });
-const nothing = () => ({ dotnet: false, windows: false, native: false, browser: 'none', workflows: false, sdk: false, macos: false, mobile: false });
+export const everything = Object.freeze({ dotnet: true, windows: true, native: true, browser: 'full', workflows: true, sdk: true, macos: true, mobile: true, web: true });
+const nothing = () => ({ dotnet: false, windows: false, native: false, browser: 'none', workflows: false, sdk: false, macos: false, mobile: false, web: false });
 
 // First matching rule wins. `checks` lists what the path needs; 'all' means everything.
 const build = /^(Directory\.Build\.(props|targets)|global\.json|NuGet\.config|MicroEngine\.slnx|\.editorconfig|\.gitattributes)$/;
@@ -44,29 +48,33 @@ export const rules = [
   // Publication freeze (freeze.mjs): lifting it on main deploys the site main accumulated meanwhile.
   { pattern: /^\.github\/phase-freeze$/, checks: ['layout'], why: 'publication freeze' },
   { pattern: /^\.github\//, checks: [], why: 'other repository settings' },
-  { pattern: /^src\/MicroEngine\.Cli\/Hosts\/web\//, checks: ['full', 'sdk'], why: 'browser host (microengine package web)' },
+  { pattern: /^src\/MicroEngine\.Cli\/Hosts\/web\//, checks: ['full', 'sdk', 'web'], why: 'browser host (microengine package web)' },
   { pattern: /^src\/MicroEngine\.Cli\/Hosts\//, checks: ['mobile', 'sdk'], why: 'phone hosts (microengine package android, ios)' },
   { pattern: /^src\/MicroEngine\.Cli\//, checks: ['dotnet', 'windows', 'sdk'], why: 'microengine tool' },
   { pattern: /^templates\//, checks: ['dotnet', 'sdk'], why: 'project templates' },
   // The documented samples' check (docs.mjs, .NET Linux) and the version tool it reads; Plan runs the tool's tests.
   { pattern: /^sdk\/(version\.|tests\/(docs|version)\.)/, checks: ['dotnet'], why: 'documented SDK version and samples check' },
   { pattern: /^sdk\//, checks: ['sdk'], why: 'SDK checks' },
-  { pattern: /^src\/MicroEngine\.Raylib\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile'], why: 'raylib backend' },
+  { pattern: /^src\/MicroEngine\.Raylib\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile', 'web'], why: 'raylib backend (desktop and browser)' },
   { pattern: /^src\/MicroEngine\.(Sdl|Desktop)\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile'], why: 'SDL backend and desktop platforms' },
-  { pattern: /^src\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos'], why: 'engine' },
+  { pattern: /^src\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'web'], why: 'engine' },
   { pattern: /^games\/LICENSE$/, checks: ['layout'], why: 'demo games licence (packaged: demo keys rebuild)' },
   { pattern: /^games\/.*\.md$/i, checks: ['layout'], why: 'published game page' },
   { pattern: /^games\/[^/]+\/screenshots\//, checks: ['layout'], why: 'screenshots on the site' },
-  { pattern: /^games\//, checks: ['dotnet', 'native'], why: 'game' },
+  { pattern: /^games\//, checks: ['dotnet', 'native', 'web'], why: 'game' },
   { pattern: /^tests\/MicroEngine\.(Raylib|Desktop)\.Tests\//, checks: ['dotnet', 'windows', 'native', 'macos'], why: 'backend tests' },
   { pattern: /^tests\/MicroEngine\.Tests\//, checks: ['dotnet', 'windows', 'macos'], why: 'engine tests' },
   { pattern: /^(tests|samples)\//, checks: ['dotnet'], why: 'game tests and samples' },
-  { pattern: /^web\/(toolchain\.env|setup\.sh|build-raylib-wasm\.sh)$/, checks: ['full', 'sdk'], why: 'web toolchain (MicroEngine.Raylib carries the web raylib)' },
-  { pattern: /^web\/tests\/package(-lock)?\.json$/, checks: ['native', 'sdk'], why: 'browser driver (desktop captures, the SDK test plays its web package)' },
+  { pattern: /^web\/(toolchain\.env|setup\.sh|build-raylib-wasm\.sh)$/, checks: ['full', 'sdk', 'web'], why: 'web toolchain (MicroEngine.Raylib carries the web raylib)' },
+  { pattern: /^web\/tests\/package(-lock)?\.json$/, checks: ['native', 'sdk', 'web'], why: 'browser driver (desktop captures, browser suites, the SDK test plays its web package)' },
+  { pattern: /^web\/tests\/run\.mjs$/, checks: ['web'], why: 'browser engine suites' },
+  // The scenarios and the desktop runner serve both: the browser suites compare their frames with the desktop's.
+  { pattern: /^web\/tests\/(scenarios\.json|desktop\.mjs)$/, checks: ['native', 'web'], why: 'scripted scenarios (desktop and browser)' },
   { pattern: /^web\/tests\//, checks: ['native'], why: 'desktop capture scripts' },
-  { pattern: /^web\/serve\.mjs$/, checks: ['full', 'sdk'], why: 'local web server (site checks, SDK test)' },
+  { pattern: /^web\/serve\.mjs$/, checks: ['full', 'sdk', 'web'], why: 'local web server (site checks, browser suites, SDK test)' },
   { pattern: /^web\/.*\.md$/i, checks: ['layout'], why: 'published web page' },
-  { pattern: /^(web|site)\//, checks: ['full'], why: 'web host and site' },
+  { pattern: /^web\//, checks: ['full', 'web'], why: 'web build' },
+  { pattern: /^site\//, checks: ['full'], why: 'site' },
   { pattern: /^(odd|experiments)\//, checks: [], why: 'task records and experiments' },
   { pattern: /^THIRD-PARTY-NOTICES\.md$/, checks: ['layout', 'sdk'], why: 'third-party notices (shipped in the packages)' },
   { pattern: /\.md$/i, checks: ['layout'], why: 'documentation' },
@@ -101,6 +109,22 @@ export function planScope(files, graph) {
   return affectedScope(graph, relevant);
 }
 
+/**
+ * The games whose browser build the browser engine suites play: the games whose own folders changed when every change
+ * that needs the suites is a game's, otherwise 'all' (the engine, the web host, the suites themselves, an unknown path).
+ */
+export function planWebGames(files) {
+  const games = new Set();
+  for (const file of files) {
+    const rule = ruleFor(file);
+    if (rule && rule.checks !== 'all' && !rule.checks.includes('web')) continue;
+    const game = /^games\/([^/]+)\//.exec(file)?.[1];
+    if (!rule || rule.checks === 'all' || !game) return 'all';
+    games.add(game);
+  }
+  return [...games].sort();
+}
+
 function changedFiles(base, head) {
   const out = execFileSync('git', ['diff', '--name-only', '--no-renames', `${base}...${head}`], { encoding: 'utf8' });
   return out.split('\n').filter(Boolean);
@@ -118,6 +142,7 @@ function main(args) {
   }
   const checks = files ? planChecks(files) : { ...everything };
   const scope = files ? planScope(files, readGraph()) : { tests: 'all', games: 'all' };
+  const webGames = files ? planWebGames(files) : 'all';
   const lines = ['### Checks for this change', ''];
   if (files) {
     lines.push(`${files.length} changed file(s) since \`${base.slice(0, 12)}\`.`, '', '| Path | Rule |', '| --- | --- |');
@@ -127,11 +152,12 @@ function main(args) {
   lines.push('', '| Check | Runs |', '| --- | --- |', ...Object.entries(checks).map(([name, on]) => `| ${name} | ${on === true ? 'yes' : on === false ? 'no' : on} |`), '');
   const describe = value => (value === 'all' ? 'all' : value.length ? value.map(v => `\`${v}\``).join(', ') : 'none');
   lines.push(`Project graph: .NET tests ${describe(scope.tests)}; native captures ${describe(scope.games)}.`, '');
+  if (checks.web) lines.push(`Browser engine suites: ${describe(webGames)}.`, '');
   const advisory = [checks.macos && 'macOS', checks.mobile && 'Android and iOS'].filter(Boolean);
   if (advisory.length) lines.push(`Advisory: this change concerns ${advisory.join(', ')}. Daily CI runs macOS tests only on public runners (informative); run the platforms or validate workflow when it matters.`, '');
   console.log(lines.join('\n'));
   if (args.includes('--github-output')) {
-    const output = [...Object.entries(checks).map(([name, on]) => `${name}=${on}`), `tests=${scopeText(scope.tests)}`, `games=${scopeText(scope.games)}`].join('\n') + '\n';
+    const output = [...Object.entries(checks).map(([name, on]) => `${name}=${on}`), `tests=${scopeText(scope.tests)}`, `games=${scopeText(scope.games)}`, `web_games=${scopeText(webGames)}`].join('\n') + '\n';
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, output);
     else process.stdout.write(output);
   }
