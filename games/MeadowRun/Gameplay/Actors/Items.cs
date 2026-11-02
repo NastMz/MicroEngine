@@ -23,7 +23,7 @@ internal sealed class Coin : Actor
     {
         var frames = a.Frames("coin");
         // Coins spin in a slow wave across the level instead of in lockstep.
-        int f = (int)((time + _phase) * 8) % frames.Length;
+        int f = (int)((time + _phase) * 8) % frames.Count;
         r.Draw(frames[f], Snap(Position + new Vector2(8, 8)));
     }
 }
@@ -48,7 +48,7 @@ internal sealed class PopCoin : Actor
     public override void Render(IRenderer r, Assets a, float time)
     {
         var frames = a.Frames("coin");
-        r.Draw(frames[(int)(Age * 24) % frames.Length], Snap(Position));
+        r.Draw(frames[(int)(Age * 24) % frames.Count], Snap(Position));
     }
 }
 

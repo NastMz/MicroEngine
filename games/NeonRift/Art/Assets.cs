@@ -105,14 +105,8 @@ internal sealed class Assets : IDisposable
     /// <summary>The packed sprite sheet (exposed so tests can guard its size).</summary>
     public Texture AtlasTexture => _atlas.Texture;
     public Sprite this[string name] => _atlas[name];
-    /// <summary>The frames <paramref name="name"/>0, 1, 2...; looked up once per name, since the atlas builds a new array per call.</summary>
-    public Sprite[] Frames(string name)
-    {
-        if (!_frames.TryGetValue(name, out var frames)) _frames[name] = frames = _atlas.Frames(name);
-        return frames;
-    }
-
-    private readonly Dictionary<string, Sprite[]> _frames = new(StringComparer.Ordinal);
+    /// <summary>The frames <paramref name="name"/>0, 1, 2... (the atlas collects each once).</summary>
+    public IReadOnlyList<Sprite> Frames(string name) => _atlas.Frames(name);
     public bool Contains(string name) => _atlas.Contains(name);
     public ArmRig Rig(string pose) => _rigs[pose];
     public IReadOnlyList<BackdropLayer> Backdrop(string theme) => _backdrops[theme];

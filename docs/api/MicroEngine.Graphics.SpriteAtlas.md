@@ -94,11 +94,11 @@ public void Dispose()
 
 ### <a id="MicroEngine_Graphics_SpriteAtlas_Frames_System_String_"></a> Frames\(string\)
 
-Collects "name0".."nameN" frames added through [AddFrames](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_AddFrames_System_String_System_Collections_Generic_IEnumerable_MicroEngine_Graphics_PixelImage__System_Nullable_System_Numerics_Vector2__). Collected once per
-name: every call returns the same array, so it can be called every frame; do not change its elements.
+The "name0".."nameN" frames added through [AddFrames](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_AddFrames_System_String_System_Collections_Generic_IEnumerable_MicroEngine_Graphics_PixelImage__System_Nullable_System_Numerics_Vector2__), in order. Collected once per
+name and shared, read-only: it can be called every frame.
 
 ```csharp
-public Sprite[] Frames(string name)
+public IReadOnlyList<Sprite> Frames(string name)
 ```
 
 #### Parameters
@@ -107,7 +107,7 @@ public Sprite[] Frames(string name)
 
 #### Returns
 
- [Sprite](MicroEngine.Graphics.Sprite.md)\[\]
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[Sprite](MicroEngine.Graphics.Sprite.md)\>
 
 #### Exceptions
 

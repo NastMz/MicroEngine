@@ -118,8 +118,8 @@ public sealed class Effect : Actor
     internal override void Render(IRenderer r, Assets art)
     {
         var frames = art.Frames(_sprite);
-        _frames = frames.Length;
-        int i = Math.Min((int)(Age * _fps), frames.Length - 1);
+        _frames = frames.Count;
+        int i = Math.Min((int)(Age * _fps), frames.Count - 1);
         r.DrawPivoted(frames[i], Vector2.Round(DrawPosition), _rotation, new Vector2(Scale), flipX: _flipX);
     }
 }

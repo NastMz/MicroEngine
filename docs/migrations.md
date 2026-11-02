@@ -28,10 +28,13 @@ Not published yet. Behaviour that changes:
   old timing until it reports a rate; `--pacing measured` keeps it for any run.
 - `IPlatform.DisplayRate` and `IPlatform.Wait` are new interface members with defaults: existing implementations
   compile unchanged.
-- `EntityList<T>.GetEnumerator` returns `EntityList<T>.Enumerator` (a struct) instead of `IEnumerator<T>`, so
-  `foreach` allocates nothing. Source code compiles unchanged; rebuild games against the new SDK.
-- `SpriteAtlas.Frames` returns the same array on every call for a name. **Migration:** a game that changed the
-  elements of the returned array copies it first (`Frames(name).ToArray()`).
+- `EntityList<T>` is walked without allocating: `GetEnumerator` returns `EntityList<T>.Enumerator`, `OfType<TEntity>`
+  returns `EntityList<T>.TypedEntities<TEntity>` and `Overlapping` returns `EntityList<T>.OverlappingEntities` (structs
+  that are still `IEnumerable`, so LINQ works on them). **Migration:** code that stored the results as
+  `IEnumerable<...>` compiles unchanged; rebuild against the new SDK.
+- `SpriteAtlas.Frames` returns a shared, read-only `IReadOnlyList<Sprite>` (collected once per name) instead of a new
+  `Sprite[]` per call. **Migration:** use `Count` instead of `Length`, and `IReadOnlyList<Sprite>` for fields that held
+  the array.
 - A game without any scene runs (it used to fail with an index error).
 
 ## 0.4.0-alpha.2

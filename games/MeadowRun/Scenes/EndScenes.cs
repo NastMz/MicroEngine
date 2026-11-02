@@ -105,7 +105,7 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
         r.SetBlendMode(BlendMode.Alpha);
         r.Draw(sun, new Vector2(250, 40 + MathF.Round(MathX.Wave(t, 0.4f, 2))));
         var pip = game.Art.Pip(game.Session.Form, "victory");
-        r.Draw(pip[(int)(t * 3) % pip.Length], new Vector2(64, 164));
+        r.Draw(pip[(int)(t * 3) % pip.Count], new Vector2(64, 164));
         r.FillRect(new RectF(40, 0, 240, 180), Pal.Ink.WithAlpha(0.35f));
         float y = 180 - t * Speed;
         foreach (var (text, color, scale) in Lines)

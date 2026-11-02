@@ -83,12 +83,12 @@ public interface IHittable
 /// <summary>A short sprite animation that removes itself when done (puffs, sparks).</summary>
 public sealed class Effect : Actor
 {
-    private readonly Sprite[] _frames;
+    private readonly IReadOnlyList<Sprite> _frames;
     private readonly float _fps;
     private float _time;
     private readonly float _depthBias;
 
-    public Effect(PlayScene world, Vector2 at, Sprite[] frames, float fps, float depthBias = 8) : base(world)
+    public Effect(PlayScene world, Vector2 at, IReadOnlyList<Sprite> frames, float fps, float depthBias = 8) : base(world)
     {
         Position = at;
         _frames = frames;
@@ -102,12 +102,12 @@ public sealed class Effect : Actor
     public override void Update(float dt)
     {
         _time += dt;
-        if (_time * _fps >= _frames.Length) Destroy();
+        if (_time * _fps >= _frames.Count) Destroy();
     }
 
     public override void Draw(IRenderer r)
     {
-        int f = Math.Min(_frames.Length - 1, (int)(_time * _fps));
+        int f = Math.Min(_frames.Count - 1, (int)(_time * _fps));
         DrawSprite(r, _frames[f], DrawPosition);
     }
 }

@@ -64,7 +64,7 @@ public sealed class GraphicsTests
             Assert.IsTrue(rects[a].Right <= atlas.Texture.Width && rects[a].Bottom <= atlas.Texture.Height);
             for (int b = a + 1; b < rects.Count; b++) Assert.IsFalse(rects[a].Intersects(rects[b]));
         }
-        Assert.AreEqual(2, atlas.Frames("walk").Length);
+        Assert.AreEqual(2, atlas.Frames("walk").Count);
         // Collected once: games call it every frame.
         atlas.Frames("walk");
         long before = GC.GetAllocatedBytesForCurrentThread();

@@ -50,7 +50,7 @@ public sealed class PlayerShot : Actor
     internal override void Render(IRenderer r, Assets art)
     {
         var frames = art.Frames(Weapon.Sprite);
-        var frame = frames[(int)(Age * 18) % frames.Length];
+        var frame = frames[(int)(Age * 18) % frames.Count];
         float angle = MathF.Atan2(Velocity.Y, Velocity.X);
         r.SetBlendMode(BlendMode.Additive);
         if (Weapon.Kind == WeaponKind.Spread)
@@ -97,7 +97,7 @@ public sealed class EnemyShot : Actor
     internal override void Render(IRenderer r, Assets art)
     {
         var frames = art.Frames("enemy_bullet");
-        var frame = frames[(int)(Age * 12) % frames.Length];
+        var frame = frames[(int)(Age * 12) % frames.Count];
         r.SetBlendMode(BlendMode.Additive);
         r.DrawPivoted(frame, Vector2.Round(DrawPosition), 0, new Vector2(Heavy ? 1.4f : 0.85f), Heavy ? Color.Hex("ff9a5a") : Color.Hex("ff6a8a"));
         r.SetBlendMode(BlendMode.Alpha);

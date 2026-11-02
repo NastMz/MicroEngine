@@ -207,9 +207,9 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         var frames = art.Pip(p.Form, clip);
         int index = clip switch
         {
-            "run" => (int)_runFrame % frames.Length,
-            "idle" => (int)(time * 1.6f) % frames.Length,
-            "victory" => (int)(time * 4) % frames.Length,
+            "run" => (int)_runFrame % frames.Count,
+            "idle" => (int)(time * 1.6f) % frames.Count,
+            "victory" => (int)(time * 4) % frames.Count,
             _ => 0,
         };
         var sprite = frames[index];

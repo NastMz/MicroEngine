@@ -93,7 +93,7 @@ public override void Exit() => _atlas.Dispose();
 // Draw puts the sprite's origin at the position: here the feet stand on the line.
 r.DrawLine(new Vector2(20, 80), new Vector2(300, 80), 1, Color.Hex("566c86"));
 var frames = _atlas.Frames("hero");
-for (int i = 0; i < frames.Length; i++)
+for (int i = 0; i < frames.Count; i++)
     r.Draw(frames[i], new Vector2(40 + i * 32, 80));
 r.Draw(_atlas["hero0"], new Vector2(200, 80), flipX: true);                         // mirrored
 r.Draw(_atlas["hero0"], new Vector2(240, 80), tint: Color.Hex("ef7d57"));          // tinted

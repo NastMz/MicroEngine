@@ -120,15 +120,15 @@ public EntityList<T>.Enumerator GetEnumerator()
 
 ### <a id="MicroEngine_World_EntityList_1_OfType__1"></a> OfType<TEntity\>\(\)
 
-Living entities of type <code class="typeparamref">TEntity</code>.
+Living entities of type <code class="typeparamref">TEntity</code>, in insertion order; <code>foreach</code> over them allocates nothing.
 
 ```csharp
-public IEnumerable<TEntity> OfType<TEntity>() where TEntity : T
+public EntityList<T>.TypedEntities<TEntity> OfType<TEntity>() where TEntity : T
 ```
 
 #### Returns
 
- [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<TEntity\>
+ [EntityList](MicroEngine.World.EntityList\-1.md)<T\>.[TypedEntities](MicroEngine.World.EntityList\-1.TypedEntities\-1.md)<TEntity\>
 
 #### Type Parameters
 
@@ -136,10 +136,11 @@ public IEnumerable<TEntity> OfType<TEntity>() where TEntity : T
 
 ### <a id="MicroEngine_World_EntityList_1_Overlapping_MicroEngine_RectF_"></a> Overlapping\(RectF\)
 
-Living entities whose [Bounds](MicroEngine.World.Entity.md#MicroEngine_World_Entity_Bounds) overlap <code class="paramref">area</code> (sharing an edge does not count).
+Living entities whose [Bounds](MicroEngine.World.Entity.md#MicroEngine_World_Entity_Bounds) overlap <code class="paramref">area</code> (sharing an edge does not
+count), in insertion order; <code>foreach</code> over them allocates nothing.
 
 ```csharp
-public IEnumerable<T> Overlapping(RectF area)
+public EntityList<T>.OverlappingEntities Overlapping(RectF area)
 ```
 
 #### Parameters
@@ -148,7 +149,7 @@ public IEnumerable<T> Overlapping(RectF area)
 
 #### Returns
 
- [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<T\>
+ [EntityList](MicroEngine.World.EntityList\-1.md)<T\>.[OverlappingEntities](MicroEngine.World.EntityList\-1.OverlappingEntities.md)
 
 ### <a id="MicroEngine_World_EntityList_1_Update_System_Single_"></a> Update\(float\)
 

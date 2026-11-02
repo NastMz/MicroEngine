@@ -138,11 +138,11 @@ public sealed class SpriteAtlas : IDisposable
     public IReadOnlyCollection<string> Names => _sprites.Keys;
 
     /// <summary>
-    /// Collects "name0".."nameN" frames added through <see cref="SpriteAtlasBuilder.AddFrames"/>. Collected once per
-    /// name: every call returns the same array, so it can be called every frame; do not change its elements.
+    /// The "name0".."nameN" frames added through <see cref="SpriteAtlasBuilder.AddFrames"/>, in order. Collected once per
+    /// name and shared, read-only: it can be called every frame.
     /// </summary>
     /// <exception cref="KeyNotFoundException">No sprite is named <paramref name="name"/> followed by 0.</exception>
-    public Sprite[] Frames(string name)
+    public IReadOnlyList<Sprite> Frames(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
         if (_frames.TryGetValue(name, out var cached)) return cached;

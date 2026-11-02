@@ -7,7 +7,6 @@ namespace CourtyardKey.Visuals;
 public sealed class Sprites : IDisposable
 {
     private readonly SpriteAtlas _atlas;
-    private readonly Dictionary<string, Sprite[]> _frames = new(StringComparer.Ordinal);
 
     private Sprites(SpriteAtlas atlas) => _atlas = atlas;
 
@@ -29,12 +28,8 @@ public sealed class Sprites : IDisposable
     public bool Contains(string name) => _atlas.Contains(name);
     public int Count => _atlas.Names.Count;
 
-    /// <summary>Cached "nameN" frame sequences.</summary>
-    public Sprite[] Frames(string name)
-    {
-        if (!_frames.TryGetValue(name, out var frames)) _frames[name] = frames = _atlas.Frames(name);
-        return frames;
-    }
+    /// <summary>The "nameN" frame sequence (the atlas collects each once).</summary>
+    public IReadOnlyList<Sprite> Frames(string name) => _atlas.Frames(name);
 
     public void Dispose() => _atlas.Dispose();
 }
