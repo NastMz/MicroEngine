@@ -79,7 +79,24 @@ internal sealed class TouchFeed
 /// <summary>Overlay drawing with raylib's shapes and default font, in render pixels.</summary>
 internal sealed class RaylibOverlayCanvas : IOverlayCanvas
 {
+    private readonly Dictionary<MicroEngine.Graphics.PixelImage, Raylib_cs.Texture2D> _images = new(ReferenceEqualityComparer.Instance);
     private static RlColor C(Color c) => new(c.R, c.G, c.B, c.A);
+
+    public void Image(MicroEngine.Graphics.PixelImage image, RectF destination, Color tint)
+    {
+        if (tint.A == 0 || destination.Width <= 0 || destination.Height <= 0) return;
+        if (!_images.TryGetValue(image, out var texture))
+        {
+            var blank = Rl.GenImageColor(image.Width, image.Height, new RlColor(0, 0, 0, 0));
+            texture = Rl.LoadTextureFromImage(blank);
+            Rl.UnloadImage(blank);
+            Rl.UpdateTexture(texture, image.ToRgba());
+            Rl.SetTextureFilter(texture, Raylib_cs.TextureFilter.Point);
+            _images[image] = texture;
+        }
+        Rl.DrawTexturePro(texture, new Raylib_cs.Rectangle(0, 0, image.Width, image.Height),
+            new Raylib_cs.Rectangle(destination.X, destination.Y, destination.Width, destination.Height), Vector2.Zero, 0, C(tint));
+    }
 
     public void FillCircle(Vector2 center, float radius, Color color)
     {

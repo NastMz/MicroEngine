@@ -50,6 +50,8 @@ public abstract record TouchControl(string Id)
     public float Radius { get; init; }
     /// <summary>Shown and touchable when the layout starts (see <see cref="VirtualControls.SetVisible"/>).</summary>
     public bool Visible { get; init; } = true;
+    /// <summary>How this control looks (null: its kind's style in the layout). Changes the drawing only, never the hit area.</summary>
+    public TouchStyle? Style { get; init; }
     internal abstract float DefaultRadius { get; }
     internal float EffectiveRadius => Radius > 0 ? Radius : DefaultRadius;
     internal abstract IEnumerable<string> ActionNames { get; }
@@ -127,6 +129,24 @@ public sealed record TouchLayout
     public Color Tint { get; init; } = new(240, 244, 255);
     /// <summary>Fill of a pressed control.</summary>
     public Color PressedTint { get; init; } = new(110, 200, 255);
+    /// <summary>How buttons look (null: the default style).</summary>
+    public TouchStyle? ButtonStyle { get; init; }
+    /// <summary>How d-pads look (null: the default style).</summary>
+    public TouchStyle? DPadStyle { get; init; }
+    /// <summary>How joysticks look (null: the default style).</summary>
+    public TouchStyle? StickStyle { get; init; }
+    /// <summary>Draws the controls (null: <see cref="DefaultTouchSkin"/>, shaped by the styles). Replace it for a look styles cannot give.</summary>
+    public ITouchSkin? Skin { get; init; }
+
+    private static readonly TouchStyle Plain = new();
+
+    /// <summary>The style <paramref name="control"/> is drawn with: its own, else its kind's, else the default.</summary>
+    public TouchStyle StyleOf(TouchControl control) => control.Style ?? control switch
+    {
+        TouchButton => ButtonStyle,
+        TouchDPad => DPadStyle,
+        _ => StickStyle,
+    } ?? Plain;
 
     /// <summary>A layout with these controls and the default look.</summary>
     public static TouchLayout Of(params TouchControl[] controls) => new() { Controls = controls };
@@ -729,79 +749,20 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
         (d.Contains(InputMap.StickDirection.Down) ? 1 : 0) - (d.Contains(InputMap.StickDirection.Up) ? 1 : 0));
 
     /// <summary>
-    /// Draws the controls. Idle controls are an outlined disc at <see cref="TouchLayout.Opacity"/>; a pressed one is
-    /// filled, outlined thicker and drawn slightly smaller (pressed in), so the press reads by shape as well as colour,
-    /// even at low opacity. A dark halo keeps outlines legible on light scenes. A d-pad lights the arrows it presses and
-    /// marks where the thumb is; a joystick shows its base, its dead zone, the knob at the thumb's deflection and an arrow
-    /// on the rim whose opacity follows the intensity.
+    /// Draws the shown controls with the layout's skin (<see cref="TouchLayout.Skin"/>, by default
+    /// <see cref="DefaultTouchSkin"/> shaped by the layout's styles), each with its state this frame.
     /// </summary>
     public void Draw(IOverlayCanvas canvas)
     {
         if (!Shown) return;
-        float op = Math.Clamp(_layout.Opacity, 0.05f, 1);
+        var skin = _layout.Skin ?? DefaultTouchSkin.Instance;
         foreach (var p in _controls)
         {
             if (!p.Visible) continue;
-            float g = p.Glow, line = Math.Max(1.5f, 2.2f * PixelsPerDp), r = p.Radius;
-            var tint = _layout.Tint;
-            var fill = Color.Lerp(tint.WithAlpha(0.16f * op), _layout.PressedTint.WithAlpha(Math.Min(1, 0.45f + op * 0.5f)), g);
-            var outline = tint.WithAlpha(Math.Min(1, 0.7f * op + 0.3f * g + 0.1f));
-            var halo = new Color(0, 0, 0, (byte)(90 * op + 60 * g));
-            switch (p.Control)
-            {
-                case TouchButton b:
-                {
-                    float drawn = r * (1 - 0.08f * g);
-                    canvas.Ring(p.Center, drawn + line, line, halo);
-                    canvas.FillCircle(p.Center, drawn, fill);
-                    canvas.Ring(p.Center, drawn, line * (1 + g), outline);
-                    if (b.Mode == TouchButtonMode.Toggle && p.Toggled) canvas.Ring(p.Center, drawn * 0.72f, line, outline);
-                    if (b.Label is { Length: > 0 } label)
-                        canvas.Text(label, p.Center, drawn * (label.Length > 2 ? 0.42f : 0.62f), (g > 0.5f ? Color.White : tint).WithAlpha(Math.Min(1, 0.75f * op + 0.35f + 0.25f * g)));
-                    break;
-                }
-                case TouchDPad:
-                {
-                    canvas.Ring(p.Center, r + line, line, halo);
-                    canvas.FillCircle(p.Center, r, tint.WithAlpha(0.14f * op + 0.06f * g));
-                    canvas.Ring(p.Center, r, line, outline);
-                    foreach (var dir in new[] { InputMap.StickDirection.Left, InputMap.StickDirection.Right, InputMap.StickDirection.Up, InputMap.StickDirection.Down })
-                    {
-                        bool lit = p.Directions.Contains(dir);
-                        var v = DirectionVector([dir]);
-                        var side = new Vector2(-v.Y, v.X);
-                        float tip = lit ? 0.86f : 0.8f, back = 0.48f, half = lit ? 0.26f : 0.21f;
-                        var color = lit ? _layout.PressedTint.WithAlpha(Math.Min(1, 0.7f + 0.3f * op)) : tint.WithAlpha(0.55f * op + 0.15f);
-                        canvas.FillTriangle(p.Center + v * r * tip, p.Center + (v * back + side * half) * r, p.Center + (v * back - side * half) * r, color);
-                    }
-                    if (p.Directions.Count > 0) canvas.FillCircle(p.Center + p.Raw * r * 0.55f, r * 0.2f, Color.White.WithAlpha(0.85f));
-                    break;
-                }
-                case TouchStick stick:
-                {
-                    bool held = p.Finger is not null;
-                    var origin = held ? p.Origin : p.Center;
-                    float idle = held ? 1 : stick.Placement == StickPlacement.Floating ? 0.6f : 1;
-                    canvas.Ring(origin, r + line, line, halo);
-                    canvas.FillCircle(origin, r, tint.WithAlpha((0.12f * op + 0.06f * g) * idle));
-                    canvas.Ring(origin, r, line, outline.WithAlpha(outline.A / 255f * idle));
-                    if (stick.DeadZone > 0) canvas.Ring(origin, r * stick.DeadZone, Math.Max(1, line * 0.6f), tint.WithAlpha(0.3f * op * idle));
-                    var knob = origin + p.Raw * r;
-                    canvas.FillCircle(knob, r * 0.46f, Color.Lerp(tint.WithAlpha((0.35f * op + 0.1f) * idle), _layout.PressedTint.WithAlpha(0.95f), held ? 0.4f + 0.6f * p.Analog.Length() : 0));
-                    canvas.Ring(knob, r * 0.46f, line, (held ? Color.White : tint).WithAlpha((0.6f * op + 0.3f) * idle));
-                    // Direction and intensity: an arrow beyond the knob, more opaque the further the stick is pushed.
-                    float intensity = p.Analog.Length();
-                    if (intensity > 0.01f)
-                    {
-                        var dir = Vector2.Normalize(p.Raw);
-                        var side = new Vector2(-dir.Y, dir.X);
-                        var tip = origin + dir * r * 1.78f;
-                        canvas.FillTriangle(tip, origin + (dir * 1.5f + side * 0.22f) * r, origin + (dir * 1.5f - side * 0.22f) * r,
-                            _layout.PressedTint.WithAlpha(0.35f + 0.65f * intensity));
-                    }
-                    break;
-                }
-            }
+            bool held = p.Finger is not null;
+            var value = p.Control is TouchStick ? p.Analog : DirectionVector(p.Directions);
+            skin.Draw(canvas, new TouchControlView(p.Control, _layout.StyleOf(p.Control), p.Center, p.Radius, PixelsPerDp, _layout.Opacity, p.Glow,
+                p.Pressed, p.Toggled, held || p.Holders > 0, held ? p.Origin : p.Center, p.Raw, value, p.Directions, _layout));
         }
     }
 }

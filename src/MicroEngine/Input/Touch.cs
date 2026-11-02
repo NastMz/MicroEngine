@@ -66,6 +66,13 @@ public interface IOverlayCanvas
     void FillRect(RectF rect, Color color);
     /// <summary>Short text centred on <paramref name="center"/>, about <paramref name="height"/> pixels tall.</summary>
     void Text(string text, Vector2 center, float height, Color color);
+    /// <summary>
+    /// Draws <paramref name="image"/> stretched over <paramref name="destination"/> without smoothing, multiplied by
+    /// <paramref name="tint"/> (white keeps its colours; the alpha fades it). Backends keep one texture per image, so the
+    /// same <see cref="Graphics.PixelImage"/> instance should be passed every frame. Canvases that cannot draw images
+    /// keep the default, which draws nothing.
+    /// </summary>
+    void Image(Graphics.PixelImage image, RectF destination, Color tint) { }
 }
 
 /// <summary>Where the virtual canvas goes in a window: the shared letterbox rule of every backend.</summary>
