@@ -47,6 +47,17 @@ public abstract class Game
     public ActionPrompts Prompts { get; private set; } = null!;
     /// <summary>The scene stack. Push the first scene from <see cref="Load"/>.</summary>
     public SceneManager Scenes { get; private set; } = null!;
+    /// <summary>
+    /// The game's content files: textures, atlases and fonts loaded from <c>Content/</c>, shared and released by the
+    /// engine (<see cref="AssetCache"/>). Created before <see cref="Load"/>; everything it loaded is disposed after
+    /// <see cref="Unload"/>.
+    /// </summary>
+    public AssetCache Assets { get; private set; } = null!;
+    /// <summary>
+    /// The content folder <see cref="Assets"/> reads; null (the default) for <see cref="ContentFolder.DefaultRoot"/> or the
+    /// <c>Content</c> folder next to the executable. Tests override it to point at the game's sources.
+    /// </summary>
+    protected virtual string? ContentRoot => null;
     /// <summary>The built-in pixel font, created before <see cref="Load"/> and disposed by the engine when the game shuts down.</summary>
     public BitmapFont Font { get; private set; } = null!;
     /// <summary>Seconds of simulated time since start.</summary>
@@ -131,6 +142,7 @@ public abstract class Game
         Prompts = new ActionPrompts(Input, Touch);
         if (platform.Touch is { } screen) screen.Overlay = Touch;
         platform.Graphics.DefaultFilter = Settings.DefaultTextureFilter;
+        Assets = new AssetCache(platform.Graphics, ContentRoot);
         Audio = new AudioMixer(platform.Audio);
         Font = BitmapFont.CreateDefault(platform.Graphics);
         Scenes = new SceneManager(this);
@@ -157,6 +169,8 @@ public abstract class Game
             achievements.Flush();
         }
         Input.EndUpdate();
+        // From the first update on, a load can show as a hitch: the cache reports slow ones.
+        Assets.Playing = true;
     }
 
     internal void Render(IRenderer renderer)
@@ -191,6 +205,7 @@ public abstract class Game
         Scenes.Clear();
         _achievements?.Flush();
         Unload();
+        Assets.Dispose();
         Font.Dispose();
     }
 
@@ -199,6 +214,7 @@ public abstract class Game
     /// <summary>Test hook: advances one fixed step after sampling input.</summary>
     public void StepForTest()
     {
+        Assets.Update();
         UpdateTouch(Platform.Touch, 1f / Settings.UpdateRate);
         Input.Sample(Platform.Input);
         Step(1f / Settings.UpdateRate);

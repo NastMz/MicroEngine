@@ -25,13 +25,56 @@ public sealed class ContentFolder
         if (!Directory.Exists(Root)) throw new DirectoryNotFoundException($"Content folder not found: {Root}");
     }
 
-    /// <summary>Full path of a file given relative to the root with '/' separators.</summary>
+    /// <summary>
+    /// Full path of a file given relative to the root with '/' separators. The name must match the file's letter case
+    /// exactly, on every system: "Hero.png" for "hero.png" works on Windows and macOS but not on Linux, Android or in
+    /// browsers, so it fails everywhere, naming the file's real spelling.
+    /// </summary>
+    /// <exception cref="ArgumentException">The path leaves the content folder.</exception>
+    /// <exception cref="FileNotFoundException">No such file, or its name is spelled with another letter case.</exception>
     public string PathOf(string relative)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(relative);
         var path = Resolve(relative) ?? throw new ArgumentException($"'{relative}' is outside the content folder.", nameof(relative));
         if (!File.Exists(path)) throw new FileNotFoundException($"Content file not found: {path}", path);
+        CheckCase(path);
         return path;
+    }
+
+    /// <summary>
+    /// The files directly inside <paramref name="folder"/> (relative to the root, '/' separators; "" for the root), as
+    /// '/'-separated paths relative to the root, in ordinal order.
+    /// </summary>
+    /// <exception cref="DirectoryNotFoundException">The folder does not exist.</exception>
+    public IReadOnlyList<string> Files(string folder)
+    {
+        ArgumentNullException.ThrowIfNull(folder);
+        var path = (folder.Trim('/').Length == 0 ? Root : Resolve(folder)) ?? throw new ArgumentException($"'{folder}' is outside the content folder.", nameof(folder));
+        if (!Directory.Exists(path)) throw new DirectoryNotFoundException($"Content folder not found: {path}");
+        if (path != Root) CheckCase(path);
+        return [.. Directory.GetFiles(path).Select(f => Path.GetRelativePath(Root, f).Replace(Path.DirectorySeparatorChar, '/')).Order(StringComparer.Ordinal)];
+    }
+
+    // Directory listings, kept so every check after the first in a folder costs a lookup. Workers preloading assets
+    // check names concurrently.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, HashSet<string>> _listings = new(StringComparer.Ordinal);
+
+    /// <summary>Fails when a part of <paramref name="path"/> (below the root) is spelled with another letter case than on disk.</summary>
+    private void CheckCase(string path)
+    {
+        var parts = Path.GetRelativePath(Root, path).Split(Path.DirectorySeparatorChar);
+        string current = Root;
+        foreach (var part in parts)
+        {
+            var names = _listings.GetOrAdd(current, dir => new HashSet<string>(Directory.EnumerateFileSystemEntries(dir).Select(Path.GetFileName)!, StringComparer.Ordinal));
+            if (!names.Contains(part))
+            {
+                string? actual = names.FirstOrDefault(n => string.Equals(n, part, StringComparison.OrdinalIgnoreCase));
+                if (actual is not null)
+                    throw new FileNotFoundException($"Content file not found: '{part}' is spelled '{actual}' on disk ({path}). Names must match exactly: Linux, Android and browsers tell letter case apart.", path);
+            }
+            current = Path.Combine(current, part);
+        }
     }
 
     /// <summary>Whether a file exists at <paramref name="relative"/> (relative to <see cref="Root"/>, '/' separators). False for a missing file and for a path outside the folder.</summary>
