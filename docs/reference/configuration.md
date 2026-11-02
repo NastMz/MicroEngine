@@ -38,15 +38,25 @@ starts through `DesktopLauncher` accepts them on its command line.
 | --- | --- |
 | `--script FILE` | Plays scripted input ([format](../examples/testing.md#level-3-input-scripts-and-captures)); implies a fixed step and seed 1 unless `--seed` is given |
 | `--captures DIR` | Directory for script `capture` commands (default `captures`) |
-| `--platform NAME` | Runs on that platform of the catalog (`sdl`, `raylib`, `sdl-software`, `headless`); default: `MICROENGINE_PLATFORM`, else the first that can run here |
+| `--platform NAME` | Runs on that platform of the catalog (`sdl`, `raylib`, `sdl-software`, `headless`); default: `MICROENGINE_PLATFORM`, else the first that can run here (next SDK version: else every platform that can run here except `headless`, in order, until one starts, printing why each one failed) |
 | `--list-platforms` | Prints the catalog, with the reason a platform cannot run here, and exits |
-| `--hidden` | Renders in a hidden window with a fixed step; captures still work |
+| `--hidden` | Renders in a hidden window with a fixed step; captures still work (next SDK version: opens no sound device unless `--audio device`) |
 | `--headless` | Runs on `HeadlessPlatform`, without a window; no capture files are written; the same as `--platform headless` |
 | `--frames N` | Stops after N updates |
 | `--seed N` | Seed for `Game.Random` (otherwise random, or 1 under a script) |
 | `--scale N` | Window scale |
 | `--mute` | Sets sound-effect and music volume to zero |
 | `--report` | Before the game starts, prints `platform: <name>` (with SDL's renderer, for example `sdl (SDL renderer metal)`) and `audio: available` or `unavailable`; used by the package checks |
+
+Next SDK version (not published yet: arrives with the next SDK version):
+
+| Flag | Effect |
+| --- | --- |
+| `--audio auto\|device\|silent` | Where sound may go. `auto` (default): a sound device for visible real-time runs only, none for `--hidden`, `--script` or `--headless` runs, so tests are never heard; `device`: always (checks that must prove a device opens); `silent`: never |
+| `--audio-capture FILE` | Plays nothing aloud and writes what would have been heard as a WAV (stereo, 44.1 kHz), mixed step by step from game time: the same run gives the same file |
+| `--profile FILE` | Measures every frame (time between frames, events, update, drawing, presenting, steps, allocations, collections) and the start phases; prints a summary and writes JSON, or CSV when FILE ends in `.csv`. The first 60 frames are left out of the summary |
+| `--pacing display\|measured` | `display` (default): when VSync paces the frames, frame time is counted in whole refresh periods, which removes the stutter of irregular wake-ups; `measured`: frame time as measured |
+| `--gpu auto\|high-performance\|power-saving` | The GPU to ask for on a machine with two. SDL passes it to its Metal and GPU renderers only; Direct3D 11 and OpenGL use the GPU the system assigns to the application (on Windows: Settings, Display, Graphics) |
 
 Exit codes: 0 success, 1 game or platform error (unknown or unavailable platform, no display, a native library the
 system cannot load, such as SDL on a Linux with glibc older than 2.34), 2 bad arguments. An unknown argument is an error, which is why games take

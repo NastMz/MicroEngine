@@ -43,6 +43,20 @@ bool CloseRequested { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_IPlatform_DisplayRate"></a> DisplayRate
+
+The refresh rate in Hz of the display that paces the frames (VSync), or 0 when frames are not paced to a display
+or its rate is unknown (the default). The loop then counts elapsed time in refresh periods, which removes the
+stutter of waking up irregularly around them.
+
+```csharp
+double DisplayRate { get; }
+```
+
+#### Property Value
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 ### <a id="MicroEngine_Core_IPlatform_Graphics"></a> Graphics
 
 Creates textures.

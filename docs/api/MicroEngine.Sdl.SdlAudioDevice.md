@@ -217,6 +217,25 @@ public static IAudioDevice TryCreate()
 
  IAudioDevice
 
+### <a id="MicroEngine_Sdl_SdlAudioDevice_TryCreate_System_String_"></a> TryCreate\(string\)
+
+Opens the default playback device of SDL's audio driver <code class="paramref">driver</code>: "dummy" runs SDL's whole audio
+path without any device or sound, for tests; "disk" writes the mixed output to a file (SDL's
+<code>SDL_AUDIO_DISK_OUTPUT_FILE</code> hint). Returns a silent device (and says why) when the driver is unavailable
+or SDL's audio was already started with another driver.
+
+```csharp
+public static IAudioDevice TryCreate(string driver)
+```
+
+#### Parameters
+
+`driver` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ IAudioDevice
+
 ### <a id="MicroEngine_Sdl_SdlAudioDevice_Update"></a> Update\(\)
 
 Keeps about a quarter of a second of music queued.

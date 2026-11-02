@@ -15,7 +15,7 @@ also reports the window's safe area and density; a system that sends the app to 
 ([Suspended](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_Suspended)).
 
 ```csharp
-public sealed class SdlPlatform : IPlatform, IDisposable
+public sealed class SdlPlatform : IPlatform, IDisposable, IPlatformDiagnostics
 ```
 
 #### Inheritance
@@ -26,7 +26,8 @@ public sealed class SdlPlatform : IPlatform, IDisposable
 #### Implements
 
 IPlatform, 
-[IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
+[IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable), 
+IPlatformDiagnostics
 
 ## Constructors
 
@@ -73,6 +74,30 @@ public bool CloseRequested { get; }
 #### Property Value
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Sdl_SdlPlatform_Diagnostics"></a> Diagnostics
+
+The facts, read when asked (a value may change, such as the display's refresh rate).
+
+```csharp
+public IReadOnlyDictionary<string, string> Diagnostics { get; }
+```
+
+#### Property Value
+
+ [IReadOnlyDictionary](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary\-2)<[string](https://learn.microsoft.com/dotnet/api/system.string), [string](https://learn.microsoft.com/dotnet/api/system.string)\>
+
+### <a id="MicroEngine_Sdl_SdlPlatform_DisplayRate"></a> DisplayRate
+
+The refresh rate of the display the window is on while VSync paces the frames; 0 otherwise.
+
+```csharp
+public double DisplayRate { get; }
+```
+
+#### Property Value
+
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Graphics"></a> Graphics
 

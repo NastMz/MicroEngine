@@ -142,6 +142,31 @@ The music samples.
 
 Whether the music restarts when it reaches its end.
 
+### <a id="MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_Song_System_Boolean_"></a> AddMusic\(string, Song, bool\)
+
+Registers a [Song](MicroEngine.Audio.Song.md) under <code class="paramref">name</code> without waiting for it to be rendered: songs render
+in the background, side by side, and each is handed to the device the first time it plays (waiting then only for
+that song if it is not ready yet). Registering every song of a game this way keeps their synthesis out of
+<code>Load</code>. Where the runtime has no background threads (browsers), the song renders here instead.
+
+```csharp
+public void AddMusic(string name, Song song, bool loop = true)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+Name used by [PlayMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusic_System_String_System_Single_).
+
+`song` [Song](MicroEngine.Audio.Song.md)
+
+The song; do not change it after registering it.
+
+`loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the music restarts when it reaches its end.
+
 ### <a id="MicroEngine_Audio_AudioMixer_AddMusicFile_System_String_System_String_System_Boolean_"></a> AddMusicFile\(string, string, bool\)
 
 Registers a music file. WAV is decoded here; other formats are streamed by the device.
