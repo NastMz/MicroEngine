@@ -31,7 +31,7 @@ licence. The demo games are not in any package: they stay in the repository unde
 
 ## Versioning and compatibility
 
-- SemVer with numbered pre-releases while in Alpha: `0.4.0-alpha.1`, `0.4.0-alpha.2`... A new minor (0.5) marks
+- SemVer with numbered pre-releases while in Alpha: `-alpha.1`, `-alpha.2`... A new minor (0.5) marks
   incompatible changes; numbered Alphas of one minor are for fixes and additions.
 - All six packages share one version, and the tool builds games with the hosts of its own version: use the same
   version for the tool and the engine packages (the template does).

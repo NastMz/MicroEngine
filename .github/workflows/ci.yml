@@ -59,8 +59,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: site/package-lock.json
-      - name: Planner tests
-        run: node --test .github/scripts/*.test.mjs
+      - name: Planner and release tool tests
+        run: node --test .github/scripts/*.test.mjs sdk/tests/version.test.mjs
+      # Every active documentation reference names the documented SDK version (docs/releasing.md, "Versions").
+      - name: SDK version references
+        shell: bash # with pipefail, so `| tee` keeps a failure
+        run: node sdk/version.mjs check | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Checks for this change
         id: changes
         env:
