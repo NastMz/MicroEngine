@@ -5,7 +5,7 @@ import { planChecks, planScope, everything } from './changes.mjs';
 import { readGraph } from './projects.mjs';
 
 const plan = files => planChecks(files);
-const none = { dotnet: false, windows: false, native: false, browser: 'none', workflows: false, macos: false, mobile: false };
+const none = { dotnet: false, windows: false, native: false, browser: 'none', workflows: false, sdk: false, macos: false, mobile: false };
 
 test('documentation only: site built and its pages checked, no .NET, no demo play', () => {
   assert.deepEqual(plan(['docs/guide/platforms.md']), { ...none, browser: 'layout' });
@@ -21,7 +21,7 @@ test("a game's screenshots are published on the site, not tested", () => {
 });
 
 test('engine core runs the .NET tests on Linux and Windows and the native checks; macOS is advisory', () => {
-  assert.deepEqual(plan(['src/MicroEngine/Core/GameLoop.cs']), { ...none, dotnet: true, windows: true, native: true, macos: true });
+  assert.deepEqual(plan(['src/MicroEngine/Core/GameLoop.cs']), { ...none, dotnet: true, windows: true, native: true, sdk: true, macos: true });
 });
 
 test('the raylib backend also recommends the mobile hosts, which never run automatically', () => {
@@ -33,7 +33,7 @@ test('the raylib backend also recommends the mobile hosts, which never run autom
 
 test('the SDL backend and the desktop launcher check the desktops natively and recommend the mobile hosts', () => {
   for (const file of ['src/MicroEngine.Sdl/SdlPlatform.cs', 'src/MicroEngine.Desktop/DesktopLauncher.cs'])
-    assert.deepEqual(plan([file]), { ...none, dotnet: true, windows: true, native: true, macos: true, mobile: true });
+    assert.deepEqual(plan([file]), { ...none, dotnet: true, windows: true, native: true, sdk: true, macos: true, mobile: true });
   assert.deepEqual(plan(['tests/MicroEngine.Desktop.Tests/PlatformEquivalenceTests.cs']), { ...none, dotnet: true, windows: true, native: true, macos: true });
 });
 
@@ -75,6 +75,25 @@ test('manual workflows are linted, not exercised', () => {
   assert.deepEqual(plan(['.github/copilot-instructions.md']), none);
 });
 
+test('every input of an SDK package or of the external project test runs the SDK check', () => {
+  assert.deepEqual(plan(['templates/MicroEngine.Templates/content/Game/Program.cs']), { ...none, dotnet: true, sdk: true });
+  assert.deepEqual(plan(['src/MicroEngine.Cli/Commands/PackageCommand.cs']), { ...none, dotnet: true, windows: true, sdk: true });
+  assert.deepEqual(plan(['src/MicroEngine.Cli/Hosts/android/MainActivity.cs']), { ...none, sdk: true, mobile: true });
+  assert.deepEqual(plan(['sdk/tests/external.mjs']), { ...none, sdk: true });
+  assert.deepEqual(plan(['THIRD-PARTY-NOTICES.md']), { ...none, browser: 'layout', sdk: true });
+  assert.deepEqual(plan(['web/toolchain.env']), { ...none, browser: 'full', sdk: true });
+  assert.deepEqual(plan(['web/tests/package-lock.json']), { ...none, native: true, sdk: true });
+  assert.equal(plan(['tests/TrailDuel.Tests/BattleTests.cs']).sdk, false, 'tests never reach a package');
+  assert.equal(plan(['games/NeonRift/NeonRiftGame.cs']).sdk, false, 'nor do the games');
+  assert.deepEqual(plan(['.github/workflows/sdk.yml']), everything, 'daily CI runs sdk.yml');
+});
+
+test('the documented version and its samples check run the .NET tests, not the SDK check', () => {
+  for (const file of ['sdk/version.json', 'sdk/version.mjs', 'sdk/tests/docs.mjs', 'sdk/tests/version.test.mjs'])
+    assert.deepEqual(plan([file]), { ...none, dotnet: true }, file);
+  assert.deepEqual(planScope(['sdk/version.json'], readGraph()), { tests: 'all', games: 'all' }, 'outside every project: the samples check is selected');
+});
+
 test('an unknown path runs everything rather than skip a check', () => {
   assert.deepEqual(plan(['newfolder/thing.txt']), everything);
 });
@@ -113,6 +132,6 @@ test('scope: the project graph narrows the .NET tests and native captures to wha
 });
 
 test('licence files are published and packaged, not tested: their pages are checked, demo keys rebuild packages', () => {
-  assert.deepEqual(plan(['LICENSE']), { ...none, browser: 'layout' });
+  assert.deepEqual(plan(['LICENSE']), { ...none, browser: 'layout', sdk: true });
   assert.deepEqual(plan(['games/LICENSE']), { ...none, browser: 'layout' });
 });

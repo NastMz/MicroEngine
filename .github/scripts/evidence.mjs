@@ -38,6 +38,11 @@ export const scopes = {
   // code reaches it only as packages, which the caller adds to the key (--site-extra).
   site: file => !always(file) && !/^(src|tests|samples|platforms)\//.test(file)
     && (!/^games\//.test(file) || /\.md$/i.test(file) || /^games\/[^/]+\/screenshots\//.test(file)),
+  // The packages read the engine, the tool, the template, the build settings, the web toolchain and the notices they
+  // ship; the external project test also reads web/ (its server and browser driver). Games, tests, samples and the
+  // documentation never reach a package.
+  sdk: file => !always(file) && !/^(docs|site|platforms|games|tests|samples)\//.test(file)
+    && (!/\.md$/i.test(file) || /^(src|templates|sdk)\//.test(file) || file === 'THIRD-PARTY-NOTICES.md'),
 };
 
 export const isInput = (check, file) => (scopes[check] ?? fail(`unknown check "${check}"`))(file);
