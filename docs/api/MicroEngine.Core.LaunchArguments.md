@@ -103,6 +103,30 @@ public string CaptureDirectory { get; init; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_Core_LaunchArguments_Display"></a> Display
+
+<code>--display</code>: the display to open on, or null to keep the game's choice.
+
+```csharp
+public int? Display { get; init; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)?
+
+### <a id="MicroEngine_Core_LaunchArguments_FrameRateLimit"></a> FrameRateLimit
+
+<code>--fps-limit</code>: the frame limit (0 for none), or null to keep the game's choice.
+
+```csharp
+public int? FrameRateLimit { get; init; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)?
+
 ### <a id="MicroEngine_Core_LaunchArguments_Frames"></a> Frames
 
 <code>--frames</code>: stop after this many updates; 0 runs until the game quits.
@@ -117,15 +141,15 @@ public long Frames { get; init; }
 
 ### <a id="MicroEngine_Core_LaunchArguments_Gpu"></a> Gpu
 
-<code>--gpu</code>: the GPU to ask for.
+<code>--gpu</code>: the GPU to ask for, or null to keep the game's choice.
 
 ```csharp
-public GpuPreference Gpu { get; init; }
+public GpuPreference? Gpu { get; init; }
 ```
 
 #### Property Value
 
- [GpuPreference](MicroEngine.Core.GpuPreference.md)
+ [GpuPreference](MicroEngine.Core.GpuPreference.md)?
 
 ### <a id="MicroEngine_Core_LaunchArguments_Headless"></a> Headless
 
@@ -211,6 +235,18 @@ public string? ProfilePath { get; init; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
+### <a id="MicroEngine_Core_LaunchArguments_Renderers"></a> Renderers
+
+<code>--renderer</code>: graphics APIs to try first, or null to keep the game's choice.
+
+```csharp
+public IReadOnlyList<string>? Renderers { get; init; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>?
+
 ### <a id="MicroEngine_Core_LaunchArguments_Report"></a> Report
 
 <code>--report</code>: print the platform and its audio state before running.
@@ -259,6 +295,30 @@ public int Seed { get; init; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Core_LaunchArguments_VSync"></a> VSync
+
+<code>--vsync</code>: on or off, or null to keep the game's choice.
+
+```csharp
+public bool? VSync { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)?
+
+### <a id="MicroEngine_Core_LaunchArguments_WindowMode"></a> WindowMode
+
+<code>--window</code>: the window mode, or null to keep the game's choice.
+
+```csharp
+public WindowMode? WindowMode { get; init; }
+```
+
+#### Property Value
+
+ [WindowMode](MicroEngine.Core.WindowMode.md)?
+
 ## Methods
 
 ### <a id="MicroEngine_Core_LaunchArguments__Clone__"></a> <Clone\>$\(\)
@@ -270,6 +330,22 @@ public LaunchArguments <Clone>$()
 #### Returns
 
  [LaunchArguments](MicroEngine.Core.LaunchArguments.md)
+
+### <a id="MicroEngine_Core_LaunchArguments_ApplyTo_MicroEngine_Core_GraphicsSettings_"></a> ApplyTo\(GraphicsSettings\)
+
+The game's graphics options with the ones given on the command line in their place.
+
+```csharp
+public GraphicsSettings ApplyTo(GraphicsSettings graphics)
+```
+
+#### Parameters
+
+`graphics` [GraphicsSettings](MicroEngine.Core.GraphicsSettings.md)
+
+#### Returns
+
+ [GraphicsSettings](MicroEngine.Core.GraphicsSettings.md)
 
 ### <a id="MicroEngine_Core_LaunchArguments_Deconstruct_System_String__System_String__System_Boolean__System_Boolean__System_Int64__System_Int32__System_Nullable_System_Int32___System_Boolean__"></a> Deconstruct\(out string?, out string, out bool, out bool, out long, out int, out int?, out bool\)
 

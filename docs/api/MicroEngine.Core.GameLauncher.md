@@ -12,7 +12,8 @@ The command line every desktop game accepts, on any backend. Supported arguments
 first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>.</li><li><code>--hidden</code> render in a hidden window (captures still work).</li><li><code>--frames N</code> stop after N updates; <code>--seed N</code>; <code>--scale N</code>; <code>--mute</code>.</li><li><code>--report</code> print the platform that runs and whether it has audio before the game starts (package checks).</li><li><code>--audio auto|device|silent</code> where sound may go ([AudioOutput](MicroEngine.Core.AudioOutput.md)); by default hidden and
 scripted runs open no physical device, so checks and tests are never heard.</li><li><code>--audio-capture FILE</code> play nothing aloud and write what would have been heard as a WAV
 ([CaptureAudioDevice](MicroEngine.Audio.CaptureAudioDevice.md)).</li><li><code>--gpu auto|high-performance|power-saving</code> the GPU to ask for on a machine with two
-([GpuPreference](MicroEngine.Core.GpuPreference.md)).</li><li><code>--pacing display|measured</code> count frame time in refresh periods of the display (the default) or as
+([GpuPreference](MicroEngine.Core.GpuPreference.md)).</li><li><code>--renderer NAME[,NAME...]</code> graphics APIs to try first ([Renderers](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Renderers)).</li><li><code>--vsync on|off</code> wait for the display's refresh or not ([VSync](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_VSync)).</li><li><code>--fps-limit N</code> draw at most N frames per second; 0 removes the game's limit
+([FrameRateLimit](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_FrameRateLimit)).</li><li><code>--window windowed|fullscreen|exclusive</code> the window mode ([WindowMode](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_WindowMode)).</li><li><code>--display N</code> open on display N, counted from 0 ([Display](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Display)).</li><li><code>--pacing display|measured</code> count frame time in refresh periods of the display (the default) or as
 measured ([PaceToDisplay](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_PaceToDisplay)).</li><li><code>--profile FILE</code> measure every frame and the start phases ([FrameProfiler](MicroEngine.Core.FrameProfiler.md)), print a summary and
 write the results as JSON, or CSV when FILE ends in .csv.</li></ul>
 
@@ -46,7 +47,7 @@ public const int ProfileWarmupFrames = 60
 The one-line usage text printed after an argument error.
 
 ```csharp
-public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--pacing display|measured] [--profile FILE]"
+public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE]"
 ```
 
 #### Field Value
@@ -67,6 +68,26 @@ public static IReadOnlyList<PlatformProfile> Fallbacks(PlatformCatalog catalog)
 #### Parameters
 
 `catalog` [PlatformCatalog](MicroEngine.Core.PlatformCatalog.md)
+
+#### Returns
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[PlatformProfile](MicroEngine.Core.PlatformProfile.md)\>
+
+### <a id="MicroEngine_Core_GameLauncher_Preferred_MicroEngine_Core_PlatformCatalog_System_String_"></a> Preferred\(PlatformCatalog, string?\)
+
+The platforms tried when the game prefers <code class="paramref">backend</code> ([Backend](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Backend)) and
+nobody named one: that platform first, then the [Fallbacks](MicroEngine.Core.GameLauncher.md#MicroEngine_Core_GameLauncher_Fallbacks_MicroEngine_Core_PlatformCatalog_). A preference this catalog lacks or that
+cannot run here is reported and skipped.
+
+```csharp
+public static IReadOnlyList<PlatformProfile> Preferred(PlatformCatalog catalog, string? backend)
+```
+
+#### Parameters
+
+`catalog` [PlatformCatalog](MicroEngine.Core.PlatformCatalog.md)
+
+`backend` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
 #### Returns
 

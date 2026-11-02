@@ -15,7 +15,7 @@ also reports the window's safe area and density; a system that sends the app to 
 ([Suspended](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_Suspended)).
 
 ```csharp
-public sealed class SdlPlatform : IPlatform, IDisposable, IPlatformDiagnostics
+public sealed class SdlPlatform : IPlatform, IDisposable, IPlatformDiagnostics, IDisplayControl
 ```
 
 #### Inheritance
@@ -27,7 +27,8 @@ public sealed class SdlPlatform : IPlatform, IDisposable, IPlatformDiagnostics
 
 IPlatform, 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable), 
-IPlatformDiagnostics
+IPlatformDiagnostics, 
+IDisplayControl
 
 ## Constructors
 
@@ -75,6 +76,18 @@ public bool CloseRequested { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Sdl_SdlPlatform_CurrentDisplay"></a> CurrentDisplay
+
+Index in [Displays](MicroEngine.Core.IDisplayControl.md#MicroEngine_Core_IDisplayControl_Displays) of the display the window is on; -1 when unknown.
+
+```csharp
+public int CurrentDisplay { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Sdl_SdlPlatform_Diagnostics"></a> Diagnostics
 
 The facts, read when asked (a value may change, such as the display's refresh rate).
@@ -98,6 +111,18 @@ public double DisplayRate { get; }
 #### Property Value
 
  [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+### <a id="MicroEngine_Sdl_SdlPlatform_Displays"></a> Displays
+
+The displays the system reports, in its order.
+
+```csharp
+public IReadOnlyList<DisplayInfo> Displays { get; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<DisplayInfo\>
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Graphics"></a> Graphics
 
@@ -223,6 +248,30 @@ public ITouchScreen Touch { get; }
 
  ITouchScreen
 
+### <a id="MicroEngine_Sdl_SdlPlatform_VSync"></a> VSync
+
+Whether frames wait for the display's refresh.
+
+```csharp
+public bool VSync { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Sdl_SdlPlatform_WindowMode"></a> WindowMode
+
+The window's current mode.
+
+```csharp
+public WindowMode WindowMode { get; }
+```
+
+#### Property Value
+
+ WindowMode
+
 ## Methods
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_BeginFrame"></a> BeginFrame\(\)
@@ -271,6 +320,22 @@ Finishes the frame and presents it.
 public void EndFrame()
 ```
 
+### <a id="MicroEngine_Sdl_SdlPlatform_MoveToDisplay_System_Int32_"></a> MoveToDisplay\(int\)
+
+Moves the window to the centre of display <code class="paramref">index</code>; a full-screen window follows to that display.
+
+```csharp
+public bool MoveToDisplay(int index)
+```
+
+#### Parameters
+
+`index` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Sdl_SdlPlatform_PollEvents"></a> PollEvents\(\)
 
 Processes pending system events (window, keyboard, gamepad, touch). Called at the start of every frame.
@@ -291,6 +356,38 @@ public void SaveScreenshot(string path)
 
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_Sdl_SdlPlatform_SetVSync_System_Boolean_"></a> SetVSync\(bool\)
+
+Turns VSync on or off; hidden and fixed-step (scripted) runs keep it off.
+
+```csharp
+public bool SetVSync(bool on)
+```
+
+#### Parameters
+
+`on` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Sdl_SdlPlatform_SetWindowMode_MicroEngine_Core_WindowMode_"></a> SetWindowMode\(WindowMode\)
+
+Changes the window's mode; phones keep theirs (always full screen).
+
+```csharp
+public bool SetWindowMode(WindowMode mode)
+```
+
+#### Parameters
+
+`mode` WindowMode
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Sdl_SdlPlatform_ToString"></a> ToString\(\)
 
 "SDL renderer" followed by the name of the render driver in use.
@@ -305,10 +402,26 @@ public override string ToString()
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_ToggleFullscreen"></a> ToggleFullscreen\(\)
 
-Switches between window and full screen where the platform has a window; does nothing elsewhere.
+Switches between the window and borderless full screen (exclusive full screen goes back to the window).
 
 ```csharp
 public void ToggleFullscreen()
 ```
+
+### <a id="MicroEngine_Sdl_SdlPlatform_Wait_System_Double_"></a> Wait\(double\)
+
+Waits with SDL's precise delay (a high-resolution timer, then a short spin).
+
+```csharp
+public bool Wait(double seconds)
+```
+
+#### Parameters
+
+`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 </div>

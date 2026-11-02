@@ -107,15 +107,16 @@ public void Flush()
 
 ### <a id="MicroEngine_World_EntityList_1_GetEnumerator"></a> GetEnumerator\(\)
 
-Enumerates the living entities in insertion order (deferred additions excluded until flushed).
+Enumerates the living entities in insertion order (deferred additions excluded until flushed). <code>foreach</code>
+over the list allocates nothing.
 
 ```csharp
-public IEnumerator<T> GetEnumerator()
+public EntityList<T>.Enumerator GetEnumerator()
 ```
 
 #### Returns
 
- [IEnumerator](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerator\-1)<T\>
+ [EntityList](MicroEngine.World.EntityList\-1.md)<T\>.[Enumerator](MicroEngine.World.EntityList\-1.Enumerator.md)
 
 ### <a id="MicroEngine_World_EntityList_1_OfType__1"></a> OfType<TEntity\>\(\)
 

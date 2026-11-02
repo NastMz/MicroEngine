@@ -254,7 +254,8 @@ public sealed class AudioMixer
     /// in the background, side by side, and each is handed to the device the first time it plays (waiting then only for
     /// that song if it is not ready yet). Registering every song of a game this way keeps their synthesis out of
     /// <c>Load</c>. Where the runtime has no background threads (browsers), songs render a few milliseconds per
-    /// <see cref="Update"/> instead, one after another in the order they were registered.
+    /// <see cref="Update"/> instead, one after another in the order they were registered; a song asked to play before
+    /// it is ready goes first and starts once rendered (<see cref="CurrentMusic"/> is null until then).
     /// </summary>
     /// <param name="name">Name used by <see cref="PlayMusic"/>.</param>
     /// <param name="song">The song; do not change it after registering it.</param>

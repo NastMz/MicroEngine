@@ -57,6 +57,14 @@ Next SDK version (not published yet: arrives with the next SDK version):
 | `--profile FILE` | Measures every frame (time between frames, events, update, drawing, presenting, steps, allocations, collections) and the start phases; prints a summary and writes JSON, or CSV when FILE ends in `.csv`. The first 60 frames are left out of the summary |
 | `--pacing display\|measured` | `display` (default): when VSync paces the frames, frame time is counted in whole refresh periods, which removes the stutter of irregular wake-ups; `measured`: frame time as measured |
 | `--gpu auto\|high-performance\|power-saving` | The GPU to ask for on a machine with two. SDL passes it to its Metal and GPU renderers only; Direct3D 11 and OpenGL use the GPU the system assigns to the application (on Windows: Settings, Display, Graphics) |
+| `--renderer NAME[,NAME...]` | Graphics APIs to try first, in order (SDL: `direct3d11`, `direct3d12`, `vulkan`, `opengl`, `metal`, `gpu`...); when none can start, SDL chooses and the reason is printed |
+| `--vsync on\|off` | Whether frames wait for the display's refresh. Off: frames run as fast as they can, or at `--fps-limit` |
+| `--fps-limit N` | Draws at most N frames per second, with or without VSync; `0` removes a limit the game sets. Scripted and hidden runs are never limited |
+| `--window windowed\|fullscreen\|exclusive` | Window mode: a window, borderless full screen on its display, or exclusive full screen at the display's own mode |
+| `--display N` | Opens on display N, counted from 0 (the order the system lists them in) |
+
+Each of these replaces the matching `GameSettings.Graphics` option for one run; options not given keep the game's
+choice ([Graphics options](../manual/backends.md#graphics-options)).
 
 Exit codes: 0 success, 1 game or platform error (unknown or unavailable platform, no display, a native library the
 system cannot load, such as SDL on a Linux with glibc older than 2.34), 2 bad arguments. An unknown argument is an error, which is why games take

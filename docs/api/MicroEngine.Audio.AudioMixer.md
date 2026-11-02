@@ -147,7 +147,9 @@ Whether the music restarts when it reaches its end.
 Registers a [Song](MicroEngine.Audio.Song.md) under <code class="paramref">name</code> without waiting for it to be rendered: songs render
 in the background, side by side, and each is handed to the device the first time it plays (waiting then only for
 that song if it is not ready yet). Registering every song of a game this way keeps their synthesis out of
-<code>Load</code>. Where the runtime has no background threads (browsers), the song renders here instead.
+<code>Load</code>. Where the runtime has no background threads (browsers), songs render a few milliseconds per
+[Update](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Update_System_Single_) instead, one after another in the order they were registered; a song asked to play before
+it is ready goes first and starts once rendered ([CurrentMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_CurrentMusic) is null until then).
 
 ```csharp
 public void AddMusic(string name, Song song, bool loop = true)
@@ -161,12 +163,21 @@ Name used by [PlayMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_Audio
 
 `song` [Song](MicroEngine.Audio.Song.md)
 
-The song; do not change it after registering it. A song that cannot be rendered is reported
-            when it first plays, not here; render it with [Render](MicroEngine.Audio.Song.md#MicroEngine_Audio_Song_Render_System_Int32_) in <code>Load</code> to fail there instead.
+The song; do not change it after registering it.
 
 `loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 Whether the music restarts when it reaches its end.
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The song has no steps.
+
+ [FormatException](https://learn.microsoft.com/dotnet/api/system.formatexception)
+
+A track has an invalid note or a drum track an unknown drum.
 
 ### <a id="MicroEngine_Audio_AudioMixer_AddMusicFile_System_String_System_String_System_Boolean_"></a> AddMusicFile\(string, string, bool\)
 
@@ -330,8 +341,9 @@ No music is registered under <code class="paramref">name</code>.
  [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
 
 A song registered with [AddMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_AudioClip_System_Boolean_)
-            could not be rendered (an invalid note, no steps); its name is then unregistered. With a fade, this surfaces from
-            [Update](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Update_System_Single_) when the song is due to start.
+            failed while rendering (its content is checked when registered, so only the machine can fail it, for example out
+            of memory); its name is then unregistered. With a fade, this surfaces from [Update](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Update_System_Single_) when the song is
+            due to start.
 
 ### <a id="MicroEngine_Audio_AudioMixer_StopMusic_System_Single_"></a> StopMusic\(float\)
 

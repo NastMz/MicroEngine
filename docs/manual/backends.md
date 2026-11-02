@@ -91,6 +91,48 @@ Unknown arguments are rejected, which is why the games read developer shortcuts 
 [`src/MicroEngine.Desktop/DesktopLauncher.cs`](../../src/MicroEngine.Desktop/DesktopLauncher.cs).
 `MicroEngine.Raylib.DesktopLauncher` is the same launcher with only `raylib` and `headless`.
 
+## Graphics options
+
+Next SDK version (not published yet: arrives with the next SDK version). `GameSettings.Graphics` (`GraphicsSettings`) is where a game chooses how it is shown. Every option
+starts automatic:
+
+| Option | Default | Changes while running |
+| --- | --- | --- |
+| `Backend` | none: the catalog in order | no |
+| `Renderers` | none: the platform chooses | no |
+| `VSync` | on | yes, `Game.Screen.VSync` |
+| `FrameRateLimit` | 0 (no limit) | yes, `Game.Screen.FrameRateLimit` |
+| `Gpu` | `GpuPreference.Automatic` | no |
+| `WindowMode` | `WindowMode.Windowed` | yes, `Game.Screen.WindowMode` |
+| `Display` | none: the system chooses | yes, `Game.Screen.MoveToDisplay` |
+
+- `Backend` names the platform to try first (`sdl`, `raylib`, `sdl-software`); a platform that cannot start falls
+  back to the next one and the reason is printed. `--platform` and `MICROENGINE_PLATFORM` name one that must start.
+- `Renderers` lists graphics APIs in order of preference for platforms that offer several (SDL). Names this system lacks
+  are skipped; after the list, the platform chooses as usual.
+- VSync, the frame limit and `UpdateRate` are independent. VSync waits for the display's refresh; the frame limit caps
+  frames per second (with VSync off it alone paces the frames, and the loop counts time in its periods as it does in
+  refresh periods with VSync); `UpdateRate` is the simulation's rate and never changes with either. With VSync on, a
+  limit below the display's rate skips refreshes: choose one that divides the rate (50 on a 100 Hz display), or draw
+  with `Game.FrameBlend`.
+- `WindowMode.Fullscreen` is a borderless window covering its display: switching is instant, and on Windows it is
+  presented directly to the display (one refresh less latency than a window). `WindowMode.ExclusiveFullscreen` asks
+  for the display's own mode where the backend supports it; it is not faster than `Fullscreen` with SDL on Windows.
+  F11 and Alt+Enter switch between the window and `Fullscreen`.
+- `Display` is an index of `Game.Screen.Displays`. A window opened on a display (or full screen) is shown once it is
+  there.
+
+`Game.Screen` (`GameScreen`) reports the displays (name, mode, refresh rate, scale, primary), the one the game is on,
+the refresh rate frames are paced to, the graphics API and GPU in use (`Renderer`, `Adapter`), and changes the options
+marked above. Changes apply where the platform allows (`CanChange`): SDL and raylib windows on desktop; browsers and
+phones keep their own window, and a headless run has none. Read a property back to see what applied. A graphics menu
+saves `Game.Screen.Current` (the start-only options as the game started, the others as they are now) with its other
+settings, and returns it from `Settings` at the next start (for example
+`Graphics = Store.Load<GraphicsSettings>("graphics") ?? new GraphicsSettings()` in the `GameSettings` it builds).
+
+The launcher's `--renderer`, `--vsync`, `--fps-limit`, `--gpu`, `--window` and `--display` replace one option for one
+run ([Configuration](../reference/configuration.md)).
+
 ## Replacing a part
 
 A profile says which parts a host may supply itself. The official profiles allow the **audio device** and **extra
@@ -130,11 +172,16 @@ draws through SDL's renderer into a texture of the virtual size and scales it by
 inside the window's safe area (`FrameLayout`).
 SDL chooses the graphics API for the system; `SdlPlatform.CreateProfile("vulkan")` (or `direct3d11`, `direct3d12`,
 `metal`, `opengl`, `opengles2`, `software`) fixes one, and `SdlPlatform.RenderDrivers` lists what this build offers.
-Next SDK version (not published yet: arrives with the next SDK version): `--gpu power-saving` (`PlatformRequest.GpuPreference`) asks for the low-power GPU
-of a machine with two; SDL can choose only for its Metal and GPU renderers, while Direct3D 11 and OpenGL use the GPU the
-system assigns to the application (on Windows: Settings, Display, Graphics). `--profile` records the renderer and GPU
-in use. A game with a start screen starts SDL's gamepad support once that screen is shown, because it can take about
-a second on some Windows machines; pads already connected are reported as usual.
+Next SDK version (not published yet: arrives with the next SDK version): `GraphicsSettings.Gpu = GpuPreference.PowerSaving` (`--gpu power-saving`) asks for the
+low-power GPU of a machine with two; SDL can choose only for its Metal and GPU renderers, while Direct3D 11 and OpenGL
+use the GPU the system assigns to the application (on Windows: Settings, Display, Graphics). `Game.Screen.Adapter` and
+`--profile` report the GPU in use, and `--profile` the display the window is on. On Windows a window can be shown at
+another display's rate than its own (the desktop composes windows on slower displays, and windows moved between
+displays, at the fastest display's rate); the loop counts frame time in refresh periods only while frames really
+arrive at the display's rate, and as measured otherwise. Full screen always runs at its display's rate. On Windows, SDL reaches gamepads through its RawInput,
+XInput and Windows.Gaming.Input drivers rather than Microsoft's GameInput, whose start can take about a second;
+`SDL_JOYSTICK_GAMEINPUT=1` in the environment brings GameInput back. A game with a start screen starts gamepad support
+once that screen is shown; pads already connected are reported as usual.
 Keyboard, mouse, the first gamepad (the next one takes over when it is unplugged) and touch are read; F11 and
 Alt+Enter toggle fullscreen on desktops; losing focus releases keys and fingers. Audio uses SDL audio streams: wav and
 ogg music, silence when no device exists. `SdlTouchScreen` reports finger events, `SDL_GetWindowSafeArea` and the

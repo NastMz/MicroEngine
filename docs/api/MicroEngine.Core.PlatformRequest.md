@@ -100,19 +100,6 @@ public bool FixedStep { get; init; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Core_PlatformRequest_GpuPreference"></a> GpuPreference
-
-Which GPU the backend should ask for on a machine with two ([GpuPreference](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_GpuPreference), the launcher's
-<code>--gpu</code>). A preference, not a guarantee: backends pass it on only where their graphics API lets them choose.
-
-```csharp
-public GpuPreference GpuPreference { get; init; }
-```
-
-#### Property Value
-
- [GpuPreference](MicroEngine.Core.GpuPreference.md)
-
 ### <a id="MicroEngine_Core_PlatformRequest_Hidden"></a> Hidden
 
 Renders into a hidden window (captures still work).

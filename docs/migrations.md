@@ -26,7 +26,15 @@ Not published yet. Behaviour that changes:
   fails with exit code 1.
 - With VSync, real-time runs count frame time in refresh periods (`IPlatform.DisplayRate`). A custom platform keeps the
   old timing until it reports a rate; `--pacing measured` keeps it for any run.
-- `IPlatform.DisplayRate` is a new interface member with a default (0): existing implementations compile unchanged.
+- `IPlatform.DisplayRate` and `IPlatform.Wait` are new interface members with defaults: existing implementations
+  compile unchanged.
+- `EntityList<T>.GetEnumerator` returns `EntityList<T>.Enumerator` (a struct) instead of `IEnumerator<T>`, so
+  `foreach` allocates nothing. Source code compiles unchanged; rebuild games against the new SDK.
+- `SpriteAtlas.Frames` returns the same array on every call for a name. **Migration:** a game that changed the
+  elements of the returned array copies it first (`Frames(name).ToArray()`).
+- On Windows, SDL reads gamepads through its RawInput, XInput and Windows.Gaming.Input drivers instead of GameInput.
+  **Migration:** to keep GameInput, set the environment variable `SDL_JOYSTICK_GAMEINPUT=1`.
+- A game without any scene runs (it used to fail with an index error).
 
 ## 0.4.0-alpha.2
 

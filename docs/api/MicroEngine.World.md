@@ -44,6 +44,10 @@ Draws the visible part of a layer, asking the game which sprite each tile uses.
 
 ### Structs
 
+ [EntityList<T\>.Enumerator](MicroEngine.World.EntityList\-1.Enumerator.md)
+
+Walks the living entities of an [EntityList`1](MicroEngine.World.md) without allocating.
+
  [MoveResult](MicroEngine.World.MoveResult.md)
 
 What happened during a [Move](MicroEngine.World.TileMotion.md#MicroEngine_World_TileMotion_Move_MicroEngine_RectF_System_Numerics_Vector2_MicroEngine_World_ICollisionGrid_System_Collections_Generic_IReadOnlyList_MicroEngine_RectF__System_Boolean_).

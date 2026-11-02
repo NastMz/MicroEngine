@@ -99,8 +99,9 @@ How far the frame being drawn is between the last update and the next one, from 
 real time that has passed but not been simulated yet. Updates run at a fixed rate and frames at the display's, so
 on a display whose rate is not a multiple of [UpdateRate](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_UpdateRate) (75, 100, 144 Hz...) some
 frames show no new update; drawing moving things at
-<code>Vector2.Lerp(previousPosition, position, FrameBlend)</code> makes their motion even. Always 0 when time advances
-one step per frame (headless, scripted runs), so captures stay exact.
+<code>Vector2.Lerp(previousPosition, position, FrameBlend)</code> makes their motion even (drawn up to one update behind,
+like every interpolating loop). Always 1 when time advances one step per frame (headless, scripted runs), so
+captures show exactly the last update.
 
 ```csharp
 public float FrameBlend { get; }
@@ -218,6 +219,19 @@ public SceneManager Scenes { get; }
 #### Property Value
 
  [SceneManager](MicroEngine.Scenes.SceneManager.md)
+
+### <a id="MicroEngine_Core_Game_Screen"></a> Screen
+
+The screen while the game runs: displays, VSync, frame limit, window mode, and the graphics API and GPU in use
+([GraphicsSettings](MicroEngine.Core.GraphicsSettings.md) for the options it starts with). Available from <code>Load</code>.
+
+```csharp
+public GameScreen Screen { get; }
+```
+
+#### Property Value
+
+ [GameScreen](MicroEngine.Core.GameScreen.md)
 
 ### <a id="MicroEngine_Core_Game_Settings"></a> Settings
 
