@@ -1,5 +1,14 @@
 # A3 — Simulation-side domains: input, audio, world/entities/scenes, physics, UI
 
+> **Superseded points (owner's approval, 2026-11-02).** This annex is kept as written; its findings stand. Two points
+> of §7 are superseded by the dossier: (1) the legacy `Entity`/`EntityList` is kept only as a transitional
+> `[Obsolete]` migration adapter outside every engine package, deleted at the end of stage 5 and guarded by the
+> architecture test ([dossier §6.3](../arch-1.md#63-physical-structure), §9); (2) physics is not "Box2D v3 by default"
+> behind one contract: `IPhysicsWorld2D` is split into a common contract both the kinematic tile backend and Box2D
+> pass, plus declared `PhysicsCapabilities` with a typed error for undeclared requests, and the tile backend is the
+> first implementation ([dossier §9.1](../arch-1.md#91-definition-of-done-for-phase-ii), ADR 0031). Where this annex
+> and the dossier differ, the dossier wins.
+
 Phase I adversarial audit, MicroEngine branch `docs/arch-1` (includes the unmerged ASSET-1 work). Read-only on the
 repository. Experiments live in
 `<scratch>\exp-sim\`

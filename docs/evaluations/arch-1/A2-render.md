@@ -1,5 +1,15 @@
 # A2 — Rendering, graphics and platform backends (ARCH-1, Phase I audit)
 
+> **Superseded points (owner's approval, 2026-11-02).** This annex is kept as written; its findings stand. The device
+> contract of §6.1 is now integrated, amended, in [dossier §6.4](../arch-1.md#64-fundamental-contracts-sketch) as the
+> single graphics contract for every tier: built-in pipelines (sprite, textured geometry, with each supported blend
+> state) on every tier, so the 2D batcher needs no custom shaders; capabilities that include tier, shader formats and
+> limits; and one typed `GraphicsCapabilityException` for an undeclared capability instead of silent rejection or
+> degradation. Specialized 2D/3D interfaces and per-mechanism extensions were rejected (dossier §7, ADR 0028). The
+> contract is frozen only after the stage 1 spike (tier 0 on SDL_Renderer, tier 1 on SDL_GPU through P3), and the
+> tier-1 SDL_GPU device and 3D vertical slice are Phase II work, not "later" (dossier §9, §9.1). Where this annex and
+> the dossier differ, the dossier wins.
+
 Auditor: domain A2. Repository: `C:\Proyectos\MicroEngine`, branch `docs/arch-1` at `5706285` (includes the unmerged
 ASSET-1 work). Read-only on the repository; experiments ran on a copy of `src/MicroEngine`, `src/MicroEngine.Sdl` and
 `src/MicroEngine.Raylib` under the scratch directory (see "Experiments").
