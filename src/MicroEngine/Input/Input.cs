@@ -239,8 +239,13 @@ public sealed class InputMap
             float value = 0;
             bool down = false;
             if (_forced.Contains(action)) { down = true; value = 1; device = InputDevice.Other; }
-            if (!down && b.Keys.Any(source.IsKeyDown)) { down = true; value = 1; device = InputDevice.Keyboard; }
-            if (!down && b.Buttons.Any(source.IsPadDown)) { down = true; value = 1; device = InputDevice.Gamepad; }
+            // Plain loops: this runs for every action at every update, and LINQ would allocate each time.
+            if (!down)
+                foreach (var key in b.Keys)
+                    if (source.IsKeyDown(key)) { down = true; value = 1; device = InputDevice.Keyboard; break; }
+            if (!down)
+                foreach (var button in b.Buttons)
+                    if (source.IsPadDown(button)) { down = true; value = 1; device = InputDevice.Gamepad; break; }
             if (b.Stick != StickDirection.None)
             {
                 float v = Component(stick, b.Stick);
@@ -267,8 +272,14 @@ public sealed class InputMap
             foreach (var action in s.Actions)
                 if (!_bindings.ContainsKey(action))
                 {
-                    bool down = _forced.Contains(action) || _sources.Any(x => x.IsDown(action));
-                    Set(action, down, _sources.Max(x => x.Value(action)), down ? s.Device : InputDevice.None);
+                    bool down = _forced.Contains(action);
+                    float value = 0;
+                    foreach (var x in _sources)
+                    {
+                        down |= x.IsDown(action);
+                        value = Math.Max(value, x.Value(action));
+                    }
+                    Set(action, down, value, down ? s.Device : InputDevice.None);
                 }
         foreach (var action in _forced)
             if (!_bindings.ContainsKey(action)) Set(action, true, 1, InputDevice.Other);
@@ -360,8 +371,9 @@ public sealed class InputMap
     /// <summary>The directions a 2D input presses: none inside <paramref name="threshold"/>, else by 45° or 90° sectors.</summary>
     public static IReadOnlySet<StickDirection> Directions(Vector2 v, float threshold, StickDirections mode)
     {
+        // A centred stick, the usual case at every update, needs no new set.
+        if (v.Length() < threshold || v.Length() < 1e-6f) return System.Collections.Frozen.FrozenSet<StickDirection>.Empty;
         var result = new HashSet<StickDirection>();
-        if (v.Length() < threshold || v.Length() < 1e-6f) return result;
         // Angle in degrees, 0 = right, 90 = down (screen coordinates).
         float angle = MathF.Atan2(v.Y, v.X) * 180 / MathF.PI;
         if (angle < 0) angle += 360;

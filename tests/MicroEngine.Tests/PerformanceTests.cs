@@ -174,6 +174,36 @@ public class PerformanceTests
         Assert.AreEqual(2, s.Work.P50, "events, update and render");
     }
 
+    private sealed class QuietGame : Game
+    {
+        public override GameSettings Settings { get; } = new("quiet");
+        protected override void Load() => Scenes.Push(new Quiet());
+        private sealed class Quiet : Scene
+        {
+            private static readonly string[] Needed = ["confirm"];
+            public override IReadOnlyCollection<string>? TouchActions => Needed;
+            public override void Update(float dt) { }
+            public override void Draw(IRenderer renderer) { }
+        }
+    }
+
+    [TestMethod]
+    public void The_loop_allocates_next_to_nothing_per_frame()
+    {
+        // Input sampling, touch controls and the loop itself run every frame; garbage there becomes collections on
+        // phones and in browsers. 2.6 KB per frame before PERF-1, about 100 bytes after.
+        var profiler = new FrameProfiler();
+        var result = GameRunner.Run(new QuietGame(), new HeadlessPlatform(), new RunOptions
+        {
+            Script = InputScript.Parse("50 hold right 100\n80 press confirm"),
+            MaxUpdates = 300,
+            Profiler = profiler,
+        });
+        Assert.IsNull(result.Error);
+        var summary = profiler.Summarize(warmup: 100);
+        Assert.IsTrue(summary.AllocatedPerFrame < 256, $"{summary.AllocatedPerFrame:0} bytes per frame");
+    }
+
     [TestMethod]
     public void A_profiled_run_matches_an_unprofiled_one()
     {

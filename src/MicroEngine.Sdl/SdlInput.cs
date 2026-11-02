@@ -10,6 +10,7 @@ internal sealed unsafe class SdlInput(SdlPlatform platform) : IInputSource, IDis
 {
     private static readonly Dictionary<Key, SDL_Scancode> Keys = BuildKeys();
     private readonly Dictionary<SDL_Scancode, int> _taps = [];
+    private readonly List<SDL_Scancode> _keys = [];
     private readonly HashSet<SDL_Scancode> _sampled = [];
     private SDL_Gamepad* _pad;
     private SDL_JoystickID _padId;
@@ -22,7 +23,9 @@ internal sealed unsafe class SdlInput(SdlPlatform platform) : IInputSource, IDis
     {
         foreach (var key in _sampled) _taps.Remove(key);
         _sampled.Clear();
-        foreach (var key in _taps.Keys.ToList())
+        _keys.Clear();
+        _keys.AddRange(_taps.Keys); // reused every frame instead of a new list
+        foreach (var key in _keys)
             if (--_taps[key] <= 0) _taps.Remove(key);
     }
 
