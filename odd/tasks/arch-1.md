@@ -90,7 +90,7 @@ A stage's tasks are checked against the stage closure criteria in dossier §9.
 | T3 | S1-S9 | inline: cross-check, resolve contradictions, write `docs/evaluations/arch-1.md` | done | — (in the Phase I PR) | dossier; D1 and D4 spot-checked against source |
 | T4 | S10 | inline: present for approval | done: approved 2026-11-02 with five amendments | — | `L4`, `L5` |
 | T5 | S11-S13, S16 | delegated: documentation agent, branch `docs/arch-1-plan` | done | [#23](https://github.com/NastMz/MicroEngine/pull/23), 986adc6 | dossier amended (§6.3-§6.5, §7-§11, §9.1), annex notes, this register |
-| T6 | S11, S16 | delegated: documentation agent, branch `docs/arch-1-prototype-verdicts` | PR open | `docs: ARCH-1 prototype verdicts (P1, P3, P4) and revised graphics contract` | dossier §9 prototype verdicts; §6.4 graphics contract revised per directive 2 (16 points); directive 3 decisions in §5, §6.1-§6.5, §7, §9, §10, §11; this register |
+| T6 | S11, S16 | delegated: documentation agent, branch `docs/arch-1-prototype-verdicts` | PR open | [#29](https://github.com/NastMz/MicroEngine/pull/29) | dossier §9 prototype verdicts; §6.4 graphics contract revised per directive 2 (16 points); directive 3 decisions in §5, §6.1-§6.5, §7, §9, §10, §11; this register |
 | G1 | S15 | delegated: another agent, branch `fix/phase-ii-deploy-freeze` | done | [#22](https://github.com/NastMz/MicroEngine/pull/22), 9a8020e | automatic public publication frozen for Phase II (`.github/phase-freeze`); validation CI keeps running |
 | S0-D1 | S11 | delegated: stage 0 defects agent, branch `fix/arch-1-stage0-defects` | done | [#24](https://github.com/NastMz/MicroEngine/pull/24), 59fae72 | `ComposedPlatform` forwards every `IPlatform` member and exactly the backend's optional interfaces; tests RED first |
 | S0-D2 | S11 | delegated: stage 0 CI agent, branch `fix/arch-1-stage0-ci` | PR open | [#27](https://github.com/NastMz/MicroEngine/pull/27) | Windows WARP reference drift and the Debian 11 glibc check rule (`packaging/targets.mjs`) |
@@ -195,7 +195,7 @@ None is frozen yet. A contract is listed as frozen only after its gate passes an
 | --- | --- | --- | --- | --- |
 | [#27](https://github.com/NastMz/MicroEngine/pull/27) | S0-D2, S0-C1-C3, S0-D11 (`docs/ci.md`) | `fix/arch-1-stage0-ci` | stage 0 CI agent | stage 0 CI unit; in progress |
 | — (not yet opened) | S0-D3, S0-V1-V3 (S0-V4 if included) | `feat/arch-1-stage0-validation` | stage 0 validation agent | stage 0 validation tooling unit; in progress |
-| `docs: ARCH-1 prototype verdicts (P1, P3, P4) and revised graphics contract` | T6 | `docs/arch-1-prototype-verdicts` | documentation agent | this register update |
+| [#29](https://github.com/NastMz/MicroEngine/pull/29) | T6 | `docs/arch-1-prototype-verdicts` | documentation agent | this register update |
 
 ### Merged PRs
 
