@@ -102,6 +102,18 @@ public ContentFolder Content { get; }
 
 The folder does not exist.
 
+### <a id="MicroEngine_Core_AssetCache_Count"></a> Count
+
+How many assets this scope and its children hold; allocates nothing, so it can be checked every frame.
+
+```csharp
+public int Count { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Core_AssetCache_FrameBudgetMilliseconds"></a> FrameBudgetMilliseconds
 
 Time per frame [Update](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Update) spends finishing preloaded assets (decoding where needed, uploading), in milliseconds; at least one asset finishes per frame.
