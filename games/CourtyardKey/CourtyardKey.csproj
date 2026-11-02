@@ -17,9 +17,6 @@
     <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Content/**" Exclude="Content/**/*.cs" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />
-  </ItemGroup>
-  <ItemGroup>
     <InternalsVisibleTo Include="CourtyardKey.Tests" />
   </ItemGroup>
 </Project>
