@@ -74,6 +74,19 @@ Daily CI runs the SDK check (`sdk.yml`) whenever a package input changes, and **
 The four demos are packaged by the same tool; their packages are also verified level by level and played scenario by
 scenario on each system ([packaging/](../packaging/README.md)).
 
+## Publication freeze
+
+While [`.github/phase-freeze`](../.github/phase-freeze) exists on `main`, none of the three is published, whatever
+merges: `main`'s ci deploys no production site, **sdk-release** stops in its preflight with a "Frozen" summary (after
+a merge or by hand: no check, draft, nuget.org push, GitHub release or site), and **release** refuses. Pull request
+checks and previews run as usual. The full list of effects is in [CI, Publication freeze](ci.md#publication-freeze).
+
+To lift it, the owner merges a pull request that deletes the file. That merge deploys production with `main`'s site
+(unless the documented SDK version is not on nuget.org yet, as always) and runs sdk-release: a version documented
+during the freeze is then checked, drafted and waits for the `nuget` environment's approval as in
+[Releasing the SDK](#releasing-the-sdk). Demo releases can be run again by hand. To freeze again, add the file back
+with its reason on the first line that is not a `#` comment.
+
 ## Releasing the SDK
 
 Publishing uses nuget.org [Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing):

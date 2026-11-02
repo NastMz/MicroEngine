@@ -4,7 +4,8 @@
 # starts on its own; it can also be run by hand (Actions → sdk-release → Run workflow) to resume one.
 #   preflight  reads the state of the documented version: on nuget.org (package by package), its GitHub release
 #              sdk-v<version> (none, draft, published), and decides what is left to do. Nothing to do is the normal
-#              outcome after any other merge
+#              outcome after any other merge. While .github/phase-freeze exists on that commit (publication freeze),
+#              its decision is `frozen`: nothing below runs, by hand either
 #   check      sdk.yml on this commit: pack every package, check them, and build, run and package a new game from them
 #              on Windows, Linux and macOS
 #   draft      a draft GitHub prerelease sdk-v<version> holding exactly the checked packages and SHA256SUMS; not public
@@ -63,7 +64,9 @@ jobs:
         id: state
         run: |
           error() { echo "::error::$1"; echo "Refused: $1" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
-          if [ "$EVENT" = workflow_dispatch ]; then
+          # Publication freeze (docs/releasing.md): release-plan answers `frozen` without asking anything, so a frozen
+          # run, by hand too, stops here with that summary and every later job is skipped.
+          if [ "$EVENT" = workflow_dispatch ] && [ ! -e .github/phase-freeze ]; then
             [ "$GITHUB_REF" = refs/heads/main ] || error "SDK releases are made from main, not $GITHUB_REF."
             passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SHA&event=push&status=success&per_page=1" --jq .total_count)
             [ "$passed" -ge 1 ] || error "ci has not passed on main for $SHA (yet)."
@@ -73,6 +76,9 @@ jobs:
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           node sdk/version.mjs release-plan --sha "$SHA" --event "$EVENT" > plan.md 2> refused.txt || error "$(sed 's/^error: //' refused.txt)"
           tee -a "$GITHUB_STEP_SUMMARY" < plan.md
+          if [ "$(grep '^action=' "$GITHUB_OUTPUT" | tail -n 1 | cut -d= -f2)" = frozen ]; then
+            echo "::notice::Publication is frozen (.github/phase-freeze): nothing was checked, drafted, pushed to nuget.org or deployed."
+          fi
 
   check:
     name: Check

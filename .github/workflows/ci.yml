@@ -7,7 +7,8 @@
 #   sdk        the SDK packed, checked and used from outside the repository on Windows, Linux and macOS
 #              (.github/workflows/sdk.yml), when a package input changed; never published from here
 #   deploy     a preview for pull requests that change the site or a demo; production when main changes the
-#              published site, always with the latest released demos: merging never publishes a demo
+#              published site, always with the latest released demos: merging never publishes a demo. While
+#              .github/phase-freeze exists, main deploys nothing (publication freeze, .github/scripts/freeze.mjs)
 #   CI result  the one check to require: fails if anything needed failed, was cancelled or did not run (the SDK
 #              check included); after it passes on main, sdk-release.yml starts if main documents a new SDK version
 #   project graph  .NET tests and native captures are narrowed to the test projects and games that depend on the
@@ -127,10 +128,9 @@ jobs:
             --site-extra "suites=$suites $PACKAGES" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
           get() { grep "^$1=" "$evidence" | cut -d= -f2-; }
           run() { [ "$1" = true ] && [ -z "$(get "reused_$2")" ] && echo true || echo false; }
-          if [ "$EVENT" = push ]; then
-            deploy=$([ "$BROWSER" != none ] && echo production || echo none)
-          elif [ "$FORK" = true ]; then deploy=none
-          else deploy=$([ "$BROWSER" != none ] || [ "$BUILD" != '[]' ] && echo preview || echo none); fi
+          # Production for a push that changes the published site, unless .github/phase-freeze exists (publication
+          # freeze, docs/ci.md); a preview for a pull request that changes the site or a demo (freeze.mjs deployTarget).
+          deploy=$(node .github/scripts/freeze.mjs deploy --event "$EVENT" --fork "$FORK" --browser "$BROWSER" --build "$BUILD" 2>> "$GITHUB_STEP_SUMMARY")
           {
             echo "dotnet=$(run "$DOTNET" dotnet)"
             echo "windows=$(run "$WINDOWS" windows)"

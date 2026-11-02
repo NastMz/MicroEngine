@@ -14,6 +14,7 @@
 //   node sdk/version.mjs wait-public <version> [--timeout <seconds>]   until nuget.org serves all six packages
 //   node sdk/version.mjs packages                     the package ids, in push order
 //   node sdk/version.mjs release-plan --sha <commit> [--event <event>]   what sdk-release.yml has left to do
+//                                                     (nothing while .github/phase-freeze exists: publication freeze)
 //
 // Active references are found by pattern (`references` below) in the documentation, the samples' project files and
 // the contributor entry point; historical files (release and migration notes, decisions, evaluations, the generated
@@ -49,6 +50,16 @@ const historical = /^docs\/(guide\/release-notes\.md|migrations\.md|decisions\/|
 const scanned = file => (/^(AGENTS|README|CONTRIBUTING)\.md$/.test(file) || /^docs\/.*\.md$/.test(file) || /^samples\/.*\.csproj$/.test(file))
   && !historical.test(file);
 const historyMarker = '<!-- sdk-version: history -->';
+
+// Publication freeze (docs/ci.md, "Publication freeze"): the same file .github/scripts/freeze.mjs reads (its tests
+// check the two agree). Read here, not imported: some sdk-release jobs check out sdk/ alone.
+export const freezeFile = '.github/phase-freeze';
+/** Why publication is frozen at `root` (the freeze file's first line that is neither blank nor a comment), or null. */
+export function freezeReason(root = repoRoot) {
+  const file = path.join(root, freezeFile);
+  if (!fs.existsSync(file)) return null;
+  return fs.readFileSync(file, 'utf8').split(/\r?\n/).map(l => l.trim()).find(l => l && !l.startsWith('#')) ?? 'publication frozen';
+}
 
 function fail(message) { throw new Error(message); }
 const read = (root, file) => fs.readFileSync(path.join(root, file), 'utf8');
@@ -199,11 +210,15 @@ export async function waitPublic(version, { timeoutSeconds = 1800, intervalSecon
  *   notes                 the release notes have a section for `documented`
  *   event                 'workflow_run' (after ci passed on main) or 'workflow_dispatch' (by hand)
  *   isAncestor(commit)    `commit` is in the history of `sha`
- * Returns { action, lines }: none (nothing to release), release (check, draft, publish), publish (finish the existing
+ *   frozen                why publication is frozen on `sha` (freezeReason), or null; when set, nothing else is read
+ * Returns { action, lines }: frozen (publication freeze: nothing is checked, drafted, pushed or deployed), none (nothing to release), release (check, draft, publish), publish (finish the existing
  * draft: push what nuget.org lacks, publish the GitHub release), finish (verify nuget.org, deploy the site). Throws
  * when no run can continue without a person: the message says what to do.
  */
-export function releasePlan({ documented, prepared, packages, release, notes, event, sha, isAncestor }) {
+export function releasePlan({ documented, prepared, packages, release, notes, event, sha, isAncestor, frozen }) {
+  if (frozen) {
+    return { action: 'frozen', lines: [`Frozen: publication is frozen (${freezeFile}: ${frozen}). Nothing is checked, drafted, pushed to nuget.org or deployed, whatever the state of ${documented}. To release, delete ${freezeFile} in a pull request (docs/releasing.md, "Publication freeze").`] };
+  }
   const onNuget = packageIds.filter(id => packages[id]).length, all = onNuget === packageIds.length;
   const shown = !release ? 'none' : release.draft ? `draft of ${release.target.slice(0, 12)}` : 'published';
   const lines = [`nuget.org has ${onNuget} of ${packageIds.length} packages; GitHub release sdk-v${documented}: ${shown}`];
@@ -274,6 +289,16 @@ async function main([command, ...args]) {
     // GITHUB_OUTPUT, the explanation to stdout (Markdown for the run summary).
     const sha = value('--sha') ?? fail('release-plan needs --sha.');
     const documented = documentedVersion();
+    const frozen = freezeReason();
+    const summary = plan => console.log([`### SDK ${documented} from \`${sha.slice(0, 12)}\``, '', ...plan.lines.map(l => `- ${l}`), ''].join('\n'));
+    const output = plan => { if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${documented}\naction=${plan.action}\n`); };
+    if (frozen) {
+      // Stops before asking nuget.org or GitHub: a freeze never depends on them answering.
+      const plan = releasePlan({ documented, frozen });
+      summary(plan);
+      output(plan);
+      return;
+    }
     const git = gitArgs => spawnSync('git', gitArgs, { cwd: repoRoot, encoding: 'utf8' });
     const release = await githubRelease(`sdk-v${documented}`);
     const plan = releasePlan({
@@ -281,11 +306,11 @@ async function main([command, ...args]) {
       notes: releasedVersions().includes(documented), event: value('--event') ?? 'workflow_dispatch', sha,
       isAncestor: commit => git(['merge-base', '--is-ancestor', commit, sha]).status === 0,
     });
-    console.log([`### SDK ${documented} from \`${sha.slice(0, 12)}\``, '', ...plan.lines.map(l => `- ${l}`), ''].join('\n'));
+    summary(plan);
     if (plan.action === 'publish' && release.target !== sha) {
       console.log([`The draft was made from ${release.target.slice(0, 12)}; main has moved on since:`, '', '```', git(['log', '--oneline', `${release.target}..${sha}`]).stdout.trim(), '```', ''].join('\n'));
     }
-    if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${documented}\naction=${plan.action}\n`);
+    output(plan);
   } else if (command === 'packages') {
     console.log(packageIds.join(' '));
   } else {

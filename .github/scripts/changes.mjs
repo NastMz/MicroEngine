@@ -41,6 +41,8 @@ export const rules = [
   { pattern: /^\.github\/workflows\/platforms\.yml$/, checks: ['workflows', 'mobile'], why: 'platform workflow' },
   { pattern: /^\.github\/workflows\//, checks: ['workflows'], why: 'manual workflow' },
   { pattern: /^platforms\//, checks: ['mobile'], why: 'mobile hosts' },
+  // Publication freeze (freeze.mjs): lifting it on main deploys the site main accumulated meanwhile.
+  { pattern: /^\.github\/phase-freeze$/, checks: ['layout'], why: 'publication freeze' },
   { pattern: /^\.github\//, checks: [], why: 'other repository settings' },
   { pattern: /^src\/MicroEngine\.Cli\/Hosts\/web\//, checks: ['full', 'sdk'], why: 'browser host (microengine package web)' },
   { pattern: /^src\/MicroEngine\.Cli\/Hosts\//, checks: ['mobile', 'sdk'], why: 'phone hosts (microengine package android, ios)' },
