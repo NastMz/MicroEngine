@@ -1,0 +1,11 @@
+regression: bullet (6x6 px) missing                      FAIL (detected)          base: differs from the reference (cell 20,15 moved by 9)
+regression: coin (12x12 px) missing                      FAIL (detected)          base: differs from the reference (cell 23,13 moved by 37)
+regression: HUD 13 -> 18                                 PASS (within tolerance)  base: pixels differ, largest cell change 3 at cell 1,0
+regression: HUD 13 -> 73                                 FAIL (detected)          base: differs from the reference (cell 1,1 moved by 10)
+regression: hero 3 px to the right (one source pixel)    FAIL (detected)          base: differs from the reference (cell 13,15 moved by 20)
+regression: hero 12 px to the right                      FAIL (detected)          base: differs from the reference (cell 13,15 moved by 80)
+regression: gem 12 px to the right, same cell            PASS (within tolerance)  base: pixels differ, largest cell change 0 at cell 0,0
+regression: gem 15 px down... (same cell, y)             PASS (identical)         
+benign: 3x3 blur (sampling/filter change)                PASS (within tolerance)  base: pixels differ, largest cell change 2 at cell 14,15
+benign: +2 on every channel (driver rounding)            PASS (within tolerance)  base: pixels differ, largest cell change 2 at cell 0,0
+benign: +4 on every channel (gamma/sRGB rounding)        FAIL (detected)          base: differs from the reference (cell 0,0 moved by 4)

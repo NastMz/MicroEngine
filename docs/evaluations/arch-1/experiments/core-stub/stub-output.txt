@@ -1,0 +1,35 @@
+== E1 composition keeps optional capabilities?
+direct                   type=StubPlatform       DisplayRate=  144 IDisplayControl=True  IPlatformDiagnostics=True  Wait->backend=True
+composed (ExtraInput)    type=ComposedPlatform   DisplayRate=    0 IDisplayControl=False IPlatformDiagnostics=False Wait->backend=False
+Game.Screen.CanChange through composed platform: False; Displays: 0
+== E2 stub backend runs a game
+updates=10 frames=10 error=none 
+IPlatform              members= 16 required(no default)= 11
+IGraphicsDevice        members=  3 required(no default)=  2
+IRenderer              members= 13 required(no default)= 13
+IInputSource           members=  7 required(no default)=  3
+IAudioDevice           members= 11 required(no default)= 11
+ITouchScreen           members=  8 required(no default)=  6
+IOverlayCanvas         members=  6 required(no default)=  5
+IDisplayControl        members=  7 required(no default)=  7
+IPlatformDiagnostics   members=  1 required(no default)=  1
+ISaveStorage           members=  6 required(no default)=  6
+Texture (abstract class) protected abstract methods=3
+== E3 headless clock vs UpdateRate
+UpdateRate=120: updates=120 Game.Time=1,000s platform.Now=2,000s (frames/60)
+== E4 asset identity and lifetime
+sibling scopes share one texture: False (device textures alive: n/a)
+same file, other filter -> other texture: True; cache count=3
+held texture after Unload: IsDisposed=True
+== E5 public surface of MicroEngine.dll
+MicroEngine            types=  4 public members=  61
+MicroEngine.Audio      types= 12 public members= 139
+MicroEngine.Core       types= 55 public members= 570
+MicroEngine.Graphics   types= 33 public members= 320
+MicroEngine.Input      types= 37 public members= 409
+MicroEngine.Scenes     types=  9 public members=  66
+MicroEngine.UI         types=  8 public members=  90
+MicroEngine.World      types= 15 public members=  88
+total exported types=173
+public static settable: ContentFolder.DefaultRoot, SaveStore.DefaultStorage
+public test hooks: Game.InitializeForTest, Game.StepForTest

@@ -1,0 +1,37 @@
+MicroEngine -> MicroEngine.Audio                     1 Wave@MathX.cs
+MicroEngine.Core -> MicroEngine                      7 Color@AppIdentity.cs RectF@HeadlessPlatform.cs Color@HeadlessPlatform.cs Color@Platform.cs Color@PlatformProfiles.cs RectF@StartScreen.cs Color@StartScreen.cs
+MicroEngine.Core -> MicroEngine.Audio                6 AudioMixer@Game.cs CaptureAudioDevice@GameLauncher.cs SilentAudioDevice@HeadlessPlatform.cs IAudioDevice@HeadlessPlatform.cs IAudioDevice@Platform.cs IAudioDevice@PlatformProfiles.cs
+MicroEngine.Core -> MicroEngine.Graphics            37 Sprite@Achievements.cs PixelImage@AppIdentity.cs IGraphicsDevice@AssetCache.cs TextureFilter@AssetCache.cs Texture@AssetCache.cs SpriteAtlas@AssetCache.cs ScalableFont@AssetCache.cs PixelImage@AssetCache.cs AtlasOptions@AssetCache.cs ImageDecoder@AssetCache.cs
+MicroEngine.Core -> MicroEngine.Input               31 Key@AppIdentity.cs InputMap@Game.cs VirtualControls@Game.cs ActionPrompts@Game.cs TouchLayout@Game.cs ITouchScreen@Game.cs InputDevice@GameRunner.cs GamepadStyle@GameRunner.cs VirtualControls@GameRunner.cs ActionPrompts@GameRunner.cs
+MicroEngine.Core -> MicroEngine.Scenes               4 Wait@AssetCache.cs SceneManager@Game.cs Wait@GameRunner.cs Wait@Platform.cs
+MicroEngine.Core -> MicroEngine.UI                   2 AchievementToasts@Game.cs UiTheme@Game.cs
+MicroEngine.Graphics -> MicroEngine                 23 MathX@Art.cs Color@Art.cs RectF@AtlasData.cs RectF@BitmapFont.cs Color@BitmapFont.cs RectF@Camera2D.cs MathX@Camera2D.cs Color@IFont.cs RectF@IGraphics.cs Color@IGraphics.cs
+MicroEngine.Input -> MicroEngine                     6 RectF@Touch.cs Color@Touch.cs Color@TouchSkin.cs RectF@TouchSkin.cs RectF@VirtualControls.cs Color@VirtualControls.cs
+MicroEngine.Input -> MicroEngine.Graphics            4 CanvasScaling@Touch.cs PixelImage@Touch.cs PixelImage@TouchSkin.cs CanvasScaling@VirtualControls.cs
+MicroEngine.Scenes -> MicroEngine                    4 Ease@Coroutines.cs Ease@Scene.cs Color@Scene.cs RectF@Scene.cs
+MicroEngine.Scenes -> MicroEngine.Audio              1 AudioMixer@Scene.cs
+MicroEngine.Scenes -> MicroEngine.Core               2 Game@Scene.cs AssetCache@Scene.cs
+MicroEngine.Scenes -> MicroEngine.Graphics           2 BitmapFont@Scene.cs IRenderer@Scene.cs
+MicroEngine.Scenes -> MicroEngine.Input              1 InputMap@Scene.cs
+MicroEngine.UI -> MicroEngine                        9 Ease@AchievementViews.cs MathX@AchievementViews.cs RectF@AchievementViews.cs Color@AchievementViews.cs Color@PromptText.cs RectF@PromptText.cs Color@Widgets.cs RectF@Widgets.cs MathX@Widgets.cs
+MicroEngine.UI -> MicroEngine.Audio                  1 Wave@Widgets.cs
+MicroEngine.UI -> MicroEngine.Core                   4 Achievement@AchievementViews.cs AchievementTracker@AchievementViews.cs Game@AchievementViews.cs AchievementStatus@AchievementViews.cs
+MicroEngine.UI -> MicroEngine.Graphics               7 IRenderer@AchievementViews.cs BitmapFont@AchievementViews.cs BitmapFont@PromptText.cs IRenderer@PromptText.cs PanelStyle@Widgets.cs IFont@Widgets.cs IRenderer@Widgets.cs
+MicroEngine.UI -> MicroEngine.Input                  9 ActionPrompts@PromptText.cs ActionPrompt@PromptText.cs PromptKind@PromptText.cs PadButton@PromptText.cs Key@PromptText.cs PadAxis@PromptText.cs GamepadStyle@PromptText.cs ActionPrompts@Widgets.cs InputMap@Widgets.cs
+MicroEngine.UI -> MicroEngine.Scenes                 1 Scene@AchievementViews.cs
+MicroEngine.World -> MicroEngine                     4 RectF@Entities.cs RectF@TileMap.cs Color@TileMap.cs RectF@TileMotion.cs
+MicroEngine.World -> MicroEngine.Graphics            6 IRenderer@Entities.cs Camera2D@Entities.cs IRenderer@TileMap.cs Camera2D@TileMap.cs Sprite@TileMap.cs Texture@TileMap.cs
+
+Types per namespace (public / all top-level):
+MicroEngine.Audio        12 / 12
+MicroEngine.Core         54 / 56
+MicroEngine.Graphics     33 / 35
+MicroEngine.Input        36 / 36
+MicroEngine              4 / 4
+MicroEngine.Scenes       9 / 13
+MicroEngine.UI           8 / 8
+MicroEngine.World        10 / 10
+
+Mutual (2-cycle) dependencies:
+  MicroEngine.Core <-> MicroEngine.Scenes
+  MicroEngine.Core <-> MicroEngine.UI
