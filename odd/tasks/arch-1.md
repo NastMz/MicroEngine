@@ -89,7 +89,7 @@ A stage's tasks are checked against the stage closure criteria in dossier §9.
 | T2 | S2 | delegated: 3 researchers (rendering, engine core/physics/assets/audio/input, validation/packaging) | done | — (in the Phase I PR) | annexes R1-R3 (230+ sources) |
 | T3 | S1-S9 | inline: cross-check, resolve contradictions, write `docs/evaluations/arch-1.md` | done | — (in the Phase I PR) | dossier; D1 and D4 spot-checked against source |
 | T4 | S10 | inline: present for approval | done: approved 2026-11-02 with five amendments | — | `L4`, `L5` |
-| T5 | S11-S13, S16 | delegated: documentation agent, branch `docs/arch-1-plan` | PR open | see Open PRs | dossier amended (§6.3-§6.5, §7-§11, §9.1), annex notes, this register |
+| T5 | S11-S13, S16 | delegated: documentation agent, branch `docs/arch-1-plan` | PR open | [#23](https://github.com/NastMz/MicroEngine/pull/23) | dossier amended (§6.3-§6.5, §7-§11, §9.1), annex notes, this register |
 | G1 | S15 | delegated: another agent, branch `fix/phase-ii-deploy-freeze` | in progress | — | freezes automatic production site deployments from `main`; merges first |
 | S0-D1 | S11 | delegated (unassigned) | pending | — | D1 `ComposedPlatform` forwarding, with tests |
 | S0-D2 | S11 | delegated (unassigned) | pending | — | D2 release-gating package checks red on `main` |
@@ -180,7 +180,7 @@ None is frozen yet. A contract is listed as frozen only after its gate passes an
 
 | PR | Task | Branch | Owner | Notes |
 | --- | --- | --- | --- | --- |
-| (to be filled when opened) | T5 | `docs/arch-1-plan` | documentation agent | Phase I dossier + approved amendments + this register; merges after G1 |
+| [#23](https://github.com/NastMz/MicroEngine/pull/23) | T5 | `docs/arch-1-plan` | documentation agent | Phase I dossier + approved amendments + this register; merges after G1 |
 | — | G1 | `fix/phase-ii-deploy-freeze` | another agent | deploy freeze; merges first |
 
 ### Merged PRs
