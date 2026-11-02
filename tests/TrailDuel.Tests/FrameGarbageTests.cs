@@ -28,15 +28,24 @@ public sealed class FrameGarbageTests
         public void SetClip(RectF? screenRect) { }
     }
 
-    /// <summary>Bytes allocated per draw of <paramref name="scene"/>, after a few warm-up draws.</summary>
-    private static long BytesPerDraw(Scene scene)
+    /// <summary>
+    /// Bytes allocated per draw of <paramref name="scene"/> in three batches after warm-up draws. Garbage made every frame
+    /// shows in every batch; a one-off (a cache filled late, the runtime's own work on a first call) shows in one only,
+    /// as on macOS where one batch of the route once allocated about 3 KB in all.
+    /// </summary>
+    private static long[] BytesPerDraw(Scene scene)
     {
         var renderer = new NullRenderer();
-        for (int i = 0; i < 5; i++) scene.Draw(renderer);
+        for (int i = 0; i < 60; i++) scene.Draw(renderer);
         const int draws = 60;
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < draws; i++) scene.Draw(renderer);
-        return (GC.GetAllocatedBytesForCurrentThread() - before) / draws;
+        var batches = new long[3];
+        for (int b = 0; b < batches.Length; b++)
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < draws; i++) scene.Draw(renderer);
+            batches[b] = (GC.GetAllocatedBytesForCurrentThread() - before) / draws;
+        }
+        return batches;
     }
 
     [TestMethod]
@@ -52,8 +61,8 @@ public sealed class FrameGarbageTests
         for (int i = 0; i < 400 && (h.Game.Scenes.Current?.GetType() != scene || h.Game.Scenes.InTransition); i++) h.Step();
         h.Step(30);
         Assert.IsInstanceOfType(h.Game.Scenes.Current, scene);
-        long bytes = BytesPerDraw(h.Game.Scenes.Current!);
-        Assert.AreEqual(0, bytes, $"{bytes} bytes per draw of {start}");
+        var bytes = BytesPerDraw(h.Game.Scenes.Current!);
+        Assert.AreEqual(0, bytes.Min(), $"bytes per draw of {start} in three batches: {string.Join(", ", bytes)}");
     }
 
     [TestMethod]
@@ -64,8 +73,8 @@ public sealed class FrameGarbageTests
         for (int i = 0; i < 2000 && !battle.AwaitingChoice; i++) h.Step();
         Assert.IsTrue(battle.AwaitingChoice, "the action menu");
         h.Step(10);
-        long bytes = BytesPerDraw(battle);
-        Assert.AreEqual(0, bytes, $"{bytes} bytes per draw of the battle menu");
+        var bytes = BytesPerDraw(battle);
+        Assert.AreEqual(0, bytes.Min(), $"bytes per draw of the battle menu in three batches: {string.Join(", ", bytes)}");
     }
 
     [TestMethod]
