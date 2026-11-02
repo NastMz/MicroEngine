@@ -99,7 +99,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
         _target = Rl.LoadRenderTexture(settings.VirtualWidth, settings.VirtualHeight);
         Rl.SetTextureFilter(_target.Texture, settings.Scaling == CanvasScaling.Smooth ? Raylib_cs.TextureFilter.Bilinear : Raylib_cs.TextureFilter.Point);
         _graphics.DefaultFilter = settings.DefaultTextureFilter;
-        _renderer = new RaylibRenderer(settings.VirtualWidth, settings.VirtualHeight);
+        _renderer = new RaylibRenderer(_graphics, settings.VirtualWidth, settings.VirtualHeight);
         _audio = options.Mute ? new SilentAudioDevice() : RaylibAudioDevice.TryCreate();
     }
 
@@ -177,10 +177,13 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
     private RectF FrameRect() => _touch.Overlay?.Frame(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, _settings.Scaling)
         ?? FrameLayout.Fit(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, _settings.Scaling);
 
-    /// <inheritdoc/>
-    public void SaveScreenshot(string path)
+    /// <summary>Writes the canvas as a PNG, opaque (alpha 255 everywhere) as on every backend: the frame is shown on an opaque backdrop.</summary>
+    public unsafe void SaveScreenshot(string path)
     {
         var image = Rl.LoadImageFromTexture(_target.Texture);
+        // The render texture is RGBA8; raylib's blending leaves alpha below 255 where translucent colours were drawn.
+        var rgba = new Span<byte>(image.Data, image.Width * image.Height * 4);
+        for (int i = 3; i < rgba.Length; i += 4) rgba[i] = 255;
         Rl.ImageFlipVertical(ref image);
         if (_captureScale > 1) Rl.ImageResizeNN(ref image, image.Width * _captureScale, image.Height * _captureScale);
         Rl.ExportImage(image, path);
@@ -305,6 +308,8 @@ internal sealed unsafe class RaylibGraphicsDevice : IGraphicsDevice, IDisposable
             });
         if (native.Id == 0) throw new InvalidOperationException($"raylib could not create a {image.Width}x{image.Height} texture.");
         Rl.SetTextureFilter(native, RaylibTexture.ToRaylib(filter));
+        // raylib repeats textures by default, so linear sampling at an edge would mix in the opposite edge; the rules clamp.
+        Rl.SetTextureWrap(native, Raylib_cs.TextureWrap.Clamp);
         var texture = new RaylibTexture(this, native, filter);
         _textures.Add(texture);
         return texture;
@@ -319,7 +324,7 @@ internal sealed unsafe class RaylibGraphicsDevice : IGraphicsDevice, IDisposable
     }
 }
 
-internal sealed unsafe class RaylibTexture(RaylibGraphicsDevice device, Raylib_cs.Texture2D native, TextureFilter filter) : Texture(native.Width, native.Height, filter)
+internal sealed unsafe class RaylibTexture(RaylibGraphicsDevice device, Raylib_cs.Texture2D native, TextureFilter filter) : Texture(device, native.Width, native.Height, filter)
 {
     public Raylib_cs.Texture2D Native { get; } = native;
 
@@ -339,12 +344,24 @@ internal sealed unsafe class RaylibTexture(RaylibGraphicsDevice device, Raylib_c
     }
 }
 
-internal sealed class RaylibRenderer(int width, int height) : IRenderer
+/// <summary>
+/// Immediate-mode drawing through raylib, adjusted to the engine's rendering rules: <see cref="Clear"/> replaces the whole
+/// canvas whatever the clip, edges exactly on a pixel centre follow the top-left rule, and textures go through
+/// <see cref="Texture.CheckDrawable"/> first.
+/// </summary>
+internal sealed class RaylibRenderer(RaylibGraphicsDevice device, int width, int height) : IRenderer
 {
+    /// <summary>
+    /// The canvas is a render texture stored upside down, so OpenGL's tie rule includes a centre on the bottom edge and
+    /// excludes one on the top edge (a 1-px rectangle at y = 2.5 lit row 3). Moving all geometry up by this much (more than
+    /// the 1/256 px of GPU sub-pixel precision, so ties are resolved) gives the top-left rule; an edge less than this
+    /// below a pixel centre counts as on it, the source of variation the contract names for raylib.
+    /// </summary>
+    internal const float TieShift = 1f / 128;
     private readonly Stack<Vector2> _offsets = new();
     private Vector2 _offset;
     private BlendMode _blend = BlendMode.Alpha;
-    private bool _clipping;
+    private RectF? _clip;
 
     public int Width { get; } = width;
     public int Height { get; } = height;
@@ -354,22 +371,33 @@ internal sealed class RaylibRenderer(int width, int height) : IRenderer
         _offsets.Clear();
         _offset = Vector2.Zero;
         _blend = BlendMode.Alpha;
+        Raylib_cs.Rlgl.PushMatrix();
+        Raylib_cs.Rlgl.Translatef(0, -TieShift, 0);
     }
 
     public void End()
     {
         if (_blend != BlendMode.Alpha) Rl.EndBlendMode();
-        if (_clipping) { Rl.EndScissorMode(); _clipping = false; }
+        if (_clip is not null) { Rl.EndScissorMode(); _clip = null; }
+        Raylib_cs.Rlgl.PopMatrix();
         if (_offsets.Count != 0) throw new InvalidOperationException("Unbalanced PushCamera/PopCamera in this frame.");
     }
 
     private static RlColor C(Color c) => new(c.R, c.G, c.B, c.A);
 
-    public void Clear(Color color) => Rl.ClearBackground(C(color));
+    public void Clear(Color color)
+    {
+        // raylib batches draws and clears immediately: draw what is pending first, so the clear replaces it. OpenGL's clear
+        // honours the scissor box, so the clip is lifted for the clear and set again after it.
+        Raylib_cs.Rlgl.DrawRenderBatchActive();
+        if (_clip is not null) Rl.EndScissorMode();
+        Rl.ClearBackground(C(color));
+        if (_clip is { } r) Scissor(r);
+    }
 
     public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default)
     {
-        var native = ((RaylibTexture)texture).Native;
+        var native = Texture.CheckDrawable<RaylibTexture>(texture, device).Native;
         var scale = options.Scale ?? Vector2.One;
         var src = new RlRect(source.X, source.Y, options.FlipX ? -source.Width : source.Width, options.FlipY ? -source.Height : source.Height);
         var origin = options.Origin * scale;
@@ -380,7 +408,7 @@ internal sealed class RaylibRenderer(int width, int height) : IRenderer
 
     public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint)
     {
-        var native = ((RaylibTexture)texture).Native;
+        var native = Texture.CheckDrawable<RaylibTexture>(texture, device).Native;
         Rl.DrawTexturePro(native, new RlRect(source.X, source.Y, source.Width, source.Height),
             new RlRect(destination.X + _offset.X, destination.Y + _offset.Y, destination.Width, destination.Height), Vector2.Zero, 0, C(tint));
     }
@@ -422,13 +450,12 @@ internal sealed class RaylibRenderer(int width, int height) : IRenderer
 
     public void SetClip(RectF? screenRect)
     {
-        if (_clipping) { Rl.EndScissorMode(); _clipping = false; }
-        if (screenRect is { } r)
-        {
-            Rl.BeginScissorMode((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height);
-            _clipping = true;
-        }
+        if (_clip is not null) Rl.EndScissorMode();
+        _clip = screenRect;
+        if (screenRect is { } r) Scissor(r);
     }
+
+    private static void Scissor(RectF r) => Rl.BeginScissorMode((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height);
 }
 
 internal sealed class RaylibInput : IInputSource

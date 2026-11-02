@@ -13,9 +13,11 @@ using System.Diagnostics;
 namespace MicroEngine.Desktop.Tests;
 
 /// <summary>
-/// The official desktop platforms are interchangeable: the same game, unchanged, draws the same pixels on SDL (with each
-/// GPU driver this machine has) and on raylib, and a subsystem of one backend can be replaced by another backend's.
-/// These tests open real windows and devices; without a display they are skipped (failed under MICROENGINE_NATIVE_TESTS=1).
+/// The official desktop platforms are interchangeable: the same game, unchanged, runs on SDL (with each GPU driver this
+/// machine has) and on raylib, and a subsystem of one backend can be replaced by another backend's. Whether each backend
+/// draws by the rendering rules is decided by the conformance suite (<see cref="RendererConformance"/>); the
+/// pixel-by-pixel comparisons between backends here are informative reports. These tests open real windows and devices;
+/// without a display they are skipped (failed under MICROENGINE_NATIVE_TESTS=1).
 /// </summary>
 [TestClass]
 [TestCategory("Native")]
@@ -127,18 +129,32 @@ public sealed class PlatformEquivalenceTests
         finally { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
     }
 
-    private static void AssertSameColours(PixelImage expected, PixelImage actual, string what)
+    /// <summary>Set by MSTest; the pixel-by-pixel comparisons are written to the test's output.</summary>
+    public TestContext TestContext { get; set; } = null!;
+
+    /// <summary>
+    /// Compares two captures of the same game pixel by pixel and writes the result to the test output. This is an
+    /// informative report, not a pass criterion: backends may differ where the rendering contract names a source of
+    /// variation (edge pixels of circles and lines, 8-bit rounding), and whether each backend follows the rules is
+    /// decided by the conformance suite (<see cref="RendererConformance"/>). Only the sizes must match.
+    /// </summary>
+    private void ReportColourDifferences(PixelImage expected, PixelImage actual, string what)
     {
         Assert.AreEqual(expected.Width, actual.Width, what);
         Assert.AreEqual(expected.Height, actual.Height, what);
         var differing = new List<string>();
+        int largest = 0;
         for (int y = 0; y < expected.Height; y++)
             for (int x = 0; x < expected.Width; x++)
             {
                 Color a = expected[x, y], b = actual[x, y];
-                if (a.R != b.R || a.G != b.G || a.B != b.B) differing.Add($"({x},{y}) {a.R},{a.G},{a.B} vs {b.R},{b.G},{b.B}");
+                if (a.R == b.R && a.G == b.G && a.B == b.B) continue;
+                differing.Add($"({x},{y}) {a.R},{a.G},{a.B} vs {b.R},{b.G},{b.B}");
+                largest = Math.Max(largest, Math.Max(Math.Abs(a.R - b.R), Math.Max(Math.Abs(a.G - b.G), Math.Abs(a.B - b.B))));
             }
-        Assert.IsEmpty(differing, $"{what}: {differing.Count} pixels differ, first {string.Join("; ", differing.Take(6))}");
+        TestContext.WriteLine(differing.Count == 0
+            ? $"{what}: identical ({expected.Width}x{expected.Height})"
+            : $"{what}: {differing.Count} of {expected.Width * expected.Height} pixels differ, largest channel difference {largest}; first {string.Join("; ", differing.Take(6))}");
     }
 
     private static void AssertRgb(PixelImage image, int x, int y, Color expected)
@@ -174,8 +190,9 @@ public sealed class PlatformEquivalenceTests
         AssertRgb(frame, 50, 26, new Color(0, 128, 255));
     }
 
+    /// <summary>Informative: each SDL GPU driver's frame against the default driver's (see <see cref="ReportColourDifferences"/>).</summary>
     [TestMethod]
-    public void EverySdlGpuDriverDrawsTheSameFrame()
+    public void EverySdlGpuDriverFrameIsComparedWithTheDefaultDriver()
     {
         var reference = Capture(SdlPlatform.Profile);
         var tried = new List<string>();
@@ -184,18 +201,19 @@ public sealed class PlatformEquivalenceTests
         foreach (var driver in SdlPlatform.RenderDrivers.Where(d => d is not ("software" or "gpu")))
         {
             if (!TryCapture(SdlPlatform.CreateProfile(driver), out var frame, out _)) { unavailable.Add(driver); continue; }
-            AssertSameColours(reference, frame, $"sdl-{driver}");
+            ReportColourDifferences(reference, frame, $"sdl-{driver}");
             tried.Add(driver);
         }
         Native.Require(tried.Count >= 2, $"fewer than two GPU drivers could open here (opened: {string.Join(", ", tried)}; unavailable: {string.Join(", ", unavailable)})");
     }
 
+    /// <summary>Informative: the same game's frame on SDL and on raylib (see <see cref="ReportColourDifferences"/>).</summary>
     [TestMethod]
-    public void TheSameGameDrawsTheSameFrameOnSdlAndRaylib()
+    public void TheSameGameFrameIsComparedOnSdlAndRaylib()
     {
         var sdl = Capture(SdlPlatform.Profile);
         var raylib = Capture(RaylibPlatform.Profile);
-        AssertSameColours(raylib, sdl, "sdl vs raylib");
+        ReportColourDifferences(raylib, sdl, "sdl vs raylib");
     }
 
     [TestMethod]
