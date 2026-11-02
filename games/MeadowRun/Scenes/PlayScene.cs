@@ -15,6 +15,7 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
     private Stage _stage = null!;
     private StageView _view = null!;
     private bool _leaving;
+    private readonly StepBlend _step = new();
     private int _coinsAtStart, _scoreAtStart;
 
     public Stage Stage => _stage;
@@ -67,7 +68,9 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
             Input.Down("left"), Input.Down("right"), Input.Down("down"),
             Input.Pressed("jump"), Input.Down("jump"), Input.Down("run"), Input.Pressed("run"));
         _view.SetCrouch(input.Down && !input.Left && !input.Right);
+        _view.Remember(_stage);
         _stage.Update(dt, input);
+        _step.Stepped(Game, dt);
         _view.Observe(_stage, dt);
         if (_stage.Player.Form == PipForm.Ember) game.Achievements.Unlock(MeadowAchievements.EmberHeart);
         if (_stage.Outcome != StageOutcome.None) Finish(_stage.Outcome);
@@ -105,7 +108,7 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
 
     public override void Draw(IRenderer r)
     {
-        _view.Draw(r, _stage, Age);
+        _view.Draw(r, _stage, _step.Time(Game, Age), _step.Blend(Game));
         Ui.Hud(r, Font, game.Art, game.Session, _stage, Age);
         if (_stage.Phase == StagePhase.Tally) DrawTally(r);
         if (_stage.Phase == StagePhase.Victory)

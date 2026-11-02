@@ -21,6 +21,8 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
     private float _walk = 1;
     private float _revealed = 1;
     private bool _leaving;
+    private readonly StepBlend _step = new();
+    private Vector2 _pipFrom;
     private int Unlocked => game.Save.Unlocked;
 
     public int Node => _node;
@@ -43,6 +45,8 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
 
     public override void Update(float dt)
     {
+        _step.Stepped(Game, dt);
+        _pipFrom = PipPosition;
         if (_leaving) return;
         if (_walk < 1)
         {
@@ -91,11 +95,12 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
     public override void Draw(IRenderer r)
     {
         r.Draw(game.Art["map"], Vector2.Zero);
+        float time = _step.Time(Game, Age);
         // Water shimmer.
         for (int i = 0; i < 14; i++)
         {
-            float x = (i * 53 + Age * 6) % 330 - 5, y = 10 + (i * 37) % 160;
-            if (x < 20 || x > 300 || y < 24 || y > 170) r.FillRect(new RectF(MathF.Round(x), y, 4, 1), Pal.Cloud.WithAlpha(0.5f + MathX.Wave(Age + i, 0.5f, 0.3f)));
+            float x = (i * 53 + time * 6) % 330 - 5, y = 10 + (i * 37) % 160;
+            if (x < 20 || x > 300 || y < 24 || y > 170) r.FillRect(new RectF(MathF.Round(x), y, 4, 1), Pal.Cloud.WithAlpha(0.5f + MathX.Wave(time + i, 0.5f, 0.3f)));
         }
         for (int p = 0; p < Nodes.Length - 1; p++)
         {
@@ -119,7 +124,7 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
             Ui.Centered(r, Font, Ui.N(i + 1), Nodes[i].X, Nodes[i].Y + 7, state == 0 ? Pal.Dusk : Pal.Cream);
         }
 
-        var pip = PipPosition;
+        var pip = Motion.Between(_pipFrom, PipPosition, _step.Blend(Game));
         bool walking = _walk < 1;
         var frames = game.Art.Pip(game.Session.Form, walking ? "run" : "idle");
         float hop = walking ? MathF.Abs(MathF.Sin(_walk * MathF.PI * 4)) * 3 : 0;

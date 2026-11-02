@@ -22,6 +22,7 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
     private IReadOnlyList<BackdropLayer> _layers = [];
     private string[] _decos = [];
     private Biome _biome;
+    private readonly StageMotion _motion = new();
 
     public void Bind(Stage stage)
     {
@@ -42,7 +43,18 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         _runFrame += dt * (6 + speed * 0.075f);
     }
 
-    public void Draw(IRenderer r, Stage stage, float time)
+    /// <summary>Call just before every stage update, so frames drawn until the next one can place things between.</summary>
+    public void Remember(Stage stage) => _motion.Remember(stage);
+
+    /// <summary>Draws the stage <paramref name="blend"/> of the way from the previous update to the current one (1: the current state).</summary>
+    public void Draw(IRenderer r, Stage stage, float time, float blend = 1)
+    {
+        _motion.Place(stage, blend);
+        try { DrawStage(r, stage, time); }
+        finally { _motion.Restore(stage); }
+    }
+
+    private void DrawStage(IRenderer r, Stage stage, float time)
     {
         var cam = stage.Camera;
         DrawBackdrop(r, stage, time);

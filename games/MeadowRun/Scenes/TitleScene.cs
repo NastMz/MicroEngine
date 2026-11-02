@@ -43,6 +43,7 @@ internal sealed class TitleScene(MeadowGame game) : Scene
     private readonly SelectionList _menu = new("Start", "Continue", "Controls", "Achievements", "Quit");
     private bool _controls, _leaving;
     private float _logoDrop;
+    private readonly StepBlend _step = new();
 
     public override void Enter()
     {
@@ -55,6 +56,7 @@ internal sealed class TitleScene(MeadowGame game) : Scene
 
     public override void Update(float dt)
     {
+        _step.Stepped(Game, dt);
         if (_leaving) return;
         if (_controls)
         {
@@ -101,20 +103,21 @@ internal sealed class TitleScene(MeadowGame game) : Scene
 
     public override void Draw(IRenderer r)
     {
-        Diorama.Draw(r, game.Art, Age, Age * 30);
+        float t = _step.Time(Game, Age);
+        Diorama.Draw(r, game.Art, t, t * 30);
         var logo = game.Art["logo"];
-        float y = MathX.Lerp(-60, 22, _logoDrop) + MathF.Round(MathX.Wave(Age, 0.4f, 1.5f));
+        float y = MathX.Lerp(-60, 22, _logoDrop) + MathF.Round(MathX.Wave(t, 0.4f, 1.5f));
         r.Draw(logo, new Vector2(MathF.Round(160 - logo.Width / 2f), MathF.Round(y)));
         Ui.Centered(r, Font, "~ a quest for the Sunstone ~", 160, y + logo.Height + 2, Pal.Cream);
 
         // Pip trots along the meadow while the world scrolls.
         var run = game.Art.Pip(PipForm.Sprout, "run");
-        r.Draw(run[(int)(Age * 11) % run.Length], new Vector2(64, 164 + MathF.Round(MathF.Abs(MathX.Wave(Age, 2.75f, 1.2f)) * -1)));
+        r.Draw(run[(int)(t * 11) % run.Length], new Vector2(64, 164 + MathF.Round(MathF.Abs(MathX.Wave(t, 2.75f, 1.2f)) * -1)));
         var coin = game.Art.Frames("coin");
         for (int i = 0; i < 4; i++)
         {
-            float cx = 330 - ((Age * 30 + i * 90) % 380);
-            r.Draw(coin[(int)(Age * 8 + i) % coin.Length], new Vector2(MathF.Round(cx), 140 + MathF.Round(MathX.Wave(Age + i, 1, 3))));
+            float cx = 330 - ((t * 30 + i * 90) % 380);
+            r.Draw(coin[(int)(t * 8 + i) % coin.Length], new Vector2(MathF.Round(cx), 140 + MathF.Round(MathX.Wave(t + i, 1, 3))));
         }
 
         if (_controls) { DrawControls(r); return; }

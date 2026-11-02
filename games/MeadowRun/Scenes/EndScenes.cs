@@ -76,6 +76,7 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
 
     private const float Speed = 14f;
     private bool _leaving;
+    private readonly StepBlend _step = new();
 
     public override void Enter() => game.Music("credits");
 
@@ -83,6 +84,7 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
 
     public override void Update(float dt)
     {
+        _step.Stepped(Game, dt);
         if (_leaving) return;
         if (Age > EndTime || (Age > 2 && Input.Pressed("confirm")))
         {
@@ -94,17 +96,18 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
 
     public override void Draw(IRenderer r)
     {
-        Diorama.Draw(r, game.Art, Age, Age * 12);
+        float t = _step.Time(Game, Age);
+        Diorama.Draw(r, game.Art, t, t * 12);
         // The Sunstone hangs in the sky, radiating.
-        var sun = game.Art.Frames("sunstone")[(int)(Age * 6) % 4];
+        var sun = game.Art.Frames("sunstone")[(int)(t * 6) % 4];
         r.SetBlendMode(BlendMode.Additive);
         r.Draw(game.Art["glow"], new Vector2(250, 40), Pal.Gold.WithAlpha(0.8f));
         r.SetBlendMode(BlendMode.Alpha);
-        r.Draw(sun, new Vector2(250, 40 + MathF.Round(MathX.Wave(Age, 0.4f, 2))));
+        r.Draw(sun, new Vector2(250, 40 + MathF.Round(MathX.Wave(t, 0.4f, 2))));
         var pip = game.Art.Pip(game.Session.Form, "victory");
-        r.Draw(pip[(int)(Age * 3) % pip.Length], new Vector2(64, 164));
+        r.Draw(pip[(int)(t * 3) % pip.Length], new Vector2(64, 164));
         r.FillRect(new RectF(40, 0, 240, 180), Pal.Ink.WithAlpha(0.35f));
-        float y = 180 - Age * Speed;
+        float y = 180 - t * Speed;
         foreach (var (text, color, scale) in Lines)
         {
             if (y > -20 && y < 190 && text.Length > 0) Ui.Centered(r, Font, text, 160, MathF.Round(y), color, scale);
