@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 graphics contract spike: the scenario. The same batcher draws one 2D scene to an offscreen target on
+       both tiers (read back, checked by properties, compared pixel by pixel); tier 1 also draws a depth-tested mesh
+       under the 2D layer; and the present-mode measurement for K-P1-1. Throwaway; not part of MicroEngine.slnx or CI. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Arch1.Graphics.Scenario</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Contract/Arch1.Graphics.Contract.csproj" />
+    <ProjectReference Include="../Batcher/Arch1.Graphics.Batcher.csproj" />
+    <ProjectReference Include="../Host/Arch1.Graphics.SdlHost.csproj" />
+    <ProjectReference Include="../Tier0Sdl/Arch1.Graphics.Tier0Sdl.csproj" />
+    <ProjectReference Include="../Tier1SdlGpu/Arch1.Graphics.Tier1SdlGpu.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../shaders/compiled/mesh.vert.*;../shaders/compiled/color.frag.*" Link="shaders/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

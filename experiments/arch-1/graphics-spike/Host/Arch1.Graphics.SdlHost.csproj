@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 graphics contract spike: the minimal SDL window host (an ISurface over SDL_Window) used by the tests and
+       the scenario. Throwaway experiment; not part of MicroEngine.slnx or CI. -->
+  <PropertyGroup>
+    <RootNamespace>Arch1.Graphics.Sdl</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The same binding and version as src/MicroEngine.Sdl (bundles SDL 3.5.0). -->
+    <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Contract/Arch1.Graphics.Contract.csproj" />
+  </ItemGroup>
+</Project>

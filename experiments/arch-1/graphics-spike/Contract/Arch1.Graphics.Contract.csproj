@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 graphics contract spike: the proposed single IGraphicsDevice contract (descriptors, resources, command
+       list and the core validation every backend inherits). Throwaway experiment; not part of MicroEngine.slnx or CI;
+       does not reference the engine. No backend dependency: this assembly references nothing but the BCL. -->
+  <PropertyGroup>
+    <RootNamespace>Arch1.Graphics</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>
