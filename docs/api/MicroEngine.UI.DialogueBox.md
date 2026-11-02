@@ -6,8 +6,10 @@ Namespace: [MicroEngine.UI](MicroEngine.UI.md)
 Assembly: MicroEngine.dll  
 Guide: [UI widgets](../manual/ui.md)  
 
-A queue of dialogue pages shown in a panel with a typewriter and a speaker name tag.
-Games call [Update](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Update_System_Single_MicroEngine_Input_InputMap_System_String_) and [Draw](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_BitmapFont_MicroEngine_RectF_) from their own scene.
+A queue of dialogue pages shown in a panel with a typewriter and a speaker name tag. A page longer than
+[Lines](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Lines) wrapped lines continues on the next confirm, so no text is ever cut. With [Prompts](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Prompts)
+set, <code>{action}</code> in a page names the control that presses it on the player's device, and follows a device change
+while the page is showing. Games call [Update](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Update_System_Single_MicroEngine_Input_InputMap_System_String_) and [Draw](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_BitmapFont_MicroEngine_RectF_) from their own scene.
 
 ```csharp
 public sealed class DialogueBox
@@ -40,9 +42,21 @@ public bool Active { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_UI_DialogueBox_HasMore"></a> HasMore
+
+Whether the current page has more wrapped lines after the ones showing (known once it has been drawn).
+
+```csharp
+public bool HasMore { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_UI_DialogueBox_Lines"></a> Lines
 
-Maximum lines drawn per page (3 by default); wrapped text beyond it is not shown, so keep pages short.
+Maximum lines drawn at once (3 by default); a page that wraps to more continues on the next confirm.
 
 ```csharp
 public int Lines { get; set; }
@@ -51,6 +65,18 @@ public int Lines { get; set; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_UI_DialogueBox_Prompts"></a> Prompts
+
+Resolves <code>{action}</code> in pages to the player's controls (null: pages are shown as written). Games pass [Prompts](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Prompts).
+
+```csharp
+public ActionPrompts? Prompts { get; set; }
+```
+
+#### Property Value
+
+ [ActionPrompts](MicroEngine.Input.ActionPrompts.md)?
 
 ### <a id="MicroEngine_UI_DialogueBox_Speaker"></a> Speaker
 
@@ -64,6 +90,18 @@ public string? Speaker { get; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
+### <a id="MicroEngine_UI_DialogueBox_Text"></a> Text
+
+The text of the current page as shown (prompts resolved), or empty when closed.
+
+```csharp
+public string Text { get; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
 ### <a id="MicroEngine_UI_DialogueBox_Theme"></a> Theme
 
 Colours of the box ([Default](MicroEngine.UI.UiTheme.md#MicroEngine_UI_UiTheme_Default) by default).
@@ -75,6 +113,18 @@ public UiTheme Theme { get; set; }
 #### Property Value
 
  [UiTheme](MicroEngine.UI.UiTheme.md)
+
+### <a id="MicroEngine_UI_DialogueBox_VisibleLines"></a> VisibleLines
+
+The wrapped lines in the box now, in full even while they are being revealed (known once the page has been drawn).
+
+```csharp
+public IReadOnlyList<string> VisibleLines { get; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
 
 ## Methods
 

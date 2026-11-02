@@ -22,6 +22,20 @@ public enum PadAxis { LeftX, LeftY, RightX, RightY, LeftTrigger, RightTrigger }
 /// <remarks><c>Other</c> covers scripted input and custom <see cref="IActionSource"/>s.</remarks>
 public enum InputDevice { None, Keyboard, Gamepad, Touch, Other }
 
+/// <summary>
+/// The button names of a gamepad family, for prompts (<see cref="ActionPrompts"/>): <see cref="PadButton"/> uses Xbox
+/// names, which PlayStation pads show as shapes and Nintendo pads with A/B and X/Y swapped.
+/// </summary>
+public enum GamepadStyle
+{
+    /// <summary>Xbox names (A, B, X, Y), also for pads whose family is unknown.</summary>
+    Xbox,
+    /// <summary>PlayStation shapes (cross, circle, square, triangle).</summary>
+    PlayStation,
+    /// <summary>Nintendo names, where the button in <see cref="PadButton.A"/>'s place is labelled B.</summary>
+    Nintendo,
+}
+
 /// <summary>How a 2D stick turns into the four direction actions.</summary>
 public enum StickDirections
 {
@@ -54,6 +68,8 @@ public interface IInputSource
     };
     /// <summary>Whether a gamepad is connected. Sources without gamepads keep the default.</summary>
     bool PadConnected => false;
+    /// <summary>The family of the connected gamepad, for button names in prompts; sources that cannot tell keep Xbox.</summary>
+    GamepadStyle PadStyle => GamepadStyle.Xbox;
     /// <summary>The mouse over the virtual canvas; sources without one keep the default (not present).</summary>
     PointerState Pointer => default;
 }
@@ -135,6 +151,8 @@ public sealed class InputMap
     public InputDevice LastDevice { get; private set; }
     /// <summary>Whether a gamepad was connected at the last sample.</summary>
     public bool PadConnected { get; private set; }
+    /// <summary>The family of the gamepad at the last sample (Xbox when unknown), for prompts.</summary>
+    public GamepadStyle PadStyle { get; private set; }
     /// <summary>The mouse over the virtual canvas at the last sample.</summary>
     public PointerState Pointer => _pointer;
     /// <summary>The action sources read with the devices (<see cref="AddSource"/>).</summary>
@@ -211,6 +229,7 @@ public sealed class InputMap
     public void Sample(IInputSource source)
     {
         PadConnected = source.PadConnected;
+        PadStyle = source.PadStyle;
         _pointer = source.Pointer;
         var stick = ApplyDeadZone(source.LeftStick, StickDeadZone);
         var stickDown = Directions(stick, StickThreshold, StickMode);

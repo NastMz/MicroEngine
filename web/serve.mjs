@@ -11,7 +11,7 @@ const types = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.wasm': 'application/wasm', '.png': 'image/png', '.wav': 'audio/wav',
   '.ogg': 'audio/ogg', '.mp3': 'audio/mpeg', '.txt': 'text/plain; charset=utf-8', '.script': 'text/plain; charset=utf-8',
-  '.dat': 'application/octet-stream', '.dll': 'application/octet-stream', '.pdb': 'application/octet-stream',
+  '.webmanifest': 'application/manifest+json', '.dat': 'application/octet-stream', '.dll': 'application/octet-stream', '.pdb': 'application/octet-stream',
 };
 
 if (!fs.existsSync(root)) {

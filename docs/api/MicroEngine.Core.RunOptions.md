@@ -43,6 +43,19 @@ public string CaptureDirectory { get; init; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_Core_RunOptions_FirstFrame"></a> FirstFrame
+
+Called once, right after the first frame is presented (the start screen, or the game's first frame), from the
+loop's thread. Phone hosts use it to keep the system's launch screen up until the game has something to show.
+
+```csharp
+public Action? FirstFrame { get; init; }
+```
+
+#### Property Value
+
+ [Action](https://learn.microsoft.com/dotnet/api/system.action)?
+
 ### <a id="MicroEngine_Core_RunOptions_MaxUpdates"></a> MaxUpdates
 
 Stops after this many updates (0 = unlimited).
@@ -90,6 +103,19 @@ public int Seed { get; init; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_RunOptions_StartScreen"></a> StartScreen
+
+Whether the game's start screen ([StartScreen](MicroEngine.Core.StartScreen.md)) is drawn while it loads, on platforms that run in
+real time and for games whose identity keeps it on (true by default). Headless runs never draw it.
+
+```csharp
+public bool StartScreen { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ## Methods
 

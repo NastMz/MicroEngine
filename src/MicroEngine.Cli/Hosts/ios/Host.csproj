@@ -9,7 +9,10 @@
     <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
     <OutputType>Exe</OutputType>
     <RootNamespace>MicroEngine.iOS</RootNamespace>
-    <AssemblyName>$(GameId)</AssemblyName>
+    <!-- Not the game's own assembly name: two assemblies called <Game> in one app confuse NuGet's restore ("Ambiguous
+         project name") and the AOT compiler (the host's GameEntry is left uncompiled). Players see ApplicationTitle. -->
+    <AssemblyName>$(GameId).iOS</AssemblyName>
+    <IsPackable>false</IsPackable>
     <ApplicationId>$(GameApplicationId)</ApplicationId>
     <ApplicationTitle>$(GameTitle)</ApplicationTitle>
     <ApplicationVersion>$(GameVersionCode)</ApplicationVersion>

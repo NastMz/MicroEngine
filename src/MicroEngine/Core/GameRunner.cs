@@ -17,6 +17,16 @@ public sealed record RunOptions
     public int Seed { get; init; } = 1;
     /// <summary>Sets the sound effect and music volumes to 0 after <c>Load</c>.</summary>
     public bool Mute { get; init; }
+    /// <summary>
+    /// Whether the game's start screen (<see cref="Core.StartScreen"/>) is drawn while it loads, on platforms that run in
+    /// real time and for games whose identity keeps it on (true by default). Headless runs never draw it.
+    /// </summary>
+    public bool StartScreen { get; init; } = true;
+    /// <summary>
+    /// Called once, right after the first frame is presented (the start screen, or the game's first frame), from the
+    /// loop's thread. Phone hosts use it to keep the system's launch screen up until the game has something to show.
+    /// </summary>
+    public Action? FirstFrame { get; init; }
 }
 
 /// <summary>How a run ended.</summary>
@@ -83,7 +93,9 @@ public sealed class GameLoop
         if (_result is not null || _running) throw new InvalidOperationException("The loop was already started.");
         try
         {
+            ShowStartScreen();
             _game.Initialize(_platform, _options.Seed);
+            _platform.Letterbox = _game.Settings.Letterbox;
             if (_options.Mute) _game.Audio.SfxVolume = 0;
             if (_options.Mute) _game.Audio.MusicVolume = 0;
             _step = 1.0 / _game.Settings.UpdateRate;
@@ -95,6 +107,33 @@ public sealed class GameLoop
             _error = e;
         }
         return _running;
+    }
+
+    private bool _presented;
+
+    private void Presented()
+    {
+        if (_presented) return;
+        _presented = true;
+        _options.FirstFrame?.Invoke();
+    }
+
+    /// <summary>Presents the start screen once, so the window shows the game's colour and image while it loads.</summary>
+    private void ShowStartScreen()
+    {
+        if (!_options.StartScreen || !_platform.RealTime || AppIdentity.Of(_game) is not { Splash: true } identity) return;
+        try
+        {
+            _platform.PollEvents();
+            _platform.Letterbox = identity.SplashColor;
+            StartScreen.Draw(_platform.BeginFrame(), _platform.Graphics, identity);
+            _platform.EndFrame();
+            Presented();
+        }
+        catch (Exception e) when (e is InvalidOperationException or NotSupportedException)
+        {
+            // A platform that cannot present before the game exists keeps its first frame black; loading goes on.
+        }
     }
 
     /// <summary>Runs one frame. Returns false once the game quit, the platform closed, a limit was hit or an error occurred.</summary>
@@ -149,6 +188,7 @@ public sealed class GameLoop
         while (_accumulator >= _step - 1e-9 && steps < 5)
         {
             script?.Apply(_game.UpdateCount, _game.Input);
+            script?.ApplyPrompts(_game.UpdateCount, _game.Prompts);
             _game.Input.Sample(_platform.Input);
             _game.Step((float)_step);
             _accumulator -= _step;
@@ -167,6 +207,7 @@ public sealed class GameLoop
         _game.Render(renderer);
         _platform.EndFrame();
         _frames++;
+        Presented();
         if (capture is not null)
         {
             Directory.CreateDirectory(_options.CaptureDirectory);
@@ -200,6 +241,7 @@ public sealed class GameLoop
 /// 250 tap 2 jump            # finger 2 taps the "jump" control (lifted 2 updates later)
 /// 260 touch 3 0.5,0.5       # finger 3 at the middle of the screen (fractions of its size)
 /// 300 lift 1
+/// 320 prompts gamepad playstation  # name controls as on a PlayStation pad (keyboard, gamepad, touch or auto)
 /// 900 quit
 /// </code>
 /// "@+N" instead of an absolute number means N updates after the previous command. Touch commands go through the
@@ -210,6 +252,7 @@ public sealed class InputScript
     private readonly List<(long Update, string Action, bool Down)> _edges = [];
     private readonly Dictionary<long, string> _captures = [];
     private readonly List<(long Update, int Finger, string? Target, Vector2 Offset, bool Lift)> _touches = [];
+    private readonly List<(long Update, Input.InputDevice? Device, Input.GamepadStyle? Style)> _prompts = [];
     private long? _quit;
 
     /// <summary>Parses the text format described above.</summary>
@@ -245,10 +288,15 @@ public sealed class InputScript
                         script._touches.Add((at + 2, ParseFinger(parts[2]), null, default, true));
                         break;
                     case "lift": script._touches.Add((at, ParseFinger(parts[2]), null, default, true)); break;
+                    case "prompts":
+                        Input.InputDevice? device = parts[2] == "auto" ? null : Enum.Parse<Input.InputDevice>(parts[2], ignoreCase: true);
+                        Input.GamepadStyle? style = parts.Length > 3 ? Enum.Parse<Input.GamepadStyle>(parts[3], ignoreCase: true) : null;
+                        script._prompts.Add((at, device, style));
+                        break;
                     default: throw new FormatException($"Unknown command '{parts[1]}'.");
                 }
             }
-            catch (Exception e) when (e is FormatException or IndexOutOfRangeException or OverflowException)
+            catch (Exception e) when (e is FormatException or IndexOutOfRangeException or OverflowException or ArgumentException)
             {
                 throw new FormatException($"Script line {lineNumber}: '{raw.Trim()}' is invalid. {e.Message}", e);
             }
@@ -306,6 +354,13 @@ public sealed class InputScript
     public InputScript Capture(long at, string fileName) { _captures[at] = fileName; return this; }
     /// <summary>Stops the run after update <paramref name="at"/>.</summary>
     public InputScript QuitAfter(long at) { _quit = at; return this; }
+
+    /// <summary>Applies the <c>prompts</c> commands scheduled for the update about to run: which device <paramref name="prompts"/> names controls for.</summary>
+    public void ApplyPrompts(long update, Input.ActionPrompts prompts)
+    {
+        foreach (var (at, device, style) in _prompts)
+            if (at == update) (prompts.Override, prompts.PadStyleOverride) = (device, style);
+    }
 
     /// <summary>Applies every edge scheduled for the update about to run.</summary>
     public void Apply(long update, Input.InputMap input)

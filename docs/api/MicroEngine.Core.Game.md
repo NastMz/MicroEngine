@@ -153,6 +153,19 @@ protected IPlatform Platform { get; }
 
  [IPlatform](MicroEngine.Core.IPlatform.md)
 
+### <a id="MicroEngine_Core_Game_Prompts"></a> Prompts
+
+How to name each action to the player on the device in use (<code>Prompts.Format("Press {confirm}")</code>), from the
+bindings of [Input](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Input) and the controls of [Touch](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Touch). Created with them, before [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load).
+
+```csharp
+public ActionPrompts Prompts { get; }
+```
+
+#### Property Value
+
+ [ActionPrompts](MicroEngine.Input.ActionPrompts.md)
+
 ### <a id="MicroEngine_Core_Game_QuitRequested"></a> QuitRequested
 
 True after [Quit](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Quit); the loop stops at the end of the current frame.

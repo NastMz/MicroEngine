@@ -9,6 +9,8 @@
     <ApplicationId>dev.microengine.meadowrun</ApplicationId>
     <Description>A side-scrolling pixel-art platformer built on MicroEngine.</Description>
     <MicroEngineIcon>icon.png</MicroEngineIcon>
+    <MicroEngineSplashColor>#5b9be8</MicroEngineSplashColor>
+    <MicroEngineSplashBranding>true</MicroEngineSplashBranding>
     <MicroEngineGameFactory>new MeadowRun.MeadowGame(null, MeadowRun.LaunchOptions.FromEnvironment())</MicroEngineGameFactory>
   </PropertyGroup>
   <ItemGroup>

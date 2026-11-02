@@ -55,6 +55,18 @@ public const float SlideTime = 0.25
 
 ## Properties
 
+### <a id="MicroEngine_UI_AchievementToasts_Bottom"></a> Bottom
+
+Distance from the bottom edge when fully shown, for games whose HUD sits at the top; null (the default) shows banners at the top.
+
+```csharp
+public float? Bottom { get; set; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)?
+
 ### <a id="MicroEngine_UI_AchievementToasts_Current"></a> Current
 
 The banner on screen, or null.
@@ -119,7 +131,7 @@ public float Top { get; set; }
 
 ### <a id="MicroEngine_UI_AchievementToasts_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_BitmapFont_"></a> Draw\(IRenderer, BitmapFont\)
 
-Draws the current banner centred at the top of the screen; the game calls it after the scenes.
+Draws the current banner centred at the top of the screen (or the bottom, see [Bottom](MicroEngine.UI.AchievementToasts.md#MicroEngine_UI_AchievementToasts_Bottom)); the game calls it after the scenes.
 
 ```csharp
 public void Draw(IRenderer r, BitmapFont font)

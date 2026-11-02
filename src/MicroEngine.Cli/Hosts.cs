@@ -1,6 +1,7 @@
 using System.Security;
 using System.Text;
 using System.Text.Json;
+using MicroEngine.Core;
 using MicroEngine.Graphics;
 
 namespace MicroEngine.Cli;
@@ -34,8 +35,30 @@ public static class Hosts
         var content = game.ContentDir is { } dir ? Packaging.Walk(dir).Where(f => !f.EndsWith(".cs", StringComparison.Ordinal)).ToList() : [];
         File.WriteAllText(Path.Combine(root, "content.txt"), string.Concat(content.Select(f => f + Environment.NewLine)));
         File.Copy(icon ?? Icons.Default, Path.Combine(root, "icon.png"), overwrite: true);
+        // The start screen is in the page itself, so the game's colour and image show before any script loads.
+        var (splash, background) = SplashOf(game, PixelImage.Load(icon ?? Icons.Default));
+        string color = Icons.Hex(background);
+        File.Delete(Path.Combine(root, "splash.png"));
+        if (game.Splash)
+        {
+            var (sw, sh) = Fit(splash, 256);
+            Icons.WritePng(splash.Resized(sw, sh), Path.Combine(root, "splash.png"));
+        }
         string index = Path.Combine(root, "index.html");
-        File.WriteAllText(index, File.ReadAllText(index).Replace("<title>MicroEngine</title>", $"<title>{SecurityElement.Escape(game.Title)}</title>"));
+        string page = File.ReadAllText(index)
+            .Replace("<title>MicroEngine</title>", $"<title>{SecurityElement.Escape(game.Title)}</title>")
+            .Replace("<html lang=\"en\">", $"<html lang=\"en\" style=\"--splash: {color}\">")
+            .Replace("<meta name=\"theme-color\" content=\"#000000\">", $"<meta name=\"theme-color\" content=\"{color}\">")
+            .Replace("<img id=\"splash\" src=\"splash.png\" alt=\"\" hidden>", game.Splash ? "<img id=\"splash\" src=\"splash.png\" alt=\"\">" : "")
+            .Replace("<p id=\"brand\" hidden>", game.Splash && game.SplashBranding ? "<p id=\"brand\">" : "<p id=\"brand\" hidden>");
+        File.WriteAllText(index, page);
+        // Installing the page on a phone's home screen keeps the game's name, icon, colour and orientation.
+        File.WriteAllText(Path.Combine(root, "manifest.webmanifest"), JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["name"] = game.Title, ["short_name"] = game.Title, ["id"] = "./", ["start_url"] = "./", ["display"] = "fullscreen",
+            ["orientation"] = game.Orientation == "any" ? "any" : game.Orientation, ["background_color"] = color, ["theme_color"] = color,
+            ["icons"] = new[] { new { src = "icon.png", type = "image/png", sizes = $"{Icons.Check(icon ?? Icons.Default)}x{Icons.Check(icon ?? Icons.Default)}", purpose = "any" } },
+        }, new JsonSerializerOptions { WriteIndented = true }) + "\n");
         string publish = host + "-publish";
         if (Directory.Exists(publish)) Directory.Delete(publish, recursive: true);
         Console.WriteLine($"Building {game.Title} for browsers (WebAssembly; the first build takes a few minutes)...");
@@ -94,11 +117,15 @@ public static class Hosts
             ["GameAndroidMinApi"] = game.AndroidMinApi,
             ["GameVersionCode"] = versionCode.ToString(System.Globalization.CultureInfo.InvariantCulture),
         }, $"    public const global::Android.Content.PM.ScreenOrientation ScreenOrientation = global::Android.Content.PM.ScreenOrientation.{game.Orientation switch { "portrait" => "SensorPortrait", "any" => "FullSensor", _ => "SensorLandscape" }};");
-        Directory.CreateDirectory(Path.Combine(host, "Resources", "values"));
-        Directory.CreateDirectory(Path.Combine(host, "Resources", "mipmap-xxxhdpi"));
-        File.WriteAllText(Path.Combine(host, "Resources", "values", "strings.xml"),
+        string res = Path.Combine(host, "Resources");
+        // Resources of an earlier package of this game (a removed splash image, an older icon layout) must not linger.
+        if (Directory.Exists(res)) Directory.Delete(res, recursive: true);
+        Directory.CreateDirectory(Path.Combine(res, "values"));
+        File.WriteAllText(Path.Combine(res, "values", "strings.xml"),
             $"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n  <string name=\"app_name\">{SecurityElement.Escape(game.Title).Replace("'", "\\'")}</string>\n</resources>\n");
-        File.Copy(icon, Path.Combine(host, "Resources", "mipmap-xxxhdpi", "appicon.png"), overwrite: true);
+        var iconImage = PixelImage.Load(icon);
+        Icons.WriteAndroid(icon, res, game.IconBackground is { } iconBackground ? Color.Hex(iconBackground) : AppIdentity.EdgeColor(iconImage));
+        AndroidSplash(game, res, iconImage);
         string publish = host + "-publish";
         if (Directory.Exists(publish)) Directory.Delete(publish, recursive: true);
         var args = new List<string> { "publish", Path.Combine(host, "Host.csproj"), "-c", "Release", "-p:MicroEngineNativePackage=true", "-o", publish, "-nologo" };
@@ -141,6 +168,7 @@ public static class Hosts
         File.WriteAllBytes(Path.Combine(set, "icon.png"), PngEncoder.Encode(image.ToRgba(), image.Width, image.Height, factor));
         File.WriteAllText(Path.Combine(set, "Contents.json"), """{ "images": [ { "filename": "icon.png", "idiom": "universal", "platform": "ios", "size": "1024x1024" } ], "info": { "author": "microengine", "version": 1 } }""");
         File.WriteAllText(Path.Combine(host, "Assets.xcassets", "Contents.json"), """{ "info": { "author": "microengine", "version": 1 } }""");
+        IosLaunchScreen(game, host, image);
         string plist = Path.Combine(host, "Info.plist");
         string orientations = game.Orientation switch
         {
@@ -181,6 +209,96 @@ public static class Hosts
         }
         File.WriteAllText(Path.ChangeExtension(file, ".build-info.json"), JsonSerializer.Serialize(info, new JsonSerializerOptions { WriteIndented = true }) + "\n");
         return file;
+    }
+
+    /// <summary>The start screen's image (the game's own, else the icon) and background colour (#RRGGBB).</summary>
+    private static (PixelImage Image, Color Background) SplashOf(GameProject game, PixelImage icon)
+    {
+        if (!game.Splash) return (icon, Color.Black);
+        PixelImage image = icon;
+        if (game.SplashImage is { } file)
+        {
+            if (!File.Exists(file)) throw new CliException($"MicroEngineSplashImage '{file}' does not exist.");
+            image = PixelImage.Load(file);
+        }
+        return (image, game.SplashColor is { } color ? Color.Hex(color) : AppIdentity.EdgeColor(image));
+    }
+
+    /// <summary>The largest size of <paramref name="image"/> that fits a <paramref name="box"/>-pixel square, keeping its shape.</summary>
+    private static (int Width, int Height) Fit(PixelImage image, int box) => image.FitInside(box, box);
+
+    /// <summary>
+    /// The activity's theme: the start screen's colour and image while Android starts the game (Android 12+ draws its
+    /// splash screen from windowSplashScreen*, older versions show the window background), so the screen the engine
+    /// draws while the game loads continues it without a black frame. Without a start screen the window stays black.
+    /// </summary>
+    private static void AndroidSplash(GameProject game, string res, PixelImage icon)
+    {
+        var (image, background) = SplashOf(game, icon);
+        string color = Icons.Hex(background);
+        Directory.CreateDirectory(Path.Combine(res, "drawable"));
+        Directory.CreateDirectory(Path.Combine(res, "values-v31"));
+        string imageItem = "";
+        if (game.Splash)
+        {
+            // 96 dp on older Android (xxhdpi: 3 pixels per dp).
+            var (w, h) = Fit(image, 288);
+            Icons.WritePng(image.Resized(w, h), Path.Combine(res, "drawable-xxhdpi", "splash_image.png"));
+            imageItem = "\n  <item><bitmap android:gravity=\"center\" android:src=\"@drawable/splash_image\" /></item>";
+        }
+        File.WriteAllText(Path.Combine(res, "drawable", "splash.xml"),
+            $"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<layer-list xmlns:android=\"http://schemas.android.com/apk/res/android\">\n  <item android:drawable=\"@color/splash_background\" />{imageItem}\n</layer-list>\n");
+        const string parent = "@android:style/Theme.NoTitleBar.Fullscreen";
+        File.WriteAllText(Path.Combine(res, "values", "splash.xml"),
+            $"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n  <color name=\"splash_background\">{color}</color>\n"
+            + $"  <style name=\"GameTheme\" parent=\"{parent}\">\n    <item name=\"android:windowBackground\">@drawable/splash</item>\n  </style>\n</resources>\n");
+        // Android 12+: the system splash shows an icon (the adaptive icon unless the game has its own image) in a circle
+        // of 160 dp inside a 240 dp square.
+        string icon31 = "";
+        if (game.Splash && game.SplashImage is not null)
+        {
+            var (w, h) = Fit(image, 640);
+            var square = new PixelImage(960, 960).Blit(image.Resized(w, h), (960 - w) / 2, (960 - h) / 2);
+            Icons.WritePng(square, Path.Combine(res, "drawable-xxxhdpi", "splash_icon.png"));
+            icon31 = "\n    <item name=\"android:windowSplashScreenAnimatedIcon\">@drawable/splash_icon</item>";
+        }
+        File.WriteAllText(Path.Combine(res, "values-v31", "splash.xml"),
+            $"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n  <style name=\"GameTheme\" parent=\"{parent}\">\n"
+            + "    <item name=\"android:windowBackground\">@drawable/splash</item>\n"
+            + $"    <item name=\"android:windowSplashScreenBackground\">@color/splash_background</item>{icon31}\n  </style>\n</resources>\n");
+    }
+
+    /// <summary>
+    /// iOS's launch screen, declared in Info.plist (<c>UILaunchScreen</c>, iOS 14+): a named colour and image of the
+    /// asset catalog, shown by the system until the game draws; the engine's own start screen continues it.
+    /// </summary>
+    private static void IosLaunchScreen(GameProject game, string host, PixelImage icon)
+    {
+        var (image, background) = SplashOf(game, icon);
+        string assets = Path.Combine(host, "Assets.xcassets");
+        string colors = Path.Combine(assets, "LaunchBackground.colorset");
+        Directory.CreateDirectory(colors);
+        string F(byte v) => (v / 255.0).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        File.WriteAllText(Path.Combine(colors, "Contents.json"),
+            $$"""{ "colors": [ { "idiom": "universal", "color": { "color-space": "srgb", "components": { "red": "{{F(background.R)}}", "green": "{{F(background.G)}}", "blue": "{{F(background.B)}}", "alpha": "1.000" } } } ], "info": { "author": "microengine", "version": 1 } }""");
+        string entries = "";
+        if (game.Splash)
+        {
+            // 128 points: @1x, @2x and @3x images, each enlarged or reduced from the game's image.
+            string images = Path.Combine(assets, "LaunchImage.imageset");
+            Directory.CreateDirectory(images);
+            foreach (int scale in new[] { 1, 2, 3 })
+            {
+                var (w, h) = Fit(image, 128 * scale);
+                Icons.WritePng(image.Resized(w, h), Path.Combine(images, $"launch@{scale}x.png"));
+            }
+            File.WriteAllText(Path.Combine(images, "Contents.json"),
+                """{ "images": [ { "filename": "launch@1x.png", "idiom": "universal", "scale": "1x" }, { "filename": "launch@2x.png", "idiom": "universal", "scale": "2x" }, { "filename": "launch@3x.png", "idiom": "universal", "scale": "3x" } ], "info": { "author": "microengine", "version": 1 } }""");
+            entries = "\n    <key>UIImageName</key>\n    <string>LaunchImage</string>\n    <key>UIImageRespectsSafeAreaInsets</key>\n    <true/>";
+        }
+        string plist = Path.Combine(host, "Info.plist");
+        File.WriteAllText(plist, File.ReadAllText(plist).ReplaceLineEndings("\n").Replace("</dict>\n</plist>",
+            $"  <key>UILaunchScreen</key>\n  <dict>\n    <key>UIColorName</key>\n    <string>LaunchBackground</string>{entries}\n  </dict>\n</dict>\n</plist>"));
     }
 
     private static string IconOrDefault(GameProject game, string target)

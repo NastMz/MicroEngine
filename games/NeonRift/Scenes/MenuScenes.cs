@@ -2,6 +2,7 @@ using System.Numerics;
 using NeonRift.Content;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Input;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 
@@ -59,30 +60,36 @@ internal sealed class TitleScene(RiftGame game) : Scene
         if (_controls)
         {
             r.Panel(new RectF(110, 118, 260, 120), new PanelStyle(Ui.Ink.WithAlpha(0.92f), Ui.Magenta, Ui.Magenta.WithAlpha(0.4f)));
-            // On a touch screen the on-screen controls are explained instead of the keys.
-            (string Action, string Keys)[] lines = Game.Touch.Shown
-            ?
-            [
-                ("MOVE / AIM", "STICK, 8 DIRECTIONS"),
-                ("JUMP", "JUMP"),
-                ("FIRE", "FIRE (HOLD), AIM WITH STICK"),
-                ("FIRE + JUMP", "SLIDE THUMB FROM FIRE"),
-                ("KNEEL", "STICK DOWN ON THE GROUND"),
-                ("DROP DOWN", "STICK DOWN + JUMP"),
-                ("PLANT FEET", "LOCK (TAP ON, TAP OFF)"),
-                ("PAUSE", "II"),
-            ]
-            :
-            [
-                ("MOVE", "ARROWS / WASD / D-PAD"),
-                ("JUMP", "Z / SPACE / A"),
-                ("FIRE", "X / K / B  (HOLD)"),
-                ("AIM", "UP, DIAGONALS, DOWN IN AIR"),
-                ("KNEEL", "DOWN ON THE GROUND"),
-                ("DROP DOWN", "DOWN + JUMP ON A LEDGE"),
-                ("PLANT FEET", "C / SHIFT / SHOULDERS"),
-                ("PAUSE", "ESC / P / START"),
-            ];
+            // The controls of the device being played: keys, a gamepad's buttons, or the on-screen controls.
+            var p = Game.Prompts;
+            bool touch = p.Device == InputDevice.Touch;
+            string[] keys = touch
+                ?
+                [
+                    "STICK, 8 DIRECTIONS",
+                    p.TextAll("jump"),
+                    $"{p.TextAll("fire")} (HOLD), AIM WITH STICK",
+                    $"SLIDE THUMB FROM {p.Text("fire")}",
+                    "STICK DOWN ON THE GROUND",
+                    $"STICK DOWN + {p.Text("jump")}",
+                    $"{p.TextAll("lock")} (TAP ON, TAP OFF)",
+                    p.TextAll("pause"),
+                ]
+                :
+                [
+                    p.Directions(separator: " / "),
+                    p.TextAll("jump"),
+                    $"{p.TextAll("fire")}  (HOLD)",
+                    "UP, DIAGONALS, DOWN IN AIR",
+                    "DOWN ON THE GROUND",
+                    p.Format("{down} + {jump} ON A LEDGE"),
+                    p.TextAll("lock"),
+                    p.TextAll("pause"),
+                ];
+            string[] actions = touch
+                ? ["MOVE / AIM", "JUMP", "FIRE", "FIRE + JUMP", "KNEEL", "DROP DOWN", "PLANT FEET", "PAUSE"]
+                : ["MOVE", "JUMP", "FIRE", "AIM", "KNEEL", "DROP DOWN", "PLANT FEET", "PAUSE"];
+            var lines = actions.Zip(keys, (action, key) => (Action: action, Keys: key.ToUpperInvariant())).ToArray();
             for (int i = 0; i < lines.Length; i++)
             {
                 Ui.Label(r, Font, lines[i].Action, new Vector2(124, 128 + i * 13), Ui.Cyan);
@@ -221,7 +228,7 @@ internal sealed class EndingScene(RiftGame game) : Scene
         if (Age * 22 > end - 60)
         {
             Ui.Centered(r, Font, $"FINAL SCORE {Ui.N(game.Session.Score, 7)}   DEATHS {game.Session.Deaths}", r.Width / 2f, 120, Ui.Gold);
-            if ((int)(Age * 2) % 2 == 0) Ui.Centered(r, Font, "PRESS START", r.Width / 2f, 150, Ui.Text);
+            if ((int)(Age * 2) % 2 == 0) Ui.Centered(r, Font, Game.Prompts.Format("PRESS {confirm}").ToUpperInvariant(), r.Width / 2f, 150, Ui.Text);
         }
         r.Draw(game.Art.Frames("hero_run")[(int)(Age * 10) % 8], new Vector2(60 + (Age * 8 % 400), 262));
         Ui.Scanlines(r);

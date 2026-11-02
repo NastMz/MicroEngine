@@ -43,7 +43,14 @@ public sealed class CourtyardKeyGame : Game
         new TouchButton("confirm", "confirm", "A") { Anchor = TouchAnchor.BottomRight, Offset = new(72, 92), Radius = 40 },
         new TouchButton("action", "action", "C") { Anchor = TouchAnchor.BottomRight, Offset = new(164, 64), Radius = 34 },
         new TouchButton("cancel", "cancel", "B") { Anchor = TouchAnchor.BottomRight, Offset = new(150, 156), Radius = 26 },
-        new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(30, 30), Radius = 20 });
+        new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(30, 30), Radius = 20 }) with
+    {
+        // Gold rims and cream labels, as on the game's frames and item slots.
+        Tint = Pal.Cream,
+        PressedTint = Pal.Gold[2],
+        ButtonStyle = new TouchStyle { PressedOutline = Pal.Gold[3] },
+        StickStyle = new TouchStyle { Outline = Pal.Gold[2], PressedOutline = Pal.Gold[3] },
+    };
 
     protected override void Load()
     {
@@ -51,6 +58,8 @@ public sealed class CourtyardKeyGame : Game
         SoundBank.Register(Audio);
         MusicBank.Register(Audio);
         UseAchievements(CourtyardAchievements.Catalog, Saves.Store, UI.UiStyle.Theme);
+        // Banners stay at the top, over the HUD's edge rather than the play field (the bottom of a room is where the
+        // hero enters, the middle is where bosses stand); the room name waits while one shows.
         AchievementToasts!.Top = PlayScene.HudHeight + 3;
         Achievements.Unlocked += _ => Audio.Play("secret", 0.8f);
         if (_start is { Length: > 0 } name)

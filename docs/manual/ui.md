@@ -54,6 +54,12 @@ and to `UseAchievements`.
 the area, shows up to `Lines` lines (default 3), a speaker name tag and a blinking arrow when the page is complete.
 Events: `Blip` (per revealed character) and `Closed` (after the last page).
 
+A page that wraps to more than `Lines` lines continues on the next confirm instead of being cut (`HasMore` says
+whether more lines follow; `VisibleLines` are the lines in the box). With `Prompts` set (usually to `Game.Prompts`),
+`{action}` in a page names the player's own control, and changes if the player switches device while the page shows:
+`"Press {confirm} to swing it."` reads "Press Z" on a keyboard, "Press A" on a gamepad or on the touch button labelled A.
+Both are not in a published SDK yet: the published SDK cuts the extra lines and prints `{confirm}` as written.
+
 Courtyard Key wraps the box in an overlay scene that freezes the world:
 
 ```csharp
@@ -67,6 +73,8 @@ public sealed class DialogueScene : Scene
     {
         _box.Blip += _ => { if (_blips++ % 2 == 0) Audio.Play("blip", 0.6f, 1f, 0.04f); };
         _box.Closed += () => _done = true;
+        // {confirm} and {action} in a page name the player's own controls (key, pad button or touch button).
+        _box.Prompts = Game.Prompts;
         _box.Show(_speaker, _pages);
     }
 
@@ -91,7 +99,7 @@ public sealed class DialogueScene : Scene
 
 Source: [`games/CourtyardKey/Scenes/DialogueScene.cs`](../../games/CourtyardKey/Scenes/DialogueScene.cs)
 
-Text longer than `Lines` lines is cut, not scrolled: split long text into several pages.
+Long text needs no manual splitting, but a page per thought still reads better than one long page.
 
 ## `SelectionList`
 
@@ -123,7 +131,21 @@ Source: [`games/NeonRift/Scenes/PlayScene.cs`](../../games/NeonRift/Scenes/PlayS
 Games can keep the list for its logic and draw it their own way: Neon Rift passes `_menu` to its own `Ui.Menu`
 helper instead of calling `SelectionList.Draw`.
 
+## Prompt glyphs
+
+> **Not in a published SDK yet**: `PromptText` arrives with the next SDK release.
+
+`PromptText.Draw(r, font, prompts, template, position, color, shadow, style)` draws one line in which each `{action}`
+is a glyph instead of a word: a key cap on a keyboard, a round button in its colour on Xbox pads (A green, B red, X
+blue, Y yellow), the shape on PlayStation pads, a ring with the button's label on a touch screen. `Measure` and
+`DrawCentered` lay it out; `DrawGlyph` draws one `ActionPrompt`. `PromptGlyphStyle` sets the caps' colours
+(`PromptGlyphStyle.From(theme)` takes them from a `UiTheme`). Use it for short hints ("{confirm} Talk"); dialogue text
+uses `DialogueBox.Prompts`, which keeps words. See [Showing controls to the player](input.md#showing-controls-to-the-player).
+
 ## Achievement views
+
+`AchievementToasts.Bottom` (not in a published SDK yet) shows the banners at the bottom of the screen instead of the
+top, for games whose HUD is at the top.
 
 `AchievementToasts` and `AchievementsScene` are documented with the rest of the system in
 [Achievements](achievements.md#banners).

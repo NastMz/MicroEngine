@@ -9,6 +9,8 @@
     <ApplicationId>dev.microengine.trailduel</ApplicationId>
     <Description>A small creature-collecting, turn-based adventure built on MicroEngine.</Description>
     <MicroEngineIcon>icon.png</MicroEngineIcon>
+    <MicroEngineSplashColor>#2b2140</MicroEngineSplashColor>
+    <MicroEngineSplashBranding>true</MicroEngineSplashBranding>
     <MicroEngineGameFactory>new TrailDuel.TrailDuelGame()</MicroEngineGameFactory>
   </PropertyGroup>
   <ItemGroup>

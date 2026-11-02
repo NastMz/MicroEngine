@@ -51,6 +51,7 @@ public sealed class RaylibPlatform : IPlatform
     public RaylibPlatform(GameSettings settings, DesktopOptions options)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        Letterbox = _settings.Letterbox;
         _input = new RaylibInput { CanvasWidth = settings.VirtualWidth, CanvasHeight = settings.VirtualHeight };
         ArgumentNullException.ThrowIfNull(options);
         _fixedStep = options.FixedStep;
@@ -115,12 +116,14 @@ public sealed class RaylibPlatform : IPlatform
     }
 
     /// <inheritdoc/>
+    public Color Letterbox { get; set; }
+
     public void EndFrame()
     {
         _renderer.End();
         Rl.EndTextureMode();
         Rl.BeginDrawing();
-        Rl.ClearBackground(new RlColor(0, 0, 0, 255));
+        Rl.ClearBackground(new RlColor(Letterbox.R, Letterbox.G, Letterbox.B, (byte)255));
         var frame = FrameRect();
         var src = new RlRect(0, 0, _settings.VirtualWidth, -_settings.VirtualHeight);
         var dst = new RlRect(frame.X, frame.Y, frame.Width, frame.Height);
@@ -382,6 +385,8 @@ internal sealed class RaylibInput : IInputSource
     }
 
     public bool PadConnected => Rl.IsGamepadAvailable(0);
+
+    public GamepadStyle PadStyle => PadConnected ? ActionPrompts.StyleFromName(Rl.GetGamepadName_(0)) : GamepadStyle.Xbox;
 
     /// <summary>Where the frame was drawn, set by the platform each frame to map the mouse onto the canvas.</summary>
     public RectF Frame { get; set; }

@@ -15,6 +15,8 @@ public sealed record GameSettings(string Title, int VirtualWidth = 320, int Virt
     public int UpdateRate { get; init; } = 60;
     /// <summary>Colour the canvas is cleared to before the scenes draw each frame (black by default).</summary>
     public Color Background { get; init; } = Color.Black;
+    /// <summary>Colour of the window around the frame when the window's shape differs from the canvas (black by default).</summary>
+    public Color Letterbox { get; init; } = Color.Black;
 }
 
 /// <summary>
@@ -56,4 +58,9 @@ public interface IPlatform : IDisposable
     void SaveScreenshot(string path);
     /// <summary>Switches between window and full screen where the platform has a window; does nothing elsewhere.</summary>
     void ToggleFullscreen();
+    /// <summary>
+    /// Colour of the window around the frame. Starts as <see cref="GameSettings.Letterbox"/>; the start screen sets its
+    /// own colour while it shows. Platforms without a window keep the default, which ignores changes.
+    /// </summary>
+    Color Letterbox { get => Color.Black; set { } }
 }

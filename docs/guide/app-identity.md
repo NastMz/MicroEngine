@@ -30,6 +30,13 @@ icon, the name desktops group windows by, phone orientation). Nothing else holds
 | `MicroEngineThirdPartyNotices` | MicroEngine's own list | shipped as `THIRD-PARTY-NOTICES.txt`; list your own assets' licences here |
 | `MicroEngineScriptsDir` | none | input scripts packaged in phone and development web builds, for automated play tests |
 | `MicroEngineAndroidMinApi` | 24 (Android 7.0) | the oldest Android version the APK installs on |
+| `MicroEngineSplash` | `true` | the [start screen](#start-screen); `false` opens on a plain black screen |
+| `MicroEngineSplashColor` | the colour along the edge of the start screen's image | the start screen's background, `#RRGGBB` |
+| `MicroEngineSplashImage` | the icon | a PNG shown in the middle of the start screen (any shape) |
+| `MicroEngineSplashBranding` | `false` | `true` adds "Made with MicroEngine" below the image |
+| `MicroEngineIconBackground` | the colour along the icon's edge | the background layer of Android's adaptive icon, `#RRGGBB` |
+
+The five properties above are not in a published SDK yet; they arrive with the next release.
 
 ## Rules the build checks
 
@@ -42,7 +49,8 @@ icon, the name desktops group windows by, phone orientation). Nothing else holds
 - **Orientation**: `landscape`, `portrait` or `any`.
 
 A wrong value stops `dotnet build` with an error naming it (`ME0001` id, `ME0002` orientation, `ME0003` missing
-icon, `ME0004` not a PNG, `ME0005` wrong size). `microengine info` shows what the project declares.
+icon, `ME0004` not a PNG, `ME0005` wrong size, `ME0006` a colour not written `#RRGGBB`, `ME0007` missing start-screen
+image, `ME0008` a start-screen switch that is not `true` or `false`). `microengine info` shows what the project declares.
 
 ## At run time
 
@@ -50,6 +58,45 @@ icon, `ME0004` not a PNG, `ME0005` wrong size). `microengine info` shows what th
 platform (`PlatformRequest.Identity`): SDL sets the application name, version and id (`SDL_SetAppMetadata`, which
 Wayland and X11 use to group windows) and the window icon; raylib sets the window icon; phone hosts follow the
 orientation. A game built without the targets has no identity, and platforms keep their defaults.
+
+## Icons on each system
+
+The one icon becomes: the Windows executable's and window's icon (`.ico`), the Linux window icon and `icon.png` beside
+the desktop entry, the macOS `AppIcon.icns`, the iOS asset catalog's 1024-pixel image, the browser favicon and web app
+manifest icon, and Android launcher icons at every density. On Android 8 and later the launcher masks icons to its own
+shape (circle, squircle...); the package carries an adaptive icon whose foreground is your icon over the part every mask
+shows and whose background is `MicroEngineIconBackground`, so the launcher shows your art instead of shrinking it onto
+a white plate. Art that reaches the corners loses them to round masks: keep what matters away from the corners. (The
+adaptive icon is not in a published SDK yet; the published SDK packages a square icon at one density.)
+
+## Start screen
+
+> **Not in a published SDK yet**: the start screen arrives with the next SDK release.
+
+A game opens on its start screen: its image (`MicroEngineSplashImage`, by default the icon) in the middle of its
+colour (`MicroEngineSplashColor`), with "Made with MicroEngine" below only when `MicroEngineSplashBranding` is `true`.
+Each system shows it in its own way, and the engine continues it, so the player never sees a black screen between the
+tap and the first frame:
+
+| Where | Shown by |
+| --- | --- |
+| Android 12 and later | the system launch screen in the start-screen colour with the adaptive icon (or the start-screen image), kept until the engine has drawn its first frame and never longer than 8 seconds |
+| Older Android | the window background: the colour with the image in the middle |
+| iOS | `UILaunchScreen` in Info.plist: the colour and the image from the asset catalog |
+| Browsers | the page itself, before any script: the colour, the image, the title and the loading bar (and the branding line) |
+| Every platform | the engine, while the game's `Load` runs: the same image on the same colour, with the bands around the frame in that colour |
+
+There is no added delay: the start screen lasts as long as loading does, and the game's first scene replaces it. An
+error while loading is reported as before (on Android, the launch screen gives way after 8 seconds at most).
+Scripted and headless runs skip it (`RunOptions.StartScreen`), so captures and tests are unchanged.
+
+```xml
+<MicroEngineIcon>icon.png</MicroEngineIcon>
+<MicroEngineSplashColor>#5b9be8</MicroEngineSplashColor>
+<MicroEngineSplashBranding>true</MicroEngineSplashBranding>
+```
+
+Source: [`games/MeadowRun/MeadowRun.csproj`](../../games/MeadowRun/MeadowRun.csproj)
 
 ## Where it comes from
 

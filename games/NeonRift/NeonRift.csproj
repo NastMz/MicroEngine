@@ -9,6 +9,8 @@
     <ApplicationId>dev.microengine.neonrift</ApplicationId>
     <Description>A run-and-gun pixel-art action game built on MicroEngine.</Description>
     <MicroEngineIcon>icon.png</MicroEngineIcon>
+    <MicroEngineSplashColor>#0d0b1a</MicroEngineSplashColor>
+    <MicroEngineSplashBranding>true</MicroEngineSplashBranding>
     <MicroEngineGameFactory>new NeonRift.RiftGame(NeonRift.LaunchOptions.FromEnvironment())</MicroEngineGameFactory>
   </PropertyGroup>
   <ItemGroup>

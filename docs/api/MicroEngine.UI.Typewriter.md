@@ -109,6 +109,20 @@ public void Start(string text)
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_UI_Typewriter_Start_System_String_System_Int32_"></a> Start\(string, int\)
+
+Starts revealing <code class="paramref">text</code> with its first <code class="paramref">revealed</code> characters already shown (text laid out again mid-reveal).
+
+```csharp
+public void Start(string text, int revealed)
+```
+
+#### Parameters
+
+`text` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`revealed` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_UI_Typewriter_Update_System_Single_"></a> Update\(float\)
 
 Reveals more characters for <code class="paramref">dt</code> seconds and raises [Revealed](MicroEngine.UI.Typewriter.md#MicroEngine_UI_Typewriter_Revealed) for each new visible one.

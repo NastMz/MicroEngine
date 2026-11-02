@@ -92,6 +92,64 @@ var velocity = dir * Speed;
 
 Source: [`games/CourtyardKey/Entities/Hero.cs`](../../games/CourtyardKey/Entities/Hero.cs)
 
+## Showing controls to the player
+
+> **Not in a published SDK yet.** Action prompts arrive with the next SDK release
+> ([release notes](../guide/release-notes.md#next-release)); the published SDK does not have them.
+
+Text that names a control ("press Z to jump") is wrong for a player holding a gamepad or touching a phone. Name the
+action instead and let `Game.Prompts` (an `ActionPrompts`) say which control presses it on the device being played:
+
+```csharp
+// Dialogue, tutorials and hints: {action} becomes the player's own control.
+Font.DrawCentered(r, Game.Prompts.Format("THE END  ·  press {confirm}"), new Vector2(160, 166), Pal.White, 1, Pal.Ink);
+```
+
+Source: [`games/CourtyardKey/Scenes/TitleScene.cs`](../../games/CourtyardKey/Scenes/TitleScene.cs)
+
+| Device | `{confirm}` with the default bindings | Where it comes from |
+| --- | --- | --- |
+| Keyboard | `Z` | the action's first key; `TextAll` lists them all (`Z / Space / Enter / J`) |
+| Xbox pad (and unknown pads) | `A` | the first gamepad button, by its Xbox name |
+| PlayStation pad | `×` (`○`, `□`, `△`, `Options`, `L1`...) | the same button, named as printed on that pad |
+| Nintendo pad | `B` (A/B and X/Y swapped, `+`, `ZR`...) | the same position, named as printed |
+| Touch | `A` | the label of the touch button that presses the action (or `↑`, `←`... on a d-pad or joystick) |
+
+The device is the one that last pressed an action (`InputMap.LastDevice`); before any press it is touch on a
+touch-first screen or while the on-screen controls are shown, otherwise the keyboard (a pad left plugged in takes over
+with its first press). The text follows remapping (`Unbind`, `Bind`) and the touch layout, and changes the moment the
+player switches device, so read it when drawing, or lay text out again when `Prompts.Version` changes.
+
+| Member | Gives |
+| --- | --- |
+| `Format(template)` | the template with each `{action}` replaced; `{move}` is the movement controls; `{{` and `}}` are braces; unknown names stay as written |
+| `Text(action)`, `Get(action)` | the first control's text, or the `ActionPrompt` (kind, key, button, pad style, touch control) |
+| `TextAll(action, separator)`, `All(action)` | every control that presses it on the device |
+| `Directions(separator: " / ")` | movement as a group: `↑←↓→ / WASD`, `D-pad`, or the touch d-pad or stick |
+| `Device`, `PadStyle` | what prompts are shown for; `Override` and `PadStyleOverride` force them (an options menu, tests) |
+| `SetLabel(action, device, text)` | your own words for an action on one device or all ("tap the screen") |
+
+Help screens build their rows from the same calls, so one screen fits every device:
+
+```csharp
+var prompts = Game.Prompts;
+bool touch = prompts.Device == InputDevice.Touch;
+(string Key, string What)[] rows =
+[
+    (prompts.Directions(separator: " / "), touch ? "Move; push less, go slow" : "Move"),
+    (prompts.TextAll("confirm"), "Sword, talk, read, open"),
+    (prompts.TextAll("action"), "Throw the boomerang"),
+    (prompts.TextAll("pause"), "Pause, map and inventory"),
+];
+```
+
+Source: [`games/CourtyardKey/Scenes/TitleScene.cs`](../../games/CourtyardKey/Scenes/TitleScene.cs)
+
+`DialogueBox.Prompts` resolves `{action}` in dialogue pages ([UI widgets](ui.md#dialoguebox)) and `PromptText` draws
+prompts as glyphs: key caps, coloured face buttons, touch rings ([UI widgets](ui.md#prompt-glyphs)). The SDL backend
+names the pad family from `SDL_GetGamepadType`, the browser host from the pad's name; other sources report Xbox
+(`IInputSource.PadStyle`).
+
 ## Sticks, dead zones and directions
 
 | Property | Default | Meaning |
@@ -156,11 +214,12 @@ needs intensity. The four demos show both:
 | `Haptics` | true | A short vibration on each press and d-pad direction change, where the device can vibrate |
 | `Visibility` | `Auto` | `Auto`: shown on touch-first screens and after any touch, hidden while a keyboard or gamepad plays, back on the next touch. `Always`, `Never` |
 | `Tint`, `PressedTint` | white, light blue | Outline and label colour; fill of a pressed control |
+| `ButtonStyle`, `DPadStyle`, `StickStyle`, `Skin` | the default look | How each kind of control looks ([Look](#look-styles-skins-and-images)); not in a published SDK yet |
 
 At run time: `Touch.SetVisible(id, bool)` hides a control (hidden controls release their finger and ignore touches),
 `Touch.Layout = ...` switches layouts (fingers are released), `Touch.IsPressed(id)`, `Touch.ValueOf(id)` and
-`Touch.Geometry(id)` describe a control, `Touch.Shown` says whether they are drawn (help screens use it to explain
-the touch controls instead of the keys).
+`Touch.Geometry(id)` describe a control, `Touch.Shown` says whether they are drawn. Help screens explain the controls of
+the device in use with [prompts](#showing-controls-to-the-player).
 
 ### Controls by context
 
@@ -217,6 +276,52 @@ knob at the thumb's deflection and an arrow on the rim whose opacity follows the
 0.12 s; presses never wait for an animation. Where the device can vibrate (Android apps, Android browsers) each press
 gives a short tick; iOS gives no vibration (SDL drives only controllers there, and Safari has no Vibration API), so
 nothing depends on it.
+
+### Look: styles, skins and images
+
+> **Not in a published SDK yet**: styles, skins and images arrive with the next SDK release.
+
+The look of the controls is separate from how they work: a style or skin changes the drawing only, never where a
+control is, how large its touch area is, or which actions it presses. Each game can match its own art:
+
+```csharp
+new TouchButton("pause", "pause", "MENU") { Anchor = TouchAnchor.TopRight, Offset = new(40, 30), Radius = 26 }) with
+{
+    // Rounded squares in the menus' cream and coral, like the boxes of its handheld-style interface.
+    Tint = Pal.Cream,
+    PressedTint = Pal.Coral,
+    ButtonStyle = new TouchStyle { Shape = TouchShape.RoundedSquare, Corner = 0.4f },
+    DPadStyle = new TouchStyle { Shape = TouchShape.RoundedSquare, Corner = 0.3f },
+};
+```
+
+Source: [`games/TrailDuel/TrailDuelGame.cs`](../../games/TrailDuel/TrailDuelGame.cs)
+
+| `TouchStyle` property | Default | Meaning |
+| --- | --- | --- |
+| `Shape`, `Corner` | `Circle` | `Circle` or `RoundedSquare` (corner radius as a fraction of the control's radius) |
+| `Fill`, `PressedFill` | from `Tint`, `PressedTint` | Fill of an idle and a pressed control |
+| `Outline`, `PressedOutline` | from `Tint` | Outline and d-pad arrows; outline and lit arrows while pressed |
+| `Label` | `Tint`, white when pressed | Colour of a button's label |
+| `OutlineWidth` | 2.2 dp | Outline thickness (0: none) |
+| `Halo` | true | A dark ring outside the outline, for light scenes |
+| `PressedScale` | 0.92 | Size of a pressed button (1: no shrink) |
+| `Opacity` | the layout's | Opacity of idle controls with this style |
+| `Image`, `PressedImage` | none | A `PixelImage` drawn over the control's square instead of fill and outline; the pressed image (or the image tinted) while pressed |
+| `KnobImage`, `KnobSize` | a disc, 0.46 | A joystick's knob |
+| `Arrows` | true | Whether a d-pad draws its arrows (an image may already show them) |
+
+`TouchLayout.ButtonStyle`, `DPadStyle` and `StickStyle` style every control of a kind; `TouchControl.Style` styles one
+control. For a look styles cannot give, set `TouchLayout.Skin` to an `ITouchSkin`: it draws each control from a
+`TouchControlView` (centre, radius, pressed, held, glow, deflection, value, directions) with the `IOverlayCanvas`
+primitives (`FillCircle`, `Ring`, `FillTriangle`, `FillRect`, `Text`, `Image`) and `OverlayShapes`
+(`FillRoundedRect`, `RoundedRectOutline`), and may hand the controls it does not change to `DefaultTouchSkin.Instance`.
+Images keep pixel art sharp; pass the same `PixelImage` instance every frame (backends keep one texture per image).
+
+When choosing a look, keep what makes touch controls usable on a small screen: pressed controls must look different
+from idle ones by more than colour (the default shrinks and fills them), outlines must stay visible on the game's
+lightest and darkest scenes, and labels must be short. The touch area stays the drawn radius times `HitScale` whatever
+the shape, so a rounded square's corners are slightly outside it.
 
 ### Safe areas, density and orientation
 
@@ -301,6 +406,7 @@ Source: format documented on `InputScript` in [`src/MicroEngine/Core/GameRunner.
 | `N tap F control` | Finger F taps the control and lifts 2 updates later |
 | `N lift F` | Finger F lifts |
 | `N capture file.png` | Save the frame after update N into the capture directory |
+| `N prompts device [style]` | From update N, prompts name the controls of `keyboard`, `gamepad` (optionally `xbox`, `playstation`, `nintendo`) or `touch`; `auto` follows the player again (not in a published SDK yet) |
 | `N quit` | End the run at update N |
 
 `@+N` instead of an absolute number means N updates after the previous command. A malformed line throws a

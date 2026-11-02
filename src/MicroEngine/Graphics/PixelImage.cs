@@ -244,6 +244,51 @@ public sealed class PixelImage
         return big;
     }
 
+    /// <summary>
+    /// A copy at <paramref name="width"/> by <paramref name="height"/> pixels. Whole-number enlargements repeat pixels,
+    /// so pixel art stays sharp; other sizes average the source area under each pixel (weighted by opacity, so
+    /// transparent pixels do not darken edges), so a 1024-pixel icon reduced for a launcher or a start screen keeps its
+    /// detail instead of dropping rows.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">A size is not positive.</exception>
+    public PixelImage Resized(int width, int height)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        var result = new PixelImage(width, height);
+        if (width % Width == 0 && height % Height == 0 && width / Width == height / Height)
+        {
+            int k = width / Width;
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++) result[x, y] = _pixels[y / k * Width + x / k];
+            return result;
+        }
+        double stepX = (double)Width / width, stepY = (double)Height / height;
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                int x0 = (int)(x * stepX), y0 = (int)(y * stepY);
+                int x1 = Math.Min(Width, Math.Max(x0 + 1, (int)((x + 1) * stepX))), y1 = Math.Min(Height, Math.Max(y0 + 1, (int)((y + 1) * stepY)));
+                double r = 0, g = 0, b = 0, a = 0;
+                int n = 0;
+                for (int sy = y0; sy < y1; sy++)
+                    for (int sx = x0; sx < x1; sx++)
+                    {
+                        var c = _pixels[sy * Width + sx];
+                        r += c.R * c.A; g += c.G * c.A; b += c.B * c.A; a += c.A; n++;
+                    }
+                result[x, y] = a == 0 ? default : new Color((byte)(r / a), (byte)(g / a), (byte)(b / a), (byte)(a / n));
+            }
+        return result;
+    }
+
+    /// <summary>The largest size of this image that fits inside <paramref name="maxWidth"/> by <paramref name="maxHeight"/>, keeping its shape (at least 1 by 1).</summary>
+    public (int Width, int Height) FitInside(int maxWidth, int maxHeight)
+    {
+        float k = Math.Min((float)maxWidth / Width, (float)maxHeight / Height);
+        return (Math.Max(1, (int)(Width * k)), Math.Max(1, (int)(Height * k)));
+    }
+
     /// <summary>Returns a copy where every visible pixel becomes <paramref name="color"/> (hit flashes, shadows).</summary>
     public PixelImage Silhouette(Color color)
     {

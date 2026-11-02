@@ -53,15 +53,16 @@ use whole numbers (2, 3) to keep pixels square. `\n` starts a new line, `LineHei
 | `LineHeight`, `CapHeight`, `Spacing`, `Advance(c)` | the font's metrics |
 
 Right-aligning a score: `new Vector2(Game.Width - 6 - Font.MeasureWidth(text), 4)`. A word longer than `maxWidth` is
-not split: it stays on its own line and overflows. The [UI widgets](ui.md) (`DialogueBox`, `Typewriter`) wrap and page
-text for you.
+broken between characters, so no line is wider than `maxWidth` (in the published SDK such a word overflows; the change is
+in the next SDK release). The [UI widgets](ui.md) (`DialogueBox`, `Typewriter`) wrap and page text for you.
 
 ## Characters
 
 The font is proportional (narrow `i`, wide `m`) and covers:
 
 - printable ASCII: `A-Z`, `a-z`, `0-9`, space and ``!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~``;
-- symbols games use: `♥ ▶ ▼ ★ ♪ → ← ↑ ↓ × © ·`.
+- symbols games use: `♥ ▶ ▼ ★ ♪ → ← ↑ ↓ × © ·`, and `○ □ △` for gamepad prompts (these three are not in a published
+  SDK yet).
 
 Any other character (accented letters, `ñ`, other alphabets, emoji) is drawn as `?`. Games written in languages that
 need other letters must replace them (`é` with `e`) or draw their own glyphs (below).

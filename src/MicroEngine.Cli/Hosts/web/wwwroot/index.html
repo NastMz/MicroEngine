@@ -8,16 +8,20 @@
   <title>MicroEngine</title>
   <link rel="icon" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#000000">
   <link rel="stylesheet" href="host.css">
 </head>
 <body>
   <canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
   <div id="screen" aria-live="polite">
+    <img id="splash" src="splash.png" alt="" hidden>
     <h1 id="title"></h1>
     <p id="message">Loading…</p>
     <div id="progress"><div></div></div>
     <button id="play" type="button" tabindex="-1" hidden>Play</button>
     <pre id="detail" hidden></pre>
+    <p id="brand" hidden>Made with MicroEngine</p>
   </div>
   <div id="bar">
     <span id="notice" hidden></span>

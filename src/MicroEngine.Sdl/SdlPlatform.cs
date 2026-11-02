@@ -76,6 +76,7 @@ public sealed unsafe class SdlPlatform : IPlatform
     {
         ArgumentNullException.ThrowIfNull(request);
         _settings = request.Settings;
+        Letterbox = _settings.Letterbox;
         _fixedStep = request.FixedStep;
         _captureScale = Math.Max(1, request.CaptureScale);
         SDL_SetHint(SDL_HINT_APP_NAME, _settings.Title);
@@ -279,11 +280,14 @@ public sealed unsafe class SdlPlatform : IPlatform
     }
 
     /// <inheritdoc/>
+    public Color Letterbox { get; set; }
+
+    /// <inheritdoc/>
     public void EndFrame()
     {
         _renderer.End();
         SDL_SetRenderTarget(_sdl, null);
-        SDL_SetRenderDrawColor(_sdl, 0, 0, 0, 255);
+        SDL_SetRenderDrawColor(_sdl, Letterbox.R, Letterbox.G, Letterbox.B, 255);
         SDL_RenderClear(_sdl);
         var frame = FrameRect();
         var dst = new SDL_FRect { x = frame.X, y = frame.Y, w = frame.Width, h = frame.Height };

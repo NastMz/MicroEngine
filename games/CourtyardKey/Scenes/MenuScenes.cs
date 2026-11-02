@@ -91,7 +91,8 @@ public sealed class PauseScene : Scene
         var menu = new RectF(154, 136, 156, 36);
         UiStyle.Frame(r, menu);
         _menu.Draw(r, Font, new Vector2(menu.X + 8, menu.Y + 7), UiStyle.Theme, Age, 12);
-        Font.Draw(r, "Esc: back", new Vector2(menu.Right - 48, menu.Y + 7), Pal.Stone[3]);
+        string back = Game.Prompts.Format("{cancel}: back");
+        Font.Draw(r, back, new Vector2(menu.Right - 6 - Font.MeasureWidth(back), menu.Y + 7), Pal.Stone[3]);
     }
 }
 

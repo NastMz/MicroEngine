@@ -92,6 +92,18 @@ public bool PadConnected { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Input_InputMap_PadStyle"></a> PadStyle
+
+The family of the gamepad at the last sample (Xbox when unknown), for prompts.
+
+```csharp
+public GamepadStyle PadStyle { get; }
+```
+
+#### Property Value
+
+ [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
+
 ### <a id="MicroEngine_Input_InputMap_Pointer"></a> Pointer
 
 The mouse over the virtual canvas at the last sample.

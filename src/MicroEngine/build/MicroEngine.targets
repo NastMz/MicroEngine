@@ -9,6 +9,12 @@
          <MicroEngineOrientation>  landscape (default), portrait or any: phones only
          <MicroEngineGameFactory>  C# expression that creates the game, for hosts that build it themselves
                                    (browser, Android, iOS); default: new <RootNamespace>.MainGame(), as in the template
+         <MicroEngineSplash>       true (default) or false: the start screen (launch screen, loading page, the engine's
+                                   screen while the game loads)
+         <MicroEngineSplashColor>  its background, #RRGGBB; default: the colour along the edge of its image
+         <MicroEngineSplashImage>  its image, a PNG; default: the icon
+         <MicroEngineSplashBranding>  true adds "Made with MicroEngine"; default false
+         <MicroEngineIconBackground>  background of Android's adaptive icon, #RRGGBB; default: the icon's edge colour
 
        Packed into the MicroEngine package (build/ and buildTransitive/), so every game that references the engine
        gets it; the repository's games import this same file. These targets write the identity into the game assembly,
@@ -23,6 +29,9 @@
     <_MicroEngineGame Condition="'$(OutputType)' == 'Exe' or '$(OutputType)' == 'WinExe'">true</_MicroEngineGame>
     <_MicroEngineIconPath Condition="'$(MicroEngineIcon)' != ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(MicroEngineIcon)'))</_MicroEngineIconPath>
     <_MicroEngineIco Condition="'$(_MicroEngineIconPath)' != ''">$(BaseIntermediateOutputPath)microengine/app.ico</_MicroEngineIco>
+    <MicroEngineSplash Condition="'$(MicroEngineSplash)' == ''">true</MicroEngineSplash>
+    <MicroEngineSplashBranding Condition="'$(MicroEngineSplashBranding)' == ''">false</MicroEngineSplashBranding>
+    <_MicroEngineSplashImagePath Condition="'$(MicroEngineSplashImage)' != ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(MicroEngineSplashImage)'))</_MicroEngineSplashImagePath>
     <ApplicationIcon Condition="'$(ApplicationIcon)' == '' and '$(_MicroEngineGame)' == 'true' and '$(_MicroEngineIco)' != ''">$(_MicroEngineIco)</ApplicationIcon>
   </PropertyGroup>
 
@@ -49,7 +58,20 @@
       <_Parameter1>MicroEngine.Orientation</_Parameter1>
       <_Parameter2>$(MicroEngineOrientation)</_Parameter2>
     </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>MicroEngine.Splash</_Parameter1>
+      <_Parameter2>$(MicroEngineSplash)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>MicroEngine.SplashColor</_Parameter1>
+      <_Parameter2>$(MicroEngineSplashColor)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>MicroEngine.SplashBranding</_Parameter1>
+      <_Parameter2>$(MicroEngineSplashBranding)</_Parameter2>
+    </AssemblyAttribute>
     <EmbeddedResource Include="$(_MicroEngineIconPath)" LogicalName="MicroEngine.AppIcon.png" Condition="'$(_MicroEngineIconPath)' != '' and Exists('$(_MicroEngineIconPath)')" />
+    <EmbeddedResource Include="$(_MicroEngineSplashImagePath)" LogicalName="MicroEngine.SplashImage.png" Condition="'$(_MicroEngineSplashImagePath)' != '' and Exists('$(_MicroEngineSplashImagePath)')" />
   </ItemGroup>
 
   <Target Name="MicroEngineCheckIdentity" BeforeTargets="CoreCompile;PrepareResources" Condition="'$(_MicroEngineGame)' == 'true'">
@@ -59,6 +81,12 @@
            Text="MicroEngineOrientation '$(MicroEngineOrientation)' is not one of landscape, portrait or any." />
     <Error Code="ME0003" Condition="'$(_MicroEngineIconPath)' != '' and !Exists('$(_MicroEngineIconPath)')"
            Text="MicroEngineIcon '$(MicroEngineIcon)' does not exist (looked for $(_MicroEngineIconPath))." />
+    <Error Code="ME0006" Condition="('$(MicroEngineSplashColor)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(MicroEngineSplashColor)', '^#[0-9A-Fa-f]{6}$'))) or ('$(MicroEngineIconBackground)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(MicroEngineIconBackground)', '^#[0-9A-Fa-f]{6}$')))"
+           Text="MicroEngineSplashColor and MicroEngineIconBackground are colours written #RRGGBB, for example #1c1b2e (got '$(MicroEngineSplashColor)$(MicroEngineIconBackground)')." />
+    <Error Code="ME0007" Condition="'$(_MicroEngineSplashImagePath)' != '' and !Exists('$(_MicroEngineSplashImagePath)')"
+           Text="MicroEngineSplashImage '$(MicroEngineSplashImage)' does not exist (looked for $(_MicroEngineSplashImagePath))." />
+    <Error Code="ME0008" Condition="'$(MicroEngineSplash)' != 'true' and '$(MicroEngineSplash)' != 'false' or '$(MicroEngineSplashBranding)' != 'true' and '$(MicroEngineSplashBranding)' != 'false'"
+           Text="MicroEngineSplash and MicroEngineSplashBranding are true or false." />
     <MicroEngineWriteIcon Condition="'$(_MicroEngineIco)' != ''" Source="$(_MicroEngineIconPath)" Ico="$(_MicroEngineIco)" />
     <ItemGroup Condition="'$(_MicroEngineIco)' != ''">
       <FileWrites Include="$(_MicroEngineIco)" />

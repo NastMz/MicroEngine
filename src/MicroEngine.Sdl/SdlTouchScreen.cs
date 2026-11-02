@@ -120,14 +120,42 @@ internal sealed unsafe class SdlTouchScreen : ITouchScreen, IDisposable
     {
         if (_haptic != null) SDL_CloseHaptic(_haptic);
         _haptic = null;
+        Canvas.Dispose();
     }
 }
 
-/// <summary>Overlay drawing with SDL's renderer in window pixels: geometry for shapes, SDL's 8×8 debug font for labels.</summary>
-internal sealed unsafe class SdlOverlayCanvas(SDL_Renderer* sdl) : IOverlayCanvas
+/// <summary>Overlay drawing with SDL's renderer in window pixels: geometry for shapes, SDL's 8×8 debug font for labels, a texture per image.</summary>
+internal sealed unsafe class SdlOverlayCanvas(SDL_Renderer* sdl) : IOverlayCanvas, IDisposable
 {
     private const int Segments = 40;
     private readonly SDL_Vertex[] _vertices = new SDL_Vertex[Segments * 6];
+    private readonly Dictionary<MicroEngine.Graphics.PixelImage, nint> _images = new(ReferenceEqualityComparer.Instance);
+
+    public void Image(MicroEngine.Graphics.PixelImage image, RectF destination, Color tint)
+    {
+        if (tint.A == 0 || destination.Width <= 0 || destination.Height <= 0) return;
+        if (!_images.TryGetValue(image, out var handle))
+        {
+            var created = SDL_CreateTexture(sdl, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC, image.Width, image.Height);
+            if (created == null) return;
+            var rgba = image.ToRgba();
+            fixed (byte* p = rgba) SDL_UpdateTexture(created, null, (nint)p, image.Width * 4);
+            SDL_SetTextureScaleMode(created, SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
+            SDL_SetTextureBlendMode(created, SDL_BlendMode.SDL_BLENDMODE_BLEND);
+            _images[image] = handle = (nint)created;
+        }
+        var texture = (SDL_Texture*)handle;
+        SDL_SetTextureColorMod(texture, tint.R, tint.G, tint.B);
+        SDL_SetTextureAlphaMod(texture, tint.A);
+        var dst = new SDL_FRect { x = destination.X, y = destination.Y, w = destination.Width, h = destination.Height };
+        SDL_RenderTexture(sdl, texture, null, &dst);
+    }
+
+    public void Dispose()
+    {
+        foreach (var handle in _images.Values) SDL_DestroyTexture((SDL_Texture*)handle);
+        _images.Clear();
+    }
 
     private static SDL_FColor F(Color c) => new() { r = c.R / 255f, g = c.G / 255f, b = c.B / 255f, a = c.A / 255f };
     private static SDL_Vertex V(Vector2 p, SDL_FColor c) => new() { position = new SDL_FPoint { x = p.X, y = p.Y }, color = c };

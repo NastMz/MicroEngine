@@ -32,6 +32,18 @@ public TouchLayout()
 
 ## Properties
 
+### <a id="MicroEngine_Input_TouchLayout_ButtonStyle"></a> ButtonStyle
+
+How buttons look (null: the default style).
+
+```csharp
+public TouchStyle? ButtonStyle { get; init; }
+```
+
+#### Property Value
+
+ [TouchStyle](MicroEngine.Input.TouchStyle.md)?
+
 ### <a id="MicroEngine_Input_TouchLayout_Controls"></a> Controls
 
 The controls, drawn in order; ids must be unique.
@@ -43,6 +55,18 @@ public IReadOnlyList<TouchControl> Controls { get; init; }
 #### Property Value
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[TouchControl](MicroEngine.Input.TouchControl.md)\>
+
+### <a id="MicroEngine_Input_TouchLayout_DPadStyle"></a> DPadStyle
+
+How d-pads look (null: the default style).
+
+```csharp
+public TouchStyle? DPadStyle { get; init; }
+```
+
+#### Property Value
+
+ [TouchStyle](MicroEngine.Input.TouchStyle.md)?
 
 ### <a id="MicroEngine_Input_TouchLayout_Haptics"></a> Haptics
 
@@ -104,6 +128,18 @@ public float Scale { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Input_TouchLayout_Skin"></a> Skin
+
+Draws the controls (null: [DefaultTouchSkin](MicroEngine.Input.DefaultTouchSkin.md), shaped by the styles). Replace it for a look styles cannot give.
+
+```csharp
+public ITouchSkin? Skin { get; init; }
+```
+
+#### Property Value
+
+ [ITouchSkin](MicroEngine.Input.ITouchSkin.md)?
+
 ### <a id="MicroEngine_Input_TouchLayout_SlideBetweenButtons"></a> SlideBetweenButtons
 
 Whether a finger that slides onto another button presses it instead (fire-and-jump rolls); toggle buttons are never slid onto.
@@ -127,6 +163,18 @@ public float SlideTolerance { get; init; }
 #### Property Value
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Input_TouchLayout_StickStyle"></a> StickStyle
+
+How joysticks look (null: the default style).
+
+```csharp
+public TouchStyle? StickStyle { get; init; }
+```
+
+#### Property Value
+
+ [TouchStyle](MicroEngine.Input.TouchStyle.md)?
 
 ### <a id="MicroEngine_Input_TouchLayout_Tint"></a> Tint
 
@@ -230,6 +278,22 @@ public static TouchLayout Of(params TouchControl[] controls)
 #### Returns
 
  [TouchLayout](MicroEngine.Input.TouchLayout.md)
+
+### <a id="MicroEngine_Input_TouchLayout_StyleOf_MicroEngine_Input_TouchControl_"></a> StyleOf\(TouchControl\)
+
+The style <code class="paramref">control</code> is drawn with: its own, else its kind's, else the default.
+
+```csharp
+public TouchStyle StyleOf(TouchControl control)
+```
+
+#### Parameters
+
+`control` [TouchControl](MicroEngine.Input.TouchControl.md)
+
+#### Returns
+
+ [TouchStyle](MicroEngine.Input.TouchStyle.md)
 
 ### <a id="MicroEngine_Input_TouchLayout_ToString"></a> ToString\(\)
 

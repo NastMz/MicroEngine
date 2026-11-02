@@ -63,6 +63,18 @@ public Color Background { get; init; }
 
  [Color](MicroEngine.Color.md)
 
+### <a id="MicroEngine_Core_GameSettings_Letterbox"></a> Letterbox
+
+Colour of the window around the frame when the window's shape differs from the canvas (black by default).
+
+```csharp
+public Color Letterbox { get; init; }
+```
+
+#### Property Value
+
+ [Color](MicroEngine.Color.md)
+
 ### <a id="MicroEngine_Core_GameSettings_Scale"></a> Scale
 
 Initial window size as a multiple of the virtual size on desktop (4 by default); the launcher's <code>--scale</code> overrides it.

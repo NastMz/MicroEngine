@@ -219,6 +219,51 @@ public sealed class AudioTests
         Assert.IsFalse(mixer.TryPlay("missing"));
     }
 
+    /// <summary>Counts how often music starts from the beginning.</summary>
+    private sealed class MusicStarts : IAudioDevice
+    {
+        private readonly SilentAudioDevice _inner = new();
+        public int Starts { get; private set; }
+        public float Volume { get; private set; } = 1;
+        public bool IsAvailable => false;
+        public SoundHandle LoadSound(string name, AudioClip clip) => _inner.LoadSound(name, clip);
+        public MusicHandle LoadMusic(string name, AudioClip clip, bool loop = true) => _inner.LoadMusic(name, clip, loop);
+        public MusicHandle LoadMusicStream(string name, byte[] encoded, string format, bool loop = true) => _inner.LoadMusicStream(name, encoded, format, loop);
+        public void Play(SoundHandle sound, float volume = 1f, float pitch = 1f, float pan = 0.5f) => _inner.Play(sound, volume, pitch, pan);
+        public void PlayMusic(MusicHandle music, float volume = 1f) { Starts++; Volume = volume; _inner.PlayMusic(music, volume); }
+        public void StopMusic() => _inner.StopMusic();
+        public void SetMusicVolume(float volume) => Volume = volume;
+        public void PauseMusic(bool paused) => _inner.PauseMusic(paused);
+        public MusicHandle? CurrentMusic => _inner.CurrentMusic;
+        public void Update() { }
+    }
+
+    [TestMethod]
+    public void Asking_again_for_the_track_that_is_fading_out_keeps_it_playing()
+    {
+        // A scene that starts a track switch and is left before the fade ends (a menu opened and closed quickly)
+        // asks for the playing track again: it must fade back in, not restart from the beginning.
+        var device = new MusicStarts();
+        var mixer = new AudioMixer(device);
+        mixer.AddMusic("a", new AudioClip(new float[10]));
+        mixer.AddMusic("b", new AudioClip(new float[10]));
+        mixer.PlayMusic("a", fadeSeconds: 0);
+        mixer.PlayMusic("b", fadeSeconds: 0.4f);
+        for (int i = 0; i < 6; i++) mixer.Update(0.016f);
+        mixer.PlayMusic("a", fadeSeconds: 0.4f);
+        for (int i = 0; i < 60; i++) mixer.Update(0.016f);
+        Assert.AreEqual("a", mixer.CurrentMusic);
+        Assert.AreEqual(1, device.Starts, "track a was never restarted");
+        Assert.AreEqual(1f, device.Volume, 0.001f, "back to full volume");
+        // The same holds after a fade to silence.
+        mixer.StopMusic(0.4f);
+        mixer.Update(0.016f);
+        mixer.PlayMusic("a");
+        for (int i = 0; i < 60; i++) mixer.Update(0.016f);
+        Assert.AreEqual(1, device.Starts);
+        Assert.AreEqual("a", mixer.CurrentMusic);
+    }
+
     [TestMethod]
     public void Save_store_round_trips_and_survives_corruption()
     {

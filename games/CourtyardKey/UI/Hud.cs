@@ -30,7 +30,7 @@ public sealed class Hud(PlayScene world)
     {
         _toastTime -= dt;
         _bannerTime -= dt;
-        _roomTime -= dt;
+        if (world.G.AchievementToasts?.Current is null) _roomTime -= dt;
         _flashTime -= dt;
         // Gem counter rolls toward the real total, like a till.
         int target = world.Progress.Gems;
@@ -70,7 +70,8 @@ public sealed class Hud(PlayScene world)
             font.DrawShadowed(r, $"×{p.SmallKeys}", new Vector2(x + 40, 5), Pal.White, Pal.Ink);
             if (p.HasBossKey) r.DrawPivoted(art["key_boss"], new Vector2(x + 64, 9));
         }
-        if (_roomTime > 0 && LastRoomName is { } place)
+        // The room name waits while an achievement banner covers its place.
+        if (_roomTime > 0 && LastRoomName is { } place && world.G.AchievementToasts?.Current is null)
         {
             float a = Math.Clamp(MathF.Min(_roomTime, 2.2f - _roomTime) * 4, 0, 1);
             int w = font.MeasureWidth(place) + 14;
@@ -80,8 +81,9 @@ public sealed class Hud(PlayScene world)
             font.DrawShadowed(r, place, new Vector2(tag.X + 7, tag.Y + 3), Pal.Gold[3].WithAlpha(a), Pal.Ink.WithAlpha(a));
         }
 
-        ItemBox(r, font, art, new Vector2(258, 2), "Z", p.HasSword ? art["sword"] : null);
-        ItemBox(r, font, art, new Vector2(286, 2), "C", p.HasBoomerang ? art["boomerang"] : null);
+        // Each slot names the control that uses it on the device being played.
+        ItemBox(r, font, art, new Vector2(258, 2), world.G.Prompts.Text("confirm"), p.HasSword ? art["sword"] : null);
+        ItemBox(r, font, art, new Vector2(286, 2), world.G.Prompts.Text("action"), p.HasBoomerang ? art["boomerang"] : null);
 
         if (world.Boss is { Alive: true } boss && boss.State != Entities.WardenState.Intro)
         {

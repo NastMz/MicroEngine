@@ -18,6 +18,7 @@ A deterministic input script, keyed by update number. Text format, one command p
 250 tap 2 jump            # finger 2 taps the "jump" control (lifted 2 updates later)
 260 touch 3 0.5,0.5       # finger 3 at the middle of the screen (fractions of its size)
 300 lift 1
+320 prompts gamepad playstation  # name controls as on a PlayStation pad (keyboard, gamepad, touch or auto)
 900 quit
 ```
 
@@ -70,6 +71,20 @@ public void Apply(long update, InputMap input)
 `update` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
 `input` [InputMap](MicroEngine.Input.InputMap.md)
+
+### <a id="MicroEngine_Core_InputScript_ApplyPrompts_System_Int64_MicroEngine_Input_ActionPrompts_"></a> ApplyPrompts\(long, ActionPrompts\)
+
+Applies the <code>prompts</code> commands scheduled for the update about to run: which device <code class="paramref">prompts</code> names controls for.
+
+```csharp
+public void ApplyPrompts(long update, ActionPrompts prompts)
+```
+
+#### Parameters
+
+`update` [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+`prompts` [ActionPrompts](MicroEngine.Input.ActionPrompts.md)
 
 ### <a id="MicroEngine_Core_InputScript_ApplyTouches_System_Int64_MicroEngine_Input_VirtualControls_"></a> ApplyTouches\(long, VirtualControls\)
 

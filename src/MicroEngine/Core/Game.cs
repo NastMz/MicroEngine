@@ -40,6 +40,11 @@ public abstract class Game
     public InputMap Input { get; private set; } = null!;
     /// <summary>The on-screen touch controls (<see cref="CreateTouchLayout"/>), drawn and read wherever the platform has a touch screen.</summary>
     public VirtualControls Touch { get; private set; } = null!;
+    /// <summary>
+    /// How to name each action to the player on the device in use (<c>Prompts.Format("Press {confirm}")</c>), from the
+    /// bindings of <see cref="Input"/> and the controls of <see cref="Touch"/>. Created with them, before <see cref="Load"/>.
+    /// </summary>
+    public ActionPrompts Prompts { get; private set; } = null!;
     /// <summary>The scene stack. Push the first scene from <see cref="Load"/>.</summary>
     public SceneManager Scenes { get; private set; } = null!;
     /// <summary>The built-in pixel font, created before <see cref="Load"/> and disposed by the engine when the game shuts down.</summary>
@@ -105,6 +110,7 @@ public abstract class Game
         Input = CreateInput();
         Touch = new VirtualControls(CreateTouchLayout());
         Input.AddSource(Touch);
+        Prompts = new ActionPrompts(Input, Touch);
         if (platform.Touch is { } screen) screen.Overlay = Touch;
         Audio = new AudioMixer(platform.Audio);
         Font = BitmapFont.CreateDefault(platform.Graphics);

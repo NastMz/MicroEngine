@@ -23,6 +23,8 @@ public sealed class AchievementToasts
     public string Heading { get; set; } = "ACHIEVEMENT UNLOCKED";
     /// <summary>Distance from the top edge when fully shown.</summary>
     public float Top { get; set; } = 4;
+    /// <summary>Distance from the bottom edge when fully shown, for games whose HUD sits at the top; null (the default) shows banners at the top.</summary>
+    public float? Bottom { get; set; }
     /// <summary>The banner on screen, or null.</summary>
     public Achievement? Current { get; private set; }
     /// <summary>Banners waiting behind the current one.</summary>
@@ -50,7 +52,7 @@ public sealed class AchievementToasts
         _time = 0;
     }
 
-    /// <summary>Draws the current banner centred at the top of the screen; the game calls it after the scenes.</summary>
+    /// <summary>Draws the current banner centred at the top of the screen (or the bottom, see <see cref="Bottom"/>); the game calls it after the scenes.</summary>
     public void Draw(IRenderer r, BitmapFont font)
     {
         if (Current is not { } a) return;
@@ -61,7 +63,8 @@ public sealed class AchievementToasts
         int lh = font.LineHeight + 1;
         var size = new Vector2(textWidth + 16 + icon, 8 + lh * (2 + description.Count));
         float shown = Ease.OutCubic(Math.Clamp(MathF.Min(_time, ShowTime - _time) / SlideTime, 0, 1));
-        var box = new RectF(MathF.Round((r.Width - size.X) / 2), MathF.Round(MathX.Lerp(-size.Y - 2, Top, shown)), size.X, size.Y);
+        float y0 = Bottom is { } bottom ? MathX.Lerp(r.Height + 2, r.Height - bottom - size.Y, shown) : MathX.Lerp(-size.Y - 2, Top, shown);
+        var box = new RectF(MathF.Round((r.Width - size.X) / 2), MathF.Round(y0), size.X, size.Y);
         r.Panel(box, Theme.Panel);
         if (a.Icon is { } sprite) r.Draw(sprite, new Vector2(box.X + 8, MathF.Round(box.Y + (box.Height - sprite.Height) / 2)) + sprite.Origin);
         float x = box.X + 8 + icon, y = box.Y + 5;

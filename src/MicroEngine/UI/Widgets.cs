@@ -22,10 +22,13 @@ public sealed class Typewriter
     public event Action<char>? Revealed;
 
     /// <summary>Starts revealing <paramref name="text"/> from the beginning; null counts as empty.</summary>
-    public void Start(string text)
+    public void Start(string text) => Start(text, 0);
+
+    /// <summary>Starts revealing <paramref name="text"/> with its first <paramref name="revealed"/> characters already shown (text laid out again mid-reveal).</summary>
+    public void Start(string text, int revealed)
     {
         Text = text ?? "";
-        _visible = 0;
+        _visible = Math.Clamp(revealed, 0, Text.Length);
     }
 
     /// <summary>Reveals more characters for <paramref name="dt"/> seconds and raises <see cref="Revealed"/> for each new visible one.</summary>
@@ -56,22 +59,36 @@ public sealed record UiTheme(PanelStyle Panel, Color Text, Color TextShadow, Col
 }
 
 /// <summary>
-/// A queue of dialogue pages shown in a panel with a typewriter and a speaker name tag.
-/// Games call <see cref="Update"/> and <see cref="Draw"/> from their own scene.
+/// A queue of dialogue pages shown in a panel with a typewriter and a speaker name tag. A page longer than
+/// <see cref="Lines"/> wrapped lines continues on the next confirm, so no text is ever cut. With <see cref="Prompts"/>
+/// set, <c>{action}</c> in a page names the control that presses it on the player's device, and follows a device change
+/// while the page is showing. Games call <see cref="Update"/> and <see cref="Draw"/> from their own scene.
 /// </summary>
 public sealed class DialogueBox
 {
     private readonly Queue<(string? Speaker, string Text)> _pages = new();
     private readonly Typewriter _typewriter = new();
     private float _time;
+    private string _page = "";
+    private IReadOnlyList<string>? _wrapped;
+    private int _first, _wrapWidth, _promptVersion;
+    private BitmapFont? _wrapFont;
+    /// <summary>Resolves <c>{action}</c> in pages to the player's controls (null: pages are shown as written). Games pass <see cref="Core.Game.Prompts"/>.</summary>
+    public ActionPrompts? Prompts { get; set; }
     /// <summary>Colours of the box (<see cref="UiTheme.Default"/> by default).</summary>
     public UiTheme Theme { get; set; } = UiTheme.Default;
     /// <summary>The speaker of the current page, drawn as a name tag; null or empty draws none.</summary>
     public string? Speaker { get; private set; }
     /// <summary>Whether a page is showing.</summary>
     public bool Active { get; private set; }
-    /// <summary>Maximum lines drawn per page (3 by default); wrapped text beyond it is not shown, so keep pages short.</summary>
+    /// <summary>Maximum lines drawn at once (3 by default); a page that wraps to more continues on the next confirm.</summary>
     public int Lines { get; set; } = 3;
+    /// <summary>The text of the current page as shown (prompts resolved), or empty when closed.</summary>
+    public string Text => Active ? Display() : "";
+    /// <summary>The wrapped lines in the box now, in full even while they are being revealed (known once the page has been drawn).</summary>
+    public IReadOnlyList<string> VisibleLines => Active ? _typewriter.Text.Split('\n') : [];
+    /// <summary>Whether the current page has more wrapped lines after the ones showing (known once it has been drawn).</summary>
+    public bool HasMore => _wrapped is { } w && _first + Math.Max(1, Lines) < w.Count;
     /// <summary>Raised for each revealed non-space character, for a typing sound.</summary>
     public event Action<char>? Blip { add => _typewriter.Revealed += value; remove => _typewriter.Revealed -= value; }
     /// <summary>Raised when the last page is dismissed.</summary>
@@ -95,8 +112,31 @@ public sealed class DialogueBox
         }
         var (speaker, text) = _pages.Dequeue();
         Speaker = speaker;
-        _typewriter.Start(text);
+        _page = text ?? "";
+        _wrapped = null;
+        _first = 0;
+        _promptVersion = Prompts?.Version ?? 0;
+        _typewriter.Start(Display());
         Active = true;
+    }
+
+    private string Display() => Prompts is { } p ? p.Format(_page) : _page;
+
+    /// <summary>Wraps the page for <paramref name="font"/> and <paramref name="width"/> and shows the lines from <see cref="_first"/>, keeping what was revealed.</summary>
+    private void Layout(BitmapFont font, int width)
+    {
+        int version = Prompts?.Version ?? 0;
+        if (_wrapped is not null && font == _wrapFont && width == _wrapWidth && version == _promptVersion) return;
+        _wrapped = font.Wrap(Display(), width);
+        (_wrapFont, _wrapWidth, _promptVersion) = (font, width, version);
+        _first = Math.Min(_first, Math.Max(0, _wrapped.Count - 1));
+        ShowChunk(_typewriter.VisibleCount);
+    }
+
+    private void ShowChunk(int revealed)
+    {
+        if (_wrapped is null) return;
+        _typewriter.Start(string.Join('\n', _wrapped.Skip(_first).Take(Math.Max(1, Lines))), revealed);
     }
 
     /// <summary>Returns true while the box consumed input this update.</summary>
@@ -108,6 +148,11 @@ public sealed class DialogueBox
         if (input.Pressed(confirm))
         {
             if (!_typewriter.Complete) _typewriter.Finish();
+            else if (HasMore)
+            {
+                _first += Math.Max(1, Lines);
+                ShowChunk(0);
+            }
             else Next();
         }
         return true;
@@ -118,10 +163,10 @@ public sealed class DialogueBox
     {
         if (!Active) return;
         r.Panel(area, Theme.Panel);
-        var lines = font.Wrap(_typewriter.Text, (int)area.Width - 16);
+        Layout(font, (int)area.Width - 16);
         int shown = _typewriter.VisibleCount;
         float y = area.Y + 7;
-        foreach (var line in lines.Take(Lines))
+        foreach (var line in _typewriter.Text.Split('\n'))
         {
             var visible = line[..Math.Min(line.Length, Math.Max(0, shown))];
             shown -= line.Length + 1;

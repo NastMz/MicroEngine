@@ -124,6 +124,7 @@ A deterministic input script, keyed by update number. Text format, one command p
 250 tap 2 jump            # finger 2 taps the "jump" control (lifted 2 updates later)
 260 touch 3 0.5,0.5       # finger 3 at the middle of the screen (fractions of its size)
 300 lift 1
+320 prompts gamepad playstation  # name controls as on a PlayStation pad (keyboard, gamepad, touch or auto)
 900 quit
 ```
 
@@ -180,6 +181,15 @@ Corrupt or missing data yields null instead of crashing the game; corrupt data i
 read (locked file, blocked browser storage) is never written by this store, because the game is then
 running with fresh progress that would replace the real one. Failed writes return false instead of
 throwing, so a full disk or browser storage quota leaves the game running with its progress in memory.
+
+ [StartScreen](MicroEngine.Core.StartScreen.md)
+
+The screen a game opens on while it loads: its start-screen image (<code>MicroEngineSplashImage</code>, by default the
+icon) centred on its colour (<code>MicroEngineSplashColor</code>), and "Made with MicroEngine" below when the game asks
+for it (<code>MicroEngineSplashBranding</code>). Phones and browsers show the same image and colour before the engine
+starts (launch screens, the loading page), so the player sees one continuous screen from the tap to the first frame.
+[GameLoop](MicroEngine.Core.GameLoop.md) draws it once, before [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load), on platforms that run in real time; it adds no
+delay, and an error while loading is reported as before.
 
 ### Structs
 

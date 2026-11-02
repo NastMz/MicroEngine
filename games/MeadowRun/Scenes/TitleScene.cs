@@ -3,6 +3,7 @@ using MeadowRun.Art;
 using MeadowRun.Content;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Input;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 
@@ -128,32 +129,36 @@ internal sealed class TitleScene(MeadowGame game) : Scene
         var box = new RectF(48, 30, 224, 124);
         r.Panel(box, Ui.Card);
         Ui.Centered(r, Font, "CONTROLS", 160, 37, Pal.Butter);
-        // On a touch screen the on-screen controls are explained instead of the keys.
-        bool touch = Game.Touch.Shown;
-        (string Key, string What)[] rows = touch
-            ?
-            [
-                ("D-pad ← →", "Walk"),
-                ("A", "Jump (hold for higher)"),
-                ("B", "Run  ·  throw seeds"),
-                ("D-pad ↓ + A", "Drop through planks"),
-                ("B, roll to A", "Jump while running"),
-                ("II", "Pause"),
-            ]
-            :
-            [
-                ("← →  /  A D", "Walk"),
-                ("Z  Space  J", "Jump (hold for higher)"),
-                ("X  C  Shift", "Run  ·  throw seeds"),
-                ("↓ + Jump", "Drop through planks"),
-                ("Esc  P", "Pause"),
-                ("F11", "Fullscreen"),
-            ];
-        for (int i = 0; i < rows.Length; i++)
+        // The controls of the device being played: keys, a gamepad's buttons, or the on-screen controls.
+        var p = Game.Prompts;
+        var device = p.Device;
+        bool touch = device == InputDevice.Touch;
+        string walk = device switch
+        {
+            InputDevice.Keyboard => string.Join(" / ", p.All("left").Zip(p.All("right"), (l, r) => l.Text + r.Text)),
+            _ => $"{p.Directions()} {p.Text("left")} {p.Text("right")}",
+        };
+        var rows = new List<(string Key, string What)>
+        {
+            (walk, "Walk"),
+            (p.TextAll("jump", "  "), "Jump (hold for higher)"),
+            (p.TextAll("run", "  "), "Run  ·  throw seeds"),
+            (p.Format("{down} + {jump}"), "Drop through planks"),
+        };
+        // Sliding a thumb from B onto A jumps without letting go of run.
+        if (touch) rows.Add((p.Format("{run}, roll to {jump}"), "Jump while running"));
+        rows.Add((p.TextAll("pause", "  "), "Pause"));
+        if (device == InputDevice.Keyboard) rows.Add(("F11", "Fullscreen"));
+        for (int i = 0; i < rows.Count; i++)
         {
             Ui.Text(r, Font, rows[i].Key, new Vector2(60, 54 + i * 13), Pal.Gold);
             Ui.Text(r, Font, rows[i].What, new Vector2(144, 54 + i * 13));
         }
-        Ui.Centered(r, Font, touch ? "Keyboards and gamepads work too" : "Gamepad: A jump · X/B run · Start pause", 160, 136, Pal.Haze);
+        Ui.Centered(r, Font, device switch
+        {
+            InputDevice.Touch => "Keyboards and gamepads work too",
+            InputDevice.Gamepad => "The keyboard works too",
+            _ => "Gamepads work too",
+        }, 160, 136, Pal.Haze);
     }
 }

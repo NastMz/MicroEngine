@@ -103,9 +103,12 @@ export async function verifyPackage(file, { game: gameId, target: targetId, key,
       const digest = signer.match(/certificate SHA-256 digest: ([0-9a-f]+)/)?.[1];
       const badging = sh(path.join(tools, version, `aapt${process.platform === 'win32' ? '.exe' : ''}`), ['dump', 'badging', file]);
       const code = badging.match(/versionCode='(\d+)'/)?.[1], name = badging.match(/versionName='([^']+)'/)?.[1], sdk = badging.match(/sdkVersion:'(\d+)'/)?.[1];
+      // The launcher shows the launchable activity's label and icon (the application's may differ): both are the game's.
+      const launcher = badging.match(/launchable-activity: name='[^']+'\s+label='([^']*)' icon='([^']*)'/);
+      const identity = launcher?.[1] === info.title && launcher?.[2] === 'res/mipmap-anydpi-v26/appicon.xml';
       record.certificate = digest;
-      level('dependencies', Boolean(digest) && code === info.versionCode && name === info.gameVersion && sdk === '24',
-        `signature verified (certificate SHA-256 ${digest?.slice(0, 16)}…), versionCode ${code}, versionName ${name}, minSdk ${sdk}`);
+      level('dependencies', Boolean(digest) && code === info.versionCode && name === info.gameVersion && sdk === '24' && identity,
+        `signature verified (certificate SHA-256 ${digest?.slice(0, 16)}…), versionCode ${code}, versionName ${name}, minSdk ${sdk}; launcher '${launcher?.[1]}' with ${launcher?.[2] || 'no icon'}`);
     } else {
       level('dependencies', false, 'ANDROID_HOME has no build-tools: apksigner and aapt are needed to check the signature and version');
     }

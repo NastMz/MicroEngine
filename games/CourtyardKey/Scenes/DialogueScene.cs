@@ -33,6 +33,8 @@ public sealed class DialogueScene : Scene
     {
         _box.Blip += _ => { if (_blips++ % 2 == 0) Audio.Play("blip", 0.6f, 1f, 0.04f); };
         _box.Closed += () => _done = true;
+        // {confirm} and {action} in a page name the player's own controls (key, pad button or touch button).
+        _box.Prompts = Game.Prompts;
         _box.Show(_speaker, _pages);
     }
 

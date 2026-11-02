@@ -136,6 +136,6 @@ internal sealed class SummaryScene(TrailDuelGame game, int index) : Scene
         var hint = new RectF(6, 140, 118, 36);
         UiKit.Box(r, hint);
         UiKit.Text(r, Font, "↑↓ Choose move", hint.X + 8, hint.Y + 7, UiKit.Muted);
-        UiKit.Text(r, Font, "X  Back", hint.X + 8, hint.Y + 19, UiKit.Muted);
+        UiKit.Text(r, Font, Game.Prompts.Format("{cancel}  Back"), hint.X + 8, hint.Y + 19, UiKit.Muted);
     }
 }

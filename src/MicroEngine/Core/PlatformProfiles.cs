@@ -180,6 +180,7 @@ internal sealed class ComposedPlatform : IPlatform
     public void EndFrame() => _inner.EndFrame();
     public void SaveScreenshot(string path) => _inner.SaveScreenshot(path);
     public void ToggleFullscreen() => _inner.ToggleFullscreen();
+    public Color Letterbox { get => _inner.Letterbox; set => _inner.Letterbox = value; }
 
     public void Dispose()
     {
@@ -221,6 +222,9 @@ public sealed class CompositeInput(IReadOnlyList<IInputSource> sources) : IInput
 
     /// <inheritdoc/>
     public bool PadConnected => _sources.Any(s => s.PadConnected);
+
+    /// <summary>The style of the first source with a connected gamepad.</summary>
+    public GamepadStyle PadStyle => _sources.FirstOrDefault(s => s.PadConnected)?.PadStyle ?? GamepadStyle.Xbox;
 
     /// <summary>The pointer of the first source whose pointer is present.</summary>
     public PointerState Pointer => _sources.Select(s => s.Pointer).FirstOrDefault(p => p.Present);

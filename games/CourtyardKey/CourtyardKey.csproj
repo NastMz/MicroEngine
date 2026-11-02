@@ -9,6 +9,8 @@
     <ApplicationId>dev.microengine.courtyardkey</ApplicationId>
     <Description>A top-down pixel-art action-adventure built on MicroEngine.</Description>
     <MicroEngineIcon>icon.png</MicroEngineIcon>
+    <MicroEngineSplashColor>#1b1726</MicroEngineSplashColor>
+    <MicroEngineSplashBranding>true</MicroEngineSplashBranding>
     <MicroEngineGameFactory>new CourtyardKey.CourtyardKeyGame(null, Environment.GetEnvironmentVariable(&quot;COURTYARD_START&quot;))</MicroEngineGameFactory>
   </PropertyGroup>
   <ItemGroup>

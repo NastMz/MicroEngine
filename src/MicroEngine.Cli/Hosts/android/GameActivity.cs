@@ -14,8 +14,8 @@ namespace MicroEngine.Android;
 /// <para>Launch extras (for tests, as <c>adb shell am start</c> passes them): <c>script</c> (a file in assets/scripts),
 /// <c>env</c> ("NAME=value;..."). Captures go to the app's external files folder, <c>captures/&lt;script&gt;</c>.</para>
 /// </summary>
-[Activity(Name = "dev.microengine.GameActivity", Label = "@string/app_name", Icon = "@mipmap/appicon", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTask,
-    ScreenOrientation = GameEntry.ScreenOrientation, Theme = "@android:style/Theme.NoTitleBar.Fullscreen",
+[Activity(Name = "dev.microengine.GameActivity", Label = "@string/app_name", Icon = "@mipmap/appicon", RoundIcon = "@mipmap/appicon_round", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTask,
+    ScreenOrientation = GameEntry.ScreenOrientation, Theme = "@style/GameTheme",
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.ScreenLayout | ConfigChanges.KeyboardHidden
         | ConfigChanges.Keyboard | ConfigChanges.Navigation | ConfigChanges.UiMode)]
 public sealed class GameActivity : SDLActivity
@@ -24,6 +24,32 @@ public sealed class GameActivity : SDLActivity
 
     /// <summary>Only SDL itself: the game is .NET code, not a native "main" library.</summary>
     protected override string[] GetLibraries() => ["SDL3"];
+
+    // Set by the game's thread once the engine has presented its first frame (the start screen).
+    private volatile bool _firstFrame;
+
+    protected override void OnCreate(global::Android.OS.Bundle? savedInstanceState)
+    {
+        base.OnCreate(savedInstanceState);
+        // Android 12+ removes its launch screen when the window first draws, while SDL's surface is still black: the
+        // window does not draw until the engine has presented its start screen, so the launch screen leads straight
+        // into it. Never longer than a few seconds, so a game that cannot start is never hidden behind it.
+        if (OperatingSystem.IsAndroidVersionAtLeast(31) && Window?.DecorView is { } decor)
+        {
+            var until = DateTime.UtcNow.AddSeconds(8);
+            decor.ViewTreeObserver!.AddOnPreDrawListener(new HoldUntil(decor, () => _firstFrame || DateTime.UtcNow > until));
+        }
+    }
+
+    private sealed class HoldUntil(global::Android.Views.View view, Func<bool> ready) : Java.Lang.Object, global::Android.Views.ViewTreeObserver.IOnPreDrawListener
+    {
+        public bool OnPreDraw()
+        {
+            if (!ready()) return false;
+            view.ViewTreeObserver!.RemoveOnPreDrawListener(this);
+            return true;
+        }
+    }
 
     protected override void Main()
     {
@@ -42,7 +68,9 @@ public sealed class GameActivity : SDLActivity
         System.Environment.SetEnvironmentVariable("XDG_DATA_HOME", FilesDir!.AbsolutePath);
         int code = MobileRun.Run(launch,
             (game, scripted) => SdlPlatform.Profile.Create(new PlatformRequest(game.Settings) { FixedStep = scripted, Identity = AppIdentity.Of(game) }),
-            line => Log.Info(Tag, line));
+            line => Log.Info(Tag, line),
+            () => _firstFrame = true);
+        _firstFrame = true;
         Log.Info(Tag, $"microengine: exit {code}");
     }
 

@@ -51,7 +51,14 @@ public sealed class TrailDuelGame : Game
         new TouchButton("confirm", "confirm", "A") { Anchor = TouchAnchor.BottomRight, Offset = new(72, 92), Radius = 40 },
         new TouchButton("cancel", "cancel", "B") { Anchor = TouchAnchor.BottomRight, Offset = new(164, 62), Radius = 34 },
         new TouchButton("action", "action", "C") { Anchor = TouchAnchor.BottomRight, Offset = new(150, 156), Radius = 26 },
-        new TouchButton("pause", "pause", "MENU") { Anchor = TouchAnchor.TopRight, Offset = new(40, 30), Radius = 26 });
+        new TouchButton("pause", "pause", "MENU") { Anchor = TouchAnchor.TopRight, Offset = new(40, 30), Radius = 26 }) with
+    {
+        // Rounded squares in the menus' cream and coral, like the boxes of its handheld-style interface.
+        Tint = Pal.Cream,
+        PressedTint = Pal.Coral,
+        ButtonStyle = new TouchStyle { Shape = TouchShape.RoundedSquare, Corner = 0.4f },
+        DPadStyle = new TouchStyle { Shape = TouchShape.RoundedSquare, Corner = 0.3f },
+    };
 
     protected override void Load()
     {

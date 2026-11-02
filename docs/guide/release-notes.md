@@ -4,6 +4,29 @@ One section per SDK version, newest first. The SDK is in Alpha: a version may ch
 every such change is in the [migration notes](../migrations.md). Releases are tagged `sdk-v<version>`; the demo
 releases (`v0.1.0`, `v0.2.0`...) are separate.
 
+## Next release
+
+Not published yet: merged on `main` after 0.4.0-alpha.2, in the next SDK version.
+
+**New**
+
+- [Action prompts](../manual/input.md#showing-controls-to-the-player): `Game.Prompts` names the control that presses an
+  action on the device being played (keyboard, Xbox, PlayStation or Nintendo pad, touch layout), follows remapping and
+  device changes; `Format("Press {confirm}")`, `TextAll`, `Directions`; `PromptText` draws them as glyphs;
+  `DialogueBox.Prompts` resolves them in dialogue; the `prompts` script command.
+- [Touch control looks](../manual/input.md#look-styles-skins-and-images): `TouchStyle` (shape, colours, outline,
+  press feedback, images) per kind or per control, `ITouchSkin` for a look of your own, `IOverlayCanvas.Image`.
+- [Start screen](app-identity.md#start-screen): Android and iOS launch screens, the browser loading page and the
+  engine's screen while the game loads, in the game's colour and image, with optional "Made with MicroEngine"
+  (`MicroEngineSplash*` properties, `AppIdentity.Splash*`, `StartScreen`, `RunOptions.FirstFrame`).
+- Android adaptive and round icons at every density (`MicroEngineIconBackground`); a web app manifest for browser
+  packages.
+- `GameSettings.Letterbox` (the colour around the frame), `AchievementToasts.Bottom`, `PixelImage.Resized`,
+  `PixelImage.FitInside`, `○ □ △` in the built-in font.
+
+**Changed**: `DialogueBox` continues a page that does not fit instead of cutting it; `BitmapFont.Wrap` breaks words
+wider than a line; see the [migration notes](../migrations.md#next-release).
+
 ## 0.4.0-alpha.2
 
 Published 2026-11-01 on nuget.org (GitHub release `sdk-v0.4.0-alpha.2`): fixes found while writing the developer manual. **Fixed**: scene changes requested during a

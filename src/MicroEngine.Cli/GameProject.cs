@@ -16,6 +16,7 @@ public sealed partial class GameProject
         "MicroEngineGameFactory", "MicroEngineContentDir", "MicroEngineScriptsDir", "MicroEngineLicenseFile", "MicroEngineThirdPartyNotices",
         "MicroEngineVersion", "MicroEngineAppTargets", "MicroEngineAndroidMinApi", "OutputType", "TargetFramework", "TargetDir",
         "BundledNETCoreAppPackageVersion", "MicroEngineWebRaylibFromPackage", "NetCoreRoot",
+        "MicroEngineSplash", "MicroEngineSplashColor", "MicroEngineSplashImage", "MicroEngineSplashBranding", "MicroEngineIconBackground",
     ];
 
     private readonly Dictionary<string, string> _values;
@@ -41,6 +42,16 @@ public sealed partial class GameProject
     public string NetCoreRoot => this["NetCoreRoot"];
     public string AndroidMinApi => this["MicroEngineAndroidMinApi"].Length > 0 ? this["MicroEngineAndroidMinApi"] : "24";
     public string? WebRaylibFromPackage => Optional("MicroEngineWebRaylibFromPackage");
+    /// <summary>Whether the game opens on its start screen (MicroEngineSplash, true unless "false").</summary>
+    public bool Splash => !this["MicroEngineSplash"].Equals("false", StringComparison.OrdinalIgnoreCase);
+    /// <summary>Whether the start screen says "Made with MicroEngine" (MicroEngineSplashBranding).</summary>
+    public bool SplashBranding => this["MicroEngineSplashBranding"].Equals("true", StringComparison.OrdinalIgnoreCase);
+    /// <summary>The start screen's background (MicroEngineSplashColor, #RRGGBB), or null to take it from its image.</summary>
+    public string? SplashColor => Optional("MicroEngineSplashColor");
+    /// <summary>The start screen's own image (MicroEngineSplashImage), or null for the icon.</summary>
+    public string? SplashImage => Optional("MicroEngineSplashImage") is { } image ? Full(image) : null;
+    /// <summary>The background of Android's adaptive icon (MicroEngineIconBackground, #RRGGBB), or null for the icon's edge colour.</summary>
+    public string? IconBackground => Optional("MicroEngineIconBackground");
     /// <summary>The build output folder of the last <c>dotnet build</c> in the configuration the project was read with.</summary>
     public string TargetDir => this["TargetDir"];
 

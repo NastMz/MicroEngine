@@ -293,7 +293,7 @@ public void PlayMusic(string name, float fadeSeconds = 0.4)
 
 #### Remarks
 
-With a fade, music starting from silence rises over about a quarter of a second; with <code class="paramref">fadeSeconds</code> 0 or less it starts at full volume at once. Asking for the music that is already playing does nothing.
+With a fade, music starting from silence rises over about a quarter of a second; with <code class="paramref">fadeSeconds</code> 0 or less it starts at full volume at once. Asking for the music that is already playing does nothing; asking for it while it fades out (towards another track or silence) cancels the fade and brings it back, without restarting it.
 
 #### Exceptions
 

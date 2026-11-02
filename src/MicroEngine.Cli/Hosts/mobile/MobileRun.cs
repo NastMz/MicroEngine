@@ -25,15 +25,15 @@ internal sealed record MobileLaunch(string? ScriptName, string? Script, IReadOnl
 /// </summary>
 internal static class MobileRun
 {
-    public static int Run(MobileLaunch launch, Func<Game, bool, IPlatform> createPlatform, Action<string> log)
+    public static int Run(MobileLaunch launch, Func<Game, bool, IPlatform> createPlatform, Action<string> log, Action? firstFrame = null)
     {
         foreach (var (name, value) in launch.Environment) Environment.SetEnvironmentVariable(name, value);
         RunOptions options;
         try
         {
             options = launch.Script is { } text
-                ? new RunOptions { Script = InputScript.Parse(text), Seed = 1, CaptureDirectory = launch.CaptureDirectory }
-                : new RunOptions { Seed = Environment.TickCount & 0x7fffffff };
+                ? new RunOptions { Script = InputScript.Parse(text), Seed = 1, CaptureDirectory = launch.CaptureDirectory, FirstFrame = firstFrame }
+                : new RunOptions { Seed = Environment.TickCount & 0x7fffffff, FirstFrame = firstFrame };
         }
         catch (FormatException e)
         {

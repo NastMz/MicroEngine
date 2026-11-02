@@ -226,11 +226,15 @@ public static class Packaging
     /// <summary>The numeric part of a version (Apple and Android accept only numbers and dots).</summary>
     public static string ShortVersion(string version) => version.Split('-', '+')[0];
 
-    /// <summary>A freedesktop.org desktop entry for the game.</summary>
+    /// <summary>
+    /// A freedesktop.org desktop entry for the game. StartupWMClass is the application id SDL gives the window (Wayland
+    /// app id, X11 class), so an installed entry's name and icon belong to the running game in docks and task switchers.
+    /// </summary>
     public static string DesktopEntry(GameProject game, bool icon) => string.Join('\n',
     [
         "[Desktop Entry]", "Type=Application", $"Name={game.Title}", $"Comment={game.Description}", $"Exec={game.Id}",
-        .. icon ? new[] { "Icon=icon.png" } : [], "Terminal=false", "Categories=Game;", "",
+        .. icon ? new[] { "Icon=icon.png" } : [], .. game.ApplicationId is { } id ? new[] { $"StartupWMClass={id}" } : [],
+        "Terminal=false", "Categories=Game;", "",
     ]);
 
     private static void CopyTree(string from, string to)

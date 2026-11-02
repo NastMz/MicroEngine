@@ -193,11 +193,8 @@ public void CancelAll()
 
 ### <a id="MicroEngine_Input_VirtualControls_Draw_MicroEngine_Input_IOverlayCanvas_"></a> Draw\(IOverlayCanvas\)
 
-Draws the controls. Idle controls are an outlined disc at [Opacity](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_Opacity); a pressed one is
-filled, outlined thicker and drawn slightly smaller (pressed in), so the press reads by shape as well as colour,
-even at low opacity. A dark halo keeps outlines legible on light scenes. A d-pad lights the arrows it presses and
-marks where the thumb is; a joystick shows its base, its dead zone, the knob at the thumb's deflection and an arrow
-on the rim whose opacity follows the intensity.
+Draws the shown controls with the layout's skin ([Skin](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_Skin), by default
+[DefaultTouchSkin](MicroEngine.Input.DefaultTouchSkin.md) shaped by the layout's styles), each with its state this frame.
 
 ```csharp
 public void Draw(IOverlayCanvas canvas)

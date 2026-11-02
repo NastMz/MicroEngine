@@ -79,7 +79,10 @@ public sealed class BitmapFont : IDisposable
         return new Vector2(MeasureWidth(text) * scale, (lines * LineHeight - (LineHeight - 8)) * scale);
     }
 
-    /// <summary>Greedy word wrap that respects explicit newlines.</summary>
+    /// <summary>
+    /// Greedy word wrap that respects explicit newlines. A word wider than <paramref name="maxWidth"/> on its own (a long
+    /// name, a URL) is broken between characters, so no line is wider than <paramref name="maxWidth"/>.
+    /// </summary>
     public IReadOnlyList<string> Wrap(string text, int maxWidth)
     {
         var result = new List<string>();
@@ -95,6 +98,14 @@ public sealed class BitmapFont : IDisposable
                     line.Clear().Append(word);
                 }
                 else line.Clear().Append(candidate);
+                // Only a single word can be too wide here: cut it where it stops fitting.
+                while (line.Length > 1 && MeasureWidth(line.ToString()) > maxWidth)
+                {
+                    int fit = 1;
+                    while (fit < line.Length && MeasureWidth(line.ToString(0, fit + 1)) <= maxWidth) fit++;
+                    result.Add(line.ToString(0, fit));
+                    line.Remove(0, fit);
+                }
             }
             result.Add(line.ToString());
         }
