@@ -101,7 +101,7 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
 
         if (!_menu)
         {
-            if ((int)(Age * 2) % 2 == 0) UiKit.Title(r, Font, "PRESS Z TO START", new Vector2(160, 98));
+            if ((int)(Age * 2) % 2 == 0) UiKit.Title(r, Font, Game.Prompts.Format("PRESS {confirm} TO START").ToUpperInvariant(), new Vector2(160, 98));
         }
         else
         {

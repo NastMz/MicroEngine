@@ -54,7 +54,13 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
         new TouchButton("fire", "fire", "FIRE") { Anchor = TouchAnchor.BottomRight, Offset = new(72, 92), Radius = 40, Also = ["cancel"] },
         new TouchButton("jump", "jump", "JUMP") { Anchor = TouchAnchor.BottomRight, Offset = new(166, 60), Radius = 36, Also = ["confirm"] },
         new TouchButton("lock", "lock", "LOCK") { Anchor = TouchAnchor.BottomRight, Offset = new(150, 156), Radius = 28, Mode = TouchButtonMode.Toggle },
-        new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(30, 30), Radius = 20 }) with { SlideBetweenButtons = true };
+        new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(30, 30), Radius = 20 }) with
+    {
+        SlideBetweenButtons = true,
+        // Neon signs: cyan outlines, magenta when pressed, as in the game's menus.
+        Tint = NeonRift.Scenes.Ui.Cyan,
+        PressedTint = NeonRift.Scenes.Ui.Magenta,
+    };
 
     protected override void Load()
     {

@@ -151,6 +151,9 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
         string best = game.Save.BestScores[i] > 0 ? "Best " + Ui.N(game.Save.BestScores[i]) : "Not cleared yet";
         Ui.Text(r, Font, best, new Vector2(304 - Font.MeasureWidth(best), 151), game.Save.BestScores[i] > 0 ? Pal.Cream : Pal.Dusk);
         if ((int)(Age * 2) % 2 == 0 && _walk >= 1 && _revealed >= 1)
-            Ui.Text(r, Font, "Z: play   X: title", new Vector2(304 - Font.MeasureWidth("Z: play   X: title"), 162), Pal.Gold);
+        {
+            string hint = Game.Prompts.Format("{confirm}: play   {cancel}: title");
+            Ui.Text(r, Font, hint, new Vector2(304 - Font.MeasureWidth(hint), 162), Pal.Gold);
+        }
     }
 }

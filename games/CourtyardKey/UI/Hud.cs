@@ -80,8 +80,9 @@ public sealed class Hud(PlayScene world)
             font.DrawShadowed(r, place, new Vector2(tag.X + 7, tag.Y + 3), Pal.Gold[3].WithAlpha(a), Pal.Ink.WithAlpha(a));
         }
 
-        ItemBox(r, font, art, new Vector2(258, 2), "Z", p.HasSword ? art["sword"] : null);
-        ItemBox(r, font, art, new Vector2(286, 2), "C", p.HasBoomerang ? art["boomerang"] : null);
+        // Each slot names the control that uses it on the device being played.
+        ItemBox(r, font, art, new Vector2(258, 2), world.G.Prompts.Text("confirm"), p.HasSword ? art["sword"] : null);
+        ItemBox(r, font, art, new Vector2(286, 2), world.G.Prompts.Text("action"), p.HasBoomerang ? art["boomerang"] : null);
 
         if (world.Boss is { Alive: true } boss && boss.State != Entities.WardenState.Intro)
         {

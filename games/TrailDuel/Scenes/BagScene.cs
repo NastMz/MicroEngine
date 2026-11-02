@@ -85,6 +85,6 @@ internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string
         UiKit.Box(r, desc);
         string text = _messageTime > 0 && _message is not null ? _message : items.Count > 0 ? items[Math.Clamp(_index, 0, items.Count - 1)].Item.Description : "";
         UiKit.Text(r, Font, text, desc.X + 10, desc.Y + 9);
-        UiKit.Text(r, Font, "Z: use   X: back", desc.X + 10, desc.Y + 23, UiKit.Muted);
+        UiKit.Text(r, Font, Game.Prompts.Format("{confirm}: use   {cancel}: back"), desc.X + 10, desc.Y + 23, UiKit.Muted);
     }
 }

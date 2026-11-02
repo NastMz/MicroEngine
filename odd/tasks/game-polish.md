@@ -53,12 +53,12 @@ Quoted fragments are the owner's request (2026-11-01), verbatim.
 
 | Task | Specs | Route | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| T1 Audit: run every demo script, inspect captures, packages and identity | S1 S2 S8 | inline | in progress | |
-| T2 Identity: adaptive Android icon, artifact checks on every target, web manifest | S2 S9 | inline | pending | |
-| T3 Action prompts in the core, glyphs in UI, demos use them | S3 S9 | inline | pending | |
-| T4 Touch control styles and skins, demo styles | S4 S9 | inline | pending | |
-| T5 DialogueBox pagination and prompt tokens, menu and text fixes | S5 S9 | inline | pending | |
-| T6 Startup: Android splash, iOS launch screen, web loading, branding option | S6 S9 | inline | pending | |
+| T1 Audit: run every demo script, inspect captures, packages and identity | S1 S2 S8 | inline | done | L3, L4 |
+| T2 Identity: adaptive Android icon, artifact checks on every target, web manifest | S2 S9 | inline | in progress | 7c976f1; emulator L5 |
+| T3 Action prompts in the core, glyphs in UI, demos use them | S3 S9 | inline | in progress | 357c584 core; demos pending |
+| T4 Touch control styles and skins, demo styles | S4 S9 | inline | in progress | 4d7a65e core; demos pending |
+| T5 DialogueBox pagination and prompt tokens, menu and text fixes | S5 S9 | inline | in progress | 357c584 DialogueBox, Wrap |
+| T6 Startup: Android splash, iOS launch screen, web loading, branding option | S6 S9 | inline | in progress | 7c976f1; emulator L6; iOS needs CI |
 | T7 Audiovisual and demo fixes found by the audit | S1 S7 | inline | pending | |
 | T8 Docs, release notes, evaluation, full tests, PR | S10 S11 S13 | inline | pending | |
 
@@ -74,3 +74,22 @@ inline following this record.
   launcher name and icon. What remains: the icon is a legacy square PNG at one density, no adaptive icon, so Android 8+
   launchers shrink it onto a plate; and the SDK check only read `application-label`, the field that was right while
   the launcher was wrong.
+- L3 Audit, desktop captures of all 36 demo scripts (first pass read the developer's own saves; rerun with isolated
+  save folders and each script's debug start). Found: Courtyard Key's Controls panel overflows (key caps run into
+  their labels, the last row past the border); achievement toasts cover the boss bar and the room tag; hardcoded keys
+  in Courtyard Key (item-get dialogue "Press Z", HUD slots "Z"/"C", "Esc: back", "press Z" at the end), Meadow Run (map
+  footer "Z: play X: title", controls screen), Trail Duel ("PRESS Z TO START", bag and summary hints, controls), Neon
+  Rift (controls screen). `DialogueBox` drops lines beyond `Lines` (documented as "not shown"). `BitmapFont.Wrap`
+  leaves a word wider than the line overflowing.
+- L4 Engine: `ActionPrompts` (device, bindings, remapping, touch layout, gamepad family; `Format`, `TextAll`,
+  `Directions`), `PromptText` glyphs, `DialogueBox` paging and prompt tokens, long-word wrapping (357c584); touch
+  `TouchStyle`, `ITouchSkin`, `IOverlayCanvas.Image` (4d7a65e). 199 engine tests pass.
+- L5 Android identity on the emulator (Medium_Phone_API_36.1, Android 16): the installed Courtyard Key and Trail Duel
+  (pre-SDK-1 builds) were listed as "MicroEngine" with Android's generic icon, Neon Rift (SDK-1 build) with its icon
+  shrunk on a white plate: the reported defect. The four packages from this branch installed as updates over them
+  (same ids, same key) and the drawer shows each game's name with its art filling the launcher mask; Recents shows
+  "Meadow Run" with its icon.
+- L6 Startup on the emulator (screen recording, 6 fps): first build showed system splash -> ~0.5 s black (SDL surface)
+  -> engine start screen with black bands -> title. After holding Android 12's launch screen until the engine's
+  first frame and letterboxing in the start-screen colour: launch screen -> start screen (same colour, full screen)
+  -> title, no black frame. The start screen lasts as long as loading does (about 3.5 s on the emulator).

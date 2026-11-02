@@ -5,6 +5,7 @@ using CourtyardKey.Visuals;
 using CourtyardKey.World;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Input;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 
@@ -118,28 +119,25 @@ public sealed class TitleScene : Scene
 
     private void DrawControls(IRenderer r)
     {
-        var panel = new RectF(56, 112, 208, 64);
+        // The controls of the device being played: keys, a gamepad's buttons, or the on-screen controls.
+        var prompts = Game.Prompts;
+        bool touch = prompts.Device == InputDevice.Touch;
+        (string Key, string What)[] rows =
+        [
+            (prompts.Directions(separator: " / "), touch ? "Move; push less, go slow" : "Move"),
+            (prompts.TextAll("confirm"), "Sword, talk, read, open"),
+            (prompts.TextAll("action"), "Throw the boomerang"),
+            (prompts.TextAll("pause"), "Pause, map and inventory"),
+        ];
+        // Columns sized from the text, so long key names never run into their descriptions or out of the panel.
+        int keys = rows.Max(row => UiStyle.KeyCapWidth(Font, row.Key)), texts = rows.Max(row => Font.MeasureWidth(row.What));
+        float width = MathF.Min(r.Width - 8, 10 + keys + 8 + texts + 10);
+        var panel = new RectF(MathF.Round((r.Width - width) / 2), 112, width, 64);
         UiStyle.Frame(r, panel);
-        // On a touch screen the on-screen controls are explained instead of the keys.
-        (string Key, string What)[] rows = Game.Touch.Shown
-            ?
-            [
-                ("Stick", "Move; push less, go slow"),
-                ("A", "Sword, talk, read, open"),
-                ("C", "Throw the boomerang"),
-                ("II", "Pause, map, inventory"),
-            ]
-            :
-            [
-                ("Arrows/WASD", "Move"),
-                ("Z / Space", "Sword, talk, read, open"),
-                ("C / X", "Throw the boomerang"),
-                ("Esc / P", "Pause, map and inventory"),
-            ];
         for (int i = 0; i < rows.Length; i++)
         {
             UiStyle.KeyCap(r, Font, rows[i].Key, new Vector2(panel.X + 10, panel.Y + 8 + i * 13));
-            Font.DrawShadowed(r, rows[i].What, new Vector2(panel.X + 82, panel.Y + 9 + i * 13), Pal.White, Pal.Ink);
+            Font.DrawShadowed(r, rows[i].What, new Vector2(panel.X + 10 + keys + 8, panel.Y + 9 + i * 13), Pal.White, Pal.Ink);
         }
     }
 }
@@ -221,7 +219,7 @@ public sealed class EndingScene : Scene
             float a = MathF.Min(1, (t - 9) / 1.5f);
             var time = TimeSpan.FromSeconds(_progress.PlaySeconds);
             Font.DrawCentered(r, $"Time {(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}  ·  Gems {_progress.Gems}  ·  Falls {_progress.Deaths}", new Vector2(160, 150), Pal.Gold[2].WithAlpha(a), 1, Pal.Ink);
-            if (t > 14 && (int)(Age * 2) % 2 == 0) Font.DrawCentered(r, "THE END  ·  press Z", new Vector2(160, 166), Pal.White, 1, Pal.Ink);
+            if (t > 14 && (int)(Age * 2) % 2 == 0) Font.DrawCentered(r, Game.Prompts.Format("THE END  ·  press {confirm}"), new Vector2(160, 166), Pal.White, 1, Pal.Ink);
         }
     }
 }

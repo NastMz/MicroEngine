@@ -74,8 +74,8 @@ public sealed class ActionPrompts
 
     /// <summary>
     /// The device prompts are shown for: <see cref="Override"/>, else the device that last pressed an action; before any
-    /// press (or after scripted input), touch when the on-screen controls are shown or the screen is touch-first, a
-    /// gamepad when one is connected, otherwise the keyboard.
+    /// press (or after scripted input), touch when the on-screen controls are shown or the screen is touch-first,
+    /// otherwise the keyboard.
     /// </summary>
     public InputDevice Device
     {
@@ -85,7 +85,9 @@ public sealed class ActionPrompts
             if (_input.LastDevice is InputDevice.Keyboard or InputDevice.Gamepad or InputDevice.Touch)
                 return _input.LastDevice == InputDevice.Touch && _touch is null ? InputDevice.Keyboard : _input.LastDevice;
             if (_touch is { } t && (t.Shown || t.TouchFirst)) return InputDevice.Touch;
-            return _input.PadConnected ? InputDevice.Gamepad : InputDevice.Keyboard;
+            // A connected pad alone does not mean the player holds it (a controller left plugged in beside the
+            // keyboard): it takes over with its first press. This also keeps scripted runs independent of the machine.
+            return InputDevice.Keyboard;
         }
     }
 
@@ -185,10 +187,25 @@ public sealed class ActionPrompts
     /// How to show a group of directions together ("move"): on a keyboard the first key of each ("←→↑↓", "WASD"), on a
     /// gamepad "D-pad" or "Stick", on a touch screen the name of the d-pad or joystick that presses them all.
     /// </summary>
-    public string Directions(string left = "left", string right = "right", string up = "up", string down = "down", InputDevice? device = null)
+    /// <remarks>
+    /// Keys are listed up, left, down, right, so a WASD set reads "WASD". With <paramref name="separator"/> set, a
+    /// keyboard shows every key set the directions share ("↑←↓→ / WASD"), for a help screen.
+    /// </remarks>
+    public string Directions(string left = "left", string right = "right", string up = "up", string down = "down", InputDevice? device = null, string? separator = null)
     {
         var d = device ?? Device;
-        string[] actions = [left, right, up, down];
+        string[] actions = [up, left, down, right];
+        if (separator is not null && d is InputDevice.Keyboard or InputDevice.None or InputDevice.Other && !actions.Any(a => _labels.Keys.Any(k => k.Action == a)))
+        {
+            var keys = actions.Select(a => All(a, InputDevice.Keyboard)).ToList();
+            var sets = new List<string>();
+            for (int i = 0; keys.All(k => k.Count > i); i++)
+            {
+                var set = keys.Select(k => k[i].Text).ToList();
+                sets.Add(set.All(t => t.Length == 1) ? string.Concat(set) : string.Join(" ", set));
+            }
+            if (sets.Count > 0) return string.Join(separator, sets);
+        }
         switch (d)
         {
             case InputDevice.Gamepad:

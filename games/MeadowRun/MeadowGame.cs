@@ -61,7 +61,13 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
         new TouchDPad { Offset = new(104, 100), Diagonals = false },
         new TouchButton("jump", "jump", "A") { Anchor = TouchAnchor.BottomRight, Offset = new(70, 92), Radius = 40, Also = ["confirm"] },
         new TouchButton("run", "run", "B") { Anchor = TouchAnchor.BottomRight, Offset = new(164, 62), Radius = 34, Also = ["cancel"] },
-        new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(30, 30), Radius = 20 }) with { SlideBetweenButtons = true };
+        new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(30, 30), Radius = 20 }) with
+    {
+        SlideBetweenButtons = true,
+        // The game's own colours: cream outlines, presses in meadow green.
+        Tint = MeadowRun.Art.Pal.Cream,
+        PressedTint = MeadowRun.Art.Pal.Leaf,
+    };
 
     protected override void Load()
     {

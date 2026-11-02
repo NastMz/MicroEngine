@@ -110,8 +110,8 @@ public sealed partial class PlayScene
 
     public static string[] ItemText(Item item, int amount) => item switch
     {
-        Item.Sword => ["You got Oswin's Sword!", "Press Z to swing it. Cut bushes, break pots, and stand your ground."],
-        Item.Boomerang => ["You got the Wind Boomerang!", "Press C to throw it. It stuns foes, fetches treasure and strikes switches out of reach."],
+        Item.Sword => ["You got Oswin's Sword!", "Press {confirm} to swing it. Cut bushes, break pots, and stand your ground."],
+        Item.Boomerang => ["You got the Wind Boomerang!", "Press {action} to throw it. It stuns foes, fetches treasure and strikes switches out of reach."],
         Item.SmallKey => ["You found a Small Key! Walk into a locked door to open it."],
         Item.BossKey => ["You found the Warden's Key! It opens the great door of the Pillar Hall."],
         Item.HeartContainer => ["You got a Heart Container! Your life grows by one whole heart."],

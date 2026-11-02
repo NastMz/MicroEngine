@@ -47,7 +47,9 @@ public sealed class ActionPromptTests
     public void TheKeyboardIsTheDefaultOnADesktop()
     {
         var rig = new Rig();
-        Assert.AreEqual(InputDevice.Keyboard, rig.Prompts.Device);
+        rig.Devices.PadConnected = true;
+        rig.Step();
+        Assert.AreEqual(InputDevice.Keyboard, rig.Prompts.Device, "a pad left plugged in takes over only when pressed");
         Assert.AreEqual("Press Z to swing", rig.Prompts.Format("Press {attack} to swing"));
     }
 
@@ -116,9 +118,10 @@ public sealed class ActionPromptTests
     {
         var rig = new Rig();
         Assert.AreEqual("Z / Space", rig.Prompts.TextAll("attack"));
-        Assert.AreEqual("←→↑↓", rig.Prompts.Directions());
+        Assert.AreEqual("↑←↓→", rig.Prompts.Directions());
+        Assert.AreEqual("↑←↓→ / WASD", rig.Prompts.Directions(separator: " / "), "help screens list every key set");
         Assert.AreEqual("D-pad", rig.Prompts.Directions(device: InputDevice.Gamepad));
-        Assert.AreEqual("Press ←→↑↓", rig.Prompts.Format("Press {move}"));
+        Assert.AreEqual("Press ↑←↓→", rig.Prompts.Format("Press {move}"));
     }
 
     [TestMethod]
@@ -132,6 +135,20 @@ public sealed class ActionPromptTests
         Assert.AreEqual("[Z]", rig.Prompts.Format("{attack}", p => $"[{p.Text}]"));
         rig.Prompts.Override = InputDevice.Gamepad;
         Assert.AreEqual("A", rig.Prompts.Text("attack"));
+    }
+
+    [TestMethod]
+    public void ScriptsChooseTheDevicePromptsAreShownFor()
+    {
+        var rig = new Rig();
+        var script = InputScript.Parse("10 prompts gamepad playstation\n20 prompts touch\n30 prompts auto");
+        script.ApplyPrompts(10, rig.Prompts);
+        Assert.AreEqual("×", rig.Prompts.Text("attack"));
+        script.ApplyPrompts(20, rig.Prompts);
+        Assert.AreEqual("SWORD", rig.Prompts.Text("attack"));
+        script.ApplyPrompts(30, rig.Prompts);
+        Assert.AreEqual("Z", rig.Prompts.Text("attack"));
+        Assert.ThrowsExactly<FormatException>(() => InputScript.Parse("10 prompts joystick"));
     }
 
     [TestMethod]
