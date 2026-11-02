@@ -31,6 +31,7 @@ public sealed class AchievementsScene : Scene
 [Scene.Input](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Input), 
 [Scene.Audio](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Audio), 
 [Scene.Font](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Font), 
+[Scene.Assets](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Assets), 
 [Scene.Coroutines](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Coroutines), 
 [Scene.Tweens](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Tweens), 
 [Scene.Age](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Age), 

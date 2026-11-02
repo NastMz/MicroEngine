@@ -40,9 +40,25 @@ Not published yet: merged on `main` after 0.4.0-alpha.2, in the next SDK version
   (`WindowMode`) and the display; `Game.Screen` (`GameScreen`, `DisplayInfo`, `IDisplayControl`) lists the displays and
   changes VSync, the frame limit, the window mode and the display while the game runs; launcher options `--renderer`,
   `--vsync`, `--fps-limit`, `--gpu`, `--window`, `--display`.
+- [Assets](../manual/assets.md): `Game.Assets` (`AssetCache`) loads, shares and releases textures, atlases and fonts
+  from `Content/`, with scopes for levels (`CreateScope`), background loading for loading screens (`Preload`,
+  `AssetBatch`), `AssetLoadException` naming the file, statistics and reports of slow loads during play (also in
+  `--profile`); `Content/` ships with every game without a project item.
+- [Images](../manual/assets.md#images): JPEG, BMP, TGA, GIF, PSD and every PNG variant (`PixelImage.Decode`).
+- [Atlases from packing tools](../manual/assets.md#atlases-from-packing-tools): TexturePacker, Free Texture Packer and
+  Aseprite JSON (trimming, pivots, frame durations and tags) and Starling XML (`AtlasData`, `SpriteAtlas.Load`,
+  `SpriteAtlas.Clip`, `AnimationClip` with a duration per frame); `Assets.AtlasFromFolder` packs a folder of images.
+- [Scalable fonts](../manual/text.md#scalable-fonts-ttf-and-otf): TTF and OTF fonts at any size (`ScalableFont`,
+  `SizedFont`, `FontOptions`), with kerning, fallback faces and `Prepare`; `IFont` for both font kinds, taken by
+  `DialogueBox` and `SelectionList`.
+- [HD canvases](../manual/rendering.md#hd-canvases-and-smooth-scaling): `GameSettings.Scaling` (`CanvasScaling.Smooth`
+  fills the window with linear sampling), per-texture `TextureFilter` with a game default (`GameSettings.TextureFilter`),
+  `Texture.Update` for regions, windows sized to fit the display.
 
 **Changed**: `DialogueBox` continues a page that does not fit instead of cutting it; `BitmapFont.Wrap` breaks words
-wider than a line; hidden and scripted runs open no sound device; see the [migration notes](../migrations.md#next-release).
+wider than a line; hidden and scripted runs open no sound device; content file names must match their letter case on
+every system; custom graphics devices implement filters and region updates; see the
+[migration notes](../migrations.md#next-release).
 
 **Faster**: the SDL window appears about a second sooner on some Windows machines (gamepads start behind the start
 screen); the SDL renderer skips unchanged state; input sampling, touch controls, `EntityList` loops and drawing,

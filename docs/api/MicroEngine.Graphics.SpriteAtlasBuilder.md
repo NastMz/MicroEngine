@@ -33,7 +33,7 @@ renderer.Draw(atlas["hero"], new Vector2(160, 120));
 
 ## Remarks
 
-Add images with [Add](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Add_System_String_MicroEngine_Graphics_PixelImage_System_Nullable_System_Numerics_Vector2__), [AddFrames](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_AddFrames_System_String_System_Collections_Generic_IEnumerable_MicroEngine_Graphics_PixelImage__System_Nullable_System_Numerics_Vector2__) or [AddGrid](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_AddGrid_System_String_MicroEngine_Graphics_PixelImage_System_Int32_System_Int32_System_Nullable_System_Int32__System_Nullable_System_Numerics_Vector2__), then call [Build](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_) once
+Add images with [Add](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Add_System_String_MicroEngine_Graphics_PixelImage_System_Nullable_System_Numerics_Vector2__), [AddFrames](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_AddFrames_System_String_System_Collections_Generic_IEnumerable_MicroEngine_Graphics_PixelImage__System_Nullable_System_Numerics_Vector2__) or [AddGrid](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_AddGrid_System_String_MicroEngine_Graphics_PixelImage_System_Int32_System_Int32_System_Nullable_System_Int32__System_Nullable_System_Numerics_Vector2__), then call [Build](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_System_Nullable_MicroEngine_Graphics_TextureFilter__) once
 from <code>Game.Load</code> (it needs the graphics device). Names are case-sensitive.
 
 ## Constructors
@@ -62,7 +62,7 @@ public int Count { get; }
 
 ### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_Add_System_String_MicroEngine_Graphics_PixelImage_System_Nullable_System_Numerics_Vector2__"></a> Add\(string, PixelImage, Vector2?\)
 
-Adds an image under <code class="paramref">name</code>. The image is copied into the atlas when [Build](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_) runs, so keep it unchanged until then.
+Adds an image under <code class="paramref">name</code>. The image is copied into the atlas when [Build](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_System_Nullable_MicroEngine_Graphics_TextureFilter__) runs, so keep it unchanged until then.
 
 ```csharp
 public SpriteAtlasBuilder Add(string name, PixelImage image, Vector2? origin = null)
@@ -142,17 +142,25 @@ public SpriteAtlasBuilder AddGrid(string name, PixelImage sheet, int cellWidth, 
 
  [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
 
-### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_"></a> Build\(IGraphicsDevice\)
+### <a id="MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_System_Nullable_MicroEngine_Graphics_TextureFilter__"></a> Build\(IGraphicsDevice, TextureFilter?\)
 
-Shelf-packs every image (with 1px padding) into the smallest power-of-two width that fits.
+Shelf-packs every image into the smallest power-of-two width that fits, with a 1-pixel gap between images. Sampled
+linearly, each image also gets a 1-pixel border repeating its edge pixels, so scaled sprites and tiles never
+show their neighbours' colours or seams.
 
 ```csharp
-public SpriteAtlas Build(IGraphicsDevice device)
+public SpriteAtlas Build(IGraphicsDevice device, TextureFilter? filter = null)
 ```
 
 #### Parameters
 
 `device` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+
+Creates the texture.
+
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
+
+The texture's filter; null for the device's [DefaultFilter](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_DefaultFilter).
 
 #### Returns
 

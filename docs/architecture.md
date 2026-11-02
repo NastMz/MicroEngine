@@ -1,6 +1,6 @@
 # MicroEngine architecture
 
-MicroEngine is a small, code-first 2D framework for pixel-art games in C#/.NET 10. It is
+MicroEngine is a small, code-first 2D framework for C#/.NET 10, for pixel-art and HD games. It is
 deliberately compact: one backend-independent core library, two platform backends (SDL 3 for Windows, Linux, macOS,
 Android and iOS; raylib for browsers and as a desktop alternative), and games that are ordinary .NET programs. This
 document explains how the pieces fit and why.
@@ -32,7 +32,7 @@ four device interfaces:
 | Interface | Responsibility | Implementations |
 | --- | --- | --- |
 | `IRenderer` | Immediate-mode drawing into the virtual canvas | `SdlRenderer`, `RaylibRenderer`, `HeadlessRenderer` |
-| `IGraphicsDevice` | Turning `PixelImage`s into textures | SDL, raylib, headless |
+| `IGraphicsDevice` | Turning `PixelImage`s into textures with a filter (nearest, linear); textures take region updates | SDL, raylib, headless |
 | `IAudioDevice` | Loading/playing PCM sounds and looping music | SDL, raylib, `SilentAudioDevice` |
 | `IInputSource` | Raw key, gamepad and mouse state | SDL, raylib, `HeadlessInput` |
 | `ITouchScreen` (optional, `IPlatform.Touch`) | Touches, safe area, density, vibration and an overlay drawn over the frame | SDL, raylib (from the browser page), `HeadlessTouchScreen` |
@@ -71,10 +71,10 @@ scripted playthrough tests and reproducible screenshots possible.
 | Namespace | Contents |
 | --- | --- |
 | `MicroEngine` | `Color`, `RectF`, `MathX` (approach, damp, waves), `Ease` |
-| `MicroEngine.Core` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `InputScript`, `HeadlessPlatform`, `SaveStore` (over `ISaveStorage`), `ContentFolder`, `Achievement`, `AchievementTracker` |
+| `MicroEngine.Core` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `InputScript`, `HeadlessPlatform`, `SaveStore` (over `ISaveStorage`), `ContentFolder`, `AssetCache` (`Game.Assets`), `Achievement`, `AchievementTracker` |
 | `MicroEngine.Scenes` | `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener` |
 | `MicroEngine.Input` | `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources; `VirtualControls` and `TouchLayout`: per-game on-screen d-pads, joysticks and buttons; `ITouchScreen`, `FrameLayout` |
-| `MicroEngine.Graphics` | `PixelImage` (CPU art, PNG loading, crop/rotate), `Art` (noise, dither, ramps), `SpriteAtlasBuilder` (incl. grid sheets), `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `BitmapFont`, `IRenderer` |
+| `MicroEngine.Graphics` | `PixelImage` (CPU art, image decoding, crop/rotate), `Art` (noise, dither, ramps), `SpriteAtlasBuilder` (incl. grid sheets), `AtlasData` (packing tools' files), `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `IFont` (`BitmapFont`, `ScalableFont`), `TextureFilter`, `IRenderer` |
 | `MicroEngine.World` | `TileLayer`, `TileGrid`, `TileMotion` (swept AABB with one-way tiles), `Autotile`, `TileRenderer`, `Entity`, `EntityList<T>` |
 | `MicroEngine.Audio` | `Synth` (retro SFX), `Song` (step sequencer), `AudioClip` (incl. WAV decoding), `AudioMixer` (incl. sound/music files) |
 | `MicroEngine.UI` | `Typewriter`, `DialogueBox`, `SelectionList`, `UiTheme`, `AchievementToasts`, `AchievementsScene` |
@@ -83,6 +83,11 @@ scripted playthrough tests and reproducible screenshots possible.
 
 In short:
 
+- **Files ship as they are; the engine decodes, caches and releases them.** `Content/` is copied with every game;
+  images (StbImageSharp), atlases from packing tools and TTF/OTF fonts (FontStashSharp) are decoded in managed code at
+  load, the same on every platform. `Game.Assets` returns one object per file and options, releases each scope's assets
+  with it, and reports loads that would hitch during play. The platform locates files and makes textures; the game
+  decides what to load and when.
 - **Code-first content by default, files when a game wants them.** Sprites, tiles and fonts can be
   authored as code (`PixelImage`, char maps, palettes, noise) and sounds synthesized, so a game can ship
   no binary assets. Games that use existing packs load PNG and WAV in managed code and stream OGG (or MP3 on raylib)
@@ -103,9 +108,10 @@ In short:
 - **Achievements: the engine keeps score, the game decides.** `AchievementTracker` owns the catalog,
   progress, one-time unlocks and persistence (through `SaveStore`, so each game keeps its own file); games
   only call `Unlock`/`AddProgress`/`SetProgress` where their events already happen.
-- **Virtual canvas.** Games draw at 320×180 (configurable); the backend scales by the largest integer
-  factor that fits the safe area and letterboxes, keeping pixels square at any window size (fractionally only when
-  whole factors would waste a fifth of a small screen). F11 toggles fullscreen.
+- **Virtual canvas.** Games draw at 320×180 (configurable, up to HD sizes such as 1920×1080). With pixel scaling, the
+  default, the backend scales by the largest integer factor that fits the safe area and letterboxes, keeping pixels
+  square at any window size (fractionally only when whole factors would waste a fifth of a small screen); with smooth
+  scaling it fills the window and samples linearly. Texture filtering is per texture. F11 toggles fullscreen.
 
 ## Testing a game
 

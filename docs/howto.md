@@ -241,7 +241,38 @@ for (int i = 0; i < lines.Count; i++)
     Font.Draw(r, lines[i], new Vector2(box.X + 6, box.Y + 6 + i * (Font.LineHeight + 1)), Color.White);
 ```
 
-It covers ASCII and a few symbols; there is no loading of other fonts. [Text](manual/text.md).
+It covers ASCII and a few symbols. Next SDK version (not published yet: arrives with the next SDK version): load a TTF or
+OTF font from `Content/` and draw it at any size:
+
+```csharp
+var font = Assets.Font("fonts/Inter-Regular.ttf");     // in Load
+font.Draw(r, "Score 1200", new Vector2(24, 24), 32, Color.White);
+```
+
+[Text](manual/text.md#scalable-fonts-ttf-and-otf).
+
+## ...make an HD game?
+
+Next SDK version (not published yet: arrives with the next SDK version). Choose an HD canvas and smooth scaling, put
+images, atlases and fonts under `Content/`, and load them through `Assets`:
+
+```csharp
+public sealed class MainGame : Game
+{
+    public override GameSettings Settings { get; } = new("My HD Game", 1280, 720, 1) { Scaling = CanvasScaling.Smooth };
+
+    protected override void Load()
+    {
+        var hero = Assets.Atlas("atlases/hero.json");            // exported from TexturePacker or Aseprite
+        var font = Assets.Font("fonts/Inter-Regular.ttf");
+        font.Prepare(ScalableFont.Ascii, 24, 48);
+        Scenes.Push(new PlayScene());
+    }
+}
+```
+
+Textures default to linear sampling and the canvas fills any window. [HD canvases](manual/rendering.md#hd-canvases-and-smooth-scaling),
+[Assets](manual/assets.md); the [Asset Gallery](../samples/AssetGallery/GalleryScene.cs) sample is a complete one.
 
 ## ...save the game?
 

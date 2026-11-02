@@ -60,6 +60,12 @@ public override GameSettings Settings { get; } = new("Neon Rift", 480, 270, 3) {
 
 Source: [`games/NeonRift/RiftGame.cs`](../../games/NeonRift/RiftGame.cs)
 
+Next SDK version (not published yet: arrives with the next SDK version): the canvas does not have to be pixel art.
+`Scaling = CanvasScaling.Smooth` scales it to fill the window with linear sampling, for HD games drawn on a 1280×720 or
+1920×1080 canvas, and `TextureFilter` sets the default sampling of textures
+([HD canvases](rendering.md#hd-canvases-and-smooth-scaling)). A window that would not fit the display opens at the
+largest size that does.
+
 ## Start-up order
 
 `Game.Initialize` (called by the loop) sets services up in a fixed order, then runs `Load` and applies the scene

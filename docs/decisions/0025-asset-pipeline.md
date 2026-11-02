@@ -19,7 +19,7 @@ committing the engine to pixel art or blocking a later move to 3D.
 | Need | Studied | Outcome |
 | --- | --- | --- |
 | Content build | MonoGame Content Pipeline (MGCB, MGCB Editor, `.mgcb` projects, XNB output); FNA (raw files, no pipeline); raylib and SDL (raw files at run time) | Raw files at run time; the build only checks and lists them |
-| Images | Current managed PNG decoder; StbImageSharp (Unlicense/MIT, managed port of stb_image); ImageSharp; SkiaSharp; System.Drawing; SDL_image / raylib loaders | Managed PNG decoder + StbImageSharp |
+| Images | Current managed PNG decoder; StbImageSharp (Unlicense/MIT, managed port of stb_image); ImageSharp; SkiaSharp; System.Drawing; SDL_image / raylib loaders | StbImageSharp for every format |
 | Fonts | FontStashSharp (Zlib) over StbTrueTypeSharp; StbTrueTypeSharp alone; SixLabors.Fonts; FreeType (SharpFont, FreeTypeSharp); SDL_ttf; SDF/MSDF (msdf-atlas-gen); AngelCode BMFont | FontStashSharp |
 | Atlases | TexturePacker, Free Texture Packer, ShoeBox, Aseprite exports; libGDX `.atlas`; MonoGame.Extended's importers; run-time packing | Import TexturePacker/Aseprite JSON and Starling XML; keep run-time packing |
 | Asset management | MonoGame `ContentManager`; Unity Addressables (reference counting, async); Godot `ResourceLoader` (cache by path, threaded loading) | An engine cache with scopes, no reference counting |
@@ -30,12 +30,14 @@ committing the engine to pixel art or blocking a later move to 3D.
   converting textures to GPU formats per platform. MicroEngine's renderers (SDL_Renderer, raylib's 2D batch) take
   neither, and decoding a PNG of game size takes milliseconds (measured in ASSET-1), so a content compiler would add a
   tool, a content project and rebuilds without benefit. `Content/**` becomes part of every game automatically (no item in
-  the project file), and the build fails on files whose names differ only in letter case and writes a list of the files
-  (`content.list`) that the asset cache uses to reject a name spelled with the wrong case on systems that would forgive
-  it (Windows, macOS), because Linux, Android and browsers would not. GPU texture formats and shaders return with
-  GRAPHICS-1; the pipeline can then convert at build time where it pays.
-- **Images are decoded in managed code on every platform.** PNGs keep the existing decoder (fast path, already proven);
-  everything else (JPEG, BMP, TGA, GIF first frame, 16-bit and interlaced PNGs) goes through StbImageSharp. Rejected:
+  the project file), and the build fails on files whose names differ only in letter case (ME0010). At run time
+  `ContentFolder` compares each requested name with the directory listing and rejects a wrong letter case on systems that
+  would forgive it (Windows, macOS), because Linux, Android and browsers would not; listings are read once per folder, so
+  no build-written file list is needed. GPU texture formats and shaders return with GRAPHICS-1; the pipeline can then
+  convert at build time where it pays.
+- **Images are decoded in managed code on every platform, by StbImageSharp.** PNG (every variant), JPEG, BMP, TGA, GIF
+  (first frame) and PSD. The engine's own PNG decoder was kept at first; measured, it decoded all 245 PNGs of the
+  repository to the same pixels five times more slowly, so it was removed. Rejected:
   ImageSharp (Six Labors Split License: commercial terms above a revenue threshold), SkiaSharp (a native library per
   platform, tens of megabytes, and a WebAssembly build of its own), System.Drawing (Windows only), backend loaders
   (headless tests and the two backends would decode differently). Uploads pass the image's memory to the backend without

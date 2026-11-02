@@ -7,7 +7,7 @@ Assembly: MicroEngine.dll
 Guide: [Graphics](../manual/rendering.md)  
 
 A CPU-side RGBA image. Games author procedural art with it and hand it to
-[CreateTexture](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_CreateTexture_MicroEngine_Graphics_PixelImage_); it also backs the built-in font.
+[CreateTexture](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_CreateTexture_MicroEngine_Graphics_PixelImage_MicroEngine_Graphics_TextureFilter_); it also backs the built-in font.
 
 ```csharp
 public sealed class PixelImage
@@ -236,6 +236,29 @@ public PixelImage Crop(int x, int y, int width, int height)
 
  [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
+### <a id="MicroEngine_Graphics_PixelImage_Decode_System_ReadOnlySpan_System_Byte__"></a> Decode\(ReadOnlySpan<byte\>\)
+
+Decodes an image file held in memory: PNG (any variant), JPEG (baseline and progressive), BMP, TGA, GIF (its first
+frame) or PSD (the composited image), recognised by its content rather than a name.
+
+```csharp
+public static PixelImage Decode(ReadOnlySpan<byte> data)
+```
+
+#### Parameters
+
+`data` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[byte](https://learn.microsoft.com/dotnet/api/system.byte)\>
+
+#### Returns
+
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)
+
+#### Exceptions
+
+ [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
+
+The data is not an image in one of those formats.
+
 ### <a id="MicroEngine_Graphics_PixelImage_DrawRect_System_Int32_System_Int32_System_Int32_System_Int32_MicroEngine_Color_"></a> DrawRect\(int, int, int, int, Color\)
 
 Draws the one-pixel outline of a rectangle.
@@ -392,7 +415,7 @@ public static PixelImage FromMap(IReadOnlyDictionary<char, Color> palette, param
 
 ### <a id="MicroEngine_Graphics_PixelImage_FromPng_System_ReadOnlySpan_System_Byte__"></a> FromPng\(ReadOnlySpan<byte\>\)
 
-Decodes a PNG (8-bit grey/RGB/RGBA or paletted, non-interlaced).
+Decodes a PNG: any colour type and bit depth, interlaced or not.
 
 ```csharp
 public static PixelImage FromPng(ReadOnlySpan<byte> data)
@@ -410,11 +433,7 @@ public static PixelImage FromPng(ReadOnlySpan<byte> data)
 
  [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
 
-The data is not a valid PNG.
-
- [NotSupportedException](https://learn.microsoft.com/dotnet/api/system.notsupportedexception)
-
-The PNG uses a format the decoder does not support.
+The data is not a PNG the engine can read.
 
 ### <a id="MicroEngine_Graphics_PixelImage_InBounds_System_Int32_System_Int32_"></a> InBounds\(int, int\)
 
@@ -460,7 +479,7 @@ public PixelImage Line(int x0, int y0, int x1, int y1, Color color)
 
 ### <a id="MicroEngine_Graphics_PixelImage_Load_System_String_"></a> Load\(string\)
 
-Loads a PNG file; the message names the path when decoding fails.
+Loads an image file in any format [Decode](MicroEngine.Graphics.PixelImage.md#MicroEngine_Graphics_PixelImage_Decode_System_ReadOnlySpan_System_Byte__) reads; the message names the path when decoding fails.
 
 ```csharp
 public static PixelImage Load(string path)
@@ -482,7 +501,7 @@ The file does not exist.
 
  [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
 
-The file is not a PNG the decoder supports.
+The file is not an image the engine can read.
 
 ### <a id="MicroEngine_Graphics_PixelImage_Map_System_Func_System_Int32_System_Int32_MicroEngine_Color_MicroEngine_Color__"></a> Map\(Func<int, int, Color, Color\>\)
 

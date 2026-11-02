@@ -77,12 +77,12 @@ public bool Wrap { get; set; }
 
 ## Methods
 
-### <a id="MicroEngine_UI_SelectionList_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_BitmapFont_System_Numerics_Vector2_MicroEngine_UI_UiTheme_System_Single_System_Int32_"></a> Draw\(IRenderer, BitmapFont, Vector2, UiTheme, float, int\)
+### <a id="MicroEngine_UI_SelectionList_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IFont_System_Numerics_Vector2_MicroEngine_UI_UiTheme_System_Single_System_Nullable_System_Single__"></a> Draw\(IRenderer, IFont, Vector2, UiTheme, float, float?\)
 
 Draws the options with a cursor beside the highlighted one.
 
 ```csharp
-public void Draw(IRenderer r, BitmapFont font, Vector2 position, UiTheme theme, float time, int lineHeight = 12)
+public void Draw(IRenderer r, IFont font, Vector2 position, UiTheme theme, float time, float? lineHeight = null)
 ```
 
 #### Parameters
@@ -91,7 +91,7 @@ public void Draw(IRenderer r, BitmapFont font, Vector2 position, UiTheme theme, 
 
 The renderer.
 
-`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
+`font` [IFont](MicroEngine.Graphics.IFont.md)
 
 The font.
 
@@ -107,9 +107,9 @@ Colours.
 
 Seconds, for the cursor's bobbing (for example [Age](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Age)).
 
-`lineHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+`lineHeight` [float](https://learn.microsoft.com/dotnet/api/system.single)?
 
-Distance between options in pixels.
+Distance between options in pixels; null for the font's line height plus a fifth (12 for the built-in font).
 
 ### <a id="MicroEngine_UI_SelectionList_IsEnabled_System_Int32_"></a> IsEnabled\(int\)
 

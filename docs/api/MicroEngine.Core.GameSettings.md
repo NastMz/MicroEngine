@@ -6,7 +6,8 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
-Window/backbuffer settings a game declares. The virtual size is the pixel-art canvas.
+Window/backbuffer settings a game declares. The virtual size is the canvas everything is drawn on: 320×180 pixel art
+by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with [Smooth](MicroEngine.Graphics.CanvasScaling.md).
 
 ```csharp
 public sealed record GameSettings : IEquatable<GameSettings>
@@ -25,7 +26,8 @@ public sealed record GameSettings : IEquatable<GameSettings>
 
 ### <a id="MicroEngine_Core_GameSettings__ctor_System_String_System_Int32_System_Int32_System_Int32_"></a> GameSettings\(string, int, int, int\)
 
-Window/backbuffer settings a game declares. The virtual size is the pixel-art canvas.
+Window/backbuffer settings a game declares. The virtual size is the canvas everything is drawn on: 320×180 pixel art
+by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with [Smooth](MicroEngine.Graphics.CanvasScaling.md).
 
 ```csharp
 public GameSettings(string Title, int VirtualWidth = 320, int VirtualHeight = 180, int Scale = 4)
@@ -47,7 +49,8 @@ Height of the virtual canvas in pixels (180 by default).
 
 `Scale` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-Initial window size as a multiple of the virtual size on desktop (4 by default); the launcher's <code>--scale</code> overrides it.
+Initial window size as a multiple of the virtual size on desktop (4 by default); the launcher's <code>--scale</code> overrides
+it. A window that would not fit the display opens at the largest size that does.
 
 ## Properties
 
@@ -62,6 +65,18 @@ public Color Background { get; init; }
 #### Property Value
 
  [Color](MicroEngine.Color.md)
+
+### <a id="MicroEngine_Core_GameSettings_DefaultTextureFilter"></a> DefaultTextureFilter
+
+The filter textures get when they do not choose one: [TextureFilter](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_TextureFilter), or the one [Scaling](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scaling) implies.
+
+```csharp
+public TextureFilter DefaultTextureFilter { get; }
+```
+
+#### Property Value
+
+ [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 ### <a id="MicroEngine_Core_GameSettings_Graphics"></a> Graphics
 
@@ -89,7 +104,8 @@ public Color Letterbox { get; init; }
 
 ### <a id="MicroEngine_Core_GameSettings_Scale"></a> Scale
 
-Initial window size as a multiple of the virtual size on desktop (4 by default); the launcher's <code>--scale</code> overrides it.
+Initial window size as a multiple of the virtual size on desktop (4 by default); the launcher's <code>--scale</code> overrides
+it. A window that would not fit the display opens at the largest size that does.
 
 ```csharp
 public int Scale { get; init; }
@@ -98,6 +114,33 @@ public int Scale { get; init; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_GameSettings_Scaling"></a> Scaling
+
+How the canvas is scaled to the window: [Pixel](MicroEngine.Graphics.CanvasScaling.md) (the default: whole factors, nearest
+sampling) for pixel art, [Smooth](MicroEngine.Graphics.CanvasScaling.md) (fills the window, linear sampling) for
+high-resolution art.
+
+```csharp
+public CanvasScaling Scaling { get; init; }
+```
+
+#### Property Value
+
+ [CanvasScaling](MicroEngine.Graphics.CanvasScaling.md)
+
+### <a id="MicroEngine_Core_GameSettings_TextureFilter"></a> TextureFilter
+
+The filter of textures created without one (images, atlases, fonts). Null (the default) follows
+[Scaling](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scaling): nearest for pixel art, linear for smooth scaling. Each texture can still choose its own.
+
+```csharp
+public TextureFilter? TextureFilter { get; init; }
+```
+
+#### Property Value
+
+ [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
 
 ### <a id="MicroEngine_Core_GameSettings_Title"></a> Title
 

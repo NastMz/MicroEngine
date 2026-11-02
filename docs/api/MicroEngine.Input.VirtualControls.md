@@ -87,7 +87,7 @@ public int FingerCount { get; }
 
 Whether the game frame is fitted around the controls while they are shown (default true): on screens close to
 16:9, where the letterbox bars cannot hold them, the frame is made as large as it can be without any control
-covering it (see [Frame](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_Frame_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_)).
+covering it (see [Frame](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_Frame_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_CanvasScaling_)).
 
 ```csharp
 public bool KeepFrameClear { get; set; }
@@ -99,7 +99,7 @@ public bool KeepFrameClear { get; set; }
 
 ### <a id="MicroEngine_Input_VirtualControls_LastFrame"></a> LastFrame
 
-The frame chosen by the last [Frame](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_Frame_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_) call, in screen pixels (tests and diagnostics).
+The frame chosen by the last [Frame](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_Frame_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_CanvasScaling_) call, in screen pixels (tests and diagnostics).
 
 ```csharp
 public RectF LastFrame { get; }
@@ -204,16 +204,16 @@ public void Draw(IOverlayCanvas canvas)
 
 `canvas` [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md)
 
-### <a id="MicroEngine_Input_VirtualControls_Frame_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_"></a> Frame\(Vector2, RectF, int, int\)
+### <a id="MicroEngine_Input_VirtualControls_Frame_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_CanvasScaling_"></a> Frame\(Vector2, RectF, int, int, CanvasScaling\)
 
-Where the backend draws the game frame. Without shown controls it is [Fit](MicroEngine.Input.FrameLayout.md#MicroEngine_Input_FrameLayout_Fit_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_). With shown
+Where the backend draws the game frame. Without shown controls it is [Fit](MicroEngine.Input.FrameLayout.md#MicroEngine_Input_FrameLayout_Fit_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_CanvasScaling_). With shown
 controls that would cover the largest frame, the frame moves to the top of the safe area, or just below a control
 anchored at the top (horizontally centred), and takes the largest size at which no control of the layout overlaps it, never below
 [MinimumFrameFraction](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_MinimumFrameFraction); a whole-number scale is kept when it is within 90 % of that size, so pixels
-stay even when it costs little. Controls hidden by context still count, so a dialogue does not resize the game.
+stay even when it costs little (pixel scaling only). Controls hidden by context still count, so a dialogue does not resize the game.
 
 ```csharp
-public RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight)
+public RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, CanvasScaling scaling = CanvasScaling.Pixel)
 ```
 
 #### Parameters
@@ -225,6 +225,8 @@ public RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtual
 `virtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 `virtualHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`scaling` [CanvasScaling](MicroEngine.Graphics.CanvasScaling.md)
 
 #### Returns
 
