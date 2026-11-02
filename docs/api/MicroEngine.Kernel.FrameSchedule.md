@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 The systems that run each frame: named callbacks placed in a [FramePhase](MicroEngine.Kernel.FramePhase.md), run in phase order. Within a
 phase, systems run in the order they were added unless a system asks to run after or before another one of the same

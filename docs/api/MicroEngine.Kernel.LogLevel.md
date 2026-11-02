@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 How important a log message is.
 

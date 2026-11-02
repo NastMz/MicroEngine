@@ -18,9 +18,21 @@ Not published yet. Behaviour that changes:
   `<MicroEngineSplash>false</MicroEngineSplash>`.
 - `IInputSource.PadStyle`, `IOverlayCanvas.Image` and `IPlatform.Letterbox` are new interface members with defaults:
   existing implementations compile unchanged (a custom overlay canvas draws no images until it implements `Image`).
-- Runs with `--hidden`, `--script` (any fixed-step run) open no sound device: `--report` prints `audio: unavailable`
-  there. **Migration:** a check that must prove a device opens passes `--audio device`
-  (`PlatformRequest.AudioOutput = AudioOutput.Device` for hosts).
+- The loop owns time. Runs in deterministic time (`--script`, the new `--time deterministic`, headless runs) open no
+  sound device: `--report` prints `audio: unavailable` there. A hidden window alone implies neither deterministic time
+  nor silence: `--hidden` without a script runs in real time and opens a sound device where there is one.
+  **Migration:** a check that must prove a device opens passes `--audio device`
+  (`PlatformRequest.AudioOutput = AudioOutput.Device` for hosts); a hidden run that must be silent passes
+  `--audio silent` or `--mute`; one that must be reproducible passes `--time deterministic`
+  (`RunOptions.TimeMode` for hosts).
+- `IPlatform.Now` is only a monotonic clock: a custom platform must not count frames or read the update rate there.
+  `IPlatform.RealTime` is the time mode a run uses when neither the run nor the game chooses one;
+  `PlatformRequest.FixedStep` asks for deterministic time and no longer changes a backend's clock.
+  `HeadlessPlatform.UpdateRate` is removed: the loop takes the rate from `GameSettings.UpdateRate` (or
+  `TimeSettings.FixedRate`). **Migration:** delete `UpdateRate = ...` from headless platforms; read the game's
+  `TimeSettings` instead of `IPlatform.RealTime` to know whether time follows the wall clock.
+- `Game` has new members (`Configure`, `Services`, `Schedule`, `Lifecycle`, `Log`, `TimeSettings`, `Frame`,
+  `TryGetCapability`). **Migration:** a game class with a member of one of those names renames it or marks it `new`.
 - Without `--platform` or `MICROENGINE_PLATFORM`, a default platform that cannot start no longer ends the launch: the
   next one is tried (desktop: SDL, raylib, SDL's software renderer) and the reason is printed. A named platform still
   fails with exit code 1.

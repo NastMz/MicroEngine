@@ -156,6 +156,21 @@ public bool StartScreen { get; init; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_RunOptions_TimeMode"></a> TimeMode
+
+How the loop advances time (the launcher's <code>--time</code>): [RealTime](MicroEngine.Kernel.TimeMode.md) with the wall
+clock, or [Deterministic](MicroEngine.Kernel.TimeMode.md), one fixed step per frame. It wins over the game's
+[Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_); null (the default) keeps the game's choice, else the platform's preference
+([RealTime](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_RealTime)).
+
+```csharp
+public TimeMode? TimeMode { get; init; }
+```
+
+#### Property Value
+
+ TimeMode?
+
 ## Methods
 
 ### <a id="MicroEngine_Core_RunOptions__Clone__"></a> <Clone\>$\(\)

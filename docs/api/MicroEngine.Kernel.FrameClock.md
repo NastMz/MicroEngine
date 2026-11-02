@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 The loop's clock: turns the time each frame stands for into fixed steps, following [TimeSettings](MicroEngine.Kernel.TimeSettings.md). The
 platform only supplies a monotonic clock; how much simulated time a frame adds, how many steps it runs, how far a slow

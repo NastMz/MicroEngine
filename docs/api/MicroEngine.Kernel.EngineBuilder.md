@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 Composes an [Engine](MicroEngine.Kernel.Engine.md): modules are added in order, each registering services, frame systems and
 capabilities; settings records are edited; [Build](MicroEngine.Kernel.EngineBuilder.md#MicroEngine_Kernel_EngineBuilder_Build) then fixes the schedule and the time policy.

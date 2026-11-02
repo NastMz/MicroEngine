@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 Engine events: the things that happen to a running game from outside its simulation. Raised on the game's thread,
 between frames (before the frame that follows them), in the order they happened; handlers run in the order they

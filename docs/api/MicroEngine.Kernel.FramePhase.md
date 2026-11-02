@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 The phases of a frame, in the order they run. The four fixed phases ([PreFixed](MicroEngine.Kernel.FramePhase.md),
 [FixedUpdate](MicroEngine.Kernel.FramePhase.md), [Physics](MicroEngine.Kernel.FramePhase.md), [PostFixed](MicroEngine.Kernel.FramePhase.md)) run once per fixed step, zero or more times

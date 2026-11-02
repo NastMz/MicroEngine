@@ -163,7 +163,8 @@ public Color Letterbox { get; set; }
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Now"></a> Now
 
-Monotonic time in seconds.
+A monotonic clock in seconds, and nothing more: the loop measures each frame's time with it and decides itself
+how many fixed steps that is ([TimeSettings](MicroEngine.Kernel.TimeSettings.md)). Never derive it from frames or the update rate.
 
 ```csharp
 public double Now { get; }
@@ -187,7 +188,10 @@ public static PlatformProfile Profile { get; }
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_RealTime"></a> RealTime
 
-Whether time advances with the wall clock (desktop) or one step per frame (headless).
+The time mode a run on this platform uses when neither the run ([TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode)) nor the game
+([Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_)) chooses one: true for real time (a desktop window), false for one step per frame
+(headless, or a backend whose host asked for deterministic time with [FixedStep](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_FixedStep)).
+A preference only; the loop owns the clock.
 
 ```csharp
 public bool RealTime { get; }
