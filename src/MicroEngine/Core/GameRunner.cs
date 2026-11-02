@@ -276,6 +276,8 @@ public sealed class GameLoop
     }
 
     private double _drift, _nextFrame;
+    private readonly double[] _recent = new double[16]; // the last measured frame times, to check the reported rate
+    private int _recentCount;
 
     /// <summary>
     /// Holds the frame back until the frame limit (<see cref="GameScreen.FrameRateLimit"/>) allows it, on an absolute
@@ -322,8 +324,21 @@ public sealed class GameLoop
     private double Paced(double elapsed)
     {
         double rate = _options.PaceToDisplay ? PaceRate() : 0;
+        _recent[_recentCount++ % _recent.Length] = elapsed;
         if (rate <= 0) return elapsed;
         double period = 1 / rate, time = elapsed + _drift;
+        // A rate the frames do not arrive at (a window composed at another display's rate, a moved window) would count
+        // 10 ms frames as 16.7 ms then 3.3 ms: time stays real but motion judders. Trust it only while the median of the
+        // recent frames is near its period.
+        if (_recentCount >= 5)
+        {
+            Span<double> sorted = stackalloc double[16];
+            int n = Math.Min(_recentCount, _recent.Length);
+            _recent.AsSpan(0, n).CopyTo(sorted);
+            sorted[..n].Sort();
+            double median = sorted[n / 2];
+            if (median < period * 0.85 || median > period * 1.15) { _drift = 0; return elapsed; }
+        }
         // A short frame keeps the debt of an earlier frame rounded up, or frames faster than the reported rate would
         // each count as a whole period and the game would run fast.
         if (time < period / 2) { _drift = 0; return Math.Max(0, time); }

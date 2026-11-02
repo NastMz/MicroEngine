@@ -15,11 +15,17 @@ public class PerformanceTests
     {
         public override GameSettings Settings { get; } = new("pacing") { UpdateRate = 60 };
         public List<float> Blends { get; } = [];
+        /// <summary>Game time drawn at each frame: between the previous and the last update, as Lerp(previous, current, FrameBlend) draws.</summary>
+        public List<double> Drawn { get; } = [];
         protected override void Load() => Scenes.Push(new BlendScene(this));
         private sealed class BlendScene(StepGame game) : Scene
         {
             public override void Update(float dt) { }
-            public override void Draw(IRenderer renderer) => game.Blends.Add(game.FrameBlend);
+            public override void Draw(IRenderer renderer)
+            {
+                game.Blends.Add(game.FrameBlend);
+                game.Drawn.Add((game.UpdateCount - 1 + game.FrameBlend) / 60.0);
+            }
         }
     }
 
@@ -124,6 +130,29 @@ public class PerformanceTests
             loop.Tick();
         }
         Assert.AreEqual(120, game.UpdateCount, 2);
+    }
+
+    [TestMethod]
+    public void A_wrong_display_rate_is_ignored_while_frames_do_not_arrive_at_it()
+    {
+        // A window on a 60 Hz display composed at another display's 100 Hz (measured on Windows): frames come every
+        // 10 ms (+-1 ms) while the display says 60 Hz. Counting them in 60 Hz periods would draw game time advancing
+        // 16.7 ms, then 3.3 ms: motion judders although the total stays real time.
+        var game = new StepGame();
+        var platform = new DisplayPlatform(60);
+        var loop = new GameLoop(game, platform);
+        loop.Start();
+        for (int frame = 1; frame <= 600; frame++)
+        {
+            platform.Now = frame / 100.0 + (frame * 7919 % 3 - 1) * 0.001;
+            loop.Tick();
+        }
+        Assert.AreEqual(360, game.UpdateCount, 2, "real time");
+        var steps = game.Drawn.Skip(100).Zip(game.Drawn.Skip(101), (a, b) => (b - a) * 1000).ToList();
+        Assert.IsTrue(steps.All(d => d > 7 && d < 13), $"drawn time follows the frames: {string.Join(" ", steps.Take(12).Select(d => d.ToString("0.0")))}");
+
+        // Frames that do arrive at the display's rate are still paced to it.
+        Assert.AreEqual(0, JitteredRun(paceToDisplay: true, displayRate: 60).Skip(1).Count(s => s != 1));
     }
 
     [TestMethod]
