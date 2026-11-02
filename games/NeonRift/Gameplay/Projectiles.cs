@@ -33,7 +33,11 @@ public sealed class PlayerShot : Actor
             Destroy();
             return;
         }
-        foreach (var enemy in Stage.Enemies.Overlapping(Bounds.Inflate(Weapon.Kind == WeaponKind.Lance ? 6 : 0)).OfType<Enemy>().ToList())
+        // Copied first: a hit can spawn or destroy enemies. The stage's buffer is reused instead of a new list per shot.
+        var targets = Stage.HitBuffer;
+        targets.Clear();
+        foreach (var e in Stage.Enemies.Overlapping(Bounds.Inflate(Weapon.Kind == WeaponKind.Lance ? 6 : 0))) targets.Add(e);
+        foreach (var enemy in targets)
         {
             if (_hit.Contains(enemy)) continue;
             if (!enemy.Hit(Weapon.Damage, Position)) continue;

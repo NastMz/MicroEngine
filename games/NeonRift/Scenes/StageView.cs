@@ -10,6 +10,12 @@ namespace NeonRift.Scenes;
 /// <summary>Draws a <see cref="Stage"/>: parallax backdrop, props, tiles, actors, foreground and HUD.</summary>
 internal sealed class StageView(Assets art, BitmapFont font)
 {
+    private readonly NumberText _score = new(static (score, _) => Ui.N(score, 7));
+    private readonly NumberText _high = new(static (high, _) => "HI " + Ui.N(high, 7));
+    private readonly Dictionary<string, ParallaxLayer[]> _parallax = new(StringComparer.Ordinal);
+    private Stage? _tileStage;
+    private Func<int, int, int, Sprite?>? _tileFor;
+
     public void Draw(IRenderer r, Stage stage)
     {
         // The scroll is drawn between updates too: the camera stands at its blended position while drawing only.
@@ -25,17 +31,23 @@ internal sealed class StageView(Assets art, BitmapFont font)
         DrawBackdrop(r, stage.Def.Theme, cam.Position, stage.Time, foreground: false);
 
         r.PushCamera(cam);
-        foreach (var prop in stage.Def.Props)
+        var props = stage.Def.Props;
+        for (int i = 0; i < props.Count; i++)
+        {
+            var prop = props[i];
             if (cam.IsVisible(new RectF(prop.X - 64, prop.Y - 140, 128, 140)))
                 r.Draw(art[prop.Sprite], new Vector2(prop.X, prop.Y));
+        }
         string theme = stage.Def.Theme;
         var layer = stage.Def.Layer;
-        TileRenderer.Draw(r, layer, Tiles.Size, cam, (_, x, y) => Tiles.For(art, theme, layer, x, y));
+        TileRenderer.Draw(r, layer, Tiles.Size, cam, TileLookup(stage));
         if (theme == "lab") DrawUndersides(r, layer, cam);
         if (theme == "grotto") DrawLavaGlow(r, stage);
 
         foreach (var c in stage.Pickups) c.Render(r, art);
-        foreach (var e in stage.Enemies.OrderBy(e => e is Boss ? 0 : 1)) if (cam.IsVisible(e.Bounds, 140)) e.Render(r, art);
+        // Bosses first, then the rest, each in spawn order (what a stable sort by "is boss" gave, without sorting).
+        foreach (var e in stage.Enemies) if (e is Boss && cam.IsVisible(e.Bounds, 140)) e.Render(r, art);
+        foreach (var e in stage.Enemies) if (e is not Boss && cam.IsVisible(e.Bounds, 140)) e.Render(r, art);
         stage.Player.Render(r, art);
         foreach (var s in stage.PlayerShots) s.Render(r, art);
         foreach (var s in stage.EnemyShots) s.Render(r, art);
@@ -50,11 +62,35 @@ internal sealed class StageView(Assets art, BitmapFont font)
     {
         var layers = art.Backdrop(theme);
         if (!foreground && layers[0].Fill.A > 0) r.FillRect(new RectF(0, 0, r.Width, layers[0].Y + 1), layers[0].Fill);
-        foreach (var l in layers)
+        var parallax = Parallax(theme, layers);
+        for (int i = 0; i < layers.Count; i++)
+            if (layers[i].Foreground == foreground) parallax[i].Draw(r, camera, time);
+    }
+
+    /// <summary>One parallax layer per backdrop layer of a theme, made once (foreground layers are tinted see-through).</summary>
+    private ParallaxLayer[] Parallax(string theme, IReadOnlyList<BackdropLayer> layers)
+    {
+        if (_parallax.TryGetValue(theme, out var made)) return made;
+        made = new ParallaxLayer[layers.Count];
+        for (int i = 0; i < made.Length; i++)
         {
-            if (l.Foreground != foreground) continue;
-            new ParallaxLayer(l.Texture) { Factor = l.Factor, Y = l.Y, Tint = foreground ? Color.White.WithAlpha(0.55f) : Color.White }.Draw(r, camera, time);
+            var l = layers[i];
+            made[i] = new ParallaxLayer(l.Texture) { Factor = l.Factor, Y = l.Y, Tint = l.Foreground ? Color.White.WithAlpha(0.55f) : Color.White };
         }
+        return _parallax[theme] = made;
+    }
+
+    /// <summary>The tile chooser for a stage, made once per stage instead of a new closure every frame.</summary>
+    private Func<int, int, int, Sprite?> TileLookup(Stage stage)
+    {
+        if (_tileStage != stage || _tileFor is null)
+        {
+            string theme = stage.Def.Theme;
+            var layer = stage.Def.Layer;
+            _tileFor = (_, x, y) => Tiles.For(art, theme, layer, x, y);
+            _tileStage = stage;
+        }
+        return _tileFor;
     }
 
     private void DrawUndersides(IRenderer r, TileLayer layer, Camera2D cam)
@@ -105,8 +141,8 @@ internal sealed class StageView(Assets art, BitmapFont font)
         var weapon = stage.Player.Weapon;
         Capsule.DrawPod(r, art, new Vector2(112, 11), weapon.Letter, stage.Time);
         Ui.Label(r, font, weapon.Label, new Vector2(126, 6), Ui.Cyan);
-        Ui.Centered(r, font, Ui.N(session.Score, 7), r.Width / 2f, 6, Ui.Text);
-        Ui.Label(r, font, "HI " + Ui.N(Math.Max(session.HighScore, 30000), 7), new Vector2(r.Width - 92, 6), Ui.Muted);
+        Ui.Centered(r, font, _score.Get(session.Score), r.Width / 2f, 6, Ui.Text);
+        Ui.Label(r, font, _high.Get(Math.Max(session.HighScore, 30000)), new Vector2(r.Width - 92, 6), Ui.Muted);
 
         if (stage.Player.Barrier > 0)
         {

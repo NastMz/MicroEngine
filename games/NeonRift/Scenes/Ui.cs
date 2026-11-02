@@ -18,6 +18,8 @@ internal static class Ui
     /// <summary>The neon look for the engine's shared widgets (achievement list and banners).</summary>
     public static readonly UiTheme Theme = new(new PanelStyle(Ink.WithAlpha(0.92f), Magenta, Magenta.WithAlpha(0.4f)), Text, Ink, Cyan, Muted);
 
+    private static readonly Vector2[] NeonOffsets = [new(-2, 0), new(2, 0), new(0, -2), new(0, 2), new(-1, -1), new(1, 1)];
+
     public static string N(int value, int digits = 0) => value.ToString(digits > 0 ? new string('0', digits) : "0", CultureInfo.InvariantCulture);
 
     public static void Label(IRenderer r, BitmapFont font, string text, Vector2 at, Color? color = null, float scale = 1)
@@ -36,7 +38,7 @@ internal static class Ui
         var at = new Vector2(MathF.Round(cx - size.X / 2), y);
         float flicker = 0.75f + 0.25f * MathF.Sin(time * 7) * MathF.Sin(time * 2.3f);
         r.SetBlendMode(BlendMode.Additive);
-        foreach (var o in new[] { new Vector2(-2, 0), new Vector2(2, 0), new Vector2(0, -2), new Vector2(0, 2), new Vector2(-1, -1), new Vector2(1, 1) })
+        foreach (var o in NeonOffsets)
             font.Draw(r, text, at + o, glow.WithAlpha(0.35f * flicker), scale);
         r.SetBlendMode(BlendMode.Alpha);
         font.Draw(r, text, at + new Vector2(MathF.Ceiling(scale / 2), MathF.Ceiling(scale / 2)), Ink, scale);
@@ -64,5 +66,19 @@ internal static class Ui
     public static void Scanlines(IRenderer r)
     {
         for (int y = 0; y < r.Height; y += 2) r.FillRect(new RectF(0, y, r.Width, 1), Color.Black.WithAlpha(0.07f));
+    }
+}
+
+/// <summary>A label showing up to two numbers, formatted again only when they change instead of every frame.</summary>
+internal sealed class NumberText(Func<int, int, string> format)
+{
+    private long _key = long.MinValue;
+    private string _text = "";
+
+    public string Get(int a, int b = 0)
+    {
+        long key = (long)a << 32 | (uint)b;
+        if (key != _key) (_key, _text) = (key, format(a, b));
+        return _text;
     }
 }

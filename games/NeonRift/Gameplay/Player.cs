@@ -57,6 +57,8 @@ public sealed class Player : Actor
         Weapon = WeaponSpec.Of(weapon);
     }
 
+    private static readonly float[] FootProbes = [-5f, 0, 5f];
+
     public void Equip(WeaponKind kind) => Weapon = WeaponSpec.Of(kind);
 
     public void Step(float dt, PlayerInput input)
@@ -138,7 +140,7 @@ public sealed class Player : Actor
         var feet = Position + new Vector2(0, 1);
         int y = (int)MathF.Floor(feet.Y / ts);
         bool any = false;
-        foreach (float dx in new[] { -5f, 0, 5f })
+        foreach (float dx in FootProbes)
         {
             var flags = Stage.Grid.FlagsAt((int)MathF.Floor((feet.X + dx) / ts), y);
             if ((flags & MicroEngine.World.TileFlags.Solid) != 0) return false;

@@ -200,6 +200,7 @@ public sealed class Interceptor : Boss
 /// </summary>
 public sealed class Dreadnought : Boss
 {
+    private static readonly Vector2[] TurretOffsets = [new(-150, -28), new(-128, 22), new(-70, 76)];
     private readonly List<DreadTurret> _turrets = [];
     private float _timer = 1.5f;
     private int _pattern;
@@ -212,14 +213,21 @@ public sealed class Dreadnought : Boss
     }
 
     public override string Title => "LEVIATHAN";
-    public bool CoreOpen => _turrets.All(t => !t.Alive);
+    public bool CoreOpen
+    {
+        get
+        {
+            foreach (var t in _turrets) if (t.Alive) return false;
+            return true;
+        }
+    }
     public IReadOnlyList<DreadTurret> Turrets => _turrets;
 
     public override void Update(float dt)
     {
         base.Update(dt);
         if (_turrets.Count == 0)
-            foreach (var offset in new[] { new Vector2(-150, -28), new Vector2(-128, 22), new Vector2(-70, 76) })
+            foreach (var offset in TurretOffsets)
                 _turrets.Add(Stage.Spawn(new DreadTurret(this, offset)));
         Armored = !CoreOpen;
         if (Entering)

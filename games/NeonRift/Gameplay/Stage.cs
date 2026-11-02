@@ -19,6 +19,7 @@ public sealed class Stage
     public const float WarningTime = 2.6f, ClearTime = 5.5f, RespawnDelay = 0.6f;
     private readonly Session _session;
     private readonly List<(float At, Action Action)> _scheduled = [];
+    private readonly float[] _checkpoints;
     private int _nextSpawn;
     private float _phaseTime, _waitTime, _time;
     private float _lockLeft;
@@ -42,9 +43,9 @@ public sealed class Stage
             OutsideRule = (x, y) => x < 0 || x >= def.Layer.Width ? TileFlags.Solid : TileFlags.None,
         };
         Camera = new Camera2D(480, 270) { Bounds = new RectF(0, 0, def.PixelWidth, def.PixelHeight), FollowSharpness = 0 };
-        var checkpoints = def.Checkpoints.ToList();
-        float startX = checkpoint > 0 && checkpoint <= checkpoints.Count ? checkpoints[checkpoint - 1] : 48;
-        CheckpointIndex = checkpoint > 0 && checkpoint <= checkpoints.Count ? checkpoint : 0;
+        var checkpoints = _checkpoints = def.Checkpoints.ToArray();
+        float startX = checkpoint > 0 && checkpoint <= checkpoints.Length ? checkpoints[checkpoint - 1] : 48;
+        CheckpointIndex = checkpoint > 0 && checkpoint <= checkpoints.Length ? checkpoint : 0;
         Camera.Position = new Vector2(MathF.Max(0, startX - 80), def.PixelHeight - 270);
         Camera.Clamp();
         PreviousCameraPosition = Camera.Position;
@@ -92,6 +93,8 @@ public sealed class Stage
     public Action<Enemy>? DefeatSink { get; set; }
     /// <summary>Optional lookup of the hero's arm rigs so bullets leave the drawn gun; tests can leave it null.</summary>
     internal Func<string, ArmRig?>? Rigs { get; set; }
+    /// <summary>Scratch list player shots fill with the enemies they touch, reused every update.</summary>
+    internal List<Enemy> HitBuffer { get; } = [];
 
     public void Update(float dt, PlayerInput input)
     {
@@ -226,8 +229,7 @@ public sealed class Stage
         }
 
         // Checkpoints only matter for continues; Vela respawns where she fell.
-        var checkpoints = Def.Checkpoints.ToList();
-        while (CheckpointIndex < checkpoints.Count && Player.Position.X >= checkpoints[CheckpointIndex]) CheckpointIndex++;
+        while (CheckpointIndex < _checkpoints.Length && Player.Position.X >= _checkpoints[CheckpointIndex]) CheckpointIndex++;
     }
 
     private void UpdatePhase(float dt)
