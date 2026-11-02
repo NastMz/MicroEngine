@@ -34,10 +34,10 @@ Test runner: `node --test` (planner and release tools), `actionlint` for workflo
 
 | ID | Specs | Route | Status | Commit |
 | --- | --- | --- | --- | --- |
-| T1 | S3, S4, S9 | inline | pending | |
-| T2 | S5, S6, S7, S9 | inline | pending | |
-| T3 | S5, S6, S8, S9 | inline | pending | |
-| T4 | S1, S2, S10 | inline | pending | |
+| T1 | S3, S4, S9 | inline | done | 2cdb3be, d4908ad |
+| T2 | S5, S6, S7, S9 | inline | done | e9ef3ff |
+| T3 | S5, S6, S8, S9 | inline | done | 9c4af17 |
+| T4 | S1, S2, S10 | inline | done | (docs commit) |
 
 - T1 Version model and tool: `sdk/version.json` (documented SDK version), `sdk/version.mjs` (status, check, release),
   tests, history markers, `docs.mjs` against the documented version with a local feed before publication.
@@ -61,3 +61,12 @@ deploy) → one independent verifier at the feature's end. RDD is off globally (
   ran twice on the merge commit (the push run was cancelled by the release's call through the shared concurrency
   group); `sdk.yml` is not part of the required check; `sdk-release` refuses a version already on nuget.org, so a
   publish that pushed the packages and then failed cannot be resumed by the workflow.
+- L3 Evidence: `sdk/version.mjs check` RED on the branch (9 unclassified mentions) before the docs were classified,
+  then green. 62 node tests (planner, evidence, version tool, release plan per state) and 14 demos tests pass.
+  Probes outside the repository: `docs.mjs` with the docs at an unpublished 0.4.0-alpha.3 built and played all six
+  samples from this commit's packages (it first caught a syntax error from a scripted edit, fixed in d4908ad);
+  `external.mjs --public --version 0.4.0-alpha.2 --targets linux` passed from nuget.org alone; `release-plan` against
+  the live repository gave none / finish / refused / release as designed. actionlint with shellcheck clean.
+- L4 Not verified on GitHub: `workflow_run` start, the approval wait, Trusted Publishing under `workflow_run`, the
+  deployment from sdk-release, evidence of the sdk check. They run after merge; no real publication was made.
+- L5 Next: independent verification (Risk item 5), then the PR. Deferred: prebuilding native demo packages on main.
