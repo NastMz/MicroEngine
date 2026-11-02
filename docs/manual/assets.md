@@ -87,7 +87,8 @@ Sounds and music keep their own registry: `Audio.AddSoundFile` and `Audio.AddMus
 Assets used by one level should go away when the level ends. Scopes share what they load: a scope that asks for a file
 another scope (`Game.Assets`, another level, an overlay scene) already loaded gets the same object, loaded once, and
 holds it too. Disposing a scope, or `Unload(path)`, releases that scope's hold; an asset is disposed only when no scope
-holds it any more, so one level ending never takes a texture away from another:
+holds it any more, so one level ending never takes a texture away from another. A scope's `Count` is the number of
+assets it holds, including those of its parents it asked for:
 
 ```csharp
 public override void Enter()

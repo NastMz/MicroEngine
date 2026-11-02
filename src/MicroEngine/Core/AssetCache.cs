@@ -306,8 +306,9 @@ public sealed class AssetCache : IDisposable
     // ---- Diagnostics
 
     /// <summary>
-    /// How many assets this scope and its children hold, an asset several of them share counting once; allocates
-    /// nothing, so it can be checked every frame.
+    /// How many assets this scope and its children hold: those they loaded and those they asked for that another scope
+    /// (a parent included) had loaded, an asset several of them share counting once. On the root scope, every asset of
+    /// the game. Allocates nothing, so it can be checked every frame.
     /// </summary>
     public int Count
     {

@@ -155,8 +155,10 @@ public interface IRenderer
 public interface IGraphicsDevice
 {
     /// <summary>
-    /// The filter of textures created without one: <see cref="CreateTexture(PixelImage)"/>, atlases, fonts. The engine
-    /// sets it from <see cref="Core.GameSettings.TextureFilter"/> before <c>Game.Load</c>.
+    /// The filter of textures created without one: <see cref="CreateTexture(PixelImage)"/>, atlases. The engine sets it
+    /// from <see cref="Core.GameSettings.TextureFilter"/> before <c>Game.Load</c>. Glyph pages of a
+    /// <see cref="ScalableFont"/> do not follow it: their filter is <see cref="FontOptions.Filter"/>, or linear for
+    /// antialiased text and nearest otherwise.
     /// </summary>
     TextureFilter DefaultFilter { get; set; }
     /// <summary>Uploads <paramref name="image"/> as a texture sampled with <paramref name="filter"/>. The caller owns the texture and disposes it.</summary>
