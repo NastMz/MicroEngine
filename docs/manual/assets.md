@@ -72,7 +72,7 @@ protected override void Load()
 | `Font(path, options?)` | a `ScalableFont` ([Text](text.md#scalable-fonts-ttf-and-otf)) |
 | `Bytes(path)`, `Text(path)` | the file's content (not cached) |
 | `IsLoaded(path)`, `Unload(path)` | whether a file is loaded; releases this cache's hold on it |
-| `Loaded`, `Statistics` | what is loaded, texture memory, load times, loads during play |
+| `Loaded`, `Statistics` | what is loaded, texture memory (`TextureBytes`), audio memory (`AudioBytes`, next SDK version), load times, loads during play |
 | `CreateScope(name?)` | a child cache that releases what it holds when disposed |
 | `Preload(paths...)` | loads files in the background, returning an `AssetBatch` |
 

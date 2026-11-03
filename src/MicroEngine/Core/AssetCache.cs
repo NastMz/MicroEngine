@@ -9,17 +9,21 @@ namespace MicroEngine.Core;
 /// <summary>One loaded asset, as <see cref="AssetCache.Loaded"/> lists it.</summary>
 /// <param name="Path">Its content path.</param>
 /// <param name="Kind">"texture", "atlas", "font", "folder atlas", or the kind of another loader (<see cref="AssetLoaderRegistry"/>).</param>
-/// <param name="Bytes">Memory it takes now: device memory for textures (font pages grow as glyphs are drawn), samples for sounds.</param>
+/// <param name="Bytes">Memory it takes now, as its loader reports it: device memory for textures (font pages grow as glyphs are drawn), decoded samples for sounds, the file for music.</param>
 /// <param name="LoadMilliseconds">Time spent reading, decoding and uploading it.</param>
 /// <param name="DuringPlay">Whether it was loaded after the game's first update, when a slow load shows as a hitch.</param>
 public readonly record struct AssetInfo(string Path, string Kind, long Bytes, double LoadMilliseconds, bool DuringPlay);
 
 /// <summary>Totals over a scope and its children (<see cref="AssetCache.Statistics"/>).</summary>
 /// <param name="Count">Assets loaded and not released.</param>
-/// <param name="TextureBytes">Memory they take (device memory of their textures, and the samples of sounds).</param>
+/// <param name="TextureBytes">Device memory of their textures (images, atlases, font pages).</param>
 /// <param name="LoadMilliseconds">Time spent loading them.</param>
 /// <param name="LoadsDuringPlay">How many were loaded after the first update.</param>
-public readonly record struct AssetStatistics(int Count, long TextureBytes, double LoadMilliseconds, int LoadsDuringPlay);
+public readonly record struct AssetStatistics(int Count, long TextureBytes, double LoadMilliseconds, int LoadsDuringPlay)
+{
+    /// <summary>Memory of the audio they hold: decoded sound samples and the bytes of music files (kinds "sound" and "music").</summary>
+    public long AudioBytes { get; init; }
+}
 
 /// <summary>
 /// Loads, shares and releases a game's content files (<c>Game.Assets</c>): images as textures, packing tools' atlases,
@@ -279,7 +283,11 @@ public sealed class AssetCache : IDisposable
         get
         {
             var all = _scope.Loaded;
-            return new AssetStatistics(all.Count, all.Sum(a => a.Bytes), all.Sum(a => a.LoadMilliseconds), all.Count(a => a.DuringPlay));
+            return new AssetStatistics(all.Count, all.Where(a => GraphicsAssetLoaders.IsGraphics(a.Kind)).Sum(a => a.Bytes),
+                all.Sum(a => a.LoadMilliseconds), all.Count(a => a.DuringPlay))
+            {
+                AudioBytes = all.Where(a => a.Kind is Audio.AudioAssetLoaders.Sound or Audio.AudioAssetLoaders.Music).Sum(a => a.Bytes),
+            };
         }
     }
 

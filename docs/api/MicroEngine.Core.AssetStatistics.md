@@ -34,7 +34,7 @@ Assets loaded and not released.
 
 `TextureBytes` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-Memory they take (device memory of their textures, and the samples of sounds).
+Device memory of their textures (images, atlases, font pages).
 
 `LoadMilliseconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
 
@@ -45,6 +45,18 @@ Time spent loading them.
 How many were loaded after the first update.
 
 ## Properties
+
+### <a id="MicroEngine_Core_AssetStatistics_AudioBytes"></a> AudioBytes
+
+Memory of the audio they hold: decoded sound samples and the bytes of music files (kinds "sound" and "music").
+
+```csharp
+public long AudioBytes { get; init; }
+```
+
+#### Property Value
+
+ [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
 ### <a id="MicroEngine_Core_AssetStatistics_Count"></a> Count
 
@@ -84,7 +96,7 @@ public int LoadsDuringPlay { get; init; }
 
 ### <a id="MicroEngine_Core_AssetStatistics_TextureBytes"></a> TextureBytes
 
-Memory they take (device memory of their textures, and the samples of sounds).
+Device memory of their textures (images, atlases, font pages).
 
 ```csharp
 public long TextureBytes { get; init; }

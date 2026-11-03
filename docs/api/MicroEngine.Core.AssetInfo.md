@@ -38,7 +38,7 @@ Its content path.
 
 `Bytes` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-Memory it takes now: device memory for textures (font pages grow as glyphs are drawn), samples for sounds.
+Memory it takes now, as its loader reports it: device memory for textures (font pages grow as glyphs are drawn), decoded samples for sounds, the file for music.
 
 `LoadMilliseconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
 
@@ -52,7 +52,7 @@ Whether it was loaded after the game's first update, when a slow load shows as a
 
 ### <a id="MicroEngine_Core_AssetInfo_Bytes"></a> Bytes
 
-Memory it takes now: device memory for textures (font pages grow as glyphs are drawn), samples for sounds.
+Memory it takes now, as its loader reports it: device memory for textures (font pages grow as glyphs are drawn), decoded samples for sounds, the file for music.
 
 ```csharp
 public long Bytes { get; init; }

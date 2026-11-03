@@ -267,6 +267,7 @@ public sealed class AssetStoreTests
             var clip = new AudioClip([0.5f, -0.5f, 0.25f, 0f], 22050);
             File.WriteAllBytes(Path.Combine(folder, "beep.wav"), clip.ToWav());
             File.WriteAllBytes(Path.Combine(folder, "theme.ogg"), [1, 2, 3, 4]);
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Gallery", "items", "blueGem.png"), Path.Combine(folder, "gem.png"));
             var assets = new AssetCache(new HeadlessGraphicsDevice(), folder);
             Assert.AreEqual("sound", assets.Loaders.KindOf("beep.wav"));
             Assert.AreEqual("music", assets.Loaders.KindOf("theme.ogg"));
@@ -281,6 +282,11 @@ public sealed class AssetStoreTests
             CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 4 }, theme.Data);
             Assert.AreEqual("wav", assets.Store.Get(assets.Scope.Load<EncodedAudio>("music", "beep.wav")).Format);
             Assert.AreEqual(4L * sizeof(float), assets.Loaded.Single(a => a.Kind == "sound").Bytes);
+            var gem = assets.Texture("gem.png");
+            var statistics = assets.Statistics;
+            Assert.AreEqual(gem.SizeInBytes, statistics.TextureBytes, "texture bytes count textures only");
+            Assert.AreEqual(4L * sizeof(float) + 4 + clip.ToWav().Length, statistics.AudioBytes, "decoded samples and music files are audio bytes");
+            assets.Unload("gem.png");
             Assert.AreEqual(3, assets.Count, "the cache counts every kind");
             var broken = Assert.ThrowsExactly<AssetLoadException>(() => assets.Scope.Load<AudioClip>("sound", "theme.ogg"));
             Assert.AreEqual("sound", broken.Kind);

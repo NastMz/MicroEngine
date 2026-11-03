@@ -16,6 +16,9 @@ internal static class GraphicsAssetLoaders
 {
     public const string Texture = "texture", Atlas = "atlas", FolderAtlas = "folder atlas", Font = "font";
 
+    /// <summary>Whether <paramref name="kind"/> is one of these loaders' kinds, whose sizes are texture memory.</summary>
+    public static bool IsGraphics(string kind) => kind is Texture or Atlas or FolderAtlas or Font;
+
     public static void Register(AssetLoaderRegistry loaders, IGraphicsDevice device)
     {
         loaders.Add(new AssetLoader<Texture>(Texture,

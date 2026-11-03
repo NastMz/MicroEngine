@@ -70,7 +70,7 @@ loading code when it arrives.
 
 - Games keep compiling and behaving the same; new code can hold `Asset<T>` handles and register loaders.
 - Content shipped as one archive works on every host; a host that cannot hand .NET a folder can list its files.
-- `Assets.Statistics.TextureBytes` counts what each loader reports, so sounds loaded through `Assets` add their samples.
+- `Assets.Statistics.TextureBytes` keeps counting textures only; `AudioBytes` counts the sounds and music files loaded through `Assets`, as their loaders report them.
 - Android still unpacks its packaged assets to a folder and browser pages still copy the package's files into memory
   before starting: both can move to `ListedContentSource` in their hosts.
 - Not done: hot reload, asynchronous or streaming sources, asset identifiers that survive renames, mod overlays
