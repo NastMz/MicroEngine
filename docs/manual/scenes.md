@@ -168,6 +168,38 @@ Source: [`games/MeadowRun/Scenes/MapScene.cs`](../../games/MeadowRun/Scenes/MapS
 
 Tweens have no handle; `Tweens.Clear()` drops all of them, and popping the scene clears them as well.
 
+## The scene world
+
+Next SDK version (not published yet: arrives with the next SDK version). `IWorld` holds a scene's objects as
+entities: each has an `EntityId` (a slot and a generation, so the id of a destroyed entity never reaches the entity
+that reuses its slot), a `Transform` relative to an optional parent (stored in 3D; `Position2D`, `Rotation2D` and
+`Scale2D` read and write the 2D part) and typed attachments, which are your own classes (`Attach`, `TryGet`, `Get`,
+`Detach`; `All<T>()` walks every attachment of a type). `SceneWorld` is the engine's implementation; game code
+programs against `IWorld`. The rules a game can rely on:
+
+- **Creating** an entity takes effect at once: its id is valid and its transform writable. A walk over `All<T>()` or
+  `Children(parent)` that is already running does not visit it; every later one does. There is no spawn queue to flush.
+- **Destroying** an entity takes effect at once for queries: `IsAlive` is false, `Count` drops and every walk skips it
+  and its children. Its transform and attachments stay readable until the world ends the step; then attachments that
+  implement `IDestroyedCallback` are told, in the order the entities were destroyed, and the slot is released.
+- **Order**: `All<T>()` walks attachments in the order they were attached, and destroying entities never reorders the
+  rest, so rules that take the first match or consume random numbers in update order behave the same every run.
+  `foreach` over `All<T>()` and `Children(parent)` allocates nothing.
+- **Drawing between steps**: `DrawPosition2D(id)` and `WorldMatrix(id)` blend each entity from where it was at the
+  start of the step to where it is now, by the world's `Blend`; at blend 1, or for an entity that did not move, they
+  return exactly the simulated transform. A new, `Teleport`ed or re-parented entity is drawn where it is until the
+  next step. `Blend` is 1 when the world did not step in the engine's latest step (its scene was paused or under an
+  overlay), so a frozen world is drawn as its last step instead of rocking between its last two.
+- **Clock**: each world has a `WorldClock` that advances with the world's step: `Scale` slows it down (0 pauses it),
+  `Freeze(seconds)` stops whole steps for a hitstop (the longer freeze wins), and a world that does not step consumes
+  no time. At scale 1 the step it reports is exactly the engine's.
+- **State hash**: the world adds its ids, hierarchy, transforms, which attachments each entity has, the state of
+  attachments that implement `IStateHashed`, and its clock; drawing never changes it.
+
+Whoever owns a `SceneWorld` drives it: `BeginStep(Game.UpdateCount, dt)` before the world's step (it returns the
+step's length on the world's clock, 0 while frozen), `EndStep()` after it, and `BeginDraw(Game.UpdateCount,
+Game.FrameBlend)` before drawing it.
+
 ## Related
 
 - [Lifecycle](lifecycle.md): where scene updates sit in a frame

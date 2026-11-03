@@ -138,6 +138,19 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_scene_world_references_only_the_kernel()
+    {
+        var scene = typeof(MicroEngine.Scenes.SceneWorld).Assembly;
+        Assert.AreEqual(Scene, scene.GetName().Name);
+        Assert.AreEqual(Scene, typeof(MicroEngine.Scenes.IWorld).Assembly.GetName().Name, "the world contract is the scene module's");
+        Assert.AreEqual(Scene, typeof(MicroEngine.Scenes.EntityId).Assembly.GetName().Name);
+        Assert.AreEqual(Scene, typeof(MicroEngine.Scenes.Transform).Assembly.GetName().Name);
+        var engine = scene.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
+        CollectionAssert.AreEqual(new[] { Kernel }, engine, string.Join(", ", engine));
+        Assert.AreEqual(Core, typeof(MicroEngine.Scenes.Scene).Assembly.GetName().Name, "the scene stack stays in the core until it leaves it");
+    }
+
+    [TestMethod]
     public void The_compiled_hosting_references_only_the_kernel_and_the_platform_contracts()
     {
         var hosting = typeof(MicroEngine.Hosting.HostBuilder).Assembly;
