@@ -9,8 +9,9 @@ Guide: [Presentation](../manual/rendering.md#presentation-one-choice-per-field)
 How the game's canvas reaches the window, one independent choice per field: how its scale is rounded
 ([Rounding](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Rounding)), what happens to the window's other shape ([Aspect](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Aspect)), how it is sampled when it is
 scaled ([Upscale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Upscale)), the sampler textures get when they choose none ([DefaultSampler](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_DefaultSampler)), the size
-factor of captures ([CaptureScale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CaptureScale)) and whether desktop windows open at whole factors
-([WholeFactorWindows](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_WholeFactorWindows)). [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt) and [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D) are presets: start from
+factor of captures ([CaptureScale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CaptureScale)), whether desktop windows open at whole factors
+([WholeFactorWindows](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_WholeFactorWindows)) and whether 2D cameras snap to whole pixels by default
+([CameraPixelSnap](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CameraPixelSnap)). [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt) and [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D) are presets: start from
 one and change any field with <code>with</code>.
 
 ```csharp
@@ -48,6 +49,20 @@ public AspectMode Aspect { get; init; }
 
  [AspectMode](MicroEngine.Graphics.AspectMode.md)
 
+### <a id="MicroEngine_Graphics_Presentation_CameraPixelSnap"></a> CameraPixelSnap
+
+Whether 2D cameras created for this presentation round their translation to whole canvas pixels
+(<code>Camera2D.PixelSnap</code>): crisp pixel art ([PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt)), smooth motion for high-resolution art
+([HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D)). Each camera can still change it.
+
+```csharp
+public bool CameraPixelSnap { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Graphics_Presentation_CaptureScale"></a> CaptureScale
 
 Size factor of the captures a run writes (screenshots, scripted captures): 1 is the canvas's own size.
@@ -82,7 +97,7 @@ public SamplerDescription DefaultSampler { get; init; }
 ### <a id="MicroEngine_Graphics_Presentation_HighResolution2D"></a> HighResolution2D
 
 High-resolution 2D: the largest size of the canvas's shape that fits, letterboxed, linear sampling for the canvas
-and for textures, captures at the canvas's size.
+and for textures, captures at the canvas's size, cameras moving smoothly (no snap).
 
 ```csharp
 public static Presentation HighResolution2D { get; }
@@ -95,7 +110,8 @@ public static Presentation HighResolution2D { get; }
 ### <a id="MicroEngine_Graphics_Presentation_PixelArt"></a> PixelArt
 
 Pixel art: whole factors unless they waste more than a fifth of the window, letterboxed, nearest sampling for the
-canvas and for textures, captures three times the canvas, windows opened at whole factors.
+canvas and for textures, captures three times the canvas, windows opened at whole factors, cameras snapped to whole
+pixels.
 
 ```csharp
 public static Presentation PixelArt { get; }

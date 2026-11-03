@@ -20,6 +20,24 @@ public sealed class PresentationSettingsTests
         Assert.AreSame(Presentation.HighResolution2D, new GameSettings("hd", 1280, 720) { Scaling = CanvasScaling.Smooth }.EffectivePresentation);
     }
 
+    private sealed class SettingsGame(GameSettings settings) : Game
+    {
+        public override GameSettings Settings { get; } = settings;
+        protected override void Load() { }
+    }
+
+    [TestMethod]
+    public void Game_cameras_snap_for_pixel_art_and_move_smoothly_for_high_resolution_2D()
+    {
+        var pixel = new SettingsGame(new GameSettings("pixel")).CreateCamera();
+        Assert.IsTrue(pixel.PixelSnap);
+        Assert.AreEqual((320f, 180f), (pixel.ViewWidth, pixel.ViewHeight));
+        var hd = new SettingsGame(new GameSettings("hd", 1280, 720) { Scaling = CanvasScaling.Smooth }).CreateCamera();
+        Assert.IsFalse(hd.PixelSnap);
+        var chosen = new SettingsGame(new GameSettings("hd", 1280, 720) { Presentation = Presentation.HighResolution2D with { CameraPixelSnap = true } }).CreateCamera();
+        Assert.IsTrue(chosen.PixelSnap, "the presentation's field, not the preset's name, decides");
+    }
+
     [TestMethod]
     public void A_Presentation_Wins_Over_Scaling()
     {

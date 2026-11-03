@@ -145,7 +145,9 @@ Not published yet. Behaviour that changes:
   window; raylib's window no longer darkens where the canvas is translucent; circles, lines and triangles have the same
   edge pixels on SDL and raylib. Opaque drawing is unchanged (captures of the demos differ by at most 3/255 per
   channel). `Camera2D` moved to `MicroEngine.Graphics2D.dll` with its namespace unchanged and gained `Zoom`, `Rotation`,
-  `WorldToView` and `VisibleBounds`. **Migration:** a game that relied on the old translucent `Multiply` uses an
+  `WorldToView` and `VisibleBounds`; `Game.CreateCamera()` and `new Camera2D(width, height, presentation)` take its
+  pixel snap from the presentation (`CameraPixelSnap`: on for pixel art, off for high-resolution 2D), while
+  `new Camera2D(width, height)` keeps snapping as before. **Migration:** a game that relied on the old translucent `Multiply` uses an
   opaque colour or `Color.Lerp(Color.White, shade, alpha)`.
 - `GameSettings.Presentation` (a `Presentation` record) states how the canvas reaches the window, one choice per
   field; `GameSettings.Scaling` keeps working and picks the preset `Presentation.PixelArt` or

@@ -53,6 +53,7 @@ capture scale). `GameSettings.Presentation` states each one, and `Scaling` now o
 | `DefaultSampler`: textures created without a filter | nearest | linear |
 | `CaptureScale`: size factor of captures | 3 | 1 |
 | `WholeFactorWindows`: windows open at whole factors | yes | no |
+| `CameraPixelSnap`: cameras snap to whole pixels by default | yes | no |
 
 Start from a preset and change only what differs; any combination is allowed:
 
@@ -318,8 +319,11 @@ stack, a state stack (blend state, sampler, scissor), sort modes (`Deferred`, `T
 `FrontToBack`), any render target, premultiplied colours and premultiplied blending by default.
 
 `Camera2D` has `Zoom` (around the view's centre) and `Rotation` (radians, clockwise on screen); `WorldToView` is its
-whole transform and `VisibleBounds` the world area it shows. `PixelSnap` (on by default) rounds its translation to
-whole canvas pixels; HD games turn it off.
+whole transform and `VisibleBounds` the world area it shows. `PixelSnap` rounds its translation to whole canvas
+pixels; its default comes from the presentation (`Presentation.CameraPixelSnap`: on for `PixelArt`, off for
+`HighResolution2D`). `Game.CreateCamera()` makes a canvas-sized camera with the game's defaults, and
+`new Camera2D(width, height, presentation)` takes them from any presentation; each camera can still set `PixelSnap`.
+`new Camera2D(width, height)` keeps the pixel-art default.
 
 ## The graphics device
 

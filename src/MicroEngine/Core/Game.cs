@@ -101,6 +101,12 @@ public abstract class Game : IEngineModule, IStateHashed
     public int Width => Settings.VirtualWidth;
     /// <summary>Height of the virtual canvas in pixels (<see cref="GameSettings.VirtualHeight"/>).</summary>
     public int Height => Settings.VirtualHeight;
+    /// <summary>
+    /// A camera the size of the canvas whose defaults follow the game's presentation
+    /// (<see cref="GameSettings.EffectivePresentation"/>): snapped to whole pixels for pixel art, smooth for
+    /// high-resolution 2D.
+    /// </summary>
+    public Camera2D CreateCamera() => new(Width, Height, Settings.EffectivePresentation);
     private AchievementTracker? _achievements;
     /// <summary>The game's achievements; available after <see cref="UseAchievements"/>.</summary>
     public AchievementTracker Achievements => _achievements ?? throw new InvalidOperationException("Achievements are off: call UseAchievements in Load.");

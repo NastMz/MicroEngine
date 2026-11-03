@@ -236,3 +236,26 @@ public sealed class Camera2DTests
         Assert.IsTrue(camera.IsVisible(new RectF(45, 45, 10, 10)));
     }
 }
+
+/// <summary>The camera's pixel snap comes from the presentation preset, and each camera can change it.</summary>
+[TestClass]
+public sealed class CameraPresentationTests
+{
+    [TestMethod]
+    public void PixelArt_SnapsByDefault_HighResolution2D_DoesNot_AndEitherCanBeOverridden()
+    {
+        Assert.IsTrue(Presentation.PixelArt.CameraPixelSnap);
+        Assert.IsFalse(Presentation.HighResolution2D.CameraPixelSnap);
+        var pixel = new Camera2D(320, 180, Presentation.PixelArt) { Position = new Vector2(10.4f, 0) };
+        var smooth = new Camera2D(1280, 720, Presentation.HighResolution2D) { Position = new Vector2(10.4f, 0) };
+        Assert.IsTrue(pixel.PixelSnap);
+        Assert.AreEqual(-10f, pixel.RenderOffset.X, "snapped to whole pixels");
+        Assert.IsFalse(smooth.PixelSnap);
+        Assert.AreEqual(-10.4f, smooth.RenderOffset.X, 1e-5f, "smooth motion");
+        smooth.PixelSnap = true;
+        Assert.AreEqual(-10f, smooth.RenderOffset.X, "overridden per camera");
+        Assert.IsTrue(new Camera2D(320, 180).PixelSnap, "the two-argument constructor keeps the pixel-art default");
+        Assert.IsFalse(new Camera2D(320, 180, Presentation.PixelArt with { CameraPixelSnap = false }).PixelSnap, "a presentation can choose it");
+        Assert.ThrowsExactly<ArgumentNullException>(() => new Camera2D(1, 1, null!));
+    }
+}

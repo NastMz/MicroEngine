@@ -43,7 +43,8 @@ around its centre; [WorldToView](MicroEngine.Graphics.Camera2D.md#MicroEngine_Gr
 
 ### <a id="MicroEngine_Graphics_Camera2D__ctor_System_Single_System_Single_"></a> Camera2D\(float, float\)
 
-Creates a camera at the world origin.
+Creates a camera at the world origin with the [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt) defaults (snapped). Prefer the
+overload that takes the game's presentation, or <code>Game.CreateCamera()</code>, so the defaults follow the game.
 
 ```csharp
 public Camera2D(float viewWidth, float viewHeight)
@@ -58,6 +59,34 @@ Width of the view in pixels.
 `viewHeight` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 Height of the view in pixels.
+
+### <a id="MicroEngine_Graphics_Camera2D__ctor_System_Single_System_Single_MicroEngine_Graphics_Presentation_"></a> Camera2D\(float, float, Presentation\)
+
+Creates a camera at the world origin whose defaults ([PixelSnap](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_PixelSnap)) come from <code class="paramref">presentation</code>.
+
+```csharp
+public Camera2D(float viewWidth, float viewHeight, Presentation presentation)
+```
+
+#### Parameters
+
+`viewWidth` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+Width of the view in pixels.
+
+`viewHeight` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+Height of the view in pixels.
+
+`presentation` Presentation
+
+The game's presentation (<code>GameSettings.EffectivePresentation</code>; <code>Game.CreateCamera</code> passes it).
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">presentation</code> is null.
 
 ## Properties
 
@@ -123,8 +152,10 @@ public float MaxShake { get; set; }
 
 ### <a id="MicroEngine_Graphics_Camera2D_PixelSnap"></a> PixelSnap
 
-Rounds the camera's translation to whole canvas pixels for crisp pixel art (true by default, the pixel-art choice;
-smooth HD games turn it off). With a zoom or a rotation the translation after them is rounded.
+Rounds the camera's translation to whole canvas pixels for crisp pixel art. Its default is the presentation's
+([CameraPixelSnap](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CameraPixelSnap): on for [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt), off for
+[HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D)); set it to override. With a zoom or a rotation the translation after
+them is rounded.
 
 ```csharp
 public bool PixelSnap { get; set; }

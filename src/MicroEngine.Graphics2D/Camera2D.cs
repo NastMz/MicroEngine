@@ -48,10 +48,12 @@ public sealed class Camera2D
     /// <summary>Shake offset applied on top of <see cref="Position"/> when rendering.</summary>
     public Vector2 ShakeOffset { get; private set; }
     /// <summary>
-    /// Rounds the camera's translation to whole canvas pixels for crisp pixel art (true by default, the pixel-art choice;
-    /// smooth HD games turn it off). With a zoom or a rotation the translation after them is rounded.
+    /// Rounds the camera's translation to whole canvas pixels for crisp pixel art. Its default is the presentation's
+    /// (<see cref="Presentation.CameraPixelSnap"/>: on for <see cref="Presentation.PixelArt"/>, off for
+    /// <see cref="Presentation.HighResolution2D"/>); set it to override. With a zoom or a rotation the translation after
+    /// them is rounded.
     /// </summary>
-    public bool PixelSnap { get; set; } = true;
+    public bool PixelSnap { get; set; }
     /// <summary>
     /// Magnification around the view's centre: 2 shows half as much of the world, twice as large (1 by default).
     /// </summary>
@@ -85,10 +87,25 @@ public sealed class Camera2D
     /// <summary>Canvas pixels to world coordinates: the inverse of <see cref="WorldToView"/>.</summary>
     public Matrix3x2 ViewToWorld => Matrix3x2.Invert(WorldToView, out var inverse) ? inverse : Matrix3x2.Identity;
 
-    /// <summary>Creates a camera at the world origin.</summary>
+    /// <summary>
+    /// Creates a camera at the world origin with the <see cref="Presentation.PixelArt"/> defaults (snapped). Prefer the
+    /// overload that takes the game's presentation, or <c>Game.CreateCamera()</c>, so the defaults follow the game.
+    /// </summary>
     /// <param name="viewWidth">Width of the view in pixels.</param>
     /// <param name="viewHeight">Height of the view in pixels.</param>
-    public Camera2D(float viewWidth, float viewHeight) => (ViewWidth, ViewHeight) = (viewWidth, viewHeight);
+    public Camera2D(float viewWidth, float viewHeight) : this(viewWidth, viewHeight, Presentation.PixelArt) { }
+
+    /// <summary>Creates a camera at the world origin whose defaults (<see cref="PixelSnap"/>) come from <paramref name="presentation"/>.</summary>
+    /// <param name="viewWidth">Width of the view in pixels.</param>
+    /// <param name="viewHeight">Height of the view in pixels.</param>
+    /// <param name="presentation">The game's presentation (<c>GameSettings.EffectivePresentation</c>; <c>Game.CreateCamera</c> passes it).</param>
+    /// <exception cref="ArgumentNullException"><paramref name="presentation"/> is null.</exception>
+    public Camera2D(float viewWidth, float viewHeight, Presentation presentation)
+    {
+        ArgumentNullException.ThrowIfNull(presentation);
+        (ViewWidth, ViewHeight) = (viewWidth, viewHeight);
+        PixelSnap = presentation.CameraPixelSnap;
+    }
 
     /// <summary>The world rectangle the camera shows, without shake.</summary>
     public RectF View => new(Position.X, Position.Y, ViewWidth, ViewHeight);
