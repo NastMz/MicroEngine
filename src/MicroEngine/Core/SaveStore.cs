@@ -3,9 +3,10 @@ using System.Text.Json;
 namespace MicroEngine.Core;
 
 /// <summary>
-/// Small JSON persistence for settings and progress. Files live under the user's data folder
-/// (<see cref="DefaultDirectory"/>) unless a directory is supplied (tests use a temporary one) or a launcher
-/// chose another medium through <see cref="DefaultStorage"/> (the browser keeps saves in localStorage).
+/// Small JSON persistence for settings and progress. Without a directory or a storage of its own, a store keeps its slots
+/// in the platform's default medium (<see cref="DefaultStorage(string)"/>): files under the user's data folder
+/// (<see cref="DefaultDirectory"/>), and the page's localStorage in browsers. A composition can hand a game another medium
+/// (<see cref="Hosting.HostBuilder.Storage"/>); tests pass a temporary directory.
 /// Corrupt or missing data yields null instead of crashing the game; corrupt data is set aside
 /// ("&lt;slot&gt;.corrupt.json" for files) so the next save cannot destroy it. A slot that exists but could not be
 /// read (locked file, blocked browser storage) is never written by this store, because the game is then
@@ -32,32 +33,39 @@ public sealed class SaveStore
     private readonly Platform.IStorage _storage;
     private readonly HashSet<string> _unreadable = new(StringComparer.Ordinal);
 
-    /// <summary>
-    /// Storage for stores created without a directory, chosen by the launcher before the game is built
-    /// (null: files under local application data). Called with the game id.
-    /// </summary>
-    public static Func<string, ISaveStorage>? DefaultStorage { get; set; }
-
     /// <summary>The save folder for file storage; otherwise a description of where saves live.</summary>
     public string Directory => _storage.Location;
 
     /// <summary>Creates a store for a game.</summary>
     /// <param name="gameId">The game's id, which names its save folder; must not be empty.</param>
-    /// <param name="directory">The folder for the slot files; null uses <see cref="DefaultStorage"/> when a launcher set it, otherwise <see cref="DefaultDirectory"/>.</param>
+    /// <param name="directory">The folder for the slot files; null uses the platform's default medium (<see cref="DefaultStorage(string)"/>).</param>
     /// <exception cref="ArgumentException"><paramref name="gameId"/> is null, empty or white space.</exception>
     public SaveStore(string gameId, string? directory = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
-        _storage = directory is null && DefaultStorage is { } create
-            ? create(gameId)
-            : new FileSaveStorage(directory ?? DefaultDirectory(gameId));
+        _storage = directory is null ? DefaultStorage(gameId) : new FileSaveStorage(directory);
     }
 
     /// <summary>
-    /// The save folder used when neither a directory nor <see cref="DefaultStorage"/> is given:
+    /// The platform's default save medium for a game: the page's localStorage in browsers
+    /// (<see cref="Platform.BrowserStorage"/>, keys <c>microengine/&lt;gameId&gt;/&lt;slot&gt;</c>), files in
+    /// <see cref="DefaultDirectory"/> everywhere else. A rule of the platform, not a setting: a host that wants another
+    /// medium composes it (<see cref="Hosting.HostBuilder.Storage"/>) and the game passes it to
+    /// <see cref="SaveStore(Platform.IStorage)"/>.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="gameId"/> is null, empty or white space.</exception>
+    public static Platform.IStorage DefaultStorage(string gameId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
+        return OperatingSystem.IsBrowser() ? new Platform.BrowserStorage(gameId) : new FileSaveStorage(DefaultDirectory(gameId));
+    }
+
+    /// <summary>
+    /// The save folder used when no directory is given (outside browsers):
     /// <c>%LOCALAPPDATA%\MicroEngine\&lt;gameId&gt;</c> on Windows, <c>~/Library/Application Support/MicroEngine/&lt;gameId&gt;</c>
-    /// on macOS, and <c>$XDG_DATA_HOME/MicroEngine/&lt;gameId&gt;</c> (by default <c>~/.local/share</c>) on Linux and other
-    /// Unix systems. Always absolute, also when the folder does not exist yet: the first save creates it.
+    /// on macOS and iOS (inside the app's container), the app's private files folder (<c>files/MicroEngine/&lt;gameId&gt;</c>)
+    /// on Android, and <c>$XDG_DATA_HOME/MicroEngine/&lt;gameId&gt;</c> (by default <c>~/.local/share</c>) on Linux and
+    /// other Unix systems. Always absolute, also when the folder does not exist yet: the first save creates it.
     /// </summary>
     public static string DefaultDirectory(string gameId)
     {
@@ -71,8 +79,12 @@ public sealed class SaveStore
         // Without DoNotVerify, .NET answers "" when the folder does not exist yet (a new account, a container, CI),
         // and the saves would land in the working directory.
         if (OperatingSystem.IsMacOS()) return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify);
-        return XdgDataHome(Environment.GetEnvironmentVariable("XDG_DATA_HOME"),
-                   Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify))
+        // A phone app's home is its own container: iOS keeps app data in Library/Application Support, Android in the
+        // app's files folder (its home). The same folders the phone hosts used before they stopped setting XDG_DATA_HOME.
+        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
+        if ((OperatingSystem.IsIOS() || OperatingSystem.IsTvOS()) && home.Length > 0) return Path.Combine(home, "Library", "Application Support");
+        if (OperatingSystem.IsAndroid() && home.Length > 0) return home;
+        return XdgDataHome(Environment.GetEnvironmentVariable("XDG_DATA_HOME"), home)
             ?? Path.GetTempPath(); // no home folder at all: saves last only as long as the temporary folder
     }
 

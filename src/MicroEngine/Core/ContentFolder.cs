@@ -19,16 +19,17 @@ public sealed class ContentFolder : IContentSource
     public string Location => _source.Location;
 
     /// <summary>
-    /// Root used when a game passes none. Null means the <c>Content</c> folder next to the executable; a host whose
-    /// files live elsewhere (a phone app unpacking its package) sets it before the game is built.
+    /// The folder used when a game and its composition name none: <c>Content</c> next to the executable. A rule, not a
+    /// setting: a host whose files live elsewhere (a phone app, a macOS bundle) composes its folder
+    /// (<see cref="Hosting.HostBuilder.Content"/>).
     /// </summary>
-    public static string? DefaultRoot { get; set; }
+    public static string DefaultRoot => Path.Combine(AppContext.BaseDirectory, "Content");
 
     /// <summary>Opens a content folder.</summary>
-    /// <param name="root">The folder, absolute or relative to the working directory; null uses <see cref="DefaultRoot"/> or the <c>Content</c> folder next to the executable.</param>
+    /// <param name="root">The folder, absolute or relative to the working directory; null uses the <c>Content</c> folder next to the executable. A host whose files live elsewhere (a phone app, a macOS bundle) composes its folder instead (<see cref="Hosting.HostBuilder.Content"/>).</param>
     /// <exception cref="DirectoryNotFoundException">The folder does not exist.</exception>
     public ContentFolder(string? root = null) =>
-        _source = new FolderContentSource(root ?? DefaultRoot ?? Path.Combine(AppContext.BaseDirectory, "Content"));
+        _source = new FolderContentSource(root ?? DefaultRoot);
 
     /// <summary>
     /// Full path of a file given relative to the root with '/' separators. The name must match the file's letter case

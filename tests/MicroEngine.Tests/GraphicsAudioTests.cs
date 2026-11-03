@@ -424,20 +424,27 @@ public sealed class AudioTests
     }
 
     [TestMethod]
-    [DoNotParallelize]
-    public void Launchers_choose_the_default_storage_for_stores_without_a_directory()
+    public void A_store_without_a_directory_uses_the_platforms_default_medium_and_a_composition_can_hand_it_another()
     {
+        // The platform's default outside browsers: files in the user's data folder, the same folder DefaultDirectory names.
+        var fallback = SaveStore.DefaultStorage("game");
+        Assert.IsInstanceOfType<FileSaveStorage>(fallback);
+        Assert.AreEqual(SaveStore.DefaultDirectory("game"), fallback.Location);
+        StringAssert.EndsWith(new SaveStore("game").Directory, Path.Combine("MicroEngine", "game"), "Without a directory saves go to local app data.");
+        var dir = Path.Combine(Path.GetTempPath(), "microengine-tests-" + Guid.NewGuid().ToString("N"));
+        Assert.AreEqual(dir, new SaveStore("game", dir).Directory, "An explicit directory still means files.");
+
+        // A composition's medium reaches the stores it creates, and only those: nothing is set for the process.
         var storage = new MemoryStorage();
-        SaveStore.DefaultStorage = gameId => gameId == "game" ? storage : throw new InvalidOperationException(gameId);
-        try
+        var host = new MicroEngine.Hosting.HostBuilder(new MicroEngine.Hosting.HostEnvironment(MicroEngine.Hosting.HostKind.Test), new MicroEngine.Hosting.LaunchRequest())
         {
-            new SaveStore("game").Save("slot", new Progress { Level = 2 });
-            Assert.IsTrue(storage.Exists("slot"), "A store without a directory uses the launcher's storage.");
-            var dir = Path.Combine(Path.GetTempPath(), "microengine-tests-" + Guid.NewGuid().ToString("N"));
-            Assert.AreEqual(dir, new SaveStore("game", dir).Directory, "An explicit directory still means files.");
-        }
-        finally { SaveStore.DefaultStorage = null; }
-        StringAssert.EndsWith(new SaveStore("game").Directory, Path.Combine("MicroEngine", "game"), "Without a launcher choice saves go to local app data.");
+            Storage = gameId => gameId == "game" ? storage : throw new InvalidOperationException(gameId),
+        };
+        Assert.IsTrue(host.SaveStore("game").Save("slot", new Progress { Level = 2 }));
+        Assert.IsTrue(storage.Exists("slot"), "A store from the composition uses the composition's storage.");
+        Assert.AreEqual(SaveStore.DefaultDirectory("game"), new SaveStore("game").Directory, "Other stores keep the platform's default.");
+        var plain = new MicroEngine.Hosting.HostBuilder(new MicroEngine.Hosting.HostEnvironment(MicroEngine.Hosting.HostKind.Test), new MicroEngine.Hosting.LaunchRequest());
+        Assert.AreEqual(SaveStore.DefaultDirectory("game"), plain.SaveStore("game").Directory, "A composition without storage uses the platform's default.");
     }
 
     [TestMethod]

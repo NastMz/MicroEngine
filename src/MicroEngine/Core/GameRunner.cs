@@ -123,13 +123,24 @@ public sealed class GameLoop
 
     /// <summary>Prepares a loop; nothing runs until <see cref="Start"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="game"/> or <paramref name="platform"/> is null.</exception>
-    public GameLoop(Game game, IPlatform platform, RunOptions? options = null)
+    public GameLoop(Game game, IPlatform platform, RunOptions? options = null) : this(game, platform, options, null) { }
+
+    /// <summary>
+    /// Prepares a loop whose engine also gets the host's composition: <paramref name="compose"/> runs after the game's
+    /// <see cref="Game.Configure"/> and before the run's own systems (<see cref="GameHost"/> passes the content and engine
+    /// changes of its <see cref="Hosting.HostBuilder"/> this way).
+    /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="game"/> or <paramref name="platform"/> is null.</exception>
+    public GameLoop(Game game, IPlatform platform, RunOptions? options, Action<Kernel.EngineBuilder>? compose)
     {
         _game = game ?? throw new ArgumentNullException(nameof(game));
         _platform = platform ?? throw new ArgumentNullException(nameof(platform));
         _options = options ?? new RunOptions();
+        _compose = compose;
         _sink = new Sink(this);
     }
+
+    private readonly Action<Kernel.EngineBuilder>? _compose;
 
     /// <summary>The loop's side of the event pump: host events become engine lifecycle events.</summary>
     private sealed class Sink(GameLoop loop) : IEngineEventSink
@@ -189,9 +200,10 @@ public sealed class GameLoop
         return _running;
     }
 
-    /// <summary>The run's own systems: a script's touches and forced actions, just before the engine reads them.</summary>
+    /// <summary>The host's composition, then the run's own systems: a script's touches and forced actions, just before the engine reads them.</summary>
     private void AddRunSystems(Kernel.EngineBuilder builder)
     {
+        _compose?.Invoke(builder);
         if (_options.Script is not { } script) return;
         builder.Schedule.Add(Kernel.FramePhase.Input, "run.script.touches", _ => script.ApplyTouches(_game.UpdateCount, _game.Touch), before: "engine.touch");
         builder.Schedule.Add(Kernel.FramePhase.PreFixed, "run.script.input", _ =>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The launcher model every host shares (desktop, browser, Android, iOS, tests): what a launch asks for and how it is
+       parsed, the time and seed rules of scripted runs, platform-profile selection, the host's environment and the
+       composition a game configures once (its Configure entry point). It references only the kernel and the platform
+       contracts (the architecture test checks it). It is not a package of its own: the MicroEngine package carries
+       MicroEngine.Hosting.dll (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Hosting</RootNamespace>
+    <Description>MicroEngine hosting: the launcher model shared by desktop, browser, phone and test hosts, and the composition a game configures once. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+</Project>

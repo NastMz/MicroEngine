@@ -1,10 +1,11 @@
-using System.Globalization;
+using MicroEngine.Hosting;
 using MicroEngine.Platform;
 
 namespace MicroEngine.Core;
 
 /// <summary>
-/// The command line every desktop game accepts, on any backend. Supported arguments:
+/// The command line every desktop game accepts, on any backend: a thin caller of the launcher model every host shares
+/// (<see cref="GameHost"/>, <see cref="LaunchRequest"/>). Supported arguments:
 /// <list type="bullet">
 /// <item><c>--script FILE</c> play scripted input (see <see cref="InputScript"/>); implies deterministic time unless
 /// <c>--time</c> says otherwise.</item>
@@ -42,188 +43,86 @@ namespace MicroEngine.Core;
 /// (<see cref="PlatformRequest.WaitForDisplay"/>) and for no sound device (<c>--audio auto</c>); a run in real time
 /// whose game shows a start screen asks it to start gamepads after the first frame
 /// (<see cref="PlatformRequest.StartGamepadsAfterFirstFrame"/>). The platform itself never knows the time mode.
+/// Browser pages, phone apps and tests apply the same rules through <see cref="GameHost"/>.
 /// Returns a process exit code: 0 on success, 1 on a game or platform error, 2 on bad arguments.
 /// </summary>
 public static class GameLauncher
 {
     /// <summary>The one-line usage text printed after an argument error.</summary>
-    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE]";
+    public const string Usage = LaunchRequest.Usage;
 
+    /// <summary>Runs <paramref name="game"/> with the command line <paramref name="args"/> on the platforms of <paramref name="catalog"/>.</summary>
     /// <param name="configure">Changes the platform request before the platform is built: an audio device or input
     /// sources of the host's own (see <see cref="PlatformRequest"/>).</param>
     public static int Run(Game game, string[] args, PlatformCatalog catalog, Func<PlatformRequest, PlatformRequest>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(game);
-        ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(catalog);
-        LaunchArguments parsed;
-        try { parsed = LaunchArguments.Parse(args); }
+        return Run(args, host =>
+        {
+            host.UsePlatforms(catalog).UseGame(() => game);
+            if (configure is not null) host.ConfigureRequest(configure);
+        });
+    }
+
+    /// <summary>
+    /// Runs the game a composition chooses (a game's <c>Configure</c> entry point, <see cref="GameHost"/>) with the
+    /// command line <paramref name="args"/> as a desktop process. <paramref name="defaults"/> (the host's own platforms
+    /// and content) runs before <paramref name="configure"/>, which may replace any of them.
+    /// </summary>
+    /// <returns>The process exit code: 0 on success, 1 on a game or platform error, 2 on bad arguments.</returns>
+    public static int Run(string[] args, Action<HostBuilder> configure, Action<HostBuilder>? defaults = null)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(configure);
+        var environment = new HostEnvironment(HostKind.Desktop);
+        LaunchRequest request;
+        try { request = LaunchRequest.Parse(args); }
         catch (FormatException e)
         {
-            Console.Error.WriteLine(e.Message);
-            Console.Error.WriteLine(Usage);
+            environment.Error.WriteLine(e.Message);
+            environment.Error.WriteLine(Usage);
             return 2;
         }
-        if (parsed.ListPlatforms)
+        GameHost host;
+        try { host = GameHost.Create(environment, request, configure, defaults); }
+        catch (Exception e) when (e is InvalidOperationException or PlatformConfigurationException)
         {
-            foreach (var p in catalog.Profiles)
-                Console.WriteLine($"{p.Name}{(p.UnsupportedReason is { } why ? $" (unavailable: {why})" : "")}: {p.Description}");
-            return 0;
-        }
-
-        var profiler = parsed.ProfilePath is null ? null : new FrameProfiler();
-        var graphics = parsed.ApplyTo(game.Settings.Graphics);
-        bool deterministic = parsed.Time == Kernel.TimeMode.Deterministic;
-        var identity = AppIdentity.Of(game);
-        var options = new RunOptions
-        {
-            Graphics = graphics,
-            Profiler = profiler,
-            PaceToDisplay = parsed.PaceToDisplay,
-            Script = parsed.ScriptPath is { } path ? InputScript.Parse(File.ReadAllText(path)) : null,
-            CaptureDirectory = parsed.CaptureDirectory,
-            MaxUpdates = parsed.Frames,
-            Seed = parsed.Seed,
-            Mute = parsed.Mute,
-            TimeMode = parsed.Time,
-        };
-        var request = new PlatformRequest(game.Settings with { Graphics = graphics })
-        {
-            Scale = parsed.Scale,
-            Hidden = parsed.Hidden,
-            WaitForDisplay = !deterministic,
-            StartGamepadsAfterFirstFrame = !deterministic && !parsed.Hidden && options.StartScreen && identity is { Splash: true },
-            Mute = parsed.Mute,
-            AudioOutput = parsed.Audio == AudioOutput.Automatic && deterministic ? AudioOutput.Silent : parsed.Audio,
-            Identity = identity,
-        };
-        if (configure is not null) request = configure(request);
-        // Applied after the host's changes: the option is explicit, so it replaces an audio device the host supplies.
-        Audio.CaptureAudioDevice? capture = null;
-        if (parsed.AudioCapturePath is not null)
-            request = request with { Audio = () => capture = new Audio.CaptureAudioDevice(game.Settings.UpdateRate) };
-        IPlatform? platform = null;
-        PlatformProfile profile;
-        IReadOnlyList<PlatformProfile> candidates;
-        try
-        {
-            string? name = parsed.Headless ? HeadlessPlatform.Profile.Name : parsed.Platform ?? Environment.GetEnvironmentVariable("MICROENGINE_PLATFORM");
-            candidates = parsed.Headless && catalog.Find(HeadlessPlatform.Profile.Name) is null ? [HeadlessPlatform.Profile]
-                : name is not null ? [catalog.Resolve(name)]
-                : Preferred(catalog, graphics.Backend);
-        }
-        catch (PlatformConfigurationException e)
-        {
-            Console.Error.WriteLine($"error: {e.Message}");
+            environment.Error.WriteLine($"error: {e.Message}");
             return 1;
         }
-        profile = candidates[0];
-        for (int i = 0; platform is null; i++)
-        {
-            profile = candidates[i];
-            string? failure;
-            try
-            {
-                platform = profile.Create(request);
-                break;
-            }
-            catch (Exception e) when (e is InvalidOperationException or PlatformConfigurationException)
-            {
-                failure = e.Message;
-            }
-            // A backend's native library that this system cannot load (missing, or built for a newer C library): the
-            // loader's message names the cause, so it is reported instead of crashing.
-            catch (DllNotFoundException e)
-            {
-                failure = $"platform '{profile.Name}' could not load its native library. {e.Message}";
-            }
-            if (i == candidates.Count - 1)
-            {
-                Console.Error.WriteLine($"error: {failure}");
-                return 1;
-            }
-            Console.Error.WriteLine($"platform: {profile.Name} could not start ({failure}); trying {candidates[i + 1].Name}");
-        }
-        profiler?.Phase("platform");
-        using var owned = platform;
-        if (parsed.Report) foreach (var line in Report(profile, platform)) Console.WriteLine(line);
-        var result = GameRunner.Run(game, platform, options);
-        // Described after the run, so facts the platform learns while running (such as late start steps) are included.
-        if (profiler is not null) Describe(profiler, profile, platform, game);
-        foreach (var shot in result.Captures) Console.WriteLine($"capture: {shot}");
-        if (capture is not null && parsed.AudioCapturePath is { } wav)
-        {
-            File.WriteAllBytes(wav, capture.Output.ToWav());
-            Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"audio capture: {wav} ({capture.Duration:0.00} s, {capture.Played.Count} sounds)"));
-        }
-        if (profiler is not null && parsed.ProfilePath is { } report)
-        {
-            int warmup = Math.Min(ProfileWarmupFrames, (int)Math.Max(0, profiler.FrameCount - 1));
-            profiler.Save(report, warmup);
-            foreach (var (phase, ms) in profiler.Phases) Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"phase: {phase} {ms:0.0} ms"));
-            Console.WriteLine(profiler.Summarize(warmup));
-            Console.WriteLine($"profile: {report}");
-        }
-        if (result.Error is { } error)
-        {
-            Console.Error.WriteLine($"error: {error}");
-            return 1;
-        }
-        Console.WriteLine($"done: {result.Updates} updates, {result.Frames} frames");
-        return 0;
+        return host.Run();
     }
 
     /// <summary>
     /// The platforms tried, in order, when nobody named one: every platform of the catalog that can run here except the
     /// headless one (a player who sees no window would not know why), or the catalog's default when that leaves none.
     /// </summary>
+    /// <exception cref="PlatformConfigurationException">The catalog has no platform that can run here.</exception>
     public static IReadOnlyList<PlatformProfile> Fallbacks(PlatformCatalog catalog)
     {
         ArgumentNullException.ThrowIfNull(catalog);
-        var windowed = catalog.Profiles.Where(p => p.UnsupportedReason is null
-            && !string.Equals(p.Name, HeadlessPlatform.Profile.Name, StringComparison.OrdinalIgnoreCase)).ToList();
-        return windowed.Count > 0 ? windowed : [catalog.Default];
+        var (profiles, error) = ProfileSelection.Fallbacks(catalog.Profiles);
+        return error is null ? profiles : throw new PlatformConfigurationException(error);
     }
 
     /// <summary>
     /// The platforms tried when the game prefers <paramref name="backend"/> (<see cref="GraphicsSettings.Backend"/>) and
     /// nobody named one: that platform first, then the <see cref="Fallbacks"/>. A preference this catalog lacks or that
-    /// cannot run here is reported and skipped.
+    /// cannot run here is reported on standard error and skipped.
     /// </summary>
+    /// <exception cref="PlatformConfigurationException">The catalog has no platform that can run here.</exception>
     public static IReadOnlyList<PlatformProfile> Preferred(PlatformCatalog catalog, string? backend)
     {
-        var fallbacks = Fallbacks(catalog);
-        if (backend is null) return fallbacks;
-        var preferred = catalog.Find(backend);
-        if (preferred is null || preferred.UnsupportedReason is not null)
-        {
-            Console.Error.WriteLine($"platform: the game prefers '{backend}', which {(preferred is null ? "is not in this build" : $"is unavailable here ({preferred.UnsupportedReason})")}; choosing automatically");
-            return fallbacks;
-        }
-        return [preferred, .. fallbacks.Where(p => p != preferred)];
+        ArgumentNullException.ThrowIfNull(catalog);
+        var choice = ProfileSelection.Preferred(catalog.Profiles, backend);
+        if (choice.Error is { } error) throw new PlatformConfigurationException(error);
+        foreach (var note in choice.Notes) Console.Error.WriteLine(note);
+        return choice.Candidates;
     }
 
     /// <summary>Frames of a profiled run left out of its summary: the first second or so, while the JIT compiles and caches warm up.</summary>
     public const int ProfileWarmupFrames = 60;
-
-    /// <summary>Records the facts a profile is compared by: machine, system, runtime, platform and canvas.</summary>
-    private static void Describe(FrameProfiler profiler, PlatformProfile profile, IPlatform platform, Game game)
-    {
-        var settings = game.Settings;
-        var env = profiler.Environment;
-        env["os"] = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
-        env["architecture"] = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString();
-        env["runtime"] = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
-        env["processors"] = Environment.ProcessorCount.ToString(CultureInfo.InvariantCulture);
-        env["gc"] = System.Runtime.GCSettings.IsServerGC ? "server" : "workstation";
-        env["platform"] = Report(profile, platform)[0]["platform: ".Length..];
-        env["realTime"] = game.EngineOrNull?.Time.Mode == Kernel.TimeMode.Deterministic ? "false" : "true";
-        env["canvas"] = $"{settings.VirtualWidth}x{settings.VirtualHeight}";
-        env["updateRate"] = settings.UpdateRate.ToString(CultureInfo.InvariantCulture);
-        env["engine"] = typeof(Game).Assembly.GetName().Version?.ToString() ?? "";
-        if (platform.TryGetCapability<IPlatformDiagnostics>(out var diagnostics))
-            foreach (var (key, value) in diagnostics.Diagnostics) env[key] = value;
-    }
 
     /// <summary>
     /// What <c>--report</c> prints: the profile that runs, with what the platform says about itself when it overrides
@@ -239,7 +138,10 @@ public static class GameLauncher
     }
 }
 
-/// <summary>The parsed launcher command line (see <see cref="GameLauncher"/>).</summary>
+/// <summary>
+/// The launcher command line with the engine's own types (see <see cref="GameLauncher"/>): a typed view of a
+/// <see cref="LaunchRequest"/>, with the seed and the time mode resolved by its rules.
+/// </summary>
 /// <param name="ScriptPath"><c>--script</c>: the input script file, or null.</param>
 /// <param name="CaptureDirectory"><c>--captures</c>: where script captures are written ("captures" by default).</param>
 /// <param name="Headless"><c>--headless</c>: run without a window.</param>
@@ -290,8 +192,9 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
     }
     /// <summary>
     /// <c>--time</c>: how the loop advances time, or null to leave it to the game. A script means
-    /// <see cref="Kernel.TimeMode.Deterministic"/> unless <c>--time</c> is given; <c>--hidden</c> changes nothing; the
-    /// headless platform's <see cref="RunPreset"/> makes its runs deterministic when this is null.
+    /// <see cref="Kernel.TimeMode.Deterministic"/> unless <c>--time</c> is given (<see cref="LaunchRequest.EffectiveTime"/>);
+    /// <c>--hidden</c> changes nothing; the headless platform's <see cref="RunPreset"/> makes its runs deterministic when
+    /// this is null.
     /// </summary>
     public Kernel.TimeMode? Time { get; init; }
     /// <summary><c>--pacing</c>: false for <c>measured</c>, true (the default) for <c>display</c>.</summary>
@@ -299,132 +202,30 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
     /// <summary><c>--profile</c>: the file to write frame measurements to, or null to measure nothing.</summary>
     public string? ProfilePath { get; init; }
 
-    /// <summary>Parses command-line arguments.</summary>
+    /// <summary>Parses command-line arguments (<see cref="LaunchRequest.Parse"/>).</summary>
     /// <exception cref="FormatException">An argument is unknown, misses its value or has an invalid one, <c>--headless</c> contradicts <c>--platform</c>, or the script file does not exist.</exception>
-    public static LaunchArguments Parse(IReadOnlyList<string> args)
+    public static LaunchArguments Parse(IReadOnlyList<string> args) => From(LaunchRequest.Parse(args), Environment.TickCount & 0x7fffffff);
+
+    /// <summary>The typed view of <paramref name="request"/>; a run that asks for no seed and plays no script gets <paramref name="clockSeed"/>.</summary>
+    public static LaunchArguments From(LaunchRequest request, int clockSeed)
     {
-        string? script = null, captures = "captures", platform = null, audioCapture = null, profile = null;
-        var audio = AudioOutput.Automatic;
-        Kernel.TimeMode? time = null;
-        bool paceToDisplay = true;
-        GpuPreference? gpu = null;
-        IReadOnlyList<string>? renderers = null;
-        bool? vsync = null;
-        int? fpsLimit = null, display = null;
-        WindowMode? window = null;
-        bool headless = false, hidden = false, mute = false, list = false, report = false;
-        long frames = 0;
-        int? seed = null;
-        int? scale = null;
-        for (int i = 0; i < args.Count; i++)
+        ArgumentNullException.ThrowIfNull(request);
+        return new LaunchArguments(request.ScriptPath, request.CaptureDirectory, request.Headless, request.Hidden, request.Frames, request.ResolveSeed(clockSeed), request.Scale, request.Mute)
         {
-            string Next() => i + 1 < args.Count ? args[++i] : throw new FormatException($"Missing value for {args[i]}.");
-            int Int()
-            {
-                string option = args[i], value = Next();
-                return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) && v > 0 ? v
-                    : throw new FormatException($"{option} needs a positive integer, not '{value}'.");
-            }
-            int Count()
-            {
-                string option = args[i], value = Next();
-                return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) && v >= 0 ? v
-                    : throw new FormatException($"{option} needs 0 or a positive integer, not '{value}'.");
-            }
-            switch (args[i])
-            {
-                case "--script": script = Next(); break;
-                case "--captures": captures = Next(); break;
-                case "--platform": platform = Next(); break;
-                case "--list-platforms": list = true; break;
-                case "--headless": headless = true; break;
-                case "--hidden": hidden = true; break;
-                case "--mute": mute = true; break;
-                case "--report": report = true; break;
-                case "--frames": frames = Int(); break;
-                case "--seed": seed = Int(); break;
-                case "--scale": scale = Int(); break;
-                case "--audio":
-                    audio = Next() switch
-                    {
-                        "auto" => AudioOutput.Automatic,
-                        "device" => AudioOutput.Device,
-                        "silent" => AudioOutput.Silent,
-                        var other => throw new FormatException($"--audio needs auto, device or silent, not '{other}'."),
-                    };
-                    break;
-                case "--audio-capture": audioCapture = Next(); break;
-                case "--profile": profile = Next(); break;
-                case "--gpu":
-                    gpu = Next() switch
-                    {
-                        "auto" => GpuPreference.Automatic,
-                        "high-performance" => GpuPreference.HighPerformance,
-                        "power-saving" => GpuPreference.PowerSaving,
-                        var other => throw new FormatException($"--gpu needs auto, high-performance or power-saving, not '{other}'."),
-                    };
-                    break;
-                case "--renderer":
-                    renderers = Next().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                    if (renderers.Count == 0) throw new FormatException("--renderer needs at least one name.");
-                    break;
-                case "--vsync":
-                    vsync = Next() switch
-                    {
-                        "on" => true,
-                        "off" => false,
-                        var other => throw new FormatException($"--vsync needs on or off, not '{other}'."),
-                    };
-                    break;
-                case "--fps-limit": fpsLimit = Count(); break;
-                case "--display": display = Count(); break;
-                case "--window":
-                    window = Next() switch
-                    {
-                        "windowed" => Core.WindowMode.Windowed,
-                        "fullscreen" => Core.WindowMode.Fullscreen,
-                        "exclusive" => Core.WindowMode.ExclusiveFullscreen,
-                        var other => throw new FormatException($"--window needs windowed, fullscreen or exclusive, not '{other}'."),
-                    };
-                    break;
-                case "--time":
-                    time = Next() switch
-                    {
-                        "realtime" => Kernel.TimeMode.RealTime,
-                        "deterministic" => Kernel.TimeMode.Deterministic,
-                        var other => throw new FormatException($"--time needs realtime or deterministic, not '{other}'."),
-                    };
-                    break;
-                case "--pacing":
-                    paceToDisplay = Next() switch
-                    {
-                        "display" => true,
-                        "measured" => false,
-                        var other => throw new FormatException($"--pacing needs display or measured, not '{other}'."),
-                    };
-                    break;
-                default: throw new FormatException($"Unknown argument '{args[i]}'.");
-            }
-        }
-        if (headless && platform is not null && !string.Equals(platform, HeadlessPlatform.Profile.Name, StringComparison.OrdinalIgnoreCase))
-            throw new FormatException($"--headless and --platform {platform} contradict each other.");
-        if (script is not null && !File.Exists(script)) throw new FormatException($"Script '{script}' not found.");
-        return new LaunchArguments(script, captures, headless, hidden, frames, seed ?? (script is null ? Environment.TickCount & 0x7fffffff : 1), scale, mute)
-        {
-            Platform = platform,
-            ListPlatforms = list,
-            Report = report,
-            Audio = audio,
-            AudioCapturePath = audioCapture,
-            ProfilePath = profile,
-            PaceToDisplay = paceToDisplay,
-            Time = time ?? (script is not null ? Kernel.TimeMode.Deterministic : null),
-            Gpu = gpu,
-            Renderers = renderers,
-            VSync = vsync,
-            FrameRateLimit = fpsLimit,
-            WindowMode = window,
-            Display = display,
+            Platform = request.Platform,
+            ListPlatforms = request.ListPlatforms,
+            Report = request.Report,
+            Audio = request.Audio switch { "device" => AudioOutput.Device, "silent" => AudioOutput.Silent, _ => AudioOutput.Automatic },
+            AudioCapturePath = request.AudioCapturePath,
+            ProfilePath = request.ProfilePath,
+            PaceToDisplay = request.PaceToDisplay,
+            Time = request.EffectiveTime,
+            Gpu = request.Gpu switch { null => null, "high-performance" => GpuPreference.HighPerformance, "power-saving" => GpuPreference.PowerSaving, _ => GpuPreference.Automatic },
+            Renderers = request.Renderers,
+            VSync = request.VSync,
+            FrameRateLimit = request.FrameRateLimit,
+            WindowMode = request.Window switch { null => null, "fullscreen" => Core.WindowMode.Fullscreen, "exclusive" => Core.WindowMode.ExclusiveFullscreen, _ => Core.WindowMode.Windowed },
+            Display = request.Display,
         };
     }
 }

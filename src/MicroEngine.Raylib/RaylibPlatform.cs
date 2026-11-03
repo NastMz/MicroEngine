@@ -64,7 +64,8 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     private readonly RaylibInput _input;
     private readonly RaylibGraphicsDevice _graphics = new();
     private readonly IAudioDevice _audio;
-    private readonly RaylibTouchScreen _touch = new();
+    private readonly RaylibTouchScreen _touch;
+    private readonly BrowserPage? _page;
     private long _frames;
     private bool _disposed;
 
@@ -78,21 +79,40 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         CheckSupport = () => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ? "raylib 6.0 has no iOS platform" : null,
     };
 
+    /// <summary>
+    /// The raylib platform of a browser page as a catalog entry (named <c>raylib</c>, like <see cref="Profile"/>): every
+    /// platform it builds reads touches, insets, visibility and vibration from <paramref name="page"/> only. The browser
+    /// host offers this profile; a game's composition may offer others.
+    /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="page"/> is null.</exception>
+    public static PlatformProfile BrowserProfile(BrowserPage page)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        return new("raylib", "raylib 6.0 in a browser page: WebGL canvas, page input and Web Audio sound", request => new RaylibPlatform(request, page))
+        {
+            CheckSupport = () => OperatingSystem.IsBrowser() ? null : "a browser page profile runs only in a browser",
+        };
+    }
+
     /// <summary>Opens the raylib window (and audio device unless the options say otherwise) for <paramref name="settings"/>. Hosts usually go through <see cref="Profile"/> instead.</summary>
-    public RaylibPlatform(GameSettings settings, DesktopOptions options) : this(settings, options, null) { }
+    public RaylibPlatform(GameSettings settings, DesktopOptions options) : this(settings, options, null, null) { }
 
     /// <summary>
     /// Opens the raylib window for <paramref name="request"/>: its window options, its audio device or raylib's own
     /// (unless muted or silent), and its extra input sources read with raylib's.
     /// </summary>
-    public RaylibPlatform(PlatformRequest request) : this(
+    public RaylibPlatform(PlatformRequest request) : this(request, null) { }
+
+    private RaylibPlatform(PlatformRequest request, BrowserPage? page) : this(
         (request ?? throw new ArgumentNullException(nameof(request))).Settings,
         new DesktopOptions { Scale = request.Scale, Hidden = request.Hidden, Mute = !request.OpensOwnAudio, CaptureScale = request.CaptureScale, Icon = request.Identity?.Icon, WaitForDisplay = request.WaitForDisplay },
-        request)
+        request, page)
     { }
 
-    private RaylibPlatform(GameSettings settings, DesktopOptions options, PlatformRequest? request)
+    private RaylibPlatform(GameSettings settings, DesktopOptions options, PlatformRequest? request, BrowserPage? page)
     {
+        _page = page;
+        _touch = page is null ? new RaylibTouchScreen() : new RaylibTouchScreen(page.Touch);
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         Letterbox = _settings.Letterbox;
         _input = new RaylibInput { CanvasWidth = settings.VirtualWidth, CanvasHeight = settings.VirtualHeight };
@@ -183,8 +203,8 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     }
     /// <summary>The touch screen (also the <see cref="ITouchScreen"/> capability).</summary>
     public ITouchScreen Touch => _touch;
-    /// <summary>In a browser, a hidden page (<see cref="BrowserLifecycle.Hidden"/>); a desktop window never suspends.</summary>
-    public bool Suspended => OperatingSystem.IsBrowser() && BrowserLifecycle.Hidden;
+    /// <summary>In a browser, a hidden page (<see cref="BrowserPage.Hidden"/> of the page the platform was built for); a desktop window never suspends.</summary>
+    public bool Suspended => OperatingSystem.IsBrowser() && _page is { Hidden: true };
 
     /// <summary>
     /// Reads what raylib collected at the end of the last frame and delivers the engine's events: a hidden page's
@@ -353,7 +373,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         (_audio as IDisposable)?.Dispose();
         _graphics.Dispose();
         Rl.UnloadRenderTexture(_target);
-        RaylibTouchScreen.Feed.Clear();
+        _touch.Clear();
         Rl.CloseWindow();
     }
 }
