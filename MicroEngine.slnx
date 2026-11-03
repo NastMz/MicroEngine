@@ -26,6 +26,7 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/AssetBench/AssetBench.csproj" />
     <Project Path="benchmarks/PerfBench/PerfBench.csproj" />
+    <Project Path="benchmarks/PhysicsBench/PhysicsBench.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/HelloEngine/HelloEngine.csproj" />
