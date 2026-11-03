@@ -44,7 +44,8 @@ test('inputs: each check reads its own part of the tree, conservatively', () => 
 
 test('inputs: the SDK check reads what the packages and the external project test read', () => {
   for (const file of ['src/Engine.cs', 'src/MicroEngine.Cli/Hosts/web/wwwroot/main.js', 'templates/Game/README.md', 'sdk/tests/external.mjs',
-    'web/toolchain.env', 'web/tests/package.json', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'Directory.Build.props', '.github/workflows/sdk.yml', 'newfolder/tool.cs'])
+    'web/toolchain.env', 'web/tests/package.json', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'Directory.Build.props', '.github/workflows/sdk.yml', 'newfolder/tool.cs',
+    'samples/AssetGallery/GalleryScene.cs', 'samples/AssetGallery/scripts/tour.script', 'samples/AssetGallery/CREDITS.md'])
     assert.equal(isInput('sdk', file), true, file);
   for (const file of ['games/Alpha/Game.cs', 'tests/Alpha.Tests/A.cs', 'samples/Hello/Program.cs', 'docs/guide.md', 'site/src/page.astro',
     'platforms/android/A.cs', 'README.md', 'odd/tasks/x.md'])

@@ -52,6 +52,12 @@ public sealed class GalleryGame : Game
     /// </summary>
     public bool RealTime => Platform.RealTime;
 
+    /// <summary>
+    /// In a fixed-step run, a scope holding the level's tile atlas, loaded before play; the gallery's level scope takes the
+    /// atlas over (and this scope goes) the first time it loads. Null in interactive runs.
+    /// </summary>
+    public AssetCache? LevelAhead { get; set; }
+
     /// <inheritdoc/>
     protected override void Load()
     {
@@ -70,6 +76,13 @@ public sealed class GalleryGame : Game
         Ui.Prepare(ScalableFont.Ascii, GalleryScene.Small, GalleryScene.Body, GalleryScene.Label);
         Bold.Prepare(ScalableFont.Ascii, GalleryScene.Title);
         Serif.Prepare(ScalableFont.Ascii, GalleryScene.Prose);
+        // A fixed-step run loads the level's atlas now: waiting for it during play would be a hitch, and leaving it to the
+        // workers would make the frames depend on how long they take.
+        if (!RealTime)
+        {
+            LevelAhead = Assets.CreateScope("level ahead");
+            LevelAhead.Preload("atlases/tiles.xml").Wait();
+        }
         Scenes.Push(new GalleryScene(this));
     }
 }
