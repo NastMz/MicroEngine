@@ -31,6 +31,9 @@ const docs = file => /^docs\//.test(file) || (/\.md$/i.test(file) && !/\/Content
 const dotnetSkips = file => always(file) || docs(file) || /^(site|platforms|web)\//.test(file) || /^src\/MicroEngine\.Cli\/Hosts\//.test(file)
   || (/^sdk\//.test(file) && !/^sdk\/(version\.|tests\/(docs|version)\.)/.test(file));
 
+// The samples the external project test (sdk/tests/external.mjs) copies and builds from the packages, every file of them.
+const sdkSamples = /^samples\/AssetGallery\//;
+
 /** Which files can affect each check. */
 export const scopes = {
   dotnet: file => !dotnetSkips(file),
@@ -41,15 +44,15 @@ export const scopes = {
   site: file => !always(file) && !/^(src|tests|samples|platforms)\//.test(file)
     && (!/^games\//.test(file) || /\.md$/i.test(file) || /^games\/[^/]+\/screenshots\//.test(file)),
   // The packages read the engine, the tool, the template, the build settings, the web toolchain and the notices they
-  // ship; the external project test also reads web/ (its server and browser driver). Games, tests, samples and the
-  // documentation never reach a package.
+  // ship; the external project test also reads web/ (its server and browser driver) and the samples it plays
+  // (sdkSamples). Games, tests, other samples and the documentation never reach a package.
   // The browser engine suites read a development web package (the engine, raylib, the web host, the games and their
   // scripts, the web toolchain), the suites and the desktop build they compare with; never SDL, the site, the tests,
   // the samples, the SDK checks or the documentation. The caller adds the games played to the key (--extra).
   web: file => !always(file) && !docs(file) && !/^(site|platforms|tests|samples|sdk)\//.test(file)
     && !/^src\/MicroEngine\.(Sdl\/|Cli\/Hosts\/(android|ios)\/)/.test(file),
-  sdk: file => !always(file) && !/^(docs|site|platforms|games|tests|samples)\//.test(file)
-    && (!/\.md$/i.test(file) || /^(src|templates|sdk)\//.test(file) || file === 'THIRD-PARTY-NOTICES.md'),
+  sdk: file => sdkSamples.test(file) || (!always(file) && !/^(docs|site|platforms|games|tests|samples)\//.test(file)
+    && (!/\.md$/i.test(file) || /^(src|templates|sdk)\//.test(file) || file === 'THIRD-PARTY-NOTICES.md')),
 };
 
 export const isInput = (check, file) => (scopes[check] ?? fail(`unknown check "${check}"`))(file);

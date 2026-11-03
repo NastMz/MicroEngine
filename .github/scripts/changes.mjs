@@ -15,7 +15,8 @@
 //              also means the published site changed, so main deploys it
 //   workflows  actionlint over every workflow
 //   sdk        the SDK packages packed and checked, then used from outside the repository on Windows, Linux and macOS
-//              (sdk.yml): every input of a package, the tool, the template or the external project test
+//              (sdk.yml): every input of a package, the tool, the template or the external project test (which also
+//              plays samples/AssetGallery)
 //   macos      the headless .NET tests on macOS: informative (never a gate), and only started when the repository
 //              uses free public runners (repository variable PUBLIC_RUNNERS=true); otherwise advisory
 //   mobile     advisory only: printed as a recommendation to run platforms.yml or validate.yml; daily CI never
@@ -65,6 +66,8 @@ export const rules = [
   { pattern: /^games\//, checks: ['dotnet', 'native', 'web'], why: 'game' },
   { pattern: /^tests\/MicroEngine\.(Raylib|Desktop)\.Tests\//, checks: ['dotnet', 'windows', 'native', 'macos'], why: 'backend tests' },
   { pattern: /^tests\/MicroEngine\.Tests\//, checks: ['dotnet', 'windows', 'macos'], why: 'engine tests' },
+  // sdk/tests/external.mjs copies the asset gallery and plays its tour from the packages (evidence.mjs: sdkSamples).
+  { pattern: /^samples\/AssetGallery\//, checks: ['dotnet', 'sdk'], why: 'asset gallery (played by the SDK external project test)' },
   { pattern: /^(tests|samples)\//, checks: ['dotnet'], why: 'game tests and samples' },
   { pattern: /^web\/(toolchain\.env|setup\.sh|build-raylib-wasm\.sh)$/, checks: ['full', 'sdk', 'web'], why: 'web toolchain (MicroEngine.Raylib carries the web raylib)' },
   { pattern: /^web\/tests\/package(-lock)?\.json$/, checks: ['native', 'sdk', 'web'], why: 'browser driver (desktop captures, browser suites, the SDK test plays its web package)' },
