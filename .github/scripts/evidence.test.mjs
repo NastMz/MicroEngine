@@ -52,6 +52,17 @@ test('inputs: the SDK check reads what the packages and the external project tes
     assert.equal(isInput('sdk', file), false, file);
 });
 
+test('inputs: the Box2D check reads its natives, the physics it implements, its tests and the web toolchain', () => {
+  for (const file of ['src/MicroEngine.Physics.Box2D/native/me_box2d.c', 'src/MicroEngine.Physics.Box2D/Box2DPhysicsWorld2D.cs',
+    'src/MicroEngine.Physics/IPhysicsWorld2D.cs', 'src/MicroEngine.Physics.Tiles/TileSweep.cs', 'src/MicroEngine.Scene/SceneWorld.cs',
+    'src/MicroEngine.Kernel/Engine.cs', 'tests/MicroEngine.Physics.Box2D.Tests/A.cs', 'tests/Shared/Physics/PhysicsConformance.cs',
+    'samples/PhysicsSubstitution/Program.cs', 'web/toolchain.env', 'web/setup.sh', 'Directory.Build.props', '.github/workflows/box2d.yml', 'newfolder/tool.cs'])
+    assert.equal(isInput('box2d', file), true, file);
+  for (const file of ['src/Engine.cs', 'src/MicroEngine/Core/GameLoop.cs', 'src/MicroEngine.Sdl/A.cs', 'games/Alpha/Game.cs', 'tests/Alpha.Tests/A.cs',
+    'samples/Hello/Program.cs', 'web/build.sh', 'docs/guide.md', 'site/src/page.astro', 'odd/tasks/x.md', 'src/MicroEngine.Physics.Box2D/README.md'])
+    assert.equal(isInput('box2d', file), false, file);
+});
+
 test('inputs: the browser engine suites read what a development web package and the suites read', () => {
   for (const file of ['src/Engine.cs', 'src/MicroEngine.Raylib/A.cs', 'src/MicroEngine.Cli/Hosts/web/wwwroot/main.js', 'games/Alpha/Game.cs',
     'games/Alpha/Content/notes.md', 'games/Alpha/scripts/smoke.script', 'web/build.sh', 'web/tests/run.mjs', 'web/tests/reference/linux-x64.json',
