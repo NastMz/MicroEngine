@@ -151,7 +151,8 @@ public IGraphicsDevice Graphics { get; }
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Input"></a> Input
 
-raylib's keyboard, gamepad and pointer, read together with the request's extra sources.
+raylib's keyboard, gamepads and mouse as a polled source, read together with the request's extra sources. The
+engine reads raylib's input as events instead (the [IInputBackend](MicroEngine.Input.IInputBackend.md) capability).
 
 ```csharp
 public IInputSource Input { get; }

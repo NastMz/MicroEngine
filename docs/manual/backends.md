@@ -44,6 +44,7 @@ Source: [`src/MicroEngine/Core/Platform.cs`](../../src/MicroEngine/Core/Platform
 | `IGraphicsDevice` | `CreateTexture(PixelImage)` | `SdlGraphicsDevice` | `RaylibGraphicsDevice` | `HeadlessGraphicsDevice` |
 | `IAudioDevice` | Sounds, looping and streamed music ([Audio](audio.md)) | `SdlAudioDevice` | `RaylibAudioDevice` | `SilentAudioDevice` |
 | `IInputSource` | Keys, pad buttons and axes, gamepad connection, mouse ([Input](input.md)) | `SdlInput` | `RaylibInput` | `HeadlessInput` |
+| `IInputBackend` (next SDK version, a capability) | Device events: keys, text, mouse, wheel, every gamepad with hot-plug; with `IKeyLabels`, `IGamepadRumble`, `ITextInputControl` where the backend has them ([Devices, players and layers](input.md#devices-players-and-layers)) | `SdlInput` | `RaylibInput` | `HeadlessInputBackend` |
 | `ITouchScreen` (`IPlatform.Touch`, optional; next SDK version: a capability, `TryGetCapability<ITouchScreen>`) | Touches, safe area, density, vibration, the overlay drawn over the frame ([Touch controls](input.md#touch-controls)) | `SdlTouchScreen` | `RaylibTouchScreen` (fed by the browser page) | `HeadlessTouchScreen` |
 
 While `Suspended` is true the loop neither simulates nor renders, pauses music, saves achievement progress and calls
@@ -319,7 +320,8 @@ Full screen always runs at its display's rate, and is the way to show a game at 
 (its default since SDL 3.4), whose start can take about a second on machines where the GameInput service is not
 running; a game with a start screen starts gamepad support once that screen is shown, so the window appears first.
 Pads already connected are reported as usual.
-Keyboard, mouse, the first gamepad (the next one takes over when it is unplugged) and touch are read; F11 and
+Keyboard, mouse, the first gamepad (the next one takes over when it is unplugged; next SDK version: every gamepad, as
+a device of its own, with text input and rumble) and touch are read; F11 and
 Alt+Enter toggle fullscreen on desktops; losing focus releases keys and fingers. Audio uses SDL audio streams: wav and
 ogg music, silence when no device exists. `SdlTouchScreen` reports finger events, `SDL_GetWindowSafeArea` and the
 display scale, vibrates the device on Android (SDL's haptic API) and draws the game's on-screen controls over the frame
