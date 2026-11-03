@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Graphics2D', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Graphics2D', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine.Scene', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
@@ -79,7 +79,7 @@ const namespaceSummaries = {
   'MicroEngine.Kernel': 'The kernel: engine composition (builder, services, modules, capabilities), the frame schedule and its phases, loop-owned time, engine events, logging and generational handles.',
   'MicroEngine.Platform': 'The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the surface, display pacing and precise waits, storage for saves and content sources.',
   'MicroEngine.Raylib': 'The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and the browser page it reads.',
-  'MicroEngine.Scenes': 'The scene stack: scenes, transitions, coroutines and tweens.',
+  'MicroEngine.Scenes': 'The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks.',
   'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android and iOS.',
   'MicroEngine.UI': 'Pixel-art widgets: dialogue boxes, menus, typewriter text, themes, achievement banners and list.',
   'MicroEngine.World': 'Tile layers, collision grids, swept movement against tiles, autotiling and plain entities.',

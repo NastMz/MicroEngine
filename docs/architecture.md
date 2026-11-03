@@ -24,6 +24,7 @@ flowchart TB
   hosting["<b> src/MicroEngine.Hosting </b> <br/> Hosting: launch requests and their rules, platform selection, the composition a game configures once"]
   content["<b> src/MicroEngine.Content </b> <br/> Content: asset store, typed handles, scopes, loader registry, zip and listed sources"]
   audio["<b> src/MicroEngine.Audio </b> <br/> Audio: the one mixer over PCM sinks, sound bank and music, synthesis"]
+  scene["<b> src/MicroEngine.Scene </b> <br/> Scene world: entity ids, transforms, attachments, interpolation, world clocks"]
   kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
   samples -- started by --> hosts
@@ -38,6 +39,8 @@ flowchart TB
   core -- builds on --> platform
   core -- builds on --> kernel
   platform -- builds on --> kernel
+  core -- builds on --> scene
+  scene -- builds on --> kernel
   graphics -- builds on --> platform
   graphics -- builds on --> kernel
   core -- builds on --> hosting
@@ -99,6 +102,13 @@ decoded ahead outside the simulation step, sounds started at exact output frames
 `AudioMixer` games use, offline rendering for tests, and the synthesizer. The platform contracts gain `IAudioSink`, the
 PCM output a backend implements: an SDL audio stream fed by a thread, a raylib audio stream, a browser AudioWorklet
 ([One mixer on every platform](manual/audio.md#one-mixer-on-every-platform)).
+
+Next SDK version (not published yet: arrives with the next SDK version): the scene world is a sixth assembly of the
+`MicroEngine` package, `MicroEngine.Scene`, which references only the kernel. Its types are in the `MicroEngine.Scenes`
+namespace, beside the scene stack: `IWorld` and its implementation `SceneWorld` (entities with generational `EntityId`s,
+a `Transform` hierarchy stored in 3D with 2D helpers, typed attachments walked in attach order, interpolation for
+drawing with teleports, per-world step tracking, and a `WorldClock` with time scale and freezes), and the world's part of
+the per-step state hash.
 
 The core references no backend library. Everything platform-specific sits behind `MicroEngine.Core.IPlatform` and
 four device interfaces:
@@ -162,6 +172,7 @@ scripted playthrough tests and reproducible screenshots possible.
 | `MicroEngine.Graphics` in `MicroEngine.Graphics2D.dll` (next SDK version) | `IRenderer2D`, `Renderer2D` (the batcher the `IRenderer` façade draws through), `BatchSettings`, `RenderState`, `SortMode`, `Camera2D` |
 | `MicroEngine.Graphics.Devices` (next SDK version) | `IGraphicsDevice`, `GraphicsDeviceBase`, `GraphicsCapabilities`, `GraphicsCapabilityException`, `Texture`, `RenderTarget`, `Sampler`, `GpuBuffer`, `Pipeline`, `CommandList`, `ReadbackRequest`, `Vertex2D`, `GraphicsCounters`, `ReferenceGraphicsDevice` |
 | `MicroEngine.Core` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `InputScript`, `HeadlessPlatform`, `SaveStore` (over `ISaveStorage`), `ContentFolder`, `AssetCache` (`Game.Assets`), `Achievement`, `AchievementTracker` |
+| `MicroEngine.Scenes` in `MicroEngine.Scene.dll` (next SDK version) | `IWorld`, `SceneWorld`, `EntityId`, `Transform`, `Attachments<T>`, `EntityChildren`, `IDestroyedCallback`, `WorldClock` |
 | `MicroEngine.Scenes` | `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener` |
 | `MicroEngine.Input` | In the `MicroEngine.Input` assembly (kernel and platform contracts only): device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem` over them, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources, with saved bindings. In the core assembly (they draw): `VirtualControls` and `TouchLayout` (per-game on-screen d-pads, joysticks and buttons, an input layer), `ActionPrompts`, `ITouchScreen`, `FrameLayout` |
 | `MicroEngine.Graphics` | `PixelImage` (CPU art, image decoding, crop/rotate), `Art` (noise, dither, ramps), `SpriteAtlasBuilder` (incl. grid sheets), `AtlasData` (packing tools' files), `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `IFont` (`BitmapFont`, `ScalableFont`), `TextureFilter`, `IRenderer` |

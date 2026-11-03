@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The scene world: entities with generational ids, a Transform hierarchy stored in 3D, typed attachments, engine
+       interpolation with teleport, per-world step tracking and world clocks (IWorld, SceneWorld). It references only
+       the kernel (the architecture test checks it). Its types live in the MicroEngine.Scenes namespace, beside the scene
+       stack. It is not a package of its own: the MicroEngine package carries MicroEngine.Scene.dll
+       (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Scenes</RootNamespace>
+    <Description>MicroEngine scene world: entity ids, transforms, attachments, interpolation and world clocks. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+    <InternalsVisibleTo Include="MicroEngine" />
+  </ItemGroup>
+</Project>
