@@ -19,5 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../Shared/Graphics/*.cs" LinkBase="Shared/Graphics" />
+    <!-- The suite's custom shaders (HLSL in tests/Shared/Graphics/Shaders, compiled offline), read from shaders/ at run time. -->
+    <None Include="../Shared/Graphics/Shaders/compiled/*" Link="shaders/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The tier-1 graphics device ("sdl-gpu"): the graphics device contract (MicroEngine.Graphics, version 1) on pure
+       SDL_GPU (Direct3D 12, Vulkan, Metal), with custom shaders, depth, render targets and fenced readback. It references
+       only the graphics contract and the platform contracts (the architecture test checks it) and SDL3. Not a package of
+       its own yet: nothing ships it until a host selects it. -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Graphics.SdlGpu</RootNamespace>
+    <Description>MicroEngine tier-1 graphics device on SDL_GPU: custom shaders, depth, render targets and readback.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Graphics/MicroEngine.Graphics.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+    <!-- SDL3 bindings and native SDL3 3.5.0 (the same pinned package as MicroEngine.Sdl). -->
+    <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The built-in Textured pipeline's shaders: HLSL in Shaders/, compiled offline (DXIL, SPIR-V, MSL + reflection). -->
+    <EmbeddedResource Include="Shaders/compiled/*" LogicalName="builtin/%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Desktop.Tests" />
+  </ItemGroup>
+</Project>

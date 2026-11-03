@@ -52,6 +52,8 @@ public sealed class ArchitectureTests
         [Raylib] = [.. Abstractions, Core],
         ["MicroEngine.Backend.Sdl"] = [.. Abstractions],
         ["MicroEngine.Backend.Raylib"] = [.. Abstractions],
+        // The tier-1 graphics device: the graphics contract on SDL_GPU, nothing else of the engine.
+        ["MicroEngine.Graphics.SdlGpu"] = [Graphics, Kernel, Platform],
         [Desktop] = [Core, Sdl, Raylib, Hosting, Kernel, Platform],
         [Cli] = [Core, Kernel],
     };

@@ -518,11 +518,175 @@ public abstract class DeviceConformance
     [TestMethod]
     public void Depth_IsRefusedWithTheTypedErrorWhereUndeclared()
     {
-        if (Caps.Has(GraphicsFeatures.DepthBuffer)) Assert.Inconclusive("depth-declaring devices run the depth tests with their own shaders (not in this suite yet)");
+        if (Caps.Has(GraphicsFeatures.DepthBuffer))
+        {
+            // Declared: a depth target and the built-in pipeline for a pass with depth exist for some depth format, and
+            // a depth format the device does not support is refused with the typed error naming it.
+            var depth = FirstDepthFormat();
+            Assert.IsNotNull(depth, "a device that declares DepthBuffer supports at least one depth format as DepthStencil");
+            using (Device.CreateRenderTarget(new RenderTargetDescription(8, 8, Depth: depth))) { }
+            Assert.AreEqual(depth, Device.GetBuiltInPipeline(BuiltInPipeline.Textured, BlendState.Opaque, TextureFormat.Rgba8Unorm, depth).DepthFormat);
+            foreach (var missing in new[] { TextureFormat.D16Unorm, TextureFormat.D24UnormS8, TextureFormat.D32Float }.Where(f => !Caps.Supports(f, TextureUsage.DepthStencil)))
+            {
+                var refused = Assert.ThrowsExactly<GraphicsCapabilityException>(() => Device.CreateRenderTarget(new RenderTargetDescription(8, 8, Depth: missing)));
+                Assert.Contains(missing.ToString(), refused.Requirement!);
+            }
+            return;
+        }
         var e = Assert.ThrowsExactly<GraphicsCapabilityException>(() => Device.CreateRenderTarget(new RenderTargetDescription(8, 8, Depth: TextureFormat.D32Float)));
         Assert.AreEqual(GraphicsFeatures.DepthBuffer, e.Missing);
         Assert.AreEqual(GraphicsFeatures.DepthBuffer, Assert.ThrowsExactly<GraphicsCapabilityException>(
             () => Device.GetBuiltInPipeline(BuiltInPipeline.Textured, BlendState.Opaque, TextureFormat.Rgba8Unorm, TextureFormat.D32Float)).Missing);
+    }
+
+    // ---------------------------------------------------------------- custom shaders and depth (tier 1; typed errors on tier 0)
+
+    [TestMethod]
+    public void Depth_TestKeepsTheNearerSurfaceRegardlessOfDrawOrder_ForEveryDepthFormat()
+    {
+        if (!RequireShaders()) return;
+        var formats = new[] { TextureFormat.D16Unorm, TextureFormat.D24UnormS8, TextureFormat.D32Float }.Where(f => Caps.Supports(f, TextureUsage.DepthStencil)).ToArray();
+        Assert.IsNotEmpty(formats);
+        foreach (var depthFormat in formats)
+        {
+            using var vertex = Device.CreateShader(ShaderFiles.Load("mesh.vert", ShaderFiles.For(Caps)));
+            using var fragment = Device.CreateShader(ShaderFiles.Load("color.frag", ShaderFiles.For(Caps)));
+            using var pipeline = Device.CreatePipeline(new PipelineDescription(vertex, fragment, MeshVertex.Layout, BlendState.Opaque,
+                DepthState.LessWrite, new RasterState(CullMode.Back), TextureFormat.Rgba8Unorm, depthFormat));
+            var target = Device.CreateRenderTarget(new RenderTargetDescription(16, 16, Depth: depthFormat));
+            // Clip-space quads (identity matrix), counter-clockwise: near (z 0.25, red, centre) drawn BEFORE far (z 0.75,
+            // green, everywhere): only the depth test keeps the near one in front.
+            MeshVertex[] mesh = [.. ClipQuad(-0.5f, -0.5f, 0.5f, 0.5f, 0.25f, new Vector4(1, 0, 0, 1)), .. ClipQuad(-1, -1, 1, 1, 0.75f, new Vector4(0, 1, 0, 1))];
+            DrawMesh(target, pipeline, mesh, Matrix4x4.Identity, clearDepth: 1);
+            var image = Read(target);
+            Assert.AreEqual(0xFF0000FFu, image[8, 8], $"{depthFormat}: the near quad survives although drawn first");
+            Assert.AreEqual(0x00FF00FFu, image[1, 1], $"{depthFormat}: the far quad fills the rest");
+            Assert.AreEqual(new RectI(4, 4, 8, 8), image.BoundsOf(0xFF0000FFu), $"{depthFormat}: the near quad covers clip -0.5..0.5 exactly");
+
+            // The clear value is the depth the test compares against: cleared to 0.5, only the near quad (0.25) passes Less.
+            DrawMesh(target, pipeline, mesh, Matrix4x4.Identity, clearDepth: 0.5f);
+            image = Read(target);
+            Assert.AreEqual(new RectI(4, 4, 8, 8), image.BoundsOfNot(Black), $"{depthFormat}: the far quad (0.75) fails against a 0.5 clear");
+        }
+    }
+
+    [TestMethod]
+    public void Depth_ClipSpaceRangeIsZeroToOne()
+    {
+        // Written convention: depth 0 (near) .. 1 (far). Quads at clip z -0.25 (left) and 1.25 (right) are clipped;
+        // z 0.5 (middle) is drawn. Depth clipping, not the depth test: the pipeline has none.
+        if (!RequireShaders()) return;
+        using var vertex = Device.CreateShader(ShaderFiles.Load("mesh.vert", ShaderFiles.For(Caps)));
+        using var fragment = Device.CreateShader(ShaderFiles.Load("color.frag", ShaderFiles.For(Caps)));
+        using var pipeline = Device.CreatePipeline(new PipelineDescription(vertex, fragment, MeshVertex.Layout, BlendState.Opaque,
+            DepthState.None, new RasterState(), TextureFormat.Rgba8Unorm, null));
+        var target = Target(24, 8);
+        var white = new Vector4(1, 1, 1, 1);
+        MeshVertex[] mesh = [.. ClipQuad(-1, -1, -1 / 3f, 1, -0.25f, white), .. ClipQuad(-1 / 3f, -1, 1 / 3f, 1, 0.5f, white), .. ClipQuad(1 / 3f, -1, 1, 1, 1.25f, white)];
+        DrawMesh(target, pipeline, mesh, Matrix4x4.Identity, clearDepth: null);
+        Assert.AreEqual(new RectI(8, 0, 8, 8), Read(target).BoundsOfNot(Black), "only the quad with 0 <= z <= 1 survives clipping");
+    }
+
+    [TestMethod]
+    public void Raster_CounterClockwiseIsTheFrontFace_AndBackFacesAreCulled()
+    {
+        // Written convention: counter-clockwise front faces in NDC (y up). The left quad winds counter-clockwise, the
+        // right one clockwise; with CullMode.Back only the left survives, with CullMode.Front only the right one.
+        if (!RequireShaders()) return;
+        using var vertex = Device.CreateShader(ShaderFiles.Load("mesh.vert", ShaderFiles.For(Caps)));
+        using var fragment = Device.CreateShader(ShaderFiles.Load("color.frag", ShaderFiles.For(Caps)));
+        var red = new Vector4(1, 0, 0, 1);
+        MeshVertex[] mesh = [.. ClipQuad(-1, -1, 0, 1, 0.5f, red), .. ClipQuad(0, -1, 1, 1, 0.5f, red, clockwise: true)];
+        foreach (var (cull, expected) in new[] { (CullMode.Back, new RectI(0, 0, 8, 8)), (CullMode.Front, new RectI(8, 0, 8, 8)), (CullMode.None, new RectI(0, 0, 16, 8)) })
+        {
+            using var pipeline = Device.CreatePipeline(new PipelineDescription(vertex, fragment, MeshVertex.Layout, BlendState.Opaque,
+                DepthState.None, new RasterState(cull, FrontFace.CounterClockwise), TextureFormat.Rgba8Unorm, null));
+            var target = Target(16, 8);
+            DrawMesh(target, pipeline, mesh, Matrix4x4.Identity, clearDepth: null);
+            Assert.AreEqual(expected, Read(target).BoundsOf(0xFF0000FFu), $"CullMode.{cull}");
+        }
+    }
+
+    [TestMethod]
+    public void Conventions_SystemNumericsMatricesUploadedAsIs_PlaceVerticesAtTheirCpuProjection()
+    {
+        // Written convention: System.Numerics right-handed CreateLookAt and CreatePerspectiveFieldOfView, uploaded as-is
+        // (mul(M, v) in HLSL), NDC y up, row 0 at the top. A small quad around a world point lands on the pixel the
+        // same matrices give on the CPU, and world +X is to the right, +Y up.
+        if (!RequireShaders()) return;
+        using var vertex = Device.CreateShader(ShaderFiles.Load("mesh.vert", ShaderFiles.For(Caps)));
+        using var fragment = Device.CreateShader(ShaderFiles.Load("color.frag", ShaderFiles.For(Caps)));
+        using var pipeline = Device.CreatePipeline(new PipelineDescription(vertex, fragment, MeshVertex.Layout, BlendState.Opaque,
+            DepthState.None, new RasterState(), TextureFormat.Rgba8Unorm, null));
+        const int W = 64, H = 48;
+        var view = Matrix4x4.CreateLookAt(new Vector3(0, 0, 5), Vector3.Zero, Vector3.UnitY);
+        var projection = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 3, (float)W / H, 0.1f, 100);
+        var viewProjection = view * projection;
+        var target = Target(W, H);
+        var marker = new Vector3(1.2f, 0.8f, -1); // right of and above the centre, behind the origin
+        const float r = 0.08f;
+        var green = new Vector4(0, 1, 0, 1);
+        MeshVertex[] mesh =
+        [
+            new(marker + new Vector3(-r, -r, 0), green), new(marker + new Vector3(r, -r, 0), green), new(marker + new Vector3(r, r, 0), green),
+            new(marker + new Vector3(-r, -r, 0), green), new(marker + new Vector3(r, r, 0), green), new(marker + new Vector3(-r, r, 0), green),
+        ];
+        DrawMesh(target, pipeline, mesh, viewProjection, clearDepth: null);
+        var clip = Vector4.Transform(new Vector4(marker, 1), viewProjection);
+        var pixel = new Vector2((clip.X / clip.W + 1) / 2 * W, (1 - clip.Y / clip.W) / 2 * H);
+        var image = Read(target);
+        Assert.AreEqual(0x00FF00FFu, image[(int)pixel.X, (int)pixel.Y], $"marker at its CPU projection {pixel}");
+        var bounds = image.BoundsOf(0x00FF00FFu);
+        Assert.IsTrue(bounds.X > W / 2 && bounds.Bottom <= H / 2, $"world +X is right and +Y is up: marker drawn at {bounds}");
+    }
+
+    [TestMethod]
+    public void Uniforms_PersistForTheRestOfTheList_AcrossBuiltInDraws()
+    {
+        // A custom pipeline's vertex uniform slot 0 is set once; a built-in draw in between (whose own projection a
+        // tier-1 device pushes into the same slot) must not change what the next custom draw sees.
+        if (!RequireShaders()) return;
+        using var vertex = Device.CreateShader(ShaderFiles.Load("mesh.vert", ShaderFiles.For(Caps)));
+        using var fragment = Device.CreateShader(ShaderFiles.Load("color.frag", ShaderFiles.For(Caps)));
+        using var custom = Device.CreatePipeline(new PipelineDescription(vertex, fragment, MeshVertex.Layout, BlendState.Opaque,
+            DepthState.None, new RasterState(), TextureFormat.Rgba8Unorm, null));
+        var target = Target(16, 16);
+        MeshVertex[] mesh = [.. ClipQuad(-1, 0, 0, 1, 0.5f, new Vector4(1, 0, 0, 1)), .. ClipQuad(0, -1, 1, 0, 0.5f, new Vector4(0, 1, 0, 1))];
+        using var meshBuffer = Device.CreateBuffer(new BufferDescription(mesh.Length * 28, BufferUsage.Vertex));
+        var white = Device.CreateTexture(new TextureDescription(1, 1), Texels.Bytes(0xFFFFFFFF));
+        var vertices = Device.CreateBuffer(new BufferDescription(4 * Vertex2D.SizeInBytes, BufferUsage.Vertex));
+        var indices = Device.CreateBuffer(new BufferDescription(12, BufferUsage.Index));
+        var list = Device.BeginCommands();
+        list.UpdateBuffer<MeshVertex>(meshBuffer, 0, mesh);
+        list.UpdateBuffer<Vertex2D>(vertices, 0, QuadVertices(12, 0, 4, 4, new ColorF(0, 0, 1, 1)));
+        list.UpdateBuffer<ushort>(indices, 0, [0, 1, 2, 0, 2, 3]);
+        list.BeginPass(new PassDescription(new ColorAttachment(target, LoadOp.Clear, Clear: Opaque(0, 0, 0))));
+        list.SetPipeline(custom);
+        list.SetVertices(meshBuffer);
+        list.SetUniforms(ShaderStage.Vertex, 0, Matrix4x4.Identity);
+        list.Draw(6, 0);                     // top-left quadrant, red
+        BindBuiltIn(list, target, white, vertices, indices);
+        list.DrawIndexed(6);                 // a built-in draw in between (blue, top-right corner)
+        list.SetPipeline(custom);
+        list.SetVertices(meshBuffer);
+        list.Draw(6, 6);                     // bottom-right quadrant, green: still the identity set above
+        list.EndPass();
+        Device.Submit(list);
+        var image = Read(target);
+        Assert.AreEqual(new RectI(0, 0, 8, 8), image.BoundsOf(0xFF0000FFu));
+        Assert.AreEqual(new RectI(12, 0, 4, 4), image.BoundsOf(0x0000FFFFu));
+        Assert.AreEqual(new RectI(8, 8, 8, 8), image.BoundsOf(0x00FF00FFu), "the caller's uniform data survived the built-in draw");
+    }
+
+    [TestMethod]
+    public void Shaders_InAnUndeclaredFormat_FailWithTheTypedErrorNamingTheFormat()
+    {
+        if (!RequireShaders()) return;
+        var undeclared = new[] { ShaderFormat.SpirV, ShaderFormat.Dxil, ShaderFormat.Msl }.Where(f => (Caps.ShaderFormats & f) == 0).ToArray();
+        if (undeclared.Length == 0) Assert.Inconclusive($"this device declares every shader format ({Caps.ShaderFormats})");
+        var e = Assert.ThrowsExactly<GraphicsCapabilityException>(() => Device.CreateShader(new ShaderDescription(ShaderStage.Fragment, undeclared[0], new byte[] { 1, 2, 3, 4 }, "main", default)));
+        Assert.AreEqual(GraphicsFeatures.None, e.Missing);
+        Assert.Contains(undeclared[0].ToString(), e.Requirement!);
     }
 
     [TestMethod]
@@ -720,6 +884,38 @@ public abstract class DeviceConformance
         list.DrawIndexed(6, instances: 2);
         list.EndPass();
         Device.Submit(list);
+    }
+
+    /// <summary>True on a device with custom shaders; otherwise asserts the typed error a shader request gets and returns false.</summary>
+    private bool RequireShaders()
+    {
+        if (Caps.Has(GraphicsFeatures.Shaders)) return true;
+        var e = Assert.ThrowsExactly<GraphicsCapabilityException>(() => Device.CreateShader(ShaderFiles.Load("mesh.vert", ShaderFormat.SpirV)));
+        Assert.AreEqual(GraphicsFeatures.Shaders, e.Missing);
+        return false;
+    }
+
+    /// <summary>One pass: clear colour to black (and depth to <paramref name="clearDepth"/> when not null), one non-indexed draw of <paramref name="mesh"/>.</summary>
+    private void DrawMesh(RenderTarget target, Pipeline pipeline, MeshVertex[] mesh, Matrix4x4 worldViewProjection, float? clearDepth)
+    {
+        using var buffer = Device.CreateBuffer(new BufferDescription(mesh.Length * 28, BufferUsage.Vertex));
+        var list = Device.BeginCommands();
+        list.UpdateBuffer<MeshVertex>(buffer, 0, mesh);
+        var color = new ColorAttachment(target, LoadOp.Clear, Clear: Opaque(0, 0, 0));
+        list.BeginPass(clearDepth is { } d ? new PassDescription(color, new DepthAttachment(target, LoadOp.Clear, StoreOp.DontCare, d)) : new PassDescription(color));
+        list.SetPipeline(pipeline);
+        list.SetVertices(buffer);
+        list.SetUniforms(ShaderStage.Vertex, 0, worldViewProjection);
+        list.Draw(mesh.Length);
+        list.EndPass();
+        Device.Submit(list);
+    }
+
+    /// <summary>Two triangles covering clip x0..x1, y0..y1 at depth z, counter-clockwise in NDC (y up) unless <paramref name="clockwise"/>.</summary>
+    private static MeshVertex[] ClipQuad(float x0, float y0, float x1, float y1, float z, Vector4 color, bool clockwise = false)
+    {
+        MeshVertex a = new(new(x0, y0, z), color), b = new(new(x1, y0, z), color), c = new(new(x1, y1, z), color), d = new(new(x0, y1, z), color);
+        return clockwise ? [a, c, b, a, d, c] : [a, b, c, a, c, d];
     }
 
     private TextureFormat? FirstDepthFormat()
