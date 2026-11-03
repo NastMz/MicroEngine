@@ -98,6 +98,27 @@ public abstract class SdlGpuConformance(string? api) : DeviceConformance
 [TestCategory("Gpu")]
 public sealed class SdlGpuDefaultDeviceConformance() : SdlGpuConformance(null);
 
+/// <summary>An offscreen SDL_GPU device in a process where nothing else started SDL (no window, no video subsystem).</summary>
+[TestClass]
+[TestCategory("Native")]
+[TestCategory("Gpu")]
+public sealed class SdlGpuOffscreenTests
+{
+    [TestMethod]
+    public void Offscreen_WithoutAnySdlWindow_StartsRendersAndReadsBack()
+    {
+        var factory = new SdlGpuBackendFactory();
+        if (factory.UnsupportedReason(null) is { } reason) Native.Require(false, $"SDL_GPU cannot start here: {reason}");
+        using var device = factory.Create(null, new GraphicsDeviceOptions());
+        using var painter = new Painter(device);
+        var target = device.CreateRenderTarget(new RenderTargetDescription(4, 4));
+        painter.Paint(target, [], clear: PremultipliedColor.FromBytes(32, 64, 96, 255));
+        var request = device.ReadPixels(target, target.Bounds);
+        request.Wait();
+        CollectionAssert.AreEqual(new byte[] { 32, 64, 96, 255 }, request.Pixels[..4].ToArray());
+    }
+}
+
 [TestClass]
 [TestCategory("Native")]
 [TestCategory("Gpu")]

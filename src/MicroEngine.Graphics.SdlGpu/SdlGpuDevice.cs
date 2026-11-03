@@ -18,10 +18,14 @@ public sealed unsafe class SdlGpuBackendFactory : IGraphicsBackendFactory
     public string? UnsupportedReason(ISurface? surface)
     {
         // The same properties as creation: SDL's default would require hardware acceleration and refuse lavapipe.
+        // SDL_GPU's drivers load through the video subsystem (the Vulkan loader, the Metal layer): hold it for the check.
+        if (!SDL_InitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO)) return $"SDL cannot start its video subsystem here: {SDL_GetError()}";
         var props = SdlGpuDevice.CreationProperties(new GraphicsDeviceOptions());
         bool supported = SDL_GPUSupportsProperties(props);
+        string error = supported ? "" : SDL_GetError() ?? "";
         SDL_DestroyProperties(props);
-        if (!supported) return $"no SDL_GPU driver for DXIL, SPIR-V or MSL on this system ({SDL_GetError()})";
+        SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
+        if (!supported) return $"no SDL_GPU driver for DXIL, SPIR-V or MSL on this system ({error})";
         return surface is not null && surface.NativeWindow == 0 ? "SDL_GPU presents only to an SDL window surface (or renders offscreen without one)" : null;
     }
 
@@ -102,13 +106,21 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
         ArgumentNullException.ThrowIfNull(options);
         if (surface is not null && surface.NativeWindow == 0) throw new ArgumentException("SDL_GPU presents only to an SDL window surface", nameof(surface));
         _surface = surface;
+        // SDL_GPU's drivers load through the video subsystem (also offscreen); the device holds it for its lifetime
+        // (SDL counts InitSubSystem/QuitSubSystem pairs, so a host that started it keeps it).
+        if (!SDL_InitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO)) throw new InvalidOperationException($"SDL cannot start its video subsystem: {SDL_GetError()}");
         // SDL's driver hint wins over the name property: set both for the duration of the call, then check what SDL chose.
         if (options.Api is not null) SDL_SetHint(SDL_HINT_GPU_DRIVER, options.Api);
         var props = CreationProperties(options);
         _device = SDL_CreateGPUDeviceWithProperties(props);
         SDL_DestroyProperties(props);
         if (options.Api is not null) SDL_ResetHint(SDL_HINT_GPU_DRIVER);
-        if (_device == null) throw new InvalidOperationException($"SDL_CreateGPUDevice({options.Api ?? "default"}): {SDL_GetError()}");
+        if (_device == null)
+        {
+            var error = SDL_GetError();
+            SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
+            throw new InvalidOperationException($"SDL_CreateGPUDevice({options.Api ?? "default"}): {error}");
+        }
 
         try
         {
@@ -167,6 +179,7 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
         {
             if (_window != null) SDL_ReleaseWindowFromGPUDevice(_device, _window);
             SDL_DestroyGPUDevice(_device);
+            SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
             throw;
         }
     }
@@ -481,6 +494,7 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
         if (_backBuffer != null) SDL_ReleaseGPUTexture(_device, _backBuffer);
         if (_window != null) SDL_ReleaseWindowFromGPUDevice(_device, _window);
         SDL_DestroyGPUDevice(_device);
+        SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
     }
 
     private SDL_GPUCommandBuffer* Acquire()
