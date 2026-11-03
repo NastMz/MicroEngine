@@ -48,12 +48,22 @@ function check(name, ok, detail = '') {
 async function launch(name) {
   const executablePath = executables[name].find(p => p && fs.existsSync(p));
   if (!executablePath) throw new Error(`${name} not found; set ${name.toUpperCase()}_PATH.`);
-  return puppeteer.launch(name === 'chrome'
+  const options = name === 'chrome'
     ? { browser: 'chrome', executablePath, headless: true, args: ['--no-first-run', '--autoplay-policy=user-gesture-required'] }
     // Without a GPU (CI runners), Firefox only offers WebGL when told to accept software rendering, and on Linux only
     // with a display: CI runs the checks under xvfb-run with HEADED=1.
     : { browser: 'firefox', executablePath, headless: process.env.HEADED !== '1',
-        extraPrefsFirefox: { 'webgl.force-enabled': true, 'webgl.disable-fail-if-major-performance-caveat': true } });
+        extraPrefsFirefox: { 'webgl.force-enabled': true, 'webgl.disable-fail-if-major-performance-caveat': true } };
+  // Starting a browser on a busy CI runner occasionally misses puppeteer's default 30 s for the browser to print its
+  // endpoint ("Timed out after 30000 ms while waiting for the WS endpoint URL", docs/ci.md "Troubleshooting"), before
+  // any check has run. The launch alone, never a check, gets a longer timeout and one retry; the retry prints the
+  // browser's own output, so a real failure says why. Same policy as web/tests/run.mjs.
+  try {
+    return await puppeteer.launch({ ...options, timeout: 90_000 });
+  } catch (e) {
+    console.log(`note ${name} did not start (${e.message.split('\n')[0]}); retrying once with its output shown`);
+    return puppeteer.launch({ ...options, timeout: 90_000, dumpio: true });
+  }
 }
 
 async function openPage(browser, label, url, viewport) {
