@@ -20,11 +20,6 @@ The default [ILog](MicroEngine.Kernel.ILog.md): each message at or above [Minimu
 <code>category: message</code> on `Error` (read when the message is written, so a redirected stream
 receives it) or on the writer it was given.
 
- [Engine](MicroEngine.Kernel.Engine.md)
-
-A composed engine: its services, its fixed frame schedule, its clock, its events and its capabilities. A loop (the
-game runner, a host, a test) drives it frame by frame: it advances [Clock](MicroEngine.Kernel.Engine.md#MicroEngine_Kernel_Engine_Clock) and runs the phases in order.
-
  [EngineBuilder](MicroEngine.Kernel.EngineBuilder.md)
 
 Composes an [Engine](MicroEngine.Kernel.Engine.md): modules are added in order, each registering services, frame systems and
@@ -35,6 +30,11 @@ Nothing is discovered by reflection.
 
 The engine's [IEngineLifecycle](MicroEngine.Kernel.IEngineLifecycle.md): subscribers read it through the interface; the loop and hosts raise
 the events through the <code>Raise</code> methods.
+
+ [Engine](MicroEngine.Kernel.Engine.md)
+
+A composed engine: its services, its fixed frame schedule, its clock, its events and its capabilities. A loop (the
+game runner, a host, a test) drives it frame by frame: it advances [Clock](MicroEngine.Kernel.Engine.md#MicroEngine_Kernel_Engine_Clock) and runs the phases in order.
 
  [FrameClock](MicroEngine.Kernel.FrameClock.md)
 

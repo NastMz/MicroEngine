@@ -8,12 +8,6 @@ Guide: [Game lifecycle and time](../manual/lifecycle.md)
 
 ### Classes
 
- [Achievement](MicroEngine.Core.Achievement.md)
-
-One entry of a game's achievement catalog. [Id](MicroEngine.Core.Achievement.md#MicroEngine_Core_Achievement_Id) is the stable key stored in saves, so
-names and descriptions can change freely. [Goal](MicroEngine.Core.Achievement.md#MicroEngine_Core_Achievement_Goal) of 1 is an immediate achievement;
-larger goals are progressive ("win 10 battles").
-
  [AchievementRecord](MicroEngine.Core.AchievementRecord.md)
 
 The saved state of one achievement.
@@ -28,6 +22,12 @@ Owns a game's achievements: the catalog, progress, unlocking and persistence. Ga
 something happened and report it with [Unlock](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_Unlock_System_String_), [AddProgress](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_AddProgress_System_String_System_Int32_) or
 [SetProgress](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_SetProgress_System_String_System_Int32_); the tracker guarantees that an achievement unlocks (and raises
 [Unlocked](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_Unlocked)) exactly once, across sessions.
+
+ [Achievement](MicroEngine.Core.Achievement.md)
+
+One entry of a game's achievement catalog. [Id](MicroEngine.Core.Achievement.md#MicroEngine_Core_Achievement_Id) is the stable key stored in saves, so
+names and descriptions can change freely. [Goal](MicroEngine.Core.Achievement.md#MicroEngine_Core_Achievement_Goal) of 1 is an immediate achievement;
+larger goals are progressive ("win 10 battles").
 
  [AppIdentity](MicroEngine.Core.AppIdentity.md)
 
@@ -82,11 +82,6 @@ adds no allocations to the frames it measures; a run without a profiler does not
 What a profiled run looked like. [MotionError](MicroEngine.Core.FrameSummary.md#MicroEngine_Core_FrameSummary_MotionError) is the measure of uneven motion: for every frame, how far
 the game time it advanced differs from the wall time that passed, so a frame that repeats the previous picture or
 jumps two steps counts even when every frame took the same time.
-
- [Game](MicroEngine.Core.Game.md)
-
-Base class for a game. Subclasses declare [Settings](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Settings), build content in
-[Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) and push the first scene. The runner owns the loop.
 
  [GameHost](MicroEngine.Core.GameHost.md)
 
@@ -162,6 +157,11 @@ host can show its own screen and start again without reloading.
 Window/backbuffer settings a game declares. The virtual size is the canvas everything is drawn on: 320×180 pixel art
 by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with [Smooth](MicroEngine.Graphics.CanvasScaling.md).
 
+ [Game](MicroEngine.Core.Game.md)
+
+Base class for a game. Subclasses declare [Settings](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Settings), build content in
+[Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) and push the first scene. The runner owns the loop.
+
  [GraphicsSettings](MicroEngine.Core.GraphicsSettings.md)
 
 The graphics options a game starts with ([Graphics](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Graphics)). Every option has a sensible automatic
@@ -176,14 +176,14 @@ are independent: VSync waits for the display, the limit caps frames per second, 
 A graphics device for tests: textures keep their size and filter but hold no pixels (unless [KeepsPixels](MicroEngine.Core.HeadlessGraphicsDevice.md#MicroEngine_Core_HeadlessGraphicsDevice_KeepsPixels));
 creations, uploads and live textures are counted.
 
- [HeadlessInput](MicroEngine.Core.HeadlessInput.md)
-
-Keys, a gamepad and a pointer that tests set by hand.
-
  [HeadlessInputBackend](MicroEngine.Core.HeadlessInputBackend.md)
 
 An input backend tests drive by hand: device events sent with [Send](MicroEngine.Core.HeadlessInputBackend.md#MicroEngine_Core_HeadlessInputBackend_Send_MicroEngine_Input_InputEvent_) are delivered at the next drain, in
 order; key labels can be set as a keyboard layout would print them; rumbles and text-input switches are recorded.
+
+ [HeadlessInput](MicroEngine.Core.HeadlessInput.md)
+
+Keys, a gamepad and a pointer that tests set by hand.
 
  [HeadlessPlatform](MicroEngine.Core.HeadlessPlatform.md)
 
@@ -343,17 +343,17 @@ What a platform can change about its window and presentation while the game runs
 A capability ([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)): platforms without a window (headless) or whose host
 owns these choices (browsers, phones) do not offer it, or report that a change did not apply.
 
- [IPlatform](MicroEngine.Core.IPlatform.md)
-
-Everything a backend provides: the host ([IPlatformHost](MicroEngine.Platform.IPlatformHost.md): clock, events, main surface, capabilities,
-whether it may block) plus, until the graphics, input and audio contracts are split from it, the renderer that draws
-into the virtual canvas and the graphics, input and audio devices.
-
  [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md)
 
 Facts a platform can report about itself for logs and profiles: the graphics API in use, VSync, the graphics adapter
 when the backend can name it. Keys are short lower-case words; values are free text. A capability
 ([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)).
+
+ [IPlatform](MicroEngine.Core.IPlatform.md)
+
+Everything a backend provides: the host ([IPlatformHost](MicroEngine.Platform.IPlatformHost.md): clock, events, main surface, capabilities,
+whether it may block) plus, until the graphics, input and audio contracts are split from it, the renderer that draws
+into the virtual canvas and the graphics, input and audio devices.
 
  [ISaveStorage](MicroEngine.Core.ISaveStorage.md)
 
