@@ -1,4 +1,5 @@
 using System.Collections;
+using MicroEngine.Kernel;
 
 namespace MicroEngine.Scenes;
 
@@ -23,7 +24,7 @@ public sealed record WaitUntil(Func<bool> Condition);
 /// <see cref="Wait.Seconds"/>, <see cref="Wait.Until"/> or another IEnumerator (awaited as a sub-routine).
 /// Ideal for cutscenes, dialogue flow and timed effects without hand-written state machines.
 /// </summary>
-public sealed class CoroutineRunner
+public sealed class CoroutineRunner : IStateHashed
 {
     private sealed class Routine(IEnumerator root)
     {
@@ -88,6 +89,24 @@ public sealed class CoroutineRunner
         }
         _routines.RemoveAll(r => r.Cancelled || r.Stack.Count == 0);
     }
+
+    /// <summary>
+    /// Adds the runner's state to the per-step state hash: for each coroutine, running or waiting to start, its nesting
+    /// depth, the seconds left to wait and whether it waits for a condition. The iterators' own variables are not visible
+    /// to it; a scene adds the state its coroutines change from its own <see cref="Scene.HashState"/>.
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(Count);
+        foreach (var r in _routines)
+        {
+            if (r.Cancelled) continue;
+            hash.Add(r.Stack.Count);
+            hash.Add(r.Wait);
+            hash.Add(r.Until is not null);
+        }
+        foreach (var r in _added) hash.Add(r.Stack.Count);
+    }
 }
 
 /// <summary>Controls a coroutine started with <see cref="CoroutineRunner.Start"/>.</summary>
@@ -100,7 +119,7 @@ public sealed class CoroutineHandle(Action cancel, Func<bool> finished)
 }
 
 /// <summary>Simple value tweens driven by update time.</summary>
-public sealed class Tweener
+public sealed class Tweener : IStateHashed
 {
     private sealed class Tween
     {
@@ -143,4 +162,16 @@ public sealed class Tweener
 
     /// <summary>Removes every tween without applying its final value or calling its <c>done</c> callback.</summary>
     public void Clear() => _tweens.Clear();
+
+    /// <summary>Adds the tweens' state to the per-step state hash: for each tween, its duration, time played and delay left.</summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(_tweens.Count);
+        foreach (var t in _tweens)
+        {
+            hash.Add(t.Duration);
+            hash.Add(t.Time);
+            hash.Add(t.Delay);
+        }
+    }
 }
