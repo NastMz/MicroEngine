@@ -6,6 +6,7 @@ using CourtyardKey.World;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 
@@ -60,6 +61,17 @@ public sealed class TitleScene : Scene
         bool hasSave = _game.Saves.HasSave;
         _menu.SetEnabled(1, hasSave);
         _menu.Index = hasSave ? 1 : 0;
+    }
+
+    /// <summary>
+    /// State hash: the menu cursor, whether the controls panel shows, and the mote spawn timer (each spawn draws from
+    /// the game's generator). The motes themselves and the control rows' text are drawing state.
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_menu.Index);
+        hash.Add(_showControls);
+        hash.Add(_spawn);
     }
 
     public override void Update(float dt)

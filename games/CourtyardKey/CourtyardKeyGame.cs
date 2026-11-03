@@ -5,6 +5,7 @@ using CourtyardKey.Scenes;
 using CourtyardKey.Visuals;
 using MicroEngine.Core;
 using MicroEngine.Input;
+using MicroEngine.Kernel;
 
 namespace CourtyardKey;
 
@@ -71,6 +72,12 @@ public sealed class CourtyardKeyGame : Game
     }
 
     protected override void Unload() => Art?.Dispose();
+
+    /// <summary>
+    /// State hash: nothing of its own. The adventure's state (progress, room, hero, actors) belongs to the play scene and
+    /// is hashed there; this class only holds the debug start (fixed), the save store (a platform location) and the art.
+    /// </summary>
+    public override void HashState(StateHasher hash) { }
 }
 
 /// <summary>Named checkpoints for captures and debugging (COURTYARD_START environment variable).</summary>
