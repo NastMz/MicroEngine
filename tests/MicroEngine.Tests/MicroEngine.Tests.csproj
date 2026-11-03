@@ -11,9 +11,10 @@
   <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine/MicroEngine.csproj" />
   </ItemGroup>
-  <!-- The simulation-determinism helper shared with the games' test projects. -->
+  <!-- The simulation-determinism helper and the allocation check shared with the games' test projects. -->
   <ItemGroup>
     <Compile Include="../Shared/StateTraceRuns.cs" Link="Shared/StateTraceRuns.cs" />
+    <Compile Include="../Shared/AllocationAssert.cs" Link="Shared/AllocationAssert.cs" />
   </ItemGroup>
   <!-- Real asset files for the asset pipeline tests: the AssetGallery sample's fonts and atlases, not copies. -->
   <ItemGroup>

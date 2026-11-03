@@ -36,6 +36,12 @@ public sealed record ActionNames
     public string Action { get; init; } = "action";
     /// <summary>Pauses ("pause").</summary>
     public string Pause { get; init; } = "pause";
+    /// <summary>
+    /// Switches between a window and full screen ("fullscreen"), handled by the engine itself where the platform can
+    /// change its window; F11 and Alt+Enter by default (<see cref="InputMap.BindFullscreenDefaults"/>). Unbind it to free
+    /// those keys, rebind it to move the toggle.
+    /// </summary>
+    public string Fullscreen { get; init; } = "fullscreen";
 }
 
 /// <summary>
@@ -54,6 +60,8 @@ public sealed class ActionBindingData
     public string Stick { get; set; } = "None";
     /// <summary>Axes as "RightTrigger+" or "LeftX-".</summary>
     public List<string> Axes { get; set; } = [];
+    /// <summary>Key combinations as "LeftAlt|RightAlt+Enter": the modifiers (any one of them), then the key.</summary>
+    public List<string> Chords { get; set; } = [];
 }
 
 /// <summary>
@@ -85,6 +93,7 @@ public sealed class InputBindingSet
                 Strings(w, "buttons", a.Buttons);
                 w.WriteString("stick", a.Stick);
                 Strings(w, "axes", a.Axes);
+                Strings(w, "chords", a.Chords);
                 w.WriteEndObject();
             }
             w.WriteEndArray();
@@ -117,6 +126,7 @@ public sealed class InputBindingSet
                     Buttons = Strings(a, "buttons"),
                     Stick = a.TryGetProperty("stick", out var stick) ? stick.GetString() ?? "None" : "None",
                     Axes = Strings(a, "axes"),
+                    Chords = Strings(a, "chords"),
                 });
             return set;
         }
@@ -149,6 +159,7 @@ public sealed partial class InputMap
                 Buttons = [.. b.Buttons.Select(k => k.ToString())],
                 Stick = b.Stick.ToString(),
                 Axes = [.. b.Axes.Select(a => a.Axis + (a.Positive ? "+" : "-"))],
+                Chords = [.. b.Chords.Select(c => string.Join('|', c.Modifiers) + "+" + c.Key)],
             });
         }
         return set;
@@ -174,6 +185,13 @@ public sealed partial class InputMap
             foreach (var a in data.Axes)
                 if (a.Length > 1 && a[^1] is '+' or '-' && Enum.TryParse<PadAxis>(a[..^1], out var axis) && Enum.IsDefined(axis))
                     b.Axes.Add((axis, a[^1] == '+'));
+            foreach (var c in data.Chords)
+            {
+                int plus = c.LastIndexOf('+');
+                if (plus <= 0 || !Enum.TryParse<Key>(c[(plus + 1)..], out var key) || !Enum.IsDefined(key)) continue;
+                var modifiers = c[..plus].Split('|').Select(m => Enum.TryParse<Key>(m, out var k) && Enum.IsDefined(k) ? k : Key.None).Where(k => k != Key.None).ToArray();
+                if (modifiers.Length > 0) b.Chords.Add(new KeyChord(key, modifiers));
+            }
             _bindings[data.Action] = b;
             replaced++;
         }

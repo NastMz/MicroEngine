@@ -2,6 +2,7 @@ using System.Numerics;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
 using MicroEngine.Scenes;
+using MicroEngine.Testing;
 
 namespace MicroEngine.Tests;
 
@@ -46,16 +47,7 @@ public sealed class AssetCacheTests
         assets.Atlas("atlases/players.xml");
         assets.Font("fonts/Inter-Regular.ttf");
         var scope = assets.CreateScope();
-        for (int i = 0; i < 100; i++) Lookups(scope, assets);
-        // Steady garbage repeats in every round; the runtime's one-off work (tiered compilation) lands in one at most.
-        var rounds = new List<long>();
-        for (int round = 0; round < 3; round++)
-        {
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            for (int i = 0; i < 1000; i++) Lookups(scope, assets);
-            rounds.Add(GC.GetAllocatedBytesForCurrentThread() - before);
-        }
-        Assert.AreEqual(0, rounds.Min(), $"games may ask for assets in Draw, every frame (rounds: {string.Join(", ", rounds)})");
+        AllocationAssert.None(() => Lookups(scope, assets), warmup: 100, calls: 1000, because: "games may ask for assets in Draw, every frame");
 
         static void Lookups(AssetCache scope, AssetCache root)
         {

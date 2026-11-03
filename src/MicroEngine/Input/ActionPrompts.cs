@@ -176,6 +176,9 @@ public sealed class ActionPrompts
             default:
                 foreach (var k in bindings?.Keys ?? [])
                     list.Add(new ActionPrompt(action, InputDevice.Keyboard, PromptKind.Key, KeyText(k)) { Key = k });
+                // A chord shows its first modifier and its key: "Alt+Enter".
+                foreach (var c in bindings?.Chords ?? [])
+                    list.Add(new ActionPrompt(action, InputDevice.Keyboard, PromptKind.Key, $"{KeyText(c.Modifiers[0])}+{KeyText(c.Key)}") { Key = c.Key });
                 break;
         }
         return list;

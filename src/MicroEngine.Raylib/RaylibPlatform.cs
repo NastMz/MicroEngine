@@ -246,12 +246,9 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         if (!focused && _focused) _input.ReleaseAll(Now);
         if (focused != _focused) sink.FocusChanged(_focused = focused);
         _surface.Pump(sink);
-        // In a browser, fullscreen needs a user gesture, so the page handles it (F11 belongs to the browser).
         if (OperatingSystem.IsBrowser()) return !_suspended;
         // A window moved to another monitor is paced to that monitor's rate (checked twice a second: the query walks the monitors).
         if (_desktop && _frames % 30 == 0 && Rl.GetCurrentMonitor() != _monitor) Pace();
-        if (Rl.IsKeyPressed(Raylib_cs.KeyboardKey.F11) || (Rl.IsKeyDown(Raylib_cs.KeyboardKey.LeftAlt) && Rl.IsKeyPressed(Raylib_cs.KeyboardKey.Enter)))
-            ToggleFullscreen();
         return !_suspended;
     }
 

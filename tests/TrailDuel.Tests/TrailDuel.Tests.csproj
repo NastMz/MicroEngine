@@ -10,6 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../Shared/StateTraceRuns.cs" Link="Shared/StateTraceRuns.cs" />
+    <Compile Include="../Shared/AllocationAssert.cs" Link="Shared/AllocationAssert.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../games/TrailDuel/TrailDuel.csproj" />
