@@ -166,6 +166,9 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         _capabilities.Add<IDisplayControl>(this);
         _capabilities.Add<IDisplayPacing>(this);
         _capabilities.Add<ITouchScreen>(_touch);
+        _capabilities.Add<IInputBackend>(_input);
+        _capabilities.Add<IGamepadRumble>(_input);
+        _capabilities.Add<ITextInputControl>(_input);
         if (CanBlock) _capabilities.Add<IPreciseDelay>(this);
     }
 
@@ -179,7 +182,10 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     public DeviceCanvas Canvas => _canvas;
     /// <inheritdoc/>
     public IAudioDevice Audio => _audio;
-    /// <summary>raylib's keyboard, gamepad and pointer, read together with the request's extra sources.</summary>
+    /// <summary>
+    /// raylib's keyboard, gamepads and mouse as a polled source, read together with the request's extra sources. The
+    /// engine reads raylib's input as events instead (the <see cref="IInputBackend"/> capability).
+    /// </summary>
     public IInputSource Input => _combinedInput;
     /// <summary>raylib's timer (the platform is its own clock).</summary>
     public IMonotonicClock Clock => this;
@@ -220,8 +226,8 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     {
         ArgumentNullException.ThrowIfNull(sink);
         _frames++;
-        _input.CollectTaps();
         _input.Frame = FrameRect();
+        _input.Collect(Now);
         if (Suspended != _suspended)
         {
             _suspended = !_suspended;
@@ -236,6 +242,8 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
             _closeSent = close;
         }
         bool focused = Rl.IsWindowFocused();
+        // Keys held while another window takes over would never be released to the game.
+        if (!focused && _focused) _input.ReleaseAll(Now);
         if (focused != _focused) sink.FocusChanged(_focused = focused);
         _surface.Pump(sink);
         // In a browser, fullscreen needs a user gesture, so the page handles it (F11 belongs to the browser).
@@ -375,28 +383,52 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     }
 }
 
-internal sealed class RaylibInput : IInputSource
+/// <summary>
+/// raylib's input as device events (<see cref="IInputBackend"/>). raylib polls its devices once per frame, so the
+/// backend compares each frame with the one before: keys come from raylib's queue of presses (in order, so a key pressed
+/// and released within one frame is a press then a release) and its key states; text from its character queue while
+/// text input is on; the mouse and wheel from its state; gamepads 0 to 3 from their state, connecting and disconnecting
+/// with ids of their own. Also the <see cref="IGamepadRumble"/> and <see cref="ITextInputControl"/> capabilities; raylib
+/// cannot tell the keyboard layout or compose text with an input method.
+/// </summary>
+internal sealed class RaylibInput : BufferedInputBackend, IGamepadRumble, ITextInputControl
 {
-    private static readonly Dictionary<Key, Raylib_cs.KeyboardKey> Keys = BuildKeys();
-    private readonly Dictionary<Raylib_cs.KeyboardKey, int> _taps = [];
-    private readonly HashSet<Raylib_cs.KeyboardKey> _sampled = [];
+    public static readonly DeviceId Keyboard = new(1), Mouse = new(2);
+    private const int Pads = 4, PadBase = 100;
+    private static readonly (Key Key, Raylib_cs.KeyboardKey Raylib)[] Keys = BuildKeys();
+    private static readonly (PadButton Button, Raylib_cs.GamepadButton Raylib)[] Buttons =
+    [
+        (PadButton.A, Raylib_cs.GamepadButton.RightFaceDown), (PadButton.B, Raylib_cs.GamepadButton.RightFaceRight),
+        (PadButton.X, Raylib_cs.GamepadButton.RightFaceLeft), (PadButton.Y, Raylib_cs.GamepadButton.RightFaceUp),
+        (PadButton.Start, Raylib_cs.GamepadButton.MiddleRight), (PadButton.Back, Raylib_cs.GamepadButton.MiddleLeft),
+        (PadButton.Guide, Raylib_cs.GamepadButton.Middle),
+        (PadButton.LeftShoulder, Raylib_cs.GamepadButton.LeftTrigger1), (PadButton.RightShoulder, Raylib_cs.GamepadButton.RightTrigger1),
+        (PadButton.DPadUp, Raylib_cs.GamepadButton.LeftFaceUp), (PadButton.DPadDown, Raylib_cs.GamepadButton.LeftFaceDown),
+        (PadButton.DPadLeft, Raylib_cs.GamepadButton.LeftFaceLeft), (PadButton.DPadRight, Raylib_cs.GamepadButton.LeftFaceRight),
+        (PadButton.LeftStick, Raylib_cs.GamepadButton.LeftThumb), (PadButton.RightStick, Raylib_cs.GamepadButton.RightThumb),
+    ];
+    private readonly HashSet<Key> _held = [];
+    private readonly bool[] _padOn = new bool[Pads];
+    private readonly HashSet<PadButton>[] _padHeld = [[], [], [], []];
+    private readonly float[,] _axes = new float[Pads, 6];
+    private readonly bool[] _mouseHeld = new bool[3];
+    private Vector2 _mouse = new(float.NaN);
+    private bool _mouseInside, _text;
 
-    /// <summary>
-    /// raylib reports whether a key is down when the frame starts, so a key pressed and released within one
-    /// frame (a quick tap during a long frame, such as the first frames after loading) would never be seen.
-    /// Keys pressed since the last frame count as down until a simulation step has sampled them; frames with
-    /// no step (a display faster than the update rate) keep them, and unread taps expire after a few frames.
-    /// </summary>
-    public void CollectTaps()
+    public RaylibInput()
     {
-        foreach (var key in _sampled) _taps.Remove(key);
-        _sampled.Clear();
-        foreach (var key in _taps.Keys.ToList())
-            if (--_taps[key] <= 0) _taps.Remove(key);
-        for (int key; (key = Rl.GetKeyPressed()) != 0;) _taps[(Raylib_cs.KeyboardKey)key] = 8;
+        Emit(InputEvent.Added(new InputDeviceInfo(Keyboard, DeviceKind.Keyboard, "keyboard")));
+        Emit(InputEvent.Added(new InputDeviceInfo(Mouse, DeviceKind.Mouse, "mouse")));
     }
 
-    private static Dictionary<Key, Raylib_cs.KeyboardKey> BuildKeys()
+    /// <summary>Where the frame was drawn, set by the platform each frame to map the mouse onto the canvas.</summary>
+    public RectF Frame { get; set; }
+    public int CanvasWidth { get; init; } = 320;
+    public int CanvasHeight { get; init; } = 180;
+
+    public static DeviceId PadId(int pad) => new(PadBase + pad);
+
+    private static (Key, Raylib_cs.KeyboardKey)[] BuildKeys()
     {
         var map = new Dictionary<Key, Raylib_cs.KeyboardKey>
         {
@@ -404,76 +436,168 @@ internal sealed class RaylibInput : IInputSource
             [Key.Escape] = Raylib_cs.KeyboardKey.Escape, [Key.Backspace] = Raylib_cs.KeyboardKey.Backspace,
             [Key.Tab] = Raylib_cs.KeyboardKey.Tab, [Key.LeftShift] = Raylib_cs.KeyboardKey.LeftShift,
             [Key.RightShift] = Raylib_cs.KeyboardKey.RightShift, [Key.LeftControl] = Raylib_cs.KeyboardKey.LeftControl,
+            [Key.RightControl] = Raylib_cs.KeyboardKey.RightControl, [Key.LeftAlt] = Raylib_cs.KeyboardKey.LeftAlt,
+            [Key.RightAlt] = Raylib_cs.KeyboardKey.RightAlt, [Key.LeftSuper] = Raylib_cs.KeyboardKey.LeftSuper,
+            [Key.RightSuper] = Raylib_cs.KeyboardKey.RightSuper, [Key.Menu] = Raylib_cs.KeyboardKey.KeyboardMenu,
             [Key.Left] = Raylib_cs.KeyboardKey.Left, [Key.Right] = Raylib_cs.KeyboardKey.Right,
             [Key.Up] = Raylib_cs.KeyboardKey.Up, [Key.Down] = Raylib_cs.KeyboardKey.Down,
-            [Key.F1] = Raylib_cs.KeyboardKey.F1, [Key.F2] = Raylib_cs.KeyboardKey.F2, [Key.F3] = Raylib_cs.KeyboardKey.F3,
-            [Key.F4] = Raylib_cs.KeyboardKey.F4, [Key.F5] = Raylib_cs.KeyboardKey.F5,
-            [Key.F11] = Raylib_cs.KeyboardKey.F11, [Key.F12] = Raylib_cs.KeyboardKey.F12,
+            [Key.Minus] = Raylib_cs.KeyboardKey.Minus, [Key.Equals] = Raylib_cs.KeyboardKey.Equal,
+            [Key.LeftBracket] = Raylib_cs.KeyboardKey.LeftBracket, [Key.RightBracket] = Raylib_cs.KeyboardKey.RightBracket,
+            [Key.Backslash] = Raylib_cs.KeyboardKey.Backslash, [Key.Semicolon] = Raylib_cs.KeyboardKey.Semicolon,
+            [Key.Apostrophe] = Raylib_cs.KeyboardKey.Apostrophe, [Key.Grave] = Raylib_cs.KeyboardKey.Grave,
+            [Key.Comma] = Raylib_cs.KeyboardKey.Comma, [Key.Period] = Raylib_cs.KeyboardKey.Period, [Key.Slash] = Raylib_cs.KeyboardKey.Slash,
+            // GLFW's "world 1" key is the extra key of ISO keyboards.
+            [Key.NonUsBackslash] = (Raylib_cs.KeyboardKey)161,
+            [Key.CapsLock] = Raylib_cs.KeyboardKey.CapsLock, [Key.ScrollLock] = Raylib_cs.KeyboardKey.ScrollLock,
+            [Key.NumLock] = Raylib_cs.KeyboardKey.NumLock, [Key.PrintScreen] = Raylib_cs.KeyboardKey.PrintScreen,
+            [Key.Pause] = Raylib_cs.KeyboardKey.Pause, [Key.Insert] = Raylib_cs.KeyboardKey.Insert,
+            [Key.Delete] = Raylib_cs.KeyboardKey.Delete, [Key.Home] = Raylib_cs.KeyboardKey.Home, [Key.End] = Raylib_cs.KeyboardKey.End,
+            [Key.PageUp] = Raylib_cs.KeyboardKey.PageUp, [Key.PageDown] = Raylib_cs.KeyboardKey.PageDown,
+            [Key.KeypadDivide] = Raylib_cs.KeyboardKey.KpDivide, [Key.KeypadMultiply] = Raylib_cs.KeyboardKey.KpMultiply,
+            [Key.KeypadMinus] = Raylib_cs.KeyboardKey.KpSubtract, [Key.KeypadPlus] = Raylib_cs.KeyboardKey.KpAdd,
+            [Key.KeypadEnter] = Raylib_cs.KeyboardKey.KpEnter, [Key.KeypadPeriod] = Raylib_cs.KeyboardKey.KpDecimal,
+            [Key.KeypadEquals] = Raylib_cs.KeyboardKey.KpEqual,
         };
         for (int i = 0; i < 26; i++) map[Key.A + i] = Raylib_cs.KeyboardKey.A + i;
         for (int i = 0; i < 10; i++) map[Key.D0 + i] = Raylib_cs.KeyboardKey.Zero + i;
-        return map;
+        for (int i = 0; i < 10; i++) map[Key.Keypad0 + i] = Raylib_cs.KeyboardKey.Kp0 + i;
+        Key[] f1to12 = [Key.F1, Key.F2, Key.F3, Key.F4, Key.F5, Key.F6, Key.F7, Key.F8, Key.F9, Key.F10, Key.F11, Key.F12];
+        for (int i = 0; i < f1to12.Length; i++) map[f1to12[i]] = Raylib_cs.KeyboardKey.F1 + i;
+        // GLFW numbers F13-F24 right after F12.
+        for (int i = 0; i < 12; i++) map[Key.F13 + i] = (Raylib_cs.KeyboardKey)(302 + i);
+        return [.. map.Select(p => (p.Key, p.Value))];
     }
 
-    public bool IsKeyDown(Key key)
+    private static readonly Dictionary<Raylib_cs.KeyboardKey, Key> ByRaylib = Keys.ToDictionary(k => k.Raylib, k => k.Key);
+
+    /// <summary>
+    /// Reads what raylib collected at the end of the last frame and emits it as events, in this order: the keyboard
+    /// (presses in raylib's order, then releases), text, the mouse and wheel, then each gamepad. Called once per frame by
+    /// the platform's event pump.
+    /// </summary>
+    public void Collect(double now)
     {
-        if (!Keys.TryGetValue(key, out var k)) return false;
-        if (!_taps.ContainsKey(k)) return Rl.IsKeyDown(k);
-        _sampled.Add(k);
+        BeginFrame();
+        // Presses since the last frame, in order; a key already released again is pressed and released.
+        for (int code; (code = Rl.GetKeyPressed()) != 0;)
+            if (ByRaylib.TryGetValue((Raylib_cs.KeyboardKey)code, out var key))
+            {
+                // raylib queues real presses only (never repeats). A key it still reports down from an earlier press
+                // (a release it missed, as a page can while it loads) was released in between: say so, then press it.
+                if (!_held.Add(key)) Emit(InputEvent.KeyUp(Keyboard, key, now));
+                Emit(InputEvent.KeyDown(Keyboard, key, now));
+            }
+        foreach (var (key, raylib) in Keys)
+            if (_held.Contains(key) && !Rl.IsKeyDown(raylib))
+            {
+                _held.Remove(key);
+                Emit(InputEvent.KeyUp(Keyboard, key, now));
+            }
+        for (int c; (c = Rl.GetCharPressed()) != 0;)
+            if (_text && c is > 0 and <= 0x10FFFF and not (>= 0xD800 and <= 0xDFFF)) Emit(InputEvent.TextInput(Keyboard, char.ConvertFromUtf32(c), now));
+        CollectMouse(now);
+        for (int pad = 0; pad < Pads; pad++) CollectPad(pad, now);
+    }
+
+    private void CollectMouse(double now)
+    {
+        bool inside = Rl.IsCursorOnScreen();
+        var screen = Rl.GetMousePosition();
+        var at = FrameLayout.ToCanvas(screen, Frame, CanvasWidth, CanvasHeight);
+        if (inside && (at != _mouse || !_mouseInside)) Emit(InputEvent.PointerMove(Mouse, 0, PointerKind.Mouse, at, now) with { ScreenPosition = screen });
+        _mouse = at;
+        (Raylib_cs.MouseButton Raylib, PointerButton Button)[] buttons =
+            [(Raylib_cs.MouseButton.Left, PointerButton.Primary), (Raylib_cs.MouseButton.Right, PointerButton.Secondary), (Raylib_cs.MouseButton.Middle, PointerButton.Middle)];
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            var (raylib, button) = buttons[i];
+            bool pressed = Rl.IsMouseButtonPressed(raylib), down = Rl.IsMouseButtonDown(raylib);
+            if (pressed || down && !_mouseHeld[i]) Emit(InputEvent.PointerDown(Mouse, 0, PointerKind.Mouse, at, button, now) with { ScreenPosition = screen });
+            if (!down && (_mouseHeld[i] || pressed)) Emit(InputEvent.PointerUp(Mouse, 0, PointerKind.Mouse, at, button, now) with { ScreenPosition = screen });
+            _mouseHeld[i] = down;
+        }
+        var wheel = Rl.GetMouseWheelMoveV();
+        if (wheel != Vector2.Zero) Emit(InputEvent.WheelMoved(Mouse, wheel, at, now));
+        if (!inside && _mouseInside) Emit(new InputEvent { Kind = InputEventKind.PointerLeave, Device = Mouse, PointerKind = PointerKind.Mouse, Time = now });
+        _mouseInside = inside;
+    }
+
+    private void CollectPad(int pad, double now)
+    {
+        var id = PadId(pad);
+        bool on = Rl.IsGamepadAvailable(pad);
+        if (on && !_padOn[pad])
+            Emit(InputEvent.Added(new InputDeviceInfo(id, DeviceKind.Gamepad, Rl.GetGamepadName_(pad) ?? "gamepad")
+            {
+                Style = ActionPrompts.StyleFromName(Rl.GetGamepadName_(pad)),
+                PlayerIndex = pad,
+                CanRumble = OperatingSystem.IsBrowser(),
+            }, now));
+        if (!on)
+        {
+            if (_padOn[pad])
+            {
+                foreach (var release in State.HeldReleases(id, now).ToList()) Emit(release);
+                Emit(InputEvent.Removed(id, now));
+                _padHeld[pad].Clear();
+                for (int a = 0; a < 6; a++) _axes[pad, a] = 0;
+            }
+            _padOn[pad] = false;
+            return;
+        }
+        _padOn[pad] = true;
+        foreach (var (button, raylib) in Buttons)
+        {
+            bool down = Rl.IsGamepadButtonDown(pad, raylib);
+            if (down && _padHeld[pad].Add(button)) Emit(InputEvent.ButtonDown(id, button, now));
+            else if (!down && _padHeld[pad].Remove(button)) Emit(InputEvent.ButtonUp(id, button, now));
+        }
+        for (int a = 0; a < 6; a++)
+        {
+            var axis = (PadAxis)a;
+            float v = Rl.GetGamepadAxisMovement(pad, axis switch
+            {
+                PadAxis.LeftX => Raylib_cs.GamepadAxis.LeftX,
+                PadAxis.LeftY => Raylib_cs.GamepadAxis.LeftY,
+                PadAxis.RightX => Raylib_cs.GamepadAxis.RightX,
+                PadAxis.RightY => Raylib_cs.GamepadAxis.RightY,
+                PadAxis.LeftTrigger => Raylib_cs.GamepadAxis.LeftTrigger,
+                _ => Raylib_cs.GamepadAxis.RightTrigger,
+            });
+            // raylib reports triggers as -1 (released) .. 1 (pulled).
+            v = axis is PadAxis.LeftTrigger or PadAxis.RightTrigger ? (v + 1) / 2 : Math.Clamp(v, -1, 1);
+            if (v != _axes[pad, a])
+            {
+                _axes[pad, a] = v;
+                Emit(InputEvent.AxisMoved(id, axis, v, now));
+            }
+        }
+    }
+
+    /// <summary>Releases every key, mouse button and pad button held, as the window loses the focus.</summary>
+    public void ReleaseAll(double now)
+    {
+        ReleaseHeld(now);
+        _held.Clear();
+        Array.Clear(_mouseHeld);
+        foreach (var held in _padHeld) held.Clear();
+    }
+
+    /// <summary>
+    /// Passes the rumble to raylib's gamepad vibration in browsers (the Gamepad API's vibration, where the browser and
+    /// pad offer it); desktop raylib has none, so it returns false there.
+    /// </summary>
+    public bool Rumble(DeviceId pad, float low, float high, double seconds)
+    {
+        int index = pad.Value - PadBase;
+        if (!OperatingSystem.IsBrowser() || index is < 0 or >= Pads || !_padOn[index]) return false;
+        Rl.SetGamepadVibration(index, Math.Clamp(low, 0, 1), Math.Clamp(high, 0, 1), (float)Math.Max(0, seconds));
         return true;
     }
 
-    public bool IsPadDown(PadButton button)
-    {
-        if (!Rl.IsGamepadAvailable(0)) return false;
-        var b = button switch
-        {
-            PadButton.A => Raylib_cs.GamepadButton.RightFaceDown,
-            PadButton.B => Raylib_cs.GamepadButton.RightFaceRight,
-            PadButton.X => Raylib_cs.GamepadButton.RightFaceLeft,
-            PadButton.Y => Raylib_cs.GamepadButton.RightFaceUp,
-            PadButton.Start => Raylib_cs.GamepadButton.MiddleRight,
-            PadButton.Back => Raylib_cs.GamepadButton.MiddleLeft,
-            PadButton.LeftShoulder => Raylib_cs.GamepadButton.LeftTrigger1,
-            PadButton.RightShoulder => Raylib_cs.GamepadButton.RightTrigger1,
-            PadButton.DPadUp => Raylib_cs.GamepadButton.LeftFaceUp,
-            PadButton.DPadDown => Raylib_cs.GamepadButton.LeftFaceDown,
-            PadButton.DPadLeft => Raylib_cs.GamepadButton.LeftFaceLeft,
-            PadButton.DPadRight => Raylib_cs.GamepadButton.LeftFaceRight,
-            PadButton.LeftStick => Raylib_cs.GamepadButton.LeftThumb,
-            PadButton.RightStick => Raylib_cs.GamepadButton.RightThumb,
-            _ => Raylib_cs.GamepadButton.Unknown,
-        };
-        return b != Raylib_cs.GamepadButton.Unknown && Rl.IsGamepadButtonDown(0, b);
-    }
+    /// <summary>raylib has no input methods: characters arrive as typed, wherever the caret is.</summary>
+    public void Start(RectF caret) => _text = true;
 
-    public Vector2 LeftStick => new(GetPadAxis(PadAxis.LeftX), GetPadAxis(PadAxis.LeftY));
-
-    public float GetPadAxis(PadAxis axis)
-    {
-        if (!Rl.IsGamepadAvailable(0)) return 0;
-        float v = Rl.GetGamepadAxisMovement(0, axis switch
-        {
-            PadAxis.LeftX => Raylib_cs.GamepadAxis.LeftX,
-            PadAxis.LeftY => Raylib_cs.GamepadAxis.LeftY,
-            PadAxis.RightX => Raylib_cs.GamepadAxis.RightX,
-            PadAxis.RightY => Raylib_cs.GamepadAxis.RightY,
-            PadAxis.LeftTrigger => Raylib_cs.GamepadAxis.LeftTrigger,
-            _ => Raylib_cs.GamepadAxis.RightTrigger,
-        });
-        // raylib reports triggers as -1 (released) .. 1 (pulled).
-        return axis is PadAxis.LeftTrigger or PadAxis.RightTrigger ? (v + 1) / 2 : Math.Clamp(v, -1, 1);
-    }
-
-    public bool PadConnected => Rl.IsGamepadAvailable(0);
-
-    public GamepadStyle PadStyle => PadConnected ? ActionPrompts.StyleFromName(Rl.GetGamepadName_(0)) : GamepadStyle.Xbox;
-
-    /// <summary>Where the frame was drawn, set by the platform each frame to map the mouse onto the canvas.</summary>
-    public RectF Frame { get; set; }
-    public int CanvasWidth { get; init; } = 320;
-    public int CanvasHeight { get; init; } = 180;
-
-    public PointerState Pointer => new(Rl.IsCursorOnScreen(), FrameLayout.ToCanvas(Rl.GetMousePosition(), Frame, CanvasWidth, CanvasHeight),
-        Rl.IsMouseButtonDown(Raylib_cs.MouseButton.Left), Rl.IsMouseButtonDown(Raylib_cs.MouseButton.Right), Rl.IsMouseButtonDown(Raylib_cs.MouseButton.Middle));
+    /// <inheritdoc/>
+    public void Stop() => _text = false;
 }

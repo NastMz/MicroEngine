@@ -193,6 +193,31 @@ public sealed class InputDevices
         }
     }
 
+    /// <summary>
+    /// The events that would release what <paramref name="device"/> holds now: an up for every key and gamepad button
+    /// held, axes back to 0, and an up for every held pointer button (a cancel for fingers and pens). A backend sends them
+    /// when the system will not (the window lost the focus).
+    /// </summary>
+    public IEnumerable<InputEvent> HeldReleases(DeviceId device, double time = 0)
+    {
+        if (!_devices.TryGetValue(device, out var d)) yield break;
+        foreach (var key in d.Keys.Order()) yield return InputEvent.KeyUp(device, key, time);
+        foreach (var button in d.Buttons.Order()) yield return InputEvent.ButtonUp(device, button, time);
+        for (int i = 0; i < d.Axes.Length; i++)
+            if (d.Axes[i] != 0) yield return InputEvent.AxisMoved(device, (PadAxis)i, 0, time);
+        foreach (var (id, p) in d.Pointers.OrderBy(p => p.Key))
+        {
+            if (p.Kind != PointerKind.Mouse)
+            {
+                if (p.Present) yield return new InputEvent { Kind = InputEventKind.PointerCancel, Device = device, Pointer = id, PointerKind = p.Kind, Position = p.Position, Time = time };
+                continue;
+            }
+            foreach (var (flag, button) in new[] { (PointerButtons.Primary, PointerButton.Primary), (PointerButtons.Secondary, PointerButton.Secondary),
+                (PointerButtons.Middle, PointerButton.Middle), (PointerButtons.Back, PointerButton.Back), (PointerButtons.Forward, PointerButton.Forward) })
+                if ((p.Held & flag) != 0) yield return InputEvent.PointerUp(device, id, p.Kind, p.Position, button, time);
+        }
+    }
+
     /// <summary>Releases everything held on every device (the window lost focus, the game was suspended).</summary>
     public void ReleaseAll()
     {

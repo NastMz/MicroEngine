@@ -182,7 +182,8 @@ public IGraphicsDevice Graphics { get; }
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Input"></a> Input
 
-The keyboard, gamepad and pointer, read together with the request's extra sources.
+The keyboard, gamepads and mouse as a polled source, read together with the request's extra sources. The engine
+reads SDL's input as events instead (the [IInputBackend](MicroEngine.Input.IInputBackend.md) capability).
 
 ```csharp
 public IInputSource Input { get; }

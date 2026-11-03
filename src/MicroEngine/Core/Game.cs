@@ -266,7 +266,8 @@ public abstract class Game : IEngineModule, IStateHashed
             services.Add(system);
             services.Add(system.Players);
             services.Add(touch);
-            services.Add(new ActionPrompts(input, touch));
+            // Keys are named as the player's layout prints them where the platform knows the layout.
+            services.Add(new ActionPrompts(input, touch) { KeyLabels = system.KeyLabels });
             // Optional features are found by query, never by casting the platform.
             platform.TryGetCapability<ITouchScreen>(out var screen);
             if (screen is not null) screen.Overlay = touch;
