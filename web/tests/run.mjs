@@ -122,13 +122,15 @@ const probe = page => page.evaluate(() => window.microengine.trace(1)[0] ?? '');
 const recent = (page, frames) => page.evaluate(n => window.microengine.trace(n), frames);
 const mark = page => page.evaluate(() => window.microengine.traced());
 /**
- * Frames traced since a mark (browsers may draw far more than 60 frames per second); none when no frame was drawn
- * since (trace(0) would return the whole trace, frames from before the mark included).
+ * Frames traced since a mark (browsers may draw far more than 60 frames per second), read in one call inside the page.
+ * Counting with traced() and then reading trace(n) in a second call lets frames arrive in between: the window then
+ * slides past the oldest frames, which are the ones that show a short press (it is down for one frame only). None
+ * when no frame was drawn since (trace(0) would return the whole trace).
  */
-const since = async (page, from) => {
-  const count = Math.min(2000, await mark(page) - from);
-  return count > 0 ? recent(page, count) : [];
-};
+const since = (page, from) => page.evaluate(start => {
+  const count = Math.min(2000, window.microengine.traced() - start);
+  return count > 0 ? window.microengine.trace(count) : [];
+}, from);
 const actionsIn = entry => (entry.split(' ')[1] ?? '').split(',').filter(Boolean);
 const stats = async page => (await page.evaluate(() => window.microengine.stats())).split(' ').map(Number);
 const updates = async page => (await stats(page))[0];
