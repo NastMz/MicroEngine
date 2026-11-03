@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Content.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
 A content file that could not be loaded: missing, unreadable, in an unsupported format, or named with the wrong letter case.
@@ -66,7 +66,7 @@ public AssetLoadException(string assetPath, string kind, string message, Excepti
 
 ### <a id="MicroEngine_Core_AssetLoadException_AssetPath"></a> AssetPath
 
-The path the game asked for, relative to the content folder.
+The path the game asked for, relative to the content source.
 
 ```csharp
 public string AssetPath { get; }
@@ -78,7 +78,7 @@ public string AssetPath { get; }
 
 ### <a id="MicroEngine_Core_AssetLoadException_Kind"></a> Kind
 
-What the game asked for it as ("texture", "atlas", "font"...).
+What the game asked for it as ("texture", "atlas", "font", "sound"...): the loader's kind.
 
 ```csharp
 public string Kind { get; }

@@ -34,11 +34,11 @@ Its content path.
 
 `Kind` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-"texture", "atlas", "font" or "folder atlas".
+"texture", "atlas", "font", "folder atlas", or the kind of another loader ([AssetLoaderRegistry](MicroEngine.Content.AssetLoaderRegistry.md)).
 
 `Bytes` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-Device memory its textures take now (font pages grow as glyphs are drawn).
+Memory it takes now: device memory for textures (font pages grow as glyphs are drawn), samples for sounds.
 
 `LoadMilliseconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
 
@@ -52,7 +52,7 @@ Whether it was loaded after the game's first update, when a slow load shows as a
 
 ### <a id="MicroEngine_Core_AssetInfo_Bytes"></a> Bytes
 
-Device memory its textures take now (font pages grow as glyphs are drawn).
+Memory it takes now: device memory for textures (font pages grow as glyphs are drawn), samples for sounds.
 
 ```csharp
 public long Bytes { get; init; }
@@ -76,7 +76,7 @@ public bool DuringPlay { get; init; }
 
 ### <a id="MicroEngine_Core_AssetInfo_Kind"></a> Kind
 
-"texture", "atlas", "font" or "folder atlas".
+"texture", "atlas", "font", "folder atlas", or the kind of another loader ([AssetLoaderRegistry](MicroEngine.Content.AssetLoaderRegistry.md)).
 
 ```csharp
 public string Kind { get; init; }

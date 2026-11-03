@@ -20,6 +20,7 @@ flowchart TB
   core["<b> src/MicroEngine </b> <br/> Core: loop, scenes, input, graphics model, world, audio synthesis, UI, platform contract"]
   platform["<b> src/MicroEngine.Platform </b> <br/> Platform contracts: host, surface, capabilities, storage, content sources"]
   hosting["<b> src/MicroEngine.Hosting </b> <br/> Hosting: launch requests and their rules, platform selection, the composition a game configures once"]
+  content["<b> src/MicroEngine.Content </b> <br/> Content: asset store, typed handles, scopes, loader registry, zip and listed sources"]
   kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
   samples -- started by --> hosts
@@ -36,6 +37,8 @@ flowchart TB
   platform -- builds on --> kernel
   core -- builds on --> hosting
   hosting -- builds on --> platform
+  core -- builds on --> content
+  content -- builds on --> platform
 ```
 
 Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
@@ -56,6 +59,14 @@ environment, and the composition a game configures once (`HostBuilder`): a `Conf
 `Program.cs` hands to the launcher and that the browser, Android and iOS hosts call too. Content folders and save media
 are parts of that composition, never process-wide settings
 ([One composition for every platform](manual/backends.md#one-composition-for-every-platform)).
+
+Next SDK version (not published yet: arrives with the next SDK version): content is a fourth assembly of the
+`MicroEngine` package, `MicroEngine.Content`, which references only the kernel and the platform contracts. It holds
+the asset store under `Game.Assets`: typed handles (`Asset<T>`) whose generation goes stale once every scope released
+the asset, scopes that share one object and dispose it with its last holder, a loader registry with one loader per
+kind of asset (images, atlases and fonts register theirs from the core for now; sounds and music too), a reserved
+build-time import step (`IAssetImporter`), and content sources beyond folders: zip archives and files a host lists
+and opens itself ([Handles, loaders and content sources](manual/assets.md#handles-loaders-and-content-sources)).
 
 The core references no backend library. Everything platform-specific sits behind `MicroEngine.Core.IPlatform` and
 four device interfaces:
