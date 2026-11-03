@@ -79,13 +79,21 @@ public sealed class ExtendingTests
     }
 
     [TestMethod]
+    [DoNotParallelize] // redirects the console
     public void AWrappedProfileJoinsTheCatalogAndRunsTheGame()
     {
-        var profile = CountingPlatform.Wrap(HeadlessPlatform.Profile);
+        var profile = ReportingPlatform.Wrap(HeadlessPlatform.Profile);
         var catalog = new PlatformCatalog().Add(HeadlessPlatform.Profile).Add(profile);
-        Assert.AreEqual("headless-counted", profile.Name);
-        int exit = GameLauncher.Run(new ExamplesGame(), ["--platform", "headless-counted", "--frames", "30"], catalog);
+        Assert.AreEqual("headless-reported", profile.Name);
+        var output = new StringWriter();
+        var previous = Console.Out;
+        Console.SetOut(output);
+        int exit;
+        try { exit = GameLauncher.Run(new ExamplesGame(), ["--platform", "headless-reported", "--frames", "30"], catalog); }
+        finally { Console.SetOut(previous); }
         Assert.AreEqual(0, exit);
+        StringAssert.Contains(output.ToString(), "started MicroEngine.Core.HeadlessPlatform (without sound)");
+        StringAssert.Contains(output.ToString(), "done: 30 updates, 30 frames", "the original platform, its preset included");
     }
 }
 
