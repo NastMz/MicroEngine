@@ -186,6 +186,10 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _capabilities.Add<IDisplayPacing>(this);
         _capabilities.Add<IPreciseDelay>(this);
         _capabilities.Add<ITouchScreen>(_touch);
+        _capabilities.Add<IInputBackend>(_input);
+        _capabilities.Add<IKeyLabels>(_input);
+        _capabilities.Add<IGamepadRumble>(_input);
+        _capabilities.Add<ITextInputControl>(_input);
         _self = GCHandle.Alloc(this);
         SDL_AddEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
         _start = SDL_GetTicksNS();
@@ -230,7 +234,10 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     public IGraphicsDevice Graphics => _graphics;
     /// <inheritdoc/>
     public IAudioDevice Audio => _audio;
-    /// <summary>The keyboard, gamepad and pointer, read together with the request's extra sources.</summary>
+    /// <summary>
+    /// The keyboard, gamepads and mouse as a polled source, read together with the request's extra sources. The engine
+    /// reads SDL's input as events instead (the <see cref="IInputBackend"/> capability).
+    /// </summary>
     public IInputSource Input => _combinedInput;
     /// <summary>SDL's nanosecond ticks since the platform opened, in seconds (the platform is its own clock).</summary>
     public IMonotonicClock Clock => this;
@@ -414,13 +421,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
                     if (!e.key.repeat && (e.key.scancode == SDL_Scancode.SDL_SCANCODE_F11
                         || e.key.scancode == SDL_Scancode.SDL_SCANCODE_RETURN && (e.key.mod & SDL_Keymod.SDL_KMOD_ALT) != 0))
                         ToggleFullscreen();
-                    _input.KeyDown(e.key.scancode);
-                    break;
-                case SDL_EventType.SDL_EVENT_GAMEPAD_ADDED:
-                    _input.GamepadAdded(e.gdevice.which);
-                    break;
-                case SDL_EventType.SDL_EVENT_GAMEPAD_REMOVED:
-                    _input.GamepadRemoved(e.gdevice.which);
+                    _input.Handle(e);
                     break;
                 case SDL_EventType.SDL_EVENT_FINGER_DOWN:
                     _touch.Finger(e.tfinger, TouchPhase.Began);
@@ -438,6 +439,10 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
                     // Keys and fingers held while another window takes over would never be released to the game.
                     ReleaseAll();
                     if (_focused) sink.FocusChanged(_focused = false);
+                    break;
+                default:
+                    // Keys, text, mouse, wheel and gamepads become the input backend's events.
+                    _input.Handle(e);
                     break;
             }
         }
@@ -465,11 +470,34 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     }
 
     /// <summary>A window position in SDL's window coordinates as virtual canvas pixels.</summary>
-    internal Vector2 ToCanvas(float x, float y)
+    internal Vector2 ToCanvas(float x, float y) =>
+        FrameLayout.ToCanvas(ToPixels(x, y), FrameRect(), _settings.VirtualWidth, _settings.VirtualHeight);
+
+    /// <summary>A window position in SDL's window coordinates as render pixels (the touch screen's and overlay's pixels).</summary>
+    internal Vector2 ToPixels(float x, float y)
     {
         float density = SDL_GetWindowPixelDensity(_window);
-        return FrameLayout.ToCanvas(new Vector2(x, y) * (density > 0 ? density : 1), FrameRect(), _settings.VirtualWidth, _settings.VirtualHeight);
+        return new Vector2(x, y) * (density > 0 ? density : 1);
     }
+
+    /// <summary>A rectangle in virtual canvas pixels as a rectangle in SDL's window coordinates (where an input method places its candidates).</summary>
+    internal SDL_Rect WindowRect(RectF canvas)
+    {
+        var frame = FrameRect();
+        float density = SDL_GetWindowPixelDensity(_window);
+        if (density <= 0) density = 1;
+        float sx = frame.Width / _settings.VirtualWidth / density, sy = frame.Height / _settings.VirtualHeight / density;
+        return new SDL_Rect
+        {
+            x = (int)MathF.Floor((frame.X / density) + canvas.X * sx),
+            y = (int)MathF.Floor((frame.Y / density) + canvas.Y * sy),
+            w = Math.Max(1, (int)MathF.Ceiling(canvas.Width * sx)),
+            h = Math.Max(1, (int)MathF.Ceiling(canvas.Height * sy)),
+        };
+    }
+
+    /// <summary>An SDL event timestamp (nanoseconds since SDL started) on this platform's clock, in seconds.</summary>
+    internal double Seconds(ulong timestamp) => timestamp >= _start ? (timestamp - _start) / 1e9 : 0;
 
     /// <inheritdoc/>
     public IRenderer BeginFrame()

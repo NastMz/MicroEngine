@@ -208,11 +208,15 @@ public sealed class GameLoop
         return _running;
     }
 
-    /// <summary>The host's composition, then the run's own systems: a script's touches and forced actions, just before the engine reads them.</summary>
+    /// <summary>
+    /// The host's composition, then the run's own systems: a script's device events, touches and forced actions, just
+    /// before the engine reads them.
+    /// </summary>
     private void AddRunSystems(Kernel.EngineBuilder builder)
     {
         _compose?.Invoke(builder);
         if (_options.Script is not { } script) return;
+        builder.Schedule.Add(Kernel.FramePhase.Input, "run.script.devices", _ => script.ApplyDevices(_game.UpdateCount, _game.InputSystem), before: "engine.input.events");
         builder.Schedule.Add(Kernel.FramePhase.Input, "run.script.touches", _ => script.ApplyTouches(_game.UpdateCount, _game.Touch), before: "engine.input.events");
         builder.Schedule.Add(Kernel.FramePhase.PreFixed, "run.script.input", _ =>
         {
@@ -535,13 +539,33 @@ public sealed class GameLoop
 /// 260 touch 3 0.5,0.5       # finger 3 at the middle of the screen (fractions of its size)
 /// 300 lift 1
 /// 320 prompts gamepad playstation  # name controls as on a PlayStation pad (keyboard, gamepad, touch or auto)
+/// 400 key Space down        # the script's keyboard: a key by position (a Key name) goes down, or up
+/// 410 keytap Z              # down and up within one frame
+/// 420 pad 2 add playstation # the script's gamepad 2 connects (xbox, playstation or nintendo)
+/// 430 pad 2 A down          # a button of pad 2 (a PadButton name) goes down, or up
+/// 440 pad 2 LeftX -0.8      # an axis of pad 2 (a PadAxis name) moves
+/// 450 pad 2 remove
+/// 460 mouse 160,90 down     # the script's mouse moves to a point in canvas pixels (and its button goes down or up)
+/// 470 wheel 1               # the wheel turns one notch away from the player
+/// 480 text Ana              # text typed (the rest of the line), read while text input is on
 /// 900 quit
 /// </code>
 /// "@+N" instead of an absolute number means N updates after the previous command. Touch commands go through the
-/// game's <see cref="Input.VirtualControls"/> with the same hit testing as real fingers.
+/// game's <see cref="Input.VirtualControls"/> with the same hit testing as real fingers. The device commands send events
+/// from the script's own devices (<see cref="ScriptKeyboard"/>, <see cref="ScriptMouse"/>, <see cref="ScriptPad"/>) through
+/// the engine's input layers, exactly as a backend's would; each device is announced before its first event.
 /// </summary>
 public sealed class InputScript
 {
+    /// <summary>The script's keyboard.</summary>
+    public static Input.DeviceId ScriptKeyboard => new(-1000);
+    /// <summary>The script's mouse.</summary>
+    public static Input.DeviceId ScriptMouse => new(-1001);
+    /// <summary>The script's gamepad <paramref name="number"/> (1 and up).</summary>
+    public static Input.DeviceId ScriptPad(int number) => new(-2000 - number);
+
+    private readonly List<(long Update, Input.InputEvent Event)> _devices = [];
+    private readonly HashSet<Input.DeviceId> _announced = [];
     private readonly List<(long Update, string Action, bool Down)> _edges = [];
     private readonly Dictionary<long, string> _captures = [];
     private readonly List<(long Update, int Finger, string? Target, Vector2 Offset, bool Lift)> _touches = [];
@@ -581,6 +605,43 @@ public sealed class InputScript
                         script._touches.Add((at + 2, ParseFinger(parts[2]), null, default, true));
                         break;
                     case "lift": script._touches.Add((at, ParseFinger(parts[2]), null, default, true)); break;
+                    case "key":
+                        script.Key(at, Enum.Parse<Input.Key>(parts[2], ignoreCase: true), parts[3] switch
+                        {
+                            "down" => true,
+                            "up" => false,
+                            _ => throw new FormatException("A key goes 'down' or 'up'."),
+                        });
+                        break;
+                    case "keytap":
+                    {
+                        var key = Enum.Parse<Input.Key>(parts[2], ignoreCase: true);
+                        script.Key(at, key, true).Key(at, key, false);
+                        break;
+                    }
+                    case "pad": script.ParsePad(at, parts); break;
+                    case "mouse":
+                    {
+                        var xy = parts[2].Split(',');
+                        var position = new Vector2(float.Parse(xy[0], CultureInfo.InvariantCulture), float.Parse(xy[1], CultureInfo.InvariantCulture));
+                        bool? down = parts.Length > 3 ? parts[3] switch
+                        {
+                            "down" => true,
+                            "up" => false,
+                            _ => throw new FormatException("The mouse button goes 'down' or 'up'."),
+                        } : null;
+                        script.Mouse(at, position, down);
+                        break;
+                    }
+                    case "wheel": script.Send(at, Input.InputEvent.WheelMoved(ScriptMouse, new Vector2(0, float.Parse(parts[2], CultureInfo.InvariantCulture)))); break;
+                    case "text":
+                    {
+                        if (parts.Length < 3) throw new FormatException("text needs the text to type.");
+                        // The rest of the line after "text ", as written (comments already removed).
+                        int start = line.IndexOf(" text ", StringComparison.Ordinal) + " text ".Length;
+                        script.Send(at, Input.InputEvent.TextInput(ScriptKeyboard, line[start..]));
+                        break;
+                    }
                     case "prompts":
                         Input.InputDevice? device = parts[2] == "auto" ? null : Enum.Parse<Input.InputDevice>(parts[2], ignoreCase: true);
                         Input.GamepadStyle? style = parts.Length > 3 ? Enum.Parse<Input.GamepadStyle>(parts[3], ignoreCase: true) : null;
@@ -598,6 +659,101 @@ public sealed class InputScript
     }
 
     private static int ParseFinger(string text) => int.Parse(text, CultureInfo.InvariantCulture);
+
+    private void ParsePad(long at, string[] parts)
+    {
+        int number = int.Parse(parts[2], CultureInfo.InvariantCulture);
+        if (number < 1) throw new FormatException("Pads are numbered from 1.");
+        var pad = ScriptPad(number);
+        switch (parts[3])
+        {
+            case "add":
+                var style = parts.Length > 4 ? Enum.Parse<Input.GamepadStyle>(parts[4], ignoreCase: true) : Input.GamepadStyle.Xbox;
+                AddPad(at, number, style);
+                return;
+            case "remove":
+                Send(at, Input.InputEvent.Removed(pad));
+                _announced.Remove(pad);
+                return;
+        }
+        if (Enum.TryParse<Input.PadButton>(parts[3], ignoreCase: true, out var button) && Enum.IsDefined(button) && button != Input.PadButton.None)
+        {
+            Button(at, number, button, parts[4] switch
+            {
+                "down" => true,
+                "up" => false,
+                _ => throw new FormatException("A pad button goes 'down' or 'up'."),
+            });
+            return;
+        }
+        if (Enum.TryParse<Input.PadAxis>(parts[3], ignoreCase: true, out var axis) && Enum.IsDefined(axis))
+        {
+            Axis(at, number, axis, float.Parse(parts[4], CultureInfo.InvariantCulture));
+            return;
+        }
+        throw new FormatException($"'{parts[3]}' is neither add, remove, a pad button nor a pad axis.");
+    }
+
+    private void Announce(long at, Input.DeviceId device, Input.DeviceKind kind, string name)
+    {
+        if (_announced.Add(device)) _devices.Add((at, Input.InputEvent.Added(new Input.InputDeviceInfo(device, kind, name))));
+    }
+
+    /// <summary>Sends <paramref name="e"/> at update <paramref name="at"/>, through the input layers like a device's event (its device must be announced, as a backend's must).</summary>
+    public InputScript Send(long at, Input.InputEvent e)
+    {
+        if (e.Device == ScriptKeyboard) Announce(at, ScriptKeyboard, Input.DeviceKind.Keyboard, "script keyboard");
+        else if (e.Device == ScriptMouse) Announce(at, ScriptMouse, Input.DeviceKind.Mouse, "script mouse");
+        else if (e.Kind == Input.InputEventKind.DeviceAdded) _announced.Add(e.Device);
+        _devices.Add((at, e));
+        return this;
+    }
+
+    /// <summary>The script's keyboard presses (<paramref name="down"/>) or releases <paramref name="key"/> at update <paramref name="at"/>.</summary>
+    public InputScript Key(long at, Input.Key key, bool down) =>
+        Send(at, down ? Input.InputEvent.KeyDown(ScriptKeyboard, key) : Input.InputEvent.KeyUp(ScriptKeyboard, key));
+
+    /// <summary>The script's gamepad <paramref name="number"/> connects at update <paramref name="at"/>.</summary>
+    public InputScript AddPad(long at, int number, Input.GamepadStyle style = Input.GamepadStyle.Xbox)
+    {
+        var pad = ScriptPad(number);
+        _announced.Add(pad);
+        _devices.Add((at, Input.InputEvent.Added(new Input.InputDeviceInfo(pad, Input.DeviceKind.Gamepad, $"script pad {number}") { Style = style, PlayerIndex = number - 1 })));
+        return this;
+    }
+
+    /// <summary>A button of the script's gamepad <paramref name="number"/> goes down or up (the pad connects first if it has not).</summary>
+    public InputScript Button(long at, int number, Input.PadButton button, bool down)
+    {
+        var pad = ScriptPad(number);
+        if (!_announced.Contains(pad)) AddPad(at, number);
+        return Send(at, down ? Input.InputEvent.ButtonDown(pad, button) : Input.InputEvent.ButtonUp(pad, button));
+    }
+
+    /// <summary>An axis of the script's gamepad <paramref name="number"/> moves to <paramref name="value"/> (the pad connects first if it has not).</summary>
+    public InputScript Axis(long at, int number, Input.PadAxis axis, float value)
+    {
+        var pad = ScriptPad(number);
+        if (!_announced.Contains(pad)) AddPad(at, number);
+        return Send(at, Input.InputEvent.AxisMoved(pad, axis, value));
+    }
+
+    /// <summary>The script's mouse moves to <paramref name="position"/> (canvas pixels) and, when <paramref name="down"/> is set, its primary button goes down or up.</summary>
+    public InputScript Mouse(long at, Vector2 position, bool? down = null)
+    {
+        Send(at, Input.InputEvent.PointerMove(ScriptMouse, 0, Input.PointerKind.Mouse, position));
+        if (down is { } pressed)
+            Send(at, pressed ? Input.InputEvent.PointerDown(ScriptMouse, 0, Input.PointerKind.Mouse, position) : Input.InputEvent.PointerUp(ScriptMouse, 0, Input.PointerKind.Mouse, position));
+        return this;
+    }
+
+    /// <summary>Sends the device events scheduled for the update about to run to <paramref name="input"/> (routed with the frame's events).</summary>
+    public void ApplyDevices(long update, Input.InputSystem input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        foreach (var (at, e) in _devices)
+            if (at == update) input.Send(e);
+    }
 
     private static Vector2 Offset(string[] parts) => parts.Length >= 6
         ? new Vector2(float.Parse(parts[4], CultureInfo.InvariantCulture), float.Parse(parts[5], CultureInfo.InvariantCulture))

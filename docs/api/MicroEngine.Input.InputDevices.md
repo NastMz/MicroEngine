@@ -82,6 +82,26 @@ public InputDeviceInfo? Find(DeviceId id)
 
  [InputDeviceInfo](MicroEngine.Input.InputDeviceInfo.md)?
 
+### <a id="MicroEngine_Input_InputDevices_HeldReleases_MicroEngine_Input_DeviceId_System_Double_"></a> HeldReleases\(DeviceId, double\)
+
+The events that would release what <code class="paramref">device</code> holds now: an up for every key and gamepad button
+held, axes back to 0, and an up for every held pointer button (a cancel for fingers and pens). A backend sends them
+when the system will not (the window lost the focus).
+
+```csharp
+public IEnumerable<InputEvent> HeldReleases(DeviceId device, double time = 0)
+```
+
+#### Parameters
+
+`device` [DeviceId](MicroEngine.Input.DeviceId.md)
+
+`time` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+#### Returns
+
+ [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[InputEvent](MicroEngine.Input.InputEvent.md)\>
+
 ### <a id="MicroEngine_Input_InputDevices_ReleaseAll"></a> ReleaseAll\(\)
 
 Releases everything held on every device (the window lost focus, the game was suspended).

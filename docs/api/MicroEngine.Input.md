@@ -32,6 +32,14 @@ pressed an action, touch while the on-screen controls are shown), the action's c
 and the touch layout, and changes as soon as the player switches device: read it every frame, or when
 [Version](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_Version) changes. Games get one in [Prompts](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Prompts).
 
+ [BufferedInputBackend](MicroEngine.Input.BufferedInputBackend.md)
+
+A base for input backends of platforms whose system reports input as it happens or as per-frame state: a backend
+emits events ([Emit](MicroEngine.Input.BufferedInputBackend.md#MicroEngine_Input_BufferedInputBackend_Emit_MicroEngine_Input_InputEvent__)) while it processes the system's, and the engine drains them
+([Drain](MicroEngine.Input.BufferedInputBackend.md#MicroEngine_Input_BufferedInputBackend_Drain_System_Collections_Generic_List_MicroEngine_Input_InputEvent__)). It also answers the polled questions ([IInputSource](MicroEngine.Input.IInputSource.md)) from the same events, for
+code that reads a platform's <code>Input</code> directly; there a press shorter than a frame reads as held until the next
+[BeginFrame](MicroEngine.Input.BufferedInputBackend.md#MicroEngine_Input_BufferedInputBackend_BeginFrame).
+
  [DefaultTouchSkin](MicroEngine.Input.DefaultTouchSkin.md)
 
 The built-in look, shaped by [TouchStyle](MicroEngine.Input.TouchStyle.md). Idle controls are an outlined shape at the style's opacity;
@@ -86,6 +94,11 @@ The engine's input: the devices and their events, the routing through input laye
 maps, and the text channel. Each frame the events of the platform's input backend (and those sent with
 [Send](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Send_MicroEngine_Input_InputEvent__)) are routed through [Layers](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Layers); what no layer takes becomes the devices' polled state
 and [Events](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Events). Each update samples every player's map from the devices they hear.
+
+ [KeyUsages](MicroEngine.Input.KeyUsages.md)
+
+The physical position of each [Key](MicroEngine.Input.Key.md) as a USB HID keyboard usage (page 7), the code SDL calls a scancode:
+backends that report HID usages map them with one table.
 
  [OverlayShapes](MicroEngine.Input.OverlayShapes.md)
 

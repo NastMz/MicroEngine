@@ -60,6 +60,20 @@ public InputDevice Device { get; }
 
  InputDevice
 
+### <a id="MicroEngine_Input_ActionPrompts_KeyLabels"></a> KeyLabels
+
+The labels of the player's keyboard layout (the platform's [IKeyLabels](MicroEngine.Input.IKeyLabels.md), set by the engine), so a key
+is named as printed on the player's keyboard: the key in A's place is "Q" on AZERTY. Null, or a key the layout
+does not label, uses [KeyName](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_KeyName_MicroEngine_Input_Key_).
+
+```csharp
+public IKeyLabels? KeyLabels { get; set; }
+```
+
+#### Property Value
+
+ IKeyLabels?
+
 ### <a id="MicroEngine_Input_ActionPrompts_Override"></a> Override
 
 Forces prompts for one device (a "show keyboard controls" option, tests); null follows the player.
@@ -221,10 +235,26 @@ public ActionPrompt Get(string action, InputDevice? device = null)
 
 ### <a id="MicroEngine_Input_ActionPrompts_KeyName_MicroEngine_Input_Key_"></a> KeyName\(Key\)
 
-The name players read on a key cap: "Z", "Space", "Esc", "←".
+The name a key has on a US keyboard: "Z", "Space", "Esc", "←" (prompts prefer the layout's label, [KeyText](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_KeyText_MicroEngine_Input_Key_)).
 
 ```csharp
 public static string KeyName(Key key)
+```
+
+#### Parameters
+
+`key` Key
+
+#### Returns
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+### <a id="MicroEngine_Input_ActionPrompts_KeyText_MicroEngine_Input_Key_"></a> KeyText\(Key\)
+
+What a key cap shows on the player's keyboard: the layout's label ([KeyLabels](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_KeyLabels)), else [KeyName](MicroEngine.Input.ActionPrompts.md#MicroEngine_Input_ActionPrompts_KeyName_MicroEngine_Input_Key_).
+
+```csharp
+public string KeyText(Key key)
 ```
 
 #### Parameters
