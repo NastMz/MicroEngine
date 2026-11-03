@@ -1,7 +1,8 @@
 # MicroEngine architecture
 
 MicroEngine is a small, code-first 2D framework for C#/.NET 10, for pixel-art and HD games. It is
-deliberately compact: one backend-independent core library, two platform backends (SDL 3 for Windows, Linux, macOS,
+deliberately compact: a kernel that knows no domain, one backend-independent core library on top of it, two platform
+backends (SDL 3 for Windows, Linux, macOS,
 Android and iOS; raylib for browsers and as a desktop alternative), and games that are ordinary .NET programs. This
 document explains how the pieces fit and why.
 
@@ -17,6 +18,7 @@ flowchart TB
   sdl["<b> src/MicroEngine.Sdl </b> <br/> SDL 3: window, 2D renderer, input, touch, audio, lifecycle"]
   raylib["<b> src/MicroEngine.Raylib </b> <br/> raylib: window, renderer, audio, input; WebAssembly"]
   core["<b> src/MicroEngine </b> <br/> Core: loop, scenes, input, graphics model, world, audio synthesis, UI, platform contract"]
+  kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
   samples -- started by --> hosts
   hosts -- choose --> sdl
@@ -24,7 +26,12 @@ flowchart TB
   sdl -- implements --> core
   raylib -- implements --> core
   games -- use --> core
+  core -- builds on --> kernel
 ```
+
+Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
+`MicroEngine.Kernel`, shipped inside the `MicroEngine` package. It references no other engine assembly; modules
+register services, frame systems and capabilities on an `EngineBuilder`, and `Game` is one of them.
 
 The core references no backend library. Everything platform-specific sits behind `MicroEngine.Core.IPlatform` and
 four device interfaces:
@@ -70,7 +77,8 @@ scripted playthrough tests and reproducible screenshots possible.
 
 | Namespace | Contents |
 | --- | --- |
-| `MicroEngine` | `Color`, `RectF`, `MathX` (approach, damp, waves), `Ease` |
+| `MicroEngine` | `Color`, `RectF`, `MathX` (approach, damp, waves), `Ease`; next SDK version: `ColorF` (linear, premultiplied helpers), all in the kernel assembly |
+| `MicroEngine.Kernel` (next SDK version) | `EngineBuilder`, `Engine`, `IEngineModule`, `ServiceRegistry`, `CapabilityRegistry`, `FrameSchedule`, `FramePhase`, `FrameContext`, `TimeSettings`, `FrameClock`, `IEngineLifecycle`, `ILog`, `Handle<T>`, `HandlePool<T>` |
 | `MicroEngine.Core` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `InputScript`, `HeadlessPlatform`, `SaveStore` (over `ISaveStorage`), `ContentFolder`, `AssetCache` (`Game.Assets`), `Achievement`, `AchievementTracker` |
 | `MicroEngine.Scenes` | `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener` |
 | `MicroEngine.Input` | `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources; `VirtualControls` and `TouchLayout`: per-game on-screen d-pads, joysticks and buttons; `ITouchScreen`, `FrameLayout` |

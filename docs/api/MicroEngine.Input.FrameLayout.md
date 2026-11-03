@@ -35,7 +35,7 @@ public static RectF Fit(Vector2 window, RectF safeArea, int virtualWidth, int vi
 
 `window` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`safeArea` [RectF](MicroEngine.RectF.md)
+`safeArea` RectF
 
 `virtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
@@ -45,7 +45,7 @@ public static RectF Fit(Vector2 window, RectF safeArea, int virtualWidth, int vi
 
 #### Returns
 
- [RectF](MicroEngine.RectF.md)
+ RectF
 
 ### <a id="MicroEngine_Input_FrameLayout_ToCanvas_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_"></a> ToCanvas\(Vector2, RectF, int, int\)
 
@@ -59,7 +59,7 @@ public static Vector2 ToCanvas(Vector2 window, RectF frame, int virtualWidth, in
 
 `window` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`frame` [RectF](MicroEngine.RectF.md)
+`frame` RectF
 
 `virtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 

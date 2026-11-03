@@ -147,7 +147,7 @@ public EntityList<T>.OverlappingEntities Overlapping(RectF area)
 
 #### Parameters
 
-`area` [RectF](MicroEngine.RectF.md)
+`area` RectF
 
 #### Returns
 

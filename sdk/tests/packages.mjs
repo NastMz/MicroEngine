@@ -41,7 +41,8 @@ function unzip(file) {
 }
 
 const expected = {
-  MicroEngine: { deps: ['StbImageSharp', 'FontStashSharp'], files: ['lib/net10.0/MicroEngine.dll', 'build/MicroEngine.targets', 'buildTransitive/MicroEngine.targets', 'buildTransitive/MicroEngine.props'] },
+  // The kernel is its own assembly but not its own package: MicroEngine carries it and its documentation.
+  MicroEngine: { deps: ['StbImageSharp', 'FontStashSharp'], files: ['lib/net10.0/MicroEngine.dll', 'lib/net10.0/MicroEngine.Kernel.dll', 'lib/net10.0/MicroEngine.Kernel.xml', 'build/MicroEngine.targets', 'buildTransitive/MicroEngine.targets', 'buildTransitive/MicroEngine.props'] },
   'MicroEngine.Sdl': { deps: ['MicroEngine', 'ppy.SDL3-CS', 'NVorbis'], files: ['lib/net10.0/MicroEngine.Sdl.dll'] },
   'MicroEngine.Raylib': { deps: ['MicroEngine', 'Raylib-cs'], files: ['lib/net10.0/MicroEngine.Raylib.dll', 'native/browser-wasm/raylib.a', 'buildTransitive/MicroEngine.Raylib.props'] },
   'MicroEngine.Desktop': { deps: ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib'], files: ['lib/net10.0/MicroEngine.Desktop.dll'] },
@@ -74,6 +75,11 @@ for (const [id, want] of Object.entries(expected)) {
   check(`${id}: no build-machine path`, leaks.length === 0,
     leaks.length ? `${leaks.slice(0, 4).join(', ')} (a local pack needs -p:MicroEngineRelease=true, as in CI)` : '');
   if (id !== 'MicroEngine.Cli' && id !== 'MicroEngine.Templates') check(`${id}: symbols package`, fs.existsSync(path.join(feed, `${id}.${version}.snupkg`)));
+  if (id === 'MicroEngine') {
+    const symbols = path.join(feed, `${id}.${version}.snupkg`);
+    const pdbs = fs.existsSync(symbols) ? unzip(symbols).map(e => e.name) : [];
+    check(`${id}: symbols of the bundled kernel`, pdbs.includes('lib/net10.0/MicroEngine.Kernel.pdb'), pdbs.join(', '));
+  }
 }
 const templates = path.join(feed, `MicroEngine.Templates.${version}.nupkg`);
 const template = !fs.existsSync(templates) ? "" : unzip(templates).find(e => e.name === 'content/MicroEngineGame/MyGame.csproj')?.data.toString('utf8') ?? '';

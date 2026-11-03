@@ -64,7 +64,7 @@ public Color Background { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_Core_GameSettings_DefaultTextureFilter"></a> DefaultTextureFilter
 
@@ -100,7 +100,7 @@ public Color Letterbox { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_Core_GameSettings_Scale"></a> Scale
 

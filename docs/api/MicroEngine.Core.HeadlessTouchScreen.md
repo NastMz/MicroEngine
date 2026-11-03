@@ -85,7 +85,7 @@ public RectF SafeArea { get; set; }
 
 #### Property Value
 
- [RectF](MicroEngine.RectF.md)
+ RectF
 
 ### <a id="MicroEngine_Core_HeadlessTouchScreen_Size"></a> Size
 

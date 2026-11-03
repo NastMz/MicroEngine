@@ -84,7 +84,7 @@ public void Draw(IRenderer renderer, string text, Vector2 position, Color color)
 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Graphics_SizedFont_Measure_System_String_"></a> Measure\(string\)
 

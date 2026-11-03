@@ -112,7 +112,7 @@ public static Transition Diamonds(float duration = 0.7, Color? color = null)
 
 Total length in seconds.
 
-`color` [Color](MicroEngine.Color.md)?
+`color` Color?
 
 Cover colour; null for black.
 
@@ -146,7 +146,7 @@ public static Transition Fade(float duration = 0.5, Color? color = null)
 
 Total length in seconds.
 
-`color` [Color](MicroEngine.Color.md)?
+`color` Color?
 
 Cover colour; null for black.
 
@@ -172,7 +172,7 @@ Centre of the circle in virtual pixels.
 
 Total length in seconds.
 
-`color` [Color](MicroEngine.Color.md)?
+`color` Color?
 
 Cover colour; null for black.
 
@@ -194,7 +194,7 @@ public static Transition Wipe(float duration = 0.6, Color? color = null)
 
 Total length in seconds.
 
-`color` [Color](MicroEngine.Color.md)?
+`color` Color?
 
 Cover colour; null for black.
 

@@ -40,7 +40,7 @@ RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight,
 
 `window` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`safeArea` [RectF](MicroEngine.RectF.md)
+`safeArea` RectF
 
 `virtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
@@ -50,6 +50,6 @@ RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight,
 
 #### Returns
 
- [RectF](MicroEngine.RectF.md)
+ RectF
 
 </div>

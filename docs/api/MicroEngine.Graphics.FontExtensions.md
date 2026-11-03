@@ -37,7 +37,7 @@ public static void DrawCentered(this IFont font, IRenderer renderer, string text
 
 `center` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Graphics_FontExtensions_DrawShadowed_MicroEngine_Graphics_IFont_MicroEngine_Graphics_IRenderer_System_String_System_Numerics_Vector2_MicroEngine_Color_MicroEngine_Color_System_Nullable_System_Numerics_Vector2__"></a> DrawShadowed\(IFont, IRenderer, string, Vector2, Color, Color, Vector2?\)
 
@@ -57,9 +57,9 @@ public static void DrawShadowed(this IFont font, IRenderer renderer, string text
 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
-`shadow` [Color](MicroEngine.Color.md)
+`shadow` Color
 
 `offset` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)?
 

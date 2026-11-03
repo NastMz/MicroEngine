@@ -30,3 +30,4 @@ maintainer's archive, not in the public history.
 | [0023](0023-frame-pacing-and-measurement.md) | Frames paced to the display, measured by the engine; checks that are never heard | Accepted |
 | [0024](0024-graphics-configuration.md) | Graphics options chosen by the game and changed at run time; a capability-based renderer as GRAPHICS-1 | Accepted |
 | [0025](0025-asset-pipeline.md) | Asset pipeline: managed decoders, FontStashSharp fonts, imported atlases, an engine asset cache (amends 0002, 0004) | Accepted |
+| [0026](0026-kernel-modules-and-schedule.md) | A kernel with modules, a typed service registry and a phased frame schedule; `Game` is a module façade (amends 0003, 0016) | Accepted |

@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine](MicroEngine.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Kernel.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 Axis-aligned rectangle in world or screen units (Y grows downward).

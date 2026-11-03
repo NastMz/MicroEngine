@@ -178,7 +178,7 @@ public RectF Zone { get; init; }
 
 #### Property Value
 
- [RectF](MicroEngine.RectF.md)
+ RectF
 
 ## Methods
 

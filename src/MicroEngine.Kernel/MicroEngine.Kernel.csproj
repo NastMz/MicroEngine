@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The kernel: composition (builder, typed services, modules), the phased frame schedule, loop-owned time,
+       lifecycle events, logging, capabilities, generational handles, and the backend-free math and colour types.
+       It references no other engine assembly (the architecture test checks it). It is not a package of its own:
+       the MicroEngine package carries MicroEngine.Kernel.dll (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine</RootNamespace>
+    <Description>MicroEngine kernel: composition, frame schedule, time, lifecycle, logging and the backend-free math and colour types. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+</Project>

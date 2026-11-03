@@ -31,11 +31,11 @@ public static void FillRoundedRect(IOverlayCanvas canvas, RectF rect, float corn
 
 `canvas` [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md)
 
-`rect` [RectF](MicroEngine.RectF.md)
+`rect` RectF
 
 `corner` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 ### <a id="MicroEngine_Input_OverlayShapes_RoundedRectOutline_MicroEngine_Input_IOverlayCanvas_MicroEngine_RectF_System_Single_System_Single_MicroEngine_Color_"></a> RoundedRectOutline\(IOverlayCanvas, RectF, float, float, Color\)
 
@@ -49,12 +49,12 @@ public static void RoundedRectOutline(IOverlayCanvas canvas, RectF rect, float c
 
 `canvas` [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md)
 
-`rect` [RectF](MicroEngine.RectF.md)
+`rect` RectF
 
 `corner` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 `thickness` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` [Color](MicroEngine.Color.md)
+`color` Color
 
 </div>

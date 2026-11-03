@@ -33,15 +33,15 @@ public PromptGlyphStyle(Color Cap, Color CapBorder, Color CapText)
 
 #### Parameters
 
-`Cap` [Color](MicroEngine.Color.md)
+`Cap` Color
 
 Fill of key caps and of gamepad buttons without a colour of their own.
 
-`CapBorder` [Color](MicroEngine.Color.md)
+`CapBorder` Color
 
 Outline of caps, pills and touch rings.
 
-`CapText` [Color](MicroEngine.Color.md)
+`CapText` Color
 
 Text on caps and buttons.
 
@@ -71,7 +71,7 @@ public Color Cap { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_UI_PromptGlyphStyle_CapBorder"></a> CapBorder
 
@@ -83,7 +83,7 @@ public Color CapBorder { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_UI_PromptGlyphStyle_CapText"></a> CapText
 
@@ -95,7 +95,7 @@ public Color CapText { get; init; }
 
 #### Property Value
 
- [Color](MicroEngine.Color.md)
+ Color
 
 ### <a id="MicroEngine_UI_PromptGlyphStyle_ColoredFaceButtons"></a> ColoredFaceButtons
 
@@ -129,11 +129,11 @@ public void Deconstruct(out Color Cap, out Color CapBorder, out Color CapText)
 
 #### Parameters
 
-`Cap` [Color](MicroEngine.Color.md)
+`Cap` Color
 
-`CapBorder` [Color](MicroEngine.Color.md)
+`CapBorder` Color
 
-`CapText` [Color](MicroEngine.Color.md)
+`CapText` Color
 
 ### <a id="MicroEngine_UI_PromptGlyphStyle_Equals_System_Object_"></a> Equals\(object?\)
 
