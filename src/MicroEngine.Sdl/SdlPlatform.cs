@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 using MicroEngine.Audio;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
+using GraphicsDeviceOptions = MicroEngine.Graphics.Devices.GraphicsDeviceOptions;
+using PresentMode = MicroEngine.Graphics.Devices.PresentMode;
 using MicroEngine.Input;
 using MicroEngine.Platform;
 using SDL;
@@ -27,9 +29,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     private readonly int _captureScale;
     private readonly SDL_Window* _window;
     private readonly SDL_Renderer* _sdl;
-    private readonly SDL_Texture* _target;
-    private readonly SdlRenderer _renderer;
-    private readonly SdlGraphicsDevice _graphics;
+    private readonly SdlRendererDevice _device;
+    private readonly DeviceCanvas _canvas;
     private readonly SdlInput _input;
     private readonly IInputSource _combinedInput;
     private readonly IAudioDevice _audio;
@@ -141,35 +142,40 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
             SDL_SetHint(SDL_HINT_RENDER_GPU_LOW_POWER, lowPower);
             SDL_SetHint(SDL_HINT_RENDER_METAL_PREFER_LOW_POWER_DEVICE, lowPower);
         }
-        // The game's preferred APIs first (SDL tries a comma-separated list in order), then SDL's own choice.
+        _surface = new HostSurface((nint)_window, PixelSize, () => SDL_GetWindowPixelDensity(_window) is > 0 and var d ? d : 1,
+            () => (SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) != 0);
+        _paced = !request.Hidden && request.WaitForDisplay;
+        // The graphics device on SDL's renderer: the game's preferred APIs first (SDL tries a comma-separated list in
+        // order), then the profile's driver or SDL's own choice.
+        var present = _paced && graphics.VSync ? PresentMode.VSync : PresentMode.Immediate;
+        SdlRendererDevice? device = null;
         if (renderer is null && graphics.Renderers.Count > 0)
         {
-            _sdl = SDL_CreateRenderer(_window, string.Join(',', graphics.Renderers));
-            if (_sdl == null)
-                Console.Error.WriteLine($"platform: none of the preferred renderers ({string.Join(", ", graphics.Renderers)}) could start here ({SDL_GetError()}); SDL chooses (drivers here: {string.Join(", ", RenderDrivers)})");
+            try { device = new SdlRendererDevice(_surface, new GraphicsDeviceOptions(present, string.Join(',', graphics.Renderers))); }
+            catch (InvalidOperationException e)
+            {
+                Console.Error.WriteLine($"platform: none of the preferred renderers ({string.Join(", ", graphics.Renderers)}) could start here ({e.Message}); SDL chooses (drivers here: {string.Join(", ", RenderDrivers)})");
+            }
         }
-        if (_sdl == null) _sdl = renderer is null ? SDL_CreateRenderer(_window, (byte*)null) : SDL_CreateRenderer(_window, renderer);
-        if (_sdl == null)
+        try { device ??= new SdlRendererDevice(_surface, new GraphicsDeviceOptions(present, renderer)); }
+        catch (InvalidOperationException e)
         {
-            var error = Fail(renderer is null
-                ? "SDL could not create a renderer"
-                : $"SDL could not create its '{renderer}' renderer (drivers here: {string.Join(", ", RenderDrivers)})");
             SDL_DestroyWindow(_window);
             SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
-            throw error;
+            throw new InvalidOperationException(renderer is null
+                ? $"SDL could not create a renderer: {e.Message}"
+                : $"SDL could not create its '{renderer}' renderer (drivers here: {string.Join(", ", RenderDrivers)}): {e.Message}", e);
         }
+        _device = device;
+        _sdl = device.Renderer;
         Mark("renderer", ref started);
         var (minWidth, minHeight) = WindowSizing.Minimum(_settings);
         SDL_SetWindowMinimumSize(_window, minWidth, minHeight);
-        _paced = !request.Hidden && request.WaitForDisplay;
         _vsync = _paced && graphics.VSync && SDL_SetRenderVSync(_sdl, 1);
         if (_paced && !graphics.VSync) SDL_SetRenderVSync(_sdl, 0);
-        _target = SDL_CreateTexture(_sdl, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, _settings.VirtualWidth, _settings.VirtualHeight);
-        if (_target == null) { Dispose(); throw Fail("SDL could not create the frame texture"); }
-        // The canvas is sampled as the presentation says when it is scaled to the window.
-        SDL_SetTextureScaleMode(_target, _settings.EffectivePresentation.Upscale.Mag == MicroEngine.Graphics.Devices.Filter.Linear ? SDL_ScaleMode.SDL_SCALEMODE_LINEAR : SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
-        _graphics = new SdlGraphicsDevice(_sdl) { DefaultFilter = _settings.DefaultTextureFilter };
-        _renderer = new SdlRenderer(_sdl, _graphics, _settings.VirtualWidth, _settings.VirtualHeight);
+        // The game draws into a canvas render target through the 2D batcher; EndFrame composes it into the window.
+        _canvas = new DeviceCanvas(_device, _settings.VirtualWidth, _settings.VirtualHeight);
+        _canvas.Graphics.DefaultFilter = _settings.DefaultTextureFilter;
         _touch = new SdlTouchScreen(_window, _sdl, mobile);
         _input = new SdlInput(this);
         _combinedInput = request.CombineInput(_input);
@@ -179,8 +185,6 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         // A host that shows a start screen asks for the gamepad subsystem to start after it (StartGamepads); without one,
         // a window that showed the game's first frame and then froze would be worse than one that appears a moment later.
         if (!request.StartGamepadsAfterFirstFrame) StartGamepads();
-        _surface = new HostSurface((nint)_window, PixelSize, () => SDL_GetWindowPixelDensity(_window) is > 0 and var d ? d : 1,
-            () => (SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) != 0);
         _focused = (SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) != 0;
         _capabilities.Add<IDisplayControl>(this);
         _capabilities.Add<IPlatformDiagnostics>(this);
@@ -228,7 +232,11 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         }
     }
     /// <inheritdoc/>
-    public IGraphicsDevice Graphics => _graphics;
+    public IGraphicsDevice Graphics => _canvas.Graphics;
+    /// <summary>The graphics device the platform draws with (SDL's renderer behind the device contract).</summary>
+    public SdlRendererDevice Device => _device;
+    /// <summary>The canvas the game draws into, with the 2D batcher's counts for the last frame.</summary>
+    public DeviceCanvas Canvas => _canvas;
     /// <inheritdoc/>
     public IAudioDevice Audio => _audio;
     /// <summary>The keyboard, gamepad and pointer, read together with the request's extra sources.</summary>
@@ -459,7 +467,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     internal RectF FrameRect()
     {
         int sw, sh;
-        SDL_GetCurrentRenderOutputSize(_sdl, &sw, &sh);
+        SDL_GetRenderOutputSize(_sdl, &sw, &sh); // the window's size, whatever target is bound
         var window = new Vector2(sw, sh);
         var presentation = _settings.EffectivePresentation;
         return _touch.Overlay?.Frame(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, OverlayScaling(presentation))
@@ -479,9 +487,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <inheritdoc/>
     public IRenderer BeginFrame()
     {
-        SDL_SetRenderTarget(_sdl, _target);
-        _renderer.Begin();
-        return _renderer;
+        return _canvas.BeginFrame();
     }
 
     /// <inheritdoc/>
@@ -490,16 +496,14 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <inheritdoc/>
     public void EndFrame()
     {
-        _renderer.End();
-        SDL_SetRenderTarget(_sdl, null);
-        SDL_SetRenderDrawColor(_sdl, Letterbox.R, Letterbox.G, Letterbox.B, 255);
-        SDL_RenderClear(_sdl);
-        var frame = FrameRect();
-        var dst = new SDL_FRect { x = frame.X, y = frame.Y, w = frame.Width, h = frame.Height };
-        SDL_RenderTexture(_sdl, _target, null, &dst);
-        // The on-screen controls, over the letterboxed frame in window pixels (never in captures).
-        _touch.Overlay?.Draw(_touch.Canvas);
-        SDL_RenderPresent(_sdl);
+        _canvas.EndFrame();
+        // The canvas into the window as the presentation says; nothing to present while minimised.
+        if (_canvas.Compose(_settings.EffectivePresentation, FrameRect(), Letterbox))
+        {
+            // The on-screen controls, over the letterboxed frame in window pixels (never in captures).
+            _touch.Overlay?.Draw(_touch.Canvas);
+            _device.Present();
+        }
         if (!_gamepadsStarted) StartGamepads();
     }
 
@@ -521,27 +525,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     }
 
     /// <inheritdoc/>
-    public void SaveScreenshot(string path)
-    {
-        SDL_SetRenderTarget(_sdl, _target);
-        var surface = SDL_RenderReadPixels(_sdl, null);
-        SDL_SetRenderTarget(_sdl, null);
-        if (surface == null) throw Fail("SDL could not read the frame back");
-        var rgba = SDL_ConvertSurface(surface, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888);
-        SDL_DestroySurface(surface);
-        if (rgba == null) throw Fail("SDL could not convert the frame");
-        try
-        {
-            int w = rgba->w, h = rgba->h;
-            var pixels = new byte[w * h * 4];
-            for (int y = 0; y < h; y++)
-                new ReadOnlySpan<byte>((byte*)rgba->pixels + y * rgba->pitch, w * 4).CopyTo(pixels.AsSpan(y * w * 4));
-            // The frame is shown on an opaque black backdrop; store it as seen.
-            for (int i = 3; i < pixels.Length; i += 4) pixels[i] = 255;
-            File.WriteAllBytes(path, PngEncoder.Encode(pixels, w, h, _captureScale));
-        }
-        finally { SDL_DestroySurface(rgba); }
-    }
+    public void SaveScreenshot(string path) => _canvas.SaveCapture(path, _captureScale);
 
     /// <summary>Switches between the window and borderless full screen (exclusive full screen goes back to the window).</summary>
     public void ToggleFullscreen() => SetWindowMode(WindowMode == WindowMode.Windowed ? WindowMode.Fullscreen : WindowMode.Windowed);
@@ -657,11 +641,10 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
             _self.Free();
         }
         (_audio as IDisposable)?.Dispose();
-        _graphics?.Dispose();
+        _canvas?.Dispose();
         _input?.Dispose();
         _touch?.Dispose();
-        if (_target != null) SDL_DestroyTexture(_target);
-        if (_sdl != null) SDL_DestroyRenderer(_sdl);
+        _device?.Dispose(); // destroys SDL's renderer
         if (_window != null) SDL_DestroyWindow(_window);
         if (_gamepadsStarted) SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_GAMEPAD);
         SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
@@ -669,247 +652,3 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
 
     internal SDL_Window* Window => _window;
 }
-
-internal sealed unsafe class SdlGraphicsDevice(SDL_Renderer* renderer) : IGraphicsDevice, IDisposable
-{
-    // Textures not disposed yet, released with the renderer; a texture leaves the set when it is disposed, so games that
-    // load and release assets for every level do not keep their wrappers alive.
-    private readonly HashSet<SdlTexture> _textures = [];
-
-    public TextureFilter DefaultFilter { get; set; }
-
-    public Texture CreateTexture(PixelImage image) => CreateTexture(image, DefaultFilter);
-
-    public Texture CreateTexture(PixelImage image, TextureFilter filter)
-    {
-        ArgumentNullException.ThrowIfNull(image);
-        var native = SDL_CreateTexture(renderer, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC, image.Width, image.Height);
-        if (native == null) throw new InvalidOperationException($"SDL could not create a {image.Width}x{image.Height} texture: {SDL_GetError()}");
-        // Color is laid out as R, G, B, A bytes, which is ABGR8888 on little-endian machines: no conversion copy.
-        fixed (Color* p = image.Pixels) SDL_UpdateTexture(native, null, (nint)p, image.Width * 4);
-        SDL_SetTextureScaleMode(native, SdlTexture.ScaleMode(filter));
-        var texture = new SdlTexture(this, native, image.Width, image.Height, filter);
-        _textures.Add(texture);
-        return texture;
-    }
-
-    internal void Forget(SdlTexture texture) => _textures.Remove(texture);
-
-    public void Dispose()
-    {
-        foreach (var t in _textures.ToList()) t.Dispose();
-        _textures.Clear();
-    }
-}
-
-internal sealed unsafe class SdlTexture(SdlGraphicsDevice device, SDL_Texture* native, int width, int height, TextureFilter filter) : Texture(device, width, height, filter)
-{
-    public SDL_Texture* Native { get; } = native;
-    /// <summary>The frame (<see cref="SdlRenderer"/>'s count) in which <see cref="Tint"/> and <see cref="Blend"/> were last applied.</summary>
-    public long StateFrame { get; set; } = -1;
-    public Color Tint { get; set; }
-    public SDL_BlendMode Blend { get; set; }
-
-    public static SDL_ScaleMode ScaleMode(TextureFilter filter) => filter == TextureFilter.Linear ? SDL_ScaleMode.SDL_SCALEMODE_LINEAR : SDL_ScaleMode.SDL_SCALEMODE_NEAREST;
-
-    protected override void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)
-    {
-        var rect = new SDL_Rect { x = x, y = y, w = width, h = height };
-        fixed (Color* p = pixels)
-            if (!SDL_UpdateTexture(Native, &rect, (nint)p, width * 4))
-                throw new InvalidOperationException($"SDL could not update a {width}x{height} region of a texture: {SDL_GetError()}");
-    }
-
-    protected override void ApplyFilter(TextureFilter filter) => SDL_SetTextureScaleMode(Native, ScaleMode(filter));
-
-    protected override void Release()
-    {
-        device.Forget(this);
-        SDL_DestroyTexture(Native);
-    }
-}
-
-/// <summary>
-/// Immediate-mode drawing through SDL's renderer, with the raylib renderer's conventions (pivot, winding, blend modes).
-/// SDL already follows the engine's rendering rules (pixel centres at +0.5 with the top-left rule, Clear replacing the
-/// whole target whatever the clip); textures go through <see cref="Texture.CheckDrawable"/> first.
-/// </summary>
-internal sealed unsafe class SdlRenderer(SDL_Renderer* sdl, SdlGraphicsDevice device, int width, int height) : IRenderer
-{
-    private const int CircleSegments = 36;
-    /// <summary>The circle's rim as unit vectors, computed once.</summary>
-    private static readonly Vector2[] Rim = [.. Enumerable.Range(0, CircleSegments + 1).Select(i => new Vector2(MathF.Cos(i * MathF.Tau / CircleSegments), MathF.Sin(i * MathF.Tau / CircleSegments)))];
-    private readonly Stack<Vector2> _offsets = new();
-    // State already set on the SDL renderer in this frame, so unchanged state is not set again for every draw. Anything
-    // else that draws with the renderer (the letterbox, the touch overlay) does so between frames, so each frame starts
-    // without assumptions.
-    private long _frame;
-    private SDL_BlendMode? _drawBlend;
-    private Color? _drawColor;
-    private readonly SDL_Vertex[] _vertices = new SDL_Vertex[CircleSegments * 3];
-    private Vector2 _offset;
-    private SDL_BlendMode _blend = SDL_BlendMode.SDL_BLENDMODE_BLEND;
-
-    public int Width { get; } = width;
-    public int Height { get; } = height;
-
-    public void Begin()
-    {
-        _frame++;
-        _drawBlend = null;
-        _drawColor = null;
-        _offsets.Clear();
-        _offset = Vector2.Zero;
-        _blend = SDL_BlendMode.SDL_BLENDMODE_BLEND;
-        SDL_SetRenderClipRect(sdl, null);
-    }
-
-    public void End()
-    {
-        SDL_SetRenderClipRect(sdl, null);
-        if (_offsets.Count != 0) throw new InvalidOperationException("Unbalanced PushCamera/PopCamera in this frame.");
-    }
-
-    private static SDL_FColor F(Color c) => new() { r = c.R / 255f, g = c.G / 255f, b = c.B / 255f, a = c.A / 255f };
-
-    public void Clear(Color color)
-    {
-        DrawColor(color);
-        SDL_RenderClear(sdl);
-    }
-
-    private void DrawColor(Color color)
-    {
-        if (_drawColor == color) return;
-        _drawColor = color;
-        SDL_SetRenderDrawColor(sdl, color.R, color.G, color.B, color.A);
-    }
-
-    private void DrawBlend()
-    {
-        if (_drawBlend == _blend) return;
-        _drawBlend = _blend;
-        SDL_SetRenderDrawBlendMode(sdl, _blend);
-    }
-
-    private SDL_Texture* Tint(SdlTexture texture, Color tint)
-    {
-        var native = texture.Native;
-        bool fresh = texture.StateFrame != _frame;
-        if (fresh || texture.Tint != tint)
-        {
-            SDL_SetTextureColorMod(native, tint.R, tint.G, tint.B);
-            SDL_SetTextureAlphaMod(native, tint.A);
-            texture.Tint = tint;
-        }
-        if (fresh || texture.Blend != _blend)
-        {
-            SDL_SetTextureBlendMode(native, _blend);
-            texture.Blend = _blend;
-        }
-        texture.StateFrame = _frame;
-        return native;
-    }
-
-    public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default)
-    {
-        var native = Tint(Texture.CheckDrawable<SdlTexture>(texture, device), tint);
-        var scale = options.Scale ?? Vector2.One;
-        var p = position + _offset;
-        var src = new SDL_FRect { x = source.X, y = source.Y, w = source.Width, h = source.Height };
-        var dst = new SDL_FRect { x = p.X, y = p.Y, w = source.Width * scale.X, h = source.Height * scale.Y };
-        if (options.Rotation == 0 && !options.FlipX && !options.FlipY)
-        {
-            // The origin only matters when rotating; without rotation or flips the plain copy draws the same pixels.
-            SDL_RenderTexture(sdl, native, &src, &dst);
-            return;
-        }
-        var center = new SDL_FPoint { x = options.Origin.X * scale.X, y = options.Origin.Y * scale.Y };
-        var flip = (options.FlipX ? SDL_FlipMode.SDL_FLIP_HORIZONTAL : 0) | (options.FlipY ? SDL_FlipMode.SDL_FLIP_VERTICAL : 0);
-        SDL_RenderTextureRotated(sdl, native, &src, &dst, options.Rotation * 180.0 / Math.PI, &center, flip);
-    }
-
-    public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint)
-    {
-        var native = Tint(Texture.CheckDrawable<SdlTexture>(texture, device), tint);
-        var src = new SDL_FRect { x = source.X, y = source.Y, w = source.Width, h = source.Height };
-        var dst = new SDL_FRect { x = destination.X + _offset.X, y = destination.Y + _offset.Y, w = destination.Width, h = destination.Height };
-        SDL_RenderTexture(sdl, native, &src, &dst);
-    }
-
-    public void FillRect(RectF rect, Color color)
-    {
-        if (color.A == 0) return;
-        DrawBlend();
-        DrawColor(color);
-        var r = new SDL_FRect { x = rect.X + _offset.X, y = rect.Y + _offset.Y, w = rect.Width, h = rect.Height };
-        SDL_RenderFillRect(sdl, &r);
-    }
-
-    public void FillCircle(Vector2 center, float radius, Color color)
-    {
-        DrawBlend();
-        FillCircle(sdl, center + _offset, radius, F(color), _vertices);
-    }
-
-    internal static void FillCircle(SDL_Renderer* sdl, Vector2 center, float radius, SDL_FColor color, SDL_Vertex[]? buffer = null)
-    {
-        var v = buffer ?? new SDL_Vertex[CircleSegments * 3];
-        for (int i = 0; i < CircleSegments; i++)
-        {
-            v[i * 3] = Vertex(center, color);
-            v[i * 3 + 1] = Vertex(center + Rim[i] * radius, color);
-            v[i * 3 + 2] = Vertex(center + Rim[i + 1] * radius, color);
-        }
-        fixed (SDL_Vertex* p = v) SDL_RenderGeometry(sdl, null, p, CircleSegments * 3, null, 0);
-    }
-
-    private static SDL_Vertex Vertex(Vector2 p, SDL_FColor c) => new() { position = new SDL_FPoint { x = p.X, y = p.Y }, color = c };
-
-    public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
-    {
-        DrawBlend();
-        var f = F(color);
-        var v = stackalloc SDL_Vertex[3] { Vertex(a + _offset, f), Vertex(b + _offset, f), Vertex(c + _offset, f) };
-        SDL_RenderGeometry(sdl, null, v, 3, null, 0);
-    }
-
-    public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color)
-    {
-        var d = to - from;
-        if (d.LengthSquared() < 1e-12f) return;
-        var n = Vector2.Normalize(new Vector2(-d.Y, d.X)) * (thickness / 2);
-        var f = F(color);
-        Vector2 a = from + _offset + n, b = from + _offset - n, c = to + _offset - n, e = to + _offset + n;
-        DrawBlend();
-        var v = stackalloc SDL_Vertex[6] { Vertex(a, f), Vertex(b, f), Vertex(c, f), Vertex(a, f), Vertex(c, f), Vertex(e, f) };
-        SDL_RenderGeometry(sdl, null, v, 6, null, 0);
-    }
-
-    public void PushCamera(Camera2D camera)
-    {
-        _offsets.Push(_offset);
-        _offset = camera.RenderOffset;
-    }
-
-    public void PopCamera() => _offset = _offsets.Count > 0 ? _offsets.Pop() : throw new InvalidOperationException("PopCamera without PushCamera.");
-
-    public void SetBlendMode(BlendMode mode) => _blend = mode switch
-    {
-        BlendMode.Additive => SDL_BlendMode.SDL_BLENDMODE_ADD,
-        // raylib's BLEND_MULTIPLIED: src × dst + dst × (1 − src alpha), which is SDL's MUL.
-        BlendMode.Multiply => SDL_BlendMode.SDL_BLENDMODE_MUL,
-        _ => SDL_BlendMode.SDL_BLENDMODE_BLEND,
-    };
-
-    public void SetClip(RectF? screenRect)
-    {
-        if (screenRect is { } r)
-        {
-            var rect = new SDL_Rect { x = (int)r.X, y = (int)r.Y, w = (int)r.Width, h = (int)r.Height };
-            SDL_SetRenderClipRect(sdl, &rect);
-        }
-        else SDL_SetRenderClipRect(sdl, null);
-    }
-}
-

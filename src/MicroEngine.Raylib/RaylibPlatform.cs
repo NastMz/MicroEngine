@@ -59,10 +59,9 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     private bool _vsync;
     private int _monitor = -1;
     private readonly int _captureScale;
-    private readonly Raylib_cs.RenderTexture2D _target;
-    private readonly RaylibRenderer _renderer;
+    private readonly RaylibDevice _device;
+    private readonly DeviceCanvas _canvas;
     private readonly RaylibInput _input;
-    private readonly RaylibGraphicsDevice _graphics = new();
     private readonly IAudioDevice _audio;
     private readonly RaylibTouchScreen _touch;
     private readonly BrowserPage? _page;
@@ -154,14 +153,15 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
             _vsync = graphics.VSync && options.WaitForDisplay;
             Pace();
         }
-        _target = Rl.LoadRenderTexture(settings.VirtualWidth, settings.VirtualHeight);
-        // The canvas is sampled as the presentation says when it is scaled to the window.
-        Rl.SetTextureFilter(_target.Texture, settings.EffectivePresentation.Upscale.Mag == MicroEngine.Graphics.Devices.Filter.Linear ? Raylib_cs.TextureFilter.Bilinear : Raylib_cs.TextureFilter.Point);
-        _graphics.DefaultFilter = settings.DefaultTextureFilter;
-        _renderer = new RaylibRenderer(_graphics, settings.VirtualWidth, settings.VirtualHeight);
         _audio = request?.CreateAudio(() => RaylibAudioDevice.TryCreate()) ?? (options.Mute ? new SilentAudioDevice() : RaylibAudioDevice.TryCreate());
         _surface = new HostSurface(GetWindowHandle(), () => (Rl.GetRenderWidth(), Rl.GetRenderHeight()),
             () => Rl.GetWindowScaleDPI().X is > 0 and var d ? d : 1, () => !OperatingSystem.IsBrowser() && Rl.IsWindowMinimized());
+        // The graphics device on raylib's window; the game draws into a canvas render target through the 2D batcher and
+        // EndFrame composes it into the window. raylib's EndDrawing swaps the buffers, so the device does not.
+        var present = _paced && graphics.VSync ? MicroEngine.Graphics.Devices.PresentMode.VSync : MicroEngine.Graphics.Devices.PresentMode.Immediate;
+        _device = new RaylibDevice(_surface, new MicroEngine.Graphics.Devices.GraphicsDeviceOptions(present)) { SwapOnPresent = false };
+        _canvas = new DeviceCanvas(_device, settings.VirtualWidth, settings.VirtualHeight);
+        _canvas.Graphics.DefaultFilter = settings.DefaultTextureFilter;
         _focused = Rl.IsWindowFocused();
         _capabilities.Add<IDisplayControl>(this);
         _capabilities.Add<IDisplayPacing>(this);
@@ -172,7 +172,11 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     private static unsafe nint GetWindowHandle() => (nint)Rl.GetWindowHandle();
 
     /// <inheritdoc/>
-    public IGraphicsDevice Graphics => _graphics;
+    public IGraphicsDevice Graphics => _canvas.Graphics;
+    /// <summary>The graphics device the platform draws with (raylib's OpenGL layer behind the device contract).</summary>
+    public RaylibDevice Device => _device;
+    /// <summary>The canvas the game draws into, with the 2D batcher's counts for the last frame.</summary>
+    public DeviceCanvas Canvas => _canvas;
     /// <inheritdoc/>
     public IAudioDevice Audio => _audio;
     /// <summary>raylib's keyboard, gamepad and pointer, read together with the request's extra sources.</summary>
@@ -246,9 +250,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     /// <inheritdoc/>
     public IRenderer BeginFrame()
     {
-        Rl.BeginTextureMode(_target);
-        _renderer.Begin();
-        return _renderer;
+        return _canvas.BeginFrame();
     }
 
     /// <inheritdoc/>
@@ -256,16 +258,15 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
 
     public void EndFrame()
     {
-        _renderer.End();
-        Rl.EndTextureMode();
+        _canvas.EndFrame();
         Rl.BeginDrawing();
-        Rl.ClearBackground(new RlColor(Letterbox.R, Letterbox.G, Letterbox.B, (byte)255));
-        var frame = FrameRect();
-        var src = new RlRect(0, 0, _settings.VirtualWidth, -_settings.VirtualHeight);
-        var dst = new RlRect(frame.X, frame.Y, frame.Width, frame.Height);
-        Rl.DrawTexturePro(_target.Texture, src, dst, Vector2.Zero, 0, new RlColor(255, 255, 255, 255));
-        // The on-screen controls, over the letterboxed frame in render pixels (never in captures).
-        _touch.DrawOverlay();
+        // The canvas into the window as the presentation says (copied opaque: its alpha never darkens it).
+        if (_canvas.Compose(_settings.EffectivePresentation, FrameRect(), Letterbox))
+        {
+            // The on-screen controls, over the letterboxed frame in render pixels (never in captures).
+            _touch.DrawOverlay();
+            _device.Present();
+        }
         Rl.EndDrawing();
     }
 
@@ -278,17 +279,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     }
 
     /// <summary>Writes the canvas as a PNG, opaque (alpha 255 everywhere) as on every backend: the frame is shown on an opaque backdrop.</summary>
-    public unsafe void SaveScreenshot(string path)
-    {
-        var image = Rl.LoadImageFromTexture(_target.Texture);
-        // The render texture is RGBA8; raylib's blending leaves alpha below 255 where translucent colours were drawn.
-        var rgba = new Span<byte>(image.Data, image.Width * image.Height * 4);
-        for (int i = 3; i < rgba.Length; i += 4) rgba[i] = 255;
-        Rl.ImageFlipVertical(ref image);
-        if (_captureScale > 1) Rl.ImageResizeNN(ref image, image.Width * _captureScale, image.Height * _captureScale);
-        Rl.ExportImage(image, path);
-        Rl.UnloadImage(image);
-    }
+    public void SaveScreenshot(string path) => _canvas.SaveCapture(path, _captureScale);
 
     /// <summary>Switches between the window and a borderless full-screen window (exclusive full screen goes back to the window).</summary>
     public void ToggleFullscreen() => SetWindowMode(WindowMode == WindowMode.Windowed ? WindowMode.Fullscreen : WindowMode.Windowed);
@@ -377,184 +368,11 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         if (_disposed) return;
         _disposed = true;
         (_audio as IDisposable)?.Dispose();
-        _graphics.Dispose();
-        Rl.UnloadRenderTexture(_target);
+        _canvas.Dispose();
+        _device.Dispose();
         _touch.Clear();
         Rl.CloseWindow();
     }
-}
-
-internal sealed unsafe class RaylibGraphicsDevice : IGraphicsDevice, IDisposable
-{
-    // Textures not disposed yet, released with the window; a texture leaves the set when it is disposed.
-    private readonly HashSet<RaylibTexture> _textures = [];
-
-    public TextureFilter DefaultFilter { get; set; }
-
-    public Texture CreateTexture(PixelImage image) => CreateTexture(image, DefaultFilter);
-
-    public Texture CreateTexture(PixelImage image, TextureFilter filter)
-    {
-        ArgumentNullException.ThrowIfNull(image);
-        Raylib_cs.Texture2D native;
-        // raylib copies the pixels to the GPU from an image that points at the PixelImage's own memory (Color is laid out
-        // as R, G, B, A bytes): no blank image and no conversion copy.
-        fixed (Color* pixels = image.Pixels)
-            native = Rl.LoadTextureFromImage(new Raylib_cs.Image
-            {
-                Data = pixels, Width = image.Width, Height = image.Height, Mipmaps = 1,
-                Format = Raylib_cs.PixelFormat.UncompressedR8G8B8A8,
-            });
-        if (native.Id == 0) throw new InvalidOperationException($"raylib could not create a {image.Width}x{image.Height} texture.");
-        Rl.SetTextureFilter(native, RaylibTexture.ToRaylib(filter));
-        // raylib repeats textures by default, so linear sampling at an edge would mix in the opposite edge; the rules clamp.
-        Rl.SetTextureWrap(native, Raylib_cs.TextureWrap.Clamp);
-        var texture = new RaylibTexture(this, native, filter);
-        _textures.Add(texture);
-        return texture;
-    }
-
-    internal void Forget(RaylibTexture texture) => _textures.Remove(texture);
-
-    public void Dispose()
-    {
-        foreach (var t in _textures.ToList()) t.Dispose();
-        _textures.Clear();
-    }
-}
-
-internal sealed unsafe class RaylibTexture(RaylibGraphicsDevice device, Raylib_cs.Texture2D native, TextureFilter filter) : Texture(device, native.Width, native.Height, filter)
-{
-    public Raylib_cs.Texture2D Native { get; } = native;
-
-    public static Raylib_cs.TextureFilter ToRaylib(TextureFilter filter) => filter == TextureFilter.Linear ? Raylib_cs.TextureFilter.Bilinear : Raylib_cs.TextureFilter.Point;
-
-    protected override void Upload(int x, int y, int width, int height, ReadOnlySpan<Color> pixels)
-    {
-        fixed (Color* p = pixels) Rl.UpdateTextureRec(Native, new RlRect(x, y, width, height), p);
-    }
-
-    protected override void ApplyFilter(TextureFilter filter) => Rl.SetTextureFilter(Native, ToRaylib(filter));
-
-    protected override void Release()
-    {
-        device.Forget(this);
-        Rl.UnloadTexture(Native);
-    }
-}
-
-/// <summary>
-/// Immediate-mode drawing through raylib, adjusted to the engine's rendering rules: <see cref="Clear"/> replaces the whole
-/// canvas whatever the clip, edges exactly on a pixel centre follow the top-left rule, and textures go through
-/// <see cref="Texture.CheckDrawable"/> first.
-/// </summary>
-internal sealed class RaylibRenderer(RaylibGraphicsDevice device, int width, int height) : IRenderer
-{
-    /// <summary>
-    /// The canvas is a render texture stored upside down, so OpenGL's tie rule includes a centre on the bottom edge and
-    /// excludes one on the top edge (a 1-px rectangle at y = 2.5 lit row 3). Moving all geometry up by this much (more than
-    /// the 1/256 px of GPU sub-pixel precision, so ties are resolved) gives the top-left rule; an edge less than this
-    /// below a pixel centre counts as on it, the source of variation the contract names for raylib.
-    /// </summary>
-    internal const float TieShift = 1f / 128;
-    private readonly Stack<Vector2> _offsets = new();
-    private Vector2 _offset;
-    private BlendMode _blend = BlendMode.Alpha;
-    private RectF? _clip;
-
-    public int Width { get; } = width;
-    public int Height { get; } = height;
-
-    public void Begin()
-    {
-        _offsets.Clear();
-        _offset = Vector2.Zero;
-        _blend = BlendMode.Alpha;
-        Raylib_cs.Rlgl.PushMatrix();
-        Raylib_cs.Rlgl.Translatef(0, -TieShift, 0);
-    }
-
-    public void End()
-    {
-        if (_blend != BlendMode.Alpha) Rl.EndBlendMode();
-        if (_clip is not null) { Rl.EndScissorMode(); _clip = null; }
-        Raylib_cs.Rlgl.PopMatrix();
-        if (_offsets.Count != 0) throw new InvalidOperationException("Unbalanced PushCamera/PopCamera in this frame.");
-    }
-
-    private static RlColor C(Color c) => new(c.R, c.G, c.B, c.A);
-
-    public void Clear(Color color)
-    {
-        // raylib batches draws and clears immediately: draw what is pending first, so the clear replaces it. OpenGL's clear
-        // honours the scissor box, so the clip is lifted for the clear and set again after it.
-        Raylib_cs.Rlgl.DrawRenderBatchActive();
-        if (_clip is not null) Rl.EndScissorMode();
-        Rl.ClearBackground(C(color));
-        if (_clip is { } r) Scissor(r);
-    }
-
-    public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in DrawOptions options = default)
-    {
-        var native = Texture.CheckDrawable<RaylibTexture>(texture, device).Native;
-        var scale = options.Scale ?? Vector2.One;
-        var src = new RlRect(source.X, source.Y, options.FlipX ? -source.Width : source.Width, options.FlipY ? -source.Height : source.Height);
-        var origin = options.Origin * scale;
-        var p = position + _offset;
-        var dst = new RlRect(p.X + origin.X, p.Y + origin.Y, source.Width * scale.X, source.Height * scale.Y);
-        Rl.DrawTexturePro(native, src, dst, origin, options.Rotation * 180f / MathF.PI, C(tint));
-    }
-
-    public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint)
-    {
-        var native = Texture.CheckDrawable<RaylibTexture>(texture, device).Native;
-        Rl.DrawTexturePro(native, new RlRect(source.X, source.Y, source.Width, source.Height),
-            new RlRect(destination.X + _offset.X, destination.Y + _offset.Y, destination.Width, destination.Height), Vector2.Zero, 0, C(tint));
-    }
-
-    public void FillRect(RectF rect, Color color)
-    {
-        if (color.A == 0) return;
-        Rl.DrawRectangleRec(new RlRect(rect.X + _offset.X, rect.Y + _offset.Y, rect.Width, rect.Height), C(color));
-    }
-
-    public void FillCircle(Vector2 center, float radius, Color color) => Rl.DrawCircleV(center + _offset, radius, C(color));
-
-    public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
-    {
-        // raylib only draws counter-clockwise triangles; normalise the winding for callers.
-        float cross = (b.X - a.X) * (c.Y - a.Y) - (b.Y - a.Y) * (c.X - a.X);
-        if (cross > 0) (b, c) = (c, b);
-        Rl.DrawTriangle(a + _offset, b + _offset, c + _offset, C(color));
-    }
-
-    public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color) => Rl.DrawLineEx(from + _offset, to + _offset, thickness, C(color));
-
-    public void PushCamera(Camera2D camera)
-    {
-        _offsets.Push(_offset);
-        _offset = camera.RenderOffset;
-    }
-
-    public void PopCamera() => _offset = _offsets.Count > 0 ? _offsets.Pop() : throw new InvalidOperationException("PopCamera without PushCamera.");
-
-    public void SetBlendMode(BlendMode mode)
-    {
-        if (mode == _blend) return;
-        if (_blend != BlendMode.Alpha) Rl.EndBlendMode();
-        _blend = mode;
-        if (mode == BlendMode.Additive) Rl.BeginBlendMode(Raylib_cs.BlendMode.Additive);
-        else if (mode == BlendMode.Multiply) Rl.BeginBlendMode(Raylib_cs.BlendMode.Multiplied);
-    }
-
-    public void SetClip(RectF? screenRect)
-    {
-        if (_clip is not null) Rl.EndScissorMode();
-        _clip = screenRect;
-        if (screenRect is { } r) Scissor(r);
-    }
-
-    private static void Scissor(RectF r) => Rl.BeginScissorMode((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height);
 }
 
 internal sealed class RaylibInput : IInputSource

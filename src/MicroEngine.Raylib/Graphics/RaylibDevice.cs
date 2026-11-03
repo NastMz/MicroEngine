@@ -88,6 +88,13 @@ public sealed unsafe class RaylibDevice : GraphicsDeviceBase
     /// <summary>The present mode chosen at creation.</summary>
     public PresentMode PresentMode { get; }
 
+    /// <summary>
+    /// Whether <see cref="IGraphicsDevice.Present"/> swaps the window's buffers (true by default). A host whose frame
+    /// loop ends with raylib's <c>EndDrawing</c>, which swaps them itself (and polls input), sets it to false: Present
+    /// then only finishes the frame's drawing and expires the surface target.
+    /// </summary>
+    public bool SwapOnPresent { get; init; } = true;
+
     /// <inheritdoc />
     protected override Texture CreateTextureCore(in TextureDescription description, ReadOnlySpan<byte> initialData)
     {
@@ -252,7 +259,7 @@ public sealed unsafe class RaylibDevice : GraphicsDeviceBase
     protected override void PresentCore(RenderTarget surfaceTarget)
     {
         Rlgl.DrawRenderBatchActive();
-        Rl.SwapScreenBuffer();
+        if (SwapOnPresent) Rl.SwapScreenBuffer();
         ((RaylibDeviceTarget)surfaceTarget).ExpireSurface();
     }
 

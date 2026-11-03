@@ -266,8 +266,9 @@ public abstract class RendererConformance
         var translucent = new List<(int, int)>();
         for (int y = 0; y < 8; y++) for (int x = 0; x < 16; x++) if (frame[x, y].A != 255) translucent.Add((x, y));
         Assert.IsEmpty(translucent, $"captures must be opaque: {translucent.Count} pixels are not, first {Describe(translucent.Take(4))} alpha {frame[0, 0].A}");
-        // A translucent Clear stores its colour channels as given.
-        AssertColour(frame, 15, 7, BlendReference.Additive(new Color(200, 100, 50), new Color(0, 255, 0, 64)), "additive over the translucent clear");
+        // The canvas is premultiplied: a translucent Clear stores its colour times its alpha, which is what the window shows
+        // (the canvas over black) and what the capture records.
+        AssertColour(frame, 15, 7, BlendReference.Additive(new Color(100, 50, 25), new Color(0, 255, 0, 64)), "additive over the translucent clear");
     }
 
     // ---- Blending ----------------------------------------------------------------------------------------------------
@@ -450,11 +451,11 @@ public static class BlendReference
         return new Color(Q(src.R / 255.0 * a + dst.R / 255.0), Q(src.G / 255.0 * a + dst.G / 255.0), Q(src.B / 255.0 * a + dst.B / 255.0));
     }
 
-    /// <summary>rgb = src·dst + dst·(1 − a).</summary>
+    /// <summary>rgb = src·a·dst + dst·(1 − a): the source's colour multiplies the canvas in proportion to its opacity.</summary>
     public static Color Multiply(Color dst, Color src)
     {
         double a = src.A / 255.0;
-        static double M(byte s, byte d, double a) => s / 255.0 * (d / 255.0) + d / 255.0 * (1 - a);
+        static double M(byte s, byte d, double a) => s / 255.0 * a * (d / 255.0) + d / 255.0 * (1 - a);
         return new Color(Q(M(src.R, dst.R, a)), Q(M(src.G, dst.G, a)), Q(M(src.B, dst.B, a)));
     }
 }
