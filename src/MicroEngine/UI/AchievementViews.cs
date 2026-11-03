@@ -110,8 +110,10 @@ public sealed class AchievementsScene(AchievementTracker tracker, UiTheme theme)
     public override void Update(float dt)
     {
         var names = Input.Names;
-        if ((CloseActions ?? [names.Cancel, names.Pause, names.Confirm]).Any(Input.Pressed))
+        // The press that closes the screen is consumed, so the scene it returns to does not act on it as well.
+        if ((CloseActions ?? [names.Cancel, names.Pause, names.Confirm]).FirstOrDefault(Input.Pressed) is { } close)
         {
+            Input.Consume(close);
             Closed?.Invoke();
             Game.Scenes.Pop();
             return;

@@ -28,6 +28,11 @@ Not published yet. Behaviour that changes:
     device of its own; SDL also offers layout key labels, rumble and text input. Their polled `Input` still answers
     for code that reads it directly, but a tap shorter than a frame now reads as held only until the next event pump
     (the engine itself keeps it until an update reads it). Prompts name keys by the player's layout on SDL.
+  - `DialogueBox.Update`, `SelectionList.Update` and `AchievementsScene` consume the press they act on: after them,
+    `Input.Pressed(confirm)` is false for the rest of that update and until the key is let go. **Migration:** code that
+    read the same press after the widget on purpose reads the widget's result instead.
+  - Input scripts have device commands (`key`, `keytap`, `pad`, `mouse`, `wheel`, `text`) that send events from the
+    script's own devices; the existing commands are unchanged.
   - A host's extra polled sources (`PlatformRequest.ExtraInput`) are devices of their own: on a backend that delivers
     events, player 1 reads them alongside it, and they can be paired with other players. A platform that offers
     `IInputBackend` as a capability is read through its events; its polled `Input` is then not read again.

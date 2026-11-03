@@ -52,7 +52,10 @@ and to `UseAchievements`.
 "confirm")` advances the typewriter; confirm first completes the current page, then moves to the next. It returns
 `true` while the box is active, so a scene can skip its own input handling. Next SDK version (not published yet:
 arrives with the next SDK version): `confirm` defaults to the map's own confirm action (`InputMap.Names`), so a game
-that renamed it needs no argument; the same holds for `SelectionList.Update` and the achievements screen. `Draw(r, font, area)` wraps text to
+that renamed it needs no argument; the same holds for `SelectionList.Update` and the achievements screen. The press a
+widget acts on (a dialogue advancing, a menu choosing, the achievements screen closing) is consumed
+(`InputMap.Consume`), so code that reads the same action after it in that update, such as the scene under an
+overlay, does not act on it too. `Draw(r, font, area)` wraps text to
 the area, shows up to `Lines` lines (default 3), a speaker name tag and a blinking arrow when the page is complete.
 Events: `Blip` (per revealed character) and `Closed` (after the last page).
 

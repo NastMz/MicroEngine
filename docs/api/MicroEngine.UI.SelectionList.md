@@ -162,7 +162,8 @@ public void SetOptions(IEnumerable<string> options)
 ### <a id="MicroEngine_UI_SelectionList_Update_MicroEngine_Input_InputMap_System_String_System_String_System_String_"></a> Update\(InputMap, string?, string?, string?\)
 
 Returns the chosen index when confirmed, otherwise null. Actions left null (the default) are the map's up, down and
-confirm actions ([Names](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Names)).
+confirm actions ([Names](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Names)). The press that chooses is consumed ([Consume](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Consume_System_String_)),
+so nothing read after the list acts on it too.
 
 ```csharp
 public int? Update(InputMap input, string? up = null, string? down = null, string? confirm = null)
