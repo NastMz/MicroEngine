@@ -27,7 +27,7 @@ public sealed unsafe class SdlKeyboardTests
         _x = XTest.Open(out var missing);
         Native.Require(_x is not null, missing);
         // A visible window (keyboard focus needs one), driven by the test's frames rather than paced by the display.
-        try { _platform = new SdlPlatform(new PlatformRequest(new GameSettings("keyboard test", 160, 90, 2)) { FixedStep = true, Mute = true }); }
+        try { _platform = new SdlPlatform(new PlatformRequest(new GameSettings("keyboard test", 160, 90, 2)) { WaitForDisplay = false, Mute = true }); }
         catch (InvalidOperationException e) { Native.Require(false, $"SDL cannot open a window here: {e.Message}"); }
         for (int i = 0; i < 5; i++) Frame();
         using var windows = SDL_GetWindows();
@@ -48,7 +48,7 @@ public sealed unsafe class SdlKeyboardTests
 
     private (bool Down, bool Pressed, bool Released) Frame()
     {
-        _platform!.PollEvents(); // SDL reads the window's events here
+        _platform!.PumpEvents(MicroEngine.NativeChecks.IgnoredEvents.Instance); // SDL reads the window's events here
         _map.Sample(_platform.Input);
         var state = (_map.Down("jump"), _map.Pressed("jump"), _map.Released("jump"));
         _map.EndUpdate();

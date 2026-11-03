@@ -12,10 +12,12 @@ graphics API per system (Direct3D, Metal, OpenGL, OpenGL ES, Vulkan, or its soft
 <code>SDL_RENDER_DRIVER</code> environment variable forces one (for example <code>software</code> on a machine without a GPU).
 Fingers go to the game's on-screen controls through [ITouchScreen](MicroEngine.Input.ITouchScreen.md) ([SdlTouchScreen](MicroEngine.Sdl.md)), which
 also reports the window's safe area and density; a system that sends the app to the background suspends it
-([Suspended](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_Suspended)).
+([Suspending](MicroEngine.Platform.IEngineEventSink.md#MicroEngine_Platform_IEngineEventSink_Suspending)). Its capabilities ([TryGetCapability``1](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_TryGetCapability__1___0__)):
+[IDisplayControl](MicroEngine.Core.IDisplayControl.md), [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md), [IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md),
+[IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md) and [ITouchScreen](MicroEngine.Input.ITouchScreen.md).
 
 ```csharp
-public sealed class SdlPlatform : IPlatform, IDisposable, IPlatformDiagnostics, IDisplayControl
+public sealed class SdlPlatform : IPlatform, IPlatformHost, IDisposable, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock
 ```
 
 #### Inheritance
@@ -26,15 +28,21 @@ public sealed class SdlPlatform : IPlatform, IDisposable, IPlatformDiagnostics, 
 #### Implements
 
 IPlatform, 
+IPlatformHost, 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable), 
 IPlatformDiagnostics, 
-IDisplayControl
+IDisplayControl, 
+IDisplayPacing, 
+IPreciseDelay, 
+IMonotonicClock
 
 ## Constructors
 
 ### <a id="MicroEngine_Sdl_SdlPlatform__ctor_MicroEngine_Core_PlatformRequest_System_String_"></a> SdlPlatform\(PlatformRequest, string?\)
 
-Opens the SDL window, renderer and (unless the request says otherwise) audio for <code class="paramref">request</code>. Hosts usually go through [Profile](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_Profile) or [CreateProfile](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_CreateProfile_System_String_) instead.
+Opens the SDL window, renderer and (unless the request says otherwise) audio for <code class="paramref">request</code>, with
+the audio device and extra input sources the request supplies. Hosts usually go through [Profile](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_Profile) or
+[CreateProfile](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_CreateProfile_System_String_) instead.
 
 ```csharp
 public SdlPlatform(PlatformRequest request, string? renderer = null)
@@ -64,17 +72,29 @@ public IAudioDevice Audio { get; }
 
  IAudioDevice
 
-### <a id="MicroEngine_Sdl_SdlPlatform_CloseRequested"></a> CloseRequested
+### <a id="MicroEngine_Sdl_SdlPlatform_CanBlock"></a> CanBlock
 
-Whether the user closed the window; the loop stops at the next frame.
+True: SDL's native hosts own their thread.
 
 ```csharp
-public bool CloseRequested { get; }
+public bool CanBlock { get; }
 ```
 
 #### Property Value
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Sdl_SdlPlatform_Clock"></a> Clock
+
+SDL's nanosecond ticks since the platform opened, in seconds (the platform is its own clock).
+
+```csharp
+public IMonotonicClock Clock { get; }
+```
+
+#### Property Value
+
+ IMonotonicClock
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_CurrentDisplay"></a> CurrentDisplay
 
@@ -138,7 +158,7 @@ public IGraphicsDevice Graphics { get; }
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Input"></a> Input
 
-Keyboard, gamepad and pointer state, read once per update.
+The keyboard, gamepad and pointer, read together with the request's extra sources.
 
 ```csharp
 public IInputSource Input { get; }
@@ -151,7 +171,7 @@ public IInputSource Input { get; }
 ### <a id="MicroEngine_Sdl_SdlPlatform_Letterbox"></a> Letterbox
 
 Colour of the window around the frame. Starts as [Letterbox](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Letterbox); the start screen sets its
-own colour while it shows. Platforms without a window keep the default, which ignores changes.
+own colour while it shows. Platforms without a window keep it and ignore it.
 
 ```csharp
 public Color Letterbox { get; set; }
@@ -161,10 +181,21 @@ public Color Letterbox { get; set; }
 
  Color
 
+### <a id="MicroEngine_Sdl_SdlPlatform_MainSurface"></a> MainSurface
+
+The window: an <code>SDL_Window*</code> as [NativeWindow](MicroEngine.Platform.ISurface.md#MicroEngine_Platform_ISurface_NativeWindow), its size in pixels and density.
+
+```csharp
+public ISurface MainSurface { get; }
+```
+
+#### Property Value
+
+ ISurface
+
 ### <a id="MicroEngine_Sdl_SdlPlatform_Now"></a> Now
 
-A monotonic clock in seconds, and nothing more: the loop measures each frame's time with it and decides itself
-how many fixed steps that is ([TimeSettings](MicroEngine.Kernel.TimeSettings.md)). Never derive it from frames or the update rate.
+Seconds since an arbitrary start (the host's creation); never decreases.
 
 ```csharp
 public double Now { get; }
@@ -185,21 +216,6 @@ public static PlatformProfile Profile { get; }
 #### Property Value
 
  PlatformProfile
-
-### <a id="MicroEngine_Sdl_SdlPlatform_RealTime"></a> RealTime
-
-The time mode a run on this platform uses when neither the run ([TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode)) nor the game
-([Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_)) chooses one: true for real time (a desktop window), false for one step per frame
-(headless, or a backend whose host asked for deterministic time with [FixedStep](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_FixedStep)).
-A preference only; the loop owns the clock.
-
-```csharp
-public bool RealTime { get; }
-```
-
-#### Property Value
-
- [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_RenderDrivers"></a> RenderDrivers
 
@@ -227,9 +243,7 @@ public string RendererName { get; }
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Suspended"></a> Suspended
 
-Whether the system took the game away (a phone app sent to the background): while true the loop neither
-simulates nor renders, music is paused and the game is told through <code>OnSuspended</code>/<code>OnResumed</code>.
-Platforms without such a state keep the default.
+Whether the system took the app away (a phone app in the background); no frame runs meanwhile.
 
 ```csharp
 public bool Suspended { get; }
@@ -241,8 +255,7 @@ public bool Suspended { get; }
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Touch"></a> Touch
 
-The touch screen, if the platform has one: touches for [VirtualControls](MicroEngine.Input.VirtualControls.md), the safe area and a layer
-drawn over the frame. Platforms without touch keep the default (null).
+The touch screen (also the [ITouchScreen](MicroEngine.Input.ITouchScreen.md) capability).
 
 ```csharp
 public ITouchScreen Touch { get; }
@@ -308,6 +321,18 @@ public static PlatformProfile CreateProfile(string? renderer = null)
 
  PlatformProfile
 
+### <a id="MicroEngine_Sdl_SdlPlatform_Delay_System_Double_"></a> Delay\(double\)
+
+Waits with SDL's precise delay (a high-resolution timer, then a short spin).
+
+```csharp
+public void Delay(double seconds)
+```
+
+#### Parameters
+
+`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 ### <a id="MicroEngine_Sdl_SdlPlatform_Dispose"></a> Dispose\(\)
 
 Closes the window, the renderer and the audio device the platform opened.
@@ -340,13 +365,24 @@ public bool MoveToDisplay(int index)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Sdl_SdlPlatform_PollEvents"></a> PollEvents\(\)
+### <a id="MicroEngine_Sdl_SdlPlatform_PumpEvents_MicroEngine_Platform_IEngineEventSink_"></a> PumpEvents\(IEngineEventSink\)
 
-Processes pending system events (window, keyboard, gamepad, touch). Called at the start of every frame.
+Processes SDL's pending events and delivers the engine's: a trip to the background (latched by the lifecycle
+watch, so one that ended before this pump is still delivered as <code>Suspending</code> then <code>Resumed</code>), one quit
+request however many close and quit events arrived together, focus changes and size changes of the window.
+While suspended it waits 50 ms instead of spinning.
 
 ```csharp
-public void PollEvents()
+public bool PumpEvents(IEngineEventSink sink)
 ```
+
+#### Parameters
+
+`sink` IEngineEventSink
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_SaveScreenshot_System_String_"></a> SaveScreenshot\(string\)
 
@@ -362,7 +398,7 @@ public void SaveScreenshot(string path)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_SetVSync_System_Boolean_"></a> SetVSync\(bool\)
 
-Turns VSync on or off; hidden and fixed-step (scripted) runs keep it off.
+Turns VSync on or off; hidden windows and requests that do not wait for the display keep it off.
 
 ```csharp
 public bool SetVSync(bool on)
@@ -412,20 +448,24 @@ Switches between the window and borderless full screen (exclusive full screen go
 public void ToggleFullscreen()
 ```
 
-### <a id="MicroEngine_Sdl_SdlPlatform_Wait_System_Double_"></a> Wait\(double\)
+### <a id="MicroEngine_Sdl_SdlPlatform_TryGetCapability__1___0__"></a> TryGetCapability<T\>\(out T?\)
 
-Waits with SDL's precise delay (a high-resolution timer, then a short spin).
+The optional feature of type <code class="typeparamref">T</code> this host offers, if it offers one.
 
 ```csharp
-public bool Wait(double seconds)
+public bool TryGetCapability<T>(out T? capability) where T : class
 ```
 
 #### Parameters
 
-`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+`capability` T?
 
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Type Parameters
+
+`T`
 
 </div>

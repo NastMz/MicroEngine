@@ -90,7 +90,7 @@ public sealed class PlatformEquivalenceTests
         return image;
     }
 
-    private static PlatformRequest Request(ProbeGame game) => new(game.Settings) { Hidden = true, FixedStep = true, Mute = true, CaptureScale = 1 };
+    private static PlatformRequest Request(ProbeGame game) => new(game.Settings) { Hidden = true, WaitForDisplay = false, Mute = true, CaptureScale = 1 };
 
     /// <summary>Runs the probe on a platform and returns the captured frame, or skips when the platform cannot open here.</summary>
     private static PixelImage Capture(PlatformProfile profile) =>
@@ -120,7 +120,7 @@ public sealed class PlatformEquivalenceTests
         {
             using (platform)
             {
-                var result = GameRunner.Run(game, platform, new RunOptions { Script = new InputScript().Capture(1, "probe.png").QuitAfter(2), CaptureDirectory = dir });
+                var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, Script = new InputScript().Capture(1, "probe.png").QuitAfter(2), CaptureDirectory = dir });
                 Assert.IsNull(result.Error, result.Error?.ToString());
             }
             frame = PixelImage.Load(Path.Combine(dir, "probe.png"));
@@ -235,7 +235,7 @@ public sealed class PlatformEquivalenceTests
         {
             Native.Require(platform.Audio is SdlAudioDevice, "SDL's dummy audio driver is unavailable here");
             Assert.IsFalse(Raylib_cs.Raylib.IsAudioDeviceReady(), "raylib must not open its own device when audio is replaced");
-            var result = GameRunner.Run(game, platform, new RunOptions { MaxUpdates = 30 });
+            var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, MaxUpdates = 30 });
             Assert.IsNull(result.Error, result.Error?.ToString());
             Assert.AreEqual(30, game.SoundsPlayed);
         }

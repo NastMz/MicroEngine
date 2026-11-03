@@ -325,7 +325,7 @@ the shape, so a rounded square's corners are slightly outside it.
 
 ### Safe areas, density and orientation
 
-`IPlatform.Touch` (`ITouchScreen`) reports the drawable size, the **safe area** (the part no notch, rounded corner,
+`IPlatform.Touch` (`ITouchScreen`; next SDK version: the platform's `ITouchScreen` capability, `Game.TryGetCapability<ITouchScreen>`) reports the drawable size, the **safe area** (the part no notch, rounded corner,
 system bar or home indicator covers), pixels per dp and whether touch is the main input. Controls are anchored to the
 safe area. The game frame is also fitted inside the safe area (`FrameLayout.Fit`), and on a portrait screen it sits at
 the top so the controls get the space below. Rotating re-lays the controls out.

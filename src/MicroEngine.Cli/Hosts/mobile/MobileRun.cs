@@ -20,7 +20,8 @@ internal sealed record MobileLaunch(string? ScriptName, string? Script, IReadOnl
 
 /// <summary>
 /// One run of the selected game (<see cref="GameEntry"/>) for a mobile host, with the same options as
-/// <c>DesktopLauncher --script</c>: a scripted run has a fixed step, seed 1 and writes its captures. Every line it
+/// <c>DesktopLauncher --script</c>: a scripted run is in deterministic time, does not wait for the display, has
+/// seed 1 and writes its captures. Every line it
 /// logs starts with "microengine:" so a test can find it in the device log.
 /// </summary>
 internal static class MobileRun
@@ -32,7 +33,7 @@ internal static class MobileRun
         try
         {
             options = launch.Script is { } text
-                ? new RunOptions { Script = InputScript.Parse(text), Seed = 1, CaptureDirectory = launch.CaptureDirectory, FirstFrame = firstFrame }
+                ? new RunOptions { Script = InputScript.Parse(text), Seed = 1, CaptureDirectory = launch.CaptureDirectory, FirstFrame = firstFrame, TimeMode = MicroEngine.Kernel.TimeMode.Deterministic }
                 : new RunOptions { Seed = Environment.TickCount & 0x7fffffff, FirstFrame = firstFrame };
         }
         catch (FormatException e)
@@ -58,7 +59,7 @@ internal static class MobileRun
         // The active scene, logged when it changes, so a test can tell that input sent by the system reached the game
         // without depending on a screenshot. A diagnostic read from a timer thread: only a reference is read.
         string? scene = null, probe = null;
-        bool suspended = false, controlsLogged = false;
+        bool lifecycleLogged = false, controlsLogged = false;
         // MICROENGINE_PROBE=1 (a test's --env) also logs where the touch controls are on this screen, once, and the
         // actions down with the scene's own description whenever they change, so a check can tell that touches moved
         // the player rather than only that a scene changed.
@@ -67,7 +68,13 @@ internal static class MobileRun
         {
             string? now = game.Scenes?.Current?.GetType().Name;
             if (now is not null && now != scene) log($"microengine: scene {scene = now}");
-            if (platform.Suspended != suspended) log($"microengine: {((suspended = !suspended) ? "suspended" : "resumed")}");
+            // The game's lifecycle exists once it started; suspensions are then logged as the loop raises them.
+            if (!lifecycleLogged && game.Scenes is not null)
+            {
+                lifecycleLogged = true;
+                game.Lifecycle.Suspending += () => log("microengine: suspended");
+                game.Lifecycle.Resumed += () => log("microengine: resumed");
+            }
             if (!probing || game.Touch is not { } touch || game.Input is not { } input) return;
             try
             {

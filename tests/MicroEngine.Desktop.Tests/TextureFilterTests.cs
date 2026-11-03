@@ -56,7 +56,7 @@ public sealed class TextureFilterTests
     {
         var game = new FilterGame();
         IPlatform platform;
-        try { platform = profile.Create(new PlatformRequest(game.Settings) { Hidden = true, FixedStep = true, Mute = true, CaptureScale = 1 }); }
+        try { platform = profile.Create(new PlatformRequest(game.Settings) { Hidden = true, WaitForDisplay = false, Mute = true, CaptureScale = 1 }); }
         catch (InvalidOperationException e)
         {
             Native.Require(false, $"{profile.Name} cannot open a window here: {e.Message}");
@@ -67,7 +67,7 @@ public sealed class TextureFilterTests
         {
             using (platform)
             {
-                var result = GameRunner.Run(game, platform, new RunOptions { Script = new InputScript().Capture(1, "frame.png").QuitAfter(2), CaptureDirectory = dir });
+                var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, Script = new InputScript().Capture(1, "frame.png").QuitAfter(2), CaptureDirectory = dir });
                 Assert.IsNull(result.Error, result.Error?.ToString());
             }
             return PixelImage.Load(Path.Combine(dir, "frame.png"));

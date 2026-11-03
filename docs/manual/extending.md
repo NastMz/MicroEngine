@@ -112,48 +112,30 @@ example with this transition.
 
 A platform is an `IPlatform`: time, events, a renderer per frame, the graphics, audio and input devices, screenshots,
 fullscreen and suspension. Writing one for a new library is a project of its own ([Writing a new
-backend](backends.md#writing-a-new-backend)); wrapping an existing one is a few lines. This wrapper counts presented
-frames, and a profile makes it selectable from the command line:
+backend](backends.md#writing-a-new-backend)); building on an existing one is a few lines. This profile runs another
+platform and reports it as it starts, selectable from the command line:
 
 <!-- code: samples/Examples/Extending.cs#platform -->
 ```csharp
 /// <summary>
-/// A platform of your own does not have to start from nothing: this one wraps any other platform and counts the
-/// frames it presents (telemetry, a frame-rate overlay, a recorder would hook in the same place).
+/// A platform of your own does not have to start from nothing: a profile can build on another one. This one runs any
+/// platform with the request it is given and reports, as it starts, which platform the launcher got and whether it has
+/// sound (telemetry or a host's diagnostics would hook in the same place). The platform it returns is the original
+/// one, so every feature it has stays available.
 /// </summary>
-public sealed class CountingPlatform(IPlatform inner) : IPlatform
+public static class ReportingPlatform
 {
-    public long Frames { get; private set; }
-
-    public IGraphicsDevice Graphics => inner.Graphics;
-    public IAudioDevice Audio => inner.Audio;
-    public IInputSource Input => inner.Input;
-    public ITouchScreen? Touch => inner.Touch;
-    public bool CloseRequested => inner.CloseRequested;
-    public double Now => inner.Now;
-    public bool RealTime => inner.RealTime;
-    public bool Suspended => inner.Suspended;
-    public void PollEvents() => inner.PollEvents();
-    public IRenderer BeginFrame() => inner.BeginFrame();
-    public void EndFrame()
-    {
-        inner.EndFrame();
-        Frames++;
-    }
-    public void SaveScreenshot(string path) => inner.SaveScreenshot(path);
-    public void ToggleFullscreen() => inner.ToggleFullscreen();
-    public void Dispose()
-    {
-        Console.WriteLine($"{Frames} frames presented");
-        inner.Dispose();
-    }
-
-    /// <summary>A profile for the launcher's catalog: "--platform sdl-counted" runs SDL through this wrapper.</summary>
+    /// <summary>A profile for the launcher's catalog: "--platform sdl-reported" runs SDL and says so.</summary>
     public static PlatformProfile Wrap(PlatformProfile profile) => new(
-        $"{profile.Name}-counted", $"{profile.Description}, counting frames",
-        request => new CountingPlatform(profile.Create(request)))
+        $"{profile.Name}-reported", $"{profile.Description}, reported at start",
+        request =>
+        {
+            var platform = profile.Create(request);
+            Console.WriteLine($"started {platform} ({(platform.Audio.IsAvailable ? "with" : "without")} sound)");
+            return platform;
+        })
     {
-        CheckSupport = () => profile.UnsupportedReason,   // runs wherever the wrapped platform runs
+        CheckSupport = () => profile.UnsupportedReason,   // runs wherever the original platform runs
         Replaceable = profile.Replaceable,
     };
 }
@@ -164,22 +146,27 @@ The game's `Program.cs` adds the profile to the desktop catalog:
 <!-- code: samples/Examples/Program.cs#launch -->
 ```csharp title="Program.cs"
 // The official desktop catalog (sdl, raylib, sdl-software, headless) plus one platform of our own:
-// "--platform sdl-counted" runs SDL through CountingPlatform (Extending.cs).
-var catalog = DesktopLauncher.CreateCatalog().Add(CountingPlatform.Wrap(SdlPlatform.Profile));
+// "--platform sdl-reported" runs SDL and reports it at start (ReportingPlatform, Extending.cs).
+var catalog = DesktopLauncher.CreateCatalog().Add(ReportingPlatform.Wrap(SdlPlatform.Profile));
 return DesktopLauncher.Run(new ExamplesGame(), args, catalog);
 ```
 
 ```text
-$ microengine run --project samples/Examples --platform sdl-counted -- --frames 30
-done: 30 updates, 30 frames
-30 frames presented
+$ microengine run --project samples/Examples --platform sdl-reported -- --frames 30
+started SDL renderer direct3d11 (with sound)
 ```
 
 - A `PlatformProfile` has a name (for `--platform` and `MICROENGINE_PLATFORM`), a description (for
   `--list-platforms`), a factory from `PlatformRequest` to `IPlatform`, `CheckSupport` (null when it can run here,
   otherwise the reason) and `Replaceable` (the parts a host may supply: audio, extra input).
 - The `PlatformRequest` carries the game's settings and identity, window scale, hidden and fixed-step modes, mute and
-  the replaced parts; a factory passes it on.
+  the replaced parts; a factory passes it on. Next SDK version (not published yet: arrives with the next SDK version):
+  the fixed-step mode is gone; the request's explicit options are `WaitForDisplay` and `StartGamepadsAfterFirstFrame`
+  ([Platform request options](../reference/configuration.md#platform-request-options)).
+- A class that wraps a platform implements every member of `IPlatform` and forwards it. Next SDK version: that
+  includes the host contract `IPlatform` extends and its capability query (`TryGetCapability<T>`), so the wrapped
+  platform's optional features stay available; a profile like the one above, which returns the original platform,
+  needs none of it.
 - The catalog's first profile that can run is the default. `DesktopLauncher.CreateCatalog()` holds `sdl`, `raylib`,
   `sdl-software` and `headless`; a game that ships SDL only builds its own with `new PlatformCatalog()`.
 

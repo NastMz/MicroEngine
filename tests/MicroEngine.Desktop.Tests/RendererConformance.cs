@@ -37,7 +37,7 @@ public abstract class RendererConformance
     protected virtual Variation Allowed => Variation.None;
 
     /// <summary>
-    /// Opens the backend for <paramref name="game"/> (hidden window, fixed step, mute, captures at scale 1), or returns
+    /// Opens the backend for <paramref name="game"/> (hidden window, no display wait, mute, captures at scale 1), or returns
     /// null after marking the test skipped when it cannot open here.
     /// </summary>
     protected abstract IPlatform? Open(Game game, PlatformRequest request);
@@ -46,14 +46,14 @@ public abstract class RendererConformance
     protected PixelImage Render(int width, int height, Action<IRenderer, IGraphicsDevice> draw)
     {
         var game = new RuleGame(width, height, draw);
-        var request = new PlatformRequest(game.Settings) { Hidden = true, FixedStep = true, Mute = true, CaptureScale = 1 };
+        var request = new PlatformRequest(game.Settings) { Hidden = true, WaitForDisplay = false, Mute = true, CaptureScale = 1 };
         var platform = Open(game, request) ?? throw new AssertInconclusiveException("the backend cannot open here");
         string dir = Path.Combine(Path.GetTempPath(), "microengine-conformance-" + Guid.NewGuid().ToString("N"));
         try
         {
             using (platform)
             {
-                var result = GameRunner.Run(game, platform, new RunOptions { Script = new InputScript().Capture(1, "rule.png").QuitAfter(2), CaptureDirectory = dir });
+                var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, Script = new InputScript().Capture(1, "rule.png").QuitAfter(2), CaptureDirectory = dir });
                 Assert.IsNull(result.Error, result.Error?.ToString());
             }
             return PixelImage.Load(Path.Combine(dir, "rule.png"));

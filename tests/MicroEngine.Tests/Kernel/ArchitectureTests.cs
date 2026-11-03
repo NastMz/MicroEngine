@@ -98,6 +98,19 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_platform_contracts_reference_only_the_kernel()
+    {
+        var platform = typeof(MicroEngine.Platform.IPlatformHost).Assembly;
+        Assert.AreEqual(Platform, platform.GetName().Name);
+        Assert.AreEqual(Platform, typeof(MicroEngine.Platform.ISurface).Assembly.GetName().Name, "the surface is a platform contract");
+        Assert.AreEqual(Platform, typeof(MicroEngine.Platform.IStorage).Assembly.GetName().Name);
+        Assert.AreEqual(Platform, typeof(MicroEngine.Platform.IContentSource).Assembly.GetName().Name);
+        var engine = platform.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
+        CollectionAssert.AreEqual(new[] { Kernel }, engine, string.Join(", ", engine));
+        CollectionAssert.Contains(typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList(), Platform, "the core is built on the platform contracts");
+    }
+
+    [TestMethod]
     public void The_compiled_core_references_only_allowed_assemblies()
     {
         var engine = typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();

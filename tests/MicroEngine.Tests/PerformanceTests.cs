@@ -30,22 +30,16 @@ public class PerformanceTests
     }
 
     /// <summary>A real-time platform whose clock the test sets, optionally paced to a display.</summary>
-    private sealed class DisplayPlatform(double displayRate) : IPlatform
+    private sealed class DisplayPlatform : TestPlatform, MicroEngine.Platform.IDisplayPacing
     {
-        private readonly HeadlessPlatform _inner = new();
-        public IGraphicsDevice Graphics => _inner.Graphics;
-        public IAudioDevice Audio => _inner.Audio;
-        public IInputSource Input => _inner.Input;
-        public bool CloseRequested => false;
-        public double Now { get; set; }
-        public bool RealTime => true;
-        public double DisplayRate => displayRate;
-        public void PollEvents() { }
-        public IRenderer BeginFrame() => _inner.BeginFrame();
-        public void EndFrame() { }
-        public void SaveScreenshot(string path) { }
-        public void ToggleFullscreen() { }
-        public void Dispose() => _inner.Dispose();
+        public DisplayPlatform(double displayRate) : base(realTime: true)
+        {
+            DisplayRate = displayRate;
+            Now = 0;
+            Capabilities.Add<MicroEngine.Platform.IDisplayPacing>(this);
+        }
+        public double DisplayRate { get; }
+        public override void EndFrame() { }
     }
 
     /// <summary>
@@ -296,13 +290,13 @@ public class PerformanceTests
     }
 
     [TestMethod]
-    public void Deterministic_runs_open_no_physical_audio_unless_asked()
+    public void A_platform_opens_physical_audio_unless_asked_not_to()
     {
+        // Silence for deterministic (scripted) runs is the launcher's choice (--audio auto), never the platform's.
         var settings = new GameSettings("audio");
         Assert.IsTrue(new PlatformRequest(settings).OpensOwnAudio, "a window a player watches");
-        Assert.IsTrue(new PlatformRequest(settings) { Hidden = true }.OpensOwnAudio, "a hidden real-time window implies no silence");
-        Assert.IsFalse(new PlatformRequest(settings) { FixedStep = true }.OpensOwnAudio, "deterministic (scripted) run");
-        Assert.IsFalse(new PlatformRequest(settings) { Hidden = true, FixedStep = true }.OpensOwnAudio, "hidden scripted run");
+        Assert.IsTrue(new PlatformRequest(settings) { Hidden = true }.OpensOwnAudio, "a hidden window implies no silence");
+        Assert.IsTrue(new PlatformRequest(settings) { WaitForDisplay = false }.OpensOwnAudio, "not waiting for the display implies no silence");
         Assert.IsTrue(new PlatformRequest(settings) { Hidden = true, AudioOutput = AudioOutput.Device }.OpensOwnAudio, "asked for a device");
         Assert.IsFalse(new PlatformRequest(settings) { AudioOutput = AudioOutput.Silent }.OpensOwnAudio);
         Assert.IsFalse(new PlatformRequest(settings) { AudioOutput = AudioOutput.Device, Mute = true }.OpensOwnAudio, "mute wins");

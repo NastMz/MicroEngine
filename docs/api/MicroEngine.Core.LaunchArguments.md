@@ -297,8 +297,9 @@ public int Seed { get; init; }
 
 ### <a id="MicroEngine_Core_LaunchArguments_Time"></a> Time
 
-<code>--time</code>: how the loop advances time, or null to leave it to the game and the platform. A script means
-[Deterministic](MicroEngine.Kernel.TimeMode.md) unless <code>--time</code> is given; <code>--hidden</code> changes nothing.
+<code>--time</code>: how the loop advances time, or null to leave it to the game. A script means
+[Deterministic](MicroEngine.Kernel.TimeMode.md) unless <code>--time</code> is given; <code>--hidden</code> changes nothing; the
+headless platform's [RunPreset](MicroEngine.Core.RunPreset.md) makes its runs deterministic when this is null.
 
 ```csharp
 public TimeMode? Time { get; init; }

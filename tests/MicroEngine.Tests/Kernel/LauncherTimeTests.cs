@@ -21,14 +21,14 @@ public sealed class LauncherTimeTests
         }
     }
 
-    /// <summary>Runs the launcher on a catalog whose only platform records the request (a headless platform that prefers real time).</summary>
+    /// <summary>Runs the launcher on a catalog whose only platform records the request (a headless platform under another name).</summary>
     private static (PlatformRequest Request, Game Game, int Code) Launch(params string[] args)
     {
         PlatformRequest? seen = null;
         var catalog = new PlatformCatalog().Add(new PlatformProfile("probe", "records the request", request =>
         {
             seen = request;
-            return HeadlessPlatform.For(request.Settings);
+            return HeadlessPlatform.For(request);
         }));
         var game = new Quiet();
         var output = Console.Out;
@@ -53,7 +53,7 @@ public sealed class LauncherTimeTests
     {
         Assert.AreEqual(TimeMode.RealTime, LaunchArguments.Parse(["--time", "realtime"]).Time);
         Assert.AreEqual(TimeMode.Deterministic, LaunchArguments.Parse(["--time", "deterministic"]).Time);
-        Assert.IsNull(LaunchArguments.Parse([]).Time, "no choice: the platform's preference");
+        Assert.IsNull(LaunchArguments.Parse([]).Time, "no choice: the game's, else real time");
         Assert.IsNull(LaunchArguments.Parse(["--hidden"]).Time, "a hidden window implies nothing about time");
         Assert.AreEqual("--time needs realtime or deterministic, not 'fast'.",
             Assert.ThrowsExactly<FormatException>(() => LaunchArguments.Parse(["--time", "fast"])).Message);
@@ -79,23 +79,44 @@ public sealed class LauncherTimeTests
         var (request, game, code) = Launch("--hidden");
         Assert.AreEqual(0, code);
         Assert.IsTrue(request.Hidden);
-        Assert.IsFalse(request.FixedStep, "hidden no longer implies deterministic time");
+        Assert.IsTrue(request.WaitForDisplay, "hidden implies nothing about time or pacing");
         Assert.IsTrue(request.OpensOwnAudio, "hidden no longer implies silence");
-        Assert.AreEqual(TimeMode.Deterministic, game.TimeSettings.Mode, "no choice: this headless platform's preference decides");
+        Assert.AreEqual(TimeMode.Deterministic, game.TimeSettings.Mode, "no choice: this headless platform's preset decides");
     }
 
     [TestMethod]
-    public void Deterministic_time_is_passed_to_the_backend_and_the_loop_and_stays_silent()
+    public void A_deterministic_run_asks_the_platform_explicitly_for_no_display_wait_and_no_sound()
     {
         var (request, game, code) = Launch("--hidden", "--time", "deterministic");
         Assert.AreEqual(0, code);
-        Assert.IsTrue(request.FixedStep);
-        Assert.IsFalse(request.OpensOwnAudio, "a deterministic run is not heard");
-        Assert.AreEqual(TimeMode.Deterministic, game.TimeSettings.Mode);
+        Assert.IsFalse(request.WaitForDisplay, "the launcher's explicit option for deterministic runs");
+        Assert.IsFalse(request.StartGamepadsAfterFirstFrame, "no start screen in deterministic time");
+        Assert.AreEqual(AudioOutput.Silent, request.AudioOutput, "--audio auto: a deterministic run is not heard");
+        Assert.IsFalse(request.OpensOwnAudio);
+        Assert.AreEqual(TimeMode.Deterministic, game.TimeSettings.Mode, "the time mode goes to the loop only");
 
         var (real, realGame, _) = Launch("--time", "realtime");
-        Assert.IsFalse(real.FixedStep);
-        Assert.AreEqual(TimeMode.RealTime, realGame.TimeSettings.Mode, "the run's choice wins over the platform's preference");
+        Assert.IsTrue(real.WaitForDisplay);
+        Assert.AreEqual(AudioOutput.Automatic, real.AudioOutput);
+        Assert.AreEqual(TimeMode.RealTime, realGame.TimeSettings.Mode);
+    }
+
+    [TestMethod]
+    public void A_headless_run_is_deterministic_unless_time_says_otherwise()
+    {
+        var headless = new Quiet();
+        var output = Console.Out;
+        Console.SetOut(new StringWriter());
+        try
+        {
+            Assert.AreEqual(0, GameLauncher.Run(headless, ["--headless", "--frames", "3"], new PlatformCatalog()));
+            Assert.AreEqual(TimeMode.Deterministic, headless.TimeSettings.Mode, "--headless: one step per frame");
+            Assert.AreEqual(3, headless.UpdateCount);
+            var real = new Quiet();
+            Assert.AreEqual(0, GameLauncher.Run(real, ["--headless", "--time", "realtime", "--frames", "3"], new PlatformCatalog()));
+            Assert.AreEqual(TimeMode.RealTime, real.TimeSettings.Mode);
+        }
+        finally { Console.SetOut(output); }
     }
 
     [TestMethod]

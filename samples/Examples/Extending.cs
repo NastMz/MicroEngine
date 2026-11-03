@@ -44,42 +44,24 @@ public sealed class CurtainTransition(float duration = 0.6f) : Transition(durati
 
 #region platform
 /// <summary>
-/// A platform of your own does not have to start from nothing: this one wraps any other platform and counts the
-/// frames it presents (telemetry, a frame-rate overlay, a recorder would hook in the same place).
+/// A platform of your own does not have to start from nothing: a profile can build on another one. This one runs any
+/// platform with the request it is given and reports, as it starts, which platform the launcher got and whether it has
+/// sound (telemetry or a host's diagnostics would hook in the same place). The platform it returns is the original
+/// one, so every feature it has stays available.
 /// </summary>
-public sealed class CountingPlatform(IPlatform inner) : IPlatform
+public static class ReportingPlatform
 {
-    public long Frames { get; private set; }
-
-    public IGraphicsDevice Graphics => inner.Graphics;
-    public IAudioDevice Audio => inner.Audio;
-    public IInputSource Input => inner.Input;
-    public ITouchScreen? Touch => inner.Touch;
-    public bool CloseRequested => inner.CloseRequested;
-    public double Now => inner.Now;
-    public bool RealTime => inner.RealTime;
-    public bool Suspended => inner.Suspended;
-    public void PollEvents() => inner.PollEvents();
-    public IRenderer BeginFrame() => inner.BeginFrame();
-    public void EndFrame()
-    {
-        inner.EndFrame();
-        Frames++;
-    }
-    public void SaveScreenshot(string path) => inner.SaveScreenshot(path);
-    public void ToggleFullscreen() => inner.ToggleFullscreen();
-    public void Dispose()
-    {
-        Console.WriteLine($"{Frames} frames presented");
-        inner.Dispose();
-    }
-
-    /// <summary>A profile for the launcher's catalog: "--platform sdl-counted" runs SDL through this wrapper.</summary>
+    /// <summary>A profile for the launcher's catalog: "--platform sdl-reported" runs SDL and says so.</summary>
     public static PlatformProfile Wrap(PlatformProfile profile) => new(
-        $"{profile.Name}-counted", $"{profile.Description}, counting frames",
-        request => new CountingPlatform(profile.Create(request)))
+        $"{profile.Name}-reported", $"{profile.Description}, reported at start",
+        request =>
+        {
+            var platform = profile.Create(request);
+            Console.WriteLine($"started {platform} ({(platform.Audio.IsAvailable ? "with" : "without")} sound)");
+            return platform;
+        })
     {
-        CheckSupport = () => profile.UnsupportedReason,   // runs wherever the wrapped platform runs
+        CheckSupport = () => profile.UnsupportedReason,   // runs wherever the original platform runs
         Replaceable = profile.Replaceable,
     };
 }

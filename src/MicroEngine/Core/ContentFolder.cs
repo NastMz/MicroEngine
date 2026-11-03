@@ -1,14 +1,22 @@
+using MicroEngine.Platform;
+
 namespace MicroEngine.Core;
 
 /// <summary>
 /// Locates a game's asset files. By default the root is the <c>Content</c> folder next to the
 /// executable (games copy it there at build time). Missing files fail with the full path so a
-/// broken install or a typo is obvious.
+/// broken install or a typo is obvious. A content source (<see cref="IContentSource"/>) over a
+/// <see cref="FolderContentSource"/>.
 /// </summary>
-public sealed class ContentFolder
+public sealed class ContentFolder : IContentSource
 {
+    private readonly FolderContentSource _source;
+
     /// <summary>The absolute path of the content folder.</summary>
-    public string Root { get; }
+    public string Root => _source.Root;
+
+    /// <summary>The same as <see cref="Root"/>.</summary>
+    public string Location => _source.Location;
 
     /// <summary>
     /// Root used when a game passes none. Null means the <c>Content</c> folder next to the executable; a host whose
@@ -19,11 +27,8 @@ public sealed class ContentFolder
     /// <summary>Opens a content folder.</summary>
     /// <param name="root">The folder, absolute or relative to the working directory; null uses <see cref="DefaultRoot"/> or the <c>Content</c> folder next to the executable.</param>
     /// <exception cref="DirectoryNotFoundException">The folder does not exist.</exception>
-    public ContentFolder(string? root = null)
-    {
-        Root = Path.GetFullPath(root ?? DefaultRoot ?? Path.Combine(AppContext.BaseDirectory, "Content"));
-        if (!Directory.Exists(Root)) throw new DirectoryNotFoundException($"Content folder not found: {Root}");
-    }
+    public ContentFolder(string? root = null) =>
+        _source = new FolderContentSource(root ?? DefaultRoot ?? Path.Combine(AppContext.BaseDirectory, "Content"));
 
     /// <summary>
     /// Full path of a file given relative to the root with '/' separators. The name must match the file's letter case
@@ -32,63 +37,21 @@ public sealed class ContentFolder
     /// </summary>
     /// <exception cref="ArgumentException">The path leaves the content folder.</exception>
     /// <exception cref="FileNotFoundException">No such file, or its name is spelled with another letter case.</exception>
-    public string PathOf(string relative)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(relative);
-        var path = Resolve(relative) ?? throw new ArgumentException($"'{relative}' is outside the content folder.", nameof(relative));
-        // On a case-sensitive system a wrong spelling is simply missing; CheckCase then names the real one.
-        CheckCase(path);
-        if (!File.Exists(path)) throw new FileNotFoundException($"Content file not found: {path}", path);
-        return path;
-    }
+    public string PathOf(string relative) => _source.PathOf(relative);
 
     /// <summary>
     /// The files directly inside <paramref name="folder"/> (relative to the root, '/' separators; "" for the root), as
     /// '/'-separated paths relative to the root, in ordinal order.
     /// </summary>
     /// <exception cref="DirectoryNotFoundException">The folder does not exist.</exception>
-    public IReadOnlyList<string> Files(string folder)
-    {
-        ArgumentNullException.ThrowIfNull(folder);
-        var path = (folder.Trim('/').Length == 0 ? Root : Resolve(folder)) ?? throw new ArgumentException($"'{folder}' is outside the content folder.", nameof(folder));
-        if (!Directory.Exists(path)) throw new DirectoryNotFoundException($"Content folder not found: {path}");
-        if (path != Root) CheckCase(path);
-        return [.. Directory.GetFiles(path).Select(f => Path.GetRelativePath(Root, f).Replace(Path.DirectorySeparatorChar, '/')).Order(StringComparer.Ordinal)];
-    }
-
-    // Directory listings, kept so every check after the first in a folder costs a lookup. Workers preloading assets
-    // check names concurrently.
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, HashSet<string>> _listings = new(StringComparer.Ordinal);
-
-    /// <summary>Fails when a part of <paramref name="path"/> (below the root) is spelled with another letter case than on disk.</summary>
-    private void CheckCase(string path)
-    {
-        var parts = Path.GetRelativePath(Root, path).Split(Path.DirectorySeparatorChar);
-        string current = Root;
-        foreach (var part in parts)
-        {
-            if (!Directory.Exists(current)) return;
-            var names = _listings.GetOrAdd(current, dir => new HashSet<string>(Directory.EnumerateFileSystemEntries(dir).Select(Path.GetFileName)!, StringComparer.Ordinal));
-            if (!names.Contains(part))
-            {
-                string? actual = names.FirstOrDefault(n => string.Equals(n, part, StringComparison.OrdinalIgnoreCase));
-                if (actual is not null)
-                    throw new FileNotFoundException($"Content file not found: '{part}' is spelled '{actual}' on disk ({path}). Names must match exactly: Linux, Android and browsers tell letter case apart.", path);
-            }
-            current = Path.Combine(current, part);
-        }
-    }
+    public IReadOnlyList<string> Files(string folder) => _source.Files(folder);
 
     /// <summary>Whether a file exists at <paramref name="relative"/> (relative to <see cref="Root"/>, '/' separators). False for a missing file and for a path outside the folder.</summary>
-    public bool Exists(string relative) => !string.IsNullOrWhiteSpace(relative) && Resolve(relative) is { } path && File.Exists(path);
+    public bool Exists(string relative) => _source.Exists(relative);
 
-    /// <summary>The full path of <paramref name="relative"/>, or null when it leaves the root (<c>..</c>, another drive).</summary>
-    private string? Resolve(string relative)
-    {
-        var path = Path.GetFullPath(Path.Combine(Root, relative.Replace('/', Path.DirectorySeparatorChar)));
-        var inside = Path.GetRelativePath(Root, path);
-        return inside == ".." || inside.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) || Path.IsPathRooted(inside) ? null : path;
-    }
+    /// <summary>Opens a file for reading, after the checks of <see cref="PathOf"/>.</summary>
+    public Stream Open(string relative) => _source.Open(relative);
+
     /// <summary>Reads a whole file.</summary>
     /// <exception cref="FileNotFoundException">The file does not exist.</exception>
     public byte[] ReadBytes(string relative) => File.ReadAllBytes(PathOf(relative));

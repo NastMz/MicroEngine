@@ -44,16 +44,20 @@ public sealed class AssetGalleryTests
         Assert.AreEqual("10", profiler.Environment["assets.loaded"], "nine for the screen and, in a fixed-step run, the level's atlas");
     }
 
-    /// <summary>A headless platform whose clock follows the wall clock, as a desktop window's does.</summary>
+    /// <summary>A headless platform, run in real time as a desktop window is (its clock is the wall clock).</summary>
     private sealed class RealTimePlatform(HeadlessPlatform inner) : IPlatform
     {
         public IGraphicsDevice Graphics => inner.Graphics;
         public MicroEngine.Audio.IAudioDevice Audio => inner.Audio;
         public MicroEngine.Input.IInputSource Input => inner.Input;
-        public bool CloseRequested => inner.CloseRequested;
-        public double Now => System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency;
-        public bool RealTime => true;
-        public void PollEvents() => inner.PollEvents();
+        public MicroEngine.Platform.IMonotonicClock Clock => inner.Clock;
+        public bool PumpEvents(MicroEngine.Platform.IEngineEventSink sink) => inner.PumpEvents(sink);
+        public MicroEngine.Platform.ISurface? MainSurface => inner.MainSurface;
+        public bool CanBlock => inner.CanBlock;
+        // A desktop window states no run preset: runs that choose nothing are real-time.
+        public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class =>
+            typeof(T) == typeof(RunPreset) ? (capability = (T)(object)new RunPreset()) is not null : inner.TryGetCapability(out capability);
+        public MicroEngine.Color Letterbox { get => inner.Letterbox; set => inner.Letterbox = value; }
         public IRenderer BeginFrame() => inner.BeginFrame();
         public void EndFrame() => inner.EndFrame();
         public void SaveScreenshot(string path) => inner.SaveScreenshot(path);

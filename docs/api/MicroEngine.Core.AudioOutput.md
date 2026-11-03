@@ -16,7 +16,8 @@ public enum AudioOutput
 
 `Automatic = 0` 
 
-A physical device for real-time runs (hidden windows included); none for deterministic-time (scripted) runs.
+The default. A platform opens a physical device, as for [Device](MicroEngine.Core.AudioOutput.md); the launcher's <code>--audio auto</code>
+asks for none when the run is in deterministic time (scripts), whose sound would not follow the wall clock.
 
 
 

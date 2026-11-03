@@ -2,6 +2,7 @@ using System.Numerics;
 using MicroEngine.Audio;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Platform;
 
 namespace MicroEngine.Core;
 
@@ -18,27 +19,36 @@ public enum PlatformParts
 }
 
 /// <summary>
-/// What a host asks of a platform: the game's settings, window options and any subsystem it supplies itself.
-/// A backend reads the window options and must not open its own audio device when <see cref="OpensOwnAudio"/> is false.
+/// What a host asks of a platform: the game's settings, window options and any subsystem it supplies itself. Every
+/// option is explicit and has a documented default; none depends on how the loop advances time (that is the loop's
+/// business only, <see cref="RunOptions.TimeMode"/>). A backend honours the supplied parts by building its audio device
+/// with <see cref="CreateAudio"/> and its input with <see cref="CombineInput"/>; <see cref="PlatformProfile.Create"/>
+/// checks that it did.
 /// </summary>
 public sealed record PlatformRequest(GameSettings Settings)
 {
     /// <summary>Window scale; null uses <see cref="GameSettings.Scale"/>.</summary>
     public int? Scale { get; init; }
-    /// <summary>Renders into a hidden window (captures still work).</summary>
+    /// <summary>Renders into a hidden window (captures still work). A hidden window never waits for the display.</summary>
     public bool Hidden { get; init; }
     /// <summary>
-    /// The run uses deterministic time (one simulation step per frame, <see cref="Kernel.TimeMode.Deterministic"/>):
-    /// the backend reports it as its preference (<see cref="IPlatform.RealTime"/> false), does not wait for the display
-    /// and does not hold devices behind a start screen. It never changes the backend's clock, which stays monotonic.
+    /// Whether the frames of a visible window may wait for the display's refresh (true by default): VSync as
+    /// <see cref="GraphicsSettings.VSync"/> asks, and frames paced to the display (<see cref="IDisplayPacing"/>). False
+    /// never waits, whatever the settings say, for checks that run as fast as they can.
     /// </summary>
-    public bool FixedStep { get; init; }
+    public bool WaitForDisplay { get; init; } = true;
+    /// <summary>
+    /// Whether the backend starts its gamepad subsystem only after the first frame is presented (false by default:
+    /// with the platform). Hosts that present a start screen while the game loads set it, so a slow gamepad start-up
+    /// (about a second on some Windows machines) never keeps the window from appearing; pads already connected are
+    /// reported when it starts.
+    /// </summary>
+    public bool StartGamepadsAfterFirstFrame { get; init; }
     /// <summary>No sound: the backend opens no audio device.</summary>
     public bool Mute { get; init; }
     /// <summary>
-    /// Whether the backend may open a physical audio device. <see cref="AudioOutput.Automatic"/> (the default) opens one
-    /// for real-time runs, hidden windows included, and none for deterministic-time runs (<see cref="FixedStep"/>),
-    /// whose sound would not follow the wall clock.
+    /// Whether the backend may open a physical audio device: <see cref="AudioOutput.Automatic"/> (the default) and
+    /// <see cref="AudioOutput.Device"/> open one, <see cref="AudioOutput.Silent"/> opens none.
     /// </summary>
     public AudioOutput AudioOutput { get; init; }
     /// <summary>
@@ -46,20 +56,33 @@ public sealed record PlatformRequest(GameSettings Settings)
     /// pixels are visible), 1 for smoothly scaled ones (already high-resolution).
     /// </summary>
     public int CaptureScale { get; init; } = Settings.Scaling == Graphics.CanvasScaling.Smooth ? 1 : 3;
-    /// <summary>Creates the audio device used instead of the backend's; the platform disposes it.</summary>
+    /// <summary>Creates the audio device used instead of the backend's; the platform owns and disposes it.</summary>
     public Func<IAudioDevice>? Audio { get; init; }
     /// <summary>Input sources read together with the backend's (an on-screen pad, a network peer, a test).</summary>
     public IReadOnlyList<IInputSource> ExtraInput { get; init; } = [];
     /// <summary>The game's application identity (name, id, icon, orientation); null keeps the backend's defaults.</summary>
     public AppIdentity? Identity { get; init; }
 
-    /// <summary>Whether the backend should open its own audio device.</summary>
-    public bool OpensOwnAudio => Audio is null && !Mute && AudioOutput switch
+    /// <summary>Whether the backend should open its own audio device: no device was supplied, no mute, and the output is not silent.</summary>
+    public bool OpensOwnAudio => Audio is null && !Mute && AudioOutput != AudioOutput.Silent;
+
+    /// <summary>
+    /// The audio device a backend uses for this request: the one the host supplied (<see cref="Audio"/>), else the
+    /// backend's own (<paramref name="openOwn"/>) when <see cref="OpensOwnAudio"/>, else a silent device. The backend
+    /// owns and disposes the result.
+    /// </summary>
+    public IAudioDevice CreateAudio(Func<IAudioDevice> openOwn)
     {
-        AudioOutput.Device => true,
-        AudioOutput.Silent => false,
-        _ => !FixedStep,
-    };
+        ArgumentNullException.ThrowIfNull(openOwn);
+        return Audio is { } supplied ? supplied() : OpensOwnAudio ? openOwn() : new SilentAudioDevice();
+    }
+
+    /// <summary>The input a backend reports for this request: its own source, read together with <see cref="ExtraInput"/> when there are any.</summary>
+    public IInputSource CombineInput(IInputSource own)
+    {
+        ArgumentNullException.ThrowIfNull(own);
+        return ExtraInput.Count == 0 ? own : new CompositeInput([own, .. ExtraInput]);
+    }
 }
 
 /// <summary>
@@ -81,7 +104,10 @@ public enum GpuPreference
 /// <summary>Where a run's sound may go (<see cref="PlatformRequest.AudioOutput"/>, the launcher's <c>--audio</c>).</summary>
 public enum AudioOutput
 {
-    /// <summary>A physical device for real-time runs (hidden windows included); none for deterministic-time (scripted) runs.</summary>
+    /// <summary>
+    /// The default. A platform opens a physical device, as for <see cref="Device"/>; the launcher's <c>--audio auto</c>
+    /// asks for none when the run is in deterministic time (scripts), whose sound would not follow the wall clock.
+    /// </summary>
     Automatic,
     /// <summary>Always a physical device, for listening checks and package checks that must prove a device opens.</summary>
     Device,
@@ -124,7 +150,13 @@ public sealed class PlatformProfile
     /// <summary>Why the profile cannot run in this process, or null when it can; evaluates <see cref="CheckSupport"/> on each read.</summary>
     public string? UnsupportedReason => CheckSupport();
 
-    /// <summary>Builds the platform, applying the request's replacements; throws <see cref="PlatformConfigurationException"/> for a request the profile cannot honour.</summary>
+    /// <summary>
+    /// Builds the platform for <paramref name="request"/>. The supplied parts (<see cref="PlatformRequest.Audio"/>,
+    /// <see cref="PlatformRequest.ExtraInput"/>) are composed into the backend when it is built, never by wrapping it,
+    /// so the platform returned is the backend itself with all its capabilities. Throws
+    /// <see cref="PlatformConfigurationException"/> for a request the profile cannot honour, and when the backend did not
+    /// use the parts the request supplied.
+    /// </summary>
     public IPlatform Create(PlatformRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -133,20 +165,18 @@ public sealed class PlatformProfile
             throw new PlatformConfigurationException($"Platform '{Name}' does not allow replacing its audio device.");
         if (request.ExtraInput.Count > 0 && !Replaceable.HasFlag(PlatformParts.Input))
             throw new PlatformConfigurationException($"Platform '{Name}' does not allow adding input sources.");
-        var platform = _create(request);
-        if (request.Audio is null && request.ExtraInput.Count == 0) return platform;
-        IAudioDevice? audio = null;
-        try
-        {
-            audio = request.Audio?.Invoke();
-            return ComposedPlatform.Create(platform, audio, request.ExtraInput);
-        }
-        catch
-        {
-            (audio as IDisposable)?.Dispose();
-            platform.Dispose();
-            throw;
-        }
+        IAudioDevice? supplied = null;
+        var forwarded = request.Audio is { } make ? request with { Audio = () => supplied = make() } : request;
+        var platform = _create(forwarded);
+        string? ignored = null;
+        if (request.Audio is not null && !ReferenceEquals(platform.Audio, supplied))
+            ignored = $"Platform '{Name}' does not use the audio device the request supplies: a backend builds its device with PlatformRequest.CreateAudio, or its profile does not declare PlatformParts.Audio.";
+        else if (request.ExtraInput.Count > 0 && !(platform.Input is CompositeInput combined && request.ExtraInput.All(combined.Sources.Contains)))
+            ignored = $"Platform '{Name}' does not read the input sources the request adds: a backend builds its input with PlatformRequest.CombineInput, or its profile does not declare PlatformParts.Input.";
+        if (ignored is null) return platform;
+        try { platform.Dispose(); }
+        finally { (supplied as IDisposable)?.Dispose(); }
+        throw new PlatformConfigurationException(ignored);
     }
 
     /// <summary>The profile's <see cref="Name"/>.</summary>
@@ -198,89 +228,13 @@ public sealed class PlatformCatalog
 /// <summary>A platform request that cannot be met: unknown or unsupported profile, or a part the profile does not let a host replace.</summary>
 public sealed class PlatformConfigurationException(string message) : Exception(message);
 
-/// <summary>
-/// A backend platform with a replaced audio device and/or extra input sources; it owns all of them. Everything else is
-/// the backend's: every <see cref="IPlatform"/> member is forwarded (none is left to the interface's defaults), and the
-/// wrapper implements exactly the optional interfaces the backend implements (<see cref="IDisplayControl"/>,
-/// <see cref="IPlatformDiagnostics"/>), since the engine finds those by type tests.
-/// </summary>
-internal class ComposedPlatform : IPlatform
-{
-    private readonly IPlatform _inner;
-    private readonly IAudioDevice? _audio;
-    private readonly IInputSource _input;
-
-    private ComposedPlatform(IPlatform inner, IAudioDevice? audio, IReadOnlyList<IInputSource> extraInput)
-    {
-        _inner = inner;
-        _audio = audio;
-        _input = extraInput.Count == 0 ? inner.Input : new CompositeInput([inner.Input, .. extraInput]);
-    }
-
-    /// <summary>Wraps <paramref name="inner"/> in the composition that has the same optional capabilities.</summary>
-    public static ComposedPlatform Create(IPlatform inner, IAudioDevice? audio, IReadOnlyList<IInputSource> extraInput) => inner switch
-    {
-        IDisplayControl and IPlatformDiagnostics => new WithDisplayAndDiagnostics(inner, audio, extraInput),
-        IDisplayControl => new WithDisplay(inner, audio, extraInput),
-        IPlatformDiagnostics => new WithDiagnostics(inner, audio, extraInput),
-        _ => new ComposedPlatform(inner, audio, extraInput),
-    };
-
-    public IGraphicsDevice Graphics => _inner.Graphics;
-    public IAudioDevice Audio => _audio ?? _inner.Audio;
-    public IInputSource Input => _input;
-    public bool CloseRequested => _inner.CloseRequested;
-    public double Now => _inner.Now;
-    public bool RealTime => _inner.RealTime;
-    public double DisplayRate => _inner.DisplayRate;
-    public bool Suspended => _inner.Suspended;
-    public bool Wait(double seconds) => _inner.Wait(seconds);
-    public ITouchScreen? Touch => _inner.Touch;
-    public void PollEvents() => _inner.PollEvents();
-    public IRenderer BeginFrame() => _inner.BeginFrame();
-    public void EndFrame() => _inner.EndFrame();
-    public void SaveScreenshot(string path) => _inner.SaveScreenshot(path);
-    public void ToggleFullscreen() => _inner.ToggleFullscreen();
-    public Color Letterbox { get => _inner.Letterbox; set => _inner.Letterbox = value; }
-
-    public void Dispose()
-    {
-        try { (_audio as IDisposable)?.Dispose(); }
-        finally { _inner.Dispose(); }
-    }
-
-    private class WithDisplay(IPlatform inner, IAudioDevice? audio, IReadOnlyList<IInputSource> extraInput)
-        : ComposedPlatform(inner, audio, extraInput), IDisplayControl
-    {
-        private readonly IDisplayControl _display = (IDisplayControl)inner;
-        public IReadOnlyList<DisplayInfo> Displays => _display.Displays;
-        public int CurrentDisplay => _display.CurrentDisplay;
-        public bool VSync => _display.VSync;
-        public bool SetVSync(bool on) => _display.SetVSync(on);
-        public WindowMode WindowMode => _display.WindowMode;
-        public bool SetWindowMode(WindowMode mode) => _display.SetWindowMode(mode);
-        public bool MoveToDisplay(int index) => _display.MoveToDisplay(index);
-    }
-
-    private sealed class WithDisplayAndDiagnostics(IPlatform inner, IAudioDevice? audio, IReadOnlyList<IInputSource> extraInput)
-        : WithDisplay(inner, audio, extraInput), IPlatformDiagnostics
-    {
-        private readonly IPlatformDiagnostics _diagnostics = (IPlatformDiagnostics)inner;
-        public IReadOnlyDictionary<string, string> Diagnostics => _diagnostics.Diagnostics;
-    }
-
-    private sealed class WithDiagnostics(IPlatform inner, IAudioDevice? audio, IReadOnlyList<IInputSource> extraInput)
-        : ComposedPlatform(inner, audio, extraInput), IPlatformDiagnostics
-    {
-        private readonly IPlatformDiagnostics _diagnostics = (IPlatformDiagnostics)inner;
-        public IReadOnlyDictionary<string, string> Diagnostics => _diagnostics.Diagnostics;
-    }
-}
-
 /// <summary>Several input sources read as one: a key or button is down when any source has it down; the stick or axis with the largest deflection wins.</summary>
 public sealed class CompositeInput(IReadOnlyList<IInputSource> sources) : IInputSource
 {
     private readonly IInputSource[] _sources = [.. sources ?? throw new ArgumentNullException(nameof(sources))];
+
+    /// <summary>The sources read, in order.</summary>
+    public IReadOnlyList<IInputSource> Sources => _sources;
 
     /// <inheritdoc/>
     public bool IsKeyDown(Key key)

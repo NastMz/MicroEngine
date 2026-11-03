@@ -1,4 +1,5 @@
 using System.Globalization;
+using MicroEngine.Platform;
 
 namespace MicroEngine.Core;
 
@@ -10,14 +11,18 @@ namespace MicroEngine.Core;
 /// <item><c>--captures DIR</c> directory for script captures (default ./captures).</item>
 /// <item><c>--platform NAME</c> run on that platform of the catalog (default: <c>MICROENGINE_PLATFORM</c>, else the
 /// first one that can run here); <c>--list-platforms</c> prints them and exits.</item>
-/// <item><c>--headless</c> run without a window (no captures are written); the same as <c>--platform headless</c>.</item>
+/// <item><c>--headless</c> run without a window (no captures are written); the same as <c>--platform headless</c>. A
+/// headless run is in deterministic time unless <c>--time</c> says otherwise (the headless platform's
+/// <see cref="RunPreset"/>).</item>
 /// <item><c>--hidden</c> render in a hidden window (captures still work); it implies nothing about time or sound.</item>
 /// <item><c>--time realtime|deterministic</c> how the loop advances time (<see cref="Kernel.TimeMode"/>): with the
-/// wall clock, or one fixed step per frame; by default the game's choice, else the platform's preference.</item>
+/// wall clock, or one fixed step per frame; by default the game's choice, else the platform's <see cref="RunPreset"/>
+/// (headless: deterministic), else real time; a script means deterministic.</item>
 /// <item><c>--frames N</c> stop after N updates; <c>--seed N</c>; <c>--scale N</c>; <c>--mute</c>.</item>
 /// <item><c>--report</c> print the platform that runs and whether it has audio before the game starts (package checks).</item>
-/// <item><c>--audio auto|device|silent</c> where sound may go (<see cref="AudioOutput"/>); by default
-/// deterministic-time runs (scripts, <c>--time deterministic</c>) open no physical device, so checks are never heard.</item>
+/// <item><c>--audio auto|device|silent</c> where sound may go (<see cref="AudioOutput"/>); <c>auto</c> (the default)
+/// asks for no physical device when the run is in deterministic time (scripts, <c>--time deterministic</c>), so checks
+/// are never heard, and for one otherwise (the headless platform has none).</item>
 /// <item><c>--audio-capture FILE</c> play nothing aloud and write what would have been heard as a WAV
 /// (<see cref="Audio.CaptureAudioDevice"/>).</item>
 /// <item><c>--gpu auto|high-performance|power-saving</c> the GPU to ask for on a machine with two
@@ -33,6 +38,10 @@ namespace MicroEngine.Core;
 /// <item><c>--profile FILE</c> measure every frame and the start phases (<see cref="FrameProfiler"/>), print a summary and
 /// write the results as JSON, or CSV when FILE ends in .csv.</item>
 /// </list>
+/// A run in deterministic time also asks the platform, through explicit request options, not to wait for the display
+/// (<see cref="PlatformRequest.WaitForDisplay"/>) and for no sound device (<c>--audio auto</c>); a run in real time
+/// whose game shows a start screen asks it to start gamepads after the first frame
+/// (<see cref="PlatformRequest.StartGamepadsAfterFirstFrame"/>). The platform itself never knows the time mode.
 /// Returns a process exit code: 0 on success, 1 on a game or platform error, 2 on bad arguments.
 /// </summary>
 public static class GameLauncher
@@ -64,6 +73,8 @@ public static class GameLauncher
 
         var profiler = parsed.ProfilePath is null ? null : new FrameProfiler();
         var graphics = parsed.ApplyTo(game.Settings.Graphics);
+        bool deterministic = parsed.Time == Kernel.TimeMode.Deterministic;
+        var identity = AppIdentity.Of(game);
         var options = new RunOptions
         {
             Graphics = graphics,
@@ -80,10 +91,11 @@ public static class GameLauncher
         {
             Scale = parsed.Scale,
             Hidden = parsed.Hidden,
-            FixedStep = parsed.Time == Kernel.TimeMode.Deterministic,
+            WaitForDisplay = !deterministic,
+            StartGamepadsAfterFirstFrame = !deterministic && !parsed.Hidden && options.StartScreen && identity is { Splash: true },
             Mute = parsed.Mute,
-            AudioOutput = parsed.Audio,
-            Identity = AppIdentity.Of(game),
+            AudioOutput = parsed.Audio == AudioOutput.Automatic && deterministic ? AudioOutput.Silent : parsed.Audio,
+            Identity = identity,
         };
         if (configure is not null) request = configure(request);
         // Applied after the host's changes: the option is explicit, so it replaces an audio device the host supplies.
@@ -137,7 +149,7 @@ public static class GameLauncher
         if (parsed.Report) foreach (var line in Report(profile, platform)) Console.WriteLine(line);
         var result = GameRunner.Run(game, platform, options);
         // Described after the run, so facts the platform learns while running (such as late start steps) are included.
-        if (profiler is not null) Describe(profiler, profile, platform, game.Settings);
+        if (profiler is not null) Describe(profiler, profile, platform, game);
         foreach (var shot in result.Captures) Console.WriteLine($"capture: {shot}");
         if (capture is not null && parsed.AudioCapturePath is { } wav)
         {
@@ -195,8 +207,9 @@ public static class GameLauncher
     public const int ProfileWarmupFrames = 60;
 
     /// <summary>Records the facts a profile is compared by: machine, system, runtime, platform and canvas.</summary>
-    private static void Describe(FrameProfiler profiler, PlatformProfile profile, IPlatform platform, GameSettings settings)
+    private static void Describe(FrameProfiler profiler, PlatformProfile profile, IPlatform platform, Game game)
     {
+        var settings = game.Settings;
         var env = profiler.Environment;
         env["os"] = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
         env["architecture"] = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString();
@@ -204,11 +217,11 @@ public static class GameLauncher
         env["processors"] = Environment.ProcessorCount.ToString(CultureInfo.InvariantCulture);
         env["gc"] = System.Runtime.GCSettings.IsServerGC ? "server" : "workstation";
         env["platform"] = Report(profile, platform)[0]["platform: ".Length..];
-        env["realTime"] = platform.RealTime ? "true" : "false";
+        env["realTime"] = game.EngineOrNull?.Time.Mode == Kernel.TimeMode.Deterministic ? "false" : "true";
         env["canvas"] = $"{settings.VirtualWidth}x{settings.VirtualHeight}";
         env["updateRate"] = settings.UpdateRate.ToString(CultureInfo.InvariantCulture);
         env["engine"] = typeof(Game).Assembly.GetName().Version?.ToString() ?? "";
-        if (platform is IPlatformDiagnostics diagnostics)
+        if (platform.TryGetCapability<IPlatformDiagnostics>(out var diagnostics))
             foreach (var (key, value) in diagnostics.Diagnostics) env[key] = value;
     }
 
@@ -276,8 +289,9 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
         };
     }
     /// <summary>
-    /// <c>--time</c>: how the loop advances time, or null to leave it to the game and the platform. A script means
-    /// <see cref="Kernel.TimeMode.Deterministic"/> unless <c>--time</c> is given; <c>--hidden</c> changes nothing.
+    /// <c>--time</c>: how the loop advances time, or null to leave it to the game. A script means
+    /// <see cref="Kernel.TimeMode.Deterministic"/> unless <c>--time</c> is given; <c>--hidden</c> changes nothing; the
+    /// headless platform's <see cref="RunPreset"/> makes its runs deterministic when this is null.
     /// </summary>
     public Kernel.TimeMode? Time { get; init; }
     /// <summary><c>--pacing</c>: false for <c>measured</c>, true (the default) for <c>display</c>.</summary>

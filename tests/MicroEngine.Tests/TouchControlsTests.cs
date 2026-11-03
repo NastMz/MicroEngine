@@ -670,23 +670,10 @@ public sealed class TouchControlsTests
         }
     }
 
-    private sealed class SuspendingPlatform : IPlatform
+    private sealed class SuspendingPlatform : TestPlatform
     {
-        public HeadlessPlatform Inner { get; } = new();
-        public bool Suspended { get; set; }
         public ITouchScreen Touch => Inner.Touch;
-        public IGraphicsDevice Graphics => Inner.Graphics;
-        public Audio.IAudioDevice Audio => Inner.Audio;
-        public IInputSource Input => Inner.Input;
-        public bool CloseRequested => false;
-        public double Now => Inner.Now;
-        public bool RealTime => false;
-        public void PollEvents() => Inner.PollEvents();
-        public IRenderer BeginFrame() => Inner.BeginFrame();
-        public void EndFrame() { }
-        public void SaveScreenshot(string path) { }
-        public void ToggleFullscreen() { }
-        public void Dispose() { }
+        public override void EndFrame() { }
     }
 
     [TestMethod]

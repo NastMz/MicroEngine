@@ -65,8 +65,10 @@ Not published yet: merged on `main` after 0.4.0-alpha.2, in the next SDK version
 
 **Changed**: `DialogueBox` continues a page that does not fit instead of cutting it; `BitmapFont.Wrap` breaks words
 wider than a line; scripted (deterministic-time) runs open no sound device, and a hidden window alone implies neither
-deterministic time nor silence; `IPlatform.Now` is only a monotonic clock on every platform and `IPlatform.RealTime` the
-platform's preferred time mode (`HeadlessPlatform.UpdateRate` is gone); content file names must match their letter case on
+deterministic time nor silence; `IPlatform.Now` is only a monotonic clock on every platform and a platform's time-mode
+preference is a stated `RunPreset` (deterministic for headless runs) (`HeadlessPlatform.UpdateRate` and `PlatformRequest.FixedStep` are gone); the platform contracts are in
+`MicroEngine.Platform` (`IPlatformHost`, `ISurface`, `IStorage`, `IContentSource`), optional platform features are
+capabilities found with `TryGetCapability<T>`, and SDL, raylib and headless platforms report resize and focus events; content file names must match their letter case on
 every system; custom graphics devices implement filters and region updates; see the
 [migration notes](../migrations.md#next-release).
 

@@ -48,7 +48,7 @@ public sealed class HeadlessTimeTests
         Assert.AreEqual(3.0, game.Time, 1e-4, "each 1/UpdateRate seconds long");
         Assert.AreEqual(1.0 / rate, game.TimeSettings.FixedDelta, 1e-12, "the loop's rate is the game's");
         Assert.AreEqual(1.0 / rate, game.Frame.Delta, 1e-12, "a deterministic frame stands for one step");
-        Assert.IsTrue(platform.Now < 3.0, "the platform's clock is the wall clock, not the frames");
+        Assert.IsTrue(platform.Clock.Now < 3.0, "the platform's clock is the wall clock, not the frames");
     }
 
     [TestMethod]

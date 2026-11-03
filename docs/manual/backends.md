@@ -44,16 +44,77 @@ Source: [`src/MicroEngine/Core/Platform.cs`](../../src/MicroEngine/Core/Platform
 | `IGraphicsDevice` | `CreateTexture(PixelImage)` | `SdlGraphicsDevice` | `RaylibGraphicsDevice` | `HeadlessGraphicsDevice` |
 | `IAudioDevice` | Sounds, looping and streamed music ([Audio](audio.md)) | `SdlAudioDevice` | `RaylibAudioDevice` | `SilentAudioDevice` |
 | `IInputSource` | Keys, pad buttons and axes, gamepad connection, mouse ([Input](input.md)) | `SdlInput` | `RaylibInput` | `HeadlessInput` |
-| `ITouchScreen` (`IPlatform.Touch`, optional) | Touches, safe area, density, vibration, the overlay drawn over the frame ([Touch controls](input.md#touch-controls)) | `SdlTouchScreen` | `RaylibTouchScreen` (fed by the browser page) | `HeadlessTouchScreen` |
+| `ITouchScreen` (`IPlatform.Touch`, optional; next SDK version: a capability, `TryGetCapability<ITouchScreen>`) | Touches, safe area, density, vibration, the overlay drawn over the frame ([Touch controls](input.md#touch-controls)) | `SdlTouchScreen` | `RaylibTouchScreen` (fed by the browser page) | `HeadlessTouchScreen` |
 
 While `Suspended` is true the loop neither simulates nor renders, pauses music, saves achievement progress and calls
 the game's `OnSuspended`/`OnResumed`. See [Lifecycle](lifecycle.md#fixed-step-and-frame-order) for the frame order.
 
 Next SDK version (not published yet: arrives with the next SDK version): the loop owns time. `Now` is only a monotonic
 clock on every backend; how many steps a frame runs, the catch-up limits and the blend are the loop's
-([Time](lifecycle.md#time)). `RealTime` is the platform's preference for runs that do not choose a time mode:
-headless prefers one step per frame, SDL and raylib prefer real time unless the host asked for deterministic time
-(`PlatformRequest.FixedStep`).
+([Time](lifecycle.md#time)). Nothing a platform does depends on the time mode. A platform may state a default for the
+runs that choose none, a `RunPreset`: the headless platform's is one step per frame (`RunPreset.Testing`), SDL and
+raylib state none (real time).
+
+### The platform host
+
+Not published yet: arrives with the next SDK version. The platform contracts move to `MicroEngine.Platform` (an
+assembly the `MicroEngine` package carries), and `IPlatform` extends the host contract:
+
+```csharp
+public interface IPlatformHost : IDisposable
+{
+    IMonotonicClock Clock { get; }                 // seconds, never derived from frames
+    bool PumpEvents(IEngineEventSink sink);        // once per frame; false while suspended
+    ISurface? MainSurface { get; }                 // the window or canvas: pixel size, density, minimised
+    bool TryGetCapability<T>(out T? capability) where T : class;
+    bool CanBlock { get; }                         // false for a page-driven host (a browser)
+}
+
+public interface IPlatform : IPlatformHost
+{
+    IGraphicsDevice Graphics { get; }
+    IAudioDevice Audio { get; }
+    IInputSource Input { get; }
+    IRenderer BeginFrame();
+    void EndFrame();
+    void SaveScreenshot(string path);
+    void ToggleFullscreen();
+    Color Letterbox { get; set; }
+}
+```
+
+The rules every platform follows:
+
+- **Events come only from the pump**, in the order they happened, on the game's thread, once at the start of each
+  frame. The game sees them as `Game.Lifecycle` events before the frame's updates: `Resized` (the surface's new size in
+  pixels; the surface's own `Resized` event fires in the same pump), `FocusChanged`, `Suspending`, `Resumed` and
+  `QuitRequested` (which a handler may veto).
+- **Suspension alternates**: `Suspending` then `Resumed`, never two of one in a row. A trip to the background and back
+  between two frames arrives as both, in that order. No frame runs while the platform is suspended.
+- **One quit request per request**: a window's close button is asked once; a later click is asked again.
+- **Optional features are capabilities**, found with `TryGetCapability<T>`, never by casting the platform:
+  `IDisplayControl` (displays, VSync, window mode), `IPlatformDiagnostics`, `ITouchScreen` (touches, safe area,
+  vibration), `IDisplayPacing` (the refresh rate frames are paced to) and `IPreciseDelay` (a precise wait). A platform's
+  capabilities do not change while it runs. `Game.TryGetCapability<T>` finds them too.
+- **Page-driven platforms** (raylib in a browser) report `CanBlock = false` and never block: no waits or sleeps; the
+  page paces the frames, and the loop skips a frame that comes early instead of waiting. They read the surface size
+  from the canvas after start, never from the size requested at creation, and open audio inside the click that starts
+  the game.
+- **No time coupling**: what a platform does never depends on how the loop advances time. Display pacing
+  (`PlatformRequest.WaitForDisplay`), when gamepads start (`StartGamepadsAfterFirstFrame`) and sound
+  (`AudioOutput`, `Mute`) are explicit options of the request.
+
+| Platform | Events it delivers | Capabilities | `CanBlock` |
+| --- | --- | --- | --- |
+| SDL | quit, focus, resize, suspension (phones) | `IDisplayControl`, `IPlatformDiagnostics`, `IDisplayPacing`, `IPreciseDelay`, `ITouchScreen` | yes |
+| raylib | quit (desktop), focus, resize, suspension (a hidden browser page) | `IDisplayControl`, `IDisplayPacing`, `ITouchScreen`, `IPreciseDelay` (desktop) | desktop yes, browser no |
+| Headless | what a test asks for (`Resize`, `Focus`, `Suspend`, `Resume`, `RequestQuit`) | `ITouchScreen` | yes |
+
+No platform raises the surface's `Lost` event yet.
+
+Storage and content files have contracts of their own in the same assembly: `IStorage` (the slots `SaveStore` writes;
+`ISaveStorage` extends it) and `IContentSource` (`Exists`, `Open`, `Files`), with `FolderContentSource` for a folder on
+disk (`ContentFolder` is one).
 
 ## Choosing a platform
 
@@ -86,7 +147,7 @@ headless: no window, devices or sound; one step per frame, for automated tests
 | `--list-platforms` | Print the catalog, with the reason a platform cannot run here, and exit |
 | `--script FILE` | Play an [input script](input.md#scripted-input); implies a fixed step (next SDK version: deterministic time unless `--time` says otherwise) |
 | `--captures DIR` | Where script captures go (default `./captures`); saved at 3× scale |
-| `--headless` | The same as `--platform headless` (captures are recorded but not written) |
+| `--headless` | The same as `--platform headless` (captures are recorded but not written); runs one step per frame unless `--time` says otherwise |
 | `--hidden` | Render in a hidden window (captures still work); implies a fixed step (next SDK version: implies nothing about time or sound; add `--time deterministic` or `--audio silent`) |
 | `--time realtime\|deterministic` | Next SDK version: how the loop advances time, whatever the window: with the wall clock, or one step per frame ([Time](lifecycle.md#time)) |
 | `--frames N` | Stop after N updates |
@@ -159,6 +220,12 @@ return DesktopLauncher.Run(game, args, DesktopLauncher.CreateCatalog(),
 When audio is supplied the backend does not open its own device, and the platform disposes the replacement. A request
 the profile cannot honour fails with `PlatformConfigurationException` (for example "Platform 'browser' does not allow
 replacing its audio device."). Source: [`src/MicroEngine/Core/PlatformProfiles.cs`](../../src/MicroEngine/Core/PlatformProfiles.cs)
+
+Next SDK version (not published yet: arrives with the next SDK version): the supplied parts are built into the backend
+itself, never wrapped around it, so a replaced audio device or an extra input source keeps every capability of the
+platform (display control, pacing, diagnostics, touch). A backend builds its audio device with
+`request.CreateAudio(openOwn)` and its input with `request.CombineInput(own)`; a backend that ignores the parts its
+profile allows is refused with `PlatformConfigurationException`.
 
 To offer a platform of your own, wrap it in a profile and add it to the catalog:
 
@@ -267,6 +334,12 @@ true)` (or `Rasterize = true` when creating it) also draws every frame on the CP
 current frame as an image, `platform.Renderer.Commands` lists the frame's draws as text (one line each, in screen
 pixels, such as `rect 2,2 3x3 #FFFFFFFF`), and script captures are written as PNG files at scale 1.
 
+Next SDK version (not published yet: arrives with the next SDK version): one step per frame is the headless
+platform's stated preset (`HeadlessPlatform.Preset`, `RunPreset.Testing`), so the tests above stay reproducible with
+no option. A run's `RunOptions.TimeMode` or the game's `Configure` win over it, and
+`new HeadlessPlatform { Preset = new RunPreset() }` makes runs that choose nothing real-time. Its events are driven by hand and delivered at the next frame: `platform.Resize(w, h)`, `Focus(bool)`, `Suspend()`,
+`Resume()` and `RequestQuit()`.
+
 ## Writing a new backend
 
 A backend for another library would:
@@ -278,7 +351,16 @@ A backend for another library would:
    when the request supplies a device (`PlatformRequest.OpensOwnAudio`).
 4. Map the library's key and pad codes onto `Key` and `PadButton` in an `IInputSource`.
 5. Implement `IPlatform` (time, events, frame begin/end, screenshots, fullscreen, and `Suspended` if the system
-   can take the app away) and expose it as a `PlatformProfile`.
+   can take the app away) and expose it as a `PlatformProfile`. Next SDK version: implement the host contract
+   instead ([The platform host](#the-platform-host)): a monotonic clock, an event pump that follows
+   its rules, the main surface, `CanBlock`, and the optional features as capabilities.
+
+Next SDK version (not published yet: arrives with the next SDK version): `PlatformConformance` in the same project
+states the platform contract as tests (a monotonic clock, events delivered once and in order, suspension alternating,
+no frame while suspended, resize and focus events, the capability query, a precise wait only where the platform can
+block); the headless, SDL and raylib platforms run it by subclassing it and saying how a test makes them resize, lose
+focus, go to the background or be asked to quit. An event a platform cannot be made to send in a test is reported as
+skipped, never passed.
 
 `tests/MicroEngine.Desktop.Tests` shows how to check a backend: a conformance suite (`RendererConformance`) states each
 rendering rule as a test, and every backend (the headless CPU reference, each SDL driver, raylib) runs the same tests

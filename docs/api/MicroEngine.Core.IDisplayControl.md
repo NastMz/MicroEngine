@@ -7,8 +7,8 @@ Assembly: MicroEngine.dll
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
 What a platform can change about its window and presentation while the game runs ([Screen](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Screen) uses it).
-Platforms without a window (headless) or whose host owns these choices (browsers, phones) leave it out or report
-that a change did not apply.
+A capability ([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)): platforms without a window (headless) or whose host
+owns these choices (browsers, phones) do not offer it, or report that a change did not apply.
 
 ```csharp
 public interface IDisplayControl

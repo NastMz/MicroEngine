@@ -511,7 +511,9 @@ Runs the phases that come before drawing for one fixed step, with a frame that s
 
 ### <a id="MicroEngine_Core_Game_TryGetCapability__1___0__"></a> TryGetCapability<T\>\(out T?\)
 
-An optional feature the engine declared (the platform's [ITouchScreen](MicroEngine.Input.ITouchScreen.md), its [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md)), if there is one.
+An optional feature, if there is one: one the engine declared ([Capabilities](MicroEngine.Kernel.EngineBuilder.md#MicroEngine_Kernel_EngineBuilder_Capabilities)), else one
+the platform offers ([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__): its [ITouchScreen](MicroEngine.Input.ITouchScreen.md), its
+[IDisplayControl](MicroEngine.Core.IDisplayControl.md), its [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md)...). False before the game starts.
 
 ```csharp
 public bool TryGetCapability<T>(out T? capability) where T : class

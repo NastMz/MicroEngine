@@ -27,10 +27,12 @@ public sealed class CapturePropertyTests
         public IGraphicsDevice Graphics => inner.Graphics;
         public IAudioDevice Audio => inner.Audio;
         public IInputSource Input => inner.Input;
-        public bool CloseRequested => inner.CloseRequested;
-        public double Now => inner.Now;
-        public bool RealTime => inner.RealTime;
-        public void PollEvents() => inner.PollEvents();
+        public MicroEngine.Platform.IMonotonicClock Clock => inner.Clock;
+        public bool PumpEvents(MicroEngine.Platform.IEngineEventSink sink) => inner.PumpEvents(sink);
+        public MicroEngine.Platform.ISurface? MainSurface => inner.MainSurface;
+        public bool CanBlock => inner.CanBlock;
+        public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class => inner.TryGetCapability(out capability);
+        public Color Letterbox { get => inner.Letterbox; set => inner.Letterbox = value; }
         public IRenderer BeginFrame() => inner.BeginFrame();
         public void EndFrame() => inner.EndFrame();
         public void ToggleFullscreen() => inner.ToggleFullscreen();

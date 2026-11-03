@@ -6,7 +6,7 @@ namespace MicroEngine.Core;
 
 /// <summary>One frame as <see cref="FrameProfiler"/> measured it. Times are in milliseconds.</summary>
 /// <param name="Interval">Time from the start of the previous frame to the start of this one (0 for the first frame).</param>
-/// <param name="Events">Polling system events (<see cref="IPlatform.PollEvents"/>).</param>
+/// <param name="Events">Polling system events (<see cref="Platform.IPlatformHost.PumpEvents"/>).</param>
 /// <param name="Update">Running the fixed steps of this frame.</param>
 /// <param name="Render">The game drawing its frame (<see cref="IPlatform.BeginFrame"/> and the scenes).</param>
 /// <param name="Present">Finishing and presenting the frame (<see cref="IPlatform.EndFrame"/>); with VSync on, this is
@@ -61,7 +61,7 @@ public sealed class FrameProfiler
     public IReadOnlyList<(string Phase, double Milliseconds)> Phases => _phases;
 
     /// <summary>
-    /// The refresh rate of the display pacing the run (<see cref="IPlatform.DisplayRate"/>), or 0 when unknown. With it,
+    /// The refresh rate of the display pacing the run (<see cref="Platform.IDisplayPacing"/>), or 0 when unknown. With it,
     /// motion is judged against the whole refresh periods each frame stayed on screen rather than against the loop's
     /// irregular wake-ups; the loop sets it when the run starts.
     /// </summary>

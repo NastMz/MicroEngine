@@ -41,8 +41,9 @@ function unzip(file) {
 }
 
 const expected = {
-  // The kernel is its own assembly but not its own package: MicroEngine carries it and its documentation.
-  MicroEngine: { deps: ['StbImageSharp', 'FontStashSharp'], files: ['lib/net10.0/MicroEngine.dll', 'lib/net10.0/MicroEngine.Kernel.dll', 'lib/net10.0/MicroEngine.Kernel.xml', 'build/MicroEngine.targets', 'buildTransitive/MicroEngine.targets', 'buildTransitive/MicroEngine.props'] },
+  // The kernel and the platform contracts are assemblies of their own but not packages: MicroEngine carries them and
+  // their documentation.
+  MicroEngine: { deps: ['StbImageSharp', 'FontStashSharp'], files: ['lib/net10.0/MicroEngine.dll', 'lib/net10.0/MicroEngine.Kernel.dll', 'lib/net10.0/MicroEngine.Kernel.xml', 'lib/net10.0/MicroEngine.Platform.dll', 'lib/net10.0/MicroEngine.Platform.xml', 'build/MicroEngine.targets', 'buildTransitive/MicroEngine.targets', 'buildTransitive/MicroEngine.props'] },
   'MicroEngine.Sdl': { deps: ['MicroEngine', 'ppy.SDL3-CS', 'NVorbis'], files: ['lib/net10.0/MicroEngine.Sdl.dll'] },
   'MicroEngine.Raylib': { deps: ['MicroEngine', 'Raylib-cs'], files: ['lib/net10.0/MicroEngine.Raylib.dll', 'native/browser-wasm/raylib.a', 'buildTransitive/MicroEngine.Raylib.props'] },
   'MicroEngine.Desktop': { deps: ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib'], files: ['lib/net10.0/MicroEngine.Desktop.dll'] },
@@ -79,6 +80,7 @@ for (const [id, want] of Object.entries(expected)) {
     const symbols = path.join(feed, `${id}.${version}.snupkg`);
     const pdbs = fs.existsSync(symbols) ? unzip(symbols).map(e => e.name) : [];
     check(`${id}: symbols of the bundled kernel`, pdbs.includes('lib/net10.0/MicroEngine.Kernel.pdb'), pdbs.join(', '));
+    check(`${id}: symbols of the bundled platform contracts`, pdbs.includes('lib/net10.0/MicroEngine.Platform.pdb'), pdbs.join(', '));
   }
 }
 const templates = path.join(feed, `MicroEngine.Templates.${version}.nupkg`);

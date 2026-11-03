@@ -4,6 +4,7 @@ using MicroEngine.Audio;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Platform;
 using SDL;
 using static SDL.SDL3;
 
@@ -16,12 +17,13 @@ namespace MicroEngine.Sdl;
 /// <c>SDL_RENDER_DRIVER</c> environment variable forces one (for example <c>software</c> on a machine without a GPU).
 /// Fingers go to the game's on-screen controls through <see cref="ITouchScreen"/> (<see cref="SdlTouchScreen"/>), which
 /// also reports the window's safe area and density; a system that sends the app to the background suspends it
-/// (<see cref="IPlatform.Suspended"/>).
+/// (<see cref="IEngineEventSink.Suspending"/>). Its capabilities (<see cref="TryGetCapability{T}"/>):
+/// <see cref="IDisplayControl"/>, <see cref="IPlatformDiagnostics"/>, <see cref="IDisplayPacing"/>,
+/// <see cref="IPreciseDelay"/> and <see cref="ITouchScreen"/>.
 /// </summary>
-public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDisplayControl
+public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock
 {
     private readonly GameSettings _settings;
-    private readonly bool _fixedStep;
     private readonly int _captureScale;
     private readonly SDL_Window* _window;
     private readonly SDL_Renderer* _sdl;
@@ -29,13 +31,16 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     private readonly SdlRenderer _renderer;
     private readonly SdlGraphicsDevice _graphics;
     private readonly SdlInput _input;
+    private readonly IInputSource _combinedInput;
     private readonly IAudioDevice _audio;
+    private readonly HostSurface _surface;
+    private readonly Kernel.CapabilityRegistry _capabilities = new();
     private readonly SdlTouchScreen _touch;
     private readonly ulong _start;
     private readonly bool _paced; // a visible real-time window: the only kind VSync applies to
     private readonly bool _mobile;
     private bool _vsync;
-    private bool _closeRequested, _suspended, _disposed;
+    private bool _suspended, _focused, _disposed;
     // Written by the lifecycle watch on the thread the system uses to send the event.
     private volatile bool _background;
     private int _wentToBackground; // 1 after a trip to the background the loop has not seen; exchanged atomically
@@ -71,7 +76,11 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         }
     }
 
-    /// <summary>Opens the SDL window, renderer and (unless the request says otherwise) audio for <paramref name="request"/>. Hosts usually go through <see cref="Profile"/> or <see cref="CreateProfile"/> instead.</summary>
+    /// <summary>
+    /// Opens the SDL window, renderer and (unless the request says otherwise) audio for <paramref name="request"/>, with
+    /// the audio device and extra input sources the request supplies. Hosts usually go through <see cref="Profile"/> or
+    /// <see cref="CreateProfile"/> instead.
+    /// </summary>
     /// <param name="request">The game's settings and window options.</param>
     /// <param name="renderer">An SDL render driver name (see <see cref="RenderDrivers"/>), or null to let SDL choose.</param>
     public SdlPlatform(PlatformRequest request, string? renderer = null)
@@ -79,7 +88,6 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         ArgumentNullException.ThrowIfNull(request);
         _settings = request.Settings;
         Letterbox = _settings.Letterbox;
-        _fixedStep = request.FixedStep;
         _captureScale = Math.Max(1, request.CaptureScale);
         SDL_SetHint(SDL_HINT_APP_NAME, _settings.Title);
         // The game's identity (its project's ApplicationTitle and ApplicationId): the name and id desktops group
@@ -153,7 +161,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         Mark("renderer", ref started);
         var (minWidth, minHeight) = WindowSizing.Minimum(_settings);
         SDL_SetWindowMinimumSize(_window, minWidth, minHeight);
-        _paced = !request.Hidden && !_fixedStep;
+        _paced = !request.Hidden && request.WaitForDisplay;
         _vsync = _paced && graphics.VSync && SDL_SetRenderVSync(_sdl, 1);
         if (_paced && !graphics.VSync) SDL_SetRenderVSync(_sdl, 0);
         _target = SDL_CreateTexture(_sdl, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, _settings.VirtualWidth, _settings.VirtualHeight);
@@ -163,12 +171,21 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _renderer = new SdlRenderer(_sdl, _graphics, _settings.VirtualWidth, _settings.VirtualHeight);
         _touch = new SdlTouchScreen(_window, _sdl, mobile);
         _input = new SdlInput(this);
+        _combinedInput = request.CombineInput(_input);
         Mark("frame", ref started);
-        _audio = request.OpensOwnAudio ? SdlAudioDevice.TryCreate() : new SilentAudioDevice();
+        _audio = request.CreateAudio(() => SdlAudioDevice.TryCreate());
         Mark("audio", ref started);
-        // Only a start screen hides the gamepad subsystem's start (StartGamepads); without one, a window that showed the
-        // game's first frame and then froze would be worse than a window that appears a moment later.
-        if (!(request.Identity is { Splash: true } && !request.Hidden && !_fixedStep)) StartGamepads();
+        // A host that shows a start screen asks for the gamepad subsystem to start after it (StartGamepads); without one,
+        // a window that showed the game's first frame and then froze would be worse than one that appears a moment later.
+        if (!request.StartGamepadsAfterFirstFrame) StartGamepads();
+        _surface = new HostSurface((nint)_window, PixelSize, () => SDL_GetWindowPixelDensity(_window) is > 0 and var d ? d : 1,
+            () => (SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) != 0);
+        _focused = (SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) != 0;
+        _capabilities.Add<IDisplayControl>(this);
+        _capabilities.Add<IPlatformDiagnostics>(this);
+        _capabilities.Add<IDisplayPacing>(this);
+        _capabilities.Add<IPreciseDelay>(this);
+        _capabilities.Add<ITouchScreen>(_touch);
         _self = GCHandle.Alloc(this);
         SDL_AddEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
         _start = SDL_GetTicksNS();
@@ -213,14 +230,25 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     public IGraphicsDevice Graphics => _graphics;
     /// <inheritdoc/>
     public IAudioDevice Audio => _audio;
-    /// <inheritdoc/>
-    public IInputSource Input => _input;
-    /// <inheritdoc/>
-    public bool CloseRequested => _closeRequested;
+    /// <summary>The keyboard, gamepad and pointer, read together with the request's extra sources.</summary>
+    public IInputSource Input => _combinedInput;
+    /// <summary>SDL's nanosecond ticks since the platform opened, in seconds (the platform is its own clock).</summary>
+    public IMonotonicClock Clock => this;
     /// <inheritdoc/>
     public double Now => (SDL_GetTicksNS() - _start) / 1e9;
+    /// <summary>The window: an <c>SDL_Window*</c> as <see cref="ISurface.NativeWindow"/>, its size in pixels and density.</summary>
+    public ISurface MainSurface => _surface;
+    ISurface? IPlatformHost.MainSurface => _surface;
+    /// <summary>True: SDL's native hosts own their thread.</summary>
+    public bool CanBlock => true;
     /// <inheritdoc/>
-    public bool RealTime => !_fixedStep;
+    public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class => _capabilities.TryGet(out capability);
+
+    private (int Width, int Height) PixelSize()
+    {
+        int w, h;
+        return SDL_GetWindowSizeInPixels(_window, &w, &h) ? (w, h) : (0, 0);
+    }
     /// <summary>The refresh rate of the display the window is on while VSync paces the frames; 0 otherwise.</summary>
     public double DisplayRate
     {
@@ -231,9 +259,9 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
             return mode == null ? 0 : mode->refresh_rate;
         }
     }
-    /// <inheritdoc/>
+    /// <summary>Whether the system took the app away (a phone app in the background); no frame runs meanwhile.</summary>
     public bool Suspended => _suspended;
-    /// <inheritdoc/>
+    /// <summary>The touch screen (also the <see cref="ITouchScreen"/> capability).</summary>
     public ITouchScreen Touch => _touch;
 
     /// <summary>
@@ -341,14 +369,29 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         }
     }
 
-    /// <inheritdoc/>
-    public void PollEvents()
+    /// <summary>
+    /// Processes SDL's pending events and delivers the engine's: a trip to the background (latched by the lifecycle
+    /// watch, so one that ended before this pump is still delivered as <c>Suspending</c> then <c>Resumed</c>), one quit
+    /// request however many close and quit events arrived together, focus changes and size changes of the window.
+    /// While suspended it waits 50 ms instead of spinning.
+    /// </summary>
+    public bool PumpEvents(IEngineEventSink sink)
     {
+        ArgumentNullException.ThrowIfNull(sink);
         _input.BeginFrame();
-        bool suspended = Interlocked.Exchange(ref _wentToBackground, 0) == 1 || _background;
-        // Fingers and keys held when the app left are never released by the system.
-        if (suspended && !_suspended) ReleaseAll();
-        _suspended = suspended;
+        if (Interlocked.Exchange(ref _wentToBackground, 0) == 1 && !_suspended)
+        {
+            // Fingers and keys held when the app left are never released by the system.
+            ReleaseAll();
+            _suspended = true;
+            sink.Suspending();
+        }
+        if (_suspended && !_background)
+        {
+            _suspended = false;
+            sink.Resumed();
+        }
+        bool quit = false;
         SDL_Event e;
         while (SDL_PollEvent(&e))
         {
@@ -357,7 +400,15 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
                 case SDL_EventType.SDL_EVENT_QUIT:
                 case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED:
                 case SDL_EventType.SDL_EVENT_TERMINATING:
-                    _closeRequested = true;
+                    // A window's close button sends a close request and a quit: one request for the game.
+                    if (!quit) sink.QuitRequested();
+                    quit = true;
+                    break;
+                case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_GAINED:
+                    if (!_focused) sink.FocusChanged(_focused = true);
+                    break;
+                case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                    _surface.Pump(sink);
                     break;
                 case SDL_EventType.SDL_EVENT_KEY_DOWN:
                     if (!e.key.repeat && (e.key.scancode == SDL_Scancode.SDL_SCANCODE_F11
@@ -386,11 +437,15 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
                 case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_LOST:
                     // Keys and fingers held while another window takes over would never be released to the game.
                     ReleaseAll();
+                    if (_focused) sink.FocusChanged(_focused = false);
                     break;
             }
         }
+        // A size change SDL reported without its own event (or with one that came before the size settled).
+        _surface.Pump(sink);
         // A suspended app draws nothing (a phone may have taken its surface away); wait instead of spinning.
         if (_suspended) SDL_Delay(50);
+        return !_suspended;
     }
 
     private void ReleaseAll()
@@ -487,10 +542,9 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     public void ToggleFullscreen() => SetWindowMode(WindowMode == WindowMode.Windowed ? WindowMode.Fullscreen : WindowMode.Windowed);
 
     /// <summary>Waits with SDL's precise delay (a high-resolution timer, then a short spin).</summary>
-    public bool Wait(double seconds)
+    public void Delay(double seconds)
     {
         if (seconds > 0) SDL_DelayPrecise((ulong)(seconds * 1e9));
-        return true;
     }
 
     /// <inheritdoc/>
@@ -538,7 +592,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <inheritdoc/>
     public bool VSync => _vsync;
 
-    /// <summary>Turns VSync on or off; hidden and fixed-step (scripted) runs keep it off.</summary>
+    /// <summary>Turns VSync on or off; hidden windows and requests that do not wait for the display keep it off.</summary>
     public bool SetVSync(bool on)
     {
         if (!_paced) return !on;

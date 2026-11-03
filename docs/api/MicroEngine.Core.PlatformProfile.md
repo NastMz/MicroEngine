@@ -119,7 +119,11 @@ public string? UnsupportedReason { get; }
 
 ### <a id="MicroEngine_Core_PlatformProfile_Create_MicroEngine_Core_PlatformRequest_"></a> Create\(PlatformRequest\)
 
-Builds the platform, applying the request's replacements; throws [PlatformConfigurationException](MicroEngine.Core.PlatformConfigurationException.md) for a request the profile cannot honour.
+Builds the platform for <code class="paramref">request</code>. The supplied parts ([Audio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_Audio),
+[ExtraInput](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_ExtraInput)) are composed into the backend when it is built, never by wrapping it,
+so the platform returned is the backend itself with all its capabilities. Throws
+[PlatformConfigurationException](MicroEngine.Core.PlatformConfigurationException.md) for a request the profile cannot honour, and when the backend did not
+use the parts the request supplied.
 
 ```csharp
 public IPlatform Create(PlatformRequest request)

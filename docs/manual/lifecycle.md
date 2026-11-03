@@ -160,34 +160,35 @@ frame stands for), `FixedDelta`, `Blend`, `FixedStep` and `Frame`.
 Services are found by the exact type they were registered as: `Services.Get<InputMap>()`, `builder.Services.Replace<ILog>(myLog)`.
 `Game.TryGetCapability<T>` asks for optional features (the platform's touch screen, its diagnostics) without casting.
 `Game.Lifecycle` raises `Suspending`, `Resumed` and `QuitRequested` (the window's close button; a handler may veto it,
-and the game quits later with `Quit()`); `Resized` and `FocusChanged` are declared for the platforms that will report
-them. `Game.Log` writes `category: message` lines to the standard error unless a host registers another `ILog`.
+and the game quits later with `Quit()`), `Resized` (the window's or canvas's new size in pixels) and `FocusChanged`, as
+the platform delivers them at the start of a frame ([The platform host](backends.md#the-platform-host)). `Game.Log` writes `category: message` lines to the standard error unless a host registers another `ILog`.
 
 ## Time
 
 Next SDK version (not published yet: arrives with the next SDK version). The loop owns time; a platform only supplies a
-monotonic clock (`IPlatform.Now`). `TimeSettings`, edited in `Configure`, holds every value:
+monotonic clock (`IPlatform.Clock`). `TimeSettings`, edited in `Configure`, holds every value:
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `FixedRate` | `GameSettings.UpdateRate` | Fixed steps per second |
 | `MaxStepsPerFrame` | 5 | Steps one frame may run; a frame that needs more keeps at most one step pending, so the game slows down instead of falling further behind |
 | `MaxFrameDelta` | 0.25 s | The longest time one real-time frame stands for |
-| `Mode` | the platform's preference | `RealTime` or `Deterministic` |
+| `Mode` | the platform's `RunPreset`, else `RealTime` | `RealTime` or `Deterministic` |
 
 In `RealTime` a frame adds the time the loop measured (paced to the display, at most `MaxFrameDelta`) and runs the
 steps it calls for. In `Deterministic` every frame is exactly one step, whatever the wall clock says, and `FrameBlend`
 is 1, so the same input gives the same steps and captures on any machine. The mode comes from, in order: the run
 (`RunOptions.TimeMode`, the launcher's `--time realtime|deterministic`; a `--script` means deterministic unless `--time`
-says otherwise), the game's `Configure`, then the platform's preference (`IPlatform.RealTime`: headless prefers
-deterministic time, SDL and raylib real time). A hidden window implies nothing about time. `Game.TimeSettings` is the
-policy the run uses.
+says otherwise), the game's `Configure`, then the preset the platform states for its runs (`RunPreset`: the headless
+platform's is deterministic, SDL and raylib state none), then real time. A preset is a default, never a platform
+behaviour, and a hidden window implies nothing about time. `Game.TimeSettings` is the policy the run uses.
 
 ## Fixed step and frame order
 
 Each `Tick` runs one frame:
 
-1. `platform.PollEvents()`.
+1. `platform.PollEvents()` (next SDK version: `platform.PumpEvents(...)`, whose events reach the game as
+   `Game.Lifecycle` events; no frame runs while the platform is suspended).
 2. Accumulate time. Real-time platforms add wall-clock time (capped at 0.25 s per frame); headless and
    fixed-step platforms add exactly one step. Next SDK version (not published yet: arrives with the next SDK version): when the platform reports the rate
    VSync paces it to (`IPlatform.DisplayRate`, SDL and desktop raylib windows), a frame counts as the whole number of
@@ -260,7 +261,8 @@ panel). A run without `--profile` measures nothing.
 
 ## Quitting and shutdown
 
-A run ends when `Game.Quit()` was called, the platform reports `CloseRequested` (the desktop window was closed),
+A run ends when `Game.Quit()` was called, the platform reports `CloseRequested` (the desktop window was closed; next
+SDK version: the platform delivers a quit request and no `Game.Lifecycle.QuitRequested` handler vetoes it),
 `RunOptions.MaxUpdates` was reached, an input script's `quit` update arrived, or an exception escaped. In every
 case `GameLoop.Finish` calls `Game.Shutdown`:
 
@@ -282,7 +284,8 @@ your `Unload` runs. Errors are reported in `RunResult.Error`; `DesktopLauncher.R
 ## Suspension
 
 A phone sends an app to the background when the player switches away or takes a call; the platform then reports
-`Suspended` ([Backends](backends.md#iplatform)). The loop reacts once on each change:
+`Suspended` ([Backends](backends.md#iplatform); next SDK version: it delivers `Suspending` and `Resumed` from its event
+pump, always alternating). The loop reacts once on each change:
 
 - **Going away**: music pauses, pending achievement progress is written, then `OnSuspended()` runs. No update and no
   frame happens while suspended.

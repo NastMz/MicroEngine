@@ -30,22 +30,10 @@ public sealed class GameSessionTests
     }
 
     /// <summary>A headless platform that records whether the session released it.</summary>
-    private sealed class TrackedPlatform : IPlatform
+    private sealed class TrackedPlatform : TestPlatform
     {
-        private readonly HeadlessPlatform _inner = new();
         public bool Disposed { get; private set; }
-        public IGraphicsDevice Graphics => _inner.Graphics;
-        public IAudioDevice Audio => _inner.Audio;
-        public IInputSource Input => _inner.Input;
-        public bool CloseRequested => _inner.CloseRequested;
-        public double Now => _inner.Now;
-        public bool RealTime => _inner.RealTime;
-        public void PollEvents() => _inner.PollEvents();
-        public IRenderer BeginFrame() => _inner.BeginFrame();
-        public void EndFrame() => _inner.EndFrame();
-        public void SaveScreenshot(string path) => _inner.SaveScreenshot(path);
-        public void ToggleFullscreen() { }
-        public void Dispose() { Disposed = true; _inner.Dispose(); }
+        public override void Dispose() { Disposed = true; base.Dispose(); }
     }
 
     private readonly List<TrackedPlatform> _platforms = [];

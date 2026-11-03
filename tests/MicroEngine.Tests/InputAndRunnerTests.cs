@@ -187,21 +187,9 @@ public sealed class RunnerTests
     }
 
     /// <summary>A real-time platform whose clock the test advances by hand.</summary>
-    private sealed class ClockPlatform : IPlatform
+    private sealed class ClockPlatform : TestPlatform
     {
-        private readonly HeadlessPlatform _inner = new();
-        public IGraphicsDevice Graphics => _inner.Graphics;
-        public IAudioDevice Audio => _inner.Audio;
-        public IInputSource Input => _inner.Input;
-        public bool CloseRequested => false;
-        public double Now { get; set; }
-        public bool RealTime => true;
-        public void PollEvents() { }
-        public IRenderer BeginFrame() => _inner.BeginFrame();
-        public void EndFrame() { }
-        public void SaveScreenshot(string path) { }
-        public void ToggleFullscreen() { }
-        public void Dispose() { }
+        public ClockPlatform() : base(realTime: true) => Now = 0;
     }
 
     [TestMethod]

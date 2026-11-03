@@ -14,23 +14,10 @@ namespace MicroEngine.Tests.Kernel;
 [TestClass]
 public sealed class GameKernelTests
 {
-    /// <summary>A platform whose monotonic clock the test advances by hand, with a chosen time-mode preference.</summary>
-    private sealed class ClockPlatform(bool realTime) : IPlatform
+    /// <summary>A platform whose monotonic clock the test advances by hand.</summary>
+    private sealed class ClockPlatform : TestPlatform
     {
-        private readonly HeadlessPlatform _inner = new();
-        public IGraphicsDevice Graphics => _inner.Graphics;
-        public IAudioDevice Audio => _inner.Audio;
-        public IInputSource Input => _inner.Input;
-        public bool CloseRequested { get; set; }
-        public bool Suspended { get; set; }
-        public double Now { get; set; }
-        public bool RealTime => realTime;
-        public void PollEvents() { }
-        public IRenderer BeginFrame() => _inner.BeginFrame();
-        public void EndFrame() { }
-        public void SaveScreenshot(string path) { }
-        public void ToggleFullscreen() { }
-        public void Dispose() { }
+        public ClockPlatform() : base(realTime: true) => Now = 0;
     }
 
     private sealed class Probe : Scene
@@ -110,11 +97,11 @@ public sealed class GameKernelTests
     }
 
     [TestMethod]
-    public void A_run_s_time_mode_overrides_the_platform_s_preference()
+    public void A_run_s_time_mode_decides_whatever_the_platform()
     {
-        // A real-time platform run deterministically: one step per frame whatever its clock says.
+        // A run in deterministic time: one step per frame whatever the clock says.
         var game = new ModularGame();
-        var platform = new ClockPlatform(realTime: true);
+        var platform = new ClockPlatform();
         var loop = new GameLoop(game, platform, new RunOptions { TimeMode = TimeMode.Deterministic });
         Assert.IsTrue(loop.Start());
         Assert.AreEqual(TimeMode.Deterministic, game.TimeSettings.Mode);
@@ -123,9 +110,9 @@ public sealed class GameKernelTests
         Assert.AreEqual(1f, game.FrameBlend);
         loop.Finish();
 
-        // A platform that prefers deterministic time run in real time: steps follow its clock.
+        // A run in real time: steps follow the clock.
         var real = new ModularGame();
-        var clock = new ClockPlatform(realTime: false);
+        var clock = new ClockPlatform();
         loop = new GameLoop(real, clock, new RunOptions { TimeMode = TimeMode.RealTime });
         Assert.IsTrue(loop.Start());
         for (int i = 0; i < 10; i++) loop.Tick();
@@ -137,13 +124,13 @@ public sealed class GameKernelTests
     }
 
     [TestMethod]
-    public void Without_a_run_choice_the_platform_s_preference_decides()
+    public void Without_a_run_or_game_choice_the_composition_s_preset_decides()
     {
         var headless = new ModularGame();
         headless.InitializeForTest(new HeadlessPlatform());
-        Assert.AreEqual(TimeMode.Deterministic, headless.TimeSettings.Mode);
+        Assert.AreEqual(TimeMode.Deterministic, headless.TimeSettings.Mode, "the headless platform's stated preset");
         var real = new ModularGame();
-        real.InitializeForTest(new ClockPlatform(realTime: true));
+        real.InitializeForTest(new ClockPlatform());
         Assert.AreEqual(TimeMode.RealTime, real.TimeSettings.Mode);
         Assert.AreEqual(60, real.TimeSettings.FixedRate, "from GameSettings.UpdateRate");
     }
@@ -152,7 +139,7 @@ public sealed class GameKernelTests
     public void The_game_s_time_settings_drive_the_loop()
     {
         var game = new ModularGame(builder => builder.Configure<TimeSettings>(t => t with { MaxStepsPerFrame = 2, MaxFrameDelta = 0.1 }));
-        var platform = new ClockPlatform(realTime: true);
+        var platform = new ClockPlatform();
         var loop = new GameLoop(game, platform);
         Assert.IsTrue(loop.Start());
         platform.Now += 1;
@@ -175,22 +162,22 @@ public sealed class GameKernelTests
         Assert.AreEqual(TimeMode.Deterministic, game.TimeSettings.Mode);
         var chosen = new ModularGame(builder => builder.Configure<TimeSettings>(t => t with { Mode = TimeMode.RealTime }));
         chosen.InitializeForTest(new HeadlessPlatform());
-        Assert.AreEqual(TimeMode.RealTime, chosen.TimeSettings.Mode, "the game's choice wins over the platform's preference");
+        Assert.AreEqual(TimeMode.RealTime, chosen.TimeSettings.Mode, "the game's choice wins over the composition's preset");
     }
 
     [TestMethod]
     public void Suspension_raises_lifecycle_events_after_the_game_s_own_handling()
     {
         var game = new ModularGame();
-        var platform = new ClockPlatform(realTime: true);
+        var platform = new ClockPlatform();
         var loop = new GameLoop(game, platform);
         Assert.IsTrue(loop.Start());
         platform.Now += 1.0 / 60;
         loop.Tick();
-        platform.Suspended = true;
+        platform.Inner.Suspend();
         platform.Now += 10;
         loop.Tick();
-        platform.Suspended = false;
+        platform.Inner.Resume();
         long before = game.UpdateCount;
         loop.Tick();
         Assert.AreEqual(before, game.UpdateCount, "the time away is not simulated");
@@ -224,10 +211,9 @@ public sealed class GameKernelTests
     public void Headless_time_is_a_monotonic_clock_not_a_frame_count()
     {
         var platform = new HeadlessPlatform();
-        double start = platform.Now;
-        for (int i = 0; i < 600; i++) platform.PollEvents();
-        Assert.IsTrue(platform.Now - start < 1, "polling ten seconds' worth of frames does not move the clock ten seconds");
-        Assert.IsTrue(platform.Now >= start);
-        Assert.IsFalse(platform.RealTime, "headless runs prefer deterministic time");
+        double start = platform.Clock.Now;
+        for (int i = 0; i < 600; i++) platform.PumpEvents(new IgnoredEvents());
+        Assert.IsTrue(platform.Clock.Now - start < 1, "pumping ten seconds' worth of frames does not move the clock ten seconds");
+        Assert.IsTrue(platform.Clock.Now >= start);
     }
 }

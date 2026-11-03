@@ -1,6 +1,7 @@
 using MicroEngine.Audio;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Platform;
 
 namespace MicroEngine.Core;
 
@@ -44,7 +45,8 @@ public sealed record GameSettings(string Title, int VirtualWidth = 320, int Virt
 
 /// <summary>
 /// Facts a platform can report about itself for logs and profiles: the graphics API in use, VSync, the graphics adapter
-/// when the backend can name it. Keys are short lower-case words; values are free text.
+/// when the backend can name it. Keys are short lower-case words; values are free text. A capability
+/// (<see cref="IPlatformHost.TryGetCapability{T}"/>).
 /// </summary>
 public interface IPlatformDiagnostics
 {
@@ -53,10 +55,17 @@ public interface IPlatformDiagnostics
 }
 
 /// <summary>
-/// Everything a backend provides: a window (or nothing, headless), input devices, audio,
-/// texture creation and a renderer that draws into the virtual canvas.
+/// Everything a backend provides: the host (<see cref="IPlatformHost"/>: clock, events, main surface, capabilities,
+/// whether it may block) plus, until the graphics, input and audio contracts are split from it, the renderer that draws
+/// into the virtual canvas and the graphics, input and audio devices.
 /// </summary>
-public interface IPlatform : IDisposable
+/// <remarks>
+/// Optional features are capabilities found with <see cref="IPlatformHost.TryGetCapability{T}"/>, never by casting a
+/// platform: <see cref="IDisplayControl"/>, <see cref="IPlatformDiagnostics"/>, <see cref="ITouchScreen"/> (with its
+/// vibration), <see cref="IDisplayPacing"/> and <see cref="IPreciseDelay"/>. A platform that wraps another forwards
+/// every member, so wrapping never hides a capability.
+/// </remarks>
+public interface IPlatform : IPlatformHost
 {
     /// <summary>Creates textures.</summary>
     IGraphicsDevice Graphics { get; }
@@ -64,50 +73,6 @@ public interface IPlatform : IDisposable
     IAudioDevice Audio { get; }
     /// <summary>Keyboard, gamepad and pointer state, read once per update.</summary>
     IInputSource Input { get; }
-    /// <summary>Whether the user closed the window; the loop stops at the next frame.</summary>
-    bool CloseRequested { get; }
-    /// <summary>
-    /// A monotonic clock in seconds, and nothing more: the loop measures each frame's time with it and decides itself
-    /// how many fixed steps that is (<see cref="Kernel.TimeSettings"/>). Never derive it from frames or the update rate.
-    /// </summary>
-    double Now { get; }
-    /// <summary>
-    /// The time mode a run on this platform uses when neither the run (<see cref="RunOptions.TimeMode"/>) nor the game
-    /// (<see cref="Game.Configure"/>) chooses one: true for real time (a desktop window), false for one step per frame
-    /// (headless, or a backend whose host asked for deterministic time with <see cref="PlatformRequest.FixedStep"/>).
-    /// A preference only; the loop owns the clock.
-    /// </summary>
-    bool RealTime { get; }
-    /// <summary>
-    /// The refresh rate in Hz of the display that paces the frames (VSync), or 0 when frames are not paced to a display
-    /// or its rate is unknown (the default). The loop then counts elapsed time in refresh periods, which removes the
-    /// stutter of waking up irregularly around them.
-    /// </summary>
-    double DisplayRate => 0;
-    /// <summary>
-    /// Whether the system took the game away (a phone app sent to the background): while true the loop neither
-    /// simulates nor renders, music is paused and the game is told through <c>OnSuspended</c>/<c>OnResumed</c>.
-    /// Platforms without such a state keep the default.
-    /// </summary>
-    bool Suspended => false;
-    /// <summary>
-    /// Blocks for about <paramref name="seconds"/>, precisely enough to pace frames (the frame limit,
-    /// <see cref="GraphicsSettings.FrameRateLimit"/>); returns false when the platform cannot block its thread (a browser,
-    /// whose page drives the frames), and the loop then skips the frames that come early instead. The default sleeps and
-    /// then spins for the last milliseconds; backends override it with their precise timers.
-    /// </summary>
-    bool Wait(double seconds)
-    {
-        FrameTimer.Delay(seconds);
-        return true;
-    }
-    /// <summary>
-    /// The touch screen, if the platform has one: touches for <see cref="VirtualControls"/>, the safe area and a layer
-    /// drawn over the frame. Platforms without touch keep the default (null).
-    /// </summary>
-    ITouchScreen? Touch => null;
-    /// <summary>Processes pending system events (window, keyboard, gamepad, touch). Called at the start of every frame.</summary>
-    void PollEvents();
     /// <summary>Starts a frame and returns the renderer that draws into the virtual canvas.</summary>
     IRenderer BeginFrame();
     /// <summary>Finishes the frame and presents it.</summary>
@@ -118,7 +83,7 @@ public interface IPlatform : IDisposable
     void ToggleFullscreen();
     /// <summary>
     /// Colour of the window around the frame. Starts as <see cref="GameSettings.Letterbox"/>; the start screen sets its
-    /// own colour while it shows. Platforms without a window keep the default, which ignores changes.
+    /// own colour while it shows. Platforms without a window keep it and ignore it.
     /// </summary>
-    Color Letterbox { get => Color.Black; set { } }
+    Color Letterbox { get; set; }
 }

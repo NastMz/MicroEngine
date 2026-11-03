@@ -40,7 +40,11 @@ each system use <code>MicroEngine.Desktop.DesktopLauncher</code> instead.
 
  [DesktopOptions](MicroEngine.Raylib.DesktopOptions.md)
 
-Desktop window options decided by the launcher.
+Window options of a raylib platform created directly (browser hosts); hosts with a [PlatformRequest](MicroEngine.Core.PlatformRequest.md) use
+[#ctor](MicroEngine.Raylib.RaylibPlatform.md). Every option is set by name
+(<code>new DesktopOptions { Hidden = true, Mute = true }</code>): there is no positional constructor, so a call written for
+the earlier positional shape (whose third argument was a fixed-step flag) fails to compile instead of meaning
+something else.
 
  [RaylibPlatform](MicroEngine.Raylib.RaylibPlatform.md)
 
@@ -48,7 +52,10 @@ raylib-backed platform. Games draw into a virtual-resolution render texture whic
 scaled to the window by the largest integer factor that fits (letterboxed), keeping pixel art crisp.
 In a browser (raylib built for emscripten) the page paces frames: the window never asks to close and
 raylib's frame limiter is left off, because both would block the only thread; the page also owns
-fullscreen, and the canvas has no minimum size.
+fullscreen, and the canvas has no minimum size: it is a page-driven host ([CanBlock](MicroEngine.Raylib.RaylibPlatform.md#MicroEngine_Raylib_RaylibPlatform_CanBlock) is false), whose
+surface size is the canvas's, read after start. Its capabilities ([TryGetCapability``1](MicroEngine.Raylib.RaylibPlatform.md#MicroEngine_Raylib_RaylibPlatform_TryGetCapability__1___0__)):
+[IDisplayControl](MicroEngine.Core.IDisplayControl.md), [IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md), [ITouchScreen](MicroEngine.Input.ITouchScreen.md) and, outside browsers,
+[IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md).
 
  [RaylibTouchScreen](MicroEngine.Raylib.RaylibTouchScreen.md)
 

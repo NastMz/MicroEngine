@@ -11,7 +11,7 @@ is in memory and vanishes on reload; localStorage writes are synchronous and sur
 the "microengine" module (see web/README.md) before the game starts.
 
 ```csharp
-public sealed class BrowserSaveStorage : ISaveStorage
+public sealed class BrowserSaveStorage : ISaveStorage, IStorage
 ```
 
 #### Inheritance
@@ -21,7 +21,8 @@ public sealed class BrowserSaveStorage : ISaveStorage
 
 #### Implements
 
-ISaveStorage
+ISaveStorage, 
+IStorage
 
 ## Constructors
 

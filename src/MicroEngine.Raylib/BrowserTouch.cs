@@ -44,7 +44,7 @@ public static class BrowserLifecycle
 {
     private static volatile bool _hidden;
 
-    /// <summary>Set by the page from <c>visibilitychange</c>; the raylib platform reports it as <see cref="Core.IPlatform.Suspended"/>.</summary>
+    /// <summary>Set by the page from <c>visibilitychange</c>; the raylib platform reports it as a suspension (<see cref="Platform.IEngineEventSink.Suspending"/>).</summary>
     public static bool Hidden
     {
         get => _hidden;

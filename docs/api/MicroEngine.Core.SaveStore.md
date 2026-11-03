@@ -84,6 +84,24 @@ public SaveStore(ISaveStorage storage)
 
 <code class="paramref">storage</code> is null.
 
+### <a id="MicroEngine_Core_SaveStore__ctor_MicroEngine_Platform_IStorage_"></a> SaveStore\(IStorage\)
+
+Creates a store over any storage of the platform contract ([IStorage](MicroEngine.Platform.IStorage.md)).
+
+```csharp
+public SaveStore(IStorage storage)
+```
+
+#### Parameters
+
+`storage` IStorage
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">storage</code> is null.
+
 ## Properties
 
 ### <a id="MicroEngine_Core_SaveStore_DefaultStorage"></a> DefaultStorage

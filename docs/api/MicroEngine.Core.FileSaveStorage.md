@@ -9,7 +9,7 @@ Guide: [Saving data](../manual/persistence.md)
 One JSON file per slot in a directory (desktop and tests).
 
 ```csharp
-public sealed class FileSaveStorage : ISaveStorage
+public sealed class FileSaveStorage : ISaveStorage, IStorage
 ```
 
 #### Inheritance
@@ -19,7 +19,8 @@ public sealed class FileSaveStorage : ISaveStorage
 
 #### Implements
 
-[ISaveStorage](MicroEngine.Core.ISaveStorage.md)
+[ISaveStorage](MicroEngine.Core.ISaveStorage.md), 
+IStorage
 
 ## Constructors
 

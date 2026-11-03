@@ -6,7 +6,11 @@ Namespace: [MicroEngine.Raylib](MicroEngine.Raylib.md)
 Assembly: MicroEngine.Raylib.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
 
-Desktop window options decided by the launcher.
+Window options of a raylib platform created directly (browser hosts); hosts with a [PlatformRequest](MicroEngine.Core.PlatformRequest.md) use
+[#ctor](MicroEngine.Raylib.RaylibPlatform.md). Every option is set by name
+(<code>new DesktopOptions { Hidden = true, Mute = true }</code>): there is no positional constructor, so a call written for
+the earlier positional shape (whose third argument was a fixed-step flag) fails to compile instead of meaning
+something else.
 
 ```csharp
 public sealed record DesktopOptions : IEquatable<DesktopOptions>
@@ -23,29 +27,17 @@ public sealed record DesktopOptions : IEquatable<DesktopOptions>
 
 ## Constructors
 
-### <a id="MicroEngine_Raylib_DesktopOptions__ctor_System_Nullable_System_Int32__System_Boolean_System_Boolean_System_Boolean_System_Int32_"></a> DesktopOptions\(int?, bool, bool, bool, int\)
-
-Desktop window options decided by the launcher.
+### <a id="MicroEngine_Raylib_DesktopOptions__ctor"></a> DesktopOptions\(\)
 
 ```csharp
-public DesktopOptions(int? Scale = null, bool Hidden = false, bool FixedStep = false, bool Mute = false, int CaptureScale = 3)
+public DesktopOptions()
 ```
-
-#### Parameters
-
-`Scale` [int](https://learn.microsoft.com/dotnet/api/system.int32)?
-
-`Hidden` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-`FixedStep` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-`Mute` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-`CaptureScale` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ## Properties
 
 ### <a id="MicroEngine_Raylib_DesktopOptions_CaptureScale"></a> CaptureScale
+
+Size factor of screenshots (3 by default).
 
 ```csharp
 public int CaptureScale { get; init; }
@@ -55,17 +47,9 @@ public int CaptureScale { get; init; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-### <a id="MicroEngine_Raylib_DesktopOptions_FixedStep"></a> FixedStep
-
-```csharp
-public bool FixedStep { get; init; }
-```
-
-#### Property Value
-
- [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
 ### <a id="MicroEngine_Raylib_DesktopOptions_Hidden"></a> Hidden
+
+Renders into a hidden window, which never waits for the display (false by default).
 
 ```csharp
 public bool Hidden { get; init; }
@@ -89,6 +73,8 @@ public PixelImage? Icon { get; init; }
 
 ### <a id="MicroEngine_Raylib_DesktopOptions_Mute"></a> Mute
 
+Opens no audio device (false by default).
+
 ```csharp
 public bool Mute { get; init; }
 ```
@@ -99,6 +85,8 @@ public bool Mute { get; init; }
 
 ### <a id="MicroEngine_Raylib_DesktopOptions_Scale"></a> Scale
 
+Window scale; null (the default) uses [Scale](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scale).
+
 ```csharp
 public int? Scale { get; init; }
 ```
@@ -106,6 +94,18 @@ public int? Scale { get; init; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)?
+
+### <a id="MicroEngine_Raylib_DesktopOptions_WaitForDisplay"></a> WaitForDisplay
+
+Whether a visible desktop window's frames may wait for the display (true by default; see [WaitForDisplay](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_WaitForDisplay)).
+
+```csharp
+public bool WaitForDisplay { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ## Methods
 
@@ -118,24 +118,6 @@ public DesktopOptions <Clone>$()
 #### Returns
 
  [DesktopOptions](MicroEngine.Raylib.DesktopOptions.md)
-
-### <a id="MicroEngine_Raylib_DesktopOptions_Deconstruct_System_Nullable_System_Int32___System_Boolean__System_Boolean__System_Boolean__System_Int32__"></a> Deconstruct\(out int?, out bool, out bool, out bool, out int\)
-
-```csharp
-public void Deconstruct(out int? Scale, out bool Hidden, out bool FixedStep, out bool Mute, out int CaptureScale)
-```
-
-#### Parameters
-
-`Scale` [int](https://learn.microsoft.com/dotnet/api/system.int32)?
-
-`Hidden` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-`FixedStep` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-`Mute` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-`CaptureScale` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ### <a id="MicroEngine_Raylib_DesktopOptions_Equals_System_Object_"></a> Equals\(object?\)
 

@@ -27,7 +27,7 @@ public sealed class KeyboardTests
         _x = XTest.Open(out var missing);
         Native.Require(_x is not null, missing);
         // A visible window, with the pointer over it so it has the keyboard focus (XTest.MovePointer).
-        _platform = new RaylibPlatform(new GameSettings("keyboard test", 160, 90, 2), new DesktopOptions(Mute: true));
+        _platform = new RaylibPlatform(new GameSettings("keyboard test", 160, 90, 2), new DesktopOptions { Mute = true });
         for (int i = 0; i < 5; i++) Frame();
         var at = Rl.GetWindowPosition();
         _x!.MovePointer((int)at.X + 160, (int)at.Y + 90);
@@ -43,7 +43,7 @@ public sealed class KeyboardTests
 
     private (bool Down, bool Pressed, bool Released) Frame()
     {
-        _platform!.PollEvents();
+        _platform!.PumpEvents(MicroEngine.NativeChecks.IgnoredEvents.Instance);
         _map.Sample(_platform.Input);
         var state = (_map.Down("jump"), _map.Pressed("jump"), _map.Released("jump"));
         _map.EndUpdate();

@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace MicroEngine.Core;
 
-/// <summary>The default precise wait of <see cref="IPlatform.Wait"/>.</summary>
+/// <summary>The loop's precise wait on hosts that can block but offer no <see cref="Platform.IPreciseDelay"/>.</summary>
 internal static class FrameTimer
 {
     /// <summary>
