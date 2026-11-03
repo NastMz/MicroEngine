@@ -201,4 +201,54 @@ public sealed class StateTraceTests
         Assert.AreEqual(0, whole.Sections.Count);
         Assert.IsTrue(detailed.Sections.Count > 0);
     }
+
+    /// <summary>A game that changes room music and lets its rules read the music playing, as Courtyard Key does.</summary>
+    private sealed class Jukebox : Game
+    {
+        public override GameSettings Settings { get; } = new("jukebox", 64, 48);
+        public string? Heard { get; set; }
+        protected override void Load()
+        {
+            var tune = new MicroEngine.Audio.Song(140).Track(MicroEngine.Audio.Instrument.Lead, "C4 E4 G4 C5 . G4 E4 - D4 F4 A4 D5 . A4 F4 -")
+                .Track(MicroEngine.Audio.Instrument.Bass, "C2 - . C2 G2 - . G2").Drums("k . s . k k s h");
+            Audio.AddMusic("first", tune);
+            Audio.AddMusic("second", tune);
+            Scenes.Push(new Rooms());
+        }
+        public override void HashState(StateHasher hash) => hash.Add(Heard);
+
+        private sealed class Rooms : Scene
+        {
+            public override void Update(float dt)
+            {
+                if (Game.UpdateCount == 5) Audio.PlayMusic("second", fadeSeconds: 0);
+                if (Game.UpdateCount == 20) Audio.PlayMusic("first");
+                ((Jukebox)Game).Heard = Audio.CurrentMusic;
+            }
+            public override void Draw(IRenderer renderer) { }
+        }
+    }
+
+    [TestMethod]
+    [DoNotParallelize]
+    public void Music_state_does_not_depend_on_how_fast_songs_render_where_there_are_no_threads()
+    {
+        bool threads = MicroEngine.Audio.AudioMixer.RenderSongsOnThreads;
+        var budget = MicroEngine.Audio.AudioMixer.SliceBudget;
+        MicroEngine.Audio.AudioMixer.RenderSongsOnThreads = false; // how browsers render songs
+        try
+        {
+            var script = InputScript.Parse("60 quit");
+            MicroEngine.Audio.AudioMixer.SliceBudget = TimeSpan.FromTicks(1);
+            var slow = StateTraceRuns.Run(new Jukebox(), script);
+            MicroEngine.Audio.AudioMixer.SliceBudget = TimeSpan.FromSeconds(1);
+            var fast = StateTraceRuns.Run(new Jukebox(), script);
+            StateTraceRuns.AssertIdentical(slow.Trace, fast.Trace, "a slow and a fast machine");
+        }
+        finally
+        {
+            MicroEngine.Audio.AudioMixer.RenderSongsOnThreads = threads;
+            MicroEngine.Audio.AudioMixer.SliceBudget = budget;
+        }
+    }
 }

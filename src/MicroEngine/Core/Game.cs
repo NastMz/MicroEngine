@@ -229,6 +229,9 @@ public abstract class Game : IEngineModule, IStateHashed
         Assets = services.Get<AssetCache>();
         Assets.Log = engine.Log;
         Audio = services.Get<AudioMixer>();
+        // Deterministic runs keep audio state on the simulation's timeline only (songs render when waited for, sounds
+        // never re-anchor to the device), so two runs hash and sound the same.
+        Audio.Deterministic = engine.Time.Mode == TimeMode.Deterministic;
         Font = services.Get<BitmapFont>();
         Scenes = services.Get<SceneManager>();
         Load();
@@ -285,6 +288,9 @@ public abstract class Game : IEngineModule, IStateHashed
             schedule.Add(FramePhase.PostFixed, "engine.assets.playing", _ => game.Assets.Playing = true);
             schedule.Add(FramePhase.Render, "engine.render", _ => game.Render(platform.BeginFrame()));
             schedule.Add(FramePhase.Present, "engine.present", _ => platform.EndFrame());
+            // Audio work of the host frame, outside the simulation step: songs rendering in slices, music decoded ahead,
+            // pumped sinks (browsers).
+            schedule.Add(FramePhase.EndFrame, "engine.audio.pump", _ => game.Audio.Pump());
             // The game's own handling comes first, so later handlers see music paused and progress saved.
             builder.Lifecycle.Suspending += game.Suspend;
             builder.Lifecycle.Resumed += game.Resume;

@@ -56,7 +56,7 @@ public IAudioDevice Audio { get; }
 
 #### Property Value
 
- [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
+ IAudioDevice
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_CanBlock"></a> CanBlock
 
@@ -248,7 +248,7 @@ public SilentAudioDevice SilentAudio { get; }
 
 #### Property Value
 
- [SilentAudioDevice](MicroEngine.Audio.SilentAudioDevice.md)
+ SilentAudioDevice
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Suspended"></a> Suspended
 
