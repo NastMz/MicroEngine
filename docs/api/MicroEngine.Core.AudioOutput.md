@@ -16,7 +16,7 @@ public enum AudioOutput
 
 `Automatic = 0` 
 
-A physical device for runs a player watches; none for hidden windows and fixed-step (scripted) runs.
+A physical device for real-time runs (hidden windows included); none for deterministic-time (scripted) runs.
 
 
 

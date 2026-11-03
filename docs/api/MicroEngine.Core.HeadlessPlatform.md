@@ -6,7 +6,7 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Testing your game](../examples/testing.md)  
 
-A windowless platform: deterministic time, no devices, and a renderer that counts calls (or, with
+A windowless platform: deterministic time by default ([RealTime](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_RealTime) is false), no devices, and a renderer that counts calls (or, with
 [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize), also records them and draws them with the CPU reference rasterizer). Used by automated tests
 and CI to play whole games through scripts.
 
@@ -104,7 +104,8 @@ public HeadlessInput Keys { get; }
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Now"></a> Now
 
-Simulated time: one update (1/[UpdateRate](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_UpdateRate) second) per frame polled, so it equals <code>Game.Time</code>.
+A monotonic clock in seconds since the platform was created. The loop owns time: in deterministic time (the
+default here) it never reads this clock to decide how many steps a frame runs.
 
 ```csharp
 public double Now { get; }
@@ -143,7 +144,7 @@ public bool Rasterize { get; init; }
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_RealTime"></a> RealTime
 
-Always false: the loop advances exactly one update per frame.
+False: runs that choose no time mode advance exactly one update per frame.
 
 ```csharp
 public bool RealTime { get; }
@@ -213,25 +214,6 @@ public HeadlessTouchScreen TouchScreen { get; }
 
  [HeadlessTouchScreen](MicroEngine.Core.HeadlessTouchScreen.md)
 
-### <a id="MicroEngine_Core_HeadlessPlatform_UpdateRate"></a> UpdateRate
-
-Updates per simulated second, which should be the game's [UpdateRate](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_UpdateRate) (60 by default):
-[For](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_For_MicroEngine_Core_GameSettings_) and [Profile](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Profile) take it from the settings.
-
-```csharp
-public int UpdateRate { get; init; }
-```
-
-#### Property Value
-
- [int](https://learn.microsoft.com/dotnet/api/system.int32)
-
-#### Exceptions
-
- [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
-
-The value is zero or negative.
-
 ## Methods
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_BeginFrame"></a> BeginFrame\(\)
@@ -264,7 +246,7 @@ public void EndFrame()
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_For_MicroEngine_Core_GameSettings_"></a> For\(GameSettings\)
 
-A headless platform with the virtual size and update rate of <code class="paramref">settings</code>.
+A headless platform with the virtual size of <code class="paramref">settings</code>.
 
 ```csharp
 public static HeadlessPlatform For(GameSettings settings)
@@ -280,7 +262,7 @@ public static HeadlessPlatform For(GameSettings settings)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_For_MicroEngine_Core_GameSettings_System_Boolean_"></a> For\(GameSettings, bool\)
 
-A headless platform with the virtual size and update rate of <code class="paramref">settings</code>, rasterizing when <code class="paramref">rasterize</code> is true (see [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize)).
+A headless platform with the virtual size of <code class="paramref">settings</code>, rasterizing when <code class="paramref">rasterize</code> is true (see [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize)).
 
 ```csharp
 public static HeadlessPlatform For(GameSettings settings, bool rasterize)
@@ -298,7 +280,7 @@ public static HeadlessPlatform For(GameSettings settings, bool rasterize)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_PollEvents"></a> PollEvents\(\)
 
-Advances simulated time by one frame.
+Does nothing: a headless platform has no events.
 
 ```csharp
 public void PollEvents()

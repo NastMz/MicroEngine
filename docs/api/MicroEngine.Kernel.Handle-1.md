@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 A reference to an item of a [HandlePool`1](MicroEngine.Kernel.md): a slot index and the generation of the item that held the
 slot when the handle was made. When the item is removed its slot's generation changes, so an old handle no longer

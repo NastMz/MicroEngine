@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 Items reached through generational [Handle`1](MicroEngine.Kernel.md)s: slots are reused, and a handle to a removed item is
 detected (stale) instead of reaching the item that took its slot.

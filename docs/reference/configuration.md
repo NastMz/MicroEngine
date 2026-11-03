@@ -36,11 +36,12 @@ starts through `DesktopLauncher` accepts them on its command line.
 
 | Flag | Effect |
 | --- | --- |
-| `--script FILE` | Plays scripted input ([format](../examples/testing.md#level-3-input-scripts-and-captures)); implies a fixed step and seed 1 unless `--seed` is given |
+| `--script FILE` | Plays scripted input ([format](../examples/testing.md#level-3-input-scripts-and-captures)); implies a fixed step and seed 1 unless `--seed` is given (next SDK version: deterministic time unless `--time realtime`) |
 | `--captures DIR` | Directory for script `capture` commands (default `captures`) |
 | `--platform NAME` | Runs on that platform of the catalog (`sdl`, `raylib`, `sdl-software`, `headless`); default: `MICROENGINE_PLATFORM`, else the first that can run here (next SDK version: else every platform that can run here except `headless`, in order, until one starts, printing why each one failed) |
 | `--list-platforms` | Prints the catalog, with the reason a platform cannot run here, and exits |
-| `--hidden` | Renders in a hidden window with a fixed step; captures still work (next SDK version: opens no sound device unless `--audio device`) |
+| `--hidden` | Renders in a hidden window with a fixed step; captures still work (next SDK version: a hidden window implies nothing about time or sound: it runs in real time and may open a sound device unless the run passes `--time deterministic`, `--script`, `--audio silent` or `--mute`) |
+| `--time realtime\|deterministic` | Next SDK version: how the loop advances time. `realtime` follows the wall clock; `deterministic` runs exactly one fixed step per frame. Default: deterministic with `--script`, else the game's choice, else the platform's (real time on SDL and raylib, deterministic headless) ([Time](../manual/lifecycle.md#time)) |
 | `--headless` | Runs on `HeadlessPlatform`, without a window; no capture files are written; the same as `--platform headless` |
 | `--frames N` | Stops after N updates |
 | `--seed N` | Seed for `Game.Random` (otherwise random, or 1 under a script) |
@@ -52,14 +53,14 @@ Next SDK version (not published yet: arrives with the next SDK version):
 
 | Flag | Effect |
 | --- | --- |
-| `--audio auto\|device\|silent` | Where sound may go. `auto` (default): a sound device for visible real-time runs only, none for `--hidden`, `--script` or `--headless` runs, so tests are never heard; `device`: always (checks that must prove a device opens); `silent`: never |
+| `--audio auto\|device\|silent` | Where sound may go. `auto` (default): a sound device for visible real-time runs only, none for `--hidden`, `--script` or `--headless` runs, so tests are never heard (next SDK version: a device for every real-time run, hidden ones included, none for deterministic-time runs: `--script`, `--time deterministic`, `--headless`); `device`: always (checks that must prove a device opens); `silent`: never |
 | `--audio-capture FILE` | Plays nothing aloud and writes what would have been heard as a WAV (stereo, 44.1 kHz), mixed step by step from game time: the same run gives the same file |
 | `--profile FILE` | Measures every frame (time between frames, events, update, drawing, presenting, steps, allocations, collections) and the start phases; prints a summary and writes JSON, or CSV when FILE ends in `.csv`. The first 60 frames are left out of the summary |
 | `--pacing display\|measured` | `display` (default): when VSync paces the frames, frame time is counted in whole refresh periods, which removes the stutter of irregular wake-ups; `measured`: frame time as measured |
 | `--gpu auto\|high-performance\|power-saving` | The GPU to ask for on a machine with two. SDL passes it to its Metal and GPU renderers only; Direct3D 11 and OpenGL use the GPU the system assigns to the application (on Windows: Settings, Display, Graphics) |
 | `--renderer NAME[,NAME...]` | Graphics APIs to try first, in order (SDL: `direct3d11`, `direct3d12`, `vulkan`, `opengl`, `metal`, `gpu`...); when none can start, SDL chooses and the reason is printed |
 | `--vsync on\|off` | Whether frames wait for the display's refresh. Off: frames run as fast as they can, or at `--fps-limit` |
-| `--fps-limit N` | Draws at most N frames per second, with or without VSync; `0` removes a limit the game sets. Scripted and hidden runs are never limited |
+| `--fps-limit N` | Draws at most N frames per second, with or without VSync; `0` removes a limit the game sets. Scripted and hidden runs are never limited (next SDK version: deterministic-time runs are never limited) |
 | `--window windowed\|fullscreen\|exclusive` | Window mode: a window, borderless full screen on its display, or exclusive full screen at the display's own mode |
 | `--display N` | Opens on display N, counted from 0 (the order the system lists them in) |
 

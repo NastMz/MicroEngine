@@ -27,7 +27,7 @@ const guides = {
   'MicroEngine.Desktop': ['Backends and platforms', '../manual/backends.md'],
   'MicroEngine.Graphics': ['Graphics', '../manual/rendering.md'],
   'MicroEngine.Input': ['Input', '../manual/input.md'],
-  'MicroEngine.Kernel': ['Game lifecycle and time', '../manual/lifecycle.md'],
+  'MicroEngine.Kernel': ['Modules and the frame schedule', '../manual/lifecycle.md#modules-and-the-frame-schedule'],
   'MicroEngine.Raylib': ['Backends and platforms', '../manual/backends.md'],
   'MicroEngine.Scenes': ['Scenes', '../manual/scenes.md'],
   'MicroEngine.Sdl': ['Backends and platforms', '../manual/backends.md'],

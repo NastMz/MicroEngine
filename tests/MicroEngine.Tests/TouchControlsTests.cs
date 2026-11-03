@@ -654,7 +654,7 @@ public sealed class TouchControlsTests
     private sealed class TouchGame : Game
     {
         public override GameSettings Settings { get; } = new("touch");
-        public List<string> Log { get; } = [];
+        public new List<string> Log { get; } = [];
         protected override TouchLayout CreateTouchLayout() => Layout;
         protected override InputMap CreateInput() => InputMap.CreateDefault().Bind("jump", Key.Space);
         protected override void Load() => Scenes.Push(new Probe(this));

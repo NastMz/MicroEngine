@@ -1,6 +1,7 @@
 using MicroEngine.Audio;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 
@@ -14,6 +15,11 @@ namespace MicroEngine.Core;
 /// The engine services (<see cref="Graphics"/>, <see cref="Audio"/>, <see cref="Input"/>, <see cref="Scenes"/>,
 /// <see cref="Font"/>) exist from <see cref="Load"/> on; reading them in the constructor fails. The simulation advances in
 /// fixed steps of <c>1 / UpdateRate</c> seconds; drawing happens once per frame.
+/// <para>
+/// A game is an engine module (<see cref="IEngineModule"/>): its services are registered in the engine's
+/// <see cref="Services"/> and its per-frame work runs as named systems of the frame <see cref="Schedule"/>. Override
+/// <see cref="Configure"/> to add systems, replace services or change the <see cref="Kernel.TimeSettings"/>.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -25,9 +31,10 @@ namespace MicroEngine.Core;
 /// }
 /// </code>
 /// </example>
-public abstract class Game
+public abstract class Game : IEngineModule
 {
     private IPlatform? _platform;
+    private Engine? _engine;
     private float _achievementFlush;
 
     /// <summary>The title, virtual canvas size, window scale, update rate and background colour of the game. Read once when the game starts; keep it constant.</summary>
@@ -96,6 +103,42 @@ public abstract class Game
     public AchievementToasts? AchievementToasts { get; private set; }
     /// <summary>The platform running the game (window, audio, input). Throws <see cref="InvalidOperationException"/> before the game starts.</summary>
     protected IPlatform Platform => _platform ?? throw new InvalidOperationException("Game is not running.");
+    internal Engine Engine => _engine ?? throw new InvalidOperationException("Game is not running.");
+    /// <summary>
+    /// The engine's services: every built-in service (<see cref="InputMap"/>, <see cref="AudioMixer"/>,
+    /// <see cref="SceneManager"/>, <see cref="AssetCache"/>, <see cref="VirtualControls"/>, <see cref="ActionPrompts"/>,
+    /// <see cref="BitmapFont"/>, <see cref="GameScreen"/>, <see cref="IPlatform"/>, <see cref="System.Random"/>, this
+    /// game) and those the game's <see cref="Configure"/> registered, found by the type they were registered as.
+    /// Available from <see cref="Load"/> on.
+    /// </summary>
+    public ServiceRegistry Services => Engine.Services;
+    /// <summary>The frame's systems by phase, the built-in ones named <c>engine.*</c>; fixed once the game starts.</summary>
+    public FrameSchedule Schedule => Engine.Schedule;
+    /// <summary>Engine events: suspension, resumption, quit requests (with veto) and, where the platform reports them, resizing and focus.</summary>
+    public IEngineLifecycle Lifecycle => Engine.Lifecycle;
+    /// <summary>Where the engine's diagnostics go (the <see cref="ILog"/> service; standard error by default).</summary>
+    public ILog Log => Engine.Log;
+    /// <summary>The time policy of the run: fixed rate, catch-up limits and whether time follows the wall clock or advances one step per frame.</summary>
+    public TimeSettings TimeSettings => Engine.Time;
+    /// <summary>The time of the frame being run (<see cref="FrameContext"/>): its delta, the fixed step, the blend and the frame number.</summary>
+    public FrameContext Frame => Engine.Clock.Context;
+
+    /// <summary>An optional feature the engine declared (the platform's <see cref="ITouchScreen"/>, its <see cref="IPlatformDiagnostics"/>), if there is one.</summary>
+    public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class
+    {
+        if (_engine is { } engine) return engine.TryGetCapability(out capability);
+        capability = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Called once when the game starts, after the built-in services and systems were registered and before
+    /// <see cref="Load"/>: add frame systems (<c>builder.Schedule.Add</c>), register or replace services
+    /// (<c>builder.Services</c>), edit settings such as <see cref="Kernel.TimeSettings"/> (<c>builder.Configure</c>) and
+    /// subscribe to <c>builder.Lifecycle</c>. A run's own choices (<see cref="RunOptions.TimeMode"/>) are applied after
+    /// it. The default does nothing.
+    /// </summary>
+    public virtual void Configure(EngineBuilder builder) { }
 
     /// <summary>Called once after the platform exists. Create atlases, sounds and push the first scene.</summary>
     protected abstract void Load();
@@ -131,23 +174,92 @@ public abstract class Game
 
     internal void Initialize(IPlatform platform, int seed) => Initialize(platform, seed, Settings.Graphics);
 
-    internal void Initialize(IPlatform platform, int seed, GraphicsSettings graphics)
+    /// <summary>
+    /// Composes the engine (the built-in services and systems, then <see cref="Configure"/>, then
+    /// <paramref name="host"/>'s additions and the run's <paramref name="mode"/>), resolves the services from it and runs
+    /// <see cref="Load"/>.
+    /// </summary>
+    internal void Initialize(IPlatform platform, int seed, GraphicsSettings graphics, TimeMode? mode = null, Action<EngineBuilder>? host = null)
     {
         _platform = platform;
-        Screen = new GameScreen(platform, graphics);
-        Random = new Random(seed);
-        Input = CreateInput();
-        Touch = new VirtualControls(CreateTouchLayout());
-        Input.AddSource(Touch);
-        Prompts = new ActionPrompts(Input, Touch);
-        if (platform.Touch is { } screen) screen.Overlay = Touch;
-        platform.Graphics.DefaultFilter = Settings.DefaultTextureFilter;
-        Assets = new AssetCache(platform.Graphics, ContentRoot);
-        Audio = new AudioMixer(platform.Audio);
-        Font = BitmapFont.CreateDefault(platform.Graphics);
-        Scenes = new SceneManager(this);
+        var builder = new EngineBuilder();
+        builder.Configure<TimeSettings>(time => time with
+        {
+            FixedRate = Settings.UpdateRate,
+            Mode = platform.RealTime ? TimeMode.RealTime : TimeMode.Deterministic,
+        });
+        builder.Add(new GameModule(this, platform, seed, graphics));
+        builder.Add(this);
+        host?.Invoke(builder);
+        if (mode is { } chosen) builder.Configure<TimeSettings>(time => time with { Mode = chosen });
+        var engine = _engine = builder.Build();
+        var services = engine.Services;
+        Screen = services.Get<GameScreen>();
+        Random = services.Get<Random>();
+        Input = services.Get<InputMap>();
+        Touch = services.Get<VirtualControls>();
+        Prompts = services.Get<ActionPrompts>();
+        Assets = services.Get<AssetCache>();
+        Assets.Log = engine.Log;
+        Audio = services.Get<AudioMixer>();
+        Font = services.Get<BitmapFont>();
+        Scenes = services.Get<SceneManager>();
         Load();
         Scenes.ApplyPending();
+    }
+
+    /// <summary>
+    /// The game's built-in services and frame systems, registered before the game's own <see cref="Configure"/>. The
+    /// services are created in the order the engine always created them; the systems keep the order of a step.
+    /// </summary>
+    private sealed class GameModule(Game game, IPlatform platform, int seed, GraphicsSettings graphics) : IEngineModule
+    {
+        public void Configure(EngineBuilder builder)
+        {
+            var services = builder.Services;
+            services.Add(game);
+            services.Add(platform);
+            services.Add(new GameScreen(platform, graphics));
+            services.Add(new Random(seed));
+            var input = game.CreateInput();
+            var touch = new VirtualControls(game.CreateTouchLayout());
+            input.AddSource(touch);
+            services.Add(input);
+            services.Add(touch);
+            services.Add(new ActionPrompts(input, touch));
+            if (platform.Touch is { } screen)
+            {
+                screen.Overlay = touch;
+                builder.Capabilities.Add(screen);
+            }
+            if (platform is IPlatformDiagnostics diagnostics) builder.Capabilities.Add(diagnostics);
+            platform.Graphics.DefaultFilter = game.Settings.DefaultTextureFilter;
+            services.Add(new AssetCache(platform.Graphics, game.ContentRoot));
+            services.Add(new AudioMixer(platform.Audio));
+            services.Add(BitmapFont.CreateDefault(platform.Graphics));
+            services.Add(new SceneManager(game));
+
+            var schedule = builder.Schedule;
+            schedule.Add(FramePhase.BeginFrame, "engine.assets", _ => game.Assets.Update());
+            schedule.Add(FramePhase.Input, "engine.touch", frame => game.UpdateTouch(platform.Touch, (float)frame.Delta));
+            schedule.Add(FramePhase.PreFixed, "engine.input", _ => game.Input.Sample(platform.Input));
+            schedule.Add(FramePhase.FixedUpdate, "engine.time", step =>
+            {
+                game.Time += (float)step.FixedDelta;
+                game.UpdateCount++;
+            });
+            schedule.Add(FramePhase.FixedUpdate, "engine.scenes", step => game.Scenes.Update((float)step.FixedDelta));
+            schedule.Add(FramePhase.PostFixed, "engine.audio", step => game.Audio.Update((float)step.FixedDelta));
+            schedule.Add(FramePhase.PostFixed, "engine.achievements", step => game.UpdateAchievements((float)step.FixedDelta));
+            schedule.Add(FramePhase.PostFixed, "engine.input.end", _ => game.Input.EndUpdate());
+            // From the first update on, a load can show as a hitch: the cache reports slow ones.
+            schedule.Add(FramePhase.PostFixed, "engine.assets.playing", _ => game.Assets.Playing = true);
+            schedule.Add(FramePhase.Render, "engine.render", _ => game.Render(platform.BeginFrame()));
+            schedule.Add(FramePhase.Present, "engine.present", _ => platform.EndFrame());
+            // The game's own handling comes first, so later handlers see music paused and progress saved.
+            builder.Lifecycle.Suspending += game.Suspend;
+            builder.Lifecycle.Resumed += game.Resume;
+        }
     }
 
     internal void UpdateTouch(ITouchScreen? screen, float dt)
@@ -156,21 +268,14 @@ public abstract class Game
         Touch.Update(screen, dt, Input.LastDevice);
     }
 
-    internal void Step(float dt)
+    private void UpdateAchievements(float dt)
     {
-        Time += dt;
-        UpdateCount++;
-        Scenes.Update(dt);
-        Audio.Update(dt);
         AchievementToasts?.Update(dt);
         if (_achievements is { } achievements && (_achievementFlush += dt) >= 1f)
         {
             _achievementFlush = 0;
             achievements.Flush();
         }
-        Input.EndUpdate();
-        // From the first update on, a load can show as a hitch: the cache reports slow ones.
-        Assets.Playing = true;
     }
 
     internal void Render(IRenderer renderer)
@@ -212,11 +317,20 @@ public abstract class Game
     /// <summary>Test hook: initializes against a platform without running the loop.</summary>
     public void InitializeForTest(IPlatform platform, int seed = 1) => Initialize(platform, seed);
     /// <summary>Test hook: advances one fixed step after sampling input.</summary>
+    /// <remarks>
+    /// Runs the phases that come before drawing for one fixed step, with a frame that stands for exactly one step:
+    /// <see cref="FramePhase.BeginFrame"/>, <see cref="FramePhase.Input"/>, the four fixed phases,
+    /// <see cref="FramePhase.Update"/> and <see cref="FramePhase.LateUpdate"/>. The loop's clock does not move.
+    /// </remarks>
     public void StepForTest()
     {
-        Assets.Update();
-        UpdateTouch(Platform.Touch, 1f / Settings.UpdateRate);
-        Input.Sample(Platform.Input);
-        Step(1f / Settings.UpdateRate);
+        var engine = Engine;
+        double step = engine.Time.FixedDelta;
+        var frame = new FrameContext(step, step, 1f, UpdateCount, engine.Clock.Frame);
+        engine.Run(FramePhase.BeginFrame, frame);
+        engine.Run(FramePhase.Input, frame);
+        engine.RunFixedStep(frame with { Blend = 0 });
+        engine.Run(FramePhase.Update, frame with { FixedStep = UpdateCount });
+        engine.Run(FramePhase.LateUpdate, frame with { FixedStep = UpdateCount });
     }
 }

@@ -23,7 +23,7 @@ public interface IPlatform : IDisposable
     bool CloseRequested { get; }
     /// <summary>Monotonic time in seconds.</summary>
     double Now { get; }
-    /// <summary>Whether time advances with the wall clock (desktop) or one step per frame (headless).</summary>
+    /// <summary>The time mode a run uses when it does not choose one: real time (desktop) or one step per frame (headless).</summary>
     bool RealTime { get; }
     /// <summary>Whether the system took the game away (a phone app sent to the background) ...</summary>
     bool Suspended => false;
@@ -48,6 +48,12 @@ Source: [`src/MicroEngine/Core/Platform.cs`](../../src/MicroEngine/Core/Platform
 
 While `Suspended` is true the loop neither simulates nor renders, pauses music, saves achievement progress and calls
 the game's `OnSuspended`/`OnResumed`. See [Lifecycle](lifecycle.md#fixed-step-and-frame-order) for the frame order.
+
+Next SDK version (not published yet: arrives with the next SDK version): the loop owns time. `Now` is only a monotonic
+clock on every backend; how many steps a frame runs, the catch-up limits and the blend are the loop's
+([Time](lifecycle.md#time)). `RealTime` is the platform's preference for runs that do not choose a time mode:
+headless prefers one step per frame, SDL and raylib prefer real time unless the host asked for deterministic time
+(`PlatformRequest.FixedStep`).
 
 ## Choosing a platform
 
@@ -78,10 +84,11 @@ headless: no window, devices or sound; one step per frame, for automated tests
 | --- | --- |
 | `--platform NAME` | Run on that platform of the catalog |
 | `--list-platforms` | Print the catalog, with the reason a platform cannot run here, and exit |
-| `--script FILE` | Play an [input script](input.md#scripted-input); implies a fixed step |
+| `--script FILE` | Play an [input script](input.md#scripted-input); implies a fixed step (next SDK version: deterministic time unless `--time` says otherwise) |
 | `--captures DIR` | Where script captures go (default `./captures`); saved at 3× scale |
 | `--headless` | The same as `--platform headless` (captures are recorded but not written) |
-| `--hidden` | Render in a hidden window (captures still work); implies a fixed step |
+| `--hidden` | Render in a hidden window (captures still work); implies a fixed step (next SDK version: implies nothing about time or sound; add `--time deterministic` or `--audio silent`) |
+| `--time realtime\|deterministic` | Next SDK version: how the loop advances time, whatever the window: with the wall clock, or one step per frame ([Time](lifecycle.md#time)) |
 | `--frames N` | Stop after N updates |
 | `--seed N`, `--scale N`, `--mute` | Random seed, window scale, silence |
 

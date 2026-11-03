@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 The default [ILog](MicroEngine.Kernel.ILog.md): each message at or above [MinimumLevel](MicroEngine.Kernel.ConsoleLog.md#MicroEngine_Kernel_ConsoleLog_MinimumLevel) becomes one line
 <code>category: message</code> on `Error` (read when the message is written, so a redirected stream

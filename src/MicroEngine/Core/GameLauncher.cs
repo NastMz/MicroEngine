@@ -5,16 +5,19 @@ namespace MicroEngine.Core;
 /// <summary>
 /// The command line every desktop game accepts, on any backend. Supported arguments:
 /// <list type="bullet">
-/// <item><c>--script FILE</c> play scripted input (see <see cref="InputScript"/>); implies a fixed step.</item>
+/// <item><c>--script FILE</c> play scripted input (see <see cref="InputScript"/>); implies deterministic time unless
+/// <c>--time</c> says otherwise.</item>
 /// <item><c>--captures DIR</c> directory for script captures (default ./captures).</item>
 /// <item><c>--platform NAME</c> run on that platform of the catalog (default: <c>MICROENGINE_PLATFORM</c>, else the
 /// first one that can run here); <c>--list-platforms</c> prints them and exits.</item>
 /// <item><c>--headless</c> run without a window (no captures are written); the same as <c>--platform headless</c>.</item>
-/// <item><c>--hidden</c> render in a hidden window (captures still work).</item>
+/// <item><c>--hidden</c> render in a hidden window (captures still work); it implies nothing about time or sound.</item>
+/// <item><c>--time realtime|deterministic</c> how the loop advances time (<see cref="Kernel.TimeMode"/>): with the
+/// wall clock, or one fixed step per frame; by default the game's choice, else the platform's preference.</item>
 /// <item><c>--frames N</c> stop after N updates; <c>--seed N</c>; <c>--scale N</c>; <c>--mute</c>.</item>
 /// <item><c>--report</c> print the platform that runs and whether it has audio before the game starts (package checks).</item>
-/// <item><c>--audio auto|device|silent</c> where sound may go (<see cref="AudioOutput"/>); by default hidden and
-/// scripted runs open no physical device, so checks and tests are never heard.</item>
+/// <item><c>--audio auto|device|silent</c> where sound may go (<see cref="AudioOutput"/>); by default
+/// deterministic-time runs (scripts, <c>--time deterministic</c>) open no physical device, so checks are never heard.</item>
 /// <item><c>--audio-capture FILE</c> play nothing aloud and write what would have been heard as a WAV
 /// (<see cref="Audio.CaptureAudioDevice"/>).</item>
 /// <item><c>--gpu auto|high-performance|power-saving</c> the GPU to ask for on a machine with two
@@ -35,7 +38,7 @@ namespace MicroEngine.Core;
 public static class GameLauncher
 {
     /// <summary>The one-line usage text printed after an argument error.</summary>
-    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE]";
+    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE]";
 
     /// <param name="configure">Changes the platform request before the platform is built: an audio device or input
     /// sources of the host's own (see <see cref="PlatformRequest"/>).</param>
@@ -71,12 +74,13 @@ public static class GameLauncher
             MaxUpdates = parsed.Frames,
             Seed = parsed.Seed,
             Mute = parsed.Mute,
+            TimeMode = parsed.Time,
         };
         var request = new PlatformRequest(game.Settings with { Graphics = graphics })
         {
             Scale = parsed.Scale,
             Hidden = parsed.Hidden,
-            FixedStep = parsed.ScriptPath is not null || parsed.Hidden,
+            FixedStep = parsed.Time == Kernel.TimeMode.Deterministic,
             Mute = parsed.Mute,
             AudioOutput = parsed.Audio,
             Identity = AppIdentity.Of(game),
@@ -271,6 +275,11 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
             Display = Display ?? graphics.Display,
         };
     }
+    /// <summary>
+    /// <c>--time</c>: how the loop advances time, or null to leave it to the game and the platform. A script means
+    /// <see cref="Kernel.TimeMode.Deterministic"/> unless <c>--time</c> is given; <c>--hidden</c> changes nothing.
+    /// </summary>
+    public Kernel.TimeMode? Time { get; init; }
     /// <summary><c>--pacing</c>: false for <c>measured</c>, true (the default) for <c>display</c>.</summary>
     public bool PaceToDisplay { get; init; } = true;
     /// <summary><c>--profile</c>: the file to write frame measurements to, or null to measure nothing.</summary>
@@ -282,6 +291,7 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
     {
         string? script = null, captures = "captures", platform = null, audioCapture = null, profile = null;
         var audio = AudioOutput.Automatic;
+        Kernel.TimeMode? time = null;
         bool paceToDisplay = true;
         GpuPreference? gpu = null;
         IReadOnlyList<string>? renderers = null;
@@ -363,6 +373,14 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
                         var other => throw new FormatException($"--window needs windowed, fullscreen or exclusive, not '{other}'."),
                     };
                     break;
+                case "--time":
+                    time = Next() switch
+                    {
+                        "realtime" => Kernel.TimeMode.RealTime,
+                        "deterministic" => Kernel.TimeMode.Deterministic,
+                        var other => throw new FormatException($"--time needs realtime or deterministic, not '{other}'."),
+                    };
+                    break;
                 case "--pacing":
                     paceToDisplay = Next() switch
                     {
@@ -386,6 +404,7 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
             AudioCapturePath = audioCapture,
             ProfilePath = profile,
             PaceToDisplay = paceToDisplay,
+            Time = time ?? (script is not null ? Kernel.TimeMode.Deterministic : null),
             Gpu = gpu,
             Renderers = renderers,
             VSync = vsync,

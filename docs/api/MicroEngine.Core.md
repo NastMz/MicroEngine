@@ -91,9 +91,11 @@ Base class for a game. Subclasses declare [Settings](MicroEngine.Core.Game.md#Mi
 
 The command line every desktop game accepts, on any backend. Supported arguments:
 
-<ul><li><code>--script FILE</code> play scripted input (see [InputScript](MicroEngine.Core.InputScript.md)); implies a fixed step.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
-first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>.</li><li><code>--hidden</code> render in a hidden window (captures still work).</li><li><code>--frames N</code> stop after N updates; <code>--seed N</code>; <code>--scale N</code>; <code>--mute</code>.</li><li><code>--report</code> print the platform that runs and whether it has audio before the game starts (package checks).</li><li><code>--audio auto|device|silent</code> where sound may go ([AudioOutput](MicroEngine.Core.AudioOutput.md)); by default hidden and
-scripted runs open no physical device, so checks and tests are never heard.</li><li><code>--audio-capture FILE</code> play nothing aloud and write what would have been heard as a WAV
+<ul><li><code>--script FILE</code> play scripted input (see [InputScript](MicroEngine.Core.InputScript.md)); implies deterministic time unless
+<code>--time</code> says otherwise.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
+first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>.</li><li><code>--hidden</code> render in a hidden window (captures still work); it implies nothing about time or sound.</li><li><code>--time realtime|deterministic</code> how the loop advances time ([TimeMode](MicroEngine.Kernel.TimeMode.md)): with the
+wall clock, or one fixed step per frame; by default the game's choice, else the platform's preference.</li><li><code>--frames N</code> stop after N updates; <code>--seed N</code>; <code>--scale N</code>; <code>--mute</code>.</li><li><code>--report</code> print the platform that runs and whether it has audio before the game starts (package checks).</li><li><code>--audio auto|device|silent</code> where sound may go ([AudioOutput](MicroEngine.Core.AudioOutput.md)); by default
+deterministic-time runs (scripts, <code>--time deterministic</code>) open no physical device, so checks are never heard.</li><li><code>--audio-capture FILE</code> play nothing aloud and write what would have been heard as a WAV
 ([CaptureAudioDevice](MicroEngine.Audio.CaptureAudioDevice.md)).</li><li><code>--gpu auto|high-performance|power-saving</code> the GPU to ask for on a machine with two
 ([GpuPreference](MicroEngine.Core.GpuPreference.md)).</li><li><code>--renderer NAME[,NAME...]</code> graphics APIs to try first ([Renderers](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Renderers)).</li><li><code>--vsync on|off</code> wait for the display's refresh or not ([VSync](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_VSync)).</li><li><code>--fps-limit N</code> draw at most N frames per second; 0 removes the game's limit
 ([FrameRateLimit](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_FrameRateLimit)).</li><li><code>--window windowed|fullscreen|exclusive</code> the window mode ([WindowMode](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_WindowMode)).</li><li><code>--display N</code> open on display N, counted from 0 ([Display](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Display)).</li><li><code>--pacing display|measured</code> count frame time in refresh periods of the display (the default) or as
@@ -104,11 +106,13 @@ Returns a process exit code: 0 on success, 1 on a game or platform error, 2 on b
 
  [GameLoop](MicroEngine.Core.GameLoop.md)
 
-The fixed-timestep loop, one frame per [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick): input is sampled once per step, the
-simulation advances in exact steps (at most five per frame to avoid a spiral of death), and
-rendering happens once per frame. Headless platforms advance exactly one step per frame, which
-makes scripted runs fully deterministic. Hosts that cannot block, such as a browser driving frames
-from <code>requestAnimationFrame</code>, call [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick) themselves; errors are captured, never thrown.
+The loop, one frame per [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick). It owns time: the platform only supplies a monotonic clock
+([Now](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_Now)), and the engine's [FrameClock](MicroEngine.Kernel.FrameClock.md) turns each frame's time into fixed
+steps following the game's [TimeSettings](MicroEngine.Kernel.TimeSettings.md) (at most <code>MaxStepsPerFrame</code> a frame, frames of at
+most <code>MaxFrameDelta</code>). Each frame runs the engine's frame schedule: the per-frame phases, the four fixed phases
+once per step, then the update, drawing and presentation phases. In deterministic time every frame is exactly one
+step, which makes scripted runs reproducible. Hosts that cannot block, such as a browser driving frames from
+<code>requestAnimationFrame</code>, call [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick) themselves; errors are captured, never thrown.
 
  [GameRunner](MicroEngine.Core.GameRunner.md)
 
@@ -153,7 +157,7 @@ Keys, a gamepad and a pointer that tests set by hand.
 
  [HeadlessPlatform](MicroEngine.Core.HeadlessPlatform.md)
 
-A windowless platform: deterministic time, no devices, and a renderer that counts calls (or, with
+A windowless platform: deterministic time by default ([RealTime](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_RealTime) is false), no devices, and a renderer that counts calls (or, with
 [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize), also records them and draws them with the CPU reference rasterizer). Used by automated tests
 and CI to play whole games through scripts.
 

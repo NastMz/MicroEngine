@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 A part of the engine or of a game that registers itself: services, frame systems, capabilities, settings and
 lifecycle handlers, all from [Configure](MicroEngine.Kernel.IEngineModule.md#MicroEngine_Kernel_IEngineModule_Configure_MicroEngine_Kernel_EngineBuilder_). Rendering, input, audio, scenes and the game itself are modules.

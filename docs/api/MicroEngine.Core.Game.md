@@ -10,13 +10,17 @@ Base class for a game. Subclasses declare [Settings](MicroEngine.Core.Game.md#Mi
 [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) and push the first scene. The runner owns the loop.
 
 ```csharp
-public abstract class Game
+public abstract class Game : IEngineModule
 ```
 
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
 [Game](MicroEngine.Core.Game.md)
+
+#### Implements
+
+IEngineModule
 
 ## Examples
 
@@ -34,6 +38,12 @@ public sealed class MyGame : Game
 The engine services ([Graphics](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Graphics), [Audio](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Audio), [Input](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Input), [Scenes](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Scenes),
 [Font](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Font)) exist from [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) on; reading them in the constructor fails. The simulation advances in
 fixed steps of <code>1 / UpdateRate</code> seconds; drawing happens once per frame.
+
+<p>
+A game is an engine module ([IEngineModule](MicroEngine.Kernel.IEngineModule.md)): its services are registered in the engine's
+[Services](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Services) and its per-frame work runs as named systems of the frame [Schedule](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Schedule). Override
+[Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_) to add systems, replace services or change the [TimeSettings](MicroEngine.Kernel.TimeSettings.md).
+</p>
 
 ## Constructors
 
@@ -120,6 +130,18 @@ public BitmapFont Font { get; }
 
  [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
+### <a id="MicroEngine_Core_Game_Frame"></a> Frame
+
+The time of the frame being run ([FrameContext](MicroEngine.Kernel.FrameContext.md)): its delta, the fixed step, the blend and the frame number.
+
+```csharp
+public FrameContext Frame { get; }
+```
+
+#### Property Value
+
+ FrameContext
+
 ### <a id="MicroEngine_Core_Game_FrameBlend"></a> FrameBlend
 
 How far the frame being drawn is between the last update and the next one, from 0 to 1: the part of a step of
@@ -186,6 +208,30 @@ public InputMap Input { get; }
 
  [InputMap](MicroEngine.Input.InputMap.md)
 
+### <a id="MicroEngine_Core_Game_Lifecycle"></a> Lifecycle
+
+Engine events: suspension, resumption, quit requests (with veto) and, where the platform reports them, resizing and focus.
+
+```csharp
+public IEngineLifecycle Lifecycle { get; }
+```
+
+#### Property Value
+
+ IEngineLifecycle
+
+### <a id="MicroEngine_Core_Game_Log"></a> Log
+
+Where the engine's diagnostics go (the [ILog](MicroEngine.Kernel.ILog.md) service; standard error by default).
+
+```csharp
+public ILog Log { get; }
+```
+
+#### Property Value
+
+ ILog
+
 ### <a id="MicroEngine_Core_Game_Platform"></a> Platform
 
 The platform running the game (window, audio, input). Throws `InvalidOperationException` before the game starts.
@@ -247,6 +293,18 @@ public SceneManager Scenes { get; }
 
  [SceneManager](MicroEngine.Scenes.SceneManager.md)
 
+### <a id="MicroEngine_Core_Game_Schedule"></a> Schedule
+
+The frame's systems by phase, the built-in ones named <code>engine.*</code>; fixed once the game starts.
+
+```csharp
+public FrameSchedule Schedule { get; }
+```
+
+#### Property Value
+
+ FrameSchedule
+
 ### <a id="MicroEngine_Core_Game_Screen"></a> Screen
 
 The screen while the game runs: displays, VSync, frame limit, window mode, and the graphics API and GPU in use
@@ -259,6 +317,22 @@ public GameScreen Screen { get; }
 #### Property Value
 
  [GameScreen](MicroEngine.Core.GameScreen.md)
+
+### <a id="MicroEngine_Core_Game_Services"></a> Services
+
+The engine's services: every built-in service ([InputMap](MicroEngine.Input.InputMap.md), [AudioMixer](MicroEngine.Audio.AudioMixer.md),
+[SceneManager](MicroEngine.Scenes.SceneManager.md), [AssetCache](MicroEngine.Core.AssetCache.md), [VirtualControls](MicroEngine.Input.VirtualControls.md), [ActionPrompts](MicroEngine.Input.ActionPrompts.md),
+[BitmapFont](MicroEngine.Graphics.BitmapFont.md), [GameScreen](MicroEngine.Core.GameScreen.md), [IPlatform](MicroEngine.Core.IPlatform.md), `Random`, this
+game) and those the game's [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_) registered, found by the type they were registered as.
+Available from [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) on.
+
+```csharp
+public ServiceRegistry Services { get; }
+```
+
+#### Property Value
+
+ ServiceRegistry
 
 ### <a id="MicroEngine_Core_Game_Settings"></a> Settings
 
@@ -283,6 +357,18 @@ public float Time { get; }
 #### Property Value
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Core_Game_TimeSettings"></a> TimeSettings
+
+The time policy of the run: fixed rate, catch-up limits and whether time follows the wall clock or advances one step per frame.
+
+```csharp
+public TimeSettings TimeSettings { get; }
+```
+
+#### Property Value
+
+ TimeSettings
 
 ### <a id="MicroEngine_Core_Game_Touch"></a> Touch
 
@@ -321,6 +407,22 @@ public int Width { get; }
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ## Methods
+
+### <a id="MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_"></a> Configure\(EngineBuilder\)
+
+Called once when the game starts, after the built-in services and systems were registered and before
+[Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load): add frame systems (<code>builder.Schedule.Add</code>), register or replace services
+(<code>builder.Services</code>), edit settings such as [TimeSettings](MicroEngine.Kernel.TimeSettings.md) (<code>builder.Configure</code>) and
+subscribe to <code>builder.Lifecycle</code>. A run's own choices ([TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode)) are applied after
+it. The default does nothing.
+
+```csharp
+public virtual void Configure(EngineBuilder builder)
+```
+
+#### Parameters
+
+`builder` EngineBuilder
 
 ### <a id="MicroEngine_Core_Game_CreateInput"></a> CreateInput\(\)
 
@@ -400,6 +502,32 @@ Test hook: advances one fixed step after sampling input.
 ```csharp
 public void StepForTest()
 ```
+
+#### Remarks
+
+Runs the phases that come before drawing for one fixed step, with a frame that stands for exactly one step:
+[BeginFrame](MicroEngine.Kernel.FramePhase.md), [Input](MicroEngine.Kernel.FramePhase.md), the four fixed phases,
+[Update](MicroEngine.Kernel.FramePhase.md) and [LateUpdate](MicroEngine.Kernel.FramePhase.md). The loop's clock does not move.
+
+### <a id="MicroEngine_Core_Game_TryGetCapability__1___0__"></a> TryGetCapability<T\>\(out T?\)
+
+An optional feature the engine declared (the platform's [ITouchScreen](MicroEngine.Input.ITouchScreen.md), its [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md)), if there is one.
+
+```csharp
+public bool TryGetCapability<T>(out T? capability) where T : class
+```
+
+#### Parameters
+
+`capability` T?
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Type Parameters
+
+`T` 
 
 ### <a id="MicroEngine_Core_Game_Unload"></a> Unload\(\)
 

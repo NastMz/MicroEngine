@@ -296,12 +296,13 @@ public class PerformanceTests
     }
 
     [TestMethod]
-    public void Hidden_and_scripted_runs_open_no_physical_audio_unless_asked()
+    public void Deterministic_runs_open_no_physical_audio_unless_asked()
     {
         var settings = new GameSettings("audio");
         Assert.IsTrue(new PlatformRequest(settings).OpensOwnAudio, "a window a player watches");
-        Assert.IsFalse(new PlatformRequest(settings) { Hidden = true }.OpensOwnAudio, "hidden window");
-        Assert.IsFalse(new PlatformRequest(settings) { FixedStep = true }.OpensOwnAudio, "scripted run");
+        Assert.IsTrue(new PlatformRequest(settings) { Hidden = true }.OpensOwnAudio, "a hidden real-time window implies no silence");
+        Assert.IsFalse(new PlatformRequest(settings) { FixedStep = true }.OpensOwnAudio, "deterministic (scripted) run");
+        Assert.IsFalse(new PlatformRequest(settings) { Hidden = true, FixedStep = true }.OpensOwnAudio, "hidden scripted run");
         Assert.IsTrue(new PlatformRequest(settings) { Hidden = true, AudioOutput = AudioOutput.Device }.OpensOwnAudio, "asked for a device");
         Assert.IsFalse(new PlatformRequest(settings) { AudioOutput = AudioOutput.Silent }.OpensOwnAudio);
         Assert.IsFalse(new PlatformRequest(settings) { AudioOutput = AudioOutput.Device, Mute = true }.OpensOwnAudio, "mute wins");

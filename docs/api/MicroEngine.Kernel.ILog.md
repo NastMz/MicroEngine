@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 Where the engine's diagnostics go. The default ([ConsoleLog](MicroEngine.Kernel.ConsoleLog.md)) writes them to the standard error stream;
 a host that has its own (a phone's system log, a browser console, an editor panel) registers another sink as the

@@ -66,9 +66,17 @@ public interface IPlatform : IDisposable
     IInputSource Input { get; }
     /// <summary>Whether the user closed the window; the loop stops at the next frame.</summary>
     bool CloseRequested { get; }
-    /// <summary>Monotonic time in seconds.</summary>
+    /// <summary>
+    /// A monotonic clock in seconds, and nothing more: the loop measures each frame's time with it and decides itself
+    /// how many fixed steps that is (<see cref="Kernel.TimeSettings"/>). Never derive it from frames or the update rate.
+    /// </summary>
     double Now { get; }
-    /// <summary>Whether time advances with the wall clock (desktop) or one step per frame (headless).</summary>
+    /// <summary>
+    /// The time mode a run on this platform uses when neither the run (<see cref="RunOptions.TimeMode"/>) nor the game
+    /// (<see cref="Game.Configure"/>) chooses one: true for real time (a desktop window), false for one step per frame
+    /// (headless, or a backend whose host asked for deterministic time with <see cref="PlatformRequest.FixedStep"/>).
+    /// A preference only; the loop owns the clock.
+    /// </summary>
     bool RealTime { get; }
     /// <summary>
     /// The refresh rate in Hz of the display that paces the frames (VSync), or 0 when frames are not paced to a display

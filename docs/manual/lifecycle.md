@@ -97,7 +97,7 @@ and synthesis is too slow to repeat each update.
 | `GameLoop` | One frame per `Tick()`. Captures errors instead of throwing; `Finish()` shuts the game down once and returns a `RunResult` |
 | `GameRunner.Run(game, platform, options)` | Ticks a `GameLoop` in a blocking loop; used by desktop and headless runs |
 | `GameSession` | For hosts that drive frames themselves and outlive a run (a browser page): `Start`, `Tick`, `Stop`, `Result` |
-| `RunOptions` | `Script`, `CaptureDirectory`, `MaxUpdates`, `Seed`, `Mute` |
+| `RunOptions` | `Script`, `CaptureDirectory`, `MaxUpdates`, `Seed`, `Mute`; next SDK version: `TimeMode` |
 | `RunResult` | `Updates`, `Frames`, `Captures`, `Error` |
 
 ```csharp
@@ -116,6 +116,73 @@ Source: [`src/MicroEngine/Core/GameRunner.cs`](../../src/MicroEngine/Core/GameRu
 it calls `Finish` and disposes the platform, so the host can show its own screen and start again. See
 [Backends](backends.md) for how the desktop and browser launchers use these types.
 
+## Modules and the frame schedule
+
+Next SDK version (not published yet: arrives with the next SDK version). The engine is composed of modules on an
+`EngineBuilder`, and `Game` is one of them: its built-in services (`Input`, `Audio`, `Scenes`, `Assets`, `Touch`,
+`Font`...) are registered in a typed service registry and read from it, and its per-frame work runs as named systems
+in the frame's phases. Override `Configure` to add your own systems, replace a built-in service or change the time
+policy; `Program.cs` stays one line.
+
+```csharp
+public override void Configure(EngineBuilder builder)
+{
+    // Runs once per frame at the display's rate, after the frame's fixed steps.
+    builder.Schedule.Add(FramePhase.Update, "mygame.camera", frame => _camera.Follow(_player, frame.Blend));
+    // Runs once per fixed step, right after the scenes updated.
+    builder.Schedule.Add(FramePhase.FixedUpdate, "mygame.physics", step => _world.Step((float)step.FixedDelta), after: "engine.scenes");
+    builder.Configure<TimeSettings>(time => time with { FixedRate = 120 });
+    builder.Lifecycle.QuitRequested += request => { if (_unsaved) request.Veto(); };
+}
+```
+
+The phases run in this order; the four fixed phases run once per fixed step, the others once per frame:
+
+| Phase | Built-in systems | Use it for |
+| --- | --- | --- |
+| `BeginFrame` | `engine.assets` (finishes background loads within the frame budget) | Bookkeeping before the frame |
+| `Input` | `engine.touch` (the on-screen controls) | Input that follows the display rate |
+| `PreFixed` | `engine.input` (samples devices into `Input`) | Work before each step's simulation |
+| `FixedUpdate` | `engine.time` (`Time`, `UpdateCount`), `engine.scenes` (`Scene.Update`) | Game rules |
+| `Physics` | — | Physics and collision |
+| `PostFixed` | `engine.audio`, `engine.achievements`, `engine.input.end` (edge detection), `engine.assets.playing` | What follows the simulated state |
+| `Update`, `LateUpdate` | — | Camera smoothing, UI animation, interpolation, at the display's rate |
+| `Extract` | — | Copying what will be drawn |
+| `Render` | `engine.render` (clear, scenes, achievement banners) | Drawing |
+| `Present` | `engine.present` | Presenting |
+| `EndFrame` | — | Last |
+
+Within a phase, systems run in the order they were added; `after` and `before` name another system of the same phase.
+A constraint that names a missing system or one in another phase, and a cycle (`a -> b -> c -> a`), stop the game
+from starting with an error that names the systems. Each system receives a `FrameContext`: `Delta` (the seconds this
+frame stands for), `FixedDelta`, `Blend`, `FixedStep` and `Frame`.
+
+Services are found by the exact type they were registered as: `Services.Get<InputMap>()`, `builder.Services.Replace<ILog>(myLog)`.
+`Game.TryGetCapability<T>` asks for optional features (the platform's touch screen, its diagnostics) without casting.
+`Game.Lifecycle` raises `Suspending`, `Resumed` and `QuitRequested` (the window's close button; a handler may veto it,
+and the game quits later with `Quit()`); `Resized` and `FocusChanged` are declared for the platforms that will report
+them. `Game.Log` writes `category: message` lines to the standard error unless a host registers another `ILog`.
+
+## Time
+
+Next SDK version (not published yet: arrives with the next SDK version). The loop owns time; a platform only supplies a
+monotonic clock (`IPlatform.Now`). `TimeSettings`, edited in `Configure`, holds every value:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `FixedRate` | `GameSettings.UpdateRate` | Fixed steps per second |
+| `MaxStepsPerFrame` | 5 | Steps one frame may run; a frame that needs more keeps at most one step pending, so the game slows down instead of falling further behind |
+| `MaxFrameDelta` | 0.25 s | The longest time one real-time frame stands for |
+| `Mode` | the platform's preference | `RealTime` or `Deterministic` |
+
+In `RealTime` a frame adds the time the loop measured (paced to the display, at most `MaxFrameDelta`) and runs the
+steps it calls for. In `Deterministic` every frame is exactly one step, whatever the wall clock says, and `FrameBlend`
+is 1, so the same input gives the same steps and captures on any machine. The mode comes from, in order: the run
+(`RunOptions.TimeMode`, the launcher's `--time realtime|deterministic`; a `--script` means deterministic unless `--time`
+says otherwise), the game's `Configure`, then the platform's preference (`IPlatform.RealTime`: headless prefers
+deterministic time, SDL and raylib real time). A hidden window implies nothing about time. `Game.TimeSettings` is the
+policy the run uses.
+
 ## Fixed step and frame order
 
 Each `Tick` runs one frame:
@@ -132,7 +199,9 @@ Each `Tick` runs one frame:
    and counts time in its periods the same way; the limit never changes `UpdateRate`.
 3. Run fixed steps of `1 / UpdateRate` seconds, **at most five per frame**. Each step applies the input script,
    samples devices into the `InputMap`, then `Game.Step` updates scenes, the audio mixer and achievement banners,
-   flushes achievement progress about once a second, and advances input edge detection.
+   flushes achievement progress about once a second, and advances input edge detection. Next SDK version: these are
+   the systems of the fixed phases ([Modules and the frame schedule](#modules-and-the-frame-schedule)), and the limit is
+   `TimeSettings.MaxStepsPerFrame` ([Time](#time)).
 4. Render once: clear to `Settings.Background`, draw the scene stack and any transition, draw achievement banners.
 5. If the script asked for a capture at this update, save a PNG of the virtual frame.
 

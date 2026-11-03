@@ -55,8 +55,18 @@ Not published yet: merged on `main` after 0.4.0-alpha.2, in the next SDK version
   fills the window with linear sampling), per-texture `TextureFilter` with a game default (`GameSettings.TextureFilter`),
   `Texture.Update` for regions, windows sized to fit the display.
 
+- [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule): `Game.Configure(EngineBuilder)`
+  adds systems to the frame's phases (including `Update` and `LateUpdate` at the display's rate), replaces built-in
+  services in a typed registry (`Game.Services`) and subscribes to engine events (`Game.Lifecycle`: suspension,
+  resumption, quit requests with veto); `Game.Log`, `Game.TryGetCapability`, `ColorF` (linear colour with premultiplied
+  helpers), `Handle<T>`/`HandlePool<T>`. The kernel ships inside the `MicroEngine` package (`MicroEngine.Kernel.dll`).
+- [Time](../manual/lifecycle.md#time): the loop owns time; `TimeSettings` (`FixedRate`, `MaxStepsPerFrame`,
+  `MaxFrameDelta`, `Mode`), `RunOptions.TimeMode` and `--time realtime|deterministic`.
+
 **Changed**: `DialogueBox` continues a page that does not fit instead of cutting it; `BitmapFont.Wrap` breaks words
-wider than a line; hidden and scripted runs open no sound device; content file names must match their letter case on
+wider than a line; scripted (deterministic-time) runs open no sound device, and a hidden window alone implies neither
+deterministic time nor silence; `IPlatform.Now` is only a monotonic clock on every platform and `IPlatform.RealTime` the
+platform's preferred time mode (`HeadlessPlatform.UpdateRate` is gone); content file names must match their letter case on
 every system; custom graphics devices implement filters and region updates; see the
 [migration notes](../migrations.md#next-release).
 

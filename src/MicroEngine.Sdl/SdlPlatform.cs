@@ -32,7 +32,6 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     private readonly IAudioDevice _audio;
     private readonly SdlTouchScreen _touch;
     private readonly ulong _start;
-    private long _frames;
     private readonly bool _paced; // a visible real-time window: the only kind VSync applies to
     private readonly bool _mobile;
     private bool _vsync;
@@ -219,7 +218,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <inheritdoc/>
     public bool CloseRequested => _closeRequested;
     /// <inheritdoc/>
-    public double Now => _fixedStep ? _frames / (double)_settings.UpdateRate : (SDL_GetTicksNS() - _start) / 1e9;
+    public double Now => (SDL_GetTicksNS() - _start) / 1e9;
     /// <inheritdoc/>
     public bool RealTime => !_fixedStep;
     /// <summary>The refresh rate of the display the window is on while VSync paces the frames; 0 otherwise.</summary>
@@ -345,7 +344,6 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <inheritdoc/>
     public void PollEvents()
     {
-        _frames++;
         _input.BeginFrame();
         bool suspended = Interlocked.Exchange(ref _wentToBackground, 0) == 1 || _background;
         // Fingers and keys held when the app left are never released by the system.

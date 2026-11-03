@@ -6,11 +6,13 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
-The fixed-timestep loop, one frame per [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick): input is sampled once per step, the
-simulation advances in exact steps (at most five per frame to avoid a spiral of death), and
-rendering happens once per frame. Headless platforms advance exactly one step per frame, which
-makes scripted runs fully deterministic. Hosts that cannot block, such as a browser driving frames
-from <code>requestAnimationFrame</code>, call [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick) themselves; errors are captured, never thrown.
+The loop, one frame per [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick). It owns time: the platform only supplies a monotonic clock
+([Now](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_Now)), and the engine's [FrameClock](MicroEngine.Kernel.FrameClock.md) turns each frame's time into fixed
+steps following the game's [TimeSettings](MicroEngine.Kernel.TimeSettings.md) (at most <code>MaxStepsPerFrame</code> a frame, frames of at
+most <code>MaxFrameDelta</code>). Each frame runs the engine's frame schedule: the per-frame phases, the four fixed phases
+once per step, then the update, drawing and presentation phases. In deterministic time every frame is exactly one
+step, which makes scripted runs reproducible. Hosts that cannot block, such as a browser driving frames from
+<code>requestAnimationFrame</code>, call [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick) themselves; errors are captured, never thrown.
 
 ```csharp
 public sealed class GameLoop

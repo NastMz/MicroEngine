@@ -37,15 +37,18 @@ public sealed class HeadlessTimeTests
     [DataRow(120)]
     [DataRow(60)]
     [DataRow(30)]
-    public void Platform_time_equals_game_time_at_any_rate(int rate)
+    public void Game_time_follows_the_update_rate_one_step_per_frame(int rate)
     {
         var game = new TouchGame(rate);
         var platform = HeadlessPlatform.For(game.Settings);
         var result = GameRunner.Run(game, platform, new RunOptions { MaxUpdates = 3 * rate });
         Assert.IsNull(result.Error, result.Error?.ToString());
         Assert.AreEqual(3 * rate, game.UpdateCount);
-        Assert.AreEqual(3.0, game.Time, 1e-4);
-        Assert.AreEqual(game.Time, platform.Now, 1e-4, "one update per frame, each 1/UpdateRate seconds long");
+        Assert.AreEqual(3 * rate, result.Frames, "one update per frame");
+        Assert.AreEqual(3.0, game.Time, 1e-4, "each 1/UpdateRate seconds long");
+        Assert.AreEqual(1.0 / rate, game.TimeSettings.FixedDelta, 1e-12, "the loop's rate is the game's");
+        Assert.AreEqual(1.0 / rate, game.Frame.Delta, 1e-12, "a deterministic frame stands for one step");
+        Assert.IsTrue(platform.Now < 3.0, "the platform's clock is the wall clock, not the frames");
     }
 
     [TestMethod]
@@ -72,15 +75,15 @@ public sealed class HeadlessTimeTests
     }
 
     [TestMethod]
-    public void A_headless_platform_made_without_settings_keeps_sixty_steps_a_second()
+    public void The_loop_takes_the_rate_from_the_game_on_any_headless_platform()
     {
-        var platform = new HeadlessPlatform();
-        Assert.AreEqual(60, platform.UpdateRate);
-        for (int i = 0; i < 90; i++) platform.PollEvents();
-        Assert.AreEqual(1.5, platform.Now, 1e-9);
-        Assert.AreEqual(120, new HeadlessPlatform { UpdateRate = 120 }.UpdateRate);
-        Assert.AreEqual(30, HeadlessPlatform.For(new GameSettings("rate") { UpdateRate = 30 }).UpdateRate);
-        Assert.AreEqual(25, ((HeadlessPlatform)HeadlessPlatform.Profile.Create(new PlatformRequest(new GameSettings("rate") { UpdateRate = 25 }))).UpdateRate);
-        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => new HeadlessPlatform { UpdateRate = 0 });
+        // The platform no longer knows the rate: a headless platform made without settings runs a 25 Hz game at 25 Hz.
+        var game = new TouchGame(25);
+        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { MaxUpdates = 50 });
+        Assert.IsNull(result.Error, result.Error?.ToString());
+        Assert.AreEqual(2.0, game.Time, 1e-4);
+        var profiled = new TouchGame(30);
+        GameRunner.Run(profiled, (HeadlessPlatform)HeadlessPlatform.Profile.Create(new PlatformRequest(profiled.Settings)), new RunOptions { MaxUpdates = 30 });
+        Assert.AreEqual(1.0, profiled.Time, 1e-4);
     }
 }

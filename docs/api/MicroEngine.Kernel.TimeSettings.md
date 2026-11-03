@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 The loop's time policy: the fixed simulation rate, how far a slow frame may catch up, and whether time follows the
 wall clock. Every value is explicit; nothing is derived from the platform or from other options.

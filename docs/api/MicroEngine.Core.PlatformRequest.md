@@ -54,7 +54,8 @@ public Func<IAudioDevice>? Audio { get; init; }
 ### <a id="MicroEngine_Core_PlatformRequest_AudioOutput"></a> AudioOutput
 
 Whether the backend may open a physical audio device. [Automatic](MicroEngine.Core.AudioOutput.md) (the default) opens one
-only for runs a player watches: not for hidden windows or fixed-step (scripted) runs, which are checks and tests.
+for real-time runs, hidden windows included, and none for deterministic-time runs ([FixedStep](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_FixedStep)),
+whose sound would not follow the wall clock.
 
 ```csharp
 public AudioOutput AudioOutput { get; init; }
@@ -91,7 +92,9 @@ public IReadOnlyList<IInputSource> ExtraInput { get; init; }
 
 ### <a id="MicroEngine_Core_PlatformRequest_FixedStep"></a> FixedStep
 
-One simulation step per frame instead of wall-clock time (scripted runs).
+The run uses deterministic time (one simulation step per frame, [Deterministic](MicroEngine.Kernel.TimeMode.md)):
+the backend reports it as its preference ([RealTime](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_RealTime) false), does not wait for the display
+and does not hold devices behind a start screen. It never changes the backend's clock, which stays monotonic.
 
 ```csharp
 public bool FixedStep { get; init; }

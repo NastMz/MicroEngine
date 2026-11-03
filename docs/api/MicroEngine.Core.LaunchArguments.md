@@ -295,6 +295,19 @@ public int Seed { get; init; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Core_LaunchArguments_Time"></a> Time
+
+<code>--time</code>: how the loop advances time, or null to leave it to the game and the platform. A script means
+[Deterministic](MicroEngine.Kernel.TimeMode.md) unless <code>--time</code> is given; <code>--hidden</code> changes nothing.
+
+```csharp
+public TimeMode? Time { get; init; }
+```
+
+#### Property Value
+
+ TimeMode?
+
 ### <a id="MicroEngine_Core_LaunchArguments_VSync"></a> VSync
 
 <code>--vsync</code>: on or off, or null to keep the game's choice.

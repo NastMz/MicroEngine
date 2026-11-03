@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Kernel](MicroEngine.Kernel.md)  
 Assembly: MicroEngine.Kernel.dll  
-Guide: [Game lifecycle and time](../manual/lifecycle.md)  
+Guide: [Modules and the frame schedule](../manual/lifecycle.md#modules-and-the-frame-schedule)  
 
 A composed engine: its services, its fixed frame schedule, its clock, its events and its capabilities. A loop (the
 game runner, a host, a test) drives it frame by frame: it advances [Clock](MicroEngine.Kernel.Engine.md#MicroEngine_Kernel_Engine_Clock) and runs the phases in order.
