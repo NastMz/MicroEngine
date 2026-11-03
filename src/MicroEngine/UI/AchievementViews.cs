@@ -85,8 +85,11 @@ public sealed class AchievementsScene(AchievementTracker tracker, UiTheme theme)
 
     /// <summary>The heading of the list ("ACHIEVEMENTS" by default).</summary>
     public string Title { get; init; } = "ACHIEVEMENTS";
-    /// <summary>Actions that close the screen (cancel, pause and confirm by default). The cursor moves with the "up" and "down" actions.</summary>
-    public string[] CloseActions { get; init; } = ["cancel", "pause", "confirm"];
+    /// <summary>
+    /// Actions that close the screen; null (the default) is the map's cancel, pause and confirm actions. The cursor moves
+    /// with the map's up and down actions (<see cref="Input.InputMap.Names"/>).
+    /// </summary>
+    public string[]? CloseActions { get; init; }
     /// <summary>Screen tint drawn over the scene below.</summary>
     public Color Dim { get; init; } = Color.Black.WithAlpha(0.55f);
     /// <summary>Text shown for locked achievements.</summary>
@@ -106,13 +109,14 @@ public sealed class AchievementsScene(AchievementTracker tracker, UiTheme theme)
     /// <summary>Moves the cursor, or pops the scene when a close action is pressed.</summary>
     public override void Update(float dt)
     {
-        if (CloseActions.Any(Input.Pressed))
+        var names = Input.Names;
+        if ((CloseActions ?? [names.Cancel, names.Pause, names.Confirm]).Any(Input.Pressed))
         {
             Closed?.Invoke();
             Game.Scenes.Pop();
             return;
         }
-        int dir = (Input.Pressed("down") ? 1 : 0) - (Input.Pressed("up") ? 1 : 0);
+        int dir = (Input.Pressed(names.Down) ? 1 : 0) - (Input.Pressed(names.Up) ? 1 : 0);
         int next = Math.Clamp(Selected + dir, 0, Math.Max(0, tracker.Count - 1));
         if (next != Selected) { Selected = next; Moved?.Invoke(); }
     }

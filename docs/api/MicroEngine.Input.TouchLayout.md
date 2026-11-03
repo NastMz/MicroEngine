@@ -212,14 +212,19 @@ public TouchLayout <Clone>$()
 
  [TouchLayout](MicroEngine.Input.TouchLayout.md)
 
-### <a id="MicroEngine_Input_TouchLayout_CreateDefault"></a> CreateDefault\(\)
+### <a id="MicroEngine_Input_TouchLayout_CreateDefault_MicroEngine_Input_ActionNames_"></a> CreateDefault\(ActionNames?\)
 
-The layout for [CreateDefault](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_CreateDefault): a d-pad on the left; confirm (A), cancel (B) and action (C)
-on the right; pause at the top right.
+The layout for [CreateDefault](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_CreateDefault_MicroEngine_Input_ActionNames_): a d-pad on the left; confirm (A), cancel (B) and
+action (C) on the right; pause at the top right. <code class="paramref">names</code> are the actions they press (null: the
+default names); the controls keep the default names as their ids.
 
 ```csharp
-public static TouchLayout CreateDefault()
+public static TouchLayout CreateDefault(ActionNames? names = null)
 ```
+
+#### Parameters
+
+`names` ActionNames?
 
 #### Returns
 

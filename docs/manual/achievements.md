@@ -115,7 +115,8 @@ An achievement's optional `Icon` sprite is drawn in the banner and in the list.
 
 `AchievementsScene(tracker, theme)` is an overlay that dims the scene below and lists every achievement: unlocked
 ones highlighted, locked ones dimmed, progressive ones with `progress/goal` and a bar. Up and down move the
-cursor and scroll; any action in `CloseActions` (default `cancel`, `pause`, `confirm`) closes it. Init properties:
+cursor and scroll; any action in `CloseActions` (default `cancel`, `pause`, `confirm`; next SDK version: the map's own names for them,
+see [Default actions](input.md#default-actions)) closes it. Init properties:
 `Title`, `CloseActions`, `Dim`, `LockedLabel`, `UnlockedLabel`; events `Moved` and `Closed` for sounds.
 
 ```csharp

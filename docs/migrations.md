@@ -8,6 +8,25 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- Input is an event stream with device ids, players and layers (assembly `MicroEngine.Input`, carried by the
+  `MicroEngine` package; the namespace stays `MicroEngine.Input`). Single-player games change nothing: `Game.Input` is
+  player 1's map and player 1 owns every device. What may need a change:
+  - Fingers that land on no on-screen control now reach gameplay as pointers: `Input.Pointer` is present while such a
+    finger is down (it was the mouse only) and `Input.Pointers` lists them. **Migration:** code that treated a present
+    `Input.Pointer` as "a mouse is here" checks `Input.Pointers` for `PointerKind.Mouse` instead.
+  - A tap shorter than a frame (a key, a gamepad button or a touch button) is kept until an update reads it, however
+    many frames come first; it used to expire after eight drawn frames. Nothing to change.
+  - The frame schedule's `Input` phase runs `engine.input.events` (device events and touches through the input layers)
+    before `engine.touch`. **Migration:** a system added `before: "engine.touch"` to feed touches adds itself
+    `before: "engine.input.events"`; `engine.input` now samples every player (`Game.InputSystem.Sample()`).
+  - `VirtualControls` is an input layer (`IInputLayer`) and its frame is split into `BeginFrame`, `HandleTouch` or
+    `Handle`, and `EndFrame`; `Update(screen, dt, device)` still does all three for code that drives it by hand.
+  - `InputMap.CreateDefault()` takes optional `ActionNames`; `InputMap.Names` says which names the engine's own parts
+    read. `PointerState` has a `Wheel`; `IInputSource` has `Pointers` (with a default). A custom `IInputSource` needs no
+    change.
+  - A host's extra polled sources (`PlatformRequest.ExtraInput`) are devices of their own: on a backend that delivers
+    events, player 1 reads them alongside it, and they can be paired with other players. A platform that offers
+    `IInputBackend` as a capability is read through its events; its polled `Input` is then not read again.
 - A game is composed once, by a `Configure` entry point, and every host runs that composition: the desktop
   `Program.cs`, and the browser, Android and iOS hosts `microengine package` builds. The entry point is a
   `public static void Configure(HostBuilder host)` method (namespace `MicroEngine.Hosting`) that chooses the game with

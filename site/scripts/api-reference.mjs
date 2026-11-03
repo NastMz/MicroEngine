@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Hosting', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
@@ -63,7 +63,7 @@ const namespaceSummaries = {
   'MicroEngine.Desktop': 'The desktop launcher with the official desktop platforms (SDL 3, raylib, SDL software, headless).',
   'MicroEngine.Graphics': 'Drawing: the renderer contract, images in code and from PNG, sprites and atlases, animation, camera, parallax, particles, light, the pixel font.',
   'MicroEngine.Hosting': 'Hosting: the launcher model every host shares (launch requests and their rules, platform selection, the host environment) and the composition a game configures once with its Configure entry point.',
-  'MicroEngine.Input': 'Input actions over keyboard, gamepad, mouse and touch: bindings, analog values, on-screen controls, custom sources.',
+  'MicroEngine.Input': 'Input: device events with ids (keys, text, pointers and touches, wheel, gamepads), players and device pairing, input layers, and actions over them: bindings and their persistence, analog values, on-screen controls, prompts, custom sources.',
   'MicroEngine.Kernel': 'The kernel: engine composition (builder, services, modules, capabilities), the frame schedule and its phases, loop-owned time, engine events, logging and generational handles.',
   'MicroEngine.Platform': 'The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the surface, display pacing and precise waits, storage for saves and content sources.',
   'MicroEngine.Raylib': 'The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and the browser page it reads.',

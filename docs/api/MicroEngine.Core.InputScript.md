@@ -70,7 +70,7 @@ public void Apply(long update, InputMap input)
 
 `update` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-`input` [InputMap](MicroEngine.Input.InputMap.md)
+`input` InputMap
 
 ### <a id="MicroEngine_Core_InputScript_ApplyPrompts_System_Int64_MicroEngine_Input_ActionPrompts_"></a> ApplyPrompts\(long, ActionPrompts\)
 

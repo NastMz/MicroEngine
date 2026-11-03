@@ -180,6 +180,11 @@ creations, uploads and live textures are counted.
 
 Keys, a gamepad and a pointer that tests set by hand.
 
+ [HeadlessInputBackend](MicroEngine.Core.HeadlessInputBackend.md)
+
+An input backend tests drive by hand: device events sent with [Send](MicroEngine.Core.HeadlessInputBackend.md#MicroEngine_Core_HeadlessInputBackend_Send_MicroEngine_Input_InputEvent_) are delivered at the next drain, in
+order; key labels can be set as a keyboard layout would print them; rumbles and text-input switches are recorded.
+
  [HeadlessPlatform](MicroEngine.Core.HeadlessPlatform.md)
 
 A windowless platform: no devices, and a renderer that counts calls (or, with [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize), also records

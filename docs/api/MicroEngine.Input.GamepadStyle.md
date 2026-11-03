@@ -3,11 +3,11 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.dll  
 Guide: [Input](../manual/input.md)  
 
-The button names of a gamepad family, for prompts ([ActionPrompts](MicroEngine.Input.ActionPrompts.md)): [PadButton](MicroEngine.Input.PadButton.md) uses Xbox
-names, which PlayStation pads show as shapes and Nintendo pads with A/B and X/Y swapped.
+The button names of a gamepad family, for prompts: [PadButton](MicroEngine.Input.PadButton.md) uses Xbox names, which PlayStation pads
+show as shapes and Nintendo pads with A/B and X/Y swapped.
 
 ```csharp
 public enum GamepadStyle

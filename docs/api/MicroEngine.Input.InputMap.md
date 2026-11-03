@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.dll  
 Guide: [Input](../manual/input.md)  
 
 Named actions bound to keys, gamepad buttons, stick directions and analog axes, plus any number of action sources
@@ -46,6 +46,20 @@ if (Input.Pressed("confirm")) Audio.Play("select");
 public InputMap()
 ```
 
+## Fields
+
+### <a id="MicroEngine_Input_InputMap_BindingsSlot"></a> BindingsSlot
+
+The slot [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_) and [LoadBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_LoadBindings_MicroEngine_Platform_IStorage_System_String_) use unless told otherwise.
+
+```csharp
+public const string BindingsSlot = "input-bindings"
+```
+
+#### Field Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
 ## Properties
 
 ### <a id="MicroEngine_Input_InputMap_Actions"></a> Actions
@@ -84,6 +98,20 @@ public InputDevice LastDevice { get; }
 
  [InputDevice](MicroEngine.Input.InputDevice.md)
 
+### <a id="MicroEngine_Input_InputMap_Names"></a> Names
+
+The engine's own action names this map uses (menus, dialogs, on-screen controls and prompts read actions by
+these names). Rename them here when the game calls its actions differently; the default names are
+[Default](MicroEngine.Input.ActionNames.md#MicroEngine_Input_ActionNames_Default).
+
+```csharp
+public ActionNames Names { get; set; }
+```
+
+#### Property Value
+
+ [ActionNames](MicroEngine.Input.ActionNames.md)
+
 ### <a id="MicroEngine_Input_InputMap_PadConnected"></a> PadConnected
 
 Whether a gamepad was connected at the last sample.
@@ -110,7 +138,8 @@ public GamepadStyle PadStyle { get; }
 
 ### <a id="MicroEngine_Input_InputMap_Pointer"></a> Pointer
 
-The mouse over the virtual canvas at the last sample.
+The pointer at the last sample: the mouse over the virtual canvas, or a finger on the screen that no on-screen
+control took (whichever moved last), with the wheel's turn since the previous update.
 
 ```csharp
 public PointerState Pointer { get; }
@@ -119,6 +148,19 @@ public PointerState Pointer { get; }
 #### Property Value
 
  [PointerState](MicroEngine.Input.PointerState.md)
+
+### <a id="MicroEngine_Input_InputMap_Pointers"></a> Pointers
+
+Every pointer at the last sample: the mouse while over the window, and each finger or pen on the screen that no
+input layer (such as the on-screen controls) took, in device and id order. Tap-to-move, drag and pinch read it.
+
+```csharp
+public IReadOnlyList<PointerInfo> Pointers { get; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[PointerInfo](MicroEngine.Input.PointerInfo.md)\>
 
 ### <a id="MicroEngine_Input_InputMap_Sources"></a> Sources
 
@@ -330,13 +372,77 @@ public InputMap BindAxis(string action, PadAxis axis, bool positive = true)
 
  [InputMap](MicroEngine.Input.InputMap.md)
 
-### <a id="MicroEngine_Input_InputMap_CreateDefault"></a> CreateDefault\(\)
+### <a id="MicroEngine_Input_InputMap_BindFrom_System_String_MicroEngine_Input_InputEvent__System_Boolean_"></a> BindFrom\(string, in InputEvent, bool\)
 
-A conventional binding set shared by the sample games.
+Binds the key or gamepad button of <code class="paramref">press</code> (a key-down or button-down event, such as the one
+[ListenForPress](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_ListenForPress_System_Action_MicroEngine_Input_InputEvent__) hands over) to <code class="paramref">action</code>, adding to its bindings; with
+<code class="paramref">replace</code>, the action's keys (for a key) or buttons (for a button) are replaced.
 
 ```csharp
-public static InputMap CreateDefault()
+public bool BindFrom(string action, in InputEvent press, bool replace = false)
 ```
+
+#### Parameters
+
+`action` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`press` [InputEvent](MicroEngine.Input.InputEvent.md)
+
+`replace` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+False when the event is neither a key-down nor a button-down.
+
+### <a id="MicroEngine_Input_InputMap_Consume_System_String_"></a> Consume\(string\)
+
+Takes the action for whoever read it first in this update: from now until it is let go, it reads as up for
+everyone (not [Down](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Down_System_String_), [Pressed](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Pressed_System_String_) or [Released](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Released_System_String_), value 0). A menu over a scene
+that both read "confirm" consumes it, so the scene below does not act on the same press. Does nothing when the
+action is not down.
+
+```csharp
+public bool Consume(string action)
+```
+
+#### Parameters
+
+`action` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the action was down and is now consumed.
+
+### <a id="MicroEngine_Input_InputMap_CopyBindings"></a> CopyBindings\(\)
+
+A new map with the same bindings, names and stick and axis settings, and no sampled state or action sources:
+the starting point of another player's map.
+
+```csharp
+public InputMap CopyBindings()
+```
+
+#### Returns
+
+ [InputMap](MicroEngine.Input.InputMap.md)
+
+### <a id="MicroEngine_Input_InputMap_CreateDefault_MicroEngine_Input_ActionNames_"></a> CreateDefault\(ActionNames?\)
+
+A conventional binding set shared by the sample games: arrows, WASD, the d-pad and the left stick move; confirm,
+cancel, action and pause on keys and face buttons. <code class="paramref">names</code> renames the engine's actions (null
+keeps [Default](MicroEngine.Input.ActionNames.md#MicroEngine_Input_ActionNames_Default)), and the map keeps them in [Names](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Names).
+
+```csharp
+public static InputMap CreateDefault(ActionNames? names = null)
+```
+
+#### Parameters
+
+`names` [ActionNames](MicroEngine.Input.ActionNames.md)?
 
 #### Returns
 
@@ -386,6 +492,18 @@ Advances edge detection. Called by the runner after each fixed update.
 public void EndUpdate()
 ```
 
+### <a id="MicroEngine_Input_InputMap_ExportBindings"></a> ExportBindings\(\)
+
+Every action's bindings as data (see [InputBindingSet](MicroEngine.Input.InputBindingSet.md)), in ordinal order of the names.
+
+```csharp
+public InputBindingSet ExportBindings()
+```
+
+#### Returns
+
+ [InputBindingSet](MicroEngine.Input.InputBindingSet.md)
+
 ### <a id="MicroEngine_Input_InputMap_GetBindings_System_String_"></a> GetBindings\(string\)
 
 What the action is bound to; null for an unknown action.
@@ -415,6 +533,62 @@ public void HashState(StateHasher hash)
 #### Parameters
 
 `hash` StateHasher
+
+### <a id="MicroEngine_Input_InputMap_ImportBindings_MicroEngine_Input_InputBindingSet_"></a> ImportBindings\(InputBindingSet\)
+
+Replaces the bindings of the actions this map has with those in <code class="paramref">set</code>. Actions the set does not
+mention keep theirs; actions the map does not have are ignored (a renamed or removed action does not come back),
+and so are names of keys, buttons or axes this version does not know.
+
+```csharp
+public int ImportBindings(InputBindingSet set)
+```
+
+#### Parameters
+
+`set` [InputBindingSet](MicroEngine.Input.InputBindingSet.md)
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+The number of actions whose bindings were replaced.
+
+### <a id="MicroEngine_Input_InputMap_IsConsumed_System_String_"></a> IsConsumed\(string\)
+
+Whether [Consume](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Consume_System_String_) took the action and it has not been let go yet.
+
+```csharp
+public bool IsConsumed(string action)
+```
+
+#### Parameters
+
+`action` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Input_InputMap_LoadBindings_MicroEngine_Platform_IStorage_System_String_"></a> LoadBindings\(IStorage, string\)
+
+Reads bindings saved with [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_) and applies them ([ImportBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_ImportBindings_MicroEngine_Input_InputBindingSet_)). Returns false
+and keeps the current bindings when nothing was saved or the data is unreadable (which is set aside, so the next
+save does not destroy it).
+
+```csharp
+public bool LoadBindings(IStorage storage, string slot = "input-bindings")
+```
+
+#### Parameters
+
+`storage` IStorage
+
+`slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Input_InputMap_Pressed_System_String_"></a> Pressed\(string\)
 
@@ -483,6 +657,26 @@ public void Sample(IInputSource source)
 #### Parameters
 
 `source` [IInputSource](MicroEngine.Input.IInputSource.md)
+
+### <a id="MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_"></a> SaveBindings\(IStorage, string\)
+
+Writes every action's bindings to <code class="paramref">storage</code> (the slot <code class="paramref">slot</code>), for a rebinding screen.
+
+```csharp
+public void SaveBindings(IStorage storage, string slot = "input-bindings")
+```
+
+#### Parameters
+
+`storage` IStorage
+
+`slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Exceptions
+
+ [IOException](https://learn.microsoft.com/dotnet/api/system.io.ioexception)
+
+The storage failed.
 
 ### <a id="MicroEngine_Input_InputMap_SetForced_System_String_System_Boolean_"></a> SetForced\(string, bool\)
 

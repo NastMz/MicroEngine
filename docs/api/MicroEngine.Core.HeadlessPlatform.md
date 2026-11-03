@@ -96,6 +96,20 @@ public bool CloseRequested { get; set; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_HeadlessPlatform_Devices"></a> Devices
+
+The platform's input backend (also its [IInputBackend](MicroEngine.Input.IInputBackend.md), [IKeyLabels](MicroEngine.Input.IKeyLabels.md),
+[IGamepadRumble](MicroEngine.Input.IGamepadRumble.md) and [ITextInputControl](MicroEngine.Input.ITextInputControl.md) capabilities): tests send device events with it,
+which the next frame routes like a real backend's.
+
+```csharp
+public HeadlessInputBackend Devices { get; }
+```
+
+#### Property Value
+
+ [HeadlessInputBackend](MicroEngine.Core.HeadlessInputBackend.md)
+
 ### <a id="MicroEngine_Core_HeadlessPlatform_Graphics"></a> Graphics
 
 A [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md): textures have a size but no pixels, unless [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize) is on.
@@ -118,11 +132,11 @@ public IInputSource Input { get; }
 
 #### Property Value
 
- [IInputSource](MicroEngine.Input.IInputSource.md)
+ IInputSource
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Keys"></a> Keys
 
-The input tests set by hand (keys, gamepad, pointer).
+The input tests set by hand (keys, gamepad, pointer), read every update as one polled device.
 
 ```csharp
 public HeadlessInput Keys { get; }

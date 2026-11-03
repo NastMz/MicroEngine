@@ -199,7 +199,8 @@ public int Height { get; }
 
 ### <a id="MicroEngine_Core_Game_Input"></a> Input
 
-The input actions, built by [CreateInput](MicroEngine.Core.Game.md#MicroEngine_Core_Game_CreateInput) before [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) and sampled once per update.
+The input actions of player 1, built by [CreateInput](MicroEngine.Core.Game.md#MicroEngine_Core_Game_CreateInput) before [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) and sampled once per
+update. With no setup player 1 owns every device, so a single-player game reads only this.
 
 ```csharp
 public InputMap Input { get; }
@@ -207,7 +208,23 @@ public InputMap Input { get; }
 
 #### Property Value
 
- [InputMap](MicroEngine.Input.InputMap.md)
+ InputMap
+
+### <a id="MicroEngine_Core_Game_InputSystem"></a> InputSystem
+
+The engine's input ([InputSystem](MicroEngine.Input.InputSystem.md)): the local players ([Players](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Players);
+player 1's map is [Input](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Input)), the devices and their events, the input layers events pass through before
+gameplay ([Layers](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Layers); the on-screen controls are one), this update's events no layer took
+([Events](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Events)) and the text channel ([Text](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Text)). Created before
+[Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load).
+
+```csharp
+public InputSystem InputSystem { get; }
+```
+
+#### Property Value
+
+ InputSystem
 
 ### <a id="MicroEngine_Core_Game_Lifecycle"></a> Lifecycle
 
@@ -414,7 +431,7 @@ public int Width { get; }
 ### <a id="MicroEngine_Core_Game_ComputeStateHash_System_Boolean_"></a> ComputeStateHash\(bool\)
 
 Hashes the simulation state now ([StateHasher](MicroEngine.Kernel.StateHasher.md)), in sections: <code>engine.time</code> (update count and
-time), <code>engine.random</code> ([Random](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Random)), <code>engine.input</code> ([Input](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Input) after sampling),
+time), <code>engine.random</code> ([Random](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Random)), <code>engine.input</code> ([Input](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Input) after sampling, then the other players and the pairings when there are any),
 <code>engine.audio</code> (the music playing or paused and the volumes), <code>engine.assets</code> (how many assets are
 loaded), <code>engine.achievements</code> (when on), <code>engine.scenes</code> (the stack and the transition), one
 <code>scene[i]:Type</code> per scene from the bottom (its age, coroutines and tweens, then [HashState](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_HashState_MicroEngine_Kernel_StateHasher_))
@@ -467,12 +484,12 @@ protected virtual InputMap CreateInput()
 
 #### Returns
 
- [InputMap](MicroEngine.Input.InputMap.md)
+ InputMap
 
 ### <a id="MicroEngine_Core_Game_CreateTouchLayout"></a> CreateTouchLayout\(\)
 
 Override to choose the on-screen controls for touch screens: which d-pad, joystick and buttons press which actions,
-and where. The default ([CreateDefault](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_CreateDefault)) matches [CreateDefault](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_CreateDefault).
+and where. The default ([CreateDefault](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_CreateDefault_MicroEngine_Input_ActionNames_)) matches [CreateDefault](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_CreateDefault_MicroEngine_Input_ActionNames_).
 
 ```csharp
 protected virtual TouchLayout CreateTouchLayout()

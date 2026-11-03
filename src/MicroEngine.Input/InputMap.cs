@@ -3,95 +3,6 @@ using MicroEngine.Kernel;
 
 namespace MicroEngine.Input;
 
-/// <summary>Physical keys the engine understands. Backends map their own codes onto these.</summary>
-public enum Key
-{
-    None, Space, Enter, Escape, Backspace, Tab, LeftShift, RightShift, LeftControl,
-    Left, Right, Up, Down,
-    A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-    D0, D1, D2, D3, D4, D5, D6, D7, D8, D9,
-    F1, F2, F3, F4, F5, F11, F12,
-}
-
-/// <summary>Gamepad buttons using Xbox layout names; backends map their own codes.</summary>
-public enum PadButton { None, A, B, X, Y, Start, Back, LeftShoulder, RightShoulder, DPadUp, DPadDown, DPadLeft, DPadRight, LeftStick, RightStick }
-
-/// <summary>Analog gamepad axes. Sticks are -1..1 (right and down positive), triggers 0..1.</summary>
-public enum PadAxis { LeftX, LeftY, RightX, RightY, LeftTrigger, RightTrigger }
-
-/// <summary>The kind of device that last pressed an action (see <see cref="InputMap.LastDevice"/>).</summary>
-/// <remarks><c>Other</c> covers scripted input and custom <see cref="IActionSource"/>s.</remarks>
-public enum InputDevice { None, Keyboard, Gamepad, Touch, Other }
-
-/// <summary>
-/// The button names of a gamepad family, for prompts (<see cref="ActionPrompts"/>): <see cref="PadButton"/> uses Xbox
-/// names, which PlayStation pads show as shapes and Nintendo pads with A/B and X/Y swapped.
-/// </summary>
-public enum GamepadStyle
-{
-    /// <summary>Xbox names (A, B, X, Y), also for pads whose family is unknown.</summary>
-    Xbox,
-    /// <summary>PlayStation shapes (cross, circle, square, triangle).</summary>
-    PlayStation,
-    /// <summary>Nintendo names, where the button in <see cref="PadButton.A"/>'s place is labelled B.</summary>
-    Nintendo,
-}
-
-/// <summary>How a 2D stick turns into the four direction actions.</summary>
-public enum StickDirections
-{
-    /// <summary>Eight 45° sectors: diagonals press two directions.</summary>
-    Eight,
-    /// <summary>Four 90° sectors: only the dominant direction is pressed (grid movement, menus).</summary>
-    Four,
-}
-
-/// <summary>The mouse (or another pointer) over the game's virtual canvas.</summary>
-/// <param name="Present">Whether the pointer is over the window at all.</param>
-/// <param name="Position">Position in virtual canvas pixels (may lie outside the canvas, in the letterbox).</param>
-public readonly record struct PointerState(bool Present, Vector2 Position, bool Primary, bool Secondary, bool Middle);
-
-/// <summary>The raw device state a backend reports once per polled frame.</summary>
-public interface IInputSource
-{
-    /// <summary>Whether <paramref name="key"/> is held.</summary>
-    bool IsKeyDown(Key key);
-    /// <summary>Whether <paramref name="button"/> is held on the gamepad.</summary>
-    bool IsPadDown(PadButton button);
-    /// <summary>Left stick, each axis in -1..1.</summary>
-    Vector2 LeftStick { get; }
-    /// <summary>Any gamepad axis. Sources that only know the left stick keep the default.</summary>
-    float GetPadAxis(PadAxis axis) => axis switch
-    {
-        PadAxis.LeftX => LeftStick.X,
-        PadAxis.LeftY => LeftStick.Y,
-        _ => 0,
-    };
-    /// <summary>Whether a gamepad is connected. Sources without gamepads keep the default.</summary>
-    bool PadConnected => false;
-    /// <summary>The family of the connected gamepad, for button names in prompts; sources that cannot tell keep Xbox.</summary>
-    GamepadStyle PadStyle => GamepadStyle.Xbox;
-    /// <summary>The mouse over the virtual canvas; sources without one keep the default (not present).</summary>
-    PointerState Pointer => default;
-}
-
-/// <summary>
-/// A source of actions rather than of keys: on-screen touch controls (<see cref="VirtualControls"/>), a network peer,
-/// an accessibility switch or an AI. Added with <see cref="InputMap.AddSource"/>, it is read every step together with
-/// the keyboard and gamepad, so a game cannot tell which produced an action.
-/// </summary>
-public interface IActionSource
-{
-    /// <summary>Whether the action is down (digital).</summary>
-    bool IsDown(string action);
-    /// <summary>The action's strength, 0..1 (analog). Digital sources keep the default.</summary>
-    float Value(string action) => IsDown(action) ? 1 : 0;
-    /// <summary>The kind of device this source stands for, reported by <see cref="InputMap.LastDevice"/>.</summary>
-    InputDevice Device => InputDevice.Other;
-    /// <summary>Actions this source may press that need no key binding (read even if the map does not bind them).</summary>
-    IEnumerable<string> Actions => [];
-}
-
 /// <summary>What an action is bound to, for display or a rebinding screen (<see cref="InputMap.GetBindings"/>).</summary>
 public sealed record ActionBindings(IReadOnlyList<Key> Keys, IReadOnlyList<PadButton> Buttons, InputMap.StickDirection Stick, IReadOnlyList<(PadAxis Axis, bool Positive)> Axes);
 
@@ -114,7 +25,7 @@ public sealed record ActionBindings(IReadOnlyList<Key> Keys, IReadOnlyList<PadBu
 /// if (Input.Pressed("confirm")) Audio.Play("select");
 /// </code>
 /// </example>
-public sealed class InputMap : IStateHashed
+public sealed partial class InputMap : IStateHashed
 {
     private sealed class Binding
     {
@@ -130,7 +41,9 @@ public sealed class InputMap : IStateHashed
     private readonly HashSet<string> _latched = new(StringComparer.Ordinal);
     private readonly HashSet<string> _forced = new(StringComparer.Ordinal);
     private readonly Dictionary<string, float> _values = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _consumed = new(StringComparer.Ordinal);
     private readonly List<IActionSource> _sources = [];
+    private readonly List<PointerInfo> _pointers = [];
     private PointerState _pointer;
 
     /// <summary>
@@ -154,8 +67,22 @@ public sealed class InputMap : IStateHashed
     public bool PadConnected { get; private set; }
     /// <summary>The family of the gamepad at the last sample (Xbox when unknown), for prompts.</summary>
     public GamepadStyle PadStyle { get; private set; }
-    /// <summary>The mouse over the virtual canvas at the last sample.</summary>
+    /// <summary>
+    /// The pointer at the last sample: the mouse over the virtual canvas, or a finger on the screen that no on-screen
+    /// control took (whichever moved last), with the wheel's turn since the previous update.
+    /// </summary>
     public PointerState Pointer => _pointer;
+    /// <summary>
+    /// Every pointer at the last sample: the mouse while over the window, and each finger or pen on the screen that no
+    /// input layer (such as the on-screen controls) took, in device and id order. Tap-to-move, drag and pinch read it.
+    /// </summary>
+    public IReadOnlyList<PointerInfo> Pointers => _pointers;
+    /// <summary>
+    /// The engine's own action names this map uses (menus, dialogs, on-screen controls and prompts read actions by
+    /// these names). Rename them here when the game calls its actions differently; the default names are
+    /// <see cref="ActionNames.Default"/>.
+    /// </summary>
+    public ActionNames Names { get; set; } = ActionNames.Default;
     /// <summary>The action sources read with the devices (<see cref="AddSource"/>).</summary>
     public IReadOnlyList<IActionSource> Sources => _sources;
 
@@ -232,6 +159,8 @@ public sealed class InputMap : IStateHashed
         PadConnected = source.PadConnected;
         PadStyle = source.PadStyle;
         _pointer = source.Pointer;
+        _pointers.Clear();
+        _pointers.AddRange(source.Pointers);
         var stick = ApplyDeadZone(source.LeftStick, StickDeadZone);
         var stickDown = Directions(stick, StickThreshold, StickMode);
         foreach (var (action, b) in _bindings)
@@ -314,14 +243,33 @@ public sealed class InputMap : IStateHashed
         // A tap latched this update counted as down: the next update reports its release.
         foreach (var a in _latched) _previous.Add(a);
         _latched.Clear();
+        // A consumed action stays taken until it was let go and its release was hidden for one update.
+        if (_consumed.Count > 0) _consumed.RemoveWhere(a => !_down.Contains(a) && !_previous.Contains(a));
     }
 
     /// <summary>Whether the action is held in this update. Also true for a press that started and ended within the last frame, so a quick tap is never missed. Unknown actions are never down.</summary>
-    public bool Down(string action) => _down.Contains(action) || _latched.Contains(action);
+    public bool Down(string action) => (_down.Contains(action) || _latched.Contains(action)) && !_consumed.Contains(action);
     /// <summary>True during the first update after the action went down, even if it was released within the same frame.</summary>
-    public bool Pressed(string action) => _latched.Contains(action) || (_down.Contains(action) && !_previous.Contains(action));
+    public bool Pressed(string action) => (_latched.Contains(action) || (_down.Contains(action) && !_previous.Contains(action))) && !_consumed.Contains(action);
     /// <summary>True during the first update after the action was let go. A tap that started and ended within one frame reports <see cref="Pressed"/> in its update and <see cref="Released"/> in the next one.</summary>
-    public bool Released(string action) => !_down.Contains(action) && _previous.Contains(action);
+    public bool Released(string action) => !_down.Contains(action) && _previous.Contains(action) && !_consumed.Contains(action);
+
+    /// <summary>
+    /// Takes the action for whoever read it first in this update: from now until it is let go, it reads as up for
+    /// everyone (not <see cref="Down"/>, <see cref="Pressed"/> or <see cref="Released"/>, value 0). A menu over a scene
+    /// that both read "confirm" consumes it, so the scene below does not act on the same press. Does nothing when the
+    /// action is not down.
+    /// </summary>
+    /// <returns>Whether the action was down and is now consumed.</returns>
+    public bool Consume(string action)
+    {
+        if (!(_down.Contains(action) || _latched.Contains(action)) || _consumed.Contains(action)) return false;
+        _consumed.Add(action);
+        return true;
+    }
+
+    /// <summary>Whether <see cref="Consume"/> took the action and it has not been let go yet.</summary>
+    public bool IsConsumed(string action) => _consumed.Contains(action);
 
     /// <summary>
     /// The action's strength in 0..1: 1 for a key or button, the deflection beyond the dead zone for a stick, trigger
@@ -329,6 +277,7 @@ public sealed class InputMap : IStateHashed
     /// </summary>
     public float Value(string action)
     {
+        if (_consumed.Contains(action)) return 0;
         float v = _values.GetValueOrDefault(action);
         return Down(action) && v <= 0 ? 1 : v;
     }
@@ -382,6 +331,21 @@ public sealed class InputMap : IStateHashed
         hash.Add(_pointer.Primary);
         hash.Add(_pointer.Secondary);
         hash.Add(_pointer.Middle);
+        // State that only exists once a game uses it: absent, it adds nothing, so older traces keep their hashes.
+        if (_pointer.Wheel != Vector2.Zero || _pointers.Count > 0 || _consumed.Count > 0)
+        {
+            hash.Add(_pointer.Wheel);
+            hash.Add(_pointers.Count);
+            foreach (var p in _pointers)
+            {
+                hash.Add(p.Device.Value);
+                hash.Add(p.Id);
+                hash.Add((int)p.Kind);
+                hash.Add(p.Position);
+                hash.Add(p.Down);
+            }
+            Names(hash, _consumed);
+        }
     }
 
     /// <summary>Clears every state, e.g. after a scene change, so held keys must be pressed again.</summary>
@@ -434,14 +398,47 @@ public sealed class InputMap : IStateHashed
         _ => 0,
     };
 
-    /// <summary>A conventional binding set shared by the sample games.</summary>
-    public static InputMap CreateDefault() => new InputMap()
-        .Bind("left", [Key.Left, Key.A], [PadButton.DPadLeft], StickDirection.Left)
-        .Bind("right", [Key.Right, Key.D], [PadButton.DPadRight], StickDirection.Right)
-        .Bind("up", [Key.Up, Key.W], [PadButton.DPadUp], StickDirection.Up)
-        .Bind("down", [Key.Down, Key.S], [PadButton.DPadDown], StickDirection.Down)
-        .Bind("confirm", [Key.Z, Key.Space, Key.Enter, Key.J], [PadButton.A])
-        .Bind("cancel", [Key.X, Key.Backspace, Key.K], [PadButton.B])
-        .Bind("action", [Key.C, Key.L], [PadButton.X])
-        .Bind("pause", [Key.Escape, Key.P], [PadButton.Start]);
+    /// <summary>
+    /// A conventional binding set shared by the sample games: arrows, WASD, the d-pad and the left stick move; confirm,
+    /// cancel, action and pause on keys and face buttons. <paramref name="names"/> renames the engine's actions (null
+    /// keeps <see cref="ActionNames.Default"/>), and the map keeps them in <see cref="Names"/>.
+    /// </summary>
+    public static InputMap CreateDefault(ActionNames? names = null)
+    {
+        var n = names ?? ActionNames.Default;
+        return new InputMap { Names = n }
+            .Bind(n.Left, [Key.Left, Key.A], [PadButton.DPadLeft], StickDirection.Left)
+            .Bind(n.Right, [Key.Right, Key.D], [PadButton.DPadRight], StickDirection.Right)
+            .Bind(n.Up, [Key.Up, Key.W], [PadButton.DPadUp], StickDirection.Up)
+            .Bind(n.Down, [Key.Down, Key.S], [PadButton.DPadDown], StickDirection.Down)
+            .Bind(n.Confirm, [Key.Z, Key.Space, Key.Enter, Key.J], [PadButton.A])
+            .Bind(n.Cancel, [Key.X, Key.Backspace, Key.K], [PadButton.B])
+            .Bind(n.Action, [Key.C, Key.L], [PadButton.X])
+            .Bind(n.Pause, [Key.Escape, Key.P], [PadButton.Start]);
+    }
+
+    /// <summary>
+    /// A new map with the same bindings, names and stick and axis settings, and no sampled state or action sources:
+    /// the starting point of another player's map.
+    /// </summary>
+    public InputMap CopyBindings()
+    {
+        var copy = new InputMap
+        {
+            Names = Names,
+            StickDeadZone = StickDeadZone,
+            StickThreshold = StickThreshold,
+            StickMode = StickMode,
+            AxisDeadZone = AxisDeadZone,
+        };
+        foreach (var (action, b) in _bindings)
+        {
+            var c = copy.Get(action);
+            c.Keys.AddRange(b.Keys);
+            c.Buttons.AddRange(b.Buttons);
+            c.Stick = b.Stick;
+            c.Axes.AddRange(b.Axes);
+        }
+        return copy;
+    }
 }

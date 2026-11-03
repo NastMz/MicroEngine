@@ -19,6 +19,7 @@ flowchart TB
   raylib["<b> src/MicroEngine.Raylib </b> <br/> raylib: window, renderer, audio, input; WebAssembly"]
   core["<b> src/MicroEngine </b> <br/> Core: loop, scenes, input, graphics model, world, audio synthesis, UI, platform contract"]
   platform["<b> src/MicroEngine.Platform </b> <br/> Platform contracts: host, surface, capabilities, storage, content sources"]
+  input["<b> src/MicroEngine.Input </b> <br/> Input: device events, players, layers, text, actions and saved bindings"]
   hosting["<b> src/MicroEngine.Hosting </b> <br/> Hosting: launch requests and their rules, platform selection, the composition a game configures once"]
   kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
@@ -36,6 +37,8 @@ flowchart TB
   platform -- builds on --> kernel
   core -- builds on --> hosting
   hosting -- builds on --> platform
+  core -- builds on --> input
+  input -- builds on --> platform
 ```
 
 Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
@@ -47,6 +50,9 @@ the main surface, optional features found with `TryGetCapability<T>`, and whethe
 `IStorage` and `IContentSource`. `IPlatform` extends `IPlatformHost` with the devices and frame presentation that
 later move to their own contracts. The engine never casts a platform to find an optional feature, never wraps one, and
 nothing a platform does depends on the time mode ([The platform host](manual/backends.md#the-platform-host)).
+Input is a third assembly, `MicroEngine.Input` (kernel and platform contracts only, shipped inside the `MicroEngine`
+package): device events with ids, the polled state derived from the events no input layer took, players with device
+pairing, input layers, the text channel and `InputMap` ([Devices, players and layers](manual/input.md#devices-players-and-layers)).
 
 Next SDK version (not published yet: arrives with the next SDK version): hosting is a third assembly of the
 `MicroEngine` package, `MicroEngine.Hosting`, which references only the kernel and the platform contracts. It holds the
@@ -65,7 +71,8 @@ four device interfaces:
 | `IRenderer` | Immediate-mode drawing into the virtual canvas | `SdlRenderer`, `RaylibRenderer`, `HeadlessRenderer` |
 | `IGraphicsDevice` | Turning `PixelImage`s into textures with a filter (nearest, linear); textures take region updates | SDL, raylib, headless |
 | `IAudioDevice` | Loading/playing PCM sounds and looping music | SDL, raylib, `SilentAudioDevice` |
-| `IInputSource` | Raw key, gamepad and mouse state | SDL, raylib, `HeadlessInput` |
+| `IInputBackend` | Device events: keys, text, pointers, wheel, gamepads, devices connecting (a capability) | `HeadlessInputBackend` |
+| `IInputSource` | Raw key, gamepad and mouse state, polled; read as one device | SDL, raylib, `HeadlessInput` |
 | `ITouchScreen` (optional, `IPlatform.Touch`; next SDK version: a capability) | Touches, safe area, density, vibration and an overlay drawn over the frame | SDL, raylib (from the browser page), `HeadlessTouchScreen` |
 
 Hosts choose a platform through a `PlatformCatalog` of named `PlatformProfile`s (`sdl`, `raylib`, `sdl-software`,
@@ -87,7 +94,7 @@ and the engine's `FrameClock` turns each frame's time into fixed steps following
 `MaxStepsPerFrame` steps, frames of at most `MaxFrameDelta`, real or deterministic time). A frame runs the engine's
 frame schedule: `BeginFrame` and `Input` once, `PreFixed`, `FixedUpdate`, `Physics` and `PostFixed` once per step,
 then `Update`, `LateUpdate`, `Extract`, `Render`, `Present` and `EndFrame`. `Game` registers the built-in systems
-(`engine.assets`, `engine.touch`, `engine.input`, `engine.time`, `engine.scenes`, `engine.audio`,
+(`engine.assets`, `engine.input.events`, `engine.touch`, `engine.input`, `engine.time`, `engine.scenes`, `engine.audio`,
 `engine.achievements`, `engine.input.end`, `engine.render`, `engine.present`...) in the order listed below, and a game
 adds its own from `Game.Configure`. Hosts that outlive a run (a browser page) use `GameSession`, which builds the game and platform, ticks the
 loop from `requestAnimationFrame` and releases the platform when the run ends. Each frame:
@@ -97,8 +104,9 @@ loop from `requestAnimationFrame` and releases the platform when the run ends. E
 2. Accumulate wall-clock time in real time, exactly one step in deterministic time (headless and scripted runs by default).
 3. Hand the frame's touches to the game's on-screen controls (`VirtualControls`), which update their state and
    drawing immediately.
-4. For each fixed step (60 Hz, at most five per frame): apply scripted input, sample devices and action sources
-   (touch controls among them) into the `InputMap`, update scenes, update the audio mixer and achievement banners (flushing achievement
+4. For each fixed step (60 Hz, at most five per frame): apply scripted input, sample each player's devices and action
+   sources (touch controls among them) into their `InputMap` (the frame's device events were routed through the input
+   layers before the steps), update scenes, update the audio mixer and achievement banners (flushing achievement
    progress about once a second), advance input edge detection.
 5. Render once: clear, draw the scene stack, draw any transition, draw achievement banners; the backend then draws
    the touch controls over the letterboxed frame (never into captures).
@@ -116,7 +124,7 @@ scripted playthrough tests and reproducible screenshots possible.
 | `MicroEngine.Platform` (next SDK version) | `IPlatformHost`, `IMonotonicClock`, `IEngineEventSink`, `ISurface`, `HostSurface`, `IDisplayPacing`, `IPreciseDelay`, `IStorage`, `IContentSource`, `FolderContentSource` |
 | `MicroEngine.Core` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `InputScript`, `HeadlessPlatform`, `SaveStore` (over `ISaveStorage`), `ContentFolder`, `AssetCache` (`Game.Assets`), `Achievement`, `AchievementTracker` |
 | `MicroEngine.Scenes` | `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener` |
-| `MicroEngine.Input` | `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources; `VirtualControls` and `TouchLayout`: per-game on-screen d-pads, joysticks and buttons; `ITouchScreen`, `FrameLayout` |
+| `MicroEngine.Input` | In the `MicroEngine.Input` assembly (kernel and platform contracts only): device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem` over them, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources, with saved bindings. In the core assembly (they draw): `VirtualControls` and `TouchLayout` (per-game on-screen d-pads, joysticks and buttons, an input layer), `ActionPrompts`, `ITouchScreen`, `FrameLayout` |
 | `MicroEngine.Graphics` | `PixelImage` (CPU art, image decoding, crop/rotate), `Art` (noise, dither, ramps), `SpriteAtlasBuilder` (incl. grid sheets), `AtlasData` (packing tools' files), `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `IFont` (`BitmapFont`, `ScalableFont`), `TextureFilter`, `IRenderer` |
 | `MicroEngine.World` | `TileLayer`, `TileGrid`, `TileMotion` (swept AABB with one-way tiles), `Autotile`, `TileRenderer`, `Entity`, `EntityList<T>` |
 | `MicroEngine.Audio` | `Synth` (retro SFX), `Song` (step sequencer), `AudioClip` (incl. WAV decoding), `AudioMixer` (incl. sound/music files) |
