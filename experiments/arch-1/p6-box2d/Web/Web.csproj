@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!-- ARCH-1 P6 browser harness: the desktop scenes in .NET 10 browser-wasm, on Box2D.NET (managed) and on native
+       Box2D v3 linked as static Emscripten archives (build-native.sh wasm). Not in MicroEngine.slnx, not built by CI.
+       -p:B2NetProject=<Box2D.NET.csproj>   Box2D.NET source (fetch-sources.sh)
+       -p:Box2DWasmDir=<dir>                 holds me_box2d.a and box2d.a
+       -p:P6Aot=true                         AOT-compile the managed code (default: the Mono interpreter, as the
+                                             MicroEngine web host ships today) -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <WasmBuildNative>true</WasmBuildNative>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugType>none</DebugType>
+    <AssemblyName>p6web</AssemblyName>
+    <RootNamespace>P6</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(P6Aot)' == 'true'">
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <DefineConstants>$(DefineConstants);P6_AOT</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Harness/*.cs" />
+    <ProjectReference Include="$(B2NetProject)" SetTargetFramework="TargetFramework=net10.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Box2DWasmDir)' != ''">
+    <!-- me_box2d.a binds [DllImport("me_box2d")]; box2d.a provides Box2D itself. -->
+    <NativeFileReference Include="$(Box2DWasmDir)/me_box2d.a" />
+    <NativeFileReference Include="$(Box2DWasmDir)/box2d.a" />
+  </ItemGroup>
+  <!-- -p:ProbeSymbols=true keeps wasm function names, so browser stack traces name the C function. -->
+  <PropertyGroup Condition="'$(ProbeSymbols)' == 'true'">
+    <WasmNativeStrip>false</WasmNativeStrip>
+    <EmccExtraLDFlags>$(EmccExtraLDFlags) --profiling-funcs</EmccExtraLDFlags>
+  </PropertyGroup>
+</Project>

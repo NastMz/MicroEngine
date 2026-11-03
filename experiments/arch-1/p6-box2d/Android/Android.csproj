@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 P6 Android harness: the desktop scenes in a .NET 10 Android app; results go to logcat (tag P6).
+       Not in MicroEngine.slnx and not built by CI.
+       -p:B2NetProject=<Box2D.NET.csproj>   Box2D.NET source (fetch-sources.sh)
+       -p:Box2DAndroidDir=<dir>              build-native.sh output folder (out/) with android-x64-* and android-arm64-* -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <ApplicationId>org.microengine.experiments.p6box2d</ApplicationId>
+    <ApplicationTitle>P6 Box2D</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
+    <RuntimeIdentifiers>android-x64;android-arm64</RuntimeIdentifiers>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <RootNamespace>P6</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Harness/*.cs" />
+    <ProjectReference Include="$(B2NetProject)" SetTargetFramework="TargetFramework=net10.0" GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Box2DAndroidDir)' != ''">
+    <AndroidNativeLibrary Include="$(Box2DAndroidDir)/android-x64-box2d-v3.2.0/libme_box2d.so" Abi="x86_64" />
+    <AndroidNativeLibrary Include="$(Box2DAndroidDir)/android-arm64-box2d-v3.2.0/libme_box2d.so" Abi="arm64-v8a" />
+  </ItemGroup>
+</Project>
