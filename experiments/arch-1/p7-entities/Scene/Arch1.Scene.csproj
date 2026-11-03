@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 P7: a self-contained prototype of the stage 3 IWorld (ids with generations, a Transform hierarchy, typed
+       attachments, engine interpolation with Teleport, per-world step tracking, world clocks). Throwaway experiment;
+       not part of MicroEngine.slnx or CI; references no engine assembly. -->
+  <PropertyGroup>
+    <RootNamespace>Arch1.Scene</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Arch1.Scene.Tests" />
+    <InternalsVisibleTo Include="Arch1.Scene.Bench" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 P7: Courtyard Key ported to the prototype IWorld (ids, transforms, attachments, engine interpolation,
+       world clock). It compiles the unchanged game files straight from games/CourtyardKey and replaces only the files
+       in this folder, so the port's diff is exactly what changed. Throwaway experiment; not part of MicroEngine.slnx or
+       CI. The game code (original and ported) is all rights reserved: see NOTICE.md. -->
+  <PropertyGroup>
+    <AssemblyName>CourtyardKey.Port</AssemblyName>
+    <RootNamespace>CourtyardKey</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <OriginalGame>../../../../games/CourtyardKey/</OriginalGame>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(OriginalGame)**/*.cs"
+             Exclude="$(OriginalGame)Program.cs;$(OriginalGame)obj/**;$(OriginalGame)bin/**;$(OriginalGame)Entities/Actor.cs;$(OriginalGame)Entities/Boss.cs;$(OriginalGame)Entities/Enemies.cs;$(OriginalGame)Scenes/PlayScene*.cs;$(OriginalGame)Scenes/Spawner.cs"
+             LinkBase="Original" />
+    <None Include="$(OriginalGame)Content/**" Exclude="$(OriginalGame)Content/**/*.cs" LinkBase="Content" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
+    <ProjectReference Include="../Scene/Arch1.Scene.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="CourtyardKey.Port.Tests" />
+  </ItemGroup>
+</Project>
