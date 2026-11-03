@@ -658,7 +658,10 @@ internal sealed class RaylibInput : BufferedInputBackend, IGamepadRumble, ITextI
         for (int code; (code = Rl.GetKeyPressed()) != 0;)
             if (ByRaylib.TryGetValue((Raylib_cs.KeyboardKey)code, out var key))
             {
-                Emit(InputEvent.KeyDown(Keyboard, key, now, repeat: !_held.Add(key)));
+                // raylib queues real presses only (never repeats). A key it still reports down from an earlier press
+                // (a release it missed, as a page can while it loads) was released in between: say so, then press it.
+                if (!_held.Add(key)) Emit(InputEvent.KeyUp(Keyboard, key, now));
+                Emit(InputEvent.KeyDown(Keyboard, key, now));
             }
         foreach (var (key, raylib) in Keys)
             if (_held.Contains(key) && !Rl.IsKeyDown(raylib))
