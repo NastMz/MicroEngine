@@ -95,11 +95,12 @@ The command line every desktop game accepts, on any backend. Supported arguments
 <ul><li><code>--script FILE</code> play scripted input (see [InputScript](MicroEngine.Core.InputScript.md)); implies deterministic time unless
 <code>--time</code> says otherwise.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
 first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>. A
-headless run is in deterministic time unless <code>--time</code> says otherwise.</li><li><code>--hidden</code> render in a hidden window (captures still work); it implies nothing about time or sound.</li><li><code>--time realtime|deterministic</code> how the loop advances time ([TimeMode](MicroEngine.Kernel.TimeMode.md)): with the
-wall clock, or one fixed step per frame; by default the game's choice, else real time (headless runs and scripts:
-deterministic).</li><li><code>--frames N</code> stop after N updates; <code>--seed N</code>; <code>--scale N</code>; <code>--mute</code>.</li><li><code>--report</code> print the platform that runs and whether it has audio before the game starts (package checks).</li><li><code>--audio auto|device|silent</code> where sound may go ([AudioOutput](MicroEngine.Core.AudioOutput.md)); <code>auto</code> (the default)
-asks for no physical device when the run is in deterministic time (scripts, <code>--time deterministic</code>,
-headless), so checks are never heard, and for one otherwise.</li><li><code>--audio-capture FILE</code> play nothing aloud and write what would have been heard as a WAV
+headless run is in deterministic time unless <code>--time</code> says otherwise (the headless platform's
+[RunPreset](MicroEngine.Core.RunPreset.md)).</li><li><code>--hidden</code> render in a hidden window (captures still work); it implies nothing about time or sound.</li><li><code>--time realtime|deterministic</code> how the loop advances time ([TimeMode](MicroEngine.Kernel.TimeMode.md)): with the
+wall clock, or one fixed step per frame; by default the game's choice, else the platform's [RunPreset](MicroEngine.Core.RunPreset.md)
+(headless: deterministic), else real time; a script means deterministic.</li><li><code>--frames N</code> stop after N updates; <code>--seed N</code>; <code>--scale N</code>; <code>--mute</code>.</li><li><code>--report</code> print the platform that runs and whether it has audio before the game starts (package checks).</li><li><code>--audio auto|device|silent</code> where sound may go ([AudioOutput](MicroEngine.Core.AudioOutput.md)); <code>auto</code> (the default)
+asks for no physical device when the run is in deterministic time (scripts, <code>--time deterministic</code>), so checks
+are never heard, and for one otherwise (the headless platform has none).</li><li><code>--audio-capture FILE</code> play nothing aloud and write what would have been heard as a WAV
 ([CaptureAudioDevice](MicroEngine.Audio.CaptureAudioDevice.md)).</li><li><code>--gpu auto|high-performance|power-saving</code> the GPU to ask for on a machine with two
 ([GpuPreference](MicroEngine.Core.GpuPreference.md)).</li><li><code>--renderer NAME[,NAME...]</code> graphics APIs to try first ([Renderers](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Renderers)).</li><li><code>--vsync on|off</code> wait for the display's refresh or not ([VSync](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_VSync)).</li><li><code>--fps-limit N</code> draw at most N frames per second; 0 removes the game's limit
 ([FrameRateLimit](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_FrameRateLimit)).</li><li><code>--window windowed|fullscreen|exclusive</code> the window mode ([WindowMode](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_WindowMode)).</li><li><code>--display N</code> open on display N, counted from 0 ([Display](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Display)).</li><li><code>--pacing display|measured</code> count frame time in refresh periods of the display (the default) or as
@@ -171,8 +172,8 @@ A windowless platform: no devices, and a renderer that counts calls (or, with [R
 them and draws them with the CPU reference rasterizer). Used by automated tests and CI to play whole games through
 scripts. Its surface has the canvas's size; tests drive its events by hand ([Resize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Resize_System_Int32_System_Int32_), [Focus](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Focus_System_Boolean_),
 [Suspend](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Suspend), [Resume](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Resume), [RequestQuit](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_RequestQuit)), which the next event pump delivers in order.
-It has no time-mode preference: a run that should advance one step per frame says so
-([TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode); the launcher's <code>--headless</code> does).
+Its run preset ([Preset](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Preset)) is deterministic time: a stated default of this testing composition that a
+run or a game overrides. Nothing the platform does depends on the time mode.
 
  [HeadlessRenderer](MicroEngine.Core.HeadlessRenderer.md)
 
@@ -244,6 +245,14 @@ An [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md) that keeps a list of th
  [RunOptions](MicroEngine.Core.RunOptions.md)
 
 Options shared by every launcher: scripted input, captures and run limits.
+
+ [RunPreset](MicroEngine.Core.RunPreset.md)
+
+Defaults a composition states for the runs it hosts when neither the run ([RunOptions](MicroEngine.Core.RunOptions.md)) nor the game
+([Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_)) chooses: a stated preset value, never a platform behaviour. A platform offers it as a
+capability ([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)); the headless platform's preset is
+[Deterministic](MicroEngine.Kernel.TimeMode.md), so tests that run a game headless are reproducible with no option. The
+platform behaves the same whatever the mode the run ends up with.
 
  [RunResult](MicroEngine.Core.RunResult.md)
 

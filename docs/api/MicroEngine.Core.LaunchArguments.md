@@ -299,7 +299,7 @@ public int Seed { get; init; }
 
 <code>--time</code>: how the loop advances time, or null to leave it to the game. A script means
 [Deterministic](MicroEngine.Kernel.TimeMode.md) unless <code>--time</code> is given; <code>--hidden</code> changes nothing; the
-launcher also runs headless platforms deterministically when this is null.
+headless platform's [RunPreset](MicroEngine.Core.RunPreset.md) makes its runs deterministic when this is null.
 
 ```csharp
 public TimeMode? Time { get; init; }

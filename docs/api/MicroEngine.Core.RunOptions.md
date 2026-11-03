@@ -160,8 +160,9 @@ public bool StartScreen { get; init; }
 
 How the loop advances time (the launcher's <code>--time</code>): [RealTime](MicroEngine.Kernel.TimeMode.md) with the wall
 clock, or [Deterministic](MicroEngine.Kernel.TimeMode.md), one fixed step per frame. It wins over the game's
-[Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_); null (the default) keeps the game's choice, else the [TimeSettings](MicroEngine.Kernel.TimeSettings.md)
-default (real time). The platform has no say: deterministic time is the loop's business only.
+[Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_); null (the default) keeps the game's choice, else the composition's
+[RunPreset](MicroEngine.Core.RunPreset.md) (the headless platform's: deterministic), else real time. Nothing a platform does depends on
+the mode: it belongs to the loop only.
 
 ```csharp
 public TimeMode? TimeMode { get; init; }

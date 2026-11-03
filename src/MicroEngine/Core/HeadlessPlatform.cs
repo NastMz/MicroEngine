@@ -11,8 +11,8 @@ namespace MicroEngine.Core;
 /// them and draws them with the CPU reference rasterizer). Used by automated tests and CI to play whole games through
 /// scripts. Its surface has the canvas's size; tests drive its events by hand (<see cref="Resize"/>, <see cref="Focus"/>,
 /// <see cref="Suspend"/>, <see cref="Resume"/>, <see cref="RequestQuit"/>), which the next event pump delivers in order.
-/// It has no time-mode preference: a run that should advance one step per frame says so
-/// (<see cref="RunOptions.TimeMode"/>; the launcher's <c>--headless</c> does).
+/// Its run preset (<see cref="Preset"/>) is deterministic time: a stated default of this testing composition that a
+/// run or a game overrides. Nothing the platform does depends on the time mode.
 /// </summary>
 public sealed class HeadlessPlatform : IPlatform
 {
@@ -39,6 +39,7 @@ public sealed class HeadlessPlatform : IPlatform
         TouchScreen = new HeadlessTouchScreen(new Vector2(width * 4, height * 4));
         _surface = new HostSurface(0, () => _surfaceSize, () => 1f, () => false);
         _capabilities.Add<ITouchScreen>(TouchScreen);
+        _capabilities.Add(_preset);
         if (request?.Audio is not null) _suppliedAudio = request.CreateAudio(() => SilentAudio);
         _input = request?.CombineInput(Keys) ?? Keys;
     }
@@ -59,6 +60,21 @@ public sealed class HeadlessPlatform : IPlatform
             _renderer = value ? new HeadlessRenderer(_width, _height, _graphics) : new HeadlessRenderer(_width, _height);
         }
     }
+
+    /// <summary>
+    /// The run defaults this testing composition states (<see cref="RunPreset"/>, offered as a capability):
+    /// <see cref="RunPreset.Testing"/> by default, so a game run on it through <see cref="GameRunner"/>,
+    /// <see cref="GameLoop"/>, <see cref="GameSession"/> or <see cref="Game.InitializeForTest"/> advances one fixed step
+    /// per frame with no option. The run's <see cref="RunOptions.TimeMode"/> and the game's <see cref="Game.Configure"/>
+    /// win over it; <c>Preset = new RunPreset()</c> when creating the platform makes runs that choose nothing real-time.
+    /// The platform behaves the same either way.
+    /// </summary>
+    public RunPreset Preset
+    {
+        get => _preset;
+        init => _capabilities.Replace(_preset = value ?? throw new ArgumentNullException(nameof(value)));
+    }
+    private RunPreset _preset = RunPreset.Testing;
 
     /// <summary>A <see cref="HeadlessGraphicsDevice"/>: textures have a size but no pixels, unless <see cref="Rasterize"/> is on.</summary>
     public IGraphicsDevice Graphics => _graphics;

@@ -271,24 +271,69 @@ public sealed class PlatformHostTests
         Assert.IsTrue(request.OpensOwnAudio, "a device by default, whatever the run's time");
     }
 
-    [TestMethod]
-    public void A_run_that_chooses_no_time_mode_runs_in_real_time_on_any_host()
+    /// <summary>A game whose steps depend on its random numbers, so two runs agree only if both are deterministic.</summary>
+    private sealed class RandomWalk : Game
     {
-        var game = new RecordingGame();
-        var loop = new GameLoop(game, HeadlessPlatform.For(Settings));
-        Assert.IsTrue(loop.Start());
-        Assert.AreEqual(TimeMode.RealTime, game.TimeSettings.Mode, "the headless host does not choose the time mode");
-        loop.Finish();
+        public List<string> Trace { get; } = [];
+        public override GameSettings Settings => PlatformHostTests.Settings;
+        public override void Configure(EngineBuilder builder) =>
+            builder.Schedule.Add(FramePhase.FixedUpdate, "test.walk", step => Trace.Add($"{step.FixedStep}:{Random.Next(100)}:{UpdateCount}"));
+        protected override void Load() => Scenes.Push(new Idle());
     }
 
     [TestMethod]
-    public void A_test_initializes_a_game_in_the_time_mode_a_run_would_choose()
+    public void A_headless_run_with_no_time_option_is_deterministic_and_reproducible()
     {
-        var deterministic = new RecordingGame();
-        deterministic.InitializeForTest(HeadlessPlatform.For(Settings), 1, TimeMode.Deterministic);
-        Assert.AreEqual(TimeMode.Deterministic, deterministic.TimeSettings.Mode);
-        var unchosen = new RecordingGame();
-        unchosen.InitializeForTest(HeadlessPlatform.For(Settings));
-        Assert.AreEqual(TimeMode.RealTime, unchosen.TimeSettings.Mode, "no choice: the default, real time");
+        // The documented testing path, unchanged: a headless platform, the runner, a frame limit, nothing about time.
+        RunResult Run(RandomWalk game) => GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { MaxUpdates = 40 });
+        var first = new RandomWalk();
+        var second = new RandomWalk();
+        var a = Run(first);
+        var b = Run(second);
+        Assert.IsNull(a.Error);
+        Assert.AreEqual(TimeMode.Deterministic, first.TimeSettings.Mode, "the headless composition's preset");
+        Assert.AreEqual(40, a.Updates);
+        Assert.AreEqual(40, a.Frames, "one step per frame");
+        Assert.AreEqual(a.Frames, b.Frames);
+        CollectionAssert.AreEqual(first.Trace, second.Trace, "two runs are identical");
+
+        var session = new GameSession(() => new RandomWalk(), _ => HeadlessPlatform.Profile.Create(new PlatformRequest(Settings)));
+        Assert.IsTrue(session.Start(new RunOptions { MaxUpdates = 40 }));
+        while (session.Tick()) { }
+        Assert.AreEqual(40, session.Result!.Frames, "the headless profile states the same preset");
+        Assert.AreEqual(TimeMode.Deterministic, session.Game!.TimeSettings.Mode);
+    }
+
+    [TestMethod]
+    public void An_explicit_real_time_choice_wins_over_the_headless_preset()
+    {
+        var run = new RandomWalk();
+        var loop = new GameLoop(run, new HeadlessPlatform(), new RunOptions { TimeMode = TimeMode.RealTime });
+        Assert.IsTrue(loop.Start());
+        Assert.AreEqual(TimeMode.RealTime, run.TimeSettings.Mode, "the run's choice");
+        loop.Finish();
+
+        var game = new RecordingGame(builder => builder.Configure<TimeSettings>(t => t with { Mode = TimeMode.RealTime }));
+        game.InitializeForTest(new HeadlessPlatform());
+        Assert.AreEqual(TimeMode.RealTime, game.TimeSettings.Mode, "the game's choice");
+
+        var unpreset = new RecordingGame();
+        unpreset.InitializeForTest(new HeadlessPlatform { Preset = new RunPreset() });
+        Assert.AreEqual(TimeMode.RealTime, unpreset.TimeSettings.Mode, "a composition that states no preset");
+    }
+
+    [TestMethod]
+    public void The_headless_preset_is_a_stated_capability_not_a_platform_behaviour()
+    {
+        var platform = new HeadlessPlatform();
+        Assert.IsTrue(platform.TryGetCapability<RunPreset>(out var preset));
+        Assert.AreSame(RunPreset.Testing, preset);
+        Assert.AreEqual(TimeMode.Deterministic, preset.TimeMode);
+        var plain = new HeadlessPlatform { Preset = new RunPreset() };
+        Assert.IsTrue(plain.TryGetCapability<RunPreset>(out var none));
+        Assert.IsNull(none.TimeMode);
+        // The platform itself is the same either way: same clock kind, same blocking rule, same capabilities otherwise.
+        Assert.AreEqual(platform.CanBlock, plain.CanBlock);
+        Assert.AreEqual(platform.TryGetCapability<ITouchScreen>(out _), plain.TryGetCapability<ITouchScreen>(out _));
     }
 }

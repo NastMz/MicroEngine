@@ -114,7 +114,21 @@ public sealed class BackendOptionsTests
     {
         Assert.IsNull(typeof(DesktopOptions).GetProperty("FixedStep"), "deterministic time is the loop's business only");
         Assert.IsTrue(new DesktopOptions().WaitForDisplay, "a visible window waits for the display by default");
-        Assert.IsFalse(new DesktopOptions(Hidden: true) { WaitForDisplay = false }.WaitForDisplay);
+        Assert.IsFalse(new DesktopOptions { Hidden = true, WaitForDisplay = false }.WaitForDisplay);
+    }
+
+    [TestMethod]
+    public void A_call_written_for_the_old_positional_options_no_longer_compiles()
+    {
+        // new DesktopOptions(scale, hidden, fixedStep) would otherwise bind its third argument to another option:
+        // with no constructor taking arguments, every positional call fails to compile.
+        var withArguments = typeof(DesktopOptions).GetConstructors().Where(c => c.GetParameters().Length > 0 && c.GetParameters()[0].ParameterType != typeof(DesktopOptions)).ToList();
+        Assert.IsEmpty(withArguments, string.Join("; ", withArguments));
+        var options = new DesktopOptions();
+        Assert.IsNull(options.Scale);
+        Assert.IsFalse(options.Hidden);
+        Assert.IsFalse(options.Mute);
+        Assert.AreEqual(3, options.CaptureScale);
     }
 }
 

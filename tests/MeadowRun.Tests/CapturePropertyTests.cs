@@ -57,7 +57,7 @@ public sealed class CapturePropertyTests
             var game = new MeadowGame(Path.Combine(dir, "save"), new LaunchOptions("level", 1));
             var probe = new ProbePlatform(HeadlessPlatform.For(game.Settings, rasterize: true), game);
             var script = new InputScript().Capture(120, "a.png").Capture(240, "b.png").QuitAfter(241);
-            var result = GameRunner.Run(game, probe, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, Script = script, CaptureDirectory = Path.Combine(dir, "captures") });
+            var result = GameRunner.Run(game, probe, new RunOptions { Script = script, CaptureDirectory = Path.Combine(dir, "captures") });
             Assert.IsNull(result.Error, result.Error?.ToString());
             Assert.HasCount(2, probe.Snapshots);
             var (a, b) = (probe.Snapshots[0], probe.Snapshots[1]);

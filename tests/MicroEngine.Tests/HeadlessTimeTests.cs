@@ -41,7 +41,7 @@ public sealed class HeadlessTimeTests
     {
         var game = new TouchGame(rate);
         var platform = HeadlessPlatform.For(game.Settings);
-        var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, MaxUpdates = 3 * rate });
+        var result = GameRunner.Run(game, platform, new RunOptions { MaxUpdates = 3 * rate });
         Assert.IsNull(result.Error, result.Error?.ToString());
         Assert.AreEqual(3 * rate, game.UpdateCount);
         Assert.AreEqual(3 * rate, result.Frames, "one update per frame");
@@ -58,7 +58,7 @@ public sealed class HeadlessTimeTests
     {
         var game = new TouchGame(rate);
         var platform = HeadlessPlatform.For(game.Settings);
-        var loop = new GameLoop(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic });
+        var loop = new GameLoop(game, platform);
         Assert.IsTrue(loop.Start());
         loop.Tick();
         var (center, _) = game.Touch.Geometry("jump");
@@ -79,11 +79,11 @@ public sealed class HeadlessTimeTests
     {
         // The platform no longer knows the rate: a headless platform made without settings runs a 25 Hz game at 25 Hz.
         var game = new TouchGame(25);
-        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, MaxUpdates = 50 });
+        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { MaxUpdates = 50 });
         Assert.IsNull(result.Error, result.Error?.ToString());
         Assert.AreEqual(2.0, game.Time, 1e-4);
         var profiled = new TouchGame(30);
-        GameRunner.Run(profiled, (HeadlessPlatform)HeadlessPlatform.Profile.Create(new PlatformRequest(profiled.Settings)), new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, MaxUpdates = 30 });
+        GameRunner.Run(profiled, (HeadlessPlatform)HeadlessPlatform.Profile.Create(new PlatformRequest(profiled.Settings)), new RunOptions { MaxUpdates = 30 });
         Assert.AreEqual(1.0, profiled.Time, 1e-4);
     }
 }

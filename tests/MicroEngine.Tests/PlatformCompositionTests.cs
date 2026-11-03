@@ -160,7 +160,7 @@ public sealed class PlatformCompositionTests
         var audio = new RecordingAudio();
         var platform = new SuspendablePlatform(audio);
         var game = new CountingGame();
-        var loop = new GameLoop(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic });
+        var loop = new GameLoop(game, platform);
         Assert.IsTrue(loop.Start());
         for (int i = 0; i < 10; i++) loop.Tick();
         Assert.AreEqual(10, game.UpdateCount);
@@ -184,7 +184,7 @@ public sealed class PlatformCompositionTests
         var audio = new RecordingAudio();
         var platform = new SuspendablePlatform(audio);
         var game = new CountingGame();
-        var loop = new GameLoop(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic });
+        var loop = new GameLoop(game, platform);
         Assert.IsTrue(loop.Start());
         loop.Tick();
         game.Audio.PauseMusic(true);

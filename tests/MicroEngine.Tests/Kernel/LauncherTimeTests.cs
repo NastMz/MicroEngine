@@ -81,7 +81,7 @@ public sealed class LauncherTimeTests
         Assert.IsTrue(request.Hidden);
         Assert.IsTrue(request.WaitForDisplay, "hidden implies nothing about time or pacing");
         Assert.IsTrue(request.OpensOwnAudio, "hidden no longer implies silence");
-        Assert.AreEqual(TimeMode.RealTime, game.TimeSettings.Mode, "no choice: real time, whatever the platform");
+        Assert.AreEqual(TimeMode.Deterministic, game.TimeSettings.Mode, "no choice: this headless platform's preset decides");
     }
 
     [TestMethod]

@@ -21,15 +21,22 @@ internal sealed class IgnoredEvents : IEngineEventSink
 /// <summary>
 /// A platform for tests that need to control one aspect of a host: a headless platform underneath, a clock the test
 /// may set by hand (<see cref="Now"/>), extra capabilities (<see cref="Capabilities"/>) and members to override. It
-/// forwards every member it does not change, the capability query included.
+/// forwards every member it does not change, the capability query included, so it keeps the headless platform's
+/// deterministic <see cref="RunPreset"/> unless it stands for a real-time host (<c>realTime</c>), which states none.
 /// </summary>
-internal abstract class TestPlatform(HeadlessPlatform? inner = null) : IPlatform, IMonotonicClock
+internal abstract class TestPlatform : IPlatform, IMonotonicClock
 {
     private double? _now;
 
+    protected TestPlatform(HeadlessPlatform? inner = null, bool realTime = false)
+    {
+        Inner = inner ?? new HeadlessPlatform();
+        if (realTime) Capabilities.Add(new RunPreset());
+    }
+
     /// <summary>The headless platform underneath.</summary>
-    public HeadlessPlatform Inner { get; } = inner ?? new HeadlessPlatform();
-    /// <summary>Capabilities this platform declares in addition to the headless platform's.</summary>
+    public HeadlessPlatform Inner { get; }
+    /// <summary>Capabilities this platform declares in addition to (and in place of) the headless platform's.</summary>
     public CapabilityRegistry Capabilities { get; } = new();
 
     private bool _suspended;

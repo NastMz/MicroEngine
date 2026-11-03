@@ -37,7 +37,7 @@ public sealed class AssetGalleryTests
         var platform = HeadlessPlatform.For(game.Settings);
         // The profiler records the cache's numbers just before the game shuts down.
         var profiler = new FrameProfiler();
-        var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, Script = new InputScript().QuitAfter(30), Profiler = profiler });
+        var result = GameRunner.Run(game, platform, new RunOptions { Script = new InputScript().QuitAfter(30), Profiler = profiler });
         Assert.IsNull(result.Error, result.Error?.ToString());
         Assert.IsTrue(platform.Renderer.DrawCalls > 0);
         Assert.AreEqual("0", profiler.Environment["assets.loadsDuringPlay"], "everything the screen draws was loaded in Load");
@@ -54,7 +54,9 @@ public sealed class AssetGalleryTests
         public bool PumpEvents(MicroEngine.Platform.IEngineEventSink sink) => inner.PumpEvents(sink);
         public MicroEngine.Platform.ISurface? MainSurface => inner.MainSurface;
         public bool CanBlock => inner.CanBlock;
-        public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class => inner.TryGetCapability(out capability);
+        // A desktop window states no run preset: runs that choose nothing are real-time.
+        public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class =>
+            typeof(T) == typeof(RunPreset) ? (capability = (T)(object)new RunPreset()) is not null : inner.TryGetCapability(out capability);
         public MicroEngine.Color Letterbox { get => inner.Letterbox; set => inner.Letterbox = value; }
         public IRenderer BeginFrame() => inner.BeginFrame();
         public void EndFrame() => inner.EndFrame();
@@ -72,7 +74,7 @@ public sealed class AssetGalleryTests
             var game = new GalleryGame();
             var platform = HeadlessPlatform.For(game.Settings, rasterize: true);
             var script = InputScript.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scripts", "tour.script")));
-            var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, Script = script, CaptureDirectory = directory.FullName });
+            var result = GameRunner.Run(game, platform, new RunOptions { Script = script, CaptureDirectory = directory.FullName });
             Assert.IsNull(result.Error, result.Error?.ToString());
             Assert.HasCount(3, result.Captures);
             return result.Captures.ToDictionary(path => Path.GetFileName(path), File.ReadAllBytes);
@@ -106,7 +108,7 @@ public sealed class AssetGalleryTests
     public void AScriptedRunShowsNoMeasuredTime()
     {
         var game = new GalleryGame();
-        game.InitializeForTest(HeadlessPlatform.For(game.Settings), 1, MicroEngine.Kernel.TimeMode.Deterministic);
+        game.InitializeForTest(HeadlessPlatform.For(game.Settings));
         var scene = (GalleryScene)game.Scenes.Current!;
         game.StepForTest();
         Assert.IsFalse(game.RealTime);
@@ -118,7 +120,7 @@ public sealed class AssetGalleryTests
     public void AScriptedRunShowsTheLevelScopeLoadedOnTheUpdateItIsAskedFor()
     {
         var game = new GalleryGame();
-        game.InitializeForTest(HeadlessPlatform.For(game.Settings), 1, MicroEngine.Kernel.TimeMode.Deterministic);
+        game.InitializeForTest(HeadlessPlatform.For(game.Settings));
         var scene = (GalleryScene)game.Scenes.Current!;
         Assert.IsNotNull(game.LevelAhead, "a fixed-step run loads the level's atlas before play");
         int before = game.Assets.Statistics.Count;

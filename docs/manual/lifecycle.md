@@ -173,16 +173,15 @@ monotonic clock (`IPlatform.Clock`). `TimeSettings`, edited in `Configure`, hold
 | `FixedRate` | `GameSettings.UpdateRate` | Fixed steps per second |
 | `MaxStepsPerFrame` | 5 | Steps one frame may run; a frame that needs more keeps at most one step pending, so the game slows down instead of falling further behind |
 | `MaxFrameDelta` | 0.25 s | The longest time one real-time frame stands for |
-| `Mode` | `RealTime` | `RealTime` or `Deterministic` |
+| `Mode` | the platform's `RunPreset`, else `RealTime` | `RealTime` or `Deterministic` |
 
 In `RealTime` a frame adds the time the loop measured (paced to the display, at most `MaxFrameDelta`) and runs the
 steps it calls for. In `Deterministic` every frame is exactly one step, whatever the wall clock says, and `FrameBlend`
 is 1, so the same input gives the same steps and captures on any machine. The mode comes from, in order: the run
 (`RunOptions.TimeMode`, the launcher's `--time realtime|deterministic`; a `--script` means deterministic unless `--time`
-says otherwise; the launcher's `--headless` too), the game's `Configure`, then the default, real time. The platform
-has no say, and a hidden window implies nothing about time. A test that runs a headless platform through the loop and
-needs one step per frame sets `RunOptions.TimeMode = TimeMode.Deterministic`. `Game.TimeSettings` is the
-policy the run uses.
+says otherwise), the game's `Configure`, then the preset the platform states for its runs (`RunPreset`: the headless
+platform's is deterministic, SDL and raylib state none), then real time. A preset is a default, never a platform
+behaviour, and a hidden window implies nothing about time. `Game.TimeSettings` is the policy the run uses.
 
 ## Fixed step and frame order
 

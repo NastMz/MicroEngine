@@ -10,13 +10,23 @@ using RlRect = Raylib_cs.Rectangle;
 
 namespace MicroEngine.Raylib;
 
-/// <summary>Window options of a raylib platform created directly (browser hosts); hosts with a <see cref="PlatformRequest"/> use <see cref="RaylibPlatform(PlatformRequest)"/>.</summary>
-/// <param name="Scale">Window scale; null uses <see cref="GameSettings.Scale"/>.</param>
-/// <param name="Hidden">Renders into a hidden window, which never waits for the display.</param>
-/// <param name="Mute">Opens no audio device.</param>
-/// <param name="CaptureScale">Size factor of screenshots.</param>
-public sealed record DesktopOptions(int? Scale = null, bool Hidden = false, bool Mute = false, int CaptureScale = 3)
+/// <summary>
+/// Window options of a raylib platform created directly (browser hosts); hosts with a <see cref="PlatformRequest"/> use
+/// <see cref="RaylibPlatform(PlatformRequest)"/>. Every option is set by name
+/// (<c>new DesktopOptions { Hidden = true, Mute = true }</c>): there is no positional constructor, so a call written for
+/// the earlier positional shape (whose third argument was a fixed-step flag) fails to compile instead of meaning
+/// something else.
+/// </summary>
+public sealed record DesktopOptions
 {
+    /// <summary>Window scale; null (the default) uses <see cref="GameSettings.Scale"/>.</summary>
+    public int? Scale { get; init; }
+    /// <summary>Renders into a hidden window, which never waits for the display (false by default).</summary>
+    public bool Hidden { get; init; }
+    /// <summary>Opens no audio device (false by default).</summary>
+    public bool Mute { get; init; }
+    /// <summary>Size factor of screenshots (3 by default).</summary>
+    public int CaptureScale { get; init; } = 3;
     /// <summary>The window's icon (the game's <see cref="AppIdentity.Icon"/>); ignored in browsers.</summary>
     public PixelImage? Icon { get; init; }
     /// <summary>Whether a visible desktop window's frames may wait for the display (true by default; see <see cref="PlatformRequest.WaitForDisplay"/>).</summary>
@@ -77,7 +87,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     /// </summary>
     public RaylibPlatform(PlatformRequest request) : this(
         (request ?? throw new ArgumentNullException(nameof(request))).Settings,
-        new DesktopOptions(request.Scale, request.Hidden, !request.OpensOwnAudio, request.CaptureScale) { Icon = request.Identity?.Icon, WaitForDisplay = request.WaitForDisplay },
+        new DesktopOptions { Scale = request.Scale, Hidden = request.Hidden, Mute = !request.OpensOwnAudio, CaptureScale = request.CaptureScale, Icon = request.Identity?.Icon, WaitForDisplay = request.WaitForDisplay },
         request)
     { }
 

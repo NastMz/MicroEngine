@@ -17,7 +17,7 @@ public sealed class GameKernelTests
     /// <summary>A platform whose monotonic clock the test advances by hand.</summary>
     private sealed class ClockPlatform : TestPlatform
     {
-        public ClockPlatform() => Now = 0;
+        public ClockPlatform() : base(realTime: true) => Now = 0;
     }
 
     private sealed class Probe : Scene
@@ -52,7 +52,7 @@ public sealed class GameKernelTests
     public void The_loop_runs_the_game_s_systems_in_phase_order()
     {
         var game = new ModularGame();
-        var loop = new GameLoop(game, new HeadlessPlatform(), new RunOptions { TimeMode = TimeMode.Deterministic });
+        var loop = new GameLoop(game, new HeadlessPlatform());
         Assert.IsTrue(loop.Start());
         loop.Tick();
         loop.Tick();
@@ -124,11 +124,11 @@ public sealed class GameKernelTests
     }
 
     [TestMethod]
-    public void Without_a_run_or_game_choice_time_is_real_time_on_every_platform()
+    public void Without_a_run_or_game_choice_the_composition_s_preset_decides()
     {
         var headless = new ModularGame();
         headless.InitializeForTest(new HeadlessPlatform());
-        Assert.AreEqual(TimeMode.RealTime, headless.TimeSettings.Mode, "a headless platform has no say");
+        Assert.AreEqual(TimeMode.Deterministic, headless.TimeSettings.Mode, "the headless platform's stated preset");
         var real = new ModularGame();
         real.InitializeForTest(new ClockPlatform());
         Assert.AreEqual(TimeMode.RealTime, real.TimeSettings.Mode);
@@ -162,7 +162,7 @@ public sealed class GameKernelTests
         Assert.AreEqual(TimeMode.Deterministic, game.TimeSettings.Mode);
         var chosen = new ModularGame(builder => builder.Configure<TimeSettings>(t => t with { Mode = TimeMode.RealTime }));
         chosen.InitializeForTest(new HeadlessPlatform());
-        Assert.AreEqual(TimeMode.RealTime, chosen.TimeSettings.Mode, "the game's choice applies when the run makes none");
+        Assert.AreEqual(TimeMode.RealTime, chosen.TimeSettings.Mode, "the game's choice wins over the composition's preset");
     }
 
     [TestMethod]
@@ -192,7 +192,7 @@ public sealed class GameKernelTests
         int asked = 0;
         var game = new ModularGame(builder => builder.Lifecycle.QuitRequested += request => { asked++; if (veto) request.Veto(); });
         var platform = new HeadlessPlatform();
-        var loop = new GameLoop(game, platform, new RunOptions { TimeMode = TimeMode.Deterministic });
+        var loop = new GameLoop(game, platform);
         Assert.IsTrue(loop.Start());
         platform.CloseRequested = true;
         Assert.IsTrue(loop.Tick(), "vetoed: the frame runs");

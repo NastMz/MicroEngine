@@ -10,8 +10,8 @@ A windowless platform: no devices, and a renderer that counts calls (or, with [R
 them and draws them with the CPU reference rasterizer). Used by automated tests and CI to play whole games through
 scripts. Its surface has the canvas's size; tests drive its events by hand ([Resize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Resize_System_Int32_System_Int32_), [Focus](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Focus_System_Boolean_),
 [Suspend](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Suspend), [Resume](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Resume), [RequestQuit](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_RequestQuit)), which the next event pump delivers in order.
-It has no time-mode preference: a run that should advance one step per frame says so
-([TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode); the launcher's <code>--headless</code> does).
+Its run preset ([Preset](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Preset)) is deterministic time: a stated default of this testing composition that a
+run or a game overrides. Nothing the platform does depends on the time mode.
 
 ```csharp
 public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable
@@ -155,6 +155,23 @@ public ISurface MainSurface { get; }
 #### Property Value
 
  ISurface
+
+### <a id="MicroEngine_Core_HeadlessPlatform_Preset"></a> Preset
+
+The run defaults this testing composition states ([RunPreset](MicroEngine.Core.RunPreset.md), offered as a capability):
+[Testing](MicroEngine.Core.RunPreset.md#MicroEngine_Core_RunPreset_Testing) by default, so a game run on it through [GameRunner](MicroEngine.Core.GameRunner.md),
+[GameLoop](MicroEngine.Core.GameLoop.md), [GameSession](MicroEngine.Core.GameSession.md) or [InitializeForTest](MicroEngine.Core.Game.md#MicroEngine_Core_Game_InitializeForTest_MicroEngine_Core_IPlatform_System_Int32_) advances one fixed step
+per frame with no option. The run's [TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode) and the game's [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_)
+win over it; <code>Preset = new RunPreset()</code> when creating the platform makes runs that choose nothing real-time.
+The platform behaves the same either way.
+
+```csharp
+public RunPreset Preset { get; init; }
+```
+
+#### Property Value
+
+ [RunPreset](MicroEngine.Core.RunPreset.md)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Profile"></a> Profile
 

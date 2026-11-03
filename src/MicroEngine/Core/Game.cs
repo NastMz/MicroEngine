@@ -191,7 +191,10 @@ public abstract class Game : IEngineModule
     {
         _platform = platform;
         var builder = new EngineBuilder();
-        builder.Configure<TimeSettings>(time => time with { FixedRate = Settings.UpdateRate });
+        // A preset the composition states (the headless platform's: deterministic) comes first; the game's Configure and the
+        // run's choice win over it.
+        platform.TryGetCapability<RunPreset>(out var preset);
+        builder.Configure<TimeSettings>(time => time with { FixedRate = Settings.UpdateRate, Mode = preset?.TimeMode ?? time.Mode });
         builder.Add(new GameModule(this, platform, seed, graphics));
         builder.Add(this);
         host?.Invoke(builder);
@@ -317,8 +320,6 @@ public abstract class Game : IEngineModule
 
     /// <summary>Test hook: initializes against a platform without running the loop.</summary>
     public void InitializeForTest(IPlatform platform, int seed = 1) => Initialize(platform, seed);
-    /// <summary>Test hook: initializes against a platform without running the loop, in the time mode a run would choose (<see cref="RunOptions.TimeMode"/>).</summary>
-    public void InitializeForTest(IPlatform platform, int seed, TimeMode mode) => Initialize(platform, seed, Settings.Graphics, mode);
     /// <summary>Test hook: advances one fixed step after sampling input.</summary>
     /// <remarks>
     /// Runs the phases that come before drawing for one fixed step, with a frame that stands for exactly one step:

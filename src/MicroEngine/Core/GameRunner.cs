@@ -44,9 +44,25 @@ public sealed record RunOptions
     /// <summary>
     /// How the loop advances time (the launcher's <c>--time</c>): <see cref="Kernel.TimeMode.RealTime"/> with the wall
     /// clock, or <see cref="Kernel.TimeMode.Deterministic"/>, one fixed step per frame. It wins over the game's
-    /// <see cref="Game.Configure"/>; null (the default) keeps the game's choice, else the <see cref="Kernel.TimeSettings"/>
-    /// default (real time). The platform has no say: deterministic time is the loop's business only.
+    /// <see cref="Game.Configure"/>; null (the default) keeps the game's choice, else the composition's
+    /// <see cref="RunPreset"/> (the headless platform's: deterministic), else real time. Nothing a platform does depends on
+    /// the mode: it belongs to the loop only.
     /// </summary>
+    public Kernel.TimeMode? TimeMode { get; init; }
+}
+
+/// <summary>
+/// Defaults a composition states for the runs it hosts when neither the run (<see cref="RunOptions"/>) nor the game
+/// (<see cref="Game.Configure"/>) chooses: a stated preset value, never a platform behaviour. A platform offers it as a
+/// capability (<see cref="Platform.IPlatformHost.TryGetCapability{T}"/>); the headless platform's preset is
+/// <see cref="Kernel.TimeMode.Deterministic"/>, so tests that run a game headless are reproducible with no option. The
+/// platform behaves the same whatever the mode the run ends up with.
+/// </summary>
+public sealed record RunPreset
+{
+    /// <summary>The preset for testing compositions: one fixed step per frame.</summary>
+    public static RunPreset Testing { get; } = new() { TimeMode = Kernel.TimeMode.Deterministic };
+    /// <summary>The time mode of runs that choose none; null leaves the default, real time.</summary>
     public Kernel.TimeMode? TimeMode { get; init; }
 }
 
@@ -146,8 +162,10 @@ public sealed class GameLoop
             // Optional features the loop uses, found once (a host's capabilities do not change while it runs).
             _platform.TryGetCapability(out _pacing);
             _platform.TryGetCapability(out _delay);
-            // Before the game exists only the run's choice is known; the start screen shows only in real time.
-            _realTime = (_options.TimeMode ?? Kernel.TimeMode.RealTime) == Kernel.TimeMode.RealTime;
+            // Before the game exists only the run's choice and the composition's preset are known; the start screen shows
+            // only in real time.
+            _platform.TryGetCapability<RunPreset>(out var preset);
+            _realTime = (_options.TimeMode ?? preset?.TimeMode ?? Kernel.TimeMode.RealTime) == Kernel.TimeMode.RealTime;
             ShowStartScreen();
             profiler?.Phase("start screen");
             _game.Initialize(_platform, _options.Seed, _options.Graphics ?? _game.Settings.Graphics, _options.TimeMode, AddRunSystems);

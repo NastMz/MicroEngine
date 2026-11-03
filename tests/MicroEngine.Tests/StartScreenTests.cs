@@ -10,7 +10,7 @@ namespace MicroEngine.Tests;
 public sealed class StartScreenTests
 {
     /// <summary>A headless platform that runs "in real time" and records what each frame drew, for the start screen.</summary>
-    private sealed class RealTimePlatform : TestPlatform
+    private sealed class RealTimePlatform() : TestPlatform(realTime: true)
     {
         public List<string> Log { get; } = [];
         public override IRenderer BeginFrame() { Log.Add("frame"); return Inner.BeginFrame(); }

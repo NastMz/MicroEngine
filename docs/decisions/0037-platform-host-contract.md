@@ -48,10 +48,16 @@ platform's preferred time mode.
   loaded.
 - **No hidden coupling with time.** `PlatformRequest.FixedStep`, `DesktopOptions.FixedStep` and `IPlatform.RealTime`
   are removed. `PlatformRequest.WaitForDisplay` (default true) and `StartGamepadsAfterFirstFrame` (default false) are
-  explicit, and `AudioOutput.Automatic` opens a device on every platform. A run that chooses no time mode runs in real
-  time whatever the platform. The launcher, a host, sets the options for the runs it starts: deterministic runs
-  (`--script`, `--time deterministic`, and now `--headless` unless `--time` says otherwise) ask for no display wait and,
-  with `--audio auto`, for silence; real-time runs that show a start screen ask for gamepads after the first frame.
+  explicit, and `AudioOutput.Automatic` opens a device on every platform. The launcher, a host, sets the options for
+  the runs it starts: deterministic runs (`--script`, `--time deterministic`) ask for no display wait and, with
+  `--audio auto`, for silence; real-time runs that show a start screen ask for gamepads after the first frame.
+- **A stated preset, not a preference flag.** A composition may state the time mode of runs that choose none as a
+  `RunPreset` capability; the order is the run's `RunOptions.TimeMode`, the game's `Configure`, the preset, then real
+  time. The headless platform states `RunPreset.Testing` (deterministic, overridable through `Preset`), so the
+  documented testing path stays reproducible with no option; SDL and raylib state none. Nothing a platform does
+  depends on the mode the run ends with.
+- **`DesktopOptions` is set by name only.** The positional constructor is gone, so a call written for the old shape
+  (whose third argument was the fixed-step flag) fails to compile instead of muting the game.
 - **A conformance suite** (`PlatformConformance`, beside `RendererConformance`) states the contract as tests; headless,
   SDL and raylib run it, and an event a host cannot be made to send in a test is reported as skipped, never passed.
 
@@ -59,8 +65,11 @@ platform's preferred time mode.
 
 - **Forward the new members in `ComposedPlatform`.** Rejected: it fixes today's list and breaks at the next capability
   (A1 F1 alternative a).
-- **Keep `IPlatform.RealTime` as a declared preference.** Rejected: it is the coupling ADR 0027 deferred; hosts say
-  what they want (`RunOptions.TimeMode`, the launcher's `--headless`), the platform does not.
+- **Keep `IPlatform.RealTime` as a required member.** Rejected: every platform had to answer it, wrappers had to forward
+  it, and it read as a platform behaviour; an optional, stated `RunPreset` keeps the plug-and-play default for testing
+  compositions without the platform depending on the mode.
+- **No default at all (real time unless every test says otherwise).** Rejected: tests written the documented way would
+  silently stop being reproducible.
 - **Move the window, devices and presentation out of `IPlatform` now.** Rejected for this step: the graphics device,
   input and audio contracts are later stages (2a, 2b, 2c); they stay reached through the host until then.
 - **Remove `ContentFolder.DefaultRoot` and `SaveStore.DefaultStorage` now.** Rejected for this step: one composition
@@ -70,9 +79,9 @@ platform's preferred time mode.
 
 - Custom platforms implement the host members and declare their optional features as capabilities; wrappers forward
   `TryGetCapability`. Code that cast a platform asks for the capability instead.
-- Tests and hosts that ran a headless platform through the loop and relied on one step per frame set
-  `RunOptions.TimeMode` (or use `InitializeForTest(platform, seed, mode)`); the launcher's behaviour for `--headless`
-  and `--script` is unchanged.
+- Tests and hosts that run a headless platform keep one step per frame with no change (its preset); the launcher's
+  behaviour for `--headless` and `--script` is unchanged. A custom platform that preferred deterministic time declares
+  `RunPreset.Testing`.
 - A visible raylib window asked not to wait for the display no longer sets VSync, and visible deterministic raylib runs
   apply the game's window mode and display at start, as SDL already did.
 - No host raises `ISurface.Lost` yet; device loss and surface recovery come with the graphics device (stage 2a).

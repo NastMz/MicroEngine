@@ -32,7 +32,7 @@ public class PerformanceTests
     /// <summary>A real-time platform whose clock the test sets, optionally paced to a display.</summary>
     private sealed class DisplayPlatform : TestPlatform, MicroEngine.Platform.IDisplayPacing
     {
-        public DisplayPlatform(double displayRate)
+        public DisplayPlatform(double displayRate) : base(realTime: true)
         {
             DisplayRate = displayRate;
             Now = 0;
@@ -168,7 +168,7 @@ public class PerformanceTests
         for (int i = 0; i < expected.Length; i++) Assert.AreEqual(expected[i], game.Blends[i], 1e-3, $"frame {i + 1}");
 
         var headless = new StepGame();
-        GameRunner.Run(headless, new HeadlessPlatform(), new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, MaxUpdates = 10 });
+        GameRunner.Run(headless, new HeadlessPlatform(), new RunOptions { MaxUpdates = 10 });
         // Lerp(previous, current, 1) draws the current update: captures show exactly what the update produced.
         Assert.IsTrue(headless.Blends.All(b => b == 1), "one step per frame: the frame is the update");
     }
@@ -178,7 +178,7 @@ public class PerformanceTests
     {
         var profiler = new FrameProfiler(capacity: 50);
         var game = new StepGame();
-        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, MaxUpdates = 80, Profiler = profiler });
+        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { MaxUpdates = 80, Profiler = profiler });
         Assert.IsNull(result.Error);
         Assert.AreEqual(80, profiler.FrameCount);
         Assert.AreEqual(50, profiler.Samples.Count, "only the last frames are kept");
@@ -237,7 +237,6 @@ public class PerformanceTests
         var profiler = new FrameProfiler();
         var result = GameRunner.Run(new QuietGame(), new HeadlessPlatform(), new RunOptions
         {
-            TimeMode = MicroEngine.Kernel.TimeMode.Deterministic,
             Script = InputScript.Parse("50 hold right 100\n80 press confirm"),
             MaxUpdates = 300,
             Profiler = profiler,
@@ -252,8 +251,8 @@ public class PerformanceTests
     {
         var plain = new StepGame();
         var profiled = new StepGame();
-        var a = GameRunner.Run(plain, new HeadlessPlatform(), new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, MaxUpdates = 30 });
-        var b = GameRunner.Run(profiled, new HeadlessPlatform(), new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, MaxUpdates = 30, Profiler = new FrameProfiler() });
+        var a = GameRunner.Run(plain, new HeadlessPlatform(), new RunOptions { MaxUpdates = 30 });
+        var b = GameRunner.Run(profiled, new HeadlessPlatform(), new RunOptions { MaxUpdates = 30, Profiler = new FrameProfiler() });
         Assert.AreEqual(a.Updates, b.Updates);
         Assert.AreEqual(a.Frames, b.Frames);
         CollectionAssert.AreEqual(plain.Blends, profiled.Blends);

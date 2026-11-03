@@ -38,8 +38,6 @@ public sealed class GameSessionTests
 
     private readonly List<TrackedPlatform> _platforms = [];
 
-    private static readonly RunOptions Deterministic = new() { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic };
-
     private GameSession Session(Func<Game> create) => new(create, _ =>
     {
         var platform = new TrackedPlatform();
@@ -51,7 +49,7 @@ public sealed class GameSessionTests
     public void A_run_ends_when_the_game_quits_and_releases_its_platform()
     {
         var session = Session(() => new QuittingGame(30));
-        Assert.IsTrue(session.Start(Deterministic));
+        Assert.IsTrue(session.Start());
         Assert.IsTrue(session.IsRunning);
         int frames = 1;
         while (session.Tick()) frames++;
@@ -72,7 +70,7 @@ public sealed class GameSessionTests
         var session = Session(() => { var g = new QuittingGame(5); games.Add(g); return g; });
         for (int run = 0; run < 2; run++)
         {
-            Assert.IsTrue(session.Start(Deterministic), $"run {run}");
+            Assert.IsTrue(session.Start(), $"run {run}");
             while (session.Tick()) { }
             Assert.AreEqual(5, session.Result!.Updates, $"run {run} starts from the beginning");
         }
@@ -86,7 +84,7 @@ public sealed class GameSessionTests
     public void A_game_that_cannot_be_built_reports_the_error_without_a_platform()
     {
         var session = Session(() => throw new FileNotFoundException("Content/title.png"));
-        Assert.IsFalse(session.Start(Deterministic));
+        Assert.IsFalse(session.Start());
         Assert.IsFalse(session.IsRunning);
         Assert.IsInstanceOfType<FileNotFoundException>(session.Result!.Error);
         Assert.AreEqual(0, _platforms.Count);
@@ -97,7 +95,7 @@ public sealed class GameSessionTests
     public void A_game_that_fails_to_load_reports_the_error_and_releases_the_platform()
     {
         var session = Session(() => new FailingLoadGame());
-        Assert.IsFalse(session.Start(Deterministic));
+        Assert.IsFalse(session.Start());
         StringAssert.Contains(session.Result!.Error!.Message, "missing asset");
         Assert.IsTrue(_platforms[0].Disposed);
     }
@@ -106,9 +104,9 @@ public sealed class GameSessionTests
     public void Stop_ends_a_running_game_and_a_second_start_while_running_is_refused()
     {
         var session = Session(() => new QuittingGame(1000));
-        Assert.IsTrue(session.Start(Deterministic));
+        Assert.IsTrue(session.Start());
         session.Tick();
-        Assert.ThrowsExactly<InvalidOperationException>(() => session.Start(Deterministic));
+        Assert.ThrowsExactly<InvalidOperationException>(() => session.Start());
         session.Stop();
         Assert.IsFalse(session.IsRunning);
         Assert.AreEqual(1, session.Result!.Updates);
@@ -121,7 +119,7 @@ public sealed class GameSessionTests
     public void Run_options_reach_the_loop()
     {
         var session = Session(() => new QuittingGame(1000));
-        Assert.IsTrue(session.Start(Deterministic with { MaxUpdates = 12 }));
+        Assert.IsTrue(session.Start(new RunOptions { MaxUpdates = 12 }));
         while (session.Tick()) { }
         Assert.AreEqual(12, session.Result!.Updates);
     }

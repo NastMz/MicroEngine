@@ -40,7 +40,11 @@ each system use <code>MicroEngine.Desktop.DesktopLauncher</code> instead.
 
  [DesktopOptions](MicroEngine.Raylib.DesktopOptions.md)
 
-Window options of a raylib platform created directly (browser hosts); hosts with a [PlatformRequest](MicroEngine.Core.PlatformRequest.md) use [#ctor](MicroEngine.Raylib.RaylibPlatform.md).
+Window options of a raylib platform created directly (browser hosts); hosts with a [PlatformRequest](MicroEngine.Core.PlatformRequest.md) use
+[#ctor](MicroEngine.Raylib.RaylibPlatform.md). Every option is set by name
+(<code>new DesktopOptions { Hidden = true, Mute = true }</code>): there is no positional constructor, so a call written for
+the earlier positional shape (whose third argument was a fixed-step flag) fails to compile instead of meaning
+something else.
 
  [RaylibPlatform](MicroEngine.Raylib.RaylibPlatform.md)
 

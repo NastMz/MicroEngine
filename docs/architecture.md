@@ -144,8 +144,7 @@ In short:
 ## Testing a game
 
 - `HeadlessPlatform` runs a game without a window or sound; runs on it default to deterministic time (one step per
-  frame), so tests are reproducible. Next SDK version: the platform no longer chooses the time mode; the launcher's
-  `--headless` runs deterministically, and a test that runs the loop itself sets
-  `RunOptions.TimeMode = TimeMode.Deterministic`.
+  frame), so tests are reproducible. Next SDK version: that default is the headless platform's stated preset
+  (`RunPreset.Testing`), which a run or a game overrides; nothing the platform does depends on it.
 - Any game accepts `--script file --hidden --captures dir` to replay input and save 3× PNG captures, for visual
   review and screenshots ([Testing](examples/testing.md)).

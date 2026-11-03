@@ -51,8 +51,9 @@ the game's `OnSuspended`/`OnResumed`. See [Lifecycle](lifecycle.md#fixed-step-an
 
 Next SDK version (not published yet: arrives with the next SDK version): the loop owns time. `Now` is only a monotonic
 clock on every backend; how many steps a frame runs, the catch-up limits and the blend are the loop's
-([Time](lifecycle.md#time)). A platform has no say in the time mode: a run that does not choose one runs in real
-time on every platform; the launcher runs `--headless` and `--script` runs one step per frame.
+([Time](lifecycle.md#time)). Nothing a platform does depends on the time mode. A platform may state a default for the
+runs that choose none, a `RunPreset`: the headless platform's is one step per frame (`RunPreset.Testing`), SDL and
+raylib state none (real time).
 
 ### The platform host
 
@@ -333,11 +334,10 @@ true)` (or `Rasterize = true` when creating it) also draws every frame on the CP
 current frame as an image, `platform.Renderer.Commands` lists the frame's draws as text (one line each, in screen
 pixels, such as `rect 2,2 3x3 #FFFFFFFF`), and script captures are written as PNG files at scale 1.
 
-Next SDK version (not published yet: arrives with the next SDK version): the headless platform no longer chooses the
-time mode. A test that runs the loop and needs one step per frame says so with
-`new RunOptions { TimeMode = TimeMode.Deterministic, ... }` (the launcher's `--headless` does it); a test that steps
-the game itself uses `game.InitializeForTest(platform, 1, TimeMode.Deterministic)` when the game reads its time mode.
-Its events are driven by hand and delivered at the next frame: `platform.Resize(w, h)`, `Focus(bool)`, `Suspend()`,
+Next SDK version (not published yet: arrives with the next SDK version): one step per frame is the headless
+platform's stated preset (`HeadlessPlatform.Preset`, `RunPreset.Testing`), so the tests above stay reproducible with
+no option. A run's `RunOptions.TimeMode` or the game's `Configure` win over it, and
+`new HeadlessPlatform { Preset = new RunPreset() }` makes runs that choose nothing real-time. Its events are driven by hand and delivered at the next frame: `platform.Resize(w, h)`, `Focus(bool)`, `Suspend()`,
 `Resume()` and `RequestQuit()`.
 
 ## Writing a new backend

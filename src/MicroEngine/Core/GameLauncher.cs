@@ -12,16 +12,17 @@ namespace MicroEngine.Core;
 /// <item><c>--platform NAME</c> run on that platform of the catalog (default: <c>MICROENGINE_PLATFORM</c>, else the
 /// first one that can run here); <c>--list-platforms</c> prints them and exits.</item>
 /// <item><c>--headless</c> run without a window (no captures are written); the same as <c>--platform headless</c>. A
-/// headless run is in deterministic time unless <c>--time</c> says otherwise.</item>
+/// headless run is in deterministic time unless <c>--time</c> says otherwise (the headless platform's
+/// <see cref="RunPreset"/>).</item>
 /// <item><c>--hidden</c> render in a hidden window (captures still work); it implies nothing about time or sound.</item>
 /// <item><c>--time realtime|deterministic</c> how the loop advances time (<see cref="Kernel.TimeMode"/>): with the
-/// wall clock, or one fixed step per frame; by default the game's choice, else real time (headless runs and scripts:
-/// deterministic).</item>
+/// wall clock, or one fixed step per frame; by default the game's choice, else the platform's <see cref="RunPreset"/>
+/// (headless: deterministic), else real time; a script means deterministic.</item>
 /// <item><c>--frames N</c> stop after N updates; <c>--seed N</c>; <c>--scale N</c>; <c>--mute</c>.</item>
 /// <item><c>--report</c> print the platform that runs and whether it has audio before the game starts (package checks).</item>
 /// <item><c>--audio auto|device|silent</c> where sound may go (<see cref="AudioOutput"/>); <c>auto</c> (the default)
-/// asks for no physical device when the run is in deterministic time (scripts, <c>--time deterministic</c>,
-/// headless), so checks are never heard, and for one otherwise.</item>
+/// asks for no physical device when the run is in deterministic time (scripts, <c>--time deterministic</c>), so checks
+/// are never heard, and for one otherwise (the headless platform has none).</item>
 /// <item><c>--audio-capture FILE</c> play nothing aloud and write what would have been heard as a WAV
 /// (<see cref="Audio.CaptureAudioDevice"/>).</item>
 /// <item><c>--gpu auto|high-performance|power-saving</c> the GPU to ask for on a machine with two
@@ -72,10 +73,7 @@ public static class GameLauncher
 
         var profiler = parsed.ProfilePath is null ? null : new FrameProfiler();
         var graphics = parsed.ApplyTo(game.Settings.Graphics);
-        string? name = parsed.Headless ? HeadlessPlatform.Profile.Name : parsed.Platform ?? Environment.GetEnvironmentVariable("MICROENGINE_PLATFORM");
-        // Headless runs are for tests and CI: one step per frame unless --time says otherwise.
-        var time = parsed.Time ?? (string.Equals(name, HeadlessPlatform.Profile.Name, StringComparison.OrdinalIgnoreCase) ? Kernel.TimeMode.Deterministic : null);
-        bool deterministic = time == Kernel.TimeMode.Deterministic;
+        bool deterministic = parsed.Time == Kernel.TimeMode.Deterministic;
         var identity = AppIdentity.Of(game);
         var options = new RunOptions
         {
@@ -87,7 +85,7 @@ public static class GameLauncher
             MaxUpdates = parsed.Frames,
             Seed = parsed.Seed,
             Mute = parsed.Mute,
-            TimeMode = time,
+            TimeMode = parsed.Time,
         };
         var request = new PlatformRequest(game.Settings with { Graphics = graphics })
         {
@@ -109,6 +107,7 @@ public static class GameLauncher
         IReadOnlyList<PlatformProfile> candidates;
         try
         {
+            string? name = parsed.Headless ? HeadlessPlatform.Profile.Name : parsed.Platform ?? Environment.GetEnvironmentVariable("MICROENGINE_PLATFORM");
             candidates = parsed.Headless && catalog.Find(HeadlessPlatform.Profile.Name) is null ? [HeadlessPlatform.Profile]
                 : name is not null ? [catalog.Resolve(name)]
                 : Preferred(catalog, graphics.Backend);
@@ -146,9 +145,6 @@ public static class GameLauncher
             Console.Error.WriteLine($"platform: {profile.Name} could not start ({failure}); trying {candidates[i + 1].Name}");
         }
         profiler?.Phase("platform");
-        // The catalog may have fallen back to its headless platform without being asked for it.
-        if (parsed.Time is null && string.Equals(profile.Name, HeadlessPlatform.Profile.Name, StringComparison.OrdinalIgnoreCase))
-            options = options with { TimeMode = Kernel.TimeMode.Deterministic };
         using var owned = platform;
         if (parsed.Report) foreach (var line in Report(profile, platform)) Console.WriteLine(line);
         var result = GameRunner.Run(game, platform, options);
@@ -295,7 +291,7 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
     /// <summary>
     /// <c>--time</c>: how the loop advances time, or null to leave it to the game. A script means
     /// <see cref="Kernel.TimeMode.Deterministic"/> unless <c>--time</c> is given; <c>--hidden</c> changes nothing; the
-    /// launcher also runs headless platforms deterministically when this is null.
+    /// headless platform's <see cref="RunPreset"/> makes its runs deterministic when this is null.
     /// </summary>
     public Kernel.TimeMode? Time { get; init; }
     /// <summary><c>--pacing</c>: false for <c>measured</c>, true (the default) for <c>display</c>.</summary>

@@ -40,7 +40,7 @@ public sealed class GraphicsSettingsTests
         private readonly double _work, _displayRate;
         private readonly bool _canWait;
 
-        public ClockPlatform(double work, bool canWait = true, double displayRate = 0)
+        public ClockPlatform(double work, bool canWait = true, double displayRate = 0) : base(realTime: true)
         {
             (_work, _canWait, _displayRate) = (work, canWait, displayRate);
             _vsync = displayRate > 0;
@@ -140,7 +140,7 @@ public sealed class GraphicsSettingsTests
     public void Fixed_step_runs_ignore_the_frame_limit()
     {
         var game = new FrameGame(new GraphicsSettings { FrameRateLimit = 10 });
-        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { MaxUpdates = 100, TimeMode = MicroEngine.Kernel.TimeMode.Deterministic });
+        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { MaxUpdates = 100 });
         Assert.IsNull(result.Error);
         Assert.AreEqual(100, game.Draws, "one frame per update, as fast as possible");
     }

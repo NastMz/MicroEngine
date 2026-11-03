@@ -463,22 +463,6 @@ public void InitializeForTest(IPlatform platform, int seed = 1)
 
 `seed` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-### <a id="MicroEngine_Core_Game_InitializeForTest_MicroEngine_Core_IPlatform_System_Int32_MicroEngine_Kernel_TimeMode_"></a> InitializeForTest\(IPlatform, int, TimeMode\)
-
-Test hook: initializes against a platform without running the loop, in the time mode a run would choose ([TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode)).
-
-```csharp
-public void InitializeForTest(IPlatform platform, int seed, TimeMode mode)
-```
-
-#### Parameters
-
-`platform` [IPlatform](MicroEngine.Core.IPlatform.md)
-
-`seed` [int](https://learn.microsoft.com/dotnet/api/system.int32)
-
-`mode` TimeMode
-
 ### <a id="MicroEngine_Core_Game_Load"></a> Load\(\)
 
 Called once after the platform exists. Create atlases, sounds and push the first scene.
