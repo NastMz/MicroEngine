@@ -20,6 +20,10 @@ public abstract class PlatformConformance
     protected virtual bool Resize(IPlatform host, int width, int height) => false;
     /// <summary>Makes the host gain or lose the input focus; false when this host cannot be made to here.</summary>
     protected virtual bool Focus(IPlatform host, bool focused) => false;
+    /// <summary>The window's size as the windowing toolkit itself reports it, independent of the host's surface (evidence for a resize the environment did not apply).</summary>
+    protected virtual (int Width, int Height) ToolkitWindowSize(IPlatform host) => host.MainSurface?.PixelSize ?? (0, 0);
+    /// <summary>What the loop does between two pumps on this host that lets it learn of window changes (nothing by default; a host that reads the window system when a frame ends presents one).</summary>
+    protected virtual void BetweenPumps(IPlatform host) { }
     /// <summary>Sends the host to the background (true) or brings it back (false); false when this host cannot be made to here.</summary>
     protected virtual bool Background(IPlatform host, bool background) => false;
     /// <summary>Asks the host to quit as the system would (a window's close button); false when this host cannot be made to here.</summary>
@@ -105,15 +109,27 @@ public abstract class PlatformConformance
         int raised = 0;
         surface.Resized += () => raised++;
         var before = surface.PixelSize;
+        var toolkitBefore = ToolkitWindowSize(host);
         Skip(Resize(host, 200, 120), "resize its surface");
+        // The window system may apply a size asynchronously (X11 sends it back as an event): pump, as the loop does once
+        // per frame, until something is delivered or a bounded deadline passes.
         var delivered = new List<string>();
-        for (int i = 0; i < 8 && delivered.Count == 0; i++) delivered.AddRange(Pump(host).Events);
+        var deadline = System.Diagnostics.Stopwatch.StartNew();
+        while (delivered.Count == 0 && deadline.Elapsed < TimeSpan.FromSeconds(2))
+        {
+            BetweenPumps(host);
+            delivered.AddRange(Pump(host).Events);
+            if (delivered.Count == 0) Thread.Sleep(10);
+        }
         var after = surface.PixelSize;
-        // Some window systems leave an unmapped (hidden) window's size alone until it is shown (X11 without a window
-        // manager, as under Xvfb): nothing changed, so there was nothing to deliver; reported, never passed.
-        if (before == after && delivered.Count == 0)
-            Assert.Inconclusive($"the window system kept the hidden window at {before.Width}x{before.Height} here");
-        Assert.AreNotEqual(before, after, "the driver changed the surface's size");
+        var toolkitAfter = ToolkitWindowSize(host);
+        // Evidence that the environment cannot resize: the toolkit's own window size (not the host's surface) did not
+        // change either. X11 without a window manager (Xvfb) may keep an unmapped window's size. Reported, never passed;
+        // a toolkit size that changed while the surface did not is a host defect and fails below.
+        if (before == after && delivered.Count == 0 && toolkitBefore == toolkitAfter)
+            Assert.Inconclusive($"{GetType().Name}: the window system kept the hidden window at {toolkitAfter.Width}x{toolkitAfter.Height} " +
+                $"(asked for 200x120) for {deadline.Elapsed.TotalSeconds:0.0} s of pumping");
+        Assert.AreNotEqual(before, after, $"{GetType().Name}: the surface's size follows the window (toolkit {toolkitBefore} -> {toolkitAfter})");
         CollectionAssert.AreEqual(new[] { $"resized {after.Width}x{after.Height}" }, delivered, "one Resized with the surface's new pixel size");
         Assert.AreEqual(1, raised, "ISurface.Resized is raised in the same pump");
         Assert.AreEqual("", string.Join(", ", Pump(host).Events), "a size that did not change again is not delivered again");

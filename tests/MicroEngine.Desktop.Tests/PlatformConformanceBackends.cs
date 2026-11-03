@@ -77,7 +77,16 @@ public sealed unsafe class SdlPlatformConformance : NativePlatformConformance
     protected override bool Resize(IPlatform host, int width, int height)
     {
         var window = Window(host);
-        return SDL_SetWindowSize(window, width, height) && SDL_SyncWindow(window);
+        // The window system may apply the size later (X11 answers with an event); the test pumps until it does.
+        if (!SDL_SetWindowSize(window, width, height)) return false;
+        SDL_SyncWindow(window);
+        return true;
+    }
+
+    protected override unsafe (int Width, int Height) ToolkitWindowSize(IPlatform host)
+    {
+        int w, h;
+        return SDL_GetWindowSizeInPixels(Window(host), &w, &h) ? (w, h) : (0, 0);
     }
 
     protected override bool Focus(IPlatform host, bool focused)
@@ -145,7 +154,16 @@ public sealed class RaylibPlatformConformance : NativePlatformConformance
     protected override bool Resize(IPlatform host, int width, int height)
     {
         Raylib_cs.Raylib.SetWindowSize(width, height);
-        Raylib_cs.Raylib.PollInputEvents();
         return true;
     }
+
+    // raylib reads the window system's events when a frame ends (GLFW's poll in EndDrawing), so a frame is presented
+    // before each pump, as the loop does.
+    protected override void BetweenPumps(IPlatform host)
+    {
+        host.BeginFrame();
+        host.EndFrame();
+    }
+
+    protected override (int Width, int Height) ToolkitWindowSize(IPlatform host) => (Raylib_cs.Raylib.GetRenderWidth(), Raylib_cs.Raylib.GetRenderHeight());
 }
