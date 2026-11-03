@@ -11,7 +11,7 @@ with the [tutorial](../tutorial/README.md).
 
 | Namespace | Contains | Guide |
 | --- | --- | --- |
-| [MicroEngine.Audio](MicroEngine.Audio.md) | Sound effects and music: synthesis, WAV decoding, the mixer games play sounds through, and the audio device contract. | [Audio](../manual/audio.md) |
+| [MicroEngine.Audio](MicroEngine.Audio.md) | Sound effects and music: the one mixer every backend plays through (voices with handles and priorities, buses, music streams, exact-frame scheduling), the sound bank and music games play through, the audio device contract, offline rendering for tests, WAV and OGG decoding, synthesis. | [Audio](../manual/audio.md) |
 | [MicroEngine.Content](MicroEngine.Content.md) | Content: the asset store under Game.Assets (typed handles, scopes that share and release, the loader registry, the reserved import step) and content sources beyond folders (zip archives, files a host lists). | [Assets](../manual/assets.md#handles-loaders-and-content-sources) |
 | [MicroEngine.Core](MicroEngine.Core.md) | The game and its loop: `Game`, settings, runners and sessions, launchers and platform composition, scripted input, saves, content files, achievements, application identity, the headless platform. | [Game lifecycle and time](../manual/lifecycle.md) |
 | [MicroEngine.Desktop](MicroEngine.Desktop.md) | The desktop launcher with the official desktop platforms (SDL 3, raylib, SDL software, headless). | [Backends and platforms](../manual/backends.md) |

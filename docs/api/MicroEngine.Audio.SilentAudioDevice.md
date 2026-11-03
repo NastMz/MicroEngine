@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Audio.dll  
 Guide: [Audio](../manual/audio.md)  
 
 Silent device used headlessly and as a fallback when no audio hardware is present.
