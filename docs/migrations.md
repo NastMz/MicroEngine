@@ -55,6 +55,9 @@ Not published yet. Behaviour that changes:
   games. `AudioMixer.CurrentMusic` names a song from the moment it is asked for, also while it still renders in slices
   (browsers), where it used to be null until rendered; songs render in slices once per frame (`AudioMixer.Pump`, which
   the game calls) instead of during updates. A mixer you create yourself calls `Pump()` once per frame.
+- Sound and music files load through `Game.Assets` from any content source: `Assets.Sound(path)` (an `AudioClip`)
+  and `Assets.Music(path)` (an `EncodedAudio`), played with `Audio.AddSound(name, clip)` and the new
+  `Audio.AddMusic(name, music)`. `AddSoundFile` and `AddMusicFile` keep reading file-system paths.
 - Scripted runs in browsers advance one fixed step per frame with seed 1, exactly as on desktop and phones (they were
   real-time, so their captures changed from run to run), and ask for no sound device unless `--audio device` is
   given, like desktop scripted runs. Nothing to change in games.

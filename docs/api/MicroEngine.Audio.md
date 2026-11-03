@@ -8,6 +8,11 @@ Guide: [Audio](../manual/audio.md)
 
 ### Classes
 
+ [AudioAssetLoaders](MicroEngine.Audio.AudioAssetLoaders.md)
+
+The audio loaders of the content store (<code>Game.Assets.Sound</code>, <code>Game.Assets.Music</code>): "sound" decodes a PCM WAV file into an [AudioClip](MicroEngine.Audio.AudioClip.md) (".wav"), and
+"music" reads a music file's bytes as [EncodedAudio](MicroEngine.Audio.EncodedAudio.md) (".ogg", ".mp3"; a ".wav" asked for as music too).
+
  [AudioBus](MicroEngine.Audio.AudioBus.md)
 
 A named mix stage: the sounds and buses under it are scaled by its [Volume](MicroEngine.Audio.AudioBus.md#MicroEngine_Audio_AudioBus_Volume). Buses form a tree under
