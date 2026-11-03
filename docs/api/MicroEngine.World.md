@@ -44,17 +44,17 @@ Draws the visible part of a layer, asking the game which sprite each tile uses.
 
 ### Structs
 
- [EntityList<T\>.OverlappingEntities.Enumerator](MicroEngine.World.EntityList\-1.OverlappingEntities.Enumerator.md)
+ [EntityList<T\>.TypedEntities<TEntity\>.Enumerator](MicroEngine.World.EntityList\-1.TypedEntities\-1.Enumerator.md)
 
-Walks the living entities overlapping the area.
+Walks the living entities of type <code class="typeparamref">TEntity</code>.
 
  [EntityList<T\>.Enumerator](MicroEngine.World.EntityList\-1.Enumerator.md)
 
 Walks the living entities of an [EntityList`1](MicroEngine.World.md) without allocating.
 
- [EntityList<T\>.TypedEntities<TEntity\>.Enumerator](MicroEngine.World.EntityList\-1.TypedEntities\-1.Enumerator.md)
+ [EntityList<T\>.OverlappingEntities.Enumerator](MicroEngine.World.EntityList\-1.OverlappingEntities.Enumerator.md)
 
-Walks the living entities of type <code class="typeparamref">TEntity</code>.
+Walks the living entities overlapping the area.
 
  [MoveResult](MicroEngine.World.MoveResult.md)
 
