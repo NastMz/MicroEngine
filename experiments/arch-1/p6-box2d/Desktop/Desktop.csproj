@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 P6 desktop harness: the same scenes on Box2D.NET (managed) and on native Box2D v3 through me_box2d.
+       Not in MicroEngine.slnx and not built by CI.
+       -p:B2NetProject=<Box2D.NET.csproj>  build against Box2D.NET source (fetch-sources.sh: b2net-154bacd0), else the
+                                           published package Box2D.NET 3.1.654
+       -p:NativeLib=<me_box2d.dll|.so>      copied next to the executable (build-native.sh) -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <AssemblyName>p6</AssemblyName>
+    <RootNamespace>P6</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ServerGarbageCollector>false</ServerGarbageCollector>
+    <TieredPGO>true</TieredPGO>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Harness/*.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(B2NetProject)' != ''">
+    <ProjectReference Include="$(B2NetProject)" SetTargetFramework="TargetFramework=net10.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(B2NetProject)' == ''">
+    <PackageReference Include="Box2D.NET" Version="[3.1.654]" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(B2NetProject)' == ''">
+    <DefineConstants>$(DefineConstants);B2NET_PKG</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(NativeLib)' != ''">
+    <None Include="$(NativeLib)" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
