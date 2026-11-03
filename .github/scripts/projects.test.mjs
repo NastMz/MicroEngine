@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildGraph, readGraph, ownerOf, affectedScope } from './projects.mjs';
+import { buildGraph, readGraph, ownerOf, affectedScope, isTestProject } from './projects.mjs';
 
 const ref = to => `<Project><ItemGroup><ProjectReference Include="${to}" /></ItemGroup></Project>`;
 const graph = buildGraph({
@@ -54,7 +54,12 @@ test("this repository's graph: a game change stays inside that game, an engine c
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
   const real = readGraph(root);
   assert.deepEqual(affectedScope(real, ['games/MeadowRun/MeadowRunGame.cs']), { tests: ['tests/MeadowRun.Tests/MeadowRun.Tests.csproj'], games: ['MeadowRun'] });
-  assert.deepEqual(affectedScope(real, ['src/MicroEngine/Core/GameRunner.cs']), { tests: 'all', games: 'all' });
+  // The engine's contracts below the core (the graphics device contract) reach every test project and game; the core
+  // reaches every one except the graphics contract's own tests, which reference the contract alone.
+  assert.deepEqual(affectedScope(real, ['src/MicroEngine.Graphics/Devices/Device.cs']), { tests: 'all', games: 'all' });
+  const everyTest = Object.keys(real.projects).filter(isTestProject).sort();
+  assert.deepEqual(affectedScope(real, ['src/MicroEngine/Core/GameRunner.cs']),
+    { tests: everyTest.filter(p => p !== 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj'), games: 'all' });
   const backend = affectedScope(real, ['src/MicroEngine.Raylib/RaylibPlatform.cs']);
   assert.equal(backend.games, 'all');
   assert.ok(!backend.tests.includes('tests/MicroEngine.Tests/MicroEngine.Tests.csproj'), 'core tests do not reference the backend');
