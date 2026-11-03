@@ -2,6 +2,7 @@ using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Scenes;
+using MicroEngine.Testing;
 using TrailDuel.Scenes;
 using TrailDuel.Ui;
 
@@ -29,23 +30,14 @@ public sealed class FrameGarbageTests
     }
 
     /// <summary>
-    /// Bytes allocated per draw of <paramref name="scene"/> in three batches after warm-up draws. Garbage made every frame
-    /// shows in every batch; a one-off (a cache filled late, the runtime's own work on a first call) shows in one only,
-    /// as on macOS where one batch of the route once allocated about 3 KB in all.
+    /// Fails if drawing <paramref name="scene"/> makes garbage after warm-up draws. Garbage made every frame shows in every
+    /// round of draws; a one-off (a cache filled late, a background collection's count) shows in one only, as on macOS
+    /// where one batch of the route once allocated about 3 KB in all.
     /// </summary>
-    private static long[] BytesPerDraw(Scene scene)
+    private static void AssertNoGarbage(Scene scene, string what)
     {
         var renderer = new NullRenderer();
-        for (int i = 0; i < 60; i++) scene.Draw(renderer);
-        const int draws = 60;
-        var batches = new long[3];
-        for (int b = 0; b < batches.Length; b++)
-        {
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            for (int i = 0; i < draws; i++) scene.Draw(renderer);
-            batches[b] = (GC.GetAllocatedBytesForCurrentThread() - before) / draws;
-        }
-        return batches;
+        AllocationAssert.None(() => scene.Draw(renderer), warmup: 60, calls: 60, because: $"draws of {what}");
     }
 
     [TestMethod]
@@ -61,8 +53,7 @@ public sealed class FrameGarbageTests
         for (int i = 0; i < 400 && (h.Game.Scenes.Current?.GetType() != scene || h.Game.Scenes.InTransition); i++) h.Step();
         h.Step(30);
         Assert.IsInstanceOfType(h.Game.Scenes.Current, scene);
-        var bytes = BytesPerDraw(h.Game.Scenes.Current!);
-        Assert.AreEqual(0, bytes.Min(), $"bytes per draw of {start} in three batches: {string.Join(", ", bytes)}");
+        AssertNoGarbage(h.Game.Scenes.Current!, start);
     }
 
     [TestMethod]
@@ -73,8 +64,7 @@ public sealed class FrameGarbageTests
         for (int i = 0; i < 2000 && !battle.AwaitingChoice; i++) h.Step();
         Assert.IsTrue(battle.AwaitingChoice, "the action menu");
         h.Step(10);
-        var bytes = BytesPerDraw(battle);
-        Assert.AreEqual(0, bytes.Min(), $"bytes per draw of the battle menu in three batches: {string.Join(", ", bytes)}");
+        AssertNoGarbage(battle, "the battle menu");
     }
 
     [TestMethod]
