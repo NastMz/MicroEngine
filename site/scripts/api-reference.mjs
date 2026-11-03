@@ -60,6 +60,8 @@ const typeGuides = {
   'MicroEngine.Graphics.Renderer2D': ['The 2D batcher and the camera', '../manual/rendering.md#the-2d-batcher-and-the-camera'],
   'MicroEngine.Graphics.IRenderer2D': ['The 2D batcher and the camera', '../manual/rendering.md#the-2d-batcher-and-the-camera'],
   'MicroEngine.Graphics.DeviceCanvas': ['The 2D batcher and the camera', '../manual/rendering.md#the-2d-batcher-and-the-camera'],
+  'MicroEngine.Core.GameViews': ['The world view and the UI view', '../manual/rendering.md#the-world-view-and-the-ui-view'],
+  'MicroEngine.Core.IScreenView': ['The world view and the UI view', '../manual/rendering.md#the-world-view-and-the-ui-view'],
   'MicroEngine.Graphics.Presentation': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],
   'MicroEngine.Graphics.ScaleRounding': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],
   'MicroEngine.Graphics.AspectMode': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],

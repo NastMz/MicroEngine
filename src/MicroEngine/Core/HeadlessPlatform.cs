@@ -14,7 +14,7 @@ namespace MicroEngine.Core;
 /// Its run preset (<see cref="Preset"/>) is deterministic time: a stated default of this testing composition that a
 /// run or a game overrides. Nothing the platform does depends on the time mode.
 /// </summary>
-public sealed class HeadlessPlatform : IPlatform
+public sealed class HeadlessPlatform : IPlatform, IScreenView
 {
     private readonly int _width, _height;
     private HeadlessRenderer _renderer;
@@ -44,6 +44,7 @@ public sealed class HeadlessPlatform : IPlatform
         _capabilities.Add<IGamepadRumble>(Devices);
         _capabilities.Add<ITextInputControl>(Devices);
         _capabilities.Add(_preset);
+        _capabilities.Add<IScreenView>(this);
         if (request?.Audio is not null) _suppliedAudio = request.CreateAudio(() => SilentAudio);
         _input = request?.CombineInput(Keys) ?? Keys;
     }
@@ -127,17 +128,40 @@ public sealed class HeadlessPlatform : IPlatform
     public bool Suspended => _suspended;
     /// <summary>The renderer, typed so tests can read its counters.</summary>
     public HeadlessRenderer Renderer => _renderer;
+    /// <summary>
+    /// The UI view's counting renderer of the current frame (<see cref="IScreenView"/>): the surface's size in pixels, one UI
+    /// unit per pixel; it records draw calls but draws nothing and is not part of captures.
+    /// </summary>
+    public HeadlessRenderer UiRenderer => _ui ??= new HeadlessRenderer(_surfaceSize.Width, _surfaceSize.Height);
+    private HeadlessRenderer? _ui;
+
+    (int Width, int Height) IScreenView.ScreenPixels => _surfaceSize;
+    (int Width, int Height) IScreenView.CanvasSize => (_width, _height);
+    RectF IScreenView.WorldFrame => Presentation.Fit(new System.Numerics.Vector2(_surfaceSize.Width, _surfaceSize.Height), default, _width, _height);
+
+    /// <summary>
+    /// How the canvas is placed in the surface for the UI view's mapping (<see cref="IScreenView.WorldFrame"/>): the
+    /// game's presentation when the platform was made for its settings, else <see cref="Graphics.Presentation.PixelArt"/>.
+    /// </summary>
+    public Presentation Presentation { get; init; } = Presentation.PixelArt;
+    float IScreenView.UiScale => 1f;
+    IRenderer IScreenView.BeginUi()
+    {
+        if (_ui is null || _ui.Width != _surfaceSize.Width || _ui.Height != _surfaceSize.Height) _ui = new HeadlessRenderer(_surfaceSize.Width, _surfaceSize.Height);
+        _ui.Reset();
+        return _ui;
+    }
     /// <summary>Paths of the screenshots requested, in order; a file is written only when <see cref="Rasterize"/> is on.</summary>
     public List<string> Screenshots { get; } = [];
     /// <summary>Ignored: there is no window around the frame.</summary>
     public Color Letterbox { get; set; }
 
     /// <summary>A headless platform with the virtual size of <paramref name="settings"/>.</summary>
-    public static HeadlessPlatform For(GameSettings settings) => new(settings.VirtualWidth, settings.VirtualHeight);
+    public static HeadlessPlatform For(GameSettings settings) => new(settings.VirtualWidth, settings.VirtualHeight) { Presentation = settings.EffectivePresentation };
 
     /// <summary>A headless platform with the virtual size of <paramref name="settings"/>, rasterizing when <paramref name="rasterize"/> is true (see <see cref="Rasterize"/>).</summary>
     public static HeadlessPlatform For(GameSettings settings, bool rasterize) =>
-        new(settings.VirtualWidth, settings.VirtualHeight) { Rasterize = rasterize };
+        new(settings.VirtualWidth, settings.VirtualHeight) { Rasterize = rasterize, Presentation = settings.EffectivePresentation };
 
     /// <summary>
     /// A headless platform for <paramref name="request"/>: the virtual size of its settings, the audio device it supplies
@@ -146,7 +170,7 @@ public sealed class HeadlessPlatform : IPlatform
     public static HeadlessPlatform For(PlatformRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return new(request.Settings.VirtualWidth, request.Settings.VirtualHeight, request);
+        return new(request.Settings.VirtualWidth, request.Settings.VirtualHeight, request) { Presentation = request.Settings.EffectivePresentation };
     }
 
     /// <summary>The headless platform as a catalog entry (<c>--platform headless</c>, <c>--headless</c>).</summary>

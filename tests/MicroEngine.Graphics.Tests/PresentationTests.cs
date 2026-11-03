@@ -110,4 +110,27 @@ public sealed class PresentationTests
         Assert.AreEqual(new Vector2(0, 0), Presentation.ToCanvas(new Vector2(43, 24), frame, 320, 180));
         Assert.AreEqual(new Vector2(160, 90), Presentation.ToCanvas(new Vector2(43 + 640, 24 + 360), frame, 320, 180));
     }
+
+    [TestMethod]
+    public void Expand_GrowsTheCanvasAlongTheFreeSide_KeepingTheScaleAndSquarePixels()
+    {
+        var expand = Presentation.PixelArt with { Aspect = AspectMode.Expand };
+        // 320x180 in 2560x1080 (ultrawide): 6x fits the height; the canvas grows to 2560 / 6 = 426 wide.
+        var area = new RectF(0, 0, 2560, 1080);
+        Assert.AreEqual((426, 180), expand.CanvasSize(area, 320, 180));
+        var frame = expand.Fit(area, 320, 180);
+        Assert.AreEqual(new RectF(2, 0, 2556, 1080), frame, "426 x 6 = 2556 pixels wide, centred; no letterbox beyond the rounding");
+        Assert.AreEqual((320, 180), expand.CanvasSize(new RectF(0, 0, 1920, 1080), 320, 180), "the canvas's own shape: unchanged");
+        Assert.AreEqual((320, 240), expand.CanvasSize(new RectF(0, 0, 1280, 960), 320, 180), "a taller window grows the height");
+        Assert.AreEqual((320, 180), Presentation.PixelArt.CanvasSize(area, 320, 180), "Keep never changes the canvas");
+    }
+
+    [TestMethod]
+    public void UiScale_DefaultsToOne_AndRefusesNonPositiveValues()
+    {
+        Assert.AreEqual(1f, Presentation.PixelArt.UiScale);
+        Assert.AreEqual(1f, Presentation.HighResolution2D.UiScale);
+        Assert.AreEqual(2f, (Presentation.PixelArt with { UiScale = 2 }).UiScale);
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => _ = Presentation.PixelArt with { UiScale = 0 });
+    }
 }

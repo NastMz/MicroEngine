@@ -105,13 +105,23 @@ public sealed class DeviceRenderer : IRenderer
     private readonly Dev.Vertex2D[] _fan = new Dev.Vertex2D[CircleSegments + 2];
     private readonly ushort[] _fanIndices = BuildFanIndices();
     private Matrix3x2 _camera = Matrix3x2.Identity;
+    private readonly float _scale;
+    private Matrix3x2 _view = Matrix3x2.Identity;
     private BlendMode _blend;
     private Dev.RectI? _clip;
     private bool _drawing;
 
     /// <summary>A renderer drawing into <paramref name="target"/> (the canvas) with the textures of <paramref name="graphics"/>.</summary>
-    public DeviceRenderer(Renderer2D batcher, DeviceGraphics graphics, Dev.RenderTarget target)
+    public DeviceRenderer(Renderer2D batcher, DeviceGraphics graphics, Dev.RenderTarget target) : this(batcher, graphics, target, 1f) { }
+
+    /// <summary>
+    /// A renderer whose units are <paramref name="scale"/> target pixels each (the UI view: UI units at the window's
+    /// resolution). <see cref="Width"/> and <see cref="Height"/> are the target's size in those units; the clip is in them too.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="scale"/> is not positive.</exception>
+    public DeviceRenderer(Renderer2D batcher, DeviceGraphics graphics, Dev.RenderTarget target, float scale)
     {
+        _scale = float.IsFinite(scale) && scale > 0 ? scale : throw new ArgumentOutOfRangeException(nameof(scale), "The scale must be positive.");
         _batcher = batcher ?? throw new ArgumentNullException(nameof(batcher));
         _graphics = graphics ?? throw new ArgumentNullException(nameof(graphics));
         _target = target ?? throw new ArgumentNullException(nameof(target));
@@ -119,9 +129,9 @@ public sealed class DeviceRenderer : IRenderer
     }
 
     /// <inheritdoc/>
-    public int Width => _target.Width;
+    public int Width => (int)MathF.Floor(_target.Width / _scale + 1e-4f);
     /// <inheritdoc/>
-    public int Height => _target.Height;
+    public int Height => (int)MathF.Floor(_target.Height / _scale + 1e-4f);
 
     /// <summary>The batcher's counts for the last frame (sprites, draw calls, flushes): exact and the same on every device.</summary>
     public Renderer2DStatistics Statistics => _batcher.Statistics;
@@ -131,6 +141,7 @@ public sealed class DeviceRenderer : IRenderer
     {
         _cameras.Clear();
         _camera = Matrix3x2.Identity;
+        _view = Matrix3x2.CreateScale(_scale);
         _blend = BlendMode.Alpha;
         _clip = null;
         _batcher.Begin(new BatchSettings(_target));
@@ -174,14 +185,14 @@ public sealed class DeviceRenderer : IRenderer
     {
         var state = _batcher.State;
         if (state.Sampler != texture.Sampler) _batcher.State = state with { Sampler = texture.Sampler };
-        _batcher.Draw(texture.Native, source, world * _camera, Dev.PremultipliedColor.FromStraight(tint), 0, flip);
+        _batcher.Draw(texture.Native, source, world * _view, Dev.PremultipliedColor.FromStraight(tint), 0, flip);
     }
 
     /// <inheritdoc/>
     public void FillRect(RectF rect, Color color)
     {
         if (color.A == 0) return;
-        _batcher.Draw(_batcher.White, new RectF(0, 0, 1, 1), Matrix3x2.CreateScale(rect.Width, rect.Height) * Matrix3x2.CreateTranslation(rect.X, rect.Y) * _camera,
+        _batcher.Draw(_batcher.White, new RectF(0, 0, 1, 1), Matrix3x2.CreateScale(rect.Width, rect.Height) * Matrix3x2.CreateTranslation(rect.X, rect.Y) * _view,
             Dev.PremultipliedColor.FromStraight(color));
     }
 
@@ -190,8 +201,8 @@ public sealed class DeviceRenderer : IRenderer
     {
         if (color.A == 0 || radius <= 0) return;
         var c = Dev.PremultipliedColor.FromStraight(color);
-        _fan[0] = new Dev.Vertex2D(Vector2.Transform(center, _camera), default, c);
-        for (int i = 0; i <= CircleSegments; i++) _fan[i + 1] = new Dev.Vertex2D(Vector2.Transform(center + Rim[i] * radius, _camera), default, c);
+        _fan[0] = new Dev.Vertex2D(Vector2.Transform(center, _view), default, c);
+        for (int i = 0; i <= CircleSegments; i++) _fan[i + 1] = new Dev.Vertex2D(Vector2.Transform(center + Rim[i] * radius, _view), default, c);
         _batcher.DrawGeometry(null, _fan, _fanIndices);
     }
 
@@ -200,7 +211,7 @@ public sealed class DeviceRenderer : IRenderer
     {
         if (color.A == 0) return;
         var p = Dev.PremultipliedColor.FromStraight(color);
-        _batcher.DrawGeometry(null, [new(Vector2.Transform(a, _camera), default, p), new(Vector2.Transform(b, _camera), default, p), new(Vector2.Transform(c, _camera), default, p)], [0, 1, 2]);
+        _batcher.DrawGeometry(null, [new(Vector2.Transform(a, _view), default, p), new(Vector2.Transform(b, _view), default, p), new(Vector2.Transform(c, _view), default, p)], [0, 1, 2]);
     }
 
     /// <inheritdoc/>
@@ -211,8 +222,8 @@ public sealed class DeviceRenderer : IRenderer
         var n = Vector2.Normalize(new Vector2(-d.Y, d.X)) * (thickness / 2);
         var p = Dev.PremultipliedColor.FromStraight(color);
         _batcher.DrawGeometry(null,
-            [new(Vector2.Transform(from + n, _camera), default, p), new(Vector2.Transform(to + n, _camera), default, p),
-             new(Vector2.Transform(to - n, _camera), default, p), new(Vector2.Transform(from - n, _camera), default, p)],
+            [new(Vector2.Transform(from + n, _view), default, p), new(Vector2.Transform(to + n, _view), default, p),
+             new(Vector2.Transform(to - n, _view), default, p), new(Vector2.Transform(from - n, _view), default, p)],
             [0, 1, 2, 0, 2, 3]);
     }
 
@@ -222,10 +233,15 @@ public sealed class DeviceRenderer : IRenderer
         ArgumentNullException.ThrowIfNull(camera);
         _cameras.Push(_camera);
         _camera = camera.WorldToView;
+        _view = _camera * Matrix3x2.CreateScale(_scale);
     }
 
     /// <inheritdoc/>
-    public void PopCamera() => _camera = _cameras.Count > 0 ? _cameras.Pop() : throw new InvalidOperationException("PopCamera without PushCamera.");
+    public void PopCamera()
+    {
+        _camera = _cameras.Count > 0 ? _cameras.Pop() : throw new InvalidOperationException("PopCamera without PushCamera.");
+        _view = _camera * Matrix3x2.CreateScale(_scale);
+    }
 
     /// <inheritdoc/>
     public void SetBlendMode(BlendMode mode)
@@ -237,7 +253,9 @@ public sealed class DeviceRenderer : IRenderer
     /// <inheritdoc/>
     public void SetClip(RectF? screenRect)
     {
-        _clip = screenRect is { } r ? new Dev.RectI((int)r.X, (int)r.Y, Math.Max(0, (int)r.Width), Math.Max(0, (int)r.Height)) : null;
+        _clip = screenRect is { } r
+            ? new Dev.RectI((int)(r.X * _scale), (int)(r.Y * _scale), Math.Max(0, (int)(r.Width * _scale)), Math.Max(0, (int)(r.Height * _scale)))
+            : null;
         ApplyState();
     }
 
@@ -269,29 +287,59 @@ public sealed class DeviceCanvas : IDisposable
 {
     private readonly Renderer2D _batcher;
     private readonly Renderer2D _composer;
-    private readonly DeviceRenderer _renderer;
-    private bool _disposed;
+    private readonly Renderer2D _uiBatcher;
+    private DeviceRenderer _renderer;
+    private Dev.RenderTarget? _ui;
+    private DeviceRenderer? _uiRenderer;
+    private float _uiScale = 1;
+    private bool _uiDrawn, _uiReady, _disposed;
 
     /// <summary>Creates a canvas of <paramref name="width"/> × <paramref name="height"/> pixels on <paramref name="device"/>.</summary>
     public DeviceCanvas(Dev.IGraphicsDevice device, int width, int height)
     {
         Device = device ?? throw new ArgumentNullException(nameof(device));
-        Target = device.CreateRenderTarget(new Dev.RenderTargetDescription(width, height, Name: "canvas"));
         Graphics = new DeviceGraphics(device);
         _batcher = new Renderer2D(device);
         _composer = new Renderer2D(device);
-        _renderer = new DeviceRenderer(_batcher, Graphics, Target);
+        _uiBatcher = new Renderer2D(device);
+        (Target, _renderer) = NewCanvas(width, height);
+    }
+
+    private (Dev.RenderTarget, DeviceRenderer) NewCanvas(int width, int height)
+    {
+        var target = Device.CreateRenderTarget(new Dev.RenderTargetDescription(width, height, Name: "canvas"));
         // A new canvas is opaque black until the game clears it, as a window is.
-        var clear = device.BeginCommands();
-        clear.BeginPass(new Dev.PassDescription(new Dev.ColorAttachment(Target, Dev.LoadOp.Clear, Dev.StoreOp.Store, ColorF.Black)));
+        var clear = Device.BeginCommands();
+        clear.BeginPass(new Dev.PassDescription(new Dev.ColorAttachment(target, Dev.LoadOp.Clear, Dev.StoreOp.Store, ColorF.Black)));
         clear.EndPass();
-        device.Submit(clear);
+        Device.Submit(clear);
+        return (target, new DeviceRenderer(_batcher, Graphics, target));
+    }
+
+    /// <summary>
+    /// Makes the canvas <paramref name="width"/> × <paramref name="height"/> pixels (an expanding presentation grows it
+    /// with the window); a new canvas starts black. Call it between frames.
+    /// </summary>
+    /// <returns>Whether the size changed.</returns>
+    public bool EnsureSize(int width, int height)
+    {
+        if (width == Target.Width && height == Target.Height) return false;
+        var old = Target;
+        (Target, _renderer) = NewCanvas(width, height);
+        old.Dispose();
+        return true;
     }
 
     /// <summary>The device everything is drawn with.</summary>
     public Dev.IGraphicsDevice Device { get; }
     /// <summary>The canvas: the render target the game draws into.</summary>
-    public Dev.RenderTarget Target { get; }
+    public Dev.RenderTarget Target { get; private set; }
+
+    /// <summary>The UI view's target (window pixels) once a frame drew a UI; null before.</summary>
+    public Dev.RenderTarget? UiTarget => _ui;
+
+    /// <summary>The UI view's renderer of the frame being drawn, or of the last one.</summary>
+    public DeviceRenderer? UiRenderer => _uiRenderer;
     /// <summary>The textures of the drawing API, on <see cref="Device"/>.</summary>
     public DeviceGraphics Graphics { get; }
     /// <summary>The drawing API over the batcher, drawing into <see cref="Target"/>.</summary>
@@ -300,12 +348,42 @@ public sealed class DeviceCanvas : IDisposable
     /// <summary>Starts drawing a frame into the canvas.</summary>
     public IRenderer BeginFrame()
     {
+        _uiReady = false;
         _renderer.Begin();
         return _renderer;
     }
 
-    /// <summary>Submits the frame drawn into the canvas.</summary>
-    public void EndFrame() => _renderer.End();
+    /// <summary>Submits the frame drawn into the canvas (and the UI view, when the frame drew one).</summary>
+    public void EndFrame()
+    {
+        _renderer.End();
+        if (!_uiDrawn) return;
+        _uiRenderer!.End();
+        _uiDrawn = false;
+        _uiReady = true;
+    }
+
+    /// <summary>
+    /// Starts the frame's UI view: a transparent target of the window's size in pixels, drawn in UI units of
+    /// <paramref name="scale"/> pixels, composited over the world by <see cref="Compose"/>. Call it after
+    /// <see cref="BeginFrame"/>, at most once per frame.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The size or the scale is not positive.</exception>
+    public IRenderer BeginUi(int pixelWidth, int pixelHeight, float scale)
+    {
+        if (pixelWidth <= 0 || pixelHeight <= 0) throw new ArgumentOutOfRangeException(nameof(pixelWidth), "The UI view needs a positive size.");
+        if (_ui is null || _ui.Width != pixelWidth || _ui.Height != pixelHeight || _uiScale != scale)
+        {
+            _ui?.Dispose();
+            _ui = Device.CreateRenderTarget(new Dev.RenderTargetDescription(pixelWidth, pixelHeight, Name: "ui"));
+            _uiRenderer = new DeviceRenderer(_uiBatcher, Graphics, _ui, scale);
+            _uiScale = scale;
+        }
+        _uiRenderer!.Begin();
+        _uiRenderer.Clear(Color.Transparent);
+        _uiDrawn = true;
+        return _uiRenderer;
+    }
 
     /// <summary>
     /// Draws the canvas into the window's target: the window cleared to <paramref name="letterbox"/> (opaque), then the
@@ -322,8 +400,29 @@ public sealed class DeviceCanvas : IDisposable
         if (frame.Width > 0 && frame.Height > 0)
             _composer.Draw(Target.Color!, new RectF(0, 0, Target.Width, Target.Height),
                 Matrix3x2.CreateScale(frame.Width / Target.Width, frame.Height / Target.Height) * Matrix3x2.CreateTranslation(frame.X, frame.Y), ColorF.White);
+        if (_uiReady && _ui is not null)
+        {
+            // The UI view over the window, one UI target pixel per window pixel, premultiplied over the world.
+            _composer.PushState(new RenderState(Dev.BlendState.AlphaPremultiplied, Dev.SamplerDescription.PointClamp, null));
+            _composer.Draw(_ui.Color!, new RectF(0, 0, _ui.Width, _ui.Height), Matrix3x2.Identity, ColorF.White);
+            _composer.PopState();
+        }
         _composer.End();
+        _uiReady = false;
         return true;
+    }
+
+    /// <summary>The UI view of the last frame as stored (premultiplied, transparent where nothing was drawn), or null.</summary>
+    public PixelImage? CaptureUi()
+    {
+        if (_ui is null) return null;
+        var request = Device.ReadPixels(_ui, _ui.Bounds);
+        request.Wait();
+        var rgba = request.Pixels;
+        var image = new PixelImage(_ui.Width, _ui.Height);
+        for (int i = 0, n = _ui.Width * _ui.Height; i < n; i++)
+            image[i % _ui.Width, i / _ui.Width] = new Color(rgba[i * 4], rgba[i * 4 + 1], rgba[i * 4 + 2], rgba[i * 4 + 3]);
+        return image;
     }
 
     /// <summary>The canvas as a capture stores it: every pixel opaque (alpha 255), the colour channels as stored.</summary>
@@ -353,6 +452,8 @@ public sealed class DeviceCanvas : IDisposable
         Graphics.DisposeAll();
         _batcher.Dispose();
         _composer.Dispose();
+        _uiBatcher.Dispose();
+        _ui?.Dispose();
         Target.Dispose();
     }
 }

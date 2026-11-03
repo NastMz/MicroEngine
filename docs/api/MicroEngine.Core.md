@@ -157,6 +157,13 @@ host can show its own screen and start again without reloading.
 Window/backbuffer settings a game declares. The virtual size is the canvas everything is drawn on: 320×180 pixel art
 by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D).
 
+ [GameViews](MicroEngine.Core.GameViews.md)
+
+The game's two views and the mapping between them ([Views](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Views)): the world view (the canvas, at the
+canvas's resolution, placed in the window by the presentation) and the UI view (the window's resolution, in UI units),
+drawn over it. Positions convert between window pixels, canvas pixels and UI units, and the pointer is given in each
+view; the UI view gets it first ([PointerOnUi](MicroEngine.Core.GameViews.md#MicroEngine_Core_GameViews_PointerOnUi)).
+
  [Game](MicroEngine.Core.Game.md)
 
 Base class for a game. Subclasses declare [Settings](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Settings), build content in
@@ -371,6 +378,14 @@ into the virtual canvas and the graphics, input and audio devices.
 Where a [SaveStore](MicroEngine.Core.SaveStore.md) keeps its slots: the platform's storage contract
 ([IStorage](MicroEngine.Platform.IStorage.md): named texts that are written whole, failures as `IOException` or
 `UnauthorizedAccessException`) under the name saves have always used.
+
+ [IScreenView](MicroEngine.Core.IScreenView.md)
+
+The UI view of a platform that draws at the window's resolution: a capability
+([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)) of the SDL and raylib platforms and of the headless
+platform. The world is drawn into the canvas ([BeginFrame](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_BeginFrame)) and scaled into
+[WorldFrame](MicroEngine.Core.IScreenView.md#MicroEngine_Core_IScreenView_WorldFrame); the UI view is drawn in UI units (window pixels divided by [UiScale](MicroEngine.Core.IScreenView.md#MicroEngine_Core_IScreenView_UiScale)) and
+composited over it, so its text and shapes have the window's resolution whatever the canvas's.
 
 ### Enums
 

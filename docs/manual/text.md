@@ -110,7 +110,10 @@ font work during play. Kerning is applied and missing characters draw as `?`.
 
 `FontOptions` chooses how outlines become pixels: the default is antialiased, sampled linearly, with each glyph placed
 on whole canvas pixels so unscaled text stays sharp. `FontOptions.Pixel` gives hard edges and nearest sampling, for
-pixel fonts distributed as TTF and drawn at their design size or whole multiples of it, on a pixel-art canvas.
+pixel fonts distributed as TTF and drawn at their design size or whole multiples of it, on a pixel-art canvas. Next SDK
+version (not published yet: arrives with the next SDK version): the default samples glyph pages with the game's default
+filter (linear for high-resolution games, nearest for pixel art), and text drawn in a scene's `DrawUi` has the window's
+resolution ([The world view and the UI view](rendering.md#the-world-view-and-the-ui-view)).
 
 `BitmapFont` and a `ScalableFont` at a size both implement `IFont` (`LineHeight`, `Measure`, `Draw`), with `Wrap`,
 `MeasureWidth`, `DrawCentered` and `DrawShadowed` for any `IFont`. The [UI widgets](ui.md) `DialogueBox` and
