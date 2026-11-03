@@ -1,4 +1,5 @@
 using MicroEngine.Core;
+using MicroEngine.Kernel;
 
 namespace TrailDuel.Rules;
 
@@ -27,8 +28,46 @@ public static class DirectionX
 /// Everything that persists between sessions: position, party, bag, money and story flags.
 /// Serialized as-is by <see cref="SaveStore"/>.
 /// </summary>
-public sealed class GameState
+public sealed class GameState : IStateHashed
 {
+    /// <summary>
+    /// State hash: position and facing, party and box (count then each creature), bag, money, story flags and the
+    /// seen/caught sets (sorted by ordinal, so neither set's internal order counts), starter, respawn point, play time
+    /// and battles won. Everything here is gameplay state; none of it is written while drawing.
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(MapId);
+        hash.Add(X);
+        hash.Add(Y);
+        hash.Add((int)Facing);
+        AddAll(hash, Party);
+        AddAll(hash, Box);
+        hash.Add(Bag);
+        hash.Add(Money);
+        AddSorted(hash, Flags);
+        AddSorted(hash, Seen);
+        AddSorted(hash, Caught);
+        hash.Add(StarterId);
+        hash.Add(RespawnMap);
+        hash.Add(RespawnX);
+        hash.Add(RespawnY);
+        hash.Add(PlaySeconds);
+        hash.Add(BattlesWon);
+    }
+
+    internal static void AddAll(StateHasher hash, IReadOnlyList<Creature> creatures)
+    {
+        hash.Add(creatures.Count);
+        foreach (var c in creatures) hash.Add(c);
+    }
+
+    private static void AddSorted(StateHasher hash, HashSet<string> set)
+    {
+        hash.Add(set.Count);
+        foreach (var s in set.Order(StringComparer.Ordinal)) hash.Add(s);
+    }
+
     public const string PlayerName = "Tavi";
     public const string RivalName = "Wren";
     public const string SaveSlot = "adventure";

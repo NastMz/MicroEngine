@@ -1,4 +1,5 @@
 using System.Collections;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.World;
@@ -310,7 +311,7 @@ internal sealed partial class OverworldScene
     private IEnumerator WildEncounter(Creature wild)
     {
         State.Seen.Add(wild.SpeciesId);
-        var battle = new Battle(State.Party, [wild], null, State.Bag, new Random(_rng.Next()));
+        var battle = new Battle(State.Party, [wild], null, State.Bag, new SeededRandom(_rng.Next()));
         yield return RunBattle(battle, "battle", null, _ => { }, allowWhiteout: true);
     }
 
@@ -318,7 +319,7 @@ internal sealed partial class OverworldScene
     {
         var info = def.ToInfo() with { Name = displayName };
         foreach (var c in info.Team) State.Seen.Add(c.SpeciesId);
-        var battle = new Battle(State.Party, info.Team, info, State.Bag, new Random(_rng.Next()));
+        var battle = new Battle(State.Party, info.Team, info, State.Bag, new SeededRandom(_rng.Next()));
         string music = def.IsMaster ? "master" : "trainer";
         yield return RunBattle(battle, music, def, result, allowWhiteout);
     }

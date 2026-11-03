@@ -1,5 +1,6 @@
 using System.Numerics;
 using MicroEngine;
+using MicroEngine.Kernel;
 using TrailDuel.Rules;
 using TrailDuel.Visuals;
 
@@ -10,7 +11,7 @@ namespace TrailDuel.World;
 /// toward the next tile over <see cref="StepTime"/> seconds with a two-frame walk cycle.
 /// Ledge hops cover two tiles with a parabolic arc.
 /// </summary>
-internal sealed class Actor
+internal sealed class Actor : IStateHashed
 {
     public const float StepTime = 0.24f;
     public const float RunStepTime = 0.13f;
@@ -38,6 +39,28 @@ internal sealed class Actor
         Look = look;
         (X, Y, Facing) = (x, y, facing);
         (_fromX, _fromY) = (x, y);
+    }
+
+    /// <summary>
+    /// State hash: who it is (its NPC id and look), tile, facing, visibility, the step in progress (from-tile, progress,
+    /// duration, hop) and the stride count. Left out: the walk clock and <see cref="Lift"/> (animation, the lift follows
+    /// from the progress), the positions held for drawing between updates and the sprite-key cache drawing fills.
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(Def?.Id);
+        hash.Add(Look.Key);
+        hash.Add(X);
+        hash.Add(Y);
+        hash.Add((int)Facing);
+        hash.Add(Visible);
+        hash.Add(Moving);
+        hash.Add(Hopping);
+        hash.Add(_fromX);
+        hash.Add(_fromY);
+        hash.Add(_progress);
+        hash.Add(_duration);
+        hash.Add(_stride);
     }
 
     /// <summary>Pixel position of the tile's top-left, interpolated while moving.</summary>

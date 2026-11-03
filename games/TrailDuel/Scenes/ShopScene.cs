@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
@@ -69,6 +70,16 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
     }
 
     private void Say(string text) { _message = text; _messageTime = 2.4f; }
+
+    /// <summary>State hash: cursor, quantity and whether it is being chosen, the message with its timer. Left out: the coin pop animation and the quantity text cache.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_index);
+        hash.Add(_quantity);
+        hash.Add(_choosingQuantity);
+        hash.Add(_message);
+        hash.Add(_messageTime);
+    }
 
     public override void Draw(IRenderer r)
     {

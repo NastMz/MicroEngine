@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
@@ -28,6 +29,13 @@ internal sealed class SummaryScene(TrailDuelGame game, int index) : Scene
     internal int CreatureIndex => _index;
 
     private List<Creature> Party => game.State.Party;
+
+    /// <summary>State hash: the creature shown and the move cursor. Left out: the page-switch animation timer and the text caches drawing fills.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_index);
+        hash.Add(_move);
+    }
 
     public override void Update(float dt)
     {

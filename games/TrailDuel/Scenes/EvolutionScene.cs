@@ -2,6 +2,7 @@ using System.Collections;
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
@@ -69,6 +70,16 @@ internal sealed class EvolutionScene(TrailDuelGame game, Creature creature, Acti
         yield return _text.Say($"Congratulations! {oldName} evolved into {creature.Name}!");
         onDone();
         Game.Scenes.Pop(Transition.Fade(0.6f, Color.White));
+    }
+
+    /// <summary>
+    /// State hash: the text box and the species shown. Left out: sparkles, flash, glow and the white silhouette
+    /// (presentation; the flow coroutine is hashed by the engine).
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_text);
+        hash.Add(_shownSpecies);
     }
 
     public override void Update(float dt)

@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 using TrailDuel.Rules;
@@ -31,6 +32,17 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
     }
 
     public override void Resume() => Audio.PlayMusic("title");
+
+    /// <summary>State hash: whether the menu is open, its options and cursor, and the overwrite question. Left out: the prompt text cache.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_menu);
+        hash.Add(_options.Count);
+        foreach (var option in _options) hash.Add(option);
+        hash.Add(_index);
+        hash.Add(_confirmOverwrite);
+        hash.Add(_confirm);
+    }
 
     public override void Update(float dt)
     {

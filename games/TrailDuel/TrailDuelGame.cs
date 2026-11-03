@@ -2,6 +2,7 @@ using MicroEngine;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Scenes;
@@ -75,6 +76,13 @@ public sealed class TrailDuelGame : Game
     }
 
     protected override void Unload() => Atlas.Dispose();
+
+    /// <summary>
+    /// State hash (section <c>game</c>): the adventure in progress (<see cref="GameState"/>). Left out: the save folder
+    /// and the debug start (launch options, not state; the save folder differs per run), the atlas and the save store
+    /// (platform and storage objects). Scenes add their own state.
+    /// </summary>
+    public override void HashState(StateHasher hash) => hash.Add(State);
 
     public bool HasSave => Saves.Exists(GameState.SaveSlot);
 
