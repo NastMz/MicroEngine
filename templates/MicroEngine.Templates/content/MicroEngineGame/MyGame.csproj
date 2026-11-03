@@ -16,7 +16,6 @@
     <Description>A game made with MicroEngine.</Description>
     <MicroEngineIcon>icon.png</MicroEngineIcon>
     <MicroEngineOrientation>landscape</MicroEngineOrientation>
-    <MicroEngineGameFactory>new MyGame.MainGame()</MicroEngineGameFactory>
   </PropertyGroup>
 
   <ItemGroup>

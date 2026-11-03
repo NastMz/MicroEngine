@@ -11,7 +11,6 @@
     <MicroEngineIcon>icon.png</MicroEngineIcon>
     <MicroEngineSplashColor>#0d0b1a</MicroEngineSplashColor>
     <MicroEngineSplashBranding>true</MicroEngineSplashBranding>
-    <MicroEngineGameFactory>new NeonRift.RiftGame(NeonRift.LaunchOptions.FromEnvironment())</MicroEngineGameFactory>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />

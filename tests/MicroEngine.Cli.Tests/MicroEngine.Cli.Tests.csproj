@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Checks of the microengine tool's own logic that need no SDK toolchain: finding a game's Configure entry point in
+       its built assembly. Packaging itself is checked end to end by sdk/tests/external.mjs and packaging/. -->
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.4.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Cli/MicroEngine.Cli.csproj" />
+    <ProjectReference Include="../../games/CourtyardKey/CourtyardKey.csproj" />
+  </ItemGroup>
+</Project>
