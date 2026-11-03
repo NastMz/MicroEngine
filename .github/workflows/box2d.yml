@@ -143,7 +143,7 @@ jobs:
           hashes=()
           for dir in natives/box2d-*; do
             rid=${dir#natives/box2d-}
-            sums=$( [ -f "$dir/SHA256SUMS" ] && sed 's/^\([0-9a-f]\{12\}\)[0-9a-f]* [ *]*\(.*\)/`\2` \1…/' "$dir/SHA256SUMS" | paste -sd ' ' || echo 'not built')
+            sums=$( [ -f "$dir/SHA256SUMS" ] && awk '{ f = $2; sub(/^[*]/, "", f); printf "%s %s... ", f, substr($1, 1, 12) }' "$dir/SHA256SUMS" || echo 'not built')
             result=$(tail -1 "$dir/selftest.txt" 2>/dev/null || echo 'missing')
             hash=$(sed -n 's/^determinism \([0-9a-f]*\).*/\1/p' "$dir/selftest.txt" 2>/dev/null || true)
             [ -n "$hash" ] && hashes+=("$hash")
