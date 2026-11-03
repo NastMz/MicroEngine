@@ -1,9 +1,10 @@
 using System.Text.Json.Serialization;
+using MicroEngine.Kernel;
 
 namespace TrailDuel.Rules;
 
 /// <summary>A known move and its remaining power points.</summary>
-public sealed class MoveSlot
+public sealed class MoveSlot : IStateHashed
 {
     public string Id { get; set; } = "";
     public int Pp { get; set; }
@@ -11,13 +12,20 @@ public sealed class MoveSlot
 
     public MoveSlot() { }
     public MoveSlot(string id) { Id = id; Pp = MoveDex.Get(id).Pp; }
+
+    /// <summary>State hash: the move and its remaining power points.</summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(Id);
+        hash.Add(Pp);
+    }
 }
 
 /// <summary>
 /// One owned or wild creature. A plain mutable class so it serializes directly into saves.
 /// Stats derive from species base stats and level (no hidden random values, keeping balance predictable).
 /// </summary>
-public sealed class Creature
+public sealed class Creature : IStateHashed
 {
     public const int MaxLevel = 30;
     public const int MaxMoves = 4;
@@ -105,6 +113,19 @@ public sealed class Creature
     }
 
     public bool CanEvolve => Species.EvolvesInto is not null && Level >= Species.EvolveLevel;
+
+    /// <summary>State hash: species, level, experience, HP, status and its moves (stats derive from these).</summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(SpeciesId);
+        hash.Add(Level);
+        hash.Add(Xp);
+        hash.Add(Hp);
+        hash.Add((int)Status);
+        hash.Add(SleepTurns);
+        hash.Add(Moves.Count);
+        foreach (var m in Moves) hash.Add(m);
+    }
 
     public Creature Clone() => new()
     {

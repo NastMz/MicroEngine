@@ -1,5 +1,6 @@
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 using CourtyardKey.UI;
@@ -36,6 +37,19 @@ public sealed class DialogueScene : Scene
         // {confirm} and {action} in a page name the player's own controls (key, pad button or touch button).
         _box.Prompts = Game.Prompts;
         _box.Show(_speaker, _pages);
+    }
+
+    /// <summary>
+    /// State hash: whether the box is open, the current page's text, the blip count (it follows the typewriter) and
+    /// whether it closed. The speaker and pages are fixed when the scene is made; the box's line wrapping is made while
+    /// drawing and stays out.
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_box.Active);
+        hash.Add(_box.Text);
+        hash.Add(_blips);
+        hash.Add(_done);
     }
 
     public override void Update(float dt)

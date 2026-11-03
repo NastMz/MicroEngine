@@ -4,6 +4,7 @@ using CourtyardKey.Scenes;
 using CourtyardKey.World;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace CourtyardKey.Entities;
 
@@ -22,6 +23,14 @@ public sealed class Slime : Enemy
     }
 
     public float Height => _hop >= 0 ? MathF.Sin(_hop / HopTime * MathF.PI) * 7 : 0;
+
+    /// <summary>State hash: the wait before the next hop and the hop in progress.</summary>
+    protected override void HashAiState(StateHasher hash)
+    {
+        hash.Add(_wait);
+        hash.Add(_hop);
+        hash.Add(_hopVelocity);
+    }
 
     protected override void Think(float dt)
     {
@@ -73,6 +82,16 @@ public sealed class Bat : Enemy
     }
 
     private static readonly string[] Frames = ["bat0", "bat1", "bat2"];
+
+    /// <summary>State hash: turn, rest and flight timers, the velocity and the flap sound timer.</summary>
+    protected override void HashAiState(StateHasher hash)
+    {
+        hash.Add(_turn);
+        hash.Add(_rest);
+        hash.Add(_flight);
+        hash.Add(_velocity);
+        hash.Add(_flapSound);
+    }
 
     public override bool Flies => true;
     protected override bool FragileToBoomerang => true;
@@ -130,6 +149,9 @@ public sealed class Spitter : Enemy
 
     private static readonly string[] Frames = ["spitter0", "spitter1", "spitter2"];
 
+    /// <summary>State hash: the position in the idle, swell and fire cycle.</summary>
+    protected override void HashAiState(StateHasher hash) => hash.Add(_cycle);
+
     protected override float KnockbackScale => 0;
     public override bool IsSolid => true;
     public override RectF SolidBox => new(Position.X - 6, Position.Y - 8, 12, 8);
@@ -173,6 +195,14 @@ public sealed class Knight : Enemy
     private static readonly string[] DownFrames = ["knight_down0", "knight_down1"];
     private static readonly string[] UpFrames = ["knight_up0", "knight_up1"];
     private static readonly string[] SideFrames = ["knight_side0", "knight_side1"];
+
+    /// <summary>State hash: the think and walk timers and the facing (which decides what the shield blocks).</summary>
+    protected override void HashAiState(StateHasher hash)
+    {
+        hash.Add(_think);
+        hash.Add(_anim);
+        hash.Add((int)_facing);
+    }
 
     public override int ContactDamage => 2;
     protected override float KnockbackScale => 0.6f;
@@ -231,6 +261,14 @@ public sealed class Projectile : Actor
 
     public int Damage { get; }
     public override float Depth => Position.Y + 6;
+
+    /// <summary>State hash: velocity, remaining life and damage (the sprite name is drawing only).</summary>
+    protected override void HashOwnState(StateHasher hash)
+    {
+        hash.Add(_velocity);
+        hash.Add(_life);
+        hash.Add(Damage);
+    }
 
     public override void Update(float dt)
     {

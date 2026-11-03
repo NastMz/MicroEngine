@@ -6,6 +6,7 @@ using CourtyardKey.Visuals;
 using CourtyardKey.World;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace CourtyardKey.Entities;
 
@@ -38,6 +39,18 @@ public sealed class Pickup : Actor
     public string? Flag { get; init; }
     public bool Collectable => _pop <= 0;
     private float Lift => _pop > 0 ? MathF.Sin(MathF.Min(1, _pop / 0.35f) * MathF.PI) * 10 : 0;
+
+    /// <summary>State hash: kind, age (it expires), the pop in progress, whether it is persistent or carried, its flag.</summary>
+    protected override void HashOwnState(StateHasher hash)
+    {
+        hash.Add((int)Kind);
+        hash.Add(_age);
+        hash.Add(_pop);
+        hash.Add(_popVelocity);
+        hash.Add(Persistent);
+        hash.Add(Carried);
+        hash.Add(Flag);
+    }
 
     public override void Update(float dt)
     {
@@ -93,6 +106,20 @@ public sealed class Boomerang : Actor
 
     public bool Returning { get; private set; }
     public override float Depth => Position.Y + 8;
+
+    /// <summary>
+    /// State hash: velocity, flight and sound timers, whether it returns, and how many targets it struck and drops it
+    /// carries (the carried pickups hash themselves in the room's actor list).
+    /// </summary>
+    protected override void HashOwnState(StateHasher hash)
+    {
+        hash.Add(_velocity);
+        hash.Add(_time);
+        hash.Add(_soundTimer);
+        hash.Add(Returning);
+        hash.Add(_hit.Count);
+        hash.Add(_carried.Count);
+    }
 
     public override void Update(float dt)
     {
@@ -188,6 +215,13 @@ public sealed class Chest : Actor, IInteractable
     public bool Opened { get; set; }
     public override bool IsSolid => true;
     public bool CanInteract => !Opened;
+
+    /// <summary>State hash: which chest of the room it is and whether it is open (its contents follow from the room).</summary>
+    protected override void HashOwnState(StateHasher hash)
+    {
+        hash.Add(Index);
+        hash.Add(Opened);
+    }
     public void Interact(Hero hero) => World.OpenChest(this);
     public override void Draw(IRenderer r) => DrawSprite(r, Art[Opened ? "chest_open" : "chest"], Position);
 }
@@ -229,6 +263,9 @@ public sealed class Npc : Actor, IInteractable
     public bool CanInteract => true;
     public bool FlipX { get; set; }
 
+    /// <summary>State hash: which way it turned to face the hero (its definition follows from the room).</summary>
+    protected override void HashOwnState(StateHasher hash) => hash.Add(FlipX);
+
     public void Interact(Hero hero)
     {
         FlipX = hero.Position.X < Position.X;
@@ -260,6 +297,16 @@ public sealed class PushBlock : Actor
 
     public (int X, int Y) Cell { get; private set; }
     public bool Sliding => _slide >= 0;
+
+    /// <summary>State hash: the cell and the slide in progress.</summary>
+    protected override void HashOwnState(StateHasher hash)
+    {
+        hash.Add(Cell.X);
+        hash.Add(Cell.Y);
+        hash.Add(_from);
+        hash.Add(_to);
+        hash.Add(_slide);
+    }
     public override bool IsSolid => true;
     public override float Depth => Position.Y - 1;
 
@@ -329,6 +376,17 @@ public sealed class Door : Actor
     public int CellY { get; }
     public bool IsOpen { get; private set; }
     public override bool IsSolid => !IsOpen;
+
+    /// <summary>State hash: kind, side, cell, whether it is open and how far it has opened.</summary>
+    protected override void HashOwnState(StateHasher hash)
+    {
+        hash.Add((int)Kind);
+        hash.Add((int)Side);
+        hash.Add(CellX);
+        hash.Add(CellY);
+        hash.Add(IsOpen);
+        hash.Add(_anim);
+    }
     public override float Depth => Side == Dir.Down ? Position.Y + 100 : -1000;
 
     public void SetOpen(bool open, bool animate = true)
@@ -379,6 +437,14 @@ public sealed class Crystal : Actor, IHittable
     }
 
     public bool Lit { get; private set; }
+
+    /// <summary>State hash: whether it is lit and its pulse.</summary>
+    protected override void HashOwnState(StateHasher hash)
+    {
+        hash.Add(Lit);
+        hash.Add(_pulse);
+    }
+
     public override bool IsSolid => true;
     public override RectF SolidBox => new(Position.X - 6, Position.Y - 6, 12, 6);
     public RectF Hurtbox => Bounds;
@@ -412,6 +478,14 @@ public sealed class Pedestal : Actor, IInteractable
 
     public bool Revealed { get; private set; }
     public bool HasKey { get; set; } = true;
+
+    /// <summary>State hash: whether it is revealed and holds the key, and how far it has risen (taking the key waits for it).</summary>
+    protected override void HashOwnState(StateHasher hash)
+    {
+        hash.Add(Revealed);
+        hash.Add(HasKey);
+        hash.Add(_rise);
+    }
     public override bool IsSolid => Revealed;
     public bool CanInteract => Revealed && HasKey && _rise >= 1;
     public void Interact(Hero hero) => World.TakeCourtyardKey(this);

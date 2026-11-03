@@ -259,6 +259,37 @@ public sealed class GameHostTests
     }
 
     [TestMethod]
+    public void State_trace_writes_one_line_per_step_with_sections_and_two_runs_write_the_same_file()
+    {
+        string first = Path.Combine(Path.GetTempPath(), $"microengine-trace-{Guid.NewGuid():N}.txt");
+        string second = Path.Combine(Path.GetTempPath(), $"microengine-trace-{Guid.NewGuid():N}.txt");
+        var output = Console.Out;
+        var printed = new StringWriter();
+        Console.SetOut(printed);
+        try
+        {
+            void Configure(HostBuilder host) => host.UseGame(() => new Probe());
+            Assert.AreEqual(0, GameLauncher.Run(["--headless", "--frames", "5", "--seed", "3", "--state-trace", first], Configure));
+            Assert.AreEqual(0, GameLauncher.Run(["--headless", "--frames", "5", "--seed", "3", "--state-trace", second], Configure));
+            var trace = StateTrace.Parse(File.ReadAllText(first));
+            CollectionAssert.AreEqual(new long[] { 1, 2, 3, 4, 5 }, trace.Steps.Select(s => s.Update).ToArray(), "one line per fixed step");
+            Assert.IsTrue(trace.Steps.All(s => s.Sections.Count > 0), "each step names its sections, so a divergence names one");
+            Assert.AreEqual(File.ReadAllText(first), File.ReadAllText(second), "two runs of the same launch write the same trace");
+            Assert.IsNull(StateTrace.FirstDivergence(trace, StateTrace.Parse(File.ReadAllText(second))));
+            StringAssert.Contains(printed.ToString(), $"state trace: {first} (5 steps)");
+        }
+        finally
+        {
+            Console.SetOut(output);
+            File.Delete(first);
+            File.Delete(second);
+        }
+        Assert.IsNull(LaunchRequest.Parse([]).StateTracePath, "no trace unless asked for");
+        Assert.AreEqual("Missing value for --state-trace.", Assert.ThrowsExactly<FormatException>(() => LaunchRequest.Parse(["--state-trace"])).Message);
+        StringAssert.Contains(GameLauncher.Usage, "[--state-trace FILE]");
+    }
+
+    [TestMethod]
     public void A_launch_request_parses_the_command_line_into_words_and_names_its_script()
     {
         string script = Path.Combine(Path.GetTempPath(), $"microengine-host-{Guid.NewGuid():N}.script");

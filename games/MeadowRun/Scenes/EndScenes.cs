@@ -3,6 +3,7 @@ using MeadowRun.Art;
 using MeadowRun.Gameplay;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 
@@ -13,6 +14,13 @@ internal sealed class GameOverScene(MeadowGame game) : Scene
 {
     private readonly SelectionList _menu = new("Continue", "Title screen");
     private bool _leaving;
+
+    /// <summary>Hashes the menu cursor and whether the scene is leaving.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_menu.Index);
+        hash.Add(_leaving);
+    }
 
     public override void Enter()
     {
@@ -79,6 +87,9 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
     private readonly StepBlend _step = new();
 
     public override void Enter() => game.Music("credits");
+
+    /// <summary>Hashes whether the credits are leaving; the scroll follows the scene's age, which the engine hashes.</summary>
+    public override void HashState(StateHasher hash) => hash.Add(_leaving);
 
     private float EndTime => (Lines.Length * 14 + 220) / Speed;
 

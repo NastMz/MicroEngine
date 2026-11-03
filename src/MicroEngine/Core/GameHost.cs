@@ -159,6 +159,8 @@ public sealed class GameHost
             Seed = arguments.Seed,
             Mute = arguments.Mute,
             TimeMode = arguments.Time,
+            // Section hashes too, so two traces that differ name the part of the state that diverged first.
+            StateTrace = arguments.StateTracePath is null ? null : new StateTrace { Sections = true },
         };
     }
 
@@ -315,6 +317,12 @@ public sealed class GameHost
         // Described after the run, so facts the platform learns while running (such as late start steps) are included.
         if (profiler is not null) Describe(profiler, profile, platform, game);
         foreach (var shot in result.Captures) output.WriteLine($"capture: {shot}");
+        // Written whatever the outcome: the steps recorded before an error are what a divergence search needs.
+        if (options.StateTrace is { } trace && arguments.StateTracePath is { } tracePath)
+        {
+            File.WriteAllText(tracePath, trace.ToText());
+            output.WriteLine($"state trace: {tracePath} ({trace.Steps.Count} steps)");
+        }
         if (capture is not null && arguments.AudioCapturePath is { } wav)
         {
             File.WriteAllBytes(wav, capture.Output.ToWav());

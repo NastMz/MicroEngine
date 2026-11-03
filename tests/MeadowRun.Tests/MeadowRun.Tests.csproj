@@ -11,4 +11,8 @@
   <ItemGroup>
     <ProjectReference Include="../../games/MeadowRun/MeadowRun.csproj" />
   </ItemGroup>
+  <!-- The simulation-determinism helper shared with the engine's and the other games' test projects. -->
+  <ItemGroup>
+    <Compile Include="../Shared/StateTraceRuns.cs" Link="Shared/StateTraceRuns.cs" />
+  </ItemGroup>
 </Project>

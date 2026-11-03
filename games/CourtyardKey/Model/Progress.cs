@@ -1,9 +1,10 @@
 using MicroEngine.Core;
+using MicroEngine.Kernel;
 
 namespace CourtyardKey.Model;
 
 /// <summary>Everything the adventure remembers between rooms, deaths and sessions. Serialized as JSON.</summary>
-public sealed class Progress
+public sealed class Progress : IStateHashed
 {
     public const int StartingHealth = 6;
     public const int MaxGems = 999;
@@ -55,6 +56,39 @@ public sealed class Progress
         if (Visited.TryGetAlternateLookup<ReadOnlySpan<char>>(out var lookup) && key.TryWrite($"{area}:{x},{y}", out int length))
             return lookup.Contains(key[..length]);
         return Visited.Contains(RoomKey(area, x, y));
+    }
+
+    /// <summary>
+    /// State hash: every field, flags and visited rooms in ordinal order (a hash set's own order follows the
+    /// process's randomized string hashes, so it is not the same in two runs).
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(Version);
+        hash.Add(MaxHealth);
+        hash.Add(Health);
+        hash.Add(Gems);
+        hash.Add(SmallKeys);
+        hash.Add(HasSword);
+        hash.Add(HasBoomerang);
+        hash.Add(HasBossKey);
+        hash.Add(HasCourtyardKey);
+        hash.Add(Deaths);
+        hash.Add(PlaySeconds);
+        AddSorted(hash, Flags);
+        AddSorted(hash, Visited);
+        hash.Add(Entrance.Area);
+        hash.Add(Entrance.RoomX);
+        hash.Add(Entrance.RoomY);
+        hash.Add(Entrance.TileX);
+        hash.Add(Entrance.TileY);
+        hash.Add((int)Entrance.Facing);
+    }
+
+    private static void AddSorted(StateHasher hash, HashSet<string> set)
+    {
+        hash.Add(set.Count);
+        foreach (string item in set.Order(StringComparer.Ordinal)) hash.Add(item);
     }
 }
 

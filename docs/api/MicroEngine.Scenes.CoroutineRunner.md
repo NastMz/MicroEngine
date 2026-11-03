@@ -11,13 +11,17 @@ Runs iterator-based sequences one step per update. A coroutine may yield null (n
 Ideal for cutscenes, dialogue flow and timed effects without hand-written state machines.
 
 ```csharp
-public sealed class CoroutineRunner
+public sealed class CoroutineRunner : IStateHashed
 ```
 
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
 [CoroutineRunner](MicroEngine.Scenes.CoroutineRunner.md)
+
+#### Implements
+
+IStateHashed
 
 ## Constructors
 
@@ -42,6 +46,20 @@ public int Count { get; }
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ## Methods
+
+### <a id="MicroEngine_Scenes_CoroutineRunner_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
+
+Adds the runner's state to the per-step state hash: for each coroutine, running or waiting to start, its nesting
+depth, the seconds left to wait and whether it waits for a condition. The iterators' own variables are not visible
+to it; a scene adds the state its coroutines change from its own [HashState](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_HashState_MicroEngine_Kernel_StateHasher_).
+
+```csharp
+public void HashState(StateHasher hash)
+```
+
+#### Parameters
+
+`hash` StateHasher
 
 ### <a id="MicroEngine_Scenes_CoroutineRunner_Start_System_Collections_IEnumerator_"></a> Start\(IEnumerator\)
 

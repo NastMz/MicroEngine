@@ -38,6 +38,10 @@ namespace MicroEngine.Core;
 /// measured (<see cref="RunOptions.PaceToDisplay"/>).</item>
 /// <item><c>--profile FILE</c> measure every frame and the start phases (<see cref="FrameProfiler"/>), print a summary and
 /// write the results as JSON, or CSV when FILE ends in .csv.</item>
+/// <item><c>--state-trace FILE</c> hash the simulation state after every fixed step (<see cref="RunOptions.StateTrace"/>)
+/// and write one line per step with each section's hash (<see cref="Kernel.StateTrace"/>'s text format): two runs of the
+/// same build, script and seed write the same file, and <see cref="Kernel.StateTrace.FirstDivergence(Kernel.StateTrace, Kernel.StateTrace)"/>
+/// names where two traces part.</item>
 /// </list>
 /// A run in deterministic time also asks the platform, through explicit request options, not to wait for the display
 /// (<see cref="PlatformRequest.WaitForDisplay"/>) and for no sound device (<c>--audio auto</c>); a run in real time
@@ -201,6 +205,8 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
     public bool PaceToDisplay { get; init; } = true;
     /// <summary><c>--profile</c>: the file to write frame measurements to, or null to measure nothing.</summary>
     public string? ProfilePath { get; init; }
+    /// <summary><c>--state-trace</c>: the file to write the per-step state hashes to (<see cref="RunOptions.StateTrace"/>), or null.</summary>
+    public string? StateTracePath { get; init; }
 
     /// <summary>Parses command-line arguments (<see cref="LaunchRequest.Parse"/>).</summary>
     /// <exception cref="FormatException">An argument is unknown, misses its value or has an invalid one, <c>--headless</c> contradicts <c>--platform</c>, or the script file does not exist.</exception>
@@ -218,6 +224,7 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
             Audio = request.Audio switch { "device" => AudioOutput.Device, "silent" => AudioOutput.Silent, _ => AudioOutput.Automatic },
             AudioCapturePath = request.AudioCapturePath,
             ProfilePath = request.ProfilePath,
+            StateTracePath = request.StateTracePath,
             PaceToDisplay = request.PaceToDisplay,
             Time = request.EffectiveTime,
             Gpu = request.Gpu switch { null => null, "high-performance" => GpuPreference.HighPerformance, "power-saving" => GpuPreference.PowerSaving, _ => GpuPreference.Automatic },

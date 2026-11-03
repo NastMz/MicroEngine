@@ -3,6 +3,7 @@ using NeonRift.Content;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 
@@ -16,6 +17,14 @@ internal sealed class TitleScene(RiftGame game) : Scene
     private DrawBlend _blend;
     private StageView? _view;
     private readonly NumberText _high = new(static (high, _) => "HI " + Ui.N(high, 7));
+
+    /// <summary>Adds the menu cursor and whether the controls panel is open or the scene is leaving; the backdrop view, the drawing blend and the high-score text are drawing only.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_menu.Index);
+        hash.Add(_controls);
+        hash.Add(_leaving);
+    }
 
     public override void Enter()
     {
@@ -117,6 +126,13 @@ internal sealed class StageCardScene(RiftGame game, int stageIndex) : Scene
     private bool _leaving;
     private readonly NumberText _rest = new(static (lives, score) => $"REST {lives}   SCORE {Ui.N(score, 7)}");
 
+    /// <summary>Adds which stage the card leads to and whether it is leaving (its timing is the scene's age); the text cache is drawing only.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(stageIndex);
+        hash.Add(_leaving);
+    }
+
     public override void Enter() => game.Music("");
 
     public override void Update(float dt)
@@ -147,6 +163,16 @@ internal sealed class GameOverScene(RiftGame game, int stageIndex, int checkpoin
     private readonly NumberText _score = new(static (score, _) => $"SCORE {Ui.N(score, 7)}");
     private readonly NumberText _continues = new(static (left, _) => $"CONTINUES LEFT {left}");
     private bool _leaving;
+
+    /// <summary>Adds the stage and checkpoint a continue returns to, the menu cursor, whether CONTINUE is offered and whether the scene is leaving; the text caches are drawing only.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(stageIndex);
+        hash.Add(checkpoint);
+        hash.Add(_menu.Index);
+        hash.Add(_menu.IsEnabled(0));
+        hash.Add(_leaving);
+    }
 
     public override void Enter()
     {
@@ -212,6 +238,9 @@ internal sealed class EndingScene(RiftGame game) : Scene
     private DrawBlend _blend;
     private StageView? _view;
     private readonly NumberText _final = new(static (score, deaths) => $"FINAL SCORE {Ui.N(score, 7)}   DEATHS {deaths}");
+
+    /// <summary>Adds whether the scene is leaving (the credits roll with the scene's age); the backdrop view, the drawing blend and the text cache are drawing only.</summary>
+    public override void HashState(StateHasher hash) => hash.Add(_leaving);
 
     public override void Enter() => game.Music("ending");
 

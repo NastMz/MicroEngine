@@ -9,6 +9,9 @@
     <PackageReference Include="MSTest.TestAdapter" Version="4.4.1" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="../Shared/StateTraceRuns.cs" Link="Shared/StateTraceRuns.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../games/TrailDuel/TrailDuel.csproj" />
   </ItemGroup>
 </Project>

@@ -58,7 +58,7 @@ public const string HeadlessName = "headless"
 The one-line usage text desktop launchers print after an argument error.
 
 ```csharp
-public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE]"
+public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]"
 ```
 
 #### Field Value
@@ -381,6 +381,19 @@ public int? Seed { get; init; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)?
+
+### <a id="MicroEngine_Hosting_LaunchRequest_StateTracePath"></a> StateTracePath
+
+<code>--state-trace</code>: the file to write the run's per-step state hashes to, one line per fixed step with the hash
+of each section (the kernel's <code>StateTrace</code> text format), or null to hash nothing.
+
+```csharp
+public string? StateTracePath { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
 ### <a id="MicroEngine_Hosting_LaunchRequest_Time"></a> Time
 

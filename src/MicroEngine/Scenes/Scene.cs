@@ -3,6 +3,7 @@ using MicroEngine.Audio;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Kernel;
 
 namespace MicroEngine.Scenes;
 
@@ -25,7 +26,7 @@ namespace MicroEngine.Scenes;
 /// }
 /// </code>
 /// </example>
-public abstract class Scene
+public abstract class Scene : IStateHashed
 {
     private Game? _game;
     /// <summary>The game this scene belongs to. Set when the scene is pushed; throws <see cref="InvalidOperationException"/> before that (for example in the scene's constructor).</summary>
@@ -69,12 +70,32 @@ public abstract class Scene
     /// the buttons that confirm and cancel stay. Read every frame, so a scene may change it with its own state.
     /// </summary>
     public virtual IReadOnlyCollection<string>? TouchActions => null;
+    /// <summary>
+    /// Adds the scene's simulation state to the per-step state hash (<see cref="Core.Game.ComputeStateHash"/>): the
+    /// fields that decide what happens next (positions, velocities, timers, health, the state of its own generators), in
+    /// a fixed order. Leave out what <see cref="Draw"/> writes (text and layout caches, positions held for blending,
+    /// particles that are only drawn): the hash must be the same whether or not a frame was drawn. The engine adds the
+    /// scene's type, <see cref="Age"/>, coroutines and tweens itself, in the scene's section
+    /// (<c>scene[index]:Type</c>). The default adds nothing.
+    /// </summary>
+    /// <param name="hash">The hasher of the step; a section started here lasts until the engine starts the next one.</param>
+    public virtual void HashState(StateHasher hash) { }
+
     /// <summary>Advances the scene by one fixed step. Not called while a blocking overlay is above, nor during the covering half of a transition.</summary>
     /// <param name="dt">Step length in seconds (<c>1 / UpdateRate</c>).</param>
     public abstract void Update(float dt);
     /// <summary>Draws the scene once per frame into the virtual canvas. Scenes below an overlay are drawn first.</summary>
     /// <param name="renderer">The renderer of the current frame.</param>
     public abstract void Draw(IRenderer renderer);
+
+    /// <summary>The engine's part of the scene's state, then the scene's own (<see cref="HashState"/>).</summary>
+    internal void HashAll(StateHasher hash)
+    {
+        hash.Add(Age);
+        Coroutines.HashState(hash);
+        Tweens.HashState(hash);
+        HashState(hash);
+    }
 
     internal void Tick(float dt)
     {
@@ -181,6 +202,33 @@ public sealed class SceneManager
         while (first > 0 && _stack[first].IsOverlay && !_stack[first].BlocksUpdateBelow) first--;
         for (int i = first; i < _stack.Count; i++) _stack[i].Tick(dt);
         ApplyPending();
+    }
+
+    /// <summary>
+    /// The stack's state (section <c>engine.scenes</c>: the scenes' types, the changes waiting and the transition), then one
+    /// section per scene from the bottom (<c>scene[index]:Type</c>).
+    /// </summary>
+    internal void HashState(StateHasher hash)
+    {
+        hash.Section("engine.scenes");
+        hash.Add(_stack.Count);
+        foreach (var scene in _stack) hash.Add(scene.GetType().FullName);
+        hash.Add(_pending.Count);
+        hash.Add(_afterSwap.Count);
+        hash.Add(_transition is not null);
+        if (_transition is { } t)
+        {
+            hash.Add(t.GetType().FullName);
+            hash.Add(t.Duration);
+            hash.Add(t.Elapsed);
+            hash.Add(_swapped);
+        }
+        for (int i = 0; i < _stack.Count; i++)
+        {
+            var scene = _stack[i];
+            hash.Section($"scene[{i}]:{scene.GetType().Name}");
+            scene.HashAll(hash);
+        }
     }
 
     internal void Draw(IRenderer renderer)

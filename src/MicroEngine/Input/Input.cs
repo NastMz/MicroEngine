@@ -1,4 +1,5 @@
 using System.Numerics;
+using MicroEngine.Kernel;
 
 namespace MicroEngine.Input;
 
@@ -113,7 +114,7 @@ public sealed record ActionBindings(IReadOnlyList<Key> Keys, IReadOnlyList<PadBu
 /// if (Input.Pressed("confirm")) Audio.Play("select");
 /// </code>
 /// </example>
-public sealed class InputMap
+public sealed class InputMap : IStateHashed
 {
     private sealed class Binding
     {
@@ -347,6 +348,40 @@ public sealed class InputMap
         var v = new Vector2(AnalogAxis(left, right), AnalogAxis(up, down));
         float length = v.Length();
         return length > 1 ? v / length : v;
+    }
+
+    /// <summary>
+    /// Adds the sampled state to the per-step state hash: the actions down, down in the previous update, latched and
+    /// forced (each in ordinal order), every action's value, the last device, the gamepad's connection and style, and the
+    /// pointer. Bindings are configuration, not state, and are left out.
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        static void Names(StateHasher hash, IEnumerable<string> names)
+        {
+            var sorted = names.Order(StringComparer.Ordinal).ToList();
+            hash.Add(sorted.Count);
+            foreach (var name in sorted) hash.Add(name);
+        }
+        Names(hash, _down);
+        Names(hash, _previous);
+        Names(hash, _latched);
+        Names(hash, _forced);
+        var values = _values.Keys.Order(StringComparer.Ordinal).ToList();
+        hash.Add(values.Count);
+        foreach (var action in values)
+        {
+            hash.Add(action);
+            hash.Add(_values[action]);
+        }
+        hash.Add((int)LastDevice);
+        hash.Add(PadConnected);
+        hash.Add((int)PadStyle);
+        hash.Add(_pointer.Present);
+        hash.Add(_pointer.Position);
+        hash.Add(_pointer.Primary);
+        hash.Add(_pointer.Secondary);
+        hash.Add(_pointer.Middle);
     }
 
     /// <summary>Clears every state, e.g. after a scene change, so held keys must be pressed again.</summary>

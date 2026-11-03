@@ -1,3 +1,4 @@
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.World;
@@ -107,11 +108,11 @@ internal static class DebugStart
             "battle" => WildBattle(game, s, Backdrop.Forest),
             "battle-meadow" => WildBattle(game, s, Backdrop.Meadow),
             "battle-indoor" => WildBattle(game, s, Backdrop.Indoor),
-            "learn" => new BattleScene(game, new Battle(s.Party, [Creature.Create("mossnail", 9)], null, s.Bag, new Random(7)), new BattleSetup(Backdrop.Meadow, "battle", null), _ => { })
+            "learn" => new BattleScene(game, new Battle(s.Party, [Creature.Create("mossnail", 9)], null, s.Bag, new SeededRandom(7)), new BattleSetup(Backdrop.Meadow, "battle", null), _ => { })
             {
                 LearnShowcase = "kindle",
             },
-            "fx" => new BattleScene(game, new Battle(s.Party, [Creature.Create("bouldox", 12)], null, s.Bag, new Random(7)), new BattleSetup(Backdrop.Meadow, "battle", null), _ => { })
+            "fx" => new BattleScene(game, new Battle(s.Party, [Creature.Create("bouldox", 12)], null, s.Bag, new SeededRandom(7)), new BattleSetup(Backdrop.Meadow, "battle", null), _ => { })
             {
                 Showcase = ["tackle", "bodyslam", "ember", "blazerush", "bubble", "tidalcrash", "vinelash", "petalstorm", "spark", "thundercrash", "pebbletoss", "boulderdrop", "gust", "cyclone", "kindle", "soothe", "glare"],
             },
@@ -137,7 +138,7 @@ internal static class DebugStart
 
     private static Scene WildBattle(TrailDuelGame game, GameState s, Backdrop backdrop)
     {
-        var battle = new Battle(s.Party, [Creature.Create("mossnail", 9)], null, s.Bag, new Random(7));
+        var battle = new Battle(s.Party, [Creature.Create("mossnail", 9)], null, s.Bag, new SeededRandom(7));
         return new BattleScene(game, battle, new BattleSetup(backdrop, "battle", null), _ => { });
     }
 
@@ -145,7 +146,7 @@ internal static class DebugStart
     {
         var def = Maps.Get("hall").Npcs.First(n => n.Id == "odessa").Trainer!;
         var info = def.ToInfo();
-        var battle = new Battle(s.Party, info.Team, info, s.Bag, new Random(7));
+        var battle = new Battle(s.Party, info.Team, info, s.Bag, new SeededRandom(7));
         return new BattleScene(game, battle, new BattleSetup(Backdrop.Hall, "master", def), _ => { });
     }
 }

@@ -4,6 +4,7 @@ using CourtyardKey.UI;
 using CourtyardKey.Visuals;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 
@@ -37,6 +38,9 @@ public sealed class PauseScene : Scene
     }
 
     public override bool IsOverlay => true;
+
+    /// <summary>State hash: the menu cursor. The status and area texts are built while drawing and stay out.</summary>
+    public override void HashState(StateHasher hash) => hash.Add(_menu.Index);
 
     public override void Update(float dt)
     {
@@ -163,6 +167,14 @@ public sealed class ShopScene : Scene
 
     public override bool IsOverlay => true;
 
+    /// <summary>State hash: the menu cursor, whether the pie is still offered, and the shopkeeper's last answer.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_menu.Index);
+        hash.Add(_menu.IsEnabled(1));
+        hash.Add(_message);
+    }
+
     public override void Update(float dt)
     {
         _menu.SetEnabled(1, !_play.Progress.Has(PieFlag));
@@ -244,6 +256,9 @@ public sealed class GameOverScene : Scene
     }
 
     public override bool IsOverlay => true;
+
+    /// <summary>State hash: the menu cursor (the scene's age, which gates the menu, is the engine's).</summary>
+    public override void HashState(StateHasher hash) => hash.Add(_menu.Index);
 
     public override void Update(float dt)
     {

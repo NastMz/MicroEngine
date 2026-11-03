@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
@@ -96,6 +97,22 @@ internal sealed class PartyScene : Scene
     }
 
     private void Say(string text) { _message = text; _messageTime = 2.2f; }
+
+    /// <summary>
+    /// State hash: purpose, active slot, cursor, the creature picked to swap, the open menu, the message with its timer
+    /// and whether it closed. The party itself is the adventure's (section <c>game</c>).
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add((int)_purpose);
+        hash.Add(_activeIndex);
+        hash.Add(_index);
+        hash.Add(_swapFrom);
+        hash.Add(_menu);
+        hash.Add(_message);
+        hash.Add(_messageTime);
+        hash.Add(_closed);
+    }
 
     private void Close(int result)
     {

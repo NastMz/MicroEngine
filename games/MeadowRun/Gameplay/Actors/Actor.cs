@@ -2,6 +2,7 @@ using System.Numerics;
 using MeadowRun.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.World;
 
 namespace MeadowRun.Gameplay.Actors;
@@ -10,7 +11,7 @@ namespace MeadowRun.Gameplay.Actors;
 /// Base for every object in a stage. Simulation lives in <see cref="Tick"/> (no drawing or audio),
 /// presentation in <see cref="Render"/>, so the stage can run headless in tests.
 /// </summary>
-internal abstract class Actor : Entity
+internal abstract class Actor : Entity, IStateHashed
 {
     protected Actor(Stage stage, Vector2 position)
     {
@@ -40,6 +41,20 @@ internal abstract class Actor : Entity
     }
 
     protected abstract void Tick(float dt);
+
+    /// <summary>
+    /// Hashes the actor's kind, whether it is alive and awake, its position, velocity and age; subclasses add their own
+    /// rule state. Leaves out <see cref="PreviousPosition"/> (only drawing reads it) and fixed setup (hitbox, home).
+    /// </summary>
+    public virtual void HashState(StateHasher hash)
+    {
+        hash.Add(GetType().Name);
+        hash.Add(Alive);
+        hash.Add(Awake);
+        hash.Add(Position);
+        hash.Add(Velocity);
+        hash.Add(Age);
+    }
     public abstract void Render(IRenderer r, Assets a, float time);
 
     /// <summary>Moves through tiles with gravity; returns the collision result.</summary>

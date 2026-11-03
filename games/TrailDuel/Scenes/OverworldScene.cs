@@ -2,6 +2,7 @@ using System.Collections;
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
@@ -25,7 +26,7 @@ internal sealed partial class OverworldScene : Scene
     private Interpolated _drawnCamera;
     private readonly ParticleSystem _dust = new(128, 17);
     private readonly List<(int X, int Y, float Time)> _rustles = [];
-    private readonly Random _rng;
+    private readonly SeededRandom _rng;
     private MapRuntime _map = null!;
     private Actor _player = null!;
     private TextPanel _text = null!;
@@ -43,7 +44,7 @@ internal sealed partial class OverworldScene : Scene
     {
         _game = game;
         _intro = intro;
-        _rng = new Random(game.Random.Next());
+        _rng = new SeededRandom(game.Random.Next());
     }
 
     private GameState State => _game.State;
@@ -57,6 +58,34 @@ internal sealed partial class OverworldScene : Scene
     internal static readonly IReadOnlyCollection<string> TextActions = ["confirm", "cancel"];
     internal static readonly IReadOnlyCollection<string> ChoiceActions = ["up", "down", "confirm", "cancel"];
     public TextPanel Text => _text;
+
+    /// <summary>
+    /// State hash, in three sections so a divergence names the part: <c>overworld</c> (map, cutscene count, walk and
+    /// bump timers, the wander clock, the pending ledge landing, the scene's generator, the text box and the open
+    /// choice), <c>overworld.player</c> and <c>overworld.npcs</c> (count then each actor). Left out: the camera and the
+    /// positions held for drawing between updates, dust and grass rustles, the area banner, fades, flashes, the heal
+    /// glow, the "!" bubble and the starter preview (presentation that cutscene coroutines drive; the coroutines
+    /// themselves are hashed by the engine), and the tile caches drawing fills.
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Section("overworld");
+        hash.Add(_map?.Def.Id);
+        hash.Add(_busy);
+        hash.Add(_turnTimer);
+        hash.Add(_bumpTimer);
+        hash.Add(_npcClock);
+        hash.Add(_hopped);
+        hash.Add(_rng);
+        hash.Add(_text);
+        hash.Add(_choice);
+        hash.Section("overworld.player");
+        hash.Add(_player);
+        hash.Section("overworld.npcs");
+        if (_map is null) return;
+        hash.Add(_map.Npcs.Count);
+        foreach (var npc in _map.Npcs) hash.Add(npc);
+    }
 
     public override void Enter()
     {

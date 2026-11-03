@@ -9,13 +9,17 @@ Guide: [Scenes](../manual/scenes.md)
 Simple value tweens driven by update time.
 
 ```csharp
-public sealed class Tweener
+public sealed class Tweener : IStateHashed
 ```
 
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
 [Tweener](MicroEngine.Scenes.Tweener.md)
+
+#### Implements
+
+IStateHashed
 
 ## Constructors
 
@@ -68,6 +72,18 @@ Removes every tween without applying its final value or calling its <code>done</
 ```csharp
 public void Clear()
 ```
+
+### <a id="MicroEngine_Scenes_Tweener_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
+
+Adds the tweens' state to the per-step state hash: for each tween, its duration, time played and delay left.
+
+```csharp
+public void HashState(StateHasher hash)
+```
+
+#### Parameters
+
+`hash` StateHasher
 
 ### <a id="MicroEngine_Scenes_Tweener_Update_System_Single_"></a> Update\(float\)
 

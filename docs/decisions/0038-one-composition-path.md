@@ -80,8 +80,9 @@ from run to run (123 of 138 identical) and from desktop (113 of 138).
 - Developer variables a phone test passes (`--env`) are still written to the phone process's environment, because game
   code reads them there, as it does on desktop and in pages; the composition reads them through `HostEnvironment`.
 - Content sources other than folders are refused with their reason until the content stage (2c) supports them.
-- A `--state-trace FILE` launcher option waits for the per-step state hash (`RunOptions.StateTrace`, unit T0); the
-  launcher model is where it will be parsed.
+- The launcher model parses `--state-trace FILE` (`LaunchRequest.StateTracePath`): `GameHost` gives the run a
+  `StateTrace` with section hashes (`RunOptions.StateTrace`, from the per-step state hash) and writes its text when
+  the run ends, whatever the outcome.
 
 ## Alternatives
 

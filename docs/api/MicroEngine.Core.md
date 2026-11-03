@@ -115,7 +115,10 @@ are never heard, and for one otherwise (the headless platform has none).</li><li
 ([GpuPreference](MicroEngine.Core.GpuPreference.md)).</li><li><code>--renderer NAME[,NAME...]</code> graphics APIs to try first ([Renderers](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Renderers)).</li><li><code>--vsync on|off</code> wait for the display's refresh or not ([VSync](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_VSync)).</li><li><code>--fps-limit N</code> draw at most N frames per second; 0 removes the game's limit
 ([FrameRateLimit](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_FrameRateLimit)).</li><li><code>--window windowed|fullscreen|exclusive</code> the window mode ([WindowMode](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_WindowMode)).</li><li><code>--display N</code> open on display N, counted from 0 ([Display](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Display)).</li><li><code>--pacing display|measured</code> count frame time in refresh periods of the display (the default) or as
 measured ([PaceToDisplay](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_PaceToDisplay)).</li><li><code>--profile FILE</code> measure every frame and the start phases ([FrameProfiler](MicroEngine.Core.FrameProfiler.md)), print a summary and
-write the results as JSON, or CSV when FILE ends in .csv.</li></ul>
+write the results as JSON, or CSV when FILE ends in .csv.</li><li><code>--state-trace FILE</code> hash the simulation state after every fixed step ([StateTrace](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_StateTrace))
+and write one line per step with each section's hash ([StateTrace](MicroEngine.Kernel.StateTrace.md)'s text format): two runs of the
+same build, script and seed write the same file, and [FirstDivergence](MicroEngine.Kernel.StateTrace.md#MicroEngine_Kernel_StateTrace_FirstDivergence_MicroEngine_Kernel_StateTrace_MicroEngine_Kernel_StateTrace_)
+names where two traces part.</li></ul>
 
 A run in deterministic time also asks the platform, through explicit request options, not to wait for the display
 ([WaitForDisplay](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_WaitForDisplay)) and for no sound device (<code>--audio auto</code>); a run in real time

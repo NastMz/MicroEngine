@@ -4,6 +4,7 @@ using MeadowRun.Content;
 using MeadowRun.Gameplay;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 
@@ -25,6 +26,21 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
         : FormattableString.Invariant($"x={_stage.Player.Position.X:0} y={_stage.Player.Position.Y:0}{(_stage.Player.Grounded ? " grounded" : "")}");
     public int LevelIndex => levelIndex;
     public LevelDef Def => Levels.All[levelIndex];
+
+    /// <summary>
+    /// Hashes the level and checkpoint, whether the scene is leaving, the session totals at the start (the clear
+    /// record uses them) and the stage. Leaves out the stage view, step blend and HUD/tally labels: drawing and
+    /// presentation write them (held positions for blending, label text caches).
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(levelIndex);
+        hash.Add(checkpoint);
+        hash.Add(_leaving);
+        hash.Add(_coinsAtStart);
+        hash.Add(_scoreAtStart);
+        hash.Add(_stage);
+    }
 
     public override void Enter()
     {
@@ -141,6 +157,14 @@ internal sealed class LevelCardScene(MeadowGame game, int levelIndex, int checkp
     private bool _started;
     private string _world = "", _name = "", _lives = "";
 
+    /// <summary>Hashes the level, the checkpoint and whether the level has started; the card's texts are presentation.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(levelIndex);
+        hash.Add(checkpoint);
+        hash.Add(_started);
+    }
+
     public override void Enter()
     {
         var def = Levels.All[levelIndex];
@@ -185,6 +209,9 @@ internal sealed class PauseScene(MeadowGame game, PlayScene play) : Scene
 {
     private readonly SelectionList _menu = new("Resume", "Restart level", "Quit to map");
     public override bool IsOverlay => true;
+
+    /// <summary>Hashes the menu cursor.</summary>
+    public override void HashState(StateHasher hash) => hash.Add(_menu.Index);
 
     public override void Enter() => _menu.Moved += () => game.Sfx("menu_move", 0.7f);
 

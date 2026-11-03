@@ -2,6 +2,7 @@ using NeonRift.Content;
 using NeonRift.Gameplay;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 
@@ -21,6 +22,21 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
     public override string? Describe() => _stage is null ? null
         : FormattableString.Invariant($"x={_stage.Player.Position.X:0} y={_stage.Player.Position.Y:0} shots={_stage.PlayerShots.Count()} aim={string.Join('/', _stage.PlayerShots.Select(s => $"{MathF.Sign(s.Velocity.X)},{MathF.Sign(s.Velocity.Y)}").Distinct())}");
     public int StageIndex => stageIndex;
+
+    /// <summary>
+    /// Adds the scene's own state (which stage, whether it is leaving, the deaths counted at its start, the autopilot's
+    /// timers), then the stage's, which opens sections of its own (<see cref="Gameplay.Stage.HashState"/>). The view and
+    /// the drawing blend are left out: drawing only.
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(stageIndex);
+        hash.Add(checkpoint);
+        hash.Add(_leaving);
+        hash.Add(_deathsAtStart);
+        hash.Add(_autopilot);
+        hash.Add(_stage);
+    }
 
     public override void Enter()
     {
@@ -99,6 +115,9 @@ internal sealed class PauseScene(RiftGame game) : Scene
 {
     private readonly SelectionList _menu = new("RESUME", "QUIT TO TITLE");
     public override bool IsOverlay => true;
+
+    /// <summary>Adds the menu cursor.</summary>
+    public override void HashState(StateHasher hash) => hash.Add(_menu.Index);
 
     public override void Enter() => _menu.Moved += () => game.Sfx("menu-move", 0.6f);
 

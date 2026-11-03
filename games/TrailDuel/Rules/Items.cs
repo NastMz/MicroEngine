@@ -1,3 +1,5 @@
+using MicroEngine.Kernel;
+
 namespace TrailDuel.Rules;
 
 public enum ItemKind { Heal, Cure, Orb }
@@ -47,8 +49,18 @@ public static class ItemDex
 }
 
 /// <summary>Item counts keyed by item id; serializes as a plain dictionary.</summary>
-public sealed class Bag
+public sealed class Bag : IStateHashed
 {
+    /// <summary>
+    /// State hash: the count of every item, in catalogue order (never the dictionary's own order). Every id in the bag
+    /// is a catalogue id (<see cref="Add"/> checks it), so the catalogue covers them all.
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(Items.Count);
+        foreach (var item in ItemDex.All) hash.Add(Count(item.Id));
+    }
+
     public Dictionary<string, int> Items { get; set; } = new(StringComparer.Ordinal);
 
     public int Count(string id) => Items.TryGetValue(id, out var n) ? n : 0;

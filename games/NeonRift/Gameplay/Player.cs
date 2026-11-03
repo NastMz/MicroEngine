@@ -2,6 +2,7 @@ using System.Numerics;
 using NeonRift.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace NeonRift.Gameplay;
 
@@ -60,6 +61,31 @@ public sealed class Player : Actor
     private static readonly float[] FootProbes = [-5f, 0, 5f];
 
     public void Equip(WeaponKind kind) => Weapon = WeaponSpec.Of(kind);
+
+    /// <summary>
+    /// Adds the actor's state, then the life state, facing, pose (crouch, somersault, grounded), aim, health,
+    /// invulnerability and barrier, weapon, god mode and the timers that gate firing, dropping and the run cycle (it
+    /// places the muzzle). The time since the last shot is left out: it only picks the drawn pose.
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add((int)State);
+        hash.Add(Facing);
+        hash.Add(Crouching);
+        hash.Add(_somersault);
+        hash.Add(_body.Grounded);
+        hash.Add(_aim);
+        hash.Add(Health);
+        hash.Add(Invulnerable);
+        hash.Add(Barrier);
+        hash.Add((int)Weapon.Kind);
+        hash.Add(God);
+        hash.Add(_stateTime);
+        hash.Add(_cooldown);
+        hash.Add(_dropTimer);
+        hash.Add(_runTime);
+    }
 
     public void Step(float dt, PlayerInput input)
     {

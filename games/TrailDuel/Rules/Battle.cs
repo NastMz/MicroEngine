@@ -1,3 +1,5 @@
+using MicroEngine.Kernel;
+
 namespace TrailDuel.Rules;
 
 /// <summary>An opposing trainer: name, team, prize and dialogue for the end of the duel.</summary>
@@ -9,7 +11,7 @@ public enum BattlePhase { ChooseAction, ForcedSwitch, Ended }
 /// Turn-based battle rules. The player's party list is mutated in place (HP, XP, PP, captures), so
 /// the overworld simply keeps using it afterwards. Each call returns the events that happened.
 /// </summary>
-public sealed class Battle
+public sealed class Battle : IStateHashed
 {
     public const int MaxParty = 6;
     private static readonly MoveData Struggle = new("struggle", "Struggle", ElementType.Normal, MoveCategory.Physical, 50, 0, 1, "A desperate attack.");
@@ -49,6 +51,33 @@ public sealed class Battle
         _rng = rng ?? throw new ArgumentNullException(nameof(rng));
         ActiveIndex = Party.FindIndex(c => !c.Fainted);
         _participants.Add(ActiveIndex);
+    }
+
+    /// <summary>
+    /// State hash: the generator (when it is a <see cref="SeededRandom"/>, as the game always passes; a plain
+    /// <see cref="Random"/> from a unit test adds only that it is not there), the active and enemy slots, the enemy team,
+    /// stat stages, phase, outcome, turn, escape attempts, faint flags, the creatures that took part (sorted) and the
+    /// catch. The player's party and bag are the adventure's own lists, hashed by <see cref="GameState"/>.
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(_rng as IStateHashed);
+        hash.Add(Trainer?.Name);
+        hash.Add(ActiveIndex);
+        hash.Add(EnemyIndex);
+        GameState.AddAll(hash, EnemyTeam);
+        foreach (int stage in PlayerStages) hash.Add(stage);
+        foreach (int stage in EnemyStages) hash.Add(stage);
+        hash.Add((int)Phase);
+        hash.Add((int)Outcome);
+        hash.Add(Turn);
+        hash.Add(_escapeAttempts);
+        hash.Add(_enemyFainted);
+        hash.Add(_playerFainted);
+        hash.Add(_participants.Count);
+        foreach (int index in _participants.Order()) hash.Add(index);
+        hash.Add(Caught);
+        hash.Add(SentToBox);
     }
 
     private string EnemyName => (IsTrainer ? "Foe " : "Wild ") + Enemy.Name;

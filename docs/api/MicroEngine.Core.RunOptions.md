@@ -156,6 +156,22 @@ public bool StartScreen { get; init; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_RunOptions_StateTrace"></a> StateTrace
+
+Receives the simulation state hash after every fixed step ([ComputeStateHash](MicroEngine.Core.Game.md#MicroEngine_Core_Game_ComputeStateHash_System_Boolean_)), with each
+section's hash when [Sections](MicroEngine.Kernel.StateTrace.md#MicroEngine_Kernel_StateTrace_Sections) is true; null (the default) hashes nothing. Two
+deterministic runs of the same build, script and seed record the same trace;
+[FirstDivergence](MicroEngine.Kernel.StateTrace.md#MicroEngine_Kernel_StateTrace_FirstDivergence_MicroEngine_Kernel_StateTrace_MicroEngine_Kernel_StateTrace_) names the first update and
+section where two differ.
+
+```csharp
+public StateTrace? StateTrace { get; init; }
+```
+
+#### Property Value
+
+ StateTrace?
+
 ### <a id="MicroEngine_Core_RunOptions_TimeMode"></a> TimeMode
 
 How the loop advances time (the launcher's <code>--time</code>): [RealTime](MicroEngine.Kernel.TimeMode.md) with the wall

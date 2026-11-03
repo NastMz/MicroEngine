@@ -297,6 +297,18 @@ public int Seed { get; init; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Core_LaunchArguments_StateTracePath"></a> StateTracePath
+
+<code>--state-trace</code>: the file to write the per-step state hashes to ([StateTrace](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_StateTrace)), or null.
+
+```csharp
+public string? StateTracePath { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
 ### <a id="MicroEngine_Core_LaunchArguments_Time"></a> Time
 
 <code>--time</code>: how the loop advances time, or null to leave it to the game. A script means

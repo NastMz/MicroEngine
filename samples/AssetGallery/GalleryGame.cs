@@ -2,6 +2,7 @@ using System.Numerics;
 using MicroEngine;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace AssetGallery;
 
@@ -57,6 +58,9 @@ public sealed class GalleryGame : Game
     /// atlas over (and this scope goes) the first time it loads. Null in interactive runs.
     /// </summary>
     public AssetCache? LevelAhead { get; set; }
+
+    /// <summary>The game's own simulation state for the per-step state hash: whether the level atlas loaded ahead is still held.</summary>
+    public override void HashState(StateHasher hash) => hash.Add(LevelAhead is not null);
 
     /// <inheritdoc/>
     protected override void Load()

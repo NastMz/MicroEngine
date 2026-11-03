@@ -3,6 +3,7 @@ using System.Numerics;
 using MicroEngine;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 
 namespace AssetGallery;
@@ -69,6 +70,20 @@ public sealed class GalleryScene(GalleryGame game) : Scene
     }
 
     public override void Exit() => _level?.Dispose();
+
+    #region hash-state
+    /// <summary>
+    /// The gallery's simulation state for the per-step state hash: the sampling switch and the level scope (created,
+    /// loading, loaded). The status lines and the glyph pages are written while drawing, so they stay out.
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_nearest);
+        hash.Add(_level is not null);
+        hash.Add(_loading is not null);
+        hash.Add(LevelLoaded);
+    }
+    #endregion
 
     public override void Draw(IRenderer r)
     {

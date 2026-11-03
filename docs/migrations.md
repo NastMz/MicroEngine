@@ -35,7 +35,11 @@ Not published yet. Behaviour that changes:
   `BrowserLauncher.CreateSession(configure, page)`, whose `GameSession` starts each run with a `LaunchRequest`
   (`session.Start(new LaunchRequest { ScriptText = script })`). Only a browser host of your own is affected: the
   packages `microengine` builds use the new host.
-
+- `Game.Random` is a `SeededRandom` (a `Random` subclass in `MicroEngine.Kernel`) that draws exactly what
+  `new Random(seed)` drew, so games see the same values; `game.Random.GetType()` is no longer `Random`. `Game`,
+  `Scene`, `InputMap`, `CoroutineRunner` and `Tweener` implement `IStateHashed` and have a public `HashState` method.
+  **Migration:** a scene or game that already declared its own `HashState(StateHasher)` method marks it `override`;
+  one with another member named `HashState` renames it.
 - The platform contracts live in `MicroEngine.Platform` (namespace and assembly, carried by the `MicroEngine` package):
   `IPlatform` now extends `IPlatformHost`. A custom platform implements `Clock` (an `IMonotonicClock`; `Now` moved
   there), `PumpEvents(sink)` (replaces `PollEvents`, `CloseRequested` and `Suspended`: it delivers quit requests,

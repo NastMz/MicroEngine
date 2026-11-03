@@ -1,5 +1,6 @@
 using System.Numerics;
 using NeonRift.Art;
+using MicroEngine.Kernel;
 
 namespace NeonRift.Gameplay;
 
@@ -8,9 +9,16 @@ namespace NeonRift.Gameplay;
 /// aims at the nearest enemy, and in the arena keeps distance from the boss while hopping.
 /// Used by the playthrough tests and by capture runs (<c>RIFT_AUTO=1</c>); it is not part of play.
 /// </summary>
-public sealed class Autopilot
+public sealed class Autopilot : IStateHashed
 {
     private float _time, _hop;
+
+    /// <summary>Adds the bot's clock and its hop timer (the rest of its decision is read from the stage each update).</summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(_time);
+        hash.Add(_hop);
+    }
 
     public PlayerInput Next(Stage stage, float dt)
     {

@@ -5,6 +5,7 @@ using CourtyardKey.Visuals;
 using CourtyardKey.World;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace CourtyardKey.Entities;
 
@@ -42,6 +43,18 @@ public sealed class Warden : Enemy
     public override RectF Hurtbox => new(Position.X - 14, Position.Y - 32, 28, 32);
     private float Height => State == WardenState.Leap ? MathF.Sin(MathF.Min(1, _stateTime / LeapTime) * MathF.PI) * 40 : 0;
     private float LeapTime => Enraged ? 0.6f : 0.75f;
+
+    /// <summary>State hash: the attack state and its timer, the boomerang cooldown, charge and leap vectors, the pattern.</summary>
+    protected override void HashAiState(StateHasher hash)
+    {
+        hash.Add((int)State);
+        hash.Add(_stateTime);
+        hash.Add(_boomerangCooldown);
+        hash.Add(_chargeDir);
+        hash.Add(_leapFrom);
+        hash.Add(_leapTo);
+        hash.Add(_patternIndex);
+    }
 
     private void Enter(WardenState state)
     {
@@ -223,6 +236,14 @@ public sealed class Shockwave : Actor
     }
 
     public override float Depth => Position.Y - 100;
+
+    /// <summary>State hash: the ring's radius (its maximum is fixed) and whether it already struck the hero.</summary>
+    protected override void HashOwnState(StateHasher hash)
+    {
+        hash.Add(_radius);
+        hash.Add(_maxRadius);
+        hash.Add(_hit);
+    }
 
     public override void Update(float dt)
     {

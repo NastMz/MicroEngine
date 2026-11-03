@@ -1,10 +1,12 @@
+using MicroEngine.Kernel;
+
 namespace CourtyardKey.Model;
 
 /// <summary>
 /// Hit points measured in half hearts, with invulnerability frames after each hit.
 /// Shared by the hero, enemies and the boss so damage rules stay identical everywhere.
 /// </summary>
-public sealed class Health
+public sealed class Health : IStateHashed
 {
     public int Max { get; private set; }
     public int Current { get; private set; }
@@ -48,4 +50,12 @@ public sealed class Health
 
     public void Update(float dt) => Invulnerable = MathF.Max(0, Invulnerable - dt);
     public void ClearInvulnerability() => Invulnerable = 0;
+
+    /// <summary>State hash: maximum, current and remaining invulnerability (all of it decides the next hit).</summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(Max);
+        hash.Add(Current);
+        hash.Add(Invulnerable);
+    }
 }

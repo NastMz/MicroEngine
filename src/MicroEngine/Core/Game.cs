@@ -32,7 +32,7 @@ namespace MicroEngine.Core;
 /// }
 /// </code>
 /// </example>
-public abstract class Game : IEngineModule
+public abstract class Game : IEngineModule, IStateHashed
 {
     private IPlatform? _platform;
     private Engine? _engine;
@@ -87,7 +87,11 @@ public abstract class Game : IEngineModule
     /// (<see cref="GraphicsSettings"/> for the options it starts with). Available from <c>Load</c>.
     /// </summary>
     public GameScreen Screen { get; private set; } = null!;
-    /// <summary>Deterministic per-run randomness; seeded by the launcher.</summary>
+    /// <summary>
+    /// Deterministic per-run randomness, seeded by the launcher (<see cref="RunOptions.Seed"/>): a
+    /// <see cref="SeededRandom"/>, which draws exactly what <c>new Random(seed)</c> draws and whose state is part of the
+    /// per-step state hash (<see cref="ComputeStateHash"/>).
+    /// </summary>
     public Random Random { get; private set; } = new(1);
     /// <summary>True after <see cref="Quit"/>; the loop stops at the end of the current frame.</summary>
     public bool QuitRequested { get; private set; }
@@ -227,7 +231,7 @@ public abstract class Game : IEngineModule
             services.Add(game);
             services.Add(platform);
             services.Add(new GameScreen(platform, graphics));
-            services.Add(new Random(seed));
+            services.Add<Random>(new SeededRandom(seed));
             var input = game.CreateInput();
             var touch = new VirtualControls(game.CreateTouchLayout());
             input.AddSource(touch);
@@ -316,6 +320,65 @@ public abstract class Game : IEngineModule
         Unload();
         Assets.Dispose();
         Font.Dispose();
+    }
+
+    /// <summary>
+    /// Adds the game's own simulation state to the per-step state hash (<see cref="ComputeStateHash"/>), after the
+    /// engine's sections, in a section named <c>game</c>: the fields of this class that decide what happens next
+    /// (progress, a session's lives and score...). Leave out what only drawing or the platform uses (caches written while
+    /// drawing, textures, save locations). The default adds nothing; scenes add their own state
+    /// (<see cref="Scene.HashState"/>).
+    /// </summary>
+    public virtual void HashState(StateHasher hash) { }
+
+    private readonly StateHasher _stateHasher = new();
+
+    /// <summary>
+    /// Hashes the simulation state now (<see cref="StateHasher"/>), in sections: <c>engine.time</c> (update count and
+    /// time), <c>engine.random</c> (<see cref="Random"/>), <c>engine.input</c> (<see cref="Input"/> after sampling),
+    /// <c>engine.audio</c> (the music playing or paused and the volumes), <c>engine.assets</c> (how many assets are
+    /// loaded), <c>engine.achievements</c> (when on), <c>engine.scenes</c> (the stack and the transition), one
+    /// <c>scene[i]:Type</c> per scene from the bottom (its age, coroutines and tweens, then <see cref="Scene.HashState"/>)
+    /// and <c>game</c> (<see cref="HashState"/>). The loop records it after every fixed step of a run given a
+    /// <see cref="RunOptions.StateTrace"/>; drawing never changes it.
+    /// </summary>
+    /// <param name="sections">Whether the result carries each section's hash, to name the state that differs.</param>
+    /// <exception cref="InvalidOperationException">The game has not started.</exception>
+    public StepHash ComputeStateHash(bool sections = false)
+    {
+        _ = Engine;
+        var hash = _stateHasher;
+        hash.Reset();
+        hash.Section("engine.time");
+        hash.Add(UpdateCount);
+        hash.Add(Time);
+        hash.Section("engine.random");
+        hash.Add(Random as IStateHashed);
+        hash.Section("engine.input");
+        Input.HashState(hash);
+        // Logical music state only. In browsers songs still render in wall-clock slices, so this section can differ
+        // there until music state is independent of rendering.
+        hash.Section("engine.audio");
+        hash.Add(Audio.CurrentMusic);
+        hash.Add(Audio.MusicPaused);
+        hash.Add(Audio.MusicVolume);
+        hash.Add(Audio.SfxVolume);
+        hash.Section("engine.assets");
+        hash.Add(Assets.Count);
+        if (_achievements is { } achievements)
+        {
+            hash.Section("engine.achievements");
+            foreach (var status in achievements.All)
+            {
+                hash.Add(status.Id);
+                hash.Add(status.Progress);
+                hash.Add(status.Unlocked);
+            }
+        }
+        Scenes.HashState(hash);
+        hash.Section("game");
+        HashState(hash);
+        return new StepHash(UpdateCount, hash.Value, sections ? hash.Sections : []);
     }
 
     /// <summary>Test hook: initializes against a platform without running the loop.</summary>

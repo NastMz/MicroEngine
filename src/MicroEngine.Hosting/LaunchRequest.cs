@@ -25,7 +25,7 @@ public sealed record LaunchRequest
     public static IReadOnlyList<string> WindowWords { get; } = ["windowed", "fullscreen", "exclusive"];
 
     /// <summary>The one-line usage text desktop launchers print after an argument error.</summary>
-    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE]";
+    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]";
 
     /// <summary><c>--script</c>: the input script file to read, or null. Hosts that hold the text itself use <see cref="ScriptText"/>.</summary>
     public string? ScriptPath { get; init; }
@@ -77,6 +77,11 @@ public sealed record LaunchRequest
     public bool PaceToDisplay { get; init; } = true;
     /// <summary><c>--profile</c>: the file to write frame measurements to, or null to measure nothing.</summary>
     public string? ProfilePath { get; init; }
+    /// <summary>
+    /// <c>--state-trace</c>: the file to write the run's per-step state hashes to, one line per fixed step with the hash
+    /// of each section (the kernel's <c>StateTrace</c> text format), or null to hash nothing.
+    /// </summary>
+    public string? StateTracePath { get; init; }
 
     /// <summary>
     /// The time mode the run asks the loop for: <see cref="Time"/> when given, else <see cref="TimeMode.Deterministic"/>
@@ -137,6 +142,7 @@ public sealed record LaunchRequest
                 "--audio" => request with { Audio = Word(AudioWords, "auto, device or silent") },
                 "--audio-capture" => request with { AudioCapturePath = Next() },
                 "--profile" => request with { ProfilePath = Next() },
+                "--state-trace" => request with { StateTracePath = Next() },
                 "--gpu" => request with { Gpu = Word(GpuWords, "auto, high-performance or power-saving") },
                 "--renderer" => request with { Renderers = RendererNames(Next()) },
                 "--vsync" => request with { VSync = Word(["on", "off"], "on or off") == "on" },
