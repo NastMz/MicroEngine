@@ -210,25 +210,41 @@ public sealed class GameHostTests
         }
     }
 
-    private sealed class Archive : IContentSource
+    /// <summary>Reads one text file through <c>Assets</c>, wherever the composition's content is.</summary>
+    private sealed class Reader : Game
     {
-        public string Location => "archive.zip";
-        public bool Exists(string path) => false;
-        public Stream Open(string path) => throw new FileNotFoundException(path);
-        public IReadOnlyList<string> Files(string folder) => [];
+        public override GameSettings Settings { get; } = new("reader");
+        public string? Text { get; private set; }
+        public string? Location { get; private set; }
+        public string? FolderError { get; private set; }
+        protected override void Load()
+        {
+            Text = Assets.Text("notes/hello.txt");
+            Location = Assets.Source.Location;
+            try { _ = Assets.Content; }
+            catch (InvalidOperationException e) { FolderError = e.Message; }
+            Scenes.Push(new Idle());
+        }
     }
 
     [TestMethod]
-    public void Content_that_is_not_a_folder_is_refused_with_its_reason()
+    public void Content_that_is_not_a_folder_is_read_through_its_source()
     {
+        var bytes = new MemoryStream();
+        using (var zip = new System.IO.Compression.ZipArchive(bytes, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+        using (var writer = new StreamWriter(zip.CreateEntry("notes/hello.txt").Open())) writer.Write("from the archive");
+        bytes.Position = 0;
+        using var archive = new MicroEngine.Content.ZipContentSource(bytes, "archive.zip");
+        Reader? game = null;
         var host = GameHost.Create(Environment(HostKind.Test), new LaunchRequest { Frames = 1 }, h =>
         {
-            h.UseGame(() => new Probe());
-            h.Content = new Archive();
+            h.UseGame(() => game = new Reader());
+            h.Content = archive;
         }, h => h.UsePlatforms(new PlatformCatalog().Add(HeadlessPlatform.Profile)));
-        var error = host.Play().Error;
-        Assert.IsInstanceOfType<NotSupportedException>(error);
-        StringAssert.Contains(error.Message, "archive.zip");
+        Assert.IsNull(host.Play().Error);
+        Assert.AreEqual("from the archive", game!.Text);
+        Assert.AreEqual("archive.zip", game.Location);
+        StringAssert.Contains(game.FolderError, "archive.zip", "the folder view says the content is not a folder");
     }
 
     [TestMethod]

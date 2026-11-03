@@ -66,7 +66,9 @@ An argument is null.
 
 Where the game's content files come from when the game names no folder of its own; null (the default) for the
 <code>Content</code> folder next to the program. The desktop host sets a macOS bundle's resources, the Android app the
-folder it unpacked its assets to, the iOS app its bundle's folder.
+folder it unpacked its assets to, the iOS app its bundle's folder. Any source works: a folder
+([FolderContentSource](MicroEngine.Platform.FolderContentSource.md)), a zip archive (<code>ZipContentSource</code>) or files a host lists and opens itself
+(<code>ListedContentSource</code>).
 
 ```csharp
 public IContentSource? Content { get; set; }
