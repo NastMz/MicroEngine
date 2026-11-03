@@ -330,6 +330,13 @@ than 2.34), the launcher ends with `error: platform 'sdl' could not load its nat
 exit code 1. A desktop game run from a macOS application bundle reads its content from `Contents/Resources/Content`
 (`DesktopLauncher.BundleContentRoot`), so a signed bundle keeps only code in `Contents/MacOS`.
 
+Not published yet: arrives with the next SDK version. `SdlRendererDevice` implements the
+[graphics device contract](rendering.md#the-graphics-device) on SDL's renderer, with SDL's default driver or the one
+`GraphicsDeviceOptions.Api` names; it declares render targets, repeat addressing and (on every GPU driver) custom blend
+states. SDL's `software` driver is a diagnostic device: its triangle edges differ from the contract's pixel-centre rule,
+so it does not claim conformance. The platform places the canvas with the game's `Presentation` and samples it with
+`Presentation.Upscale` ([Presentation](rendering.md#presentation-one-choice-per-field)).
+
 ## raylib and browsers
 
 `RaylibPlatform` behaves like the SDL platform on desktops (the `raylib` profile). raylib cannot run on iOS, and on
@@ -358,6 +365,12 @@ private static readonly GameSession Session = BrowserLauncher.CreateSession(Game
 ```
 
 Source: [`src/MicroEngine.Raylib/BrowserLauncher.cs`](../../src/MicroEngine.Raylib/BrowserLauncher.cs)
+
+Not published yet: arrives with the next SDK version. `RaylibDevice` implements the
+[graphics device contract](rendering.md#the-graphics-device) on raylib's OpenGL layer, on raylib's own window only (raylib
+has one window per process). On desktops it declares render targets, repeat and mirror addressing, separate filters
+and custom blend states; in browsers only render targets. Like SDL, the platform places and samples the canvas as the
+game's `Presentation` says.
 
 The shared web host calls `Frame` once per `requestAnimationFrame`. In a browser the window never reports
 `CloseRequested`, the page paces frames and owns fullscreen, and saves go to `localStorage`
