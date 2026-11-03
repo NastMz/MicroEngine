@@ -71,15 +71,16 @@ public AchievementsScene(AchievementTracker tracker, UiTheme theme)
 
 ### <a id="MicroEngine_UI_AchievementsScene_CloseActions"></a> CloseActions
 
-Actions that close the screen (cancel, pause and confirm by default). The cursor moves with the "up" and "down" actions.
+Actions that close the screen; null (the default) is the map's cancel, pause and confirm actions. The cursor moves
+with the map's up and down actions ([Names](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Names)).
 
 ```csharp
-public string[] CloseActions { get; init; }
+public string[]? CloseActions { get; init; }
 ```
 
 #### Property Value
 
- [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
+ [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]?
 
 ### <a id="MicroEngine_UI_AchievementsScene_Dim"></a> Dim
 

@@ -92,7 +92,7 @@ public StickDirections Directions { get; init; }
 
 #### Property Value
 
- [StickDirections](MicroEngine.Input.StickDirections.md)
+ StickDirections
 
 ### <a id="MicroEngine_Input_TouchStick_Down"></a> Down
 

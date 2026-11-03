@@ -44,8 +44,19 @@ public abstract class Game : IEngineModule, IStateHashed
     public IGraphicsDevice Graphics => Platform.Graphics;
     /// <summary>The mixer that loads and plays sound effects and music. Created before <see cref="Load"/>.</summary>
     public AudioMixer Audio { get; private set; } = null!;
-    /// <summary>The input actions, built by <see cref="CreateInput"/> before <see cref="Load"/> and sampled once per update.</summary>
+    /// <summary>
+    /// The input actions of player 1, built by <see cref="CreateInput"/> before <see cref="Load"/> and sampled once per
+    /// update. With no setup player 1 owns every device, so a single-player game reads only this.
+    /// </summary>
     public InputMap Input { get; private set; } = null!;
+    /// <summary>
+    /// The engine's input (<see cref="Input.InputSystem"/>): the local players (<see cref="InputSystem.Players"/>;
+    /// player 1's map is <see cref="Input"/>), the devices and their events, the input layers events pass through before
+    /// gameplay (<see cref="InputSystem.Layers"/>; the on-screen controls are one), this update's events no layer took
+    /// (<see cref="InputSystem.Events"/>) and the text channel (<see cref="InputSystem.Text"/>). Created before
+    /// <see cref="Load"/>.
+    /// </summary>
+    public InputSystem InputSystem { get; private set; } = null!;
     /// <summary>The on-screen touch controls (<see cref="CreateTouchLayout"/>), drawn and read wherever the platform has a touch screen.</summary>
     public VirtualControls Touch { get; private set; } = null!;
     /// <summary>
@@ -168,7 +179,9 @@ public abstract class Game : IEngineModule, IStateHashed
     /// Override to choose the on-screen controls for touch screens: which d-pad, joystick and buttons press which actions,
     /// and where. The default (<see cref="TouchLayout.CreateDefault"/>) matches <see cref="InputMap.CreateDefault"/>.
     /// </summary>
-    protected virtual TouchLayout CreateTouchLayout() => TouchLayout.CreateDefault();
+    protected virtual TouchLayout CreateTouchLayout() => TouchLayout.CreateDefault(_inputNames);
+
+    private ActionNames? _inputNames; // the names of the map CreateInput built, for the default touch layout
 
     /// <summary>Asks the loop to stop. The current frame finishes, then every scene exits and <see cref="Unload"/> runs.</summary>
     public void Quit() => QuitRequested = true;
@@ -210,6 +223,7 @@ public abstract class Game : IEngineModule, IStateHashed
         Screen = services.Get<GameScreen>();
         Random = services.Get<Random>();
         Input = services.Get<InputMap>();
+        InputSystem = services.Get<InputSystem>();
         Touch = services.Get<VirtualControls>();
         Prompts = services.Get<ActionPrompts>();
         Assets = services.Get<AssetCache>();
@@ -238,9 +252,13 @@ public abstract class Game : IEngineModule, IStateHashed
             services.Add(new GameScreen(platform, graphics));
             services.Add<Random>(new SeededRandom(seed));
             var input = game.CreateInput();
+            game._inputNames = input.Names;
             var touch = new VirtualControls(game.CreateTouchLayout());
             input.AddSource(touch);
+            var system = CreateInputSystem(platform, input, touch);
             services.Add(input);
+            services.Add(system);
+            services.Add(system.Players);
             services.Add(touch);
             services.Add(new ActionPrompts(input, touch));
             // Optional features are found by query, never by casting the platform.
@@ -254,8 +272,9 @@ public abstract class Game : IEngineModule, IStateHashed
 
             var schedule = builder.Schedule;
             schedule.Add(FramePhase.BeginFrame, "engine.assets", _ => game.Assets.Update());
+            schedule.Add(FramePhase.Input, "engine.input.events", _ => game.RouteInput(screen));
             schedule.Add(FramePhase.Input, "engine.touch", frame => game.UpdateTouch(screen, (float)frame.Delta));
-            schedule.Add(FramePhase.PreFixed, "engine.input", _ => game.Input.Sample(platform.Input));
+            schedule.Add(FramePhase.PreFixed, "engine.input", _ => game.InputSystem.Sample());
             schedule.Add(FramePhase.FixedUpdate, "engine.time", step =>
             {
                 game.Time += (float)step.FixedDelta;
@@ -264,7 +283,7 @@ public abstract class Game : IEngineModule, IStateHashed
             schedule.Add(FramePhase.FixedUpdate, "engine.scenes", step => game.Scenes.Update((float)step.FixedDelta));
             schedule.Add(FramePhase.PostFixed, "engine.audio", step => game.Audio.Update((float)step.FixedDelta));
             schedule.Add(FramePhase.PostFixed, "engine.achievements", step => game.UpdateAchievements((float)step.FixedDelta));
-            schedule.Add(FramePhase.PostFixed, "engine.input.end", _ => game.Input.EndUpdate());
+            schedule.Add(FramePhase.PostFixed, "engine.input.end", _ => game.InputSystem.EndUpdate());
             // From the first update on, a load can show as a hitch: the cache reports slow ones.
             schedule.Add(FramePhase.PostFixed, "engine.assets.playing", _ => game.Assets.Playing = true);
             schedule.Add(FramePhase.Render, "engine.render", _ => game.Render(platform.BeginFrame()));
@@ -275,14 +294,70 @@ public abstract class Game : IEngineModule, IStateHashed
             // The game's own handling comes first, so later handlers see music paused and progress saved.
             builder.Lifecycle.Suspending += game.Suspend;
             builder.Lifecycle.Resumed += game.Resume;
+            // A window that loses the focus never hears the releases of what was held.
+            builder.Lifecycle.FocusChanged += focused => { if (!focused) game.InputSystem.ReleaseAll(); };
         }
     }
 
-    internal void UpdateTouch(ITouchScreen? screen, float dt)
+    /// <summary>
+    /// The engine's input over <paramref name="platform"/>: its event backend and the optional features it offers when
+    /// it has one, otherwise its polled source as one device; a host's extra polled sources as devices of their own;
+    /// the on-screen controls as the touch layer.
+    /// </summary>
+    private static InputSystem CreateInputSystem(IPlatform platform, InputMap input, VirtualControls touch)
+    {
+        var system = new InputSystem(input);
+        platform.TryGetCapability<IInputBackend>(out var backend);
+        platform.TryGetCapability<IKeyLabels>(out var labels);
+        platform.TryGetCapability<IGamepadRumble>(out var rumble);
+        platform.TryGetCapability<ITextInputControl>(out var text);
+        system.Connect(backend, labels, rumble, text);
+        var polled = platform.Input;
+        if (backend is null) system.AddPolled(polled);
+        else if (polled is CompositeInput composite)
+        {
+            // The backend's own polled view is the same device as its events: only the host's additions are read.
+            foreach (var source in composite.Sources)
+                if (!ReferenceEquals(source, backend)) system.AddPolled(source);
+        }
+        else if (!ReferenceEquals(polled, backend)) system.AddPolled(polled);
+        system.Layers.Add(touch, InputLayerOrder.TouchControls);
+        return system;
+    }
+
+    private readonly List<TouchEvent> _touches = [];
+
+    /// <summary>
+    /// The frame's input routing: the backend's events and those sent by scripts and tests, then the screen's touches
+    /// (and scripted touches) as pointers in screen and canvas pixels, all through the input layers to gameplay.
+    /// </summary>
+    internal void RouteInput(ITouchScreen? screen)
     {
         Touch.SetContext(Scenes.Current?.TouchActions);
-        Touch.Update(screen, dt, Input.LastDevice);
+        Touch.BeginFrame(screen);
+        InputSystem.BeginFrame();
+        if (screen is null) return;
+        _touches.Clear();
+        screen.ReadTouches(_touches);
+        Touch.TakeScripted(_touches);
+        if (_touches.Count == 0) return;
+        var frame = screen.Overlay?.Frame(screen.Size, screen.SafeArea, Settings.VirtualWidth, Settings.VirtualHeight, Settings.Scaling)
+            ?? FrameLayout.Fit(screen.Size, screen.SafeArea, Settings.VirtualWidth, Settings.VirtualHeight, Settings.Scaling);
+        foreach (var t in _touches)
+        {
+            var canvas = FrameLayout.ToCanvas(t.Position, frame, Settings.VirtualWidth, Settings.VirtualHeight);
+            var e = t.Phase switch
+            {
+                TouchPhase.Began => InputEvent.PointerDown(DeviceId.TouchScreen, t.Finger, PointerKind.Touch, canvas),
+                TouchPhase.Moved => InputEvent.PointerMove(DeviceId.TouchScreen, t.Finger, PointerKind.Touch, canvas),
+                TouchPhase.Ended => InputEvent.PointerUp(DeviceId.TouchScreen, t.Finger, PointerKind.Touch, canvas),
+                _ => new InputEvent { Kind = InputEventKind.PointerCancel, Device = DeviceId.TouchScreen, Pointer = t.Finger, PointerKind = PointerKind.Touch, Position = canvas },
+            };
+            InputSystem.Route(e with { ScreenPosition = t.Position });
+        }
     }
+
+    internal void UpdateTouch(ITouchScreen? screen, float dt) => Touch.EndFrame(dt, Input.LastDevice);
 
     private void UpdateAchievements(float dt)
     {
@@ -309,8 +384,9 @@ public abstract class Game : IEngineModule, IStateHashed
         _pausedMusicForSuspension = !Audio.MusicPaused;
         if (_pausedMusicForSuspension) Audio.PauseMusic(true);
         _achievements?.Flush();
-        // The system never lifts fingers that were down when the game left.
+        // The system never lifts fingers that were down when the game left, nor keys held when it went away.
         Touch.CancelAll();
+        InputSystem.ReleaseAll();
         OnSuspended();
     }
 
@@ -343,7 +419,7 @@ public abstract class Game : IEngineModule, IStateHashed
 
     /// <summary>
     /// Hashes the simulation state now (<see cref="StateHasher"/>), in sections: <c>engine.time</c> (update count and
-    /// time), <c>engine.random</c> (<see cref="Random"/>), <c>engine.input</c> (<see cref="Input"/> after sampling),
+    /// time), <c>engine.random</c> (<see cref="Random"/>), <c>engine.input</c> (<see cref="Input"/> after sampling, then the other players and the pairings when there are any),
     /// <c>engine.audio</c> (the music playing or paused and the volumes), <c>engine.assets</c> (how many assets are
     /// loaded), <c>engine.achievements</c> (when on), <c>engine.scenes</c> (the stack and the transition), one
     /// <c>scene[i]:Type</c> per scene from the bottom (its age, coroutines and tweens, then <see cref="Scene.HashState"/>)
@@ -364,6 +440,8 @@ public abstract class Game : IEngineModule, IStateHashed
         hash.Add(Random as IStateHashed);
         hash.Section("engine.input");
         Input.HashState(hash);
+        // Nothing for one player without pairings, so single-player hashes are player 1's map alone.
+        InputSystem.HashState(hash);
         // Logical music state only. In browsers songs still render in wall-clock slices, so this section can differ
         // there until music state is independent of rendering.
         hash.Section("engine.audio");

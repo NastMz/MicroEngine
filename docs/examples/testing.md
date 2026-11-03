@@ -287,7 +287,7 @@ state after each fixed step and records one 64-bit hash per update, and two trac
 | --- | --- |
 | `engine.time` | `UpdateCount` and `Time` |
 | `engine.random` | `Game.Random`: its seed, how many values it drew and a running hash of them |
-| `engine.input` | The actions down, pressed, latched and forced, their values, the last device, the gamepad and the pointer |
+| `engine.input` | The actions down, pressed, latched and forced, their values, the last device, the gamepad and the pointer; next SDK version: the wheel, the pointers and consumed actions once a game has any, then the other players' actions and the device pairings when there are any |
 | `engine.audio` | The music playing (`CurrentMusic`), whether it is paused, and the volumes |
 | `engine.assets` | How many assets are loaded |
 | `engine.achievements` | Each achievement's progress and whether it is unlocked (only with `UseAchievements`) |

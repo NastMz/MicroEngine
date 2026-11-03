@@ -160,6 +160,18 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_input_references_only_the_kernel_and_the_platform_contracts()
+    {
+        var input = typeof(MicroEngine.Input.InputMap).Assembly;
+        Assert.AreEqual(Input, input.GetName().Name);
+        Assert.AreEqual(Input, typeof(MicroEngine.Input.InputSystem).Assembly.GetName().Name, "devices, players and layers are input's");
+        Assert.AreEqual(Input, typeof(MicroEngine.Input.IInputBackend).Assembly.GetName().Name);
+        var engine = input.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToList();
+        CollectionAssert.AreEqual(new[] { Kernel, Platform }, engine, string.Join(", ", engine));
+        CollectionAssert.Contains(typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList(), Input, "the core reads input through it");
+    }
+
+    [TestMethod]
     public void The_compiled_core_references_only_allowed_assemblies()
     {
         var engine = typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();

@@ -153,26 +153,32 @@ public sealed record TouchLayout
     public static TouchLayout Of(params TouchControl[] controls) => new() { Controls = controls };
 
     /// <summary>
-    /// The layout for <see cref="InputMap.CreateDefault"/>: a d-pad on the left; confirm (A), cancel (B) and action (C)
-    /// on the right; pause at the top right.
+    /// The layout for <see cref="InputMap.CreateDefault(ActionNames?)"/>: a d-pad on the left; confirm (A), cancel (B) and
+    /// action (C) on the right; pause at the top right. <paramref name="names"/> are the actions they press (null: the
+    /// default names); the controls keep the default names as their ids.
     /// </summary>
-    public static TouchLayout CreateDefault() => Of(
-        new TouchDPad { Offset = new(104, 100) },
-        new TouchButton("confirm", "confirm", "A") { Anchor = TouchAnchor.BottomRight, Offset = new(70, 84), Radius = 38 },
-        new TouchButton("cancel", "cancel", "B") { Anchor = TouchAnchor.BottomRight, Offset = new(156, 54), Radius = 32 },
-        new TouchButton("action", "action", "C") { Anchor = TouchAnchor.BottomRight, Offset = new(146, 140), Radius = 30 },
-        new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(34, 30), Radius = 20 });
+    public static TouchLayout CreateDefault(ActionNames? names = null)
+    {
+        var n = names ?? ActionNames.Default;
+        return Of(
+            new TouchDPad("dpad", n.Left, n.Right, n.Up, n.Down) { Offset = new(104, 100) },
+            new TouchButton("confirm", n.Confirm, "A") { Anchor = TouchAnchor.BottomRight, Offset = new(70, 84), Radius = 38 },
+            new TouchButton("cancel", n.Cancel, "B") { Anchor = TouchAnchor.BottomRight, Offset = new(156, 54), Radius = 32 },
+            new TouchButton("action", n.Action, "C") { Anchor = TouchAnchor.BottomRight, Offset = new(146, 140), Radius = 30 },
+            new TouchButton("pause", n.Pause, "II") { Anchor = TouchAnchor.TopRight, Offset = new(34, 30), Radius = 20 });
+    }
 }
 
 /// <summary>
 /// On-screen controls at run time: hit testing, finger tracking, d-pad and joystick values, tap latching, haptics and
-/// drawing. It is an <see cref="IActionSource"/> (read by <see cref="InputMap"/> with the keyboard and gamepad) and an
-/// <see cref="ITouchOverlay"/> (drawn by the backend over the game). Each finger belongs to the control it started on
-/// until it lifts, so two thumbs work independently and a thumb that slides a little stays on its control.
+/// drawing. It is an <see cref="IActionSource"/> (read by <see cref="InputMap"/> with the keyboard and gamepad), an
+/// <see cref="ITouchOverlay"/> (drawn by the backend over the game) and an input layer (<see cref="IInputLayer"/>, at
+/// <see cref="InputLayerOrder.TouchControls"/>): a finger that lands on a control is the control's, every other finger
+/// goes on to gameplay as a pointer. Each finger belongs to the control it started on until it lifts, so two thumbs
+/// work independently and a thumb that slides a little stays on its control.
 /// </summary>
-public sealed class VirtualControls : IActionSource, ITouchOverlay
+public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
 {
-    private const int TapFrames = 8;
     private const long ScriptFingerBase = 1L << 40;
 
     private sealed class Placed(TouchControl control)
@@ -216,17 +222,16 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
     private readonly List<(long Finger, string? Target, Vector2 At, bool Lift)> _scripted = [];
     private readonly HashSet<string> _held = new(StringComparer.Ordinal);
     private readonly Dictionary<string, float> _values = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, int> _taps = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _taps = new(StringComparer.Ordinal);
     // Reused every frame, so reading the controls allocates nothing.
     private readonly HashSet<string> _context = new(StringComparer.Ordinal);
-    private readonly List<string> _keys = [];
     private string[] _actions = [];
     private readonly HashSet<string> _sampled = new(StringComparer.Ordinal);
     private TouchLayout _layout;
     private Vector2 _size;
     private RectF _safe;
     private float _density;
-    private bool _touchedSinceOtherDevice, _touchFirst, _laidOut;
+    private bool _touchedSinceOtherDevice, _touchFirst, _laidOut, _began;
     private ITouchScreen? _screen;
 
     /// <summary>Creates the controls for <paramref name="layout"/> (null: <see cref="TouchLayout.CreateDefault"/>). Games use the instance in <see cref="Core.Game.Touch"/>.</summary>
@@ -420,7 +425,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
     /// <summary>Whether a control holds <paramref name="action"/> down; a tap shorter than an update still counts once.</summary>
     public bool IsDown(string action)
     {
-        if (_taps.ContainsKey(action))
+        if (_taps.Contains(action))
         {
             _sampled.Add(action);
             return true;
@@ -455,22 +460,37 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
     /// Called once per frame by the loop, before the steps: lays the controls out for the screen, applies its touch
     /// events and scripted touches, and advances visibility and press animations. <paramref name="otherDevice"/> is the
     /// device that last pressed an action (a keyboard or gamepad hides <see cref="TouchVisibility.Auto"/> controls).
+    /// Equivalent to <see cref="BeginFrame"/>, then every touch of the screen and every scripted touch through
+    /// <see cref="HandleTouch"/>, then <see cref="EndFrame"/>; the engine's loop routes the touches through the input
+    /// layers instead, so fingers no control takes reach gameplay.
     /// </summary>
     public void Update(ITouchScreen? screen, float dt, InputDevice otherDevice = InputDevice.None)
     {
-        foreach (var a in _sampled) _taps.Remove(a);
-        _sampled.Clear();
-        _keys.Clear();
-        _keys.AddRange(_taps.Keys);
-        foreach (var a in _keys)
-            if (--_taps[a] <= 0) _taps.Remove(a);
-
-        _screen = screen;
+        BeginFrame(screen);
         if (screen is null)
         {
             Shown = false;
             return;
         }
+        _events.Clear();
+        screen.ReadTouches(_events);
+        TakeScripted(_events);
+        foreach (var e in _events) HandleTouch(e);
+        EndFrame(dt, otherDevice);
+    }
+
+    /// <summary>
+    /// Starts a frame: taps an update has read stop counting, and the controls are laid out again when the screen's
+    /// size, safe area or density changed (releasing every finger). Called by the loop before the frame's touches.
+    /// </summary>
+    public void BeginFrame(ITouchScreen? screen)
+    {
+        // A tap shorter than a frame stays down until an update has read it: taps expire by updates, never by frames.
+        foreach (var a in _sampled) _taps.Remove(a);
+        _sampled.Clear();
+        _began = false;
+        _screen = screen;
+        if (screen is null) return;
         _touchFirst = screen.TouchFirst;
         if (!_laidOut || screen.Size != _size || screen.SafeArea != _safe || screen.PixelsPerDp != _density)
         {
@@ -478,11 +498,20 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
             if (_laidOut && _fingers.Count > 0) CancelAll();
             Relayout();
         }
-        _events.Clear();
-        screen.ReadTouches(_events);
+    }
+
+    /// <summary>
+    /// Moves the scripted touches queued since the previous frame (<see cref="ScriptTouch"/>, <see cref="ScriptTouchAt"/>,
+    /// <see cref="ScriptLift"/>) into <paramref name="events"/> as touch events in screen pixels, after the events
+    /// already in it. Call after <see cref="BeginFrame"/>, which lays the controls out; without a screen they stay queued.
+    /// </summary>
+    public void TakeScripted(List<TouchEvent> events)
+    {
+        ArgumentNullException.ThrowIfNull(events);
+        if (_screen is null) return;
         foreach (var (finger, target, at, lift) in _scripted)
         {
-            if (lift) { _events.Add(new TouchEvent(finger, TouchPhase.Ended, _fingers.TryGetValue(finger, out var f) ? f.Position : default)); continue; }
+            if (lift) { events.Add(new TouchEvent(finger, TouchPhase.Ended, _fingers.TryGetValue(finger, out var f) ? f.Position : default)); continue; }
             Vector2 position;
             if (target is null) position = at * _size;
             else
@@ -491,24 +520,67 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
                 bool holding = p.Finger == finger && p.Control is not TouchButton;
                 // A thumb lands on the middle of a stick or d-pad, then pushes: a floating stick starts where it lands.
                 if (!holding && p.Control is not TouchButton && at != Vector2.Zero && !_fingers.ContainsKey(finger))
-                    _events.Add(new TouchEvent(finger, TouchPhase.Began, p.Center));
+                    events.Add(new TouchEvent(finger, TouchPhase.Began, p.Center));
                 position = (holding ? p.Origin : p.Center) + at * p.Radius;
             }
-            bool known = _fingers.ContainsKey(finger) || _events.Any(e => e.Finger == finger && e.Phase == TouchPhase.Began);
-            _events.Add(new TouchEvent(finger, known ? TouchPhase.Moved : TouchPhase.Began, position));
+            bool known = _fingers.ContainsKey(finger) || events.Exists(e => e.Finger == finger && e.Phase == TouchPhase.Began);
+            events.Add(new TouchEvent(finger, known ? TouchPhase.Moved : TouchPhase.Began, position));
         }
         _scripted.Clear();
-        if (_layout.Visibility == TouchVisibility.Never) _events.Clear();
-        foreach (var e in _events) Handle(e);
-        RecomputeActions();
+    }
 
+    /// <summary>
+    /// Applies one touch (screen pixels). Returns whether the finger is a control's: a finger that lands on a visible
+    /// control is, until it lifts; any other finger is not, and its events are left for gameplay.
+    /// </summary>
+    public bool HandleTouch(TouchEvent e)
+    {
+        if (_screen is null || _layout.Visibility == TouchVisibility.Never) return false;
+        bool owned = _fingers.TryGetValue(e.Finger, out var before) && before.Control is not null;
+        if (e.Phase == TouchPhase.Began) _began = true;
+        Handle(e);
+        return e.Phase == TouchPhase.Began ? _fingers.TryGetValue(e.Finger, out var after) && after.Control is not null : owned;
+    }
+
+    /// <summary>
+    /// The input layer: takes the touch-screen pointers (<see cref="PointerKind.Touch"/> of
+    /// <see cref="DeviceId.TouchScreen"/>) that land on a control (<see cref="HandleTouch"/>, with
+    /// <see cref="InputEvent.ScreenPosition"/>); everything else goes on.
+    /// </summary>
+    public bool Handle(in InputEvent e)
+    {
+        if (e.PointerKind != PointerKind.Touch || e.Device != DeviceId.TouchScreen) return false;
+        TouchPhase? phase = e.Kind switch
+        {
+            InputEventKind.PointerDown => TouchPhase.Began,
+            InputEventKind.PointerMove => TouchPhase.Moved,
+            InputEventKind.PointerUp => TouchPhase.Ended,
+            InputEventKind.PointerCancel => TouchPhase.Canceled,
+            _ => null,
+        };
+        return phase is { } p && HandleTouch(new TouchEvent(e.Pointer, p, e.ScreenPosition));
+    }
+
+    /// <summary>
+    /// Ends a frame's touches: works out the actions the controls press, whether they are shown and their press
+    /// animations. <paramref name="otherDevice"/> is the device that last pressed an action (a keyboard or gamepad hides
+    /// <see cref="TouchVisibility.Auto"/> controls).
+    /// </summary>
+    public void EndFrame(float dt, InputDevice otherDevice = InputDevice.None)
+    {
+        if (_screen is null)
+        {
+            Shown = false;
+            return;
+        }
+        RecomputeActions();
         if (otherDevice is InputDevice.Keyboard or InputDevice.Gamepad && _fingers.Count == 0) _touchedSinceOtherDevice = false;
-        if (_events.Any(e => e.Phase == TouchPhase.Began)) _touchedSinceOtherDevice = true;
+        if (_began) _touchedSinceOtherDevice = true;
         Shown = _layout.Visibility switch
         {
             TouchVisibility.Always => true,
             TouchVisibility.Never => false,
-            _ => _touchedSinceOtherDevice || (screen.TouchFirst && otherDevice is not (InputDevice.Keyboard or InputDevice.Gamepad)),
+            _ => _touchedSinceOtherDevice || (_screen.TouchFirst && otherDevice is not (InputDevice.Keyboard or InputDevice.Gamepad)),
         };
         float fade = dt / 0.12f;
         foreach (var p in _controls) p.Glow = p.Pressed ? 1 : Math.Max(0, p.Glow - fade);
@@ -713,7 +785,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
         p.Reported.Clear();
         p.Reported.UnionWith(p.Directions);
         // Taps shorter than a frame still reach a step (as with keys).
-        foreach (var a in newly) _taps[a] = TapFrames;
+        foreach (var a in newly) _taps.Add(a);
         // A tick on every new press and on each d-pad direction change, so the thumb feels what it pressed; a stick
         // ticks only when it leaves the centre.
         if (newly.Count > 0 && _layout.Haptics && (p.Control is not TouchStick || !was) && _screen is { CanVibrate: true } screen)

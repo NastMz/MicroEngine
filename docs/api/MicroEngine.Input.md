@@ -2,15 +2,27 @@
 
 <div data-pagefind-weight="0.3">
 
-Input actions over keyboard, gamepad, mouse and touch: bindings, analog values, on-screen controls, custom sources.
+Input: device events with ids (keys, text, pointers and touches, wheel, gamepads), players and device pairing, input layers, and actions over them: bindings and their persistence, analog values, on-screen controls, prompts, custom sources.
 
 Guide: [Input](../manual/input.md)  
 
 ### Classes
 
+ [ActionBindingData](MicroEngine.Input.ActionBindingData.md)
+
+The bindings of one action as data, by name (keys, buttons and axes are their enum names), so saved bindings stay
+valid when the engine adds keys. Part of [InputBindingSet](MicroEngine.Input.InputBindingSet.md).
+
  [ActionBindings](MicroEngine.Input.ActionBindings.md)
 
 What an action is bound to, for display or a rebinding screen ([GetBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_GetBindings_System_String_)).
+
+ [ActionNames](MicroEngine.Input.ActionNames.md)
+
+The action names the engine's own parts read: menus and dialogs (<code>SelectionList</code>, <code>DialogueBox</code>), the
+achievements screen, the default on-screen controls and prompts. They are defaults the game may rename: build the
+map with [CreateDefault](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_CreateDefault_MicroEngine_Input_ActionNames_) or set [Names](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Names), and every engine
+part follows.
 
  [ActionPrompts](MicroEngine.Input.ActionPrompts.md)
 
@@ -32,6 +44,33 @@ deflection and an arrow on the rim whose opacity follows the intensity. Images r
 
 Where the virtual canvas goes in a window: the shared letterbox rule of every backend.
 
+ [InputBindingSet](MicroEngine.Input.InputBindingSet.md)
+
+Every action's bindings as data, for a rebinding screen to save and load: through [SaveBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_SaveBindings_MicroEngine_Platform_IStorage_System_String_)
+and [LoadBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_LoadBindings_MicroEngine_Platform_IStorage_System_String_) (the platform's storage), or as a value a game keeps in its own save
+(<code>SaveStore.Save("bindings", map.ExportBindings())</code>; the classes have public properties).
+
+ [InputDeviceInfo](MicroEngine.Input.InputDeviceInfo.md)
+
+A connected device as its backend describes it.
+
+ [InputDevices](MicroEngine.Input.InputDevices.md)
+
+The state of every device, derived from the events no input layer took: which keys and buttons are held, where the
+axes, the pointers and the wheel are, and which devices are connected. A press that started and ended between two
+updates still reads as held until an update has sampled it ([EndSample](MicroEngine.Input.InputDevices.md#MicroEngine_Input_InputDevices_EndSample)): taps expire by updates, never
+by drawn frames. Players read it through views limited to their devices ([View](MicroEngine.Input.InputDevices.md#MicroEngine_Input_InputDevices_View_System_Func_MicroEngine_Input_DeviceId_System_Boolean__)).
+
+ [InputLayerOrder](MicroEngine.Input.InputLayerOrder.md)
+
+The orders of the engine's own layers. Higher orders see events first; gameplay is below every layer.
+
+ [InputLayers](MicroEngine.Input.InputLayers.md)
+
+The input layers in routing order: highest <code>order</code> first, layers of equal order in the order they were added.
+Events no layer takes become the polled state actions read ([InputDevices](MicroEngine.Input.InputDevices.md)) and the frame's
+[Events](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Events).
+
  [InputMap](MicroEngine.Input.InputMap.md)
 
 Named actions bound to keys, gamepad buttons, stick directions and analog axes, plus any number of action sources
@@ -41,9 +80,33 @@ scripted input stay in one place. Every action is both digital ([Down](MicroEngi
 virtual joystick gives the deflection beyond its dead zone.
 Edge states (pressed/released) are computed per fixed update, so a tap is never lost or doubled.
 
+ [InputSystem](MicroEngine.Input.InputSystem.md)
+
+The engine's input: the devices and their events, the routing through input layers, the players and their action
+maps, and the text channel. Each frame the events of the platform's input backend (and those sent with
+[Send](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Send_MicroEngine_Input_InputEvent__)) are routed through [Layers](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Layers); what no layer takes becomes the devices' polled state
+and [Events](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Events). Each update samples every player's map from the devices they hear.
+
  [OverlayShapes](MicroEngine.Input.OverlayShapes.md)
 
 Shapes built from [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md) triangles and rectangles, which never overlap, so translucent colours stay even.
+
+ [PlayerInput](MicroEngine.Input.PlayerInput.md)
+
+One local player: an action map of their own ([Map](MicroEngine.Input.PlayerInput.md#MicroEngine_Input_PlayerInput_Map)) read from the devices paired with them.
+
+ [Players](MicroEngine.Input.Players.md)
+
+The local players. With no setup there is one player who owns every device, so a single-player game never deals
+with players at all (<code>Game.Input</code> is player 1's map). For local multiplayer, pair devices explicitly: a
+device paired with a player is heard only by that player, and once player 1 has a device of their own they stop
+hearing the devices nobody was given.
+
+ [TextInput](MicroEngine.Input.TextInput.md)
+
+The text channel, separate from actions: while it is on, characters typed (and the text an input method is
+composing) arrive here instead of as keys to remember. Turn it on for name entry, chat or a console; on phones it
+shows the on-screen keyboard. A layer above gameplay (a text field) may take text events itself.
 
  [TouchButton](MicroEngine.Input.TouchButton.md)
 
@@ -80,9 +143,11 @@ Set one style for every control kind ([ButtonStyle](MicroEngine.Input.TouchLayou
  [VirtualControls](MicroEngine.Input.VirtualControls.md)
 
 On-screen controls at run time: hit testing, finger tracking, d-pad and joystick values, tap latching, haptics and
-drawing. It is an [IActionSource](MicroEngine.Input.IActionSource.md) (read by [InputMap](MicroEngine.Input.InputMap.md) with the keyboard and gamepad) and an
-[ITouchOverlay](MicroEngine.Input.ITouchOverlay.md) (drawn by the backend over the game). Each finger belongs to the control it started on
-until it lifts, so two thumbs work independently and a thumb that slides a little stays on its control.
+drawing. It is an [IActionSource](MicroEngine.Input.IActionSource.md) (read by [InputMap](MicroEngine.Input.InputMap.md) with the keyboard and gamepad), an
+[ITouchOverlay](MicroEngine.Input.ITouchOverlay.md) (drawn by the backend over the game) and an input layer ([IInputLayer](MicroEngine.Input.IInputLayer.md), at
+[TouchControls](MicroEngine.Input.InputLayerOrder.md#MicroEngine_Input_InputLayerOrder_TouchControls)): a finger that lands on a control is the control's, every other finger
+goes on to gameplay as a pointer. Each finger belongs to the control it started on until it lifts, so two thumbs
+work independently and a thumb that slides a little stays on its control.
 
 ### Structs
 
@@ -91,6 +156,23 @@ until it lifts, so two thumbs work independently and a thumb that slides a littl
 How to show one action to the player on one device: <code>"Z"</code> on a keyboard, <code>"A"</code> on an Xbox pad,
 <code>"×"</code> on a PlayStation pad, the button's own label on a touch screen. [Text](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Text) is what to print;
 [Kind](MicroEngine.Input.ActionPrompt.md#MicroEngine_Input_ActionPrompt_Kind) and the other members let a game draw a glyph instead (a key cap, a coloured pad button).
+
+ [DeviceId](MicroEngine.Input.DeviceId.md)
+
+Identifies one input device for as long as it is connected: a keyboard, a mouse, a touch screen, one gamepad. Ids
+are chosen by whoever reports the device (a backend's own ids are positive; the engine's polled sources and touch
+screen use negative ones) and are never reused while the game runs.
+
+ [InputEvent](MicroEngine.Input.InputEvent.md)
+
+One thing that happened on an input device, in the order it happened, with the time it happened on the host's
+monotonic clock. Backends deliver them ([IInputBackend](MicroEngine.Input.IInputBackend.md)); the engine routes them through the input
+layers (UI, on-screen controls, then gameplay) and derives the polled state actions read from those no layer took.
+Build one with the static methods ([KeyDown](MicroEngine.Input.InputEvent.md#MicroEngine_Input_InputEvent_KeyDown_MicroEngine_Input_DeviceId_MicroEngine_Input_Key_System_Double_System_Boolean_), [PointerDown](MicroEngine.Input.InputEvent.md#MicroEngine_Input_InputEvent_PointerDown_MicroEngine_Input_DeviceId_System_Int64_MicroEngine_Input_PointerKind_System_Numerics_Vector2_MicroEngine_Input_PointerButton_System_Double_)...).
+
+ [PointerInfo](MicroEngine.Input.PointerInfo.md)
+
+A pointer the game can read: the mouse while it is over the window, or a finger or pen on the screen.
 
  [PointerState](MicroEngine.Input.PointerState.md)
 
@@ -108,17 +190,43 @@ One change of one finger, in the touch screen's pixels ([Size](MicroEngine.Input
 
  [IActionSource](MicroEngine.Input.IActionSource.md)
 
-A source of actions rather than of keys: on-screen touch controls ([VirtualControls](MicroEngine.Input.VirtualControls.md)), a network peer,
-an accessibility switch or an AI. Added with [AddSource](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_AddSource_MicroEngine_Input_IActionSource_), it is read every step together with
-the keyboard and gamepad, so a game cannot tell which produced an action.
+A source of actions rather than of keys: on-screen touch controls, a network peer, an accessibility switch or an AI.
+Added with [AddSource](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_AddSource_MicroEngine_Input_IActionSource_), it is read every step together with the keyboard and gamepad, so a game
+cannot tell which produced an action.
+
+ [IGamepadRumble](MicroEngine.Input.IGamepadRumble.md)
+
+Gamepad vibration, a capability of input backends whose pads can rumble.
+
+ [IInputBackend](MicroEngine.Input.IInputBackend.md)
+
+The input part of a platform: the devices and what happens on them, delivered as events. A capability of hosts with
+input ([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)); the engine drains it once per frame, at the start
+of the frame's input phase.
+
+ [IInputLayer](MicroEngine.Input.IInputLayer.md)
+
+One stage of input routing: user interface, on-screen controls, a debug console, a rebinding screen. Events reach
+the layers from the highest order down ([InputLayers](MicroEngine.Input.InputLayers.md)); a layer that returns true takes the event, and
+nothing below it (other layers, the actions of gameplay) sees it.
 
  [IInputSource](MicroEngine.Input.IInputSource.md)
 
 The raw device state a backend reports once per polled frame.
 
+ [IKeyLabels](MicroEngine.Input.IKeyLabels.md)
+
+The labels the player's keyboard layout prints on keys: "Q" for [A](MicroEngine.Input.Key.md) on AZERTY. A capability of input
+backends that know the layout ([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)).
+
  [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md)
 
 Primitive drawing in screen pixels, implemented by each backend for [ITouchOverlay](MicroEngine.Input.ITouchOverlay.md).
+
+ [ITextInputControl](MicroEngine.Input.ITextInputControl.md)
+
+Turns the system's text input on and off: the on-screen keyboard on phones, input methods (IME) on desktops. A
+capability of input backends that deliver [Text](MicroEngine.Input.InputEventKind.md).
 
  [ITouchOverlay](MicroEngine.Input.ITouchOverlay.md)
 
@@ -139,18 +247,35 @@ Draws touch controls. The engine calls it for each shown control with its state;
 
 ### Enums
 
+ [DeviceKind](MicroEngine.Input.DeviceKind.md)
+
+The kind of an input device.
+
  [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
 
-The button names of a gamepad family, for prompts ([ActionPrompts](MicroEngine.Input.ActionPrompts.md)): [PadButton](MicroEngine.Input.PadButton.md) uses Xbox
-names, which PlayStation pads show as shapes and Nintendo pads with A/B and X/Y swapped.
+The button names of a gamepad family, for prompts: [PadButton](MicroEngine.Input.PadButton.md) uses Xbox names, which PlayStation pads
+show as shapes and Nintendo pads with A/B and X/Y swapped.
 
  [InputDevice](MicroEngine.Input.InputDevice.md)
 
 The kind of device that last pressed an action (see [LastDevice](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_LastDevice)).
 
+ [InputEventKind](MicroEngine.Input.InputEventKind.md)
+
+What an [InputEvent](MicroEngine.Input.InputEvent.md) reports.
+
+ [InputMap.StickDirection](MicroEngine.Input.InputMap.StickDirection.md)
+
+The direction of the left stick an action is bound to (<code>None</code>, <code>Left</code>, <code>Right</code>, <code>Up</code>,
+<code>Down</code>). The action is down when the stick points that way beyond [StickThreshold](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_StickThreshold), and its
+[Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_) is the deflection along that direction.
+
  [Key](MicroEngine.Input.Key.md)
 
-Physical keys the engine understands. Backends map their own codes onto these.
+Physical keys, named by their position on a US keyboard (a scancode, not a character): [A](MicroEngine.Input.Key.md) is the key
+left of [S](MicroEngine.Input.Key.md) whatever the layout prints on it, so WASD movement stays in place on AZERTY or Dvorak. Ask
+[IKeyLabels](MicroEngine.Input.IKeyLabels.md) (or <code>ActionPrompts</code>) for the label the player's layout shows. Backends map their own
+codes onto these; the set covers a full-size keyboard.
 
  [PadAxis](MicroEngine.Input.PadAxis.md)
 
@@ -158,17 +283,20 @@ Analog gamepad axes. Sticks are -1..1 (right and down positive), triggers 0..1.
 
  [PadButton](MicroEngine.Input.PadButton.md)
 
-Gamepad buttons using Xbox layout names; backends map their own codes.
+Gamepad buttons by position, using Xbox names ([A](MicroEngine.Input.PadButton.md) is the bottom face button on every pad); backends map
+their own codes. [GamepadStyle](MicroEngine.Input.GamepadStyle.md) says what the pad prints there.
+
+ [PointerButton](MicroEngine.Input.PointerButton.md)
+
+Pointer buttons. A finger or pen tip is [Primary](MicroEngine.Input.PointerButton.md).
+
+ [PointerKind](MicroEngine.Input.PointerKind.md)
+
+What kind of pointer moved or pressed: the mouse, a finger on a touch screen or a pen.
 
  [PromptKind](MicroEngine.Input.PromptKind.md)
 
 What an [ActionPrompt](MicroEngine.Input.ActionPrompt.md) shows: a key, a gamepad control, an on-screen control, or a plain label.
-
- [InputMap.StickDirection](MicroEngine.Input.InputMap.StickDirection.md)
-
-The direction of the left stick an action is bound to (<code>None</code>, <code>Left</code>, <code>Right</code>, <code>Up</code>,
-<code>Down</code>). The action is down when the stick points that way beyond [StickThreshold](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_StickThreshold), and its
-[Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_) is the deflection along that direction.
 
  [StickDirections](MicroEngine.Input.StickDirections.md)
 

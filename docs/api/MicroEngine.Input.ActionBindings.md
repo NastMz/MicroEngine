@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.dll  
 Guide: [Input](../manual/input.md)  
 
 What an action is bound to, for display or a rebinding screen ([GetBindings](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_GetBindings_System_String_)).
