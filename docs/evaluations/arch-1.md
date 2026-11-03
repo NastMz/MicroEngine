@@ -5,12 +5,11 @@ integrated in place, not appended: prototypes run before the decision they valid
 device contract validated by a tier-0/tier-1 spike (§6.4, §7, §9), the legacy `Entity` adapter is transitional and
 deleted at the end of stage 5 (§6.3, §6.5, §9), stage closure criteria and property-based validation (§8, §9), and a
 definition of done for Phase II with a 3D vertical slice and a physics substitution demonstration (§9.1). Prototypes
-P1, P3, P4, P5 and P6 have concluded and the graphics contract spike has met the stage 1 freeze gate; their verdicts
-and the decisions taken on them (the architect's directives 2-9) are written in §9 (prototype verdicts) and applied in
-place in §5, §6.1-§6.5, §7, §8, §9, §9.1 and §10: the graphics device contract v1 and `IAudioSink` v1 are frozen
-(§6.4), and the physics contract carries P6's revisions. Phase II progress on `main` (2026-11-03): stage 0 merged
-except the per-step state hash (T0, in progress); stage 1A (kernel, loop-owned time) and 1B (platform host) merged,
-1C (hosting) in progress (§9, Phase II progress). Phase I changed nothing in `src/`, `games/`, `samples/`, `templates/`
+P1, P3, P4, P5, P6 and P7 have concluded and the graphics contract spike has met the stage 1 freeze gate; their
+verdicts and the decisions taken on them (the architect's directives 2-12) are written in §9 (prototype verdicts) and
+applied in place in §5, §6.1-§6.5, §7, §8, §9, §9.1 and §10: the graphics device contract v1, `IAudioSink` v1 and
+`IWorld` v1 are frozen (§6.4), and the physics contract carries P6's revisions. Phase II progress on `main`
+(2026-11-03): stages 0, 1 and 2 closed; stage 3 started (3a) (§9, Phase II progress). Phase I changed nothing in `src/`, `games/`, `samples/`, `templates/`
 or the workflows. Audited code: `docs/arch-1` = `feat/asset-1` at 5706285 (the ASSET-1 work, since merged). Record and
 Phase II register: [`odd/tasks/arch-1.md`](../../odd/tasks/arch-1.md). Date: 2026-11-02; last revised 2026-11-03.
 
@@ -269,16 +268,20 @@ packages only if the SDL_GPU work or the static `SDL3.a` the web build links (P4
 
 The sketches with rationale are in A1 §4.2, A2 §6 and A3 §7; this is the integrated core. A contract is frozen only at
 its gate in §9; after that, any change is a recorded contract revision with evidence (a version bump in the contract
-text). State on 2026-11-03:
+text). State on 2026-11-03 (after stage 2 closed and P7 concluded):
 
 | Contract | State | Where the text lives |
 | --- | --- | --- |
-| Kernel (builder, registry, schedule, loop-owned time, lifecycle events, log, capabilities) | implemented in stage 1A (ADRs 0026, 0027) | `src/MicroEngine.Kernel`; the sketch below is superseded where the code differs |
+| Kernel (builder, registry, schedule, loop-owned time, lifecycle events, log, capabilities, per-step state hash) | implemented in stage 1A (ADRs 0026, 0027); state hash by T0 (#42) | `src/MicroEngine.Kernel`; the sketch below is superseded where the code differs |
 | Platform host (`IPlatformHost`, `ISurface`, capability query, storage, content sources, page-driven rules) | implemented in stage 1B (ADR 0037) | `src/MicroEngine.Platform` and the contract text in `IPlatformHost`'s documentation |
-| Graphics device | **frozen, v1** (graphics contract spike, architect directive 5); implemented in engine assemblies by stage 2a | [`experiments/arch-1/graphics-spike/Contract`](../../experiments/arch-1/graphics-spike/Contract) with the changes listed below |
-| `IAudioSink` | **frozen, v1** (P5, architect directive 7); implemented in stage 2c | the sketch below |
-| `IPhysicsWorld2D` and `PhysicsCapabilities` | P6 gate met; revised by P6 (architect directive 8); written and frozen in stage 3 | the sketch below and §9.1 |
-| `IWorld` | sketch; frozen after P7 (stage 3) | the sketch below |
+| Hosting (one composition path, `Configure` entry point, `HostBuilder`) | implemented in stage 1C (ADR 0038, #43) | `src/MicroEngine.Hosting` |
+| Graphics device | **frozen, v1** (graphics contract spike, architect directive 5); implemented in stage 2a (ADR 0028, #45): `GraphicsContract.Version = 1`, with `Textured` | `src/MicroEngine.Graphics` (namespace `MicroEngine.Graphics.Devices`; the XML documentation is the contract text); the spike's [`Contract/`](../../experiments/arch-1/graphics-spike/Contract) is its historical source |
+| `Presentation`, `IRenderer2D`, `Camera2D` | implemented in stage 2a (ADR 0029, #48, #52); the code is authoritative where it differs from the 2D sketch below | `src/MicroEngine.Graphics` (`Presentation`), `src/MicroEngine.Graphics2D` |
+| Input (device events, players, layers, `IInputBackend`) | implemented in stage 2b (ADR 0032, #46, #49, #51) | `src/MicroEngine.Input`; `IInputBackend` lives there, not in `MicroEngine.Platform` as §6.3 sketches (open point, below) |
+| `IAudioSink` | **frozen, v1** (P5, architect directive 7); implemented in stage 2c (ADR 0033, #47) | `src/MicroEngine.Platform/Audio/IAudioSink.cs`; the sketch below |
+| Content (`AssetStore`, `Asset<T>`, loader registry, sources) | implemented in stage 2c (ADR 0034, #44, #50) | `src/MicroEngine.Content` |
+| `IPhysicsWorld2D` and `PhysicsCapabilities` | P6 gate met; revised by P6 (architect directive 8); written and frozen in stage 3b | the sketch below and §9.1 |
+| `IWorld` | **frozen, v1** (P7, architect directive 11); implemented in stage 3a-1 | the Scene part of the sketch below, which restates P7's [verdict](../../experiments/arch-1/p7-entities/README.md#verdict-the-api-to-freeze-in-stage-3) with directive 11's corrections |
 
 #### Graphics device contract v1 (frozen)
 
@@ -287,8 +290,10 @@ The graphics contract spike ([report](../../experiments/arch-1/graphics-spike/RE
 adapter on SDL_Renderer (Direct3D 11, OpenGL, Vulkan) and a tier-1 adapter on pure SDL_GPU (Direct3D 12, Vulkan), both
 driving the same 2D batcher, which references nothing but the contract. The frozen contract v1 is the text in
 [`Contract/`](../../experiments/arch-1/graphics-spike/Contract) (about 1,640 lines; every rule is in its XML
-documentation) with changes E1-E14 applied and one architect decision on top of it. Stage 2a moves it into the engine
-assemblies (`MicroEngine.Graphics`); it is not restated here. Its shape:
+documentation) with changes E1-E14 applied and one architect decision on top of it. Stage 2a moved it into the engine
+(`src/MicroEngine.Graphics`, [PR #45](https://github.com/NastMz/MicroEngine/pull/45), ADR 0028) with the `Textured`
+merge and the version marker `GraphicsContract.Version = 1`; that code is now the contract text, and it is not
+restated here. Its shape:
 
 - **`IGraphicsDevice`**: `Capabilities`; optional `DeviceLost`; `CreateTexture`, `CreateRenderTarget`, `GetSampler`
   (cached, device-owned), `CreateBuffer` (every tier), `CreateShader`, `CreatePipeline`,
@@ -346,7 +351,9 @@ attachments, `DeviceLost` through the host's event queue on SDL_Renderer, no ETC
 #### Other contracts
 
 The platform sketch carries P4's decisions (no integrated-backend concept, the page-driven host rules) and P5's sink;
-the physics sketch carries P6's revisions.
+the physics sketch carries P6's revisions; the Scene part is `IWorld` v1 as frozen by P7 (architect directive 11).
+The 2D, input and audio parts were implemented in stage 2 and the code is authoritative where it differs (noted in
+each part).
 
 ```csharp
 // Kernel (implemented in stage 1A; the code is authoritative) ----------------
@@ -415,7 +422,10 @@ public interface IAudioSink : IDisposable
 // on CoreCLR, Mono Android and .NET wasm). Targets are documented, configurable audio settings. SDL's own get-callback
 // sink stays available as a low-latency option (13-18 ms), not as the default.
 
-// 2D (stage 2a, over the frozen graphics device) -----------------------------
+// 2D (implemented in stage 2a, #48 and #52, ADR 0029; the code is authoritative) -----
+// As implemented: Presentation (MicroEngine.Graphics) has Rounding Fractional | Integer | IntegerUnlessWasteful,
+// Aspect Keep | Stretch (no Expand yet), Upscale, DefaultSampler, CaptureScale, CameraPixelSnap (on in the PixelArt
+// preset, off in HighResolution2D); IRenderer2D/Renderer2D and Camera2D (zoom, rotation) live in MicroEngine.Graphics2D.
 public sealed record Presentation                       // replaces the five-way CanvasScaling coupling
 {
     public Size? Canvas { get; init; }                   // null = native resolution
@@ -439,28 +449,92 @@ public interface IRenderer2D                              // implemented once, i
 // where Capabilities declares Shaders (otherwise GraphicsCapabilityException). Today's IRenderer survives as a
 // façade over IRenderer2D.
 
-// Scene -------------------------------------------------------------------
-public readonly record struct EntityId(uint Index, uint Generation);
+// Scene: IWorld v1, frozen by P7 with architect directive 11 (implemented in stage 3a-1) --------
+// Namespace MicroEngine.Scene (assembly references Kernel only). Games program against IWorld; the concrete,
+// engine-owned type is SceneWorld. Signatures are P7's verdict with directive 11's corrections applied: no blend
+// arguments (the world owns its blend), Children(parent) added, struct attachments left out of v1.
+public readonly record struct EntityId(uint Index, uint Generation)
+{
+    public static EntityId None { get; }        // default; generation 0 is never issued
+    public bool IsNone { get; }
+}
 
-public struct Transform { public Vector3 Position; public Quaternion Rotation; public Vector3 Scale; }
+public struct Transform
+{
+    public Vector3 Position; public Quaternion Rotation; public Vector3 Scale;
+    public static Transform Identity { get; }
+    public Vector2 Position2D { readonly get; set; }   // exact
+    public float Rotation2D { readonly get; set; }     // about Z; reads back within a few ulps
+    public Vector2 Scale2D { readonly get; set; }
+    public readonly Matrix4x4 ToMatrix();
+    public static Transform Interpolate(in Transform from, in Transform to, float t);   // exactly `to` at t >= 1 or when equal
+}
 
 public interface IWorld
 {
-    EntityId Create(EntityId? parent = null);
-    void Destroy(EntityId entity);                       // deferred to the end of the phase
+    int Count { get; }
+    WorldClock Clock { get; }
+    float Blend { get; }                         // the engine's blend if this world stepped in the latest engine step, else 1
+
+    EntityId Create(EntityId parent = default);
+    bool IsAlive(EntityId entity);
+    void Destroy(EntityId entity);
+    EntityId ParentOf(EntityId entity);
+    void SetParent(EntityId entity, EntityId parent);
+    Children Children(EntityId parent);          // allocation-free walk; fast path for 2D parents (directive 11.4)
+
     ref Transform Local(EntityId entity);
-    Matrix4x4 WorldMatrix(EntityId entity, float blend); // interpolated for drawing
-    void Teleport(EntityId entity);                      // skip interpolation once
+    Matrix4x4 WorldMatrix(EntityId entity);      // interpolated at the world's own Blend (directive 11.1a)
+    Vector2 DrawPosition2D(EntityId entity);     // idem; roots never build a matrix
+    void Teleport(EntityId entity);
+
     T Attach<T>(EntityId entity, T attachment) where T : class;
     bool TryGet<T>(EntityId entity, [NotNullWhen(true)] out T? attachment) where T : class;
+    T Get<T>(EntityId entity) where T : class;
+    bool Detach<T>(EntityId entity) where T : class;
+    Attachments<T> All<T>() where T : class;     // attach order, stable under removal (directive 11.1b)
 }
 
-// Input -------------------------------------------------------------------
+public interface IDestroyedCallback { void OnDestroyed(EntityId entity); }
+
+public readonly struct Attachments<T> : IEnumerable<T> where T : class
+{
+    public Enumerator GetEnumerator();
+    public struct Enumerator : IEnumerator<T> { public T Current { get; } public EntityId Entity { get; } public bool MoveNext(); }
+}
+
+public sealed class WorldClock
+{
+    public float Scale { get; set; }             // >= 0; 1 by default (slow motion)
+    public double Time { get; }                  // scaled seconds
+    public float Delta { get; }                  // scaled length of the latest step; 0 while frozen
+    public float FreezeRemaining { get; }
+    public bool Frozen { get; }
+    public void Freeze(float seconds);           // hitstop; the longer freeze wins
+    public void Unfreeze();
+}
+// The Children return type's exact shape (an allocation-free enumerable) is fixed by stage 3a-1.
+// Engine side (the scene module, not games): BeginStep(engineStep) / EndStep() around the world's step,
+// BeginDraw(latestEngineStep, engineBlend) before drawing; the clock advances as part of the world's step, so a
+// paused world consumes no time, hitstop included (directive 11.5).
+// Rules (P7's nine, each a conformance test, 44 in the prototype): generation-checked ids, a stale id throws
+// InvalidOperationException naming it; Destroy takes effect at once for queries, data stay readable until the step
+// ends, then IDestroyedCallback in destroy order; creation visible to every later iteration, never to the running
+// one (no spawn queue); All<T> in attach order, stable under removal (swap-remove forbidden), keyed by the type
+// argument, allocation-free; interpolation exact at blend 1; Teleport holds until the next step and carries
+// children; per-world step tracking (the D11/SC-2 fix); clocks bit-exact at scale 1; storage one dense array per
+// attachment type with a sparse slot index, compacted at the step's end (directive 11.2).
+
+// Input (implemented in stage 2b, #46, #49, #51, ADR 0032; the code is authoritative) ---------
+// As implemented, IInputBackend and the event types live in MicroEngine.Input (open point: §6.3 places the input
+// backend contract in MicroEngine.Platform); players are reached as Game.InputSystem.Players.
 public readonly record struct DeviceId(int Value);
 public interface IPlayers { PlayerInput this[int index] { get; } PlayerInput Join(DeviceId device); }
 public interface IInputLayer { bool Handle(in InputEvent e); }   // UI → touch controls → gameplay; true = consumed
 
-// Audio -------------------------------------------------------------------
+// Audio (implemented in stage 2c, #47, #50, ADR 0033; the code is authoritative) ----------
+// As implemented: the mixer is AudioEngine (MicroEngine.Audio) and its handle is VoiceHandle(int Index, uint
+// Generation), not SoundHandle; streamed music is decoded half a second ahead by Pump; AudioMixer stays the façade.
 public readonly record struct SoundHandle(uint Id, uint Generation);
 public interface IAudioEngine
 {
@@ -545,7 +619,7 @@ The goal changes from "output identical to a recording" to "each subsystem meets
 
 | Tier | What it proves | Runs | Blocks | Comparison |
 | --- | --- | --- | --- | --- |
-| T0 Simulation | Determinism: a state hash per fixed step (`StateHasher`, explicit contributions, never reflection; draw-time caches excluded), first diverging step and section reported; scripted device events | every PR, every OS | yes: two runs of the same build and script on the same OS | exact run to run; across platforms (desktop vs browser) recorded and reported, not gating, because last-bit float differences from FMA and per-platform `MathF` reach state (browser determinism R4) |
+| T0 Simulation | Determinism: a state hash per fixed step (`StateHasher`, explicit contributions, never reflection; draw-time caches excluded), first diverging step and section reported; scripted device events | every PR, every OS (as implemented by T0, #42: Linux on every change; Windows and macOS when the engine or shared inputs change, per the CI change plan, macOS informative) | yes: two runs of the same build and script on the same OS | exact run to run; across platforms (desktop vs browser) recorded and reported, not gating, because last-bit float differences from FMA and per-platform `MathF` reach state (browser determinism R4) |
 | T1 Conformance | Each backend meets its contract: lifecycle, input events, audio sink (offline buffer vs reference WAV), clock, storage, rendering rules (clip, rasterization, alpha, disposed and foreign resources, samplers, targets), capability declarations (an undeclared capability fails with the typed error) | every PR touching a backend or contract; SDL on lavapipe/WARP (unproven for SDL_GPU, §10), raylib on llvmpipe/`rlsw`; SDL's software renderer runs the graphics suite with a named tolerance as a diagnostic and does not claim conformance | yes | each assertion declares the property it checks; exact properties (positions, counts, state, command lists, resource and error behaviour) exactly; geometric invariants (bounding boxes, coverage, histograms) with tolerances only from a named source of variation the contract allows |
 | T2 Commands and reference | The engine emits the right draw commands (text, exact) and the CPU reference rasterizer turns them into the reference image | every PR | yes | commands exact; reference image by declared property, per the tolerance policy below |
 | T3 Scene goldens | Demos, gallery and integration scenarios look right on each renderer family | PRs touching rendering or a game | yes | declared properties first (geometry, coverage, colour, text legibility, state) checked as in T1; FLIP mean/percentile against references keyed by renderer family (not 7 OS sets) only for the appearance the contract does not specify; masks documented; a missing reference is a failure (candidate written) |
@@ -595,7 +669,7 @@ prototype in the stage where it must conclude, with its gate.
 | 2a. Graphics foundation | Real tier-0 devices on SDL (SDL's default renderer driver) and raylib (desktop) built on the frozen contract; decides raylib desktop's future; built-in pipelines, samplers, premultiplied alpha, targets, deferred destruction, typed capability error; `Presentation` and presets; views; `IRenderer2D` batcher with `IRenderer` façade; camera transforms; conformance suite T1-render; implements the frozen graphics contract v1 in engine assemblies; raylib's translucent canvas alpha darkening on screen (found in stage 0) | P1 concluded (entry gate met) | 1 (frozen graphics contract) | parallel with 2b, 2c |
 | 2b. Input | Device events and ids, all pads, text/IME, touches as pointers, layers, default player; taps expire by updates, not by drawn frames (browser determinism finding) | — | 1 | parallel |
 | 2c. Audio and content | Managed mixer over sinks, handles, buses, streaming; content handles, loader registry, sources; audio as assets; implements `IAudioSink` v1 and its default sinks; music rendering and logical music state independent of the wall clock (browser determinism R2); hidden-page audio suspension in the contract | P5 concluded: `IAudioSink` v1 frozen (gate met) | 1 | parallel |
-| 3. World and physics | `MicroEngine.Scene` (ids, transforms, attachments, interpolation, clocks, scene results); physics common contract, `PhysicsCapabilities` and suites; `Physics.Tiles` with the fixed mover as the first backend; the **transitional** `Entity` adapter (`[Obsolete]`, in the non-packable `MicroEngine.Migration.Entities`, consumed only by the demos) | P7 before the `IWorld` contract is frozen; P6 concluded: the physics contract is written with its revisions (§6.4, §9.1) | 1, 2a (presentation reads transforms) | — |
+| 3. World and physics | `MicroEngine.Scene` (ids, transforms, attachments, interpolation, clocks, scene results); physics common contract, `PhysicsCapabilities` and suites; `Physics.Tiles` with the fixed mover as the first backend; the **transitional** `Entity` adapter (`[Obsolete]`, in the non-packable `MicroEngine.Migration.Entities`, consumed only by the demos) | P7 concluded: `IWorld` v1 frozen (directive 11; gate met); P6 concluded: the physics contract is written with its revisions (§6.4, §9.1) | 1, 2a (presentation reads transforms) | two (architect directive 12): 3a `MicroEngine.Scene` as chained PRs (3a-1 world, 3a-2 scenes own worlds, 3a-3 `Entity` adapter; ADR 0030); 3b `MicroEngine.Physics` and `Physics.Tiles` after 3a-1 merges (ADR 0031) |
 | 4. UI and modules | UI with pointer/focus/layout/screen-unit view; saves, achievements, touch controls as modules | — | 2a, 2b, 3 | parallel per module |
 | 5. Consumers | Migrate the four demos, gallery, samples, template; docs, snippets and API reference regenerated; CLI hosts on the `Configure` entry point; packages and SDK acceptance; the SDL browser launcher replaces raylib on the web (gates under P4 below); release notes as a breaking Alpha (written, not published). **Deletes the `Entity` adapter** (the architecture test fails on any reference) and **empties the exclusion list**; the stage cannot close otherwise | — | 2-4 | per demo |
 | 6. Phase II completion | The tier-1 pure SDL_GPU device, offline shader toolchain and the 3D vertical slice; the native Box2D v3 backend, its CI-built native binaries and optional package (validated on Linux, macOS, iOS and Android arm64, not published) and the physics substitution demonstration; the final report (§9.1) | P2 before the tier-1 shader toolchain is fixed (inside the 3D vertical slice) | 2a, 3 (contracts it exercises), P2, P6; Phase II completes only with stages 0-5 closed | 3D slice and physics substitution in parallel |
@@ -611,12 +685,12 @@ here before its gate):
 | P4 | SDL3 built for .NET 10's Emscripten running one demo in a browser vs raylib (size, frame time, audio) | Whether raylib stays the browser backend, and whether integrated (fused host + device) backends must exist in the contract | The platform/device split of stage 1 is frozen (hosts consolidated) | Concluded 2026-11-02: SDL runs the games in browsers; no integrated backends; raylib web retired in stage 5 ([evidence](#p4-verdict)) |
 | P5 | Pull-callback PCM sink on web (AudioWorklet), Android and iOS output threads | The shape of `IAudioSink` | `IAudioSink` is frozen (before stage 2c closes; run at 2c start or earlier) | Concluded 2026-11-03: `IAudioSink` v1 frozen; feeder-thread default on SDL3 platforms, AudioWorklet sink in browsers; iOS unverified ([evidence](#p5-verdict)) |
 | P6 | Box2D v3 in .NET on every target: Box2D.NET (managed, version unclear) vs native Box2D incl. WebAssembly; determinism flags | Physics backend choice; a native binding with wasm limits changes the contract | The physics contract of stage 3 is frozen | Concluded 2026-11-03: native Box2D v3.2.0 behind the engine's flat C layer; physics contract revised in eight points ([evidence](#p6-verdict)) |
-| P7 | Port one demo (Courtyard Key) to ids/transforms/attachments; compare code and ergonomics with today | Attachment API shape; real ergonomics of `IWorld` | The `IWorld` contract of stage 3 is frozen | Open |
+| P7 | Port one demo (Courtyard Key) to ids/transforms/attachments; compare code and ergonomics with today | Attachment API shape; real ergonomics of `IWorld` | The `IWorld` contract of stage 3 is frozen | Concluded 2026-11-03: `IWorld` v1 frozen with corrections (world-owned blend, attach-order iteration, `Children`); dense storage per type ([evidence](#p7-verdict)) |
 
 A prototype whose verdict contradicts an approved decision reopens that decision with its evidence; the decision is
 not kept only because it was approved.
 
-**Prototype verdicts.** Each verdict below was accepted by the architect (directives 2-9 of 2026-11-02 and 2026-11-03) and is applied in
+**Prototype verdicts.** Each verdict below was accepted by the architect (directives 2-11 of 2026-11-02 and 2026-11-03) and is applied in
 place in this dossier. The evidence is the prototype's report under `experiments/arch-1/`.
 
 <a id="p3-verdict"></a>**P3 — SDL_GPU 3D composited with 2D** ([report](../../experiments/arch-1/p3-sdl-gpu-3d/README.md),
@@ -794,19 +868,72 @@ directive 9):
 Also found: `RaylibInput.CollectTaps` expires an unread tap after 8 drawn frames rather than after an update, so a
 page drawing more than about eight frames per update drops sub-frame presses (owner: stage 2b). The intermittent CI
 failure of the browser short-press check was a harness race, fixed by
-[PR #36](https://github.com/NastMz/MicroEngine/pull/36). Until R1 is fixed, the browser-vs-desktop frame comparison
-(Meadow Run, Neon Rift and Courtyard Key frames) is reported, not gated.
+[PR #36](https://github.com/NastMz/MicroEngine/pull/36). The browser-vs-desktop frame comparison stays reported, not
+gated. Resolution: R1 fixed by stage 1C ([PR #43](https://github.com/NastMz/MicroEngine/pull/43): browser scripted
+runs deterministic, byte-identical across two runs); R2 fixed by stage 2c
+([PR #47](https://github.com/NastMz/MicroEngine/pull/47): music renders in `Pump`, outside the step, and music state
+does not depend on rendering speed); R3 settled by T0's design ([PR #42](https://github.com/NastMz/MicroEngine/pull/42):
+explicit contributions, drawing never changes the hash); tap expiry by updates fixed by stage 2b
+([PR #46](https://github.com/NastMz/MicroEngine/pull/46), [PR #49](https://github.com/NastMz/MicroEngine/pull/49)); R4
+remains report-only.
+
+<a id="p7-verdict"></a>**P7 — Courtyard Key on ids, transforms and attachments**
+([report](../../experiments/arch-1/p7-entities/README.md), [PR #53](https://github.com/NastMz/MicroEngine/pull/53)).
+Courtyard Key's actors, hero, room objects, camera, interpolation and hitstop were ported onto a prototype world: the
+port's per-step state traces are bit-identical to the original on 11 scripts with two storage designs (22 runs), the
+game's 47 tests pass, 12 engine-like helpers leave the game (interpolation, snap, per-scene step tracking, spawn queue,
+list choreography, hitstop timer), and frame time stays within ±5 % and allocation within ±0.1 %. The game is simpler,
+not shorter (1645 → 1668 lines: the members the `Entity` base gave it and a 36-line room filter). A swap-remove store
+changed the simulation of one script in eleven, so iteration order is behaviour. **Verdict and decisions** (architect
+directive 11):
+
+1. `IWorld` v1 is frozen as in the P7 report's exact signatures (§6.4, Scene), with two corrections: (a) the world owns
+   its blend from per-world step tracking, so `WorldMatrix(id)` and the draw positions take no blend argument (fixes
+   D11/SC-2 by construction); (b) iteration order is attach order, stable under removal, pinned directly by
+   conformance tests.
+2. Storage: one dense array per attachment type (a dictionary per entity is rejected: 4.7× slower lookups and 240 B per
+   entity).
+3. Struct attachments are not part of v1 (references are invalidated when storage grows; no consumer needs them).
+4. Grouping: `Children(EntityId parent)`, an allocation-free enumeration with a fast path for 2D parents.
+5. Clocks: the world clock advances as part of the world's step; a paused world consumes no time (hitstop included).
+6. Naming: the concrete type is `SceneWorld`; games program against `IWorld`.
+7. The transitional `Entity` adapter maps per the report's table; it lives in the non-packable
+   `MicroEngine.Migration.Entities`, `[Obsolete]`, and is deleted at the end of stage 5.
+8. Risks: measured on desktop .NET only (not WebAssembly or Android); the traces run at blend 1 (drawing between
+   steps is covered by tests).
 
 <a id="phase-ii-progress"></a>**Phase II progress (2026-11-03).** Pull requests, merge commits, validation results
 and owners are in the register ([`odd/tasks/arch-1.md`](../../odd/tasks/arch-1.md)).
 
-- Stage 0: defects, CI and validation tooling merged (#24, #27, #30), with the asset gallery's deterministic clock
-  (#31, #35); the T0 per-step state hash (directive 9) is in progress and closes the stage.
-- Stage 1: 1A (kernel and loop-owned time, #33, #34, ADRs 0026 and 0027) and 1B (platform host, #37, ADR 0037)
-  merged; 1C (hosting, directive 9) in progress. The graphics contract freeze gate is met.
-- Prototypes: P1, P3, P4, P5, P6 concluded; P2 and P7 open.
-- The exclusion list of temporarily incompatible consumers is empty: every demo, the gallery and the samples still
-  build and run in CI.
+- Stage 0 **closed**: defects, CI and validation tooling (#24, #27, #30), the asset gallery's deterministic clock
+  (#31, #35) and T0, the per-step state hash with first-divergence reporting (#42). T0's gate runs on Linux for every
+  change and on Windows and macOS when the engine or shared inputs change (the CI change plan): a documented precision
+  of §8's "every OS". Follow-up (stage 5): declare starting points for the scripts T0 skips (every game's touch
+  script, Meadow Run's boss and tour, Trail Duel's catch) so its traces cover them.
+- Stage 1 **closed**: 1A (kernel and loop-owned time, #33, #34, ADRs 0026 and 0027), 1B (platform host, #37, ADR
+  0037), 1C (hosting, #43, ADR 0038: `GameHost`, the `Configure` entry point, no process-wide statics, browser scripted
+  runs deterministic, `--state-trace`). Follow-ups: hosting carries GPU, window and audio options as command-line words
+  until the modules split; phone `--env` variables are still read from the process environment by the demos (stage 5);
+  no trace export from web or phone runs (declined).
+- Stage 2 **closed**, three units in parallel (directive 10):
+  - 2a graphics (#45 device contract v1 in the engine, reference device and conformance suite, ADR 0028; #48 tier-0
+    SDL and raylib devices, `Presentation` and its presets, ADR 0029; #52 `Graphics2D` batcher, `IRenderer` façade over
+    the device, old renderers deleted, `Camera2D` zoom and rotation with pixel snap set per preset; premultiplied alpha
+    changed the translucent `Multiply` and `Clear` rules; SDL vs raylib captures within 3/255). Open: the F11/Alt+Enter
+    rebindable action (in progress); the views hook for games (stage 3a-2); `Aspect.Expand` and font pages following
+    `DefaultSampler` (follow-ups); the tier-1 adapter port (stage 6).
+  - 2b input (#46 the input model, ADR 0032, with `IInputBackend` in `MicroEngine.Input` as an open point; #49 SDL and
+    raylib event backends; #51 scripted device events, widgets consume the presses they act on, a two-player test).
+  - 2c audio and content (#44 `MicroEngine.Content`, audio bytes as assets, ADR 0034; #47 one managed mixer over
+    `IAudioSink` v1 with its default sinks, R2 fixed, NVorbis bundled in the `MicroEngine` package with its notice,
+    ADR 0033; #50 sounds and music as asset kinds, `Synth`/`Song` in a `Retro` folder with the namespace move deferred to
+    stage 5). Recorded: the voice handle is named `VoiceHandle`; streamed music is decoded only half a second ahead
+    (a risk under long stalls).
+- Stage 3 **started** (directive 12): 3a (`MicroEngine.Scene`: 3a-1 world, 3a-2 scenes own worlds, 3a-3 the `Entity`
+  adapter); 3b (physics) starts after 3a-1 merges.
+- Prototypes: P1, P3, P4, P5, P6, P7 concluded; P2 open (inside the 3D vertical slice, stage 6).
+- The exclusion list of temporarily incompatible consumers is empty: stages 1 and 2 kept every demo, the gallery and
+  the samples building and running in CI through the existing façades.
 
 ### 9.1 Definition of done for Phase II
 
@@ -871,6 +998,8 @@ editor.
 | Cross-platform float differences (FMA contraction in `Vector2.Lerp`, per-libm `MathF`) make the same game logic produce last-bit different state on desktop and in the browser (browser determinism R4). | T0 gates run-to-run identity on each OS and reports cross-platform differences; deterministic engine math is later work. |
 | .NET wasm interpreter defects: P/Invoke parameters of 64-bit enum type, `delegate* unmanaged` parameters (K-P4-1) and 8-byte structs passed by value (P6: Box2D's ids) fail at run time, not at build time. | The engine's own P/Invoke declarations use `ulong` and `nint` for the affected SDL functions (P4 recommends a browser test for each such call); the Box2D layer passes only scalars and pointers. Not reported upstream: listed for the owner. |
 | Software rasterizers for SDL_GPU are unproven: P3 and the graphics spike found no lavapipe ICD locally and SDL_GPU exposes no way to request WARP; whether hosted runners can run tier 1 is unknown. SDL's software renderer fails the coverage rule (18 of 240 pixels). | The 3D slice's CI check must be proven on Linux lavapipe (§9.1); `sdl-software` stays a diagnostic fallback that does not claim conformance. |
+| `IWorld` v1 was measured on desktop CoreCLR only (P7: not on WebAssembly or Android), its traces ran at blend 1, and iteration order is latent behaviour (one script in eleven caught a changed order). | Stage 3a-1's conformance suite pins the order and the hot accessor's cost; drawing between steps is covered by tests; stage 5 compares each demo's traces before and after its migration. |
+| Streamed music is decoded only half a second ahead of playback by the mixer's `Pump` (stage 2c, #47); a main-thread stall longer than that starves the stream. | Recorded; the buffer length is a mixer setting; measured on real devices with the audio sink verification still open. |
 | Two GPU paths on the web for years. | No engine-written web GPU backend in Phase II (web tier 1 is later); 3D marked unavailable on tier 0 through capabilities. |
 | Interpolation adds one step of visual latency and needs previous state. | Opt-out per entity; teleport API; input sampled per frame for UI. |
 | Shader toolchain adds native tools (DXC, SPIRV-Cross) to the SDK; the `Microsoft.Direct3D.DXC` package ships Windows binaries only, and MSL output was not executed (P3). | Offline only, in the tool (P2); games without shaders never need it; P2 settles non-Windows DXC and verifies MSL on Metal. |
@@ -911,6 +1040,14 @@ Box2D v3.2.0 behind the engine's flat C layer and revised the physics contract i
 browser determinism findings were assigned (R1 to 1C, R2 to 2c, R3 to T0's design, R4 report-only) and T0's per-step
 state hash closes stage 0, gating run-to-run identity and reporting cross-platform differences (directive 9); tap
 expiry by updates was assigned to 2b by the architect alongside directive 9.
+
+Decisions of directives 10-12 (2026-11-03): stage 2 ran as three parallel units with disjoint assemblies (2a graphics,
+2b input, 2c audio and content), keeping consumers working through the existing façades (`IRenderer`, `InputMap`,
+`AudioMixer`, `Game.Assets`) rather than the exclusion list (directive 10); P7 froze `IWorld` v1 with a world-owned
+blend, attach-order iteration stable under removal, dense per-type storage, `Children(parent)`, the world clock
+advancing with the world's step, no struct attachments in v1 and the concrete type named `SceneWorld` (directive 11);
+stage 3 runs as 3a (`MicroEngine.Scene`, chained 3a-1 to 3a-3, ADR 0030) and 3b (physics with `Physics.Tiles`, ADR
+0031, after 3a-1 merges), with the Box2D backend in stage 6 (directive 12).
 
 Governance for Phase II (the owner's protocol of 2026-11-02): the architect directs, reviews and merges; agents
 implement every unit through a pull request and never merge their own; the architect may merge to `main` after
