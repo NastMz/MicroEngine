@@ -16,13 +16,14 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
 const guides = {
   'MicroEngine': ['Graphics', '../manual/rendering.md'],
   'MicroEngine.Audio': ['Audio', '../manual/audio.md'],
+  'MicroEngine.Content': ['Assets', '../manual/assets.md#handles-loaders-and-content-sources'],
   'MicroEngine.Core': ['Game lifecycle and time', '../manual/lifecycle.md'],
   'MicroEngine.Desktop': ['Backends and platforms', '../manual/backends.md'],
   'MicroEngine.Graphics': ['Graphics', '../manual/rendering.md'],
@@ -59,6 +60,7 @@ const typeGuides = {
 const namespaceSummaries = {
   'MicroEngine': 'Basic value types: colours, rectangles, maths and easing helpers.',
   'MicroEngine.Audio': 'Sound effects and music: synthesis, WAV decoding, the mixer games play sounds through, and the audio device contract.',
+  'MicroEngine.Content': 'Content: the asset store under Game.Assets (typed handles, scopes that share and release, the loader registry, the reserved import step) and content sources beyond folders (zip archives, files a host lists).',
   'MicroEngine.Core': 'The game and its loop: `Game`, settings, runners and sessions, launchers and platform composition, scripted input, saves, content files, achievements, application identity, the headless platform.',
   'MicroEngine.Desktop': 'The desktop launcher with the official desktop platforms (SDL 3, raylib, SDL software, headless).',
   'MicroEngine.Graphics': 'Drawing: the renderer contract, images in code and from PNG, sprites and atlases, animation, camera, parallax, particles, light, the pixel font.',

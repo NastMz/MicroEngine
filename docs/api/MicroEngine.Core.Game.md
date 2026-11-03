@@ -108,8 +108,10 @@ public AudioMixer Audio { get; }
 
 ### <a id="MicroEngine_Core_Game_ContentRoot"></a> ContentRoot
 
-The content folder [Assets](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Assets) reads; null (the default) for [DefaultRoot](MicroEngine.Core.ContentFolder.md#MicroEngine_Core_ContentFolder_DefaultRoot) or the
-<code>Content</code> folder next to the executable. Tests override it to point at the game's sources.
+A content folder of the game's own for [Assets](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Assets), which then wins over the composition's content. Null
+(the default) reads the content the composition names ([Content](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Content): a macOS bundle's
+resources, a phone's unpacked files, a zip archive), or else the <code>Content</code> folder next to the executable
+([DefaultRoot](MicroEngine.Core.ContentFolder.md#MicroEngine_Core_ContentFolder_DefaultRoot)). Tests override it to point at the game's sources.
 
 ```csharp
 protected virtual string? ContentRoot { get; }

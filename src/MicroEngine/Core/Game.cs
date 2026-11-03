@@ -73,8 +73,10 @@ public abstract class Game : IEngineModule, IStateHashed
     /// </summary>
     public AssetCache Assets { get; private set; } = null!;
     /// <summary>
-    /// The content folder <see cref="Assets"/> reads; null (the default) for <see cref="ContentFolder.DefaultRoot"/> or the
-    /// <c>Content</c> folder next to the executable. Tests override it to point at the game's sources.
+    /// A content folder of the game's own for <see cref="Assets"/>, which then wins over the composition's content. Null
+    /// (the default) reads the content the composition names (<see cref="Hosting.HostBuilder.Content"/>: a macOS bundle's
+    /// resources, a phone's unpacked files, a zip archive), or else the <c>Content</c> folder next to the executable
+    /// (<see cref="ContentFolder.DefaultRoot"/>). Tests override it to point at the game's sources.
     /// </summary>
     protected virtual string? ContentRoot => null;
     /// <summary>The built-in pixel font, created before <see cref="Load"/> and disposed by the engine when the game shuts down.</summary>

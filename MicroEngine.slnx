@@ -4,6 +4,7 @@
     <Project Path="src/MicroEngine.Platform/MicroEngine.Platform.csproj" />
     <Project Path="src/MicroEngine.Input/MicroEngine.Input.csproj" />
     <Project Path="src/MicroEngine.Hosting/MicroEngine.Hosting.csproj" />
+    <Project Path="src/MicroEngine.Content/MicroEngine.Content.csproj" />
     <Project Path="src/MicroEngine/MicroEngine.csproj" />
     <Project Path="src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
     <Project Path="src/MicroEngine.Sdl/MicroEngine.Sdl.csproj" />

@@ -41,6 +41,14 @@ Not published yet. Behaviour that changes:
   around the game (a catalog, request changes) into it. `<MicroEngineGameFactory>` is deprecated and has no default
   any more: a game without an entry point that still declares it packages with a warning; one with neither fails with
   a message showing the method to add. `DesktopLauncher.Run(game, args)` and its other overloads keep working.
+- `Game.Assets` reads content from any source the composition names (`host.Content`): a folder, a zip archive
+  (`MicroEngine.Content.ZipContentSource`, `ContentSources.Open("game.zip")`) or files a host lists and opens itself
+  (`ListedContentSource`); a source other than a folder used to be refused with `NotSupportedException`. The new
+  `Assets.Source` is the source in use; `Assets.Content` (a `ContentFolder`) now throws `InvalidOperationException`
+  when the content is not a folder. `AssetLoadException` moved to the new `MicroEngine.Content.dll` (inside the
+  `MicroEngine` package) with its namespace, `MicroEngine.Core`, unchanged, and `MicroEngine.dll` forwards it: nothing
+  to change in games. `Assets.Statistics.AudioBytes` (new) counts the sounds and music files loaded through `Assets`;
+  `TextureBytes` still counts textures only.
 - Scripted runs in browsers advance one fixed step per frame with seed 1, exactly as on desktop and phones (they were
   real-time, so their captures changed from run to run), and ask for no sound device unless `--audio device` is
   given, like desktop scripted runs. Nothing to change in games.
