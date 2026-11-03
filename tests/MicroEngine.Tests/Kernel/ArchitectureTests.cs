@@ -14,14 +14,14 @@ public sealed class ArchitectureTests
 {
     private const string Kernel = "MicroEngine.Kernel", Platform = "MicroEngine.Platform", Graphics = "MicroEngine.Graphics",
         Content = "MicroEngine.Content", Graphics2D = "MicroEngine.Graphics2D", Text = "MicroEngine.Text", Input = "MicroEngine.Input",
-        Audio = "MicroEngine.Audio", Scene = "MicroEngine.Scene", Physics = "MicroEngine.Physics", Box2D = "MicroEngine.Physics.Box2D",
+        Audio = "MicroEngine.Audio", Scene = "MicroEngine.Scene", Physics = "MicroEngine.Physics", PhysicsTiles = "MicroEngine.Physics.Tiles", Box2D = "MicroEngine.Physics.Box2D",
         UI = "MicroEngine.UI", Saves = "MicroEngine.Saves", Achievements = "MicroEngine.Achievements", Hosting = "MicroEngine.Hosting",
         Testing = "MicroEngine.Testing", Migration = "MicroEngine.Migration.Entities",
         // Today's assemblies. MicroEngine still holds every module not yet split out of it; it becomes the metapackage.
         Core = "MicroEngine", Sdl = "MicroEngine.Sdl", Raylib = "MicroEngine.Raylib", Desktop = "MicroEngine.Desktop", Cli = "MicroEngine.Cli";
 
     private static readonly string[] Abstractions = [Kernel, Platform, Graphics, Content];
-    private static readonly string[] Modules = [Graphics2D, Text, Input, Audio, Scene, Physics, UI, Saves, Achievements, Hosting];
+    private static readonly string[] Modules = [Graphics2D, Text, Input, Audio, Scene, Physics, PhysicsTiles, UI, Saves, Achievements, Hosting];
 
     /// <summary>Each engine assembly and the engine assemblies it may reference.</summary>
     internal static readonly Dictionary<string, string[]> Allowed = new()
@@ -36,6 +36,7 @@ public sealed class ArchitectureTests
         [Audio] = [Kernel, Platform, Content],
         [Scene] = [Kernel],
         [Physics] = [Scene, Kernel],
+        [PhysicsTiles] = [Physics, Scene, Kernel],
         [Box2D] = [Physics, Scene, Kernel],
         [UI] = [Graphics2D, Text, Input, Graphics, Content, Kernel, Platform],
         [Saves] = [Kernel, Platform],
@@ -148,6 +149,28 @@ public sealed class ArchitectureTests
         var engine = scene.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
         CollectionAssert.AreEqual(new[] { Kernel }, engine, string.Join(", ", engine));
         Assert.AreEqual(Core, typeof(MicroEngine.Scenes.Scene).Assembly.GetName().Name, "the scene stack stays in the core until it leaves it");
+    }
+
+    [TestMethod]
+    public void The_compiled_physics_contract_references_only_the_scene_world_and_the_kernel_and_the_tile_backend_only_the_contract()
+    {
+        var physics = typeof(MicroEngine.Physics.IPhysicsWorld2D).Assembly;
+        Assert.AreEqual(Physics, physics.GetName().Name);
+        Assert.AreEqual(Physics, typeof(MicroEngine.Physics.PhysicsCapabilityException).Assembly.GetName().Name, "the typed capability error is the contract's");
+        Assert.AreEqual(Physics, typeof(MicroEngine.Physics.PhysicsModule).Assembly.GetName().Name, "stepping and transform sync are the contract's module");
+        var engine = physics.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToList();
+        CollectionAssert.AreEqual(new[] { Kernel, Scene }, engine, string.Join(", ", engine));
+
+        var tiles = typeof(MicroEngine.Physics.Tiles.TilePhysicsWorld2D).Assembly;
+        Assert.AreEqual(PhysicsTiles, tiles.GetName().Name);
+        Assert.AreEqual(PhysicsTiles, typeof(MicroEngine.World.TileGrid).Assembly.GetName().Name, "the tile types live with the tile backend");
+        Assert.AreEqual(PhysicsTiles, typeof(MicroEngine.World.TileMotion).Assembly.GetName().Name);
+        var tileRefs = tiles.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
+        Assert.IsTrue(tileRefs.All(Allowed[PhysicsTiles].Contains), string.Join(", ", tileRefs));
+        CollectionAssert.Contains(tileRefs, Physics);
+        Assert.AreEqual(typeof(MicroEngine.World.TileGrid), typeof(Game).Assembly.GetType("MicroEngine.World.TileGrid"), "code compiled against an earlier MicroEngine.dll still finds it");
+        Assert.AreEqual(typeof(MicroEngine.World.MoveResult), typeof(Game).Assembly.GetType("MicroEngine.World.MoveResult"));
+        Assert.AreEqual(Core, typeof(MicroEngine.World.TileRenderer).Assembly.GetName().Name, "drawing tiles needs the renderer, which stays in the core");
     }
 
     [TestMethod]

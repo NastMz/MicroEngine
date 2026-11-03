@@ -14,6 +14,8 @@
   <!-- The simulation-determinism helper shared with the games' test projects. -->
   <ItemGroup>
     <Compile Include="../Shared/StateTraceRuns.cs" Link="Shared/StateTraceRuns.cs" />
+    <!-- The physics conformance suites every 2D backend runs (common contract and capability suites). -->
+    <Compile Include="../Shared/Physics/*.cs" LinkBase="Shared/Physics" />
   </ItemGroup>
   <!-- Real asset files for the asset pipeline tests: the AssetGallery sample's fonts and atlases, not copies. -->
   <ItemGroup>

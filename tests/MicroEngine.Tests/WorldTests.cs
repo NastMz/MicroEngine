@@ -98,6 +98,74 @@ public sealed class WorldTests
         CollectionAssert.AreEqual(new[] { (0, 1), (3, 1) }, spawns);
     }
 
+    private static TileGrid Open(params string[] rows)
+    {
+        var grid = Grid(rows);
+        grid.OutsideFlags = TileFlags.None;
+        return grid;
+    }
+
+    [TestMethod]
+    public void D6_a_fast_small_body_does_not_tunnel_through_a_thin_extra_solid_E1()
+    {
+        // A3 WO-2 E1: a 2×2 body moving 15.9 px down through a 4 px solid at y 100..104 used to end at y 105.9.
+        var thin = new RectF(0, 100, 40, 4);
+        var result = TileMotion.Move(new RectF(20, 90, 2, 2), new Vector2(0, 15.9f), Open("...."), [thin]);
+        Assert.IsTrue(result.HitFloor, result.ToString());
+        Assert.AreEqual(98, result.Bounds.Y);
+        Assert.IsTrue(TileMotion.IsOnGround(result.Bounds, Open("...."), [thin]));
+    }
+
+    [TestMethod]
+    public void D6_a_fast_body_does_not_tunnel_sideways_through_a_thin_extra_solid()
+    {
+        // Sub-steps of 7.5 px used to jump a 2 px box over a 1 px solid.
+        var thin = new RectF(60, 0, 1, 40);
+        var result = TileMotion.Move(new RectF(40, 10, 2, 2), new Vector2(30, 0), Open("........"), [thin]);
+        Assert.IsTrue(result.HitRight, result.ToString());
+        Assert.AreEqual(58, result.Bounds.X);
+    }
+
+    [TestMethod]
+    public void D6_a_solid_that_rose_into_a_resting_body_lifts_it_and_it_stays_on_ground_E2()
+    {
+        // A3 WO-2 E2: a 10×10 body resting at bottom 90, platform raised to top 88: after a 2 px fall the body used to
+        // end embedded (bottom 92) with HitFloor and IsOnGround false.
+        var grid = Open("....");
+        var platform = new RectF(0, 88, 40, 8);
+        var result = TileMotion.Move(new RectF(10, 80, 10, 10), new Vector2(0, 2), grid, [platform]);
+        Assert.AreEqual(88, result.Bounds.Bottom, result.ToString());
+        Assert.IsTrue(result.HitFloor);
+        Assert.IsTrue(TileMotion.IsOnGround(result.Bounds, grid, [platform]));
+    }
+
+    [TestMethod]
+    public void A_solid_the_box_overlaps_from_the_side_still_does_not_trap_it()
+    {
+        // Unchanged: a rectangle the box already overlaps does not block it (here it overlaps from the side, so it is not
+        // a platform that rose into it and the box keeps moving).
+        var crate = new RectF(20, 0, 16, 16);
+        var right = TileMotion.Move(new RectF(10, 2, 12, 12), new Vector2(5, 0), Open("....", "...."), [crate]);
+        Assert.AreEqual(15, right.Bounds.X);
+        Assert.IsFalse(right.HitWall);
+        var down = TileMotion.Move(new RectF(10, 2, 12, 12), new Vector2(0, 3), Open("....", "...."), [crate]);
+        Assert.AreEqual(5, down.Bounds.Y, "its top edge is not in the box's lower half: no lift");
+    }
+
+    [TestMethod]
+    public void Sub_stepped_free_movement_keeps_the_exact_positions_of_earlier_versions()
+    {
+        // Unchanged: a move longer than half a tile advances in equal sub-steps, so positions match bit for bit.
+        var start = new RectF(0.3f, 0.7f, 5, 5);
+        var delta = new Vector2(37.3f, 23.9f);
+        var result = TileMotion.Move(start, delta, Open("......", "......", "......", "......"));
+        float x = start.X, y = start.Y;
+        for (int i = 0; i < 5; i++) x += delta.X / 5;
+        for (int i = 0; i < 3; i++) y += delta.Y / 3;
+        Assert.AreEqual(x, result.Bounds.X);
+        Assert.AreEqual(y, result.Bounds.Y);
+    }
+
     private sealed class Probe(float y) : Entity
     {
         public override float Depth => y;
