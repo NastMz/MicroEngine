@@ -226,11 +226,22 @@ A deterministic input script, keyed by update number. Text format, one command p
 260 touch 3 0.5,0.5       # finger 3 at the middle of the screen (fractions of its size)
 300 lift 1
 320 prompts gamepad playstation  # name controls as on a PlayStation pad (keyboard, gamepad, touch or auto)
+400 key Space down        # the script's keyboard: a key by position (a Key name) goes down, or up
+410 keytap Z              # down and up within one frame
+420 pad 2 add playstation # the script's gamepad 2 connects (xbox, playstation or nintendo)
+430 pad 2 A down          # a button of pad 2 (a PadButton name) goes down, or up
+440 pad 2 LeftX -0.8      # an axis of pad 2 (a PadAxis name) moves
+450 pad 2 remove
+460 mouse 160,90 down     # the script's mouse moves to a point in canvas pixels (and its button goes down or up)
+470 wheel 1               # the wheel turns one notch away from the player
+480 text Ana              # text typed (the rest of the line), read while text input is on
 900 quit
 ```
 
 "@+N" instead of an absolute number means N updates after the previous command. Touch commands go through the
-game's [VirtualControls](MicroEngine.Input.VirtualControls.md) with the same hit testing as real fingers.
+game's [VirtualControls](MicroEngine.Input.VirtualControls.md) with the same hit testing as real fingers. The device commands send events
+from the script's own devices ([ScriptKeyboard](MicroEngine.Core.InputScript.md#MicroEngine_Core_InputScript_ScriptKeyboard), [ScriptMouse](MicroEngine.Core.InputScript.md#MicroEngine_Core_InputScript_ScriptMouse), [ScriptPad](MicroEngine.Core.InputScript.md#MicroEngine_Core_InputScript_ScriptPad_System_Int32_)) through
+the engine's input layers, exactly as a backend's would; each device is announced before its first event.
 
  [LaunchArguments](MicroEngine.Core.LaunchArguments.md)
 

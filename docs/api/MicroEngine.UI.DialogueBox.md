@@ -162,8 +162,9 @@ public void Show(string? speaker, params string[] pages)
 
 ### <a id="MicroEngine_UI_DialogueBox_Update_System_Single_MicroEngine_Input_InputMap_System_String_"></a> Update\(float, InputMap, string?\)
 
-Returns true while the box consumed input this update. <code class="paramref">confirm</code> advances it; null (the default)
-is the map's confirm action ([Names](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Names)).
+Returns true while the box is open and takes input this update. <code class="paramref">confirm</code> advances it; null (the
+default) is the map's confirm action ([Names](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Names)). A confirm the box acted on is consumed
+([Consume](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Consume_System_String_)), so nothing read after it (the scene under an overlay) acts on the same press.
 
 ```csharp
 public bool Update(float dt, InputMap input, string? confirm = null)

@@ -69,6 +69,16 @@ public sealed class ActionPrompts
         _touch = touch;
     }
 
+    /// <summary>
+    /// The labels of the player's keyboard layout (the platform's <see cref="IKeyLabels"/>, set by the engine), so a key
+    /// is named as printed on the player's keyboard: the key in A's place is "Q" on AZERTY. Null, or a key the layout
+    /// does not label, uses <see cref="KeyName"/>.
+    /// </summary>
+    public IKeyLabels? KeyLabels { get; set; }
+
+    /// <summary>What a key cap shows on the player's keyboard: the layout's label (<see cref="KeyLabels"/>), else <see cref="KeyName"/>.</summary>
+    public string KeyText(Key key) => KeyLabels?.KeyLabel(key) is { Length: > 0 } label ? label : KeyName(key);
+
     /// <summary>Forces prompts for one device (a "show keyboard controls" option, tests); null follows the player.</summary>
     public InputDevice? Override { get; set; }
 
@@ -165,7 +175,7 @@ public sealed class ActionPrompts
                 break;
             default:
                 foreach (var k in bindings?.Keys ?? [])
-                    list.Add(new ActionPrompt(action, InputDevice.Keyboard, PromptKind.Key, KeyName(k)) { Key = k });
+                    list.Add(new ActionPrompt(action, InputDevice.Keyboard, PromptKind.Key, KeyText(k)) { Key = k });
                 break;
         }
         return list;
@@ -311,7 +321,7 @@ public sealed class ActionPrompts
         _ => "↓",
     };
 
-    /// <summary>The name players read on a key cap: "Z", "Space", "Esc", "←".</summary>
+    /// <summary>The name a key has on a US keyboard: "Z", "Space", "Esc", "←" (prompts prefer the layout's label, <see cref="KeyText"/>).</summary>
     public static string KeyName(Key key) => key switch
     {
         Key.Space => "Space",
@@ -320,12 +330,42 @@ public sealed class ActionPrompts
         Key.Backspace => "Backspace",
         Key.Tab => "Tab",
         Key.LeftShift or Key.RightShift => "Shift",
-        Key.LeftControl => "Ctrl",
+        Key.LeftControl or Key.RightControl => "Ctrl",
+        Key.LeftAlt or Key.RightAlt => "Alt",
+        Key.LeftSuper or Key.RightSuper => "Super",
         Key.Left => "←",
         Key.Right => "→",
         Key.Up => "↑",
         Key.Down => "↓",
         >= Key.D0 and <= Key.D9 => ((char)('0' + (key - Key.D0))).ToString(),
+        >= Key.Keypad0 and <= Key.Keypad9 => "Num " + (char)('0' + (key - Key.Keypad0)),
+        Key.Minus => "-",
+        Key.Equals => "=",
+        Key.LeftBracket => "[",
+        Key.RightBracket => "]",
+        Key.Backslash => "\\",
+        Key.Semicolon => ";",
+        Key.Apostrophe => "'",
+        Key.Grave => "`",
+        Key.Comma => ",",
+        Key.Period => ".",
+        Key.Slash => "/",
+        Key.NonUsBackslash => "<",
+        Key.CapsLock => "Caps Lock",
+        Key.Insert => "Ins",
+        Key.Delete => "Del",
+        Key.PageUp => "PgUp",
+        Key.PageDown => "PgDn",
+        Key.PrintScreen => "PrtSc",
+        Key.ScrollLock => "ScrLk",
+        Key.NumLock => "Num Lock",
+        Key.KeypadDivide => "Num /",
+        Key.KeypadMultiply => "Num *",
+        Key.KeypadMinus => "Num -",
+        Key.KeypadPlus => "Num +",
+        Key.KeypadEnter => "Num Enter",
+        Key.KeypadPeriod => "Num .",
+        Key.KeypadEquals => "Num =",
         _ => key.ToString(),
     };
 
