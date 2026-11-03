@@ -11,13 +11,17 @@ developer registers. The profile decides which parts a host may replace ([Replac
 subsystems share state with the window and cannot be swapped independently.
 
 ```csharp
-public sealed class PlatformProfile
+public sealed class PlatformProfile : IHostProfile
 ```
 
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
 [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
+
+#### Implements
+
+IHostProfile
 
 ## Constructors
 

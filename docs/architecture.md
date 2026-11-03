@@ -11,7 +11,7 @@ document explains how the pieces fit and why.
 ```mermaid
 flowchart TB
   accTitle: Layers
-  accDescr: Games and samples start through the desktop launcher, which offers the SDL and raylib backends; both implement the platform contract, which builds on the kernel.
+  accDescr: Games and samples start through the hosts, which compose them through hosting and offer the SDL and raylib backends; both implement the platform contract, which builds on the kernel.
   games["<b> games/* </b> <br/> Game rules, content, art and music <br/> (MeadowRun, CourtyardKey, TrailDuel, NeonRift)"]
   samples["<b> samples/* </b> <br/> Minimal examples (HelloEngine)"]
   hosts["<b> src/MicroEngine.Desktop, src/MicroEngine.Cli/Hosts </b> <br/> Hosts: choose a platform profile, run the game"]
@@ -19,11 +19,13 @@ flowchart TB
   raylib["<b> src/MicroEngine.Raylib </b> <br/> raylib: window, renderer, audio, input; WebAssembly"]
   core["<b> src/MicroEngine </b> <br/> Core: loop, scenes, input, graphics model, world, audio synthesis, UI, platform contract"]
   platform["<b> src/MicroEngine.Platform </b> <br/> Platform contracts: host, surface, capabilities, storage, content sources"]
+  hosting["<b> src/MicroEngine.Hosting </b> <br/> Hosting: launch requests and their rules, platform selection, the composition a game configures once"]
   kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
   samples -- started by --> hosts
   hosts -- choose --> sdl
   hosts -- choose --> raylib
+  hosts -- compose through --> hosting
   sdl -- implements --> core
   raylib -- implements --> core
   sdl -- implements --> platform
@@ -32,6 +34,8 @@ flowchart TB
   core -- builds on --> platform
   core -- builds on --> kernel
   platform -- builds on --> kernel
+  core -- builds on --> hosting
+  hosting -- builds on --> platform
 ```
 
 Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
@@ -43,6 +47,15 @@ the main surface, optional features found with `TryGetCapability<T>`, and whethe
 `IStorage` and `IContentSource`. `IPlatform` extends `IPlatformHost` with the devices and frame presentation that
 later move to their own contracts. The engine never casts a platform to find an optional feature, never wraps one, and
 nothing a platform does depends on the time mode ([The platform host](manual/backends.md#the-platform-host)).
+
+Next SDK version (not published yet: arrives with the next SDK version): hosting is a third assembly of the
+`MicroEngine` package, `MicroEngine.Hosting`, which references only the kernel and the platform contracts. It holds the
+launcher model every host shares: what a launch asks for (`LaunchRequest`, from a command line, a page or a phone) and
+its rules (a script means deterministic time and seed 1 on every host), how a host chooses a platform, the host's
+environment, and the composition a game configures once (`HostBuilder`): a `Configure` entry point that the desktop
+`Program.cs` hands to the launcher and that the browser, Android and iOS hosts call too. Content folders and save media
+are parts of that composition, never process-wide settings
+([One composition for every platform](manual/backends.md#one-composition-for-every-platform)).
 
 The core references no backend library. Everything platform-specific sits behind `MicroEngine.Core.IPlatform` and
 four device interfaces:
@@ -60,7 +73,9 @@ Hosts choose a platform through a `PlatformCatalog` of named `PlatformProfile`s 
 renderer and graphics device stay together because they share a graphics context ([Backends](manual/backends.md)).
 SDL is the default on desktops and phones. The raylib backend also runs in a browser (raylib compiled to
 WebAssembly): `BrowserLauncher` returns a `GameSession` that the page starts, ticks from `requestAnimationFrame` and
-restarts, and keeps saves in `localStorage`. `microengine package web` builds any game into a static site
+restarts, and keeps saves in `localStorage`. Next SDK version: every host composes the game with its `Configure` entry
+point through the same launcher model (`GameHost`), so a page's scripted run is deterministic like a desktop one.
+`microengine package web` builds any game into a static site
 ([The browser host](examples/embedding.md)).
 
 ## The frame

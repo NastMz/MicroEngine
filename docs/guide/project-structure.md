@@ -10,7 +10,7 @@ real games as the reference.
 | --- | --- |
 | `src/MicroEngine/` | Backend-independent core: loop, scenes, input, graphics model, world, audio synthesis, UI, saves, achievements. No native dependencies |
 | `src/MicroEngine.Sdl/` | SDL 3 backend: `SdlPlatform`, `SdlAudioDevice` |
-| `src/MicroEngine.Raylib/` | raylib backend: `RaylibPlatform`, `RaylibAudioDevice`, `BrowserLauncher`, `BrowserSaveStorage` |
+| `src/MicroEngine.Raylib/` | raylib backend: `RaylibPlatform`, `RaylibAudioDevice`, `BrowserLauncher`, `BrowserSaveStorage` (next SDK version: `BrowserPage`; browser saves move to `MicroEngine.Platform.BrowserStorage`) |
 | `src/MicroEngine.Desktop/` | `DesktopLauncher` and the official desktop platforms; what games reference |
 | `platforms/` | Android and iOS hosts ([README](../../platforms/README.md)) |
 | `games/<Name>/` | A complete game: code, procedural art and audio, optional asset files, input scripts, README |
@@ -109,10 +109,24 @@ variables because the launcher rejects unknown arguments. From
 [`games/TrailDuel/Program.cs`](../../games/TrailDuel/Program.cs):
 
 ```csharp
-// TRAIL_SAVE_DIR (optional) keeps saves and achievements in another folder, e.g. for capture runs.
-var saveDir = Environment.GetEnvironmentVariable("TRAIL_SAVE_DIR");
-return DesktopLauncher.Run(new TrailDuelGame(string.IsNullOrWhiteSpace(saveDir) ? null : saveDir), args);
+return DesktopLauncher.Run(Startup.Configure, args);
+
+namespace TrailDuel
+{
+    public static class Startup
+    {
+        /// <summary>TRAIL_SAVE_DIR (optional) keeps saves and achievements in another folder, e.g. for capture runs.</summary>
+        public static void Configure(HostBuilder host)
+        {
+            var saveDir = host.Environment.Variable("TRAIL_SAVE_DIR");
+            host.UseGame(() => new TrailDuelGame(saveDir));
+        }
+    }
+}
 ```
 
-Keeping it this small is also what lets the browser and phone hosts build the same game: the project's
+This is the next SDK version's form (not published yet: arrives with the next SDK version): `Startup.Configure` is the
+game's composition, and the browser and phone hosts call the same method, so they build the same game
+([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)). With the published
+SDK, `Program.cs` passes the game itself (`DesktopLauncher.Run(new TrailDuelGame(...), args)`) and the project's
 `MicroEngineGameFactory` repeats the constructor expression ([Application identity](app-identity.md)).

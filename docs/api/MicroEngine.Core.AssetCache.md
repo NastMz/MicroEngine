@@ -70,7 +70,7 @@ Creates the textures.
 
 `root` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
-The content folder; null for [DefaultRoot](MicroEngine.Core.ContentFolder.md#MicroEngine_Core_ContentFolder_DefaultRoot) or the <code>Content</code> folder next to the executable. It is opened on the first load, so games without content files never need one.
+The content folder; null for the composition's ([Content](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Content)) or the <code>Content</code> folder next to the executable. It is opened on the first load, so games without content files never need one.
 
 ## Properties
 

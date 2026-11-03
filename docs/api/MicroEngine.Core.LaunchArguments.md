@@ -6,7 +6,8 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
-The parsed launcher command line (see [GameLauncher](MicroEngine.Core.GameLauncher.md)).
+The launcher command line with the engine's own types (see [GameLauncher](MicroEngine.Core.GameLauncher.md)): a typed view of a
+[LaunchRequest](MicroEngine.Hosting.LaunchRequest.md), with the seed and the time mode resolved by its rules.
 
 ```csharp
 public sealed record LaunchArguments : IEquatable<LaunchArguments>
@@ -25,7 +26,8 @@ public sealed record LaunchArguments : IEquatable<LaunchArguments>
 
 ### <a id="MicroEngine_Core_LaunchArguments__ctor_System_String_System_String_System_Boolean_System_Boolean_System_Int64_System_Int32_System_Nullable_System_Int32__System_Boolean_"></a> LaunchArguments\(string?, string, bool, bool, long, int, int?, bool\)
 
-The parsed launcher command line (see [GameLauncher](MicroEngine.Core.GameLauncher.md)).
+The launcher command line with the engine's own types (see [GameLauncher](MicroEngine.Core.GameLauncher.md)): a typed view of a
+[LaunchRequest](MicroEngine.Hosting.LaunchRequest.md), with the seed and the time mode resolved by its rules.
 
 ```csharp
 public LaunchArguments(string? ScriptPath, string CaptureDirectory, bool Headless, bool Hidden, long Frames, int Seed, int? Scale, bool Mute)
@@ -298,8 +300,9 @@ public int Seed { get; init; }
 ### <a id="MicroEngine_Core_LaunchArguments_Time"></a> Time
 
 <code>--time</code>: how the loop advances time, or null to leave it to the game. A script means
-[Deterministic](MicroEngine.Kernel.TimeMode.md) unless <code>--time</code> is given; <code>--hidden</code> changes nothing; the
-headless platform's [RunPreset](MicroEngine.Core.RunPreset.md) makes its runs deterministic when this is null.
+[Deterministic](MicroEngine.Kernel.TimeMode.md) unless <code>--time</code> is given ([EffectiveTime](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_EffectiveTime));
+<code>--hidden</code> changes nothing; the headless platform's [RunPreset](MicroEngine.Core.RunPreset.md) makes its runs deterministic when
+this is null.
 
 ```csharp
 public TimeMode? Time { get; init; }
@@ -413,6 +416,24 @@ public bool Equals(LaunchArguments? other)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_LaunchArguments_From_MicroEngine_Hosting_LaunchRequest_System_Int32_"></a> From\(LaunchRequest, int\)
+
+The typed view of <code class="paramref">request</code>; a run that asks for no seed and plays no script gets <code class="paramref">clockSeed</code>.
+
+```csharp
+public static LaunchArguments From(LaunchRequest request, int clockSeed)
+```
+
+#### Parameters
+
+`request` LaunchRequest
+
+`clockSeed` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ [LaunchArguments](MicroEngine.Core.LaunchArguments.md)
+
 ### <a id="MicroEngine_Core_LaunchArguments_GetHashCode"></a> GetHashCode\(\)
 
 ```csharp
@@ -425,7 +446,7 @@ public override int GetHashCode()
 
 ### <a id="MicroEngine_Core_LaunchArguments_Parse_System_Collections_Generic_IReadOnlyList_System_String__"></a> Parse\(IReadOnlyList<string\>\)
 
-Parses command-line arguments.
+Parses command-line arguments ([Parse](MicroEngine.Hosting.LaunchRequest.md#MicroEngine_Hosting_LaunchRequest_Parse_System_Collections_Generic_IReadOnlyList_System_String__System_Func_System_String_System_Boolean__)).
 
 ```csharp
 public static LaunchArguments Parse(IReadOnlyList<string> args)

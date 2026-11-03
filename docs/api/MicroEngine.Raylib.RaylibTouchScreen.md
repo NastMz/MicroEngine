@@ -8,7 +8,7 @@ Guide: [Backends and platforms](../manual/backends.md)
 
 Touches for the raylib platform. raylib's own touch state is a per-frame list of points indexed by position (no
 cancel, no reliable identity across frames), so it is not used: in a browser the page forwards Pointer Events
-([BrowserTouch](MicroEngine.Raylib.BrowserTouch.md)), with their pointer ids, the page's safe-area insets and its density. A desktop raylib
+([BrowserPage](MicroEngine.Raylib.BrowserPage.md)), with their pointer ids, the page's safe-area insets and its density. A desktop raylib
 window reports no touches; its controls still lay out for scripted touches.
 
 ```csharp
@@ -27,6 +27,8 @@ ITouchScreen
 ## Constructors
 
 ### <a id="MicroEngine_Raylib_RaylibTouchScreen__ctor"></a> RaylibTouchScreen\(\)
+
+A touch screen with no page feeding it (a desktop window): no touches, default insets and density.
 
 ```csharp
 public RaylibTouchScreen()

@@ -6,9 +6,10 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Saving data](../manual/persistence.md)  
 
-Small JSON persistence for settings and progress. Files live under the user's data folder
-([DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_)) unless a directory is supplied (tests use a temporary one) or a launcher
-chose another medium through [DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage) (the browser keeps saves in localStorage).
+Small JSON persistence for settings and progress. Without a directory or a storage of its own, a store keeps its slots
+in the platform's default medium ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)): files under the user's data folder
+([DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_)), and the page's localStorage in browsers. A composition can hand a game another medium
+([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)); tests pass a temporary directory.
 Corrupt or missing data yields null instead of crashing the game; corrupt data is set aside
 ("&lt;slot&gt;.corrupt.json" for files) so the next save cannot destroy it. A slot that exists but could not be
 read (locked file, blocked browser storage) is never written by this store, because the game is then
@@ -58,7 +59,7 @@ The game's id, which names its save folder; must not be empty.
 
 `directory` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
-The folder for the slot files; null uses [DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage) when a launcher set it, otherwise [DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_).
+The folder for the slot files; null uses the platform's default medium ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)).
 
 #### Exceptions
 
@@ -104,19 +105,6 @@ public SaveStore(IStorage storage)
 
 ## Properties
 
-### <a id="MicroEngine_Core_SaveStore_DefaultStorage"></a> DefaultStorage
-
-Storage for stores created without a directory, chosen by the launcher before the game is built
-(null: files under local application data). Called with the game id.
-
-```csharp
-public static Func<string, ISaveStorage>? DefaultStorage { get; set; }
-```
-
-#### Property Value
-
- [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[string](https://learn.microsoft.com/dotnet/api/system.string), [ISaveStorage](MicroEngine.Core.ISaveStorage.md)\>?
-
 ### <a id="MicroEngine_Core_SaveStore_Directory"></a> Directory
 
 The save folder for file storage; otherwise a description of where saves live.
@@ -133,10 +121,11 @@ public string Directory { get; }
 
 ### <a id="MicroEngine_Core_SaveStore_DefaultDirectory_System_String_"></a> DefaultDirectory\(string\)
 
-The save folder used when neither a directory nor [DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage) is given:
+The save folder used when no directory is given (outside browsers):
 <code>%LOCALAPPDATA%\MicroEngine\&lt;gameId&gt;</code> on Windows, <code>~/Library/Application Support/MicroEngine/&lt;gameId&gt;</code>
-on macOS, and <code>$XDG_DATA_HOME/MicroEngine/&lt;gameId&gt;</code> (by default <code>~/.local/share</code>) on Linux and other
-Unix systems. Always absolute, also when the folder does not exist yet: the first save creates it.
+on macOS and iOS (inside the app's container), the app's private files folder (<code>files/MicroEngine/&lt;gameId&gt;</code>)
+on Android, and <code>$XDG_DATA_HOME/MicroEngine/&lt;gameId&gt;</code> (by default <code>~/.local/share</code>) on Linux and
+other Unix systems. Always absolute, also when the folder does not exist yet: the first save creates it.
 
 ```csharp
 public static string DefaultDirectory(string gameId)
@@ -149,6 +138,32 @@ public static string DefaultDirectory(string gameId)
 #### Returns
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+### <a id="MicroEngine_Core_SaveStore_DefaultStorage_System_String_"></a> DefaultStorage\(string\)
+
+The platform's default save medium for a game: the page's localStorage in browsers
+([BrowserStorage](MicroEngine.Platform.BrowserStorage.md), keys <code>microengine/&lt;gameId&gt;/&lt;slot&gt;</code>), files in
+[DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_) everywhere else. A rule of the platform, not a setting: a host that wants another
+medium composes it ([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)) and the game passes it to
+[#ctor](MicroEngine.Core.SaveStore.md).
+
+```csharp
+public static IStorage DefaultStorage(string gameId)
+```
+
+#### Parameters
+
+`gameId` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ IStorage
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">gameId</code> is null, empty or white space.
 
 ### <a id="MicroEngine_Core_SaveStore_Delete_System_String_"></a> Delete\(string\)
 

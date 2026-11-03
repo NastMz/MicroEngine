@@ -16,6 +16,8 @@ Guide: [Graphics](../manual/rendering.md)
 
  [MicroEngine.Graphics](MicroEngine.Graphics.md)
 
+ [MicroEngine.Hosting](MicroEngine.Hosting.md)
+
  [MicroEngine.Input](MicroEngine.Input.md)
 
  [MicroEngine.Kernel](MicroEngine.Kernel.md)

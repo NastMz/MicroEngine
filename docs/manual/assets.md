@@ -217,7 +217,7 @@ Source: [`games/CourtyardKey/Visuals/MonsterArt.cs`](../../games/CourtyardKey/Vi
 
 | Member | Behaviour |
 | --- | --- |
-| `new ContentFolder(root?)` | Default root is `<exe dir>/Content` (or `ContentFolder.DefaultRoot`, which phone hosts set); a missing folder throws with the full path |
+| `new ContentFolder(root?)` | Default root is `<exe dir>/Content` (or `ContentFolder.DefaultRoot`, which phone hosts set; next SDK version: `DefaultRoot` is read-only and hosts compose their folder, `host.Content`); a missing folder throws with the full path |
 | `PathOf("sfx/shot.wav")` | Full path from a `/`-separated relative path; throws if missing, outside the root or (next SDK version) spelled with another letter case |
 | `Image(relative)` | Loads an image as a `PixelImage` |
 | `ReadBytes(relative)`, `Exists(relative)` | Raw access |

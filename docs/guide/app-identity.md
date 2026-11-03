@@ -25,7 +25,7 @@ icon, the name desktops group windows by, phone orientation). Nothing else holds
 | `Description` | empty | README.txt, the Linux desktop entry |
 | `MicroEngineIcon` | none (system default) | Windows executable and window, Linux window and desktop entry, macOS `AppIcon.icns`, Android launcher, iOS app icon, browser favicon |
 | `MicroEngineOrientation` | `landscape` | Android activity, iOS supported orientations, SDL on phones |
-| `MicroEngineGameFactory` | `new <RootNamespace>.MainGame()` | the C# expression that creates the game in hosts that build it themselves (browser, Android, iOS) |
+| `MicroEngineGameFactory` | `new <RootNamespace>.MainGame()` (next SDK version: none) | the C# expression that creates the game in hosts that build it themselves (browser, Android, iOS). Next SDK version (not published yet): deprecated; those hosts call the game's `Configure` entry point, the method its `Program.cs` passes to `DesktopLauncher.Run` ([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)), and use this expression only for a game without one |
 | `MicroEngineLicenseFile` | `LICENSE`, `LICENSE.txt` or `LICENSE.md` next to the project | shipped as `LICENSE.txt` |
 | `MicroEngineThirdPartyNotices` | MicroEngine's own list | shipped as `THIRD-PARTY-NOTICES.txt`; list your own assets' licences here |
 | `MicroEngineScriptsDir` | none | input scripts packaged in phone and development web builds, for automated play tests |

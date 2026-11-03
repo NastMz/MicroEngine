@@ -49,6 +49,32 @@ public GameLoop(Game game, IPlatform platform, RunOptions? options = null)
 
 <code class="paramref">game</code> or <code class="paramref">platform</code> is null.
 
+### <a id="MicroEngine_Core_GameLoop__ctor_MicroEngine_Core_Game_MicroEngine_Core_IPlatform_MicroEngine_Core_RunOptions_System_Action_MicroEngine_Kernel_EngineBuilder__"></a> GameLoop\(Game, IPlatform, RunOptions?, Action<EngineBuilder\>?\)
+
+Prepares a loop whose engine also gets the host's composition: <code class="paramref">compose</code> runs after the game's
+[Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_) and before the run's own systems ([GameHost](MicroEngine.Core.GameHost.md) passes the content and engine
+changes of its [HostBuilder](MicroEngine.Hosting.HostBuilder.md) this way).
+
+```csharp
+public GameLoop(Game game, IPlatform platform, RunOptions? options, Action<EngineBuilder>? compose)
+```
+
+#### Parameters
+
+`game` [Game](MicroEngine.Core.Game.md)
+
+`platform` [IPlatform](MicroEngine.Core.IPlatform.md)
+
+`options` [RunOptions](MicroEngine.Core.RunOptions.md)?
+
+`compose` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<EngineBuilder\>?
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">game</code> or <code class="paramref">platform</code> is null.
+
 ## Properties
 
 ### <a id="MicroEngine_Core_GameLoop_Frames"></a> Frames

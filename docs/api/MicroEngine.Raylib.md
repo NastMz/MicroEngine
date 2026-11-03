@@ -2,7 +2,7 @@
 
 <div data-pagefind-weight="0.3">
 
-The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and browser storage.
+The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and the browser page it reads.
 
 Guide: [Backends and platforms](../manual/backends.md)  
 
@@ -10,33 +10,27 @@ Guide: [Backends and platforms](../manual/backends.md)
 
  [BrowserLauncher](MicroEngine.Raylib.BrowserLauncher.md)
 
-Entry point for browser builds (raylib compiled to WebAssembly). A page cannot block its only thread in
-a game loop, so this returns a [GameSession](MicroEngine.Core.GameSession.md): the page starts it, ticks it once per
-<code>requestAnimationFrame</code> and may start it again after the game ends. Saves go to localStorage
-([BrowserSaveStorage](MicroEngine.Raylib.BrowserSaveStorage.md)); that choice is made here, before any game is built, so games
-construct their [SaveStore](MicroEngine.Core.SaveStore.md) exactly as on desktop.
+Entry point for browser builds (raylib compiled to WebAssembly): the shared launcher model ([GameHost](MicroEngine.Core.GameHost.md))
+for a page. A page cannot block its only thread in a game loop, so this returns a [GameSession](MicroEngine.Core.GameSession.md): the page
+starts it with a [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md) (a script in development packages), ticks it once per
+<code>requestAnimationFrame</code> and may start it again after the game ends. Every run composes the game with the same
+<code>Configure</code> entry point its desktop <code>Program.cs</code> uses, so what the game configures there (platforms, request
+changes, engine services) reaches the browser too; a scripted run is in deterministic time with seed 1, exactly as on
+desktop and phones. Saves go to localStorage by default ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)).
 
- [BrowserLifecycle](MicroEngine.Raylib.BrowserLifecycle.md)
+ [BrowserPage](MicroEngine.Raylib.BrowserPage.md)
 
-The page's visibility: a hidden page (another tab, the phone locked or switched away) suspends the game.
-
- [BrowserSaveStorage](MicroEngine.Raylib.BrowserSaveStorage.md)
-
-Save slots in the page's localStorage under "microengine/&lt;game&gt;/&lt;slot&gt;". The browser's file system
-is in memory and vanishes on reload; localStorage writes are synchronous and survive it. The page registers
-the "microengine" module (see web/README.md) before the game starts.
-
- [BrowserTouch](MicroEngine.Raylib.BrowserTouch.md)
-
-The browser page's way into the raylib platform's touch screen ([RaylibTouchScreen](MicroEngine.Raylib.RaylibTouchScreen.md)): the page listens to
-Pointer Events on the canvas and forwards touch and pen pointers here, in canvas pixels, with the page's safe-area
-insets (CSS <code>env(safe-area-inset-*)</code>) and density. The browser host (src/MicroEngine.Cli/Hosts/web) calls these from its JS exports.
+One browser page's way into the raylib platform it hosts: the page listens to Pointer Events on the canvas and
+forwards touch and pen pointers here, in canvas pixels, with the page's safe-area insets (CSS
+<code>env(safe-area-inset-*)</code>) and density, its visibility and how it vibrates. The browser host
+(src/MicroEngine.Cli/Hosts/web) owns one and calls these from its JavaScript exports; every platform it builds
+([BrowserProfile](MicroEngine.Raylib.RaylibPlatform.md#MicroEngine_Raylib_RaylibPlatform_BrowserProfile_MicroEngine_Raylib_BrowserPage_)) reads this page and no other, so nothing is shared through the process.
 
  [DesktopLauncher](MicroEngine.Raylib.DesktopLauncher.md)
 
-Entry point for desktop games on raylib only: [GameLauncher](MicroEngine.Core.GameLauncher.md) with the <code>raylib</code> and <code>headless</code>
-platforms (see [GameLauncher](MicroEngine.Core.GameLauncher.md) for the arguments). Games that should run on the recommended platform of
-each system use <code>MicroEngine.Desktop.DesktopLauncher</code> instead.
+Entry point for desktop games on raylib only: the shared launcher model ([GameHost](MicroEngine.Core.GameHost.md), the arguments of
+[GameLauncher](MicroEngine.Core.GameLauncher.md)) with the <code>raylib</code> and <code>headless</code> platforms. Games that should run on the
+recommended platform of each system use <code>MicroEngine.Desktop.DesktopLauncher</code> instead.
 
  [DesktopOptions](MicroEngine.Raylib.DesktopOptions.md)
 
@@ -61,7 +55,7 @@ surface size is the canvas's, read after start. Its capabilities ([TryGetCapabil
 
 Touches for the raylib platform. raylib's own touch state is a per-frame list of points indexed by position (no
 cancel, no reliable identity across frames), so it is not used: in a browser the page forwards Pointer Events
-([BrowserTouch](MicroEngine.Raylib.BrowserTouch.md)), with their pointer ids, the page's safe-area insets and its density. A desktop raylib
+([BrowserPage](MicroEngine.Raylib.BrowserPage.md)), with their pointer ids, the page's safe-area insets and its density. A desktop raylib
 window reports no touches; its controls still lay out for scripted touches.
 
 </div>

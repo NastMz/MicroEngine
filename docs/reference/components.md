@@ -12,6 +12,8 @@ the backend, a game, or the browser host.
 | `src/MicroEngine.Sdl` | Library | SDL 3 backend (`SdlPlatform`, `SdlAudioDevice`): the default on Windows, Linux, macOS, Android and iOS | `MicroEngine`, NuGet `ppy.SDL3-CS`, `NVorbis` |
 | `src/MicroEngine.Raylib` | Library | raylib backend (`RaylibPlatform`, `RaylibAudioDevice`), a raylib-only `DesktopLauncher`, `BrowserLauncher`, `BrowserSaveStorage` | `MicroEngine`, NuGet `Raylib-cs` 8.1.0 |
 | `src/MicroEngine.Desktop` | Library | `DesktopLauncher` with the official desktop catalog (`sdl`, `raylib`, `sdl-software`, `headless`) | `MicroEngine.Sdl`, `MicroEngine.Raylib` |
+| `src/MicroEngine.Hosting` | Library (inside the `MicroEngine` package; next SDK version) | The launcher model every host shares: `LaunchRequest` and its rules, `ProfileSelection`, `HostEnvironment`, `HostBuilder` (the composition a game configures with its `Configure` entry point) | `MicroEngine.Kernel`, `MicroEngine.Platform` |
+| `tests/MicroEngine.Cli.Tests` | MSTest | The tool's own logic: finding a game's `Configure` entry point in its built assembly | `MicroEngine.Cli`, `CourtyardKey` |
 | `games/MeadowRun`, `games/CourtyardKey`, `games/TrailDuel`, `games/NeonRift` | Executable | One complete game each: rules, scenes, art, audio, content | `MicroEngine.Desktop` |
 | `samples/HelloEngine` | Executable | Minimal example game | `MicroEngine.Desktop` |
 | `tests/MicroEngine.Tests` | MSTest | Engine contracts | `MicroEngine` |
@@ -51,8 +53,9 @@ The manual covers each area: [lifecycle](../manual/lifecycle.md), [scenes](../ma
 | `SdlAudioDevice` | `IAudioDevice` over SDL audio streams; WAV and OGG (NVorbis) music; usable with another platform |
 | `GameLauncher` (core) | Parses launcher flags, builds `RunOptions` and a `PlatformRequest`, resolves a profile from a `PlatformCatalog`, calls `GameRunner.Run`, returns an exit code |
 | `DesktopLauncher` | `GameLauncher` with the official desktop catalog (in `MicroEngine.Desktop`) or with raylib only (in `MicroEngine.Raylib`) |
-| `BrowserLauncher` | Sets `SaveStore.DefaultStorage` to `BrowserSaveStorage` and returns a `GameSession` that creates a `RaylibPlatform` per run |
-| `BrowserSaveStorage` | `ISaveStorage` over `localStorage`, keys `microengine/<Game>/<slot>` |
+| `BrowserLauncher` | Sets `SaveStore.DefaultStorage` to `BrowserSaveStorage` and returns a `GameSession` that creates a `RaylibPlatform` per run (next SDK version: composes every run with the game's `Configure` and the shared launch rules, on the raylib platform of one `BrowserPage`) |
+| `GameHost` (core, next SDK version) | The one launch path: composes a host (its defaults, then the game's `Configure`), decides `RunOptions` and the `PlatformRequest` from a `LaunchRequest`, chooses and starts the platform, applies the composition to the engine; `GameLauncher`, `BrowserLauncher`, the phone hosts and tests call it |
+| `BrowserSaveStorage` | `ISaveStorage` over `localStorage`, keys `microengine/<Game>/<slot>` (next SDK version: `MicroEngine.Platform.BrowserStorage`, the default medium in browsers) |
 
 ## What calls what
 
@@ -112,7 +115,11 @@ flowchart TB
 ```
 
 `GameEntry` is generated at build time from the game's entry in the browser build configuration, so the browser
-builds the game with the same constructor expression as its desktop `Program.cs`.
+builds the game with the same constructor expression as its desktop `Program.cs`. Next SDK version (not published yet:
+arrives with the next SDK version): `GameEntry.Configure` calls the game's own `Configure` entry point, which
+`microengine` finds in the built game; `BrowserLauncher.CreateSession(GameEntry.Configure, page)` composes each run
+with it through `GameHost`, and `Start` takes a `LaunchRequest` (the script, when there is one), decided by the same
+rules as a desktop `--script` run.
 
 ### Tests
 

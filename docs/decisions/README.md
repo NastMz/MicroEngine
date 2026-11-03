@@ -33,3 +33,4 @@ maintainer's archive, not in the public history.
 | [0026](0026-kernel-modules-and-schedule.md) | A kernel with modules, a typed service registry and a phased frame schedule; `Game` is a module façade (amends 0003, 0016) | Accepted |
 | [0027](0027-loop-owned-time.md) | The loop owns time; backends keep only a monotonic clock; time mode and sound are explicit options (amends 0003, 0023) | Accepted |
 | [0037](0037-platform-host-contract.md) | A platform host contract with capabilities, explicit options and no time coupling (amends 0016, 0027) | Accepted |
+| [0038](0038-one-composition-path.md) | One composition path for desktop, browser, phones and tests: `MicroEngine.Hosting`, a `Configure` entry point, no statics (amends 0007, 0016, 0021) | Accepted |

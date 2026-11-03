@@ -58,7 +58,6 @@ template's files, with `MyGame` where your project's name goes.
     <Description>A game made with MicroEngine.</Description>
     <MicroEngineIcon>icon.png</MicroEngineIcon>
     <MicroEngineOrientation>landscape</MicroEngineOrientation>
-    <MicroEngineGameFactory>new MyGame.MainGame()</MicroEngineGameFactory>
   </PropertyGroup>
 
   <ItemGroup>
@@ -76,6 +75,9 @@ In your project `MICROENGINE_VERSION` is the tool's version (`0.4.0-alpha.2`). T
 identity: every package `microengine package` builds takes its name, id, version, icon and orientation from there, and
 nowhere else. `MicroEngineGameFactory` is the C# expression that creates the game in the hosts that build it
 themselves (browser, Android, iOS); keep it in step with `Program.cs` if your game's constructor takes arguments.
+Next SDK version (not published yet: arrives with the next SDK version): the template has no `MicroEngineGameFactory`;
+the browser, Android and iOS hosts call the game's `Configure` entry point instead (below), the same one `Program.cs`
+uses, so there is nothing to keep in step.
 
 ### The entry point
 
@@ -85,13 +87,20 @@ using MicroEngine.Desktop;
 using MyGame;
 
 // Runs the game on the desktop platforms: SDL 3 by default; --platform raylib, --list-platforms and the other launcher
-// options work from the command line (microengine run -- --list-platforms).
-return DesktopLauncher.Run(new MainGame(), args);
+// options work from the command line (microengine run -- --list-platforms). Browser, Android and iOS builds call the
+// same MainGame.Configure, so whatever it composes reaches every platform.
+return DesktopLauncher.Run(MainGame.Configure, args);
 ```
 
 `DesktopLauncher.Run` reads the command line, picks a platform (SDL 3 unless told otherwise), opens the window, runs
 the game loop and returns the exit code. The game never names a platform; that is why the same game also runs in a
 browser or on a phone ([Platforms](platforms.md)).
+
+The template above is the next SDK version's (not published yet: arrives with the next SDK version): `Program.cs`
+hands the launcher `MainGame.Configure`, the game's composition, which the browser, Android and iOS hosts call too
+([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)). With the published
+SDK, `Program.cs` reads `return DesktopLauncher.Run(new MainGame(), args);` and the project declares
+`<MicroEngineGameFactory>new MyGame.MainGame()</MicroEngineGameFactory>`.
 
 ### The game class
 
@@ -102,6 +111,7 @@ using MicroEngine;
 using MicroEngine.Audio;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
+using MicroEngine.Hosting;
 using MyGame.Scenes;
 
 namespace MyGame;
@@ -109,6 +119,12 @@ namespace MyGame;
 /// <summary>The game: its settings, the assets every scene shares, and the first scene.</summary>
 public sealed class MainGame : Game
 {
+    /// <summary>
+    /// The game's composition, called by every build (desktop Program.cs, browser, Android, iOS): it chooses the game, and
+    /// may add platforms (host.Platforms()), change the platform request or register engine services.
+    /// </summary>
+    public static void Configure(HostBuilder host) => host.UseGame(() => new MainGame());
+
     /// <summary>A 320x180 virtual screen, scaled to the window without blurring the pixels.</summary>
     public override GameSettings Settings { get; } = new("MyGameTitle") { Background = Color.Hex("1d2b53") };
 

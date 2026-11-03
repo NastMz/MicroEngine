@@ -26,7 +26,10 @@ iOS is a preview: games build and run, and device builds need the developer's ow
 SDL 3. Players and tests can choose another with `--platform raylib`, `--platform sdl-software` (SDL's CPU renderer,
 for machines without a working GPU driver) or `MICROENGINE_PLATFORM`; `--list-platforms` lists them. The window
 scales the game's virtual canvas by the largest whole factor that fits and letterboxes it; F11 and Alt+Enter toggle
-fullscreen. The window and taskbar show the game's [icon](app-identity.md).
+fullscreen. The window and taskbar show the game's [icon](app-identity.md). Next SDK version (not published yet:
+arrives with the next SDK version): `DesktopLauncher.Run(MainGame.Configure, args)` takes the game's `Configure` entry
+point, and the browser, Android and iOS builds run that same composition with the same launch rules
+([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)).
 
 - **Rendering**: SDL picks Direct3D 11, Vulkan or OpenGL on Windows, OpenGL on Linux and Metal on macOS; all draw the
   same pixels. raylib uses OpenGL, so on a Mac without OpenGL it cannot open a window and SDL is used.

@@ -32,7 +32,11 @@ Neon Rift, for example, draws at 480x270.
 
 Parsed by `GameLauncher.Run`, which `DesktopLauncher.Run` calls
 ([`src/MicroEngine/Core/GameLauncher.cs`](../../src/MicroEngine/Core/GameLauncher.cs)). A game that
-starts through `DesktopLauncher` accepts them on its command line.
+starts through `DesktopLauncher` accepts them on its command line. Next SDK version (not published yet: arrives with the
+next SDK version): the flags are parsed into a `LaunchRequest` (namespace `MicroEngine.Hosting`), the launch model
+every host shares: a browser development package's `script=` and a phone app's script follow the same rules as
+`--script` (deterministic time, seed 1, no sound device unless asked for), and a script that cannot be parsed exits
+with code 2.
 
 | Flag | Effect |
 | --- | --- |
@@ -110,7 +114,12 @@ package. What a package exposes to the page that serves or embeds it:
 | iframe `allow="fullscreen; autoplay"` | Enables the package's Fullscreen button and Alt+Enter inside an iframe ([Embedding](../examples/embedding.md#the-iframe)) |
 
 The browser host builds the game with the project's `MicroEngineGameFactory` expression, which should match its
-desktop `Program.cs` ([Name, id, version and icon](../guide/app-identity.md)). The browser build uses invariant globalization,
+desktop `Program.cs` ([Name, id, version and icon](../guide/app-identity.md)). Next SDK version (not published yet:
+arrives with the next SDK version): the browser, Android and iOS hosts call the game's `Configure` entry point, the same
+method its desktop `Program.cs` passes to `DesktopLauncher.Run`, so they run exactly what the desktop build runs
+([One composition for every platform](../manual/backends.md#one-composition-for-every-platform));
+`MicroEngineGameFactory` is deprecated and used only by a game without one. A scripted run in a development package
+follows the desktop rules: deterministic time, seed 1, no sound device. The browser build uses invariant globalization,
 partial trimming and reflection-based JSON for `SaveStore`.
 
 ## Default input actions
@@ -136,11 +145,11 @@ From `InputMap.CreateDefault()` in [`src/MicroEngine/Input/Input.cs`](../../src/
 | UI style | Pass a `UiTheme` to `UseAchievements`, `AchievementsScene` and widgets | Each game's theme |
 | Achievements | `Achievement.Icon`; `AchievementToasts.Top` and `Heading`; `AchievementsScene` `Title`, `CloseActions`, `Moved`, `Closed` | Neon Rift closes its list with `fire` too |
 | Lighting | `new LightMap(device, glowImage)` with your own glow image | Meadow Run's banded halos |
-| Content location | `new ContentFolder(root)` (default `<exe dir>/Content`) | Tests can point at another folder |
-| Save medium | Implement `ISaveStorage`; pass it to `SaveStore`, or set `SaveStore.DefaultStorage` before games are built | `BrowserSaveStorage` |
+| Content location | `new ContentFolder(root)` (default `<exe dir>/Content`); next SDK version: `host.Content` in the composition, for every host | Tests can point at another folder |
+| Save medium | Implement `ISaveStorage`; pass it to `SaveStore`, or set `SaveStore.DefaultStorage` before games are built (next SDK version: `host.Storage` in the composition and `host.SaveStore(gameId)`) | `BrowserSaveStorage` (next SDK version: `BrowserStorage`) |
 | Save location | `new SaveStore(gameId, directory)` | Every game's `*_SAVE_DIR` variable |
 | Backend | Implement `IPlatform` and its device interfaces, offered as a `PlatformProfile` (next SDK version: `IPlatform` extends the host contract, `IPlatformHost`, and optional features are capabilities) | `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform` ([backends](../manual/backends.md)) |
-| Host loop | Drive `GameLoop` or `GameSession` yourself, one `Tick` per frame | The browser host |
+| Host loop | Drive `GameLoop` or `GameSession` yourself, one `Tick` per frame (next SDK version: `GameHost` gives a host of your own the shared launch rules and the game's composition) | The browser host |
 
 ### Platform request options
 

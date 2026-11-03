@@ -40,6 +40,12 @@ public PlatformProfile Default { get; }
 
  [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
 
+#### Exceptions
+
+ [PlatformConfigurationException](MicroEngine.Core.PlatformConfigurationException.md)
+
+No profile is registered, or none can run here.
+
 ### <a id="MicroEngine_Core_PlatformCatalog_Profiles"></a> Profiles
 
 The registered profiles in order of preference.
@@ -109,5 +115,11 @@ public PlatformProfile Resolve(string? name)
 #### Returns
 
  [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
+
+#### Exceptions
+
+ [PlatformConfigurationException](MicroEngine.Core.PlatformConfigurationException.md)
+
+No profile has that name, or it cannot run here.
 
 </div>

@@ -88,9 +88,19 @@ jumps two steps counts even when every frame took the same time.
 Base class for a game. Subclasses declare [Settings](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Settings), build content in
 [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) and push the first scene. The runner owns the loop.
 
+ [GameHost](MicroEngine.Core.GameHost.md)
+
+The one launch path of every host: desktop ([GameLauncher](MicroEngine.Core.GameLauncher.md)), browser pages, Android and iOS apps and
+tests compose the same way and decide a run the same way. A host states its defaults (its platforms, where content
+files are), the game's <code>Configure</code> entry point composes the rest ([HostBuilder](MicroEngine.Hosting.HostBuilder.md)), and the
+[LaunchRequest](MicroEngine.Hosting.LaunchRequest.md) decides the run: a script means deterministic time and seed 1 on every host; a run in
+deterministic time asks the platform not to wait for the display and for no sound device unless the launch asks for
+one; a real-time run whose game shows a start screen starts gamepads after the first frame.
+
  [GameLauncher](MicroEngine.Core.GameLauncher.md)
 
-The command line every desktop game accepts, on any backend. Supported arguments:
+The command line every desktop game accepts, on any backend: a thin caller of the launcher model every host shares
+([GameHost](MicroEngine.Core.GameHost.md), [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md)). Supported arguments:
 
 <ul><li><code>--script FILE</code> play scripted input (see [InputScript](MicroEngine.Core.InputScript.md)); implies deterministic time unless
 <code>--time</code> says otherwise.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
@@ -111,6 +121,7 @@ A run in deterministic time also asks the platform, through explicit request opt
 ([WaitForDisplay](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_WaitForDisplay)) and for no sound device (<code>--audio auto</code>); a run in real time
 whose game shows a start screen asks it to start gamepads after the first frame
 ([StartGamepadsAfterFirstFrame](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_StartGamepadsAfterFirstFrame)). The platform itself never knows the time mode.
+Browser pages, phone apps and tests apply the same rules through [GameHost](MicroEngine.Core.GameHost.md).
 Returns a process exit code: 0 on success, 1 on a game or platform error, 2 on bad arguments.
 
  [GameLoop](MicroEngine.Core.GameLoop.md)
@@ -186,6 +197,12 @@ device, it also rasterizes: it records each draw as a line of text ([Commands](M
 A touch screen for tests: fingers go down, move and lift by hand, the size, safe area and density can change (a
 rotation, a notch), vibrations are counted, and [DrawOverlay](MicroEngine.Core.HeadlessTouchScreen.md#MicroEngine_Core_HeadlessTouchScreen_DrawOverlay) records what the overlay draws.
 
+ [HostBuilderExtensions](MicroEngine.Core.HostBuilderExtensions.md)
+
+The game's side of a [HostBuilder](MicroEngine.Hosting.HostBuilder.md): choosing the game, the platforms a host offers and changes to the
+platform request. A game's <code>Configure</code> entry point calls these; every host (desktop, browser, phones, tests)
+reads them through [GameHost](MicroEngine.Core.GameHost.md).
+
  [InputScript](MicroEngine.Core.InputScript.md)
 
 A deterministic input script, keyed by update number. Text format, one command per line:
@@ -209,7 +226,8 @@ game's [VirtualControls](MicroEngine.Input.VirtualControls.md) with the same hit
 
  [LaunchArguments](MicroEngine.Core.LaunchArguments.md)
 
-The parsed launcher command line (see [GameLauncher](MicroEngine.Core.GameLauncher.md)).
+The launcher command line with the engine's own types (see [GameLauncher](MicroEngine.Core.GameLauncher.md)): a typed view of a
+[LaunchRequest](MicroEngine.Hosting.LaunchRequest.md), with the seed and the time mode resolved by its rules.
 
  [MonotonicClock](MicroEngine.Core.MonotonicClock.md)
 
@@ -260,9 +278,10 @@ How a run ended.
 
  [SaveStore](MicroEngine.Core.SaveStore.md)
 
-Small JSON persistence for settings and progress. Files live under the user's data folder
-([DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_)) unless a directory is supplied (tests use a temporary one) or a launcher
-chose another medium through [DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage) (the browser keeps saves in localStorage).
+Small JSON persistence for settings and progress. Without a directory or a storage of its own, a store keeps its slots
+in the platform's default medium ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)): files under the user's data folder
+([DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_)), and the page's localStorage in browsers. A composition can hand a game another medium
+([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)); tests pass a temporary directory.
 Corrupt or missing data yields null instead of crashing the game; corrupt data is set aside
 ("&lt;slot&gt;.corrupt.json" for files) so the next save cannot destroy it. A slot that exists but could not be
 read (locked file, blocked browser storage) is never written by this store, because the game is then
