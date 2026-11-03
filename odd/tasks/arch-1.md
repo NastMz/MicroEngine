@@ -94,7 +94,7 @@ A stage's tasks are checked against the stage closure criteria in dossier §9.
 | T6 | S11, S16 | delegated: documentation agent, branch `docs/arch-1-prototype-verdicts` | done | [#29](https://github.com/NastMz/MicroEngine/pull/29), 32006ca | dossier §9 prototype verdicts; §6.4 graphics contract revised per directive 2 (16 points); directive 3 decisions in §5, §6.1-§6.5, §7, §9, §10, §11; this register |
 | T7 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-2` | done | [#41](https://github.com/NastMz/MicroEngine/pull/41), 3aa486e | directives 4-9 applied: dossier §6.4 (graphics contract v1 summary + link, `IAudioSink` v1, physics revisions), §9 verdicts (graphics spike, P5, P6, browser determinism), §5-§11; this register |
 | T8 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-3` | done | [#55](https://github.com/NastMz/MicroEngine/pull/55), f08a3e3 | directives 9-12 applied: stages 0-2 closed, P7 verdict; dossier §6.4 (contract states, frozen `IWorld` v1 sketch, stage 2 notes), §8 (T0 OS precision), §9 (P7 verdict, stage 3 units, progress), §10 (two risks), §11; this register |
-| T9 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-4` | PR open | (this PR) | directives 12-14 and #54-#61 applied: stage 3 closed, stages 4 and 6 started; dossier §6.3-§6.4 (implemented states), §9 (stage units, progress), §10 (risks), §11; this register |
+| T9 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-4` | PR open | [#64](https://github.com/NastMz/MicroEngine/pull/64) | directives 12-14 and #54-#61 applied: stage 3 closed, stages 4 and 6 started; dossier §6.3-§6.4 (implemented states), §9 (stage units, progress), §10 (risks), §11; this register |
 | G1 | S15 | delegated: another agent, branch `fix/phase-ii-deploy-freeze` | done | [#22](https://github.com/NastMz/MicroEngine/pull/22), 9a8020e | automatic public publication frozen for Phase II (`.github/phase-freeze`); validation CI keeps running |
 | S0-D1 | S11 | delegated: stage 0 defects agent, branch `fix/arch-1-stage0-defects` | done | [#24](https://github.com/NastMz/MicroEngine/pull/24), 59fae72 | `ComposedPlatform` forwards every `IPlatform` member and exactly the backend's optional interfaces; tests RED first (since deleted by 1B) |
 | S0-D2 | S11 | delegated: stage 0 CI agent, branch `fix/arch-1-stage0-ci` | done | [#27](https://github.com/NastMz/MicroEngine/pull/27), a89d031 | Windows WARP reference drift (eight entries of `sdl-windows-ci.json`) and the Debian 11 glibc check rule (`packaging/targets.mjs`, `glibcRefusal`) |
@@ -232,7 +232,7 @@ revisions with evidence.
 
 | PR | Task | Branch | Owner | Notes |
 | --- | --- | --- | --- | --- |
-| (this PR) | T9 | `docs/arch-1-register-4` | registrar agent | this register and dossier update |
+| [#64](https://github.com/NastMz/MicroEngine/pull/64) | T9 | `docs/arch-1-register-4` | registrar agent | this register and dossier update |
 | [#62](https://github.com/NastMz/MicroEngine/pull/62) | S6-1 (6a-1) | `feat/arch-1-stage6a-3d-1` | stage 6a agent | tier-1 SDL_GPU device with conformance on D3D12, Vulkan and lavapipe |
 | [#63](https://github.com/NastMz/MicroEngine/pull/63) | S6-2 (6b-1) | `feat/arch-1-stage6b-box2d-1` | stage 6b agent | Box2D v3.2.0 natives for every runtime |
 | — (not yet opened) | S4a (4a-1) | — | stage 4a agent | in progress |
