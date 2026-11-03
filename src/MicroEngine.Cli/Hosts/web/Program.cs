@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using MicroEngine.Core;
+using MicroEngine.Hosting;
 using MicroEngine.Raylib;
 
 [assembly: SupportedOSPlatform("browser")]
@@ -10,28 +11,28 @@ Console.WriteLine($"{GameEntry.Title}: ready");
 
 /// <summary>
 /// The page's bridge to the game (wwwroot/main.js): start a run, one frame per animation frame, and how the run
-/// ended. The game is the one `microengine package web` built this package for (<see cref="GameEntry"/>).
+/// ended. The game is the one `microengine package web` built this package for, composed by its own <c>Configure</c>
+/// entry point (<see cref="GameEntry"/>) through the launcher model every host shares. The page's events reach the
+/// one <see cref="BrowserPage"/> this host owns, never a process-wide state of the engine.
 /// </summary>
 public static partial class WebHost
 {
-    private static readonly GameSession Session = BrowserLauncher.CreateSession(GameEntry.Create);
+    private static readonly BrowserPage Page = new();
+    private static readonly GameSession Session = BrowserLauncher.CreateSession(GameEntry.Configure, Page);
 
     /// <summary>
     /// Starts a new run; returns "" on success, otherwise the error. In development packages a non-empty
-    /// <paramref name="script"/> plays scripted input with captures written to /captures, as --script does on desktop.
+    /// <paramref name="script"/> plays scripted input with captures written to /captures, as --script does on desktop:
+    /// in deterministic time, one fixed step per frame, with seed 1, so two runs write the same captures.
     /// </summary>
     [JSExport]
     public static string Start(string script)
     {
-        RunOptions options;
-        try
-        {
-            options = GameEntry.DevHooks && script.Length > 0
-                ? new RunOptions { Script = InputScript.Parse(script), Seed = 1, CaptureDirectory = "/captures" }
-                : new RunOptions { Seed = Environment.TickCount & 0x7fffffff };
-        }
+        var request = GameEntry.DevHooks && script.Length > 0
+            ? new LaunchRequest { ScriptText = script, ScriptName = "script", CaptureDirectory = "/captures" }
+            : new LaunchRequest();
+        try { return Session.Start(request) ? "" : Describe(Session.Result?.Error); }
         catch (FormatException e) { return e.Message; }
-        return Session.Start(options) ? "" : Describe(Session.Result?.Error);
     }
 
     /// <summary>Runs one frame; false once the run has ended (then see <see cref="Outcome"/>).</summary>
@@ -51,16 +52,16 @@ public static partial class WebHost
     /// pixels. It reaches the game's on-screen controls through the raylib platform's touch screen.
     /// </summary>
     [JSExport]
-    public static void Pointer(double id, int phase, double x, double y) => BrowserTouch.Pointer((long)id, phase, (float)x, (float)y);
+    public static void Pointer(double id, int phase, double x, double y) => Page.Pointer((long)id, phase, (float)x, (float)y);
 
     /// <summary>The page's safe-area insets in canvas pixels, canvas pixels per CSS pixel, and whether touch is the main input.</summary>
     [JSExport]
     public static void Screen(double left, double top, double right, double bottom, double pixelsPerDp, bool touchFirst) =>
-        BrowserTouch.Screen((float)left, (float)top, (float)right, (float)bottom, (float)pixelsPerDp, touchFirst);
+        Page.Screen((float)left, (float)top, (float)right, (float)bottom, (float)pixelsPerDp, touchFirst);
 
     /// <summary>The page was hidden or shown again: a hidden page suspends the game (music paused, fingers released).</summary>
     [JSExport]
-    public static void Visibility(bool hidden) => BrowserLifecycle.Hidden = hidden;
+    public static void Visibility(bool hidden) => Page.Hidden = hidden;
 
     /// <summary>Diagnostics for tests and validation: "updates frames" of the current or last run.</summary>
     [JSExport]

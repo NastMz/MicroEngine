@@ -358,9 +358,9 @@ public interface ISaveStorage
 | Missing or corrupt slot | `Load` returns null; corrupt data is set aside (`<slot>.corrupt.json` for files) |
 | Unreadable slot (I/O or access error) | `Load` returns null and that store never writes the slot |
 | Refused write | `Save` returns false; the game keeps running |
-| Where | Files under `DefaultDirectory(gameId)` by default (local application data on Windows and macOS, the XDG data folder on Linux); `localStorage` in the browser via `DefaultStorage` |
+| Where | Files under `DefaultDirectory(gameId)` by default (local application data on Windows and macOS, the XDG data folder on Linux); `localStorage` in the browser via `DefaultStorage` (next SDK version: `DefaultStorage(gameId)` is a method returning the platform's default medium, `BrowserStorage` in browsers; Android and iOS folders are part of `DefaultDirectory`) |
 
-Implementations: `FileSaveStorage` (core), `BrowserSaveStorage` (`MicroEngine.Raylib`). See
+Implementations: `FileSaveStorage` (core), `BrowserSaveStorage` (`MicroEngine.Raylib`; next SDK version: `BrowserStorage` in `MicroEngine.Platform`). See
 [Persistence](../manual/persistence.md).
 
 ## Achievement and AchievementTracker
@@ -403,8 +403,11 @@ public sealed class AchievementTracker
 | --- | --- | --- |
 | `DesktopLauncher` | `public static int Run(Game game, string[] args)` | [`DesktopLauncher.cs`](../../src/MicroEngine.Raylib/DesktopLauncher.cs) |
 | `BrowserLauncher` | `public static GameSession CreateSession(Func<Game> createGame)` | [`BrowserLauncher.cs`](../../src/MicroEngine.Raylib/BrowserLauncher.cs) |
+| `DesktopLauncher` (next SDK version) | `public static int Run(Action<HostBuilder> configure, string[] args)`: the game's `Configure` entry point | [`DesktopLauncher.cs`](../../src/MicroEngine.Desktop/DesktopLauncher.cs) |
+| `BrowserLauncher` (next SDK version) | `public static GameSession CreateSession(Action<HostBuilder> configure, BrowserPage page)` | [`BrowserLauncher.cs`](../../src/MicroEngine.Raylib/BrowserLauncher.cs) |
+| `GameHost` (next SDK version) | `public static GameHost Create(HostEnvironment environment, LaunchRequest request, Action<HostBuilder> configure, Action<HostBuilder>? defaults = null)`; `CreateGame`, `CreateRunOptions`, `CreateRequest`, `CreatePlatform`, `Run`, `Play`, `CreateSession` | [`GameHost.cs`](../../src/MicroEngine/Core/GameHost.cs) |
 | `GameRunner` | `public static RunResult Run(Game game, IPlatform platform, RunOptions? options = null)` | [`GameRunner.cs`](../../src/MicroEngine/Core/GameRunner.cs) |
-| `GameSession` | `GameSession(Func<Game> createGame, Func<Game, IPlatform> createPlatform)`; `Start`, `Tick`, `Stop`, `Result` | [`GameSession.cs`](../../src/MicroEngine/Core/GameSession.cs) |
+| `GameSession` | `GameSession(Func<Game> createGame, Func<Game, IPlatform> createPlatform)`; `Start`, `Tick`, `Stop`, `Result` (next SDK version: also `GameSession(Func<LaunchRequest, GameHost> compose)` with `Start(LaunchRequest)`) | [`GameSession.cs`](../../src/MicroEngine/Core/GameSession.cs) |
 | `RunResult` | `record RunResult(long Updates, long Frames, IReadOnlyList<string> Captures, Exception? Error)` | [`GameRunner.cs`](../../src/MicroEngine/Core/GameRunner.cs) |
 
 See [Lifecycle](../manual/lifecycle.md) and [Backends](../manual/backends.md).

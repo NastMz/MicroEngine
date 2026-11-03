@@ -230,21 +230,11 @@ public sealed class ContentLoadingTests
     }
 
     [TestMethod]
-    public void AHostCanMoveTheDefaultContentFolder()
+    public void A_content_folder_without_a_root_is_the_Content_folder_next_to_the_program()
     {
-        string root = Path.Combine(Path.GetTempPath(), "microengine-content-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(root);
-        try
-        {
-            ContentFolder.DefaultRoot = root;
-            Assert.AreEqual(Path.GetFullPath(root), new ContentFolder().Root);
-            Assert.AreEqual(Path.GetFullPath(AppContext.BaseDirectory), new ContentFolder(AppContext.BaseDirectory).Root, "an explicit root still wins");
-        }
-        finally
-        {
-            ContentFolder.DefaultRoot = null;
-            Directory.Delete(root, recursive: true);
-        }
+        Assert.AreEqual(Path.Combine(AppContext.BaseDirectory, "Content"), ContentFolder.DefaultRoot);
+        Assert.AreEqual(Path.GetFullPath(AppContext.BaseDirectory), new ContentFolder(AppContext.BaseDirectory).Root, "an explicit root wins");
+        if (Directory.Exists(ContentFolder.DefaultRoot)) return;
         var e = Assert.ThrowsExactly<DirectoryNotFoundException>(() => new ContentFolder());
         StringAssert.Contains(e.Message, Path.Combine(AppContext.BaseDirectory, "Content"));
     }

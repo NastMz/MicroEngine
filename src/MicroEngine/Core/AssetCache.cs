@@ -69,6 +69,7 @@ public sealed class AssetCache : IDisposable
 {
     private readonly IGraphicsDevice _device;
     private readonly string? _root;
+    private string? _composedRoot;
     private ContentFolder? _content;
     private readonly AssetCache? _parent;
     private readonly List<AssetCache> _children = [];
@@ -102,7 +103,7 @@ public sealed class AssetCache : IDisposable
 
     /// <summary>Creates the root scope of a game's assets.</summary>
     /// <param name="device">Creates the textures.</param>
-    /// <param name="root">The content folder; null for <see cref="ContentFolder.DefaultRoot"/> or the <c>Content</c> folder next to the executable. It is opened on the first load, so games without content files never need one.</param>
+    /// <param name="root">The content folder; null for the composition's (<see cref="Hosting.HostBuilder.Content"/>) or the <c>Content</c> folder next to the executable. It is opened on the first load, so games without content files never need one.</param>
     public AssetCache(IGraphicsDevice device, string? root = null)
     {
         _device = device ?? throw new ArgumentNullException(nameof(device));
@@ -129,9 +130,24 @@ public sealed class AssetCache : IDisposable
         {
             if (_content is not null) return _content;
             if (_parent is not null) return _content = _parent.Content;
-            try { return _content = new ContentFolder(_root); }
+            try { return _content = new ContentFolder(_root ?? _composedRoot); }
             catch (DirectoryNotFoundException e) { throw new AssetLoadException("", "content folder", e.Message, e); }
         }
+    }
+
+    /// <summary>
+    /// The composition's content (<see cref="Hosting.HostBuilder.Content"/>), used when the game names no folder of its own.
+    /// Until content sources other than folders are supported (archives, a browser's fetch), it must be a folder.
+    /// </summary>
+    /// <exception cref="NotSupportedException"><paramref name="source"/> is not a folder.</exception>
+    internal void UseComposedContent(Platform.IContentSource source)
+    {
+        _composedRoot = source switch
+        {
+            Platform.FolderContentSource folder => folder.Root,
+            ContentFolder folder => folder.Root,
+            _ => throw new NotSupportedException($"Content from {source.GetType().Name} ({source.Location}) is not supported yet: the engine reads content from folders (FolderContentSource)."),
+        };
     }
 
     /// <summary>Where warnings about loads during play go: the game's <see cref="Kernel.ILog"/>, or standard error when none was set.</summary>

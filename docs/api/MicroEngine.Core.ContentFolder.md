@@ -38,7 +38,7 @@ public ContentFolder(string? root = null)
 
 `root` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
-The folder, absolute or relative to the working directory; null uses [DefaultRoot](MicroEngine.Core.ContentFolder.md#MicroEngine_Core_ContentFolder_DefaultRoot) or the <code>Content</code> folder next to the executable.
+The folder, absolute or relative to the working directory; null uses the <code>Content</code> folder next to the executable. A host whose files live elsewhere (a phone app, a macOS bundle) composes its folder instead ([Content](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Content)).
 
 #### Exceptions
 
@@ -50,16 +50,17 @@ The folder does not exist.
 
 ### <a id="MicroEngine_Core_ContentFolder_DefaultRoot"></a> DefaultRoot
 
-Root used when a game passes none. Null means the <code>Content</code> folder next to the executable; a host whose
-files live elsewhere (a phone app unpacking its package) sets it before the game is built.
+The folder used when a game and its composition name none: <code>Content</code> next to the executable. A rule, not a
+setting: a host whose files live elsewhere (a phone app, a macOS bundle) composes its folder
+([Content](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Content)).
 
 ```csharp
-public static string? DefaultRoot { get; set; }
+public static string DefaultRoot { get; }
 ```
 
 #### Property Value
 
- [string](https://learn.microsoft.com/dotnet/api/system.string)?
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 ### <a id="MicroEngine_Core_ContentFolder_Location"></a> Location
 

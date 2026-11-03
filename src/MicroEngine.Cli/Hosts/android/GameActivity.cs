@@ -2,6 +2,8 @@ using Android.App;
 using Android.Content.PM;
 using Android.Util;
 using MicroEngine.Core;
+using MicroEngine.Hosting;
+using MicroEngine.Platform;
 using MicroEngine.Sdl;
 using Org.Libsdl.App;
 
@@ -54,20 +56,19 @@ public sealed class GameActivity : SDLActivity
     protected override void Main()
     {
         MobileLaunch launch;
+        string? content;
         try
         {
             launch = ReadLaunch();
-            ContentFolder.DefaultRoot = UnpackContent();
+            content = UnpackContent();
         }
         catch (Exception e) when (e is FormatException or IOException or Java.IO.IOException)
         {
             Log.Error(Tag, $"microengine: error: {e.Message}");
             return;
         }
-        // Saves go to the app's private files folder (SaveStore's Linux rule under XDG_DATA_HOME).
-        System.Environment.SetEnvironmentVariable("XDG_DATA_HOME", FilesDir!.AbsolutePath);
-        int code = MobileRun.Run(launch,
-            (game, scripted) => SdlPlatform.Profile.Create(new PlatformRequest(game.Settings) { WaitForDisplay = !scripted, StartGamepadsAfterFirstFrame = !scripted && AppIdentity.Of(game) is { Splash: true }, AudioOutput = AudioOutput.Device, Identity = AppIdentity.Of(game) }),
+        // Saves go to the app's private files folder: SaveStore's default on Android (files/MicroEngine/<game id>).
+        int code = MobileRun.Run(launch, HostKind.Android, content is null ? null : new FolderContentSource(content),
             line => Log.Info(Tag, line),
             () => _firstFrame = true);
         _firstFrame = true;
@@ -92,7 +93,7 @@ public sealed class GameActivity : SDLActivity
 
     /// <summary>
     /// The game's Content files travel in the APK's assets, which .NET file APIs cannot open; they are copied once per
-    /// installed version into the app's files folder, where <see cref="ContentFolder"/> reads them as on desktop.
+    /// installed version into the app's files folder, which the composition hands the game as its content folder.
     /// </summary>
     private string? UnpackContent()
     {

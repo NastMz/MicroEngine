@@ -183,7 +183,7 @@ namespace MicroEngine.Cli
                 Description  {(game.Description.Length > 0 ? game.Description : "(none)")}
                 Icon         {(game.Icon is null ? "(none: MicroEngineIcon)" : iconProblem ?? game.Icon)}
                 Orientation  {game.Orientation}
-                Factory      {game.GameFactory}
+                Entry point  {game.DescribeEntryPoint()}
                 Content      {game.ContentDir ?? "(no Content folder)"}
                 Licence      {game.LicenseFile ?? "(none)"}
                 Engine       MicroEngine {game.EngineVersion}, .NET {game.DotnetVersion}

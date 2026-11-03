@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Hosting', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
@@ -26,6 +26,7 @@ const guides = {
   'MicroEngine.Core': ['Game lifecycle and time', '../manual/lifecycle.md'],
   'MicroEngine.Desktop': ['Backends and platforms', '../manual/backends.md'],
   'MicroEngine.Graphics': ['Graphics', '../manual/rendering.md'],
+  'MicroEngine.Hosting': ['Composing a game for every platform', '../manual/backends.md#one-composition-for-every-platform'],
   'MicroEngine.Input': ['Input', '../manual/input.md'],
   'MicroEngine.Kernel': ['Modules and the frame schedule', '../manual/lifecycle.md#modules-and-the-frame-schedule'],
   'MicroEngine.Platform': ['The platform host', '../manual/backends.md#the-platform-host'],
@@ -48,6 +49,8 @@ const typeGuides = {
   'MicroEngine.Core.HeadlessPlatform': ['Testing your game', '../examples/testing.md'],
   'MicroEngine.Core.InputScript': ['Testing your game', '../examples/testing.md'],
   'MicroEngine.Core.GameLauncher': ['Configuration and launch options', '../reference/configuration.md'],
+  'MicroEngine.Core.GameHost': ['Composing a game for every platform', '../manual/backends.md#one-composition-for-every-platform'],
+  'MicroEngine.Core.HostBuilderExtensions': ['Composing a game for every platform', '../manual/backends.md#one-composition-for-every-platform'],
   'MicroEngine.Core.AppIdentity': ['Name, id, version and icon', '../guide/app-identity.md'],
   'MicroEngine.Graphics.BitmapFont': ['Text', '../manual/text.md'],
   'MicroEngine.UI.AchievementToasts': ['Achievements', '../manual/achievements.md'],
@@ -59,10 +62,11 @@ const namespaceSummaries = {
   'MicroEngine.Core': 'The game and its loop: `Game`, settings, runners and sessions, launchers and platform composition, scripted input, saves, content files, achievements, application identity, the headless platform.',
   'MicroEngine.Desktop': 'The desktop launcher with the official desktop platforms (SDL 3, raylib, SDL software, headless).',
   'MicroEngine.Graphics': 'Drawing: the renderer contract, images in code and from PNG, sprites and atlases, animation, camera, parallax, particles, light, the pixel font.',
+  'MicroEngine.Hosting': 'Hosting: the launcher model every host shares (launch requests and their rules, platform selection, the host environment) and the composition a game configures once with its Configure entry point.',
   'MicroEngine.Input': 'Input actions over keyboard, gamepad, mouse and touch: bindings, analog values, on-screen controls, custom sources.',
   'MicroEngine.Kernel': 'The kernel: engine composition (builder, services, modules, capabilities), the frame schedule and its phases, loop-owned time, engine events, logging and generational handles.',
   'MicroEngine.Platform': 'The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the surface, display pacing and precise waits, storage for saves and content sources.',
-  'MicroEngine.Raylib': 'The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and browser storage.',
+  'MicroEngine.Raylib': 'The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and the browser page it reads.',
   'MicroEngine.Scenes': 'The scene stack: scenes, transitions, coroutines and tweens.',
   'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android and iOS.',
   'MicroEngine.UI': 'Pixel-art widgets: dialogue boxes, menus, typewriter text, themes, achievement banners and list.',

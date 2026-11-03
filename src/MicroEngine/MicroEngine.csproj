@@ -6,16 +6,18 @@
   <ItemGroup>
     <InternalsVisibleTo Include="MicroEngine.Tests" />
   </ItemGroup>
-  <!-- The kernel (composition, schedule, time, math and colour) and the platform contracts (host, surface, storage,
-       content sources) are assemblies of their own but not packages: this package carries MicroEngine.Kernel.dll and
-       MicroEngine.Platform.dll with their documentation and symbols, and depends on no package of theirs. The
+  <!-- The kernel (composition, schedule, time, math and colour), the platform contracts (host, surface, storage,
+       content sources) and hosting (the launcher model and the composition a game configures) are assemblies of their
+       own but not packages: this package carries MicroEngine.Kernel.dll, MicroEngine.Platform.dll and
+       MicroEngine.Hosting.dll with their documentation and symbols, and depends on no package of theirs. The
        references are private (so packing adds no dependency on them); inside the repository, projects that reference
        this one still compile against them and copy them, because this project hands their assemblies over together
        with its own (_MicroEngineBundledOutput). -->
   <ItemGroup>
     <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" PrivateAssets="all" />
-    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+    <ProjectReference Include="../MicroEngine.Hosting/MicroEngine.Hosting.csproj" PrivateAssets="all" />
+    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj" />
   </ItemGroup>
   <Target Name="_MicroEngineBundledOutput">
     <MSBuild Projects="@(_MicroEngineBundledProject)" Targets="GetTargetPath" Properties="BuildProjectReferences=false">

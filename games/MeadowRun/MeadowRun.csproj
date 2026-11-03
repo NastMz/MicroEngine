@@ -11,7 +11,6 @@
     <MicroEngineIcon>icon.png</MicroEngineIcon>
     <MicroEngineSplashColor>#5b9be8</MicroEngineSplashColor>
     <MicroEngineSplashBranding>true</MicroEngineSplashBranding>
-    <MicroEngineGameFactory>new MeadowRun.MeadowGame(null, MeadowRun.LaunchOptions.FromEnvironment())</MicroEngineGameFactory>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />

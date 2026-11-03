@@ -8,6 +8,13 @@ Guide: [The platform host](../manual/backends.md#the-platform-host)
 
 ### Classes
 
+ [BrowserStorage](MicroEngine.Platform.BrowserStorage.md)
+
+Save slots in the page's localStorage under "microengine/&lt;game&gt;/&lt;slot&gt;": the default save medium in
+browsers. The browser's file system is in memory and vanishes on reload; localStorage writes are synchronous and
+survive it. The page registers the "microengine" JavaScript module (its <code>storage.get</code>, <code>storage.set</code> and
+<code>storage.remove</code> functions) before the game starts; the browser host's page does.
+
  [FolderContentSource](MicroEngine.Platform.FolderContentSource.md)
 
 Content files in a folder on disk. Names must match the files' letter case exactly on every system: "Hero.png" for

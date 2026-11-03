@@ -16,8 +16,9 @@ refused writes return `false`.
 | `Load<T>(slot)` | The object, or `null` when missing, corrupt or unreadable |
 | `Exists(slot)`, `Delete(slot)` | Slot management |
 | `Directory` | The folder (file storage) or a description of the medium |
-| `SaveStore.DefaultStorage` | Static factory chosen by a launcher before any game is built |
+| `SaveStore.DefaultStorage` | Static factory chosen by a launcher before any game is built. Next SDK version: a method, `DefaultStorage(gameId)`, that returns the platform's default medium (below); a host composes another one instead (`host.Storage`) |
 | `SaveStore.DefaultDirectory(gameId)` | The user's save folder for a game on this system (see below) |
+| `host.SaveStore(gameId)` | Next SDK version: a store on the composition's medium (`host.Storage`), else the platform's default ([One composition for every platform](backends.md#one-composition-for-every-platform)) |
 
 Courtyard Key keeps its adventure in one slot:
 
@@ -69,6 +70,14 @@ Only a system with no home folder at all falls back to the temporary folder.
 games construct their store exactly as on desktop. An explicit
 `directory` always means files.
 
+Next SDK version (not published yet: arrives with the next SDK version): nothing is set for the process. A store
+created without a directory takes the platform's default medium, `SaveStore.DefaultStorage(gameId)`: the page's
+`localStorage` in browsers (`MicroEngine.Platform.BrowserStorage`, the same keys), files in `DefaultDirectory(gameId)`
+elsewhere. The phone folders are part of that rule: the app's private files folder on Android
+(`files/MicroEngine/<gameId>`) and `Library/Application Support/MicroEngine/<gameId>` on iOS, where phone apps kept saves
+before. Games still construct their store exactly as on desktop; a host that wants another medium composes it
+(`host.Storage`) and the game creates its store with `host.SaveStore(gameId)`.
+
 ## `ISaveStorage`
 
 ```csharp
@@ -92,7 +101,8 @@ Source: [`src/MicroEngine/Core/SaveStore.cs`](../../src/MicroEngine/Core/SaveSto
 Implementations report failures as `IOException` or `UnauthorizedAccessException`; the browser storage converts
 JavaScript storage errors (quota, privacy mode) into `IOException`. A new medium (a cloud service, a console save
 API) would implement this interface and be installed through `SaveStore.DefaultStorage` or the
-`SaveStore(ISaveStorage)` constructor. No such implementation exists today.
+`SaveStore(ISaveStorage)` constructor (next SDK version: through the composition's `host.Storage` or the constructor).
+No such implementation exists today.
 
 ## Failure handling
 

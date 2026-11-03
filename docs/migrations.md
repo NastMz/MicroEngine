@@ -8,6 +8,33 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- A game is composed once, by a `Configure` entry point, and every host runs that composition: the desktop
+  `Program.cs`, and the browser, Android and iOS hosts `microengine package` builds. The entry point is a
+  `public static void Configure(HostBuilder host)` method (namespace `MicroEngine.Hosting`) that chooses the game with
+  `host.UseGame(() => new MainGame())` and may add platforms (`host.Platforms().Add(...)`), change the platform request
+  (`host.ConfigureRequest(...)`) or the engine (`host.ConfigureEngine(...)`). `microengine` finds it in the built game,
+  so web and phone builds no longer need a project property. **Migration:** add the method to your game class and
+  pass it to the launcher: `return DesktopLauncher.Run(MainGame.Configure, args);`. Move what `Program.cs` composed
+  around the game (a catalog, request changes) into it. `<MicroEngineGameFactory>` is deprecated and has no default
+  any more: a game without an entry point that still declares it packages with a warning; one with neither fails with
+  a message showing the method to add. `DesktopLauncher.Run(game, args)` and its other overloads keep working.
+- Scripted runs in browsers advance one fixed step per frame with seed 1, exactly as on desktop and phones (they were
+  real-time, so their captures changed from run to run), and ask for no sound device unless `--audio device` is
+  given, like desktop scripted runs. Nothing to change in games.
+- No engine default is process-wide any more. `ContentFolder.DefaultRoot` is read-only (the `Content` folder next to the
+  program) and `SaveStore.DefaultStorage` is a method returning the platform's default medium: the page's localStorage
+  in browsers (`MicroEngine.Platform.BrowserStorage`, the same keys as before), files elsewhere. **Migration:** a host
+  that set `ContentFolder.DefaultRoot` sets `host.Content = new FolderContentSource(folder)` in its composition; one that
+  set `SaveStore.DefaultStorage` sets `host.Storage = gameId => new MyStorage(gameId)` and the game creates its store
+  with `host.SaveStore(gameId)` (or passes the storage to `new SaveStore(storage)`). `BrowserSaveStorage` is replaced by
+  `MicroEngine.Platform.BrowserStorage`. Saves stay where they were on every platform: the Android and iOS folders
+  (the app's files folder; `Library/Application Support`) are now part of `SaveStore.DefaultDirectory` instead of an
+  environment variable the phone hosts set.
+- The browser page's classes are per page: `BrowserTouch` and `BrowserLifecycle` are replaced by a `BrowserPage` the
+  host owns (`Pointer`, `Screen`, `Hidden`, `Vibrator`), and `BrowserLauncher.CreateSession(createGame)` by
+  `BrowserLauncher.CreateSession(configure, page)`, whose `GameSession` starts each run with a `LaunchRequest`
+  (`session.Start(new LaunchRequest { ScriptText = script })`). Only a browser host of your own is affected: the
+  packages `microengine` builds use the new host.
 - `Game.Random` is a `SeededRandom` (a `Random` subclass in `MicroEngine.Kernel`) that draws exactly what
   `new Random(seed)` drew, so games see the same values; `game.Random.GetType()` is no longer `Random`. `Game`,
   `Scene`, `InputMap`, `CoroutineRunner` and `Tweener` implement `IStateHashed` and have a public `HashState` method.

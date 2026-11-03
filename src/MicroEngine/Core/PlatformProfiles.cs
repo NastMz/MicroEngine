@@ -120,7 +120,7 @@ public enum AudioOutput
 /// developer registers. The profile decides which parts a host may replace (<see cref="Replaceable"/>), because some
 /// subsystems share state with the window and cannot be swapped independently.
 /// </summary>
-public sealed class PlatformProfile
+public sealed class PlatformProfile : Hosting.IHostProfile
 {
     private readonly Func<PlatformRequest, IPlatform> _create;
 
@@ -206,23 +206,17 @@ public sealed class PlatformCatalog
     }
 
     /// <summary>The profile named <paramref name="name"/> (ignoring case), or null.</summary>
-    public PlatformProfile? Find(string name) => _profiles.Find(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+    public PlatformProfile? Find(string name) => Hosting.ProfileSelection.Find(_profiles, name);
 
     /// <summary>The first registered profile that can run in this process.</summary>
-    public PlatformProfile Default => _profiles.Find(p => p.UnsupportedReason is null)
-        ?? throw new PlatformConfigurationException(_profiles.Count == 0
-            ? "No platform is registered."
-            : $"No platform can run here. {string.Join(" ", _profiles.Select(p => $"{p.Name}: {p.UnsupportedReason}."))}");
+    /// <exception cref="PlatformConfigurationException">No profile is registered, or none can run here.</exception>
+    public PlatformProfile Default => Hosting.ProfileSelection.Default(_profiles) is (var profile, var error) && profile is not null
+        ? profile : throw new PlatformConfigurationException(error!);
 
     /// <summary>The named profile, or <see cref="Default"/> for null or empty.</summary>
-    public PlatformProfile Resolve(string? name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return Default;
-        var profile = Find(name) ?? throw new PlatformConfigurationException(
-            $"Unknown platform '{name}'. Available platforms: {string.Join(", ", _profiles.Select(p => p.Name))}.");
-        if (profile.UnsupportedReason is { } reason) throw new PlatformConfigurationException($"Platform '{profile.Name}' cannot run here: {reason}.");
-        return profile;
-    }
+    /// <exception cref="PlatformConfigurationException">No profile has that name, or it cannot run here.</exception>
+    public PlatformProfile Resolve(string? name) => Hosting.ProfileSelection.Resolve(_profiles, name) is (var profile, var error) && profile is not null
+        ? profile : throw new PlatformConfigurationException(error!);
 }
 
 /// <summary>A platform request that cannot be met: unknown or unsupported profile, or a part the profile does not let a host replace.</summary>

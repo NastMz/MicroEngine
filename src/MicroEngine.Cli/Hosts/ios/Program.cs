@@ -42,11 +42,9 @@ public static unsafe class Program
     private static int Run(string? scriptName, string? env)
     {
         string library = NSSearchPath.GetDirectories(NSSearchPathDirectory.LibraryDirectory, NSSearchPathDomain.User)[0];
-        // Saves go to the app's Library/Application Support (SaveStore's rule under XDG_DATA_HOME); the sandbox's home
-        // folder itself is not writable. Content files are bundle resources.
-        Environment.SetEnvironmentVariable("XDG_DATA_HOME", Path.Combine(library, "Application Support"));
+        // Saves go to the app's Library/Application Support (SaveStore's default on iOS); the sandbox's home folder itself
+        // is not writable. Content files are bundle resources, which the composition hands the game.
         string content = Path.Combine(NSBundle.MainBundle.BundlePath, "Content");
-        if (Directory.Exists(content)) ContentFolder.DefaultRoot = content;
         MobileLaunch launch;
         try
         {
@@ -60,8 +58,7 @@ public static unsafe class Program
             Console.WriteLine($"microengine: error: {e.Message}");
             return 2;
         }
-        return MobileRun.Run(launch,
-            (game, scripted) => SdlPlatform.Profile.Create(new PlatformRequest(game.Settings) { WaitForDisplay = !scripted, StartGamepadsAfterFirstFrame = !scripted && AppIdentity.Of(game) is { Splash: true }, AudioOutput = AudioOutput.Device, Identity = AppIdentity.Of(game) }),
-            Console.WriteLine);
+        return MobileRun.Run(launch, MicroEngine.Hosting.HostKind.IOS,
+            Directory.Exists(content) ? new MicroEngine.Platform.FolderContentSource(content) : null, Console.WriteLine);
     }
 }

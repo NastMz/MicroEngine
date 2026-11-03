@@ -3,6 +3,7 @@ using MicroEngine;
 using MicroEngine.Audio;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
+using MicroEngine.Hosting;
 using MyGame.Scenes;
 
 namespace MyGame;
@@ -10,6 +11,12 @@ namespace MyGame;
 /// <summary>The game: its settings, the assets every scene shares, and the first scene.</summary>
 public sealed class MainGame : Game
 {
+    /// <summary>
+    /// The game's composition, called by every build (desktop Program.cs, browser, Android, iOS): it chooses the game, and
+    /// may add platforms (host.Platforms()), change the platform request or register engine services.
+    /// </summary>
+    public static void Configure(HostBuilder host) => host.UseGame(() => new MainGame());
+
     /// <summary>A 320x180 virtual screen, scaled to the window without blurring the pixels.</summary>
     public override GameSettings Settings { get; } = new("MyGameTitle") { Background = Color.Hex("1d2b53") };
 

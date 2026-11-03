@@ -11,7 +11,7 @@ MicroEngine's tests.
 | --- | --- | --- |
 | press actions from something that is not a key (accessibility switch, network player, replay, AI helper) | `IActionSource` | `Input.AddSource(source)` |
 | read another device library at the device level | `IInputSource` | `PlatformRequest.ExtraInput` ([Backends](backends.md#replacing-a-part)) |
-| keep saves somewhere else (memory, a cloud service, a console API) | `ISaveStorage` | `new SaveStore(storage)` or `SaveStore.DefaultStorage` |
+| keep saves somewhere else (memory, a cloud service, a console API) | `ISaveStorage` | `new SaveStore(storage)` or `SaveStore.DefaultStorage` (next SDK version: `host.Storage` in the game's `Configure`) |
 | a scene transition of your own | subclass `Transition` | `Scenes.Push/Replace(scene, transition)` |
 | another audio device (for example SDL's audio under raylib) | `IAudioDevice` | `PlatformRequest.Audio` ([Backends](backends.md#replacing-a-part)) |
 | change or wrap a platform, or add a new one | `IPlatform` | a `PlatformProfile` in the launcher's `PlatformCatalog` |
@@ -85,7 +85,10 @@ public sealed class MemorySaveStorage : ISaveStorage
 (`SetAside`), never overwrites a slot it could not read, and turns refused writes into `false`. A storage only reports
 failures as `IOException` or `UnauthorizedAccessException`. Use it for one store with `new SaveStore(storage)`, or for
 every store a game creates by setting `SaveStore.DefaultStorage = gameId => new MyStorage(gameId)` before the game is
-constructed (the browser launcher does exactly that with its `localStorage` storage).
+constructed (the browser launcher does exactly that with its `localStorage` storage). Next SDK version (not published
+yet: arrives with the next SDK version): there is no process-wide setting; the game's `Configure` entry point sets
+`host.Storage = gameId => new MyStorage(gameId)` and the game creates its stores with `host.SaveStore(gameId)`
+([One composition for every platform](backends.md#one-composition-for-every-platform)).
 
 ## A transition
 

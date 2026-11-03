@@ -121,8 +121,15 @@ disk (`ContentFolder` is one).
 Desktop games start through `MicroEngine.Desktop.DesktopLauncher`:
 
 ```csharp
-var saveDir = Environment.GetEnvironmentVariable("RIFT_SAVE_DIR");
-return DesktopLauncher.Run(new RiftGame(LaunchOptions.FromEnvironment(), saveDirectory: string.IsNullOrWhiteSpace(saveDir) ? null : saveDir), args);
+return DesktopLauncher.Run(new MainGame(), args);
+```
+
+Next SDK version (not published yet: arrives with the next SDK version): the launcher takes the game's `Configure`
+entry point instead, the composition every platform runs ([One composition for every
+platform](#one-composition-for-every-platform)):
+
+```csharp
+return DesktopLauncher.Run(Startup.Configure, args);
 ```
 
 Source: [`games/NeonRift/Program.cs`](../../games/NeonRift/Program.cs)
@@ -158,6 +165,61 @@ Unknown arguments are rejected, which is why the games read developer shortcuts 
 [`src/MicroEngine/Core/GameLauncher.cs`](../../src/MicroEngine/Core/GameLauncher.cs),
 [`src/MicroEngine.Desktop/DesktopLauncher.cs`](../../src/MicroEngine.Desktop/DesktopLauncher.cs).
 `MicroEngine.Raylib.DesktopLauncher` is the same launcher with only `raylib` and `headless`.
+
+## One composition for every platform
+
+Next SDK version (not published yet: arrives with the next SDK version). A game is composed once, by a `Configure`
+entry point, and every host runs that composition: the desktop `Program.cs`, and the browser, Android and iOS hosts
+that `microengine package` builds. The entry point is a public static method that takes a `HostBuilder`
+(namespace `MicroEngine.Hosting`):
+
+```csharp
+public sealed class MainGame : Game
+{
+    public static void Configure(HostBuilder host)
+    {
+        host.UseGame(() => new MainGame());
+        // Optional: everything below reaches web and phone builds too.
+        host.Platforms().Add(myProfile);                                     // offered with --platform
+        host.ConfigureRequest(request => request with { ExtraInput = [myInput] });
+        host.ConfigureEngine(engine => engine.Services.Add(new MyService()));
+    }
+    ...
+}
+```
+
+```csharp
+return DesktopLauncher.Run(MainGame.Configure, args);   // Program.cs
+```
+
+`microengine` finds the method in the built game (one public static `Configure(HostBuilder)` on a public type) and
+the hosts it generates call it, so the project file needs no property for it. Each host fills its defaults before the
+game's `Configure` runs, which may change them:
+
+| Part | Desktop | Browser | Android | iOS |
+| --- | --- | --- | --- | --- |
+| `host.Platforms()` | `sdl`, `raylib`, `sdl-software`, `headless` | `raylib` (the page's) | `sdl` | `sdl` |
+| `host.Content` | `Content` next to the program; a macOS bundle's `Contents/Resources/Content` | `Content` next to the program | the folder the app unpacks its assets to | the bundle's `Content` |
+| Saves, while `host.Storage` is unset (`SaveStore.DefaultStorage`) | files (`SaveStore.DefaultDirectory`) | `localStorage` | the app's files folder | `Library/Application Support` |
+
+Add to `host.Platforms()` rather than replacing it, so every host keeps its own platform. `host.Kind` says which host is
+composing, `host.Request` what the launch asked for, and `host.Environment.Variable(name)` reads a developer variable
+(an environment variable on desktop, the page's or the launch's elsewhere). `host.SaveStore(gameId)` creates a store on
+the composition's medium. Nothing here is process-wide: two hosts in one process (an editor, tests running in
+parallel) keep their own content folder and storage.
+
+The launch's rules are the same on every host (`LaunchRequest`, `GameHost`): a run with a script is in deterministic
+time with seed 1 unless the launch says otherwise, asks the platform not to wait for the display and for no sound
+device unless the launch asks for one (phones always do); a real-time run whose game shows a start screen starts
+gamepads after the first frame. Tests compose the same way:
+
+```csharp
+var host = GameHost.Create(new HostEnvironment(HostKind.Test), new LaunchRequest { Frames = 120 }, MainGame.Configure,
+    h => h.UsePlatforms(new PlatformCatalog().Add(HeadlessPlatform.Profile)));
+RunResult result = host.Play();
+```
+
+Content sources other than folders are refused for now, with their reason.
 
 ## Graphics options
 
@@ -284,6 +346,17 @@ public static GameSession CreateSession(Func<Game> createGame)
 }
 ```
 
+Next SDK version (not published yet: arrives with the next SDK version): the browser launcher composes every run with
+the game's `Configure` entry point and the same launcher rules as desktop and phones, on the raylib platform of one
+page (`BrowserPage`, which receives the page's touches, visibility and vibration); a scripted run in a development
+package is deterministic with seed 1, so two runs write byte-identical captures:
+
+```csharp
+private static readonly BrowserPage Page = new();
+private static readonly GameSession Session = BrowserLauncher.CreateSession(GameEntry.Configure, Page);
+// on "play": Session.Start(new LaunchRequest { ScriptText = script, CaptureDirectory = "/captures" });
+```
+
 Source: [`src/MicroEngine.Raylib/BrowserLauncher.cs`](../../src/MicroEngine.Raylib/BrowserLauncher.cs)
 
 The shared web host calls `Frame` once per `requestAnimationFrame`. In a browser the window never reports
@@ -294,7 +367,10 @@ The shared web host calls `Frame` once per `requestAnimationFrame`. In a browser
 
 `microengine package android` and `ios` build a host app around the game: it runs on the SDL platform with touch
 controls, is suspended in the background and ships the game's `Content` files (unpacked from the APK on Android,
-bundle resources on iOS, both through `ContentFolder.DefaultRoot`). See [Platforms](../guide/platforms.md#android).
+bundle resources on iOS, both through `ContentFolder.DefaultRoot`). Next SDK version (not published yet: arrives with
+the next SDK version): the phone apps run the game's `Configure` entry point with the same launcher rules as desktop,
+and hand their content folder to the composition (`host.Content`) instead of a process-wide setting; saves stay in the
+same folders. See [Platforms](../guide/platforms.md#android).
 
 ## Headless platform
 

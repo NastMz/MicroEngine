@@ -8,13 +8,21 @@ namespace MicroEngine.Raylib;
 /// <summary>
 /// Touches for the raylib platform. raylib's own touch state is a per-frame list of points indexed by position (no
 /// cancel, no reliable identity across frames), so it is not used: in a browser the page forwards Pointer Events
-/// (<see cref="BrowserTouch"/>), with their pointer ids, the page's safe-area insets and its density. A desktop raylib
+/// (<see cref="BrowserPage"/>), with their pointer ids, the page's safe-area insets and its density. A desktop raylib
 /// window reports no touches; its controls still lay out for scripted touches.
 /// </summary>
 public sealed class RaylibTouchScreen : ITouchScreen
 {
-    internal static readonly TouchFeed Feed = new();
+    private readonly TouchFeed Feed;
     private readonly RaylibOverlayCanvas _canvas = new();
+
+    /// <summary>A touch screen with no page feeding it (a desktop window): no touches, default insets and density.</summary>
+    public RaylibTouchScreen() : this(new TouchFeed()) { }
+
+    internal RaylibTouchScreen(TouchFeed feed) => Feed = feed;
+
+    /// <summary>Drops touches not yet read (a new run on the same page starts with none).</summary>
+    internal void Clear() => Feed.Clear();
 
     /// <inheritdoc/>
     public Vector2 Size => new(Rl.GetRenderWidth(), Rl.GetRenderHeight());

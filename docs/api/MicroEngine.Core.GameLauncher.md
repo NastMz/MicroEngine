@@ -6,7 +6,8 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Configuration and launch options](../reference/configuration.md)  
 
-The command line every desktop game accepts, on any backend. Supported arguments:
+The command line every desktop game accepts, on any backend: a thin caller of the launcher model every host shares
+([GameHost](MicroEngine.Core.GameHost.md), [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md)). Supported arguments:
 
 <ul><li><code>--script FILE</code> play scripted input (see [InputScript](MicroEngine.Core.InputScript.md)); implies deterministic time unless
 <code>--time</code> says otherwise.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
@@ -21,12 +22,16 @@ are never heard, and for one otherwise (the headless platform has none).</li><li
 ([GpuPreference](MicroEngine.Core.GpuPreference.md)).</li><li><code>--renderer NAME[,NAME...]</code> graphics APIs to try first ([Renderers](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Renderers)).</li><li><code>--vsync on|off</code> wait for the display's refresh or not ([VSync](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_VSync)).</li><li><code>--fps-limit N</code> draw at most N frames per second; 0 removes the game's limit
 ([FrameRateLimit](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_FrameRateLimit)).</li><li><code>--window windowed|fullscreen|exclusive</code> the window mode ([WindowMode](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_WindowMode)).</li><li><code>--display N</code> open on display N, counted from 0 ([Display](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Display)).</li><li><code>--pacing display|measured</code> count frame time in refresh periods of the display (the default) or as
 measured ([PaceToDisplay](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_PaceToDisplay)).</li><li><code>--profile FILE</code> measure every frame and the start phases ([FrameProfiler](MicroEngine.Core.FrameProfiler.md)), print a summary and
-write the results as JSON, or CSV when FILE ends in .csv.</li></ul>
+write the results as JSON, or CSV when FILE ends in .csv.</li><li><code>--state-trace FILE</code> hash the simulation state after every fixed step ([StateTrace](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_StateTrace))
+and write one line per step with each section's hash ([StateTrace](MicroEngine.Kernel.StateTrace.md)'s text format): two runs of the
+same build, script and seed write the same file, and [FirstDivergence](MicroEngine.Kernel.StateTrace.md#MicroEngine_Kernel_StateTrace_FirstDivergence_MicroEngine_Kernel_StateTrace_MicroEngine_Kernel_StateTrace_)
+names where two traces part.</li></ul>
 
 A run in deterministic time also asks the platform, through explicit request options, not to wait for the display
 ([WaitForDisplay](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_WaitForDisplay)) and for no sound device (<code>--audio auto</code>); a run in real time
 whose game shows a start screen asks it to start gamepads after the first frame
 ([StartGamepadsAfterFirstFrame](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_StartGamepadsAfterFirstFrame)). The platform itself never knows the time mode.
+Browser pages, phone apps and tests apply the same rules through [GameHost](MicroEngine.Core.GameHost.md).
 Returns a process exit code: 0 on success, 1 on a game or platform error, 2 on bad arguments.
 
 ```csharp
@@ -57,7 +62,7 @@ public const int ProfileWarmupFrames = 60
 The one-line usage text printed after an argument error.
 
 ```csharp
-public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE]"
+public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]"
 ```
 
 #### Field Value
@@ -83,11 +88,17 @@ public static IReadOnlyList<PlatformProfile> Fallbacks(PlatformCatalog catalog)
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[PlatformProfile](MicroEngine.Core.PlatformProfile.md)\>
 
+#### Exceptions
+
+ [PlatformConfigurationException](MicroEngine.Core.PlatformConfigurationException.md)
+
+The catalog has no platform that can run here.
+
 ### <a id="MicroEngine_Core_GameLauncher_Preferred_MicroEngine_Core_PlatformCatalog_System_String_"></a> Preferred\(PlatformCatalog, string?\)
 
 The platforms tried when the game prefers <code class="paramref">backend</code> ([Backend](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Backend)) and
 nobody named one: that platform first, then the [Fallbacks](MicroEngine.Core.GameLauncher.md#MicroEngine_Core_GameLauncher_Fallbacks_MicroEngine_Core_PlatformCatalog_). A preference this catalog lacks or that
-cannot run here is reported and skipped.
+cannot run here is reported on standard error and skipped.
 
 ```csharp
 public static IReadOnlyList<PlatformProfile> Preferred(PlatformCatalog catalog, string? backend)
@@ -102,6 +113,12 @@ public static IReadOnlyList<PlatformProfile> Preferred(PlatformCatalog catalog, 
 #### Returns
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[PlatformProfile](MicroEngine.Core.PlatformProfile.md)\>
+
+#### Exceptions
+
+ [PlatformConfigurationException](MicroEngine.Core.PlatformConfigurationException.md)
+
+The catalog has no platform that can run here.
 
 ### <a id="MicroEngine_Core_GameLauncher_Report_MicroEngine_Core_PlatformProfile_MicroEngine_Core_IPlatform_"></a> Report\(PlatformProfile, IPlatform\)
 
@@ -124,6 +141,8 @@ public static IReadOnlyList<string> Report(PlatformProfile profile, IPlatform pl
 
 ### <a id="MicroEngine_Core_GameLauncher_Run_MicroEngine_Core_Game_System_String___MicroEngine_Core_PlatformCatalog_System_Func_MicroEngine_Core_PlatformRequest_MicroEngine_Core_PlatformRequest__"></a> Run\(Game, string\[\], PlatformCatalog, Func<PlatformRequest, PlatformRequest\>?\)
 
+Runs <code class="paramref">game</code> with the command line <code class="paramref">args</code> on the platforms of <code class="paramref">catalog</code>.
+
 ```csharp
 public static int Run(Game game, string[] args, PlatformCatalog catalog, Func<PlatformRequest, PlatformRequest>? configure = null)
 ```
@@ -144,5 +163,29 @@ Changes the platform request before the platform is built: an audio device or in
 #### Returns
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_GameLauncher_Run_System_String___System_Action_MicroEngine_Hosting_HostBuilder__System_Action_MicroEngine_Hosting_HostBuilder__"></a> Run\(string\[\], Action<HostBuilder\>, Action<HostBuilder\>?\)
+
+Runs the game a composition chooses (a game's <code>Configure</code> entry point, [GameHost](MicroEngine.Core.GameHost.md)) with the
+command line <code class="paramref">args</code> as a desktop process. <code class="paramref">defaults</code> (the host's own platforms
+and content) runs before <code class="paramref">configure</code>, which may replace any of them.
+
+```csharp
+public static int Run(string[] args, Action<HostBuilder> configure, Action<HostBuilder>? defaults = null)
+```
+
+#### Parameters
+
+`args` [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
+
+`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<HostBuilder\>
+
+`defaults` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<HostBuilder\>?
+
+#### Returns
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+The process exit code: 0 on success, 1 on a game or platform error, 2 on bad arguments.
 
 </div>

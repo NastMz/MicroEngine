@@ -111,6 +111,17 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_hosting_references_only_the_kernel_and_the_platform_contracts()
+    {
+        var hosting = typeof(MicroEngine.Hosting.HostBuilder).Assembly;
+        Assert.AreEqual(Hosting, hosting.GetName().Name);
+        Assert.AreEqual(Hosting, typeof(MicroEngine.Hosting.LaunchRequest).Assembly.GetName().Name, "the launcher model is hosting's");
+        var engine = hosting.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToList();
+        CollectionAssert.AreEqual(new[] { Kernel, Platform }, engine, string.Join(", ", engine));
+        CollectionAssert.Contains(typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList(), Hosting, "every host composes through hosting");
+    }
+
+    [TestMethod]
     public void The_compiled_core_references_only_allowed_assemblies()
     {
         var engine = typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();

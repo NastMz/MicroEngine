@@ -364,6 +364,9 @@ public void TwoRunsOfTheTourRecordTheSameTrace()
 A trace is also text, one line per update (`update`, the hash, then `section=hash` pairs, separated by tabs):
 `trace.ToText()` or `trace.Write(writer)` saves it and `StateTrace.Parse(text)` reads it back, so traces recorded by
 different runs or machines can be compared. Override `StateTrace.Record` to send each step elsewhere as it comes.
+Next SDK version (not published yet: arrives with the next SDK version): a desktop game records one from its command
+line, `--state-trace FILE` (with section hashes), for example
+`microengine run -- --headless --script tour.script --state-trace a.txt`; the file is written when the run ends.
 
 Traces are exact. Two runs of the same build on the same machine must match; a divergence is a bug: an unseeded
 generator, a value from the wall clock, a set or dictionary hashed in its storage order, state left over from an

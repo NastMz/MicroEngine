@@ -10,7 +10,7 @@ namespace MicroEngine.Cli;
 /// Packages that need a host program around the game: the browser page (raylib in WebAssembly), the Android activity
 /// and the iOS app (SDL 3). The tool copies a host template (Hosts/&lt;kind&gt;) into the game's
 /// <c>obj/microengine/&lt;kind&gt;</c> folder and writes what is particular to the game: Game.props (identity and paths),
-/// GameEntry.cs (the game's <c>MicroEngineGameFactory</c>), the icon and names. The host references the game project,
+/// GameEntry.cs (a call to the game's <c>Configure</c> entry point, <see cref="EntryPoint"/>), the icon and names. The host references the game project,
 /// so the engine comes from wherever the game gets it (packages, or project references in MicroEngine's repository).
 /// </summary>
 public static class Hosts
@@ -18,7 +18,6 @@ public static class Hosts
     public static async Task<string> Web(PackageRequest request)
     {
         var game = request.Game;
-        string factory = game.RequireFactory("Web");
         RequireBackend(game, "MicroEngine.Raylib", "Web packages run on raylib: reference MicroEngine.Raylib (or MicroEngine.Desktop, which includes it).");
         string raylib = request.RaylibWasm ?? game.WebRaylibFromPackage
             ?? Path.Combine(Environment.GetEnvironmentVariable("MICROENGINE_WEB_TOOLS") is { Length: > 0 } w ? w : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".microengine", "web-tools"), "raylib-web", "raylib.a");
@@ -108,7 +107,6 @@ public static class Hosts
     {
         var game = request.Game;
         string id = game.RequireId("Android");
-        game.RequireFactory("Android");
         RequireBackend(game, "MicroEngine.Sdl", "Android packages run on SDL 3: reference MicroEngine.Sdl (or MicroEngine.Desktop, which includes it).");
         var signing = AndroidSigning.Resolve(request.DebugKey);
         string icon = IconOrDefault(game, "Android");
@@ -151,7 +149,6 @@ public static class Hosts
         bool device = request.Target.Name == "ios";
         if (!OperatingSystem.IsMacOS()) throw new CliException("iOS apps are built on a Mac with Xcode (Apple's tools exist only there). Use a Mac or a macOS CI runner.");
         string id = game.RequireId("iOS");
-        game.RequireFactory("iOS");
         RequireBackend(game, "MicroEngine.Sdl", "iOS packages run on SDL 3: reference MicroEngine.Sdl (or MicroEngine.Desktop, which includes it).");
         string? key = Environment.GetEnvironmentVariable("MICROENGINE_IOS_CODESIGN_KEY");
         string? profile = Environment.GetEnvironmentVariable("MICROENGINE_IOS_PROVISIONING_PROFILE");
@@ -353,14 +350,16 @@ public static class Hosts
         foreach (var (file, name) in notices) sb.Append($"    <GameNotice Include=\"{Escape(file)}\" Name=\"{Escape(name)}\" />\n");
         sb.Append("  </ItemGroup>\n</Project>\n");
         File.WriteAllText(Path.Combine(host, "Game.props"), sb.ToString());
+        string configure = EntryPoint.Call(game, kind switch { "web" => "Web", "android" => "Android", _ => "iOS" });
         File.WriteAllText(Path.Combine(host, "GameEntry.cs"), $$"""
-            // Written by microengine from {{Path.GetFileName(game.Path)}}: the game's id, title and MicroEngineGameFactory.
+            // Written by microengine from {{Path.GetFileName(game.Path)}}: the game's id, title and Configure entry point.
             internal static class GameEntry
             {
                 public const string Id = {{Literal(game.Id)}};
                 public const string Title = {{Literal(game.Title)}};
             {{entryExtra}}
-                public static MicroEngine.Core.Game Create() => {{game.GameFactory}};
+                /// <summary>The game's composition, the same one its desktop Program.cs hands to the launcher.</summary>
+                public static void Configure(MicroEngine.Hosting.HostBuilder host) => {{configure}};
             }
 
             """);

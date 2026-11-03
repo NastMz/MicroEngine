@@ -213,7 +213,7 @@ public static PlatformProfile Profile { get; }
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Suspended"></a> Suspended
 
-In a browser, a hidden page ([Hidden](MicroEngine.Raylib.BrowserLifecycle.md#MicroEngine_Raylib_BrowserLifecycle_Hidden)); a desktop window never suspends.
+In a browser, a hidden page ([Hidden](MicroEngine.Raylib.BrowserPage.md#MicroEngine_Raylib_BrowserPage_Hidden) of the page the platform was built for); a desktop window never suspends.
 
 ```csharp
 public bool Suspended { get; }
@@ -272,6 +272,30 @@ public IRenderer BeginFrame()
 #### Returns
 
  IRenderer
+
+### <a id="MicroEngine_Raylib_RaylibPlatform_BrowserProfile_MicroEngine_Raylib_BrowserPage_"></a> BrowserProfile\(BrowserPage\)
+
+The raylib platform of a browser page as a catalog entry (named <code>raylib</code>, like [Profile](MicroEngine.Raylib.RaylibPlatform.md#MicroEngine_Raylib_RaylibPlatform_Profile)): every
+platform it builds reads touches, insets, visibility and vibration from <code class="paramref">page</code> only. The browser
+host offers this profile; a game's composition may offer others.
+
+```csharp
+public static PlatformProfile BrowserProfile(BrowserPage page)
+```
+
+#### Parameters
+
+`page` [BrowserPage](MicroEngine.Raylib.BrowserPage.md)
+
+#### Returns
+
+ PlatformProfile
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">page</code> is null.
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Delay_System_Double_"></a> Delay\(double\)
 

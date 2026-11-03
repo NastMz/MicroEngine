@@ -152,11 +152,16 @@ public sealed partial class GameProject
         return icon;
     }
 
-    /// <summary>The factory expression, which hosts that create the game themselves need.</summary>
-    public string RequireFactory(string target)
+    /// <summary>
+    /// The game's <c>Configure</c> entry point as found in its last build (<see cref="global::MicroEngine.Cli.EntryPoint"/>), the deprecated
+    /// factory expression it declares instead, or why neither is known yet.
+    /// </summary>
+    public string DescribeEntryPoint()
     {
-        if (GameFactory.Length == 0)
-            throw new CliException($"{target} packages create the game themselves: add <MicroEngineGameFactory>new MyGame.MyGame()</MicroEngineGameFactory> to {System.IO.Path.GetFileName(Path)}.");
-        return GameFactory;
+        string assembly = System.IO.Path.Combine(TargetDir, Id + ".dll");
+        var found = TargetDir.Length > 0 && File.Exists(assembly) ? global::MicroEngine.Cli.EntryPoint.Find(assembly) : [];
+        if (found.Count > 0) return string.Join(", ", found.Select(f => f.Replace("global::", "") + "(HostBuilder)"));
+        if (GameFactory.Length > 0) return $"MicroEngineGameFactory {GameFactory} (deprecated: add a Configure(HostBuilder) entry point)";
+        return File.Exists(assembly) ? "(none: add a public static Configure(HostBuilder) method)" : "(build the game to find its Configure entry point)";
     }
 }

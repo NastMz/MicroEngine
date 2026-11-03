@@ -1,4 +1,7 @@
 using MicroEngine.Core;
+using MicroEngine.Hosting;
+using MicroEngine.Platform;
+using MicroEngine.Sdl;
 
 /// <summary>What a mobile host was asked to run: an input script (its text), developer environment variables
 /// (the games' desktop shortcuts, such as MEADOW_START) and where captures go.</summary>
@@ -19,23 +22,36 @@ internal sealed record MobileLaunch(string? ScriptName, string? Script, IReadOnl
 }
 
 /// <summary>
-/// One run of the selected game (<see cref="GameEntry"/>) for a mobile host, with the same options as
-/// <c>DesktopLauncher --script</c>: a scripted run is in deterministic time, does not wait for the display, has
-/// seed 1 and writes its captures. Every line it
-/// logs starts with "microengine:" so a test can find it in the device log.
+/// One run of the selected game for a mobile host, composed by the game's own <c>Configure</c> entry point
+/// (<see cref="GameEntry"/>) through the launcher model every host shares (<see cref="GameHost"/>): a scripted run is in
+/// deterministic time, does not wait for the display, has seed 1 and writes its captures, exactly as
+/// <c>DesktopLauncher --script</c>. The phone always asks for a sound device (package checks prove one opens). Every
+/// line it logs starts with "microengine:" so a test can find it in the device log.
 /// </summary>
 internal static class MobileRun
 {
-    public static int Run(MobileLaunch launch, Func<Game, bool, IPlatform> createPlatform, Action<string> log, Action? firstFrame = null)
+    public static int Run(MobileLaunch launch, HostKind kind, IContentSource? content, Action<string> log, Action? firstFrame = null)
     {
+        // A test's developer variables (the games' desktop shortcuts, such as MEADOW_START) reach the game the way a
+        // desktop shell's or the page's do: as the process environment, which game code reads.
         foreach (var (name, value) in launch.Environment) Environment.SetEnvironmentVariable(name, value);
-        RunOptions options;
+        var request = new LaunchRequest { ScriptText = launch.Script, ScriptName = launch.ScriptName, CaptureDirectory = launch.CaptureDirectory, Audio = "device" };
+        GameHost host;
         try
         {
-            options = launch.Script is { } text
-                ? new RunOptions { Script = InputScript.Parse(text), Seed = 1, CaptureDirectory = launch.CaptureDirectory, FirstFrame = firstFrame, TimeMode = MicroEngine.Kernel.TimeMode.Deterministic }
-                : new RunOptions { Seed = Environment.TickCount & 0x7fffffff, FirstFrame = firstFrame };
+            host = GameHost.Create(new HostEnvironment(kind), request, GameEntry.Configure, defaults =>
+            {
+                defaults.UsePlatforms(new PlatformCatalog().Add(SdlPlatform.Profile));
+                defaults.Content = content;
+            });
         }
+        catch (Exception e)
+        {
+            log($"microengine: error: {e}");
+            return 1;
+        }
+        InputScript? script;
+        try { script = host.ReadScript(); }
         catch (FormatException e)
         {
             log($"microengine: error: {launch.ScriptName}: {e.Message}");
@@ -44,10 +60,12 @@ internal static class MobileRun
         log($"microengine: start {GameEntry.Id} script={launch.ScriptName ?? "none"} on {System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier}");
         Game game;
         IPlatform platform;
+        RunOptions options;
         try
         {
-            game = GameEntry.Create();
-            platform = createPlatform(game, launch.Script is not null);
+            game = host.CreateGame();
+            options = host.CreateRunOptions(game, script: script) with { FirstFrame = firstFrame };
+            (platform, _) = host.CreatePlatform(host.CreateRequest(game, options));
         }
         catch (Exception e)
         {
@@ -96,7 +114,7 @@ internal static class MobileRun
         using (platform)
         {
             audio = platform.Audio.IsAvailable;
-            result = GameRunner.Run(game, platform, options);
+            result = host.Run(game, platform, options);
         }
         watch.Change(Timeout.Infinite, Timeout.Infinite);
         foreach (var capture in result.Captures) log($"microengine: capture {Path.GetFileName(capture)}");
