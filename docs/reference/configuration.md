@@ -142,7 +142,7 @@ From `InputMap.CreateDefault()` in [`src/MicroEngine/Input/Input.cs`](../../src/
 | Input bindings | Override `Game.CreateInput()` and call `Bind` | Meadow Run adds `jump` and `run` ([patterns](../examples/patterns.md#actions-never-keys)) |
 | Scenes and overlays | Subclass `Scene`; override `IsOverlay`, `BlocksUpdateBelow`, `Enter`, `Exit`, `Resume` | Pause menus in every game |
 | Transitions | Subclass `Transition(float duration)` and implement `Draw` | Built-ins: `Fade`, `Iris`, `Diamonds`, `Wipe` |
-| Entities | Subclass `Entity`; override `Update`, `Draw`, `Depth`, `Removed` | Courtyard Key's `Actor` |
+| Entities | Subclass `Entity`; override `Update`, `Draw`, `Depth`, `Removed` (removed in the next SDK version: keep a scene's objects in `Scene.Objects`, an `IWorld`; [The scene world](../manual/scenes.md#the-scene-world)) | Courtyard Key's `Actor` |
 | UI style | Pass a `UiTheme` to `UseAchievements`, `AchievementsScene` and widgets | Each game's theme |
 | Achievements | `Achievement.Icon`; `AchievementToasts.Top` and `Heading`; `AchievementsScene` `Title`, `CloseActions`, `Moved`, `Closed` | Neon Rift closes its list with `fire` too |
 | Lighting | `new LightMap(device, glowImage)` with your own glow image | Meadow Run's banded halos |
