@@ -44,16 +44,10 @@ The tracker rejects empty ids, goals below 1 and duplicate ids at construction.
 
 ## Turning it on
 
-Call `UseAchievements(catalog, store, theme?)` from `Load`. It creates the tracker over the `"achievements"` slot of
-the store and the banner queue styled with the theme.
-
-Next SDK version: achievements are an optional engine module, and a game declares them before the engine is composed:
-call `UseAchievements` from the game's constructor or from its `Configure(EngineBuilder)` override. The engine then adds
-the module: the tracker and the store become services (`Services.Get<AchievementTracker>()`,
-`Services.Get<SaveStore>()`), and the `engine.achievements` frame system writes progress. A game that never calls it
-has no achievement service, no frame system and no achievement file. Calling it from `Load` or later throws an
-`InvalidOperationException` that names the fix. What only exists once the game runs (sounds, the banners' position)
-stays in `Load`:
+Call `UseAchievements(catalog, store, theme?)` before the engine is composed: from the game's constructor (every SDK
+version) or from its `Configure(EngineBuilder)` override (next SDK version, which adds `Configure`). It creates the tracker over the `"achievements"` slot of the store and the
+banner queue styled with the theme. What only exists once the game runs (sounds, the banners' position) stays in
+`Load`:
 
 ```csharp
 public override void Configure(EngineBuilder builder) => UseAchievements(RiftAchievements.Catalog, Store, Ui.Theme);
@@ -68,6 +62,12 @@ protected override void Load()
 ```
 
 Source: [`games/NeonRift/RiftGame.cs`](../../games/NeonRift/RiftGame.cs)
+
+The published SDK also accepts the call from `Load`. Next SDK version: achievements are an optional engine module.
+Declared before composition, the engine adds the module: the tracker and the store become services
+(`Services.Get<AchievementTracker>()`, `Services.Get<SaveStore>()`), and the `engine.achievements` frame system writes
+progress. A game that never calls `UseAchievements` has no achievement service, no frame system and no achievement
+file, and calling it from `Load` or later throws an `InvalidOperationException` that names the fix.
 
 `Game.Achievements` throws until `UseAchievements` has been called; `Game.HasAchievements` tells whether it was.
 A composition of your own (without the `Game` façade) adds the same module itself:
