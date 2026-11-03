@@ -24,6 +24,10 @@ Not published yet. Behaviour that changes:
   - `InputMap.CreateDefault()` takes optional `ActionNames`; `InputMap.Names` says which names the engine's own parts
     read. `PointerState` has a `Wheel`; `IInputSource` has `Pointers` (with a default). A custom `IInputSource` needs no
     change.
+  - The SDL and raylib platforms deliver their input as events (`IInputBackend`, a capability) with every gamepad as a
+    device of its own; SDL also offers layout key labels, rumble and text input. Their polled `Input` still answers
+    for code that reads it directly, but a tap shorter than a frame now reads as held only until the next event pump
+    (the engine itself keeps it until an update reads it). Prompts name keys by the player's layout on SDL.
   - A host's extra polled sources (`PlatformRequest.ExtraInput`) are devices of their own: on a backend that delivers
     events, player 1 reads them alongside it, and they can be paired with other players. A platform that offers
     `IInputBackend` as a capability is read through its events; its polled `Input` is then not read again.

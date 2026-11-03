@@ -391,6 +391,59 @@ public sealed class InputEventTests
         Assert.AreNotEqual(joined, hash.Value, "player 2's actions are simulation state");
     }
 
+    private sealed class PolledBackend : BufferedInputBackend
+    {
+        public void Press(Key key, bool down) => Emit(down ? InputEvent.KeyDown(Keyboard, key) : InputEvent.KeyUp(Keyboard, key));
+        public void Plug(DeviceId pad) => Emit(Pad(pad));
+        public void Button(DeviceId pad, bool down) => Emit(down ? InputEvent.ButtonDown(pad, PadButton.A) : InputEvent.ButtonUp(pad, PadButton.A));
+        public void Blur() => ReleaseHeld(5);
+    }
+
+    [TestMethod]
+    public void A_buffered_backend_queues_events_and_answers_polled_questions_from_them()
+    {
+        var backend = new PolledBackend();
+        backend.BeginFrame();
+        backend.Press(Key.Space, true);
+        backend.Press(Key.Space, false);
+        Assert.IsTrue(backend.IsKeyDown(Key.Space), "a tap reads as held in its frame");
+        backend.BeginFrame();
+        Assert.IsFalse(backend.IsKeyDown(Key.Space), "and only in its frame");
+        backend.Plug(Pad1);
+        backend.Button(Pad1, true);
+        backend.Press(Key.Left, true);
+        Assert.IsTrue(backend.PadConnected && backend.IsPadDown(PadButton.A));
+        backend.Blur();
+        backend.BeginFrame();
+        Assert.IsFalse(backend.IsKeyDown(Key.Left) || backend.IsPadDown(PadButton.A), "losing the focus releases everything");
+        var drained = new List<InputEvent>();
+        backend.Drain(drained);
+        CollectionAssert.AreEqual(new[]
+        {
+            InputEventKind.KeyDown, InputEventKind.KeyUp, InputEventKind.DeviceAdded, InputEventKind.ButtonDown, InputEventKind.KeyDown,
+            InputEventKind.KeyUp, InputEventKind.ButtonUp,
+        }, drained.Select(e => e.Kind).ToArray());
+        Assert.IsTrue(drained.TakeLast(2).All(e => e.Time == 5));
+        backend.Drain(drained);
+        Assert.AreEqual(7, drained.Count, "a drain moves the events out");
+        for (int i = 0; i < 10_000; i++) backend.Press(Key.Z, i % 2 == 0);
+        drained.Clear();
+        backend.Drain(drained);
+        Assert.IsTrue(drained.Count <= 4096, "nobody draining keeps a bounded backlog, the newest events");
+        Assert.AreEqual(InputEventKind.KeyUp, drained[^1].Kind);
+    }
+
+    [TestMethod]
+    public void Keys_map_to_usb_hid_usages_both_ways()
+    {
+        Assert.AreEqual(4, KeyUsages.Usage(Key.A));
+        Assert.AreEqual(39, KeyUsages.Usage(Key.D0));
+        Assert.AreEqual(Key.Keypad0, KeyUsages.FromHidUsage(98));
+        Assert.AreEqual(Key.F13, KeyUsages.FromHidUsage(104));
+        Assert.AreEqual(Key.None, KeyUsages.FromHidUsage(102), "a usage the engine does not name");
+        foreach (var key in KeyUsages.All) Assert.AreEqual(key, KeyUsages.FromHidUsage(KeyUsages.Usage(key)), key.ToString());
+    }
+
     private sealed class RecordingLayer(Func<InputEvent, bool> take) : IInputLayer
     {
         public List<InputEvent> Seen { get; } = [];
@@ -483,6 +536,23 @@ public sealed class GameInputTests
         Assert.AreEqual(0, game.Lines.Count, "neither the control nor gameplay saw the finger: " + string.Join(", ", game.Lines));
         Assert.IsFalse(game.Touch.IsPressed("jump"));
         loop.Finish();
+    }
+
+    [TestMethod]
+    public void Prompts_name_keys_as_the_players_layout_prints_them()
+    {
+        var platform = new HeadlessPlatform();
+        // An AZERTY layout: the keys in W and A's places print Z and Q.
+        platform.Devices.Labels[Key.W] = "Z";
+        platform.Devices.Labels[Key.A] = "Q";
+        var game = new PlainGame();
+        game.InitializeForTest(platform);
+        game.Prompts.Override = InputDevice.Keyboard;
+        Assert.AreEqual("↑←↓→ / ZQSD", game.Prompts.Directions(separator: " / "));
+        Assert.AreEqual("Q", game.Prompts.KeyText(Key.A));
+        Assert.AreEqual("Space", game.Prompts.KeyText(Key.Space), "keys the layout does not label keep the engine's name");
+        Assert.AreEqual("Num 5", ActionPrompts.KeyName(Key.Keypad5));
+        Assert.AreEqual("-", ActionPrompts.KeyName(Key.Minus));
     }
 
     private sealed class TakeEverything : IInputLayer

@@ -153,6 +153,11 @@ Source: [`games/CourtyardKey/Scenes/TitleScene.cs`](../../games/CourtyardKey/Sce
 | Nintendo pad | `B` (A/B and X/Y swapped, `+`, `ZR`...) | the same position, named as printed |
 | Touch | `A` | the label of the touch button that presses the action (or `↑`, `←`... on a d-pad or joystick) |
 
+Next SDK version (not published yet: arrives with the next SDK version): keys are named as the player's keyboard
+layout prints them where the platform knows the layout (SDL): with the default bindings an AZERTY player reads `ZQSD`
+where a US player reads `WASD`, and a game that binds `Key.A` shows `Q` on that keyboard. `Prompts.KeyText(key)` gives
+the label; `ActionPrompts.KeyName(key)` is the US name, used where the layout is unknown (raylib).
+
 The device is the one that last pressed an action (`InputMap.LastDevice`); before any press it is touch on a
 touch-first screen or while the on-screen controls are shown, otherwise the keyboard (a pad left plugged in takes over
 with its first press). The text follows remapping (`Unbind`, `Bind`) and the touch layout, and changes the moment the
@@ -269,9 +274,20 @@ input methods on desktops; `caret` places the candidate list), `Typed` holds the
 step and `Composition` the text an input method is still composing; `Stop()` turns it off. Backspace and Enter stay
 keys.
 
-Which backends deliver what: the headless platform takes events from tests (`HeadlessPlatform.Devices.Send`); the SDL
-and raylib backends are still read as one polled device in this version (their own events, every gamepad and text
-arrive with the next step of this work). Polled sources (`IInputSource`: a host's `PlatformRequest.ExtraInput`, a
+Which backends deliver what:
+
+| | SDL (desktop, phones) | raylib (desktop, browsers) | Headless |
+| --- | --- | --- | --- |
+| Keys | every key of a full-size keyboard, by position | the same keys, through GLFW's key codes | sent by tests (`HeadlessPlatform.Devices.Send`) |
+| Key labels of the layout (`IKeyLabels`) | yes (`SDL_GetKeyFromScancode`) | no: keys keep their US names | set by tests (`Devices.Labels`) |
+| Text and composition | text and input-method composition, the candidate list placed at the caret, the on-screen keyboard on phones | typed characters, no input methods | sent by tests |
+| Mouse and wheel | yes | yes | sent by tests |
+| Gamepads | every pad, each with its own id, hot-plugged, its type (button names) and the player number it shows | pads 0 to 3, family from the pad's name | sent by tests |
+| Rumble (`IGamepadRumble`) | where the pad has motors | in browsers, through raylib's vibration call (not checked on hardware); none on desktop | recorded (`Devices.Rumbles`) |
+| Touches | fingers through the touch screen, as pointers | the browser page's Pointer Events, as pointers | `HeadlessPlatform.TouchScreen` |
+
+raylib polls its devices once per frame, so a pad button pressed and released between two frames is not seen there;
+keys are (raylib queues their presses). Polled sources (`IInputSource`: a host's `PlatformRequest.ExtraInput`, a
 test's `HeadlessPlatform.Keys`) are devices of their own, read every step.
 
 ## Sticks, dead zones and directions
@@ -574,8 +590,9 @@ sound) move to the bottom centre, between the thumbs. Details: [Embedding](../ex
 
 ## Limitations
 
-- One gamepad at a time on the SDL and raylib backends (the first connected; the next one takes over when it is
-  unplugged), and no rumble there yet; the input system itself handles any number of pads and players.
+- Published SDK: one gamepad at a time (the first connected; the next one takes over when it is unplugged) and no
+  rumble. Next SDK version: every pad is a device of its own; raylib reads pads 0 to 3 and has rumble only in
+  browsers.
 - The mouse is readable (`Input.Pointer`) but cannot be bound to actions; no game uses it.
 - No rebinding screen and no layout editor in the engine: bindings and touch layouts are code (next SDK version:
   `ListenForPress`, `BindFrom` and `SaveBindings` are the parts of one).
