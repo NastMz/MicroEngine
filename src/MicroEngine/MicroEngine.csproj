@@ -18,7 +18,8 @@
     <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Hosting/MicroEngine.Hosting.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Content/MicroEngine.Content.csproj" PrivateAssets="all" />
-    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj;../MicroEngine.Content/MicroEngine.Content.csproj" />
+    <ProjectReference Include="../MicroEngine.Audio/MicroEngine.Audio.csproj" PrivateAssets="all" />
+    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj;../MicroEngine.Content/MicroEngine.Content.csproj;../MicroEngine.Audio/MicroEngine.Audio.csproj" />
   </ItemGroup>
   <Target Name="_MicroEngineBundledOutput">
     <MSBuild Projects="@(_MicroEngineBundledProject)" Targets="GetTargetPath" Properties="BuildProjectReferences=false">
@@ -52,6 +53,8 @@
   <ItemGroup>
     <PackageReference Include="StbImageSharp" Version="[2.30.15]" />
     <PackageReference Include="FontStashSharp" Version="[1.3.10]" />
+    <!-- The bundled audio assembly decodes OGG Vorbis music (NVorbis, managed, MIT). -->
+    <PackageReference Include="NVorbis" Version="[0.10.5]" />
   </ItemGroup>
   <!-- The application-identity targets (build/MicroEngine.targets) apply to every game that references the package,
        directly or through a backend package. -->

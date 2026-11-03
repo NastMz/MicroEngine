@@ -185,7 +185,7 @@ public sealed class SilentAudioDevice : IAudioDevice
 /// Games register synthesized clips once and then call <see cref="Play"/> by name.
 /// </summary>
 /// <remarks>
-/// Every game has one in <see cref="Core.Game.Audio"/>. Sounds and music are registered under names that are compared
+/// Every game has one in <c>Game.Audio</c>. Sounds and music are registered under names that are compared
 /// ordinally (case-sensitive); registering a name again replaces it. On a device without hardware every call still works
 /// and nothing is heard.
 /// </remarks>
@@ -223,7 +223,7 @@ public sealed class AudioMixer
     private string? _pendingMusic;
     private long _frame;
 
-    /// <summary>Creates a mixer over <paramref name="device"/>. Games use the one in <see cref="Core.Game.Audio"/>.</summary>
+    /// <summary>Creates a mixer over <paramref name="device"/>. Games use the one in <c>Game.Audio</c>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="device"/> is null.</exception>
     public AudioMixer(IAudioDevice device) => _device = device ?? throw new ArgumentNullException(nameof(device));
 

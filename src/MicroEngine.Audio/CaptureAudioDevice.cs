@@ -25,7 +25,7 @@ public sealed class CaptureAudioDevice : IAudioDevice
     private bool _musicPaused;
 
     /// <summary>Creates a capture device.</summary>
-    /// <param name="updateRate">Updates per second of the game (<see cref="Core.GameSettings.UpdateRate"/>); each <see cref="Update"/> captures 1/<paramref name="updateRate"/> seconds.</param>
+    /// <param name="updateRate">Updates per second of the game (<c>GameSettings.UpdateRate</c>); each <see cref="Update"/> captures 1/<paramref name="updateRate"/> seconds.</param>
     /// <param name="sampleRate">Samples per second of the capture.</param>
     /// <exception cref="ArgumentOutOfRangeException">A rate is not positive.</exception>
     public CaptureAudioDevice(int updateRate = 60, int sampleRate = AudioClip.DefaultSampleRate)
