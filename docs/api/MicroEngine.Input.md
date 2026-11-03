@@ -277,6 +277,12 @@ The kind of device that last pressed an action (see [LastDevice](MicroEngine.Inp
 
 What an [InputEvent](MicroEngine.Input.InputEvent.md) reports.
 
+ [InputMap.StickDirection](MicroEngine.Input.InputMap.StickDirection.md)
+
+The direction of the left stick an action is bound to (<code>None</code>, <code>Left</code>, <code>Right</code>, <code>Up</code>,
+<code>Down</code>). The action is down when the stick points that way beyond [StickThreshold](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_StickThreshold), and its
+[Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_) is the deflection along that direction.
+
  [Key](MicroEngine.Input.Key.md)
 
 Physical keys, named by their position on a US keyboard (a scancode, not a character): [A](MicroEngine.Input.Key.md) is the key
@@ -304,12 +310,6 @@ What kind of pointer moved or pressed: the mouse, a finger on a touch screen or 
  [PromptKind](MicroEngine.Input.PromptKind.md)
 
 What an [ActionPrompt](MicroEngine.Input.ActionPrompt.md) shows: a key, a gamepad control, an on-screen control, or a plain label.
-
- [InputMap.StickDirection](MicroEngine.Input.InputMap.StickDirection.md)
-
-The direction of the left stick an action is bound to (<code>None</code>, <code>Left</code>, <code>Right</code>, <code>Up</code>,
-<code>Down</code>). The action is down when the stick points that way beyond [StickThreshold](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_StickThreshold), and its
-[Value](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Value_System_String_) is the deflection along that direction.
 
  [StickDirections](MicroEngine.Input.StickDirections.md)
 

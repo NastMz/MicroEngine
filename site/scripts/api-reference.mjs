@@ -144,6 +144,13 @@ for (const file of generated) {
   const namespace = /^# Namespace /.test(text) ? name : [...Object.keys(guides)].filter(ns => name.startsWith(`${ns}.`)).sort((a, b) => b.length - a.length)[0];
   const guide = typeGuides[name] ?? guides[namespace];
   if (guide) text = text.replace(/^(Assembly: [^\n]*\n|# Namespace [^\n]*\n)/m, m => `${m}Guide: [${guide[0]}](${guide[1]})  \n`);
+  // DocFX lists a namespace's nested types in an order that differs between runs and systems: sort each section's
+  // entries by their name (ordinal), so the page depends only on the source.
+  if (/^# Namespace /.test(text)) text = text.replace(/(^### [^\n]*\n\n)([\s\S]*?)(?=^### |(?![\s\S]))/gm, (_, heading, body) => {
+    const entries = body.split(/\n(?= \[)/).map(e => e.replace(/\n+$/, ''));
+    entries.sort((x, y) => (x < y ? -1 : x > y ? 1 : 0));
+    return `${heading}${entries.join('\n\n')}\n\n`;
+  });
   if (/^# Namespace /.test(text) && namespaceSummaries[name]) text = text.replace(/^(# Namespace [^\n]*\n)/, `$1\n${namespaceSummaries[name]}\n\n`);
   // Search: a type page repeats many words of the guides (Touch, Control, Save); weighting its text down keeps the
   // tutorial and the manual above it, while its title still finds it.
