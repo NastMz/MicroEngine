@@ -45,7 +45,7 @@ Each game has five achievements and saves its progress, and is packaged for desk
 | --- | --- | --- |
 | Code-first content, files when wanted | `PixelImage`, palettes, noise and `Synth` build assets in code; `ContentFolder` loads PNG and WAV, and music streams from OGG | [Assets](../manual/assets.md) |
 | Scenes on a stack | Pause menus, dialogue and inventories are overlay scenes; transitions swap scenes at their midpoint | [Scenes](../manual/scenes.md) |
-| Plain entities, not an ECS | Small classes with `Update`/`Draw` in an `EntityList<T>` with deferred add and remove | [Architecture](../architecture.md) |
+| Plain entities, not an ECS | Small classes with `Update`/`Draw` in an `EntityList<T>` with deferred add and remove; next SDK version: entities with ids, transforms and attachments in a scene's `IWorld`, and no `EntityList` | [Architecture](../architecture.md) |
 | Actions, never keys | Games ask for `"jump"` or `"confirm"`; scripts and tests force the same actions | [Architecture](../architecture.md) |
 | Fixed-step simulation | 60 updates per second, rendering once per frame; headless runs are deterministic | [Architecture](../architecture.md) |
 | Integrate, do not reinvent | Platforms are profiles over existing libraries (SDL 3, raylib); the core references none of them, and a host can replace a subsystem or register its own platform | [Backends and platforms](../manual/backends.md) |

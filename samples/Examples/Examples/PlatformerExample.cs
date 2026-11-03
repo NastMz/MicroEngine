@@ -8,7 +8,7 @@ namespace Examples;
 
 /// <summary>
 /// Side-view movement through tiles: gravity, jumping, solid walls, one-way platforms you can drop through, a moving
-/// platform that carries the player, and coins kept in an EntityList.
+/// platform that carries the player, and coins: plain classes the scene keeps in a list.
 /// </summary>
 public sealed class PlatformerExample : Scene
 {
@@ -43,11 +43,12 @@ public sealed class PlatformerExample : Scene
     private Vector2 _velocity;
     private float _dropTime;                         // while > 0, one-way platforms let the player fall through
     private RectF _lift = new(176, 96, 32, 6);       // a moving platform: an extra solid rectangle, not a tile
-    private readonly EntityList<Coin> _coins = new();
+    private readonly List<Coin> _coins = [];
     private int _collected;
 
     public RectF Player => _player;
     public int Collected => _collected;
+    public int CoinsLeft => _coins.Count;
 
     public override void Enter()
     {
@@ -85,8 +86,9 @@ public sealed class PlatformerExample : Scene
 
         // Objects against the player: the game compares rectangles.
         foreach (var coin in _coins)
-            if (coin.Bounds.Intersects(_player)) { coin.Destroy(); _collected++; }
-        _coins.Update(dt);                                     // updates, then removes destroyed coins
+            if (coin.Bounds.Intersects(_player)) { coin.Collected = true; _collected++; }
+        _coins.RemoveAll(static coin => coin.Collected);      // removed after the walk, never during it
+        foreach (var coin in _coins) coin.Update(dt);
     }
     #endregion
 
@@ -100,7 +102,7 @@ public sealed class PlatformerExample : Scene
             else if (_grid.Layer[x, y] == Ledge) r.FillRect(cell with { Height = 4 }, Color.Hex("a7f070"));
         }
         r.FillRect(_lift, Color.Hex("ffcd75"));
-        _coins.Draw(r);
+        foreach (var coin in _coins) coin.Draw(r);
         r.FillRect(_player, Color.Hex("41a6f6"));
         Font.Draw(r, $"COINS {_collected}   JUMP: Z   DROP: DOWN+Z", new Vector2(20, 18), Color.White);
         Heading.Draw(r, Font, "PLATFORMER");
@@ -108,16 +110,18 @@ public sealed class PlatformerExample : Scene
 }
 
 #region coin
-/// <summary>An Entity: a position, a hitbox relative to it, Update/Draw, and Destroy to leave its list.</summary>
-public sealed class Coin : Entity
+/// <summary>A game object as a plain class: a position, a box around it, its own Update and Draw.</summary>
+public sealed class Coin
 {
     private float _time;
 
-    public Coin() => Hitbox = new RectF(0, 0, 8, 8);
+    public Vector2 Position { get; init; }
+    public RectF Bounds => new(Position.X, Position.Y, 8, 8);
+    public bool Collected { get; set; }
 
-    public override void Update(float dt) => _time += dt;
+    public void Update(float dt) => _time += dt;
 
-    public override void Draw(IRenderer r) =>
-        r.FillCircle(Center + new Vector2(0, MathF.Sin(_time * 4)), 4, Color.Hex("ffec27"));
+    public void Draw(IRenderer r) =>
+        r.FillCircle(Bounds.Center + new Vector2(0, MathF.Sin(_time * 4)), 4, Color.Hex("ffec27"));
 }
 #endregion
