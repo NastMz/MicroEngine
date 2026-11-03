@@ -124,7 +124,7 @@ public sealed class CoreContractTests
         protected override GpuBuffer CreateBufferCore(in BufferDescription description) => new Buffer(this, description);
         protected override void SubmitCore(CommandList commands) { }
         protected override void DisposeCore(IReadOnlyList<Pipeline> builtIns, IReadOnlyList<Sampler> samplers) { }
-        protected override Texture CreateTextureCore(in TextureDescription description, ReadOnlySpan<byte> initialData) => throw new NotSupportedException();
+        protected override Devices.Texture CreateTextureCore(in TextureDescription description, ReadOnlySpan<byte> initialData) => throw new NotSupportedException();
         protected override RenderTarget CreateRenderTargetCore(in RenderTargetDescription description) => throw new NotSupportedException();
         protected override Sampler CreateSamplerCore(in SamplerDescription description) => throw new NotSupportedException();
         protected override Shader CreateShaderCore(in ShaderDescription description) => throw new NotSupportedException();

@@ -9,7 +9,7 @@ namespace MicroEngine.Graphics.Tests;
 [TestClass]
 public sealed class ReferenceDeviceConformance : DeviceConformance
 {
-    protected override IGraphicsDevice CreateDevice(ITestSurface surface) => new ReferenceGraphicsBackendFactory().Create(surface, new GraphicsDeviceOptions());
+    protected override Devices.IGraphicsDevice CreateDevice(ITestSurface surface) => new ReferenceGraphicsBackendFactory().Create(surface, new GraphicsDeviceOptions());
     protected override ITestSurface CreateSurface(int width, int height) => new MemorySurface(width, height);
     protected override string ExpectedBackend => "reference";
     protected override string? ExpectedApi => "cpu";
