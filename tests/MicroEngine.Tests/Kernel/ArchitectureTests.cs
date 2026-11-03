@@ -125,6 +125,19 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_audio_references_only_the_kernel_the_platform_contracts_and_content()
+    {
+        var audio = typeof(MicroEngine.Audio.AudioEngine).Assembly;
+        Assert.AreEqual(Audio, audio.GetName().Name);
+        Assert.AreEqual(Audio, typeof(MicroEngine.Audio.AudioMixer).Assembly.GetName().Name, "the game's sound façade is audio's");
+        Assert.AreEqual(Platform, typeof(MicroEngine.Platform.IAudioSink).Assembly.GetName().Name, "the PCM sink is a platform contract");
+        var engine = audio.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToList();
+        Assert.IsTrue(engine.All(Allowed[Audio].Contains), string.Join(", ", engine));
+        CollectionAssert.Contains(engine, Platform);
+        Assert.AreEqual(typeof(MicroEngine.Audio.AudioClip), typeof(Game).Assembly.GetType("MicroEngine.Audio.AudioClip"), "code compiled against an earlier MicroEngine.dll still finds it");
+    }
+
+    [TestMethod]
     public void The_compiled_hosting_references_only_the_kernel_and_the_platform_contracts()
     {
         var hosting = typeof(MicroEngine.Hosting.HostBuilder).Assembly;
