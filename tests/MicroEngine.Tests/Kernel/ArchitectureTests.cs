@@ -122,6 +122,17 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_graphics_contract_references_only_the_kernel_and_the_platform_contracts()
+    {
+        var graphics = typeof(MicroEngine.Graphics.Devices.IGraphicsDevice).Assembly;
+        Assert.AreEqual(Graphics, graphics.GetName().Name);
+        Assert.AreEqual(Graphics, typeof(MicroEngine.Graphics.Devices.GraphicsDeviceBase).Assembly.GetName().Name, "core validation is the contract's");
+        Assert.AreEqual(Graphics, typeof(MicroEngine.Graphics.Devices.ReferenceGraphicsDevice).Assembly.GetName().Name, "the reference device lives with the contract");
+        var engine = graphics.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToList();
+        CollectionAssert.AreEqual(new[] { Kernel, Platform }, engine, string.Join(", ", engine));
+    }
+
+    [TestMethod]
     public void The_compiled_core_references_only_allowed_assemblies()
     {
         var engine = typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();

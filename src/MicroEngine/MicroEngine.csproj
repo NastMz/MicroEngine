@@ -7,8 +7,9 @@
     <InternalsVisibleTo Include="MicroEngine.Tests" />
   </ItemGroup>
   <!-- The kernel (composition, schedule, time, math and colour), the platform contracts (host, surface, storage,
-       content sources) and hosting (the launcher model and the composition a game configures) are assemblies of their
-       own but not packages: this package carries MicroEngine.Kernel.dll, MicroEngine.Platform.dll and
+       content sources), the graphics device contract (devices, resources, command lists, the reference device) and
+       hosting (the launcher model and the composition a game configures) are assemblies of their own but not packages:
+       this package carries MicroEngine.Kernel.dll, MicroEngine.Platform.dll, MicroEngine.Graphics.dll and
        MicroEngine.Hosting.dll with their documentation and symbols, and depends on no package of theirs. The
        references are private (so packing adds no dependency on them); inside the repository, projects that reference
        this one still compile against them and copy them, because this project hands their assemblies over together
@@ -16,8 +17,9 @@
   <ItemGroup>
     <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" PrivateAssets="all" />
+    <ProjectReference Include="../MicroEngine.Graphics/MicroEngine.Graphics.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Hosting/MicroEngine.Hosting.csproj" PrivateAssets="all" />
-    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj" />
+    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Graphics/MicroEngine.Graphics.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj" />
   </ItemGroup>
   <Target Name="_MicroEngineBundledOutput">
     <MSBuild Projects="@(_MicroEngineBundledProject)" Targets="GetTargetPath" Properties="BuildProjectReferences=false">

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The graphics device contract: its core validation, handles and counters, and the device conformance suite run
+       against the CPU reference device. It references only MicroEngine.Graphics (and through it the kernel and the
+       platform contracts), so the contract is proven usable without the rest of the engine. The suite itself lives in
+       tests/Shared/Graphics and also runs against the native devices in tests/MicroEngine.Desktop.Tests. -->
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.4.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Graphics/MicroEngine.Graphics.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/Graphics/*.cs" LinkBase="Shared/Graphics" />
+  </ItemGroup>
+</Project>

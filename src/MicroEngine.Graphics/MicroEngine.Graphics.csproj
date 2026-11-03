@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The graphics device contract (version 1; docs/manual/rendering.md "The graphics device"): capabilities and the
+       typed capability error, resources owned by their device with generations, samplers as values, buffers, shaders,
+       pipelines with the built-in Textured pipeline, command lists with passes, fenced readback and the surface target;
+       the core validation every backend inherits (GraphicsDeviceBase); the CPU reference device that defines the
+       written rules executably. It references only the kernel and the platform contracts (the architecture test checks
+       it). It is not a package of its own: the MicroEngine package carries MicroEngine.Graphics.dll
+       (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Graphics</RootNamespace>
+    <Description>MicroEngine graphics: the device contract every backend implements, its core validation and the CPU reference device. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+    <InternalsVisibleTo Include="MicroEngine.Graphics.Tests" />
+  </ItemGroup>
+</Project>

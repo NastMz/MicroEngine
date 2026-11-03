@@ -6,6 +6,10 @@ Drawing: the renderer contract, images in code and from PNG, sprites and atlases
 
 Guide: [Graphics](../manual/rendering.md)  
 
+### Namespaces
+
+ [MicroEngine.Graphics.Devices](MicroEngine.Graphics.Devices.md)
+
 ### Classes
 
  [AnimationClip](MicroEngine.Graphics.AnimationClip.md)
