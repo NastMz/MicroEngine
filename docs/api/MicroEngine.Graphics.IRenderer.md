@@ -30,7 +30,8 @@ Every renderer follows the same rules. Pixel (x, y) is the square from (x, y) to
 centre on its left or top edge counting as inside and one on its right or bottom edge as outside (the top-left rule
 of Direct3D and Vulkan): a 1 × 1 rectangle at (2.5, 2.5) covers pixel (2, 2) only. A sprite pixel shows the texel
 under its centre (nearest) or the bilinear mix of the four texels around it (linear, clamped at the texture's edge).
-Colours are straight (not premultiplied) alpha with 8-bit results rounded to nearest. Circles, lines and triangles
+Colours are given straight (not premultiplied); the canvas stores them premultiplied (colour times alpha), so linear
+sampling never darkens transparent edges, and 8-bit results are rounded to nearest. Circles, lines and triangles
 cover their shape's area but their edge pixels may differ between renderers.
 
 ## Properties
@@ -234,13 +235,14 @@ void PushCamera(Camera2D camera)
 
 #### Parameters
 
-`camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)
+`camera` Camera2D
 
 ### <a id="MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_"></a> SetBlendMode\(BlendMode\)
 
 Sets how later draws combine with the canvas. Every frame starts with [Alpha](MicroEngine.Graphics.BlendMode.md). With source
 colour s (after the tint), its alpha a and canvas colour d: <code>Alpha</code> writes s·a + d·(1 − a),
-<code>Additive</code> s·a + d, <code>Multiply</code> s·d + d·(1 − a), each channel clamped to 0..1.
+<code>Additive</code> s·a + d, <code>Multiply</code> s·a·d + d·(1 − a) (the colour multiplies the canvas in proportion to its
+opacity), each channel clamped to 0..1.
 
 ```csharp
 void SetBlendMode(BlendMode mode)

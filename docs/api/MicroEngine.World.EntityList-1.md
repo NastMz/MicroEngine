@@ -95,7 +95,7 @@ public void Draw(IRenderer renderer, Camera2D? camera = null, float cullMargin =
 
 `renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)?
+`camera` Camera2D?
 
 `cullMargin` [float](https://learn.microsoft.com/dotnet/api/system.single)
 

@@ -84,6 +84,18 @@ public bool CanBlock { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Sdl_SdlPlatform_Canvas"></a> Canvas
+
+The canvas the game draws into, with the 2D batcher's counts for the last frame.
+
+```csharp
+public DeviceCanvas Canvas { get; }
+```
+
+#### Property Value
+
+ DeviceCanvas
+
 ### <a id="MicroEngine_Sdl_SdlPlatform_Clock"></a> Clock
 
 SDL's nanosecond ticks since the platform opened, in seconds (the platform is its own clock).
@@ -107,6 +119,18 @@ public int CurrentDisplay { get; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Sdl_SdlPlatform_Device"></a> Device
+
+The graphics device the platform draws with (SDL's renderer behind the device contract).
+
+```csharp
+public SdlRendererDevice Device { get; }
+```
+
+#### Property Value
+
+ [SdlRendererDevice](MicroEngine.Sdl.SdlRendererDevice.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Diagnostics"></a> Diagnostics
 

@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Graphics2D.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 A 2D camera whose [Position](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Position) is the world point at the top-left of the view.
@@ -35,8 +35,9 @@ renderer.PopCamera();
 
 ## Remarks
 
-The camera has no zoom or rotation: one world pixel is one virtual pixel. Draw the world between
-[PushCamera](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushCamera_MicroEngine_Graphics_Camera2D_) and [PopCamera](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PopCamera), and the interface after the pop.
+By default one world pixel is one canvas pixel. [Zoom](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Zoom) scales and [Rotation](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Rotation) turns the view
+around its centre; [WorldToView](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_WorldToView) is the whole transform. Draw the world between the renderer's
+<code>PushCamera</code> and <code>PopCamera</code>, and the interface after the pop.
 
 ## Constructors
 
@@ -122,7 +123,8 @@ public float MaxShake { get; set; }
 
 ### <a id="MicroEngine_Graphics_Camera2D_PixelSnap"></a> PixelSnap
 
-Rounds the render offset to whole pixels for crisp pixel art.
+Rounds the camera's translation to whole canvas pixels for crisp pixel art (true by default, the pixel-art choice;
+smooth HD games turn it off). With a zoom or a rotation the translation after them is rounded.
 
 ```csharp
 public bool PixelSnap { get; set; }
@@ -155,6 +157,18 @@ public Vector2 RenderOffset { get; }
 #### Property Value
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_Graphics_Camera2D_Rotation"></a> Rotation
+
+Rotation of the view around its centre, in radians; positive turns the world clockwise on screen (0 by default).
+
+```csharp
+public float Rotation { get; set; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ### <a id="MicroEngine_Graphics_Camera2D_ShakeOffset"></a> ShakeOffset
 
@@ -192,6 +206,18 @@ public float ViewHeight { get; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
+### <a id="MicroEngine_Graphics_Camera2D_ViewToWorld"></a> ViewToWorld
+
+Canvas pixels to world coordinates: the inverse of [WorldToView](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_WorldToView).
+
+```csharp
+public Matrix3x2 ViewToWorld { get; }
+```
+
+#### Property Value
+
+ [Matrix3x2](https://learn.microsoft.com/dotnet/api/system.numerics.matrix3x2)
+
 ### <a id="MicroEngine_Graphics_Camera2D_ViewWidth"></a> ViewWidth
 
 Width of the view in pixels, usually the virtual canvas width.
@@ -203,6 +229,51 @@ public float ViewWidth { get; }
 #### Property Value
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+### <a id="MicroEngine_Graphics_Camera2D_VisibleBounds"></a> VisibleBounds
+
+The world rectangle that covers what the canvas shows, without shake: [View](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_View) with no zoom or rotation,
+otherwise the bounding box of the canvas's corners in the world.
+
+```csharp
+public RectF VisibleBounds { get; }
+```
+
+#### Property Value
+
+ RectF
+
+### <a id="MicroEngine_Graphics_Camera2D_WorldToView"></a> WorldToView
+
+World coordinates to canvas pixels: the view's centre (with shake) moves to the canvas centre, then the world is
+rotated by [Rotation](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Rotation) and scaled by [Zoom](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Zoom) around it; with [PixelSnap](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_PixelSnap) the
+final translation is rounded. With no zoom or rotation it is the translation by [RenderOffset](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_RenderOffset).
+
+```csharp
+public Matrix3x2 WorldToView { get; }
+```
+
+#### Property Value
+
+ [Matrix3x2](https://learn.microsoft.com/dotnet/api/system.numerics.matrix3x2)
+
+### <a id="MicroEngine_Graphics_Camera2D_Zoom"></a> Zoom
+
+Magnification around the view's centre: 2 shows half as much of the world, twice as large (1 by default).
+
+```csharp
+public float Zoom { get; set; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The value is not a positive finite number.
 
 ## Methods
 
@@ -242,7 +313,7 @@ public void Follow(Vector2 target, float dt)
 
 ### <a id="MicroEngine_Graphics_Camera2D_IsVisible_MicroEngine_RectF_System_Single_"></a> IsVisible\(RectF, float\)
 
-Whether <code class="paramref">world</code> overlaps the view, grown by <code class="paramref">margin</code> plus [MaxShake](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_MaxShake) pixels. Use it to skip drawing off-screen objects.
+Whether <code class="paramref">world</code> overlaps the visible area, grown by <code class="paramref">margin</code> plus [MaxShake](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_MaxShake) pixels. Use it to skip drawing off-screen objects.
 
 ```csharp
 public bool IsVisible(RectF world, float margin = 0)

@@ -138,6 +138,15 @@ Not published yet. Behaviour that changes:
 - `SpriteAtlas.Frames(name)` also finds frames numbered from 1 when there is no `name0`.
 - Windows larger than the display open at the largest size that fits (a `Scale` of 4 on a small laptop used to open a
   window bigger than the screen).
+- The SDL and raylib platforms draw through the graphics device: `IRenderer` is a façade over the 2D batcher, and the
+  canvas is premultiplied. Behaviour that changes: `BlendMode.Multiply` with a translucent colour now computes
+  s·a·d + d·(1 − a) (it computed s·d + d·(1 − a), which brightened as the colour became more transparent); a
+  translucent `Clear` stores its colour times its alpha, as the window always showed it, and captures now match the
+  window; raylib's window no longer darkens where the canvas is translucent; circles, lines and triangles have the same
+  edge pixels on SDL and raylib. Opaque drawing is unchanged (captures of the demos differ by at most 3/255 per
+  channel). `Camera2D` moved to `MicroEngine.Graphics2D.dll` with its namespace unchanged and gained `Zoom`, `Rotation`,
+  `WorldToView` and `VisibleBounds`. **Migration:** a game that relied on the old translucent `Multiply` uses an
+  opaque colour or `Color.Lerp(Color.White, shade, alpha)`.
 - `GameSettings.Presentation` (a `Presentation` record) states how the canvas reaches the window, one choice per
   field; `GameSettings.Scaling` keeps working and picks the preset `Presentation.PixelArt` or
   `Presentation.HighResolution2D`, which reproduce what `Pixel` and `Smooth` did. `PlatformRequest.CaptureScale`

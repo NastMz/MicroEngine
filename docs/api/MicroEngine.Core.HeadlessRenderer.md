@@ -306,7 +306,7 @@ public void PushCamera(Camera2D camera)
 
 #### Parameters
 
-`camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)
+`camera` Camera2D
 
 ### <a id="MicroEngine_Core_HeadlessRenderer_Reset"></a> Reset\(\)
 
@@ -326,7 +326,8 @@ The previous frame pushed a camera it did not pop.
 
 Sets how later draws combine with the canvas. Every frame starts with [Alpha](MicroEngine.Graphics.BlendMode.md). With source
 colour s (after the tint), its alpha a and canvas colour d: <code>Alpha</code> writes s·a + d·(1 − a),
-<code>Additive</code> s·a + d, <code>Multiply</code> s·d + d·(1 − a), each channel clamped to 0..1.
+<code>Additive</code> s·a + d, <code>Multiply</code> s·a·d + d·(1 − a) (the colour multiplies the canvas in proportion to its
+opacity), each channel clamped to 0..1.
 
 ```csharp
 public void SetBlendMode(BlendMode mode)

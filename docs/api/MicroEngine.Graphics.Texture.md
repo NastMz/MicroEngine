@@ -17,6 +17,10 @@ public abstract class Texture : IDisposable
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
 [Texture](MicroEngine.Graphics.Texture.md)
 
+#### Derived
+
+[DeviceTexture](MicroEngine.Graphics.DeviceTexture.md)
+
 #### Implements
 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)

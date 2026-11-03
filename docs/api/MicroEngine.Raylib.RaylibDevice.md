@@ -123,6 +123,20 @@ public PresentMode PresentMode { get; }
 
  PresentMode
 
+### <a id="MicroEngine_Raylib_RaylibDevice_SwapOnPresent"></a> SwapOnPresent
+
+Whether [Present](MicroEngine.Graphics.Devices.IGraphicsDevice.md#MicroEngine_Graphics_Devices_IGraphicsDevice_Present) swaps the window's buffers (true by default). A host whose frame
+loop ends with raylib's <code>EndDrawing</code>, which swaps them itself (and polls input), sets it to false: Present
+then only finishes the frame's drawing and expires the surface target.
+
+```csharp
+public bool SwapOnPresent { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ## Methods
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_CreateBufferCore_MicroEngine_Graphics_Devices_BufferDescription__"></a> CreateBufferCore\(in BufferDescription\)

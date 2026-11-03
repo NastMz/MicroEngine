@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Graphics2D', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
@@ -55,6 +55,9 @@ const typeGuides = {
   'MicroEngine.Core.HostBuilderExtensions': ['Composing a game for every platform', '../manual/backends.md#one-composition-for-every-platform'],
   'MicroEngine.Core.AppIdentity': ['Name, id, version and icon', '../guide/app-identity.md'],
   'MicroEngine.Graphics.BitmapFont': ['Text', '../manual/text.md'],
+  'MicroEngine.Graphics.Renderer2D': ['The 2D batcher and the camera', '../manual/rendering.md#the-2d-batcher-and-the-camera'],
+  'MicroEngine.Graphics.IRenderer2D': ['The 2D batcher and the camera', '../manual/rendering.md#the-2d-batcher-and-the-camera'],
+  'MicroEngine.Graphics.DeviceCanvas': ['The 2D batcher and the camera', '../manual/rendering.md#the-2d-batcher-and-the-camera'],
   'MicroEngine.Graphics.Presentation': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],
   'MicroEngine.Graphics.ScaleRounding': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],
   'MicroEngine.Graphics.AspectMode': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],

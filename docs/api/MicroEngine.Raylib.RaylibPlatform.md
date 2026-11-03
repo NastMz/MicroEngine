@@ -89,6 +89,18 @@ public bool CanBlock { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Raylib_RaylibPlatform_Canvas"></a> Canvas
+
+The canvas the game draws into, with the 2D batcher's counts for the last frame.
+
+```csharp
+public DeviceCanvas Canvas { get; }
+```
+
+#### Property Value
+
+ DeviceCanvas
+
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Clock"></a> Clock
 
 raylib's timer (the platform is its own clock).
@@ -112,6 +124,18 @@ public int CurrentDisplay { get; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Raylib_RaylibPlatform_Device"></a> Device
+
+The graphics device the platform draws with (raylib's OpenGL layer behind the device contract).
+
+```csharp
+public RaylibDevice Device { get; }
+```
+
+#### Property Value
+
+ [RaylibDevice](MicroEngine.Raylib.RaylibDevice.md)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_DisplayRate"></a> DisplayRate
 
