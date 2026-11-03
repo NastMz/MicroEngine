@@ -94,6 +94,15 @@ A CPU-side RGBA image. Games author procedural art with it and hand it to
 
 Writes 8-bit RGBA PNG files (no filtering), for backends that read frames back as raw pixels.
 
+ [Presentation](MicroEngine.Graphics.Presentation.md)
+
+How the game's canvas reaches the window, one independent choice per field: how its scale is rounded
+([Rounding](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Rounding)), what happens to the window's other shape ([Aspect](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Aspect)), how it is sampled when it is
+scaled ([Upscale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Upscale)), the sampler textures get when they choose none ([DefaultSampler](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_DefaultSampler)), the size
+factor of captures ([CaptureScale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CaptureScale)) and whether desktop windows open at whole factors
+([WholeFactorWindows](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_WholeFactorWindows)). [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt) and [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D) are presets: start from
+one and change any field with <code>with</code>.
+
  [RendererExtensions](MicroEngine.Graphics.RendererExtensions.md)
 
 Drawing helpers built on [IRenderer](MicroEngine.Graphics.IRenderer.md): sprites, outlines, ellipses, gradients and panels.
@@ -163,6 +172,10 @@ pushed with [PushCamera](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_
 
 The order an animation plays its frames in (Aseprite's tag directions).
 
+ [AspectMode](MicroEngine.Graphics.AspectMode.md)
+
+What happens when the window's shape differs from the canvas's ([Aspect](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Aspect)).
+
  [BlendMode](MicroEngine.Graphics.BlendMode.md)
 
 How drawn pixels combine with the canvas (see [SetBlendMode](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_)): <code>Alpha</code> (normal
@@ -173,6 +186,10 @@ transparency, the default), <code>Additive</code> (adds light: glows, sparks, fi
 How the virtual canvas reaches the window ([Scaling](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scaling)). <code>Pixel</code> prefers whole
 factors (fractional only when whole ones would waste a fifth of the screen) and samples nearest, so pixels stay square
 and even; <code>Smooth</code> fills the largest area of the canvas's shape and samples linearly, for high-resolution art.
+
+ [ScaleRounding](MicroEngine.Graphics.ScaleRounding.md)
+
+How the canvas's scale to the window is rounded ([Rounding](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Rounding)).
 
  [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 

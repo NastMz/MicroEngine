@@ -7,7 +7,7 @@ Assembly: MicroEngine.dll
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
 Window/backbuffer settings a game declares. The virtual size is the canvas everything is drawn on: 320×180 pixel art
-by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with [Smooth](MicroEngine.Graphics.CanvasScaling.md).
+by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D).
 
 ```csharp
 public sealed record GameSettings : IEquatable<GameSettings>
@@ -27,7 +27,7 @@ public sealed record GameSettings : IEquatable<GameSettings>
 ### <a id="MicroEngine_Core_GameSettings__ctor_System_String_System_Int32_System_Int32_System_Int32_"></a> GameSettings\(string, int, int, int\)
 
 Window/backbuffer settings a game declares. The virtual size is the canvas everything is drawn on: 320×180 pixel art
-by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with [Smooth](MicroEngine.Graphics.CanvasScaling.md).
+by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D).
 
 ```csharp
 public GameSettings(string Title, int VirtualWidth = 320, int VirtualHeight = 180, int Scale = 4)
@@ -68,7 +68,8 @@ public Color Background { get; init; }
 
 ### <a id="MicroEngine_Core_GameSettings_DefaultTextureFilter"></a> DefaultTextureFilter
 
-The filter textures get when they do not choose one: [TextureFilter](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_TextureFilter), or the one [Scaling](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scaling) implies.
+The filter textures get when they do not choose one: [TextureFilter](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_TextureFilter), or the magnification filter of the
+presentation's default sampler.
 
 ```csharp
 public TextureFilter DefaultTextureFilter { get; }
@@ -77,6 +78,18 @@ public TextureFilter DefaultTextureFilter { get; }
 #### Property Value
 
  [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
+
+### <a id="MicroEngine_Core_GameSettings_EffectivePresentation"></a> EffectivePresentation
+
+The presentation in effect: [Presentation](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Presentation), or the preset [Scaling](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scaling) names.
+
+```csharp
+public Presentation EffectivePresentation { get; }
+```
+
+#### Property Value
+
+ Presentation
 
 ### <a id="MicroEngine_Core_GameSettings_Graphics"></a> Graphics
 
@@ -102,6 +115,21 @@ public Color Letterbox { get; init; }
 
  Color
 
+### <a id="MicroEngine_Core_GameSettings_Presentation"></a> Presentation
+
+How the canvas reaches the window, one choice per field (scale rounding, aspect, the canvas's upscale sampler, the
+textures' default sampler, the capture scale, whole-factor windows). Null (the default) uses the preset
+[Scaling](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scaling) names; a game that sets it starts from a preset and changes what it needs:
+<code>Presentation = Presentation.PixelArt with { Upscale = SamplerDescription.LinearClamp }</code>.
+
+```csharp
+public Presentation? Presentation { get; init; }
+```
+
+#### Property Value
+
+ Presentation?
+
 ### <a id="MicroEngine_Core_GameSettings_Scale"></a> Scale
 
 Initial window size as a multiple of the virtual size on desktop (4 by default); the launcher's <code>--scale</code> overrides
@@ -117,9 +145,9 @@ public int Scale { get; init; }
 
 ### <a id="MicroEngine_Core_GameSettings_Scaling"></a> Scaling
 
-How the canvas is scaled to the window: [Pixel](MicroEngine.Graphics.CanvasScaling.md) (the default: whole factors, nearest
-sampling) for pixel art, [Smooth](MicroEngine.Graphics.CanvasScaling.md) (fills the window, linear sampling) for
-high-resolution art.
+A shorthand for the two presentation presets when [Presentation](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Presentation) is null:
+[Pixel](MicroEngine.Graphics.CanvasScaling.md) (the default) is [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt),
+[Smooth](MicroEngine.Graphics.CanvasScaling.md) is [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D).
 
 ```csharp
 public CanvasScaling Scaling { get; init; }
@@ -131,10 +159,10 @@ public CanvasScaling Scaling { get; init; }
 
 ### <a id="MicroEngine_Core_GameSettings_TextureFilter"></a> TextureFilter
 
-The filter of textures created without one (images, atlases). Null (the default) follows
-[Scaling](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scaling): nearest for pixel art, linear for smooth scaling. Each texture can still choose its own.
-Glyph pages of TTF/OTF fonts do not follow it: their filter is [Filter](MicroEngine.Graphics.FontOptions.md#MicroEngine_Graphics_FontOptions_Filter), or linear for
-antialiased text and nearest otherwise.
+The filter of textures created without one (images, atlases). Null (the default) follows the presentation's
+default sampler ([DefaultSampler](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_DefaultSampler)): nearest for pixel art, linear for
+high-resolution 2D. Each texture can still choose its own. Glyph pages of TTF/OTF fonts do not follow it: their
+filter is [Filter](MicroEngine.Graphics.FontOptions.md#MicroEngine_Graphics_FontOptions_Filter), or linear for antialiased text and nearest otherwise.
 
 ```csharp
 public TextureFilter? TextureFilter { get; init; }

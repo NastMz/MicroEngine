@@ -27,4 +27,20 @@ also reports the window's safe area and density; a system that sends the app to 
 [IDisplayControl](MicroEngine.Core.IDisplayControl.md), [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md), [IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md),
 [IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md) and [ITouchScreen](MicroEngine.Input.ITouchScreen.md).
 
+ [SdlRendererBackendFactory](MicroEngine.Sdl.SdlRendererBackendFactory.md)
+
+Factory of the tier-0 SDL_Renderer backend ("sdl-renderer").
+
+ [SdlRendererDevice](MicroEngine.Sdl.SdlRendererDevice.md)
+
+The tier-0 graphics device on SDL_Renderer, with SDL's default render driver unless
+[Api](MicroEngine.Graphics.Devices.GraphicsDeviceOptions.md#MicroEngine_Graphics_Devices_GraphicsDeviceOptions_Api) names one ("direct3d11", "direct3d12", "opengl", "vulkan", "metal", "gpu",
+"software"...). Buffers are device-owned CPU memory submitted through <code>SDL_RenderGeometryRaw</code> (the
+[Vertex2D](MicroEngine.Graphics.Devices.Vertex2D.md) layout is passed with strides, without conversion); the built-in pipeline is an SDL blend mode;
+samplers are SDL scale and address modes applied per draw; command lists execute inside
+[Submit](MicroEngine.Graphics.Devices.IGraphicsDevice.md#MicroEngine_Graphics_Devices_IGraphicsDevice_Submit_MicroEngine_Graphics_Devices_CommandList_) into SDL's own queue, which SDL flushes at readback and present. Declared
+features: render targets, repeat addressing and, where the driver composes every blend factor, custom blend states.
+SDL's <code>software</code> driver is a diagnostic device: its triangle coverage differs from the contract's pixel-centre
+rule along rotated edges, and it does not claim conformance.
+
 </div>

@@ -155,7 +155,8 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
             Pace();
         }
         _target = Rl.LoadRenderTexture(settings.VirtualWidth, settings.VirtualHeight);
-        Rl.SetTextureFilter(_target.Texture, settings.Scaling == CanvasScaling.Smooth ? Raylib_cs.TextureFilter.Bilinear : Raylib_cs.TextureFilter.Point);
+        // The canvas is sampled as the presentation says when it is scaled to the window.
+        Rl.SetTextureFilter(_target.Texture, settings.EffectivePresentation.Upscale.Mag == MicroEngine.Graphics.Devices.Filter.Linear ? Raylib_cs.TextureFilter.Bilinear : Raylib_cs.TextureFilter.Point);
         _graphics.DefaultFilter = settings.DefaultTextureFilter;
         _renderer = new RaylibRenderer(_graphics, settings.VirtualWidth, settings.VirtualHeight);
         _audio = request?.CreateAudio(() => RaylibAudioDevice.TryCreate()) ?? (options.Mute ? new SilentAudioDevice() : RaylibAudioDevice.TryCreate());
@@ -268,8 +269,13 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         Rl.EndDrawing();
     }
 
-    private RectF FrameRect() => _touch.Overlay?.Frame(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, _settings.Scaling)
-        ?? FrameLayout.Fit(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, _settings.Scaling);
+    private RectF FrameRect()
+    {
+        var presentation = _settings.EffectivePresentation;
+        var overlayScaling = presentation.Rounding == ScaleRounding.Fractional ? CanvasScaling.Smooth : CanvasScaling.Pixel;
+        return _touch.Overlay?.Frame(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, overlayScaling)
+            ?? presentation.Fit(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
+    }
 
     /// <summary>Writes the canvas as a PNG, opaque (alpha 255 everywhere) as on every backend: the frame is shown on an opaque backdrop.</summary>
     public unsafe void SaveScreenshot(string path)
