@@ -11,9 +11,10 @@ namespace MicroEngine.Graphics;
 /// Rules implemented: pixel centres at +0.5; rectangles and unrotated sprites cover the centres inside them with the
 /// top-left rule (half-open intervals); rotated sprites, triangles and lines use the same rule on their edges; circles
 /// cover the centres strictly inside the disc; nearest sampling takes the texel under the centre, linear sampling mixes
-/// the four texels around it with the texture's edges clamped; straight alpha with the blend equations of
-/// <see cref="IRenderer.SetBlendMode"/>, results rounded to nearest; <see cref="Clear"/> replaces the whole canvas; the
-/// clip is truncated to whole pixels.
+/// the four texels around it with the texture's edges clamped; premultiplied alpha (texels premultiplied and rounded to
+/// 8 bits as an upload does, colours and tints premultiplied) with the blend equations of
+/// <see cref="IRenderer.SetBlendMode"/>, results rounded to nearest; <see cref="Clear"/> replaces the whole canvas with
+/// the premultiplied colour; the clip is truncated to whole pixels.
 /// </remarks>
 internal sealed class ReferenceRasterizer
 {
@@ -48,8 +49,19 @@ internal sealed class ReferenceRasterizer
         return image;
     }
 
-    /// <summary>Replaces every pixel, alpha included, whatever the clip and blend mode.</summary>
-    public void Clear(Color color) => Array.Fill(_canvas, color);
+    /// <summary>Replaces every pixel with the premultiplied colour, alpha included, whatever the clip and blend mode.</summary>
+    public void Clear(Color color)
+    {
+        var p = Premultiplied(color);
+        Array.Fill(_canvas, new Color(Q(p.X), Q(p.Y), Q(p.Z), Q(p.W)));
+    }
+
+    /// <summary>A straight 8-bit colour as a premultiplied 0..1 vector.</summary>
+    private static Vector4 Premultiplied(Color c)
+    {
+        float a = c.A / 255f;
+        return new Vector4(c.R / 255f * a, c.G / 255f * a, c.B / 255f * a, a);
+    }
 
     /// <summary>Restricts drawing to a rectangle whose X, Y, Width and Height are truncated to whole pixels; null removes it.</summary>
     public void SetClip(RectF? rect)
@@ -65,7 +77,7 @@ internal sealed class ReferenceRasterizer
         if (color.A == 0) return;
         var (x0, x1) = Span(rect.X, rect.Right, _clip.X0, _clip.X1);
         var (y0, y1) = Span(rect.Y, rect.Bottom, _clip.Y0, _clip.Y1);
-        var src = Vector4.Create(color.R, color.G, color.B, color.A) / 255f;
+        var src = Premultiplied(color);
         for (int y = y0; y < y1; y++)
             for (int x = x0; x < x1; x++) Put(x, y, src);
     }
@@ -98,7 +110,7 @@ internal sealed class ReferenceRasterizer
         Vector2[] corners = [Corner(0, 0), Corner(w, 0), Corner(0, h), Corner(w, h)];
         var (x0, x1) = Span(corners.Min(c => c.X), corners.Max(c => c.X) + 1, _clip.X0, _clip.X1);
         var (y0, y1) = Span(corners.Min(c => c.Y), corners.Max(c => c.Y) + 1, _clip.Y0, _clip.Y1);
-        var tintF = Vector4.Create(tint.R, tint.G, tint.B, tint.A) / 255f;
+        var tintF = Premultiplied(tint);
         for (int y = y0; y < y1; y++)
             for (int x = x0; x < x1; x++)
             {
@@ -127,7 +139,7 @@ internal sealed class ReferenceRasterizer
         return Texel(texture, x, y);
     }
 
-    /// <summary>Bilinear mix of the four texels around (s, t) (texel centres at +0.5), the texture's edges clamped; straight alpha.</summary>
+    /// <summary>Bilinear mix of the four texels around (s, t) (texel centres at +0.5), the texture's edges clamped; premultiplied.</summary>
     private static Vector4 Linear(PixelImage texture, float s, float t)
     {
         float fs = s - 0.5f, ft = t - 0.5f;
@@ -141,7 +153,9 @@ internal sealed class ReferenceRasterizer
     private static Vector4 Texel(PixelImage texture, int x, int y)
     {
         var c = texture[Math.Clamp(x, 0, texture.Width - 1), Math.Clamp(y, 0, texture.Height - 1)];
-        return Vector4.Create(c.R, c.G, c.B, c.A) / 255f;
+        // Premultiplied and rounded to 8 bits, as uploading the texture stores it.
+        static float P(byte channel, byte alpha) => (channel * alpha + 127) / 255 / 255f;
+        return new Vector4(P(c.R, c.A), P(c.G, c.A), P(c.B, c.A), c.A / 255f);
     }
 
     /// <summary>Covers the centres strictly inside the disc.</summary>
@@ -150,7 +164,7 @@ internal sealed class ReferenceRasterizer
         if (radius <= 0) return;
         var (x0, x1) = Span(center.X - radius, center.X + radius + 1, _clip.X0, _clip.X1);
         var (y0, y1) = Span(center.Y - radius, center.Y + radius + 1, _clip.Y0, _clip.Y1);
-        var src = Vector4.Create(color.R, color.G, color.B, color.A) / 255f;
+        var src = Premultiplied(color);
         for (int y = y0; y < y1; y++)
             for (int x = x0; x < x1; x++)
                 if (Vector2.DistanceSquared(new Vector2(x + 0.5f, y + 0.5f), center) < radius * radius) Put(x, y, src);
@@ -163,7 +177,7 @@ internal sealed class ReferenceRasterizer
         if (Edge(a, b, c) == 0) return;
         var (x0, x1) = Span(MathF.Min(a.X, MathF.Min(b.X, c.X)), MathF.Max(a.X, MathF.Max(b.X, c.X)) + 1, _clip.X0, _clip.X1);
         var (y0, y1) = Span(MathF.Min(a.Y, MathF.Min(b.Y, c.Y)), MathF.Max(a.Y, MathF.Max(b.Y, c.Y)) + 1, _clip.Y0, _clip.Y1);
-        var src = Vector4.Create(color.R, color.G, color.B, color.A) / 255f;
+        var src = Premultiplied(color);
         for (int y = y0; y < y1; y++)
             for (int x = x0; x < x1; x++)
             {
@@ -195,7 +209,7 @@ internal sealed class ReferenceRasterizer
         if (Edge(a, b, c) < 0) (a, b, c, e) = (b, a, e, c);
         var (x0, x1) = Span(MathF.Min(MathF.Min(a.X, b.X), MathF.Min(c.X, e.X)), MathF.Max(MathF.Max(a.X, b.X), MathF.Max(c.X, e.X)) + 1, _clip.X0, _clip.X1);
         var (y0, y1) = Span(MathF.Min(MathF.Min(a.Y, b.Y), MathF.Min(c.Y, e.Y)), MathF.Max(MathF.Max(a.Y, b.Y), MathF.Max(c.Y, e.Y)) + 1, _clip.Y0, _clip.Y1);
-        var src = Vector4.Create(color.R, color.G, color.B, color.A) / 255f;
+        var src = Premultiplied(color);
         for (int y = y0; y < y1; y++)
             for (int x = x0; x < x1; x++)
             {
@@ -204,7 +218,7 @@ internal sealed class ReferenceRasterizer
             }
     }
 
-    /// <summary>Blends a straight-alpha source colour (0..1 per channel) into one pixel with the current mode.</summary>
+    /// <summary>Blends a premultiplied source colour (0..1 per channel) into one pixel with the current mode.</summary>
     private void Put(int x, int y, Vector4 s)
     {
         ref var pixel = ref _canvas[y * Width + x];
@@ -212,9 +226,9 @@ internal sealed class ReferenceRasterizer
         float a = s.W;
         Vector4 o = Blend switch
         {
-            BlendMode.Additive => new Vector4(s.X * a + d.X, s.Y * a + d.Y, s.Z * a + d.Z, d.W),
+            BlendMode.Additive => new Vector4(s.X + d.X, s.Y + d.Y, s.Z + d.Z, d.W),
             BlendMode.Multiply => new Vector4(s.X * d.X + d.X * (1 - a), s.Y * d.Y + d.Y * (1 - a), s.Z * d.Z + d.Z * (1 - a), d.W),
-            _ => new Vector4(s.X * a + d.X * (1 - a), s.Y * a + d.Y * (1 - a), s.Z * a + d.Z * (1 - a), a + d.W * (1 - a)),
+            _ => new Vector4(s.X + d.X * (1 - a), s.Y + d.Y * (1 - a), s.Z + d.Z * (1 - a), a + d.W * (1 - a)),
         };
         pixel = new Color(Q(o.X), Q(o.Y), Q(o.Z), Q(o.W));
     }

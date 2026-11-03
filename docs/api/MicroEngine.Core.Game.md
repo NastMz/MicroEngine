@@ -476,6 +476,20 @@ public virtual void Configure(EngineBuilder builder)
 
 `builder` EngineBuilder
 
+### <a id="MicroEngine_Core_Game_CreateCamera"></a> CreateCamera\(\)
+
+A camera the size of the canvas whose defaults follow the game's presentation
+([EffectivePresentation](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_EffectivePresentation)): snapped to whole pixels for pixel art, smooth for
+high-resolution 2D.
+
+```csharp
+public Camera2D CreateCamera()
+```
+
+#### Returns
+
+ Camera2D
+
 ### <a id="MicroEngine_Core_Game_CreateInput"></a> CreateInput\(\)
 
 Override to change bindings; the default suits most games.

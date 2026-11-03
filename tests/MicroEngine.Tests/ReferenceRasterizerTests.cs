@@ -45,7 +45,7 @@ public sealed class ReferenceRasterizerTests
         var frame = r.Frame!;
         for (int y = 0; y < 16; y++)
             for (int x = 0; x < 16; x++)
-                Assert.AreEqual(x < 4 && y < 4 ? new Color(0, 255, 0) : new Color(255, 0, 0), frame[x, y], $"({x},{y})");
+                Assert.AreEqual(x < 4 && y < 4 ? new Color(0, 255, 0) : new Color(128, 0, 0), frame[x, y], $"({x},{y}): the clear stored premultiplied");
     }
 
     [TestMethod]
@@ -103,7 +103,7 @@ public sealed class ReferenceRasterizerTests
     }
 
     [TestMethod]
-    public void Blending_follows_the_written_straight_alpha_equations_rounded_to_nearest()
+    public void Blending_follows_the_written_premultiplied_alpha_equations_rounded_to_nearest()
     {
         var (r, g) = Reference(32, 4);
         r.FillRect(new RectF(0, 0, 32, 4), new Color(128, 128, 128));
@@ -118,7 +118,7 @@ public sealed class ReferenceRasterizerTests
         var f = r.Frame!;
         Assert.AreEqual(new Color(192, 64, 64), f[1, 1], "alpha: 255·0.502 + 128·0.498");
         Assert.AreEqual(new Color(178, 128, 128), f[5, 1], "additive: 100·0.502 + 128");
-        Assert.AreEqual(new Color(192, 64, 64), f[9, 1], "multiply: 255·128/255 + 128·0.498");
+        Assert.AreEqual(new Color(128, 64, 64), f[9, 1], "multiply: 255·0.502·128/255 + 128·0.498");
         Assert.AreEqual(new Color(64, 164, 114), f[12, 0], "tinted sprite");
     }
 
@@ -283,7 +283,7 @@ public sealed class ReferenceRasterizerTests
     {
         var (r, _) = Reference(4, 4);
         r.Clear(new Color(200, 100, 50, 0));
-        Assert.IsTrue(r.Frame!.Pixels.ToArray().All(c => c == new Color(200, 100, 50)));
+        Assert.IsTrue(r.Frame!.Pixels.ToArray().All(c => c == new Color(0, 0, 0)), "a transparent clear stores premultiplied black; the capture is opaque");
     }
 
     private sealed class SquareGame : Game

@@ -53,6 +53,7 @@ capture scale). `GameSettings.Presentation` states each one, and `Scaling` now o
 | `DefaultSampler`: textures created without a filter | nearest | linear |
 | `CaptureScale`: size factor of captures | 3 | 1 |
 | `WholeFactorWindows`: windows open at whole factors | yes | no |
+| `CameraPixelSnap`: cameras snap to whole pixels by default | yes | no |
 
 Start from a preset and change only what differs; any combination is allowed:
 
@@ -134,8 +135,11 @@ Next SDK version (not published yet: arrives with the next SDK version): every b
   stops at the texture's edge (it never wraps around to the opposite edge).
 - `Clear` replaces every pixel of the canvas whatever the clip and blend mode, and replaces what was drawn before it;
   the clip still applies to the draws after it. `SetClip` truncates its rectangle to whole pixels.
-- Blending is straight alpha: with source colour s (after the tint), its alpha a and canvas colour d, `Alpha` writes
-  s·a + d·(1 − a), `Additive` s·a + d, `Multiply` s·d + d·(1 − a).
+- Blending: with source colour s (after the tint), its alpha a and canvas colour d, `Alpha` writes s·a + d·(1 − a),
+  `Additive` s·a + d, `Multiply` s·a·d + d·(1 − a). Next SDK version (not published yet: arrives with the next SDK
+  version): the canvas is premultiplied (colours stored times their alpha), so `Multiply` with a translucent colour
+  darkens in proportion to its opacity (it used to compute s·d + d·(1 − a)), a translucent `Clear` stores its colour
+  times its alpha (what the window always showed), and linear sampling of transparent edges no longer darkens them.
 - Drawing a disposed texture throws `ObjectDisposedException`, and a texture created by another graphics device
   throws `ArgumentException`, on every backend; nothing is drawn.
 - Captures are opaque (alpha 255) on every backend.
@@ -301,6 +305,25 @@ TileRenderer.Draw(r, layer, Tiles.Size, cam, (_, x, y) => Tiles.For(art, theme, 
 Source: [`games/NeonRift/Scenes/StageView.cs`](../../games/NeonRift/Scenes/StageView.cs)
 
 Collision over the same layers (`TileGrid`, `TileMotion`) is described in [Tile maps and collision](world.md).
+
+## The 2D batcher and the camera
+
+Not published yet: arrives with the next SDK version. `IRenderer` is a façade over the 2D batcher (`Renderer2D`, in
+`MicroEngine.Graphics2D.dll`), which runs on the [graphics device](#the-graphics-device) of the platform: a frame's
+draws reach the GPU as one indexed draw per run of consecutive draws with the same texture, blend mode and clip, so
+drawing from one atlas costs one draw call. `SdlPlatform.Canvas.Renderer.Statistics` and
+`RaylibPlatform.Canvas.Renderer.Statistics` count the last frame's sprites, draw calls and flushes exactly.
+
+Code that needs more than `IRenderer` can use `Renderer2D` directly: a `Matrix3x2` transform per draw and a transform
+stack, a state stack (blend state, sampler, scissor), sort modes (`Deferred`, `Texture`, `BackToFront`,
+`FrontToBack`), any render target, premultiplied colours and premultiplied blending by default.
+
+`Camera2D` has `Zoom` (around the view's centre) and `Rotation` (radians, clockwise on screen); `WorldToView` is its
+whole transform and `VisibleBounds` the world area it shows. `PixelSnap` rounds its translation to whole canvas
+pixels; its default comes from the presentation (`Presentation.CameraPixelSnap`: on for `PixelArt`, off for
+`HighResolution2D`). `Game.CreateCamera()` makes a canvas-sized camera with the game's defaults, and
+`new Camera2D(width, height, presentation)` takes them from any presentation; each camera can still set `PixelSnap`.
+`new Camera2D(width, height)` keeps the pixel-art default.
 
 ## The graphics device
 

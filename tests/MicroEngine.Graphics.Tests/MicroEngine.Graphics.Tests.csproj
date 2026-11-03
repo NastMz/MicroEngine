@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- The graphics device contract: its core validation, handles and counters, and the device conformance suite run
-       against the CPU reference device. It references only MicroEngine.Graphics (and through it the kernel and the
-       platform contracts), so the contract is proven usable without the rest of the engine. The suite itself lives in
+  <!-- The graphics device contract (its core validation, handles and counters, and the device conformance suite run
+       against the CPU reference device) and the 2D layer over it (batcher, camera). It references only
+       MicroEngine.Graphics and MicroEngine.Graphics2D (and through them the kernel and the platform contracts), so both
+       are proven usable without the rest of the engine. The suite itself lives in
        tests/Shared/Graphics and also runs against the native devices in tests/MicroEngine.Desktop.Tests. -->
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
@@ -14,6 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine.Graphics/MicroEngine.Graphics.csproj" />
+    <ProjectReference Include="../../src/MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../Shared/Graphics/*.cs" LinkBase="Shared/Graphics" />

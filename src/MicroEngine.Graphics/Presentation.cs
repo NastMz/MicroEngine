@@ -33,8 +33,9 @@ public enum AspectMode
 /// How the game's canvas reaches the window, one independent choice per field: how its scale is rounded
 /// (<see cref="Rounding"/>), what happens to the window's other shape (<see cref="Aspect"/>), how it is sampled when it is
 /// scaled (<see cref="Upscale"/>), the sampler textures get when they choose none (<see cref="DefaultSampler"/>), the size
-/// factor of captures (<see cref="CaptureScale"/>) and whether desktop windows open at whole factors
-/// (<see cref="WholeFactorWindows"/>). <see cref="PixelArt"/> and <see cref="HighResolution2D"/> are presets: start from
+/// factor of captures (<see cref="CaptureScale"/>), whether desktop windows open at whole factors
+/// (<see cref="WholeFactorWindows"/>) and whether 2D cameras snap to whole pixels by default
+/// (<see cref="CameraPixelSnap"/>). <see cref="PixelArt"/> and <see cref="HighResolution2D"/> are presets: start from
 /// one and change any field with <c>with</c>.
 /// </summary>
 public sealed record Presentation
@@ -44,7 +45,8 @@ public sealed record Presentation
 
     /// <summary>
     /// Pixel art: whole factors unless they waste more than a fifth of the window, letterboxed, nearest sampling for the
-    /// canvas and for textures, captures three times the canvas, windows opened at whole factors.
+    /// canvas and for textures, captures three times the canvas, windows opened at whole factors, cameras snapped to whole
+    /// pixels.
     /// </summary>
     public static Presentation PixelArt { get; } = new()
     {
@@ -53,11 +55,12 @@ public sealed record Presentation
         DefaultSampler = SamplerDescription.PointClamp,
         CaptureScale = 3,
         WholeFactorWindows = true,
+        CameraPixelSnap = true,
     };
 
     /// <summary>
     /// High-resolution 2D: the largest size of the canvas's shape that fits, letterboxed, linear sampling for the canvas
-    /// and for textures, captures at the canvas's size.
+    /// and for textures, captures at the canvas's size, cameras moving smoothly (no snap).
     /// </summary>
     public static Presentation HighResolution2D { get; } = new()
     {
@@ -66,6 +69,7 @@ public sealed record Presentation
         DefaultSampler = SamplerDescription.LinearClamp,
         CaptureScale = 1,
         WholeFactorWindows = false,
+        CameraPixelSnap = false,
     };
 
     /// <summary>How the scale is rounded.</summary>
@@ -104,6 +108,13 @@ public sealed record Presentation
 
     /// <summary>Whether desktop windows open at a whole factor of the canvas when the requested size does not fit the display.</summary>
     public bool WholeFactorWindows { get; init; }
+
+    /// <summary>
+    /// Whether 2D cameras created for this presentation round their translation to whole canvas pixels
+    /// (<c>Camera2D.PixelSnap</c>): crisp pixel art (<see cref="PixelArt"/>), smooth motion for high-resolution art
+    /// (<see cref="HighResolution2D"/>). Each camera can still change it.
+    /// </summary>
+    public bool CameraPixelSnap { get; init; }
 
     /// <summary>
     /// Where the canvas lands in <paramref name="area"/> (the window, or its safe area on a phone), in window pixels: the

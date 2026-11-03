@@ -160,6 +160,18 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_2D_layer_references_only_the_graphics_contract_the_kernel_and_the_platform()
+    {
+        var graphics2D = typeof(MicroEngine.Graphics.Renderer2D).Assembly;
+        Assert.AreEqual(Graphics2D, graphics2D.GetName().Name);
+        Assert.AreEqual(Graphics2D, typeof(MicroEngine.Graphics.Camera2D).Assembly.GetName().Name, "the 2D camera lives in the 2D layer");
+        var engine = graphics2D.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
+        Assert.IsTrue(engine.All(Allowed[Graphics2D].Contains), string.Join(", ", engine));
+        CollectionAssert.Contains(engine, Graphics, "the batcher is built on the device contract");
+        CollectionAssert.Contains(typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList(), Graphics2D, "the IRenderer façade is built on the batcher");
+    }
+
+    [TestMethod]
     public void The_compiled_input_references_only_the_kernel_and_the_platform_contracts()
     {
         var input = typeof(MicroEngine.Input.InputMap).Assembly;

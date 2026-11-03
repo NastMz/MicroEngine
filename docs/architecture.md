@@ -70,6 +70,10 @@ owned by their device with generational handles and deferred release, samplers a
 `Textured` pipeline, command lists with passes, fenced readback of render targets and the window's target), the core
 validation every backend inherits (`GraphicsDeviceBase`) and the CPU reference device that executes the written rules
 ([The graphics device](manual/rendering.md#the-graphics-device)).
+The 2D layer is `MicroEngine.Graphics2D`, also carried by the `MicroEngine` package, which references the graphics
+contract only: the batcher (`Renderer2D`) and `Camera2D`. The SDL and raylib platforms draw every frame into a canvas
+render target through it, with `IRenderer` as its façade, and compose the canvas into the window as the game's
+`Presentation` says ([The 2D batcher and the camera](manual/rendering.md#the-2d-batcher-and-the-camera)).
 
 Next SDK version (not published yet: arrives with the next SDK version): hosting is another assembly of the
 `MicroEngine` package, `MicroEngine.Hosting`, which references only the kernel and the platform contracts. It holds the
@@ -155,6 +159,7 @@ scripted playthrough tests and reproducible screenshots possible.
 | `MicroEngine` | `Color`, `RectF`, `MathX` (approach, damp, waves), `Ease`; next SDK version: `ColorF` (linear, premultiplied helpers), all in the kernel assembly |
 | `MicroEngine.Kernel` (next SDK version) | `EngineBuilder`, `Engine`, `IEngineModule`, `ServiceRegistry`, `CapabilityRegistry`, `FrameSchedule`, `FramePhase`, `FrameContext`, `TimeSettings`, `FrameClock`, `IEngineLifecycle`, `ILog`, `Handle<T>`, `HandlePool<T>` |
 | `MicroEngine.Platform` (next SDK version) | `IPlatformHost`, `IMonotonicClock`, `IEngineEventSink`, `ISurface`, `HostSurface`, `IDisplayPacing`, `IPreciseDelay`, `IStorage`, `IContentSource`, `FolderContentSource` |
+| `MicroEngine.Graphics` in `MicroEngine.Graphics2D.dll` (next SDK version) | `IRenderer2D`, `Renderer2D` (the batcher the `IRenderer` façade draws through), `BatchSettings`, `RenderState`, `SortMode`, `Camera2D` |
 | `MicroEngine.Graphics.Devices` (next SDK version) | `IGraphicsDevice`, `GraphicsDeviceBase`, `GraphicsCapabilities`, `GraphicsCapabilityException`, `Texture`, `RenderTarget`, `Sampler`, `GpuBuffer`, `Pipeline`, `CommandList`, `ReadbackRequest`, `Vertex2D`, `GraphicsCounters`, `ReferenceGraphicsDevice` |
 | `MicroEngine.Core` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `InputScript`, `HeadlessPlatform`, `SaveStore` (over `ISaveStorage`), `ContentFolder`, `AssetCache` (`Game.Assets`), `Achievement`, `AchievementTracker` |
 | `MicroEngine.Scenes` | `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener` |

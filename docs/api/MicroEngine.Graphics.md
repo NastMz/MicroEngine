@@ -51,6 +51,30 @@ empty columns, so narrow letters like 'i' take less space.
 A 2D camera whose [Position](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Position) is the world point at the top-left of the view.
 Supports smooth following with a dead zone, world bounds and trauma-based shake.
 
+ [DeviceCanvas](MicroEngine.Graphics.DeviceCanvas.md)
+
+A game's canvas on a graphics device, as backends built on the device contract use it: the canvas render target, the
+textures ([Graphics](MicroEngine.Graphics.DeviceCanvas.md#MicroEngine_Graphics_DeviceCanvas_Graphics)) and the drawing API ([Renderer](MicroEngine.Graphics.DeviceCanvas.md#MicroEngine_Graphics_DeviceCanvas_Renderer)) over the 2D batcher, the composition of
+the canvas into the window as the presentation says, and captures read back from the canvas.
+
+ [DeviceGraphics](MicroEngine.Graphics.DeviceGraphics.md)
+
+The textures of the drawing API ([IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)) made on a graphics device of the device contract: each
+texture is a device texture whose straight-alpha pixels are premultiplied when they are uploaded, and its
+[Filter](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Filter) chooses the sampler it is drawn with. Backends built on a device use it as their
+[Graphics](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_Graphics).
+
+ [DeviceRenderer](MicroEngine.Graphics.DeviceRenderer.md)
+
+The drawing API ([IRenderer](MicroEngine.Graphics.IRenderer.md)) as a façade over the 2D batcher ([Renderer2D](MicroEngine.Graphics.Renderer2D.md)) on a graphics
+device: every call is recorded into the batcher, and the frame reaches the device in as few draw calls as the draws'
+textures and states allow. Straight-alpha colours are premultiplied on the way in, so the blend modes keep their
+written equations (see [SetBlendMode](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_)).
+
+ [DeviceTexture](MicroEngine.Graphics.DeviceTexture.md)
+
+A texture of the drawing API backed by a device texture ([DeviceGraphics](MicroEngine.Graphics.DeviceGraphics.md)).
+
  [FontExtensions](MicroEngine.Graphics.FontExtensions.md)
 
 Layout and drawing helpers that work with any [IFont](MicroEngine.Graphics.IFont.md).
@@ -99,9 +123,14 @@ Writes 8-bit RGBA PNG files (no filtering), for backends that read frames back a
 How the game's canvas reaches the window, one independent choice per field: how its scale is rounded
 ([Rounding](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Rounding)), what happens to the window's other shape ([Aspect](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Aspect)), how it is sampled when it is
 scaled ([Upscale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Upscale)), the sampler textures get when they choose none ([DefaultSampler](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_DefaultSampler)), the size
-factor of captures ([CaptureScale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CaptureScale)) and whether desktop windows open at whole factors
-([WholeFactorWindows](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_WholeFactorWindows)). [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt) and [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D) are presets: start from
+factor of captures ([CaptureScale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CaptureScale)), whether desktop windows open at whole factors
+([WholeFactorWindows](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_WholeFactorWindows)) and whether 2D cameras snap to whole pixels by default
+([CameraPixelSnap](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CameraPixelSnap)). [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt) and [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D) are presets: start from
 one and change any field with <code>with</code>.
+
+ [Renderer2D](MicroEngine.Graphics.Renderer2D.md)
+
+The engine's 2D batcher ([IRenderer2D](MicroEngine.Graphics.IRenderer2D.md)) over one graphics device.
 
  [RendererExtensions](MicroEngine.Graphics.RendererExtensions.md)
 
@@ -141,6 +170,10 @@ A GPU (or headless) texture owned by the active graphics device.
 
 One named rectangle of an atlas image, as a packing tool described it.
 
+ [BatchSettings](MicroEngine.Graphics.BatchSettings.md)
+
+The settings of one batch, from [Begin](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_Begin_MicroEngine_Graphics_BatchSettings__) to [End](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_End).
+
  [DrawOptions](MicroEngine.Graphics.DrawOptions.md)
 
 Per-draw sprite options. Origin is in source pixels and is also the rotation pivot.
@@ -148,6 +181,14 @@ Per-draw sprite options. Origin is in source pixels and is also the rotation piv
  [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
 
 Colours of a panel drawn with [Panel](MicroEngine.Graphics.RendererExtensions.md#MicroEngine_Graphics_RendererExtensions_Panel_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_Graphics_PanelStyle_).
+
+ [RenderState](MicroEngine.Graphics.RenderState.md)
+
+The per-draw state of the 2D batcher ([State](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_State)): blend, sampler and scissor.
+
+ [Renderer2DStatistics](MicroEngine.Graphics.Renderer2DStatistics.md)
+
+Deterministic counts of the last batch ([Statistics](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_Statistics)), the same on every device and run.
 
 ### Interfaces
 
@@ -160,6 +201,12 @@ Anything that measures and draws text at one size: the built-in [BitmapFont](Mic
  [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
 
 Creates device resources. Separated so headless tests can provide fakes.
+
+ [IRenderer2D](MicroEngine.Graphics.IRenderer2D.md)
+
+The 2D renderer over the graphics device, implemented once in core: it writes vertices and indices into device
+buffers and draws them with the built-in [Textured](MicroEngine.Graphics.Devices.BuiltInPipeline.md) pipeline only, so it runs unchanged
+on every tier. Colours (tints, vertex colours) are premultiplied, and the default blend state is premultiplied alpha.
 
  [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
@@ -190,6 +237,14 @@ and even; <code>Smooth</code> fills the largest area of the canvas's shape and s
  [ScaleRounding](MicroEngine.Graphics.ScaleRounding.md)
 
 How the canvas's scale to the window is rounded ([Rounding](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Rounding)).
+
+ [SortMode](MicroEngine.Graphics.SortMode.md)
+
+The order in which a batch's draws reach the device ([Sort](MicroEngine.Graphics.BatchSettings.md#MicroEngine_Graphics_BatchSettings_Sort)).
+
+ [SpriteFlip](MicroEngine.Graphics.SpriteFlip.md)
+
+Mirrors a sprite's texels within its quad ([Draw](MicroEngine.Graphics.IRenderer2D.md#MicroEngine_Graphics_IRenderer2D_Draw_MicroEngine_Graphics_Devices_Texture_MicroEngine_RectF_System_Numerics_Matrix3x2__MicroEngine_ColorF_System_Single_MicroEngine_Graphics_SpriteFlip_)).
 
  [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 

@@ -6,3 +6,6 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(MicroEngine.RectF))]
 [assembly: TypeForwardedTo(typeof(MicroEngine.MathX))]
 [assembly: TypeForwardedTo(typeof(MicroEngine.Ease))]
+
+// The 2D camera moved to MicroEngine.Graphics2D.dll with its namespace unchanged.
+[assembly: TypeForwardedTo(typeof(MicroEngine.Graphics.Camera2D))]

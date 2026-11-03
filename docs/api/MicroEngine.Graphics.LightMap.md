@@ -221,6 +221,6 @@ public void Draw(IRenderer r, Camera2D camera)
 
 `r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)
+`camera` Camera2D
 
 </div>

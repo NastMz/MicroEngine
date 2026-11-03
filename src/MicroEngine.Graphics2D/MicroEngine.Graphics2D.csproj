@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The 2D layer over the graphics device contract: the batcher (IRenderer2D, Renderer2D: transform and state stacks,
+       sort, scissor, target, premultiplied alpha by default, deterministic counters) and Camera2D. It references only the
+       graphics contract, the kernel and the platform contracts (the architecture test checks it; content arrives with the
+       content stage). It is not a package of its own: the MicroEngine package carries MicroEngine.Graphics2D.dll
+       (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Graphics</RootNamespace>
+    <Description>MicroEngine 2D graphics: the batcher over the graphics device and the 2D camera. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+    <ProjectReference Include="../MicroEngine.Graphics/MicroEngine.Graphics.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+    <InternalsVisibleTo Include="MicroEngine.Graphics.Tests" />
+  </ItemGroup>
+</Project>

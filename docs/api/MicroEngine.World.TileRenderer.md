@@ -41,7 +41,7 @@ The tile ids; 0 is never drawn.
 
 Tile size in pixels.
 
-`camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)?
+`camera` Camera2D?
 
 The camera, used only to skip tiles outside its view; null draws the tiles over the screen area.
 
