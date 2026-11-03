@@ -11,8 +11,8 @@ namespace AssetGallery;
 /// One screen: a backdrop from PNG and JPEG files, animated characters from two atlas formats, a folder atlas, text in three
 /// fonts at several sizes, and the asset cache's own numbers. Confirm switches the characters between linear and nearest
 /// sampling; action loads (or releases) a "level" scope with a tile atlas. A deterministic-time run (scripted or headless)
-/// shows no wall-clock measurement and finishes the level scope on the update that asks for it, so its frames are the
-/// same on every run.
+/// shows no wall-clock measurement and loads the level's atlas before play, so the update that asks for the level gets it
+/// and its frames are the same on every run.
 /// </summary>
 public sealed class GalleryScene(GalleryGame game) : Scene
 {
@@ -51,8 +51,9 @@ public sealed class GalleryScene(GalleryGame game) : Scene
                 // uploads within the frame budget, so switching levels during play does not stall a frame.
                 _level = Assets.CreateScope("level");
                 _loading = _level.Preload("atlases/tiles.xml");
-                // A scripted run finishes the batch now: how many frames the workers take must not show in its captures.
-                if (!game.RealTime) _loading.Wait();
+                // A fixed-step run loaded the atlas before play (GalleryGame.Load): this scope takes it over at once.
+                game.LevelAhead?.Dispose();
+                game.LevelAhead = null;
             }
             else
             {

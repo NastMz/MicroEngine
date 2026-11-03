@@ -78,7 +78,7 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
 | Engine or backend tests | those tests | yes | backend tests only | — | — | — | — | — |
 | One game's tests | those tests | — | — | — | — | — | — | — |
 | Samples | compile only | — | — | — | — | — | — | — |
-| The tool, the template, SDK tests (`src/MicroEngine.Cli`, `templates/`, `sdk/tests/external.mjs`) | the tool's and template's tests | the tool's | — | yes | — | — | browser host only | — |
+| The tool, the template, SDK tests and the sample they play (`src/MicroEngine.Cli`, `templates/`, `sdk/tests/external.mjs`, `samples/AssetGallery`) | the tool's, template's and sample's tests | the tool's | — | yes | — | — | browser host only | — |
 | Documented SDK version (`sdk/version.json`, `sdk/version.mjs`, `sdk/tests/docs.mjs`) | all, with the documented samples | — | — | — | — | — | — | — |
 | Desktop capture scripts and references (`web/tests`) | — | — | yes | its browser driver only | — | — | the scenarios, the desktop runner, the suites (`run.mjs`) and the browser driver | — |
 | Web host or toolchain (`web/`) | — | — | — | toolchain, server | the canary game | all | all games | preview, production |
