@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.dll  
 Guide: [Input](../manual/input.md)  
 
 The raw device state a backend reports once per polled frame.
@@ -11,6 +11,11 @@ The raw device state a backend reports once per polled frame.
 ```csharp
 public interface IInputSource
 ```
+
+## Remarks
+
+Engine backends deliver events instead ([IInputBackend](MicroEngine.Input.IInputBackend.md)); a polled source is still read every frame and
+its changes become the same events, so a host's extra source or a test's hand-set input is one more device.
 
 ## Properties
 
@@ -61,6 +66,18 @@ PointerState Pointer { get; }
 #### Property Value
 
  [PointerState](MicroEngine.Input.PointerState.md)
+
+### <a id="MicroEngine_Input_IInputSource_Pointers"></a> Pointers
+
+Every pointer: the mouse while over the window, each finger or pen on the screen. Sources without pointers keep the default (none).
+
+```csharp
+IReadOnlyList<PointerInfo> Pointers { get; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[PointerInfo](MicroEngine.Input.PointerInfo.md)\>
 
 ## Methods
 

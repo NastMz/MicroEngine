@@ -73,7 +73,7 @@ public sealed class GameKernelTests
         CollectionAssert.AreEqual(new[] { "engine.time", "engine.scenes", "test.after-scenes" }, game.Schedule.Order(FramePhase.FixedUpdate).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.audio", "engine.achievements", "engine.input.end", "engine.assets.playing" }, game.Schedule.Order(FramePhase.PostFixed).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.assets" }, game.Schedule.Order(FramePhase.BeginFrame).ToArray());
-        CollectionAssert.AreEqual(new[] { "engine.touch" }, game.Schedule.Order(FramePhase.Input).ToArray());
+        CollectionAssert.AreEqual(new[] { "engine.input.events", "engine.touch" }, game.Schedule.Order(FramePhase.Input).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.render" }, game.Schedule.Order(FramePhase.Render).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.present" }, game.Schedule.Order(FramePhase.Present).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.audio.pump", "test.end" }, game.Schedule.Order(FramePhase.EndFrame).ToArray(), "audio work of the frame runs outside the simulation step");

@@ -117,19 +117,19 @@ draw quads; [Prepare](MicroEngine.Graphics.ScalableFont.md#MicroEngine_Graphics_
 
 A [ScalableFont](MicroEngine.Graphics.ScalableFont.md) at one size: an [IFont](MicroEngine.Graphics.IFont.md) for widgets, layout and drawing.
 
- [Sprite](MicroEngine.Graphics.Sprite.md)
+ [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
 
-A region of a texture with a pivot (origin) in source pixels.
+Packs many procedurally authored [PixelImage](MicroEngine.Graphics.PixelImage.md)s into one texture and
+exposes them by name. Keeps draw calls batched and art code independent of layout.
 
  [SpriteAtlas](MicroEngine.Graphics.SpriteAtlas.md)
 
 Named sprites packed into one texture, built by [Build](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_System_Nullable_MicroEngine_Graphics_TextureFilter__). The atlas owns the texture:
 dispose the atlas (usually in <code>Game.Unload</code>) when its sprites are no longer drawn.
 
- [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
+ [Sprite](MicroEngine.Graphics.Sprite.md)
 
-Packs many procedurally authored [PixelImage](MicroEngine.Graphics.PixelImage.md)s into one texture and
-exposes them by name. Keeps draw calls batched and art code independent of layout.
+A region of a texture with a pivot (origin) in source pixels.
 
  [Texture](MicroEngine.Graphics.Texture.md)
 

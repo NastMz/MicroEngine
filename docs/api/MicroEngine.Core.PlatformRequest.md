@@ -94,7 +94,7 @@ public IReadOnlyList<IInputSource> ExtraInput { get; init; }
 
 #### Property Value
 
- [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[IInputSource](MicroEngine.Input.IInputSource.md)\>
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<IInputSource\>
 
 ### <a id="MicroEngine_Core_PlatformRequest_Hidden"></a> Hidden
 
@@ -217,11 +217,11 @@ public IInputSource CombineInput(IInputSource own)
 
 #### Parameters
 
-`own` [IInputSource](MicroEngine.Input.IInputSource.md)
+`own` IInputSource
 
 #### Returns
 
- [IInputSource](MicroEngine.Input.IInputSource.md)
+ IInputSource
 
 ### <a id="MicroEngine_Core_PlatformRequest_CreateAudio_System_Func_MicroEngine_Audio_IAudioDevice__"></a> CreateAudio\(Func<IAudioDevice\>\)
 

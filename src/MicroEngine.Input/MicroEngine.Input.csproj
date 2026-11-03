@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Input: devices with ids, the timestamped event stream an input backend delivers (keys, text, pointers with touches
+       as pointers, wheel, gamepads with hot-plug), the polled state derived from it, players with device pairing, input
+       layers with consumption, named actions (InputMap) and their persistence. It references only the kernel and the
+       platform contracts (the architecture test checks it). The on-screen touch controls and prompts still live in the
+       MicroEngine assembly because they draw through the renderer there; they move here once the 2D renderer is an
+       assembly of its own. It is not a package of its own: the MicroEngine package carries MicroEngine.Input.dll
+       (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Input</RootNamespace>
+    <Description>MicroEngine input: device events, players and pairing, input layers, named actions and their persistence. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+</Project>

@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
@@ -72,7 +72,7 @@ const namespaceSummaries = {
   'MicroEngine.Graphics': 'Drawing: the renderer contract, images in code and from PNG, sprites and atlases, animation, camera, parallax, particles, light, the pixel font.',
   'MicroEngine.Graphics.Devices': 'The graphics device contract every backend implements: capabilities and the typed capability error, textures, render targets, samplers, buffers, pipelines, command lists with passes, readback and the surface target; the core validation backends inherit and the CPU reference device.',
   'MicroEngine.Hosting': 'Hosting: the launcher model every host shares (launch requests and their rules, platform selection, the host environment) and the composition a game configures once with its Configure entry point.',
-  'MicroEngine.Input': 'Input actions over keyboard, gamepad, mouse and touch: bindings, analog values, on-screen controls, custom sources.',
+  'MicroEngine.Input': 'Input: device events with ids (keys, text, pointers and touches, wheel, gamepads), players and device pairing, input layers, and actions over them: bindings and their persistence, analog values, on-screen controls, prompts, custom sources.',
   'MicroEngine.Kernel': 'The kernel: engine composition (builder, services, modules, capabilities), the frame schedule and its phases, loop-owned time, engine events, logging and generational handles.',
   'MicroEngine.Platform': 'The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the surface, display pacing and precise waits, storage for saves and content sources.',
   'MicroEngine.Raylib': 'The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and the browser page it reads.',
@@ -151,6 +151,13 @@ for (const file of generated) {
   const namespace = /^# Namespace /.test(text) ? name : [...Object.keys(guides)].filter(ns => name.startsWith(`${ns}.`)).sort((a, b) => b.length - a.length)[0];
   const guide = typeGuides[name] ?? guides[namespace];
   if (guide) text = text.replace(/^(Assembly: [^\n]*\n|# Namespace [^\n]*\n)/m, m => `${m}Guide: [${guide[0]}](${guide[1]})  \n`);
+  // DocFX lists a namespace's nested types in an order that differs between runs and systems: sort each section's
+  // entries by their name (ordinal), so the page depends only on the source.
+  if (/^# Namespace /.test(text)) text = text.replace(/(^### [^\n]*\n\n)([\s\S]*?)(?=^### |(?![\s\S]))/gm, (_, heading, body) => {
+    const entries = body.split(/\n(?= \[)/).map(e => e.replace(/\n+$/, ''));
+    entries.sort((x, y) => (x < y ? -1 : x > y ? 1 : 0));
+    return `${heading}${entries.join('\n\n')}\n\n`;
+  });
   if (/^# Namespace /.test(text) && namespaceSummaries[name]) text = text.replace(/^(# Namespace [^\n]*\n)/, `$1\n${namespaceSummaries[name]}\n\n`);
   // Search: a type page repeats many words of the guides (Touch, Control, Save); weighting its text down keeps the
   // tutorial and the manual above it, while its title still finds it.

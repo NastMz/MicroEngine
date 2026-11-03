@@ -140,10 +140,15 @@ public sealed class DialogueBox
         _typewriter.Start(string.Join('\n', _wrapped.Skip(_first).Take(Math.Max(1, Lines))), revealed);
     }
 
-    /// <summary>Returns true while the box consumed input this update.</summary>
-    public bool Update(float dt, InputMap input, string confirm = "confirm")
+    /// <summary>
+    /// Returns true while the box consumed input this update. <paramref name="confirm"/> advances it; null (the default)
+    /// is the map's confirm action (<see cref="InputMap.Names"/>).
+    /// </summary>
+    public bool Update(float dt, InputMap input, string? confirm = null)
     {
         if (!Active) return false;
+        ArgumentNullException.ThrowIfNull(input);
+        confirm ??= input.Names.Confirm;
         _time += dt;
         _typewriter.Update(dt);
         if (input.Pressed(confirm))
@@ -235,9 +240,16 @@ public sealed class SelectionList
     /// <summary>Whether the option at <paramref name="index"/> can be chosen.</summary>
     public bool IsEnabled(int index) => !_disabled.Contains(index);
 
-    /// <summary>Returns the chosen index when confirmed, otherwise null.</summary>
-    public int? Update(InputMap input, string up = "up", string down = "down", string confirm = "confirm")
+    /// <summary>
+    /// Returns the chosen index when confirmed, otherwise null. Actions left null (the default) are the map's up, down and
+    /// confirm actions (<see cref="InputMap.Names"/>).
+    /// </summary>
+    public int? Update(InputMap input, string? up = null, string? down = null, string? confirm = null)
     {
+        ArgumentNullException.ThrowIfNull(input);
+        up ??= input.Names.Up;
+        down ??= input.Names.Down;
+        confirm ??= input.Names.Confirm;
         int dir = (input.Pressed(down) ? 1 : 0) - (input.Pressed(up) ? 1 : 0);
         if (dir != 0 && _options.Count > 1)
         {

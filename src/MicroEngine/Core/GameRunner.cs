@@ -213,7 +213,7 @@ public sealed class GameLoop
     {
         _compose?.Invoke(builder);
         if (_options.Script is not { } script) return;
-        builder.Schedule.Add(Kernel.FramePhase.Input, "run.script.touches", _ => script.ApplyTouches(_game.UpdateCount, _game.Touch), before: "engine.touch");
+        builder.Schedule.Add(Kernel.FramePhase.Input, "run.script.touches", _ => script.ApplyTouches(_game.UpdateCount, _game.Touch), before: "engine.input.events");
         builder.Schedule.Add(Kernel.FramePhase.PreFixed, "run.script.input", _ =>
         {
             script.Apply(_game.UpdateCount, _game.Input);

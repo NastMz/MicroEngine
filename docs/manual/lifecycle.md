@@ -144,8 +144,8 @@ The phases run in this order; the four fixed phases run once per fixed step, the
 | Phase | Built-in systems | Use it for |
 | --- | --- | --- |
 | `BeginFrame` | `engine.assets` (finishes background loads within the frame budget) | Bookkeeping before the frame |
-| `Input` | `engine.touch` (the on-screen controls) | Input that follows the display rate |
-| `PreFixed` | `engine.input` (samples devices into `Input`) | Work before each step's simulation |
+| `Input` | `engine.input.events` (routes the frame's device events and touches through the input layers; next SDK version), `engine.touch` (the on-screen controls) | Input that follows the display rate |
+| `PreFixed` | `engine.input` (samples every player's actions from their devices; `Input` is player 1's) | Work before each step's simulation |
 | `FixedUpdate` | `engine.time` (`Time`, `UpdateCount`), `engine.scenes` (`Scene.Update`) | Game rules |
 | `Physics` | — | Physics and collision |
 | `PostFixed` | `engine.audio`, `engine.achievements`, `engine.input.end` (edge detection), `engine.assets.playing` | What follows the simulated state |

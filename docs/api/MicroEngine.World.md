@@ -12,16 +12,16 @@ Guide: [Tile maps and collision](../manual/world.md)
 
 Helpers for picking tile sprites from their neighbours.
 
+ [EntityList<T\>](MicroEngine.World.EntityList\-1.md)
+
+Owns entities of a kind. Additions and removals made during iteration are deferred to
+the end of the update, so entities can spawn and destroy each other safely.
+
  [Entity](MicroEngine.World.Entity.md)
 
 A lightweight game object: a position, a hitbox relative to it, and update/draw hooks.
 MicroEngine deliberately prefers small inheritance-based entities over an ECS: the sample
 games have dozens of objects, and plain classes keep game code readable and debuggable.
-
- [EntityList<T\>](MicroEngine.World.EntityList\-1.md)
-
-Owns entities of a kind. Additions and removals made during iteration are deferred to
-the end of the update, so entities can spawn and destroy each other safely.
 
  [TileGrid](MicroEngine.World.TileGrid.md)
 
@@ -52,21 +52,21 @@ Walks the living entities of an [EntityList`1](MicroEngine.World.md) without all
 
 Walks the living entities overlapping the area.
 
- [EntityList<T\>.TypedEntities<TEntity\>.Enumerator](MicroEngine.World.EntityList\-1.TypedEntities\-1.Enumerator.md)
-
-Walks the living entities of type <code class="typeparamref">TEntity</code>.
-
- [MoveResult](MicroEngine.World.MoveResult.md)
-
-What happened during a [Move](MicroEngine.World.TileMotion.md#MicroEngine_World_TileMotion_Move_MicroEngine_RectF_System_Numerics_Vector2_MicroEngine_World_ICollisionGrid_System_Collections_Generic_IReadOnlyList_MicroEngine_RectF__System_Boolean_).
-
  [EntityList<T\>.OverlappingEntities](MicroEngine.World.EntityList\-1.OverlappingEntities.md)
 
 The living entities overlapping an area ([Overlapping](MicroEngine.World.md)), walked without allocating.
 
+ [EntityList<T\>.TypedEntities<TEntity\>.Enumerator](MicroEngine.World.EntityList\-1.TypedEntities\-1.Enumerator.md)
+
+Walks the living entities of type <code class="typeparamref">TEntity</code>.
+
  [EntityList<T\>.TypedEntities<TEntity\>](MicroEngine.World.EntityList\-1.TypedEntities\-1.md)
 
 The living entities of one type ([OfType``1](MicroEngine.World.md)), walked without allocating.
+
+ [MoveResult](MicroEngine.World.MoveResult.md)
+
+What happened during a [Move](MicroEngine.World.TileMotion.md#MicroEngine_World_TileMotion_Move_MicroEngine_RectF_System_Numerics_Vector2_MicroEngine_World_ICollisionGrid_System_Collections_Generic_IReadOnlyList_MicroEngine_RectF__System_Boolean_).
 
 ### Interfaces
 

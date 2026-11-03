@@ -160,21 +160,22 @@ public void Show(string? speaker, params string[] pages)
 
 `pages` [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
 
-### <a id="MicroEngine_UI_DialogueBox_Update_System_Single_MicroEngine_Input_InputMap_System_String_"></a> Update\(float, InputMap, string\)
+### <a id="MicroEngine_UI_DialogueBox_Update_System_Single_MicroEngine_Input_InputMap_System_String_"></a> Update\(float, InputMap, string?\)
 
-Returns true while the box consumed input this update.
+Returns true while the box consumed input this update. <code class="paramref">confirm</code> advances it; null (the default)
+is the map's confirm action ([Names](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Names)).
 
 ```csharp
-public bool Update(float dt, InputMap input, string confirm = "confirm")
+public bool Update(float dt, InputMap input, string? confirm = null)
 ```
 
 #### Parameters
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`input` [InputMap](MicroEngine.Input.InputMap.md)
+`input` InputMap
 
-`confirm` [string](https://learn.microsoft.com/dotnet/api/system.string)
+`confirm` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
 #### Returns
 

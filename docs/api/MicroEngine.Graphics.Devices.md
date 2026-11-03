@@ -74,15 +74,15 @@ generation: once the resource is disposed the handle no longer resolves
 backend object is released only when no submitted work uses it any more (at once on devices that execute command
 lists at [Submit](MicroEngine.Graphics.Devices.IGraphicsDevice.md#MicroEngine_Graphics_Devices_IGraphicsDevice_Submit_MicroEngine_Graphics_Devices_CommandList_)).
 
- [Pipeline](MicroEngine.Graphics.Devices.Pipeline.md)
-
-A graphics pipeline: built-in (device-owned) or custom.
-
  [PipelineDescription](MicroEngine.Graphics.Devices.PipelineDescription.md)
 
 A custom pipeline: requires [Shaders](MicroEngine.Graphics.Devices.GraphicsFeatures.md). The pipeline is bound to the attachment formats
 it renders to: a pass accepts it only when its colour format equals <code class="paramref">ColorFormat</code> and its depth
 attachment format equals <code class="paramref">DepthFormat</code> (null = the pass has no depth attachment).
+
+ [Pipeline](MicroEngine.Graphics.Devices.Pipeline.md)
+
+A graphics pipeline: built-in (device-owned) or custom.
 
  [PremultipliedColor](MicroEngine.Graphics.Devices.PremultipliedColor.md)
 
@@ -119,13 +119,13 @@ Device-owned, cached sampler object for one [SamplerDescription](MicroEngine.Gra
 
 A custom shader stage.
 
- [Texture](MicroEngine.Graphics.Devices.Texture.md)
-
-A texture that pipelines sample.
-
  [TextureFormats](MicroEngine.Graphics.Devices.TextureFormats.md)
 
 Byte-size rules of texture formats, shared by validation and backends.
+
+ [Texture](MicroEngine.Graphics.Devices.Texture.md)
+
+A texture that pipelines sample.
 
  [VertexLayout](MicroEngine.Graphics.Devices.VertexLayout.md)
 

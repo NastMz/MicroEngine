@@ -62,7 +62,7 @@ IInputSource Input { get; }
 
 #### Property Value
 
- [IInputSource](MicroEngine.Input.IInputSource.md)
+ IInputSource
 
 ### <a id="MicroEngine_Core_IPlatform_Letterbox"></a> Letterbox
 

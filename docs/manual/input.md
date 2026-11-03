@@ -24,19 +24,26 @@ flowchart LR
 
 `InputMap.CreateDefault()` is what `Game.CreateInput()` returns unless a game overrides it:
 
-```csharp
-public static InputMap CreateDefault() => new InputMap()
-    .Bind("left", [Key.Left, Key.A], [PadButton.DPadLeft], StickDirection.Left)
-    .Bind("right", [Key.Right, Key.D], [PadButton.DPadRight], StickDirection.Right)
-    .Bind("up", [Key.Up, Key.W], [PadButton.DPadUp], StickDirection.Up)
-    .Bind("down", [Key.Down, Key.S], [PadButton.DPadDown], StickDirection.Down)
-    .Bind("confirm", [Key.Z, Key.Space, Key.Enter, Key.J], [PadButton.A])
-    .Bind("cancel", [Key.X, Key.Backspace, Key.K], [PadButton.B])
-    .Bind("action", [Key.C, Key.L], [PadButton.X])
-    .Bind("pause", [Key.Escape, Key.P], [PadButton.Start]);
-```
+| Action | Keys | Gamepad |
+| --- | --- | --- |
+| `left`, `right`, `up`, `down` | arrows, `A` `D` `W` `S` | d-pad, left stick |
+| `confirm` | `Z`, Space, Enter, `J` | `A` |
+| `cancel` | `X`, Backspace, `K` | `B` |
+| `action` | `C`, `L` | `X` |
+| `pause` | Escape, `P` | Start |
 
-Source: [`src/MicroEngine/Input/Input.cs`](../../src/MicroEngine/Input/Input.cs)
+Source: `InputMap.CreateDefault` in [`src/MicroEngine.Input/InputMap.cs`](../../src/MicroEngine.Input/InputMap.cs)
+
+Keys are positions, named as on a US keyboard: `Key.A` is the key left of `S` whatever the player's layout prints on it,
+so WASD stays in place on AZERTY or Dvorak.
+
+Next SDK version (not published yet: arrives with the next SDK version): the engine's own parts (menus, dialogs, the
+achievements screen, the default touch layout, prompts) read these actions by the names in `InputMap.Names`, an
+`ActionNames` record. A game that calls its actions differently renames them once and every engine part follows:
+
+```csharp
+protected override InputMap CreateInput() => InputMap.CreateDefault(ActionNames.Default with { Confirm = "accept" });
+```
 
 ## Custom bindings and remapping
 
@@ -64,6 +71,35 @@ The `Key` enum covers letters, digits, arrows, Space, Enter, Escape, Backspace, 
 F1-F5, F11, F12. `PadButton` uses Xbox names (`A`, `B`, `X`, `Y`, `Start`, `Back`, shoulders, d-pad, stick clicks).
 `PadAxis` has both sticks and both triggers. Rebinding is code; there is no rebinding screen in the engine.
 
+Next SDK version (not published yet: arrives with the next SDK version): `Key` covers a full-size keyboard (F1-F24,
+punctuation by position such as `Minus`, `Comma` and `Grave`, the ISO key `NonUsBackslash`, both Alt, Control and Super
+keys, Caps Lock, Insert, Delete, Home, End, Page Up/Down, Print Screen, Scroll Lock, Pause, Num Lock and the whole
+keypad), and `PadButton` adds `Guide`, `Misc1`, four back paddles and the touchpad click. The numbers of the earlier
+members do not change.
+
+### Saving bindings
+
+Next SDK version (not published yet: arrives with the next SDK version). A rebinding screen listens for the next press
+and binds it; the press that chose the key never reaches gameplay. Bindings are saved by name (`"Q"`, `"RightTrigger+"`),
+so they stay valid when the engine adds keys:
+
+```csharp
+// "Press a key for jump": the next key or gamepad button of any device.
+listening = Game.InputSystem.ListenForPress(press => Input.BindFrom("jump", press, replace: true));
+
+// Saved in the platform's storage (files, or the page's localStorage in browsers), loaded at start.
+Input.SaveBindings(storage);
+Input.LoadBindings(storage);
+```
+
+| Member | Use |
+| --- | --- |
+| `InputSystem.ListenForPress(pressed)` | Hands the next key-down or button-down to `pressed`, once, and keeps it (and its release) from everything else; dispose the result to stop listening |
+| `BindFrom(action, press, replace)` | Binds the press's key or button; `replace` swaps the action's keys (for a key) or buttons (for a button) |
+| `SaveBindings(storage, slot)` | Writes every action's bindings to an `IStorage` slot (`input-bindings` by default) |
+| `LoadBindings(storage, slot)` | Applies saved bindings to the actions the map has (a removed or renamed action does not come back); false and the defaults stay when nothing was saved or the data is unreadable, which is set aside |
+| `ExportBindings()`, `ImportBindings(set)` | The same data as an `InputBindingSet`, to keep inside a save of your own (`SaveStore.Save("bindings", Input.ExportBindings())`) |
+
 ## Querying actions
 
 | Method | Returns |
@@ -77,7 +113,9 @@ F1-F5, F11, F12. `PadButton` uses Xbox names (`A`, `B`, `X`, `Y`, `Start`, `Back
 | `Vector(left, right, up, down)` | A 2D direction at most 1 long: keys give unit vectors with normalised diagonals, sticks their deflection |
 | `LastDevice` | `Keyboard`, `Gamepad`, `Touch` or `Other`: what pressed an action last |
 | `PadConnected` | Whether a gamepad is connected |
-| `Pointer` | The mouse over the virtual canvas: position in canvas pixels and buttons |
+| `Pointer` | The mouse over the virtual canvas: position in canvas pixels and buttons; next SDK version: also a finger no on-screen control took, and the wheel's turn since the previous step (`Wheel`) |
+| `Pointers` | Next SDK version: every pointer (the mouse, each finger or pen no on-screen control took), with its id and position in canvas pixels |
+| `Consume(action)` | Next SDK version: takes the action for the reader that acted on it, see [Input layers](#input-layers) |
 | `Actions` | Every bound action name |
 
 Digital code keeps working everywhere: a stick or touch joystick also presses the direction actions past its
@@ -149,6 +187,92 @@ Source: [`games/CourtyardKey/Scenes/TitleScene.cs`](../../games/CourtyardKey/Sce
 prompts as glyphs: key caps, coloured face buttons, touch rings ([UI widgets](ui.md#prompt-glyphs)). The SDL backend
 names the pad family from `SDL_GetGamepadType`, the browser host from the pad's name; other sources report Xbox
 (`IInputSource.PadStyle`).
+
+## Devices, players and layers
+
+Next SDK version (not published yet: arrives with the next SDK version). Under the actions, input is a stream of
+device events: every device has an id (`DeviceId`) and reports what happens on it, in order (keys, text, pointers with
+touches as pointers, the wheel, gamepad buttons and axes, devices connecting and disconnecting). The events pass
+through *input layers*, from the highest down; what no layer takes becomes the state the players' actions are sampled
+from. `Game.InputSystem` holds it all.
+
+```mermaid
+flowchart LR
+  accTitle: Input routing
+  accDescr: Device events from the platform's input backend, the touch screen and scripts pass through the input layers from the user interface down to the on-screen controls; events no layer takes become device state, each player's InputMap is sampled from the devices that player hears, and the game reads actions and the update's events.
+  backend["Platform input backend"] --> layers
+  touch["Touch screen (fingers as pointers)"] --> layers
+  sent["Scripts and tests (InputSystem.Send)"] --> layers
+  subgraph layers["Input layers"]
+    ui["UI (300)"] --> vc["On-screen controls (200)"] --> gl["Game layers (100)"]
+  end
+  layers -- "events no layer took" --> state["Device state and InputSystem.Events"]
+  state --> p1["Player 1: Game.Input"]
+  state --> p2["Player 2..n: Players[i].Map"]
+```
+
+### One player, zero setup
+
+With no setup there is one player and they own every device: `Game.Input` (player 1's map) hears the keyboard, the
+mouse, every gamepad and the fingers no on-screen control took. A single-player game never deals with players.
+
+### Local multiplayer
+
+Each player has a map of their own (`Players[i].Map`), sampled from the devices paired with them. Pair devices
+explicitly; a device paired with a player is heard only by that player, so a keyboard player and a pad player never
+cancel each other out. Once player 1 has a device of their own, devices nobody was given drive nobody: a press on one
+raises `Players.UnpairedPress`, the moment to let it join.
+
+```csharp
+var players = Game.InputSystem.Players;
+var keyboard = Game.InputSystem.Devices.Devices.First(d => d.Kind == DeviceKind.Keyboard).Id;
+players[0].Pair(keyboard);                      // player 1 plays on the keyboard
+players.UnpairedPress += (device, press) =>     // a press on a free pad joins as the next player
+{
+    if (players.Count < 4) players.Join(device);  // a copy of player 1's bindings, or Join(device, map)
+};
+var move2 = players[1].Map.Vector("left", "right", "up", "down");
+```
+
+| Member | Use |
+| --- | --- |
+| `Players[i]`, `Players.Count` | The players (0 is player 1); each has `Map`, `Devices` and `Pair(device)` |
+| `Join(device, map)` | Adds a player paired with the device, with `map` or a copy of player 1's bindings and settings |
+| `Add(map)`, `Remove(player)` | A player with no device yet; removing frees their devices (player 1 stays) |
+| `OwnerOf(device)` | Who hears it: the player it is paired with, else player 1 while they have no device of their own, else nobody |
+| `InputSystem.Devices.Devices` | The connected devices (`InputDeviceInfo`: id, kind, name, pad style, player number shown by the pad) with `Connected` and `Disconnected` events |
+| `InputSystem.Rumble(player, low, high, seconds)` | Vibrates the pads that player hears, where the backend can |
+
+The other players' actions and every pairing are part of the state hash ([testing](../examples/testing.md)); a
+single player without pairings hashes as before.
+
+### Input layers
+
+A layer (`IInputLayer`) sees each event before everything below it and returns true to take it. Taking a press also
+takes what it starts: the same pointer's moves until it lifts, the same key's release. The engine's on-screen controls
+are a layer (order 200): a finger that lands on a control is the control's, any other finger goes on to gameplay as a
+pointer, so tap-to-move, drag and pinch work next to a virtual d-pad. A menu or text field adds itself above them:
+
+```csharp
+Game.InputSystem.Layers.Add(menu, InputLayerOrder.UI);   // 300: sees events before the on-screen controls
+```
+
+Inside one step, scenes and widgets that read the same action resolve who acts on it with `Input.Consume(action)`:
+once consumed, the action reads as up for everyone (not down, pressed or released) until it is let go.
+
+### Events and text
+
+`InputSystem.Events` lists the events no layer took since the previous step, in order, for what actions cannot say:
+where a tap landed, the order of presses within a frame, a device connecting. Each event is seen by exactly one step.
+Text is a channel of its own: `InputSystem.Text.Start(caret)` turns text input on (the on-screen keyboard on phones,
+input methods on desktops; `caret` places the candidate list), `Typed` holds the characters typed since the previous
+step and `Composition` the text an input method is still composing; `Stop()` turns it off. Backspace and Enter stay
+keys.
+
+Which backends deliver what: the headless platform takes events from tests (`HeadlessPlatform.Devices.Send`); the SDL
+and raylib backends are still read as one polled device in this version (their own events, every gamepad and text
+arrive with the next step of this work). Polled sources (`IInputSource`: a host's `PlatformRequest.ExtraInput`, a
+test's `HeadlessPlatform.Keys`) are devices of their own, read every step.
 
 ## Sticks, dead zones and directions
 
@@ -261,7 +385,11 @@ controls fit in the letterbox bars. Smaller controls (`Radius`, `TouchLayout.Sca
 - **Buttons tolerate small slides** (`SlideTolerance`) and release beyond them; nothing stays pressed after a finger
   leaves.
 - **Quick taps are never lost.** A tap that starts and ends within one frame is kept until a simulation step has read
-  it, as keys are.
+  it, as keys are. Next SDK version: it is kept however many frames run before that step (taps expire by steps, not
+  by drawn frames).
+- **Fingers that land on no control go to the game.** Next SDK version: they reach gameplay as pointers
+  (`Input.Pointers`, `Input.Pointer`, `InputSystem.Events`) in canvas pixels; a finger that started on a control is
+  never also a pointer.
 - **Cancellation.** A cancelled touch, a rotation or resize (the layout moves), focus loss and suspension release every
   finger. Toggled buttons keep their state.
 - **Coexistence.** Touch, keyboard and gamepad are read together: a keyboard can jump while a thumb holds the d-pad.
@@ -446,9 +574,11 @@ sound) move to the bottom centre, between the thumbs. Details: [Embedding](../ex
 
 ## Limitations
 
-- One gamepad at a time (the first connected; the next one takes over when it is unplugged). No gamepad rumble API.
+- One gamepad at a time on the SDL and raylib backends (the first connected; the next one takes over when it is
+  unplugged), and no rumble there yet; the input system itself handles any number of pads and players.
 - The mouse is readable (`Input.Pointer`) but cannot be bound to actions; no game uses it.
-- No rebinding screen and no layout editor: bindings and touch layouts are code.
+- No rebinding screen and no layout editor in the engine: bindings and touch layouts are code (next SDK version:
+  `ListenForPress`, `BindFrom` and `SaveBindings` are the parts of one).
 - iOS gives no haptic feedback (see Feedback). Android vibration needs the `VIBRATE` permission (the demo host has it).
 - Touch controls are drawn in screen pixels with simple shapes and the backend's own font (SDL's 8×8 debug font,
   raylib's default font); there are no images or custom fonts on controls.
