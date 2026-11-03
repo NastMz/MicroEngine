@@ -15,6 +15,15 @@ Not published yet. Behaviour that changes:
   that declares a member named `Objects` now hides the inherited one (compiler warning CS0108): rename yours, or read
   the engine's as `base.Objects`. Once a scene reads `Objects`, its `Update` receives the step on the world's clock
   (equal to the engine's step unless the game scales or freezes that clock).
+- `Entity` and `EntityList<T>` (namespace `MicroEngine.World`) are removed from the SDK. **Migration:** keep a
+  scene's objects in `Scene.Objects` (an `IWorld`: create an entity, attach your own class to it, walk them with
+  `All<T>()`, destroy them with `Destroy`), or in plain classes of your own held in a `List<T>`, as the platformer
+  example now keeps its coins. What maps where: an `Entity` added to a list is `Objects.Create()` plus
+  `Objects.Attach(id, yourObject)`; `Position` is `Objects.Local(id).Position2D`; `Alive` and `Destroy()` are
+  `Objects.IsAlive(id)` and `Objects.Destroy(id)`; `Removed()` is an attachment implementing `IDestroyedCallback`,
+  told when the world ends the step; `EntityList.Update` is a `foreach` over `Objects.All<T>()`; `OfType<T>()` and
+  `Overlapping(area)` are filtered walks over it. A new entity is visible at once to every walk that starts after it
+  is created (there is no deferred add to flush).
 - `TileMotion.Move` is a swept test: a fast box stops against an extra solid rectangle thinner than a sub-step instead of
   passing through it, and an extra solid whose top edge is inside the lower half of a box moving down (a platform that
   rose into a standing player) lifts the box onto its top, so `HitFloor` and `IsOnGround` are true instead of the box

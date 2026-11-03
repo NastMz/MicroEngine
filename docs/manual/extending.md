@@ -15,7 +15,7 @@ MicroEngine's tests.
 | a scene transition of your own | subclass `Transition` | `Scenes.Push/Replace(scene, transition)` |
 | another audio device (for example SDL's audio under raylib) | `IAudioDevice` | `PlatformRequest.Audio` ([Backends](backends.md#replacing-a-part)) |
 | change or wrap a platform, or add a new one | `IPlatform` | a `PlatformProfile` in the launcher's `PlatformCatalog` |
-| game objects with deferred spawning and removal | subclass `Entity` | `EntityList<T>` ([Tile maps and collision](world.md#entities)) |
+| game objects with deferred spawning and removal | subclass `Entity` (published SDK; next SDK version: `Scene.Objects`, an `IWorld`) | `EntityList<T>` ([Tile maps and collision](world.md#entities); [The scene world](scenes.md#the-scene-world)) |
 | your own on-screen controls | records of `TouchLayout` | `Game.CreateTouchLayout` ([Input](input.md#touch-controls)) |
 
 The window, the renderer and the graphics device share one graphics context, so they are replaced together, as a

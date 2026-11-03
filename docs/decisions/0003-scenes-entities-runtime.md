@@ -1,6 +1,6 @@
 # 0003 — Scene stack, plain entities, fixed-step runner, raylib behind IPlatform
 
-Status: Accepted (2026-10-29)
+Status: Accepted (2026-10-29). Amended by [ADR 0030](0030-one-object-model.md): entities are ids with transforms and attachments in a scene's `IWorld`; `Entity`/`EntityList<T>` survive only as a transitional adapter outside the engine packages.
 
 ## Decision
 

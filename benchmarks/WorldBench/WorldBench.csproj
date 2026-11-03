@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The scene world's hot paths (SceneWorld): entity churn, iteration, attachment lookup, transform access and draw
+       positions. Run it in Release with dotnet run (project benchmarks/WorldBench). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>WorldBench</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Scene/MicroEngine.Scene.csproj" />
+  </ItemGroup>
+</Project>

@@ -76,7 +76,7 @@ does. See [Input](../manual/input.md).
 
 ## Entities in an `EntityList<T>`
 
-Plain classes deriving from `Entity` live in an `EntityList<T>`. Adds and removes made while the list updates are
+Published SDK; removed in the next SDK version: a scene keeps its objects in `Scene.Objects`, an `IWorld` ([The scene world](../manual/scenes.md#the-scene-world)). Plain classes deriving from `Entity` live in an `EntityList<T>`. Adds and removes made while the list updates are
 deferred, so entities can spawn and destroy each other safely. Courtyard Key queues spawns and flushes them
 between update phases. From [`games/CourtyardKey/Scenes/PlayScene.cs`](../../games/CourtyardKey/Scenes/PlayScene.cs):
 

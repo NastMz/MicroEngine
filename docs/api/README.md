@@ -27,7 +27,7 @@ with the [tutorial](../tutorial/README.md).
 | [MicroEngine.Scenes](MicroEngine.Scenes.md) | The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks. | [Scenes](../manual/scenes.md) |
 | [MicroEngine.Sdl](MicroEngine.Sdl.md) | The SDL 3 platform: Windows, Linux, macOS, Android and iOS. | [Backends and platforms](../manual/backends.md) |
 | [MicroEngine.UI](MicroEngine.UI.md) | Pixel-art widgets: dialogue boxes, menus, typewriter text, themes, achievement banners and list. | [UI widgets](../manual/ui.md) |
-| [MicroEngine.World](MicroEngine.World.md) | Tile layers, collision grids, swept movement against tiles (`TileMotion`), autotiling, drawing tiles and plain entities. | [Tile maps and collision](../manual/world.md) |
+| [MicroEngine.World](MicroEngine.World.md) | Tile layers, collision grids, swept movement against tiles (`TileMotion`), autotiling and drawing tiles. | [Tile maps and collision](../manual/world.md) |
 | [MicroEngine](MicroEngine.md) | Basic value types: colours, rectangles, maths and easing helpers. | [Graphics](../manual/rendering.md) |
 
 ## Reading a page

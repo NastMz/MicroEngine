@@ -16,7 +16,7 @@ described in [Physics worlds](#physics-worlds).
 | `TileMotion` | moves a box through a grid: `Move`, `IsOnGround`, `TouchedFlags`, `IsSolidAt` |
 | `TileRenderer` | draws the visible cells of a layer, asking the game which sprite each id uses |
 | `Autotile` | `Mask4`: which of the four neighbours match, to pick edge and corner sprites |
-| `Entity`, `EntityList<T>` | optional base class and list for game objects, with safe spawning and removal |
+| `Entity`, `EntityList<T>` | optional base class and list for game objects, with safe spawning and removal (removed in the next SDK version: a scene keeps its objects in `Scene.Objects`, an `IWorld`, [The scene world](scenes.md#the-scene-world)) |
 
 ## Maps as text
 
@@ -118,8 +118,9 @@ public override void Update(float dt)
 
     // Objects against the player: the game compares rectangles.
     foreach (var coin in _coins)
-        if (coin.Bounds.Intersects(_player)) { coin.Destroy(); _collected++; }
-    _coins.Update(dt);                                     // updates, then removes destroyed coins
+        if (coin.Bounds.Intersects(_player)) { coin.Collected = true; _collected++; }
+    _coins.RemoveAll(static coin => coin.Collected);      // removed after the walk, never during it
+    foreach (var coin in _coins) coin.Update(dt);
 }
 ```
 
@@ -136,38 +137,46 @@ A top-down game uses the same call without gravity: see the gardener and the sli
 rectangles: `a.Intersects(b)` is true when they overlap (sharing an edge does not count). `RectF.FromCenter`,
 `Offset`, `Inflate` and `Intersection` build and adjust the rectangles.
 
-With an `EntityList`, `list.Overlapping(rect)` returns the living entities whose bounds overlap a rectangle. Next SDK version (not published yet: arrives with the next SDK version):
+With an `EntityList` (removed in the next SDK version: a scene keeps its objects in `Scene.Objects`, an `IWorld`), `list.Overlapping(rect)` returns the living entities whose bounds overlap a rectangle. Next SDK version (not published yet: arrives with the next SDK version):
 walking an `EntityList`, `OfType<T>()` or `Overlapping` with `foreach` allocates nothing. There is no
 spatial index: checking every pair is fast for the few hundred objects a scene of a pixel-art game holds.
 A game with thousands of objects would bucket them by tile itself.
 
 ## Entities
 
-`Entity` is an optional base class: a `Position`, a `Hitbox` relative to it (`Bounds` in world pixels), virtual
-`Update` and `Draw`, a `Depth` for draw order, and `Destroy()`. `EntityList<T>` updates and draws a list of them:
+Removed in the next SDK version (not published yet): `Entity` and `EntityList<T>` leave the SDK. A scene keeps its
+objects in `Scene.Objects`, an `IWorld` with entity ids, transforms, attachments, interpolation for drawing and a
+clock ([The scene world](scenes.md#the-scene-world)), or in plain classes of its own, as the platformer example does
+with its coins:
 
 <!-- code: samples/Examples/Examples/PlatformerExample.cs#coin -->
 ```csharp
-/// <summary>An Entity: a position, a hitbox relative to it, Update/Draw, and Destroy to leave its list.</summary>
-public sealed class Coin : Entity
+/// <summary>A game object as a plain class: a position, a box around it, its own Update and Draw.</summary>
+public sealed class Coin
 {
     private float _time;
 
-    public Coin() => Hitbox = new RectF(0, 0, 8, 8);
+    public Vector2 Position { get; init; }
+    public RectF Bounds => new(Position.X, Position.Y, 8, 8);
+    public bool Collected { get; set; }
 
-    public override void Update(float dt) => _time += dt;
+    public void Update(float dt) => _time += dt;
 
-    public override void Draw(IRenderer r) =>
-        r.FillCircle(Center + new Vector2(0, MathF.Sin(_time * 4)), 4, Color.Hex("ffec27"));
+    public void Draw(IRenderer r) =>
+        r.FillCircle(Bounds.Center + new Vector2(0, MathF.Sin(_time * 4)), 4, Color.Hex("ffec27"));
 }
 ```
+
+In the published SDK, `Entity` is an optional base class: a `Position`, a `Hitbox` relative to it (`Bounds` in
+world pixels), virtual `Update` and `Draw`, a `Depth` for draw order, and `Destroy()`; `EntityList<T>` updates and
+draws a list of them:
 
 - Adding during an update is deferred to the end of that update, and destroyed entities leave the list then (calling
   `Removed()`), so entities can spawn and destroy each other while the list is iterated.
 - `Draw(r, camera)` sorts by `Depth` (top-down games use the feet's Y, so lower objects draw in front) and skips
   entities outside the camera's view.
 
-Using `Entity` is a choice, not a requirement: the tutorial's player and slimes are plain classes. MicroEngine has no
+Using `Entity` was always a choice, not a requirement: the tutorial's player and slimes are plain classes. MicroEngine has no
 entity-component system.
 
 ## Drawing tiles
@@ -264,6 +273,6 @@ at once.
 - [Tutorial step 6: tile map and camera](../tutorial/06-garden.md), [step 7: collisions](../tutorial/07-collisions.md)
 - [Graphics](rendering.md#tile-maps): drawing layers
 - API: [`TileMotion`](../api/MicroEngine.World.TileMotion.md), [`TileGrid`](../api/MicroEngine.World.TileGrid.md),
-  [`EntityList<T>`](../api/MicroEngine.World.EntityList-1.md),
+  [`IWorld`](../api/MicroEngine.Scenes.IWorld.md),
   [`IPhysicsWorld2D`](../api/MicroEngine.Physics.IPhysicsWorld2D.md),
   [`TilePhysicsWorld2D`](../api/MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md)

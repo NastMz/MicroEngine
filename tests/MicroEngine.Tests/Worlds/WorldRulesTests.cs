@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
+using MicroEngine.Testing;
 
 namespace MicroEngine.Tests.Worlds;
 
@@ -389,14 +390,13 @@ public sealed class WorldRulesTests
         int count = 0;
         foreach (var _ in world.All<Tag>()) count++;
         foreach (var _ in world.Children(parent)) count++;
+        Assert.AreEqual(100, count);
 
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        foreach (var _ in world.All<Tag>()) count++;
-        foreach (var _ in world.Children(parent)) count++;
-        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        Assert.AreEqual(200, count);
-        Assert.AreEqual(0, allocated);
+        AllocationAssert.None(() =>
+        {
+            foreach (var _ in world.All<Tag>()) count++;
+            foreach (var _ in world.Children(parent)) count++;
+        }, calls: 20, because: "walking attachments and children");
     }
 
     // ------------------------------------------------------------------ hierarchy

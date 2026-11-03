@@ -109,6 +109,19 @@ public sealed class PlatformerExampleTests
     }
 
     [TestMethod]
+    public void TheLevelPlacesItsFourCoinsAndKeepsThoseThePlayerDoesNotTouch()
+    {
+        var game = new ExamplesGame(Path.GetTempPath());
+        game.InitializeForTest(new HeadlessPlatform());
+        var scene = new PlatformerExample();
+        game.Scenes.Push(scene);
+        for (int i = 0; i < 60; i++) game.StepForTest();
+
+        Assert.AreEqual(4, scene.CoinsLeft);
+        Assert.AreEqual(0, scene.Collected);
+    }
+
+    [TestMethod]
     public void JumpsUpThroughAOneWayPlatformLandsOnItAndDropsBack()
     {
         var game = new ExamplesGame(Path.GetTempPath());
