@@ -10,7 +10,7 @@ Base class for a game. Subclasses declare [Settings](MicroEngine.Core.Game.md#Mi
 [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) and push the first scene. The runner owns the loop.
 
 ```csharp
-public abstract class Game : IEngineModule
+public abstract class Game : IEngineModule, IStateHashed
 ```
 
 #### Inheritance
@@ -20,7 +20,8 @@ public abstract class Game : IEngineModule
 
 #### Implements
 
-IEngineModule
+IEngineModule, 
+IStateHashed
 
 ## Examples
 
@@ -271,7 +272,9 @@ public bool QuitRequested { get; }
 
 ### <a id="MicroEngine_Core_Game_Random"></a> Random
 
-Deterministic per-run randomness; seeded by the launcher.
+Deterministic per-run randomness, seeded by the launcher ([Seed](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_Seed)): a
+[SeededRandom](MicroEngine.Kernel.SeededRandom.md), which draws exactly what <code>new Random(seed)</code> draws and whose state is part of the
+per-step state hash ([ComputeStateHash](MicroEngine.Core.Game.md#MicroEngine_Core_Game_ComputeStateHash_System_Boolean_)).
 
 ```csharp
 public Random Random { get; }
@@ -408,6 +411,36 @@ public int Width { get; }
 
 ## Methods
 
+### <a id="MicroEngine_Core_Game_ComputeStateHash_System_Boolean_"></a> ComputeStateHash\(bool\)
+
+Hashes the simulation state now ([StateHasher](MicroEngine.Kernel.StateHasher.md)), in sections: <code>engine.time</code> (update count and
+time), <code>engine.random</code> ([Random](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Random)), <code>engine.input</code> ([Input](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Input) after sampling),
+<code>engine.audio</code> (the music playing or paused and the volumes), <code>engine.assets</code> (how many assets are
+loaded), <code>engine.achievements</code> (when on), <code>engine.scenes</code> (the stack and the transition), one
+<code>scene[i]:Type</code> per scene from the bottom (its age, coroutines and tweens, then [HashState](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_HashState_MicroEngine_Kernel_StateHasher_))
+and <code>game</code> ([HashState](MicroEngine.Core.Game.md#MicroEngine_Core_Game_HashState_MicroEngine_Kernel_StateHasher_)). The loop records it after every fixed step of a run given a
+[StateTrace](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_StateTrace); drawing never changes it.
+
+```csharp
+public StepHash ComputeStateHash(bool sections = false)
+```
+
+#### Parameters
+
+`sections` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the result carries each section's hash, to name the state that differs.
+
+#### Returns
+
+ StepHash
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The game has not started.
+
 ### <a id="MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_"></a> Configure\(EngineBuilder\)
 
 Called once when the game starts, after the built-in services and systems were registered and before
@@ -448,6 +481,22 @@ protected virtual TouchLayout CreateTouchLayout()
 #### Returns
 
  [TouchLayout](MicroEngine.Input.TouchLayout.md)
+
+### <a id="MicroEngine_Core_Game_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
+
+Adds the game's own simulation state to the per-step state hash ([ComputeStateHash](MicroEngine.Core.Game.md#MicroEngine_Core_Game_ComputeStateHash_System_Boolean_)), after the
+engine's sections, in a section named <code>game</code>: the fields of this class that decide what happens next
+(progress, a session's lives and score...). Leave out what only drawing or the platform uses (caches written while
+drawing, textures, save locations). The default adds nothing; scenes add their own state
+([HashState](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_HashState_MicroEngine_Kernel_StateHasher_)).
+
+```csharp
+public virtual void HashState(StateHasher hash)
+```
+
+#### Parameters
+
+`hash` StateHasher
 
 ### <a id="MicroEngine_Core_Game_InitializeForTest_MicroEngine_Core_IPlatform_System_Int32_"></a> InitializeForTest\(IPlatform, int\)
 

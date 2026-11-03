@@ -1,5 +1,6 @@
 using AssetGallery;
 using MicroEngine.Core;
+using MicroEngine.Kernel;
 using MicroEngine.Testing;
 
 namespace Samples.Tests;
@@ -10,14 +11,38 @@ public sealed class GalleryStateTraceTests
 {
     private static InputScript Tour() => InputScript.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scripts", "tour.script")));
 
-    [TestMethod]
-    public void TwoRunsOfTheTourRecordTheSameTraceAndDrawingChangesNothing()
+    #region trace
+    /// <summary>Plays the tour headless (one fixed step per frame) and records the state hash after every step.</summary>
+    private static StateTrace Record(string captures)
     {
-        var first = StateTraceRuns.Run(new GalleryGame(), Tour());
-        var second = StateTraceRuns.Run(new GalleryGame(), Tour());
-        Assert.AreEqual(112L, first.Result.Updates, "the tour ran to its end");
-        StateTraceRuns.AssertIdentical(first.Trace, second.Trace, "gallery tour");
-        StateTraceRuns.AssertDrawingChangesNothing(first, "gallery tour");
+        var game = new GalleryGame();
+        var trace = new StateTrace { Sections = true };
+        var result = GameRunner.Run(game, HeadlessPlatform.For(game.Settings),
+            new RunOptions { Script = Tour(), CaptureDirectory = captures, StateTrace = trace });
+        Assert.IsNull(result.Error);
+        return trace;
+    }
+
+    [TestMethod]
+    public void TwoRunsOfTheTourRecordTheSameTrace()
+    {
+        var captures = Directory.CreateTempSubdirectory("gallery-trace-").FullName;
+        var first = Record(captures);
+        var second = Record(captures);
+        Assert.AreEqual(112, first.Steps.Count, "one hash per update of the tour");
+        var divergence = StateTrace.FirstDivergence(first, second);
+        Assert.IsNull(divergence, divergence?.ToString()); // e.g. "state diverges at update 41, section 'scene[0]:GalleryScene'"
+        Directory.Delete(captures, true);
+    }
+    #endregion
+
+    [TestMethod]
+    public void DrawingTheTourNeverChangesTheHash()
+    {
+        var run = StateTraceRuns.Run(new GalleryGame(), Tour());
+        Assert.AreEqual(112L, run.Result.Updates, "the tour ran to its end");
+        StateTraceRuns.AssertIdentical(run.Trace, StateTraceRuns.Run(new GalleryGame(), Tour()).Trace, "gallery tour");
+        StateTraceRuns.AssertDrawingChangesNothing(run, "gallery tour");
     }
 
     [TestMethod]

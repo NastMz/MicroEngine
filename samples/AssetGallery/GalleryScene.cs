@@ -71,6 +71,7 @@ public sealed class GalleryScene(GalleryGame game) : Scene
 
     public override void Exit() => _level?.Dispose();
 
+    #region hash-state
     /// <summary>
     /// The gallery's simulation state for the per-step state hash: the sampling switch and the level scope (created,
     /// loading, loaded). The status lines and the glyph pages are written while drawing, so they stay out.
@@ -82,6 +83,7 @@ public sealed class GalleryScene(GalleryGame game) : Scene
         hash.Add(_loading is not null);
         hash.Add(LevelLoaded);
     }
+    #endregion
 
     public override void Draw(IRenderer r)
     {
