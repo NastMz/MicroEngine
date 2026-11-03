@@ -43,7 +43,7 @@ public sealed class KeyboardTests
 
     private (bool Down, bool Pressed, bool Released) Frame()
     {
-        _platform!.PollEvents();
+        _platform!.PumpEvents(MicroEngine.NativeChecks.IgnoredEvents.Instance);
         _map.Sample(_platform.Input);
         var state = (_map.Down("jump"), _map.Pressed("jump"), _map.Released("jump"));
         _map.EndUpdate();

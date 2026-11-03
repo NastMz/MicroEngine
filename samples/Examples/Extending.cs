@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using MicroEngine;
 using MicroEngine.Audio;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Platform;
 using MicroEngine.Scenes;
 
 namespace Examples;
@@ -45,7 +47,9 @@ public sealed class CurtainTransition(float duration = 0.6f) : Transition(durati
 #region platform
 /// <summary>
 /// A platform of your own does not have to start from nothing: this one wraps any other platform and counts the
-/// frames it presents (telemetry, a frame-rate overlay, a recorder would hook in the same place).
+/// frames it presents (telemetry, a frame-rate overlay, a recorder would hook in the same place). It forwards every
+/// member, the capability query included, so the wrapped platform's optional features (display control, touch screen,
+/// diagnostics...) stay available.
 /// </summary>
 public sealed class CountingPlatform(IPlatform inner) : IPlatform
 {
@@ -54,12 +58,12 @@ public sealed class CountingPlatform(IPlatform inner) : IPlatform
     public IGraphicsDevice Graphics => inner.Graphics;
     public IAudioDevice Audio => inner.Audio;
     public IInputSource Input => inner.Input;
-    public ITouchScreen? Touch => inner.Touch;
-    public bool CloseRequested => inner.CloseRequested;
-    public double Now => inner.Now;
-    public bool RealTime => inner.RealTime;
-    public bool Suspended => inner.Suspended;
-    public void PollEvents() => inner.PollEvents();
+    public IMonotonicClock Clock => inner.Clock;
+    public bool PumpEvents(IEngineEventSink sink) => inner.PumpEvents(sink);
+    public ISurface? MainSurface => inner.MainSurface;
+    public bool CanBlock => inner.CanBlock;
+    public bool TryGetCapability<T>([NotNullWhen(true)] out T? capability) where T : class => inner.TryGetCapability(out capability);
+    public Color Letterbox { get => inner.Letterbox; set => inner.Letterbox = value; }
     public IRenderer BeginFrame() => inner.BeginFrame();
     public void EndFrame()
     {

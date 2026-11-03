@@ -128,7 +128,7 @@ public sealed class PlaythroughTests
         {
             var game = new MeadowGame(TempDir(), new LaunchOptions(start, Level: 4));
             var platform = new HeadlessPlatform();
-            var result = GameRunner.Run(game, platform, new RunOptions { MaxUpdates = 240 });
+            var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, MaxUpdates = 240 });
             Assert.IsNull(result.Error, $"{start}: {result.Error}");
             Assert.AreEqual(0, game.MissingSounds.Count, $"{start}: missing {string.Join(", ", game.MissingSounds)}");
         }

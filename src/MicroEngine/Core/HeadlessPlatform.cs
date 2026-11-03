@@ -2,25 +2,45 @@ using System.Numerics;
 using MicroEngine.Audio;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Platform;
 
 namespace MicroEngine.Core;
 
 /// <summary>
-/// A windowless platform: deterministic time by default (<see cref="RealTime"/> is false), no devices, and a renderer that counts calls (or, with
-/// <see cref="Rasterize"/>, also records them and draws them with the CPU reference rasterizer). Used by automated tests
-/// and CI to play whole games through scripts.
+/// A windowless platform: no devices, and a renderer that counts calls (or, with <see cref="Rasterize"/>, also records
+/// them and draws them with the CPU reference rasterizer). Used by automated tests and CI to play whole games through
+/// scripts. Its surface has the canvas's size; tests drive its events by hand (<see cref="Resize"/>, <see cref="Focus"/>,
+/// <see cref="Suspend"/>, <see cref="Resume"/>, <see cref="RequestQuit"/>), which the next event pump delivers in order.
+/// It has no time-mode preference: a run that should advance one step per frame says so
+/// (<see cref="RunOptions.TimeMode"/>; the launcher's <c>--headless</c> does).
 /// </summary>
 public sealed class HeadlessPlatform : IPlatform
 {
     private readonly int _width, _height;
     private HeadlessRenderer _renderer;
     private HeadlessGraphicsDevice _graphics = new();
+    private (int Width, int Height) _surfaceSize;
+    private readonly HostSurface _surface;
+    private readonly Kernel.CapabilityRegistry _capabilities = new();
+    private readonly Queue<Action<IEngineEventSink>> _pending = new();
+    private readonly IAudioDevice? _suppliedAudio;
+    private readonly IInputSource _input;
+    private bool _suspended, _quitAsked, _disposed;
+    private bool? _focused;
+
     /// <summary>Creates a headless platform whose renderer reports a <paramref name="width"/> × <paramref name="height"/> canvas.</summary>
-    public HeadlessPlatform(int width = 320, int height = 180)
+    public HeadlessPlatform(int width = 320, int height = 180) : this(width, height, null) { }
+
+    private HeadlessPlatform(int width, int height, PlatformRequest? request)
     {
         (_width, _height) = (width, height);
+        _surfaceSize = (width, height);
         _renderer = new HeadlessRenderer(width, height);
         TouchScreen = new HeadlessTouchScreen(new Vector2(width * 4, height * 4));
+        _surface = new HostSurface(0, () => _surfaceSize, () => 1f, () => false);
+        _capabilities.Add<ITouchScreen>(TouchScreen);
+        if (request?.Audio is not null) _suppliedAudio = request.CreateAudio(() => SilentAudio);
+        _input = request?.CombineInput(Keys) ?? Keys;
     }
 
     /// <summary>
@@ -44,30 +64,47 @@ public sealed class HeadlessPlatform : IPlatform
     public IGraphicsDevice Graphics => _graphics;
     /// <summary>The silent audio device, typed so tests can read <see cref="SilentAudioDevice.Played"/>.</summary>
     public SilentAudioDevice SilentAudio { get; } = new();
-    /// <summary>The same device as <see cref="SilentAudio"/>.</summary>
-    public IAudioDevice Audio => SilentAudio;
+    /// <summary>The device the request supplied (<see cref="PlatformRequest.Audio"/>), otherwise <see cref="SilentAudio"/>.</summary>
+    public IAudioDevice Audio => _suppliedAudio ?? SilentAudio;
     /// <summary>The input tests set by hand (keys, gamepad, pointer).</summary>
     public HeadlessInput Keys { get; } = new();
-    /// <summary>The same source as <see cref="Keys"/>.</summary>
-    public IInputSource Input => Keys;
-    /// <summary>A touch screen tests can touch; by default 4× the canvas, not touch-first, no safe-area insets.</summary>
+    /// <summary><see cref="Keys"/>, read together with the request's extra sources (<see cref="PlatformRequest.ExtraInput"/>) when there are any.</summary>
+    public IInputSource Input => _input;
+    /// <summary>A touch screen tests can touch; by default 4× the canvas, not touch-first, no safe-area insets. Also the host's <see cref="ITouchScreen"/> capability.</summary>
     public HeadlessTouchScreen TouchScreen { get; }
     /// <summary>The same screen as <see cref="TouchScreen"/>.</summary>
     public ITouchScreen Touch => TouchScreen;
-    /// <summary>Set it to true to stop the loop at the next frame, as if the window closed.</summary>
-    public bool CloseRequested { get; set; }
     /// <summary>
-    /// A monotonic clock in seconds since the platform was created. The loop owns time: in deterministic time (the
-    /// default here) it never reads this clock to decide how many steps a frame runs.
+    /// Set it to true to ask the game to quit at the next event pump, as if the window's close button was pressed; the
+    /// request is delivered once while it stays true. Setting it back to false allows a later request.
     /// </summary>
-    public double Now => _clock.Elapsed.TotalSeconds;
-    private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
-    /// <summary>False: runs that choose no time mode advance exactly one update per frame.</summary>
-    public bool RealTime => false;
+    public bool CloseRequested
+    {
+        get => _quitAsked;
+        set
+        {
+            if (value && !_quitAsked) _pending.Enqueue(sink => sink.QuitRequested());
+            _quitAsked = value;
+        }
+    }
+    /// <summary>
+    /// A monotonic clock in seconds since the platform was created. The loop owns time: in deterministic time it never
+    /// reads this clock to decide how many steps a frame runs.
+    /// </summary>
+    public IMonotonicClock Clock { get; } = new StopwatchClock();
+    /// <summary>The surface, of the canvas's size until <see cref="Resize"/> changes it; it has no native window.</summary>
+    public ISurface MainSurface => _surface;
+    ISurface? IPlatformHost.MainSurface => _surface;
+    /// <summary>True: tests and CI may block.</summary>
+    public bool CanBlock => true;
+    /// <summary>Whether <see cref="Suspend"/> sent the platform to the background (until <see cref="Resume"/>).</summary>
+    public bool Suspended => _suspended;
     /// <summary>The renderer, typed so tests can read its counters.</summary>
     public HeadlessRenderer Renderer => _renderer;
     /// <summary>Paths of the screenshots requested, in order; a file is written only when <see cref="Rasterize"/> is on.</summary>
     public List<string> Screenshots { get; } = [];
+    /// <summary>Ignored: there is no window around the frame.</summary>
+    public Color Letterbox { get; set; }
 
     /// <summary>A headless platform with the virtual size of <paramref name="settings"/>.</summary>
     public static HeadlessPlatform For(GameSettings settings) => new(settings.VirtualWidth, settings.VirtualHeight);
@@ -76,11 +113,69 @@ public sealed class HeadlessPlatform : IPlatform
     public static HeadlessPlatform For(GameSettings settings, bool rasterize) =>
         new(settings.VirtualWidth, settings.VirtualHeight) { Rasterize = rasterize };
 
-    /// <summary>The headless platform as a catalog entry (<c>--platform headless</c>, <c>--headless</c>).</summary>
-    public static PlatformProfile Profile { get; } = new("headless", "no window, devices or sound; one step per frame, for tests and CI", request => For(request.Settings));
+    /// <summary>
+    /// A headless platform for <paramref name="request"/>: the virtual size of its settings, the audio device it supplies
+    /// (<see cref="PlatformRequest.Audio"/>) and its extra input sources read with <see cref="Keys"/>.
+    /// </summary>
+    public static HeadlessPlatform For(PlatformRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return new(request.Settings.VirtualWidth, request.Settings.VirtualHeight, request);
+    }
 
-    /// <summary>Does nothing: a headless platform has no events.</summary>
-    public void PollEvents() { }
+    /// <summary>The headless platform as a catalog entry (<c>--platform headless</c>, <c>--headless</c>).</summary>
+    public static PlatformProfile Profile { get; } = new("headless", "no window, devices or sound, for tests and CI", For);
+
+    /// <summary>Changes the surface's size; the next pump delivers the resize (once, when the size changed).</summary>
+    public void Resize(int width, int height)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(width);
+        ArgumentOutOfRangeException.ThrowIfNegative(height);
+        _pending.Enqueue(sink =>
+        {
+            _surfaceSize = (width, height);
+            _surface.Pump(sink);
+        });
+    }
+
+    /// <summary>Gives (true) or takes (false) the input focus; the next pump delivers it when the focus changes.</summary>
+    public void Focus(bool focused) => _pending.Enqueue(sink =>
+    {
+        if (_focused == focused) return;
+        _focused = focused;
+        sink.FocusChanged(focused);
+    });
+
+    /// <summary>Sends the platform to the background, as a phone does; the next pump delivers <c>Suspending</c>.</summary>
+    public void Suspend() => _pending.Enqueue(sink =>
+    {
+        if (_suspended) return;
+        _suspended = true;
+        sink.Suspending();
+    });
+
+    /// <summary>Brings the platform back; the next pump delivers <c>Resumed</c> after a <c>Suspending</c>.</summary>
+    public void Resume() => _pending.Enqueue(sink =>
+    {
+        if (!_suspended) return;
+        _suspended = false;
+        sink.Resumed();
+    });
+
+    /// <summary>Asks the game to quit, as a window's close button does; the next pump delivers the request.</summary>
+    public void RequestQuit() => _pending.Enqueue(sink => sink.QuitRequested());
+
+    /// <summary>Delivers the events the test hooks queued, in order; false while suspended.</summary>
+    public bool PumpEvents(IEngineEventSink sink)
+    {
+        ArgumentNullException.ThrowIfNull(sink);
+        while (_pending.TryDequeue(out var deliver)) deliver(sink);
+        return !_suspended;
+    }
+
+    /// <inheritdoc/>
+    public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class => _capabilities.TryGet(out capability);
+
     /// <inheritdoc/>
     public IRenderer BeginFrame() { _renderer.Reset(); return _renderer; }
     /// <inheritdoc/>
@@ -96,8 +191,19 @@ public sealed class HeadlessPlatform : IPlatform
     }
     /// <summary>Does nothing.</summary>
     public void ToggleFullscreen() { }
-    /// <summary>Does nothing; there is nothing to release.</summary>
-    public void Dispose() { }
+    /// <summary>Disposes the audio device the request supplied, if any; nothing else holds resources.</summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        (_suppliedAudio as IDisposable)?.Dispose();
+    }
+
+    private sealed class StopwatchClock : IMonotonicClock
+    {
+        private readonly System.Diagnostics.Stopwatch _watch = System.Diagnostics.Stopwatch.StartNew();
+        public double Now => _watch.Elapsed.TotalSeconds;
+    }
 }
 
 /// <summary>Keys, a gamepad and a pointer that tests set by hand.</summary>

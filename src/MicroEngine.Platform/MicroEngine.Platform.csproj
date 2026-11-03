@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the
+       surface, and the storage and content-file abstractions. It references only the kernel (the architecture test
+       checks it). It is not a package of its own: the MicroEngine package carries MicroEngine.Platform.dll
+       (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Platform</RootNamespace>
+    <Description>MicroEngine platform contracts: host, surface, capabilities, storage and content sources. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+</Project>

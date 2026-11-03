@@ -14,7 +14,7 @@ public sealed class PlatformCompositionTests
 
     /// <summary>A headless profile that records the request its backend received.</summary>
     private static PlatformProfile Headless(string name, List<PlatformRequest>? seen = null, PlatformParts replaceable = PlatformParts.Audio | PlatformParts.Input, string? unsupported = null) =>
-        new(name, $"{name} test profile", request => { seen?.Add(request); return HeadlessPlatform.For(request.Settings); })
+        new(name, $"{name} test profile", request => { seen?.Add(request); return HeadlessPlatform.For(request); })
         {
             Replaceable = replaceable,
             CheckSupport = () => unsupported,
@@ -148,22 +148,10 @@ public sealed class PlatformCompositionTests
         public override void Draw(IRenderer renderer) { }
     }
 
-    private sealed class SuspendablePlatform(RecordingAudio audio) : IPlatform
+    private sealed class SuspendablePlatform(RecordingAudio audio) : TestPlatform
     {
-        private readonly HeadlessPlatform _inner = new();
-        public bool Suspended { get; set; }
-        public IGraphicsDevice Graphics => _inner.Graphics;
-        public IAudioDevice Audio => audio;
-        public IInputSource Input => _inner.Input;
-        public bool CloseRequested => false;
-        public double Now => _inner.Now;
-        public bool RealTime => false;
-        public void PollEvents() => _inner.PollEvents();
-        public IRenderer BeginFrame() => _inner.BeginFrame();
-        public void EndFrame() { }
-        public void SaveScreenshot(string path) { }
-        public void ToggleFullscreen() { }
-        public void Dispose() { }
+        public override IAudioDevice Audio => audio;
+        public override void EndFrame() { }
     }
 
     [TestMethod]
@@ -172,7 +160,7 @@ public sealed class PlatformCompositionTests
         var audio = new RecordingAudio();
         var platform = new SuspendablePlatform(audio);
         var game = new CountingGame();
-        var loop = new GameLoop(game, platform);
+        var loop = new GameLoop(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic });
         Assert.IsTrue(loop.Start());
         for (int i = 0; i < 10; i++) loop.Tick();
         Assert.AreEqual(10, game.UpdateCount);
@@ -196,7 +184,7 @@ public sealed class PlatformCompositionTests
         var audio = new RecordingAudio();
         var platform = new SuspendablePlatform(audio);
         var game = new CountingGame();
-        var loop = new GameLoop(game, platform);
+        var loop = new GameLoop(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic });
         Assert.IsTrue(loop.Start());
         loop.Tick();
         game.Audio.PauseMusic(true);
@@ -213,6 +201,6 @@ public sealed class PlatformCompositionTests
     public void PlatformsAreActiveByDefault()
     {
         IPlatform platform = new HeadlessPlatform();
-        Assert.IsFalse(platform.Suspended);
+        Assert.IsTrue(platform.PumpEvents(new IgnoredEvents()), "a frame may run");
     }
 }

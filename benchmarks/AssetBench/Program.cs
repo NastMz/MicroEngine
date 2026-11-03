@@ -29,8 +29,8 @@ string device;
 try
 {
     if (headless) throw new InvalidOperationException("--headless");
-    platform = SdlPlatform.Profile.Create(new PlatformRequest(settings) { Hidden = true, FixedStep = true, Mute = true });
-    device = "SDL " + ((IPlatformDiagnostics)platform).Diagnostics.GetValueOrDefault("renderer", "?");
+    platform = SdlPlatform.Profile.Create(new PlatformRequest(settings) { Hidden = true, WaitForDisplay = false, Mute = true });
+    device = "SDL " + (platform.TryGetCapability<IPlatformDiagnostics>(out var facts) ? facts.Diagnostics.GetValueOrDefault("renderer", "?") : "?");
 }
 catch (InvalidOperationException e)
 {

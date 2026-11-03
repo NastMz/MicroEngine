@@ -32,37 +32,38 @@ public sealed class GraphicsSettingsTests
 
     /// <summary>
     /// A real-time platform on a simulated clock: each frame costs <c>work</c> seconds plus the jitter the test gives,
-    /// and <see cref="IPlatform.Wait"/> advances the clock (or refuses, like a browser page).
+    /// and its <see cref="MicroEngine.Platform.IPreciseDelay"/> advances the clock; a platform that cannot block (a browser page)
+    /// offers none, and <see cref="RunFor"/> moves its clock on to the next animation frame after a skipped one.
     /// </summary>
-    private sealed class ClockPlatform(double work, bool canWait = true, double displayRate = 0) : IPlatform, IDisplayControl
+    private sealed class ClockPlatform : TestPlatform, IDisplayControl, MicroEngine.Platform.IDisplayPacing, MicroEngine.Platform.IPreciseDelay
     {
-        private readonly HeadlessPlatform _inner = new();
-        public double Now { get; set; }
+        private readonly double _work, _displayRate;
+        private readonly bool _canWait;
+
+        public ClockPlatform(double work, bool canWait = true, double displayRate = 0)
+        {
+            (_work, _canWait, _displayRate) = (work, canWait, displayRate);
+            _vsync = displayRate > 0;
+            Now = 0;
+            Capabilities.Add<IDisplayControl>(this);
+            Capabilities.Add<MicroEngine.Platform.IDisplayPacing>(this);
+            if (canWait) Capabilities.Add<MicroEngine.Platform.IPreciseDelay>(this);
+        }
+
+        public double Work => _work;
         public Func<int, double> Jitter { get; set; } = _ => 0;
         public int Frames;
         public double Waited;
-        public bool RealTime => true;
-        public double DisplayRate => _vsync ? displayRate : 0;
-        public IGraphicsDevice Graphics => _inner.Graphics;
-        public IAudioDevice Audio => _inner.Audio;
-        public IInputSource Input => _inner.Input;
-        public bool CloseRequested => false;
-        public void PollEvents() { }
-        public IRenderer BeginFrame() => _inner.BeginFrame();
-        public void EndFrame() => Now += work;
-        public void SaveScreenshot(string path) { }
-        public void ToggleFullscreen() { }
-        public void Dispose() => _inner.Dispose();
-        public bool Wait(double seconds)
+        public double DisplayRate => _vsync ? _displayRate : 0;
+        public override bool CanBlock => _canWait;
+        public override void EndFrame() => Now += _work;
+        public void Delay(double seconds)
         {
-            // A page is called back at its next animation frame, after the skipped one.
-            if (!canWait) { Now += work; return false; }
             Waited += seconds;
             Now += seconds + Jitter(++Frames);
-            return true;
         }
 
-        private bool _vsync = displayRate > 0;
+        private bool _vsync;
         public IReadOnlyList<DisplayInfo> Displays { get; } =
             [new(0, "main", 1920, 1080, 100, 1, true), new(1, "side", 1920, 1080, 75, 1.25f, false)];
         public int CurrentDisplay { get; private set; }
@@ -89,7 +90,13 @@ public sealed class GraphicsSettingsTests
     private static void RunFor(GameLoop loop, ClockPlatform platform, double seconds)
     {
         double end = platform.Now + seconds;
-        while (platform.Now < end) loop.Tick();
+        while (platform.Now < end)
+        {
+            double before = platform.Now;
+            loop.Tick();
+            // A page is called back at its next animation frame, after the skipped one.
+            if (platform.Now == before) platform.Now += platform.Work;
+        }
     }
 
     [TestMethod]
@@ -133,7 +140,7 @@ public sealed class GraphicsSettingsTests
     public void Fixed_step_runs_ignore_the_frame_limit()
     {
         var game = new FrameGame(new GraphicsSettings { FrameRateLimit = 10 });
-        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { MaxUpdates = 100 });
+        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { MaxUpdates = 100, TimeMode = MicroEngine.Kernel.TimeMode.Deterministic });
         Assert.IsNull(result.Error);
         Assert.AreEqual(100, game.Draws, "one frame per update, as fast as possible");
     }

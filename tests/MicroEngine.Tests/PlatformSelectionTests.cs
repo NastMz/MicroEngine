@@ -114,20 +114,9 @@ public sealed class PlatformSelectionTests
     }
 
     /// <summary>A headless platform playing through the audio device of the request.</summary>
-    private sealed class AudioPlatform(HeadlessPlatform inner, MicroEngine.Audio.IAudioDevice audio) : IPlatform
+    private sealed class AudioPlatform(HeadlessPlatform inner, MicroEngine.Audio.IAudioDevice audio) : TestPlatform(inner)
     {
-        public MicroEngine.Graphics.IGraphicsDevice Graphics => inner.Graphics;
-        public MicroEngine.Audio.IAudioDevice Audio => audio;
-        public MicroEngine.Input.IInputSource Input => inner.Input;
-        public bool CloseRequested => false;
-        public double Now => inner.Now;
-        public bool RealTime => false;
-        public void PollEvents() => inner.PollEvents();
-        public MicroEngine.Graphics.IRenderer BeginFrame() => inner.BeginFrame();
-        public void EndFrame() => inner.EndFrame();
-        public void SaveScreenshot(string path) { }
-        public void ToggleFullscreen() { }
-        public void Dispose() => inner.Dispose();
+        public override MicroEngine.Audio.IAudioDevice Audio => audio;
     }
 
     [TestMethod]

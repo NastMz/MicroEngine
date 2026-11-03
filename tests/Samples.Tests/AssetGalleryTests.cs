@@ -37,23 +37,25 @@ public sealed class AssetGalleryTests
         var platform = HeadlessPlatform.For(game.Settings);
         // The profiler records the cache's numbers just before the game shuts down.
         var profiler = new FrameProfiler();
-        var result = GameRunner.Run(game, platform, new RunOptions { Script = new InputScript().QuitAfter(30), Profiler = profiler });
+        var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, Script = new InputScript().QuitAfter(30), Profiler = profiler });
         Assert.IsNull(result.Error, result.Error?.ToString());
         Assert.IsTrue(platform.Renderer.DrawCalls > 0);
         Assert.AreEqual("0", profiler.Environment["assets.loadsDuringPlay"], "everything the screen draws was loaded in Load");
         Assert.AreEqual("10", profiler.Environment["assets.loaded"], "nine for the screen and, in a fixed-step run, the level's atlas");
     }
 
-    /// <summary>A headless platform whose clock follows the wall clock, as a desktop window's does.</summary>
+    /// <summary>A headless platform, run in real time as a desktop window is (its clock is the wall clock).</summary>
     private sealed class RealTimePlatform(HeadlessPlatform inner) : IPlatform
     {
         public IGraphicsDevice Graphics => inner.Graphics;
         public MicroEngine.Audio.IAudioDevice Audio => inner.Audio;
         public MicroEngine.Input.IInputSource Input => inner.Input;
-        public bool CloseRequested => inner.CloseRequested;
-        public double Now => System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency;
-        public bool RealTime => true;
-        public void PollEvents() => inner.PollEvents();
+        public MicroEngine.Platform.IMonotonicClock Clock => inner.Clock;
+        public bool PumpEvents(MicroEngine.Platform.IEngineEventSink sink) => inner.PumpEvents(sink);
+        public MicroEngine.Platform.ISurface? MainSurface => inner.MainSurface;
+        public bool CanBlock => inner.CanBlock;
+        public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class => inner.TryGetCapability(out capability);
+        public MicroEngine.Color Letterbox { get => inner.Letterbox; set => inner.Letterbox = value; }
         public IRenderer BeginFrame() => inner.BeginFrame();
         public void EndFrame() => inner.EndFrame();
         public void SaveScreenshot(string path) => inner.SaveScreenshot(path);
@@ -70,7 +72,7 @@ public sealed class AssetGalleryTests
             var game = new GalleryGame();
             var platform = HeadlessPlatform.For(game.Settings, rasterize: true);
             var script = InputScript.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scripts", "tour.script")));
-            var result = GameRunner.Run(game, platform, new RunOptions { Script = script, CaptureDirectory = directory.FullName });
+            var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, Script = script, CaptureDirectory = directory.FullName });
             Assert.IsNull(result.Error, result.Error?.ToString());
             Assert.HasCount(3, result.Captures);
             return result.Captures.ToDictionary(path => Path.GetFileName(path), File.ReadAllBytes);
@@ -104,7 +106,7 @@ public sealed class AssetGalleryTests
     public void AScriptedRunShowsNoMeasuredTime()
     {
         var game = new GalleryGame();
-        game.InitializeForTest(HeadlessPlatform.For(game.Settings));
+        game.InitializeForTest(HeadlessPlatform.For(game.Settings), 1, MicroEngine.Kernel.TimeMode.Deterministic);
         var scene = (GalleryScene)game.Scenes.Current!;
         game.StepForTest();
         Assert.IsFalse(game.RealTime);
@@ -116,7 +118,7 @@ public sealed class AssetGalleryTests
     public void AScriptedRunShowsTheLevelScopeLoadedOnTheUpdateItIsAskedFor()
     {
         var game = new GalleryGame();
-        game.InitializeForTest(HeadlessPlatform.For(game.Settings));
+        game.InitializeForTest(HeadlessPlatform.For(game.Settings), 1, MicroEngine.Kernel.TimeMode.Deterministic);
         var scene = (GalleryScene)game.Scenes.Current!;
         Assert.IsNotNull(game.LevelAhead, "a fixed-step run loads the level's atlas before play");
         int before = game.Assets.Statistics.Count;

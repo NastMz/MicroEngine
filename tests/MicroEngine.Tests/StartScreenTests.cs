@@ -10,22 +10,11 @@ namespace MicroEngine.Tests;
 public sealed class StartScreenTests
 {
     /// <summary>A headless platform that runs "in real time" and records what each frame drew, for the start screen.</summary>
-    private sealed class RealTimePlatform : IPlatform
+    private sealed class RealTimePlatform : TestPlatform
     {
-        private readonly HeadlessPlatform _inner = new();
         public List<string> Log { get; } = [];
-        public IGraphicsDevice Graphics => _inner.Graphics;
-        public MicroEngine.Audio.IAudioDevice Audio => _inner.Audio;
-        public IInputSource Input => _inner.Input;
-        public bool CloseRequested => false;
-        public double Now => _inner.Now;
-        public bool RealTime => true;
-        public void PollEvents() => _inner.PollEvents();
-        public IRenderer BeginFrame() { Log.Add("frame"); return _inner.BeginFrame(); }
-        public void EndFrame() { Log.Add($"draws {_inner.Renderer.DrawCalls}"); _inner.EndFrame(); }
-        public void SaveScreenshot(string path) { }
-        public void ToggleFullscreen() { }
-        public void Dispose() => _inner.Dispose();
+        public override IRenderer BeginFrame() { Log.Add("frame"); return Inner.BeginFrame(); }
+        public override void EndFrame() { Log.Add($"draws {Inner.Renderer.DrawCalls}"); Inner.EndFrame(); }
     }
 
     private sealed class LoggingGame(List<string> log) : Game

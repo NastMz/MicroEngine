@@ -2,6 +2,7 @@ using MicroEngine.Audio;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
 using MicroEngine.Kernel;
+using MicroEngine.Platform;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
 
@@ -104,6 +105,8 @@ public abstract class Game : IEngineModule
     /// <summary>The platform running the game (window, audio, input). Throws <see cref="InvalidOperationException"/> before the game starts.</summary>
     protected IPlatform Platform => _platform ?? throw new InvalidOperationException("Game is not running.");
     internal Engine Engine => _engine ?? throw new InvalidOperationException("Game is not running.");
+    /// <summary>The engine once the game started (also after it shut down); null before.</summary>
+    internal Engine? EngineOrNull => _engine;
     /// <summary>
     /// The engine's services: every built-in service (<see cref="InputMap"/>, <see cref="AudioMixer"/>,
     /// <see cref="SceneManager"/>, <see cref="AssetCache"/>, <see cref="VirtualControls"/>, <see cref="ActionPrompts"/>,
@@ -123,10 +126,15 @@ public abstract class Game : IEngineModule
     /// <summary>The time of the frame being run (<see cref="FrameContext"/>): its delta, the fixed step, the blend and the frame number.</summary>
     public FrameContext Frame => Engine.Clock.Context;
 
-    /// <summary>An optional feature the engine declared (the platform's <see cref="ITouchScreen"/>, its <see cref="IPlatformDiagnostics"/>), if there is one.</summary>
+    /// <summary>
+    /// An optional feature, if there is one: one the engine declared (<see cref="EngineBuilder.Capabilities"/>), else one
+    /// the platform offers (<see cref="IPlatformHost.TryGetCapability{T}"/>: its <see cref="ITouchScreen"/>, its
+    /// <see cref="IDisplayControl"/>, its <see cref="IPlatformDiagnostics"/>...). False before the game starts.
+    /// </summary>
     public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class
     {
-        if (_engine is { } engine) return engine.TryGetCapability(out capability);
+        if (_engine is { } engine && engine.TryGetCapability(out capability)) return true;
+        if (_platform is { } platform) return platform.TryGetCapability(out capability);
         capability = null;
         return false;
     }
@@ -183,11 +191,7 @@ public abstract class Game : IEngineModule
     {
         _platform = platform;
         var builder = new EngineBuilder();
-        builder.Configure<TimeSettings>(time => time with
-        {
-            FixedRate = Settings.UpdateRate,
-            Mode = platform.RealTime ? TimeMode.RealTime : TimeMode.Deterministic,
-        });
+        builder.Configure<TimeSettings>(time => time with { FixedRate = Settings.UpdateRate });
         builder.Add(new GameModule(this, platform, seed, graphics));
         builder.Add(this);
         host?.Invoke(builder);
@@ -227,12 +231,9 @@ public abstract class Game : IEngineModule
             services.Add(input);
             services.Add(touch);
             services.Add(new ActionPrompts(input, touch));
-            if (platform.Touch is { } screen)
-            {
-                screen.Overlay = touch;
-                builder.Capabilities.Add(screen);
-            }
-            if (platform is IPlatformDiagnostics diagnostics) builder.Capabilities.Add(diagnostics);
+            // Optional features are found by query, never by casting the platform.
+            platform.TryGetCapability<ITouchScreen>(out var screen);
+            if (screen is not null) screen.Overlay = touch;
             platform.Graphics.DefaultFilter = game.Settings.DefaultTextureFilter;
             services.Add(new AssetCache(platform.Graphics, game.ContentRoot));
             services.Add(new AudioMixer(platform.Audio));
@@ -241,7 +242,7 @@ public abstract class Game : IEngineModule
 
             var schedule = builder.Schedule;
             schedule.Add(FramePhase.BeginFrame, "engine.assets", _ => game.Assets.Update());
-            schedule.Add(FramePhase.Input, "engine.touch", frame => game.UpdateTouch(platform.Touch, (float)frame.Delta));
+            schedule.Add(FramePhase.Input, "engine.touch", frame => game.UpdateTouch(screen, (float)frame.Delta));
             schedule.Add(FramePhase.PreFixed, "engine.input", _ => game.Input.Sample(platform.Input));
             schedule.Add(FramePhase.FixedUpdate, "engine.time", step =>
             {
@@ -316,6 +317,8 @@ public abstract class Game : IEngineModule
 
     /// <summary>Test hook: initializes against a platform without running the loop.</summary>
     public void InitializeForTest(IPlatform platform, int seed = 1) => Initialize(platform, seed);
+    /// <summary>Test hook: initializes against a platform without running the loop, in the time mode a run would choose (<see cref="RunOptions.TimeMode"/>).</summary>
+    public void InitializeForTest(IPlatform platform, int seed, TimeMode mode) => Initialize(platform, seed, Settings.Graphics, mode);
     /// <summary>Test hook: advances one fixed step after sampling input.</summary>
     /// <remarks>
     /// Runs the phases that come before drawing for one fixed step, with a frame that stands for exactly one step:

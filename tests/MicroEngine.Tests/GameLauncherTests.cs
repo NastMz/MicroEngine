@@ -52,22 +52,8 @@ public sealed class GameLauncherTests
         protected override void Load() { }
     }
 
-    private sealed class DescribedPlatform : IPlatform
+    private sealed class DescribedPlatform : TestPlatform
     {
-        private readonly HeadlessPlatform _inner = new();
-        public Graphics.IGraphicsDevice Graphics => _inner.Graphics;
-        public Audio.IAudioDevice Audio => _inner.Audio;
-        public Input.IInputSource Input => _inner.Input;
-        public bool CloseRequested => _inner.CloseRequested;
-        public double Now => _inner.Now;
-        public bool RealTime => _inner.RealTime;
-        public bool Suspended => ((IPlatform)_inner).Suspended;
-        public void PollEvents() => _inner.PollEvents();
-        public Graphics.IRenderer BeginFrame() => _inner.BeginFrame();
-        public void EndFrame() => _inner.EndFrame();
-        public void SaveScreenshot(string path) => _inner.SaveScreenshot(path);
-        public void ToggleFullscreen() => _inner.ToggleFullscreen();
-        public void Dispose() => _inner.Dispose();
         public override string ToString() => "probe renderer";
     }
 }

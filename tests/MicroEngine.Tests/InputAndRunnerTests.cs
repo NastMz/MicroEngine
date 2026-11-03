@@ -109,7 +109,7 @@ public sealed class RunnerTests
         var game = new CountingGame();
         var script = InputScript.Parse("10 press confirm\n20 press confirm\n30 capture shot.png\n40 quit");
         var platform = new HeadlessPlatform();
-        var result = GameRunner.Run(game, platform, new RunOptions { Script = script });
+        var result = GameRunner.Run(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, Script = script });
         Assert.IsNull(result.Error);
         Assert.AreEqual(40, result.Updates);
         Assert.AreEqual(40, game.Scene.Updates);
@@ -121,7 +121,7 @@ public sealed class RunnerTests
     [TestMethod]
     public void Max_updates_stops_the_run()
     {
-        var result = GameRunner.Run(new CountingGame(), new HeadlessPlatform(), new RunOptions { MaxUpdates = 25 });
+        var result = GameRunner.Run(new CountingGame(), new HeadlessPlatform(), new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, MaxUpdates = 25 });
         Assert.AreEqual(25, result.Updates);
     }
 
@@ -129,7 +129,7 @@ public sealed class RunnerTests
     public void Errors_are_reported_not_thrown()
     {
         var game = new ThrowingGame();
-        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { MaxUpdates = 10 });
+        var result = GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, MaxUpdates = 10 });
         Assert.IsInstanceOfType<InvalidOperationException>(result.Error);
     }
 
@@ -144,7 +144,7 @@ public sealed class RunnerTests
     {
         var game = new CountingGame();
         var platform = new HeadlessPlatform();
-        var loop = new GameLoop(game, platform, new RunOptions { Script = InputScript.Parse("10 press confirm\n20 press confirm\n30 capture shot.png\n40 quit") });
+        var loop = new GameLoop(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, Script = InputScript.Parse("10 press confirm\n20 press confirm\n30 capture shot.png\n40 quit") });
         Assert.IsTrue(loop.Start());
         int ticks = 0;
         while (loop.Tick()) ticks++;
@@ -187,21 +187,9 @@ public sealed class RunnerTests
     }
 
     /// <summary>A real-time platform whose clock the test advances by hand.</summary>
-    private sealed class ClockPlatform : IPlatform
+    private sealed class ClockPlatform : TestPlatform
     {
-        private readonly HeadlessPlatform _inner = new();
-        public IGraphicsDevice Graphics => _inner.Graphics;
-        public IAudioDevice Audio => _inner.Audio;
-        public IInputSource Input => _inner.Input;
-        public bool CloseRequested => false;
-        public double Now { get; set; }
-        public bool RealTime => true;
-        public void PollEvents() { }
-        public IRenderer BeginFrame() => _inner.BeginFrame();
-        public void EndFrame() { }
-        public void SaveScreenshot(string path) { }
-        public void ToggleFullscreen() { }
-        public void Dispose() { }
+        public ClockPlatform() => Now = 0;
     }
 
     [TestMethod]

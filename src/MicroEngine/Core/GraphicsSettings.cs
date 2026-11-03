@@ -1,3 +1,5 @@
+using MicroEngine.Platform;
+
 namespace MicroEngine.Core;
 
 /// <summary>How the game's window covers the screen (<see cref="GraphicsSettings.WindowMode"/>, <see cref="GameScreen.WindowMode"/>).</summary>
@@ -64,8 +66,8 @@ public sealed record GraphicsSettings
 
 /// <summary>
 /// What a platform can change about its window and presentation while the game runs (<see cref="Game.Screen"/> uses it).
-/// Platforms without a window (headless) or whose host owns these choices (browsers, phones) leave it out or report
-/// that a change did not apply.
+/// A capability (<see cref="IPlatformHost.TryGetCapability{T}"/>): platforms without a window (headless) or whose host
+/// owns these choices (browsers, phones) do not offer it, or report that a change did not apply.
 /// </summary>
 public interface IDisplayControl
 {
@@ -92,15 +94,17 @@ public interface IDisplayControl
 /// </summary>
 public sealed class GameScreen
 {
-    private readonly IPlatform _platform;
     private readonly IDisplayControl? _control;
+    private readonly IDisplayPacing? _pacing;
+    private readonly IPlatformDiagnostics? _diagnostics;
     private readonly GraphicsSettings _start;
     private int _frameRateLimit;
 
     internal GameScreen(IPlatform platform, GraphicsSettings start)
     {
-        _platform = platform;
-        _control = platform as IDisplayControl;
+        platform.TryGetCapability(out _control);
+        platform.TryGetCapability(out _pacing);
+        platform.TryGetCapability(out _diagnostics);
         _start = start;
         _frameRateLimit = Math.Max(0, start.FrameRateLimit);
     }
@@ -115,12 +119,12 @@ public sealed class GameScreen
     /// The refresh rate frames are paced to (the display's while VSync is on), in hertz; 0 when nothing paces them to a
     /// display (VSync off, scripted and headless runs).
     /// </summary>
-    public double RefreshRate => _platform.DisplayRate;
+    public double RefreshRate => _pacing?.DisplayRate ?? 0;
 
     /// <summary>Whether frames wait for the display's refresh. Setting it applies where <see cref="CanChange"/>; read it back.</summary>
     public bool VSync
     {
-        get => _control?.VSync ?? _platform.DisplayRate > 0;
+        get => _control?.VSync ?? RefreshRate > 0;
         set => _control?.SetVSync(value);
     }
 
@@ -147,7 +151,7 @@ public sealed class GameScreen
     /// <summary>The graphics adapter (GPU) in use where the platform can identify it; null otherwise.</summary>
     public string? Adapter => Fact("adapter");
 
-    private string? Fact(string key) => _platform is IPlatformDiagnostics d && d.Diagnostics.TryGetValue(key, out var v) ? v : null;
+    private string? Fact(string key) => _diagnostics is { } d && d.Diagnostics.TryGetValue(key, out var v) ? v : null;
 
     /// <summary>
     /// The options in effect, to save and return from <see cref="Game.Settings"/> at the next start: the start-only

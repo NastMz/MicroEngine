@@ -29,7 +29,7 @@ namespace MicroEngine.Core;
 public sealed class SaveStore
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
-    private readonly ISaveStorage _storage;
+    private readonly Platform.IStorage _storage;
     private readonly HashSet<string> _unreadable = new(StringComparer.Ordinal);
 
     /// <summary>
@@ -90,6 +90,10 @@ public sealed class SaveStore
     /// <summary>Creates a store over a custom storage medium.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="storage"/> is null.</exception>
     public SaveStore(ISaveStorage storage) => _storage = storage ?? throw new ArgumentNullException(nameof(storage));
+
+    /// <summary>Creates a store over any storage of the platform contract (<see cref="Platform.IStorage"/>).</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="storage"/> is null.</exception>
+    public SaveStore(Platform.IStorage storage) => _storage = storage ?? throw new ArgumentNullException(nameof(storage));
 
     /// <summary>Reads and deserializes a slot.</summary>
     /// <typeparam name="T">The saved type.</typeparam>
@@ -152,24 +156,11 @@ public sealed class SaveStore
 }
 
 /// <summary>
-/// Where a <see cref="SaveStore"/> keeps its slots: named texts that are written whole. Failures surface
-/// as <see cref="IOException"/> or <see cref="UnauthorizedAccessException"/>.
+/// Where a <see cref="SaveStore"/> keeps its slots: the platform's storage contract
+/// (<see cref="Platform.IStorage"/>: named texts that are written whole, failures as <see cref="IOException"/> or
+/// <see cref="UnauthorizedAccessException"/>) under the name saves have always used.
 /// </summary>
-public interface ISaveStorage
-{
-    /// <summary>The save folder, or a description of the medium for diagnostics.</summary>
-    string Location { get; }
-    /// <summary>The slot's text, or null when it does not exist.</summary>
-    string? Read(string slot);
-    /// <summary>Replaces the slot atomically.</summary>
-    void Write(string slot, string text);
-    /// <summary>Whether the slot has data.</summary>
-    bool Exists(string slot);
-    /// <summary>Removes the slot; does nothing when it does not exist.</summary>
-    void Delete(string slot);
-    /// <summary>Moves unreadable data out of the slot, keeping a copy; best effort, never throws.</summary>
-    void SetAside(string slot);
-}
+public interface ISaveStorage : Platform.IStorage;
 
 /// <summary>One JSON file per slot in a directory (desktop and tests).</summary>
 public sealed class FileSaveStorage(string directory) : ISaveStorage

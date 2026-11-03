@@ -670,23 +670,10 @@ public sealed class TouchControlsTests
         }
     }
 
-    private sealed class SuspendingPlatform : IPlatform
+    private sealed class SuspendingPlatform : TestPlatform
     {
-        public HeadlessPlatform Inner { get; } = new();
-        public bool Suspended { get; set; }
         public ITouchScreen Touch => Inner.Touch;
-        public IGraphicsDevice Graphics => Inner.Graphics;
-        public Audio.IAudioDevice Audio => Inner.Audio;
-        public IInputSource Input => Inner.Input;
-        public bool CloseRequested => false;
-        public double Now => Inner.Now;
-        public bool RealTime => false;
-        public void PollEvents() => Inner.PollEvents();
-        public IRenderer BeginFrame() => Inner.BeginFrame();
-        public void EndFrame() { }
-        public void SaveScreenshot(string path) { }
-        public void ToggleFullscreen() { }
-        public void Dispose() { }
+        public override void EndFrame() { }
     }
 
     [TestMethod]
@@ -694,7 +681,7 @@ public sealed class TouchControlsTests
     {
         var platform = new SuspendingPlatform();
         var game = new TouchGame();
-        var loop = new GameLoop(game, platform);
+        var loop = new GameLoop(game, platform, new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic });
         Assert.IsTrue(loop.Start());
         Assert.AreSame(game.Touch, platform.Inner.TouchScreen.Overlay, "the game's controls are drawn on the platform's screen");
         loop.Tick();
@@ -724,7 +711,7 @@ public sealed class TouchControlsTests
             20 lift 1
             30 quit
             """);
-        GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { Script = script });
+        GameRunner.Run(game, new HeadlessPlatform(), new RunOptions { TimeMode = MicroEngine.Kernel.TimeMode.Deterministic, Script = script });
         Assert.IsTrue(game.Log.Contains("jump 7"), string.Join(", ", game.Log));
         Assert.AreEqual(15, game.Log.Count(l => l.StartsWith("right")), "right held for the 15 updates between touch and lift");
     }

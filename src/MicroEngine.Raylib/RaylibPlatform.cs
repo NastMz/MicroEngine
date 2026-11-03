@@ -3,17 +3,24 @@ using MicroEngine.Audio;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Platform;
 using Rl = Raylib_cs.Raylib;
 using RlColor = Raylib_cs.Color;
 using RlRect = Raylib_cs.Rectangle;
 
 namespace MicroEngine.Raylib;
 
-/// <summary>Desktop window options decided by the launcher.</summary>
-public sealed record DesktopOptions(int? Scale = null, bool Hidden = false, bool FixedStep = false, bool Mute = false, int CaptureScale = 3)
+/// <summary>Window options of a raylib platform created directly (browser hosts); hosts with a <see cref="PlatformRequest"/> use <see cref="RaylibPlatform(PlatformRequest)"/>.</summary>
+/// <param name="Scale">Window scale; null uses <see cref="GameSettings.Scale"/>.</param>
+/// <param name="Hidden">Renders into a hidden window, which never waits for the display.</param>
+/// <param name="Mute">Opens no audio device.</param>
+/// <param name="CaptureScale">Size factor of screenshots.</param>
+public sealed record DesktopOptions(int? Scale = null, bool Hidden = false, bool Mute = false, int CaptureScale = 3)
 {
     /// <summary>The window's icon (the game's <see cref="AppIdentity.Icon"/>); ignored in browsers.</summary>
     public PixelImage? Icon { get; init; }
+    /// <summary>Whether a visible desktop window's frames may wait for the display (true by default; see <see cref="PlatformRequest.WaitForDisplay"/>).</summary>
+    public bool WaitForDisplay { get; init; } = true;
 }
 
 /// <summary>
@@ -21,15 +28,23 @@ public sealed record DesktopOptions(int? Scale = null, bool Hidden = false, bool
 /// scaled to the window by the largest integer factor that fits (letterboxed), keeping pixel art crisp.
 /// In a browser (raylib built for emscripten) the page paces frames: the window never asks to close and
 /// raylib's frame limiter is left off, because both would block the only thread; the page also owns
-/// fullscreen, and the canvas has no minimum size.
+/// fullscreen, and the canvas has no minimum size: it is a page-driven host (<see cref="CanBlock"/> is false), whose
+/// surface size is the canvas's, read after start. Its capabilities (<see cref="TryGetCapability{T}"/>):
+/// <see cref="IDisplayControl"/>, <see cref="IDisplayPacing"/>, <see cref="ITouchScreen"/> and, outside browsers,
+/// <see cref="IPreciseDelay"/>.
 /// </summary>
-public sealed class RaylibPlatform : IPlatform, IDisplayControl
+public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock
 {
     private readonly GameSettings _settings;
-    private readonly bool _fixedStep;
-    // A visible real-time desktop window: the only kind whose VSync, window and monitor the platform changes. Browsers
-    // and Android leave those to the page and the system.
+    // A visible desktop window: the only kind whose window and monitor the platform changes. Browsers and Android leave
+    // those to the page and the system.
     private readonly bool _desktop;
+    // A visible desktop window whose request lets it wait for the display: the only kind whose VSync the platform sets.
+    private readonly bool _paced;
+    private readonly HostSurface _surface;
+    private readonly Kernel.CapabilityRegistry _capabilities = new();
+    private readonly IInputSource _combinedInput;
+    private bool _suspended, _closeSent, _focused;
     private double _displayRate;
     private bool _vsync;
     private int _monitor = -1;
@@ -48,26 +63,39 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
     /// request supplies another one.
     /// </summary>
     public static PlatformProfile Profile { get; } = new("raylib", "raylib 6.0: GLFW window, OpenGL renderer, input and miniaudio sound",
-        request => new RaylibPlatform(request.Settings, new DesktopOptions(request.Scale, request.Hidden, request.FixedStep, !request.OpensOwnAudio, request.CaptureScale) { Icon = request.Identity?.Icon }))
+        request => new RaylibPlatform(request))
     {
         CheckSupport = () => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ? "raylib 6.0 has no iOS platform" : null,
     };
 
     /// <summary>Opens the raylib window (and audio device unless the options say otherwise) for <paramref name="settings"/>. Hosts usually go through <see cref="Profile"/> instead.</summary>
-    public RaylibPlatform(GameSettings settings, DesktopOptions options)
+    public RaylibPlatform(GameSettings settings, DesktopOptions options) : this(settings, options, null) { }
+
+    /// <summary>
+    /// Opens the raylib window for <paramref name="request"/>: its window options, its audio device or raylib's own
+    /// (unless muted or silent), and its extra input sources read with raylib's.
+    /// </summary>
+    public RaylibPlatform(PlatformRequest request) : this(
+        (request ?? throw new ArgumentNullException(nameof(request))).Settings,
+        new DesktopOptions(request.Scale, request.Hidden, !request.OpensOwnAudio, request.CaptureScale) { Icon = request.Identity?.Icon, WaitForDisplay = request.WaitForDisplay },
+        request)
+    { }
+
+    private RaylibPlatform(GameSettings settings, DesktopOptions options, PlatformRequest? request)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         Letterbox = _settings.Letterbox;
         _input = new RaylibInput { CanvasWidth = settings.VirtualWidth, CanvasHeight = settings.VirtualHeight };
+        _combinedInput = request?.CombineInput(_input) ?? _input;
         ArgumentNullException.ThrowIfNull(options);
-        _fixedStep = options.FixedStep;
         _captureScale = Math.Max(1, options.CaptureScale);
         var graphics = settings.Graphics;
-        _desktop = !options.Hidden && !_fixedStep && !OperatingSystem.IsBrowser() && !OperatingSystem.IsAndroid();
+        _desktop = !options.Hidden && !OperatingSystem.IsBrowser() && !OperatingSystem.IsAndroid();
+        _paced = _desktop && options.WaitForDisplay;
         var flags = Raylib_cs.ConfigFlags.ResizableWindow;
         // A hidden window is never looked at: waiting for the display there only slows scripted checks down.
         if (options.Hidden) flags |= Raylib_cs.ConfigFlags.HiddenWindow;
-        else if (graphics.VSync) flags |= Raylib_cs.ConfigFlags.VSyncHint;
+        else if (graphics.VSync && options.WaitForDisplay) flags |= Raylib_cs.ConfigFlags.VSyncHint;
         Rl.SetTraceLogLevel(Raylib_cs.TraceLogLevel.Warning);
         Rl.SetConfigFlags(flags);
         int scale = options.Scale ?? settings.Scale;
@@ -93,28 +121,42 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
         {
             if (_desktop && graphics.Display is { } display) MoveToDisplay(display);
             if (_desktop && graphics.WindowMode != WindowMode.Windowed) SetWindowMode(graphics.WindowMode);
-            _vsync = graphics.VSync;
+            _vsync = graphics.VSync && options.WaitForDisplay;
             Pace();
         }
         _target = Rl.LoadRenderTexture(settings.VirtualWidth, settings.VirtualHeight);
         Rl.SetTextureFilter(_target.Texture, settings.Scaling == CanvasScaling.Smooth ? Raylib_cs.TextureFilter.Bilinear : Raylib_cs.TextureFilter.Point);
         _graphics.DefaultFilter = settings.DefaultTextureFilter;
         _renderer = new RaylibRenderer(_graphics, settings.VirtualWidth, settings.VirtualHeight);
-        _audio = options.Mute ? new SilentAudioDevice() : RaylibAudioDevice.TryCreate();
+        _audio = request?.CreateAudio(() => RaylibAudioDevice.TryCreate()) ?? (options.Mute ? new SilentAudioDevice() : RaylibAudioDevice.TryCreate());
+        _surface = new HostSurface(GetWindowHandle(), () => (Rl.GetRenderWidth(), Rl.GetRenderHeight()),
+            () => Rl.GetWindowScaleDPI().X is > 0 and var d ? d : 1, () => !OperatingSystem.IsBrowser() && Rl.IsWindowMinimized());
+        _focused = Rl.IsWindowFocused();
+        _capabilities.Add<IDisplayControl>(this);
+        _capabilities.Add<IDisplayPacing>(this);
+        _capabilities.Add<ITouchScreen>(_touch);
+        if (CanBlock) _capabilities.Add<IPreciseDelay>(this);
     }
+
+    private static unsafe nint GetWindowHandle() => (nint)Rl.GetWindowHandle();
 
     /// <inheritdoc/>
     public IGraphicsDevice Graphics => _graphics;
     /// <inheritdoc/>
     public IAudioDevice Audio => _audio;
-    /// <inheritdoc/>
-    public IInputSource Input => _input;
-    /// <inheritdoc/>
-    public bool CloseRequested => !OperatingSystem.IsBrowser() && Rl.WindowShouldClose();
+    /// <summary>raylib's keyboard, gamepad and pointer, read together with the request's extra sources.</summary>
+    public IInputSource Input => _combinedInput;
+    /// <summary>raylib's timer (the platform is its own clock).</summary>
+    public IMonotonicClock Clock => this;
     /// <inheritdoc/>
     public double Now => Rl.GetTime();
+    /// <summary>The window, or the page's canvas in a browser: its size is the canvas's as it is now, never the size requested at creation.</summary>
+    public ISurface MainSurface => _surface;
+    ISurface? IPlatformHost.MainSurface => _surface;
+    /// <summary>False in a browser, whose page drives the frames; true on desktop.</summary>
+    public bool CanBlock => !OperatingSystem.IsBrowser();
     /// <inheritdoc/>
-    public bool RealTime => !_fixedStep;
+    public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class => _capabilities.TryGet(out capability);
     /// <summary>The monitor's refresh rate when frames are paced to it (a visible real-time desktop window with VSync); 0 otherwise.</summary>
     public double DisplayRate => _displayRate;
 
@@ -127,25 +169,47 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
         _monitor = Rl.GetCurrentMonitor();
         int refresh = Rl.GetMonitorRefreshRate(_monitor);
         Rl.SetTargetFPS(_vsync ? Math.Max(60, refresh) : 0);
-        _displayRate = _vsync && !_fixedStep && refresh >= 60 ? refresh : 0;
+        _displayRate = _vsync && refresh >= 60 ? refresh : 0;
     }
-    /// <inheritdoc/>
+    /// <summary>The touch screen (also the <see cref="ITouchScreen"/> capability).</summary>
     public ITouchScreen Touch => _touch;
     /// <summary>In a browser, a hidden page (<see cref="BrowserLifecycle.Hidden"/>); a desktop window never suspends.</summary>
     public bool Suspended => OperatingSystem.IsBrowser() && BrowserLifecycle.Hidden;
 
-    /// <inheritdoc/>
-    public void PollEvents()
+    /// <summary>
+    /// Reads what raylib collected at the end of the last frame and delivers the engine's events: a hidden page's
+    /// suspension (browsers), the window's close request (desktop, once while it stays asked), focus changes and size
+    /// changes of the window or canvas.
+    /// </summary>
+    public bool PumpEvents(IEngineEventSink sink)
     {
+        ArgumentNullException.ThrowIfNull(sink);
         _frames++;
         _input.CollectTaps();
         _input.Frame = FrameRect();
+        if (Suspended != _suspended)
+        {
+            _suspended = !_suspended;
+            if (_suspended) sink.Suspending();
+            else sink.Resumed();
+        }
+        if (!OperatingSystem.IsBrowser())
+        {
+            // The page never asks to close (closing the tab ends everything); GLFW keeps the request until it is read.
+            bool close = Rl.WindowShouldClose();
+            if (close && !_closeSent) sink.QuitRequested();
+            _closeSent = close;
+        }
+        bool focused = Rl.IsWindowFocused();
+        if (focused != _focused) sink.FocusChanged(_focused = focused);
+        _surface.Pump(sink);
         // In a browser, fullscreen needs a user gesture, so the page handles it (F11 belongs to the browser).
-        if (OperatingSystem.IsBrowser()) return;
+        if (OperatingSystem.IsBrowser()) return !_suspended;
         // A window moved to another monitor is paced to that monitor's rate (checked twice a second: the query walks the monitors).
         if (_desktop && _frames % 30 == 0 && Rl.GetCurrentMonitor() != _monitor) Pace();
         if (Rl.IsKeyPressed(Raylib_cs.KeyboardKey.F11) || (Rl.IsKeyDown(Raylib_cs.KeyboardKey.LeftAlt) && Rl.IsKeyPressed(Raylib_cs.KeyboardKey.Enter)))
             ToggleFullscreen();
+        return !_suspended;
     }
 
     /// <inheritdoc/>
@@ -193,12 +257,11 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
     /// <summary>Switches between the window and a borderless full-screen window (exclusive full screen goes back to the window).</summary>
     public void ToggleFullscreen() => SetWindowMode(WindowMode == WindowMode.Windowed ? WindowMode.Fullscreen : WindowMode.Windowed);
 
-    /// <summary>Waits with raylib's timer (a sleep, then a short spin); a browser page cannot be blocked.</summary>
-    public bool Wait(double seconds)
+    /// <summary>Waits with raylib's timer (a sleep, then a short spin); never offered in a browser, whose page cannot be blocked.</summary>
+    public void Delay(double seconds)
     {
-        if (OperatingSystem.IsBrowser()) return false;
+        if (OperatingSystem.IsBrowser()) throw new InvalidOperationException("A browser page cannot be blocked: the page paces the frames.");
         if (seconds > 0) Rl.WaitTime(seconds);
-        return true;
     }
 
     /// <summary>The monitors GLFW reports (none in a browser or on Android); GLFW lists the primary one first.</summary>
@@ -223,10 +286,10 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl
     /// <inheritdoc/>
     public bool VSync => _vsync;
 
-    /// <summary>Turns VSync on or off on a visible desktop window; browsers and Android follow the display.</summary>
+    /// <summary>Turns VSync on or off on a visible desktop window that may wait for the display; browsers and Android follow the display.</summary>
     public bool SetVSync(bool on)
     {
-        if (!_desktop) return on == _vsync;
+        if (!_paced) return on == _vsync;
         if (on) Rl.SetWindowState(Raylib_cs.ConfigFlags.VSyncHint);
         else Rl.ClearWindowState(Raylib_cs.ConfigFlags.VSyncHint);
         _vsync = on;

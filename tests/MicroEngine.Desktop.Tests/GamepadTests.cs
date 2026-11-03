@@ -46,7 +46,7 @@ public sealed unsafe class GamepadTests
 
     private static void Frame(SdlPlatform platform)
     {
-        platform.PollEvents();
+        platform.PumpEvents(MicroEngine.NativeChecks.IgnoredEvents.Instance);
         platform.EndFrame(); // a hidden window still needs a frame for its events to settle
     }
 
@@ -56,7 +56,7 @@ public sealed unsafe class GamepadTests
         // The hidden window never has focus, and SDL keeps pad input from unfocused windows.
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
         SdlPlatform platform;
-        try { platform = new SdlPlatform(new PlatformRequest(new GameSettings("pads", 8, 8)) { Hidden = true, FixedStep = true, Mute = true }); }
+        try { platform = new SdlPlatform(new PlatformRequest(new GameSettings("pads", 8, 8)) { Hidden = true, WaitForDisplay = false, Mute = true }); }
         catch (InvalidOperationException e) { Native.Require(false, $"SDL cannot open a window here: {e.Message}"); return; }
         using var owned = platform;
         platform.BeginFrame();

@@ -6,37 +6,40 @@
   <ItemGroup>
     <InternalsVisibleTo Include="MicroEngine.Tests" />
   </ItemGroup>
-  <!-- The kernel (composition, schedule, time, math and colour) is its own assembly but not its own package: this
-       package carries MicroEngine.Kernel.dll with its documentation and symbols, and depends on no MicroEngine.Kernel
-       package. The reference is private (so packing adds no dependency on it); inside the repository, projects that
-       reference this one still compile against the kernel and copy it, because this project hands the kernel's
-       assembly over together with its own (_MicroEngineKernelOutput). -->
+  <!-- The kernel (composition, schedule, time, math and colour) and the platform contracts (host, surface, storage,
+       content sources) are assemblies of their own but not packages: this package carries MicroEngine.Kernel.dll and
+       MicroEngine.Platform.dll with their documentation and symbols, and depends on no package of theirs. The
+       references are private (so packing adds no dependency on them); inside the repository, projects that reference
+       this one still compile against them and copy them, because this project hands their assemblies over together
+       with its own (_MicroEngineBundledOutput). -->
   <ItemGroup>
     <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" PrivateAssets="all" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" PrivateAssets="all" />
+    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj" />
   </ItemGroup>
-  <Target Name="_MicroEngineKernelOutput">
-    <MSBuild Projects="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" Targets="GetTargetPath" Properties="BuildProjectReferences=false">
-      <Output TaskParameter="TargetOutputs" ItemName="_MicroEngineKernelAssembly" />
+  <Target Name="_MicroEngineBundledOutput">
+    <MSBuild Projects="@(_MicroEngineBundledProject)" Targets="GetTargetPath" Properties="BuildProjectReferences=false">
+      <Output TaskParameter="TargetOutputs" ItemName="_MicroEngineBundledAssembly" />
     </MSBuild>
   </Target>
-  <Target Name="_MicroEngineExportKernel" AfterTargets="GetTargetPathWithTargetPlatformMoniker" DependsOnTargets="_MicroEngineKernelOutput">
+  <Target Name="_MicroEngineExportBundled" AfterTargets="GetTargetPathWithTargetPlatformMoniker" DependsOnTargets="_MicroEngineBundledOutput">
     <ItemGroup>
-      <TargetPathWithTargetPlatformMoniker Include="@(_MicroEngineKernelAssembly)" />
+      <TargetPathWithTargetPlatformMoniker Include="@(_MicroEngineBundledAssembly)" />
     </ItemGroup>
   </Target>
   <PropertyGroup>
-    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);_MicroEngineBundleKernel</TargetsForTfmSpecificBuildOutput>
-    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);_MicroEngineBundleKernelSymbols</TargetsForTfmSpecificDebugSymbolsInPackage>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);_MicroEngineBundle</TargetsForTfmSpecificBuildOutput>
+    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);_MicroEngineBundleSymbols</TargetsForTfmSpecificDebugSymbolsInPackage>
   </PropertyGroup>
-  <Target Name="_MicroEngineBundleKernel" DependsOnTargets="_MicroEngineKernelOutput">
+  <Target Name="_MicroEngineBundle" DependsOnTargets="_MicroEngineBundledOutput">
     <ItemGroup>
-      <BuildOutputInPackage Include="@(_MicroEngineKernelAssembly);@(_MicroEngineKernelAssembly->'%(RootDir)%(Directory)%(Filename).xml')" />
+      <BuildOutputInPackage Include="@(_MicroEngineBundledAssembly);@(_MicroEngineBundledAssembly->'%(RootDir)%(Directory)%(Filename).xml')" />
     </ItemGroup>
   </Target>
-  <Target Name="_MicroEngineBundleKernelSymbols" DependsOnTargets="_MicroEngineKernelOutput">
+  <Target Name="_MicroEngineBundleSymbols" DependsOnTargets="_MicroEngineBundledOutput">
     <ItemGroup>
-      <TfmSpecificDebugSymbolsFile Include="@(_MicroEngineKernelAssembly->'%(RootDir)%(Directory)%(Filename).pdb')">
-        <TargetPath>MicroEngine.Kernel.pdb</TargetPath>
+      <TfmSpecificDebugSymbolsFile Include="@(_MicroEngineBundledAssembly->'%(RootDir)%(Directory)%(Filename).pdb')">
+        <TargetPath>%(Filename).pdb</TargetPath>
         <TargetFramework>$(TargetFramework)</TargetFramework>
       </TfmSpecificDebugSymbolsFile>
     </ItemGroup>
