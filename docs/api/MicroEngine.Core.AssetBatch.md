@@ -53,7 +53,7 @@ public IReadOnlyList<AssetLoadException> Errors { get; }
 
 #### Property Value
 
- [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[AssetLoadException](MicroEngine.Core.AssetLoadException.md)\>
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<AssetLoadException\>
 
 ### <a id="MicroEngine_Core_AssetBatch_IsDone"></a> IsDone
 

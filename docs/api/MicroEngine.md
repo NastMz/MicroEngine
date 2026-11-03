@@ -10,6 +10,8 @@ Guide: [Graphics](../manual/rendering.md)
 
  [MicroEngine.Audio](MicroEngine.Audio.md)
 
+ [MicroEngine.Content](MicroEngine.Content.md)
+
  [MicroEngine.Core](MicroEngine.Core.md)
 
  [MicroEngine.Desktop](MicroEngine.Desktop.md)
