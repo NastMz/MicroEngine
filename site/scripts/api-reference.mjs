@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
@@ -27,6 +27,7 @@ const guides = {
   'MicroEngine.Core': ['Game lifecycle and time', '../manual/lifecycle.md'],
   'MicroEngine.Desktop': ['Backends and platforms', '../manual/backends.md'],
   'MicroEngine.Graphics': ['Graphics', '../manual/rendering.md'],
+  'MicroEngine.Graphics.Devices': ['The graphics device', '../manual/rendering.md#the-graphics-device'],
   'MicroEngine.Hosting': ['Composing a game for every platform', '../manual/backends.md#one-composition-for-every-platform'],
   'MicroEngine.Input': ['Input', '../manual/input.md'],
   'MicroEngine.Kernel': ['Modules and the frame schedule', '../manual/lifecycle.md#modules-and-the-frame-schedule'],
@@ -64,6 +65,7 @@ const namespaceSummaries = {
   'MicroEngine.Core': 'The game and its loop: `Game`, settings, runners and sessions, launchers and platform composition, scripted input, saves, content files, achievements, application identity, the headless platform.',
   'MicroEngine.Desktop': 'The desktop launcher with the official desktop platforms (SDL 3, raylib, SDL software, headless).',
   'MicroEngine.Graphics': 'Drawing: the renderer contract, images in code and from PNG, sprites and atlases, animation, camera, parallax, particles, light, the pixel font.',
+  'MicroEngine.Graphics.Devices': 'The graphics device contract every backend implements: capabilities and the typed capability error, textures, render targets, samplers, buffers, pipelines, command lists with passes, readback and the surface target; the core validation backends inherit and the CPU reference device.',
   'MicroEngine.Hosting': 'Hosting: the launcher model every host shares (launch requests and their rules, platform selection, the host environment) and the composition a game configures once with its Configure entry point.',
   'MicroEngine.Input': 'Input: device events with ids (keys, text, pointers and touches, wheel, gamepads), players and device pairing, input layers, and actions over them: bindings and their persistence, analog values, on-screen controls, prompts, custom sources.',
   'MicroEngine.Kernel': 'The kernel: engine composition (builder, services, modules, capabilities), the frame schedule and its phases, loop-owned time, engine events, logging and generational handles.',

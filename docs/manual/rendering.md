@@ -268,6 +268,56 @@ Source: [`games/NeonRift/Scenes/StageView.cs`](../../games/NeonRift/Scenes/Stage
 
 Collision over the same layers (`TileGrid`, `TileMotion`) is described in [Tile maps and collision](world.md).
 
+## The graphics device
+
+Not published yet: arrives with the next SDK version. Under the 2D drawing API sits one graphics device contract that
+every backend implements, in the `MicroEngine.Graphics.Devices` namespace (`MicroEngine.Graphics.dll`, carried by the
+`MicroEngine` package). Games do not need it to draw sprites; it is for engine modules, tools and backend authors.
+
+```csharp
+public interface IGraphicsDevice : IDisposable
+{
+    GraphicsCapabilities Capabilities { get; }   // tier, optional features, formats per usage, limits, API in use
+    Texture CreateTexture(in TextureDescription description, ReadOnlySpan<byte> initialData = default);
+    RenderTarget CreateRenderTarget(in RenderTargetDescription description);
+    Sampler GetSampler(in SamplerDescription description);              // samplers are values, cached by the device
+    GpuBuffer CreateBuffer(in BufferDescription description);           // vertex and index buffers, every tier
+    Pipeline GetBuiltInPipeline(BuiltInPipeline kind, BlendState blend, TextureFormat colorFormat, TextureFormat? depthFormat = null);
+    CommandList BeginCommands();                                        // passes, bindings, draws, updates
+    void Submit(CommandList commands);
+    ReadbackRequest ReadPixels(RenderTarget target, RectI region);      // completed by a fence
+    bool TryAcquireSurfaceTarget(out RenderTarget? target);             // false while minimised
+    void Present();
+    // plus CreateShader and CreatePipeline for devices that declare custom shaders, and the optional DeviceLost event
+}
+```
+
+- **One contract, declared capabilities.** Devices differ only in `GraphicsCapabilities`: the tier, optional features
+  (`RenderTargets`, `AddressRepeat`, `AddressMirror`, `Mipmaps`, `CustomBlend`, `Shaders`, `DepthBuffer`, `Instancing`,
+  `SeparateFilters`), the formats each usage supports and limits that are guaranteed minimums. A request that needs
+  something the device does not declare fails at once with `GraphicsCapabilityException`, which names the operation,
+  the device and the missing feature or requirement; nothing degrades silently.
+- **Premultiplied colour.** Colours and texel data are premultiplied (colour channels already multiplied by alpha), so
+  linear filtering and scaling never darken the edges of transparent art. The four blend presets (`Opaque`,
+  `AlphaPremultiplied`, `Additive`, `Multiply`) work on every device.
+- **The built-in pipeline.** `BuiltInPipeline.Textured` draws `Vertex2D` triangles (position in target pixels, texture
+  coordinate, premultiplied colour) with one texture; it needs no shader, so the same 2D code runs on every device.
+- **Written rules, the same everywhere.** A triangle covers the pixels whose centre lies inside it (a centre on a top
+  or left edge counts as inside); clears ignore viewport and scissor; the scissor is in target pixels; commands run in
+  the order they were submitted and recorded; the window's target (`TryAcquireSurfaceTarget`) expires at `Present` and
+  cannot be read back: captures render to a `RenderTarget`, read it back, then draw it to the window.
+- **Resources.** Every resource belongs to the device that created it and has a `Handle` with a generation that stops
+  resolving once the resource is disposed; the device releases it only when no submitted work uses it any more. Using
+  a resource of another device, or a disposed one, throws when the command is recorded.
+- **Counters.** `GraphicsDeviceBase.Counters` counts submitted lists, passes, draw calls, pipeline changes, texture
+  bindings and uploaded bytes exactly, the same on every device, so tests can hold a scene to a draw-call budget.
+- **The reference device.** `ReferenceGraphicsDevice` implements the contract on the CPU, rule by rule; it needs no
+  window and draws identically on every machine.
+
+A backend derives from `GraphicsDeviceBase`, which validates every call before the backend sees it, so errors and the
+moment they are raised are identical on every device; the backend implements only the members whose names end in
+`Core`.
+
 ## Limitations
 
 - No shaders, render targets or post-processing are exposed through `IRenderer`.

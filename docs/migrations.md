@@ -179,6 +179,11 @@ Not published yet. Behaviour that changes:
 - `SpriteAtlas.Frames(name)` also finds frames numbered from 1 when there is no `name0`.
 - Windows larger than the display open at the largest size that fits (a `Scale` of 4 on a small laptop used to open a
   window bigger than the screen).
+- New, nothing to change: the `MicroEngine` package carries a fourth assembly, `MicroEngine.Graphics.dll`, with the
+  graphics device contract (namespace `MicroEngine.Graphics.Devices`: `IGraphicsDevice`, `GraphicsDeviceBase`, command
+  lists, render targets, the CPU `ReferenceGraphicsDevice`; [The graphics device](manual/rendering.md#the-graphics-device)).
+  Its `IGraphicsDevice` and `Texture` are not the `MicroEngine.Graphics` types games use today; code that imports both
+  namespaces names the one it means.
 
 ## 0.4.0-alpha.2
 

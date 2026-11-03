@@ -19,6 +19,7 @@ flowchart TB
   raylib["<b> src/MicroEngine.Raylib </b> <br/> raylib: window, renderer, audio, input; WebAssembly"]
   core["<b> src/MicroEngine </b> <br/> Core: loop, scenes, input, graphics model, world, audio synthesis, UI, platform contract"]
   platform["<b> src/MicroEngine.Platform </b> <br/> Platform contracts: host, surface, capabilities, storage, content sources"]
+  graphics["<b> src/MicroEngine.Graphics </b> <br/> Graphics device contract: capabilities, resources, command lists, the reference device"]
   input["<b> src/MicroEngine.Input </b> <br/> Input: device events, players, layers, text, actions and saved bindings"]
   hosting["<b> src/MicroEngine.Hosting </b> <br/> Hosting: launch requests and their rules, platform selection, the composition a game configures once"]
   content["<b> src/MicroEngine.Content </b> <br/> Content: asset store, typed handles, scopes, loader registry, zip and listed sources"]
@@ -37,6 +38,8 @@ flowchart TB
   core -- builds on --> platform
   core -- builds on --> kernel
   platform -- builds on --> kernel
+  graphics -- builds on --> platform
+  graphics -- builds on --> kernel
   core -- builds on --> hosting
   hosting -- builds on --> platform
   core -- builds on --> input
@@ -60,7 +63,15 @@ Input is a third assembly, `MicroEngine.Input` (kernel and platform contracts on
 package): device events with ids, the polled state derived from the events no input layer took, players with device
 pairing, input layers, the text channel and `InputMap` ([Devices, players and layers](manual/input.md#devices-players-and-layers)).
 
-Next SDK version (not published yet: arrives with the next SDK version): hosting is a third assembly of the
+Next SDK version (not published yet: arrives with the next SDK version): the graphics device contract is an assembly
+of the `MicroEngine` package too, `MicroEngine.Graphics`, which references only the kernel and the platform contracts.
+It holds one device contract for every backend (capabilities with a typed error for anything undeclared, resources
+owned by their device with generational handles and deferred release, samplers as values, buffers, the built-in
+`Textured` pipeline, command lists with passes, fenced readback of render targets and the window's target), the core
+validation every backend inherits (`GraphicsDeviceBase`) and the CPU reference device that executes the written rules
+([The graphics device](manual/rendering.md#the-graphics-device)).
+
+Next SDK version (not published yet: arrives with the next SDK version): hosting is another assembly of the
 `MicroEngine` package, `MicroEngine.Hosting`, which references only the kernel and the platform contracts. It holds the
 launcher model every host shares: what a launch asks for (`LaunchRequest`, from a command line, a page or a phone) and
 its rules (a script means deterministic time and seed 1 on every host), how a host chooses a platform, the host's
@@ -144,6 +155,7 @@ scripted playthrough tests and reproducible screenshots possible.
 | `MicroEngine` | `Color`, `RectF`, `MathX` (approach, damp, waves), `Ease`; next SDK version: `ColorF` (linear, premultiplied helpers), all in the kernel assembly |
 | `MicroEngine.Kernel` (next SDK version) | `EngineBuilder`, `Engine`, `IEngineModule`, `ServiceRegistry`, `CapabilityRegistry`, `FrameSchedule`, `FramePhase`, `FrameContext`, `TimeSettings`, `FrameClock`, `IEngineLifecycle`, `ILog`, `Handle<T>`, `HandlePool<T>` |
 | `MicroEngine.Platform` (next SDK version) | `IPlatformHost`, `IMonotonicClock`, `IEngineEventSink`, `ISurface`, `HostSurface`, `IDisplayPacing`, `IPreciseDelay`, `IStorage`, `IContentSource`, `FolderContentSource` |
+| `MicroEngine.Graphics.Devices` (next SDK version) | `IGraphicsDevice`, `GraphicsDeviceBase`, `GraphicsCapabilities`, `GraphicsCapabilityException`, `Texture`, `RenderTarget`, `Sampler`, `GpuBuffer`, `Pipeline`, `CommandList`, `ReadbackRequest`, `Vertex2D`, `GraphicsCounters`, `ReferenceGraphicsDevice` |
 | `MicroEngine.Core` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `InputScript`, `HeadlessPlatform`, `SaveStore` (over `ISaveStorage`), `ContentFolder`, `AssetCache` (`Game.Assets`), `Achievement`, `AchievementTracker` |
 | `MicroEngine.Scenes` | `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener` |
 | `MicroEngine.Input` | In the `MicroEngine.Input` assembly (kernel and platform contracts only): device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem` over them, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources, with saved bindings. In the core assembly (they draw): `VirtualControls` and `TouchLayout` (per-game on-screen d-pads, joysticks and buttons, an input layer), `ActionPrompts`, `ITouchScreen`, `FrameLayout` |

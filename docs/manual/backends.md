@@ -446,6 +446,13 @@ by subclassing it. Next SDK version (not published yet: arrives with the next SD
 `Texture.CheckDrawable<TTexture>(texture, device)` before drawing a texture, so disposed and foreign textures fail as
 on every other backend, and its textures pass their device to the `Texture` constructor.
 
+Not published yet: arrives with the next SDK version. A graphics device derives from `GraphicsDeviceBase`
+([The graphics device](rendering.md#the-graphics-device)) and implements only its `*Core` members; the base validates
+every call first. `tests/Shared/Graphics/DeviceConformance.cs` states the device contract as tests (exact coverage,
+placement, readback and ordering; blending within 8-bit quantization; filtering within the kernel's bounds; the typed
+error for every undeclared feature), and a device runs it by subclassing it and saying how to create the device and
+its surface, as the CPU reference device does in `tests/MicroEngine.Graphics.Tests`.
+
 ## Limitations
 
 - The phone hosts are built by `microengine package`; a game does not write its own Android activity or iOS app.
