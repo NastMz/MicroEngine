@@ -8,6 +8,14 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- Scenes can hold their objects in a world (`Scene.Objects`, an `IWorld` in the `MicroEngine.Scenes` namespace, from
+  the new `MicroEngine.Scene.dll` the `MicroEngine` package carries), and a `Scene<TResult>` can return a value to the
+  scene below (`Game.Scenes.Push(scene, onResult)`, `Finish(value)`). Nothing changes for a scene that does not read
+  `Objects`: it has no world and its `Update` receives the engine's step as before. **Migration:** a scene of yours
+  that declares a member named `Objects` now hides the inherited one (compiler warning CS0108): rename yours, or read
+  the engine's as `base.Objects`. Once a scene reads `Objects`, its `Update` receives the step on the world's clock
+  (equal to the engine's step unless the game scales or freezes that clock).
+
 - Input is an event stream with device ids, players and layers (assembly `MicroEngine.Input`, carried by the
   `MicroEngine` package; the namespace stays `MicroEngine.Input`). Single-player games change nothing: `Game.Input` is
   player 1's map and player 1 owns every device. What may need a change:

@@ -51,6 +51,7 @@ Each update a scene first advances its coroutines, then its tweens, then calls y
 | `Pop(transition?)` | Removes the top scene; the one below gets `Resume()` |
 | `Replace(scene, transition?)` | Pops the top scene and pushes another |
 | `Reset(scene, transition?)` | Pops every scene, then pushes one (back to the title) |
+| `Push(scene, onResult, transition?)` | Next SDK version: pushes a `Scene<TResult>`; when it calls `Finish(value)` it is popped and `onResult` receives the value |
 | `Current`, `Count`, `Stack`, `InTransition` | Read-only state |
 
 Changes are **queued**, not applied immediately: they run before and after the scene updates of a step, so a
@@ -89,6 +90,14 @@ internal sealed class PauseScene(RiftGame game) : Scene
 Source: [`games/NeonRift/Scenes/PlayScene.cs`](../../games/NeonRift/Scenes/PlayScene.cs)
 
 Override `BlocksUpdateBelow => false` for an overlay that should let the scene below keep running.
+
+### Scenes that return a value
+
+Next SDK version (not published yet: arrives with the next SDK version). A dialogue, a shop or a yes/no question can
+derive from `Scene<TResult>` and end with `Finish(value)`. Pushed with `Game.Scenes.Push(scene, onResult)`, it is
+popped (deferred, like `Pop`) and `onResult` receives the value after the scene's `Exit` and before the scene below
+receives `Resume`. Only the first `Finish` counts; a result scene removed any other way (popped, replaced, the stack
+reset) returns nothing, and one pushed with plain `Push` simply pops when it finishes.
 
 ## Transitions
 
@@ -170,8 +179,9 @@ Tweens have no handle; `Tweens.Clear()` drops all of them, and popping the scene
 
 ## The scene world
 
-Next SDK version (not published yet: arrives with the next SDK version). `IWorld` holds a scene's objects as
-entities: each has an `EntityId` (a slot and a generation, so the id of a destroyed entity never reaches the entity
+Next SDK version (not published yet: arrives with the next SDK version). Every scene can hold its objects in a world,
+`Objects` (an `IWorld`), created the first time the scene reads it; a scene that never reads it has none. The world
+holds entities: each has an `EntityId` (a slot and a generation, so the id of a destroyed entity never reaches the entity
 that reuses its slot), a `Transform` relative to an optional parent (stored in 3D; `Position2D`, `Rotation2D` and
 `Scale2D` read and write the 2D part) and typed attachments, which are your own classes (`Attach`, `TryGet`, `Get`,
 `Detach`; `All<T>()` walks every attachment of a type). `SceneWorld` is the engine's implementation; game code
@@ -196,9 +206,17 @@ programs against `IWorld`. The rules a game can rely on:
 - **State hash**: the world adds its ids, hierarchy, transforms, which attachments each entity has, the state of
   attachments that implement `IStateHashed`, and its clock; drawing never changes it.
 
-Whoever owns a `SceneWorld` drives it: `BeginStep(Game.UpdateCount, dt)` before the world's step (it returns the
-step's length on the world's clock, 0 while frozen), `EndStep()` after it, and `BeginDraw(Game.UpdateCount,
-Game.FrameBlend)` before drawing it.
+The engine steps a scene's world with the scene. While the scene is updated, each step starts before its coroutines,
+tweens and `Update`, and ends after them (releasing what was destroyed); `Update` then receives the step on the
+world's clock: the same `dt` at scale 1, scaled in slow motion, 0 during a freeze. The scene's `Age`, coroutines and
+tweens keep the engine's time. Before the scene is drawn, the engine sets the world's `Blend`: the frame's blend while
+the scene plays, 1 while it is frozen under a blocking overlay or by a transition, so a paused level stays still
+instead of rocking between its last two updates, with no code in the game. The world's state is part of the scene's
+section of the state hash.
+
+A world you create yourself (`new SceneWorld()`, for a tool or a test) is driven by its owner:
+`BeginStep(Game.UpdateCount, dt)` before its step (it returns the step on its clock), `EndStep()` after it, and
+`BeginDraw(Game.UpdateCount, Game.FrameBlend)` before drawing it.
 
 ## Related
 

@@ -101,6 +101,28 @@ public void Push(Scene scene, Transition? transition = null)
 Changes keep the order they were requested in. A change requested while a transition plays drops its own
 transition; until the playing transition has swapped its scenes, it waits and applies right after the swap.
 
+### <a id="MicroEngine_Scenes_SceneManager_Push__1_MicroEngine_Scenes_Scene___0__System_Action___0__MicroEngine_Scenes_Transition_"></a> Push<TResult\>\(Scene<TResult\>, Action<TResult\>, Transition?\)
+
+Pushes a scene that returns a value, deferred like [Push](MicroEngine.Scenes.SceneManager.md#MicroEngine_Scenes_SceneManager_Push_MicroEngine_Scenes_Scene_MicroEngine_Scenes_Transition_): when it calls
+[Finish](MicroEngine.Scenes.md), it is popped and <code class="paramref">onResult</code> receives the value (after the
+scene's [Exit](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Exit), before the scene below receives [Resume](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Resume)).
+
+```csharp
+public void Push<TResult>(Scene<TResult> scene, Action<TResult> onResult, Transition? transition = null)
+```
+
+#### Parameters
+
+`scene` [Scene](MicroEngine.Scenes.Scene\-1.md)<TResult\>
+
+`onResult` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<TResult\>
+
+`transition` [Transition](MicroEngine.Scenes.Transition.md)?
+
+#### Type Parameters
+
+`TResult` 
+
 ### <a id="MicroEngine_Scenes_SceneManager_Replace_MicroEngine_Scenes_Scene_MicroEngine_Scenes_Transition_"></a> Replace\(Scene, Transition?\)
 
 Replaces the top scene.

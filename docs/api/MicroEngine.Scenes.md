@@ -18,6 +18,12 @@ Runs iterator-based sequences one step per update. A coroutine may yield null (n
 [Seconds](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Seconds_System_Single_), [Until](MicroEngine.Scenes.Wait.md#MicroEngine_Scenes_Wait_Until_System_Func_System_Boolean__) or another IEnumerator (awaited as a sub-routine).
 Ideal for cutscenes, dialogue flow and timed effects without hand-written state machines.
 
+ [Scene<TResult\>](MicroEngine.Scenes.Scene\-1.md)
+
+A scene that ends by returning a value to whoever pushed it (a dialogue's choice, a shop's purchase, a menu's
+answer): push it with [Push``1](MicroEngine.Scenes.SceneManager.md#MicroEngine_Scenes_SceneManager_Push__1_MicroEngine_Scenes_Scene___0__System_Action___0__MicroEngine_Scenes_Transition_) and
+end it with [Finish](MicroEngine.Scenes.md).
+
  [SceneManager](MicroEngine.Scenes.SceneManager.md)
 
 Manages the scene stack and the transitions between scenes.
