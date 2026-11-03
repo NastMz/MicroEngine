@@ -155,7 +155,7 @@ host can show its own screen and start again without reloading.
  [GameSettings](MicroEngine.Core.GameSettings.md)
 
 Window/backbuffer settings a game declares. The virtual size is the canvas everything is drawn on: 320×180 pixel art
-by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with [Smooth](MicroEngine.Graphics.CanvasScaling.md).
+by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D).
 
  [Game](MicroEngine.Core.Game.md)
 

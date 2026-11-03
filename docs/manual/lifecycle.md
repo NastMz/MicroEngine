@@ -64,7 +64,10 @@ Next SDK version (not published yet: arrives with the next SDK version): the can
 `Scaling = CanvasScaling.Smooth` scales it to fill the window with linear sampling, for HD games drawn on a 1280×720 or
 1920×1080 canvas, and `TextureFilter` sets the default sampling of textures
 ([HD canvases](rendering.md#hd-canvases-and-smooth-scaling)). A window that would not fit the display opens at the
-largest size that does.
+largest size that does. `Presentation` states each of those choices separately (scale rounding, the canvas's
+sampling, the textures' default sampler, capture scale, whole-factor windows), starting from the presets
+`Presentation.PixelArt` and `Presentation.HighResolution2D`
+([Presentation](rendering.md#presentation-one-choice-per-field)).
 
 ## Start-up order
 

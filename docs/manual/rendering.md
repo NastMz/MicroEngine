@@ -39,6 +39,40 @@ or a 2560×1440 screen smoothly and shrinks into a smaller window. A window that
 largest size that does, and HD canvases allow windows down to a quarter of their size. Captures (`--captures`) of a
 smooth canvas are written at its size; pixel-art captures stay three times larger (`PlatformRequest.CaptureScale`).
 
+### Presentation: one choice per field
+
+Not published yet: arrives with the next SDK version. `Scaling` decided five things at once (how the scale is rounded,
+how the canvas is sampled on its way to the window, the textures' default filter, the initial window size and the
+capture scale). `GameSettings.Presentation` states each one, and `Scaling` now only names a preset:
+
+| `Presentation` field | `Presentation.PixelArt` (`Scaling = Pixel`) | `Presentation.HighResolution2D` (`Scaling = Smooth`) |
+| --- | --- | --- |
+| `Rounding`: how the scale to the window is rounded | `IntegerUnlessWasteful`: whole factors unless they fill less than `WastefulThreshold` (80 %) of what fits | `Fractional`: the largest size that fits |
+| `Aspect`: the window's other shape | `Keep` (letterbox) | `Keep` |
+| `Upscale`: how the canvas is sampled when scaled | `SamplerDescription.PointClamp` (nearest) | `SamplerDescription.LinearClamp` |
+| `DefaultSampler`: textures created without a filter | nearest | linear |
+| `CaptureScale`: size factor of captures | 3 | 1 |
+| `WholeFactorWindows`: windows open at whole factors | yes | no |
+
+Start from a preset and change only what differs; any combination is allowed:
+
+```csharp
+public override GameSettings Settings { get; } = new("My Game", 480, 270, 3)
+{
+    // whole-factor scaling, but the canvas and its textures sampled smoothly, captures at the canvas's size
+    Presentation = Presentation.PixelArt with
+    {
+        Upscale = SamplerDescription.LinearClamp,
+        DefaultSampler = SamplerDescription.LinearClamp,
+        CaptureScale = 1,
+    },
+};
+```
+
+`Rounding` also has `Integer` (never fractional while a whole factor fits) and `Aspect` has `Stretch` (fill the whole
+window, pixels no longer square). When `Presentation` is set it wins over `Scaling`; `TextureFilter`, when set, still
+wins over `DefaultSampler`. `SamplerDescription` lives in `MicroEngine.Graphics.Devices`.
+
 ### Filtering: nearest or linear
 
 Next SDK version (not published yet: arrives with the next SDK version). Every texture has a `TextureFilter`:

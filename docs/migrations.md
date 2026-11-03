@@ -179,6 +179,12 @@ Not published yet. Behaviour that changes:
 - `SpriteAtlas.Frames(name)` also finds frames numbered from 1 when there is no `name0`.
 - Windows larger than the display open at the largest size that fits (a `Scale` of 4 on a small laptop used to open a
   window bigger than the screen).
+- `GameSettings.Presentation` (a `Presentation` record) states how the canvas reaches the window, one choice per
+  field; `GameSettings.Scaling` keeps working and picks the preset `Presentation.PixelArt` or
+  `Presentation.HighResolution2D`, which reproduce what `Pixel` and `Smooth` did. `PlatformRequest.CaptureScale`
+  defaults to the presentation's `CaptureScale`, and `WindowSizing.Initial` uses its `WholeFactorWindows`. Nothing to
+  change; to combine choices `Scaling` could not express, set `Presentation`
+  ([Presentation](manual/rendering.md#presentation-one-choice-per-field)).
 - New, nothing to change: the `MicroEngine` package carries a fourth assembly, `MicroEngine.Graphics.dll`, with the
   graphics device contract (namespace `MicroEngine.Graphics.Devices`: `IGraphicsDevice`, `GraphicsDeviceBase`, command
   lists, render targets, the CPU `ReferenceGraphicsDevice`; [The graphics device](manual/rendering.md#the-graphics-device)).

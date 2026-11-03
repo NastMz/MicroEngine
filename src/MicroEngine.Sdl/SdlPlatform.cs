@@ -166,7 +166,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         if (_paced && !graphics.VSync) SDL_SetRenderVSync(_sdl, 0);
         _target = SDL_CreateTexture(_sdl, SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, _settings.VirtualWidth, _settings.VirtualHeight);
         if (_target == null) { Dispose(); throw Fail("SDL could not create the frame texture"); }
-        SDL_SetTextureScaleMode(_target, _settings.Scaling == CanvasScaling.Smooth ? SDL_ScaleMode.SDL_SCALEMODE_LINEAR : SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
+        // The canvas is sampled as the presentation says when it is scaled to the window.
+        SDL_SetTextureScaleMode(_target, _settings.EffectivePresentation.Upscale.Mag == MicroEngine.Graphics.Devices.Filter.Linear ? SDL_ScaleMode.SDL_SCALEMODE_LINEAR : SDL_ScaleMode.SDL_SCALEMODE_NEAREST);
         _graphics = new SdlGraphicsDevice(_sdl) { DefaultFilter = _settings.DefaultTextureFilter };
         _renderer = new SdlRenderer(_sdl, _graphics, _settings.VirtualWidth, _settings.VirtualHeight);
         _touch = new SdlTouchScreen(_window, _sdl, mobile);
@@ -465,9 +466,13 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         int sw, sh;
         SDL_GetCurrentRenderOutputSize(_sdl, &sw, &sh);
         var window = new Vector2(sw, sh);
-        return _touch.Overlay?.Frame(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, _settings.Scaling)
-            ?? FrameLayout.Fit(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, _settings.Scaling);
+        var presentation = _settings.EffectivePresentation;
+        return _touch.Overlay?.Frame(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, OverlayScaling(presentation))
+            ?? presentation.Fit(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
     }
+
+    /// <summary>How the on-screen controls lay the frame out around themselves: whole factors unless the presentation is fractional.</summary>
+    internal static CanvasScaling OverlayScaling(Presentation presentation) => presentation.Rounding == ScaleRounding.Fractional ? CanvasScaling.Smooth : CanvasScaling.Pixel;
 
     /// <summary>A window position in SDL's window coordinates as virtual canvas pixels.</summary>
     internal Vector2 ToCanvas(float x, float y) =>

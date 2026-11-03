@@ -11,8 +11,8 @@ public static class WindowSizing
     /// <summary>
     /// The size a window opens at: the canvas times <paramref name="scale"/>, or, when that does not fit in
     /// <see cref="MaximumDisplayShare"/> of the display's usable area, the largest size that does: a whole factor of the
-    /// canvas for <see cref="CanvasScaling.Pixel"/> when one fits, otherwise the canvas's shape scaled to fit (a
-    /// 1920×1080 canvas on a 1366×768 laptop).
+    /// canvas when the presentation asks for whole-factor windows (<see cref="Presentation.WholeFactorWindows"/>, pixel
+    /// art) and one fits, otherwise the canvas's shape scaled to fit (a 1920×1080 canvas on a 1366×768 laptop).
     /// </summary>
     /// <param name="settings">The game's canvas and scaling.</param>
     /// <param name="scale">The requested multiple of the canvas (<see cref="GameSettings.Scale"/> or <c>--scale</c>).</param>
@@ -27,7 +27,7 @@ public static class WindowSizing
         float maxW = usableWidth * MaximumDisplayShare, maxH = usableHeight * MaximumDisplayShare;
         if (vw * scale <= maxW && vh * scale <= maxH) return (vw * scale, vh * scale);
         float fit = MathF.Min(maxW / vw, maxH / vh);
-        if (settings.Scaling == CanvasScaling.Pixel && fit >= 1) return (vw * (int)fit, vh * (int)fit);
+        if (settings.EffectivePresentation.WholeFactorWindows && fit >= 1) return (vw * (int)fit, vh * (int)fit);
         return (Math.Max(1, (int)(vw * fit)), Math.Max(1, (int)(vh * fit)));
     }
 

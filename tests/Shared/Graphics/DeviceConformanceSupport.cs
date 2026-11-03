@@ -2,7 +2,7 @@ using System.Numerics;
 using MicroEngine.Graphics.Devices;
 using MicroEngine.Platform;
 
-namespace MicroEngine.Graphics.Conformance;
+namespace MicroEngine.Conformance.Graphics;
 
 /// <summary>An RGBA8 image read back from a target.</summary>
 public sealed class Image(int width, int height, byte[] rgba)

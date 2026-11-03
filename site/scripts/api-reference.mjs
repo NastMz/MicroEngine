@@ -55,6 +55,11 @@ const typeGuides = {
   'MicroEngine.Core.HostBuilderExtensions': ['Composing a game for every platform', '../manual/backends.md#one-composition-for-every-platform'],
   'MicroEngine.Core.AppIdentity': ['Name, id, version and icon', '../guide/app-identity.md'],
   'MicroEngine.Graphics.BitmapFont': ['Text', '../manual/text.md'],
+  'MicroEngine.Graphics.Presentation': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],
+  'MicroEngine.Graphics.ScaleRounding': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],
+  'MicroEngine.Graphics.AspectMode': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],
+  'MicroEngine.Sdl.SdlRendererDevice': ['The graphics device', '../manual/rendering.md#the-graphics-device'],
+  'MicroEngine.Raylib.RaylibDevice': ['The graphics device', '../manual/rendering.md#the-graphics-device'],
   'MicroEngine.UI.AchievementToasts': ['Achievements', '../manual/achievements.md'],
   'MicroEngine.UI.AchievementsScene': ['Achievements', '../manual/achievements.md'],
 };

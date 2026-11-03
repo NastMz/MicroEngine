@@ -7,7 +7,7 @@ namespace MicroEngine.Core;
 
 /// <summary>
 /// Window/backbuffer settings a game declares. The virtual size is the canvas everything is drawn on: 320×180 pixel art
-/// by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with <see cref="CanvasScaling.Smooth"/>.
+/// by default, or a high-resolution canvas such as 1280×720 or 1920×1080 with <see cref="Graphics.Presentation.HighResolution2D"/>.
 /// </summary>
 /// <param name="Title">Window title and application name shown by the system.</param>
 /// <param name="VirtualWidth">Width of the virtual canvas in pixels (320 by default). Everything is drawn in these pixels and scaled to the window.</param>
@@ -19,20 +19,33 @@ namespace MicroEngine.Core;
 public sealed record GameSettings(string Title, int VirtualWidth = 320, int VirtualHeight = 180, int Scale = 4)
 {
     /// <summary>
-    /// How the canvas is scaled to the window: <see cref="CanvasScaling.Pixel"/> (the default: whole factors, nearest
-    /// sampling) for pixel art, <see cref="CanvasScaling.Smooth"/> (fills the window, linear sampling) for
-    /// high-resolution art.
+    /// A shorthand for the two presentation presets when <see cref="Presentation"/> is null:
+    /// <see cref="CanvasScaling.Pixel"/> (the default) is <see cref="Graphics.Presentation.PixelArt"/>,
+    /// <see cref="CanvasScaling.Smooth"/> is <see cref="Graphics.Presentation.HighResolution2D"/>.
     /// </summary>
     public CanvasScaling Scaling { get; init; } = CanvasScaling.Pixel;
     /// <summary>
-    /// The filter of textures created without one (images, atlases). Null (the default) follows
-    /// <see cref="Scaling"/>: nearest for pixel art, linear for smooth scaling. Each texture can still choose its own.
-    /// Glyph pages of TTF/OTF fonts do not follow it: their filter is <see cref="FontOptions.Filter"/>, or linear for
-    /// antialiased text and nearest otherwise.
+    /// How the canvas reaches the window, one choice per field (scale rounding, aspect, the canvas's upscale sampler, the
+    /// textures' default sampler, the capture scale, whole-factor windows). Null (the default) uses the preset
+    /// <see cref="Scaling"/> names; a game that sets it starts from a preset and changes what it needs:
+    /// <c>Presentation = Presentation.PixelArt with { Upscale = SamplerDescription.LinearClamp }</c>.
+    /// </summary>
+    public Presentation? Presentation { get; init; }
+    /// <summary>The presentation in effect: <see cref="Presentation"/>, or the preset <see cref="Scaling"/> names.</summary>
+    public Presentation EffectivePresentation => Presentation ?? (Scaling == CanvasScaling.Smooth ? MicroEngine.Graphics.Presentation.HighResolution2D : MicroEngine.Graphics.Presentation.PixelArt);
+    /// <summary>
+    /// The filter of textures created without one (images, atlases). Null (the default) follows the presentation's
+    /// default sampler (<see cref="Graphics.Presentation.DefaultSampler"/>): nearest for pixel art, linear for
+    /// high-resolution 2D. Each texture can still choose its own. Glyph pages of TTF/OTF fonts do not follow it: their
+    /// filter is <see cref="FontOptions.Filter"/>, or linear for antialiased text and nearest otherwise.
     /// </summary>
     public TextureFilter? TextureFilter { get; init; }
-    /// <summary>The filter textures get when they do not choose one: <see cref="TextureFilter"/>, or the one <see cref="Scaling"/> implies.</summary>
-    public TextureFilter DefaultTextureFilter => TextureFilter ?? (Scaling == CanvasScaling.Smooth ? MicroEngine.Graphics.TextureFilter.Linear : MicroEngine.Graphics.TextureFilter.Nearest);
+    /// <summary>
+    /// The filter textures get when they do not choose one: <see cref="TextureFilter"/>, or the magnification filter of the
+    /// presentation's default sampler.
+    /// </summary>
+    public TextureFilter DefaultTextureFilter => TextureFilter
+        ?? (EffectivePresentation.DefaultSampler.Mag == MicroEngine.Graphics.Devices.Filter.Linear ? MicroEngine.Graphics.TextureFilter.Linear : MicroEngine.Graphics.TextureFilter.Nearest);
     /// <summary>Fixed simulation rate in updates per second.</summary>
     public int UpdateRate { get; init; } = 60;
     /// <summary>Colour the canvas is cleared to before the scenes draw each frame (black by default).</summary>
