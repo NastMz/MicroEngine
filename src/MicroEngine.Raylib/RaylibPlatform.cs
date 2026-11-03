@@ -43,7 +43,7 @@ public sealed record DesktopOptions
 /// <see cref="IDisplayControl"/>, <see cref="IDisplayPacing"/>, <see cref="ITouchScreen"/> and, outside browsers,
 /// <see cref="IPreciseDelay"/>.
 /// </summary>
-public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock
+public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView
 {
     private readonly GameSettings _settings;
     // A visible desktop window: the only kind whose window and monitor the platform changes. Browsers and Android leave
@@ -165,6 +165,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         _focused = Rl.IsWindowFocused();
         _capabilities.Add<IDisplayControl>(this);
         _capabilities.Add<IDisplayPacing>(this);
+        _capabilities.Add<IScreenView>(this);
         _capabilities.Add<ITouchScreen>(_touch);
         _capabilities.Add<IInputBackend>(_input);
         _capabilities.Add<IGamepadRumble>(_input);
@@ -255,7 +256,22 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     /// <inheritdoc/>
     public IRenderer BeginFrame()
     {
+        // An expanding presentation grows the canvas with the window.
+        var size = _touch.Size;
+        var area = _touch.SafeArea is { Width: > 0, Height: > 0 } safe ? safe : new RectF(0, 0, size.X, size.Y);
+        var (cw, ch) = _settings.EffectivePresentation.CanvasSize(area, _settings.VirtualWidth, _settings.VirtualHeight);
+        if (_canvas.EnsureSize(cw, ch)) (_input.CanvasWidth, _input.CanvasHeight) = (cw, ch);
         return _canvas.BeginFrame();
+    }
+
+    (int Width, int Height) IScreenView.ScreenPixels => (Math.Max(1, (int)_touch.Size.X), Math.Max(1, (int)_touch.Size.Y));
+    (int Width, int Height) IScreenView.CanvasSize => (_canvas.Target.Width, _canvas.Target.Height);
+    RectF IScreenView.WorldFrame => FrameRect();
+    float IScreenView.UiScale => _settings.EffectivePresentation.UiScale;
+    IRenderer IScreenView.BeginUi()
+    {
+        var (width, height) = ((IScreenView)this).ScreenPixels;
+        return _canvas.BeginUi(width, height, _settings.EffectivePresentation.UiScale);
     }
 
     /// <inheritdoc/>
@@ -420,8 +436,8 @@ internal sealed class RaylibInput : BufferedInputBackend, IGamepadRumble, ITextI
 
     /// <summary>Where the frame was drawn, set by the platform each frame to map the mouse onto the canvas.</summary>
     public RectF Frame { get; set; }
-    public int CanvasWidth { get; init; } = 320;
-    public int CanvasHeight { get; init; } = 180;
+    public int CanvasWidth { get; set; } = 320;
+    public int CanvasHeight { get; set; } = 180;
 
     public static DeviceId PadId(int pad) => new(PadBase + pad);
 

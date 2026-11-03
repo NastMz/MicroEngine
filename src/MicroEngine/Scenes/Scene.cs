@@ -106,9 +106,33 @@ public abstract class Scene : IStateHashed
     /// world's clock (the same at scale 1; scaled by <see cref="WorldClock.Scale"/>; 0 while it is frozen).
     /// </param>
     public abstract void Update(float dt);
-    /// <summary>Draws the scene once per frame into the virtual canvas. Scenes below an overlay are drawn first.</summary>
+    /// <summary>
+    /// Draws the scene's world once per frame into the canvas (the world view). Scenes below an overlay are drawn first.
+    /// With a <see cref="WorldCamera"/>, the engine pushes it around this call.
+    /// </summary>
     /// <param name="renderer">The renderer of the current frame.</param>
     public abstract void Draw(IRenderer renderer);
+
+    /// <summary>
+    /// Draws the scene's interface once per frame in the UI view, after every scene's world: in UI units at the window's
+    /// resolution (<see cref="Core.GameViews.UiSize"/>), composited over the world, so text and shapes stay sharp
+    /// whatever the canvas's resolution. On a platform without a UI view it is drawn in the canvas instead. Does nothing by
+    /// default.
+    /// </summary>
+    /// <param name="ui">The UI view's renderer: <c>ui.Width</c> and <c>ui.Height</c> are its size in UI units.</param>
+    public virtual void DrawUi(IRenderer ui) { }
+
+    /// <summary>
+    /// Whether <paramref name="uiPoint"/> (UI units) lies on this scene's interface, so the pointer belongs to the UI view
+    /// there and not to the world (<see cref="Core.GameViews.PointerOnUi"/>). False by default.
+    /// </summary>
+    public virtual bool UiContains(Vector2 uiPoint) => false;
+
+    /// <summary>
+    /// The camera of the scene's world view: when set, the engine pushes it before <see cref="Draw"/> and pops it after,
+    /// so <see cref="Draw"/> draws in world coordinates. Null (the default) draws in canvas pixels.
+    /// </summary>
+    public Camera2D? WorldCamera { get; set; }
 
     /// <summary>The engine's part of the scene's state, then the scene's own (<see cref="HashState"/>).</summary>
     internal void HashAll(StateHasher hash)
@@ -328,10 +352,35 @@ public sealed class SceneManager
         while (first > 0 && _stack[first].IsOverlay) first--;
         for (int i = Math.Max(first, 0); i < _stack.Count; i++)
         {
-            _stack[i].BeginDraw();
-            _stack[i].Draw(renderer);
+            var scene = _stack[i];
+            scene.BeginDraw();
+            if (scene.WorldCamera is { } camera) renderer.PushCamera(camera);
+            scene.Draw(renderer);
+            if (scene.WorldCamera is not null) renderer.PopCamera();
         }
         _transition?.DrawAt(renderer, _game.FrameBlend);
+    }
+
+    /// <summary>The visible scenes' interfaces in the UI view; a transition covers it too when it is a view of its own.</summary>
+    internal void DrawUi(IRenderer ui, bool separate)
+    {
+        for (int i = FirstVisible(); i < _stack.Count; i++) _stack[i].DrawUi(ui);
+        if (separate) _transition?.DrawAt(ui, _game.FrameBlend);
+    }
+
+    /// <summary>Whether a visible scene's interface contains <paramref name="uiPoint"/> (topmost first).</summary>
+    internal bool VisibleUiContains(Vector2 uiPoint)
+    {
+        for (int i = _stack.Count - 1; i >= FirstVisible(); i--)
+            if (_stack[i].UiContains(uiPoint)) return true;
+        return false;
+    }
+
+    private int FirstVisible()
+    {
+        int first = _stack.Count - 1;
+        while (first > 0 && _stack[first].IsOverlay) first--;
+        return Math.Max(first, 0);
     }
 
     internal void Clear()

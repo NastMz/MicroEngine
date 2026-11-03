@@ -52,6 +52,31 @@ public DeviceRenderer(Renderer2D batcher, DeviceGraphics graphics, RenderTarget 
 
 `target` RenderTarget
 
+### <a id="MicroEngine_Graphics_DeviceRenderer__ctor_MicroEngine_Graphics_Renderer2D_MicroEngine_Graphics_DeviceGraphics_MicroEngine_Graphics_Devices_RenderTarget_System_Single_"></a> DeviceRenderer\(Renderer2D, DeviceGraphics, RenderTarget, float\)
+
+A renderer whose units are <code class="paramref">scale</code> target pixels each (the UI view: UI units at the window's
+resolution). [Width](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Width) and [Height](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Height) are the target's size in those units; the clip is in them too.
+
+```csharp
+public DeviceRenderer(Renderer2D batcher, DeviceGraphics graphics, RenderTarget target, float scale)
+```
+
+#### Parameters
+
+`batcher` Renderer2D
+
+`graphics` [DeviceGraphics](MicroEngine.Graphics.DeviceGraphics.md)
+
+`target` RenderTarget
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">scale</code> is not positive.
+
 ## Properties
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_Height"></a> Height

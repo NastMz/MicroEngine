@@ -63,25 +63,26 @@ public sealed class ScalableFontTests
     [TestMethod]
     [DataRow(TextureFilter.Nearest)]
     [DataRow(TextureFilter.Linear)]
-    public void The_glyph_filter_comes_from_the_font_options_not_the_game_default(TextureFilter gameDefault)
+    public void The_glyph_filter_is_the_game_default_unless_the_font_options_choose_one(TextureFilter gameDefault)
     {
-        // As the rendering manual states: FontOptions.Filter, else linear for antialiased text and nearest otherwise.
+        // As the rendering manual states: FontOptions.Filter, else the game's default (its presentation's default sampler),
+        // whether the text is antialiased or not.
         var device = new HeadlessGraphicsDevice { DefaultFilter = gameDefault };
         using var smooth = Inter(device);
         using var pixel = Inter(device, FontOptions.Pixel);
         using var chosen = Inter(device, new FontOptions(Filter: TextureFilter.Nearest));
-        Assert.AreEqual(TextureFilter.Linear, smooth.Filter);
-        Assert.AreEqual(TextureFilter.Nearest, pixel.Filter);
-        Assert.AreEqual(TextureFilter.Nearest, chosen.Filter);
+        Assert.AreEqual(gameDefault, smooth.Filter);
+        Assert.AreEqual(TextureFilter.Nearest, pixel.Filter, "the pixel-font options choose nearest");
+        Assert.AreEqual(TextureFilter.Nearest, chosen.Filter, "a font's own choice wins");
         var assets = new AssetCache(device, Path.Combine(AppContext.BaseDirectory, "Gallery"));
-        Assert.AreEqual(TextureFilter.Linear, assets.Font("fonts/Inter-Regular.ttf").Filter, "loaded through the cache too");
+        Assert.AreEqual(gameDefault, assets.Font("fonts/Inter-Regular.ttf").Filter, "loaded through the cache too");
         assets.Dispose();
     }
 
     [TestMethod]
     public void Pages_follow_the_font_filter_and_disposing_releases_them()
     {
-        var device = new HeadlessGraphicsDevice();
+        var device = new HeadlessGraphicsDevice { DefaultFilter = TextureFilter.Linear };
         var smooth = Inter(device);
         smooth.Prepare("abc", 20);
         Assert.AreEqual(TextureFilter.Linear, smooth.Filter);

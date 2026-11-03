@@ -205,6 +205,19 @@ public Tweener Tweens { get; }
 
  [Tweener](MicroEngine.Scenes.Tweener.md)
 
+### <a id="MicroEngine_Scenes_Scene_WorldCamera"></a> WorldCamera
+
+The camera of the scene's world view: when set, the engine pushes it before [Draw](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Draw_MicroEngine_Graphics_IRenderer_) and pops it after,
+so [Draw](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Draw_MicroEngine_Graphics_IRenderer_) draws in world coordinates. Null (the default) draws in canvas pixels.
+
+```csharp
+public Camera2D? WorldCamera { get; set; }
+```
+
+#### Property Value
+
+ Camera2D?
+
 ## Methods
 
 ### <a id="MicroEngine_Scenes_Scene_Describe"></a> Describe\(\)
@@ -222,7 +235,8 @@ public virtual string? Describe()
 
 ### <a id="MicroEngine_Scenes_Scene_Draw_MicroEngine_Graphics_IRenderer_"></a> Draw\(IRenderer\)
 
-Draws the scene once per frame into the virtual canvas. Scenes below an overlay are drawn first.
+Draws the scene's world once per frame into the canvas (the world view). Scenes below an overlay are drawn first.
+With a [WorldCamera](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_WorldCamera), the engine pushes it around this call.
 
 ```csharp
 public abstract void Draw(IRenderer renderer)
@@ -233,6 +247,23 @@ public abstract void Draw(IRenderer renderer)
 `renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 The renderer of the current frame.
+
+### <a id="MicroEngine_Scenes_Scene_DrawUi_MicroEngine_Graphics_IRenderer_"></a> DrawUi\(IRenderer\)
+
+Draws the scene's interface once per frame in the UI view, after every scene's world: in UI units at the window's
+resolution ([UiSize](MicroEngine.Core.GameViews.md#MicroEngine_Core_GameViews_UiSize)), composited over the world, so text and shapes stay sharp
+whatever the canvas's resolution. On a platform without a UI view it is drawn in the canvas instead. Does nothing by
+default.
+
+```csharp
+public virtual void DrawUi(IRenderer ui)
+```
+
+#### Parameters
+
+`ui` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+The UI view's renderer: <code>ui.Width</code> and <code>ui.Height</code> are its size in UI units.
 
 ### <a id="MicroEngine_Scenes_Scene_Enter"></a> Enter\(\)
 
@@ -276,6 +307,23 @@ Called when a scene pushed above this one is popped.
 ```csharp
 public virtual void Resume()
 ```
+
+### <a id="MicroEngine_Scenes_Scene_UiContains_System_Numerics_Vector2_"></a> UiContains\(Vector2\)
+
+Whether <code class="paramref">uiPoint</code> (UI units) lies on this scene's interface, so the pointer belongs to the UI view
+there and not to the world ([PointerOnUi](MicroEngine.Core.GameViews.md#MicroEngine_Core_GameViews_PointerOnUi)). False by default.
+
+```csharp
+public virtual bool UiContains(Vector2 uiPoint)
+```
+
+#### Parameters
+
+`uiPoint` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Scenes_Scene_Update_System_Single_"></a> Update\(float\)
 

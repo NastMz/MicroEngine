@@ -23,7 +23,7 @@ namespace MicroEngine.Sdl;
 /// <see cref="IDisplayControl"/>, <see cref="IPlatformDiagnostics"/>, <see cref="IDisplayPacing"/>,
 /// <see cref="IPreciseDelay"/> and <see cref="ITouchScreen"/>.
 /// </summary>
-public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock
+public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView
 {
     private readonly GameSettings _settings;
     private readonly int _captureScale;
@@ -189,6 +189,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _capabilities.Add<IDisplayControl>(this);
         _capabilities.Add<IPlatformDiagnostics>(this);
         _capabilities.Add<IDisplayPacing>(this);
+        _capabilities.Add<IScreenView>(this);
         _capabilities.Add<IPreciseDelay>(this);
         _capabilities.Add<ITouchScreen>(_touch);
         _capabilities.Add<IInputBackend>(_input);
@@ -478,7 +479,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
 
     /// <summary>A window position in SDL's window coordinates as virtual canvas pixels.</summary>
     internal Vector2 ToCanvas(float x, float y) =>
-        FrameLayout.ToCanvas(ToPixels(x, y), FrameRect(), _settings.VirtualWidth, _settings.VirtualHeight);
+        FrameLayout.ToCanvas(ToPixels(x, y), FrameRect(), _canvas.Target.Width, _canvas.Target.Height);
 
     /// <summary>A window position in SDL's window coordinates as render pixels (the touch screen's and overlay's pixels).</summary>
     internal Vector2 ToPixels(float x, float y)
@@ -509,7 +510,29 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <inheritdoc/>
     public IRenderer BeginFrame()
     {
+        // An expanding presentation grows the canvas with the window.
+        var (width, height) = WindowPixels();
+        var area = _touch.SafeArea is { Width: > 0, Height: > 0 } safe ? safe : new RectF(0, 0, width, height);
+        var (cw, ch) = _settings.EffectivePresentation.CanvasSize(area, _settings.VirtualWidth, _settings.VirtualHeight);
+        _canvas.EnsureSize(cw, ch);
         return _canvas.BeginFrame();
+    }
+
+    private (int Width, int Height) WindowPixels()
+    {
+        int w, h;
+        SDL_GetRenderOutputSize(_sdl, &w, &h);
+        return (Math.Max(1, w), Math.Max(1, h));
+    }
+
+    (int Width, int Height) IScreenView.ScreenPixels => WindowPixels();
+    (int Width, int Height) IScreenView.CanvasSize => (_canvas.Target.Width, _canvas.Target.Height);
+    RectF IScreenView.WorldFrame => FrameRect();
+    float IScreenView.UiScale => _settings.EffectivePresentation.UiScale;
+    IRenderer IScreenView.BeginUi()
+    {
+        var (width, height) = WindowPixels();
+        return _canvas.BeginUi(width, height, _settings.EffectivePresentation.UiScale);
     }
 
     /// <inheritdoc/>

@@ -67,6 +67,12 @@ public abstract class Game : IEngineModule, IStateHashed
     /// <summary>The scene stack. Push the first scene from <see cref="Load"/>.</summary>
     public SceneManager Scenes { get; private set; } = null!;
     /// <summary>
+    /// The world view and the UI view, and the mapping between window pixels, canvas pixels and UI units, with the
+    /// pointer in each (<see cref="GameViews"/>).
+    /// </summary>
+    public GameViews Views => _views ??= new GameViews(this);
+    private GameViews? _views;
+    /// <summary>
     /// The game's content files: textures, atlases and fonts loaded from <c>Content/</c>, shared and released by the
     /// engine (<see cref="AssetCache"/>). Created before <see cref="Load"/>; everything it loaded is disposed after
     /// <see cref="Unload"/>.
@@ -388,6 +394,9 @@ public abstract class Game : IEngineModule, IStateHashed
         renderer.Clear(Settings.Background);
         Scenes.Draw(renderer);
         AchievementToasts?.Draw(renderer, Font);
+        // The UI view: at the window's resolution where the platform offers it, else in the canvas over the world.
+        var ui = TryGetCapability(out IScreenView? screen) ? screen.BeginUi() : renderer;
+        Scenes.DrawUi(ui, separate: !ReferenceEquals(ui, renderer));
     }
 
     private bool _pausedMusicForSuspension;

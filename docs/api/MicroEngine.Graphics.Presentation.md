@@ -133,6 +133,25 @@ public ScaleRounding Rounding { get; init; }
 
  [ScaleRounding](MicroEngine.Graphics.ScaleRounding.md)
 
+### <a id="MicroEngine_Graphics_Presentation_UiScale"></a> UiScale
+
+UI units per screen pixel of the UI view, drawn over the world at the window's resolution (1 by default: one UI unit
+is one window pixel). 2 makes the UI twice as large on a high-density screen.
+
+```csharp
+public float UiScale { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The value is not a positive finite number.
+
 ### <a id="MicroEngine_Graphics_Presentation_Upscale"></a> Upscale
 
 How the canvas is sampled when it is drawn to the window at another size.
@@ -187,6 +206,34 @@ public Presentation <Clone>$()
 #### Returns
 
  [Presentation](MicroEngine.Graphics.Presentation.md)
+
+### <a id="MicroEngine_Graphics_Presentation_CanvasSize_MicroEngine_RectF_System_Int32_System_Int32_"></a> CanvasSize\(RectF, int, int\)
+
+The canvas size for <code class="paramref">area</code>: the configured size, except with [Expand](MicroEngine.Graphics.AspectMode.md),
+where the side the window has room for grows (at the scale [Rounding](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Rounding) chooses) until the scaled canvas
+fills the area. Never smaller than the configured size.
+
+```csharp
+public (int Width, int Height) CanvasSize(RectF area, int canvasWidth, int canvasHeight)
+```
+
+#### Parameters
+
+`area` RectF
+
+`canvasWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`canvasHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ \([int](https://learn.microsoft.com/dotnet/api/system.int32) [Width](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.int32,system.int32\-.width), [int](https://learn.microsoft.com/dotnet/api/system.int32) [Height](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.int32,system.int32\-.height)\)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The configured size is not positive.
 
 ### <a id="MicroEngine_Graphics_Presentation_Equals_System_Object_"></a> Equals\(object?\)
 

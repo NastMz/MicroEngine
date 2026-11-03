@@ -8,6 +8,18 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- A frame has a world view and a UI view: `Scene.DrawUi(IRenderer ui)` draws the interface at the window's resolution
+  over the world (UI units: window pixels / `Presentation.UiScale`), `Scene.UiContains` says where it takes the pointer,
+  `Scene.WorldCamera` is pushed around `Draw`, and `Game.Views` maps positions and the pointer between window pixels,
+  canvas pixels and UI units. Nothing to change: a scene without `DrawUi` draws as before. Platforms of your own may
+  offer the UI view as the `IScreenView` capability; without it `DrawUi` draws in the canvas.
+- `Presentation.Aspect = AspectMode.Expand` grows the canvas with the window instead of letterboxing; the canvas's
+  current size is `IRenderer.Width`/`Height` (and `Game.Views.CanvasSize`), while `Game.Width`/`Height` stay the
+  configured size.
+- Glyph pages of TTF/OTF fonts created without `FontOptions.Filter` follow the game's default filter (the presentation's
+  `DefaultSampler`) instead of choosing from `Antialiasing`; `FontOptions.Pixel` now sets nearest itself. **Migration:** a
+  pixel-art game whose antialiased `ScalableFont` must stay linear passes `new FontOptions(Filter: TextureFilter.Linear)`.
+
 - Scenes can hold their objects in a world (`Scene.Objects`, an `IWorld` in the `MicroEngine.Scenes` namespace, from
   the new `MicroEngine.Scene.dll` the `MicroEngine` package carries), and a `Scene<TResult>` can return a value to the
   scene below (`Game.Scenes.Push(scene, onResult)`, `Finish(value)`). Nothing changes for a scene that does not read
