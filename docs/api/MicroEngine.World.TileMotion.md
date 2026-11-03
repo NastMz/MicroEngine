@@ -3,12 +3,13 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Physics.Tiles.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
 
-Moves an axis-aligned box through a tile grid (plus optional extra solid rectangles such as
-moving platforms or push blocks). X is resolved before Y, in sub-steps no larger than half a
-tile, so fast bodies never tunnel. One-way tiles only stop bodies falling onto their top edge.
+Moves an axis-aligned box through a tile grid (plus optional extra solid rectangles such as moving platforms or push
+blocks). X is resolved before Y, each as a swept test in sub-steps no larger than half a tile: the box stops flush
+against the first solid tile or rectangle in its way, however thin, so it never tunnels. One-way tiles only stop
+bodies falling onto their top edge.
 
 ```csharp
 public static class TileMotion
@@ -18,6 +19,11 @@ public static class TileMotion
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
 [TileMotion](MicroEngine.World.TileMotion.md)
+
+## Remarks
+
+A stateless helper over one grid. A world of bodies, sensors, queries and moving solids that push and carry bodies
+is [TilePhysicsWorld2D](MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md), built on the same swept test.
 
 ## Methods
 
@@ -85,7 +91,9 @@ The tiles to collide with.
 
 `solids` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<RectF\>?
 
-Extra solid rectangles; one the box already overlaps before moving is ignored, so a body is never trapped inside it.
+Extra solid rectangles. One the box already overlaps before moving does not block it, so a body is never trapped
+inside it, except a rectangle that rose into a box moving down: when its top edge is inside the box's lower half,
+the box is first lifted onto it (if nothing solid is there), as a platform carries what stands on it.
 
 `ignoreOneWay` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
