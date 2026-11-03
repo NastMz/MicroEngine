@@ -51,8 +51,9 @@ public interface IEngineEventSink
 /// <item><b>Clock.</b> <see cref="Clock"/> is monotonic and nothing else: it is never derived from frames, steps or the
 /// update rate. The loop owns time.</item>
 /// <item><b>Capabilities.</b> Optional features (changing the display mode, diagnostics, a touch screen, display
-/// pacing, a precise timer) are found with <see cref="TryGetCapability{T}"/>, never by casting the host. A host that
-/// wraps another forwards the query.</item>
+/// pacing, a precise timer) are found with <see cref="TryGetCapability{T}"/>, never by casting the host. A host's
+/// capabilities do not change while it runs (a capability's values may). A host that wraps another forwards the
+/// query.</item>
 /// <item><b>Page-driven hosts.</b> A host whose frames are driven by a page (a browser's animation frames) reports
 /// <see cref="CanBlock"/> false and then never blocks: no waits, sleeps or precise delays in any member; the page paces
 /// the frames. It reads the surface size from the canvas after start, never from the size requested at creation. It

@@ -85,6 +85,18 @@ public PointerState Pointer { get; }
 
  [PointerState](MicroEngine.Input.PointerState.md)
 
+### <a id="MicroEngine_Core_CompositeInput_Sources"></a> Sources
+
+The sources read, in order.
+
+```csharp
+public IReadOnlyList<IInputSource> Sources { get; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[IInputSource](MicroEngine.Input.IInputSource.md)\>
+
 ## Methods
 
 ### <a id="MicroEngine_Core_CompositeInput_GetPadAxis_MicroEngine_Input_PadAxis_"></a> GetPadAxis\(PadAxis\)

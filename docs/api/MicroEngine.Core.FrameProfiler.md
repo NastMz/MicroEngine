@@ -38,7 +38,7 @@ public FrameProfiler(int capacity = 36000)
 
 ### <a id="MicroEngine_Core_FrameProfiler_DisplayRate"></a> DisplayRate
 
-The refresh rate of the display pacing the run ([DisplayRate](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_DisplayRate)), or 0 when unknown. With it,
+The refresh rate of the display pacing the run ([IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md)), or 0 when unknown. With it,
 motion is judged against the whole refresh periods each frame stayed on screen rather than against the loop's
 irregular wake-ups; the loop sets it when the run starts.
 

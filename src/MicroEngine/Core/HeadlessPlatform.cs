@@ -124,7 +124,7 @@ public sealed class HeadlessPlatform : IPlatform
     }
 
     /// <summary>The headless platform as a catalog entry (<c>--platform headless</c>, <c>--headless</c>).</summary>
-    public static PlatformProfile Profile { get; } = new("headless", "no window, devices or sound, for tests and CI", For);
+    public static PlatformProfile Profile { get; } = new("headless", "no window, devices or sound; one step per frame, for tests and CI", For);
 
     /// <summary>Changes the surface's size; the next pump delivers the resize (once, when the size changed).</summary>
     public void Resize(int width, int height)

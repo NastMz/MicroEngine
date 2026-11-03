@@ -96,7 +96,7 @@ public bool Mute { get; init; }
 ### <a id="MicroEngine_Core_RunOptions_PaceToDisplay"></a> PaceToDisplay
 
 Whether real-time runs count elapsed time in refresh periods of the display that paces them
-([DisplayRate](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_DisplayRate)), which removes the stutter of an irregular wake-up (true by default). False
+([IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md)), which removes the stutter of an irregular wake-up (true by default). False
 takes every frame's time as measured (the launcher's <code>--pacing measured</code>), for comparisons.
 
 ```csharp
@@ -145,8 +145,8 @@ public int Seed { get; init; }
 
 ### <a id="MicroEngine_Core_RunOptions_StartScreen"></a> StartScreen
 
-Whether the game's start screen ([StartScreen](MicroEngine.Core.StartScreen.md)) is drawn while it loads, on platforms that run in
-real time and for games whose identity keeps it on (true by default). Headless runs never draw it.
+Whether the game's start screen ([StartScreen](MicroEngine.Core.StartScreen.md)) is drawn while it loads, for runs whose time mode
+([TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode)) is not deterministic and games whose identity keeps it on (true by default).
 
 ```csharp
 public bool StartScreen { get; init; }
@@ -160,8 +160,8 @@ public bool StartScreen { get; init; }
 
 How the loop advances time (the launcher's <code>--time</code>): [RealTime](MicroEngine.Kernel.TimeMode.md) with the wall
 clock, or [Deterministic](MicroEngine.Kernel.TimeMode.md), one fixed step per frame. It wins over the game's
-[Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_); null (the default) keeps the game's choice, else the platform's preference
-([RealTime](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_RealTime)).
+[Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_); null (the default) keeps the game's choice, else the [TimeSettings](MicroEngine.Kernel.TimeSettings.md)
+default (real time). The platform has no say: deterministic time is the loop's business only.
 
 ```csharp
 public TimeMode? TimeMode { get; init; }

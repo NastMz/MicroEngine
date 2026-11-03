@@ -6,8 +6,11 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
 
-What a host asks of a platform: the game's settings, window options and any subsystem it supplies itself.
-A backend reads the window options and must not open its own audio device when [OpensOwnAudio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_OpensOwnAudio) is false.
+What a host asks of a platform: the game's settings, window options and any subsystem it supplies itself. Every
+option is explicit and has a documented default; none depends on how the loop advances time (that is the loop's
+business only, [TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode)). A backend honours the supplied parts by building its audio device
+with [CreateAudio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_CreateAudio_System_Func_MicroEngine_Audio_IAudioDevice__) and its input with [CombineInput](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_CombineInput_MicroEngine_Input_IInputSource_); [Create](MicroEngine.Core.PlatformProfile.md#MicroEngine_Core_PlatformProfile_Create_MicroEngine_Core_PlatformRequest_)
+checks that it did.
 
 ```csharp
 public sealed record PlatformRequest : IEquatable<PlatformRequest>
@@ -26,8 +29,11 @@ public sealed record PlatformRequest : IEquatable<PlatformRequest>
 
 ### <a id="MicroEngine_Core_PlatformRequest__ctor_MicroEngine_Core_GameSettings_"></a> PlatformRequest\(GameSettings\)
 
-What a host asks of a platform: the game's settings, window options and any subsystem it supplies itself.
-A backend reads the window options and must not open its own audio device when [OpensOwnAudio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_OpensOwnAudio) is false.
+What a host asks of a platform: the game's settings, window options and any subsystem it supplies itself. Every
+option is explicit and has a documented default; none depends on how the loop advances time (that is the loop's
+business only, [TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode)). A backend honours the supplied parts by building its audio device
+with [CreateAudio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_CreateAudio_System_Func_MicroEngine_Audio_IAudioDevice__) and its input with [CombineInput](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_CombineInput_MicroEngine_Input_IInputSource_); [Create](MicroEngine.Core.PlatformProfile.md#MicroEngine_Core_PlatformProfile_Create_MicroEngine_Core_PlatformRequest_)
+checks that it did.
 
 ```csharp
 public PlatformRequest(GameSettings Settings)
@@ -41,7 +47,7 @@ public PlatformRequest(GameSettings Settings)
 
 ### <a id="MicroEngine_Core_PlatformRequest_Audio"></a> Audio
 
-Creates the audio device used instead of the backend's; the platform disposes it.
+Creates the audio device used instead of the backend's; the platform owns and disposes it.
 
 ```csharp
 public Func<IAudioDevice>? Audio { get; init; }
@@ -53,9 +59,8 @@ public Func<IAudioDevice>? Audio { get; init; }
 
 ### <a id="MicroEngine_Core_PlatformRequest_AudioOutput"></a> AudioOutput
 
-Whether the backend may open a physical audio device. [Automatic](MicroEngine.Core.AudioOutput.md) (the default) opens one
-for real-time runs, hidden windows included, and none for deterministic-time runs ([FixedStep](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_FixedStep)),
-whose sound would not follow the wall clock.
+Whether the backend may open a physical audio device: [Automatic](MicroEngine.Core.AudioOutput.md) (the default) and
+[Device](MicroEngine.Core.AudioOutput.md) open one, [Silent](MicroEngine.Core.AudioOutput.md) opens none.
 
 ```csharp
 public AudioOutput AudioOutput { get; init; }
@@ -90,23 +95,9 @@ public IReadOnlyList<IInputSource> ExtraInput { get; init; }
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[IInputSource](MicroEngine.Input.IInputSource.md)\>
 
-### <a id="MicroEngine_Core_PlatformRequest_FixedStep"></a> FixedStep
-
-The run uses deterministic time (one simulation step per frame, [Deterministic](MicroEngine.Kernel.TimeMode.md)):
-the backend reports it as its preference ([RealTime](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_RealTime) false), does not wait for the display
-and does not hold devices behind a start screen. It never changes the backend's clock, which stays monotonic.
-
-```csharp
-public bool FixedStep { get; init; }
-```
-
-#### Property Value
-
- [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
 ### <a id="MicroEngine_Core_PlatformRequest_Hidden"></a> Hidden
 
-Renders into a hidden window (captures still work).
+Renders into a hidden window (captures still work). A hidden window never waits for the display.
 
 ```csharp
 public bool Hidden { get; init; }
@@ -142,7 +133,7 @@ public bool Mute { get; init; }
 
 ### <a id="MicroEngine_Core_PlatformRequest_OpensOwnAudio"></a> OpensOwnAudio
 
-Whether the backend should open its own audio device.
+Whether the backend should open its own audio device: no device was supplied, no mute, and the output is not silent.
 
 ```csharp
 public bool OpensOwnAudio { get; }
@@ -174,6 +165,35 @@ public GameSettings Settings { get; init; }
 
  [GameSettings](MicroEngine.Core.GameSettings.md)
 
+### <a id="MicroEngine_Core_PlatformRequest_StartGamepadsAfterFirstFrame"></a> StartGamepadsAfterFirstFrame
+
+Whether the backend starts its gamepad subsystem only after the first frame is presented (false by default:
+with the platform). Hosts that present a start screen while the game loads set it, so a slow gamepad start-up
+(about a second on some Windows machines) never keeps the window from appearing; pads already connected are
+reported when it starts.
+
+```csharp
+public bool StartGamepadsAfterFirstFrame { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_PlatformRequest_WaitForDisplay"></a> WaitForDisplay
+
+Whether the frames of a visible window may wait for the display's refresh (true by default): VSync as
+[VSync](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_VSync) asks, and frames paced to the display ([IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md)). False
+never waits, whatever the settings say, for checks that run as fast as they can.
+
+```csharp
+public bool WaitForDisplay { get; init; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ## Methods
 
 ### <a id="MicroEngine_Core_PlatformRequest__Clone__"></a> <Clone\>$\(\)
@@ -185,6 +205,40 @@ public PlatformRequest <Clone>$()
 #### Returns
 
  [PlatformRequest](MicroEngine.Core.PlatformRequest.md)
+
+### <a id="MicroEngine_Core_PlatformRequest_CombineInput_MicroEngine_Input_IInputSource_"></a> CombineInput\(IInputSource\)
+
+The input a backend reports for this request: its own source, read together with [ExtraInput](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_ExtraInput) when there are any.
+
+```csharp
+public IInputSource CombineInput(IInputSource own)
+```
+
+#### Parameters
+
+`own` [IInputSource](MicroEngine.Input.IInputSource.md)
+
+#### Returns
+
+ [IInputSource](MicroEngine.Input.IInputSource.md)
+
+### <a id="MicroEngine_Core_PlatformRequest_CreateAudio_System_Func_MicroEngine_Audio_IAudioDevice__"></a> CreateAudio\(Func<IAudioDevice\>\)
+
+The audio device a backend uses for this request: the one the host supplied ([Audio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_Audio)), else the
+backend's own (<code class="paramref">openOwn</code>) when [OpensOwnAudio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_OpensOwnAudio), else a silent device. The backend
+owns and disposes the result.
+
+```csharp
+public IAudioDevice CreateAudio(Func<IAudioDevice> openOwn)
+```
+
+#### Parameters
+
+`openOwn` [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[IAudioDevice](MicroEngine.Audio.IAudioDevice.md)\>
+
+#### Returns
+
+ [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
 ### <a id="MicroEngine_Core_PlatformRequest_Deconstruct_MicroEngine_Core_GameSettings__"></a> Deconstruct\(out GameSettings\)
 

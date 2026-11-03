@@ -34,7 +34,7 @@ Time from the start of the previous frame to the start of this one (0 for the fi
 
 `Events` [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-Polling system events ([PollEvents](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_PollEvents)).
+Polling system events ([PumpEvents](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_PumpEvents_MicroEngine_Platform_IEngineEventSink_)).
 
 `Update` [double](https://learn.microsoft.com/dotnet/api/system.double)
 
@@ -97,7 +97,7 @@ public int Collections { get; init; }
 
 ### <a id="MicroEngine_Core_FrameSample_Events"></a> Events
 
-Polling system events ([PollEvents](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_PollEvents)).
+Polling system events ([PumpEvents](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_PumpEvents_MicroEngine_Platform_IEngineEventSink_)).
 
 ```csharp
 public double Events { get; init; }

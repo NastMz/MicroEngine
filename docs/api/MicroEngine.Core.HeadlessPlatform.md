@@ -6,12 +6,15 @@ Namespace: [MicroEngine.Core](MicroEngine.Core.md)
 Assembly: MicroEngine.dll  
 Guide: [Testing your game](../examples/testing.md)  
 
-A windowless platform: deterministic time by default ([RealTime](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_RealTime) is false), no devices, and a renderer that counts calls (or, with
-[Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize), also records them and draws them with the CPU reference rasterizer). Used by automated tests
-and CI to play whole games through scripts.
+A windowless platform: no devices, and a renderer that counts calls (or, with [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize), also records
+them and draws them with the CPU reference rasterizer). Used by automated tests and CI to play whole games through
+scripts. Its surface has the canvas's size; tests drive its events by hand ([Resize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Resize_System_Int32_System_Int32_), [Focus](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Focus_System_Boolean_),
+[Suspend](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Suspend), [Resume](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Resume), [RequestQuit](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_RequestQuit)), which the next event pump delivers in order.
+It has no time-mode preference: a run that should advance one step per frame says so
+([TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode); the launcher's <code>--headless</code> does).
 
 ```csharp
-public sealed class HeadlessPlatform : IPlatform, IDisposable
+public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable
 ```
 
 #### Inheritance
@@ -22,6 +25,7 @@ public sealed class HeadlessPlatform : IPlatform, IDisposable
 #### Implements
 
 [IPlatform](MicroEngine.Core.IPlatform.md), 
+IPlatformHost, 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
 ## Constructors
@@ -44,7 +48,7 @@ public HeadlessPlatform(int width = 320, int height = 180)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Audio"></a> Audio
 
-The same device as [SilentAudio](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_SilentAudio).
+The device the request supplied ([Audio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_Audio)), otherwise [SilentAudio](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_SilentAudio).
 
 ```csharp
 public IAudioDevice Audio { get; }
@@ -54,9 +58,35 @@ public IAudioDevice Audio { get; }
 
  [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
+### <a id="MicroEngine_Core_HeadlessPlatform_CanBlock"></a> CanBlock
+
+True: tests and CI may block.
+
+```csharp
+public bool CanBlock { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_HeadlessPlatform_Clock"></a> Clock
+
+A monotonic clock in seconds since the platform was created. The loop owns time: in deterministic time it never
+reads this clock to decide how many steps a frame runs.
+
+```csharp
+public IMonotonicClock Clock { get; }
+```
+
+#### Property Value
+
+ IMonotonicClock
+
 ### <a id="MicroEngine_Core_HeadlessPlatform_CloseRequested"></a> CloseRequested
 
-Set it to true to stop the loop at the next frame, as if the window closed.
+Set it to true to ask the game to quit at the next event pump, as if the window's close button was pressed; the
+request is delivered once while it stays true. Setting it back to false allows a later request.
 
 ```csharp
 public bool CloseRequested { get; set; }
@@ -80,7 +110,7 @@ public IGraphicsDevice Graphics { get; }
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Input"></a> Input
 
-The same source as [Keys](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Keys).
+[Keys](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Keys), read together with the request's extra sources ([ExtraInput](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_ExtraInput)) when there are any.
 
 ```csharp
 public IInputSource Input { get; }
@@ -102,18 +132,29 @@ public HeadlessInput Keys { get; }
 
  [HeadlessInput](MicroEngine.Core.HeadlessInput.md)
 
-### <a id="MicroEngine_Core_HeadlessPlatform_Now"></a> Now
+### <a id="MicroEngine_Core_HeadlessPlatform_Letterbox"></a> Letterbox
 
-A monotonic clock in seconds since the platform was created. The loop owns time: in deterministic time (the
-default here) it never reads this clock to decide how many steps a frame runs.
+Ignored: there is no window around the frame.
 
 ```csharp
-public double Now { get; }
+public Color Letterbox { get; set; }
 ```
 
 #### Property Value
 
- [double](https://learn.microsoft.com/dotnet/api/system.double)
+ Color
+
+### <a id="MicroEngine_Core_HeadlessPlatform_MainSurface"></a> MainSurface
+
+The surface, of the canvas's size until [Resize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Resize_System_Int32_System_Int32_) changes it; it has no native window.
+
+```csharp
+public ISurface MainSurface { get; }
+```
+
+#### Property Value
+
+ ISurface
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Profile"></a> Profile
 
@@ -136,18 +177,6 @@ as a PNG (at scale 1). False by default: the renderer only counts. Set it when c
 
 ```csharp
 public bool Rasterize { get; init; }
-```
-
-#### Property Value
-
- [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-### <a id="MicroEngine_Core_HeadlessPlatform_RealTime"></a> RealTime
-
-False: runs that choose no time mode advance exactly one update per frame.
-
-```csharp
-public bool RealTime { get; }
 ```
 
 #### Property Value
@@ -190,6 +219,18 @@ public SilentAudioDevice SilentAudio { get; }
 
  [SilentAudioDevice](MicroEngine.Audio.SilentAudioDevice.md)
 
+### <a id="MicroEngine_Core_HeadlessPlatform_Suspended"></a> Suspended
+
+Whether [Suspend](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Suspend) sent the platform to the background (until [Resume](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Resume)).
+
+```csharp
+public bool Suspended { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Core_HeadlessPlatform_Touch"></a> Touch
 
 The same screen as [TouchScreen](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_TouchScreen).
@@ -204,7 +245,7 @@ public ITouchScreen Touch { get; }
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_TouchScreen"></a> TouchScreen
 
-A touch screen tests can touch; by default 4× the canvas, not touch-first, no safe-area insets.
+A touch screen tests can touch; by default 4× the canvas, not touch-first, no safe-area insets. Also the host's [ITouchScreen](MicroEngine.Input.ITouchScreen.md) capability.
 
 ```csharp
 public HeadlessTouchScreen TouchScreen { get; }
@@ -230,7 +271,7 @@ public IRenderer BeginFrame()
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Dispose"></a> Dispose\(\)
 
-Does nothing; there is nothing to release.
+Disposes the audio device the request supplied, if any; nothing else holds resources.
 
 ```csharp
 public void Dispose()
@@ -243,6 +284,18 @@ Finishes the frame and presents it.
 ```csharp
 public void EndFrame()
 ```
+
+### <a id="MicroEngine_Core_HeadlessPlatform_Focus_System_Boolean_"></a> Focus\(bool\)
+
+Gives (true) or takes (false) the input focus; the next pump delivers it when the focus changes.
+
+```csharp
+public void Focus(bool focused)
+```
+
+#### Parameters
+
+`focused` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_For_MicroEngine_Core_GameSettings_"></a> For\(GameSettings\)
 
@@ -278,12 +331,67 @@ public static HeadlessPlatform For(GameSettings settings, bool rasterize)
 
  [HeadlessPlatform](MicroEngine.Core.HeadlessPlatform.md)
 
-### <a id="MicroEngine_Core_HeadlessPlatform_PollEvents"></a> PollEvents\(\)
+### <a id="MicroEngine_Core_HeadlessPlatform_For_MicroEngine_Core_PlatformRequest_"></a> For\(PlatformRequest\)
 
-Does nothing: a headless platform has no events.
+A headless platform for <code class="paramref">request</code>: the virtual size of its settings, the audio device it supplies
+([Audio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_Audio)) and its extra input sources read with [Keys](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Keys).
 
 ```csharp
-public void PollEvents()
+public static HeadlessPlatform For(PlatformRequest request)
+```
+
+#### Parameters
+
+`request` [PlatformRequest](MicroEngine.Core.PlatformRequest.md)
+
+#### Returns
+
+ [HeadlessPlatform](MicroEngine.Core.HeadlessPlatform.md)
+
+### <a id="MicroEngine_Core_HeadlessPlatform_PumpEvents_MicroEngine_Platform_IEngineEventSink_"></a> PumpEvents\(IEngineEventSink\)
+
+Delivers the events the test hooks queued, in order; false while suspended.
+
+```csharp
+public bool PumpEvents(IEngineEventSink sink)
+```
+
+#### Parameters
+
+`sink` IEngineEventSink
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_HeadlessPlatform_RequestQuit"></a> RequestQuit\(\)
+
+Asks the game to quit, as a window's close button does; the next pump delivers the request.
+
+```csharp
+public void RequestQuit()
+```
+
+### <a id="MicroEngine_Core_HeadlessPlatform_Resize_System_Int32_System_Int32_"></a> Resize\(int, int\)
+
+Changes the surface's size; the next pump delivers the resize (once, when the size changed).
+
+```csharp
+public void Resize(int width, int height)
+```
+
+#### Parameters
+
+`width` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_Core_HeadlessPlatform_Resume"></a> Resume\(\)
+
+Brings the platform back; the next pump delivers <code>Resumed</code> after a <code>Suspending</code>.
+
+```csharp
+public void Resume()
 ```
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_SaveScreenshot_System_String_"></a> SaveScreenshot\(string\)
@@ -299,6 +407,14 @@ public void SaveScreenshot(string path)
 
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_Core_HeadlessPlatform_Suspend"></a> Suspend\(\)
+
+Sends the platform to the background, as a phone does; the next pump delivers <code>Suspending</code>.
+
+```csharp
+public void Suspend()
+```
+
 ### <a id="MicroEngine_Core_HeadlessPlatform_ToggleFullscreen"></a> ToggleFullscreen\(\)
 
 Does nothing.
@@ -306,5 +422,25 @@ Does nothing.
 ```csharp
 public void ToggleFullscreen()
 ```
+
+### <a id="MicroEngine_Core_HeadlessPlatform_TryGetCapability__1___0__"></a> TryGetCapability<T\>\(out T?\)
+
+The optional feature of type <code class="typeparamref">T</code> this host offers, if it offers one.
+
+```csharp
+public bool TryGetCapability<T>(out T? capability) where T : class
+```
+
+#### Parameters
+
+`capability` T?
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Type Parameters
+
+`T`
 
 </div>

@@ -7,7 +7,8 @@ Assembly: MicroEngine.dll
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
 Facts a platform can report about itself for logs and profiles: the graphics API in use, VSync, the graphics adapter
-when the backend can name it. Keys are short lower-case words; values are free text.
+when the backend can name it. Keys are short lower-case words; values are free text. A capability
+([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)).
 
 ```csharp
 public interface IPlatformDiagnostics

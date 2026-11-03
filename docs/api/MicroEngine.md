@@ -20,6 +20,8 @@ Guide: [Graphics](../manual/rendering.md)
 
  [MicroEngine.Kernel](MicroEngine.Kernel.md)
 
+ [MicroEngine.Platform](MicroEngine.Platform.md)
+
  [MicroEngine.Raylib](MicroEngine.Raylib.md)
 
  [MicroEngine.Scenes](MicroEngine.Scenes.md)

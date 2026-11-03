@@ -59,7 +59,8 @@ Several input sources read as one: a key or button is down when any source has i
 
 Locates a game's asset files. By default the root is the <code>Content</code> folder next to the
 executable (games copy it there at build time). Missing files fail with the full path so a
-broken install or a typo is obvious.
+broken install or a typo is obvious. A content source ([IContentSource](MicroEngine.Platform.IContentSource.md)) over a
+[FolderContentSource](MicroEngine.Platform.FolderContentSource.md).
 
  [DisplayInfo](MicroEngine.Core.DisplayInfo.md)
 
@@ -93,26 +94,35 @@ The command line every desktop game accepts, on any backend. Supported arguments
 
 <ul><li><code>--script FILE</code> play scripted input (see [InputScript](MicroEngine.Core.InputScript.md)); implies deterministic time unless
 <code>--time</code> says otherwise.</li><li><code>--captures DIR</code> directory for script captures (default ./captures).</li><li><code>--platform NAME</code> run on that platform of the catalog (default: <code>MICROENGINE_PLATFORM</code>, else the
-first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>.</li><li><code>--hidden</code> render in a hidden window (captures still work); it implies nothing about time or sound.</li><li><code>--time realtime|deterministic</code> how the loop advances time ([TimeMode](MicroEngine.Kernel.TimeMode.md)): with the
-wall clock, or one fixed step per frame; by default the game's choice, else the platform's preference.</li><li><code>--frames N</code> stop after N updates; <code>--seed N</code>; <code>--scale N</code>; <code>--mute</code>.</li><li><code>--report</code> print the platform that runs and whether it has audio before the game starts (package checks).</li><li><code>--audio auto|device|silent</code> where sound may go ([AudioOutput](MicroEngine.Core.AudioOutput.md)); by default
-deterministic-time runs (scripts, <code>--time deterministic</code>) open no physical device, so checks are never heard.</li><li><code>--audio-capture FILE</code> play nothing aloud and write what would have been heard as a WAV
+first one that can run here); <code>--list-platforms</code> prints them and exits.</li><li><code>--headless</code> run without a window (no captures are written); the same as <code>--platform headless</code>. A
+headless run is in deterministic time unless <code>--time</code> says otherwise.</li><li><code>--hidden</code> render in a hidden window (captures still work); it implies nothing about time or sound.</li><li><code>--time realtime|deterministic</code> how the loop advances time ([TimeMode](MicroEngine.Kernel.TimeMode.md)): with the
+wall clock, or one fixed step per frame; by default the game's choice, else real time (headless runs and scripts:
+deterministic).</li><li><code>--frames N</code> stop after N updates; <code>--seed N</code>; <code>--scale N</code>; <code>--mute</code>.</li><li><code>--report</code> print the platform that runs and whether it has audio before the game starts (package checks).</li><li><code>--audio auto|device|silent</code> where sound may go ([AudioOutput](MicroEngine.Core.AudioOutput.md)); <code>auto</code> (the default)
+asks for no physical device when the run is in deterministic time (scripts, <code>--time deterministic</code>,
+headless), so checks are never heard, and for one otherwise.</li><li><code>--audio-capture FILE</code> play nothing aloud and write what would have been heard as a WAV
 ([CaptureAudioDevice](MicroEngine.Audio.CaptureAudioDevice.md)).</li><li><code>--gpu auto|high-performance|power-saving</code> the GPU to ask for on a machine with two
 ([GpuPreference](MicroEngine.Core.GpuPreference.md)).</li><li><code>--renderer NAME[,NAME...]</code> graphics APIs to try first ([Renderers](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Renderers)).</li><li><code>--vsync on|off</code> wait for the display's refresh or not ([VSync](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_VSync)).</li><li><code>--fps-limit N</code> draw at most N frames per second; 0 removes the game's limit
 ([FrameRateLimit](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_FrameRateLimit)).</li><li><code>--window windowed|fullscreen|exclusive</code> the window mode ([WindowMode](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_WindowMode)).</li><li><code>--display N</code> open on display N, counted from 0 ([Display](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Display)).</li><li><code>--pacing display|measured</code> count frame time in refresh periods of the display (the default) or as
 measured ([PaceToDisplay](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_PaceToDisplay)).</li><li><code>--profile FILE</code> measure every frame and the start phases ([FrameProfiler](MicroEngine.Core.FrameProfiler.md)), print a summary and
 write the results as JSON, or CSV when FILE ends in .csv.</li></ul>
 
+A run in deterministic time also asks the platform, through explicit request options, not to wait for the display
+([WaitForDisplay](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_WaitForDisplay)) and for no sound device (<code>--audio auto</code>); a run in real time
+whose game shows a start screen asks it to start gamepads after the first frame
+([StartGamepadsAfterFirstFrame](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_StartGamepadsAfterFirstFrame)). The platform itself never knows the time mode.
 Returns a process exit code: 0 on success, 1 on a game or platform error, 2 on bad arguments.
 
  [GameLoop](MicroEngine.Core.GameLoop.md)
 
 The loop, one frame per [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick). It owns time: the platform only supplies a monotonic clock
-([Now](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_Now)), and the engine's [FrameClock](MicroEngine.Kernel.FrameClock.md) turns each frame's time into fixed
+([Clock](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_Clock)), and the engine's [FrameClock](MicroEngine.Kernel.FrameClock.md) turns each frame's time into fixed
 steps following the game's [TimeSettings](MicroEngine.Kernel.TimeSettings.md) (at most <code>MaxStepsPerFrame</code> a frame, frames of at
 most <code>MaxFrameDelta</code>). Each frame runs the engine's frame schedule: the per-frame phases, the four fixed phases
 once per step, then the update, drawing and presentation phases. In deterministic time every frame is exactly one
-step, which makes scripted runs reproducible. Hosts that cannot block, such as a browser driving frames from
-<code>requestAnimationFrame</code>, call [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick) themselves; errors are captured, never thrown.
+step, which makes scripted runs reproducible. Each frame starts with the platform's event pump
+([PumpEvents](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_PumpEvents_MicroEngine_Platform_IEngineEventSink_)), whose events become the engine's lifecycle events
+([IEngineLifecycle](MicroEngine.Kernel.IEngineLifecycle.md)) before the frame's steps. Hosts that cannot block, such as a browser driving
+frames from <code>requestAnimationFrame</code>, call [Tick](MicroEngine.Core.GameLoop.md#MicroEngine_Core_GameLoop_Tick) themselves; errors are captured, never thrown.
 
  [GameRunner](MicroEngine.Core.GameRunner.md)
 
@@ -157,9 +167,12 @@ Keys, a gamepad and a pointer that tests set by hand.
 
  [HeadlessPlatform](MicroEngine.Core.HeadlessPlatform.md)
 
-A windowless platform: deterministic time by default ([RealTime](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_RealTime) is false), no devices, and a renderer that counts calls (or, with
-[Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize), also records them and draws them with the CPU reference rasterizer). Used by automated tests
-and CI to play whole games through scripts.
+A windowless platform: no devices, and a renderer that counts calls (or, with [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize), also records
+them and draws them with the CPU reference rasterizer). Used by automated tests and CI to play whole games through
+scripts. Its surface has the canvas's size; tests drive its events by hand ([Resize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Resize_System_Int32_System_Int32_), [Focus](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Focus_System_Boolean_),
+[Suspend](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Suspend), [Resume](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Resume), [RequestQuit](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_RequestQuit)), which the next event pump delivers in order.
+It has no time-mode preference: a run that should advance one step per frame says so
+([TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode); the launcher's <code>--headless</code> does).
 
  [HeadlessRenderer](MicroEngine.Core.HeadlessRenderer.md)
 
@@ -218,8 +231,11 @@ subsystems share state with the window and cannot be swapped independently.
 
  [PlatformRequest](MicroEngine.Core.PlatformRequest.md)
 
-What a host asks of a platform: the game's settings, window options and any subsystem it supplies itself.
-A backend reads the window options and must not open its own audio device when [OpensOwnAudio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_OpensOwnAudio) is false.
+What a host asks of a platform: the game's settings, window options and any subsystem it supplies itself. Every
+option is explicit and has a documented default; none depends on how the loop advances time (that is the loop's
+business only, [TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode)). A backend honours the supplied parts by building its audio device
+with [CreateAudio](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_CreateAudio_System_Func_MicroEngine_Audio_IAudioDevice__) and its input with [CombineInput](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_CombineInput_MicroEngine_Input_IInputSource_); [Create](MicroEngine.Core.PlatformProfile.md#MicroEngine_Core_PlatformProfile_Create_MicroEngine_Core_PlatformRequest_)
+checks that it did.
 
  [RecordingOverlayCanvas](MicroEngine.Core.RecordingOverlayCanvas.md)
 
@@ -288,23 +304,26 @@ One recorded drawing call.
  [IDisplayControl](MicroEngine.Core.IDisplayControl.md)
 
 What a platform can change about its window and presentation while the game runs ([Screen](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Screen) uses it).
-Platforms without a window (headless) or whose host owns these choices (browsers, phones) leave it out or report
-that a change did not apply.
+A capability ([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)): platforms without a window (headless) or whose host
+owns these choices (browsers, phones) do not offer it, or report that a change did not apply.
 
  [IPlatform](MicroEngine.Core.IPlatform.md)
 
-Everything a backend provides: a window (or nothing, headless), input devices, audio,
-texture creation and a renderer that draws into the virtual canvas.
+Everything a backend provides: the host ([IPlatformHost](MicroEngine.Platform.IPlatformHost.md): clock, events, main surface, capabilities,
+whether it may block) plus, until the graphics, input and audio contracts are split from it, the renderer that draws
+into the virtual canvas and the graphics, input and audio devices.
 
  [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md)
 
 Facts a platform can report about itself for logs and profiles: the graphics API in use, VSync, the graphics adapter
-when the backend can name it. Keys are short lower-case words; values are free text.
+when the backend can name it. Keys are short lower-case words; values are free text. A capability
+([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)).
 
  [ISaveStorage](MicroEngine.Core.ISaveStorage.md)
 
-Where a [SaveStore](MicroEngine.Core.SaveStore.md) keeps its slots: named texts that are written whole. Failures surface
-as `IOException` or `UnauthorizedAccessException`.
+Where a [SaveStore](MicroEngine.Core.SaveStore.md) keeps its slots: the platform's storage contract
+([IStorage](MicroEngine.Platform.IStorage.md): named texts that are written whole, failures as `IOException` or
+`UnauthorizedAccessException`) under the name saves have always used.
 
 ### Enums
 

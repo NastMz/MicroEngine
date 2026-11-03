@@ -119,7 +119,9 @@ frames, and a profile makes it selectable from the command line:
 ```csharp
 /// <summary>
 /// A platform of your own does not have to start from nothing: this one wraps any other platform and counts the
-/// frames it presents (telemetry, a frame-rate overlay, a recorder would hook in the same place).
+/// frames it presents (telemetry, a frame-rate overlay, a recorder would hook in the same place). It forwards every
+/// member, the capability query included, so the wrapped platform's optional features (display control, touch screen,
+/// diagnostics...) stay available.
 /// </summary>
 public sealed class CountingPlatform(IPlatform inner) : IPlatform
 {
@@ -128,12 +130,12 @@ public sealed class CountingPlatform(IPlatform inner) : IPlatform
     public IGraphicsDevice Graphics => inner.Graphics;
     public IAudioDevice Audio => inner.Audio;
     public IInputSource Input => inner.Input;
-    public ITouchScreen? Touch => inner.Touch;
-    public bool CloseRequested => inner.CloseRequested;
-    public double Now => inner.Now;
-    public bool RealTime => inner.RealTime;
-    public bool Suspended => inner.Suspended;
-    public void PollEvents() => inner.PollEvents();
+    public IMonotonicClock Clock => inner.Clock;
+    public bool PumpEvents(IEngineEventSink sink) => inner.PumpEvents(sink);
+    public ISurface? MainSurface => inner.MainSurface;
+    public bool CanBlock => inner.CanBlock;
+    public bool TryGetCapability<T>([NotNullWhen(true)] out T? capability) where T : class => inner.TryGetCapability(out capability);
+    public Color Letterbox { get => inner.Letterbox; set => inner.Letterbox = value; }
     public IRenderer BeginFrame() => inner.BeginFrame();
     public void EndFrame()
     {
@@ -179,7 +181,12 @@ done: 30 updates, 30 frames
   `--list-platforms`), a factory from `PlatformRequest` to `IPlatform`, `CheckSupport` (null when it can run here,
   otherwise the reason) and `Replaceable` (the parts a host may supply: audio, extra input).
 - The `PlatformRequest` carries the game's settings and identity, window scale, hidden and fixed-step modes, mute and
-  the replaced parts; a factory passes it on.
+  the replaced parts; a factory passes it on. Next SDK version (not published yet: arrives with the next SDK version):
+  the fixed-step mode is gone; the request's explicit options are `WaitForDisplay` and `StartGamepadsAfterFirstFrame`
+  ([Platform request options](../reference/configuration.md#platform-request-options)).
+- Next SDK version: a wrapper forwards every member of `IPlatform` and of the host contract it extends, the capability
+  query (`TryGetCapability<T>`) included, so the wrapped platform's optional features stay available; the example
+  above does.
 - The catalog's first profile that can run is the default. `DesktopLauncher.CreateCatalog()` holds `sdl`, `raylib`,
   `sdl-software` and `headless`; a game that ships SDL only builds its own with `new PlatformCatalog()`.
 

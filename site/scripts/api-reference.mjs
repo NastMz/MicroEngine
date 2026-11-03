@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
@@ -28,6 +28,7 @@ const guides = {
   'MicroEngine.Graphics': ['Graphics', '../manual/rendering.md'],
   'MicroEngine.Input': ['Input', '../manual/input.md'],
   'MicroEngine.Kernel': ['Modules and the frame schedule', '../manual/lifecycle.md#modules-and-the-frame-schedule'],
+  'MicroEngine.Platform': ['The platform host', '../manual/backends.md#the-platform-host'],
   'MicroEngine.Raylib': ['Backends and platforms', '../manual/backends.md'],
   'MicroEngine.Scenes': ['Scenes', '../manual/scenes.md'],
   'MicroEngine.Sdl': ['Backends and platforms', '../manual/backends.md'],
@@ -60,6 +61,7 @@ const namespaceSummaries = {
   'MicroEngine.Graphics': 'Drawing: the renderer contract, images in code and from PNG, sprites and atlases, animation, camera, parallax, particles, light, the pixel font.',
   'MicroEngine.Input': 'Input actions over keyboard, gamepad, mouse and touch: bindings, analog values, on-screen controls, custom sources.',
   'MicroEngine.Kernel': 'The kernel: engine composition (builder, services, modules, capabilities), the frame schedule and its phases, loop-owned time, engine events, logging and generational handles.',
+  'MicroEngine.Platform': 'The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the surface, display pacing and precise waits, storage for saves and content sources.',
   'MicroEngine.Raylib': 'The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and browser storage.',
   'MicroEngine.Scenes': 'The scene stack: scenes, transitions, coroutines and tweens.',
   'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android and iOS.',

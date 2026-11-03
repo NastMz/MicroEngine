@@ -41,7 +41,7 @@ starts through `DesktopLauncher` accepts them on its command line.
 | `--platform NAME` | Runs on that platform of the catalog (`sdl`, `raylib`, `sdl-software`, `headless`); default: `MICROENGINE_PLATFORM`, else the first that can run here (next SDK version: else every platform that can run here except `headless`, in order, until one starts, printing why each one failed) |
 | `--list-platforms` | Prints the catalog, with the reason a platform cannot run here, and exits |
 | `--hidden` | Renders in a hidden window with a fixed step; captures still work (next SDK version: a hidden window implies nothing about time or sound: it runs in real time and may open a sound device unless the run passes `--time deterministic`, `--script`, `--audio silent` or `--mute`) |
-| `--time realtime\|deterministic` | Next SDK version: how the loop advances time. `realtime` follows the wall clock; `deterministic` runs exactly one fixed step per frame. Default: deterministic with `--script`, else the game's choice, else the platform's (real time on SDL and raylib, deterministic headless) ([Time](../manual/lifecycle.md#time)) |
+| `--time realtime\|deterministic` | Next SDK version: how the loop advances time. `realtime` follows the wall clock; `deterministic` runs exactly one fixed step per frame. Default: deterministic with `--script` and on the headless platform, else the game's choice, else real time (the platform has no say). A deterministic run also asks the platform not to wait for the display and, with `--audio auto`, for no sound device ([Time](../manual/lifecycle.md#time)) |
 | `--headless` | Runs on `HeadlessPlatform`, without a window; no capture files are written; the same as `--platform headless` |
 | `--frames N` | Stops after N updates |
 | `--seed N` | Seed for `Game.Random` (otherwise random, or 1 under a script) |
@@ -139,5 +139,23 @@ From `InputMap.CreateDefault()` in [`src/MicroEngine/Input/Input.cs`](../../src/
 | Content location | `new ContentFolder(root)` (default `<exe dir>/Content`) | Tests can point at another folder |
 | Save medium | Implement `ISaveStorage`; pass it to `SaveStore`, or set `SaveStore.DefaultStorage` before games are built | `BrowserSaveStorage` |
 | Save location | `new SaveStore(gameId, directory)` | Every game's `*_SAVE_DIR` variable |
-| Backend | Implement `IPlatform` and its device interfaces, offered as a `PlatformProfile` | `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform` ([backends](../manual/backends.md)) |
+| Backend | Implement `IPlatform` and its device interfaces, offered as a `PlatformProfile` (next SDK version: `IPlatform` extends the host contract, `IPlatformHost`, and optional features are capabilities) | `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform` ([backends](../manual/backends.md)) |
 | Host loop | Drive `GameLoop` or `GameSession` yourself, one `Tick` per frame | The browser host |
+
+### Platform request options
+
+Next SDK version (not published yet: arrives with the next SDK version). A host asks a platform for what it needs with
+a `PlatformRequest`; every option is explicit, and none depends on how the loop advances time:
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `Scale` | null (`GameSettings.Scale`) | The window's initial scale |
+| `Hidden` | false | A hidden window; captures still work, and it never waits for the display |
+| `WaitForDisplay` | true | Whether a visible window's frames may wait for the display (VSync as the game asks, and frames paced to it); false never waits. The launcher sets false for deterministic runs |
+| `StartGamepadsAfterFirstFrame` | false | Starts gamepads only after the first presented frame, so a slow gamepad start never delays the window. The launcher sets it for real-time runs whose game shows a start screen |
+| `AudioOutput` | `Automatic` | `Automatic` and `Device` open a sound device, `Silent` opens none. The launcher's `--audio auto` asks for `Silent` in deterministic runs |
+| `Mute` | false | No sound device |
+| `CaptureScale` | 3 for pixel art, 1 for smooth scaling | Size factor of screenshots |
+| `Audio` | null | An audio device the platform uses instead of its own (where its profile allows it) |
+| `ExtraInput` | none | Input sources read together with the platform's (where its profile allows it) |
+| `Identity` | null | The game's application identity (title, id, icon, orientation) |

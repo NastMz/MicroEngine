@@ -8,6 +8,34 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- The platform contracts live in `MicroEngine.Platform` (namespace and assembly, carried by the `MicroEngine` package):
+  `IPlatform` now extends `IPlatformHost`. A custom platform implements `Clock` (an `IMonotonicClock`; `Now` moved
+  there), `PumpEvents(sink)` (replaces `PollEvents`, `CloseRequested` and `Suspended`: it delivers quit requests,
+  suspension and resumption, focus and resize events to the sink, and returns false while suspended), `MainSurface`,
+  `CanBlock` and `TryGetCapability<T>`, and declares `Letterbox` (no default any more). `IPlatform.RealTime`,
+  `DisplayRate`, `Wait` and `Touch` are removed. **Migration:** offer optional features as capabilities:
+  `IDisplayControl`, `IPlatformDiagnostics`, `ITouchScreen`, `IDisplayPacing` (the old `DisplayRate`) and
+  `IPreciseDelay` (the old `Wait`; a platform that cannot block reports `CanBlock = false` instead of returning false).
+  Code that cast a platform (`platform as IDisplayControl`) calls `platform.TryGetCapability<IDisplayControl>(out var
+  display)`. A platform that wraps another forwards every member, `TryGetCapability` included.
+- A platform has no time-mode preference: a run that chooses no time mode, on any platform, headless included, runs in
+  real time. The launcher still runs `--headless` and `--script` runs deterministically. **Migration:** a test or host
+  that runs a `HeadlessPlatform` through `GameRunner`, `GameLoop` or `GameSession` and expects one step per frame sets
+  `RunOptions.TimeMode = TimeMode.Deterministic`; `Game.InitializeForTest(platform, seed, mode)` does the same for
+  tests that do not run the loop.
+- `PlatformRequest.FixedStep` and `DesktopOptions.FixedStep` are removed. **Migration:** a request that must not wait
+  for the display sets `WaitForDisplay = false`; a host that shows a start screen sets
+  `StartGamepadsAfterFirstFrame = true`; silence is `AudioOutput.Silent` or `Mute` (`AudioOutput.Automatic` opens a
+  device on every platform; the launcher's `--audio auto` stays silent for deterministic runs). The positional
+  `DesktopOptions(scale, hidden, fixedStep, mute, captureScale)` lost its third parameter: check calls with three or
+  more positional arguments.
+- A profile's request parts are composed into the backend, never wrapped: `PlatformProfile.Create` returns the backend
+  itself. **Migration:** a custom backend whose profile lets hosts replace audio or add input builds its devices with
+  `request.CreateAudio(...)` and `request.CombineInput(...)`; a profile that ignores them is refused with
+  `PlatformConfigurationException`.
+- `ISaveStorage` extends `MicroEngine.Platform.IStorage` (same members) and `SaveStore` also accepts any `IStorage`;
+  `ContentFolder` is an `IContentSource` (with `Open`). Existing code compiles unchanged.
+
 - `DialogueBox` shows every line of a page: a page that wraps to more than `Lines` lines continues on the next
   confirm (before, the extra lines were never shown). Pages written short show as before.
 - `BitmapFont.Wrap` breaks a word wider than `maxWidth` between characters (before, it overflowed the line).

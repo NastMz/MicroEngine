@@ -11,13 +11,14 @@ document explains how the pieces fit and why.
 ```mermaid
 flowchart TB
   accTitle: Layers
-  accDescr: Games and samples start through the desktop launcher, which offers the SDL and raylib backends; both implement the core's platform contract.
+  accDescr: Games and samples start through the desktop launcher, which offers the SDL and raylib backends; both implement the platform contract, which builds on the kernel.
   games["<b> games/* </b> <br/> Game rules, content, art and music <br/> (MeadowRun, CourtyardKey, TrailDuel, NeonRift)"]
   samples["<b> samples/* </b> <br/> Minimal examples (HelloEngine)"]
   hosts["<b> src/MicroEngine.Desktop, src/MicroEngine.Cli/Hosts </b> <br/> Hosts: choose a platform profile, run the game"]
   sdl["<b> src/MicroEngine.Sdl </b> <br/> SDL 3: window, 2D renderer, input, touch, audio, lifecycle"]
   raylib["<b> src/MicroEngine.Raylib </b> <br/> raylib: window, renderer, audio, input; WebAssembly"]
   core["<b> src/MicroEngine </b> <br/> Core: loop, scenes, input, graphics model, world, audio synthesis, UI, platform contract"]
+  platform["<b> src/MicroEngine.Platform </b> <br/> Platform contracts: host, surface, capabilities, storage, content sources"]
   kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
   samples -- started by --> hosts
@@ -25,13 +26,23 @@ flowchart TB
   hosts -- choose --> raylib
   sdl -- implements --> core
   raylib -- implements --> core
+  sdl -- implements --> platform
+  raylib -- implements --> platform
   games -- use --> core
+  core -- builds on --> platform
   core -- builds on --> kernel
+  platform -- builds on --> kernel
 ```
 
 Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
 `MicroEngine.Kernel`, shipped inside the `MicroEngine` package. It references no other engine assembly; modules
-register services, frame systems and capabilities on an `EngineBuilder`, and `Game` is one of them.
+register services, frame systems and capabilities on an `EngineBuilder`, and `Game` is one of them. The platform
+contracts are a second assembly, `MicroEngine.Platform`, also shipped inside the `MicroEngine` package, which references
+only the kernel: `IPlatformHost` (a monotonic clock, an event pump whose events become the engine's lifecycle events,
+the main surface, optional features found with `TryGetCapability<T>`, and whether the host may block), `ISurface`,
+`IStorage` and `IContentSource`. `IPlatform` extends `IPlatformHost` with the devices and frame presentation that
+later move to their own contracts. The engine never casts a platform to find an optional feature, never wraps one, and
+nothing a platform does depends on the time mode ([The platform host](manual/backends.md#the-platform-host)).
 
 The core references no backend library. Everything platform-specific sits behind `MicroEngine.Core.IPlatform` and
 four device interfaces:
@@ -42,7 +53,7 @@ four device interfaces:
 | `IGraphicsDevice` | Turning `PixelImage`s into textures with a filter (nearest, linear); textures take region updates | SDL, raylib, headless |
 | `IAudioDevice` | Loading/playing PCM sounds and looping music | SDL, raylib, `SilentAudioDevice` |
 | `IInputSource` | Raw key, gamepad and mouse state | SDL, raylib, `HeadlessInput` |
-| `ITouchScreen` (optional, `IPlatform.Touch`) | Touches, safe area, density, vibration and an overlay drawn over the frame | SDL, raylib (from the browser page), `HeadlessTouchScreen` |
+| `ITouchScreen` (optional, `IPlatform.Touch`; next SDK version: a capability) | Touches, safe area, density, vibration and an overlay drawn over the frame | SDL, raylib (from the browser page), `HeadlessTouchScreen` |
 
 Hosts choose a platform through a `PlatformCatalog` of named `PlatformProfile`s (`sdl`, `raylib`, `sdl-software`,
 `headless`, or one of the developer's own) and may supply an audio device or extra input sources of their own; window,
@@ -87,6 +98,7 @@ scripted playthrough tests and reproducible screenshots possible.
 | --- | --- |
 | `MicroEngine` | `Color`, `RectF`, `MathX` (approach, damp, waves), `Ease`; next SDK version: `ColorF` (linear, premultiplied helpers), all in the kernel assembly |
 | `MicroEngine.Kernel` (next SDK version) | `EngineBuilder`, `Engine`, `IEngineModule`, `ServiceRegistry`, `CapabilityRegistry`, `FrameSchedule`, `FramePhase`, `FrameContext`, `TimeSettings`, `FrameClock`, `IEngineLifecycle`, `ILog`, `Handle<T>`, `HandlePool<T>` |
+| `MicroEngine.Platform` (next SDK version) | `IPlatformHost`, `IMonotonicClock`, `IEngineEventSink`, `ISurface`, `HostSurface`, `IDisplayPacing`, `IPreciseDelay`, `IStorage`, `IContentSource`, `FolderContentSource` |
 | `MicroEngine.Core` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `InputScript`, `HeadlessPlatform`, `SaveStore` (over `ISaveStorage`), `ContentFolder`, `AssetCache` (`Game.Assets`), `Achievement`, `AchievementTracker` |
 | `MicroEngine.Scenes` | `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener` |
 | `MicroEngine.Input` | `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources; `VirtualControls` and `TouchLayout`: per-game on-screen d-pads, joysticks and buttons; `ITouchScreen`, `FrameLayout` |
@@ -132,6 +144,8 @@ In short:
 ## Testing a game
 
 - `HeadlessPlatform` runs a game without a window or sound; runs on it default to deterministic time (one step per
-  frame), so tests are reproducible.
+  frame), so tests are reproducible. Next SDK version: the platform no longer chooses the time mode; the launcher's
+  `--headless` runs deterministically, and a test that runs the loop itself sets
+  `RunOptions.TimeMode = TimeMode.Deterministic`.
 - Any game accepts `--script file --hidden --captures dir` to replay input and save 3× PNG captures, for visual
   review and screenshots ([Testing](examples/testing.md)).

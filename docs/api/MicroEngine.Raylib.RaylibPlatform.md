@@ -10,10 +10,13 @@ raylib-backed platform. Games draw into a virtual-resolution render texture whic
 scaled to the window by the largest integer factor that fits (letterboxed), keeping pixel art crisp.
 In a browser (raylib built for emscripten) the page paces frames: the window never asks to close and
 raylib's frame limiter is left off, because both would block the only thread; the page also owns
-fullscreen, and the canvas has no minimum size.
+fullscreen, and the canvas has no minimum size: it is a page-driven host ([CanBlock](MicroEngine.Raylib.RaylibPlatform.md#MicroEngine_Raylib_RaylibPlatform_CanBlock) is false), whose
+surface size is the canvas's, read after start. Its capabilities ([TryGetCapability``1](MicroEngine.Raylib.RaylibPlatform.md#MicroEngine_Raylib_RaylibPlatform_TryGetCapability__1___0__)):
+[IDisplayControl](MicroEngine.Core.IDisplayControl.md), [IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md), [ITouchScreen](MicroEngine.Input.ITouchScreen.md) and, outside browsers,
+[IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md).
 
 ```csharp
-public sealed class RaylibPlatform : IPlatform, IDisposable, IDisplayControl
+public sealed class RaylibPlatform : IPlatform, IPlatformHost, IDisposable, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock
 ```
 
 #### Inheritance
@@ -24,8 +27,12 @@ public sealed class RaylibPlatform : IPlatform, IDisposable, IDisplayControl
 #### Implements
 
 IPlatform, 
+IPlatformHost, 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable), 
-IDisplayControl
+IDisplayControl, 
+IDisplayPacing, 
+IPreciseDelay, 
+IMonotonicClock
 
 ## Constructors
 
@@ -43,6 +50,19 @@ public RaylibPlatform(GameSettings settings, DesktopOptions options)
 
 `options` [DesktopOptions](MicroEngine.Raylib.DesktopOptions.md)
 
+### <a id="MicroEngine_Raylib_RaylibPlatform__ctor_MicroEngine_Core_PlatformRequest_"></a> RaylibPlatform\(PlatformRequest\)
+
+Opens the raylib window for <code class="paramref">request</code>: its window options, its audio device or raylib's own
+(unless muted or silent), and its extra input sources read with raylib's.
+
+```csharp
+public RaylibPlatform(PlatformRequest request)
+```
+
+#### Parameters
+
+`request` PlatformRequest
+
 ## Properties
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Audio"></a> Audio
@@ -57,17 +77,29 @@ public IAudioDevice Audio { get; }
 
  IAudioDevice
 
-### <a id="MicroEngine_Raylib_RaylibPlatform_CloseRequested"></a> CloseRequested
+### <a id="MicroEngine_Raylib_RaylibPlatform_CanBlock"></a> CanBlock
 
-Whether the user closed the window; the loop stops at the next frame.
+False in a browser, whose page drives the frames; true on desktop.
 
 ```csharp
-public bool CloseRequested { get; }
+public bool CanBlock { get; }
 ```
 
 #### Property Value
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Raylib_RaylibPlatform_Clock"></a> Clock
+
+raylib's timer (the platform is its own clock).
+
+```csharp
+public IMonotonicClock Clock { get; }
+```
+
+#### Property Value
+
+ IMonotonicClock
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_CurrentDisplay"></a> CurrentDisplay
 
@@ -119,7 +151,7 @@ public IGraphicsDevice Graphics { get; }
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Input"></a> Input
 
-Keyboard, gamepad and pointer state, read once per update.
+raylib's keyboard, gamepad and pointer, read together with the request's extra sources.
 
 ```csharp
 public IInputSource Input { get; }
@@ -132,7 +164,7 @@ public IInputSource Input { get; }
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Letterbox"></a> Letterbox
 
 Colour of the window around the frame. Starts as [Letterbox](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Letterbox); the start screen sets its
-own colour while it shows. Platforms without a window keep the default, which ignores changes.
+own colour while it shows. Platforms without a window keep it and ignore it.
 
 ```csharp
 public Color Letterbox { get; set; }
@@ -142,10 +174,21 @@ public Color Letterbox { get; set; }
 
  Color
 
+### <a id="MicroEngine_Raylib_RaylibPlatform_MainSurface"></a> MainSurface
+
+The window, or the page's canvas in a browser: its size is the canvas's as it is now, never the size requested at creation.
+
+```csharp
+public ISurface MainSurface { get; }
+```
+
+#### Property Value
+
+ ISurface
+
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Now"></a> Now
 
-A monotonic clock in seconds, and nothing more: the loop measures each frame's time with it and decides itself
-how many fixed steps that is ([TimeSettings](MicroEngine.Kernel.TimeSettings.md)). Never derive it from frames or the update rate.
+Seconds since an arbitrary start (the host's creation); never decreases.
 
 ```csharp
 public double Now { get; }
@@ -168,21 +211,6 @@ public static PlatformProfile Profile { get; }
 
  PlatformProfile
 
-### <a id="MicroEngine_Raylib_RaylibPlatform_RealTime"></a> RealTime
-
-The time mode a run on this platform uses when neither the run ([TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode)) nor the game
-([Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_)) chooses one: true for real time (a desktop window), false for one step per frame
-(headless, or a backend whose host asked for deterministic time with [FixedStep](MicroEngine.Core.PlatformRequest.md#MicroEngine_Core_PlatformRequest_FixedStep)).
-A preference only; the loop owns the clock.
-
-```csharp
-public bool RealTime { get; }
-```
-
-#### Property Value
-
- [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Suspended"></a> Suspended
 
 In a browser, a hidden page ([Hidden](MicroEngine.Raylib.BrowserLifecycle.md#MicroEngine_Raylib_BrowserLifecycle_Hidden)); a desktop window never suspends.
@@ -197,8 +225,7 @@ public bool Suspended { get; }
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Touch"></a> Touch
 
-The touch screen, if the platform has one: touches for [VirtualControls](MicroEngine.Input.VirtualControls.md), the safe area and a layer
-drawn over the frame. Platforms without touch keep the default (null).
+The touch screen (also the [ITouchScreen](MicroEngine.Input.ITouchScreen.md) capability).
 
 ```csharp
 public ITouchScreen Touch { get; }
@@ -246,6 +273,18 @@ public IRenderer BeginFrame()
 
  IRenderer
 
+### <a id="MicroEngine_Raylib_RaylibPlatform_Delay_System_Double_"></a> Delay\(double\)
+
+Waits with raylib's timer (a sleep, then a short spin); never offered in a browser, whose page cannot be blocked.
+
+```csharp
+public void Delay(double seconds)
+```
+
+#### Parameters
+
+`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Dispose"></a> Dispose\(\)
 
 Closes the window and the audio device the platform opened.
@@ -278,13 +317,23 @@ public bool MoveToDisplay(int index)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Raylib_RaylibPlatform_PollEvents"></a> PollEvents\(\)
+### <a id="MicroEngine_Raylib_RaylibPlatform_PumpEvents_MicroEngine_Platform_IEngineEventSink_"></a> PumpEvents\(IEngineEventSink\)
 
-Processes pending system events (window, keyboard, gamepad, touch). Called at the start of every frame.
+Reads what raylib collected at the end of the last frame and delivers the engine's events: a hidden page's
+suspension (browsers), the window's close request (desktop, once while it stays asked), focus changes and size
+changes of the window or canvas.
 
 ```csharp
-public void PollEvents()
+public bool PumpEvents(IEngineEventSink sink)
 ```
+
+#### Parameters
+
+`sink` IEngineEventSink
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_SaveScreenshot_System_String_"></a> SaveScreenshot\(string\)
 
@@ -300,7 +349,7 @@ public void SaveScreenshot(string path)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_SetVSync_System_Boolean_"></a> SetVSync\(bool\)
 
-Turns VSync on or off on a visible desktop window; browsers and Android follow the display.
+Turns VSync on or off on a visible desktop window that may wait for the display; browsers and Android follow the display.
 
 ```csharp
 public bool SetVSync(bool on)
@@ -338,20 +387,24 @@ Switches between the window and a borderless full-screen window (exclusive full 
 public void ToggleFullscreen()
 ```
 
-### <a id="MicroEngine_Raylib_RaylibPlatform_Wait_System_Double_"></a> Wait\(double\)
+### <a id="MicroEngine_Raylib_RaylibPlatform_TryGetCapability__1___0__"></a> TryGetCapability<T\>\(out T?\)
 
-Waits with raylib's timer (a sleep, then a short spin); a browser page cannot be blocked.
+The optional feature of type <code class="typeparamref">T</code> this host offers, if it offers one.
 
 ```csharp
-public bool Wait(double seconds)
+public bool TryGetCapability<T>(out T? capability) where T : class
 ```
 
 #### Parameters
 
-`seconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+`capability` T?
 
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Type Parameters
+
+`T`
 
 </div>

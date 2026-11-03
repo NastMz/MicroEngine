@@ -136,6 +136,36 @@ per frame (headless). `Suspended` is true while the system has taken the app awa
 the loop then pauses. `Touch` is the touch screen, if any: touches, safe area, density, vibration and the overlay
 layer. Implementations: `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform`.
 
+Next SDK version (not published yet: arrives with the next SDK version): `IPlatform` extends the host contract of
+`MicroEngine.Platform`, and the members above that are not drawing, devices or screenshots move into it:
+
+```csharp
+public interface IPlatformHost : IDisposable
+{
+    IMonotonicClock Clock { get; }
+    bool PumpEvents(IEngineEventSink sink);   // Resized, FocusChanged, Suspending, Resumed, QuitRequested
+    ISurface? MainSurface { get; }
+    bool TryGetCapability<T>(out T? capability) where T : class;
+    bool CanBlock { get; }
+}
+
+public interface ISurface
+{
+    nint NativeWindow { get; }
+    (int Width, int Height) PixelSize { get; }
+    float PixelDensity { get; }
+    bool IsMinimized { get; }
+    event Action? Resized;
+    event Action? Lost;
+}
+```
+
+`RealTime`, `Suspended`, `Touch`, `DisplayRate`, `Wait`, `CloseRequested` and `PollEvents` leave `IPlatform`: the time
+mode is the loop's only, suspension and quit requests are events of the pump, and optional features are capabilities
+(`IDisplayControl`, `IPlatformDiagnostics`, `ITouchScreen`, `IDisplayPacing`, `IPreciseDelay`). The rules every host
+follows are in [The platform host](../manual/backends.md#the-platform-host). The same assembly holds
+`IStorage` (save slots; `ISaveStorage` extends it) and `IContentSource` with `FolderContentSource`.
+
 ### Platform profiles
 
 [`src/MicroEngine/Core/PlatformProfiles.cs`](../../src/MicroEngine/Core/PlatformProfiles.cs). How a host chooses and
@@ -145,7 +175,7 @@ assembles a platform ([Backends](../manual/backends.md#choosing-a-platform)).
 | --- | --- |
 | `PlatformProfile(name, description, create)` | A named way to build an `IPlatform`; `CheckSupport` says why it cannot run here; `Replaceable` lists the `PlatformParts` a host may supply |
 | `PlatformCatalog` | Profiles in order of preference; `Default` is the first that can run, `Resolve(name)` finds one or throws |
-| `PlatformRequest(settings)` | Window options (`Scale`, `Hidden`, `FixedStep`, `Mute`, `CaptureScale`), an optional `Audio` factory and `ExtraInput` sources; `OpensOwnAudio` tells a backend whether to open its device |
+| `PlatformRequest(settings)` | Window options (`Scale`, `Hidden`, `FixedStep`, `Mute`, `CaptureScale`), an optional `Audio` factory and `ExtraInput` sources; `OpensOwnAudio` tells a backend whether to open its device. Next SDK version: `FixedStep` is replaced by `WaitForDisplay` and `StartGamepadsAfterFirstFrame`, and a backend builds its devices with `CreateAudio` and `CombineInput` ([options](configuration.md#platform-request-options)) |
 | `PlatformConfigurationException` | An unknown or unavailable profile, or a replacement the profile does not allow |
 | `CompositeInput` | Several input sources read as one |
 | `GameLauncher.Run(game, args, catalog, configure)` | The desktop command line over any catalog |

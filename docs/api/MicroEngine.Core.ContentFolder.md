@@ -8,16 +8,21 @@ Guide: [Assets](../manual/assets.md)
 
 Locates a game's asset files. By default the root is the <code>Content</code> folder next to the
 executable (games copy it there at build time). Missing files fail with the full path so a
-broken install or a typo is obvious.
+broken install or a typo is obvious. A content source ([IContentSource](MicroEngine.Platform.IContentSource.md)) over a
+[FolderContentSource](MicroEngine.Platform.FolderContentSource.md).
 
 ```csharp
-public sealed class ContentFolder
+public sealed class ContentFolder : IContentSource
 ```
 
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
 [ContentFolder](MicroEngine.Core.ContentFolder.md)
+
+#### Implements
+
+IContentSource
 
 ## Constructors
 
@@ -55,6 +60,18 @@ public static string? DefaultRoot { get; set; }
 #### Property Value
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
+### <a id="MicroEngine_Core_ContentFolder_Location"></a> Location
+
+The same as [Root](MicroEngine.Core.ContentFolder.md#MicroEngine_Core_ContentFolder_Root).
+
+```csharp
+public string Location { get; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 ### <a id="MicroEngine_Core_ContentFolder_Root"></a> Root
 
@@ -130,6 +147,22 @@ public PixelImage Image(string relative)
  [FileNotFoundException](https://learn.microsoft.com/dotnet/api/system.io.filenotfoundexception)
 
 The file does not exist.
+
+### <a id="MicroEngine_Core_ContentFolder_Open_System_String_"></a> Open\(string\)
+
+Opens a file for reading, after the checks of [PathOf](MicroEngine.Core.ContentFolder.md#MicroEngine_Core_ContentFolder_PathOf_System_String_).
+
+```csharp
+public Stream Open(string relative)
+```
+
+#### Parameters
+
+`relative` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ [Stream](https://learn.microsoft.com/dotnet/api/system.io.stream)
 
 ### <a id="MicroEngine_Core_ContentFolder_PathOf_System_String_"></a> PathOf\(string\)
 

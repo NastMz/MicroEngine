@@ -21,7 +21,7 @@ public static class BrowserLifecycle
 
 ### <a id="MicroEngine_Raylib_BrowserLifecycle_Hidden"></a> Hidden
 
-Set by the page from <code>visibilitychange</code>; the raylib platform reports it as [Suspended](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_Suspended).
+Set by the page from <code>visibilitychange</code>; the raylib platform reports it as a suspension ([Suspending](MicroEngine.Platform.IEngineEventSink.md#MicroEngine_Platform_IEngineEventSink_Suspending)).
 
 ```csharp
 public static bool Hidden { get; set; }

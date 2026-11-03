@@ -463,6 +463,22 @@ public void InitializeForTest(IPlatform platform, int seed = 1)
 
 `seed` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Core_Game_InitializeForTest_MicroEngine_Core_IPlatform_System_Int32_MicroEngine_Kernel_TimeMode_"></a> InitializeForTest\(IPlatform, int, TimeMode\)
+
+Test hook: initializes against a platform without running the loop, in the time mode a run would choose ([TimeMode](MicroEngine.Core.RunOptions.md#MicroEngine_Core_RunOptions_TimeMode)).
+
+```csharp
+public void InitializeForTest(IPlatform platform, int seed, TimeMode mode)
+```
+
+#### Parameters
+
+`platform` [IPlatform](MicroEngine.Core.IPlatform.md)
+
+`seed` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`mode` TimeMode
+
 ### <a id="MicroEngine_Core_Game_Load"></a> Load\(\)
 
 Called once after the platform exists. Create atlases, sounds and push the first scene.
@@ -511,7 +527,9 @@ Runs the phases that come before drawing for one fixed step, with a frame that s
 
 ### <a id="MicroEngine_Core_Game_TryGetCapability__1___0__"></a> TryGetCapability<T\>\(out T?\)
 
-An optional feature the engine declared (the platform's [ITouchScreen](MicroEngine.Input.ITouchScreen.md), its [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md)), if there is one.
+An optional feature, if there is one: one the engine declared ([Capabilities](MicroEngine.Kernel.EngineBuilder.md#MicroEngine_Kernel_EngineBuilder_Capabilities)), else one
+the platform offers ([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__): its [ITouchScreen](MicroEngine.Input.ITouchScreen.md), its
+[IDisplayControl](MicroEngine.Core.IDisplayControl.md), its [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md)...). False before the game starts.
 
 ```csharp
 public bool TryGetCapability<T>(out T? capability) where T : class
