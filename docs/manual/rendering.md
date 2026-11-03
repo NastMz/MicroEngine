@@ -71,7 +71,10 @@ public override GameSettings Settings { get; } = new("My Game", 480, 270, 3)
 ```
 
 `Rounding` also has `Integer` (never fractional while a whole factor fits) and `Aspect` has `Stretch` (fill the whole
-window, pixels no longer square). When `Presentation` is set it wins over `Scaling`; `TextureFilter`, when set, still
+window, pixels no longer square) and, next SDK version, `Expand`: the scale and square pixels stay, and the canvas grows
+along the window's free side so a wider (or taller) window shows more of the world instead of letterbox
+(`Presentation.CanvasSize`; the configured size is the minimum, and `IRenderer.Width`/`Height` report the canvas's current
+size). When `Presentation` is set it wins over `Scaling`; `TextureFilter`, when set, still
 wins over `DefaultSampler`. `SamplerDescription` lives in `MicroEngine.Graphics.Devices`.
 
 ### Filtering: nearest or linear
@@ -88,8 +91,10 @@ hero.Texture.Filter = TextureFilter.Nearest;                                    
 var page = Graphics.CreateTexture(image, TextureFilter.Linear);
 ```
 
-Glyph pages of TTF/OTF fonts do not follow the game's default: their filter is `FontOptions.Filter`, or, when that is
-null, linear for antialiased text (`FontOptions.Antialiasing`, the default) and nearest otherwise; `ScalableFont.Filter`
+Glyph pages of TTF/OTF fonts take their filter from `FontOptions.Filter`; when that is null, the published SDK picks
+linear for antialiased text (`FontOptions.Antialiasing`, the default) and nearest otherwise. Next SDK version (not
+published yet: arrives with the next SDK version): when it is null they follow the game's default like every other
+texture (the presentation's `DefaultSampler`), and `FontOptions.Pixel` chooses nearest itself. `ScalableFont.Filter`
 changes it later. The built-in pixel font is always nearest. Atlases packed at run time and sampled linearly get extruded edges, so
 neighbouring sprites never bleed into each other. Linear sampling does not replace art made for the size it is shown
 at: there are no mipmaps, so drawing a large image much smaller than its pixels shimmers; keep art within about twice
@@ -305,6 +310,34 @@ TileRenderer.Draw(r, layer, Tiles.Size, cam, (_, x, y) => Tiles.For(art, theme, 
 Source: [`games/NeonRift/Scenes/StageView.cs`](../../games/NeonRift/Scenes/StageView.cs)
 
 Collision over the same layers (`TileGrid`, `TileMotion`) is described in [Tile maps and collision](world.md).
+
+## The world view and the UI view
+
+Not published yet: arrives with the next SDK version. A frame has two views. The **world view** is the canvas: drawn at
+the canvas's resolution (`Scene.Draw`), with the scene's camera, and scaled into the window as the presentation says. The
+**UI view** is drawn at the window's resolution over it (`Scene.DrawUi`), in UI units (window pixels divided by
+`Presentation.UiScale`, 1 by default), so interface text and shapes stay sharp however small the canvas is: a 320 × 180
+pixel-art world in a 1280 × 720 window gets its interface drawn on 1280 × 720 pixels.
+
+```csharp
+public sealed class PlayScene : Scene
+{
+    public PlayScene(Game game) => WorldCamera = game.CreateCamera();     // pushed around Draw by the engine
+
+    public override void Draw(IRenderer world) => DrawLevel(world);       // world coordinates, canvas pixels
+    public override void DrawUi(IRenderer ui) =>                          // UI units at the window's resolution
+        Game.Font.Draw(ui, $"SCORE {score}", new Vector2(16, 16), Color.White, scale: 2);
+    public override bool UiContains(Vector2 uiPoint) => pauseButton.Contains(uiPoint);
+    // ...
+}
+```
+
+`Game.Views` maps positions between window pixels, canvas pixels and UI units (`CanvasToUi` places a label over a world
+object), gives the pointer in the UI view (`UiPointer`) and in a camera's world (`WorldPointer(camera)`), and gives it to
+the UI first: while it is over a visible scene's interface (`UiContains`), `PointerOnUi` is true and the world pointer is
+not present. Transitions cover both views. The SDL, raylib and headless platforms offer the UI view (`IScreenView`); a
+platform without one draws `DrawUi` into the canvas, where UI units are canvas pixels. Captures (`--captures`) record the
+world view.
 
 ## The 2D batcher and the camera
 
