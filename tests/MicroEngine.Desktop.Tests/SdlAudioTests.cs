@@ -1,6 +1,7 @@
 using MicroEngine.Audio;
 using MicroEngine.NativeChecks;
 using MicroEngine.Sdl;
+using MicroEngine.Testing;
 
 namespace MicroEngine.Desktop.Tests;
 
@@ -50,15 +51,17 @@ public sealed class SdlAudioTests
             // Warm up: the first calls create SDL's streams and the reused buffers.
             for (int i = 0; i < 30; i++) { device.Update(); device.Play(shot, pan: i % 3 * 0.5f); Thread.Sleep(5); }
 
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            for (int i = 0; i < 120; i++)
+            // The game thread's side: updates and plays. The feeder thread renders; the mixer's render is checked on the
+            // test thread by the engine's tests.
+            int update = 0;
+            AllocationAssert.None(() =>
             {
                 device.Update();
-                if (i % 6 == 0) device.Play(shot, volume: 0.5f, pitch: 1.2f, pan: i % 4 * 0.33f);
+                if (update % 6 == 0) device.Play(shot, volume: 0.5f, pitch: 1.2f, pan: update % 4 * 0.33f);
+                update++;
                 Thread.Sleep(2);
-            }
-            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-            Assert.AreEqual(0, allocated, "120 updates streaming music and 20 sounds allocate nothing");
+            }, warmup: 0, calls: 24, because: "updates streaming music and playing a sound every sixth update");
+            Assert.AreEqual(5 * 24, update);
         }
         finally { (device as IDisposable)?.Dispose(); }
     }

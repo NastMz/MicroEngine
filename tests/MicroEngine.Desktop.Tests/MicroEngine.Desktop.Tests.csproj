@@ -17,5 +17,7 @@
     <Compile Include="../MicroEngine.Raylib.Tests/Shared/*.cs" LinkBase="Shared" />
     <!-- The graphics device conformance suite, run here against the SDL and raylib devices. -->
     <Compile Include="../Shared/Graphics/*.cs" LinkBase="Shared/Graphics" />
+    <!-- The allocation check the engine tests use. -->
+    <Compile Include="../Shared/AllocationAssert.cs" Link="Shared/AllocationAssert.cs" />
   </ItemGroup>
 </Project>
