@@ -27,13 +27,17 @@ public sealed class EncodedAudio
 }
 
 /// <summary>
-/// The audio loaders of the content store: "sound" decodes a PCM WAV file into an <see cref="AudioClip"/> (".wav"), and
+/// The audio loaders of the content store (<c>Game.Assets.Sound</c>, <c>Game.Assets.Music</c>): "sound" decodes a PCM WAV file into an <see cref="AudioClip"/> (".wav"), and
 /// "music" reads a music file's bytes as <see cref="EncodedAudio"/> (".ogg", ".mp3"; a ".wav" asked for as music too).
 /// </summary>
-internal static class AudioAssetLoaders
+public static class AudioAssetLoaders
 {
-    public const string Sound = "sound", Music = "music";
+    /// <summary>The kind of decoded sound effects (<see cref="AudioClip"/>).</summary>
+    public const string Sound = "sound";
+    /// <summary>The kind of music files (<see cref="EncodedAudio"/>).</summary>
+    public const string Music = "music";
 
+    /// <summary>Registers both loaders in <paramref name="loaders"/> (<c>Game.Assets</c> has them already).</summary>
     public static void Register(AssetLoaderRegistry loaders)
     {
         loaders.Add(new AssetLoader<AudioClip>(Sound, c => AudioClip.FromWav(c.ReadBytes()), [".wav"], clip => clip.Samples.LongLength * sizeof(float)));

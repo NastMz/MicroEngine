@@ -3,7 +3,9 @@
 MicroEngine audio has two halves. The core synthesizes sound effects (`Synth`) and step-sequenced music (`Song`)
 into `AudioClip`s, and decodes PCM WAV files. The game-facing `AudioMixer` (`Game.Audio`) keeps a bank of named
 sounds and music, plays them by name, and fades music in and out. Playback itself is done by the backend's
-`IAudioDevice`, which also streams compressed music: OGG on every platform, MP3 on raylib only.
+`IAudioDevice`, which also streams compressed music: OGG on every platform, MP3 on raylib only. In the next SDK version
+every device is the engine's one mixer playing through the platform's output
+([One mixer on every platform](#one-mixer-on-every-platform)).
 
 ## Pieces
 
@@ -14,9 +16,9 @@ sounds and music, plays them by name, and fades music in and out. Playback itsel
 | `Synth.Layer`, `Synth.NoteFrequency` | Mix clips at time offsets; note name to Hz (`"C5"`, `"F#3"`) |
 | `Instrument`, `Song` | Tracker-style voices and a step sequencer rendered to a looping stereo clip |
 | `AudioMixer` | Named sound bank, music with fades, volumes |
-| `IAudioDevice` | The platform's device: SDL audio streams on the SDL platform (the default on desktops and phones), raylib's audio on the raylib platform (desktops and browsers), `SilentAudioDevice` headless or without hardware |
+| `IAudioDevice` | The platform's device. Next SDK version: every backend device is the engine's own mixer (`MixerAudioDevice`, `AudioEngine`) playing through the backend's PCM sink (an SDL audio stream on the SDL platform, the default on desktops and phones; a raylib audio stream on raylib desktops; an AudioWorklet in browsers); `SilentAudioDevice` headless or without hardware |
 
-Source: [`src/MicroEngine/Audio/`](../../src/MicroEngine/Audio/)
+Source: [`src/MicroEngine.Audio/`](../../src/MicroEngine.Audio/)
 
 ## Synthesized sound effects
 
@@ -55,10 +57,12 @@ Source: [`samples/HelloEngine/Program.cs`](../../samples/HelloEngine/Program.cs)
 Rendering happens on the CPU at load time; long songs add to start-up time, so render them once in `Load`. Next SDK
 version (not published yet: arrives with the next SDK version): `Audio.AddMusic(name, song)` with the `Song` itself (no `Render()`) renders it in the
 background, songs side by side, and hands it to the device the first time it plays, waiting then only for that song;
-in browsers, which have no background threads, songs render a few milliseconds per update, in the order they were
-registered; a song asked to play before it is ready goes first and starts once rendered (`CurrentMusic` is null
-until then), so the game never freezes for it. A song with an invalid note or drum fails in
-`AddMusic`. Do not change a song after registering it.
+in browsers, which have no background threads, songs render a few milliseconds per frame, outside the game's updates,
+in the order they were registered; a song asked to play before it is ready goes first and starts once rendered, so the
+game never freezes for it. `CurrentMusic` names it from the moment it is asked for, so game rules that read it do not
+depend on how fast the machine renders (in deterministic runs such as scripted ones, a song waited for is finished
+before the next frame). A song with an invalid note or drum fails in `AddMusic`. Do not change a song after
+registering it.
 
 ## The mixer
 
@@ -94,6 +98,35 @@ public void Music(string name)
 
 Source: [`games/NeonRift/RiftGame.cs`](../../games/NeonRift/RiftGame.cs)
 
+## One mixer on every platform
+
+Next SDK version (merged, not published yet). Every audio device of the engine is the same managed mixer,
+`AudioEngine`, rendering into the platform's PCM output: on the SDL platform a thread keeps 60 ms queued in an SDL
+audio stream; on raylib desktops a thread keeps a raylib audio stream full; in browsers the page plays through an
+AudioWorklet that the game fills 100 ms ahead once per frame. So a sound plays the same everywhere: the same voice
+limit, priorities, panning, resampling, looping and fades, and `CaptureAudioDevice` records exactly what a device would
+play.
+
+| `AudioEngine` member | Behaviour |
+| --- | --- |
+| `Play(clip, parameters)` | Plays a clip; returns a `VoiceHandle`, or `VoiceHandle.None` when the voice policy refused it |
+| `Play(stream, parameters)` | Plays an `IAudioStream` (music decoded while it plays); several streams play side by side |
+| `Stop(voice, fadeSeconds)`, `Set(voice, volume, pan)`, `Pause(voice, paused)` | Control a playing sound; a stale handle does nothing and returns `false` |
+| `IsPlaying(voice)`, `ActiveVoices`, `RefusedSounds` | What plays now |
+| `Bus(name)`, `AddBus(name, parent)`, `AudioBus.Volume` | Named buses under `master` (`sfx` and `music` exist); a bus is created under a parent that exists, so buses never form a cycle |
+| `MaxVoices` (32 by default), `DelayFrames` | The voice limit; the delay between a step and the sounds it starts |
+
+`PlayParameters` holds `Volume`, `Pitch`, `Pan`, `Loop`, `Priority` and `Bus` (`sfx` by default). When every voice is
+busy, a new sound steals the oldest sound of the lowest priority, if that priority is not higher than its own;
+otherwise the new sound is refused. `Game.Audio` plays music with the highest priority, so sound effects never steal
+it. A device's mixer is `MixerAudioDevice.Engine`.
+
+Sounds start at an exact output frame: the frame of the game update that played them plus a fixed delay at least as
+long as the output's queue, so what is heard does not depend on how the platform asks for audio, and an offline
+render (`OfflineAudioSink`, `CaptureAudioDevice`) gives the same samples on every machine. Music streams are decoded
+ahead once per frame, outside the game's updates. `SdlAudioDevice.TryCreate(driver, latencyMilliseconds)` changes the
+SDL queue (lower plays sounds sooner; higher survives longer pauses, such as long garbage collections).
+
 ## Sound and music files
 
 ```csharp
@@ -109,16 +142,24 @@ Source: [`games/NeonRift/Art/Sounds.cs`](../../games/NeonRift/Art/Sounds.cs)
 | Format | Support |
 | --- | --- |
 | WAV | PCM 8, 16 or 24-bit, mono or stereo, decoded in managed code (`AudioClip.FromWav`); other WAV encodings throw `NotSupportedException` |
-| OGG | Music only, through `AddMusicFile`; streamed by the SDL device (decoded in managed code with NVorbis) and by raylib |
-| MP3 | Music only, and **raylib only**: the SDL device, the default on desktops and phones, throws `NotSupportedException` for it. Use OGG for music that plays everywhere |
+| OGG | Music only, through `AddMusicFile`; streamed and decoded in managed code (NVorbis) on every platform, ahead of playback and outside the simulation step |
+| MP3 | Music only, and **raylib only** (decoded by raylib, whole, when it is loaded): the SDL device, the default on desktops and phones, throws `NotSupportedException` for it. Use OGG for music that plays everywhere |
+
+Next SDK version: sound and music files can also come through `Game.Assets`, from any content source (a zip
+archive too), shared and released by scopes like any asset:
+
+```csharp
+Audio.AddSound("jump", Assets.Sound("sfx/jump.wav"));
+Audio.AddMusic("city", Assets.Music("music/city.ogg"));
+```
 
 Where content files live and how they are located is covered in [Assets](assets.md).
 
 ## Devices and silence
 
 Both platforms fall back to `SilentAudioDevice` when no audio device is available (they print `audio: ...,
-continuing silently`), so a machine without sound still runs the game. Each sound keeps several voices so rapid
-repeats overlap instead of cutting each other off. `--mute` on desktop (or `RunOptions.Mute`) sets both volumes to zero and uses the silent device.
+continuing silently`), so a machine without sound still runs the game. Rapid repeats of a sound overlap (up to the voice limit, 32 by default in the next SDK version) instead of cutting each other off.
+`--mute` on desktop (or `RunOptions.Mute`) sets both volumes to zero and uses the silent device.
 `HeadlessPlatform` exposes its `SilentAudioDevice`, whose `Played` list lets tests assert which cues fired.
 
 Next SDK version (not published yet: arrives with the next SDK version):
@@ -128,10 +169,10 @@ Next SDK version (not published yet: arrives with the next SDK version):
   asks for one anyway; `AudioOutput.Silent` never opens one. In the version after that, the default follows the
   loop's time mode instead of the window: a real-time run opens a device (a hidden one too, unless it passes
   `--audio silent` or `--mute`), a deterministic-time run (`--script`, `--time deterministic`, headless) does not.
-- `CaptureAudioDevice` records what would have been heard: it mixes sound effects (volume, pitch, balance panning) and
-  music (looping, pause, volume) one game step per update, so the same run always gives the same samples. Tests read
-  its `Output` clip (waves, durations, silences, amplitudes) and `Played` list; `--audio-capture FILE` writes it as a
-  WAV. It does not decode compressed music streams other than WAV (they are captured as silence).
+- `CaptureAudioDevice` records what would have been heard, one game step per update, so the same run always gives the
+  same samples. Tests read its `Output` clip (waves, durations, silences, amplitudes) and `Played` list;
+  `--audio-capture FILE` writes it as a WAV. It is the engine's own mixer rendering offline, with the same voice limit,
+  priorities, panning, resampling, looping, pause and fades as every device, and it decodes OGG music too.
 - `SdlAudioDevice.TryCreate("dummy")` runs SDL's whole audio path with no device or sound; `"disk"` writes SDL's mix
   to a file.
 
@@ -142,9 +183,16 @@ starting the game, so the audio context is created inside that gesture; if the b
 suspended, the page shows a "Sound is blocked" button and any key or click resumes it. Development packages with
 `autostart=1` skip the gesture and stay silent. See [The browser host](../examples/embedding.md).
 
+Next SDK version: the game renders its sound once per frame, 100 ms ahead, and the page plays it through an
+AudioWorklet. A frame longer than that is heard as a gap. A hidden page (another tab, a locked phone) suspends its
+sound and resumes it when shown again.
+
 ## Limitations
 
-- One music track at a time; no simultaneous layers or true crossfades.
-- No positional audio beyond a per-play stereo `pan`, no effects buses, no runtime pitch or volume changes on a
-  sound that is already playing.
-- Compressed formats are supported for music only; sound effects must be WAV or synthesized.
+- `Game.Audio` plays one music track at a time, with fade-out then fade-in; several streams at once, buses and
+  per-sound handles are on the engine's mixer (`MixerAudioDevice.Engine`), not on `Game.Audio` yet.
+- No positional audio beyond a per-play stereo `pan`, no effects on buses, no runtime pitch changes on a sound that is
+  already playing.
+- Compressed formats are supported for music only; sound effects must be WAV or synthesized. MP3 plays on raylib only.
+- Sound starts 60 ms (SDL) to about 100 ms (browsers) after the update that played it: the queue that keeps pauses
+  from being heard.

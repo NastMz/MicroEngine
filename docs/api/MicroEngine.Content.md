@@ -82,15 +82,15 @@ a model converted from glTF, a font baked into a distance field), driven by sett
 The engine does not call importers yet; the interface fixes where that step will plug in so loaders never need to
 change when it arrives. Content stays usable without any importer: loaders read source files directly.
 
+ [IAssetLoader<T\>](MicroEngine.Content.IAssetLoader\-1.md)
+
+A loader of assets of type <code class="typeparamref">T</code> (see [IAssetLoader](MicroEngine.Content.IAssetLoader.md)).
+
  [IAssetLoader](MicroEngine.Content.IAssetLoader.md)
 
 Makes one kind of asset from content files: decodes an image into a texture, a WAV into an audio clip... A loader is
 registered once per store under its [Kind](MicroEngine.Content.IAssetLoader.md#MicroEngine_Content_IAssetLoader_Kind) ([AssetLoaderRegistry](MicroEngine.Content.AssetLoaderRegistry.md)); the store calls it the
 first time a key of that kind is asked for and shares the result.
-
- [IAssetLoader<T\>](MicroEngine.Content.IAssetLoader\-1.md)
-
-A loader of assets of type <code class="typeparamref">T</code> (see [IAssetLoader](MicroEngine.Content.IAssetLoader.md)).
 
  [IAssetStore](MicroEngine.Content.IAssetStore.md)
 

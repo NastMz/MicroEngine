@@ -104,7 +104,7 @@ public AudioMixer Audio { get; }
 
 #### Property Value
 
- [AudioMixer](MicroEngine.Audio.AudioMixer.md)
+ AudioMixer
 
 ### <a id="MicroEngine_Core_Game_ContentRoot"></a> ContentRoot
 

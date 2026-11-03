@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Audio.dll  
 Guide: [Audio](../manual/audio.md)  
 
 Oscillator waveforms for [SfxParams](MicroEngine.Audio.SfxParams.md) and [Instrument](MicroEngine.Audio.Instrument.md): <code>Square</code>, <code>Triangle</code>, <code>Saw</code>,

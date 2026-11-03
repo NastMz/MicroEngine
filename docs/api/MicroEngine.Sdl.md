@@ -10,10 +10,10 @@ Guide: [Backends and platforms](../manual/backends.md)
 
  [SdlAudioDevice](MicroEngine.Sdl.SdlAudioDevice.md)
 
-SDL3 audio. SDL mixes every audio stream bound to a device, so the device keeps a pool of streams (voices) for sound
-effects, each converting its clip's rate and channels and applying pitch (frequency ratio) and volume (gain); pan is
-applied when the clip is copied into its voice. Music is one stream topped up from [Update](MicroEngine.Sdl.SdlAudioDevice.md#MicroEngine_Sdl_SdlAudioDevice_Update), decoded from
-PCM or OGG Vorbis (NVorbis) in managed code. It works without a window, so a host can use it with another platform.
+SDL3 audio: the engine's mixer ([MixerAudioDevice](MicroEngine.Audio.MixerAudioDevice.md), the same voices, priorities and music on every
+backend) playing through SDL's default playback device. A feeder thread keeps [DefaultLatencyMilliseconds](MicroEngine.Sdl.SdlAudioDevice.md#MicroEngine_Sdl_SdlAudioDevice_DefaultLatencyMilliseconds)
+of audio queued in an SDL audio stream (48 kHz stereo float), so main-thread stalls and garbage collections shorter
+than that are not heard. It works without a window, so a host can use it with another platform.
 
  [SdlPlatform](MicroEngine.Sdl.SdlPlatform.md)
 
