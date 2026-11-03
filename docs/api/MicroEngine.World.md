@@ -2,7 +2,7 @@
 
 <div data-pagefind-weight="0.3">
 
-Tile layers, collision grids, swept movement against tiles and autotiling.
+Tile layers, collision grids, swept movement against tiles (`TileMotion`), autotiling and drawing tiles.
 
 Guide: [Tile maps and collision](../manual/world.md)  
 
@@ -23,9 +23,10 @@ A rectangular grid of integer tile ids (0 conventionally means empty).
 
  [TileMotion](MicroEngine.World.TileMotion.md)
 
-Moves an axis-aligned box through a tile grid (plus optional extra solid rectangles such as
-moving platforms or push blocks). X is resolved before Y, in sub-steps no larger than half a
-tile, so fast bodies never tunnel. One-way tiles only stop bodies falling onto their top edge.
+Moves an axis-aligned box through a tile grid (plus optional extra solid rectangles such as moving platforms or push
+blocks). X is resolved before Y, each as a swept test in sub-steps no larger than half a tile: the box stops flush
+against the first solid tile or rectangle in its way, however thin, so it never tunnels. One-way tiles only stop
+bodies falling onto their top edge.
 
  [TileRenderer](MicroEngine.World.TileRenderer.md)
 

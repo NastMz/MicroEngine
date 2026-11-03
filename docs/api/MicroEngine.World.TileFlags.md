@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Physics.Tiles.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
 
 Collision semantics of a tile. Games may use the Custom bits for their own meaning.
