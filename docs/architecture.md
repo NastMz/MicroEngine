@@ -21,6 +21,7 @@ flowchart TB
   platform["<b> src/MicroEngine.Platform </b> <br/> Platform contracts: host, surface, capabilities, storage, content sources"]
   hosting["<b> src/MicroEngine.Hosting </b> <br/> Hosting: launch requests and their rules, platform selection, the composition a game configures once"]
   content["<b> src/MicroEngine.Content </b> <br/> Content: asset store, typed handles, scopes, loader registry, zip and listed sources"]
+  audio["<b> src/MicroEngine.Audio </b> <br/> Audio: the one mixer over PCM sinks, sound bank and music, synthesis"]
   kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
   samples -- started by --> hosts
@@ -39,6 +40,8 @@ flowchart TB
   hosting -- builds on --> platform
   core -- builds on --> content
   content -- builds on --> platform
+  core -- builds on --> audio
+  audio -- builds on --> content
 ```
 
 Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
@@ -67,6 +70,14 @@ the asset, scopes that share one object and dispose it with its last holder, a l
 kind of asset (images, atlases and fonts register theirs from the core for now; sounds and music too), a reserved
 build-time import step (`IAssetImporter`), and content sources beyond folders: zip archives and files a host lists
 and opens itself ([Handles, loaders and content sources](manual/assets.md#handles-loaders-and-content-sources)).
+
+Next SDK version (not published yet: arrives with the next SDK version): audio is a fifth assembly of the `MicroEngine`
+package, `MicroEngine.Audio`, which references the kernel, the platform contracts and content. It holds the one mixer
+every backend plays through (`AudioEngine`: voices with handles and priorities, one voice policy, buses, music streams
+decoded ahead outside the simulation step, sounds started at exact output frames), the audio device contract and the
+`AudioMixer` games use, offline rendering for tests, and the synthesizer. The platform contracts gain `IAudioSink`, the
+PCM output a backend implements: an SDL audio stream fed by a thread, a raylib audio stream, a browser AudioWorklet
+([One mixer on every platform](manual/audio.md#one-mixer-on-every-platform)).
 
 The core references no backend library. Everything platform-specific sits behind `MicroEngine.Core.IPlatform` and
 four device interfaces:

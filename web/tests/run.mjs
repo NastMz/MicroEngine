@@ -12,7 +12,8 @@
 //   repeat    replays each script twice in fresh pages and checks that both runs write byte-identical captures
 //             (scripted runs are deterministic in pages as on desktop); differing pairs go to --out/<browser>/repeat
 //   autopilot Neon Rift's built-in autopilot plays stages 1 to 3 until the ending
-//   audio     per game: the sound actually reaching the speakers (signal level of the page's audio output)
+//   audio     per game: the sound actually reaching the speakers (signal level of the page's audio output); a hidden page
+//             suspends its sound and resumes it when shown
 //   framerate per game: updates per second while the page draws every frame, every 2nd and every 4th
 //   keyboard  replays the same scripts through the browser's keyboard (real key events at the scripted update
 //             numbers) and checks that the game reaches the scene the scripted run ends in; page screenshots
@@ -422,7 +423,7 @@ async function keyboard(browser, label) {
   }
 }
 
-/** Measures the level of what the game sends to the speakers: music and effects share miniaudio's output node. */
+/** Measures the level of what the game sends to the speakers: music and effects share the engine's one output node. */
 async function audio(browser, label) {
   for (const game of games) {
     const context = await browser.createBrowserContext();
@@ -471,7 +472,7 @@ async function audio(browser, label) {
   await page.click('#play');
   await waitFor(page, s => s === 'playing');
   await sleep(1000);
-  await page.evaluate(() => Promise.all(window.miniaudio.devices.map(d => d?.webaudio?.suspend())));
+  await page.evaluate(() => window.microengine.suspendAudio());
   await sleep(1200);
   const state = () => page.evaluate(() => ({ audio: window.microengine.audio(), button: !document.getElementById('sound').hidden }));
   const blocked = await state();
@@ -481,6 +482,22 @@ async function audio(browser, label) {
   check(`${label} audio: suspended sound is explained and one click brings it back`,
     blocked.button && blocked.audio.includes('suspended') && !resumed.button && resumed.audio.every(a => a === 'running'),
     `${JSON.stringify(blocked)} -> ${JSON.stringify(resumed)}`);
+
+  // A hidden page (another tab, a locked phone) stops drawing frames, so nothing fills the audio queue: the page
+  // suspends the output and resumes it when shown again. Visibility is emulated here, as headless browsers stay visible.
+  const visibility = hidden => page.evaluate(h => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => h ? 'hidden' : 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  }, hidden);
+  await visibility(true);
+  await sleep(800);
+  const hiddenAudio = await page.evaluate(() => window.microengine.audio());
+  await visibility(false);
+  await sleep(800);
+  const shownAudio = await page.evaluate(() => window.microengine.audio());
+  check(`${label} audio: a hidden page suspends its sound and resumes it when shown`,
+    hiddenAudio.length > 0 && hiddenAudio.every(a => a === 'suspended') && shownAudio.every(a => a === 'running'),
+    `${hiddenAudio.join(',')} -> ${shownAudio.join(',')}`);
   await context.close();
 }
 
