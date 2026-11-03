@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 P7: Courtyard Key's own tests run against the port (linked unchanged from tests/CourtyardKey.Tests, two
+       files adapted here), plus the port-versus-original state trace comparison. The original game is referenced under
+       the alias "original". Not part of MicroEngine.slnx or CI. -->
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>CourtyardKey.Tests</RootNamespace>
+    <OriginalTests>../../../../tests/CourtyardKey.Tests/</OriginalTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.4.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(OriginalTests)*.cs" Exclude="$(OriginalTests)FrameBlendTests.cs;$(OriginalTests)PlayTests.cs" LinkBase="Original" />
+    <Compile Include="../../../../tests/Shared/StateTraceRuns.cs" Link="Shared/StateTraceRuns.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../CourtyardKey.Port/CourtyardKey.Port.csproj" />
+    <ProjectReference Include="../../../../games/CourtyardKey/CourtyardKey.csproj" Aliases="original" />
+  </ItemGroup>
+</Project>

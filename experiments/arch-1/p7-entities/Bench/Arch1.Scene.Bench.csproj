@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 P7: measurements (attachment lookup and iteration per storage design, struct vs class attachments,
+       hierarchy cost for 2D games, step cost, and the game-level per-frame time and allocation of the original vs the
+       port). Throwaway; not part of MicroEngine.slnx or CI. Run: dotnet run -c Release -(-) [micro|game|all] -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Arch1.Scene.Bench</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <TieredPGO>true</TieredPGO>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Scene/Arch1.Scene.csproj" />
+    <ProjectReference Include="../CourtyardKey.Port/CourtyardKey.Port.csproj" />
+    <ProjectReference Include="../../../../games/CourtyardKey/CourtyardKey.csproj" Aliases="original" />
+  </ItemGroup>
+</Project>
