@@ -21,7 +21,8 @@ public abstract class Scene : IStateHashed
 
 #### Derived
 
-[AchievementsScene](MicroEngine.UI.AchievementsScene.md)
+[AchievementsScene](MicroEngine.UI.AchievementsScene.md), 
+[Scene<TResult\>](MicroEngine.Scenes.Scene\-1.md)
 
 #### Implements
 
@@ -160,6 +161,24 @@ public virtual bool IsOverlay { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Scenes_Scene_Objects"></a> Objects
+
+The scene's objects ([IWorld](MicroEngine.Scenes.IWorld.md)), created the first time it is read. While the scene is updated the
+engine steps it with the scene: each step starts before the scene's coroutines, tweens and [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_)
+(which then receives the step on the world's [Clock](MicroEngine.Scenes.IWorld.md#MicroEngine_Scenes_IWorld_Clock)) and ends after them, releasing what was
+destroyed. Before [Draw](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Draw_MicroEngine_Graphics_IRenderer_) the engine sets its [Blend](MicroEngine.Scenes.IWorld.md#MicroEngine_Scenes_IWorld_Blend): the frame's blend when the
+scene was updated in the latest step, 1 when it was not (frozen under an overlay, in a transition), so drawing
+through [DrawPosition2D](MicroEngine.Scenes.IWorld.md#MicroEngine_Scenes_IWorld_DrawPosition2D_MicroEngine_Scenes_EntityId_) and [WorldMatrix](MicroEngine.Scenes.IWorld.md#MicroEngine_Scenes_IWorld_WorldMatrix_MicroEngine_Scenes_EntityId_) is smooth while it plays and
+still while it is frozen. Its state is part of the scene's state hash.
+
+```csharp
+public IWorld Objects { get; }
+```
+
+#### Property Value
+
+ IWorld
+
 ### <a id="MicroEngine_Scenes_Scene_TouchActions"></a> TouchActions
 
 The actions this scene needs from the on-screen touch controls while it is on top, or null for all of them (the
@@ -270,6 +289,7 @@ public abstract void Update(float dt)
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-Step length in seconds (<code>1 / UpdateRate</code>).
+Step length in seconds: <code>1 / UpdateRate</code>, or, once the scene has [Objects](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Objects), the step on the
+world's clock (the same at scale 1; scaled by [Scale](MicroEngine.Scenes.WorldClock.md#MicroEngine_Scenes_WorldClock_Scale); 0 while it is frozen).
 
 </div>

@@ -51,6 +51,25 @@ public abstract class Scene : IStateHashed
     /// <summary>When true (default), scenes below an overlay are not updated.</summary>
     public virtual bool BlocksUpdateBelow => true;
 
+    private SceneWorld? _world;
+    /// <summary>
+    /// The scene's objects (<see cref="IWorld"/>), created the first time it is read. While the scene is updated the
+    /// engine steps it with the scene: each step starts before the scene's coroutines, tweens and <see cref="Update"/>
+    /// (which then receives the step on the world's <see cref="IWorld.Clock"/>) and ends after them, releasing what was
+    /// destroyed. Before <see cref="Draw"/> the engine sets its <see cref="IWorld.Blend"/>: the frame's blend when the
+    /// scene was updated in the latest step, 1 when it was not (frozen under an overlay, in a transition), so drawing
+    /// through <see cref="IWorld.DrawPosition2D"/> and <see cref="IWorld.WorldMatrix"/> is smooth while it plays and
+    /// still while it is frozen. Its state is part of the scene's state hash.
+    /// </summary>
+    public IWorld Objects => _world ??= new SceneWorld();
+    /// <summary>Whether <see cref="Objects"/> was created (a scene that never reads it has none and pays nothing).</summary>
+    internal bool HasWorld => _world is not null;
+
+    internal Action<object?>? ResultHandler;
+    internal bool Finishing;
+    internal bool HasResult;
+    internal object? Result;
+
     internal void Attach(Game game) => _game = game;
 
     /// <summary>Called when the scene is pushed onto the stack, after <see cref="Game"/> is set and input was reset.</summary>
@@ -82,7 +101,10 @@ public abstract class Scene : IStateHashed
     public virtual void HashState(StateHasher hash) { }
 
     /// <summary>Advances the scene by one fixed step. Not called while a blocking overlay is above, nor during the covering half of a transition.</summary>
-    /// <param name="dt">Step length in seconds (<c>1 / UpdateRate</c>).</param>
+    /// <param name="dt">
+    /// Step length in seconds: <c>1 / UpdateRate</c>, or, once the scene has <see cref="Objects"/>, the step on the
+    /// world's clock (the same at scale 1; scaled by <see cref="WorldClock.Scale"/>; 0 while it is frozen).
+    /// </param>
     public abstract void Update(float dt);
     /// <summary>Draws the scene once per frame into the virtual canvas. Scenes below an overlay are drawn first.</summary>
     /// <param name="renderer">The renderer of the current frame.</param>
@@ -94,16 +116,48 @@ public abstract class Scene : IStateHashed
         hash.Add(Age);
         Coroutines.HashState(hash);
         Tweens.HashState(hash);
+        _world?.HashState(hash);
         HashState(hash);
     }
 
     internal void Tick(float dt)
     {
+        if (_world is not { } world)
+        {
+            Age += dt;
+            Coroutines.Update(dt);
+            Tweens.Update(dt);
+            Update(dt);
+            return;
+        }
+        float step = world.BeginStep(Game.UpdateCount, dt);
         Age += dt;
         Coroutines.Update(dt);
         Tweens.Update(dt);
-        Update(dt);
+        Update(step);
+        world.EndStep();
     }
+
+    internal void BeginDraw() => _world?.BeginDraw(Game.UpdateCount, Game.FrameBlend);
+}
+
+/// <summary>
+/// A scene that ends by returning a value to whoever pushed it (a dialogue's choice, a shop's purchase, a menu's
+/// answer): push it with <see cref="SceneManager.Push{TResult}(Scene{TResult}, Action{TResult}, Transition?)"/> and
+/// end it with <see cref="Finish"/>.
+/// </summary>
+/// <typeparam name="TResult">What the scene returns.</typeparam>
+public abstract class Scene<TResult> : Scene
+{
+    /// <summary>
+    /// Pops this scene, deferred like <see cref="SceneManager.Pop"/>, and hands <paramref name="result"/> to the callback
+    /// it was pushed with, after its <see cref="Scene.Exit"/> and before the scene below receives
+    /// <see cref="Scene.Resume"/>. Only the first call counts; nothing happens if the scene is no longer on top when the
+    /// change applies. A scene removed any other way (popped, replaced, cleared) returns nothing.
+    /// </summary>
+    /// <param name="result">The value handed to the callback.</param>
+    /// <param name="transition">An optional transition for the pop.</param>
+    protected void Finish(TResult result, Transition? transition = null) => Game.Scenes.Finish(this, result, transition);
 }
 
 /// <summary>Manages the scene stack and the transitions between scenes.</summary>
@@ -137,6 +191,34 @@ public sealed class SceneManager
     /// transition; until the playing transition has swapped its scenes, it waits and applies right after the swap.
     /// </remarks>
     public void Push(Scene scene, Transition? transition = null) => Schedule(() => PushNow(scene), transition);
+    /// <summary>
+    /// Pushes a scene that returns a value, deferred like <see cref="Push(Scene, Transition?)"/>: when it calls
+    /// <see cref="Scene{TResult}.Finish"/>, it is popped and <paramref name="onResult"/> receives the value (after the
+    /// scene's <see cref="Scene.Exit"/>, before the scene below receives <see cref="Scene.Resume"/>).
+    /// </summary>
+    public void Push<TResult>(Scene<TResult> scene, Action<TResult> onResult, Transition? transition = null)
+    {
+        ArgumentNullException.ThrowIfNull(scene);
+        ArgumentNullException.ThrowIfNull(onResult);
+        Schedule(() =>
+        {
+            PushNow(scene);
+            scene.ResultHandler = value => onResult((TResult)value!);
+        }, transition);
+    }
+
+    internal void Finish(Scene scene, object? result, Transition? transition)
+    {
+        if (scene.Finishing) return;
+        scene.Finishing = true;
+        Schedule(() =>
+        {
+            if (!ReferenceEquals(Current, scene)) return;
+            scene.Result = result;
+            scene.HasResult = true;
+            PopNow();
+        }, transition);
+    }
     /// <summary>Removes the top scene, deferred like <see cref="Push"/>. The scene below receives <see cref="Scene.Resume"/>. Does nothing on an empty stack.</summary>
     public void Pop(Transition? transition = null) => Schedule(PopNow, transition);
     /// <summary>Replaces the top scene.</summary>
@@ -159,6 +241,9 @@ public sealed class SceneManager
     {
         ArgumentNullException.ThrowIfNull(scene);
         scene.Attach(_game);
+        scene.ResultHandler = null;
+        scene.Finishing = scene.HasResult = false;
+        scene.Result = null;
         _stack.Add(scene);
         _game.Input.Reset();
         scene.Enter();
@@ -172,6 +257,12 @@ public sealed class SceneManager
         top.Coroutines.StopAll();
         top.Tweens.Clear();
         top.Exit();
+        var handler = top.HasResult ? top.ResultHandler : null;
+        object? result = top.Result;
+        top.ResultHandler = null;
+        top.HasResult = false;
+        top.Result = null;
+        handler?.Invoke(result);
         _game.Input.Reset();
         Current?.Resume();
     }
@@ -235,7 +326,11 @@ public sealed class SceneManager
     {
         int first = _stack.Count - 1;
         while (first > 0 && _stack[first].IsOverlay) first--;
-        for (int i = Math.Max(first, 0); i < _stack.Count; i++) _stack[i].Draw(renderer);
+        for (int i = Math.Max(first, 0); i < _stack.Count; i++)
+        {
+            _stack[i].BeginDraw();
+            _stack[i].Draw(renderer);
+        }
         _transition?.DrawAt(renderer, _game.FrameBlend);
     }
 

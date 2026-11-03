@@ -42,6 +42,7 @@ IStateHashed
 [Scene.Age](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Age), 
 [Scene.IsOverlay](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_IsOverlay), 
 [Scene.BlocksUpdateBelow](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_BlocksUpdateBelow), 
+[Scene.Objects](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Objects), 
 [Scene.TouchActions](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_TouchActions), 
 [object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
 [object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 

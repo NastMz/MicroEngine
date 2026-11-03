@@ -8,6 +8,13 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- Scenes can hold their objects in a world (`Scene.Objects`, an `IWorld` in the `MicroEngine.Scenes` namespace, from
+  the new `MicroEngine.Scene.dll` the `MicroEngine` package carries), and a `Scene<TResult>` can return a value to the
+  scene below (`Game.Scenes.Push(scene, onResult)`, `Finish(value)`). Nothing changes for a scene that does not read
+  `Objects`: it has no world and its `Update` receives the engine's step as before. **Migration:** a scene of yours
+  that declares a member named `Objects` now hides the inherited one (compiler warning CS0108): rename yours, or read
+  the engine's as `base.Objects`. Once a scene reads `Objects`, its `Update` receives the step on the world's clock
+  (equal to the engine's step unless the game scales or freezes that clock).
 - `TileMotion.Move` is a swept test: a fast box stops against an extra solid rectangle thinner than a sub-step instead of
   passing through it, and an extra solid whose top edge is inside the lower half of a box moving down (a platform that
   rose into a standing player) lifts the box onto its top, so `HitFloor` and `IsOnGround` are true instead of the box
