@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Graphics2D.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 The order an animation plays its frames in (Aseprite's tag directions).

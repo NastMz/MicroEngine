@@ -78,6 +78,6 @@ IRenderer BeginUi()
 
 #### Returns
 
- [IRenderer](MicroEngine.Graphics.IRenderer.md)
+ IRenderer
 
 </div>

@@ -77,7 +77,7 @@ public Sprite? Icon { get; init; }
 
 #### Property Value
 
- [Sprite](MicroEngine.Graphics.Sprite.md)?
+ Sprite?
 
 ### <a id="MicroEngine_Core_Achievement_Id"></a> Id
 

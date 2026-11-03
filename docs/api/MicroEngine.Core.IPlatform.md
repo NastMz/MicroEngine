@@ -50,7 +50,7 @@ IGraphicsDevice Graphics { get; }
 
 #### Property Value
 
- [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+ IGraphicsDevice
 
 ### <a id="MicroEngine_Core_IPlatform_Input"></a> Input
 
@@ -89,7 +89,7 @@ IRenderer BeginFrame()
 
 #### Returns
 
- [IRenderer](MicroEngine.Graphics.IRenderer.md)
+ IRenderer
 
 ### <a id="MicroEngine_Core_IPlatform_EndFrame"></a> EndFrame\(\)
 

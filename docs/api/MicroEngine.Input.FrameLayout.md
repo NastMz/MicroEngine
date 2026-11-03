@@ -41,7 +41,7 @@ public static RectF Fit(Vector2 window, RectF safeArea, int virtualWidth, int vi
 
 `virtualHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`scaling` [CanvasScaling](MicroEngine.Graphics.CanvasScaling.md)
+`scaling` CanvasScaling
 
 #### Returns
 

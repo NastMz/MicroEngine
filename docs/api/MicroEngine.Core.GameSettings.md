@@ -77,7 +77,7 @@ public TextureFilter DefaultTextureFilter { get; }
 
 #### Property Value
 
- [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
+ TextureFilter
 
 ### <a id="MicroEngine_Core_GameSettings_EffectivePresentation"></a> EffectivePresentation
 
@@ -155,7 +155,7 @@ public CanvasScaling Scaling { get; init; }
 
 #### Property Value
 
- [CanvasScaling](MicroEngine.Graphics.CanvasScaling.md)
+ CanvasScaling
 
 ### <a id="MicroEngine_Core_GameSettings_TextureFilter"></a> TextureFilter
 
@@ -170,7 +170,7 @@ public TextureFilter? TextureFilter { get; init; }
 
 #### Property Value
 
- [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
+ TextureFilter?
 
 ### <a id="MicroEngine_Core_GameSettings_Title"></a> Title
 

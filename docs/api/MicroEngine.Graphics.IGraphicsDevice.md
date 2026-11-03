@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Graphics2D.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 Creates device resources. Separated so headless tests can provide fakes.
@@ -17,9 +17,8 @@ public interface IGraphicsDevice
 ### <a id="MicroEngine_Graphics_IGraphicsDevice_DefaultFilter"></a> DefaultFilter
 
 The filter of textures created without one: [CreateTexture](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_CreateTexture_MicroEngine_Graphics_PixelImage_MicroEngine_Graphics_TextureFilter_), atlases. The engine sets it
-from [TextureFilter](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_TextureFilter) before <code>Game.Load</code>. Glyph pages of a
-[ScalableFont](MicroEngine.Graphics.ScalableFont.md) do not follow it: their filter is [Filter](MicroEngine.Graphics.FontOptions.md#MicroEngine_Graphics_FontOptions_Filter), or linear for
-antialiased text and nearest otherwise.
+from the game settings (<code>TextureFilter</code>, or its presentation's default sampler) before <code>Game.Load</code>.
+Glyph pages of a scalable font follow it too unless the font's options choose a filter.
 
 ```csharp
 TextureFilter DefaultFilter { get; set; }

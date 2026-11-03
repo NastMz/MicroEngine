@@ -130,7 +130,7 @@ public abstract void Draw(IRenderer renderer)
 
 #### Parameters
 
-`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`renderer` IRenderer
 
 ### <a id="MicroEngine_Scenes_Transition_Fade_System_Single_System_Nullable_MicroEngine_Color__"></a> Fade\(float, Color?\)
 

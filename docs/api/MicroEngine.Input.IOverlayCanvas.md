@@ -75,7 +75,7 @@ void Image(PixelImage image, RectF destination, Color tint)
 
 #### Parameters
 
-`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
+`image` PixelImage
 
 `destination` RectF
 

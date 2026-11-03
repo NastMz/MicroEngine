@@ -103,7 +103,7 @@ public static BitmapFont CreateDefault(IGraphicsDevice? device)
 
 #### Parameters
 
-`device` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)?
+`device` IGraphicsDevice?
 
 #### Returns
 
@@ -127,7 +127,7 @@ public void Draw(IRenderer renderer, string text, Vector2 position, Color color,
 
 #### Parameters
 
-`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`renderer` IRenderer
 
 The renderer.
 
@@ -163,7 +163,7 @@ public void DrawCentered(IRenderer renderer, string text, Vector2 center, Color 
 
 #### Parameters
 
-`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`renderer` IRenderer
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
@@ -185,7 +185,7 @@ public void DrawOutlined(IRenderer renderer, string text, Vector2 position, Colo
 
 #### Parameters
 
-`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`renderer` IRenderer
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
@@ -207,7 +207,7 @@ public void DrawShadowed(IRenderer renderer, string text, Vector2 position, Colo
 
 #### Parameters
 
-`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`renderer` IRenderer
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 

@@ -31,7 +31,7 @@ public static void Draw(IRenderer r, BitmapFont font, ActionPrompts prompts, str
 
 #### Parameters
 
-`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`r` IRenderer
 
 The renderer.
 
@@ -73,7 +73,7 @@ public static void DrawCentered(IRenderer r, BitmapFont font, ActionPrompts prom
 
 #### Parameters
 
-`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`r` IRenderer
 
 `font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
@@ -103,7 +103,7 @@ public static void DrawGlyph(IRenderer r, BitmapFont font, ActionPrompt prompt, 
 
 #### Parameters
 
-`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`r` IRenderer
 
 `font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 

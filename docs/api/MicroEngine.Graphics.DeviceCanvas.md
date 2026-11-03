@@ -127,7 +127,7 @@ public IRenderer BeginFrame()
 
 #### Returns
 
- [IRenderer](MicroEngine.Graphics.IRenderer.md)
+ IRenderer
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_BeginUi_System_Int32_System_Int32_System_Single_"></a> BeginUi\(int, int, float\)
 
@@ -149,7 +149,7 @@ public IRenderer BeginUi(int pixelWidth, int pixelHeight, float scale)
 
 #### Returns
 
- [IRenderer](MicroEngine.Graphics.IRenderer.md)
+ IRenderer
 
 #### Exceptions
 
@@ -167,7 +167,7 @@ public PixelImage Capture()
 
 #### Returns
 
- [PixelImage](MicroEngine.Graphics.PixelImage.md)
+ PixelImage
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_CaptureUi"></a> CaptureUi\(\)
 
@@ -179,7 +179,7 @@ public PixelImage? CaptureUi()
 
 #### Returns
 
- [PixelImage](MicroEngine.Graphics.PixelImage.md)?
+ PixelImage?
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_Compose_MicroEngine_Graphics_Presentation_MicroEngine_RectF_MicroEngine_Color_"></a> Compose\(Presentation, RectF, Color\)
 

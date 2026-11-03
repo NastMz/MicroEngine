@@ -97,7 +97,7 @@ public PixelImage? Icon { get; init; }
 
 #### Property Value
 
- [PixelImage](MicroEngine.Graphics.PixelImage.md)?
+ PixelImage?
 
 ### <a id="MicroEngine_Core_AppIdentity_Id"></a> Id
 
@@ -179,7 +179,7 @@ public PixelImage? SplashImage { get; }
 
 #### Property Value
 
- [PixelImage](MicroEngine.Graphics.PixelImage.md)?
+ PixelImage?
 
 ### <a id="MicroEngine_Core_AppIdentity_SplashImageOverride"></a> SplashImageOverride
 
@@ -191,7 +191,7 @@ public PixelImage? SplashImageOverride { get; init; }
 
 #### Property Value
 
- [PixelImage](MicroEngine.Graphics.PixelImage.md)?
+ PixelImage?
 
 ### <a id="MicroEngine_Core_AppIdentity_Title"></a> Title
 
@@ -252,7 +252,7 @@ public static Color EdgeColor(PixelImage image)
 
 #### Parameters
 
-`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
+`image` PixelImage
 
 #### Returns
 
