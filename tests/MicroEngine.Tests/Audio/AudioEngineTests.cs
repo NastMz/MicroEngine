@@ -1,5 +1,6 @@
 using MicroEngine.Audio;
 using MicroEngine.Platform;
+using MicroEngine.Testing;
 
 namespace MicroEngine.Tests.Audio;
 
@@ -302,9 +303,8 @@ public sealed class AudioEngineTests
         engine.Play(new CountingStream(Rate * 100, 0.1f), new PlayParameters { Bus = "music", Loop = true });
         Step(engine, 30);
         var buffer = new float[2048];
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 100; i++) engine.Render(buffer);
-        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        // Rendered on the test thread, as the sink's thread renders it: the count is this thread's alone.
+        AllocationAssert.None(() => engine.Render(buffer), calls: 20, because: "the audio thread renders without garbage");
     }
 
     [TestMethod]

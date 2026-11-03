@@ -31,8 +31,30 @@ flowchart LR
 | `cancel` | `X`, Backspace, `K` | `B` |
 | `action` | `C`, `L` | `X` |
 | `pause` | Escape, `P` | Start |
+| `fullscreen` (next SDK version) | F11, Alt+Enter | none |
 
 Source: `InputMap.CreateDefault` in [`src/MicroEngine.Input/InputMap.cs`](../../src/MicroEngine.Input/InputMap.cs)
+
+### Full screen
+
+Next SDK version (not published yet: arrives with the next SDK version). Switching between a window and full screen is
+the engine's own action, `fullscreen` (`ActionNames.Fullscreen`), bound to F11 and Alt+Enter (`KeyChord`: Enter with
+either Alt key held); no gamepad button has that meaning by convention, so none is bound. The engine switches when the
+action is pressed (`Game.Screen.ToggleFullscreen()`, where the platform can change its window: not in browsers, whose
+page has its own button and Alt+Enter, nor on phones). The keys reach the game like any other key, so a game can bind
+F11 to something of its own. A map built from scratch (`new InputMap()`) gets the default toggle; to change it:
+
+```csharp
+// Move the toggle to F10 (F11 is then free for the game), or turn it off.
+protected override InputMap CreateInput() => InputMap.CreateDefault().Unbind("fullscreen").Bind("fullscreen", Key.F10);
+// Turn it off: InputMap.CreateDefault().Unbind("fullscreen")
+```
+
+`Bind(action, new KeyChord(key, modifiers))` binds any key combination; chords are saved with the other bindings and
+named in prompts as `Alt+Enter`. A chord takes its key for the press it makes: a key pressed while a modifier of one
+of its chords is held belongs to the chord until it is let go, so Alt+Enter switches full screen without also pressing
+`confirm` (Enter's action), and Ctrl+S never also presses an action bound to S. A plain press of the key, or one after
+the modifier was let go, is the key's again.
 
 Keys are positions, named as on a US keyboard: `Key.A` is the key left of `S` whatever the player's layout prints on it,
 so WASD stays in place on AZERTY or Dvorak.

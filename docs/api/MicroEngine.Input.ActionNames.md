@@ -101,6 +101,20 @@ public string Down { get; init; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_Input_ActionNames_Fullscreen"></a> Fullscreen
+
+Switches between a window and full screen ("fullscreen"), handled by the engine itself where the platform can
+change its window; F11 and Alt+Enter by default ([BindFullscreenDefaults](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_BindFullscreenDefaults)). Unbind it to free
+those keys, rebind it to move the toggle.
+
+```csharp
+public string Fullscreen { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
 ### <a id="MicroEngine_Input_ActionNames_Left"></a> Left
 
 Moves or selects left ("left").

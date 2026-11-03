@@ -95,6 +95,11 @@ maps, and the text channel. Each frame the events of the platform's input backen
 [Send](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Send_MicroEngine_Input_InputEvent__)) are routed through [Layers](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Layers); what no layer takes becomes the devices' polled state
 and [Events](MicroEngine.Input.InputSystem.md#MicroEngine_Input_InputSystem_Events). Each update samples every player's map from the devices they hear.
 
+ [KeyChord](MicroEngine.Input.KeyChord.md)
+
+A key pressed while a modifier is held: <code>new KeyChord(Key.Enter, Key.LeftAlt, Key.RightAlt)</code> is Alt+Enter with
+either Alt key. The chord is down while [Key](MicroEngine.Input.KeyChord.md#MicroEngine_Input_KeyChord_Key) and any one of [Modifiers](MicroEngine.Input.KeyChord.md#MicroEngine_Input_KeyChord_Modifiers) are down.
+
  [KeyUsages](MicroEngine.Input.KeyUsages.md)
 
 The physical position of each [Key](MicroEngine.Input.Key.md) as a USB HID keyboard usage (page 7), the code SDL calls a scancode:

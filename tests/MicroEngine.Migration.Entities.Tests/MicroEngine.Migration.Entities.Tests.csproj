@@ -13,6 +13,9 @@
     <PackageReference Include="MSTest.TestAdapter" Version="4.4.1" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="../Shared/AllocationAssert.cs" Link="Shared/AllocationAssert.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine.Migration.Entities/MicroEngine.Migration.Entities.csproj" />
   </ItemGroup>
 </Project>

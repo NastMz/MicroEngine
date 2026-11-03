@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine.Graphics;
 using MicroEngine.Scenes;
+using MicroEngine.Testing;
 using MicroEngine.World;
 
 [assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
@@ -96,16 +97,15 @@ public sealed class EntityAdapterTests
         Assert.AreEqual(0, list.Overlapping(new RectF(100, 100, 4, 4)).Count());
 
         drawn.Clear();
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int frame = 0; frame < 100; frame++)
+        AllocationAssert.None(() =>
         {
             foreach (var e in list) alive += e.Alive ? 0 : 1;
             foreach (var e in list.OfType<DrawLog>()) alive += e.Alive ? 0 : 1;
             foreach (var e in list.Overlapping(new RectF(0, 0, 8, 8))) alive += e.Alive ? 0 : 1;
             list.Draw(renderer);
             drawn.Clear();
-        }
-        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before, "every frame reuses what it needs");
+        }, calls: 20, because: "every frame reuses what it needs");
+        Assert.AreEqual(4, alive, "the walks saw living entities only");
     }
 
     [TestMethod]
