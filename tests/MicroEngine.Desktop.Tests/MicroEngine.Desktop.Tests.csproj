@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
     <ProjectReference Include="../../src/MicroEngine.Graphics.SdlGpu/MicroEngine.Graphics.SdlGpu.csproj" />
+    <ProjectReference Include="../../src/MicroEngine.Graphics3D/MicroEngine.Graphics3D.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- The native keyboard (XTEST) and sound-server helpers the raylib tests use, so SDL is checked the same way. -->
@@ -20,6 +21,8 @@
     <Compile Include="../Shared/Graphics/*.cs" LinkBase="Shared/Graphics" />
     <!-- The suite's custom shaders (HLSL in tests/Shared/Graphics/Shaders, compiled offline), read from shaders/ at run time. -->
     <None Include="../Shared/Graphics/Shaders/compiled/*" Link="shaders/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Meshes and glTF files built in code for the 3D tests. -->
+    <Compile Include="../Shared/Graphics3D/*.cs" LinkBase="Shared/Graphics3D" />
     <!-- The allocation check the engine tests use. -->
     <Compile Include="../Shared/AllocationAssert.cs" Link="Shared/AllocationAssert.cs" />
   </ItemGroup>

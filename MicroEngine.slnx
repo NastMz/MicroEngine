@@ -16,6 +16,7 @@
     <Project Path="src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
     <Project Path="src/MicroEngine.Sdl/MicroEngine.Sdl.csproj" />
     <Project Path="src/MicroEngine.Graphics.SdlGpu/MicroEngine.Graphics.SdlGpu.csproj" />
+    <Project Path="src/MicroEngine.Graphics3D/MicroEngine.Graphics3D.csproj" />
     <Project Path="src/MicroEngine.Cli/MicroEngine.Cli.csproj" />
     <Project Path="src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
     <Project Path="src/MicroEngine.Migration.Entities/MicroEngine.Migration.Entities.csproj" />
@@ -36,6 +37,7 @@
     <Project Path="samples/HelloEngine/HelloEngine.csproj" />
     <Project Path="samples/Examples/Examples.csproj" />
     <Project Path="samples/AssetGallery/AssetGallery.csproj" />
+    <Project Path="samples/Slice3D/Slice3D.csproj" />
   </Folder>
   <Folder Name="/samples/GemGarden/part1-scenes/">
     <Project Path="samples/GemGarden/part1-scenes/GemGarden.csproj" />
@@ -55,6 +57,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/MicroEngine.Tests/MicroEngine.Tests.csproj" />
     <Project Path="tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj" />
+    <Project Path="tests/MicroEngine.Graphics3D.Tests/MicroEngine.Graphics3D.Tests.csproj" />
     <Project Path="tests/MicroEngine.Raylib.Tests/MicroEngine.Raylib.Tests.csproj" />
     <Project Path="tests/MicroEngine.Desktop.Tests/MicroEngine.Desktop.Tests.csproj" />
     <Project Path="tests/CourtyardKey.Tests/CourtyardKey.Tests.csproj" />
