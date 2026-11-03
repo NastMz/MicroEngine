@@ -5,6 +5,7 @@ using CourtyardKey.Visuals;
 using CourtyardKey.World;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace CourtyardKey.Entities;
 
@@ -71,6 +72,27 @@ public sealed class Hero : Actor
             var c = Position + new Vector2(0, -4) + Facing.ToVector() * 10;
             return RectF.FromCenter(c, 12, 12);
         }
+    }
+
+    /// <summary>
+    /// State hash: health, facing, state and its timers, knockback, control, walking and push state, and how many
+    /// targets the current swing struck (the targets themselves are object identities, the same set in the same run).
+    /// </summary>
+    protected override void HashOwnState(StateHasher hash)
+    {
+        hash.Add(Health);
+        hash.Add((int)Facing);
+        hash.Add((int)State);
+        hash.Add(_stateTime);
+        hash.Add(_animTime);
+        hash.Add(_knockTime);
+        hash.Add(_dustTimer);
+        hash.Add(_knock);
+        hash.Add(Controllable);
+        hash.Add(IsMoving);
+        hash.Add(PushTime);
+        hash.Add(InputDirection);
+        hash.Add(_struck.Count);
     }
 
     /// <summary>Returns true the first time a swing touches <paramref name="target"/> (one hit per swing).</summary>

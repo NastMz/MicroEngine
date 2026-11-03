@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
@@ -68,6 +69,18 @@ internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string
     }
 
     private void Say(string text) { _message = text; _messageTime = 2.4f; }
+
+    /// <summary>
+    /// State hash: the cursor, the message with its timer and whether it closed. Left out: the item list (refilled from
+    /// the bag, which the adventure hashes, also while drawing) and the hint text cache.
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_index);
+        hash.Add(_message);
+        hash.Add(_messageTime);
+        hash.Add(_closed);
+    }
 
     private void Close(string? item, int target)
     {

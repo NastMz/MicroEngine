@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
@@ -36,6 +37,18 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
     private bool _leaving;
 
     public override void Enter() => Audio.PlayMusic("victory", 0f);
+
+    /// <summary>
+    /// State hash: the champion card or the roll, its phase clock, the scroll (it decides when the credits end) and
+    /// whether it is leaving. Left out: the scroll held for drawing between updates and the time text cache.
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_champion);
+        hash.Add(_phase);
+        hash.Add(_scroll);
+        hash.Add(_leaving);
+    }
 
     public override void Update(float dt)
     {

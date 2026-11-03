@@ -4,6 +4,7 @@ using MeadowRun.Content;
 using MeadowRun.Gameplay.Actors;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.World;
 
 namespace MeadowRun.Gameplay;
@@ -15,7 +16,7 @@ internal enum StageOutcome { None, Died, Cleared, Won }
 /// One attempt at a level. Pure simulation plus effect requests (sound, shake, hit-stop, particles),
 /// so the whole level can be played headlessly in tests. The play scene draws it and plays sounds.
 /// </summary>
-internal sealed partial class Stage
+internal sealed partial class Stage : IStateHashed
 {
     public const float TimeUnitSeconds = 0.4f;
     private const int MaxSeeds = 2;
@@ -72,6 +73,58 @@ internal sealed partial class Stage
             Player.Position = new Vector2(cp.Center.X - Player.Width / 2f, cp.Bounds.Bottom - Player.Height);
         }
         SnapCamera();
+    }
+
+    /// <summary>
+    /// Hashes the attempt: phase and outcome, clocks and timers, stomp chain, scores of the tally, the camera (its
+    /// position wakes actors) and its lock, the tiles (bumped and broken blocks change them), the multi-coin bricks,
+    /// Pip, the platforms and the actors in list order. Leaves out what only presentation uses: particles, popups,
+    /// block bump offsets, the throw pose, ambient emission and camera shake (the camera's own generator only moves
+    /// the drawn view).
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add((int)Phase);
+        hash.Add((int)Outcome);
+        hash.Add(DeathCause);
+        hash.Add(Clock);
+        hash.Add(TimeLeft);
+        hash.Add(_freeze);
+        hash.Add(_phaseTime);
+        hash.Add(_stompChain);
+        hash.Add(_hurryPlayed);
+        hash.Add(_lastInputJumpHeld);
+        hash.Add(CheckpointReached);
+        hash.Add(FlagScore);
+        hash.Add(TimeBonus);
+        hash.Add(_look);
+        hash.Add(Camera.Position);
+        hash.Add(CameraLock.HasValue);
+        if (CameraLock is { } view)
+        {
+            hash.Add(view.X);
+            hash.Add(view.Y);
+            hash.Add(view.Width);
+            hash.Add(view.Height);
+        }
+        var tiles = Level.Tiles;
+        hash.Add(tiles.Width);
+        hash.Add(tiles.Height);
+        for (int y = 0; y < tiles.Height; y++)
+        for (int x = 0; x < tiles.Width; x++)
+            hash.Add(tiles[x, y]);
+        hash.Add(_multiCoins.Count);
+        foreach (var ((x, y), left) in _multiCoins.OrderBy(e => e.Key))
+        {
+            hash.Add(x);
+            hash.Add(y);
+            hash.Add(left);
+        }
+        hash.Add(Player);
+        hash.Add(_platforms.Count);
+        foreach (var platform in _platforms) hash.Add(platform);
+        hash.Add(Actors.Count);
+        foreach (var actor in Actors) hash.Add(actor);
     }
 
     public void Spawn(Actor actor)

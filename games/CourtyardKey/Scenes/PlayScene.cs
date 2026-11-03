@@ -7,6 +7,7 @@ using CourtyardKey.Visuals;
 using CourtyardKey.World;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using MicroEngine.World;
 
@@ -38,7 +39,62 @@ public sealed partial class PlayScene : Scene
     {
         G = game;
         Progress = progress;
-        Rng = new Random(1234 + progress.Deaths);
+        // Draws what new Random(seed) draws; a SeededRandom so its state takes part in the state hash.
+        Rng = new SeededRandom(1234 + progress.Deaths);
+    }
+
+    /// <summary>
+    /// State hash: the progress, the room's generator, the mode and its timers (hitstop, heartbeat, ambience), the
+    /// scroll in progress, the camera position, the current room (area, cell and tiles: bushes can be cut), the hero,
+    /// then every actor of the room, the room being left and the spawns not yet flushed, in list order.
+    /// Left out: particles (presentation only, with generators of their own), the HUD (toasts and banners only show),
+    /// the fade (drawing), the positions held for blending, and the light map and renderers (platform objects).
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Section("play.progress");
+        hash.Add(Progress);
+        hash.Add((IStateHashed)Rng);
+        hash.Add((int)Mode);
+        hash.Add(_hitstop);
+        hash.Add(_lowHealthTimer);
+        hash.Add(_ambientTimer);
+        hash.Add((int)PresentedItem);
+        hash.Add(Camera.Position);
+        hash.Section("play.room");
+        HashRoom(hash, Room);
+        HashRoom(hash, _scrollFrom);
+        hash.Add(_scrollHeroFrom);
+        hash.Add(_scrollHeroTo);
+        hash.Add(_scrollCamFrom);
+        hash.Add(_scrollCamTo);
+        hash.Add(_scrollTime);
+        hash.Add(_closeShuttersPending);
+        hash.Section("play.hero");
+        hash.Add(Hero);
+        hash.Section("play.actors");
+        HashActors(hash, _actors);
+        HashActors(hash, _leaving);
+        HashActors(hash, _pending);
+    }
+
+    private static void HashRoom(StateHasher hash, Room? room)
+    {
+        hash.Add(room is not null);
+        if (room is null) return;
+        hash.Add(room.Area.Id);
+        hash.Add(room.X);
+        hash.Add(room.Y);
+        var tiles = room.Tiles;
+        for (int y = 0; y < tiles.Height; y++)
+            for (int x = 0; x < tiles.Width; x++)
+                hash.Add(tiles[x, y]);
+    }
+
+    private static void HashActors(StateHasher hash, IEnumerable<Actor> actors)
+    {
+        hash.Add(actors.Count());
+        foreach (var actor in actors) hash.Add(actor);
     }
 
     public CourtyardKeyGame G { get; }

@@ -4,6 +4,7 @@ using NeonRift.Scenes;
 using MicroEngine;
 using MicroEngine.Core;
 using MicroEngine.Input;
+using MicroEngine.Kernel;
 
 namespace NeonRift;
 
@@ -83,6 +84,12 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
     }
 
     public void NewGame() => Session = new Session();
+
+    /// <summary>
+    /// Adds the run's session (lives, continues, score, weapon, deaths). The launch options are fixed for the run and
+    /// already decide the first scene; the art, the save store and the list of missing sounds are not simulation state.
+    /// </summary>
+    public override void HashState(StateHasher hash) => hash.Add(Session);
 
     /// <summary>Plays a sound by name, tolerating names that are not registered.</summary>
     public void Sfx(string name, float volume = 1, float pitch = 1, float pan = 0.5f)

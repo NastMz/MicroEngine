@@ -14,13 +14,17 @@ virtual joystick gives the deflection beyond its dead zone.
 Edge states (pressed/released) are computed per fixed update, so a tap is never lost or doubled.
 
 ```csharp
-public sealed class InputMap
+public sealed class InputMap : IStateHashed
 ```
 
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
 [InputMap](MicroEngine.Input.InputMap.md)
+
+#### Implements
+
+IStateHashed
 
 ## Examples
 
@@ -397,6 +401,20 @@ public ActionBindings? GetBindings(string action)
 #### Returns
 
  [ActionBindings](MicroEngine.Input.ActionBindings.md)?
+
+### <a id="MicroEngine_Input_InputMap_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
+
+Adds the sampled state to the per-step state hash: the actions down, down in the previous update, latched and
+forced (each in ordinal order), every action's value, the last device, the gamepad's connection and style, and the
+pointer. Bindings are configuration, not state, and are left out.
+
+```csharp
+public void HashState(StateHasher hash)
+```
+
+#### Parameters
+
+`hash` StateHasher
 
 ### <a id="MicroEngine_Input_InputMap_Pressed_System_String_"></a> Pressed\(string\)
 

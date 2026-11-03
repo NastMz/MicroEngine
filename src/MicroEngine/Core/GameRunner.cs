@@ -49,6 +49,14 @@ public sealed record RunOptions
     /// the mode: it belongs to the loop only.
     /// </summary>
     public Kernel.TimeMode? TimeMode { get; init; }
+    /// <summary>
+    /// Receives the simulation state hash after every fixed step (<see cref="Game.ComputeStateHash"/>), with each
+    /// section's hash when <see cref="Kernel.StateTrace.Sections"/> is true; null (the default) hashes nothing. Two
+    /// deterministic runs of the same build, script and seed record the same trace;
+    /// <see cref="Kernel.StateTrace.FirstDivergence(Kernel.StateTrace, Kernel.StateTrace)"/> names the first update and
+    /// section where two differ.
+    /// </summary>
+    public Kernel.StateTrace? StateTrace { get; init; }
 }
 
 /// <summary>
@@ -348,6 +356,7 @@ public sealed class GameLoop
         while (clock.TryStep(out var step))
         {
             engine.RunFixedStep(step);
+            _options.StateTrace?.Record(_game.ComputeStateHash(_options.StateTrace.Sections));
             if (script?.CaptureAt(_game.UpdateCount) is { } name) capture = name;
             if (script?.QuitAt(_game.UpdateCount) == true || _options.MaxUpdates > 0 && _game.UpdateCount >= _options.MaxUpdates)
             {

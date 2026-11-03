@@ -11,7 +11,7 @@ an overlay scene (dialogue, pause) draws on top of the scene below and can freez
 Each scene owns its coroutines and tweens, which stop when it leaves the stack.
 
 ```csharp
-public abstract class Scene
+public abstract class Scene : IStateHashed
 ```
 
 #### Inheritance
@@ -22,6 +22,10 @@ public abstract class Scene
 #### Derived
 
 [AchievementsScene](MicroEngine.UI.AchievementsScene.md)
+
+#### Implements
+
+IStateHashed
 
 ## Examples
 
@@ -226,6 +230,25 @@ Called when the scene leaves the stack (popped, replaced or cleared), after its 
 ```csharp
 public virtual void Exit()
 ```
+
+### <a id="MicroEngine_Scenes_Scene_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
+
+Adds the scene's simulation state to the per-step state hash ([ComputeStateHash](MicroEngine.Core.Game.md#MicroEngine_Core_Game_ComputeStateHash_System_Boolean_)): the
+fields that decide what happens next (positions, velocities, timers, health, the state of its own generators), in
+a fixed order. Leave out what [Draw](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Draw_MicroEngine_Graphics_IRenderer_) writes (text and layout caches, positions held for blending,
+particles that are only drawn): the hash must be the same whether or not a frame was drawn. The engine adds the
+scene's type, [Age](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Age), coroutines and tweens itself, in the scene's section
+(<code>scene[index]:Type</code>). The default adds nothing.
+
+```csharp
+public virtual void HashState(StateHasher hash)
+```
+
+#### Parameters
+
+`hash` StateHasher
+
+The hasher of the step; a section started here lasts until the engine starts the next one.
 
 ### <a id="MicroEngine_Scenes_Scene_Resume"></a> Resume\(\)
 

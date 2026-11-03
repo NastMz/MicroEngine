@@ -2,6 +2,7 @@ using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
@@ -48,6 +49,14 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
     }
 
     private void Say(string text) { _message = text; _messageTime = 2.2f; }
+
+    /// <summary>State hash: the cursor and the message with its timer. Left out: the opening slide and the play-time text cache.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_index);
+        hash.Add(_message);
+        hash.Add(_messageTime);
+    }
 
     public override void Draw(IRenderer r)
     {
@@ -142,6 +151,9 @@ internal sealed class TrailLogScene(TrailDuelGame game) : Scene
     /// <summary>The dex number as three digits, built once per number.</summary>
     private static string DexNumber(int n) => (uint)n < (uint)DexNumbers.Length ? DexNumbers[n] ??= $"{n:000}" : $"{n:000}";
     private int _index;
+
+    /// <summary>State hash: the cursor. Left out: the seen/caught text cache.</summary>
+    public override void HashState(StateHasher hash) => hash.Add(_index);
 
     public override void Update(float dt)
     {

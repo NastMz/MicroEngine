@@ -272,9 +272,114 @@ second stage while the script takes captures.
 
 The variables of each game are listed in [Configuration](../reference/configuration.md#environment-variables).
 
+## Level 4: simulation determinism (state traces)
+
+Next SDK version (not published yet: arrives with the next SDK version). A deterministic run (headless, or any run with
+one fixed step per frame) must simulate the same game on every run: the same script and seed give the same state after
+every update. A **state trace** checks it at every step instead of only in the captures: the loop hashes the simulation
+state after each fixed step and records one 64-bit hash per update, and two traces are compared step by step.
+
+### What the hash covers
+
+`Game.ComputeStateHash()` builds the hash in named sections, always in this order:
+
+| Section | What it holds |
+| --- | --- |
+| `engine.time` | `UpdateCount` and `Time` |
+| `engine.random` | `Game.Random`: its seed, how many values it drew and a running hash of them |
+| `engine.input` | The actions down, pressed, latched and forced, their values, the last device, the gamepad and the pointer |
+| `engine.audio` | The music playing (`CurrentMusic`), whether it is paused, and the volumes |
+| `engine.assets` | How many assets are loaded |
+| `engine.achievements` | Each achievement's progress and whether it is unlocked (only with `UseAchievements`) |
+| `engine.scenes` | The scene stack (types), scene changes waiting, and the transition playing |
+| `scene[i]:Type` | One per scene from the bottom: its `Age`, coroutines and tweens, then its `HashState` |
+| `game` | The game's `HashState` |
+
+Values are encoded in a fixed binary form (floats by their bits), never read by reflection: the engine adds its own
+state and a game adds its own. Music state in browser builds can still differ between runs, because browsers render
+songs a few milliseconds per update.
+
+### How a game contributes
+
+Override `HashState(StateHasher hash)` on the game and on each scene, and add the values that decide what happens next:
+positions, velocities, timers, health, score, menu cursors, and the generators the simulation draws from. Add lists as a
+count followed by each item, in a fixed order (sort sets and dictionaries). Leave out everything only drawing uses:
+caches `Draw` writes (text and layout, positions held for blending), particles that are only drawn, textures, and the
+save folder. Classes of your own can implement `IStateHashed` and be added with `hash.Add(item)`. A large scene can
+start its own sections (`hash.Section("enemies")`) so a difference names the part that changed.
+
+The Asset Gallery sample hashes its sampling switch and its level scope, and leaves out the status lines its drawing
+builds:
+
+<!-- code: samples/AssetGallery/GalleryScene.cs#hash-state -->
+```csharp
+/// <summary>
+/// The gallery's simulation state for the per-step state hash: the sampling switch and the level scope (created,
+/// loading, loaded). The status lines and the glyph pages are written while drawing, so they stay out.
+/// </summary>
+public override void HashState(StateHasher hash)
+{
+    hash.Add(_nearest);
+    hash.Add(_level is not null);
+    hash.Add(_loading is not null);
+    hash.Add(LevelLoaded);
+}
+```
+
+`Game.Random` is a `SeededRandom`: it draws exactly what `new Random(seed)` draws, and its state is part of the hash.
+Use one for the generators your simulation creates itself (`new SeededRandom(seed)` instead of `new Random(seed)`)
+and add it from `HashState`. A generator that only places particles is presentation: leave it out.
+
+### Recording and comparing traces
+
+`RunOptions.StateTrace` records a run. `StateTrace.FirstDivergence(a, b)` returns null when two traces are identical,
+or the first update that differs and, with `Sections = true`, the first section that differs:
+
+<!-- code: tests/Samples.Tests/GalleryStateTraceTests.cs#trace -->
+```csharp
+/// <summary>Plays the tour headless (one fixed step per frame) and records the state hash after every step.</summary>
+private static StateTrace Record(string captures)
+{
+    var game = new GalleryGame();
+    var trace = new StateTrace { Sections = true };
+    var result = GameRunner.Run(game, HeadlessPlatform.For(game.Settings),
+        new RunOptions { Script = Tour(), CaptureDirectory = captures, StateTrace = trace });
+    Assert.IsNull(result.Error);
+    return trace;
+}
+
+[TestMethod]
+public void TwoRunsOfTheTourRecordTheSameTrace()
+{
+    var captures = Directory.CreateTempSubdirectory("gallery-trace-").FullName;
+    var first = Record(captures);
+    var second = Record(captures);
+    Assert.AreEqual(112, first.Steps.Count, "one hash per update of the tour");
+    var divergence = StateTrace.FirstDivergence(first, second);
+    Assert.IsNull(divergence, divergence?.ToString()); // e.g. "state diverges at update 41, section 'scene[0]:GalleryScene'"
+    Directory.Delete(captures, true);
+}
+```
+
+A trace is also text, one line per update (`update`, the hash, then `section=hash` pairs, separated by tabs):
+`trace.ToText()` or `trace.Write(writer)` saves it and `StateTrace.Parse(text)` reads it back, so traces recorded by
+different runs or machines can be compared. Override `StateTrace.Record` to send each step elsewhere as it comes.
+
+Traces are exact. Two runs of the same build on the same machine must match; a divergence is a bug: an unseeded
+generator, a value from the wall clock, a set or dictionary hashed in its storage order, state left over from an
+earlier run in the same process, or state written while drawing. Compare traces from different operating systems or
+browsers as information only: some floating-point functions (`MathF.Sin`, `MathF.Exp`, `Vector2.Lerp`) can round the
+last bit differently on another system.
+
+Drawing must never change the hash: a frame drawn or skipped must not change what the game simulates. To check it,
+compare `ComputeStateHash()` before and after a frame is drawn, for example from a platform that wraps
+`HeadlessPlatform` and hashes in `BeginFrame` and `EndFrame`.
+
 ## Guidelines
 
 - Test observable behaviour through public types and actions, not private state.
 - Use a temporary save directory in every test that builds a game.
+- Run each script twice with a state trace and compare the traces (next SDK version): a difference names the first
+  update and section that is not deterministic.
 - For visual or feel changes, run a script with captures and look at the PNGs; a passing test is not proof that
   something looks right.

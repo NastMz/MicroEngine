@@ -2,6 +2,7 @@ using System.Collections;
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
@@ -53,6 +54,48 @@ internal sealed partial class BattleScene : Scene
     internal bool InMoveMenu => _mode == Mode.Moves;
     internal int MoveCursor => _moveIndex;
     internal bool MoveInfoOpen => _moveInfo;
+
+    /// <summary>
+    /// State hash, in sections: <c>battle.rules</c> (the <see cref="Rules.Battle"/>: generator, slots, enemy team, stages,
+    /// phase, outcome) and <c>battle.screen</c> (menu mode and cursors, the move card toggle, the pending action, the
+    /// moves offered to forget, the low-HP beep timer, whether it ended, the text box, the open choice and what each
+    /// side shows: creature, level, displayed HP and XP, status and visibility, which lag behind the rules while
+    /// animating). Left out: particles, sprite effects, shakes, flashes, slides, lunges, tints, the orb's flight
+    /// (presentation the flow coroutine drives; the coroutine is hashed by the engine), the positions held for drawing
+    /// between updates and the label caches drawing fills.
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Section("battle.rules");
+        hash.Add(_battle);
+        hash.Section("battle.screen");
+        hash.Add((int)_mode);
+        hash.Add(_actionIndex);
+        hash.Add(_moveIndex);
+        hash.Add(_moveInfo);
+        hash.Add(_pending?.GetType().Name);
+        hash.Add(_forgetOptions?.Length ?? -1);
+        hash.Add(_lowHpBeep);
+        hash.Add(_finished);
+        hash.Add(_text);
+        hash.Add(_choice);
+        AddDisplay(hash, _enemy);
+        AddDisplay(hash, _player);
+    }
+
+    private static void AddDisplay(StateHasher hash, Display? d)
+    {
+        hash.Add(d is not null);
+        if (d is null) return;
+        hash.Add(d.Creature.SpeciesId);
+        hash.Add(d.Level);
+        hash.Add(d.MaxHp);
+        hash.Add(d.Hp);
+        hash.Add(d.Xp);
+        hash.Add((int)d.Status);
+        hash.Add(d.Visible);
+        hash.Add(d.HudVisible);
+    }
 
     public override void Enter()
     {

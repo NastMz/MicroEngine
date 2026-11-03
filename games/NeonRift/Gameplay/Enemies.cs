@@ -2,6 +2,7 @@ using System.Numerics;
 using NeonRift.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace NeonRift.Gameplay;
 
@@ -20,6 +21,16 @@ public sealed class Trooper : Enemy
         _shotTimer = firstShot;
         Hitbox = new RectF(-8, -44, 16, 44);
         Points = 100;
+    }
+
+    /// <summary>Adds the enemy's state, then the shot timer, the firing pause, the walking direction and footing.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_shotTimer);
+        hash.Add(_pause);
+        hash.Add(_dir);
+        hash.Add(_body.Grounded);
     }
 
     public override void Update(float dt)
@@ -68,6 +79,14 @@ public sealed class TrooperGate(float x, int count) : Enemy
 
     public override bool Hit(int damage, Vector2 at) => false;
 
+    /// <summary>Adds the enemy's state, then the troopers left to send and the time to the next one.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_left);
+        hash.Add(_timer);
+    }
+
     public override void Update(float dt)
     {
         base.Update(dt);
@@ -99,6 +118,15 @@ public sealed class Gunner : Enemy
         Hitbox = new RectF(-8, -44, 16, 44);
         Health = 3;
         Points = 300;
+    }
+
+    /// <summary>Adds the enemy's state, then the fire timer, the burst count and the facing.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_timer);
+        hash.Add(_burst);
+        hash.Add(_facing);
     }
 
     public override void Update(float dt)
@@ -151,6 +179,15 @@ public sealed class Drone : Enemy
         Points = 200;
     }
 
+    /// <summary>Adds the enemy's state, then the dive (whether, and its velocity) and whether it fired; the bobbing phase and height are fixed at spawn.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_diving);
+        hash.Add(_dive);
+        hash.Add(_fired);
+    }
+
     public override void Update(float dt)
     {
         base.Update(dt);
@@ -192,6 +229,13 @@ public sealed class Turret : Enemy
         Hitbox = new RectF(-11, -21, 22, 21);
         Health = 6;
         Points = 400;
+    }
+
+    /// <summary>Adds the enemy's state, then the fire timer; the recoil animation time is left out (drawing only).</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_timer);
     }
 
     public override void Update(float dt)
@@ -247,6 +291,13 @@ public sealed class EggPod : Enemy
         Armored = true;
     }
 
+    /// <summary>Adds the enemy's state, then the open/close cycle time.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_cycle);
+    }
+
     public override void Update(float dt)
     {
         base.Update(dt);
@@ -294,6 +345,13 @@ public sealed class Skiff : Enemy
         Points = 150;
     }
 
+    /// <summary>Adds the enemy's state, then the fire timer; the bobbing phase and height are fixed at spawn.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_timer);
+    }
+
     public override void Update(float dt)
     {
         base.Update(dt);
@@ -329,6 +387,13 @@ public sealed class Carrier : Enemy
 
     public override bool Contact => false;
     public char Letter => _letter;
+
+    /// <summary>Adds the enemy's state, then the letter of the capsule it drops.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add((int)_letter);
+    }
 
     public override void Update(float dt)
     {

@@ -3,6 +3,7 @@ using MeadowRun.Art;
 using MeadowRun.Content;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Scenes;
 
 namespace MeadowRun.Scenes;
@@ -31,6 +32,20 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
     private int Unlocked => game.Save.Unlocked;
 
     public int Node => _node;
+
+    /// <summary>
+    /// Hashes the node Pip stands on, the node he walks to and how far, the unlock reveal (it holds input back) and
+    /// whether the scene is leaving. Leaves out the held position for blending, the step blend and the info panel's
+    /// label caches (drawing writes them).
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_node);
+        hash.Add(_target);
+        hash.Add(_walk);
+        hash.Add(_revealed);
+        hash.Add(_leaving);
+    }
 
     public override void Enter()
     {

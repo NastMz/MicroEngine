@@ -60,12 +60,39 @@ A request to quit that came from outside the game (the window's close button, th
 [QuitRequested](MicroEngine.Kernel.IEngineLifecycle.md#MicroEngine_Kernel_IEngineLifecycle_QuitRequested). A handler that must keep the game running (unsaved work, a confirmation
 dialog) calls [Veto](MicroEngine.Kernel.QuitRequest.md#MicroEngine_Kernel_QuitRequest_Veto); the game can quit later on its own.
 
+ [SeededRandom](MicroEngine.Kernel.SeededRandom.md)
+
+A `Random` that draws exactly what <code>new Random(seed)</code> draws, and whose state can take part in the
+per-step state hash ([IStateHashed](MicroEngine.Kernel.IStateHashed.md)): its seed, how many values it drew and a running hash of them. Two
+runs that drew the same values from the same seed hash the same; one extra or different draw changes the hash.
+
  [ServiceRegistry](MicroEngine.Kernel.ServiceRegistry.md)
 
 The engine's services, one instance per type, registered by modules and read by whoever needs them. Typed and
 explicit: a service is found by the exact type it was registered as (no base classes, no interfaces it also
 implements), nothing is created on demand and nothing is discovered by reflection, so the registry works the same
 under trimming, NativeAOT and WebAssembly.
+
+ [StateDivergence](MicroEngine.Kernel.StateDivergence.md)
+
+Where two traces first differ ([FirstDivergence](MicroEngine.Kernel.StateTrace.md#MicroEngine_Kernel_StateTrace_FirstDivergence_MicroEngine_Kernel_StateTrace_MicroEngine_Kernel_StateTrace_)).
+
+ [StateHasher](MicroEngine.Kernel.StateHasher.md)
+
+Accumulates a 64-bit hash (FNV-1a) of simulation state in named sections. Values are encoded in a fixed binary form
+(little-endian; floats by their bits, so <code>-0</code> and NaN payloads count; strings length-prefixed), so the same
+values in the same order give the same hash on every machine and run. Nothing is read by reflection: the engine and
+the game add what they choose ([IStateHashed](MicroEngine.Kernel.IStateHashed.md)).
+
+ [StateTrace](MicroEngine.Kernel.StateTrace.md)
+
+A run's per-step state hashes: the loop records one [StepHash](MicroEngine.Kernel.StepHash.md) after every fixed step when a run is given
+one (<code>RunOptions.StateTrace</code>). Two runs of the same build, script and seed must record the same trace;
+[FirstDivergence](MicroEngine.Kernel.StateTrace.md#MicroEngine_Kernel_StateTrace_FirstDivergence_MicroEngine_Kernel_StateTrace_MicroEngine_Kernel_StateTrace_) names the first update and section where two differ.
+
+ [StepHash](MicroEngine.Kernel.StepHash.md)
+
+The state hash after one fixed step.
 
  [TimeSettings](MicroEngine.Kernel.TimeSettings.md)
 
@@ -83,6 +110,10 @@ What a frame system knows about time when it runs ([FrameSchedule](MicroEngine.K
 A reference to an item of a [HandlePool`1](MicroEngine.Kernel.md): a slot index and the generation of the item that held the
 slot when the handle was made. When the item is removed its slot's generation changes, so an old handle no longer
 finds anything (instead of finding whatever reuses the slot). <code>default</code> is [None](MicroEngine.Kernel.md).
+
+ [SectionHash](MicroEngine.Kernel.SectionHash.md)
+
+The hash of one named part of the state of a step ([Sections](MicroEngine.Kernel.StepHash.md#MicroEngine_Kernel_StepHash_Sections)).
 
  [SurfaceResized](MicroEngine.Kernel.SurfaceResized.md)
 
@@ -106,6 +137,11 @@ lifecycle handlers, all from [Configure](MicroEngine.Kernel.IEngineModule.md#Mic
 Where the engine's diagnostics go. The default ([ConsoleLog](MicroEngine.Kernel.ConsoleLog.md)) writes them to the standard error stream;
 a host that has its own (a phone's system log, a browser console, an editor panel) registers another sink as the
 engine's [ILog](MicroEngine.Kernel.ILog.md) service.
+
+ [IStateHashed](MicroEngine.Kernel.IStateHashed.md)
+
+Something whose simulation state takes part in the per-step state hash ([StateHasher](MicroEngine.Kernel.StateHasher.md)): it adds the
+values that decide what the game does next, and leaves out what only drawing uses.
 
 ### Enums
 

@@ -4,6 +4,7 @@ using CourtyardKey.Scenes;
 using CourtyardKey.World;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.World;
 
 namespace CourtyardKey.Entities;
@@ -19,11 +20,26 @@ public enum HitOutcome { Ignored, Damaged, Blocked, Stunned, Destroyed }
 /// Base for everything in a room. <see cref="Entity.Position"/> is the feet point: hitboxes sit
 /// around it and draw order is the feet Y, which gives correct top-down overlap for free.
 /// </summary>
-public abstract class Actor(PlayScene world) : Entity
+public abstract class Actor(PlayScene world) : Entity, IStateHashed
 {
     public PlayScene World { get; } = world;
     protected Sprites Art => World.Art;
     public override float Depth => Position.Y;
+
+    /// <summary>
+    /// State hash: the actor's kind, position and whether it is alive, then its own state (<see cref="HashOwnState"/>).
+    /// The position held for blending between updates (<see cref="RememberPosition"/>) is drawing state and stays out.
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(GetType().Name);
+        hash.Add(Position);
+        hash.Add(Alive);
+        HashOwnState(hash);
+    }
+
+    /// <summary>Adds the subclass's simulation state (timers, velocities, flags); nothing by default (static scenery).</summary>
+    protected virtual void HashOwnState(StateHasher hash) { }
 
     /// <summary>Blocks the hero and enemies (chests, pots, closed doors, NPCs).</summary>
     public virtual bool IsSolid => false;
@@ -98,6 +114,9 @@ public sealed class Effect : Actor
     }
 
     public override float Depth => Position.Y + _depthBias;
+
+    /// <summary>State hash: the animation time, which decides when the effect removes itself.</summary>
+    protected override void HashOwnState(StateHasher hash) => hash.Add(_time);
 
     public override void Update(float dt)
     {

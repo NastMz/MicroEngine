@@ -11,4 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="../../games/NeonRift/NeonRift.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/StateTraceRuns.cs" Link="Shared/StateTraceRuns.cs" />
+  </ItemGroup>
 </Project>

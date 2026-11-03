@@ -4,6 +4,7 @@ using CourtyardKey.Scenes;
 using CourtyardKey.World;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace CourtyardKey.Entities;
 
@@ -39,6 +40,23 @@ public abstract class Enemy : Actor, IHittable
     public virtual RectF Hurtbox => Bounds;
     /// <summary>Whether touching the hero hurts right now.</summary>
     public virtual bool Harmful => !Stunned;
+
+    /// <summary>
+    /// State hash: health, stun, hit flash, age and knockback, then the enemy's own AI state (<see cref="HashAiState"/>).
+    /// </summary>
+    protected sealed override void HashOwnState(StateHasher hash)
+    {
+        hash.Add(Health);
+        hash.Add(Stun);
+        hash.Add(Flash);
+        hash.Add(Time);
+        hash.Add(_knock);
+        hash.Add(_knockTime);
+        HashAiState(hash);
+    }
+
+    /// <summary>Adds the enemy's AI state (timers, velocities, facing).</summary>
+    protected abstract void HashAiState(StateHasher hash);
 
     public override void Update(float dt)
     {

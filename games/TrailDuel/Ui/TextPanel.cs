@@ -4,6 +4,7 @@ using MicroEngine;
 using MicroEngine.Audio;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
+using MicroEngine.Kernel;
 using MicroEngine.UI;
 using TrailDuel.Visuals;
 
@@ -13,7 +14,7 @@ namespace TrailDuel.Ui;
 /// The message box used everywhere: typewriter reveal with soft blips, automatic paging at two
 /// lines, a speaker name tag and a bouncing "more" arrow. Coroutines await <see cref="Say"/>.
 /// </summary>
-internal sealed class TextPanel
+internal sealed class TextPanel : IStateHashed
 {
     private readonly BitmapFont _font;
     private readonly AudioMixer _audio;
@@ -70,6 +71,26 @@ internal sealed class TextPanel
     }
 
     public void FinishTyping() => _typewriter.Finish();
+
+    /// <summary>
+    /// State hash: whether it is open, the speaker, the page being typed and how much of it shows, the pages waiting,
+    /// the paging settings, how long the page has been complete and the blip counter (which reveals play a sound).
+    /// Left out: <c>_time</c> (only bobs the "more" arrow) and the visible-line cache that drawing fills.
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(Active);
+        hash.Add(Speaker);
+        hash.Add(_typewriter.Text);
+        hash.Add(_typewriter.VisibleCount);
+        hash.Add(_pages.Count);
+        foreach (var page in _pages) hash.Add(page);
+        hash.Add(WaitForConfirmOnLast);
+        hash.Add(Silent);
+        hash.Add(AutoAdvance);
+        hash.Add(_completeTime);
+        hash.Add(_blips);
+    }
 
     public void Update(float dt, InputMap input)
     {
@@ -136,8 +157,22 @@ internal sealed class TextPanel
 }
 
 /// <summary>A small vertical menu box (Yes/No, shop lists...). Returns the chosen index, or -1 on cancel.</summary>
-internal sealed class ChoiceMenu
+internal sealed class ChoiceMenu : IStateHashed
 {
+    /// <summary>
+    /// State hash: the options, the cursor, whether it can be cancelled and the result. Left out: <c>_time</c> (cursor
+    /// animation) and the width that drawing measures.
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(_options.Length);
+        foreach (var option in _options) hash.Add(option);
+        hash.Add(Index);
+        hash.Add(CanCancel);
+        hash.Add(Result is not null);
+        hash.Add(Result ?? 0);
+    }
+
     private readonly string[] _options;
     private readonly BitmapFont _font;
     private readonly AudioMixer _audio;

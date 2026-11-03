@@ -1,4 +1,5 @@
 using MeadowRun.Art;
+using MicroEngine.Kernel;
 
 namespace MeadowRun.Gameplay;
 
@@ -6,7 +7,7 @@ namespace MeadowRun.Gameplay;
 /// The run that spans levels: lives, coins, score and Pip's form. Owns the scoring rules so they
 /// are testable without a stage.
 /// </summary>
-public sealed class Session
+public sealed class Session : IStateHashed
 {
     public const int StartingLives = 5;
     public const int CoinsPerLife = 100;
@@ -77,6 +78,15 @@ public sealed class Session
     };
 
     public const int TimeBonusPerUnit = 50;
+
+    /// <summary>Hashes lives, coins, score and form; the events are wiring, not state.</summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(Lives);
+        hash.Add(Coins);
+        hash.Add(Score);
+        hash.Add((int)Form);
+    }
 
     /// <summary>Resets for a continue after game over: score and coins clear, lives refill.</summary>
     public void Continue()

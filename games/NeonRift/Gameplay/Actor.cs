@@ -2,13 +2,36 @@ using System.Numerics;
 using NeonRift.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.World;
 
 namespace NeonRift.Gameplay;
 
 /// <summary>Anything living in a stage. Simulation lives in <see cref="Entity.Update"/>; drawing needs the assets.</summary>
-public abstract class Actor : Entity
+public abstract class Actor : Entity, IStateHashed
 {
+    /// <summary>
+    /// Adds the actor's simulation state to the per-step state hash: whether it is alive, its position, velocity and
+    /// age; subclasses add their own timers and counters after it. The previous position kept for drawing between
+    /// updates (<see cref="DrawPosition"/>) and the hitbox (fixed per kind) are left out.
+    /// </summary>
+    public virtual void HashState(StateHasher hash)
+    {
+        hash.Add(Alive);
+        hash.Add(Position);
+        hash.Add(Velocity);
+        hash.Add(Age);
+    }
+
+    /// <summary>Adds the living entities of <paramref name="list"/>: their count, then each one's state in list order.</summary>
+    internal static void HashAll<T>(StateHasher hash, EntityList<T> list) where T : Actor
+    {
+        int count = 0;
+        foreach (var _ in list) count++;
+        hash.Add(count);
+        foreach (var actor in list) actor.HashState(hash);
+    }
+
     public Stage Stage { get; internal set; } = null!;
     public Vector2 Velocity { get; set; }
     public float Age { get; protected set; }
@@ -54,6 +77,14 @@ public abstract class Enemy : Actor
     public virtual bool Big => false;
     protected float Flash { get; set; }
 
+    /// <summary>Adds the actor's state, then health and armour; the hit flash (drawing only) is left out.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(Health);
+        hash.Add(Armored);
+    }
+
     public override void Update(float dt)
     {
         base.Update(dt);
@@ -91,6 +122,10 @@ public abstract class Enemy : Actor
 }
 
 /// <summary>Short-lived visual effect (explosion, muzzle spark) that plays a strip once.</summary>
+/// <remarks>
+/// Presentation only, so the stage leaves effects out of the state hash: nothing in play reads them, and their lifetime
+/// depends on the strip length learnt while drawing (<c>_frames</c>, set in <see cref="Render"/>).
+/// </remarks>
 public sealed class Effect : Actor
 {
     private readonly string _sprite;

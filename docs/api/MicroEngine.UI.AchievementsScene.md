@@ -10,7 +10,7 @@ Overlay listing a game's achievements: unlocked ones highlighted, pending ones d
 for progressive goals. Up/down moves the cursor (the list scrolls); any of [CloseActions](MicroEngine.UI.AchievementsScene.md#MicroEngine_UI_AchievementsScene_CloseActions) closes it.
 
 ```csharp
-public sealed class AchievementsScene : Scene
+public sealed class AchievementsScene : Scene, IStateHashed
 ```
 
 #### Inheritance
@@ -19,12 +19,17 @@ public sealed class AchievementsScene : Scene
 [Scene](MicroEngine.Scenes.Scene.md) ← 
 [AchievementsScene](MicroEngine.UI.AchievementsScene.md)
 
+#### Implements
+
+IStateHashed
+
 #### Inherited Members
 
 [Scene.Enter\(\)](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Enter), 
 [Scene.Exit\(\)](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Exit), 
 [Scene.Resume\(\)](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Resume), 
 [Scene.Describe\(\)](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Describe), 
+[Scene.HashState\(StateHasher\)](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_HashState\_MicroEngine\_Kernel\_StateHasher\_), 
 [Scene.Update\(float\)](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Update\_System\_Single\_), 
 [Scene.Draw\(IRenderer\)](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Draw\_MicroEngine\_Graphics\_IRenderer\_), 
 [Scene.Game](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Game), 

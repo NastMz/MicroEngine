@@ -1,8 +1,21 @@
+using MicroEngine.Kernel;
+
 namespace NeonRift.Gameplay;
 
 /// <summary>Run-wide state: lives, continues, score and the weapon carried between stages.</summary>
-public sealed class Session
+public sealed class Session : IStateHashed
 {
+    /// <summary>Adds every field of the run: lives, continues, score, high score, weapon and deaths.</summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(Lives);
+        hash.Add(Continues);
+        hash.Add(Score);
+        hash.Add(HighScore);
+        hash.Add((int)Weapon);
+        hash.Add(Deaths);
+    }
+
     public const int StartLives = 3;
     public const int StartContinues = 3;
     /// <summary>Every multiple of this score grants an extra life.</summary>
