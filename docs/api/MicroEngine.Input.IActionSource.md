@@ -3,12 +3,12 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.dll  
 Guide: [Input](../manual/input.md)  
 
-A source of actions rather than of keys: on-screen touch controls ([VirtualControls](MicroEngine.Input.VirtualControls.md)), a network peer,
-an accessibility switch or an AI. Added with [AddSource](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_AddSource_MicroEngine_Input_IActionSource_), it is read every step together with
-the keyboard and gamepad, so a game cannot tell which produced an action.
+A source of actions rather than of keys: on-screen touch controls, a network peer, an accessibility switch or an AI.
+Added with [AddSource](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_AddSource_MicroEngine_Input_IActionSource_), it is read every step together with the keyboard and gamepad, so a game
+cannot tell which produced an action.
 
 ```csharp
 public interface IActionSource

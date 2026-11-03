@@ -22,15 +22,15 @@ A named mix stage: the sounds and buses under it are scaled by its [Volume](Micr
 
 Uncompressed audio: interleaved float samples in -1..1.
 
+ [AudioEngineSettings](MicroEngine.Audio.AudioEngineSettings.md)
+
+Settings of an [AudioEngine](MicroEngine.Audio.AudioEngine.md).
+
  [AudioEngine](MicroEngine.Audio.AudioEngine.md)
 
 The engine's one mixer: game code plays sounds here on the main thread, a sink renders them. Every backend plays
 through it, so voices, priorities, stealing, buses and fades behave the same everywhere, and an offline sink renders
 exactly what a device would play.
-
- [AudioEngineSettings](MicroEngine.Audio.AudioEngineSettings.md)
-
-Settings of an [AudioEngine](MicroEngine.Audio.AudioEngine.md).
 
  [AudioMixer](MicroEngine.Audio.AudioMixer.md)
 

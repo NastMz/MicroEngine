@@ -191,8 +191,14 @@ public sealed class ActionPrompts
     /// Keys are listed up, left, down, right, so a WASD set reads "WASD". With <paramref name="separator"/> set, a
     /// keyboard shows every key set the directions share ("↑←↓→ / WASD"), for a help screen.
     /// </remarks>
-    public string Directions(string left = "left", string right = "right", string up = "up", string down = "down", InputDevice? device = null, string? separator = null)
+    public string Directions(string? left = null, string? right = null, string? up = null, string? down = null, InputDevice? device = null, string? separator = null)
     {
+        // Directions left null are the map's own (InputMap.Names), so a game that renamed them needs no arguments.
+        var names = _input.Names;
+        left ??= names.Left;
+        right ??= names.Right;
+        up ??= names.Up;
+        down ??= names.Down;
         var d = device ?? Device;
         string[] actions = [up, left, down, right];
         if (separator is not null && d is InputDevice.Keyboard or InputDevice.None or InputDevice.Other && !actions.Any(a => _labels.Keys.Any(k => k.Action == a)))

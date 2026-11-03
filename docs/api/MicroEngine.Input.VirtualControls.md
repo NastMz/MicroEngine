@@ -7,12 +7,14 @@ Assembly: MicroEngine.dll
 Guide: [Input](../manual/input.md)  
 
 On-screen controls at run time: hit testing, finger tracking, d-pad and joystick values, tap latching, haptics and
-drawing. It is an [IActionSource](MicroEngine.Input.IActionSource.md) (read by [InputMap](MicroEngine.Input.InputMap.md) with the keyboard and gamepad) and an
-[ITouchOverlay](MicroEngine.Input.ITouchOverlay.md) (drawn by the backend over the game). Each finger belongs to the control it started on
-until it lifts, so two thumbs work independently and a thumb that slides a little stays on its control.
+drawing. It is an [IActionSource](MicroEngine.Input.IActionSource.md) (read by [InputMap](MicroEngine.Input.InputMap.md) with the keyboard and gamepad), an
+[ITouchOverlay](MicroEngine.Input.ITouchOverlay.md) (drawn by the backend over the game) and an input layer ([IInputLayer](MicroEngine.Input.IInputLayer.md), at
+[TouchControls](MicroEngine.Input.InputLayerOrder.md#MicroEngine_Input_InputLayerOrder_TouchControls)): a finger that lands on a control is the control's, every other finger
+goes on to gameplay as a pointer. Each finger belongs to the control it started on until it lifts, so two thumbs
+work independently and a thumb that slides a little stays on its control.
 
 ```csharp
-public sealed class VirtualControls : IActionSource, ITouchOverlay
+public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
 ```
 
 #### Inheritance
@@ -22,14 +24,15 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay
 
 #### Implements
 
-[IActionSource](MicroEngine.Input.IActionSource.md), 
-[ITouchOverlay](MicroEngine.Input.ITouchOverlay.md)
+IActionSource, 
+[ITouchOverlay](MicroEngine.Input.ITouchOverlay.md), 
+IInputLayer
 
 ## Constructors
 
 ### <a id="MicroEngine_Input_VirtualControls__ctor_MicroEngine_Input_TouchLayout_"></a> VirtualControls\(TouchLayout?\)
 
-Creates the controls for <code class="paramref">layout</code> (null: [CreateDefault](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_CreateDefault)). Games use the instance in [Touch](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Touch).
+Creates the controls for <code class="paramref">layout</code> (null: [CreateDefault](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_CreateDefault_MicroEngine_Input_ActionNames_)). Games use the instance in [Touch](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Touch).
 
 ```csharp
 public VirtualControls(TouchLayout? layout = null)
@@ -69,7 +72,7 @@ public InputDevice Device { get; }
 
 #### Property Value
 
- [InputDevice](MicroEngine.Input.InputDevice.md)
+ InputDevice
 
 ### <a id="MicroEngine_Input_VirtualControls_FingerCount"></a> FingerCount
 
@@ -183,6 +186,19 @@ public int Vibrations { get; }
 
 ## Methods
 
+### <a id="MicroEngine_Input_VirtualControls_BeginFrame_MicroEngine_Input_ITouchScreen_"></a> BeginFrame\(ITouchScreen?\)
+
+Starts a frame: taps an update has read stop counting, and the controls are laid out again when the screen's
+size, safe area or density changed (releasing every finger). Called by the loop before the frame's touches.
+
+```csharp
+public void BeginFrame(ITouchScreen? screen)
+```
+
+#### Parameters
+
+`screen` [ITouchScreen](MicroEngine.Input.ITouchScreen.md)?
+
 ### <a id="MicroEngine_Input_VirtualControls_CancelAll"></a> CancelAll\(\)
 
 Releases every finger, as when the game loses focus or is suspended. Toggled buttons stay as they are.
@@ -203,6 +219,22 @@ public void Draw(IOverlayCanvas canvas)
 #### Parameters
 
 `canvas` [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md)
+
+### <a id="MicroEngine_Input_VirtualControls_EndFrame_System_Single_MicroEngine_Input_InputDevice_"></a> EndFrame\(float, InputDevice\)
+
+Ends a frame's touches: works out the actions the controls press, whether they are shown and their press
+animations. <code class="paramref">otherDevice</code> is the device that last pressed an action (a keyboard or gamepad hides
+[Auto](MicroEngine.Input.TouchVisibility.md) controls).
+
+```csharp
+public void EndFrame(float dt, InputDevice otherDevice = InputDevice.None)
+```
+
+#### Parameters
+
+`dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+`otherDevice` InputDevice
 
 ### <a id="MicroEngine_Input_VirtualControls_Frame_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_CanvasScaling_"></a> Frame\(Vector2, RectF, int, int, CanvasScaling\)
 
@@ -247,6 +279,41 @@ public (Vector2 Center, float Radius) Geometry(string id)
 #### Returns
 
  \([Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2) [Center](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.numerics.vector2,system.single\-.center), [float](https://learn.microsoft.com/dotnet/api/system.single) [Radius](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.numerics.vector2,system.single\-.radius)\)
+
+### <a id="MicroEngine_Input_VirtualControls_Handle_MicroEngine_Input_InputEvent__"></a> Handle\(in InputEvent\)
+
+The input layer: takes the touch-screen pointers ([Touch](MicroEngine.Input.PointerKind.md) of
+[TouchScreen](MicroEngine.Input.DeviceId.md#MicroEngine_Input_DeviceId_TouchScreen)) that land on a control ([HandleTouch](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_HandleTouch_MicroEngine_Input_TouchEvent_), with
+[ScreenPosition](MicroEngine.Input.InputEvent.md#MicroEngine_Input_InputEvent_ScreenPosition)); everything else goes on.
+
+```csharp
+public bool Handle(in InputEvent e)
+```
+
+#### Parameters
+
+`e` InputEvent
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Input_VirtualControls_HandleTouch_MicroEngine_Input_TouchEvent_"></a> HandleTouch\(TouchEvent\)
+
+Applies one touch (screen pixels). Returns whether the finger is a control's: a finger that lands on a visible
+control is, until it lifts; any other finger is not, and its events are left for gameplay.
+
+```csharp
+public bool HandleTouch(TouchEvent e)
+```
+
+#### Parameters
+
+`e` [TouchEvent](MicroEngine.Input.TouchEvent.md)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Input_VirtualControls_IsDown_System_String_"></a> IsDown\(string\)
 
@@ -375,11 +442,28 @@ public void SetVisible(string id, bool visible)
 
 `visible` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Input_VirtualControls_TakeScripted_System_Collections_Generic_List_MicroEngine_Input_TouchEvent__"></a> TakeScripted\(List<TouchEvent\>\)
+
+Moves the scripted touches queued since the previous frame ([ScriptTouch](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_ScriptTouch_System_Int32_System_String_System_Numerics_Vector2_), [ScriptTouchAt](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_ScriptTouchAt_System_Int32_System_Numerics_Vector2_),
+[ScriptLift](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_ScriptLift_System_Int32_)) into <code class="paramref">events</code> as touch events in screen pixels, after the events
+already in it. Call after [BeginFrame](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_BeginFrame_MicroEngine_Input_ITouchScreen_), which lays the controls out; without a screen they stay queued.
+
+```csharp
+public void TakeScripted(List<TouchEvent> events)
+```
+
+#### Parameters
+
+`events` [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<[TouchEvent](MicroEngine.Input.TouchEvent.md)\>
+
 ### <a id="MicroEngine_Input_VirtualControls_Update_MicroEngine_Input_ITouchScreen_System_Single_MicroEngine_Input_InputDevice_"></a> Update\(ITouchScreen?, float, InputDevice\)
 
 Called once per frame by the loop, before the steps: lays the controls out for the screen, applies its touch
 events and scripted touches, and advances visibility and press animations. <code class="paramref">otherDevice</code> is the
 device that last pressed an action (a keyboard or gamepad hides [Auto](MicroEngine.Input.TouchVisibility.md) controls).
+Equivalent to [BeginFrame](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_BeginFrame_MicroEngine_Input_ITouchScreen_), then every touch of the screen and every scripted touch through
+[HandleTouch](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_HandleTouch_MicroEngine_Input_TouchEvent_), then [EndFrame](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_EndFrame_System_Single_MicroEngine_Input_InputDevice_); the engine's loop routes the touches through the input
+layers instead, so fingers no control takes reach gameplay.
 
 ```csharp
 public void Update(ITouchScreen? screen, float dt, InputDevice otherDevice = InputDevice.None)
@@ -391,7 +475,7 @@ public void Update(ITouchScreen? screen, float dt, InputDevice otherDevice = Inp
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`otherDevice` [InputDevice](MicroEngine.Input.InputDevice.md)
+`otherDevice` InputDevice
 
 ### <a id="MicroEngine_Input_VirtualControls_Value_System_String_"></a> Value\(string\)
 

@@ -40,6 +40,11 @@ Window options of a raylib platform created directly (browser hosts); hosts with
 the earlier positional shape (whose third argument was a fixed-step flag) fails to compile instead of meaning
 something else.
 
+ [RaylibDeviceFactory](MicroEngine.Raylib.RaylibDeviceFactory.md)
+
+Factory of the tier-0 raylib device ("raylib"). raylib owns one window and one OpenGL context per process, so the
+device accepts only raylib's own window: the surface whose native window is raylib's, once raylib has opened it.
+
  [RaylibDevice](MicroEngine.Raylib.RaylibDevice.md)
 
 The tier-0 graphics device on raylib's OpenGL layer (rlgl): textures and render targets are OpenGL textures and
@@ -49,11 +54,6 @@ Offscreen targets are rendered with row 0 at the top of the texture's memory, so
 flipping and OpenGL's tie rule gives the contract's top-left rule; the window's target (bottom-up in OpenGL) moves
 geometry up by 1/128 px for the same rule. Desktop OpenGL declares render targets, repeat and mirror addressing,
 separate filters and custom blend states; in browsers (WebGL) only render targets are declared.
-
- [RaylibDeviceFactory](MicroEngine.Raylib.RaylibDeviceFactory.md)
-
-Factory of the tier-0 raylib device ("raylib"). raylib owns one window and one OpenGL context per process, so the
-device accepts only raylib's own window: the surface whose native window is raylib's, once raylib has opened it.
 
  [RaylibPlatform](MicroEngine.Raylib.RaylibPlatform.md)
 

@@ -40,7 +40,7 @@ public ActionPrompts(InputMap input, VirtualControls? touch = null)
 
 #### Parameters
 
-`input` [InputMap](MicroEngine.Input.InputMap.md)
+`input` InputMap
 
 `touch` [VirtualControls](MicroEngine.Input.VirtualControls.md)?
 
@@ -58,7 +58,7 @@ public InputDevice Device { get; }
 
 #### Property Value
 
- [InputDevice](MicroEngine.Input.InputDevice.md)
+ InputDevice
 
 ### <a id="MicroEngine_Input_ActionPrompts_Override"></a> Override
 
@@ -70,7 +70,7 @@ public InputDevice? Override { get; set; }
 
 #### Property Value
 
- [InputDevice](MicroEngine.Input.InputDevice.md)?
+ InputDevice?
 
 ### <a id="MicroEngine_Input_ActionPrompts_PadStyle"></a> PadStyle
 
@@ -82,7 +82,7 @@ public GamepadStyle PadStyle { get; }
 
 #### Property Value
 
- [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
+ GamepadStyle
 
 ### <a id="MicroEngine_Input_ActionPrompts_PadStyleOverride"></a> PadStyleOverride
 
@@ -94,7 +94,7 @@ public GamepadStyle? PadStyleOverride { get; set; }
 
 #### Property Value
 
- [GamepadStyle](MicroEngine.Input.GamepadStyle.md)?
+ GamepadStyle?
 
 ### <a id="MicroEngine_Input_ActionPrompts_Version"></a> Version
 
@@ -123,7 +123,7 @@ public IReadOnlyList<ActionPrompt> All(string action, InputDevice? device = null
 
 `action` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`device` [InputDevice](MicroEngine.Input.InputDevice.md)?
+`device` InputDevice?
 
 #### Returns
 
@@ -141,34 +141,34 @@ public static string ButtonName(PadButton button, GamepadStyle style = GamepadSt
 
 #### Parameters
 
-`button` [PadButton](MicroEngine.Input.PadButton.md)
+`button` PadButton
 
-`style` [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
+`style` GamepadStyle
 
 #### Returns
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-### <a id="MicroEngine_Input_ActionPrompts_Directions_System_String_System_String_System_String_System_String_System_Nullable_MicroEngine_Input_InputDevice__System_String_"></a> Directions\(string, string, string, string, InputDevice?, string?\)
+### <a id="MicroEngine_Input_ActionPrompts_Directions_System_String_System_String_System_String_System_String_System_Nullable_MicroEngine_Input_InputDevice__System_String_"></a> Directions\(string?, string?, string?, string?, InputDevice?, string?\)
 
 How to show a group of directions together ("move"): on a keyboard the first key of each ("←→↑↓", "WASD"), on a
 gamepad "D-pad" or "Stick", on a touch screen the name of the d-pad or joystick that presses them all.
 
 ```csharp
-public string Directions(string left = "left", string right = "right", string up = "up", string down = "down", InputDevice? device = null, string? separator = null)
+public string Directions(string? left = null, string? right = null, string? up = null, string? down = null, InputDevice? device = null, string? separator = null)
 ```
 
 #### Parameters
 
-`left` [string](https://learn.microsoft.com/dotnet/api/system.string)
+`left` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
-`right` [string](https://learn.microsoft.com/dotnet/api/system.string)
+`right` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
-`up` [string](https://learn.microsoft.com/dotnet/api/system.string)
+`up` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
-`down` [string](https://learn.microsoft.com/dotnet/api/system.string)
+`down` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
-`device` [InputDevice](MicroEngine.Input.InputDevice.md)?
+`device` InputDevice?
 
 `separator` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
@@ -213,7 +213,7 @@ public ActionPrompt Get(string action, InputDevice? device = null)
 
 `action` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`device` [InputDevice](MicroEngine.Input.InputDevice.md)?
+`device` InputDevice?
 
 #### Returns
 
@@ -229,7 +229,7 @@ public static string KeyName(Key key)
 
 #### Parameters
 
-`key` [Key](MicroEngine.Input.Key.md)
+`key` Key
 
 #### Returns
 
@@ -264,7 +264,7 @@ public void SetLabel(string action, InputDevice? device, string? text)
 
 `action` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`device` [InputDevice](MicroEngine.Input.InputDevice.md)?
+`device` InputDevice?
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
@@ -299,7 +299,7 @@ public static GamepadStyle StyleFromName(string? name)
 
 #### Returns
 
- [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
+ GamepadStyle
 
 ### <a id="MicroEngine_Input_ActionPrompts_Text_System_String_System_Nullable_MicroEngine_Input_InputDevice__"></a> Text\(string, InputDevice?\)
 
@@ -313,7 +313,7 @@ public string Text(string action, InputDevice? device = null)
 
 `action` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`device` [InputDevice](MicroEngine.Input.InputDevice.md)?
+`device` InputDevice?
 
 #### Returns
 
@@ -333,7 +333,7 @@ public string TextAll(string action, string separator = " / ", InputDevice? devi
 
 `separator` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`device` [InputDevice](MicroEngine.Input.InputDevice.md)?
+`device` InputDevice?
 
 #### Returns
 

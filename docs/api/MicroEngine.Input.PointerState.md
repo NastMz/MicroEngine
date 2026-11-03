@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.dll  
 Guide: [Input](../manual/input.md)  
 
 The mouse (or another pointer) over the game's virtual canvas.
@@ -97,6 +97,19 @@ public bool Secondary { get; init; }
 #### Property Value
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Input_PointerState_Wheel"></a> Wheel
+
+How far the wheel turned since the previous update: Y positive away from the player (scroll up), X positive to
+the right, in notches (fractions for smooth wheels and touchpads).
+
+```csharp
+public Vector2 Wheel { get; init; }
+```
+
+#### Property Value
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
 ## Methods
 

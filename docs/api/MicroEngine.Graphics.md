@@ -146,19 +146,19 @@ draw quads; [Prepare](MicroEngine.Graphics.ScalableFont.md#MicroEngine_Graphics_
 
 A [ScalableFont](MicroEngine.Graphics.ScalableFont.md) at one size: an [IFont](MicroEngine.Graphics.IFont.md) for widgets, layout and drawing.
 
- [Sprite](MicroEngine.Graphics.Sprite.md)
+ [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
 
-A region of a texture with a pivot (origin) in source pixels.
+Packs many procedurally authored [PixelImage](MicroEngine.Graphics.PixelImage.md)s into one texture and
+exposes them by name. Keeps draw calls batched and art code independent of layout.
 
  [SpriteAtlas](MicroEngine.Graphics.SpriteAtlas.md)
 
 Named sprites packed into one texture, built by [Build](MicroEngine.Graphics.SpriteAtlasBuilder.md#MicroEngine_Graphics_SpriteAtlasBuilder_Build_MicroEngine_Graphics_IGraphicsDevice_System_Nullable_MicroEngine_Graphics_TextureFilter__). The atlas owns the texture:
 dispose the atlas (usually in <code>Game.Unload</code>) when its sprites are no longer drawn.
 
- [SpriteAtlasBuilder](MicroEngine.Graphics.SpriteAtlasBuilder.md)
+ [Sprite](MicroEngine.Graphics.Sprite.md)
 
-Packs many procedurally authored [PixelImage](MicroEngine.Graphics.PixelImage.md)s into one texture and
-exposes them by name. Keeps draw calls batched and art code independent of layout.
+A region of a texture with a pivot (origin) in source pixels.
 
  [Texture](MicroEngine.Graphics.Texture.md)
 
@@ -202,16 +202,16 @@ Anything that measures and draws text at one size: the built-in [BitmapFont](Mic
 
 Creates device resources. Separated so headless tests can provide fakes.
 
- [IRenderer](MicroEngine.Graphics.IRenderer.md)
-
-Immediate-mode 2D drawing in virtual pixels. Coordinates go through the camera
-pushed with [PushCamera](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushCamera_MicroEngine_Graphics_Camera2D_); with no camera they are screen space.
-
  [IRenderer2D](MicroEngine.Graphics.IRenderer2D.md)
 
 The 2D renderer over the graphics device, implemented once in core: it writes vertices and indices into device
 buffers and draws them with the built-in [Textured](MicroEngine.Graphics.Devices.BuiltInPipeline.md) pipeline only, so it runs unchanged
 on every tier. Colours (tints, vertex colours) are premultiplied, and the default blend state is premultiplied alpha.
+
+ [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+Immediate-mode 2D drawing in virtual pixels. Coordinates go through the camera
+pushed with [PushCamera](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_PushCamera_MicroEngine_Graphics_Camera2D_); with no camera they are screen space.
 
 ### Enums
 

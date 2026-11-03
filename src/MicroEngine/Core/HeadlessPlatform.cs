@@ -39,6 +39,10 @@ public sealed class HeadlessPlatform : IPlatform
         TouchScreen = new HeadlessTouchScreen(new Vector2(width * 4, height * 4));
         _surface = new HostSurface(0, () => _surfaceSize, () => 1f, () => false);
         _capabilities.Add<ITouchScreen>(TouchScreen);
+        _capabilities.Add<IInputBackend>(Devices);
+        _capabilities.Add<IKeyLabels>(Devices);
+        _capabilities.Add<IGamepadRumble>(Devices);
+        _capabilities.Add<ITextInputControl>(Devices);
         _capabilities.Add(_preset);
         if (request?.Audio is not null) _suppliedAudio = request.CreateAudio(() => SilentAudio);
         _input = request?.CombineInput(Keys) ?? Keys;
@@ -82,8 +86,14 @@ public sealed class HeadlessPlatform : IPlatform
     public SilentAudioDevice SilentAudio { get; } = new();
     /// <summary>The device the request supplied (<see cref="PlatformRequest.Audio"/>), otherwise <see cref="SilentAudio"/>.</summary>
     public IAudioDevice Audio => _suppliedAudio ?? SilentAudio;
-    /// <summary>The input tests set by hand (keys, gamepad, pointer).</summary>
+    /// <summary>The input tests set by hand (keys, gamepad, pointer), read every update as one polled device.</summary>
     public HeadlessInput Keys { get; } = new();
+    /// <summary>
+    /// The platform's input backend (also its <see cref="IInputBackend"/>, <see cref="IKeyLabels"/>,
+    /// <see cref="IGamepadRumble"/> and <see cref="ITextInputControl"/> capabilities): tests send device events with it,
+    /// which the next frame routes like a real backend's.
+    /// </summary>
+    public HeadlessInputBackend Devices { get; } = new();
     /// <summary><see cref="Keys"/>, read together with the request's extra sources (<see cref="PlatformRequest.ExtraInput"/>) when there are any.</summary>
     public IInputSource Input => _input;
     /// <summary>A touch screen tests can touch; by default 4× the canvas, not touch-first, no safe-area insets. Also the host's <see cref="ITouchScreen"/> capability.</summary>
@@ -220,6 +230,51 @@ public sealed class HeadlessPlatform : IPlatform
         private readonly System.Diagnostics.Stopwatch _watch = System.Diagnostics.Stopwatch.StartNew();
         public double Now => _watch.Elapsed.TotalSeconds;
     }
+}
+
+/// <summary>
+/// An input backend tests drive by hand: device events sent with <see cref="Send"/> are delivered at the next drain, in
+/// order; key labels can be set as a keyboard layout would print them; rumbles and text-input switches are recorded.
+/// </summary>
+public sealed class HeadlessInputBackend : IInputBackend, IKeyLabels, IGamepadRumble, ITextInputControl
+{
+    private readonly List<InputEvent> _pending = [];
+
+    /// <summary>The labels <see cref="KeyLabel"/> reports, as a layout would print them; keys not in it report null.</summary>
+    public Dictionary<Key, string> Labels { get; } = [];
+    /// <summary>Every <see cref="Rumble"/> call, in order.</summary>
+    public List<(DeviceId Pad, float Low, float High, double Seconds)> Rumbles { get; } = [];
+    /// <summary>Whether text input is on, and the caret it was turned on with.</summary>
+    public (bool Active, RectF Caret) TextInput { get; private set; }
+
+    /// <summary>Queues an event for the next drain.</summary>
+    public HeadlessInputBackend Send(InputEvent e)
+    {
+        _pending.Add(e);
+        return this;
+    }
+
+    /// <inheritdoc/>
+    public void Drain(List<InputEvent> events)
+    {
+        events.AddRange(_pending);
+        _pending.Clear();
+    }
+
+    /// <inheritdoc/>
+    public string? KeyLabel(Key key) => Labels.TryGetValue(key, out var label) ? label : null;
+
+    /// <summary>Records the call; every pad can rumble here.</summary>
+    public bool Rumble(DeviceId pad, float low, float high, double seconds)
+    {
+        Rumbles.Add((pad, low, high, seconds));
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public void Start(RectF caret) => TextInput = (true, caret);
+    /// <inheritdoc/>
+    public void Stop() => TextInput = (false, default);
 }
 
 /// <summary>Keys, a gamepad and a pointer that tests set by hand.</summary>

@@ -146,7 +146,7 @@ public InputMap Input { get; }
 
 #### Property Value
 
- [InputMap](MicroEngine.Input.InputMap.md)
+ InputMap
 
 ### <a id="MicroEngine_Scenes_Scene_IsOverlay"></a> IsOverlay
 

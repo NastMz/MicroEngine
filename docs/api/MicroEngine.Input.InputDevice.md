@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.dll  
 Guide: [Input](../manual/input.md)  
 
 The kind of device that last pressed an action (see [LastDevice](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_LastDevice)).

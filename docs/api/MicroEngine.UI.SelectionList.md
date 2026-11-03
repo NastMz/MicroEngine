@@ -159,23 +159,24 @@ public void SetOptions(IEnumerable<string> options)
 
 <code class="paramref">options</code> is empty.
 
-### <a id="MicroEngine_UI_SelectionList_Update_MicroEngine_Input_InputMap_System_String_System_String_System_String_"></a> Update\(InputMap, string, string, string\)
+### <a id="MicroEngine_UI_SelectionList_Update_MicroEngine_Input_InputMap_System_String_System_String_System_String_"></a> Update\(InputMap, string?, string?, string?\)
 
-Returns the chosen index when confirmed, otherwise null.
+Returns the chosen index when confirmed, otherwise null. Actions left null (the default) are the map's up, down and
+confirm actions ([Names](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Names)).
 
 ```csharp
-public int? Update(InputMap input, string up = "up", string down = "down", string confirm = "confirm")
+public int? Update(InputMap input, string? up = null, string? down = null, string? confirm = null)
 ```
 
 #### Parameters
 
-`input` [InputMap](MicroEngine.Input.InputMap.md)
+`input` InputMap
 
-`up` [string](https://learn.microsoft.com/dotnet/api/system.string)
+`up` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
-`down` [string](https://learn.microsoft.com/dotnet/api/system.string)
+`down` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
-`confirm` [string](https://learn.microsoft.com/dotnet/api/system.string)
+`confirm` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
 #### Returns
 
