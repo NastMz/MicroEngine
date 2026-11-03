@@ -74,10 +74,51 @@ const storageImports = {
   remove: key => storage.removeItem(key),
 };
 
-// Audio: raylib's backend (miniaudio) creates its AudioContext when the game starts, which happens inside the
-// click or key press that starts it, so browsers let it play. If a browser still holds it suspended, every
-// later key or click resumes it and a button says why the game is silent.
-const audioContexts = () => (window.miniaudio?.devices ?? []).map(d => d?.webaudio).filter(Boolean);
+// Audio: the game's mixer renders on this thread, once per frame, up to 100 ms ahead, and the page plays what it
+// rendered through an AudioWorklet (audio-worklet.js) on Web Audio's own thread. The AudioContext is created when the
+// game starts, which happens inside the click or key press that starts it, so browsers let it play. If a browser still
+// holds it suspended, every later key or click resumes it and a button says why the game is silent. A hidden page
+// suspends it (below).
+const sound = { ctx: null, node: null, pending: [], written: 0, report: { played: 0, time: 0 } };
+function soundPlayed() {
+  const r = sound.report;
+  const since = Math.max(0, sound.ctx.currentTime - r.time) * sound.ctx.sampleRate;
+  return Math.min(sound.written, r.played + since);
+}
+function soundClear() {
+  sound.node?.port.postMessage('clear');
+  sound.pending = [];
+  sound.written = 0;
+  sound.report = { played: 0, time: sound.ctx?.currentTime ?? 0 };
+}
+const audioImports = {
+  // Returns the output's sample rate, or 0 when the browser has no Web Audio.
+  start(channels) {
+    if (!sound.ctx) {
+      try { sound.ctx = new AudioContext({ latencyHint: 'interactive' }); }
+      catch (e) { console.error(e); return 0; }
+      sound.ctx.audioWorklet.addModule('audio-worklet.js').then(() => {
+        sound.node = new AudioWorkletNode(sound.ctx, 'microengine-sink', { numberOfInputs: 0, outputChannelCount: [channels] });
+        sound.node.port.onmessage = e => { sound.report = e.data; };
+        sound.node.connect(sound.ctx.destination);
+        for (const chunk of sound.pending) sound.node.port.postMessage(chunk, [chunk.buffer]);
+        sound.pending = [];
+      }, e => console.error(e));
+    }
+    soundClear();
+    return sound.ctx.sampleRate;
+  },
+  write(view) {
+    const bytes = view.slice(); // copied out of the runtime's memory before the call returns
+    const chunk = new Float32Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 4);
+    sound.written += chunk.length / 2;
+    if (sound.node) sound.node.port.postMessage(chunk, [chunk.buffer]);
+    else sound.pending.push(chunk);
+  },
+  buffered: () => sound.ctx ? Math.max(0, Math.round(sound.written - soundPlayed())) : 0,
+  stop: soundClear,
+};
+const audioContexts = () => sound.ctx ? [sound.ctx] : [];
 function resumeAudio() {
   for (const context of audioContexts()) if (context.state === 'suspended') context.resume().then(updateSound, () => {});
 }
@@ -196,6 +237,10 @@ document.addEventListener('visibilitychange', () => {
   if (!exports) return;
   const hidden = document.visibilityState === 'hidden';
   if (hidden) releaseFingers();
+  // Animation frames stop while hidden, so the game stops filling the audio queue: suspend the output rather than
+  // let it run dry, and resume it when the page is shown again.
+  if (hidden) sound.ctx?.suspend().catch(() => {});
+  else if (state === 'playing') resumeAudio();
   try {
     exports.WebHost.Visibility(hidden);
     if (state === 'playing') exports.WebHost.Frame();
@@ -259,6 +304,7 @@ window.microengine = {
   get game() { return game; },
   stats: () => exports?.WebHost.Stats() ?? '0 0',
   audio: () => audioContexts().map(c => c.state),
+  suspendAudio: () => Promise.all(audioContexts().map(c => c.suspend())),
   captures: () => exports?.WebHost.Captures() ?? [],
   capture: name => exports?.WebHost.CaptureData(name) ?? '',
   controls: () => exports?.WebHost.Controls() ?? '',
@@ -290,6 +336,8 @@ async function load() {
     storage: storageImports,
     // Touch-control haptics. Android browsers vibrate; Safari on iOS has no Vibration API, so this returns false there.
     haptics: { vibrate: ms => !!navigator.vibrate?.(ms) },
+    // The game's audio output (MicroEngine.Raylib's browser sink).
+    audio: audioImports,
   });
 
   // Copy the game's files into the virtual file system so ContentFolder finds /Content as on desktop.

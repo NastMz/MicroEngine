@@ -6,18 +6,19 @@ Namespace: [MicroEngine.Sdl](MicroEngine.Sdl.md)
 Assembly: MicroEngine.Sdl.dll  
 Guide: [Backends and platforms](../manual/backends.md)  
 
-SDL3 audio. SDL mixes every audio stream bound to a device, so the device keeps a pool of streams (voices) for sound
-effects, each converting its clip's rate and channels and applying pitch (frequency ratio) and volume (gain); pan is
-applied when the clip is copied into its voice. Music is one stream topped up from [Update](MicroEngine.Sdl.SdlAudioDevice.md#MicroEngine_Sdl_SdlAudioDevice_Update), decoded from
-PCM or OGG Vorbis (NVorbis) in managed code. It works without a window, so a host can use it with another platform.
+SDL3 audio: the engine's mixer ([MixerAudioDevice](MicroEngine.Audio.MixerAudioDevice.md), the same voices, priorities and music on every
+backend) playing through SDL's default playback device. A feeder thread keeps [DefaultLatencyMilliseconds](MicroEngine.Sdl.SdlAudioDevice.md#MicroEngine_Sdl_SdlAudioDevice_DefaultLatencyMilliseconds)
+of audio queued in an SDL audio stream (48 kHz stereo float), so main-thread stalls and garbage collections shorter
+than that are not heard. It works without a window, so a host can use it with another platform.
 
 ```csharp
-public sealed class SdlAudioDevice : IAudioDevice, IDisposable
+public sealed class SdlAudioDevice : MixerAudioDevice, IAudioDevice, IDisposable
 ```
 
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
+MixerAudioDevice ← 
 [SdlAudioDevice](MicroEngine.Sdl.SdlAudioDevice.md)
 
 #### Implements
@@ -25,185 +26,45 @@ public sealed class SdlAudioDevice : IAudioDevice, IDisposable
 IAudioDevice, 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
-## Properties
+#### Inherited Members
 
-### <a id="MicroEngine_Sdl_SdlAudioDevice_CurrentMusic"></a> CurrentMusic
+MixerAudioDevice.LoadSound\(string, AudioClip\), 
+MixerAudioDevice.LoadMusic\(string, AudioClip, bool\), 
+MixerAudioDevice.LoadMusicStream\(string, byte\[\], string, bool\), 
+MixerAudioDevice.Play\(SoundHandle, float, float, float\), 
+MixerAudioDevice.PlayMusic\(MusicHandle, float\), 
+MixerAudioDevice.StopMusic\(\), 
+MixerAudioDevice.SetMusicVolume\(float\), 
+MixerAudioDevice.PauseMusic\(bool\), 
+MixerAudioDevice.Update\(\), 
+MixerAudioDevice.Pump\(\), 
+MixerAudioDevice.Dispose\(\), 
+MixerAudioDevice.Engine, 
+MixerAudioDevice.IsAvailable, 
+MixerAudioDevice.MusicFormats, 
+MixerAudioDevice.CurrentMusic, 
+[object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
+[object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 
+[object.Equals\(object?\)](https://learn.microsoft.com/dotnet/api/system.object.equals\#system\-object\-equals\(system\-object\)), 
+[object.Equals\(object?, object?\)](https://learn.microsoft.com/dotnet/api/system.object.equals\#system\-object\-equals\(system\-object\-system\-object\)), 
+[object.ReferenceEquals\(object?, object?\)](https://learn.microsoft.com/dotnet/api/system.object.referenceequals), 
+[object.GetHashCode\(\)](https://learn.microsoft.com/dotnet/api/system.object.gethashcode)
 
-The music started last and not stopped, or null.
+## Fields
+
+### <a id="MicroEngine_Sdl_SdlAudioDevice_DefaultLatencyMilliseconds"></a> DefaultLatencyMilliseconds
+
+Audio kept queued by default, in milliseconds: longer than the longest collection measured on desktop.
 
 ```csharp
-public MusicHandle? CurrentMusic { get; }
+public const double DefaultLatencyMilliseconds = 60
 ```
 
-#### Property Value
+#### Field Value
 
- MusicHandle?
-
-### <a id="MicroEngine_Sdl_SdlAudioDevice_IsAvailable"></a> IsAvailable
-
-Always true: a device that could not open is replaced by a silent one in [TryCreate](MicroEngine.Sdl.SdlAudioDevice.md#MicroEngine_Sdl_SdlAudioDevice_TryCreate).
-
-```csharp
-public bool IsAvailable { get; }
-```
-
-#### Property Value
-
- [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+ [double](https://learn.microsoft.com/dotnet/api/system.double)
 
 ## Methods
-
-### <a id="MicroEngine_Sdl_SdlAudioDevice_Dispose"></a> Dispose\(\)
-
-Stops playback and closes the audio device.
-
-```csharp
-public void Dispose()
-```
-
-### <a id="MicroEngine_Sdl_SdlAudioDevice_LoadMusic_System_String_MicroEngine_Audio_AudioClip_System_Boolean_"></a> LoadMusic\(string, AudioClip, bool\)
-
-Uploads decoded music and returns its handle.
-
-```csharp
-public MusicHandle LoadMusic(string name, AudioClip clip, bool loop = true)
-```
-
-#### Parameters
-
-`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
-
-Name reported by [Name](MicroEngine.Audio.MusicHandle.md#MicroEngine_Audio_MusicHandle_Name).
-
-`clip` AudioClip
-
-The music samples.
-
-`loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-Whether the music restarts when it reaches its end.
-
-#### Returns
-
- MusicHandle
-
-### <a id="MicroEngine_Sdl_SdlAudioDevice_LoadMusicStream_System_String_System_Byte___System_String_System_Boolean_"></a> LoadMusicStream\(string, byte\[\], string, bool\)
-
-Loads compressed music for streaming. The SDL device decodes "wav" (PCM) and "ogg" (Vorbis).
-
-```csharp
-public MusicHandle LoadMusicStream(string name, byte[] encoded, string format, bool loop = true)
-```
-
-#### Parameters
-
-`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
-
-`encoded` [byte](https://learn.microsoft.com/dotnet/api/system.byte)\[\]
-
-`format` [string](https://learn.microsoft.com/dotnet/api/system.string)
-
-`loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-#### Returns
-
- MusicHandle
-
-#### Exceptions
-
- [NotSupportedException](https://learn.microsoft.com/dotnet/api/system.notsupportedexception)
-
-Any other format, such as mp3.
-
-### <a id="MicroEngine_Sdl_SdlAudioDevice_LoadSound_System_String_MicroEngine_Audio_AudioClip_"></a> LoadSound\(string, AudioClip\)
-
-Uploads a sound effect and returns its handle.
-
-```csharp
-public SoundHandle LoadSound(string name, AudioClip clip)
-```
-
-#### Parameters
-
-`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
-
-`clip` AudioClip
-
-#### Returns
-
- SoundHandle
-
-### <a id="MicroEngine_Sdl_SdlAudioDevice_PauseMusic_System_Boolean_"></a> PauseMusic\(bool\)
-
-Pauses (true) or resumes (false) the current music.
-
-```csharp
-public void PauseMusic(bool paused)
-```
-
-#### Parameters
-
-`paused` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
-
-### <a id="MicroEngine_Sdl_SdlAudioDevice_Play_MicroEngine_Audio_SoundHandle_System_Single_System_Single_System_Single_"></a> Play\(SoundHandle, float, float, float\)
-
-Plays a sound effect once, mixed with any sounds already playing.
-
-```csharp
-public void Play(SoundHandle sound, float volume = 1, float pitch = 1, float pan = 0.5)
-```
-
-#### Parameters
-
-`sound` SoundHandle
-
-A handle from [LoadSound](MicroEngine.Audio.IAudioDevice.md#MicroEngine_Audio_IAudioDevice_LoadSound_System_String_MicroEngine_Audio_AudioClip_).
-
-`volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
-
-Volume, 0..1.
-
-`pitch` [float](https://learn.microsoft.com/dotnet/api/system.single)
-
-Playback speed factor; 1 is the original pitch.
-
-`pan` [float](https://learn.microsoft.com/dotnet/api/system.single)
-
-Stereo position, 0 (left) to 1 (right); 0.5 is centred.
-
-### <a id="MicroEngine_Sdl_SdlAudioDevice_PlayMusic_MicroEngine_Audio_MusicHandle_System_Single_"></a> PlayMusic\(MusicHandle, float\)
-
-Starts <code class="paramref">music</code> from the beginning, replacing the music that was playing.
-
-```csharp
-public void PlayMusic(MusicHandle music, float volume = 1)
-```
-
-#### Parameters
-
-`music` MusicHandle
-
-`volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
-
-### <a id="MicroEngine_Sdl_SdlAudioDevice_SetMusicVolume_System_Single_"></a> SetMusicVolume\(float\)
-
-Sets the volume of the current music, 0..1.
-
-```csharp
-public void SetMusicVolume(float volume)
-```
-
-#### Parameters
-
-`volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
-
-### <a id="MicroEngine_Sdl_SdlAudioDevice_StopMusic"></a> StopMusic\(\)
-
-Stops the music immediately.
-
-```csharp
-public void StopMusic()
-```
 
 ### <a id="MicroEngine_Sdl_SdlAudioDevice_TryCreate"></a> TryCreate\(\)
 
@@ -236,12 +97,29 @@ public static IAudioDevice TryCreate(string driver)
 
  IAudioDevice
 
-### <a id="MicroEngine_Sdl_SdlAudioDevice_Update"></a> Update\(\)
+### <a id="MicroEngine_Sdl_SdlAudioDevice_TryCreate_System_String_System_Double_"></a> TryCreate\(string?, double\)
 
-Keeps about a quarter of a second of music queued.
+Opens the default playback device (of <code class="paramref">driver</code>, or SDL's choice when null) keeping
+<code class="paramref">latencyMilliseconds</code> of audio queued: lower plays sounds sooner, higher survives longer pauses.
 
 ```csharp
-public void Update()
+public static IAudioDevice TryCreate(string? driver, double latencyMilliseconds)
 ```
+
+#### Parameters
+
+`driver` [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
+`latencyMilliseconds` [double](https://learn.microsoft.com/dotnet/api/system.double)
+
+#### Returns
+
+ IAudioDevice
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+<code class="paramref">latencyMilliseconds</code> is not between 5 and 1000.
 
 </div>

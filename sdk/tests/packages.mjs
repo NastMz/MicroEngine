@@ -43,7 +43,7 @@ function unzip(file) {
 const expected = {
   // The kernel, the platform and graphics contracts and hosting are assemblies of their own but not packages: MicroEngine carries them and
   // their documentation.
-  MicroEngine: { deps: ['StbImageSharp', 'FontStashSharp'], files: ['lib/net10.0/MicroEngine.dll', 'lib/net10.0/MicroEngine.Kernel.dll', 'lib/net10.0/MicroEngine.Kernel.xml', 'lib/net10.0/MicroEngine.Platform.dll', 'lib/net10.0/MicroEngine.Platform.xml', 'lib/net10.0/MicroEngine.Graphics.dll', 'lib/net10.0/MicroEngine.Graphics.xml', 'lib/net10.0/MicroEngine.Hosting.dll', 'lib/net10.0/MicroEngine.Hosting.xml', 'lib/net10.0/MicroEngine.Content.dll', 'lib/net10.0/MicroEngine.Content.xml', 'build/MicroEngine.targets', 'buildTransitive/MicroEngine.targets', 'buildTransitive/MicroEngine.props'] },
+  MicroEngine: { deps: ['StbImageSharp', 'FontStashSharp', 'NVorbis'], files: ['lib/net10.0/MicroEngine.dll', 'lib/net10.0/MicroEngine.Kernel.dll', 'lib/net10.0/MicroEngine.Kernel.xml', 'lib/net10.0/MicroEngine.Platform.dll', 'lib/net10.0/MicroEngine.Platform.xml', 'lib/net10.0/MicroEngine.Graphics.dll', 'lib/net10.0/MicroEngine.Graphics.xml', 'lib/net10.0/MicroEngine.Hosting.dll', 'lib/net10.0/MicroEngine.Hosting.xml', 'lib/net10.0/MicroEngine.Content.dll', 'lib/net10.0/MicroEngine.Content.xml', 'lib/net10.0/MicroEngine.Audio.dll', 'lib/net10.0/MicroEngine.Audio.xml', 'build/MicroEngine.targets', 'buildTransitive/MicroEngine.targets', 'buildTransitive/MicroEngine.props'] },
   'MicroEngine.Sdl': { deps: ['MicroEngine', 'ppy.SDL3-CS', 'NVorbis'], files: ['lib/net10.0/MicroEngine.Sdl.dll'] },
   'MicroEngine.Raylib': { deps: ['MicroEngine', 'Raylib-cs'], files: ['lib/net10.0/MicroEngine.Raylib.dll', 'native/browser-wasm/raylib.a', 'buildTransitive/MicroEngine.Raylib.props'] },
   'MicroEngine.Desktop': { deps: ['MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib'], files: ['lib/net10.0/MicroEngine.Desktop.dll'] },
@@ -84,6 +84,7 @@ for (const [id, want] of Object.entries(expected)) {
     check(`${id}: symbols of the bundled graphics contract`, pdbs.includes('lib/net10.0/MicroEngine.Graphics.pdb'), pdbs.join(', '));
     check(`${id}: symbols of the bundled hosting`, pdbs.includes('lib/net10.0/MicroEngine.Hosting.pdb'), pdbs.join(', '));
     check(`${id}: symbols of the bundled content`, pdbs.includes('lib/net10.0/MicroEngine.Content.pdb'), pdbs.join(', '));
+    check(`${id}: symbols of the bundled audio`, pdbs.includes('lib/net10.0/MicroEngine.Audio.pdb'), pdbs.join(', '));
   }
 }
 const templates = path.join(feed, `MicroEngine.Templates.${version}.nupkg`);

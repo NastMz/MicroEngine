@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Audio.dll  
 Guide: [Audio](../manual/audio.md)  
 
 A tracker-style voice: waveform plus an ADSR envelope (seconds, sustain level 0..1).
