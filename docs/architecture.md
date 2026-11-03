@@ -26,6 +26,7 @@ flowchart TB
   audio["<b> src/MicroEngine.Audio </b> <br/> Audio: the one mixer over PCM sinks, sound bank and music, synthesis"]
   scene["<b> src/MicroEngine.Scene </b> <br/> Scene world: entity ids, transforms, attachments, interpolation, world clocks"]
   physics["<b> src/MicroEngine.Physics, src/MicroEngine.Physics.Tiles </b> <br/> Physics: the 2D contract and capabilities; tile grids and the swept tile backend"]
+  saves["<b> src/MicroEngine.Saves </b> <br/> Saves: JSON save slots over the platform storage, the optional saves module"]
   kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
   samples -- started by --> hosts
@@ -54,6 +55,8 @@ flowchart TB
   content -- builds on --> platform
   core -- builds on --> audio
   audio -- builds on --> content
+  core -- builds on --> saves
+  saves -- builds on --> platform
 ```
 
 Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
@@ -122,6 +125,14 @@ does not declare, and `PhysicsModule`, which steps worlds in the `Physics` phase
 `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion`) with their `MicroEngine.World` namespace;
 `TileRenderer` stays in the core because it draws ([Physics worlds](manual/world.md#physics-worlds)).
 
+Next SDK version (not published yet: arrives with the next SDK version): saves and achievements are optional engine
+modules. `MicroEngine.Saves` (kernel and platform contracts only, shipped inside the `MicroEngine` package) holds
+`SaveStore`, `ISaveStorage` and `FileSaveStorage` with their `MicroEngine.Core` namespace, and `SavesModule`, which
+registers a store as the engine's `SaveStore` service. `AchievementsModule` registers a game's `AchievementTracker`
+and schedules `engine.achievements`, which writes progress. `Game` adds both when the game declares achievements
+(`UseAchievements` from its constructor or `Configure`); a game that declares none has no achievement or save service,
+no `engine.achievements` system and no achievement file ([Achievements](manual/achievements.md)).
+
 The core references no backend library. Everything platform-specific sits behind `MicroEngine.Core.IPlatform` and
 four device interfaces:
 
@@ -154,7 +165,7 @@ and the engine's `FrameClock` turns each frame's time into fixed steps following
 frame schedule: `BeginFrame` and `Input` once, `PreFixed`, `FixedUpdate`, `Physics` and `PostFixed` once per step,
 then `Update`, `LateUpdate`, `Extract`, `Render`, `Present` and `EndFrame`. `Game` registers the built-in systems
 (`engine.assets`, `engine.input.events`, `engine.touch`, `engine.input`, `engine.time`, `engine.scenes`, `engine.audio`,
-`engine.achievements`, `engine.input.end`, `engine.render`, `engine.present`...) in the order listed below, and a game
+`engine.achievements` (only in games that declare achievements), `engine.input.end`, `engine.render`, `engine.present`...) in the order listed below, and a game
 adds its own from `Game.Configure`. Hosts that outlive a run (a browser page) use `GameSession`, which builds the game and platform, ticks the
 loop from `requestAnimationFrame` and releases the platform when the run ends. Each frame:
 
@@ -191,6 +202,8 @@ scripted playthrough tests and reproducible screenshots possible.
 | `MicroEngine.World` | `TileLayer`, `TileGrid`, `TileMotion` (swept AABB with one-way tiles), `Autotile`, `TileRenderer`; `Entity` and `EntityList<T>` in the published SDK only (removed in the next SDK version); next SDK version: the tile types and `TileMotion` are in `MicroEngine.Physics.Tiles.dll` |
 | `MicroEngine.Physics` in `MicroEngine.Physics.dll` (next SDK version) | `IPhysicsWorld2D`, `PhysicsCapabilities`, `PhysicsCapabilityException`, `BodyId`, `ShapeId`, `BodyDescription`, `ShapeDescription`, `QueryFilter`, `MoveResult`, `RayHit`, `SensorEvent`, `ContactEvent`, `PhysicsModule`, `PhysicsSystem`, `PhysicsSync` |
 | `MicroEngine.Physics.Tiles` (next SDK version) | `TilePhysicsWorld2D`: tile grids as static geometry, the swept mover, one-way platforms, moving solids |
+| `MicroEngine.Saves` (next SDK version) | `SavesModule`; `SaveStore`, `ISaveStorage` and `FileSaveStorage` live in `MicroEngine.Saves.dll` with the `MicroEngine.Core` namespace |
+| `MicroEngine.Achievements` (next SDK version) | `AchievementsModule` (the tracker as a service, the `engine.achievements` system) |
 | `MicroEngine.Audio` | `Synth` (retro SFX), `Song` (step sequencer), `AudioClip` (incl. WAV decoding), `AudioMixer` (incl. sound/music files) |
 | `MicroEngine.UI` | `Typewriter`, `DialogueBox`, `SelectionList`, `UiTheme`, `AchievementToasts`, `AchievementsScene` |
 

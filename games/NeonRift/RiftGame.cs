@@ -63,12 +63,14 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
         PressedTint = NeonRift.Scenes.Ui.Magenta,
     };
 
+    // Achievements are declared before the engine is composed, so it adds their module.
+    public override void Configure(EngineBuilder builder) => UseAchievements(RiftAchievements.Catalog, Store, Ui.Theme);
+
     protected override void Load()
     {
         var content = new ContentFolder(contentRoot);
         Art = new Assets(Graphics, content) { Font = Font };
         Sounds.Register(Audio, content);
-        UseAchievements(RiftAchievements.Catalog, Store, Ui.Theme);
         AchievementToasts!.Top = 22;   // below the HUD gradient
         Achievements.Unlocked += _ => Sfx("powerup", 0.8f);
         Session = new Session { Weapon = _launch.Weapon };

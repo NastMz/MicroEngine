@@ -24,6 +24,8 @@ public sealed class CourtyardKeyGame : Game
     {
         _start = start;
         Saves = new SaveSlots(new SaveStore(GameId, saveDirectory));
+        // Declared before the engine is composed, so it adds the achievements module.
+        UseAchievements(CourtyardAchievements.Catalog, Saves.Store, UI.UiStyle.Theme);
     }
 
     public override GameSettings Settings { get; } = new("Courtyard Key") { Background = Pal.Ink };
@@ -58,7 +60,6 @@ public sealed class CourtyardKeyGame : Game
         Art = Sprites.Build(Graphics, new MicroEngine.Core.ContentFolder());
         SoundBank.Register(Audio);
         MusicBank.Register(Audio);
-        UseAchievements(CourtyardAchievements.Catalog, Saves.Store, UI.UiStyle.Theme);
         // Banners stay at the top, over the HUD's edge rather than the play field (the bottom of a room is where the
         // hero enters, the middle is where bosses stand); the room name waits while one shows.
         AchievementToasts!.Top = PlayScene.HudHeight + 3;

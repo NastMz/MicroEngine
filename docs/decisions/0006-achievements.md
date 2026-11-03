@@ -1,6 +1,6 @@
 # 0006 — Engine-owned achievements, game-owned rules
 
-Status: Accepted (2026-10-30).
+Status: Accepted (2026-10-30). Amended on 2026-11-03 (below): achievements are declared before the engine is composed and are an optional engine module; saves are a module assembly of their own.
 
 ## Context
 
@@ -43,3 +43,28 @@ platform abstractions.
   how players expect them to behave.
 - The tracker writes JSON through `SaveStore`; a browser backend will need a `SaveStore` that uses
   browser storage, which also serves game saves.
+
+## Amendment: achievements and saves as modules (2026-11-03)
+
+Context: the engine is composed from modules on an `EngineBuilder` ([0026](0026-kernel-modules-and-schedule.md)) and
+the frame schedule is fixed when the engine is built, before `Load`. Every game paid for achievements: the
+`engine.achievements` system ran in every game, with or without a catalog.
+
+- **Saves are a module assembly.** `SaveStore`, `ISaveStorage` and `FileSaveStorage` move to `MicroEngine.Saves`
+  (kernel and platform contracts only; the namespace stays `MicroEngine.Core` and `MicroEngine.dll` forwards the
+  types). `SavesModule(store)` registers a store as the engine's `SaveStore` service; it schedules nothing.
+- **Achievements are an opt-in module.** `AchievementsModule(tracker)` registers the tracker as a service, schedules
+  `engine.achievements` in `PostFixed` (before `engine.input.end`, its place in the step), writes progress about
+  once a second of simulated time and on suspension, and raises `Stepped` each step for the banners.
+- **Declared before composition.** `UseAchievements(catalog, store, theme)` is called from the game's constructor or
+  from `Configure`. `Game` then adds `SavesModule` (unless the composition already has a store) and
+  `AchievementsModule`, and wires the banners to it. A call from `Load` or later throws `InvalidOperationException`:
+  the schedule is already fixed, and an always-present system is what this amendment removes. Code that needs the
+  running game (banner position, unlock sounds) stays in `Load`.
+- The banners (`AchievementToasts`) and the list scene (`AchievementsScene`) are UI and move with the UI module, not
+  with the tracker.
+
+Consequences: a game without achievements has no achievement or save service, no `engine.achievements` system and no
+file; a game with achievements keeps the same banners, persistence rules and state hash. Games written for the
+earlier SDK move one call (the migration notes say how). Compositions without the `Game` façade add the modules
+themselves.
