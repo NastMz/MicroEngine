@@ -374,8 +374,8 @@ example, a platform that wraps another one, added to the desktop catalog:
 <!-- code: samples/Examples/Program.cs#launch -->
 ```csharp title="Program.cs"
 // The official desktop catalog (sdl, raylib, sdl-software, headless) plus one platform of our own:
-// "--platform sdl-counted" runs SDL through CountingPlatform (Extending.cs).
-var catalog = DesktopLauncher.CreateCatalog().Add(CountingPlatform.Wrap(SdlPlatform.Profile));
+// "--platform sdl-reported" runs SDL and reports it at start (ReportingPlatform, Extending.cs).
+var catalog = DesktopLauncher.CreateCatalog().Add(ReportingPlatform.Wrap(SdlPlatform.Profile));
 return DesktopLauncher.Run(new ExamplesGame(), args, catalog);
 ```
 
