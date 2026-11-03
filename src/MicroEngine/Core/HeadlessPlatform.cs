@@ -215,8 +215,10 @@ public sealed class HeadlessPlatform : IPlatform
         Screenshots.Add(path);
         if (_renderer.Frame is { } frame) File.WriteAllBytes(path, PngEncoder.Encode(frame.ToRgba(), frame.Width, frame.Height));
     }
-    /// <summary>Does nothing.</summary>
-    public void ToggleFullscreen() { }
+    /// <summary>Counts the request in <see cref="FullscreenToggles"/>: there is no window to switch.</summary>
+    public void ToggleFullscreen() => FullscreenToggles++;
+    /// <summary>How many times the game asked to switch between a window and full screen (there is no window to switch).</summary>
+    public int FullscreenToggles { get; private set; }
     /// <summary>Disposes the audio device the request supplied, if any; nothing else holds resources.</summary>
     public void Dispose()
     {

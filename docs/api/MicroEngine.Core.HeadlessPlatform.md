@@ -110,6 +110,18 @@ public HeadlessInputBackend Devices { get; }
 
  [HeadlessInputBackend](MicroEngine.Core.HeadlessInputBackend.md)
 
+### <a id="MicroEngine_Core_HeadlessPlatform_FullscreenToggles"></a> FullscreenToggles
+
+How many times the game asked to switch between a window and full screen (there is no window to switch).
+
+```csharp
+public int FullscreenToggles { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_Core_HeadlessPlatform_Graphics"></a> Graphics
 
 A [HeadlessGraphicsDevice](MicroEngine.Core.HeadlessGraphicsDevice.md): textures have a size but no pixels, unless [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize) is on.
@@ -448,7 +460,7 @@ public void Suspend()
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_ToggleFullscreen"></a> ToggleFullscreen\(\)
 
-Does nothing.
+Counts the request in [FullscreenToggles](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_FullscreenToggles): there is no window to switch.
 
 ```csharp
 public void ToggleFullscreen()

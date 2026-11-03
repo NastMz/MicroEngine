@@ -350,6 +350,30 @@ This map, for chaining.
 
 <code class="paramref">action</code> is empty.
 
+### <a id="MicroEngine_Input_InputMap_Bind_System_String_MicroEngine_Input_KeyChord___"></a> Bind\(string, params KeyChord\[\]\)
+
+Binds key combinations ([KeyChord](MicroEngine.Input.KeyChord.md): Alt+Enter, Ctrl+S) to <code class="paramref">action</code>, adding to its existing bindings.
+
+```csharp
+public InputMap Bind(string action, params KeyChord[] chords)
+```
+
+#### Parameters
+
+`action` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`chords` [KeyChord](MicroEngine.Input.KeyChord.md)\[\]
+
+#### Returns
+
+ [InputMap](MicroEngine.Input.InputMap.md)
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">action</code> is empty.
+
 ### <a id="MicroEngine_Input_InputMap_BindAxis_System_String_MicroEngine_Input_PadAxis_System_Boolean_"></a> BindAxis\(string, PadAxis, bool\)
 
 Binds one side of an analog axis: <code>BindAxis("aim-right", PadAxis.RightX, positive: true)</code>, or a trigger
@@ -395,6 +419,20 @@ public bool BindFrom(string action, in InputEvent press, bool replace = false)
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 False when the event is neither a key-down nor a button-down.
+
+### <a id="MicroEngine_Input_InputMap_BindFullscreenDefaults"></a> BindFullscreenDefaults\(\)
+
+Binds [Fullscreen](MicroEngine.Input.ActionNames.md#MicroEngine_Input_ActionNames_Fullscreen) (in [Names](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Names)) to F11 and Alt+Enter, the usual desktop
+toggle; no gamepad button has that meaning by convention, so none is bound. The engine calls this for a map that
+has no such action, so a game that never mentions it keeps the toggle.
+
+```csharp
+public InputMap BindFullscreenDefaults()
+```
+
+#### Returns
+
+ [InputMap](MicroEngine.Input.InputMap.md)
 
 ### <a id="MicroEngine_Input_InputMap_Consume_System_String_"></a> Consume\(string\)
 
@@ -694,7 +732,9 @@ public void SetForced(string action, bool down)
 
 ### <a id="MicroEngine_Input_InputMap_Unbind_System_String_"></a> Unbind\(string\)
 
-Removes every key, button, stick and axis bound to the action (the action stays, unbound), to rebind it.
+Removes every key, chord, button, stick and axis bound to the action (the action stays, unbound), to rebind or
+turn it off. An action the map does not have yet becomes one with no binding, so the engine adds no default
+binding to it ([Fullscreen](MicroEngine.Input.ActionNames.md#MicroEngine_Input_ActionNames_Fullscreen)).
 
 ```csharp
 public InputMap Unbind(string action)
@@ -707,6 +747,12 @@ public InputMap Unbind(string action)
 #### Returns
 
  [InputMap](MicroEngine.Input.InputMap.md)
+
+#### Exceptions
+
+ [ArgumentException](https://learn.microsoft.com/dotnet/api/system.argumentexception)
+
+<code class="paramref">action</code> is empty.
 
 ### <a id="MicroEngine_Input_InputMap_Value_System_String_"></a> Value\(string\)
 

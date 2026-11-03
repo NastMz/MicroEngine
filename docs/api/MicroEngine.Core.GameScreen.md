@@ -167,4 +167,20 @@ public bool MoveToDisplay(int index)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_GameScreen_ToggleFullscreen"></a> ToggleFullscreen\(\)
+
+Switches between a window and full screen: through the platform's display control where it has one, otherwise by
+asking the platform ([ToggleFullscreen](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_ToggleFullscreen); the headless platform counts the request). The
+engine calls it when the full-screen action is pressed ([Fullscreen](MicroEngine.Input.ActionNames.md#MicroEngine_Input_ActionNames_Fullscreen)).
+
+```csharp
+public bool ToggleFullscreen()
+```
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the window's mode changed through the display control.
+
 </div>

@@ -69,7 +69,7 @@ public sealed class GameKernelTests
     {
         var game = new ModularGame();
         new GameLoop(game, new HeadlessPlatform()).Start();
-        CollectionAssert.AreEqual(new[] { "engine.input" }, game.Schedule.Order(FramePhase.PreFixed).ToArray());
+        CollectionAssert.AreEqual(new[] { "engine.input", "engine.fullscreen" }, game.Schedule.Order(FramePhase.PreFixed).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.time", "engine.scenes", "test.after-scenes" }, game.Schedule.Order(FramePhase.FixedUpdate).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.audio", "engine.achievements", "engine.input.end", "engine.assets.playing" }, game.Schedule.Order(FramePhase.PostFixed).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.assets" }, game.Schedule.Order(FramePhase.BeginFrame).ToArray());

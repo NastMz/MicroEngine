@@ -4,7 +4,32 @@ using MicroEngine.Kernel;
 namespace MicroEngine.Input;
 
 /// <summary>What an action is bound to, for display or a rebinding screen (<see cref="InputMap.GetBindings"/>).</summary>
-public sealed record ActionBindings(IReadOnlyList<Key> Keys, IReadOnlyList<PadButton> Buttons, InputMap.StickDirection Stick, IReadOnlyList<(PadAxis Axis, bool Positive)> Axes);
+public sealed record ActionBindings(IReadOnlyList<Key> Keys, IReadOnlyList<PadButton> Buttons, InputMap.StickDirection Stick, IReadOnlyList<(PadAxis Axis, bool Positive)> Axes)
+{
+    /// <summary>The key combinations that press the action (Alt+Enter).</summary>
+    public IReadOnlyList<KeyChord> Chords { get; init; } = [];
+}
+
+/// <summary>
+/// A key pressed while a modifier is held: <c>new KeyChord(Key.Enter, Key.LeftAlt, Key.RightAlt)</c> is Alt+Enter with
+/// either Alt key. The chord is down while <see cref="Key"/> and any one of <see cref="Modifiers"/> are down.
+/// </summary>
+public sealed record KeyChord
+{
+    /// <summary>A chord of <paramref name="key"/> with any one of <paramref name="modifiers"/> (at least one).</summary>
+    /// <exception cref="ArgumentException">No modifier is given.</exception>
+    public KeyChord(Key key, params Key[] modifiers)
+    {
+        if (modifiers is null || modifiers.Length == 0) throw new ArgumentException("A chord needs at least one modifier key.", nameof(modifiers));
+        Key = key;
+        Modifiers = [.. modifiers];
+    }
+
+    /// <summary>The key that is pressed.</summary>
+    public Key Key { get; }
+    /// <summary>The keys of which one must be held (both Alt keys, both Control keys...).</summary>
+    public IReadOnlyList<Key> Modifiers { get; }
+}
 
 /// <summary>
 /// Named actions bound to keys, gamepad buttons, stick directions and analog axes, plus any number of action sources
@@ -33,6 +58,7 @@ public sealed partial class InputMap : IStateHashed
         public List<PadButton> Buttons { get; } = [];
         public StickDirection Stick { get; set; }
         public List<(PadAxis Axis, bool Positive)> Axes { get; } = [];
+        public List<KeyChord> Chords { get; } = [];
     }
 
     private readonly Dictionary<string, Binding> _bindings = new(StringComparer.Ordinal);
@@ -109,6 +135,14 @@ public sealed partial class InputMap : IStateHashed
         return this;
     }
 
+    /// <summary>Binds key combinations (<see cref="KeyChord"/>: Alt+Enter, Ctrl+S) to <paramref name="action"/>, adding to its existing bindings.</summary>
+    /// <exception cref="ArgumentException"><paramref name="action"/> is empty.</exception>
+    public InputMap Bind(string action, params KeyChord[] chords)
+    {
+        Get(action).Chords.AddRange(chords);
+        return this;
+    }
+
     /// <summary>
     /// Binds one side of an analog axis: <c>BindAxis("aim-right", PadAxis.RightX, positive: true)</c>, or a trigger
     /// (<c>BindAxis("fire", PadAxis.RightTrigger)</c>). The action is down beyond half travel and its
@@ -120,16 +154,22 @@ public sealed partial class InputMap : IStateHashed
         return this;
     }
 
-    /// <summary>Removes every key, button, stick and axis bound to the action (the action stays, unbound), to rebind it.</summary>
+    /// <summary>
+    /// Removes every key, chord, button, stick and axis bound to the action (the action stays, unbound), to rebind or
+    /// turn it off. An action the map does not have yet becomes one with no binding, so the engine adds no default
+    /// binding to it (<see cref="ActionNames.Fullscreen"/>).
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="action"/> is empty.</exception>
     public InputMap Unbind(string action)
     {
-        if (_bindings.ContainsKey(action)) _bindings[action] = new Binding();
+        ArgumentException.ThrowIfNullOrWhiteSpace(action);
+        _bindings[action] = new Binding();
         return this;
     }
 
     /// <summary>What the action is bound to; null for an unknown action.</summary>
     public ActionBindings? GetBindings(string action) => _bindings.TryGetValue(action, out var b)
-        ? new ActionBindings([.. b.Keys], [.. b.Buttons], b.Stick, [.. b.Axes])
+        ? new ActionBindings([.. b.Keys], [.. b.Buttons], b.Stick, [.. b.Axes]) { Chords = [.. b.Chords] }
         : null;
 
     private Binding Get(string action)
@@ -174,6 +214,9 @@ public sealed partial class InputMap : IStateHashed
                 foreach (var key in b.Keys)
                     if (source.IsKeyDown(key)) { down = true; value = 1; device = InputDevice.Keyboard; break; }
             if (!down)
+                foreach (var chord in b.Chords)
+                    if (source.IsKeyDown(chord.Key) && AnyDown(source, chord.Modifiers)) { down = true; value = 1; device = InputDevice.Keyboard; break; }
+            if (!down)
                 foreach (var button in b.Buttons)
                     if (source.IsPadDown(button)) { down = true; value = 1; device = InputDevice.Gamepad; break; }
             if (b.Stick != StickDirection.None)
@@ -213,6 +256,12 @@ public sealed partial class InputMap : IStateHashed
                 }
         foreach (var action in _forced)
             if (!_bindings.ContainsKey(action)) Set(action, true, 1, InputDevice.Other);
+    }
+
+    private static bool AnyDown(IInputSource source, IReadOnlyList<Key> keys)
+    {
+        foreach (var key in keys) if (source.IsKeyDown(key)) return true;
+        return false;
     }
 
     private void Set(string action, bool down, float value, InputDevice device)
@@ -414,8 +463,16 @@ public sealed partial class InputMap : IStateHashed
             .Bind(n.Confirm, [Key.Z, Key.Space, Key.Enter, Key.J], [PadButton.A])
             .Bind(n.Cancel, [Key.X, Key.Backspace, Key.K], [PadButton.B])
             .Bind(n.Action, [Key.C, Key.L], [PadButton.X])
-            .Bind(n.Pause, [Key.Escape, Key.P], [PadButton.Start]);
+            .Bind(n.Pause, [Key.Escape, Key.P], [PadButton.Start])
+            .BindFullscreenDefaults();
     }
+
+    /// <summary>
+    /// Binds <see cref="ActionNames.Fullscreen"/> (in <see cref="Names"/>) to F11 and Alt+Enter, the usual desktop
+    /// toggle; no gamepad button has that meaning by convention, so none is bound. The engine calls this for a map that
+    /// has no such action, so a game that never mentions it keeps the toggle.
+    /// </summary>
+    public InputMap BindFullscreenDefaults() => Bind(Names.Fullscreen, Key.F11).Bind(Names.Fullscreen, new KeyChord(Key.Enter, Key.LeftAlt, Key.RightAlt));
 
     /// <summary>
     /// A new map with the same bindings, names and stick and axis settings, and no sampled state or action sources:
@@ -438,6 +495,7 @@ public sealed partial class InputMap : IStateHashed
             c.Buttons.AddRange(b.Buttons);
             c.Stick = b.Stick;
             c.Axes.AddRange(b.Axes);
+            c.Chords.AddRange(b.Chords);
         }
         return copy;
     }

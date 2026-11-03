@@ -426,12 +426,6 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
                 case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
                     _surface.Pump(sink);
                     break;
-                case SDL_EventType.SDL_EVENT_KEY_DOWN:
-                    if (!e.key.repeat && (e.key.scancode == SDL_Scancode.SDL_SCANCODE_F11
-                        || e.key.scancode == SDL_Scancode.SDL_SCANCODE_RETURN && (e.key.mod & SDL_Keymod.SDL_KMOD_ALT) != 0))
-                        ToggleFullscreen();
-                    _input.Handle(e);
-                    break;
                 case SDL_EventType.SDL_EVENT_FINGER_DOWN:
                     _touch.Finger(e.tfinger, TouchPhase.Began);
                     break;

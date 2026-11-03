@@ -97,11 +97,13 @@ public sealed class GameScreen
     private readonly IDisplayControl? _control;
     private readonly IDisplayPacing? _pacing;
     private readonly IPlatformDiagnostics? _diagnostics;
+    private readonly IPlatform _platform;
     private readonly GraphicsSettings _start;
     private int _frameRateLimit;
 
     internal GameScreen(IPlatform platform, GraphicsSettings start)
     {
+        _platform = platform;
         platform.TryGetCapability(out _control);
         platform.TryGetCapability(out _pacing);
         platform.TryGetCapability(out _diagnostics);
@@ -141,6 +143,19 @@ public sealed class GameScreen
     {
         get => _frameRateLimit;
         set => _frameRateLimit = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), "The frame limit cannot be negative.");
+    }
+
+    /// <summary>
+    /// Switches between a window and full screen: through the platform's display control where it has one, otherwise by
+    /// asking the platform (<see cref="IPlatform.ToggleFullscreen"/>; the headless platform counts the request). The
+    /// engine calls it when the full-screen action is pressed (<see cref="Input.ActionNames.Fullscreen"/>).
+    /// </summary>
+    /// <returns>Whether the window's mode changed through the display control.</returns>
+    public bool ToggleFullscreen()
+    {
+        if (_control is { } control) return control.SetWindowMode(control.WindowMode == WindowMode.Windowed ? WindowMode.Fullscreen : WindowMode.Windowed);
+        _platform.ToggleFullscreen();
+        return false;
     }
 
     /// <summary>Moves the game to display <paramref name="index"/> of <see cref="Displays"/>; returns whether it applied.</summary>

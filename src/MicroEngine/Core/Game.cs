@@ -258,6 +258,9 @@ public abstract class Game : IEngineModule, IStateHashed
             services.Add(new GameScreen(platform, graphics));
             services.Add<Random>(new SeededRandom(seed));
             var input = game.CreateInput();
+            // The full-screen toggle is the engine's own action: a map that never mentions it gets F11 and Alt+Enter; one
+            // that unbound or rebound it keeps its choice.
+            if (input.GetBindings(input.Names.Fullscreen) is null) input.BindFullscreenDefaults();
             game._inputNames = input.Names;
             var touch = new VirtualControls(game.CreateTouchLayout());
             input.AddSource(touch);
@@ -282,6 +285,10 @@ public abstract class Game : IEngineModule, IStateHashed
             schedule.Add(FramePhase.Input, "engine.input.events", _ => game.RouteInput(screen));
             schedule.Add(FramePhase.Input, "engine.touch", frame => game.UpdateTouch(screen, (float)frame.Delta));
             schedule.Add(FramePhase.PreFixed, "engine.input", _ => game.InputSystem.Sample());
+            schedule.Add(FramePhase.PreFixed, "engine.fullscreen", _ =>
+            {
+                if (game.Input.Pressed(game.Input.Names.Fullscreen)) game.Screen.ToggleFullscreen();
+            });
             schedule.Add(FramePhase.FixedUpdate, "engine.time", step =>
             {
                 game.Time += (float)step.FixedDelta;
