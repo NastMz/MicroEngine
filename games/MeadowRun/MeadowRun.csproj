@@ -14,8 +14,13 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
+    <!-- Transitional: the legacy Entity/EntityList over IWorld until this game migrates to Scene.Objects (MEMIG001). -->
+    <ProjectReference Include="../../src/MicroEngine.Migration.Entities/MicroEngine.Migration.Entities.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="MeadowRun.Tests" />
   </ItemGroup>
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);MEMIG001</NoWarn>
+  </PropertyGroup>
 </Project>

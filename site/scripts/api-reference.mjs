@@ -82,7 +82,7 @@ const namespaceSummaries = {
   'MicroEngine.Scenes': 'The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks.',
   'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android and iOS.',
   'MicroEngine.UI': 'Pixel-art widgets: dialogue boxes, menus, typewriter text, themes, achievement banners and list.',
-  'MicroEngine.World': 'Tile layers, collision grids, swept movement against tiles, autotiling and plain entities.',
+  'MicroEngine.World': 'Tile layers, collision grids, swept movement against tiles and autotiling.',
 };
 
 function run(command, args, options = {}) {

@@ -2,7 +2,7 @@
 
 <div data-pagefind-weight="0.3">
 
-Tile layers, collision grids, swept movement against tiles, autotiling and plain entities.
+Tile layers, collision grids, swept movement against tiles and autotiling.
 
 Guide: [Tile maps and collision](../manual/world.md)  
 
@@ -11,17 +11,6 @@ Guide: [Tile maps and collision](../manual/world.md)
  [Autotile](MicroEngine.World.Autotile.md)
 
 Helpers for picking tile sprites from their neighbours.
-
- [EntityList<T\>](MicroEngine.World.EntityList\-1.md)
-
-Owns entities of a kind. Additions and removals made during iteration are deferred to
-the end of the update, so entities can spawn and destroy each other safely.
-
- [Entity](MicroEngine.World.Entity.md)
-
-A lightweight game object: a position, a hitbox relative to it, and update/draw hooks.
-MicroEngine deliberately prefers small inheritance-based entities over an ECS: the sample
-games have dozens of objects, and plain classes keep game code readable and debuggable.
 
  [TileGrid](MicroEngine.World.TileGrid.md)
 
@@ -43,26 +32,6 @@ tile, so fast bodies never tunnel. One-way tiles only stop bodies falling onto t
 Draws the visible part of a layer, asking the game which sprite each tile uses.
 
 ### Structs
-
- [EntityList<T\>.Enumerator](MicroEngine.World.EntityList\-1.Enumerator.md)
-
-Walks the living entities of an [EntityList`1](MicroEngine.World.md) without allocating.
-
- [EntityList<T\>.OverlappingEntities.Enumerator](MicroEngine.World.EntityList\-1.OverlappingEntities.Enumerator.md)
-
-Walks the living entities overlapping the area.
-
- [EntityList<T\>.OverlappingEntities](MicroEngine.World.EntityList\-1.OverlappingEntities.md)
-
-The living entities overlapping an area ([Overlapping](MicroEngine.World.md)), walked without allocating.
-
- [EntityList<T\>.TypedEntities<TEntity\>.Enumerator](MicroEngine.World.EntityList\-1.TypedEntities\-1.Enumerator.md)
-
-Walks the living entities of type <code class="typeparamref">TEntity</code>.
-
- [EntityList<T\>.TypedEntities<TEntity\>](MicroEngine.World.EntityList\-1.TypedEntities\-1.md)
-
-The living entities of one type ([OfType``1](MicroEngine.World.md)), walked without allocating.
 
  [MoveResult](MicroEngine.World.MoveResult.md)
 

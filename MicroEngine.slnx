@@ -14,6 +14,7 @@
     <Project Path="src/MicroEngine.Sdl/MicroEngine.Sdl.csproj" />
     <Project Path="src/MicroEngine.Cli/MicroEngine.Cli.csproj" />
     <Project Path="src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
+    <Project Path="src/MicroEngine.Migration.Entities/MicroEngine.Migration.Entities.csproj" />
   </Folder>
   <Folder Name="/games/">
     <Project Path="games/CourtyardKey/CourtyardKey.csproj" />
@@ -24,6 +25,7 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/AssetBench/AssetBench.csproj" />
     <Project Path="benchmarks/PerfBench/PerfBench.csproj" />
+    <Project Path="benchmarks/WorldBench/WorldBench.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/HelloEngine/HelloEngine.csproj" />
@@ -56,5 +58,6 @@
     <Project Path="tests/TrailDuel.Tests/TrailDuel.Tests.csproj" />
     <Project Path="tests/Samples.Tests/Samples.Tests.csproj" />
     <Project Path="tests/MicroEngine.Cli.Tests/MicroEngine.Cli.Tests.csproj" />
+    <Project Path="tests/MicroEngine.Migration.Entities.Tests/MicroEngine.Migration.Entities.Tests.csproj" />
   </Folder>
 </Solution>
