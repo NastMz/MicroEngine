@@ -7,10 +7,11 @@
     <InternalsVisibleTo Include="MicroEngine.Tests" />
   </ItemGroup>
   <!-- The kernel (composition, schedule, time, math and colour), the platform contracts (host, surface, storage,
-       content sources), hosting (the launcher model and the composition a game configures) and content (the asset
-       store, handles, loaders and content sources) are assemblies of their own but not packages: this package carries
-       MicroEngine.Kernel.dll, MicroEngine.Platform.dll, MicroEngine.Hosting.dll and MicroEngine.Content.dll with their
-       documentation and symbols, and depends on no package of theirs. The references are private (so packing adds no
+       content sources), hosting (the launcher model and the composition a game configures), content (the asset
+       store, handles, loaders and content sources) and audio (the mixer over PCM sinks) are assemblies of their own but
+       not packages: this package carries MicroEngine.Kernel.dll, MicroEngine.Platform.dll, MicroEngine.Hosting.dll,
+       MicroEngine.Content.dll and MicroEngine.Audio.dll with their documentation and symbols, and depends on no package
+       of theirs. The references are private (so packing adds no
        dependency on them); inside the repository, projects that reference this one still compile against them and copy
        them, because this project hands their assemblies over together with its own (_MicroEngineBundledOutput). -->
   <ItemGroup>

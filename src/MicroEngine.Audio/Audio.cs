@@ -233,8 +233,8 @@ public sealed class AudioMixer
     public float SfxVolume { get; set; } = 0.8f;
     /// <summary>Music volume, clamped to 0..1 (default 1). Applies immediately to the playing music, combined with any fade.</summary>
     public float MusicVolume { get => _musicVolume; set { _musicVolume = Math.Clamp(value, 0, 1); Apply(); } }
-    /// <summary>Name of the music the device is playing (also while it fades out), or null.</summary>
-    public string? CurrentMusic => _device.CurrentMusic?.Name;
+    /// <summary>Name of the music playing (also while it fades out, and while a song asked for still renders in slices), or null. It follows the game's requests and the music's end on the simulation's timeline, never rendering speed.</summary>
+    public string? CurrentMusic => _waiting?.Name ?? _device.CurrentMusic?.Name;
 
     /// <summary>Registers <paramref name="clip"/> as the sound effect <paramref name="name"/>, replacing any sound with that name.</summary>
     public void AddSound(string name, AudioClip clip) => _sounds[name] = _device.LoadSound(name, clip);
@@ -254,8 +254,9 @@ public sealed class AudioMixer
     /// in the background, side by side, and each is handed to the device the first time it plays (waiting then only for
     /// that song if it is not ready yet). Registering every song of a game this way keeps their synthesis out of
     /// <c>Load</c>. Where the runtime has no background threads (browsers), songs render a few milliseconds per
-    /// <see cref="Update"/> instead, one after another in the order they were registered; a song asked to play before
-    /// it is ready goes first and starts once rendered (<see cref="CurrentMusic"/> is null until then).
+    /// <see cref="Pump"/> (once per frame, outside the simulation step) instead, one after another in the order they were
+    /// registered; a song asked to play before
+    /// it is ready goes first and starts once rendered (<see cref="CurrentMusic"/> already names it).
     /// </summary>
     /// <param name="name">Name used by <see cref="PlayMusic"/>.</param>
     /// <param name="song">The song; do not change it after registering it.</param>
@@ -408,11 +409,17 @@ public sealed class AudioMixer
 
     private void Apply() => _device.SetMusicVolume(_musicVolume * _fade);
 
-    /// <summary>Renders pending songs for up to <see cref="SliceBudget"/>, handing each finished one to the device.</summary>
+    /// <summary>
+    /// Renders pending songs for up to <see cref="SliceBudget"/>, handing each finished one to the device; in a
+    /// deterministic run, only a song the game is waiting for renders, all of it, whatever the budget.
+    /// </summary>
     private void RenderSlices()
     {
+        // Deterministic runs render only a song the game waits for, all of it: whether a song is ready then depends on
+        // the game's requests, never on how fast the machine renders.
+        if (Deterministic && _waiting is null) return;
         long due = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(SliceBudget.TotalSeconds * System.Diagnostics.Stopwatch.Frequency);
-        while (_sliced.Count > 0 && System.Diagnostics.Stopwatch.GetTimestamp() < due)
+        while (_sliced.Count > 0 && (System.Diagnostics.Stopwatch.GetTimestamp() < due || Deterministic && _waiting is not null))
         {
             var (name, slices, loop) = _sliced[0];
             if (!slices.MoveNext()) { _sliced.RemoveAt(0); continue; }
@@ -425,12 +432,39 @@ public sealed class AudioMixer
         }
     }
 
-    /// <summary>Advances music fades and lets the device stream. The game calls it once per update; call it yourself only for a mixer you created.</summary>
+    /// <summary>
+    /// The host frame's audio work, outside the simulation step: renders songs that render in slices (browsers), then
+    /// lets the device decode streamed music ahead and pump its sink. The game calls it once per frame; call it yourself
+    /// only for a mixer you created.
+    /// </summary>
+    public void Pump()
+    {
+        if (_sliced.Count > 0) RenderSlices();
+        if (_device is MixerAudioDevice mixer) mixer.Pump();
+    }
+
+    /// <summary>
+    /// Whether the run is deterministic (scripted runs, tests): the device's timeline then follows the simulation only,
+    /// and songs that render in slices render only when the game waits for one, finished in the next <see cref="Pump"/>
+    /// whatever <see cref="SliceBudget"/>, so the
+    /// same steps give the same sound. The game sets it from its time mode.
+    /// </summary>
+    public bool Deterministic
+    {
+        get => _deterministic;
+        set
+        {
+            _deterministic = value;
+            if (_device is MixerAudioDevice mixer && mixer is not CaptureAudioDevice) mixer.Engine.Deterministic = value;
+        }
+    }
+    private bool _deterministic;
+
+    /// <summary>Advances music fades and ends the device's simulation step. The game calls it once per update; call it yourself only for a mixer you created.</summary>
     /// <param name="dt">Elapsed time in seconds.</param>
     public void Update(float dt)
     {
         _frame++;
-        if (_sliced.Count > 0) RenderSlices();
         if (_fadeSpeed != 0)
         {
             _fade = Math.Clamp(_fade + _fadeSpeed * dt, 0, 1);
