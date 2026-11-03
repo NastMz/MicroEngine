@@ -91,7 +91,7 @@ A stage's tasks are checked against the stage closure criteria in dossier §9.
 | T4 | S10 | inline: present for approval | done: approved 2026-11-02 with five amendments | — | `L4`, `L5` |
 | T5 | S11-S13, S16 | delegated: documentation agent, branch `docs/arch-1-plan` | done | [#23](https://github.com/NastMz/MicroEngine/pull/23), 986adc6 | dossier amended (§6.3-§6.5, §7-§11, §9.1), annex notes, this register |
 | T6 | S11, S16 | delegated: documentation agent, branch `docs/arch-1-prototype-verdicts` | done | [#29](https://github.com/NastMz/MicroEngine/pull/29), 32006ca | dossier §9 prototype verdicts; §6.4 graphics contract revised per directive 2 (16 points); directive 3 decisions in §5, §6.1-§6.5, §7, §9, §10, §11; this register |
-| T7 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-2` | PR open | (this PR) | directives 4-9 applied: dossier §6.4 (graphics contract v1 summary + link, `IAudioSink` v1, physics revisions), §9 verdicts (graphics spike, P5, P6, browser determinism), §5-§11; this register |
+| T7 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-2` | PR open | [#41](https://github.com/NastMz/MicroEngine/pull/41) | directives 4-9 applied: dossier §6.4 (graphics contract v1 summary + link, `IAudioSink` v1, physics revisions), §9 verdicts (graphics spike, P5, P6, browser determinism), §5-§11; this register |
 | G1 | S15 | delegated: another agent, branch `fix/phase-ii-deploy-freeze` | done | [#22](https://github.com/NastMz/MicroEngine/pull/22), 9a8020e | automatic public publication frozen for Phase II (`.github/phase-freeze`); validation CI keeps running |
 | S0-D1 | S11 | delegated: stage 0 defects agent, branch `fix/arch-1-stage0-defects` | done | [#24](https://github.com/NastMz/MicroEngine/pull/24), 59fae72 | `ComposedPlatform` forwards every `IPlatform` member and exactly the backend's optional interfaces; tests RED first (since deleted by 1B) |
 | S0-D2 | S11 | delegated: stage 0 CI agent, branch `fix/arch-1-stage0-ci` | done | [#27](https://github.com/NastMz/MicroEngine/pull/27), a89d031 | Windows WARP reference drift (eight entries of `sdl-windows-ci.json`) and the Debian 11 glibc check rule (`packaging/targets.mjs`, `glibcRefusal`) |
@@ -211,7 +211,7 @@ revisions with evidence.
 
 | PR | Task | Branch | Owner | Notes |
 | --- | --- | --- | --- | --- |
-| (this PR) | T7 | `docs/arch-1-register-2` | registrar agent | this register and dossier update |
+| [#41](https://github.com/NastMz/MicroEngine/pull/41) | T7 | `docs/arch-1-register-2` | registrar agent | this register and dossier update |
 | — (not yet opened) | S1-1C | — | stage 1 hosting agent | in progress |
 | — (not yet opened) | T0 | — | T0 agent | in progress |
 
