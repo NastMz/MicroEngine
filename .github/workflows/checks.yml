@@ -235,7 +235,7 @@ jobs:
         run: |
           sudo apt-get update -q
           # libvulkan1 + mesa-vulkan-drivers: Mesa's software Vulkan (lavapipe) for the tier-1 SDL_GPU device.
-          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1 libglx-mesa0 libgl1-mesa-dri libxtst6 pulseaudio pulseaudio-utils libvulkan1 mesa-vulkan-drivers
+          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1 libglx-mesa0 libgl1-mesa-dri libxtst6 pulseaudio pulseaudio-utils libvulkan1 mesa-vulkan-drivers vulkan-tools
           export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$RUNNER_TEMP/xdg}"
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
@@ -258,9 +258,10 @@ jobs:
           VK_DRIVER_FILES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
           VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
         run: |
+          vulkaninfo --summary 2>&1 | sed -n '/^Devices:/,$p' | tee -a gpu-tests.log
           xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Desktop.Tests -c Release --no-build --filter "TestCategory=Gpu" \
-            --logger trx --logger "console;verbosity=detailed" --results-directory test-results | tee gpu-tests.log
-          { echo '### SDL_GPU adapter (lavapipe)'; echo; echo '```'; grep -m 3 -E 'sdl-gpu api=|depth formats:' gpu-tests.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            --logger trx --logger "console;verbosity=detailed" --results-directory test-results | tee -a gpu-tests.log
+          { echo '### SDL_GPU adapter (lavapipe)'; echo; echo '```'; grep -m 6 -E 'deviceName|driverName|sdl-gpu api=|depth formats:' gpu-tests.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results "Native tests on Linux"
       - name: Scripted captures against the Linux and SDL references (${{ inputs.games }})

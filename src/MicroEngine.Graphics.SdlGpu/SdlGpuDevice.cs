@@ -17,8 +17,11 @@ public sealed unsafe class SdlGpuBackendFactory : IGraphicsBackendFactory
     /// <inheritdoc />
     public string? UnsupportedReason(ISurface? surface)
     {
-        if (!SDL_GPUSupportsShaderFormats(SdlGpuDevice.AcceptedFormats, (byte*)null))
-            return "no SDL_GPU driver for DXIL, SPIR-V or MSL on this system";
+        // The same properties as creation: SDL's default would require hardware acceleration and refuse lavapipe.
+        var props = SdlGpuDevice.CreationProperties(new GraphicsDeviceOptions());
+        bool supported = SDL_GPUSupportsProperties(props);
+        SDL_DestroyProperties(props);
+        if (!supported) return $"no SDL_GPU driver for DXIL, SPIR-V or MSL on this system ({SDL_GetError()})";
         return surface is not null && surface.NativeWindow == 0 ? "SDL_GPU presents only to an SDL window surface (or renders offscreen without one)" : null;
     }
 
@@ -74,6 +77,21 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
     private readonly TextureFormat _surfaceFormat;
     private readonly SDL_GPUTextureFormat _swapchainFormat;
 
+    /// <summary>The device creation properties (the factory's support check uses the same ones); the caller destroys them.</summary>
+    internal static SDL_PropertiesID CreationProperties(GraphicsDeviceOptions options)
+    {
+        var props = SDL_CreateProperties();
+        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_DXIL_BOOLEAN, true);
+        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_SPIRV_BOOLEAN, true);
+        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_MSL_BOOLEAN, true);
+        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_DEBUGMODE_BOOLEAN, options.Debug);
+        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_PREFERLOWPOWER_BOOLEAN, options.PreferLowPower);
+        // Software Vulkan (Mesa lavapipe) is a valid adapter: CI renders on it.
+        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_VULKAN_REQUIRE_HARDWARE_ACCELERATION_BOOLEAN, false);
+        if (options.Api is not null) SDL_SetStringProperty(props, SDL_PROP_GPU_DEVICE_CREATE_NAME_STRING, options.Api);
+        return props;
+    }
+
     /// <summary>Creates the device, offscreen or for an SDL window surface.</summary>
     /// <param name="surface">A surface whose <see cref="ISurface.NativeWindow"/> is an <c>SDL_Window*</c> with no renderer, or null for an offscreen device.</param>
     /// <param name="options">Present mode (set explicitly on the swapchain), preferred API, validation and adapter preference.</param>
@@ -86,15 +104,7 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
         _surface = surface;
         // SDL's driver hint wins over the name property: set both for the duration of the call, then check what SDL chose.
         if (options.Api is not null) SDL_SetHint(SDL_HINT_GPU_DRIVER, options.Api);
-        var props = SDL_CreateProperties();
-        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_DXIL_BOOLEAN, true);
-        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_SPIRV_BOOLEAN, true);
-        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_MSL_BOOLEAN, true);
-        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_DEBUGMODE_BOOLEAN, options.Debug);
-        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_PREFERLOWPOWER_BOOLEAN, options.PreferLowPower);
-        // Software Vulkan (Mesa lavapipe) is a valid adapter: CI renders on it.
-        SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_VULKAN_REQUIRE_HARDWARE_ACCELERATION_BOOLEAN, false);
-        if (options.Api is not null) SDL_SetStringProperty(props, SDL_PROP_GPU_DEVICE_CREATE_NAME_STRING, options.Api);
+        var props = CreationProperties(options);
         _device = SDL_CreateGPUDeviceWithProperties(props);
         SDL_DestroyProperties(props);
         if (options.Api is not null) SDL_ResetHint(SDL_HINT_GPU_DRIVER);
