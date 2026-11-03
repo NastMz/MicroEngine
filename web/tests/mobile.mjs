@@ -71,7 +71,12 @@ function parse(entry = '') {
 const trace = async (page, frames = 1) => (await page.evaluate(n => window.microengine.trace(n), frames)).map(parse);
 const now = async page => (await trace(page, 1))[0] ?? parse();
 const traced = page => page.evaluate(() => window.microengine.traced());
-const since = async (page, mark) => (await trace(page, Math.min(2000, (await traced(page)) - mark))).filter(Boolean);
+// Counted and read in one call inside the page: frames arriving between two calls would slide the window past the
+// oldest frames, the ones that show a very short tap (run.mjs, since()). None when no frame was drawn since.
+const since = async (page, mark) => (await page.evaluate(start => {
+  const count = Math.min(2000, window.microengine.traced() - start);
+  return count > 0 ? window.microengine.trace(count) : [];
+}, mark)).map(parse).filter(Boolean);
 
 /** Fingers on the touch screen, all sent together as the device would (each event lists every finger down). */
 class Fingers {

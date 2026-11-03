@@ -121,10 +121,33 @@ async function waitFor(page, predicate, timeout = 30_000) {
 const probe = page => page.evaluate(() => window.microengine.trace(1)[0] ?? '');
 const recent = (page, frames) => page.evaluate(n => window.microengine.trace(n), frames);
 const mark = page => page.evaluate(() => window.microengine.traced());
-/** Frames traced since a mark (browsers may draw far more than 60 frames per second). */
-const since = async (page, from) => recent(page, Math.min(2000, await mark(page) - from));
+/**
+ * Frames traced since a mark (browsers may draw far more than 60 frames per second), read in one call inside the page.
+ * Counting with traced() and then reading trace(n) in a second call lets frames arrive in between: the window then
+ * slides past the oldest frames, which are the ones that show a short press (it is down for one frame only). None
+ * when no frame was drawn since (trace(0) would return the whole trace).
+ */
+const since = (page, from) => page.evaluate(start => {
+  const count = Math.min(2000, window.microengine.traced() - start);
+  return count > 0 ? window.microengine.trace(count) : [];
+}, from);
 const actionsIn = entry => (entry.split(' ')[1] ?? '').split(',').filter(Boolean);
-const updates = async page => Number((await page.evaluate(() => window.microengine.stats())).split(' ')[0]);
+const stats = async page => (await page.evaluate(() => window.microengine.stats())).split(' ').map(Number);
+const updates = async page => (await stats(page))[0];
+/**
+ * Waits until the game has run at least `count` fixed updates and drawn `count` frames after `from` (stats() taken
+ * before the action under test), or `timeout` ms. A check that reads the frames after an action needs the game to have
+ * run, not a fixed time to have passed: a loaded runner (llvmpipe, two vCPUs) can draw no frame for hundreds of
+ * milliseconds. Returns what was waited for, for the check's detail.
+ */
+async function progress(page, [u0, f0], count = 3, timeout = 5000) {
+  const start = Date.now();
+  for (;;) {
+    const [u, f] = await stats(page);
+    if ((u - u0 >= count && f - f0 >= count) || Date.now() - start > timeout) return `${u - u0} updates, ${f - f0} frames in ${Date.now() - start} ms`;
+    await sleep(50);
+  }
+}
 
 async function platform(browser, label, game) {
   const name = `${label} ${game}`;
@@ -155,10 +178,13 @@ async function platform(browser, label, game) {
   const released = !actionsIn(await probe(page)).includes('left');
   check(`${name}: held and released keys`, held && released, `held ${held}, released ${released}`);
 
-  const before = await mark(page);
+  // Key down and up back to back, with no frame between them: the game must still see the press in an update.
+  const before = await mark(page), counters = await stats(page);
   await page.keyboard.press('ArrowRight');
-  await sleep(400);
-  check(`${name}: a press shorter than a frame is seen`, (await since(page, before)).some(e => actionsIn(e).includes('right')));
+  const waited = await progress(page, counters);
+  const frames = await since(page, before);
+  check(`${name}: a press shorter than a frame is seen`, frames.some(e => actionsIn(e).includes('right')),
+    `${waited}; ${frames.length} frames traced${frames.length ? `, last: ${frames.at(-1)}` : ''}`);
 
   await page.keyboard.down('ArrowUp');
   await sleep(300);
