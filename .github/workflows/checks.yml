@@ -255,13 +255,15 @@ jobs:
       - name: Tier-1 graphics on SDL_GPU (Vulkan, Mesa lavapipe)
         env:
           MICROENGINE_GPU_ADAPTER: llvmpipe
-          VK_DRIVER_FILES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
-          VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
         run: |
-          vulkaninfo --summary 2>&1 | sed -n '/^Devices:/,$p' | tee -a gpu-tests.log
+          # Only lavapipe: point the Vulkan loader at Mesa's software ICD (its file name differs between Mesa versions).
+          icd=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "Vulkan ICD: $icd" | tee -a gpu-tests.log
+          export VK_DRIVER_FILES="$icd" VK_ICD_FILENAMES="$icd"
+          { vulkaninfo --summary 2>&1 || true; } | grep -E 'apiVersion|deviceType|deviceName|driverName|driverInfo' | tee -a gpu-tests.log || true
           xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Desktop.Tests -c Release --no-build --filter "TestCategory=Gpu" \
             --logger trx --logger "console;verbosity=detailed" --results-directory test-results | tee -a gpu-tests.log
-          { echo '### SDL_GPU adapter (lavapipe)'; echo; echo '```'; grep -m 6 -E 'deviceName|driverName|sdl-gpu api=|depth formats:' gpu-tests.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          { echo '### SDL_GPU adapter (lavapipe)'; echo; echo '```'; grep -m 6 -E 'deviceName|driverName|sdl-gpu api=|depth formats:' gpu-tests.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results "Native tests on Linux"
       - name: Scripted captures against the Linux and SDL references (${{ inputs.games }})
