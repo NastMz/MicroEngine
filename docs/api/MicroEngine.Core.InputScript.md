@@ -19,11 +19,22 @@ A deterministic input script, keyed by update number. Text format, one command p
 260 touch 3 0.5,0.5       # finger 3 at the middle of the screen (fractions of its size)
 300 lift 1
 320 prompts gamepad playstation  # name controls as on a PlayStation pad (keyboard, gamepad, touch or auto)
+400 key Space down        # the script's keyboard: a key by position (a Key name) goes down, or up
+410 keytap Z              # down and up within one frame
+420 pad 2 add playstation # the script's gamepad 2 connects (xbox, playstation or nintendo)
+430 pad 2 A down          # a button of pad 2 (a PadButton name) goes down, or up
+440 pad 2 LeftX -0.8      # an axis of pad 2 (a PadAxis name) moves
+450 pad 2 remove
+460 mouse 160,90 down     # the script's mouse moves to a point in canvas pixels (and its button goes down or up)
+470 wheel 1               # the wheel turns one notch away from the player
+480 text Ana              # text typed (the rest of the line), read while text input is on
 900 quit
 ```
 
 "@+N" instead of an absolute number means N updates after the previous command. Touch commands go through the
-game's [VirtualControls](MicroEngine.Input.VirtualControls.md) with the same hit testing as real fingers.
+game's [VirtualControls](MicroEngine.Input.VirtualControls.md) with the same hit testing as real fingers. The device commands send events
+from the script's own devices ([ScriptKeyboard](MicroEngine.Core.InputScript.md#MicroEngine_Core_InputScript_ScriptKeyboard), [ScriptMouse](MicroEngine.Core.InputScript.md#MicroEngine_Core_InputScript_ScriptMouse), [ScriptPad](MicroEngine.Core.InputScript.md#MicroEngine_Core_InputScript_ScriptPad_System_Int32_)) through
+the engine's input layers, exactly as a backend's would; each device is announced before its first event.
 
 ```csharp
 public sealed class InputScript
@@ -56,7 +67,51 @@ public long? QuitUpdate { get; }
 
  [long](https://learn.microsoft.com/dotnet/api/system.int64)?
 
+### <a id="MicroEngine_Core_InputScript_ScriptKeyboard"></a> ScriptKeyboard
+
+The script's keyboard.
+
+```csharp
+public static DeviceId ScriptKeyboard { get; }
+```
+
+#### Property Value
+
+ DeviceId
+
+### <a id="MicroEngine_Core_InputScript_ScriptMouse"></a> ScriptMouse
+
+The script's mouse.
+
+```csharp
+public static DeviceId ScriptMouse { get; }
+```
+
+#### Property Value
+
+ DeviceId
+
 ## Methods
+
+### <a id="MicroEngine_Core_InputScript_AddPad_System_Int64_System_Int32_MicroEngine_Input_GamepadStyle_"></a> AddPad\(long, int, GamepadStyle\)
+
+The script's gamepad <code class="paramref">number</code> connects at update <code class="paramref">at</code>.
+
+```csharp
+public InputScript AddPad(long at, int number, GamepadStyle style = GamepadStyle.Xbox)
+```
+
+#### Parameters
+
+`at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+`number` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`style` GamepadStyle
+
+#### Returns
+
+ [InputScript](MicroEngine.Core.InputScript.md)
 
 ### <a id="MicroEngine_Core_InputScript_Apply_System_Int64_MicroEngine_Input_InputMap_"></a> Apply\(long, InputMap\)
 
@@ -71,6 +126,20 @@ public void Apply(long update, InputMap input)
 `update` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
 `input` InputMap
+
+### <a id="MicroEngine_Core_InputScript_ApplyDevices_System_Int64_MicroEngine_Input_InputSystem_"></a> ApplyDevices\(long, InputSystem\)
+
+Sends the device events scheduled for the update about to run to <code class="paramref">input</code> (routed with the frame's events).
+
+```csharp
+public void ApplyDevices(long update, InputSystem input)
+```
+
+#### Parameters
+
+`update` [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+`input` InputSystem
 
 ### <a id="MicroEngine_Core_InputScript_ApplyPrompts_System_Int64_MicroEngine_Input_ActionPrompts_"></a> ApplyPrompts\(long, ActionPrompts\)
 
@@ -99,6 +168,50 @@ public void ApplyTouches(long update, VirtualControls controls)
 `update` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
 `controls` [VirtualControls](MicroEngine.Input.VirtualControls.md)
+
+### <a id="MicroEngine_Core_InputScript_Axis_System_Int64_System_Int32_MicroEngine_Input_PadAxis_System_Single_"></a> Axis\(long, int, PadAxis, float\)
+
+An axis of the script's gamepad <code class="paramref">number</code> moves to <code class="paramref">value</code> (the pad connects first if it has not).
+
+```csharp
+public InputScript Axis(long at, int number, PadAxis axis, float value)
+```
+
+#### Parameters
+
+`at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+`number` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`axis` PadAxis
+
+`value` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [InputScript](MicroEngine.Core.InputScript.md)
+
+### <a id="MicroEngine_Core_InputScript_Button_System_Int64_System_Int32_MicroEngine_Input_PadButton_System_Boolean_"></a> Button\(long, int, PadButton, bool\)
+
+A button of the script's gamepad <code class="paramref">number</code> goes down or up (the pad connects first if it has not).
+
+```csharp
+public InputScript Button(long at, int number, PadButton button, bool down)
+```
+
+#### Parameters
+
+`at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+`number` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`button` PadButton
+
+`down` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Returns
+
+ [InputScript](MicroEngine.Core.InputScript.md)
 
 ### <a id="MicroEngine_Core_InputScript_Capture_System_Int64_System_String_"></a> Capture\(long, string\)
 
@@ -154,6 +267,26 @@ public InputScript Hold(long at, string action, long duration)
 
  [InputScript](MicroEngine.Core.InputScript.md)
 
+### <a id="MicroEngine_Core_InputScript_Key_System_Int64_MicroEngine_Input_Key_System_Boolean_"></a> Key\(long, Key, bool\)
+
+The script's keyboard presses (<code class="paramref">down</code>) or releases <code class="paramref">key</code> at update <code class="paramref">at</code>.
+
+```csharp
+public InputScript Key(long at, Key key, bool down)
+```
+
+#### Parameters
+
+`at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+`key` Key
+
+`down` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Returns
+
+ [InputScript](MicroEngine.Core.InputScript.md)
+
 ### <a id="MicroEngine_Core_InputScript_Lift_System_Int64_System_Int32_"></a> Lift\(long, int\)
 
 Lifts finger <code class="paramref">finger</code> at update <code class="paramref">at</code>.
@@ -167,6 +300,26 @@ public InputScript Lift(long at, int finger)
 `at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
 `finger` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ [InputScript](MicroEngine.Core.InputScript.md)
+
+### <a id="MicroEngine_Core_InputScript_Mouse_System_Int64_System_Numerics_Vector2_System_Nullable_System_Boolean__"></a> Mouse\(long, Vector2, bool?\)
+
+The script's mouse moves to <code class="paramref">position</code> (canvas pixels) and, when <code class="paramref">down</code> is set, its primary button goes down or up.
+
+```csharp
+public InputScript Mouse(long at, Vector2 position, bool? down = null)
+```
+
+#### Parameters
+
+`at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+`down` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)?
 
 #### Returns
 
@@ -243,6 +396,40 @@ public bool QuitAt(long update)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_Core_InputScript_ScriptPad_System_Int32_"></a> ScriptPad\(int\)
+
+The script's gamepad <code class="paramref">number</code> (1 and up).
+
+```csharp
+public static DeviceId ScriptPad(int number)
+```
+
+#### Parameters
+
+`number` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ DeviceId
+
+### <a id="MicroEngine_Core_InputScript_Send_System_Int64_MicroEngine_Input_InputEvent_"></a> Send\(long, InputEvent\)
+
+Sends <code class="paramref">e</code> at update <code class="paramref">at</code>, through the input layers like a device's event (its device must be announced, as a backend's must).
+
+```csharp
+public InputScript Send(long at, InputEvent e)
+```
+
+#### Parameters
+
+`at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
+
+`e` InputEvent
+
+#### Returns
+
+ [InputScript](MicroEngine.Core.InputScript.md)
 
 ### <a id="MicroEngine_Core_InputScript_Touch_System_Int64_System_Int32_System_String_System_Numerics_Vector2_"></a> Touch\(long, int, string, Vector2\)
 

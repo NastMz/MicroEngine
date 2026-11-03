@@ -141,8 +141,9 @@ public sealed class DialogueBox
     }
 
     /// <summary>
-    /// Returns true while the box consumed input this update. <paramref name="confirm"/> advances it; null (the default)
-    /// is the map's confirm action (<see cref="InputMap.Names"/>).
+    /// Returns true while the box is open and takes input this update. <paramref name="confirm"/> advances it; null (the
+    /// default) is the map's confirm action (<see cref="InputMap.Names"/>). A confirm the box acted on is consumed
+    /// (<see cref="InputMap.Consume"/>), so nothing read after it (the scene under an overlay) acts on the same press.
     /// </summary>
     public bool Update(float dt, InputMap input, string? confirm = null)
     {
@@ -153,6 +154,7 @@ public sealed class DialogueBox
         _typewriter.Update(dt);
         if (input.Pressed(confirm))
         {
+            input.Consume(confirm);
             if (!_typewriter.Complete) _typewriter.Finish();
             else if (HasMore)
             {
@@ -242,7 +244,8 @@ public sealed class SelectionList
 
     /// <summary>
     /// Returns the chosen index when confirmed, otherwise null. Actions left null (the default) are the map's up, down and
-    /// confirm actions (<see cref="InputMap.Names"/>).
+    /// confirm actions (<see cref="InputMap.Names"/>). The press that chooses is consumed (<see cref="InputMap.Consume"/>),
+    /// so nothing read after the list acts on it too.
     /// </summary>
     public int? Update(InputMap input, string? up = null, string? down = null, string? confirm = null)
     {
@@ -257,7 +260,11 @@ public sealed class SelectionList
             next = Wrap ? (next + _options.Count) % _options.Count : Math.Clamp(next, 0, _options.Count - 1);
             if (next != Index) { Index = next; Moved?.Invoke(); }
         }
-        if (input.Pressed(confirm) && IsEnabled(Index)) return Index;
+        if (input.Pressed(confirm) && IsEnabled(Index))
+        {
+            input.Consume(confirm);
+            return Index;
+        }
         return null;
     }
 

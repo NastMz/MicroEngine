@@ -551,10 +551,21 @@ Source: format documented on `InputScript` in [`src/MicroEngine/Core/GameRunner.
 | `N lift F` | Finger F lifts |
 | `N capture file.png` | Save the frame after update N into the capture directory |
 | `N prompts device [style]` | From update N, prompts name the controls of `keyboard`, `gamepad` (optionally `xbox`, `playstation`, `nintendo`) or `touch`; `auto` follows the player again (not in a published SDK yet) |
+| `N key K down` / `N key K up` | Next SDK version: the script's keyboard presses or releases key `K` (a `Key` name: `Space`, `A`, `Keypad5`) |
+| `N keytap K` | Next SDK version: key `K` goes down and up within one frame |
+| `N pad P add [style]` / `N pad P remove` | Next SDK version: the script's gamepad `P` (1 and up) connects (`xbox`, `playstation`, `nintendo`) or disconnects |
+| `N pad P B down` / `N pad P B up` | Next SDK version: button `B` (a `PadButton` name) of pad `P`; a pad not added yet connects as an Xbox pad |
+| `N pad P A value` | Next SDK version: axis `A` (a `PadAxis` name: `LeftX`, `RightTrigger`) of pad `P` moves to `value` |
+| `N mouse X,Y [down\|up]` | Next SDK version: the script's mouse moves to a point in canvas pixels, and its primary button goes down or up |
+| `N wheel D` | Next SDK version: the wheel turns `D` notches (positive away from the player) |
+| `N text T` | Next SDK version: the rest of the line is typed as text (read while text input is on; `#` starts a comment) |
 | `N quit` | End the run at update N |
 
 `@+N` instead of an absolute number means N updates after the previous command. A malformed line throws a
-`FormatException` naming the line. Scripts force actions through `InputMap.SetForced`, which tests can also call
+`FormatException` naming the line. Next SDK version: the device commands send events from the script's own keyboard,
+mouse and pads (`InputScript.ScriptKeyboard`, `ScriptMouse`, `ScriptPad(n)`) through the input layers, exactly as a
+backend's events, so a scripted run exercises the real input path, players and pairing included (a game can pair
+`ScriptPad(1)` with player 2). Scripts force actions through `InputMap.SetForced`, which tests can also call
 directly; scripted fingers go through `VirtualControls.ScriptTouch`, with the same hit testing as real fingers on the
 platform's real layout. In code the same script can be built with `Press`, `Hold`, `Touch`, `Lift`, `Capture` and
 `QuitAfter`. Each demo has a `touch.script` that plays two thumbs at once.
