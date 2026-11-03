@@ -63,6 +63,18 @@ public IReadOnlyList<PadButton> Buttons { get; init; }
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[PadButton](MicroEngine.Input.PadButton.md)\>
 
+### <a id="MicroEngine_Input_ActionBindings_Chords"></a> Chords
+
+The key combinations that press the action (Alt+Enter).
+
+```csharp
+public IReadOnlyList<KeyChord> Chords { get; init; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[KeyChord](MicroEngine.Input.KeyChord.md)\>
+
 ### <a id="MicroEngine_Input_ActionBindings_Keys"></a> Keys
 
 ```csharp

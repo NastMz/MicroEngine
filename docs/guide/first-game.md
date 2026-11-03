@@ -13,7 +13,9 @@ microengine run
 
 `new` creates the folder `StarCourier` with a complete project; `run` builds it and opens a window. Move the hero with
 the arrow keys, WASD, a gamepad's d-pad or left stick, or the on-screen controls of a touch screen, and collect coins.
-Close the window to quit; F11 or Alt+Enter toggles fullscreen.
+Close the window to quit; F11 or Alt+Enter toggles fullscreen. Next SDK version (not published yet: arrives with the
+next SDK version): that is the engine's `fullscreen` action, which your game can rebind or turn off like any other
+([Full screen](../manual/input.md#full-screen)).
 
 `<Name>` becomes the project and the C# namespace, `--id` the application id stores and phones identify the game by
 (reverse domain, letters, digits and underscores: see [Name, id, version and icon](app-identity.md)), `--title` the

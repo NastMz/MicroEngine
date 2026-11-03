@@ -8,6 +8,13 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- F11 and Alt+Enter no longer switch full screen inside the SDL and raylib backends: the engine's `fullscreen` action
+  (`ActionNames.Fullscreen`, bound to F11 and Alt+Enter by `InputMap.CreateDefault` and added to a map that has no such
+  action) does, through `Game.Screen.ToggleFullscreen()`. Players see no change. **Migration:** a game that wants F11
+  for itself, or no toggle at all, calls `Unbind("fullscreen")` (and `Bind("fullscreen", ...)` to move it) in
+  `CreateInput`. `InputMap.Unbind` of an action the map does not have now creates it unbound. The frame schedule's
+  `PreFixed` phase runs `engine.fullscreen` after `engine.input`; the headless platform counts the requests
+  (`HeadlessPlatform.FullscreenToggles`).
 - Input is an event stream with device ids, players and layers (assembly `MicroEngine.Input`, carried by the
   `MicroEngine` package; the namespace stays `MicroEngine.Input`). Single-player games change nothing: `Game.Input` is
   player 1's map and player 1 owns every device. What may need a change:

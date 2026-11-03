@@ -66,7 +66,7 @@ dotnet run --project games/NeonRift -c Release
 ```
 
 Shared controls: arrows or WASD to move, Z or Space to confirm, X to cancel, C for the secondary action,
-Esc or P to pause, F11 for fullscreen. Each game's README lists its own controls.
+Esc or P to pause, F11 (or Alt+Enter) for fullscreen, the engine's default. Each game's README lists its own controls.
 
 ## Scripted runs and captures
 
