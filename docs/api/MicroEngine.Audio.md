@@ -24,6 +24,11 @@ into stereo samples, advancing one game step per [Update](MicroEngine.Audio.Capt
 run always produces the same samples. Tests compare its [Output](MicroEngine.Audio.CaptureAudioDevice.md#MicroEngine_Audio_CaptureAudioDevice_Output) (waves, durations, silences, amplitudes);
 the launcher's <code>--audio-capture FILE</code> writes it as a WAV.
 
+ [EncodedAudio](MicroEngine.Audio.EncodedAudio.md)
+
+The bytes of a music file loaded from content (the "music" asset kind) and its format ("wav", "ogg", "mp3"): music is
+decoded while it plays rather than all at once.
+
  [Instrument](MicroEngine.Audio.Instrument.md)
 
 A tracker-style voice: waveform plus an ADSR envelope (seconds, sustain level 0..1).

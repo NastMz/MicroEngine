@@ -1,37 +1,29 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Numerics;
+using MicroEngine.Content;
 using MicroEngine.Graphics;
+using MicroEngine.Platform;
 
 namespace MicroEngine.Core;
 
-/// <summary>A content file that could not be loaded: missing, unreadable, in an unsupported format, or named with the wrong letter case.</summary>
-public sealed class AssetLoadException : Exception
-{
-    /// <summary>The path the game asked for, relative to the content folder.</summary>
-    public string AssetPath { get; }
-    /// <summary>What the game asked for it as ("texture", "atlas", "font"...).</summary>
-    public string Kind { get; }
-
-    /// <summary>Records which asset failed and why.</summary>
-    public AssetLoadException(string assetPath, string kind, string message, Exception? inner = null)
-        : base($"Could not load {kind} '{assetPath}': {message}", inner) => (AssetPath, Kind) = (assetPath, kind);
-}
-
 /// <summary>One loaded asset, as <see cref="AssetCache.Loaded"/> lists it.</summary>
 /// <param name="Path">Its content path.</param>
-/// <param name="Kind">"texture", "atlas", "font" or "folder atlas".</param>
-/// <param name="Bytes">Device memory its textures take now (font pages grow as glyphs are drawn).</param>
+/// <param name="Kind">"texture", "atlas", "font", "folder atlas", or the kind of another loader (<see cref="AssetLoaderRegistry"/>).</param>
+/// <param name="Bytes">Memory it takes now, as its loader reports it: device memory for textures (font pages grow as glyphs are drawn), decoded samples for sounds, the file for music.</param>
 /// <param name="LoadMilliseconds">Time spent reading, decoding and uploading it.</param>
 /// <param name="DuringPlay">Whether it was loaded after the game's first update, when a slow load shows as a hitch.</param>
 public readonly record struct AssetInfo(string Path, string Kind, long Bytes, double LoadMilliseconds, bool DuringPlay);
 
 /// <summary>Totals over a scope and its children (<see cref="AssetCache.Statistics"/>).</summary>
 /// <param name="Count">Assets loaded and not released.</param>
-/// <param name="TextureBytes">Device memory of their textures.</param>
+/// <param name="TextureBytes">Device memory of their textures (images, atlases, font pages).</param>
 /// <param name="LoadMilliseconds">Time spent loading them.</param>
 /// <param name="LoadsDuringPlay">How many were loaded after the first update.</param>
-public readonly record struct AssetStatistics(int Count, long TextureBytes, double LoadMilliseconds, int LoadsDuringPlay);
+public readonly record struct AssetStatistics(int Count, long TextureBytes, double LoadMilliseconds, int LoadsDuringPlay)
+{
+    /// <summary>Memory of the audio they hold: decoded sound samples and the bytes of music files (kinds "sound" and "music").</summary>
+    public long AudioBytes { get; init; }
+}
 
 /// <summary>
 /// Loads, shares and releases a game's content files (<c>Game.Assets</c>): images as textures, packing tools' atlases,
@@ -41,8 +33,10 @@ public readonly record struct AssetStatistics(int Count, long TextureBytes, doub
 /// </summary>
 /// <remarks>
 /// <para>
-/// Paths are relative to the content folder, with '/' separators, and must match the file names' letter case exactly
+/// Paths are relative to the content source, with '/' separators, and must match the file names' letter case exactly
 /// on every system, because Linux, Android and browsers would not find "Hero.png" for "hero.png" even where Windows does.
+/// The content is a folder by default; the composition may name another source, such as a zip archive
+/// (<see cref="Hosting.HostBuilder.Content"/>, <see cref="ZipContentSource"/>).
 /// </para>
 /// <para>
 /// <c>Game.Assets</c> lives as long as the game and is disposed after <c>Unload</c>. For assets of one level or scene,
@@ -53,6 +47,11 @@ public readonly record struct AssetStatistics(int Count, long TextureBytes, doub
 /// <c>Enter</c> or a loading screen; a load during play is reported, because decoding a large image takes longer than a
 /// frame. <see cref="Preload"/> decodes on worker threads where the platform has them and uploads within a time budget
 /// per frame, for loading screens.
+/// </para>
+/// <para>
+/// The cache is built on the engine's asset store (<see cref="Store"/>): every scope is an <see cref="AssetScope"/>
+/// (<see cref="Scope"/>), so typed handles (<see cref="Asset{T}"/>) and loaders of other kinds registered in
+/// <see cref="Loaders"/> share the same lifetimes.
 /// </para>
 /// </remarks>
 /// <example>
@@ -69,37 +68,13 @@ public sealed class AssetCache : IDisposable
 {
     private readonly IGraphicsDevice _device;
     private readonly string? _root;
-    private string? _composedRoot;
-    private ContentFolder? _content;
+    private IContentSource? _composed;
+    private ContentFolder? _folder;
     private readonly AssetCache? _parent;
+    private readonly AssetScope _scope;
     private readonly List<AssetCache> _children = [];
-    // The assets of every scope of a game, one entry per key, shared by the scopes that hold it.
-    private readonly Dictionary<AssetKey, Entry> _shared;
-    // What this scope holds, in the order it first asked.
-    private readonly Dictionary<AssetKey, Entry> _entries = [];
-
-    /// <summary>What identifies a cached asset: its path, its kind and the options it was loaded with. A struct of references and values, so a lookup allocates nothing.</summary>
-    private readonly record struct AssetKey(string Path, string Kind, TextureFilter Filter, Vector2 Pivot, object? Options);
     private readonly Queue<Pending> _uploads = new();
-    private readonly HashSet<string> _warned = new(StringComparer.Ordinal);
     private bool _disposed;
-
-    private sealed class Entry(string path, string kind, IDisposable value, double milliseconds, bool duringPlay)
-    {
-        public readonly string Path = path, Kind = kind;
-        public readonly IDisposable Value = value;
-        public readonly double Milliseconds = milliseconds;
-        public readonly bool DuringPlay = duringPlay;
-        // The scopes holding the asset; it is disposed when the last one releases it.
-        public readonly List<AssetCache> Holders = [];
-        public long Bytes => Value switch
-        {
-            Texture t => t.IsDisposed ? 0 : t.SizeInBytes,
-            SpriteAtlas a => a.Texture.IsDisposed ? 0 : a.Texture.SizeInBytes,
-            ScalableFont f => f.TextureBytes,
-            _ => 0,
-        };
-    }
 
     /// <summary>Creates the root scope of a game's assets.</summary>
     /// <param name="device">Creates the textures.</param>
@@ -108,51 +83,69 @@ public sealed class AssetCache : IDisposable
     {
         _device = device ?? throw new ArgumentNullException(nameof(device));
         _root = root;
-        _shared = [];
+        var loaders = new AssetLoaderRegistry();
+        GraphicsAssetLoaders.Register(loaders, device);
+        Audio.AudioAssetLoaders.Register(loaders);
+        _scope = new AssetStore(OpenSource, loaders).Root;
     }
 
     private AssetCache(AssetCache parent, string? name)
     {
-        (_device, _root, _content, _parent, _shared, Name) = (parent._device, parent._root, parent._content, parent, parent._shared, name);
-        Playing = parent.Playing;
+        (_device, _root, _parent) = (parent._device, parent._root, parent);
+        _scope = parent._scope.CreateScope(name);
         BackgroundDecoding = parent.BackgroundDecoding;
         FrameBudgetMilliseconds = parent.FrameBudgetMilliseconds;
     }
 
     /// <summary>The scope's name for diagnostics (null for the root and unnamed scopes).</summary>
-    public string? Name { get; }
+    public string? Name => _scope.Name;
+
+    /// <summary>The asset scope behind this cache scope: typed handles (<see cref="AssetScope.Load{T}"/>) with the same holds and lifetimes.</summary>
+    public AssetScope Scope => _scope;
+
+    /// <summary>The game's asset store: its content source, loaders and root scope.</summary>
+    public AssetStore Store => _scope.Store;
+
+    /// <summary>The loaders of the store, one per kind: "texture", "atlas", "folder atlas", "font", "sound", "music" and any a game registers.</summary>
+    public AssetLoaderRegistry Loaders => Store.Loaders;
+
+    /// <summary>Where content files are read from (opened on first use): a folder, a zip archive or another source of the composition.</summary>
+    /// <exception cref="AssetLoadException">The content folder does not exist.</exception>
+    public IContentSource Source => Store.Source;
 
     /// <summary>The content folder files are read from (opened on first use).</summary>
     /// <exception cref="AssetLoadException">The folder does not exist.</exception>
+    /// <exception cref="InvalidOperationException">The content is not a folder (a zip archive, for example); use <see cref="Source"/>.</exception>
     public ContentFolder Content
     {
         get
         {
-            if (_content is not null) return _content;
-            if (_parent is not null) return _content = _parent.Content;
-            try { return _content = new ContentFolder(_root ?? _composedRoot); }
-            catch (DirectoryNotFoundException e) { throw new AssetLoadException("", "content folder", e.Message, e); }
+            if (_folder is not null) return _folder;
+            return _folder = Source switch
+            {
+                ContentFolder folder => folder,
+                FolderContentSource folder => new ContentFolder(folder.Root),
+                var other => throw new InvalidOperationException($"The content comes from {other.Location} ({other.GetType().Name}), not a folder; read it through Assets.Source."),
+            };
         }
     }
 
-    /// <summary>
-    /// The composition's content (<see cref="Hosting.HostBuilder.Content"/>), used when the game names no folder of its own.
-    /// Until content sources other than folders are supported (archives, a browser's fetch), it must be a folder.
-    /// </summary>
-    /// <exception cref="NotSupportedException"><paramref name="source"/> is not a folder.</exception>
-    internal void UseComposedContent(Platform.IContentSource source)
+    /// <summary>The game's folder, the composition's source, or the <c>Content</c> folder next to the executable.</summary>
+    private IContentSource OpenSource()
     {
-        _composedRoot = source switch
-        {
-            Platform.FolderContentSource folder => folder.Root,
-            ContentFolder folder => folder.Root,
-            _ => throw new NotSupportedException($"Content from {source.GetType().Name} ({source.Location}) is not supported yet: the engine reads content from folders (FolderContentSource)."),
-        };
+        try { return _root is not null ? new ContentFolder(_root) : _composed ?? new ContentFolder(); }
+        catch (DirectoryNotFoundException e) { throw new AssetLoadException("", "content folder", e.Message, e); }
     }
 
+    /// <summary>The composition's content (<see cref="Hosting.HostBuilder.Content"/>), used when the game names no folder of its own: a folder, a zip archive or any other source.</summary>
+    internal void UseComposedContent(IContentSource source) => _composed = source ?? throw new ArgumentNullException(nameof(source));
+
     /// <summary>Where warnings about loads during play go: the game's <see cref="Kernel.ILog"/>, or standard error when none was set.</summary>
-    internal Kernel.ILog? Log { get; set; }
-    private static readonly Kernel.ILog DefaultLog = new Kernel.ConsoleLog();
+    internal Kernel.ILog? Log
+    {
+        get => Store.Log;
+        set => Store.Log = value;
+    }
 
     /// <summary>
     /// Whether the game is past its first update; loads from then on count as loads during play (<see cref="AssetInfo.DuringPlay"/>).
@@ -160,20 +153,19 @@ public sealed class AssetCache : IDisposable
     /// </summary>
     public bool Playing
     {
-        get => _playing;
-        set
-        {
-            _playing = value;
-            foreach (var child in _children) child.Playing = value;
-        }
+        get => _scope.Playing;
+        set => _scope.Playing = value;
     }
-    private bool _playing;
 
     /// <summary>
     /// A load during play that takes at least this many milliseconds is reported once on the error output, naming the
     /// file (4 by default: a quarter of a 60 Hz frame). Zero or less turns the reports off.
     /// </summary>
-    public double SlowLoadMilliseconds { get; set; } = 4;
+    public double SlowLoadMilliseconds
+    {
+        get => _scope.SlowLoadMilliseconds;
+        set => _scope.SlowLoadMilliseconds = value;
+    }
 
     /// <summary>
     /// Whether <see cref="Preload"/> decodes on worker threads (true by default, except in browsers, where .NET runs on
@@ -188,20 +180,15 @@ public sealed class AssetCache : IDisposable
 
     /// <summary>The image at <paramref name="path"/> as a texture, sampled with <paramref name="filter"/> (the game's default when null).</summary>
     /// <exception cref="AssetLoadException">The file is missing, wrongly cased or not an image the engine reads.</exception>
-    public Texture Texture(string path, TextureFilter? filter = null)
-    {
-        var sampling = filter ?? _device.DefaultFilter;
-        var key = new AssetKey(Normalize(path), "texture", sampling, default, null);
-        // The loaders read everything from the key: a lambda capturing a parameter would allocate on every call, hits included.
-        return Find<Texture>(key) ?? Get(key, k => _device.CreateTexture(DecodeImage(k.Path, k.Kind), k.Filter));
-    }
+    public Texture Texture(string path, TextureFilter? filter = null) =>
+        _scope.Acquire<Texture>(new AssetKey(GraphicsAssetLoaders.Texture, AssetPath.Normalize(path), null, (long)(filter ?? _device.DefaultFilter)));
 
     /// <summary>
     /// The image at <paramref name="path"/> decoded into a new <see cref="PixelImage"/> each call (not cached: the game may
     /// change it, for example to recolour it before packing).
     /// </summary>
     /// <exception cref="AssetLoadException">The file is missing, wrongly cased or not an image the engine reads.</exception>
-    public PixelImage Image(string path) => DecodeImage(path, "image");
+    public PixelImage Image(string path) => GraphicsAssetLoaders.DecodeImage(Source, AssetPath.Normalize(path), "image");
 
     /// <summary>
     /// The atlas a packing tool described at <paramref name="path"/> (TexturePacker or Aseprite JSON, Starling XML) with the
@@ -211,69 +198,35 @@ public sealed class AssetCache : IDisposable
     /// <param name="options">Default pivot and naming; null for <see cref="AtlasOptions.Default"/>.</param>
     /// <param name="filter">The texture's filter; null for the game's default.</param>
     /// <exception cref="AssetLoadException">The file or its image is missing or invalid.</exception>
-    public SpriteAtlas Atlas(string path, AtlasOptions? options = null, TextureFilter? filter = null)
-    {
-        options ??= AtlasOptions.Default;
-        var sampling = filter ?? _device.DefaultFilter;
-        var key = new AssetKey(Normalize(path), "atlas", sampling, default, options);
-        return Find<SpriteAtlas>(key) ?? Get(key, k =>
-        {
-            var (data, image) = DecodeAtlas(k.Path, (AtlasOptions)k.Options!);
-            return BuildAtlas(k.Path, data, image, k.Filter);
-        });
-    }
+    public SpriteAtlas Atlas(string path, AtlasOptions? options = null, TextureFilter? filter = null) =>
+        _scope.Acquire<SpriteAtlas>(new AssetKey(GraphicsAssetLoaders.Atlas, AssetPath.Normalize(path), options ?? AtlasOptions.Default, (long)(filter ?? _device.DefaultFilter)));
 
     /// <summary>
     /// Every image directly inside <paramref name="folder"/> packed into one atlas at load, named by file name without its
     /// extension ("items/gem.png" is "gem"): a folder of loose sprites, no packing tool needed.
     /// </summary>
-    /// <param name="folder">A folder of the content folder.</param>
+    /// <param name="folder">A folder of the content.</param>
     /// <param name="pivot">The anchor of every sprite as a fraction of its size; (0, 0), the top-left, by default.</param>
     /// <param name="filter">The texture's filter; null for the game's default.</param>
     /// <exception cref="AssetLoadException">The folder is missing or holds no image, or an image cannot be read.</exception>
-    public SpriteAtlas AtlasFromFolder(string folder, Vector2 pivot = default, TextureFilter? filter = null)
-    {
-        var sampling = filter ?? _device.DefaultFilter;
-        var key = new AssetKey(Normalize(folder), "folder atlas", sampling, pivot, null);
-        return Find<SpriteAtlas>(key) ?? Get(key, k =>
-        {
-            var files = Files(k.Path, k.Kind).Where(f => ImageDecoder.Extensions.Contains(System.IO.Path.GetExtension(f))).ToList();
-            if (files.Count == 0) throw new AssetLoadException(k.Path, k.Kind, "the folder holds no image.");
-            var builder = new SpriteAtlasBuilder();
-            foreach (var file in files)
-            {
-                var image = DecodeImage(file, k.Kind);
-                builder.Add(System.IO.Path.GetFileNameWithoutExtension(file), image, k.Pivot * new Vector2(image.Width, image.Height));
-            }
-            return builder.Build(_device, k.Filter);
-        });
-    }
+    public SpriteAtlas AtlasFromFolder(string folder, Vector2 pivot = default, TextureFilter? filter = null) =>
+        _scope.Acquire<SpriteAtlas>(new AssetKey(GraphicsAssetLoaders.FolderAtlas, AssetPath.Normalize(folder), pivot, (long)(filter ?? _device.DefaultFilter)));
 
     /// <summary>The TTF or OTF font at <paramref name="path"/>, drawn at any size (<see cref="ScalableFont"/>).</summary>
     /// <exception cref="AssetLoadException">The file is missing, wrongly cased or not a font the engine reads.</exception>
-    public ScalableFont Font(string path, FontOptions? options = null)
-    {
-        options ??= FontOptions.Default;
-        var key = new AssetKey(Normalize(path), "font", default, default, options);
-        return Find<ScalableFont>(key) ?? Get(key, k => OpenFont(k.Path, Read(k.Path, k.Kind), (FontOptions)k.Options!));
-    }
+    public ScalableFont Font(string path, FontOptions? options = null) =>
+        _scope.Acquire<ScalableFont>(new AssetKey(GraphicsAssetLoaders.Font, AssetPath.Normalize(path), options ?? FontOptions.Default));
 
     /// <summary>The bytes of any content file (not cached).</summary>
     /// <exception cref="AssetLoadException">The file is missing or wrongly cased.</exception>
-    public byte[] Bytes(string path) => Read(path, "file");
+    public byte[] Bytes(string path) => GraphicsAssetLoaders.Read(Source, AssetPath.Normalize(path), "file");
 
     /// <summary>The text of any content file, as UTF-8 (not cached).</summary>
     /// <exception cref="AssetLoadException">The file is missing or wrongly cased.</exception>
-    public string Text(string path) => System.Text.Encoding.UTF8.GetString(Read(path, "file"));
+    public string Text(string path) => System.Text.Encoding.UTF8.GetString(Bytes(path));
 
     /// <summary>Whether this scope or one of its parents has <paramref name="path"/> loaded (in any form).</summary>
-    public bool IsLoaded(string path)
-    {
-        string normalized = Normalize(path);
-        for (var scope = this; scope is not null; scope = scope._parent)
-            if (scope._entries.Keys.Any(k => k.Path == normalized)) return true;
-        return false;
-    }
+    public bool IsLoaded(string path) => _scope.IsLoaded(path);
 
     // ---- Lifecycle
 
@@ -295,17 +248,7 @@ public sealed class AssetCache : IDisposable
     /// scope still holds it, and loads again if asked for later. What only other scopes hold is not touched.
     /// </summary>
     /// <returns>Whether this scope held anything from the file.</returns>
-    public bool Unload(string path)
-    {
-        string normalized = Normalize(path);
-        var keys = _entries.Keys.Where(k => k.Path == normalized).ToList();
-        foreach (var k in keys)
-        {
-            Release(k, _entries[k]);
-            _entries.Remove(k);
-        }
-        return keys.Count > 0;
-    }
+    public bool Unload(string path) => _scope.Release(path);
 
     /// <summary>
     /// Releases every asset this scope and its child scopes hold, disposing those no other scope holds. The root scope is
@@ -317,8 +260,7 @@ public sealed class AssetCache : IDisposable
         _disposed = true;
         foreach (var child in _children.ToList()) child.Dispose();
         _children.Clear();
-        foreach (var (key, entry) in _entries) Release(key, entry);
-        _entries.Clear();
+        _scope.Dispose();
         _uploads.Clear();
         _parent?._children.Remove(this);
     }
@@ -330,52 +272,22 @@ public sealed class AssetCache : IDisposable
     /// (a parent included) had loaded, an asset several of them share counting once. On the root scope, every asset of
     /// the game. Allocates nothing, so it can be checked every frame.
     /// </summary>
-    public int Count
-    {
-        get
-        {
-            if (_parent is null) return _shared.Count;
-            int count = 0;
-            foreach (var entry in _shared.Values)
-                foreach (var holder in entry.Holders)
-                    if (holder.IsWithin(this)) { count++; break; }
-            return count;
-        }
-    }
+    public int Count => _scope.Count;
 
     /// <summary>The assets of this scope and its children, each once, in the order each scope asked for them.</summary>
-    public IReadOnlyList<AssetInfo> Loaded
-    {
-        get
-        {
-            var seen = new HashSet<Entry>();
-            var loaded = new List<AssetInfo>();
-            Collect(seen, loaded);
-            return loaded;
-        }
-    }
+    public IReadOnlyList<AssetInfo> Loaded => [.. _scope.Loaded.Select(r => new AssetInfo(r.Path, r.Kind, r.Bytes, r.LoadMilliseconds, r.DuringPlay))];
 
-    private void Collect(HashSet<Entry> seen, List<AssetInfo> into)
-    {
-        foreach (var e in _entries.Values)
-            if (seen.Add(e)) into.Add(new AssetInfo(e.Path, e.Kind, e.Bytes, e.Milliseconds, e.DuringPlay));
-        foreach (var child in _children) child.Collect(seen, into);
-    }
-
-    private bool IsWithin(AssetCache scope)
-    {
-        for (var s = this; s is not null; s = s._parent)
-            if (s == scope) return true;
-        return false;
-    }
-
-    /// <summary>Counts, texture memory and load time of this scope and its children.</summary>
+    /// <summary>Counts, memory and load time of this scope and its children.</summary>
     public AssetStatistics Statistics
     {
         get
         {
-            var all = Loaded;
-            return new AssetStatistics(all.Count, all.Sum(a => a.Bytes), all.Sum(a => a.LoadMilliseconds), all.Count(a => a.DuringPlay));
+            var all = _scope.Loaded;
+            return new AssetStatistics(all.Count, all.Where(a => GraphicsAssetLoaders.IsGraphics(a.Kind)).Sum(a => a.Bytes),
+                all.Sum(a => a.LoadMilliseconds), all.Count(a => a.DuringPlay))
+            {
+                AudioBytes = all.Where(a => a.Kind is Audio.AudioAssetLoaders.Sound or Audio.AudioAssetLoaders.Music).Sum(a => a.Bytes),
+            };
         }
     }
 
@@ -393,16 +305,16 @@ public sealed class AssetCache : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(paths);
         var batch = new AssetBatch(this, paths.Length);
-        // Opened here, on the game's thread, so a missing folder fails now and workers share one folder.
-        _ = Content;
+        // Opened here, on the game's thread, so a missing folder fails now and workers share one source.
+        var source = Source;
         foreach (var path in paths)
         {
             string ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
-            var kind = ImageDecoder.Extensions.Contains(ext) ? "texture" : ext is ".json" or ".xml" ? "atlas" : ext is ".ttf" or ".otf" ? "font"
+            var kind = ImageDecoder.Extensions.Contains(ext) ? GraphicsAssetLoaders.Texture : ext is ".json" or ".xml" ? GraphicsAssetLoaders.Atlas : ext is ".ttf" or ".otf" ? GraphicsAssetLoaders.Font
                 : throw new ArgumentException($"'{path}' is not an image, atlas or font file.", nameof(paths));
-            var pending = new Pending(batch, path, kind);
-            if (FindLoaded(path, kind)) { batch.Complete(null); continue; }
-            if (BackgroundDecoding) pending.Decoding = Task.Run(() => pending.Decode(this));
+            var pending = new Pending(batch, AssetPath.Normalize(path), kind);
+            if (_scope.HoldLoaded(kind, pending.Path)) { batch.Complete(null); continue; }
+            if (BackgroundDecoding) pending.Decoding = Task.Run(() => pending.Decode(source));
             _uploads.Enqueue(pending);
         }
         return batch;
@@ -441,26 +353,27 @@ public sealed class AssetCache : IDisposable
         try
         {
             if (pending.Decoding is { } task) task.Wait();
-            else pending.Decode(this);
+            else pending.Decode(Source);
             if (pending.Error is { } error) throw error;
             // The keys the direct calls use with default options, so Texture(path) finds a preloaded texture.
+            var filter = (long)_device.DefaultFilter;
             var key = pending.Kind switch
             {
-                "texture" => new AssetKey(Normalize(pending.Path), "texture", _device.DefaultFilter, default, null),
-                "atlas" => new AssetKey(Normalize(pending.Path), "atlas", _device.DefaultFilter, default, AtlasOptions.Default),
-                _ => new AssetKey(Normalize(pending.Path), "font", default, default, FontOptions.Default),
+                GraphicsAssetLoaders.Texture => new AssetKey(pending.Kind, pending.Path, null, filter),
+                GraphicsAssetLoaders.Atlas => new AssetKey(pending.Kind, pending.Path, AtlasOptions.Default, filter),
+                _ => new AssetKey(pending.Kind, pending.Path, FontOptions.Default),
             };
-            if (!FindLoaded(pending.Path, pending.Kind))
+            if (!_scope.HoldLoaded(pending.Kind, pending.Path))
             {
                 IDisposable value = pending.Kind switch
                 {
-                    "texture" => _device.CreateTexture(pending.Image!, _device.DefaultFilter),
-                    "atlas" => BuildAtlas(pending.Path, pending.Atlas!, pending.Image!, _device.DefaultFilter),
-                    _ => OpenFont(pending.Path, pending.Bytes!, FontOptions.Default),
+                    GraphicsAssetLoaders.Texture => _device.CreateTexture(pending.Image!, _device.DefaultFilter),
+                    GraphicsAssetLoaders.Atlas => GraphicsAssetLoaders.BuildAtlas(_device, pending.Path, pending.Atlas!, pending.Image!, _device.DefaultFilter),
+                    _ => GraphicsAssetLoaders.OpenFont(_device, pending.Path, pending.Bytes!, FontOptions.Default),
                 };
                 // The load time counts the worker's decoding; a hitch is only what this thread spent (all of it without workers).
                 double blocking = Stopwatch.GetElapsedTime(finishing).TotalMilliseconds;
-                Store(key, value, (pending.Decoding is null ? 0 : pending.DecodeMilliseconds) + blocking, blocking);
+                _scope.Add(key, value, (pending.Decoding is null ? 0 : pending.DecodeMilliseconds) + blocking, blocking);
             }
             pending.Batch.Complete(null);
         }
@@ -483,163 +396,21 @@ public sealed class AssetCache : IDisposable
         public AssetLoadException? Error;
 
         /// <summary>Reads and decodes on whichever thread runs it; touches no device.</summary>
-        public void Decode(AssetCache owner)
+        public void Decode(IContentSource source)
         {
             long started = Stopwatch.GetTimestamp();
             try
             {
                 switch (Kind)
                 {
-                    case "texture": Image = owner.DecodeImage(Path, Kind); break;
-                    case "atlas": (Atlas, Image) = owner.DecodeAtlas(Path, AtlasOptions.Default); break;
-                    default: Bytes = owner.Read(Path, Kind); break;
+                    case GraphicsAssetLoaders.Texture: Image = GraphicsAssetLoaders.DecodeImage(source, Path, Kind); break;
+                    case GraphicsAssetLoaders.Atlas: (Atlas, Image) = GraphicsAssetLoaders.DecodeAtlas(source, Path, AtlasOptions.Default); break;
+                    default: Bytes = GraphicsAssetLoaders.Read(source, Path, Kind); break;
                 }
             }
             catch (AssetLoadException e) { Error = e; }
             catch (Exception e) when (e is not OutOfMemoryException) { Error = new AssetLoadException(Path, Kind, e.Message, e); }
             DecodeMilliseconds = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
-        }
-    }
-
-    // ---- Internals
-
-    /// <summary>
-    /// The asset under <paramref name="key"/>, held by this scope from now on, or null when no scope has it; a hit this
-    /// scope already holds allocates nothing.
-    /// </summary>
-    private T? Find<T>(in AssetKey key) where T : class
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        if (_entries.TryGetValue(key, out var held)) return (T)held.Value;
-        if (!_shared.TryGetValue(key, out var shared)) return null;
-        Hold(key, shared);
-        return (T)shared.Value;
-    }
-
-    private void Hold(AssetKey key, Entry entry)
-    {
-        _entries.Add(key, entry);
-        entry.Holders.Add(this);
-    }
-
-    /// <summary>Lets go of <paramref name="entry"/> (the caller removes it from this scope); disposes it when no scope holds it any more.</summary>
-    private void Release(AssetKey key, Entry entry)
-    {
-        entry.Holders.Remove(this);
-        if (entry.Holders.Count > 0) return;
-        _shared.Remove(key);
-        entry.Value.Dispose();
-    }
-
-    private T Get<T>(AssetKey key, Func<AssetKey, T> load) where T : class, IDisposable
-    {
-        if (key.Path.Length == 0) throw new ArgumentException("An asset path is needed.", nameof(key));
-        long started = Stopwatch.GetTimestamp();
-        T value;
-        try { value = load(key); }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
-        {
-            throw new AssetLoadException(key.Path, key.Kind, e.Message, e);
-        }
-        Store(key, value, Stopwatch.GetElapsedTime(started).TotalMilliseconds);
-        return value;
-    }
-
-    /// <param name="milliseconds">The whole load, worker decoding included.</param>
-    /// <param name="blocking">The part spent on the game's thread, which is what a player sees as a hitch; the whole load when null.</param>
-    private void Store(AssetKey key, IDisposable value, double milliseconds, double? blocking = null)
-    {
-        var entry = new Entry(key.Path, key.Kind, value, milliseconds, Playing);
-        _shared.Add(key, entry);
-        Hold(key, entry);
-        double hitch = blocking ?? milliseconds;
-        if (Playing && SlowLoadMilliseconds > 0 && hitch >= SlowLoadMilliseconds && _warned.Add(key.Kind + "|" + key.Path))
-            (Log ?? DefaultLog).Write(Kernel.LogLevel.Warning, "assets", $"{key.Kind} '{key.Path}' was loaded during play and took {hitch:0.0} ms (a visible hitch); load it in Load, or Preload it behind a loading screen.");
-    }
-
-    /// <summary>Whether any scope has <paramref name="path"/> loaded as <paramref name="kind"/> (with any options); this scope then holds it.</summary>
-    private bool FindLoaded(string path, string kind)
-    {
-        string normalized = Normalize(path);
-        foreach (var key in _entries.Keys)
-            if (key.Path == normalized && key.Kind == kind) return true;
-        foreach (var (key, entry) in _shared)
-            if (key.Path == normalized && key.Kind == kind)
-            {
-                Hold(key, entry);
-                return true;
-            }
-        return false;
-    }
-    /// <summary>'/' separators, no leading '/' or "./"; the same string when nothing changes, so lookups allocate nothing.</summary>
-    private static string Normalize(string path)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        path = path.Replace('\\', '/').TrimStart('/');
-        if (!path.StartsWith("./", StringComparison.Ordinal) && !path.Contains("/.", StringComparison.Ordinal) && !path.StartsWith("../", StringComparison.Ordinal))
-            return path;
-        // "a/../b" and "./b" name "b": one cache entry per file. A ".." that leaves the folder stays, so it is refused.
-        var parts = new List<string>();
-        foreach (var part in path.Split('/'))
-        {
-            if (part is "." or "") continue;
-            if (part == ".." && parts.Count > 0 && parts[^1] != "..") parts.RemoveAt(parts.Count - 1);
-            else parts.Add(part);
-        }
-        return string.Join('/', parts);
-    }
-
-    private byte[] Read(string path, string kind)
-    {
-        try { return Content.ReadBytes(Normalize(path)); }
-        catch (Exception e) when (e is IOException or ArgumentException or UnauthorizedAccessException)
-        {
-            throw new AssetLoadException(Normalize(path), kind, e.Message, e);
-        }
-    }
-
-    private PixelImage DecodeImage(string path, string kind)
-    {
-        var bytes = Read(path, kind);
-        try { return PixelImage.Decode(bytes); }
-        catch (InvalidDataException e) { throw new AssetLoadException(Normalize(path), kind, e.Message, e); }
-    }
-
-    private (AtlasData Data, PixelImage Image) DecodeAtlas(string path, AtlasOptions options)
-    {
-        AtlasData data;
-        try { data = AtlasData.Parse(System.Text.Encoding.UTF8.GetString(Read(path, "atlas")), options); }
-        catch (InvalidDataException e) { throw new AssetLoadException(Normalize(path), "atlas", e.Message, e); }
-        string folder = System.IO.Path.GetDirectoryName(Normalize(path))?.Replace('\\', '/') ?? "";
-        string image = data.ImagePath ?? System.IO.Path.GetFileNameWithoutExtension(path) + ".png";
-        string imagePath = folder.Length == 0 ? image : folder + "/" + image;
-        try { return (data, DecodeImage(imagePath, "atlas")); }
-        catch (AssetLoadException e) { throw new AssetLoadException(Normalize(path), "atlas", $"its image: {e.Message}", e); }
-    }
-
-    private SpriteAtlas BuildAtlas(string path, AtlasData data, PixelImage image, TextureFilter filter)
-    {
-        var texture = _device.CreateTexture(image, filter);
-        try { return SpriteAtlas.Create(texture, data); }
-        catch (InvalidDataException e)
-        {
-            texture.Dispose();
-            throw new AssetLoadException(Normalize(path), "atlas", e.Message, e);
-        }
-    }
-
-    private ScalableFont OpenFont(string path, byte[] bytes, FontOptions options)
-    {
-        try { return ScalableFont.FromBytes(_device, bytes, options, Normalize(path)); }
-        catch (InvalidDataException e) { throw new AssetLoadException(Normalize(path), "font", e.Message, e); }
-    }
-
-    private IReadOnlyList<string> Files(string folder, string kind)
-    {
-        try { return Content.Files(Normalize(folder)); }
-        catch (Exception e) when (e is IOException or ArgumentException)
-        {
-            throw new AssetLoadException(Normalize(folder), kind, e.Message, e);
         }
     }
 }

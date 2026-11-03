@@ -111,6 +111,20 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_content_references_only_the_kernel_and_the_platform_contracts()
+    {
+        var content = typeof(MicroEngine.Content.AssetStore).Assembly;
+        Assert.AreEqual(Content, content.GetName().Name);
+        Assert.AreEqual(Content, typeof(MicroEngine.Content.Asset<>).Assembly.GetName().Name, "typed handles are content's");
+        Assert.AreEqual(Content, typeof(AssetLoadException).Assembly.GetName().Name, "the load failure belongs with the loaders");
+        Assert.AreEqual(Content, typeof(MicroEngine.Content.ZipContentSource).Assembly.GetName().Name);
+        var engine = content.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToList();
+        CollectionAssert.AreEqual(new[] { Kernel, Platform }, engine, string.Join(", ", engine));
+        CollectionAssert.Contains(typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList(), Content, "the asset cache is built on the store");
+        Assert.AreEqual(typeof(AssetLoadException), typeof(Game).Assembly.GetType("MicroEngine.Core.AssetLoadException"), "code compiled against an earlier MicroEngine.dll still finds it");
+    }
+
+    [TestMethod]
     public void The_compiled_hosting_references_only_the_kernel_and_the_platform_contracts()
     {
         var hosting = typeof(MicroEngine.Hosting.HostBuilder).Assembly;

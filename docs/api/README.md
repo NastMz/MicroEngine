@@ -12,6 +12,7 @@ with the [tutorial](../tutorial/README.md).
 | Namespace | Contains | Guide |
 | --- | --- | --- |
 | [MicroEngine.Audio](MicroEngine.Audio.md) | Sound effects and music: synthesis, WAV decoding, the mixer games play sounds through, and the audio device contract. | [Audio](../manual/audio.md) |
+| [MicroEngine.Content](MicroEngine.Content.md) | Content: the asset store under Game.Assets (typed handles, scopes that share and release, the loader registry, the reserved import step) and content sources beyond folders (zip archives, files a host lists). | [Assets](../manual/assets.md#handles-loaders-and-content-sources) |
 | [MicroEngine.Core](MicroEngine.Core.md) | The game and its loop: `Game`, settings, runners and sessions, launchers and platform composition, scripted input, saves, content files, achievements, application identity, the headless platform. | [Game lifecycle and time](../manual/lifecycle.md) |
 | [MicroEngine.Desktop](MicroEngine.Desktop.md) | The desktop launcher with the official desktop platforms (SDL 3, raylib, SDL software, headless). | [Backends and platforms](../manual/backends.md) |
 | [MicroEngine.Graphics.Devices](MicroEngine.Graphics.Devices.md) | The graphics device contract every backend implements: capabilities and the typed capability error, textures, render targets, samplers, buffers, pipelines, command lists with passes, readback and the surface target; the core validation backends inherit and the CPU reference device. | [The graphics device](../manual/rendering.md#the-graphics-device) |
