@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ARCH-1 P5 Android probe: the desktop scenario inside SDL's activity (as the repository's Android host runs games),
+       on SDL's Android audio (AAudio, OpenSL ES fallback). Not in MicroEngine.slnx and not built by CI. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>P5</RootNamespace>
+    <ApplicationId>dev.microengine.p5audio</ApplicationId>
+    <ApplicationTitle>P5 audio</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
+    <RuntimeIdentifiers>android-x64;android-arm64</RuntimeIdentifiers>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/*.cs" />
+    <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!-- ARCH-1 P5 web probe: the same mixer and scenario as the desktop probe, on .NET 10 browser-wasm (single-threaded),
+       with three sinks: SDL3 pull and push (SDL3.a from P4's build-sdl3-wasm.sh, ScriptProcessorNode) and an
+       AudioWorklet fed from the frame loop. Not in MicroEngine.slnx and not built by CI. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <WasmBuildNative>true</WasmBuildNative>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugType>none</DebugType>
+    <RootNamespace>P5</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- No threads on this runtime: the feeder sink and the blocking runner are desktop/phone only. -->
+    <Compile Include="../Shared/*.cs" Exclude="../Shared/FeederSink.cs;../Shared/Runner.cs" />
+    <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Sdl3WasmLib)' != ''">
+    <!-- File name SDL3.a so the P/Invoke module "SDL3" binds to it. -->
+    <NativeFileReference Include="$(Sdl3WasmLib)" />
+  </ItemGroup>
+</Project>
