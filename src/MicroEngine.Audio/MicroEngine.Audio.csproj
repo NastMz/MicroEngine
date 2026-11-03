@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Audio: the one managed mixer over IAudioSink v1 (voices with handles, priorities and one voice policy on every
+       backend, acyclic buses, music streams decoded ahead outside the simulation step, sounds started at exact output
+       frames), the default offline sink, the sound bank and music façade games use (AudioMixer), clips and their
+       loaders, and the retro synthesizer. It references only the kernel, the platform contracts and content (the
+       architecture test checks it). It is not a package of its own: the MicroEngine package carries
+       MicroEngine.Audio.dll (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Audio</RootNamespace>
+    <Description>MicroEngine audio: the managed mixer over PCM sinks, sounds and music, the retro synthesizer. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+    <ProjectReference Include="../MicroEngine.Content/MicroEngine.Content.csproj" />
+  </ItemGroup>
+  <!-- OGG Vorbis decoding, managed and MIT (THIRD-PARTY-NOTICES.md): music streams decode the same on every backend. -->
+  <ItemGroup>
+    <PackageReference Include="NVorbis" Version="[0.10.5]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+    <InternalsVisibleTo Include="MicroEngine" />
+  </ItemGroup>
+</Project>

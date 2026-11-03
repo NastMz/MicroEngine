@@ -76,6 +76,7 @@ public sealed class GameKernelTests
         CollectionAssert.AreEqual(new[] { "engine.input.events", "engine.touch" }, game.Schedule.Order(FramePhase.Input).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.render" }, game.Schedule.Order(FramePhase.Render).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.present" }, game.Schedule.Order(FramePhase.Present).ToArray());
+        CollectionAssert.AreEqual(new[] { "engine.audio.pump", "test.end" }, game.Schedule.Order(FramePhase.EndFrame).ToArray(), "audio work of the frame runs outside the simulation step");
     }
 
     [TestMethod]

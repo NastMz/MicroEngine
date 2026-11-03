@@ -27,7 +27,19 @@ An [ISurface](MicroEngine.Platform.ISurface.md) for hosts: it reads its size, de
 [Pump](MicroEngine.Platform.HostSurface.md#MicroEngine_Platform_HostSurface_Pump_MicroEngine_Platform_IEngineEventSink_) reports a size change the way the platform contract requires ([Resized](MicroEngine.Platform.HostSurface.md#MicroEngine_Platform_HostSurface_Resized) and the
 sink's [Resized](MicroEngine.Platform.IEngineEventSink.md#MicroEngine_Platform_IEngineEventSink_Resized_MicroEngine_Kernel_SurfaceResized_), once per change).
 
+### Structs
+
+ [AudioFormat](MicroEngine.Platform.AudioFormat.md)
+
+The PCM format a sink plays: interleaved 32-bit float samples, [Channels](MicroEngine.Platform.AudioFormat.md#MicroEngine_Platform_AudioFormat_Channels) per frame, at
+[SampleRate](MicroEngine.Platform.AudioFormat.md#MicroEngine_Platform_AudioFormat_SampleRate) frames per second.
+
 ### Interfaces
+
+ [IAudioSink](MicroEngine.Platform.IAudioSink.md)
+
+A PCM audio output, version 1 of the contract: the engine's one mixer renders, the sink plays. The sink chooses the
+thread that renders ([Schedule](MicroEngine.Platform.IAudioSink.md#MicroEngine_Platform_IAudioSink_Schedule)).
 
  [IContentSource](MicroEngine.Platform.IContentSource.md)
 
@@ -70,5 +82,19 @@ page's localStorage in browsers, a cloud service). Failures surface as `IOExcept
 
 A surface a host produces and a graphics device presents to: a window, a browser canvas, a phone's screen. This is
 the graphics contract's surface (version 1); only backends read [NativeWindow](MicroEngine.Platform.ISurface.md#MicroEngine_Platform_ISurface_NativeWindow).
+
+### Enums
+
+ [AudioSinkSchedule](MicroEngine.Platform.AudioSinkSchedule.md)
+
+Who calls a sink's [AudioRender](MicroEngine.Platform.AudioRender.md).
+
+### Delegates
+
+ [AudioRender](MicroEngine.Platform.AudioRender.md)
+
+Fills all of <code class="paramref">buffer</code> (<code>buffer.Length / Channels</code> frames of the sink's
+[AudioFormat](MicroEngine.Platform.AudioFormat.md)). Called by one thread at a time; which thread depends on
+[Schedule](MicroEngine.Platform.IAudioSink.md#MicroEngine_Platform_IAudioSink_Schedule). It never blocks, allocates, takes a lock the main thread holds, or throws.
 
 </div>

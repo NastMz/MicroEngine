@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Audio.dll  
 Guide: [Audio](../manual/audio.md)  
 
 Game-facing audio: a sound bank keyed by name plus music with fades.
@@ -32,7 +32,7 @@ if (Input.Pressed("jump")) Audio.Play("jump", pitchJitter: 0.05f);
 
 ## Remarks
 
-Every game has one in [Audio](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Audio). Sounds and music are registered under names that are compared
+Every game has one in <code>Game.Audio</code>. Sounds and music are registered under names that are compared
 ordinally (case-sensitive); registering a name again replaces it. On a device without hardware every call still works
 and nothing is heard.
 
@@ -40,7 +40,7 @@ and nothing is heard.
 
 ### <a id="MicroEngine_Audio_AudioMixer__ctor_MicroEngine_Audio_IAudioDevice_"></a> AudioMixer\(IAudioDevice\)
 
-Creates a mixer over <code class="paramref">device</code>. Games use the one in [Audio](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Audio).
+Creates a mixer over <code class="paramref">device</code>. Games use the one in <code>Game.Audio</code>.
 
 ```csharp
 public AudioMixer(IAudioDevice device)
@@ -60,7 +60,7 @@ public AudioMixer(IAudioDevice device)
 
 ### <a id="MicroEngine_Audio_AudioMixer_CurrentMusic"></a> CurrentMusic
 
-Name of the music the device is playing (also while it fades out), or null.
+Name of the music playing (also while it fades out, and while a song asked for still renders in slices), or null. It follows the game's requests and the music's end on the simulation's timeline, never rendering speed.
 
 ```csharp
 public string? CurrentMusic { get; }
@@ -69,6 +69,21 @@ public string? CurrentMusic { get; }
 #### Property Value
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
+### <a id="MicroEngine_Audio_AudioMixer_Deterministic"></a> Deterministic
+
+Whether the run is deterministic (scripted runs, tests): the device's timeline then follows the simulation only,
+and songs that render in slices render only when the game waits for one, finished in the next [Pump](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Pump)
+whatever [SliceBudget](MicroEngine.Audio.AudioMixer.md), so the
+same steps give the same sound. The game sets it from its time mode.
+
+```csharp
+public bool Deterministic { get; set; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_Audio_AudioMixer_Device"></a> Device
 
@@ -148,8 +163,9 @@ Registers a [Song](MicroEngine.Audio.Song.md) under <code class="paramref">name<
 in the background, side by side, and each is handed to the device the first time it plays (waiting then only for
 that song if it is not ready yet). Registering every song of a game this way keeps their synthesis out of
 <code>Load</code>. Where the runtime has no background threads (browsers), songs render a few milliseconds per
-[Update](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Update_System_Single_) instead, one after another in the order they were registered; a song asked to play before
-it is ready goes first and starts once rendered ([CurrentMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_CurrentMusic) is null until then).
+[Pump](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Pump) (once per frame, outside the simulation step) instead, one after another in the order they were
+registered; a song asked to play before
+it is ready goes first and starts once rendered ([CurrentMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_CurrentMusic) already names it).
 
 ```csharp
 public void AddMusic(string name, Song song, bool loop = true)
@@ -345,6 +361,16 @@ A song registered with [AddMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Au
             of memory); its name is then unregistered. With a fade, this surfaces from [Update](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_Update_System_Single_) when the song is
             due to start.
 
+### <a id="MicroEngine_Audio_AudioMixer_Pump"></a> Pump\(\)
+
+The host frame's audio work, outside the simulation step: renders songs that render in slices (browsers), then
+lets the device decode streamed music ahead and pump its sink. The game calls it once per frame; call it yourself
+only for a mixer you created.
+
+```csharp
+public void Pump()
+```
+
 ### <a id="MicroEngine_Audio_AudioMixer_StopMusic_System_Single_"></a> StopMusic\(float\)
 
 Stops the music, fading it out over <code class="paramref">fadeSeconds</code>; 0 or less stops it at once.
@@ -383,7 +409,7 @@ public bool TryPlay(string name, float volume = 1, float pitch = 1, float pitchJ
 
 ### <a id="MicroEngine_Audio_AudioMixer_Update_System_Single_"></a> Update\(float\)
 
-Advances music fades and lets the device stream. The game calls it once per update; call it yourself only for a mixer you created.
+Advances music fades and ends the device's simulation step. The game calls it once per update; call it yourself only for a mixer you created.
 
 ```csharp
 public void Update(float dt)

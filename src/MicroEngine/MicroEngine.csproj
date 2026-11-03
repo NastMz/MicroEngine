@@ -8,19 +8,21 @@
   </ItemGroup>
   <!-- The kernel (composition, schedule, time, math and colour), the platform contracts (host, surface, storage,
        content sources), input (device events, players, layers, actions), hosting (the launcher model and the
-       composition a game configures) and content (the asset store, handles, loaders and content sources) are assemblies
-       of their own but not packages: this package carries MicroEngine.Kernel.dll, MicroEngine.Platform.dll,
-       MicroEngine.Input.dll, MicroEngine.Hosting.dll and MicroEngine.Content.dll with their documentation and symbols,
-       and depends on no package of theirs. The references are private (so packing adds no dependency on them); inside
-       the repository, projects that reference this one still compile against them and copy them, because this project
-       hands their assemblies over together with its own (_MicroEngineBundledOutput). -->
+       composition a game configures), content (the asset store, handles, loaders and content sources) and audio (the
+       mixer over PCM sinks) are assemblies of their own but not packages: this package carries MicroEngine.Kernel.dll,
+       MicroEngine.Platform.dll, MicroEngine.Input.dll, MicroEngine.Hosting.dll, MicroEngine.Content.dll and
+       MicroEngine.Audio.dll with their documentation and symbols, and depends on no package of theirs. The references
+       are private (so packing adds no dependency on them); inside the repository, projects that reference this one
+       still compile against them and copy them, because this project hands their assemblies over together with its
+       own (_MicroEngineBundledOutput). -->
   <ItemGroup>
     <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Input/MicroEngine.Input.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Hosting/MicroEngine.Hosting.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Content/MicroEngine.Content.csproj" PrivateAssets="all" />
-    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Input/MicroEngine.Input.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj;../MicroEngine.Content/MicroEngine.Content.csproj" />
+    <ProjectReference Include="../MicroEngine.Audio/MicroEngine.Audio.csproj" PrivateAssets="all" />
+    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Input/MicroEngine.Input.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj;../MicroEngine.Content/MicroEngine.Content.csproj;../MicroEngine.Audio/MicroEngine.Audio.csproj" />
   </ItemGroup>
   <Target Name="_MicroEngineBundledOutput">
     <MSBuild Projects="@(_MicroEngineBundledProject)" Targets="GetTargetPath" Properties="BuildProjectReferences=false">
@@ -54,6 +56,8 @@
   <ItemGroup>
     <PackageReference Include="StbImageSharp" Version="[2.30.15]" />
     <PackageReference Include="FontStashSharp" Version="[1.3.10]" />
+    <!-- The bundled audio assembly decodes OGG Vorbis music (NVorbis, managed, MIT). -->
+    <PackageReference Include="NVorbis" Version="[0.10.5]" />
   </ItemGroup>
   <!-- The application-identity targets (build/MicroEngine.targets) apply to every game that references the package,
        directly or through a backend package. -->
