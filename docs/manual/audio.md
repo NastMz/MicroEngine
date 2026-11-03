@@ -145,6 +145,14 @@ Source: [`games/NeonRift/Art/Sounds.cs`](../../games/NeonRift/Art/Sounds.cs)
 | OGG | Music only, through `AddMusicFile`; streamed and decoded in managed code (NVorbis) on every platform, ahead of playback and outside the simulation step |
 | MP3 | Music only, and **raylib only** (decoded by raylib, whole, when it is loaded): the SDL device, the default on desktops and phones, throws `NotSupportedException` for it. Use OGG for music that plays everywhere |
 
+Next SDK version: sound and music files can also come through `Game.Assets`, from any content source (a zip
+archive too), shared and released by scopes like any asset:
+
+```csharp
+Audio.AddSound("jump", Assets.Sound("sfx/jump.wav"));
+Audio.AddMusic("city", Assets.Music("music/city.ogg"));
+```
+
 Where content files live and how they are located is covered in [Assets](assets.md).
 
 ## Devices and silence
