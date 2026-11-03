@@ -1,0 +1,12 @@
+<Project>
+  <!-- MicroEngine.Physics.Box2D in browser builds: Box2D and the me_box2d layer are static WebAssembly archives linked
+       into dotnet.native.wasm (the browser build binds [LibraryImport("me_box2d")] to the archive named me_box2d.a).
+       Other runtimes load runtimes/<rid>/native/ from the package as usual. -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+    <NativeFileReference Include="$(MSBuildThisFileDirectory)../runtimes/browser-wasm/native/me_box2d.a" />
+    <NativeFileReference Include="$(MSBuildThisFileDirectory)../runtimes/browser-wasm/native/box2d.a" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+    <WasmBuildNative>true</WasmBuildNative>
+  </PropertyGroup>
+</Project>
