@@ -102,6 +102,10 @@ test('every input of an SDK package or of the external project test runs the SDK
   assert.deepEqual(plan(['src/MicroEngine.Cli/Commands/PackageCommand.cs']), { ...none, dotnet: true, windows: true, sdk: true });
   assert.deepEqual(plan(['src/MicroEngine.Cli/Hosts/android/MainActivity.cs']), { ...none, sdk: true, mobile: true });
   assert.deepEqual(plan(['sdk/tests/external.mjs']), { ...none, sdk: true });
+  // The external project test copies the asset gallery and plays its tour from the packages.
+  assert.deepEqual(plan(['samples/AssetGallery/GalleryScene.cs']), { ...none, dotnet: true, sdk: true });
+  assert.deepEqual(plan(['samples/AssetGallery/scripts/tour.script']), { ...none, dotnet: true, sdk: true });
+  assert.deepEqual(plan(['samples/AssetGallery/CREDITS.md']), { ...none, dotnet: true, sdk: true });
   assert.deepEqual(plan(['THIRD-PARTY-NOTICES.md']), { ...none, browser: 'layout', sdk: true });
   assert.deepEqual(plan(['web/toolchain.env']), { ...none, browser: 'full', sdk: true, web: true });
   assert.deepEqual(plan(['web/tests/package-lock.json']), { ...none, native: true, sdk: true, web: true });
