@@ -309,17 +309,26 @@ public sealed class AudioMixer
     public void AddSoundFile(string name, string path) => AddSound(name, AudioClip.FromWav(File.ReadAllBytes(path)));
 
     /// <summary>Registers a music file. WAV is decoded here; other formats are streamed by the device.</summary>
-    /// <remarks>Formats other than wav depend on the audio device: the SDL device streams ogg; the raylib device also decodes mp3.</remarks>
+    /// <remarks>Every device decodes OGG Vorbis; the raylib device also decodes mp3.</remarks>
     /// <exception cref="FileNotFoundException">The file does not exist.</exception>
-    public void AddMusicFile(string name, string path, bool loop = true)
+    public void AddMusicFile(string name, string path, bool loop = true) =>
+        AddMusic(name, new EncodedAudio(File.ReadAllBytes(path), Path.GetExtension(path) is { Length: > 1 } e ? e : "wav"), loop);
+
+    /// <summary>
+    /// Registers a music file loaded from content (<c>Assets.Music(path)</c>) under <paramref name="name"/>: WAV is
+    /// decoded here, other formats are decoded by the device while they play.
+    /// </summary>
+    /// <exception cref="NotSupportedException">The device does not decode that format (MP3 outside raylib, for example).</exception>
+    /// <exception cref="InvalidDataException">The bytes cannot be decoded as their format.</exception>
+    public void AddMusic(string name, EncodedAudio music, bool loop = true)
     {
-        var bytes = File.ReadAllBytes(path);
-        var format = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
+        ArgumentNullException.ThrowIfNull(music);
+        var handle = music.Format == "wav"
+            ? _device.LoadMusic(name, AudioClip.FromWav(music.Data), loop)
+            : _device.LoadMusicStream(name, music.Data, music.Format, loop);
         _songs.Remove(name);
         _sliced.RemoveAll(s => s.Name == name);
-        _music[name] = format == "wav"
-            ? _device.LoadMusic(name, AudioClip.FromWav(bytes), loop)
-            : _device.LoadMusicStream(name, bytes, format, loop);
+        _music[name] = handle;
     }
 
     /// <summary>Plays a sound. <paramref name="pitchJitter"/> randomizes pitch (+/-) to avoid repetition fatigue.
