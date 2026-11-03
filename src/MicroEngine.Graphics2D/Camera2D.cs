@@ -7,8 +7,9 @@ namespace MicroEngine.Graphics;
 /// Supports smooth following with a dead zone, world bounds and trauma-based shake.
 /// </summary>
 /// <remarks>
-/// The camera has no zoom or rotation: one world pixel is one virtual pixel. Draw the world between
-/// <see cref="IRenderer.PushCamera"/> and <see cref="IRenderer.PopCamera"/>, and the interface after the pop.
+/// By default one world pixel is one canvas pixel. <see cref="Zoom"/> scales and <see cref="Rotation"/> turns the view
+/// around its centre; <see cref="WorldToView"/> is the whole transform. Draw the world between the renderer's
+/// <c>PushCamera</c> and <c>PopCamera</c>, and the interface after the pop.
 /// </remarks>
 /// <example>
 /// <code>
@@ -46,8 +47,43 @@ public sealed class Camera2D
     public float MaxShake { get; set; } = 6f;
     /// <summary>Shake offset applied on top of <see cref="Position"/> when rendering.</summary>
     public Vector2 ShakeOffset { get; private set; }
-    /// <summary>Rounds the render offset to whole pixels for crisp pixel art.</summary>
+    /// <summary>
+    /// Rounds the camera's translation to whole canvas pixels for crisp pixel art (true by default, the pixel-art choice;
+    /// smooth HD games turn it off). With a zoom or a rotation the translation after them is rounded.
+    /// </summary>
     public bool PixelSnap { get; set; } = true;
+    /// <summary>
+    /// Magnification around the view's centre: 2 shows half as much of the world, twice as large (1 by default).
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a positive finite number.</exception>
+    public float Zoom
+    {
+        get => _zoom;
+        set => _zoom = float.IsFinite(value) && value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), "The zoom must be a positive number.");
+    }
+    private float _zoom = 1f;
+    /// <summary>Rotation of the view around its centre, in radians; positive turns the world clockwise on screen (0 by default).</summary>
+    public float Rotation { get; set; }
+
+    /// <summary>
+    /// World coordinates to canvas pixels: the view's centre (with shake) moves to the canvas centre, then the world is
+    /// rotated by <see cref="Rotation"/> and scaled by <see cref="Zoom"/> around it; with <see cref="PixelSnap"/> the
+    /// final translation is rounded. With no zoom or rotation it is the translation by <see cref="RenderOffset"/>.
+    /// </summary>
+    public Matrix3x2 WorldToView
+    {
+        get
+        {
+            if (Zoom == 1f && Rotation == 0f) return Matrix3x2.CreateTranslation(RenderOffset);
+            var half = new Vector2(ViewWidth, ViewHeight) / 2f;
+            var m = Matrix3x2.CreateTranslation(-(Center + ShakeOffset)) * Matrix3x2.CreateRotation(Rotation) * Matrix3x2.CreateScale(Zoom) * Matrix3x2.CreateTranslation(half);
+            if (PixelSnap) m.Translation = new Vector2(MathF.Round(m.Translation.X), MathF.Round(m.Translation.Y));
+            return m;
+        }
+    }
+
+    /// <summary>Canvas pixels to world coordinates: the inverse of <see cref="WorldToView"/>.</summary>
+    public Matrix3x2 ViewToWorld => Matrix3x2.Invert(WorldToView, out var inverse) ? inverse : Matrix3x2.Identity;
 
     /// <summary>Creates a camera at the world origin.</summary>
     /// <param name="viewWidth">Width of the view in pixels.</param>
@@ -114,9 +150,28 @@ public sealed class Camera2D
     }
 
     /// <summary>Converts a world point to virtual-canvas pixels, including shake.</summary>
-    public Vector2 WorldToScreen(Vector2 world) => world + RenderOffset;
+    public Vector2 WorldToScreen(Vector2 world) => Zoom == 1f && Rotation == 0f ? world + RenderOffset : Vector2.Transform(world, WorldToView);
     /// <summary>Converts a virtual-canvas point (for example a pointer position) to world pixels, including shake.</summary>
-    public Vector2 ScreenToWorld(Vector2 screen) => screen - RenderOffset;
-    /// <summary>Whether <paramref name="world"/> overlaps the view, grown by <paramref name="margin"/> plus <see cref="MaxShake"/> pixels. Use it to skip drawing off-screen objects.</summary>
-    public bool IsVisible(RectF world, float margin = 0) => View.Inflate(margin + MaxShake).Intersects(world);
+    public Vector2 ScreenToWorld(Vector2 screen) => Zoom == 1f && Rotation == 0f ? screen - RenderOffset : Vector2.Transform(screen, ViewToWorld);
+    /// <summary>Whether <paramref name="world"/> overlaps the visible area, grown by <paramref name="margin"/> plus <see cref="MaxShake"/> pixels. Use it to skip drawing off-screen objects.</summary>
+    public bool IsVisible(RectF world, float margin = 0) => VisibleBounds.Inflate(margin + MaxShake).Intersects(world);
+
+    /// <summary>
+    /// The world rectangle that covers what the canvas shows, without shake: <see cref="View"/> with no zoom or rotation,
+    /// otherwise the bounding box of the canvas's corners in the world.
+    /// </summary>
+    public RectF VisibleBounds
+    {
+        get
+        {
+            if (Zoom == 1f && Rotation == 0f) return View;
+            var half = new Vector2(ViewWidth, ViewHeight) / 2f;
+            var toWorld = Matrix3x2.CreateTranslation(-half) * Matrix3x2.CreateScale(1f / Zoom) * Matrix3x2.CreateRotation(-Rotation) * Matrix3x2.CreateTranslation(Center);
+            Span<Vector2> corners = [Vector2.Transform(Vector2.Zero, toWorld), Vector2.Transform(new Vector2(ViewWidth, 0), toWorld),
+                Vector2.Transform(new Vector2(ViewWidth, ViewHeight), toWorld), Vector2.Transform(new Vector2(0, ViewHeight), toWorld)];
+            float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+            foreach (var c in corners) { x0 = MathF.Min(x0, c.X); y0 = MathF.Min(y0, c.Y); x1 = MathF.Max(x1, c.X); y1 = MathF.Max(y1, c.Y); }
+            return new RectF(x0, y0, x1 - x0, y1 - y0);
+        }
+    }
 }
