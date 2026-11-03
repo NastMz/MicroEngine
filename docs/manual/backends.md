@@ -249,7 +249,8 @@ starts automatic:
 - `WindowMode.Fullscreen` is a borderless window covering its display: switching is instant, and on Windows it is
   presented directly to the display (one refresh less latency than a window). `WindowMode.ExclusiveFullscreen` asks
   for the display's own mode where the backend supports it; it is not faster than `Fullscreen` with SDL on Windows.
-  F11 and Alt+Enter switch between the window and `Fullscreen`.
+  F11 and Alt+Enter switch between the window and `Fullscreen` (next SDK version: through the engine's `fullscreen`
+  action, which a game can rebind or turn off; see [Input](input.md#full-screen)).
 - `Display` is an index of `Game.Screen.Displays`. A window opened on a display (or full screen) is shown once it is
   there.
 
@@ -322,7 +323,7 @@ running; a game with a start screen starts gamepad support once that screen is s
 Pads already connected are reported as usual.
 Keyboard, mouse, the first gamepad (the next one takes over when it is unplugged; next SDK version: every gamepad, as
 a device of its own, with text input and rumble) and touch are read; F11 and
-Alt+Enter toggle fullscreen on desktops; losing focus releases keys and fingers. Audio uses SDL audio streams: wav and
+Alt+Enter toggle fullscreen on desktops (next SDK version: the engine's `fullscreen` action does, not the backend); losing focus releases keys and fingers. Audio uses SDL audio streams: wav and
 ogg music, silence when no device exists. `SdlTouchScreen` reports finger events, `SDL_GetWindowSafeArea` and the
 display scale, vibrates the device on Android (SDL's haptic API) and draws the game's on-screen controls over the frame
 in window pixels (never into captures; [Touch controls](input.md#touch-controls)).

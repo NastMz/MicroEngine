@@ -1,4 +1,5 @@
 using MicroEngine.Kernel;
+using MicroEngine.Testing;
 
 namespace MicroEngine.Tests.Kernel;
 
@@ -125,10 +126,7 @@ public sealed class FrameScheduleTests
         int count = 0;
         for (int i = 0; i < 8; i++) schedule.Add(FramePhase.Update, $"s{i}", _ => count++);
         schedule.Freeze();
-        schedule.Run(FramePhase.Update, Context);
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 100; i++) schedule.Run(FramePhase.Update, Context);
-        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before);
-        Assert.AreEqual(808, count);
+        AllocationAssert.None(() => schedule.Run(FramePhase.Update, Context), warmup: 1, calls: 100, rounds: 5);
+        Assert.AreEqual(8 * (1 + 100 * 5), count, "every run runs every system");
     }
 }

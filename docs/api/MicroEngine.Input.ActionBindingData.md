@@ -64,6 +64,18 @@ public List<string> Buttons { get; set; }
 
  [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
 
+### <a id="MicroEngine_Input_ActionBindingData_Chords"></a> Chords
+
+Key combinations as "LeftAlt|RightAlt+Enter": the modifiers (any one of them), then the key.
+
+```csharp
+public List<string> Chords { get; set; }
+```
+
+#### Property Value
+
+ [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
+
 ### <a id="MicroEngine_Input_ActionBindingData_Keys"></a> Keys
 
 Keys by name ("A", "Space").

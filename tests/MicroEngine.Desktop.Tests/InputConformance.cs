@@ -410,6 +410,24 @@ public sealed unsafe class SdlInputConformance : InputConformance
     }
 
     [TestMethod]
+    public void F11_and_Alt_Enter_are_keys_like_any_other_and_the_backend_never_switches_the_window_itself()
+    {
+        using var host = Open(new PlatformRequest(new GameSettings("keys", 64, 36)) { Hidden = true, WaitForDisplay = false, Mute = true })
+            ?? throw new AssertInconclusiveException("SDL cannot open here");
+        Assert.IsTrue(host.TryGetCapability<MicroEngine.Core.IDisplayControl>(out var display));
+        var before = display.WindowMode;
+        Assert.IsTrue(Key(host, Input.Key.F11, true) && Key(host, Input.Key.F11, false));
+        Assert.IsTrue(Key(host, Input.Key.LeftAlt, true) && Key(host, Input.Key.Enter, true) && Key(host, Input.Key.Enter, false) && Key(host, Input.Key.LeftAlt, false));
+        host.PumpEvents(NativeChecks.IgnoredEvents.Instance);
+        Assert.IsTrue(host.TryGetCapability<IInputBackend>(out var backend));
+        var events = new List<InputEvent>();
+        backend.Drain(events);
+        Assert.AreEqual(before, display.WindowMode, "switching is the engine's full-screen action, not the backend's");
+        CollectionAssert.IsSubsetOf(new[] { Input.Key.F11, Input.Key.LeftAlt, Input.Key.Enter },
+            events.Where(e => e.Kind == InputEventKind.KeyDown).Select(e => e.Key).ToArray(), "the keys reach the engine as events");
+    }
+
+    [TestMethod]
     public void Character_keys_are_labelled_by_the_layout_and_named_keys_are_left_to_the_engine()
     {
         using var host = Open(new PlatformRequest(new GameSettings("labels", 64, 36)) { Hidden = true, WaitForDisplay = false, Mute = true })

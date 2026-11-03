@@ -233,7 +233,8 @@ public class PerformanceTests
     public void The_loop_allocates_next_to_nothing_per_frame()
     {
         // Input sampling, touch controls and the loop itself run every frame; garbage there becomes collections on
-        // phones and in browsers. 2.6 KB per frame before PERF-1, about 100 bytes after.
+        // phones and in browsers. 2.6 KB per frame before PERF-1, about 100 bytes after, 240 bytes in
+        // November 2026.
         var profiler = new FrameProfiler();
         var result = GameRunner.Run(new QuietGame(), new HeadlessPlatform(), new RunOptions
         {
@@ -242,8 +243,13 @@ public class PerformanceTests
             Profiler = profiler,
         });
         Assert.IsNull(result.Error);
-        var summary = profiler.Summarize(warmup: 100);
-        Assert.IsTrue(summary.AllocatedPerFrame < 256, $"{summary.AllocatedPerFrame:0} bytes per frame");
+        // Each frame's bytes are the loop thread's count. Garbage made every frame shows in the median frame. A background
+        // collection caused by tests running in parallel can add up to about 8 KB to one frame's count (see
+        // AllocationAssert); that moves the mean only.
+        var frames = profiler.Samples.Skip(100).Select(f => f.Allocated).Order().ToList();
+        Assert.AreEqual(200, frames.Count);
+        long median = frames[frames.Count / 2];
+        Assert.IsTrue(median < 256, $"{median} bytes in the median frame (mean {profiler.Summarize(warmup: 100).AllocatedPerFrame:0}, most {frames[^1]})");
     }
 
     [TestMethod]

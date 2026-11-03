@@ -2,6 +2,7 @@ using System.Numerics;
 using MicroEngine.Audio;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
+using MicroEngine.Testing;
 using MicroEngine.UI;
 
 namespace MicroEngine.Tests;
@@ -66,11 +67,8 @@ public sealed class GraphicsTests
         }
         Assert.AreEqual(2, atlas.Frames("walk").Count);
         // Collected once: games call it every frame.
-        atlas.Frames("walk");
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        var again = atlas.Frames("walk");
-        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before);
-        Assert.AreSame(again, atlas.Frames("walk"));
+        AllocationAssert.None(() => atlas.Frames("walk"), because: "frames of an animation are collected once");
+        Assert.AreSame(atlas.Frames("walk"), atlas.Frames("walk"));
         Assert.ThrowsExactly<KeyNotFoundException>(() => atlas.Frames("run"));
         Assert.ThrowsExactly<ArgumentException>(() => new SpriteAtlasBuilder().Add("a", new PixelImage(1, 1)).Add("a", new PixelImage(1, 1)));
     }
@@ -80,9 +78,7 @@ public sealed class GraphicsTests
     {
         var font = BitmapFont.CreateDefault(null);
         Assert.AreEqual(new System.Numerics.Vector2(font.MeasureWidth("ab\ncdef"), 18), font.Measure("ab\ncdef"));
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 100; i++) font.Measure("HP 12/20\nLv 5");
-        Assert.AreEqual(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        AllocationAssert.None(() => font.Measure("HP 12/20\nLv 5"), because: "games measure text every frame");
     }
 
     [TestMethod]

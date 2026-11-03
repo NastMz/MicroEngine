@@ -49,7 +49,7 @@ The manual covers each area: [lifecycle](../manual/lifecycle.md), [scenes](../ma
 
 | Type | Responsibility |
 | --- | --- |
-| `RaylibPlatform` | `IPlatform` over raylib: window, scaled and letterboxed canvas, renderer, texture creation, keyboard, gamepad and mouse, touches from the browser page (`BrowserTouch`), captures, F11 and Alt+Enter fullscreen on desktop. In a browser it leaves fullscreen and minimum size to the page |
+| `RaylibPlatform` | `IPlatform` over raylib: window, scaled and letterboxed canvas, renderer, texture creation, keyboard, gamepad and mouse, touches from the browser page (`BrowserTouch`), captures, F11 and Alt+Enter fullscreen on desktop (next SDK version: the engine's `fullscreen` action switches; the backend only delivers the keys). In a browser it leaves fullscreen and minimum size to the page |
 | `RaylibAudioDevice` | `IAudioDevice` over raylib audio, including streamed OGG and MP3 music |
 | `SdlPlatform` | `IPlatform` over SDL 3: window (full screen on phones), SDL renderer into a virtual-size texture, keyboard, mouse, gamepad, touch screen (safe area, density, Android vibration), lifecycle events, captures; `CreateProfile(renderer)` fixes a render driver |
 | `SdlAudioDevice` | `IAudioDevice` over SDL audio streams; WAV and OGG (NVorbis) music; usable with another platform |
