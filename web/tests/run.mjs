@@ -9,6 +9,8 @@
 //             Run's saves and run only when --games includes them)
 //   scripts   replays the games' own input scripts (scenarios.json) and stores their captures in --out, to
 //             compare with desktop captures (desktop.mjs with the same --out compares them byte for byte)
+//   repeat    replays each script twice in fresh pages and checks that both runs write byte-identical captures
+//             (scripted runs are deterministic in pages as on desktop); differing pairs go to --out/<browser>/repeat
 //   autopilot Neon Rift's built-in autopilot plays stages 1 to 3 until the ending
 //   audio     per game: the sound actually reaching the speakers (signal level of the page's audio output)
 //   framerate per game: updates per second while the page draws every frame, every 2nd and every 4th
@@ -317,6 +319,49 @@ async function scripts(browser, label) {
   }
 }
 
+// One scripted run in a fresh page: whether it reached its quit, and its captures by name.
+async function scriptedRun(browser, s) {
+  const query = new URLSearchParams({ ...s.env, script: s.script, autostart: '1' });
+  const { page, context, errors } = await open(browser, s.game, `?${query}`);
+  try {
+    const state = await waitFor(page, st => st === 'ended' || st === 'failed', 600_000);
+    const captures = new Map();
+    for (const capture of await page.evaluate(() => window.microengine.captures()))
+      captures.set(capture, Buffer.from(await page.evaluate(n => window.microengine.capture(n), capture), 'base64'));
+    return { ended: state === 'ended' && errors.length === 0, error: errors[0], captures };
+  } finally {
+    await context.close();
+  }
+}
+
+// Every scripted run is deterministic in a page as on desktop (one fixed step per frame, seed 1, the same launcher
+// model), so two runs of the same package and script must write byte-identical captures. The second run's differing
+// captures are kept in --out for inspection.
+async function repeat(browser, label) {
+  const { scenarios } = JSON.parse(fs.readFileSync(path.join(here, 'scenarios.json'), 'utf8'));
+  for (const s of scenarios.filter(s => games.includes(s.game))) {
+    const name = `${label} ${s.game} ${s.script}`;
+    const [first, second] = [await scriptedRun(browser, s), await scriptedRun(browser, s)];
+    const ended = first.ended && second.ended;
+    check(`${name}: both runs reach their quit`, ended, first.error ?? second.error ?? '');
+    if (!ended) continue;
+    const names = [...first.captures.keys()].sort();
+    const same = names.length === second.captures.size && names.every(n => second.captures.has(n));
+    const differing = names.filter(n => second.captures.has(n) && !first.captures.get(n).equals(second.captures.get(n)));
+    if (differing.length) {
+      const dir = path.join(out, label, 'repeat', s.game, path.basename(s.script, '.script'));
+      fs.rmSync(dir, { recursive: true, force: true });
+      fs.mkdirSync(dir, { recursive: true });
+      for (const n of differing) {
+        fs.writeFileSync(path.join(dir, `run1-${n}`), first.captures.get(n));
+        fs.writeFileSync(path.join(dir, `run2-${n}`), second.captures.get(n));
+      }
+    }
+    check(`${name}: two runs write byte-identical captures`, same && differing.length === 0 && names.length > 0,
+      `${names.length - differing.length}/${names.length} identical${same ? '' : `; run 2 wrote ${[...second.captures.keys()].sort().join(', ')}`}${differing.length ? `; differing: ${differing.join(', ')}` : ''}`);
+  }
+}
+
 // The key a player would press for each scripted action (the first binding that no other action shares).
 const keyFor = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', confirm: 'Enter', cancel: 'Backspace',
   action: 'KeyC', pause: 'Escape', jump: 'KeyZ', run: 'KeyX', fire: 'KeyX', lock: 'KeyC' };
@@ -501,6 +546,7 @@ try {
         if (label === 'firefox' && games.includes('MeadowRun')) await blockedStorage().catch(e => check('firefox blocked storage', false, e.message));
       }
       if (suites.includes('scripts')) await scripts(browser, label).catch(e => check(`${label} scripts`, false, e.message));
+      if (suites.includes('repeat')) await repeat(browser, label).catch(e => check(`${label} repeat`, false, e.message));
       if (suites.includes('audio')) await audio(browser, label).catch(e => check(`${label} audio`, false, e.message));
       if (suites.includes('framerate')) await framerate(browser, label).catch(e => check(`${label} framerate`, false, e.message));
       if (suites.includes('keyboard')) await keyboard(browser, label).catch(e => check(`${label} keyboard`, false, e.message));
