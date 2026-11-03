@@ -2,6 +2,7 @@ using System.Numerics;
 using NeonRift.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.World;
 
 namespace NeonRift.Gameplay;
@@ -20,6 +21,15 @@ public sealed class PlayerShot : Actor
         Velocity = velocity;
         float size = weapon.Kind switch { WeaponKind.Lance => 10, WeaponKind.Spread => 6, _ => 5 };
         Hitbox = new RectF(-size / 2, -size / 2, size, size);
+    }
+
+    /// <summary>Adds the actor's state, then the weapon, the lifetime and how many enemies a piercing shot already hit.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add((int)Weapon.Kind);
+        hash.Add(Life);
+        hash.Add(_hit.Count);
     }
 
     public override void Update(float dt)
@@ -80,10 +90,18 @@ public sealed class EnemyShot : Actor
         Hitbox = new RectF(-size / 2, -size / 2, size, size);
     }
 
+    /// <summary>Adds the actor's state, then whether the shell is heavy and its gravity.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(Heavy);
+        hash.Add(Gravity);
+    }
+
     public override void Update(float dt)
     {
         base.Update(dt);
-        Velocity += new Vector2(0, Gravity * dt);
+        Velocity +=new Vector2(0, Gravity * dt);
         Position += Velocity * dt;
         if (Age > 6 || !Stage.Camera.View.Inflate(40).Contains(Position)) Destroy();
         else if (Gravity > 0 && TileMotion.IsSolidAt(Position, Stage.Grid))

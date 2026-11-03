@@ -3,6 +3,7 @@ using NeonRift.Art;
 using NeonRift.Content;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace NeonRift.Gameplay;
 
@@ -59,6 +60,15 @@ public sealed class Gunship : Boss
     {
         Position = home + new Vector2(300, -40);
         Hitbox = new RectF(-70, -30, 140, 60);
+    }
+
+    /// <summary>Adds the enemy's state, then the attack timer, the next pattern and the strafe run's time.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_timer);
+        hash.Add(_pattern);
+        hash.Add(_strafe);
     }
 
     public override string Title => "HAULER GX-9";
@@ -136,6 +146,18 @@ public sealed class Interceptor : Boss
         Hitbox = new RectF(-60, -40, 120, 75);
     }
 
+    /// <summary>Adds the enemy's state, then the attack timer, the next pattern, the dash (time and ends) and the facing.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_timer);
+        hash.Add(_pattern);
+        hash.Add(_dash);
+        hash.Add(_dashFrom);
+        hash.Add(_dashTo);
+        hash.Add(_facing);
+    }
+
     public override string Title => "RAPTOR INTERCEPTOR";
 
     public override void Update(float dt)
@@ -210,6 +232,15 @@ public sealed class Dreadnought : Boss
         Position = home + new Vector2(360, -30);
         Hitbox = new RectF(-110, -40, 170, 100);
         EntryTime = 3.2f;
+    }
+
+    /// <summary>Adds the enemy's state, then the attack timer, the next pattern and how many turrets were mounted (the turrets are hashed with the stage's enemies).</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_timer);
+        hash.Add(_pattern);
+        hash.Add(_turrets.Count);
     }
 
     public override string Title => "LEVIATHAN";
@@ -313,6 +344,13 @@ public sealed class DreadTurret : Enemy
     }
 
     public override bool Big => true;
+
+    /// <summary>Adds the enemy's state, then the fire timer; its offset on the hull is fixed.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_timer);
+    }
 
     public override bool Hit(int damage, Vector2 at) => !_parent.Entering && base.Hit(damage, at);
 

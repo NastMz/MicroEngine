@@ -3,6 +3,7 @@ using NeonRift.Art;
 using NeonRift.Content;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.World;
 
 namespace NeonRift.Gameplay;
@@ -14,7 +15,7 @@ public enum StagePhase { Playing, Warning, Boss, Cleared, GameOver }
 /// enemies, shots and pickups, deaths and respawns, and the boss arena. Contains no drawing code
 /// besides what actors render, so tests can run it headlessly.
 /// </summary>
-public sealed class Stage
+public sealed class Stage : IStateHashed
 {
     public const float WarningTime = 2.6f, ClearTime = 5.5f, RespawnDelay = 0.6f;
     private readonly Session _session;
@@ -31,7 +32,9 @@ public sealed class Stage
     {
         Def = def;
         _session = session;
-        Random = new Random(seed);
+        // Simulation draws from it (the rapid gun's jitter, trooper timing, boss explosions): a SeededRandom draws the
+        // same sequence as new Random(seed) and takes part in the state hash.
+        Random = new SeededRandom(seed);
         Grid = new TileGrid(def.Layer, Tiles.Size, new Dictionary<int, TileFlags>
         {
             [TileId.Solid] = TileFlags.Solid,
@@ -58,7 +61,7 @@ public sealed class Stage
     public StageDef Def { get; }
     public TileGrid Grid { get; }
     public Camera2D Camera { get; }
-    public Random Random { get; }
+    public SeededRandom Random { get; }
     public Player Player { get; }
     public EntityList<Enemy> Enemies { get; } = new();
     public EntityList<PlayerShot> PlayerShots { get; } = new();
@@ -95,6 +98,49 @@ public sealed class Stage
     internal Func<string, ArmRig?>? Rigs { get; set; }
     /// <summary>Scratch list player shots fill with the enemies they touch, reused every update.</summary>
     internal List<Enemy> HitBuffer { get; } = [];
+
+    /// <summary>
+    /// Adds the stage's simulation state in sections named after its parts, so a divergence names the part:
+    /// <c>stage</c> (phase and its timers, clock, scroll and linger timers, next spawn, checkpoint, camera position, the
+    /// stage's generator, pending scheduled actions by time, the boss), <c>stage.player</c>, <c>stage.enemies</c>,
+    /// <c>stage.shots</c> (the player's, then the enemies') and <c>stage.pickups</c>. Left out: effects (presentation
+    /// only, see <see cref="Effect"/>), the camera's shake (drawing only), what is kept for drawing between updates
+    /// (<see cref="PreviousCameraPosition"/>, <see cref="Blend"/>), the session (hashed by the game) and the stage
+    /// definition (fixed).
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Section("stage");
+        hash.Add((int)Phase);
+        hash.Add(_phaseTime);
+        hash.Add(_waitTime);
+        hash.Add(_time);
+        hash.Add(_lockLeft);
+        hash.Add(_idleTime);
+        hash.Add(_lingerTimer);
+        hash.Add(_nextSpawn);
+        hash.Add(CheckpointIndex);
+        hash.Add(Camera.Position);
+        hash.Add(Random);
+        hash.Add(_scheduled.Count);
+        foreach (var (at, _) in _scheduled) hash.Add(at);
+        // The boss is hashed with the enemies while alive; after its defeat the clear sequence still explodes around it.
+        hash.Add(Boss is not null);
+        if (Boss is not null)
+        {
+            hash.Add(Boss.Alive);
+            hash.Add(Boss.Position);
+        }
+        hash.Section("stage.player");
+        hash.Add(Player);
+        hash.Section("stage.enemies");
+        Actor.HashAll(hash, Enemies);
+        hash.Section("stage.shots");
+        Actor.HashAll(hash, PlayerShots);
+        Actor.HashAll(hash, EnemyShots);
+        hash.Section("stage.pickups");
+        Actor.HashAll(hash, Pickups);
+    }
 
     public void Update(float dt, PlayerInput input)
     {

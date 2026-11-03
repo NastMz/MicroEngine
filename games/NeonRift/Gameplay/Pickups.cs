@@ -2,6 +2,7 @@ using System.Numerics;
 using NeonRift.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace NeonRift.Gameplay;
 
@@ -21,6 +22,14 @@ public sealed class Capsule : Actor
         Letter = letter;
         Velocity = new Vector2(30, -170);
         Hitbox = new RectF(-9, -9, 18, 18);
+    }
+
+    /// <summary>Adds the actor's state, then the letter and whether it rests on the ground.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add((int)Letter);
+        hash.Add(_body.Grounded);
     }
 
     public override void Update(float dt)
