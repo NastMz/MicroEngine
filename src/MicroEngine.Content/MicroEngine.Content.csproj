@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Content: the asset store (typed handles with generations, scopes that share and release what they hold), the
+       loader registry, the reserved import seam and content sources beyond folders (zip archives, files a host lists
+       and opens itself). It references only the kernel and the platform contracts (the architecture test checks it).
+       It is not a package of its own: the MicroEngine package carries MicroEngine.Content.dll
+       (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Content</RootNamespace>
+    <Description>MicroEngine content: the asset store, typed asset handles, scopes, the loader registry and content sources. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+</Project>

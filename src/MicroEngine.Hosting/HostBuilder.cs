@@ -49,7 +49,9 @@ public sealed class HostBuilder
     /// <summary>
     /// Where the game's content files come from when the game names no folder of its own; null (the default) for the
     /// <c>Content</c> folder next to the program. The desktop host sets a macOS bundle's resources, the Android app the
-    /// folder it unpacked its assets to, the iOS app its bundle's folder.
+    /// folder it unpacked its assets to, the iOS app its bundle's folder. Any source works: a folder
+    /// (<see cref="FolderContentSource"/>), a zip archive (<c>ZipContentSource</c>) or files a host lists and opens itself
+    /// (<c>ListedContentSource</c>).
     /// </summary>
     public IContentSource? Content { get; set; }
 
