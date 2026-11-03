@@ -17,6 +17,7 @@ public sealed class FullscreenActionTests
     {
         public override GameSettings Settings { get; } = new("fullscreen");
         public List<Key> KeysSeen { get; } = [];
+        public int Confirms { get; private set; }
         protected override InputMap CreateInput() => input?.Invoke() ?? base.CreateInput();
         protected override void Load() { }
         public override void Configure(MicroEngine.Kernel.EngineBuilder builder) =>
@@ -24,6 +25,7 @@ public sealed class FullscreenActionTests
             {
                 foreach (var e in InputSystem.Events)
                     if (e.Kind == InputEventKind.KeyDown) KeysSeen.Add(e.Key);
+                if (Input.Pressed("confirm")) Confirms++;
             });
     }
 
@@ -125,6 +127,62 @@ public sealed class FullscreenActionTests
     }
 
     [TestMethod]
+    public void Alt_Enter_toggles_without_confirming_and_Enter_alone_still_confirms()
+    {
+        var (platform, game, loop) = Start();
+        Tap(platform, loop, Key.LeftAlt, Key.Enter);
+        Assert.AreEqual(1, platform.FullscreenToggles);
+        Assert.AreEqual(0, game.Confirms, "the chord's press is the chord's, not Enter's");
+        Tap(platform, loop, Key.Enter);
+        Assert.AreEqual(1, game.Confirms, "a plain Enter press confirms");
+        loop.Finish();
+    }
+
+    [TestMethod]
+    public void A_chord_takes_its_key_for_that_press_and_a_later_plain_press_is_the_keys_again()
+    {
+        var map = new InputMap().Bind("save", new KeyChord(Key.S, Key.LeftControl, Key.RightControl)).Bind("down", Key.S);
+        var keys = new HeadlessInput();
+        void Step() { map.EndUpdate(); map.Sample(keys); }
+        keys.Set(Key.LeftControl, true);
+        map.Sample(keys);
+        keys.Set(Key.S, true);
+        Step();
+        Assert.IsTrue(map.Pressed("save"));
+        Assert.IsFalse(map.Down("down"), "Ctrl+S does not also press the plain S action");
+        keys.Set(Key.LeftControl, false);
+        Step();
+        Assert.IsFalse(map.Down("save"), "the chord ends with its modifier");
+        Assert.IsFalse(map.Down("down"), "S is still the chord's press until it is let go");
+        keys.Set(Key.S, false);
+        Step();
+        keys.Set(Key.S, true);
+        Step();
+        Assert.IsTrue(map.Pressed("down"), "after releasing Ctrl, a new S press is plain S");
+        Assert.IsFalse(map.Down("save"));
+    }
+
+    [TestMethod]
+    public void Releasing_Alt_then_pressing_Enter_confirms()
+    {
+        var map = InputMap.CreateDefault();
+        var keys = new HeadlessInput();
+        void Step() { map.EndUpdate(); map.Sample(keys); }
+        keys.Set(Key.LeftAlt, true);
+        map.Sample(keys);
+        keys.Set(Key.Enter, true);
+        Step();
+        Assert.IsTrue(map.Pressed("fullscreen") && !map.Down("confirm"));
+        keys.Set(Key.Enter, false);
+        keys.Set(Key.LeftAlt, false);
+        Step();
+        keys.Set(Key.Enter, true);
+        Step();
+        Assert.IsTrue(map.Pressed("confirm"));
+        Assert.IsFalse(map.Down("fullscreen"));
+    }
+
+    [TestMethod]
     public void Chords_need_their_modifier_and_survive_a_save_and_load()
     {
         var map = new InputMap().Bind("save", new KeyChord(Key.S, Key.LeftControl, Key.RightControl));
@@ -132,7 +190,11 @@ public sealed class FullscreenActionTests
         keys.Set(Key.S, true);
         map.Sample(keys);
         Assert.IsFalse(map.Down("save"), "S alone");
+        keys.Set(Key.S, false);
         keys.Set(Key.RightControl, true);
+        map.EndUpdate();
+        map.Sample(keys);
+        keys.Set(Key.S, true);
         map.EndUpdate();
         map.Sample(keys);
         Assert.IsTrue(map.Pressed("save"));

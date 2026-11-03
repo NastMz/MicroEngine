@@ -93,4 +93,5 @@ desktop with a keyboard or gamepad, or on a phone or tablet with the on-screen t
 
 The desktop builds accept the engine's command line ([Configuration](../reference/configuration.md)): `--platform raylib`
 runs the game on raylib instead of SDL 3 (on Linux it needs glibc 2.38), `--platform sdl-software` uses SDL's CPU
-renderer, `--list-platforms` lists what can run on the machine. F11 or Alt+Enter toggles fullscreen.
+renderer, `--list-platforms` lists what can run on the machine. F11 or Alt+Enter toggles fullscreen (the engine's default keys for it; a game may
+move them).

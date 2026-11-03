@@ -51,7 +51,10 @@ protected override InputMap CreateInput() => InputMap.CreateDefault().Unbind("fu
 ```
 
 `Bind(action, new KeyChord(key, modifiers))` binds any key combination; chords are saved with the other bindings and
-named in prompts as `Alt+Enter`.
+named in prompts as `Alt+Enter`. A chord takes its key for the press it makes: a key pressed while a modifier of one
+of its chords is held belongs to the chord until it is let go, so Alt+Enter switches full screen without also pressing
+`confirm` (Enter's action), and Ctrl+S never also presses an action bound to S. A plain press of the key, or one after
+the modifier was let go, is the key's again.
 
 Keys are positions, named as on a US keyboard: `Key.A` is the key left of `S` whatever the player's layout prints on it,
 so WASD stays in place on AZERTY or Dvorak.

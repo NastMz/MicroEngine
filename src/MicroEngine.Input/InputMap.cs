@@ -68,6 +68,12 @@ public sealed partial class InputMap : IStateHashed
     private readonly HashSet<string> _forced = new(StringComparer.Ordinal);
     private readonly Dictionary<string, float> _values = new(StringComparer.Ordinal);
     private readonly HashSet<string> _consumed = new(StringComparer.Ordinal);
+    // Chord precedence: a key pressed while one of its chords' modifiers was held belongs to the chord until it is let
+    // go, so it presses no single-key binding (Alt+Enter is not also Enter). The chord keys down at the previous sample
+    // tell a new press from a held key.
+    private readonly HashSet<Key> _chorded = [];
+    private readonly HashSet<Key> _chordKeysDown = [];
+    private readonly List<Key> _released = [];
     private readonly List<IActionSource> _sources = [];
     private readonly List<PointerInfo> _pointers = [];
     private PointerState _pointer;
@@ -201,6 +207,7 @@ public sealed partial class InputMap : IStateHashed
         _pointer = source.Pointer;
         _pointers.Clear();
         _pointers.AddRange(source.Pointers);
+        UpdateChords(source);
         var stick = ApplyDeadZone(source.LeftStick, StickDeadZone);
         var stickDown = Directions(stick, StickThreshold, StickMode);
         foreach (var (action, b) in _bindings)
@@ -212,10 +219,10 @@ public sealed partial class InputMap : IStateHashed
             // Plain loops: this runs for every action at every update, and LINQ would allocate each time.
             if (!down)
                 foreach (var key in b.Keys)
-                    if (source.IsKeyDown(key)) { down = true; value = 1; device = InputDevice.Keyboard; break; }
+                    if (source.IsKeyDown(key) && !_chorded.Contains(key)) { down = true; value = 1; device = InputDevice.Keyboard; break; }
             if (!down)
                 foreach (var chord in b.Chords)
-                    if (source.IsKeyDown(chord.Key) && AnyDown(source, chord.Modifiers)) { down = true; value = 1; device = InputDevice.Keyboard; break; }
+                    if (_chorded.Contains(chord.Key) && source.IsKeyDown(chord.Key) && AnyDown(source, chord.Modifiers)) { down = true; value = 1; device = InputDevice.Keyboard; break; }
             if (!down)
                 foreach (var button in b.Buttons)
                     if (source.IsPadDown(button)) { down = true; value = 1; device = InputDevice.Gamepad; break; }
@@ -256,6 +263,38 @@ public sealed partial class InputMap : IStateHashed
                 }
         foreach (var action in _forced)
             if (!_bindings.ContainsKey(action)) Set(action, true, 1, InputDevice.Other);
+    }
+
+    /// <summary>
+    /// Chord precedence: a chord key that went down since the previous sample while a modifier of one of its chords is
+    /// held becomes the chord's until it is released; a chord key that went down alone stays a plain key.
+    /// </summary>
+    private void UpdateChords(IInputSource source)
+    {
+        if (_chordKeysDown.Count == 0 && _chorded.Count == 0 && !HasChords()) return;
+        // Plain loops and a reused list: this runs at every update and must not allocate.
+        if (_chorded.Count > 0)
+        {
+            _released.Clear();
+            foreach (var k in _chorded) if (!source.IsKeyDown(k)) _released.Add(k);
+            foreach (var k in _released) _chorded.Remove(k);
+        }
+        foreach (var b in _bindings.Values)
+            foreach (var chord in b.Chords)
+            {
+                bool down = source.IsKeyDown(chord.Key);
+                if (down && !_chordKeysDown.Contains(chord.Key) && AnyDown(source, chord.Modifiers)) _chorded.Add(chord.Key);
+            }
+        _chordKeysDown.Clear();
+        foreach (var b in _bindings.Values)
+            foreach (var chord in b.Chords)
+                if (source.IsKeyDown(chord.Key)) _chordKeysDown.Add(chord.Key);
+    }
+
+    private bool HasChords()
+    {
+        foreach (var b in _bindings.Values) if (b.Chords.Count > 0) return true;
+        return false;
     }
 
     private static bool AnyDown(IInputSource source, IReadOnlyList<Key> keys)
@@ -381,6 +420,11 @@ public sealed partial class InputMap : IStateHashed
         hash.Add(_pointer.Secondary);
         hash.Add(_pointer.Middle);
         // State that only exists once a game uses it: absent, it adds nothing, so older traces keep their hashes.
+        if (_chorded.Count > 0)
+        {
+            hash.Add(_chorded.Count);
+            foreach (var key in _chorded.Order()) hash.Add((int)key);
+        }
         if (_pointer.Wheel != Vector2.Zero || _pointers.Count > 0 || _consumed.Count > 0)
         {
             hash.Add(_pointer.Wheel);
