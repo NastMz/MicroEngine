@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Numerics;
 using MicroEngine.Graphics.Devices;
 
-namespace MicroEngine.Graphics.Conformance;
+namespace MicroEngine.Conformance.Graphics;
 
 /// <summary>
 /// The conformance suite of the graphics device contract (version 1). It runs unchanged against every device: a concrete
@@ -41,6 +41,12 @@ public abstract class DeviceConformance
     /// a diagnostic device that does not claim conformance (SDL's software renderer) names its own.
     /// </summary>
     protected virtual int CoverageTolerance => 0;
+
+    /// <summary>
+    /// Allowed difference of a blended 8-bit channel from the blend formula: 1 (8-bit quantization of the result, an
+    /// exact .5 rounding either way). A diagnostic device whose blending runs in truncating 8-bit integer steps names more.
+    /// </summary>
+    protected virtual int BlendTolerance => 1;
 
     protected IGraphicsDevice Device => _device!;
     protected Painter Painter => _painter ??= new Painter(Device);
@@ -204,8 +210,8 @@ public abstract class DeviceConformance
                 var expected = Blend(preset, s, d, ch);
                 var actual = image.Channel(1, 1, ch);
                 // Named source of variation: 8-bit quantization of the blended value (an exact .5 may round either way
-                // between vendors and APIs): ±1/255.
-                Assert.IsTrue(Math.Abs(actual - expected * 255f) <= 1f, $"{Name(preset)} channel {ch}: expected {expected * 255f:F2}, got {actual}");
+                // between vendors and APIs): ±1/255 (BlendTolerance).
+                Assert.IsTrue(Math.Abs(actual - expected * 255f) <= BlendTolerance, $"{Name(preset)} channel {ch}: expected {expected * 255f:F2}, got {actual}");
             }
         }
     }

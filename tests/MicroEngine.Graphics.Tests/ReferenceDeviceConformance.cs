@@ -1,4 +1,4 @@
-using MicroEngine.Graphics.Conformance;
+using MicroEngine.Conformance.Graphics;
 using MicroEngine.Graphics.Devices;
 
 [assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]

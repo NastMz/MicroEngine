@@ -15,5 +15,7 @@
   <ItemGroup>
     <!-- The native keyboard (XTEST) and sound-server helpers the raylib tests use, so SDL is checked the same way. -->
     <Compile Include="../MicroEngine.Raylib.Tests/Shared/*.cs" LinkBase="Shared" />
+    <!-- The graphics device conformance suite, run here against the SDL and raylib devices. -->
+    <Compile Include="../Shared/Graphics/*.cs" LinkBase="Shared/Graphics" />
   </ItemGroup>
 </Project>
