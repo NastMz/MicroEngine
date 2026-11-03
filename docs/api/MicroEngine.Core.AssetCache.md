@@ -438,6 +438,29 @@ public bool IsLoaded(string path)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_AssetCache_Music_System_String_"></a> Music\(string\)
+
+The music file at <code class="paramref">path</code> (OGG, WAV; MP3 on raylib), read whole and decoded while it plays; play
+it with <code>Audio.AddMusic(name, music)</code>.
+
+```csharp
+public EncodedAudio Music(string path)
+```
+
+#### Parameters
+
+`path` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ EncodedAudio
+
+#### Exceptions
+
+ AssetLoadException
+
+The file is missing or wrongly cased.
+
 ### <a id="MicroEngine_Core_AssetCache_Preload_System_String___"></a> Preload\(params string\[\]\)
 
 Starts loading <code class="paramref">paths</code> without blocking: images become textures, ".json" and ".xml" files atlases,
@@ -458,6 +481,28 @@ public AssetBatch Preload(params string[] paths)
  [AssetBatch](MicroEngine.Core.AssetBatch.md)
 
 The batch, to show progress on a loading screen or wait for.
+
+### <a id="MicroEngine_Core_AssetCache_Sound_System_String_"></a> Sound\(string\)
+
+The PCM WAV file at <code class="paramref">path</code> decoded into a clip, shared and released like any asset; play it with <code>Audio.AddSound(name, clip)</code>.
+
+```csharp
+public AudioClip Sound(string path)
+```
+
+#### Parameters
+
+`path` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+#### Returns
+
+ AudioClip
+
+#### Exceptions
+
+ AssetLoadException
+
+The file is missing, wrongly cased or not an 8, 16 or 24-bit PCM WAV.
 
 ### <a id="MicroEngine_Core_AssetCache_Text_System_String_"></a> Text\(string\)
 
