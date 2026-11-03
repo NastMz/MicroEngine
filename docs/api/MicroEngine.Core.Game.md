@@ -416,6 +416,19 @@ public long UpdateCount { get; }
 
  [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
+### <a id="MicroEngine_Core_Game_Views"></a> Views
+
+The world view and the UI view, and the mapping between window pixels, canvas pixels and UI units, with the
+pointer in each ([GameViews](MicroEngine.Core.GameViews.md)).
+
+```csharp
+public GameViews Views { get; }
+```
+
+#### Property Value
+
+ [GameViews](MicroEngine.Core.GameViews.md)
+
 ### <a id="MicroEngine_Core_Game_Width"></a> Width
 
 Width of the virtual canvas in pixels ([VirtualWidth](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_VirtualWidth)).

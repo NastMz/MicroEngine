@@ -91,6 +91,30 @@ public RenderTarget Target { get; }
 
  RenderTarget
 
+### <a id="MicroEngine_Graphics_DeviceCanvas_UiRenderer"></a> UiRenderer
+
+The UI view's renderer of the frame being drawn, or of the last one.
+
+```csharp
+public DeviceRenderer? UiRenderer { get; }
+```
+
+#### Property Value
+
+ [DeviceRenderer](MicroEngine.Graphics.DeviceRenderer.md)?
+
+### <a id="MicroEngine_Graphics_DeviceCanvas_UiTarget"></a> UiTarget
+
+The UI view's target (window pixels) once a frame drew a UI; null before.
+
+```csharp
+public RenderTarget? UiTarget { get; }
+```
+
+#### Property Value
+
+ RenderTarget?
+
 ## Methods
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_BeginFrame"></a> BeginFrame\(\)
@@ -105,6 +129,34 @@ public IRenderer BeginFrame()
 
  [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
+### <a id="MicroEngine_Graphics_DeviceCanvas_BeginUi_System_Int32_System_Int32_System_Single_"></a> BeginUi\(int, int, float\)
+
+Starts the frame's UI view: a transparent target of the window's size in pixels, drawn in UI units of
+<code class="paramref">scale</code> pixels, composited over the world by [Compose](MicroEngine.Graphics.DeviceCanvas.md#MicroEngine_Graphics_DeviceCanvas_Compose_MicroEngine_Graphics_Presentation_MicroEngine_RectF_MicroEngine_Color_). Call it after
+[BeginFrame](MicroEngine.Graphics.DeviceCanvas.md#MicroEngine_Graphics_DeviceCanvas_BeginFrame), at most once per frame.
+
+```csharp
+public IRenderer BeginUi(int pixelWidth, int pixelHeight, float scale)
+```
+
+#### Parameters
+
+`pixelWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`pixelHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The size or the scale is not positive.
+
 ### <a id="MicroEngine_Graphics_DeviceCanvas_Capture"></a> Capture\(\)
 
 The canvas as a capture stores it: every pixel opaque (alpha 255), the colour channels as stored.
@@ -116,6 +168,18 @@ public PixelImage Capture()
 #### Returns
 
  [PixelImage](MicroEngine.Graphics.PixelImage.md)
+
+### <a id="MicroEngine_Graphics_DeviceCanvas_CaptureUi"></a> CaptureUi\(\)
+
+The UI view of the last frame as stored (premultiplied, transparent where nothing was drawn), or null.
+
+```csharp
+public PixelImage? CaptureUi()
+```
+
+#### Returns
+
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)?
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_Compose_MicroEngine_Graphics_Presentation_MicroEngine_RectF_MicroEngine_Color_"></a> Compose\(Presentation, RectF, Color\)
 
@@ -150,11 +214,32 @@ public void Dispose()
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_EndFrame"></a> EndFrame\(\)
 
-Submits the frame drawn into the canvas.
+Submits the frame drawn into the canvas (and the UI view, when the frame drew one).
 
 ```csharp
 public void EndFrame()
 ```
+
+### <a id="MicroEngine_Graphics_DeviceCanvas_EnsureSize_System_Int32_System_Int32_"></a> EnsureSize\(int, int\)
+
+Makes the canvas <code class="paramref">width</code> × <code class="paramref">height</code> pixels (an expanding presentation grows it
+with the window); a new canvas starts black. Call it between frames.
+
+```csharp
+public bool EnsureSize(int width, int height)
+```
+
+#### Parameters
+
+`width` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+Whether the size changed.
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_SaveCapture_System_String_System_Int32_"></a> SaveCapture\(string, int\)
 

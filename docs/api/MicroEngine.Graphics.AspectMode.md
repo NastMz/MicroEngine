@@ -14,6 +14,14 @@ public enum AspectMode
 
 ## Fields
 
+`Expand = 2` 
+
+Keep the scale and square pixels, and grow the canvas along the window's longer side so it fills the area: a
+wider window shows more of the world, never letterbox ([CanvasSize](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_CanvasSize_MicroEngine_RectF_System_Int32_System_Int32_)). The canvas's
+configured size is its minimum.
+
+
+
 `Keep = 0` 
 
 Keep the canvas's shape; the rest of the window is letterbox.
