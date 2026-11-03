@@ -33,6 +33,7 @@ maintainer's archive, not in the public history.
 | [0026](0026-kernel-modules-and-schedule.md) | A kernel with modules, a typed service registry and a phased frame schedule; `Game` is a module façade (amends 0003, 0016) | Accepted |
 | [0027](0027-loop-owned-time.md) | The loop owns time; backends keep only a monotonic clock; time mode and sound are explicit options (amends 0003, 0023) | Accepted |
 | [0028](0028-graphics-device-contract.md) | One graphics device contract for every tier: declared capabilities, a typed error, core validation, premultiplied alpha, a CPU reference device (amends 0003, 0017, 0024) | Accepted |
+| [0033](0033-one-mixer-over-pcm-sinks.md) | One managed mixer over PCM sinks (`IAudioSink` v1); a feeder thread is the default SDL sink, an AudioWorklet queue the browser one | Accepted |
 | [0034](0034-content-handles-loaders-sources.md) | Content handles with generations, a loader registry, a reserved import step and content sources beyond folders (amends 0004, 0025) | Accepted |
 | [0037](0037-platform-host-contract.md) | A platform host contract with capabilities, explicit options and no time coupling (amends 0016, 0027) | Accepted |
 | [0038](0038-one-composition-path.md) | One composition path for desktop, browser, phones and tests: `MicroEngine.Hosting`, a `Configure` entry point, no statics (amends 0007, 0016, 0021) | Accepted |

@@ -86,7 +86,7 @@ public AudioMixer Audio { get; }
 
 #### Property Value
 
- [AudioMixer](MicroEngine.Audio.AudioMixer.md)
+ AudioMixer
 
 ### <a id="MicroEngine_Scenes_Scene_BlocksUpdateBelow"></a> BlocksUpdateBelow
 

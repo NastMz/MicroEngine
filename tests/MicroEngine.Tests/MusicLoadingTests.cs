@@ -48,12 +48,12 @@ public class MusicLoadingTests
 
     [TestMethod]
     [DoNotParallelize]
-    public void Without_threads_songs_render_a_few_milliseconds_per_update_and_start_when_ready()
+    public void Without_threads_songs_render_while_pumping_outside_the_step_and_music_state_does_not_wait_for_them()
     {
         bool threads = AudioMixer.RenderSongsOnThreads;
         var budget = AudioMixer.SliceBudget;
         AudioMixer.RenderSongsOnThreads = false;
-        AudioMixer.SliceBudget = TimeSpan.FromTicks(1); // one slice per update, whatever the machine
+        AudioMixer.SliceBudget = TimeSpan.FromTicks(1); // one slice per pump, whatever the machine
         try
         {
             var device = new CaptureAudioDevice();
@@ -61,31 +61,71 @@ public class MusicLoadingTests
             mixer.AddMusic("first", Long(), loop: false);
             mixer.AddMusic("second", Tune(), loop: false);
             Assert.IsTrue(mixer.HasMusic("first") && mixer.HasMusic("second"));
-            mixer.Update(1f / 60);
-            mixer.Update(1f / 60);
+            for (int i = 0; i < 50; i++) mixer.Update(1f / 60);
+            Assert.AreEqual(2, mixer.SlicedSongs, "updates (simulation steps) never render songs");
+            mixer.Pump();
+            mixer.Pump();
             Assert.IsNull(device.CurrentMusic, "rendering does not play anything");
 
-            // Asked for before its turn: it goes first and starts once rendered; nothing freezes or plays meanwhile.
+            // Asked for before its turn: it goes first; the music state says it plays at once, the device starts it once rendered.
             mixer.PlayMusic("second", fadeSeconds: 0);
-            Assert.IsNull(mixer.CurrentMusic, "waits for its slices");
-            int updates = 0;
-            while (mixer.CurrentMusic is null && updates < 100_000) { mixer.Update(1f / 60); updates++; }
-            Assert.AreEqual("second", mixer.CurrentMusic);
+            Assert.AreEqual("second", mixer.CurrentMusic, "the game's music state does not depend on rendering speed");
+            Assert.IsNull(device.CurrentMusic, "the device waits for its slices");
+            int pumps = 0;
+            while (device.CurrentMusic is null && pumps < 100_000) { mixer.Pump(); pumps++; }
+            Assert.AreEqual("second", device.CurrentMusic?.Name);
             Assert.AreEqual(1, mixer.SlicedSongs, "it started before the song registered first finished");
             mixer.PlayMusic("second", fadeSeconds: 0);
             Assert.AreEqual("second", mixer.CurrentMusic, "asking again changes nothing");
 
             // Stopped while waiting: it never starts.
             mixer.PlayMusic("first", fadeSeconds: 0);
-            Assert.IsNull(mixer.CurrentMusic);
+            Assert.AreEqual("first", mixer.CurrentMusic);
             mixer.StopMusic(0);
-            updates = 0;
-            while (mixer.SlicedSongs > 0 && updates < 100_000) { mixer.Update(1f / 60); updates++; }
-            Assert.AreEqual(0, mixer.SlicedSongs, "rendered by updates alone");
-            Assert.IsTrue(updates > 20, $"over many updates ({updates})");
+            Assert.IsNull(mixer.CurrentMusic);
+            pumps = 0;
+            while (mixer.SlicedSongs > 0 && pumps < 100_000) { mixer.Pump(); pumps++; }
+            Assert.AreEqual(0, mixer.SlicedSongs, "rendered by pumps alone");
+            Assert.IsTrue(pumps > 20, $"over many pumps ({pumps})");
             Assert.IsNull(mixer.CurrentMusic, "a stopped request stays stopped");
             mixer.PlayMusic("first", fadeSeconds: 0);
-            Assert.AreEqual("first", mixer.CurrentMusic, "ready songs start at once");
+            Assert.AreEqual("first", device.CurrentMusic?.Name, "ready songs start at once");
+        }
+        finally
+        {
+            AudioMixer.RenderSongsOnThreads = threads;
+            AudioMixer.SliceBudget = budget;
+        }
+    }
+
+    [TestMethod]
+    [DoNotParallelize]
+    public void In_deterministic_runs_a_waited_song_is_finished_in_the_next_pump_whatever_the_budget()
+    {
+        bool threads = AudioMixer.RenderSongsOnThreads;
+        var budget = AudioMixer.SliceBudget;
+        AudioMixer.RenderSongsOnThreads = false;
+        try
+        {
+            float[] Run(TimeSpan slice)
+            {
+                AudioMixer.SliceBudget = slice;
+                var device = new CaptureAudioDevice();
+                var mixer = new AudioMixer(device) { Deterministic = true };
+                mixer.AddMusic("first", Long(), loop: false);
+                mixer.AddMusic("second", Tune(), loop: false);
+                mixer.Update(1f / 60);
+                mixer.Pump();
+                mixer.PlayMusic("second", fadeSeconds: 0);
+                for (int i = 0; i < 20; i++)
+                {
+                    mixer.Update(1f / 60);
+                    mixer.Pump();
+                }
+                Assert.AreEqual("second", device.CurrentMusic?.Name);
+                return device.Output.Samples;
+            }
+            CollectionAssert.AreEqual(Run(TimeSpan.FromTicks(1)), Run(TimeSpan.FromSeconds(1)), "the same samples however fast the machine renders");
         }
         finally
         {

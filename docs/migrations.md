@@ -26,6 +26,19 @@ Not published yet. Behaviour that changes:
   `MicroEngine` package) with its namespace, `MicroEngine.Core`, unchanged, and `MicroEngine.dll` forwards it: nothing
   to change in games. `Assets.Statistics.AudioBytes` (new) counts the sounds and music files loaded through `Assets`;
   `TextureBytes` still counts textures only.
+- Every audio device is the engine's one mixer (`MixerAudioDevice` over an `IAudioSink`): the same voice limit (32),
+  priorities and stealing, panning, resampling and fades on SDL, raylib, in browsers and in `CaptureAudioDevice`.
+  SDL plays through a stream a thread keeps 60 ms ahead, browsers through an AudioWorklet 100 ms ahead, so sounds start
+  that much after the update that played them; OGG music decodes in managed code on every backend (the `MicroEngine`
+  package now depends on NVorbis), MP3 stays raylib-only. `CaptureAudioDevice` now applies the voice limit and decodes
+  OGG music (it captured it as silence). The audio types moved to the new `MicroEngine.Audio.dll` (inside the
+  `MicroEngine` package) with their namespace unchanged, and `MicroEngine.dll` forwards them: nothing to change in
+  games. `AudioMixer.CurrentMusic` names a song from the moment it is asked for, also while it still renders in slices
+  (browsers), where it used to be null until rendered; songs render in slices once per frame (`AudioMixer.Pump`, which
+  the game calls) instead of during updates. A mixer you create yourself calls `Pump()` once per frame.
+- Sound and music files load through `Game.Assets` from any content source: `Assets.Sound(path)` (an `AudioClip`)
+  and `Assets.Music(path)` (an `EncodedAudio`), played with `Audio.AddSound(name, clip)` and the new
+  `Audio.AddMusic(name, music)`. `AddSoundFile` and `AddMusicFile` keep reading file-system paths.
 - Scripted runs in browsers advance one fixed step per frame with seed 1, exactly as on desktop and phones (they were
   real-time, so their captures changed from run to run), and ask for no sound device unless `--audio device` is
   given, like desktop scripted runs. Nothing to change in games.

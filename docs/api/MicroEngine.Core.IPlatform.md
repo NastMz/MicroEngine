@@ -38,7 +38,7 @@ IAudioDevice Audio { get; }
 
 #### Property Value
 
- [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
+ IAudioDevice
 
 ### <a id="MicroEngine_Core_IPlatform_Graphics"></a> Graphics
 
