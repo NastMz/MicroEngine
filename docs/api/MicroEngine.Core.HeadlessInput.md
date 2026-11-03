@@ -19,7 +19,7 @@ public sealed class HeadlessInput : IInputSource
 
 #### Implements
 
-[IInputSource](MicroEngine.Input.IInputSource.md)
+IInputSource
 
 ## Constructors
 
@@ -65,7 +65,7 @@ public GamepadStyle PadStyle { get; set; }
 
 #### Property Value
 
- [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
+ GamepadStyle
 
 ### <a id="MicroEngine_Core_HeadlessInput_Pointer"></a> Pointer
 
@@ -77,7 +77,7 @@ public PointerState Pointer { get; set; }
 
 #### Property Value
 
- [PointerState](MicroEngine.Input.PointerState.md)
+ PointerState
 
 ## Methods
 
@@ -91,7 +91,7 @@ public float GetPadAxis(PadAxis axis)
 
 #### Parameters
 
-`axis` [PadAxis](MicroEngine.Input.PadAxis.md)
+`axis` PadAxis
 
 #### Returns
 
@@ -107,7 +107,7 @@ public bool IsKeyDown(Key key)
 
 #### Parameters
 
-`key` [Key](MicroEngine.Input.Key.md)
+`key` Key
 
 #### Returns
 
@@ -123,7 +123,7 @@ public bool IsPadDown(PadButton button)
 
 #### Parameters
 
-`button` [PadButton](MicroEngine.Input.PadButton.md)
+`button` PadButton
 
 #### Returns
 
@@ -139,7 +139,7 @@ public void Set(Key key, bool down)
 
 #### Parameters
 
-`key` [Key](MicroEngine.Input.Key.md)
+`key` Key
 
 `down` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
@@ -153,7 +153,7 @@ public void Set(PadButton button, bool down)
 
 #### Parameters
 
-`button` [PadButton](MicroEngine.Input.PadButton.md)
+`button` PadButton
 
 `down` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
@@ -167,7 +167,7 @@ public void Set(PadAxis axis, float value)
 
 #### Parameters
 
-`axis` [PadAxis](MicroEngine.Input.PadAxis.md)
+`axis` PadAxis
 
 `value` [float](https://learn.microsoft.com/dotnet/api/system.single)
 

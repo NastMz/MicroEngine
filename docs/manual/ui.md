@@ -50,7 +50,9 @@ and to `UseAchievements`.
 
 `Show(speaker, params pages)` queues pages (and opens the box if it was closed). `Update(dt, input, confirm =
 "confirm")` advances the typewriter; confirm first completes the current page, then moves to the next. It returns
-`true` while the box is active, so a scene can skip its own input handling. `Draw(r, font, area)` wraps text to
+`true` while the box is active, so a scene can skip its own input handling. Next SDK version (not published yet:
+arrives with the next SDK version): `confirm` defaults to the map's own confirm action (`InputMap.Names`), so a game
+that renamed it needs no argument; the same holds for `SelectionList.Update` and the achievements screen. `Draw(r, font, area)` wraps text to
 the area, shows up to `Lines` lines (default 3), a speaker name tag and a blinking arrow when the page is complete.
 Events: `Blip` (per revealed character) and `Closed` (after the last page).
 
@@ -103,8 +105,8 @@ Long text needs no manual splitting, but a page per thought still reads better t
 
 ## `SelectionList`
 
-`new SelectionList(params options)` needs at least one option. `Update(input, up, down, confirm)` moves the
-highlight (wrapping when `Wrap` is true, the default) and returns the chosen index on confirm, otherwise `null`.
+`new SelectionList(params options)` needs at least one option. `Update(input, up, down, confirm)` (the actions
+default to the map's names, see [Default actions](input.md#default-actions)) moves the highlight (wrapping when `Wrap` is true, the default) and returns the chosen index on confirm, otherwise `null`.
 `SetEnabled(index, false)` greys an option out and makes it unselectable; `SetOptions` replaces the list. The
 `Moved` event fires when the highlight changes. `Draw(r, font, position, theme, time, lineHeight = 12)` draws the
 list with a bobbing cursor.

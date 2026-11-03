@@ -80,7 +80,7 @@ The thumb's offset from the base, each axis -1..1 (sticks and d-pads).
 
 A joystick's value after its dead zone, or a d-pad's direction.
 
-`Directions` [IReadOnlySet](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlyset\-1)<[InputMap](MicroEngine.Input.InputMap.md).[StickDirection](MicroEngine.Input.InputMap.StickDirection.md)\>
+`Directions` [IReadOnlySet](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlyset\-1)<InputMap.StickDirection\>
 
 The direction actions pressed now (sticks and d-pads).
 
@@ -136,7 +136,7 @@ public IReadOnlySet<InputMap.StickDirection> Directions { get; init; }
 
 #### Property Value
 
- [IReadOnlySet](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlyset\-1)<[InputMap](MicroEngine.Input.InputMap.md).[StickDirection](MicroEngine.Input.InputMap.StickDirection.md)\>
+ [IReadOnlySet](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlyset\-1)<InputMap.StickDirection\>
 
 ### <a id="MicroEngine_Input_TouchControlView_Glow"></a> Glow
 
@@ -306,7 +306,7 @@ public void Deconstruct(out TouchControl Control, out TouchStyle Style, out Vect
 
 `Value` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`Directions` [IReadOnlySet](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlyset\-1)<[InputMap](MicroEngine.Input.InputMap.md).[StickDirection](MicroEngine.Input.InputMap.StickDirection.md)\>
+`Directions` [IReadOnlySet](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlyset\-1)<InputMap.StickDirection\>
 
 `Layout` [TouchLayout](MicroEngine.Input.TouchLayout.md)
 

@@ -1,26 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>MicroEngine</RootNamespace>
-    <Description>Backend-independent core of the MicroEngine 2D game engine: loop, scenes, input actions, graphics model, audio synthesis, UI, saves, achievements, a headless platform, and the build targets that give a game its application identity.</Description>
+    <Description>Backend-independent core of the MicroEngine 2D game engine: loop, scenes, input (device events, players, actions), graphics model, audio synthesis, UI, saves, achievements, a headless platform, and the build targets that give a game its application identity.</Description>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="MicroEngine.Tests" />
   </ItemGroup>
   <!-- The kernel (composition, schedule, time, math and colour), the platform contracts (host, surface, storage,
-       content sources), hosting (the launcher model and the composition a game configures), content (the asset
-       store, handles, loaders and content sources) and audio (the mixer over PCM sinks) are assemblies of their own but
-       not packages: this package carries MicroEngine.Kernel.dll, MicroEngine.Platform.dll, MicroEngine.Hosting.dll,
-       MicroEngine.Content.dll and MicroEngine.Audio.dll with their documentation and symbols, and depends on no package
-       of theirs. The references are private (so packing adds no
-       dependency on them); inside the repository, projects that reference this one still compile against them and copy
-       them, because this project hands their assemblies over together with its own (_MicroEngineBundledOutput). -->
+       content sources), input (device events, players, layers, actions), hosting (the launcher model and the
+       composition a game configures), content (the asset store, handles, loaders and content sources) and audio (the
+       mixer over PCM sinks) are assemblies of their own but not packages: this package carries MicroEngine.Kernel.dll,
+       MicroEngine.Platform.dll, MicroEngine.Input.dll, MicroEngine.Hosting.dll, MicroEngine.Content.dll and
+       MicroEngine.Audio.dll with their documentation and symbols, and depends on no package of theirs. The references
+       are private (so packing adds no dependency on them); inside the repository, projects that reference this one
+       still compile against them and copy them, because this project hands their assemblies over together with its
+       own (_MicroEngineBundledOutput). -->
   <ItemGroup>
     <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" PrivateAssets="all" />
+    <ProjectReference Include="../MicroEngine.Input/MicroEngine.Input.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Hosting/MicroEngine.Hosting.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Content/MicroEngine.Content.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Audio/MicroEngine.Audio.csproj" PrivateAssets="all" />
-    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj;../MicroEngine.Content/MicroEngine.Content.csproj;../MicroEngine.Audio/MicroEngine.Audio.csproj" />
+    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Input/MicroEngine.Input.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj;../MicroEngine.Content/MicroEngine.Content.csproj;../MicroEngine.Audio/MicroEngine.Audio.csproj" />
   </ItemGroup>
   <Target Name="_MicroEngineBundledOutput">
     <MSBuild Projects="@(_MicroEngineBundledProject)" Targets="GetTargetPath" Properties="BuildProjectReferences=false">
