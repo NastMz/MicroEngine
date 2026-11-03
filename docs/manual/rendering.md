@@ -412,6 +412,12 @@ public interface IGraphicsDevice : IDisposable
   TextureUsage.DepthStencil)` accepts. Matrices follow System.Numerics (right-handed `CreateLookAt` and
   `CreatePerspectiveFieldOfView`, uploaded as they are, `mul(M, v)` in HLSL), front faces are counter-clockwise and
   depth runs from 0 (near) to 1 (far).
+- **Shaders compiled ahead of time.** Not published yet: arrives with the next SDK version. Custom shaders are HLSL
+  compiled by [`microengine shaders`](../guide/cli.md#shaders) into `.shader` files with code for every API.
+  `CompiledShader.Parse(bytes)` reads one and `compiled.Create(device)` creates it in the format the device runs (DXIL on
+  Direct3D 12, SPIR-V on Vulkan, MSL on Metal); on a device without custom shaders it throws
+  `GraphicsCapabilityException`, so a game can keep a tier-0 path (a palette swap drawn from pre-recoloured art, a
+  post effect left out) instead of failing later.
 
 A backend derives from `GraphicsDeviceBase`, which validates every call before the backend sees it, so errors and the
 moment they are raised are identical on every device; the backend implements only the members whose names end in

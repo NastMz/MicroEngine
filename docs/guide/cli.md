@@ -11,6 +11,7 @@ microengine build [--project P] [-c Release|Debug]
 microengine package <target> [--project P] [--out DIR] [options]
 microengine info [--project P]
 microengine doctor [target]
+microengine shaders [--project P] [--source DIR] [--out DIR] [--check]
 microengine version
 ```
 
@@ -72,6 +73,29 @@ workload); by default the one on `PATH` is used.
 this machine for every target (or one, `microengine doctor android`): the .NET SDK, workloads, Android SDK, Java,
 Xcode, and whether signing variables are set (never their values). For anything missing it prints how to install it.
 It changes nothing.
+
+## shaders
+
+Not published yet: arrives with the next SDK version. `microengine shaders` compiles custom shaders ahead of time, for
+devices that declare custom shaders (the programmable SDL_GPU device; see
+[the graphics device](../manual/rendering.md#the-graphics-device)). Each `name.vert.hlsl` or `name.frag.hlsl` in the
+game's `Shaders` folder (or `--source`) becomes `name.vert.shader` in `Content/shaders` (or `--out`), holding DXIL for
+Direct3D 12, SPIR-V for Vulkan, MSL for Metal and the resource counts the device needs. A game loads the file with
+`CompiledShader.Parse` and creates it with `CompiledShader.Create(device)`, which picks the format the device runs;
+nothing compiles while the game runs, and a device without custom shaders refuses with `GraphicsCapabilityException`.
+
+Write one HLSL file per stage with the entry point `main` (shader model 6.0) and the SDL_GPU binding rules: vertex
+inputs use `TEXCOORD0`, `TEXCOORD1`... for their locations; vertex-stage uniforms are `register(b0, space1)`;
+fragment-stage textures and samplers are `register(t0, space2)` and `register(s0, space2)`, uniforms
+`register(b0, space3)`. Matrices from `System.Numerics` are uploaded as they are and applied with `mul(M, v)`.
+
+`--check` writes nothing and fails when a `.shader` file is missing or differs from what its HLSL compiles to, so a CI
+job can catch a shader edited without recompiling.
+
+Compiling needs Windows: the HLSL compiler (DXC) is Microsoft's `Microsoft.Direct3D.DXC` package, under Microsoft's own
+licence terms, and it has Windows binaries only. The tool does not ship it: on first use it restores that exact version
+into your NuGet packages folder (`MICROENGINE_DXC` names another `dxc.exe`). Elsewhere the command stops with exit code 3
+and says so; commit the `.shader` files, which load on every platform. MSL is generated but has not been run on a Mac.
 
 ## Errors
 
