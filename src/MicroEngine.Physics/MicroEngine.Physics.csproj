@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The 2D physics contract: IPhysicsWorld2D (the common core every backend passes), declared PhysicsCapabilities
+       and the typed PhysicsCapabilityException, ids, descriptions, query and move results, buffered events, and the
+       module that steps physics worlds in the Physics phase and writes body poses to the scene world's transforms.
+       It holds no backend. It references only the scene world and the kernel (the architecture test checks it). It is
+       not a package of its own: the MicroEngine package carries MicroEngine.Physics.dll
+       (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Physics</RootNamespace>
+    <Description>MicroEngine 2D physics contract: worlds, bodies, shapes, layers, moves, queries, sensors and capabilities. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Scene/MicroEngine.Scene.csproj" />
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+</Project>

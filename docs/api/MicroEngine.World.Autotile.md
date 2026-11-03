@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Physics.Tiles.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
 
 Helpers for picking tile sprites from their neighbours.

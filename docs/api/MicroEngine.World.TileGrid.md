@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Physics.Tiles.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
 
 A collision grid backed by a [TileLayer](MicroEngine.World.TileLayer.md) and a per-id flag table.

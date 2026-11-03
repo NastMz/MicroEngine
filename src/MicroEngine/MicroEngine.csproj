@@ -12,7 +12,8 @@
        composition a game configures), content (the asset store, handles, loaders and content sources) and audio (the
        mixer over PCM sinks) are assemblies of their own but not packages: this package carries MicroEngine.Kernel.dll,
        MicroEngine.Platform.dll, MicroEngine.Graphics.dll, MicroEngine.Graphics2D.dll, MicroEngine.Input.dll, MicroEngine.Hosting.dll, MicroEngine.Content.dll and
-       MicroEngine.Audio.dll, and the scene world (ids, transforms, attachments) MicroEngine.Scene.dll, with their documentation and symbols, and depends on no package of theirs. The references
+       MicroEngine.Audio.dll, the scene world (ids, transforms, attachments) MicroEngine.Scene.dll, and physics (the 2D
+       contract MicroEngine.Physics.dll and the tile backend with the tile types MicroEngine.Physics.Tiles.dll), with their documentation and symbols, and depends on no package of theirs. The references
        are private (so packing adds no dependency on them); inside the repository, projects that reference this one
        still compile against them and copy them, because this project hands their assemblies over together with its
        own (_MicroEngineBundledOutput). -->
@@ -26,7 +27,9 @@
     <ProjectReference Include="../MicroEngine.Content/MicroEngine.Content.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Audio/MicroEngine.Audio.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Scene/MicroEngine.Scene.csproj" PrivateAssets="all" />
-    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Graphics/MicroEngine.Graphics.csproj;../MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj;../MicroEngine.Input/MicroEngine.Input.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj;../MicroEngine.Content/MicroEngine.Content.csproj;../MicroEngine.Audio/MicroEngine.Audio.csproj;../MicroEngine.Scene/MicroEngine.Scene.csproj" />
+    <ProjectReference Include="../MicroEngine.Physics/MicroEngine.Physics.csproj" PrivateAssets="all" />
+    <ProjectReference Include="../MicroEngine.Physics.Tiles/MicroEngine.Physics.Tiles.csproj" PrivateAssets="all" />
+    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Graphics/MicroEngine.Graphics.csproj;../MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj;../MicroEngine.Input/MicroEngine.Input.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj;../MicroEngine.Content/MicroEngine.Content.csproj;../MicroEngine.Audio/MicroEngine.Audio.csproj;../MicroEngine.Scene/MicroEngine.Scene.csproj;../MicroEngine.Physics/MicroEngine.Physics.csproj;../MicroEngine.Physics.Tiles/MicroEngine.Physics.Tiles.csproj" />
   </ItemGroup>
   <Target Name="_MicroEngineBundledOutput">
     <MSBuild Projects="@(_MicroEngineBundledProject)" Targets="GetTargetPath" Properties="BuildProjectReferences=false">

@@ -33,7 +33,7 @@ public static void Draw(IRenderer renderer, TileLayer layer, int tileSize, Camer
 
 The renderer; push <code class="paramref">camera</code> on it first when there is one.
 
-`layer` [TileLayer](MicroEngine.World.TileLayer.md)
+`layer` TileLayer
 
 The tile ids; 0 is never drawn.
 

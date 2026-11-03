@@ -25,6 +25,7 @@ flowchart TB
   content["<b> src/MicroEngine.Content </b> <br/> Content: asset store, typed handles, scopes, loader registry, zip and listed sources"]
   audio["<b> src/MicroEngine.Audio </b> <br/> Audio: the one mixer over PCM sinks, sound bank and music, synthesis"]
   scene["<b> src/MicroEngine.Scene </b> <br/> Scene world: entity ids, transforms, attachments, interpolation, world clocks"]
+  physics["<b> src/MicroEngine.Physics, src/MicroEngine.Physics.Tiles </b> <br/> Physics: the 2D contract and capabilities; tile grids and the swept tile backend"]
   kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
   samples -- started by --> hosts
@@ -41,6 +42,8 @@ flowchart TB
   platform -- builds on --> kernel
   core -- builds on --> scene
   scene -- builds on --> kernel
+  core -- builds on --> physics
+  physics -- builds on --> scene
   graphics -- builds on --> platform
   graphics -- builds on --> kernel
   core -- builds on --> hosting
@@ -110,6 +113,15 @@ a `Transform` hierarchy stored in 3D with 2D helpers, typed attachments walked i
 drawing with teleports, per-world step tracking, and a `WorldClock` with time scale and freezes), and the world's part of
 the per-step state hash.
 
+Next SDK version (not published yet: arrives with the next SDK version): physics is two more assemblies of the
+`MicroEngine` package. `MicroEngine.Physics` (scene world and kernel only) is the 2D contract, `IPhysicsWorld2D`: bodies
+owned by entities, box shapes with collision layers, collide-and-slide moves that return their contacts, exact ray and
+overlap queries, sensors with buffered events, declared `PhysicsCapabilities` with a typed error for anything a backend
+does not declare, and `PhysicsModule`, which steps worlds in the `Physics` phase and writes body poses to transforms.
+`MicroEngine.Physics.Tiles` is its tile backend, `TilePhysicsWorld2D`, and now holds the tile types (`TileLayer`,
+`TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion`) with their `MicroEngine.World` namespace;
+`TileRenderer` stays in the core because it draws ([Physics worlds](manual/world.md#physics-worlds)).
+
 The core references no backend library. Everything platform-specific sits behind `MicroEngine.Core.IPlatform` and
 four device interfaces:
 
@@ -176,7 +188,9 @@ scripted playthrough tests and reproducible screenshots possible.
 | `MicroEngine.Scenes` | `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener` |
 | `MicroEngine.Input` | In the `MicroEngine.Input` assembly (kernel and platform contracts only): device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem` over them, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources, with saved bindings. In the core assembly (they draw): `VirtualControls` and `TouchLayout` (per-game on-screen d-pads, joysticks and buttons, an input layer), `ActionPrompts`, `ITouchScreen`, `FrameLayout` |
 | `MicroEngine.Graphics` | `PixelImage` (CPU art, image decoding, crop/rotate), `Art` (noise, dither, ramps), `SpriteAtlasBuilder` (incl. grid sheets), `AtlasData` (packing tools' files), `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `IFont` (`BitmapFont`, `ScalableFont`), `TextureFilter`, `IRenderer` |
-| `MicroEngine.World` | `TileLayer`, `TileGrid`, `TileMotion` (swept AABB with one-way tiles), `Autotile`, `TileRenderer`, `Entity`, `EntityList<T>` |
+| `MicroEngine.World` | `TileLayer`, `TileGrid`, `TileMotion` (swept AABB with one-way tiles), `Autotile`, `TileRenderer`, `Entity`, `EntityList<T>`; next SDK version: the tile types and `TileMotion` are in `MicroEngine.Physics.Tiles.dll` |
+| `MicroEngine.Physics` in `MicroEngine.Physics.dll` (next SDK version) | `IPhysicsWorld2D`, `PhysicsCapabilities`, `PhysicsCapabilityException`, `BodyId`, `ShapeId`, `BodyDescription`, `ShapeDescription`, `QueryFilter`, `MoveResult`, `RayHit`, `SensorEvent`, `ContactEvent`, `PhysicsModule`, `PhysicsSystem`, `PhysicsSync` |
+| `MicroEngine.Physics.Tiles` (next SDK version) | `TilePhysicsWorld2D`: tile grids as static geometry, the swept mover, one-way platforms, moving solids |
 | `MicroEngine.Audio` | `Synth` (retro SFX), `Song` (step sequencer), `AudioClip` (incl. WAV decoding), `AudioMixer` (incl. sound/music files) |
 | `MicroEngine.UI` | `Typewriter`, `DialogueBox`, `SelectionList`, `UiTheme`, `AchievementToasts`, `AchievementsScene` |
 

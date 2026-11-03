@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.World](MicroEngine.World.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Physics.Tiles.dll  
 Guide: [Tile maps and collision](../manual/world.md)  
 
 What happened during a [Move](MicroEngine.World.TileMotion.md#MicroEngine_World_TileMotion_Move_MicroEngine_RectF_System_Numerics_Vector2_MicroEngine_World_ICollisionGrid_System_Collections_Generic_IReadOnlyList_MicroEngine_RectF__System_Boolean_).

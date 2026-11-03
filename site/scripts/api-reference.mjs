@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Graphics2D', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine.Scene', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Graphics2D', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine.Scene', 'MicroEngine.Physics', 'MicroEngine.Physics.Tiles', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
@@ -31,6 +31,8 @@ const guides = {
   'MicroEngine.Hosting': ['Composing a game for every platform', '../manual/backends.md#one-composition-for-every-platform'],
   'MicroEngine.Input': ['Input', '../manual/input.md'],
   'MicroEngine.Kernel': ['Modules and the frame schedule', '../manual/lifecycle.md#modules-and-the-frame-schedule'],
+  'MicroEngine.Physics': ['Physics worlds', '../manual/world.md#physics-worlds'],
+  'MicroEngine.Physics.Tiles': ['Physics worlds', '../manual/world.md#physics-worlds'],
   'MicroEngine.Platform': ['The platform host', '../manual/backends.md#the-platform-host'],
   'MicroEngine.Raylib': ['Backends and platforms', '../manual/backends.md'],
   'MicroEngine.Scenes': ['Scenes', '../manual/scenes.md'],
@@ -77,12 +79,14 @@ const namespaceSummaries = {
   'MicroEngine.Hosting': 'Hosting: the launcher model every host shares (launch requests and their rules, platform selection, the host environment) and the composition a game configures once with its Configure entry point.',
   'MicroEngine.Input': 'Input: device events with ids (keys, text, pointers and touches, wheel, gamepads), players and device pairing, input layers, and actions over them: bindings and their persistence, analog values, on-screen controls, prompts, custom sources.',
   'MicroEngine.Kernel': 'The kernel: engine composition (builder, services, modules, capabilities), the frame schedule and its phases, loop-owned time, engine events, logging and generational handles.',
+  'MicroEngine.Physics': 'The 2D physics contract: worlds of bodies owned by entities, box shapes with collision layers, collide-and-slide moves with their contacts, ray and overlap queries, sensors with buffered events, declared capabilities and the typed capability error, and the module that steps worlds and writes body poses to transforms.',
+  'MicroEngine.Physics.Tiles': 'The tile backend of the physics contract: tile grids as static geometry, the exact swept mover, one-way platforms and moving solids that push and carry bodies.',
   'MicroEngine.Platform': 'The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the surface, display pacing and precise waits, storage for saves and content sources.',
   'MicroEngine.Raylib': 'The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and the browser page it reads.',
   'MicroEngine.Scenes': 'The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks.',
   'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android and iOS.',
   'MicroEngine.UI': 'Pixel-art widgets: dialogue boxes, menus, typewriter text, themes, achievement banners and list.',
-  'MicroEngine.World': 'Tile layers, collision grids, swept movement against tiles, autotiling and plain entities.',
+  'MicroEngine.World': 'Tile layers, collision grids, swept movement against tiles (`TileMotion`), autotiling, drawing tiles and plain entities.',
 };
 
 function run(command, args, options = {}) {
