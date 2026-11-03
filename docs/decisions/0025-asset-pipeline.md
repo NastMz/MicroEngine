@@ -92,3 +92,11 @@ and tracks which scopes hold each entry. Every scope that asks for an asset hold
 object; `Unload` and disposing a scope release that scope's hold, and the asset is disposed when the last holding scope
 releases it. A scope's `Count` is the number of assets it and its children hold, including parent assets they asked
 for; `Loaded`, `Statistics` and the root's `Count` count a shared asset once.
+
+## Amendment (2026-11-03, ARCH-1 stage 2c)
+
+The asset cache is now a façade over the asset store of [ADR 0034](0034-content-handles-loaders-sources.md): the scope
+bookkeeping of the amendment above moved unchanged into `MicroEngine.Content` (`AssetStore`, `AssetScope`), images,
+atlases and fonts are loaders registered under the kinds `texture`, `atlas`, `folder atlas` and `font`, and content may
+come from any source the composition names (a zip archive, a host's listing), not only a folder. Games, their paths and
+their scopes are unchanged.

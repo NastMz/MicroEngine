@@ -72,7 +72,7 @@ protected override void Load()
 | `Font(path, options?)` | a `ScalableFont` ([Text](text.md#scalable-fonts-ttf-and-otf)) |
 | `Bytes(path)`, `Text(path)` | the file's content (not cached) |
 | `IsLoaded(path)`, `Unload(path)` | whether a file is loaded; releases this cache's hold on it |
-| `Loaded`, `Statistics` | what is loaded, texture memory, load times, loads during play |
+| `Loaded`, `Statistics` | what is loaded, texture memory (`TextureBytes`), audio memory (`AudioBytes`, next SDK version), load times, loads during play |
 | `CreateScope(name?)` | a child cache that releases what it holds when disposed |
 | `Preload(paths...)` | loads files in the background, returning an `AssetBatch` |
 
@@ -81,6 +81,8 @@ do not dispose those objects yourself. Looking up an asset that is already loade
 while drawing.
 
 Sounds and music keep their own registry: `Audio.AddSoundFile` and `Audio.AddMusicFile` ([Audio](audio.md#sound-and-music-files)).
+In the next SDK version, sound and music files are also asset kinds of `Game.Assets` (see
+[handles, loaders and sources](#handles-loaders-and-content-sources)).
 
 ### Levels and scenes: scopes
 
@@ -211,6 +213,50 @@ private static PixelImage Repaint(PixelImage sheet, params (string From, Color T
 
 Source: [`games/CourtyardKey/Visuals/MonsterArt.cs`](../../games/CourtyardKey/Visuals/MonsterArt.cs)
 
+## Handles, loaders and content sources
+
+Next SDK version (merged, not published yet). `Game.Assets` is built on an asset store (`MicroEngine.Content`, inside
+the `MicroEngine` package) that games can also use directly.
+
+**Typed handles.** `Assets.Scope.Load<T>(kind, path)` returns an `Asset<T>`, a small value that names the asset
+instead of holding the object. `Assets.Store.Get(handle)` returns the object while some scope holds it; once every
+holding scope has released it, the handle is stale and `Get` fails saying so, even if another asset later takes its
+place. Handles follow the same scopes as the methods above: `Assets.Texture("a.png")` and
+`Assets.Scope.Load<Texture>("texture", "a.png", variant: (long)filter)` hold the same object.
+
+```csharp
+var jump = Assets.Scope.Load<AudioClip>("sound", "sfx/jump.wav");   // decoded once, shared, released with the scope
+Audio.AddSound("jump", Assets.Store.Get(jump));
+```
+
+**Loaders.** Each kind of asset has one loader in `Assets.Loaders`: `texture`, `atlas`, `folder atlas`, `font`,
+`sound` (a PCM WAV decoded into an `AudioClip`) and `music` (a music file's bytes as `EncodedAudio`, decoded while it
+plays). A game adds a kind of its own, or replaces one, by registering an `IAssetLoader<T>` (or an
+`AssetLoader<T>` built from a function) before the first load of that kind:
+
+```csharp
+Assets.Loaders.Add(new AssetLoader<LevelData>("level", c => LevelData.Parse(c.ReadBytes()), [".lvl"]));
+var forest = Assets.Scope.Load<LevelData>("level", "levels/forest.lvl");
+```
+
+A loader reads through its context (`ReadBytes`, `Files`); a failure becomes an `AssetLoadException` naming the asset.
+`IAssetImporter` is reserved for a build-time conversion step and is not called yet: loaders read source files.
+
+**Content sources.** Content comes from any `IContentSource`, chosen by the composition (`host.Content`): a folder
+(`FolderContentSource`), a zip archive (`ZipContentSource`), or files a host lists and opens itself
+(`ListedContentSource`, for an app's packaged assets). `ContentSources.Open(path)` opens a folder or a `.zip` file.
+Every source follows the folder rules: exact letter case on every system (naming the real spelling when only the case
+differs), `/` separators, no path out of the source. `Assets.Source` is the source in use; `Assets.Content` (a
+`ContentFolder`) works only when the content is a folder.
+
+```csharp
+public static void Configure(HostBuilder host)
+{
+    host.UseGame(() => new MainGame());
+    host.Content = ContentSources.Open("game-content.zip");   // the whole Content folder as one archive
+}
+```
+
 ## `ContentFolder`
 
 `ContentFolder` is the lower level under `Game.Assets`: it resolves paths in the content folder and reads files.
@@ -245,6 +291,9 @@ font in `Content/`. Examples: [Neon Rift](../../games/NeonRift/CREDITS.md),
 ## Limitations
 
 - No build-time conversion: no compressed GPU texture formats (BCn, ASTC, ETC2), no mipmaps, no hot reload.
+  `IAssetImporter` only reserves the place of that step.
+- Content sources are read whole and synchronously: a zip archive decompresses a file when it is opened, and a
+  browser page still copies the package's files into memory before the game starts.
 - Atlases with rotated frames, Aseprite slices, libGDX `.atlas`, Spine and Tiled files are not read.
 - Animated GIFs load their first frame only; there is no video.
 - Fonts: see [Text](text.md#limits).

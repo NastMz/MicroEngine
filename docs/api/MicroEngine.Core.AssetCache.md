@@ -38,8 +38,10 @@ var tiles = level.Atlas("levels/forest/tiles.xml");
 ## Remarks
 
 <p>
-Paths are relative to the content folder, with '/' separators, and must match the file names' letter case exactly
+Paths are relative to the content source, with '/' separators, and must match the file names' letter case exactly
 on every system, because Linux, Android and browsers would not find "Hero.png" for "hero.png" even where Windows does.
+The content is a folder by default; the composition may name another source, such as a zip archive
+([Content](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Content), [ZipContentSource](MicroEngine.Content.ZipContentSource.md)).
 </p>
 <p>
 <code>Game.Assets</code> lives as long as the game and is disposed after <code>Unload</code>. For assets of one level or scene,
@@ -50,6 +52,11 @@ holds it any more. Loading belongs in <code>Load</code>, a scene's
 <code>Enter</code> or a loading screen; a load during play is reported, because decoding a large image takes longer than a
 frame. [Preload](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Preload_System_String___) decodes on worker threads where the platform has them and uploads within a time budget
 per frame, for loading screens.
+</p>
+<p>
+The cache is built on the engine's asset store ([Store](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Store)): every scope is an [AssetScope](MicroEngine.Content.AssetScope.md)
+([Scope](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Scope)), so typed handles ([Asset`1](MicroEngine.Content.md)) and loaders of other kinds registered in
+[Loaders](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Loaders) share the same lifetimes.
 </p>
 
 ## Constructors
@@ -101,9 +108,13 @@ public ContentFolder Content { get; }
 
 #### Exceptions
 
- [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+ AssetLoadException
 
 The folder does not exist.
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The content is not a folder (a zip archive, for example); use [Source](MicroEngine.Core.AssetCache.md#MicroEngine_Core_AssetCache_Source).
 
 ### <a id="MicroEngine_Core_AssetCache_Count"></a> Count
 
@@ -143,6 +154,18 @@ public IReadOnlyList<AssetInfo> Loaded { get; }
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[AssetInfo](MicroEngine.Core.AssetInfo.md)\>
 
+### <a id="MicroEngine_Core_AssetCache_Loaders"></a> Loaders
+
+The loaders of the store, one per kind: "texture", "atlas", "folder atlas", "font", "sound", "music" and any a game registers.
+
+```csharp
+public AssetLoaderRegistry Loaders { get; }
+```
+
+#### Property Value
+
+ AssetLoaderRegistry
+
 ### <a id="MicroEngine_Core_AssetCache_Name"></a> Name
 
 The scope's name for diagnostics (null for the root and unnamed scopes).
@@ -168,6 +191,18 @@ public bool Playing { get; set; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_AssetCache_Scope"></a> Scope
+
+The asset scope behind this cache scope: typed handles ([Load``1](MicroEngine.Content.AssetScope.md#MicroEngine_Content_AssetScope_Load__1_System_String_System_String_System_Object_System_Int64_)) with the same holds and lifetimes.
+
+```csharp
+public AssetScope Scope { get; }
+```
+
+#### Property Value
+
+ AssetScope
+
 ### <a id="MicroEngine_Core_AssetCache_SlowLoadMilliseconds"></a> SlowLoadMilliseconds
 
 A load during play that takes at least this many milliseconds is reported once on the error output, naming the
@@ -181,9 +216,27 @@ public double SlowLoadMilliseconds { get; set; }
 
  [double](https://learn.microsoft.com/dotnet/api/system.double)
 
+### <a id="MicroEngine_Core_AssetCache_Source"></a> Source
+
+Where content files are read from (opened on first use): a folder, a zip archive or another source of the composition.
+
+```csharp
+public IContentSource Source { get; }
+```
+
+#### Property Value
+
+ IContentSource
+
+#### Exceptions
+
+ AssetLoadException
+
+The content folder does not exist.
+
 ### <a id="MicroEngine_Core_AssetCache_Statistics"></a> Statistics
 
-Counts, texture memory and load time of this scope and its children.
+Counts, memory and load time of this scope and its children.
 
 ```csharp
 public AssetStatistics Statistics { get; }
@@ -192,6 +245,18 @@ public AssetStatistics Statistics { get; }
 #### Property Value
 
  [AssetStatistics](MicroEngine.Core.AssetStatistics.md)
+
+### <a id="MicroEngine_Core_AssetCache_Store"></a> Store
+
+The game's asset store: its content source, loaders and root scope.
+
+```csharp
+public AssetStore Store { get; }
+```
+
+#### Property Value
+
+ AssetStore
 
 ## Methods
 
@@ -224,7 +289,7 @@ The texture's filter; null for the game's default.
 
 #### Exceptions
 
- [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+ AssetLoadException
 
 The file or its image is missing or invalid.
 
@@ -241,7 +306,7 @@ public SpriteAtlas AtlasFromFolder(string folder, Vector2 pivot = default, Textu
 
 `folder` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-A folder of the content folder.
+A folder of the content.
 
 `pivot` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
@@ -257,7 +322,7 @@ The texture's filter; null for the game's default.
 
 #### Exceptions
 
- [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+ AssetLoadException
 
 The folder is missing or holds no image, or an image cannot be read.
 
@@ -279,7 +344,7 @@ public byte[] Bytes(string path)
 
 #### Exceptions
 
- [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+ AssetLoadException
 
 The file is missing or wrongly cased.
 
@@ -330,7 +395,7 @@ public ScalableFont Font(string path, FontOptions? options = null)
 
 #### Exceptions
 
- [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+ AssetLoadException
 
 The file is missing, wrongly cased or not a font the engine reads.
 
@@ -353,7 +418,7 @@ public PixelImage Image(string path)
 
 #### Exceptions
 
- [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+ AssetLoadException
 
 The file is missing, wrongly cased or not an image the engine reads.
 
@@ -412,7 +477,7 @@ public string Text(string path)
 
 #### Exceptions
 
- [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+ AssetLoadException
 
 The file is missing or wrongly cased.
 
@@ -436,7 +501,7 @@ public Texture Texture(string path, TextureFilter? filter = null)
 
 #### Exceptions
 
- [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
+ AssetLoadException
 
 The file is missing, wrongly cased or not an image the engine reads.
 
