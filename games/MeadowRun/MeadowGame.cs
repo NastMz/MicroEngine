@@ -6,17 +6,29 @@ using MeadowRun.Scenes;
 using MicroEngine;
 using MicroEngine.Core;
 using MicroEngine.Input;
+using MicroEngine.Kernel;
 
 namespace MeadowRun;
 
 /// <summary>Persistent progress: unlocked levels, best scores and whether the Sunstone was recovered.</summary>
-public sealed class SaveData
+public sealed class SaveData : IStateHashed
 {
     public int Unlocked { get; set; } = 1;
     public int[] BestScores { get; set; } = new int[Levels.All.Count];
     public bool Finished { get; set; }
     /// <summary>Coins collected in each level's best run (shown on the map).</summary>
     public int[] BestCoins { get; set; } = new int[Levels.All.Count];
+
+    /// <summary>Hashes the progress kept in memory (what the title, map and records read).</summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(Unlocked);
+        hash.Add(Finished);
+        hash.Add(BestScores.Length);
+        foreach (int score in BestScores) hash.Add(score);
+        hash.Add(BestCoins.Length);
+        foreach (int coins in BestCoins) hash.Add(coins);
+    }
 }
 
 /// <summary>Developer launch options (environment variables), used for captures and debugging.</summary>
@@ -99,6 +111,17 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
         if (save.BestScores.Length != n) save.BestScores = [.. save.BestScores.Concat(new int[n]).Take(n)];
         if (save.BestCoins.Length != n) save.BestCoins = [.. save.BestCoins.Concat(new int[n]).Take(n)];
         save.Unlocked = Math.Clamp(save.Unlocked, 1, n);
+    }
+
+    /// <summary>
+    /// Hashes the run (<see cref="Session"/>) and the progress in memory (<see cref="SaveData"/>). Leaves out the save
+    /// folder and store (environment), the art, lights and sound banks (platform resources), and
+    /// <see cref="MissingSounds"/> (a diagnostic).
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(Session);
+        hash.Add(Save);
     }
 
     public void NewGame()

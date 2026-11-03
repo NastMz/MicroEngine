@@ -2,6 +2,7 @@ using System.Numerics;
 using MeadowRun.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace MeadowRun.Gameplay.Actors;
 
@@ -59,6 +60,15 @@ internal abstract class Enemy : Actor
     }
 
     protected abstract void Live(float dt);
+
+    /// <summary>Adds facing and how (and how long ago) the enemy was defeated.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(Facing);
+        hash.Add((int)Death);
+        hash.Add(DeathTime);
+    }
     protected abstract Sprite Frame(Assets a, float time);
 
     public override void Render(IRenderer r, Assets a, float time)
@@ -112,6 +122,14 @@ internal sealed class Hopkin : Enemy
     public Hopkin(Stage stage, Vector2 tileTopLeft) : base(stage, tileTopLeft) => Hitbox = new RectF(2, 5, 12, 11);
     public override int Points => 200;
     private bool Airborne => Velocity.Y != 0;
+
+    /// <summary>Adds the leap timer and the crouch tell.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_timer);
+        hash.Add(_crouching);
+    }
 
     protected override void Live(float dt)
     {
@@ -174,6 +192,14 @@ internal sealed class Spitpod : Enemy
     private int _pose;
     public Spitpod(Stage stage, Vector2 tileTopLeft) : base(stage, tileTopLeft) => Hitbox = new RectF(3, 0, 10, 16);
     public override int Points => 200;
+
+    /// <summary>Adds the spit timer and the pose (the swell tell gates the next shot).</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_timer);
+        hash.Add(_pose);
+    }
 
     protected override void Live(float dt)
     {

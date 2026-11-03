@@ -3,6 +3,7 @@ using MeadowRun.Art;
 using MeadowRun.Content;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 using MicroEngine.Input;
 using MicroEngine.Scenes;
 using MicroEngine.UI;
@@ -47,6 +48,18 @@ internal sealed class TitleScene(MeadowGame game) : Scene
     private bool _controls, _leaving;
     private float _logoDrop;
     private readonly StepBlend _step = new();
+
+    /// <summary>
+    /// Hashes the menu cursor and whether Continue is enabled, the controls page and whether the scene is leaving.
+    /// Leaves out the logo drop (a tween the engine already hashes, read only by drawing) and the step blend.
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        hash.Add(_menu.Index);
+        hash.Add(_menu.IsEnabled(1));
+        hash.Add(_controls);
+        hash.Add(_leaving);
+    }
 
     public override void Enter()
     {

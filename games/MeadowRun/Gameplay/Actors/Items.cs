@@ -3,6 +3,7 @@ using MeadowRun.Art;
 using MeadowRun.Content;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace MeadowRun.Gameplay.Actors;
 
@@ -71,6 +72,13 @@ internal sealed class PowerItem : Actor
     }
 
     public override bool AlwaysActive => true;
+
+    /// <summary>Adds the kind of power-up.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add((int)Kind);
+    }
 
     protected override void Tick(float dt)
     {

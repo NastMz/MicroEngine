@@ -3,6 +3,7 @@ using MeadowRun.Art;
 using MeadowRun.Content;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace MeadowRun.Gameplay.Actors;
 
@@ -13,6 +14,13 @@ internal sealed class Spring : Actor
     public Spring(Stage stage, Vector2 tileTopLeft) : base(stage, tileTopLeft) => Hitbox = new RectF(1, 6, 14, 10);
     public override bool AlwaysActive => true;
     protected override void Tick(float dt) => Compress = MathF.Max(0, Compress - dt);
+
+    /// <summary>Adds the compression timer.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(Compress);
+    }
     public override void Render(IRenderer r, Assets a, float time) => r.Draw(a.Frames("spring")[Compress > 0 ? 1 : 0], Snap(Feet));
 }
 
@@ -26,6 +34,14 @@ internal sealed class Checkpoint : Actor
         Hitbox = new RectF(2, 0, 12, 32);
         Index = index;
         Lit = lit;
+    }
+
+    /// <summary>Adds which checkpoint it is and whether it is lit.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(Index);
+        hash.Add(Lit);
     }
 
     public override bool AlwaysActive => true;
@@ -78,6 +94,14 @@ internal abstract class PlatformActor(Stage stage, Vector2 position, int tiles) 
     public virtual void StoodOn() => StoodThisStep = true;
     protected void ClearStood() => StoodThisStep = false;
 
+    /// <summary>Adds the movement of the last step (it carries Pip) and whether Pip stood on it.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(Delta);
+        hash.Add(StoodThisStep);
+    }
+
     protected void DrawPlatform(IRenderer r, Assets a, Vector2 offset)
     {
         var p = Snap(Position + offset);
@@ -124,6 +148,14 @@ internal sealed class FallingPlatform : PlatformActor
 {
     private float _standTime, _fallTime = -1;
     public FallingPlatform(Stage stage, Vector2 tileTopLeft) : base(stage, tileTopLeft, 2) => Hitbox = new RectF(0, 0, 32, 8);
+
+    /// <summary>Adds how long Pip has stood on it and how long it has been falling.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_standTime);
+        hash.Add(_fallTime);
+    }
 
     protected override void Tick(float dt)
     {

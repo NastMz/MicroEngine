@@ -2,6 +2,7 @@ using System.Numerics;
 using MeadowRun.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Kernel;
 
 namespace MeadowRun.Gameplay.Actors;
 
@@ -16,6 +17,13 @@ internal sealed class SeedShot : Actor
     }
 
     public override bool AlwaysActive => true;
+
+    /// <summary>Adds how many times the seed has bounced.</summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add(_bounces);
+    }
 
     protected override void Tick(float dt)
     {
@@ -113,6 +121,25 @@ internal sealed class Grumbold : Enemy
     public RectF Arena { get; set; }
 
     public Grumbold(Stage stage, Vector2 tileTopLeft) : base(stage, tileTopLeft + new Vector2(-10, -14)) => Hitbox = new RectF(4, 6, 36, 24);
+
+    /// <summary>
+    /// Adds the attack mode and its timer, the attack rotation, health, the burrow mound, the flight after defeat and
+    /// the arena. Leaves out the hit flash (only the sprite reads it).
+    /// </summary>
+    public override void HashState(StateHasher hash)
+    {
+        base.HashState(hash);
+        hash.Add((int)_mode);
+        hash.Add(_timer);
+        hash.Add(_attack);
+        hash.Add(Health);
+        hash.Add(_moundX);
+        hash.Add(_fleeing);
+        hash.Add(Arena.X);
+        hash.Add(Arena.Y);
+        hash.Add(Arena.Width);
+        hash.Add(Arena.Height);
+    }
     public override bool AlwaysActive => true;
     public override bool Stompable => Vulnerable;
     public override bool Knockable => false;

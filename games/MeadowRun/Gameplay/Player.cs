@@ -2,6 +2,7 @@ using System.Numerics;
 using MeadowRun.Art;
 using MeadowRun.Content;
 using MicroEngine;
+using MicroEngine.Kernel;
 using MicroEngine.World;
 
 namespace MeadowRun.Gameplay;
@@ -31,7 +32,7 @@ public enum PlayerEvents
 /// acceleration and skid, run modifier, variable jump height, coyote time, jump buffering, apex
 /// hang, terminal velocity, ceiling corner correction, one-way drop-through and moving platforms.
 /// </summary>
-public sealed class Player
+public sealed class Player : IStateHashed
 {
     public const int Width = 12, Height = 14;
 
@@ -64,6 +65,33 @@ public sealed class Player
 
     /// <summary>Copies the full movement state, for prediction (e.g. AI planning a jump) without touching this player.</summary>
     public Player Clone() => (Player)MemberwiseClone();
+
+    /// <summary>
+    /// Hashes the whole movement state: position, velocity, facing, ground and jump flags, the coyote, buffer, drop and
+    /// invulnerability timers, landing impact, air time, this step's events and bumped tile, form and control, and
+    /// whether Pip rides a platform (the platform itself is hashed with the stage).
+    /// </summary>
+    public void HashState(StateHasher hash)
+    {
+        hash.Add(Position);
+        hash.Add(Velocity);
+        hash.Add(Facing);
+        hash.Add(Grounded);
+        hash.Add(Skidding);
+        hash.Add(Jumping);
+        hash.Add(CoyoteTimer);
+        hash.Add(BufferTimer);
+        hash.Add(DropTimer);
+        hash.Add(LandImpact);
+        hash.Add(AirTime);
+        hash.Add(Riding is not null);
+        hash.Add((int)Events);
+        hash.Add(BumpedTile.X);
+        hash.Add(BumpedTile.Y);
+        hash.Add((int)Form);
+        hash.Add(Invulnerable);
+        hash.Add(Controllable);
+    }
 
     /// <summary>Starts a jump-like launch. When <paramref name="cuttable"/>, releasing jump shortens it (variable height).</summary>
     public void Launch(float speed, bool cuttable = true)
