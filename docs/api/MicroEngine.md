@@ -24,6 +24,8 @@ Guide: [Graphics](../manual/rendering.md)
 
  [MicroEngine.Kernel](MicroEngine.Kernel.md)
 
+ [MicroEngine.Physics](MicroEngine.Physics.md)
+
  [MicroEngine.Platform](MicroEngine.Platform.md)
 
  [MicroEngine.Raylib](MicroEngine.Raylib.md)

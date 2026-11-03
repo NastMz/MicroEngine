@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The tile backend of IPhysicsWorld2D (TilePhysicsWorld2D: tile grids as static geometry, axis-aligned boxes, the
+       exact swept kinematic mover, one-way platforms, moving solids) and the tile types it is built on (TileLayer,
+       TileGrid, TileFlags, ICollisionGrid, Autotile, and the TileMotion helper), which keep their MicroEngine.World
+       namespace; MicroEngine.dll forwards them. It references only the physics contract, the scene world and the
+       kernel (the architecture test checks it). It is not a package of its own: the MicroEngine package carries
+       MicroEngine.Physics.Tiles.dll (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Physics.Tiles</RootNamespace>
+    <Description>MicroEngine tile physics: tile layers and grids, autotile, the swept tile mover and the tile backend of the 2D physics contract. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Physics/MicroEngine.Physics.csproj" />
+    <ProjectReference Include="../MicroEngine.Scene/MicroEngine.Scene.csproj" />
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+</Project>

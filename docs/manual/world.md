@@ -2,8 +2,9 @@
 
 The `MicroEngine.World` namespace holds what most 2D games build their levels from: grids of tiles, what each tile
 means for movement, a function that moves a box through the grid without passing through walls, and a list type for
-game objects. It is deliberately small: there is no physics engine (no forces, masses, slopes or rotating bodies) and no
-level editor format. Movement rules are game code that calls these pieces.
+game objects. It is deliberately small: there are no forces, masses, slopes or rotating bodies and no level editor format.
+Movement rules are game code that calls these pieces. A world of bodies with collision layers, queries and sensors is
+described in [Physics worlds](#physics-worlds).
 
 ## The pieces
 
@@ -70,11 +71,18 @@ private readonly TileGrid _grid = new(
 How it works, and why it matters:
 
 - **X first, then Y.** A box moving diagonally into a wall stops on one axis and keeps sliding on the other.
-- **Sub-steps of at most half a tile**, so a fast box never tunnels through a one-tile wall.
+- **A swept test in sub-steps of at most half a tile.** Each sub-step stops the box flush against the first solid
+  tile or rectangle in its way, including one thinner than the step. Next SDK version (not published yet: arrives with
+  the next SDK version): a fast box no longer passes through an extra rectangle thinner than a sub-step (earlier
+  versions only tested where each sub-step ended); a move with nothing in its way ends at exactly the same position as
+  before.
 - **Solid** tiles block from every side. **One-way** tiles block only a box moving down onto their top edge from above:
   jump up through them, land on them, and pass `ignoreOneWay: true` to drop through.
 - **`solids`**: extra rectangles that block like solid tiles (moving platforms, doors, push blocks). A rectangle the
-  box already overlaps does not block it, so a box is never stuck inside one.
+  box already overlaps does not block it, so a box is never stuck inside one. Next SDK version (not published yet:
+  arrives with the next SDK version): one exception, a rectangle that rose into a box moving down: when its top edge is
+  inside the box's lower half, the box is first lifted onto it (if nothing solid is there), so a platform moved up into
+  a standing player carries him instead of swallowing him, and `HitFloor` and `IsOnGround` are true.
 - `IsOnGround(box, grid, solids)` is true when one more pixel down would collide: standing on a floor, a one-way
   platform or a solid rectangle.
 
@@ -171,13 +179,14 @@ calling `spriteFor(id, x, y)` for each non-empty cell; return `null` to skip one
 
 ## Performance
 
-`TileMotion.Move` checks only the cells the box overlaps at each sub-step: a handful of lookups per moving object.
+`TileMotion.Move` checks only the cells the box sweeps at each sub-step: a handful of lookups per moving object.
 `TileRenderer` touches only visible cells, so a large map costs what the screen shows. Both are fine for hundreds of
 moving objects per step.
 
 ## Limits
 
-- Axis-aligned boxes only: no slopes, circles or rotated shapes, no continuous collision between moving objects.
+- Axis-aligned boxes only: no slopes, circles or rotated shapes. `TileMotion` moves one box against rectangles that
+  stand still during the call; a physics world's moving solids push and carry other bodies.
 - One tile size per grid; no isometric or hexagonal grids.
 - No importer for map editors (Tiled, LDtk): read their files yourself into a `TileLayer` if you use one.
 
@@ -188,9 +197,73 @@ moving objects per step.
 - **Checking `IsOnGround` after moving.** Check it before deciding to jump, then move.
 - **Resetting vertical speed only on `HitFloor`.** Reset it on `HitCeiling` too, or the player sticks to ceilings.
 
+## Physics worlds
+
+Next SDK version (not published yet: arrives with the next SDK version). `IPhysicsWorld2D` (namespace
+`MicroEngine.Physics`) is a world of bodies owned by entities of the [scene world](scenes.md#the-scene-world). Every
+physics backend offers the same core; anything else is a capability the backend declares, and asking for one it does
+not declare throws `PhysicsCapabilityException` instead of being approximated. The engine's backend is
+`TilePhysicsWorld2D` (namespace `MicroEngine.Physics.Tiles`), built on the same swept test as `TileMotion`:
+
+```csharp
+var physics = new TilePhysicsWorld2D();
+var level = physics.CreateBody(levelEntity, BodyDescription.Static());
+physics.AddTiles(level, grid);                                   // the tile grid as static geometry
+
+var player = physics.CreateBody(playerEntity, BodyDescription.Kinematic(new Vector2(40, 120)));
+physics.AddShape(player, ShapeDescription.Box(new Vector2(10, 14)));
+
+// Each step: collide-and-slide, then read what the box touched.
+var move = physics.Move(player, velocity * dt);
+if (move.OnGround) velocity.Y = 0;
+```
+
+The core every backend offers:
+
+| Part | What it does |
+| --- | --- |
+| Bodies | `CreateBody(owner, description)`: `Static` (level geometry) or `Kinematic` (moved only by your code). Ids are generation-checked: a destroyed body's id never reaches the body that reuses its slot. `SetPosition` teleports. |
+| Shapes | `AddShape(body, ShapeDescription.Box(size, offset))`: an axis-aligned box centred on the body's origin plus its offset. |
+| Layers | `Category` (the layers a shape is in) and `Mask` (the layers it collides with), 64 bits; two shapes collide only when each one's mask holds the other's category. `QueryFilter(category, mask)` selects what a move or a query sees. |
+| `Move(body, delta, filter)` | Moves a kinematic body's box, X then Y, and stops it against what is in its way however fast it moves. `MoveResult` has the position, the distance actually moved, `OnGround`, `GroundNormal`, `HitWall`, `HitCeiling` and every contact with its shape, owner and normal. A shape the box already overlaps does not block it. |
+| `RayCast(from, to, filter, out hit)` | The closest shape the segment enters: shape, owner, point, normal and fraction. |
+| `Overlap(area, filter, results)` | The shapes that truly overlap a rectangle (sharing an edge does not count). |
+| Sensors | `ShapeDescription.Sensor(size)`: never blocks; after each `Step`, `SensorEvents` lists the shapes of moving bodies that entered or left it. Queries leave sensors out unless the filter sets `IncludeSensors`. |
+| `Step(dt)` | Computes the step's events; they stay readable until the next step. No game code runs during it. |
+
+What a backend may declare (`physics.Capabilities`):
+
+| Capability | Meaning | Tile backend |
+| --- | --- | --- |
+| `TileGeometry` | `AddTiles(body, grid)`: solid cells block, one-way cells are platforms, changing a tile changes collisions at once | yes |
+| `OneWayPlatforms` | `ShapeDescription.OneWay`: stops only bodies coming down onto its top; `QueryFilter.PassOneWay` drops through | yes |
+| `MovingSolids` | `BodyDescription.PushesBodies`: a kinematic body that moves the whole way, pushes kinematic bodies out of its way and carries those standing on it | yes |
+| `DynamicBodies`, `Rotation`, `Joints`, `Circles`, `Capsules`, `Polygons`, `ContinuousCollision`, `FrictionRestitution`, `MassProperties` | bodies moved by a solver, and the shapes and properties they need; `ContactEvents` reports their contacts | no: refused with `PhysicsCapabilityException` |
+
+The tile backend rests boxes exactly on surfaces (`Skin` is 0), uses the engine's Y-down space (`Up` is (0, -1)) and
+gives identical results on every platform. A backend with dynamic bodies may leave a small gap, at most its `Skin`.
+
+To step worlds with the game, add the physics module and register each world with the scene world whose entities own
+its bodies:
+
+```csharp
+public override void Configure(EngineBuilder builder) => builder.Add(new PhysicsModule());
+
+// In the scene that owns the world:
+physicsSystem.Add(physics, world);       // physicsSystem: the PhysicsSystem service the module registers
+```
+
+The module steps the world in the frame's `Physics` phase, after the scene's update, only in the steps its scene world
+took and by that world's scaled time (so pausing, slow motion and hitstop apply), then writes every moving body's
+position to its owner's `Transform`, which the scene world interpolates for drawing. Owners of moving bodies are root
+entities. `PhysicsSync.Teleport(physics, world, body, position)` moves a body and its entity together and draws it there
+at once.
+
 ## Related
 
 - [Tutorial step 6: tile map and camera](../tutorial/06-garden.md), [step 7: collisions](../tutorial/07-collisions.md)
 - [Graphics](rendering.md#tile-maps): drawing layers
 - API: [`TileMotion`](../api/MicroEngine.World.TileMotion.md), [`TileGrid`](../api/MicroEngine.World.TileGrid.md),
-  [`EntityList<T>`](../api/MicroEngine.World.EntityList-1.md)
+  [`EntityList<T>`](../api/MicroEngine.World.EntityList-1.md),
+  [`IPhysicsWorld2D`](../api/MicroEngine.Physics.IPhysicsWorld2D.md),
+  [`TilePhysicsWorld2D`](../api/MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md)

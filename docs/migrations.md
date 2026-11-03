@@ -8,6 +8,18 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- `TileMotion.Move` is a swept test: a fast box stops against an extra solid rectangle thinner than a sub-step instead of
+  passing through it, and an extra solid whose top edge is inside the lower half of a box moving down (a platform that
+  rose into a standing player) lifts the box onto its top, so `HitFloor` and `IsOnGround` are true instead of the box
+  ending inside it. Moves with nothing thin in their way end exactly where they did. Nothing to change; a game that
+  relied on passing through thin rectangles makes them thicker or leaves them out of `solids`.
+- The tile types (`TileLayer`, `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`) and `TileMotion` with its
+  `MoveResult` moved to the new `MicroEngine.Physics.Tiles.dll` (carried by the `MicroEngine` package) with their
+  namespace, `MicroEngine.World`, unchanged, and `MicroEngine.dll` forwards them: nothing to change in games.
+  `TileRenderer` stays in `MicroEngine.dll`.
+- New: physics worlds (`MicroEngine.Physics`, `MicroEngine.Physics.Tiles`; [Physics worlds](manual/world.md#physics-worlds)).
+  A file that imports both `MicroEngine.World` and `MicroEngine.Physics` sees two `MoveResult` types: write
+  `MicroEngine.World.MoveResult` or `MicroEngine.Physics.MoveResult`.
 - F11 and Alt+Enter no longer switch full screen inside the SDL and raylib backends: the engine's `fullscreen` action
   (`ActionNames.Fullscreen`, bound to F11 and Alt+Enter by `InputMap.CreateDefault` and added to a map that has no such
   action) does, through `Game.Screen.ToggleFullscreen()`. Players see no change. **Migration:** a game that wants F11

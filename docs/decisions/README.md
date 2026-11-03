@@ -35,6 +35,7 @@ maintainer's archive, not in the public history.
 | [0028](0028-graphics-device-contract.md) | One graphics device contract for every tier: declared capabilities, a typed error, core validation, premultiplied alpha, a CPU reference device (amends 0003, 0017, 0024) | Accepted |
 | [0029](0029-presentation-replaces-canvas-scaling.md) | `Presentation` replaces `CanvasScaling`: one choice per field, pixel art and high-resolution 2D as presets (amends 0024) | Accepted |
 | [0030](0030-one-object-model.md) | One object model: ids, 3D-storage transforms, hierarchy, attachments in `IWorld`; no core ECS; `Entity` only as a transitional adapter (amends 0003) | Accepted |
+| [0031](0031-physics-contract.md) | A 2D physics contract (`IPhysicsWorld2D`) with declared capabilities and a typed error; the tile mover, made a true swept test, as its first backend | Accepted |
 | [0032](0032-input-devices-players-layers.md) | Input as device events with ids, players and layers (amends 0020) | Accepted |
 | [0033](0033-one-mixer-over-pcm-sinks.md) | One managed mixer over PCM sinks (`IAudioSink` v1); a feeder thread is the default SDL sink, an AudioWorklet queue the browser one | Accepted |
 | [0034](0034-content-handles-loaders-sources.md) | Content handles with generations, a loader registry, a reserved import step and content sources beyond folders (amends 0004, 0025) | Accepted |
