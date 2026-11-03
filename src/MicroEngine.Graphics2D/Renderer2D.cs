@@ -71,10 +71,10 @@ public interface IRenderer2D
     /// Draws the <paramref name="source"/> texels of <paramref name="texture"/> as a quad of source.Width × source.Height
     /// local units placed by <paramref name="world"/>, multiplied by the premultiplied <paramref name="tint"/>.
     /// </summary>
-    void Draw(Texture texture, RectF source, in Matrix3x2 world, ColorF tint, float depth = 0, SpriteFlip flip = SpriteFlip.None);
+    void Draw(Devices.Texture texture, RectF source, in Matrix3x2 world, ColorF tint, float depth = 0, SpriteFlip flip = SpriteFlip.None);
     /// <summary>Draws triangles (positions transformed like a draw's local units); a null texture draws the vertex colours.</summary>
     /// <exception cref="ArgumentOutOfRangeException">An index selects no vertex, or more than 65,535 vertices.</exception>
-    void DrawGeometry(Texture? texture, ReadOnlySpan<Vertex2D> vertices, ReadOnlySpan<ushort> indices, float depth = 0);
+    void DrawGeometry(Devices.Texture? texture, ReadOnlySpan<Vertex2D> vertices, ReadOnlySpan<ushort> indices, float depth = 0);
     /// <summary>Multiplies later draws' transforms by <paramref name="transform"/> (before the view) until <see cref="PopTransform"/>.</summary>
     void PushTransform(in Matrix3x2 transform);
     /// <summary>Returns to the transform before the last <see cref="PushTransform"/>.</summary>
@@ -110,8 +110,8 @@ public enum SpriteFlip
 public sealed class Renderer2D : IRenderer2D, IDisposable
 {
     private const int MaxVerticesPerDraw = ushort.MaxValue;
-    private readonly IGraphicsDevice _device;
-    private readonly Texture _white;
+    private readonly Devices.IGraphicsDevice _device;
+    private readonly Devices.Texture _white;
     private readonly List<Vertex2D> _vertices = [];
     private readonly List<ushort> _indices = [];
     private readonly List<Item> _items = [];
@@ -129,17 +129,17 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
     private bool _begun, _disposed;
 
     /// <summary>Creates the batcher (and its 1 × 1 white texture, which untextured draws sample).</summary>
-    public Renderer2D(IGraphicsDevice device)
+    public Renderer2D(Devices.IGraphicsDevice device)
     {
         _device = device ?? throw new ArgumentNullException(nameof(device));
         _white = device.CreateTexture(new TextureDescription(1, 1, Name: "renderer2d-white"), [255, 255, 255, 255]);
     }
 
     /// <summary>The device the batcher draws with.</summary>
-    public IGraphicsDevice Device => _device;
+    public Devices.IGraphicsDevice Device => _device;
 
     /// <summary>The 1 × 1 opaque white texture untextured draws sample.</summary>
-    public Texture White => _white;
+    public Devices.Texture White => _white;
 
     /// <inheritdoc />
     public RenderTarget? Target => _begun ? _settings.Target : null;
@@ -171,7 +171,7 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
     }
 
     /// <inheritdoc />
-    public void Draw(Texture texture, RectF source, in Matrix3x2 world, ColorF tint, float depth = 0, SpriteFlip flip = SpriteFlip.None)
+    public void Draw(Devices.Texture texture, RectF source, in Matrix3x2 world, ColorF tint, float depth = 0, SpriteFlip flip = SpriteFlip.None)
     {
         Begun();
         ArgumentNullException.ThrowIfNull(texture);
@@ -191,7 +191,7 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
     }
 
     /// <inheritdoc />
-    public void DrawGeometry(Texture? texture, ReadOnlySpan<Vertex2D> vertices, ReadOnlySpan<ushort> indices, float depth = 0)
+    public void DrawGeometry(Devices.Texture? texture, ReadOnlySpan<Vertex2D> vertices, ReadOnlySpan<ushort> indices, float depth = 0)
     {
         Begun();
         if (vertices.Length > MaxVerticesPerDraw) throw new ArgumentOutOfRangeException(nameof(vertices), $"at most {MaxVerticesPerDraw} vertices per call");
@@ -283,7 +283,7 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
 
     private Matrix3x2 View => _settings.View ?? Matrix3x2.Identity;
 
-    private void Record(Texture texture, float depth, int vertexStart, int vertexCount, int indexStart, int indexCount)
+    private void Record(Devices.Texture texture, float depth, int vertexStart, int vertexCount, int indexStart, int indexCount)
     {
         int state = _states.IndexOf(_state);
         if (state < 0)
@@ -341,7 +341,7 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
             Pipeline? pipeline = null;
             RectI? scissor = null;
             bool scissorSet = false;
-            Texture? texture = null;
+            Devices.Texture? texture = null;
             SamplerDescription sampler = default;
             foreach (var run in runs)
             {
@@ -387,7 +387,7 @@ public sealed class Renderer2D : IRenderer2D, IDisposable
         if (!_begun) throw new InvalidOperationException("call Begin first");
     }
 
-    private readonly record struct Item(Texture Texture, int State, float Depth, int Order, int VertexStart, int VertexCount, int IndexStart, int IndexCount);
+    private readonly record struct Item(Devices.Texture Texture, int State, float Depth, int Order, int VertexStart, int VertexCount, int IndexStart, int IndexCount);
 
-    private readonly record struct Run(Texture Texture, int State, int FirstIndex, int IndexCount, int BaseVertex, int VertexCount);
+    private readonly record struct Run(Devices.Texture Texture, int State, int FirstIndex, int IndexCount, int BaseVertex, int VertexCount);
 }

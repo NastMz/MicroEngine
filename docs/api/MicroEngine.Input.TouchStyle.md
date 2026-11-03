@@ -94,7 +94,7 @@ public PixelImage? Image { get; init; }
 
 #### Property Value
 
- [PixelImage](MicroEngine.Graphics.PixelImage.md)?
+ PixelImage?
 
 ### <a id="MicroEngine_Input_TouchStyle_KnobImage"></a> KnobImage
 
@@ -106,7 +106,7 @@ public PixelImage? KnobImage { get; init; }
 
 #### Property Value
 
- [PixelImage](MicroEngine.Graphics.PixelImage.md)?
+ PixelImage?
 
 ### <a id="MicroEngine_Input_TouchStyle_KnobSize"></a> KnobSize
 
@@ -190,7 +190,7 @@ public PixelImage? PressedImage { get; init; }
 
 #### Property Value
 
- [PixelImage](MicroEngine.Graphics.PixelImage.md)?
+ PixelImage?
 
 ### <a id="MicroEngine_Input_TouchStyle_PressedOutline"></a> PressedOutline
 

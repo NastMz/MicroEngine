@@ -78,7 +78,7 @@ public void Draw(IRenderer renderer, string text, Vector2 position, Color color)
 
 #### Parameters
 
-`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`renderer` IRenderer
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 

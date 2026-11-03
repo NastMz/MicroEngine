@@ -71,7 +71,7 @@ public AssetCache(IGraphicsDevice device, string? root = null)
 
 #### Parameters
 
-`device` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+`device` IGraphicsDevice
 
 Creates the textures.
 
@@ -275,17 +275,17 @@ public SpriteAtlas Atlas(string path, AtlasOptions? options = null, TextureFilte
 
 The atlas file.
 
-`options` [AtlasOptions](MicroEngine.Graphics.AtlasOptions.md)?
+`options` AtlasOptions?
 
 Default pivot and naming; null for [Default](MicroEngine.Graphics.AtlasOptions.md#MicroEngine_Graphics_AtlasOptions_Default).
 
-`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
+`filter` TextureFilter?
 
 The texture's filter; null for the game's default.
 
 #### Returns
 
- [SpriteAtlas](MicroEngine.Graphics.SpriteAtlas.md)
+ SpriteAtlas
 
 #### Exceptions
 
@@ -312,13 +312,13 @@ A folder of the content.
 
 The anchor of every sprite as a fraction of its size; (0, 0), the top-left, by default.
 
-`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
+`filter` TextureFilter?
 
 The texture's filter; null for the game's default.
 
 #### Returns
 
- [SpriteAtlas](MicroEngine.Graphics.SpriteAtlas.md)
+ SpriteAtlas
 
 #### Exceptions
 
@@ -414,7 +414,7 @@ public PixelImage Image(string path)
 
 #### Returns
 
- [PixelImage](MicroEngine.Graphics.PixelImage.md)
+ PixelImage
 
 #### Exceptions
 
@@ -538,11 +538,11 @@ public Texture Texture(string path, TextureFilter? filter = null)
 
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
+`filter` TextureFilter?
 
 #### Returns
 
- [Texture](MicroEngine.Graphics.Texture.md)
+ Texture
 
 #### Exceptions
 

@@ -26,7 +26,7 @@ public sealed class Renderer2DTests
         _device.Dispose();
     }
 
-    private Texture Solid(uint rgba) => _device.CreateTexture(new TextureDescription(1, 1), Texels.Bytes(rgba));
+    private Devices.Texture Solid(uint rgba) => _device.CreateTexture(new TextureDescription(1, 1), Texels.Bytes(rgba));
     private RenderTarget Target(int w, int h) => _device.CreateRenderTarget(new RenderTargetDescription(w, h));
     private static ColorF Opaque(byte r, byte g, byte b) => PremultipliedColor.FromBytes(r, g, b);
 
@@ -37,12 +37,12 @@ public sealed class Renderer2DTests
         return new Image(target.Width, target.Height, request.Pixels.ToArray());
     }
 
-    private void Pixel(Texture texture, float x, float y, float depth = 0) => _batcher.Draw(texture, new RectF(0, 0, 1, 1), Matrix3x2.CreateTranslation(x, y), ColorF.White, depth);
+    private void Pixel(Devices.Texture texture, float x, float y, float depth = 0) => _batcher.Draw(texture, new RectF(0, 0, 1, 1), Matrix3x2.CreateTranslation(x, y), ColorF.White, depth);
 
     [TestMethod]
     public void ConsecutiveDrawsOfOneTextureAndState_ShareOneDrawCall_InSubmissionOrder()
     {
-        Texture a = Solid(0xFF0000FF), b = Solid(0x00FF00FF);
+        Devices.Texture a = Solid(0xFF0000FF), b = Solid(0x00FF00FF);
         var target = Target(8, 8);
         var before = _device.Counters;
         _batcher.Begin(new BatchSettings(target, Clear: Opaque(0, 0, 0)));
@@ -59,7 +59,7 @@ public sealed class Renderer2DTests
     [TestMethod]
     public void TextureSort_GroupsByTexture_AndDepthSortsOrderByDepth()
     {
-        Texture a = Solid(0xFF0000FF), b = Solid(0x00FF00FF);
+        Devices.Texture a = Solid(0xFF0000FF), b = Solid(0x00FF00FF);
         var target = Target(8, 8);
         _batcher.Begin(new BatchSettings(target, Sort: SortMode.Texture));
         Pixel(a, 0, 0); Pixel(b, 1, 0); Pixel(a, 2, 0);
@@ -116,7 +116,7 @@ public sealed class Renderer2DTests
     [TestMethod]
     public void Clear_InTheMiddleOfABatch_ReplacesWhatWasDrawnBefore()
     {
-        Texture a = Solid(0xFF0000FF), b = Solid(0x00FF00FF);
+        Devices.Texture a = Solid(0xFF0000FF), b = Solid(0x00FF00FF);
         var target = Target(8, 8);
         _batcher.Begin(new BatchSettings(target));
         Pixel(a, 0, 0);
