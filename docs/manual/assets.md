@@ -70,6 +70,7 @@ protected override void Load()
 | `Atlas(path, options?, filter?)` | a `SpriteAtlas` from a packing tool's file and the image it names |
 | `AtlasFromFolder(folder, pivot?, filter?)` | every image of a folder packed into one atlas, named by file name |
 | `Font(path, options?)` | a `ScalableFont` ([Text](text.md#scalable-fonts-ttf-and-otf)) |
+| `Sound(path)`, `Music(path)` | next SDK version: a PCM WAV decoded into an `AudioClip`; a music file (OGG, WAV, MP3 on raylib) as `EncodedAudio`, decoded while it plays. Play them with `Audio.AddSound(name, clip)` and `Audio.AddMusic(name, music)` |
 | `Bytes(path)`, `Text(path)` | the file's content (not cached) |
 | `IsLoaded(path)`, `Unload(path)` | whether a file is loaded; releases this cache's hold on it |
 | `Loaded`, `Statistics` | what is loaded, texture memory (`TextureBytes`), audio memory (`AudioBytes`, next SDK version), load times, loads during play |

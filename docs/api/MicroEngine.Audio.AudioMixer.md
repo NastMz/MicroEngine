@@ -195,6 +195,33 @@ The song has no steps.
 
 A track has an invalid note or a drum track an unknown drum.
 
+### <a id="MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_EncodedAudio_System_Boolean_"></a> AddMusic\(string, EncodedAudio, bool\)
+
+Registers a music file loaded from content (<code>Assets.Music(path)</code>) under <code class="paramref">name</code>: WAV is
+decoded here, other formats are decoded by the device while they play.
+
+```csharp
+public void AddMusic(string name, EncodedAudio music, bool loop = true)
+```
+
+#### Parameters
+
+`name` [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+`music` [EncodedAudio](MicroEngine.Audio.EncodedAudio.md)
+
+`loop` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+#### Exceptions
+
+ [NotSupportedException](https://learn.microsoft.com/dotnet/api/system.notsupportedexception)
+
+The device does not decode that format (MP3 outside raylib, for example).
+
+ [InvalidDataException](https://learn.microsoft.com/dotnet/api/system.io.invaliddataexception)
+
+The bytes cannot be decoded as their format.
+
 ### <a id="MicroEngine_Audio_AudioMixer_AddMusicFile_System_String_System_String_System_Boolean_"></a> AddMusicFile\(string, string, bool\)
 
 Registers a music file. WAV is decoded here; other formats are streamed by the device.
@@ -213,7 +240,7 @@ public void AddMusicFile(string name, string path, bool loop = true)
 
 #### Remarks
 
-Formats other than wav depend on the audio device: the SDL device streams ogg; the raylib device also decodes mp3.
+Every device decodes OGG Vorbis; the raylib device also decodes mp3.
 
 #### Exceptions
 
