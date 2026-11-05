@@ -6,25 +6,29 @@ using MicroEngine.Scenes;
 namespace MicroEngine.UI;
 
 /// <summary>
-/// Queued "achievement unlocked" banners that slide in at the top of the screen, one at a time.
-/// Purely visual: they never read input, so play continues underneath. <see cref="Game"/> owns one
-/// when achievements are enabled and draws it above every scene.
+/// Queued "achievement unlocked" banners that slide in at the top of the screen, one at a time: the UI's
+/// <see cref="Toasts"/> showing achievements. Purely visual: they never read input, so play continues underneath.
+/// <see cref="Game"/> owns one when achievements are enabled and draws it above every scene.
 /// </summary>
 public sealed class AchievementToasts
 {
     /// <summary>Seconds each banner stays (3.4), and seconds it takes to slide in and out (0.25).</summary>
-    public const float ShowTime = 3.4f, SlideTime = 0.25f;
+    public const float ShowTime = Toasts.ShowTime, SlideTime = Toasts.SlideTime;
     private readonly Queue<Achievement> _queue = new();
-    private float _time;
 
+    /// <summary>Creates the banners; each one that leaves the screen makes the next achievement current.</summary>
+    public AchievementToasts() => Banners.Advanced += () => Current = _queue.Count > 0 ? _queue.Dequeue() : null;
+
+    /// <summary>The banners themselves, a <see cref="Toasts"/> of the UI.</summary>
+    public Toasts Banners { get; } = new();
     /// <summary>Colours of the banners.</summary>
-    public UiTheme Theme { get; set; } = UiTheme.Default;
-    /// <summary>The first line of every banner ("ACHIEVEMENT UNLOCKED" by default).</summary>
+    public UiTheme Theme { get => Banners.Theme; set => Banners.Theme = value; }
+    /// <summary>The first line of every banner queued from now on ("ACHIEVEMENT UNLOCKED" by default).</summary>
     public string Heading { get; set; } = "ACHIEVEMENT UNLOCKED";
     /// <summary>Distance from the top edge when fully shown.</summary>
-    public float Top { get; set; } = 4;
+    public float Top { get => Banners.Top; set => Banners.Top = value; }
     /// <summary>Distance from the bottom edge when fully shown, for games whose HUD sits at the top; null (the default) shows banners at the top.</summary>
-    public float? Bottom { get; set; }
+    public float? Bottom { get => Banners.Bottom; set => Banners.Bottom = value; }
     /// <summary>The banner on screen, or null.</summary>
     public Achievement? Current { get; private set; }
     /// <summary>Banners waiting behind the current one.</summary>
@@ -34,45 +38,16 @@ public sealed class AchievementToasts
     public void Show(Achievement achievement)
     {
         ArgumentNullException.ThrowIfNull(achievement);
-        _queue.Enqueue(achievement);
-        if (Current is null) Next();
+        if (Current is null) Current = achievement;
+        else _queue.Enqueue(achievement);
+        Banners.Show(new Toast(Heading, achievement.Name, achievement.Description) { Icon = achievement.Icon });
     }
 
     /// <summary>Advances the current banner; the game calls it every update.</summary>
-    public void Update(float dt)
-    {
-        if (Current is null) return;
-        _time += dt;
-        if (_time >= ShowTime) Next();
-    }
-
-    private void Next()
-    {
-        Current = _queue.Count > 0 ? _queue.Dequeue() : null;
-        _time = 0;
-    }
+    public void Update(float dt) => Banners.Update(dt);
 
     /// <summary>Draws the current banner centred at the top of the screen (or the bottom, see <see cref="Bottom"/>); the game calls it after the scenes.</summary>
-    public void Draw(IRenderer r, BitmapFont font)
-    {
-        if (Current is not { } a) return;
-        int icon = a.Icon is { } s ? Math.Max(s.Width, s.Height) + 6 : 0;
-        int maxText = Math.Min(r.Width - 16, 240) - 16 - icon;
-        var description = font.Wrap(a.Description, maxText).Take(2).ToList();
-        int textWidth = new[] { font.MeasureWidth(Heading), font.MeasureWidth(a.Name) }.Concat(description.Select(font.MeasureWidth)).Max();
-        int lh = font.LineHeight + 1;
-        var size = new Vector2(textWidth + 16 + icon, 8 + lh * (2 + description.Count));
-        float shown = Ease.OutCubic(Math.Clamp(MathF.Min(_time, ShowTime - _time) / SlideTime, 0, 1));
-        float y0 = Bottom is { } bottom ? MathX.Lerp(r.Height + 2, r.Height - bottom - size.Y, shown) : MathX.Lerp(-size.Y - 2, Top, shown);
-        var box = new RectF(MathF.Round((r.Width - size.X) / 2), MathF.Round(y0), size.X, size.Y);
-        r.Panel(box, Theme.Panel);
-        if (a.Icon is { } sprite) r.Draw(sprite, new Vector2(box.X + 8, MathF.Round(box.Y + (box.Height - sprite.Height) / 2)) + sprite.Origin);
-        float x = box.X + 8 + icon, y = box.Y + 5;
-        font.DrawShadowed(r, Heading, new Vector2(x, y), Theme.Accent, Theme.TextShadow);
-        font.DrawShadowed(r, a.Name, new Vector2(x, y + lh), Theme.Text, Theme.TextShadow);
-        for (int i = 0; i < description.Count; i++)
-            font.Draw(r, description[i], new Vector2(x, y + lh * (2 + i)), Theme.Muted);
-    }
+    public void Draw(IRenderer r, BitmapFont font) => Banners.Draw(r, font);
 }
 
 /// <summary>

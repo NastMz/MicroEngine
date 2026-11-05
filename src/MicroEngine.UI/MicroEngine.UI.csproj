@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- UI: the widgets (labels, buttons, panels, stacks, text fields, selection lists, the typewriter, toasts), their
+       layout in UI units, focus and focus navigation, the theme, and the root that drives them from the engine's actions
+       and, as the highest input layer, from the pointer and the text channel. The existing widget types keep their
+       MicroEngine.UI namespace; MicroEngine.dll forwards them. It references only the 2D layer, text, input, the
+       graphics contract, content, the kernel and the platform contracts (the architecture test checks it); scenes, which
+       host a root, stay in the MicroEngine assembly. It is not a package of its own: the MicroEngine package carries
+       MicroEngine.UI.dll (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.UI</RootNamespace>
+    <Description>MicroEngine UI: widgets, layout in UI units, focus and focus navigation, themes, and the input layer that drives them. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+    <ProjectReference Include="../MicroEngine.Graphics/MicroEngine.Graphics.csproj" />
+    <ProjectReference Include="../MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj" />
+    <ProjectReference Include="../MicroEngine.Content/MicroEngine.Content.csproj" />
+    <ProjectReference Include="../MicroEngine.Text/MicroEngine.Text.csproj" />
+    <ProjectReference Include="../MicroEngine.Input/MicroEngine.Input.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine" />
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+</Project>

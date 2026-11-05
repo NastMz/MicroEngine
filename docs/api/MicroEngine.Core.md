@@ -314,6 +314,10 @@ read (locked file, blocked browser storage) is never written by this store, beca
 running with fresh progress that would replace the real one. Failed writes return false instead of
 throwing, so a full disk or browser storage quota leaves the game running with its progress in memory.
 
+ [ScreenCapture](MicroEngine.Core.ScreenCapture.md)
+
+Builds the image the player sees from the two views, as the platforms compose a frame.
+
  [StartScreen](MicroEngine.Core.StartScreen.md)
 
 The screen a game opens on while it loads: its start-screen image (<code>MicroEngineSplashImage</code>, by default the
@@ -386,6 +390,15 @@ The UI view of a platform that draws at the window's resolution: a capability
 platform. The world is drawn into the canvas ([BeginFrame](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_BeginFrame)) and scaled into
 [WorldFrame](MicroEngine.Core.IScreenView.md#MicroEngine_Core_IScreenView_WorldFrame); the UI view is drawn in UI units (window pixels divided by [UiScale](MicroEngine.Core.IScreenView.md#MicroEngine_Core_IScreenView_UiScale)) and
 composited over it, so its text and shapes have the window's resolution whatever the canvas's.
+
+ [IViewCapture](MicroEngine.Core.IViewCapture.md)
+
+The captures of a platform that has a UI view ([IScreenView](MicroEngine.Core.IScreenView.md)), a capability of the SDL, raylib and headless
+platforms ([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)). A run's captures ([SaveScreenshot](MicroEngine.Core.IPlatform.md#MicroEngine_Core_IPlatform_SaveScreenshot_System_String_))
+show what the player sees: a frame that drew a UI is captured as the window, the world scaled into its frame with the
+UI view composited over it ([CaptureScreen](MicroEngine.Core.IViewCapture.md#MicroEngine_Core_IViewCapture_CaptureScreen)); a frame that drew none is captured as the canvas, as before
+the UI view existed. Tests that need the world alone read [CaptureWorld](MicroEngine.Core.IViewCapture.md#MicroEngine_Core_IViewCapture_CaptureWorld) or write
+[SaveWorldScreenshot](MicroEngine.Core.IViewCapture.md#MicroEngine_Core_IViewCapture_SaveWorldScreenshot_System_String_).
 
 ### Enums
 

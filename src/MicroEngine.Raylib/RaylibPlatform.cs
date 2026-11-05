@@ -43,7 +43,7 @@ public sealed record DesktopOptions
 /// <see cref="IDisplayControl"/>, <see cref="IDisplayPacing"/>, <see cref="ITouchScreen"/> and, outside browsers,
 /// <see cref="IPreciseDelay"/>.
 /// </summary>
-public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView
+public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture
 {
     private readonly GameSettings _settings;
     // A visible desktop window: the only kind whose window and monitor the platform changes. Browsers and Android leave
@@ -166,6 +166,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         _capabilities.Add<IDisplayControl>(this);
         _capabilities.Add<IDisplayPacing>(this);
         _capabilities.Add<IScreenView>(this);
+        _capabilities.Add<IViewCapture>(this);
         _capabilities.Add<ITouchScreen>(_touch);
         _capabilities.Add<IInputBackend>(_input);
         _capabilities.Add<IGamepadRumble>(_input);
@@ -261,6 +262,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         var area = _touch.SafeArea is { Width: > 0, Height: > 0 } safe ? safe : new RectF(0, 0, size.X, size.Y);
         var (cw, ch) = _settings.EffectivePresentation.CanvasSize(area, _settings.VirtualWidth, _settings.VirtualHeight);
         if (_canvas.EnsureSize(cw, ch)) (_input.CanvasWidth, _input.CanvasHeight) = (cw, ch);
+        _frameHasUi = false;
         return _canvas.BeginFrame();
     }
 
@@ -271,8 +273,11 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     IRenderer IScreenView.BeginUi()
     {
         var (width, height) = ((IScreenView)this).ScreenPixels;
+        _frameHasUi = true;
         return _canvas.BeginUi(width, height, _settings.EffectivePresentation.UiScale);
     }
+
+    private bool _frameHasUi;
 
     /// <inheritdoc/>
     public Color Letterbox { get; set; }
@@ -300,7 +305,30 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     }
 
     /// <summary>Writes the canvas as a PNG, opaque (alpha 255 everywhere) as on every backend: the frame is shown on an opaque backdrop.</summary>
-    public void SaveScreenshot(string path) => _canvas.SaveCapture(path, _captureScale);
+    /// <summary>
+    /// Writes what the player saw as a PNG: the canvas at the capture scale, or, for a frame that drew a UI, the window with
+    /// the UI view over the world (<see cref="IViewCapture.CaptureScreen"/>) at the window's size.
+    /// </summary>
+    public void SaveScreenshot(string path)
+    {
+        if (!_frameHasUi) _canvas.SaveCapture(path, _captureScale);
+        else
+        {
+            var screen = ((IViewCapture)this).CaptureScreen();
+            File.WriteAllBytes(path, PngEncoder.Encode(screen.ToRgba(), screen.Width, screen.Height));
+        }
+    }
+
+    bool IViewCapture.FrameHasUi => _frameHasUi;
+    PixelImage IViewCapture.CaptureWorld() => _canvas.Capture();
+    PixelImage? IViewCapture.CaptureUi() => _frameHasUi ? _canvas.CaptureUi() : null;
+    PixelImage IViewCapture.CaptureScreen()
+    {
+        var world = _canvas.Capture();
+        if (!_frameHasUi || _canvas.CaptureUi() is not { } ui) return world;
+        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.EffectivePresentation.Upscale);
+    }
+    void IViewCapture.SaveWorldScreenshot(string path) => _canvas.SaveCapture(path, _captureScale);
 
     /// <summary>Switches between the window and a borderless full-screen window (exclusive full screen goes back to the window).</summary>
     public void ToggleFullscreen() => SetWindowMode(WindowMode == WindowMode.Windowed ? WindowMode.Fullscreen : WindowMode.Windowed);

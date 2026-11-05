@@ -30,6 +30,7 @@ flowchart TB
   saves["<b> src/MicroEngine.Saves </b> <br/> Saves: JSON save slots over the platform storage, the optional saves module"]
   text["<b> src/MicroEngine.Text </b> <br/> Text: the built-in pixel font, scalable TTF/OTF fonts, measurement and wrapping, the font loader"]
   achievements["<b> src/MicroEngine.Achievements </b> <br/> Achievements: catalog, tracker, the optional achievements module"]
+  ui["<b> src/MicroEngine.UI </b> <br/> UI: widgets, layout in UI units, focus and navigation, themes, the UI input layer"]
   kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
   samples -- started by --> hosts
@@ -66,6 +67,9 @@ flowchart TB
   text -- builds on --> content
   core -- builds on --> achievements
   achievements -- builds on --> saves
+  core -- builds on --> ui
+  ui -- builds on --> text
+  ui -- builds on --> input
 ```
 
 Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
@@ -110,6 +114,16 @@ platform contracts. It holds the fonts with their `MicroEngine.Graphics` namespa
 `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`; `MicroEngine.dll` forwards each type), FontStashSharp, which
 rasterizes scalable fonts, and the font loader the asset store registers under the kind "font"
 ([Text](manual/text.md)).
+
+Next SDK version (not published yet: arrives with the next SDK version): the UI is `MicroEngine.UI`, another assembly
+of the `MicroEngine` package, which references only the 2D layer, text, input, the graphics contract, content, the
+kernel and the platform contracts. It holds the widgets that need nothing else (`Typewriter`, `SelectionList` and
+`UiTheme`, which `MicroEngine.dll` forwards, and the widget tree: `Widget`, `Label`, `Button`, `Panel`, `Stack`,
+`TextField`, `Toasts`) and `UiRoot`, which lays a tree out in UI units in the UI view, keeps the focus, moves it with
+the engine's actions under the input map's names and, as the highest input layer, takes the pointer presses and keys
+it handles from gameplay. Scenes stay in the core, which hosts one root per scene (`Scene.Widgets`), and so do the
+widgets that read core types: `DialogueBox` and `PromptText` (action prompts) and the achievement views
+([UI widgets](manual/ui.md)).
 
 Next SDK version (not published yet: arrives with the next SDK version): hosting is another assembly of the
 `MicroEngine` package, `MicroEngine.Hosting`, which references only the kernel and the platform contracts. It holds the
@@ -233,13 +247,14 @@ scripted playthrough tests and reproducible screenshots possible.
 | `MicroEngine.Input` | In the `MicroEngine.Input` assembly (kernel and platform contracts only): device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem` over them, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources, with saved bindings. In the core assembly: `ActionPrompts`; in the published SDK also `VirtualControls`, `TouchLayout` (per-game on-screen d-pads, joysticks and buttons, an input layer), `ITouchScreen` and `FrameLayout`, which move to `MicroEngine.Input.Touch.dll` in the next SDK version |
 | `MicroEngine.Graphics` | `PixelImage` (CPU art, image decoding, crop/rotate), `Art` (noise, dither, ramps), `SpriteAtlasBuilder` (incl. grid sheets), `AtlasData` (packing tools' files), `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `IFont` (`BitmapFont`, `ScalableFont`), `TextureFilter`, `IRenderer`; next SDK version: all but the fonts in `MicroEngine.Graphics2D.dll` |
 | `MicroEngine.Graphics` in `MicroEngine.Text.dll` (next SDK version) | `IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions` |
+| `MicroEngine.UI` in `MicroEngine.UI.dll` (next SDK version) | `UiRoot`, `UiActions`, `UiContext`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts`, `Toast`, `Typewriter`, `SelectionList`, `UiTheme`; `DialogueBox`, `PromptText` and the achievement views stay in `MicroEngine.dll` |
 | `MicroEngine.World` | `TileLayer`, `TileGrid`, `TileMotion` (swept AABB with one-way tiles), `Autotile`, `TileRenderer`; `Entity` and `EntityList<T>` in the published SDK only (removed in the next SDK version); next SDK version: the tile types and `TileMotion` are in `MicroEngine.Physics.Tiles.dll` |
 | `MicroEngine.Physics` in `MicroEngine.Physics.dll` (next SDK version) | `IPhysicsWorld2D`, `PhysicsCapabilities`, `PhysicsCapabilityException`, `BodyId`, `ShapeId`, `BodyDescription`, `ShapeDescription`, `QueryFilter`, `MoveResult`, `RayHit`, `SensorEvent`, `ContactEvent`, `PhysicsModule`, `PhysicsSystem`, `PhysicsSync` |
 | `MicroEngine.Physics.Tiles` (next SDK version) | `TilePhysicsWorld2D`: tile grids as static geometry, the swept mover, one-way platforms, moving solids |
 | `MicroEngine.Saves` (next SDK version) | `SavesModule`; `SaveStore`, `ISaveStorage` and `FileSaveStorage` live in `MicroEngine.Saves.dll` with the `MicroEngine.Core` namespace |
 | `MicroEngine.Achievements` (next SDK version) | `AchievementsModule` (the tracker as a service, the `engine.achievements` system); `Achievement`, `AchievementStatus`, `AchievementTracker`, `AchievementSaveData` and `AchievementRecord` live in `MicroEngine.Achievements.dll` with the `MicroEngine.Core` namespace |
 | `MicroEngine.Audio` | `Synth` (retro SFX), `Song` (step sequencer), `AudioClip` (incl. WAV decoding), `AudioMixer` (incl. sound/music files) |
-| `MicroEngine.UI` | `Typewriter`, `DialogueBox`, `SelectionList`, `UiTheme`, `AchievementToasts`, `AchievementsScene` |
+| `MicroEngine.UI` | `Typewriter`, `DialogueBox`, `SelectionList`, `UiTheme`, `AchievementToasts`, `AchievementsScene`; next SDK version: the widget tree and `Typewriter`, `SelectionList`, `UiTheme` in `MicroEngine.UI.dll` (row above) |
 
 ## Key design decisions
 

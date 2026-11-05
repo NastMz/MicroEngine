@@ -3,7 +3,8 @@
 The `MicroEngine.UI` namespace provides a small set of pixel-art widgets that games compose inside their own
 scenes: a `Typewriter` for revealing text, a paged `DialogueBox`, a keyboard-driven `SelectionList`, a `UiTheme`
 record that lets each game keep its own look, and the achievement banners and list screen. Widgets read input
-through actions and draw with the built-in `BitmapFont`; there is no layout system or retained widget tree.
+through actions and draw with the built-in `BitmapFont`. In the published SDK there is no layout system or retained
+widget tree; the next SDK version adds one ([Widgets in the UI view](#widgets-in-the-ui-view)).
 
 ## Overview
 
@@ -15,9 +16,13 @@ through actions and draw with the built-in `BitmapFont`; there is no layout syst
 | `SelectionList` | Vertical menu navigated with up/down and chosen with confirm |
 | `AchievementToasts` | Unlock banners drawn above every scene ([Achievements](achievements.md)) |
 | `AchievementsScene` | Overlay listing a game's achievements ([Achievements](achievements.md)) |
+| `UiRoot`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts` | Next SDK version: a widget tree laid out in the UI view, with focus, pointer and text input ([Widgets in the UI view](#widgets-in-the-ui-view)) |
 
-Source: [`src/MicroEngine/UI/Widgets.cs`](../../src/MicroEngine/UI/Widgets.cs),
+Source: [`src/MicroEngine.UI`](../../src/MicroEngine.UI/), [`src/MicroEngine/UI/Widgets.cs`](../../src/MicroEngine/UI/Widgets.cs),
 [`src/MicroEngine/UI/AchievementViews.cs`](../../src/MicroEngine/UI/AchievementViews.cs)
+
+Next SDK version (not published yet: arrives with the next SDK version): `Typewriter`, `SelectionList` and `UiTheme`
+are in `MicroEngine.UI.dll`, inside the `MicroEngine` package, with the same namespace; nothing changes for a game.
 
 ## `UiTheme`
 
@@ -30,7 +35,7 @@ public sealed record UiTheme(PanelStyle Panel, Color Text, Color TextShadow, Col
 }
 ```
 
-Source: [`src/MicroEngine/UI/Widgets.cs`](../../src/MicroEngine/UI/Widgets.cs)
+Source: [`src/MicroEngine.UI/UiTheme.cs`](../../src/MicroEngine.UI/UiTheme.cs)
 
 `PanelStyle(Fill, Border, Highlight, Shadow, InnerBorder)` is drawn by the `r.Panel(rect, style)` renderer
 extension ([Rendering](rendering.md#irenderer)). Each sample game defines one theme and passes it to its widgets
@@ -155,8 +160,74 @@ top, for games whose HUD is at the top.
 `AchievementToasts` and `AchievementsScene` are documented with the rest of the system in
 [Achievements](achievements.md#banners).
 
+## Widgets in the UI view
+
+Not published yet: arrives with the next SDK version. A scene's `Widgets` is a widget tree the engine lays out, draws,
+updates and gives input to. Set its `Content` (usually in `Enter`) and react to the widgets' events:
+
+```csharp
+public sealed class TitleScene : Scene
+{
+    public override void Enter()
+    {
+        var name = new TextField { Placeholder = "YOUR NAME", MaxLength = 12 };
+        Widgets.Content = new Panel(new Stack()
+            .Add(new Label("NEW GAME"))
+            .Add(name)
+            .Add(new Button("START", () => Game.Scenes.Replace(new PlayScene(name.Text))))
+            .Add(new Button("QUIT", Game.Quit)));
+        Widgets.Cancelled += Game.Quit;              // cancel that no widget used
+    }
+
+    public override void Update(float dt) { }        // the widgets already took what they used
+    public override void Draw(IRenderer world) => DrawBackdrop(world);
+}
+```
+
+| Type | What it is |
+| --- | --- |
+| `UiRoot` | The tree's root (`Scene.Widgets`): `Content`, `Anchor` and `Offset` (where the content sits in the UI view), `Font`, `Theme`, `Actions`, `Focused`, `Focus(widget)`, `MoveFocus(direction)`, `AutoFocus`, `WrapFocus`, the `Cancelled` event |
+| `Widget` | The base class: `Bounds` (UI units, from the last layout), `Visible`, `Enabled`, fixed `Width` and `Height`, `IsFocused`, `IsHovered`, `IsPressed`; derive from it for a widget of your own (`MeasureContent`, `ArrangeContent`, `DrawContent`, `OnAction`, `OnClick`) |
+| `Label` | Text, one or more lines, in the theme's text colour or its own `Color` |
+| `Button` | A label in a panel; confirm while it has the focus, or a click on it, raises `Clicked` |
+| `Panel` | A box (the theme's panel, or its own `Style`) with `Padding` around one `Content` |
+| `Stack` | Children one after another, `Vertical` or `Horizontal`, with `Spacing` and a cross-axis `Align` |
+| `TextField` | One line of editable text: `Text`, `Caret`, `Placeholder`, `MaxLength`, the input method's `Composition`; `Changed` and `Submitted` events |
+| `Toasts` | Banners that slide in one at a time (`Show(new Toast(heading, title, description))`); `AchievementToasts` shows achievements through it |
+
+**Layout.** Widgets are measured and placed in UI units (window pixels divided by `Presentation.UiScale`, see
+[The world view and the UI view](rendering.md#the-world-view-and-the-ui-view)) every frame, so a menu stays centred
+when the window changes size. Padding and spacing default to multiples of a layout unit taken from the font: 1 UI unit
+for the built-in 10-pixel font, more for a larger one, so a `ScalableFont` set as `Widgets.Font` grows the margins with
+the text.
+
+**Keyboard and gamepad.** The first enabled focusable widget takes the focus. The up, down, left and right actions move
+it to the nearest widget in that direction (from the last one to the first when `WrapFocus` is on); confirm presses the
+focused button; cancel raises `Cancelled`. The widgets read these actions under the input map's current names
+(`InputMap.Names`, see [Default actions](input.md#default-actions)): a game that renames `confirm` keeps working
+widgets, and a gameplay action that happens to be called `confirm` never presses a button. `Widgets.Actions` gives the
+widgets other actions (`new UiActions { Confirm = "select" }`). An action a widget acts on is consumed, so the scene's
+`Update`, which runs after the widgets, does not see it.
+
+**Mouse and touch.** The widgets are the highest input layer: a press on the content (a click or a tap) is theirs, with
+everything that press does until it is released, and never reaches gameplay; the wheel over them does not either.
+Releasing on the widget that was pressed clicks it, and a press focuses what it lands on. While the pointer is over the
+content, `Game.Views.PointerOnUi` is true and the world pointer is not present.
+
+**Text.** A focused `TextField` turns the text channel on (the on-screen keyboard on a phone; the input method's
+candidate window next to the field), inserts what is typed at the caret and shows what an input method is still
+composing, underlined. While it has the focus it takes the keyboard from gameplay: Backspace, Delete, the arrows, Home
+and End edit, Enter raises `Submitted`, Escape leaves the field, Tab and the up and down keys move the focus. Text input
+stops when the field loses the focus or its scene leaves or is covered.
+
+The widgets' state (the focus, the fields' text) is part of the scene's state hash, so scripted runs and replays see
+the same interface. A scene that never reads `Widgets` has none and pays nothing.
+
 ## Limitations
 
-- Keyboard and gamepad navigation only; widgets do not respond to mouse or touch.
-- Text uses the single built-in font; there is no rich text, right-to-left text or localisation support.
-- Layout is manual (rectangles and positions in virtual pixels).
+- Published SDK: keyboard and gamepad navigation only; widgets do not respond to mouse or touch, and layout is manual
+  (rectangles and positions in virtual pixels). The next SDK version's widget tree responds to both and lays itself out.
+- `DialogueBox`, `SelectionList` and the achievement screen are not widgets of the tree: they are placed by hand.
+- Text uses the game's font; there is no rich text, right-to-left text or localisation support. A text field edits one
+  line, without selection or clipboard.
+- There are no scrolling containers, grids or sliders yet.

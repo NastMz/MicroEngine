@@ -54,6 +54,7 @@ IStateHashed
 [Scene.Objects](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Objects), 
 [Scene.TouchActions](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_TouchActions), 
 [Scene.WorldCamera](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_WorldCamera), 
+[Scene.Widgets](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Widgets), 
 [object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
 [object.MemberwiseClone\(\)](https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone), 
 [object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 

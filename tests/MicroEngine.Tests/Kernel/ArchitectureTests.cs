@@ -312,6 +312,24 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_UI_references_only_the_2D_layer_text_input_the_graphics_contract_content_the_kernel_and_the_platform()
+    {
+        var ui = typeof(MicroEngine.UI.UiRoot).Assembly;
+        Assert.AreEqual(UI, ui.GetName().Name);
+        var moved = new[] { typeof(MicroEngine.UI.Typewriter), typeof(MicroEngine.UI.SelectionList), typeof(MicroEngine.UI.UiTheme) };
+        var widgets = new[] { typeof(MicroEngine.UI.Widget), typeof(MicroEngine.UI.Button), typeof(MicroEngine.UI.Label), typeof(MicroEngine.UI.Panel),
+            typeof(MicroEngine.UI.Stack), typeof(MicroEngine.UI.TextField), typeof(MicroEngine.UI.Toasts), typeof(MicroEngine.UI.UiActions) };
+        foreach (var type in moved.Concat(widgets)) Assert.AreEqual(UI, type.Assembly.GetName().Name, $"{type.Name} is the UI's");
+        var engine = ui.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
+        Assert.IsTrue(engine.All(Allowed[UI].Contains), string.Join(", ", engine));
+        CollectionAssert.Contains(engine, Input, "widgets read actions and take events as an input layer");
+        CollectionAssert.Contains(engine, Text, "widgets draw text");
+        // Code compiled against an earlier MicroEngine.dll still finds the moved widgets there.
+        CollectionAssert.IsSubsetOf(moved, typeof(Game).Assembly.GetForwardedTypes());
+        CollectionAssert.Contains(typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList(), UI, "the façade hosts the widgets in scenes");
+    }
+
+    [TestMethod]
     public void The_compiled_input_references_only_the_kernel_and_the_platform_contracts()
     {
         var input = typeof(MicroEngine.Input.InputMap).Assembly;
