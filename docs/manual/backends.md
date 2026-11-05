@@ -40,8 +40,8 @@ Source: [`src/MicroEngine/Core/Platform.cs`](../../src/MicroEngine/Core/Platform
 
 | Interface | Responsibility | SDL | raylib | Headless |
 | --- | --- | --- | --- | --- |
-| `IRenderer` | Immediate-mode drawing into the virtual canvas ([Rendering](rendering.md#irenderer)) | `SdlRenderer` | `RaylibRenderer` | `HeadlessRenderer` |
-| `IGraphicsDevice` | `CreateTexture(PixelImage)` | `SdlGraphicsDevice` | `RaylibGraphicsDevice` | `HeadlessGraphicsDevice` |
+| `IRenderer` | Immediate-mode drawing into the virtual canvas ([Rendering](rendering.md#irenderer)) | Internal to the platform (next SDK version: `DeviceRenderer`, on the graphics device) | Internal to the platform (next SDK version: `DeviceRenderer`, on the graphics device) | `HeadlessRenderer` |
+| `IGraphicsDevice` | `CreateTexture(PixelImage)` | Internal to the platform (next SDK version: `SdlRendererDevice`, or `SdlGpuDevice` when the game asks for the GPU device; see [the graphics device](rendering.md#the-graphics-device)) | Internal to the platform (next SDK version: `RaylibDevice`) | `HeadlessGraphicsDevice` |
 | `IAudioDevice` | Sounds, looping and streamed music ([Audio](audio.md)) | `SdlAudioDevice` | `RaylibAudioDevice` | `SilentAudioDevice` |
 | `IInputSource` | Keys, pad buttons and axes, gamepad connection, mouse ([Input](input.md)) | `SdlInput` | `RaylibInput` | `HeadlessInput` |
 | `IInputBackend` (next SDK version, a capability) | Device events: keys, text, mouse, wheel, every gamepad with hot-plug; with `IKeyLabels`, `IGamepadRumble`, `ITextInputControl` where the backend has them ([Devices, players and layers](input.md#devices-players-and-layers)) | `SdlInput` | `RaylibInput` | `HeadlessInputBackend` |

@@ -304,7 +304,8 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
   .steps li { counter-increment: step; display: grid; gap: var(--space-2xs); padding: var(--space-sm) var(--space-md); border: var(--rule-thin) solid var(--color-rule);
     border-radius: var(--radius-sm); background: var(--color-paper-2); min-width: 0; }
   .steps .label::before { content: counter(step, decimal-leading-zero) ' '; color: var(--color-ink); }
-  .steps code { overflow-x: auto; white-space: nowrap; font-size: var(--text-sm); padding-bottom: var(--space-2xs); }
+  /* Commands wrap at their spaces on narrow screens instead of scrolling: nothing to reach with a keyboard. */
+  .steps code { overflow-wrap: anywhere; font-size: var(--text-sm); padding-bottom: var(--space-2xs); }
 
   .vision { padding-top: var(--space-lg); border-top: var(--rule-thin) dotted var(--color-ink-3); }
 

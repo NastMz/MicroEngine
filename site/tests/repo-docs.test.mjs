@@ -200,3 +200,11 @@ test('docs status phrases: written statuses become status tags, outside code and
   const untouched = '<h2 id="a">Next SDK version: x</h2><pre><code>next SDK version: y</code></pre><p>arrives with the next SDK version.</p>';
   assert.equal(markStatusPhrases(untouched), untouched);
 });
+
+test('docs scroll regions: tables and diagrams take focus so a keyboard can scroll them; code and set values stay', async () => {
+  const { focusableScrollRegions } = await import('../src/components/docs/scroll-regions.mjs');
+  assert.equal(focusableScrollRegions('<table><tr><td>a</td></tr></table>'), '<table tabindex="0"><tr><td>a</td></tr></table>');
+  assert.equal(focusableScrollRegions('<pre class="mermaid">flowchart TB</pre>'), '<pre class="mermaid" tabindex="0">flowchart TB</pre>');
+  const untouched = '<table tabindex="-1"></table><pre data-language="csharp"><code>x</code></pre><tbody></tbody><p>&lt;table&gt;</p>';
+  assert.equal(focusableScrollRegions(untouched), untouched);
+});

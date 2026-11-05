@@ -85,7 +85,7 @@ export function checkDiagrams(dist, { list = pages, root = repoRoot } = {}) {
     const built = path.join(dist, page.slug, 'index.html');
     if (!fs.existsSync(source) || !fs.existsSync(built)) continue;
     const expected = fs.readFileSync(source, 'utf8').match(/^ {0,3}(`{3,}|~{3,})\s*mermaid\s*$/gm)?.length ?? 0;
-    const found = fs.readFileSync(built, 'utf8').match(/<pre class="mermaid">/g)?.length ?? 0;
+    const found = fs.readFileSync(built, 'utf8').match(/<pre class="mermaid"[\s>]/g)?.length ?? 0;
     if (found !== expected) problems.push(`${page.slug}/index.html has ${found} of the ${expected} diagram(s) in ${page.source}`);
   }
   return problems;

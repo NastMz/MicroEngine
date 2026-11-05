@@ -1,5 +1,43 @@
 # MicroEngine art direction: "Socket"
 
+## Creative decisions
+
+**In one sentence:** MicroEngine is drawn as a board of labelled sockets with modules seated in them, because that is
+how the engine is built, so the identity can grow with the engine without changing its language.
+
+### The main choices
+
+| Choice | What it is | Why |
+|---|---|---|
+| One device: socket and module | The mark, family icons, the landing board, docs headers, platform and roadmap boards, the 404 page and the OG image all draw the same thing | Recognition comes from one product-true artifact repeated, not from decoration. A demo card, a heading or a diagram is recognisable on its own |
+| Family colours | Seven families (kernel, graphics, physics, audio, input, platform, tools), one hue each; the kernel stays neutral | A colour means a kind of module and nothing else, so it carries information wherever it appears |
+| Status drawn, coloured and written | Seated module = ships; dashed empty socket = in the repository only; dotted = planned; the words are always written | Present and future must never be confused; colour is reserved for what ships |
+| Credited upstream modules | SDL 3, raylib, .NET, NVorbis, Box2D, glTF drawn as named modules seated in MicroEngine's sockets | The engine orchestrates proven technology; crediting it is the stance, not a footnote |
+| Warm paper and graphite, amber signal | Two first-class themes from OKLCH tokens; code panels and the player stay graphite in both | A technical, warm tone that is neither SaaS gradient nor retro night screen |
+| Type: Bricolage Grotesque, IBM Plex Sans and Mono | Roman display face, Plex for reading, Plex Mono for labels and code | Character without a pixel costume; mono labels read like a parts list |
+| Real output next to code | Frame strips captured by the engine's headless runs; real screenshots, never mock-ups | The engine's own output is the most honest illustration |
+| Plain labels, no fake chrome | Code under a label strip, no window dots, tabs or knobs; motion is a module seating once | Engineering shown as it is, mechanical and short |
+
+### How they carry MicroEngine's philosophy
+
+| Philosophy | How the identity shows it |
+|---|---|
+| Modularity | Every subsystem is a socket with a contract; swapping an implementation is literally reseating a module |
+| Building on existing technology | Upstream libraries appear as credited modules seated in the board, never hidden and never the hero |
+| Honesty about status | Only shipping modules are seated and coloured; the next SDK version is labelled; repository-only work (3D, Box2D) is an empty dashed socket |
+| Pixel-art origins, kept but not defining | The demos keep their pixel art inside their own frames; the mark keeps a 16-unit grid; the chrome has no pixel face or grid |
+| Growth toward HD, 2.5D and 3D | A new capability is a new module in an existing socket. The 3D socket is already drawn, empty and dashed: the direction is visible, nothing is promised |
+
+### How to extend it
+
+| To add | Do this |
+|---|---|
+| A page | Build it from tokens and the brand components (Quick path below); open with a rail and a legend like the other pages; show capabilities with `<Socket>` or the board, never as feature cards; verify both themes at 320 to 1280 px |
+| A capability | One entry in `src/data/capabilities.ts` (family, status, contract, upstream); the landing board, roadmap and counts follow |
+| A family | A hue in `tokens.css` (`--family-<name>`, light and dark), its icon geometry in `src/components/brand/geometry.mjs`, its name in `scripts/contrast.mjs`; run the contrast check. Only when the engine gains a new kind of subsystem |
+| A status | A `--status-<name>` token, a drawing that differs without colour (solid, dashed, dotted), its words in `brand/Socket.astro`, `docs/families.mjs`, `src/data/capabilities.ts` and `docs/status-phrases.mjs`, and a row in section 7. Keep the rule: colour only for what ships |
+| A shipped feature | Change its status in the data; the socket fills in. Never draw a module seated before it is in a published package |
+
 MicroEngine is drawn as **a board of labelled sockets with modules seated in them**. The kernel is the board; graphics,
 physics, audio, input, platform hosts and tools are modules that seat into it and can be swapped. One device, the
 socket and its module, is repeated everywhere: in the mark, the family icons, the diagrams, the status of every
@@ -20,6 +58,7 @@ This folder is design material for people working on the site. The site does not
 | A diagram | Inline SVG with `class="illustration"` plus `<Callout />` |
 | A code panel | `<CodeLabel file=… lang=… />` before the block; the block is a `.code-surface` |
 | What code produces | `<FrameStrip frames=… caption=… />` with real captures |
+| Anything that scrolls sideways | It must take focus (`tabindex="0"` and a label) so a keyboard can scroll it; docs tables and diagrams get it in `docs/scroll-regions.mjs`; `npm run test:browser` fails otherwise |
 | A status on its own | `<span data-status="next"><span class="status-mark"></span>Next SDK version</span>` |
 
 Checks: `node scripts/contrast.mjs` (WCAG AA for every token pair, both themes) and `npm test` (it also fails when the
@@ -206,7 +245,7 @@ always written.
 | Available (in the published SDK) | Solid module seated in a solid socket; solid square marker | `--status-available` | "Available" |
 | Next SDK version (merged, not published yet) | Module seated; half-filled square marker | `--status-next` (amber) | "Next SDK version" |
 | In the repository, not published (experimental) | **Empty dashed socket**, module named inside in mono; dashed marker | `--status-repo` (neutral) | "In the repository, not published" |
-| Planned | Empty dashed socket; dotted marker | `--status-planned` (neutral) | "Planned" |
+| Planned | Empty dotted socket; dotted marker | `--status-planned` (neutral) | "Planned" |
 
 `<Socket empty status="repo" module="Box2D" />` is how an unpublished backend appears. The SDL_GPU device ships in the
 next SDK version (inside the `MicroEngine.Sdl` package, desktops, opt-in), so it is a seated module with the next
@@ -277,7 +316,7 @@ colour, light and dark, rasterised at real size and enlarged) and the brand kit 
 Added by the shell and landing unit; this section extends the rules above, it changes none of them.
 
 - **Background:** plain paper. The 32 px grid of the pixel workbench is gone; drawings, rules and modules carry the
-  identity. (`--color-grid` in `tokens.css` is no longer used by `site.css`.)
+  identity (the grid token has been removed from `tokens.css`).
 - **Header:** the lockup left, the navigation right in Plex Mono. Under 48 rem the navigation takes its own line under
   the lockup, never wraps, and spreads its five links across the width. The current page has a short amber bar under
   its name: a module, not an underline. The skip link stays the first Tab stop.
