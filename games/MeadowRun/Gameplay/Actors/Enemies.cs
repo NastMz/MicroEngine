@@ -74,7 +74,7 @@ internal abstract class Enemy : Actor
     public override void Render(IRenderer r, Assets a, float time)
     {
         var sprite = Frame(a, time);
-        var pos = Snap(Feet);
+        var pos = Snap(DrawFeet);
         bool flipX = Facing > 0;
         if (Death == DeathKind.Flip)
         {
@@ -178,7 +178,7 @@ internal sealed class Mothwing : Enemy
     public override void Render(IRenderer r, Assets a, float time)
     {
         var sprite = Frame(a, time);
-        var pos = Snap(Position + new Vector2(9, 8));
+        var pos = Snap(DrawPosition + new Vector2(9, 8));
         if (Death == DeathKind.Flip)
             r.Draw(sprite.Texture, sprite.Source, pos - sprite.Origin, Color.White, new DrawOptions(FlipX: Facing > 0, FlipY: true));
         else r.Draw(sprite, pos, null, Facing > 0);
@@ -247,5 +247,5 @@ internal sealed class ThornShot : Enemy
     }
 
     protected override Sprite Frame(Assets a, float time) => a["thorn"];
-    public override void Render(IRenderer r, Assets a, float time) => r.Draw(a["thorn"], Snap(Center));
+    public override void Render(IRenderer r, Assets a, float time) => r.Draw(a["thorn"], Snap(DrawCenter));
 }

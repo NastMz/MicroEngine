@@ -46,9 +46,9 @@ internal sealed class SeedShot : Actor
     public override void Render(IRenderer r, Assets a, float time)
     {
         r.SetBlendMode(BlendMode.Additive);
-        r.Draw(a["glow_small"], Snap(Center), Pal.Flame.WithAlpha(0.5f));
+        r.Draw(a["glow_small"], Snap(DrawCenter), Pal.Flame.WithAlpha(0.5f));
         r.SetBlendMode(BlendMode.Alpha);
-        r.Draw(a.Frames("seedshot")[(int)(Age * 16) % 4], Snap(Center));
+        r.Draw(a.Frames("seedshot")[(int)(Age * 16) % 4], Snap(DrawCenter));
     }
 }
 
@@ -90,8 +90,8 @@ internal sealed class Rock : Enemy
         // Shadow on the floor grows as the rock approaches: the warning players learn to read.
         float t = Math.Clamp((Age + 0.6f) / (_delay + 0.9f), 0, 1);
         float w = 4 + 8 * t;
-        r.FillRect(new RectF(MathF.Round(Center.X - w), _groundY - 2, MathF.Round(w * 2), 2), Pal.Ink.WithAlpha(0.5f));
-        if (Falling) r.Draw(a["rock"], Snap(Center));
+        r.FillRect(new RectF(MathF.Round(DrawCenter.X - w), _groundY - 2, MathF.Round(w * 2), 2), Pal.Ink.WithAlpha(0.5f));
+        if (Falling) r.Draw(a["rock"], Snap(DrawCenter));
     }
 }
 
@@ -273,6 +273,7 @@ internal sealed class Grumbold : Enemy
                 if (_timer <= 0)
                 {
                     Position = new Vector2(_moundX - Hitbox.Center.X, ground - Hitbox.Bottom);
+                    Teleport();
                     Velocity = new Vector2(0, -430);
                     Stage.Sfx("erupt", 1, 1, Center);
                     Stage.Burst(new Vector2(_moundX, ground), Pal.Sand, 18);
@@ -376,7 +377,7 @@ internal sealed class Grumbold : Enemy
             var s = Frame(a, time);
             int visible = (int)(s.Source.Height * (1 - sink));
             if (visible > 0)
-                r.Draw(s.Texture, s.Source with { Height = visible }, Snap(Feet) - new Vector2(Facing > 0 ? s.Source.Width - s.Origin.X : s.Origin.X, s.Origin.Y - (s.Source.Height - visible)) , Color.White, new DrawOptions(FlipX: Facing > 0));
+                r.Draw(s.Texture, s.Source with { Height = visible }, Snap(DrawFeet) - new Vector2(Facing > 0 ? s.Source.Width - s.Origin.X : s.Origin.X, s.Origin.Y - (s.Source.Height - visible)) , Color.White, new DrawOptions(FlipX: Facing > 0));
             return;
         }
         if (_mode == Mode.Stalk)
@@ -390,7 +391,7 @@ internal sealed class Grumbold : Enemy
             // Dazed stars circle the helmet: the "hit me now" signal.
             for (int i = 0; i < 3; i++)
             {
-                var c = Feet + new Vector2(-Facing * 8, -42) + MathX.FromAngle(time * 5 + i * MathF.Tau / 3, 9) * new Vector2(1, 0.4f);
+                var c = DrawFeet + new Vector2(-Facing * 8, -42) + MathX.FromAngle(time * 5 + i * MathF.Tau / 3, 9) * new Vector2(1, 0.4f);
                 r.FillRect(new RectF(MathF.Round(c.X), MathF.Round(c.Y), 2, 2), Pal.Butter);
             }
         }
@@ -420,8 +421,8 @@ internal sealed class Sunstone : Actor
     public override void Render(IRenderer r, Assets a, float time)
     {
         r.SetBlendMode(BlendMode.Additive);
-        r.Draw(a["glow"], Snap(Center), Pal.Gold.WithAlpha(0.7f));
+        r.Draw(a["glow"], Snap(DrawCenter), Pal.Gold.WithAlpha(0.7f));
         r.SetBlendMode(BlendMode.Alpha);
-        r.Draw(a.Frames("sunstone")[(int)(time * 6) % 4], Snap(Center));
+        r.Draw(a.Frames("sunstone")[(int)(time * 6) % 4], Snap(DrawCenter));
     }
 }

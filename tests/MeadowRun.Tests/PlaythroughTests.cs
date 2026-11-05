@@ -152,7 +152,8 @@ public sealed class PlaythroughTests
     public void TheMoleKingCanBeDefeatedAndTheSunstoneEndsTheGame()
     {
         var session = new Session();
-        var stage = new Stage(new Level(Levels.All[^1]), session) { IgnoreEnemiesForTesting = false };
+        var stage = StageHarness.New(new Level(Levels.All[^1]), session);
+        stage.IgnoreEnemiesForTesting = false;
         var boss = stage.Boss!;
         Assert.IsNotNull(boss);
         stage.Player.Position = new Vector2(boss.Arena.Left + 48, boss.Arena.Bottom - Player.Height);

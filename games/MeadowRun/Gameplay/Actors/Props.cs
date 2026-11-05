@@ -104,7 +104,7 @@ internal abstract class PlatformActor(Stage stage, Vector2 position, int tiles) 
 
     protected void DrawPlatform(IRenderer r, Assets a, Vector2 offset)
     {
-        var p = Snap(Position + offset);
+        var p = Snap(DrawPosition + offset);
         for (int i = 0; i < Tiles; i++)
         {
             int part = i == 0 ? 0 : i == Tiles - 1 ? 2 : 1;
@@ -171,6 +171,7 @@ internal sealed class FallingPlatform : PlatformActor
                 _standTime = 0;
                 Velocity = Vector2.Zero;
                 Position = Origin;
+                Teleport();
                 Stage.Puff(Center, Pal.Cloud);
             }
         }

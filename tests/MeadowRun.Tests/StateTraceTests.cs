@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using MeadowRun.Art;
 using MeadowRun.Scenes;
 using MicroEngine.Core;
+using MicroEngine.Hosting;
 using MicroEngine.Kernel;
 using MicroEngine.Testing;
 
@@ -14,30 +15,36 @@ namespace MeadowRun.Tests;
 [TestClass]
 public sealed partial class StateTraceTests
 {
-    // Not run here: touch.script (on-screen touch controls, checked by the phone runs), boss.script and tour.script
-    // (their header does not say which level or checkpoint they start from).
+    /// <summary>Every script of the game with its starting point: the developer variables its header declares.</summary>
     public static IEnumerable<object[]> Scenarios =>
     [
         // The browser and desktop scenarios (web/tests/scenarios.json).
-        ["menus.script", "title", null!],
-        ["smoke.script", "title", null!],
-        ["showcase.script", "level", "bloom"],
-        ["end.script", "credits", null!],
-        // The other scripts whose start is clear from their header or name.
-        ["level1.script", "level", null!],
-        ["sheet.script", "sheet", null!],
+        ["menus.script", ""],
+        ["smoke.script", ""],
+        ["showcase.script", "MEADOW_START=level MEADOW_FORM=bloom"],
+        ["end.script", "MEADOW_START=credits"],
+        // The other scripts, started as their headers say.
+        ["level1.script", "MEADOW_START=level"],
+        ["sheet.script", "MEADOW_START=sheet"],
+        ["boss.script", "MEADOW_START=level MEADOW_LEVEL=5 MEADOW_FORM=ember"],
+        ["tour.script", "MEADOW_START=level MEADOW_LEVEL=2"],
+        ["touch.script", "MEADOW_START=level"],
     ];
 
-    private static LaunchOptions Options(string start, string? form) =>
-        new(start, Form: form is null ? PipForm.Sprout : Enum.Parse<PipForm>(form, ignoreCase: true));
+    /// <summary>The launch options of <paramref name="variables"/> (NAME=value pairs), read as a host reads them.</summary>
+    private static LaunchOptions Options(string variables)
+    {
+        var values = variables.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(pair => pair.Split('=', 2)).ToDictionary(pair => pair[0], pair => pair[1]);
+        return LaunchOptions.From(new HostEnvironment(HostKind.Test) { Variables = name => values.GetValueOrDefault(name) });
+    }
 
-    private static TracedRun RunOnce(string script, string start, string? form)
+    private static TracedRun RunOnce(string script, string variables)
     {
         string save = Path.Combine(Path.GetTempPath(), "meadowrun-state-trace", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(save);
         try
         {
-            return StateTraceRuns.Run(new MeadowGame(save, Options(start, form)), StateTraceRuns.Script("games/MeadowRun/scripts/" + script));
+            return StateTraceRuns.Run(new MeadowGame(save, Options(variables)), StateTraceRuns.Script("games/MeadowRun/scripts/" + script));
         }
         finally
         {
@@ -56,13 +63,22 @@ public sealed partial class StateTraceTests
 
     [TestMethod]
     [DynamicData(nameof(Scenarios))]
-    public void TwoRunsOfAScriptRecordTheSameStateAtEveryStep(string script, string start, string? form)
+    public void TwoRunsOfAScriptRecordTheSameStateAtEveryStep(string script, string variables)
     {
-        var first = RunOnce(script, start, form);
-        var second = RunOnce(script, start, form);
+        var first = RunOnce(script, variables);
+        var second = RunOnce(script, variables);
         StateTraceRuns.AssertIdentical(first.Trace, second.Trace, script);
         StateTraceRuns.AssertDrawingChangesNothing(first, script);
         Assert.AreEqual(QuitUpdate(script), first.Result.Updates, $"{script}: the run reaches the script's quit update");
+    }
+
+    /// <summary>Every script in the game's folder has a declared starting point here, so none is left out of the check.</summary>
+    [TestMethod]
+    public void EveryScriptHasAStartingPoint()
+    {
+        var scripts = Directory.GetFiles(Path.Combine(StateTraceRuns.RepositoryRoot(), "games/MeadowRun/scripts"), "*.script").Select(Path.GetFileName).Order().ToArray();
+        var covered = Scenarios.Select(row => (string)row[0]).Order().ToArray();
+        CollectionAssert.AreEqual(scripts, covered);
     }
 
     /// <summary>
@@ -72,7 +88,7 @@ public sealed partial class StateTraceTests
     [TestMethod]
     public void TheGameSectionFollowsTheSession()
     {
-        var run = RunOnce("showcase.script", "level", "bloom");
+        var run = RunOnce("showcase.script", "MEADOW_START=level MEADOW_FORM=bloom");
         int changes = 0;
         for (int i = 1; i < run.Trace.Steps.Count; i++)
             if (Section(run.Trace.Steps[i], "game") != Section(run.Trace.Steps[i - 1], "game")) changes++;

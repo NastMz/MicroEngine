@@ -1,3 +1,5 @@
+# The Mole King fight: an Ember Pip runs into the arena and keeps throwing seeds
+# (MEADOW_START=level MEADOW_LEVEL=5 MEADOW_FORM=ember).
 20 hold right 330
 400 press run
 420 press run

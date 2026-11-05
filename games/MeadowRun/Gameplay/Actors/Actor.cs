@@ -3,33 +3,72 @@ using MeadowRun.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
+using MicroEngine.Scenes;
 using MicroEngine.World;
 
 namespace MeadowRun.Gameplay.Actors;
 
 /// <summary>
-/// Base for every object in a stage. Simulation lives in <see cref="Tick"/> (no drawing or audio),
-/// presentation in <see cref="Render"/>, so the stage can run headless in tests.
+/// Base for every object in a stage: an entity of the stage's world (<see cref="Stage.Objects"/>) whose transform holds
+/// its position. Simulation lives in <see cref="Tick"/> (no drawing or audio), presentation in <see cref="Render"/>, so
+/// the stage can run headless in tests. Constructing an actor creates its entity; <see cref="Stage.Spawn"/> attaches
+/// it, which is when the stage's walks start to see it.
 /// </summary>
-internal abstract class Actor : Entity, IStateHashed
+internal abstract class Actor : IStateHashed
 {
     protected Actor(Stage stage, Vector2 position)
     {
         Stage = stage;
+        Id = stage.Objects.Create();
         Position = position;
-        PreviousPosition = position;
     }
 
     public Stage Stage { get; }
+    /// <summary>The actor's entity in <see cref="Stage.Objects"/>.</summary>
+    public EntityId Id { get; }
+    /// <summary>World position in pixels: the entity's transform.</summary>
+    public Vector2 Position
+    {
+        get => Stage.Objects.Local(Id).Position2D;
+        set => Stage.Objects.Local(Id).Position2D = value;
+    }
+    /// <summary>Hitbox relative to <see cref="Position"/>.</summary>
+    public RectF Hitbox { get; set; } = new(0, 0, 16, 16);
+    /// <summary>The hitbox in world pixels.</summary>
+    public RectF Bounds => Hitbox.Offset(Position);
+    /// <summary>The centre of <see cref="Bounds"/>.</summary>
+    public Vector2 Center => Bounds.Center;
+    /// <summary>False once <see cref="Destroy"/> was called: the stage's walks skip the actor at once.</summary>
+    public bool Alive => Stage.Objects.IsAlive(Id);
     public Vector2 Velocity;
-    /// <summary>Where the actor was before the last stage update; frames are drawn between it and <see cref="Entity.Position"/>. Never read by the rules.</summary>
-    public Vector2 PreviousPosition;
     public float Age { get; private set; }
     /// <summary>Actors sleep until the camera approaches them, so encounters play out as designed.</summary>
     public virtual bool AlwaysActive => false;
     public bool Awake { get; set; }
 
-    public sealed override void Update(float dt)
+    /// <summary>Removes the actor: walks skip it at once; the world releases its entity when the step ends.</summary>
+    public void Destroy() => Stage.Objects.Destroy(Id);
+
+    /// <summary>A jump (respawn, eruption): frames draw the actor where it is now instead of sliding it from where it was.</summary>
+    protected void Teleport() => Stage.Objects.Teleport(Id);
+
+    /// <summary>Where frames draw the actor: between its last two positions, as the world interpolates it. Never read by the rules.</summary>
+    public Vector2 DrawPosition => Stage.Objects.DrawPosition2D(Id);
+    /// <summary>The hitbox at <see cref="DrawPosition"/>.</summary>
+    protected RectF DrawBounds => Hitbox.Offset(DrawPosition);
+    /// <summary>The centre of <see cref="DrawBounds"/>.</summary>
+    public Vector2 DrawCenter => DrawBounds.Center;
+    /// <summary>The feet (bottom centre of <see cref="DrawBounds"/>), where most sprites are anchored.</summary>
+    protected Vector2 DrawFeet
+    {
+        get
+        {
+            var b = DrawBounds;
+            return new(b.Center.X, b.Bottom);
+        }
+    }
+
+    public void Update(float dt)
     {
         if (!Awake)
         {
@@ -44,7 +83,7 @@ internal abstract class Actor : Entity, IStateHashed
 
     /// <summary>
     /// Hashes the actor's kind, whether it is alive and awake, its position, velocity and age; subclasses add their own
-    /// rule state. Leaves out <see cref="PreviousPosition"/> (only drawing reads it) and fixed setup (hitbox, home).
+    /// rule state. Leaves out fixed setup (hitbox, home).
     /// </summary>
     public virtual void HashState(StateHasher hash)
     {
@@ -55,6 +94,8 @@ internal abstract class Actor : Entity, IStateHashed
         hash.Add(Velocity);
         hash.Add(Age);
     }
+
+    /// <summary>Draws the actor; positions come from <see cref="DrawPosition"/> and its relatives, never from the rules' ones.</summary>
     public abstract void Render(IRenderer r, Assets a, float time);
 
     /// <summary>Moves through tiles with gravity; returns the collision result.</summary>

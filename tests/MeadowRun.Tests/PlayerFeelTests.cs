@@ -56,7 +56,7 @@ public sealed class PlayerFeelTests
     {
         var stage = Settled();
         Run(stage, 60, Input(right: true, run: true));
-        stage.Update(Dt, Input(left: true));
+        Step(stage, Input(left: true));
         Assert.IsTrue(stage.Player.Skidding);
         Assert.IsTrue(stage.Player.Velocity.X > 0, "momentum carries through the skid");
         Assert.AreEqual(1, stage.Player.Facing, "facing does not flip mid-skid");
@@ -67,7 +67,7 @@ public sealed class PlayerFeelTests
     {
         var stage = Stage("..S...", "......", "......", "......", "......", "......", "......", "......", "......", "......", "......", "......", "......", "######");
         float max = 0;
-        for (int i = 0; i < 60; i++) { stage.Update(Dt, default); max = MathF.Max(max, stage.Player.Velocity.Y); }
+        for (int i = 0; i < 60; i++) { Step(stage, default); max = MathF.Max(max, stage.Player.Velocity.Y); }
         Assert.AreEqual(Tuning.TerminalVelocity, max, 0.01f);
     }
 
@@ -83,9 +83,9 @@ public sealed class PlayerFeelTests
     public void CoyoteTimeAllowsJumpJustAfterLeavingLedge()
     {
         var stage = Settled(Ledge);
-        while (stage.Player.Grounded) stage.Update(Dt, Input(right: true));
+        while (stage.Player.Grounded) Step(stage, Input(right: true));
         Run(stage, 3, Input(right: true)); // 3 steps (0.05 s) after leaving
-        stage.Update(Dt, Input(right: true, jumpPressed: true, jumpHeld: true));
+        Step(stage, Input(right: true, jumpPressed: true, jumpHeld: true));
         Assert.IsTrue(stage.Player.Velocity.Y < -200, "jump should still fire inside the coyote window");
     }
 
@@ -93,10 +93,10 @@ public sealed class PlayerFeelTests
     public void NoJumpLongAfterLeavingLedge()
     {
         var stage = Settled(Ledge);
-        while (stage.Player.Grounded) stage.Update(Dt, Input(right: true));
+        while (stage.Player.Grounded) Step(stage, Input(right: true));
         Run(stage, 12, Input(right: true)); // 0.2 s: past coyote time
         float vy = stage.Player.Velocity.Y;
-        stage.Update(Dt, Input(right: true, jumpPressed: true, jumpHeld: true));
+        Step(stage, Input(right: true, jumpPressed: true, jumpHeld: true));
         Assert.IsTrue(stage.Player.Velocity.Y >= vy, "no mid-air jump after coyote time");
     }
 
@@ -104,16 +104,16 @@ public sealed class PlayerFeelTests
     public void JumpPressedJustBeforeLandingIsBuffered()
     {
         var stage = Settled();
-        stage.Update(Dt, Input(jumpPressed: true, jumpHeld: true));
+        Step(stage, Input(jumpPressed: true, jumpHeld: true));
         while (stage.Player.Velocity.Y < 0 || !stage.Player.Grounded)
         {
             // Press again a few frames before touching down.
             bool nearGround = stage.Player.Velocity.Y > 0 && stage.Player.Feet.Y > stage.Level.PixelHeight - 32 - 10;
-            stage.Update(Dt, Input(jumpPressed: nearGround && !_pressed, jumpHeld: false));
+            Step(stage, Input(jumpPressed: nearGround && !_pressed, jumpHeld: false));
             if (nearGround) _pressed = true;
             if (stage.Player.Grounded) break;
         }
-        stage.Update(Dt, default);
+        Step(stage, default);
         Assert.IsTrue(stage.Player.Velocity.Y < -200, "buffered press should jump on landing");
     }
 
@@ -135,7 +135,7 @@ public sealed class PlayerFeelTests
         Run(stage, 30, default);
         Assert.AreEqual(platformTop, stage.Player.Feet.Y, 0.01f, "Pip passes up through and lands on the plank");
         // Down + jump drops back through.
-        stage.Update(Dt, Input(down: true, jumpPressed: true, jumpHeld: true));
+        Step(stage, Input(down: true, jumpPressed: true, jumpHeld: true));
         Run(stage, 40, default);
         Assert.IsTrue(stage.Player.Feet.Y > platformTop + 16);
     }

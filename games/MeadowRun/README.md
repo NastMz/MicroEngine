@@ -111,10 +111,13 @@ documented on `LevelDef`.
 | `Content/` | Biomes, tile ids, legend, level chunks |
 | `Gameplay/` | `Player` (pure movement controller), `Session` (lives, score rules), `Level` (parsing), `Stage` (headless simulation split into core, rules and effects) |
 | `Gameplay/Actors/` | Items, props and platforms, enemies, projectiles, boss |
-| `Scenes/` | Title, map, level card, play, pause, game over, credits, stage renderer, HUD and UI helpers, a dev sprite sheet |
+| `Scenes/` | Title, map, level card, play, pause, game over, credits, stage renderer, HUD and UI helpers, the drawn clock, a dev sprite sheet |
 
 The simulation (`Stage`) never draws and never plays audio directly. It raises sound and music
-requests and exposes its state, so tests can play whole levels headlessly.
+requests and exposes its state, so tests can play whole levels headlessly. Its actors are entities of the play
+scene's world (`Scene.Objects`): the world keeps their positions, skips removed actors at once, interpolates actors,
+Pip and the camera for frames drawn between updates, and holds the hit-stop on its clock. The world map draws Pip
+through its scene's world the same way.
 
 ## Run, test, capture
 
@@ -129,7 +132,8 @@ dotnet test tests/MeadowRun.Tests/MeadowRun.Tests.csproj -c Release --no-build
 games/MeadowRun/bin/Release/net10.0/MeadowRun.exe --script games/MeadowRun/scripts/smoke.script --hidden --mute --captures captures
 ```
 
-Developer environment variables (the launcher rejects unknown arguments):
+Developer variables, read through the host (environment variables on desktop, a phone test's `--env`, a page's
+query; the launcher rejects unknown arguments):
 
 - `MEADOW_START`: `title`, `map`, `level`, `credits`, `gameover` or `sheet`.
 - `MEADOW_LEVEL`: the level number (1 to 5).
@@ -148,7 +152,9 @@ The tests cover:
   traversable. It plans jumps by simulating a cloned `Player` and predicting platforms.
 - A boss fight to victory, and a full headless run: title, new game, map, level 1, tally, map,
   with progress persisted to disk and no missing sounds.
-
+- Drawing between updates (actors, Pip and the camera blended, jumps drawn at once) and the hit-stop.
+- Determinism: every script in `scripts/` runs twice from the starting point its header declares and must record
+  the same state at every step, whether or not frames are drawn.
 ## License
 
 This game is a MicroEngine demo, **not** covered by the engine's MIT License: all rights reserved

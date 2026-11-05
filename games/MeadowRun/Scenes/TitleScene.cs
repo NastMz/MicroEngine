@@ -47,11 +47,10 @@ internal sealed class TitleScene(MeadowGame game) : Scene
     private readonly SelectionList _menu = new("Start", "Continue", "Controls", "Achievements", "Quit");
     private bool _controls, _leaving;
     private float _logoDrop;
-    private readonly StepBlend _step = new();
 
     /// <summary>
     /// Hashes the menu cursor and whether Continue is enabled, the controls page and whether the scene is leaving.
-    /// Leaves out the logo drop (a tween the engine already hashes, read only by drawing) and the step blend.
+    /// Leaves out the logo drop (a tween the engine already hashes, read only by drawing).
     /// </summary>
     public override void HashState(StateHasher hash)
     {
@@ -68,11 +67,11 @@ internal sealed class TitleScene(MeadowGame game) : Scene
         _menu.Moved += () => game.Sfx("menu_move", 0.7f);
         game.Music("title");
         Tweens.Add(1.1f, t => _logoDrop = t, Ease.OutBounce);
+        _ = Objects;   // the scene's world, created before the first frame: frames animate at its blend (DrawTime)
     }
 
     public override void Update(float dt)
     {
-        _step.Stepped(Game, dt);
         if (_leaving) return;
         if (_controls)
         {
@@ -119,7 +118,7 @@ internal sealed class TitleScene(MeadowGame game) : Scene
 
     public override void Draw(IRenderer r)
     {
-        float t = _step.Time(Game, Age);
+        float t = DrawTime.Of(this);
         Diorama.Draw(r, game.Art, t, t * 30);
         var logo = game.Art["logo"];
         float y = MathX.Lerp(-60, 22, _logoDrop) + MathF.Round(MathX.Wave(t, 0.4f, 1.5f));

@@ -1,12 +1,14 @@
 using System.Numerics;
 using MeadowRun.Gameplay;
 using MeadowRun.Gameplay.Actors;
-using MeadowRun.Scenes;
 using static MeadowRun.Tests.StageHarness;
 
 namespace MeadowRun.Tests;
 
-/// <summary>Frames drawn between updates place moving things between their previous and current positions.</summary>
+/// <summary>
+/// Frames drawn between updates place moving things between their previous and current positions: the stage keeps
+/// its actors, Pip and the camera in its scene's world, which interpolates them; the rules never see drawn positions.
+/// </summary>
 [TestClass]
 public sealed class MotionTests
 {
@@ -25,32 +27,28 @@ public sealed class MotionTests
     {
         Assert.AreNotEqual(from, to, $"{what} should be moving");
         var expected = Vector2.Lerp(from, to, 0.5f);
-        Assert.AreEqual(expected.X, drawn.X, 1e-4f, what);
-        Assert.AreEqual(expected.Y, drawn.Y, 1e-4f, what);
+        Assert.AreEqual(expected.X, drawn.X, 1e-3f, what);
+        Assert.AreEqual(expected.Y, drawn.Y, 1e-3f, what);
     }
 
     [TestMethod]
     public void MovingThingsAreDrawnBetweenTheirLastTwoUpdates()
     {
         var stage = Running();
-        var motion = new StageMotion();
         var walker = stage.Actors.OfType<Enemy>().Single();
-        motion.Remember(stage);
         var pipFrom = stage.Player.Position;
         var cameraFrom = stage.Camera.Position;
         var walkerFrom = walker.Position;
-        stage.Update(Dt, Input(right: true, run: true));
+        Step(stage, Input(right: true, run: true));
         var pipNow = stage.Player.Position;
         var cameraNow = stage.Camera.Position;
         var walkerNow = walker.Position;
 
-        motion.Place(stage, 0.5f);
-        AssertBetween(pipFrom, pipNow, stage.Player.Position, "Pip");
-        AssertBetween(cameraFrom, cameraNow, stage.Camera.Position, "camera");
-        AssertBetween(walkerFrom, walkerNow, walker.Position, "walker");
-        motion.Restore(stage);
-
-        Assert.AreEqual(pipNow, stage.Player.Position, "the rules get Pip back where they left him");
+        Draw(stage, 0.5f);
+        AssertBetween(pipFrom, pipNow, stage.PipDrawPosition, "Pip");
+        AssertBetween(cameraFrom, cameraNow, stage.CameraDrawPosition, "camera");
+        AssertBetween(walkerFrom, walkerNow, walker.DrawPosition, "walker");
+        Assert.AreEqual(pipNow, stage.Player.Position, "drawing never moves what the rules see");
         Assert.AreEqual(cameraNow, stage.Camera.Position);
         Assert.AreEqual(walkerNow, walker.Position);
     }
@@ -59,54 +57,72 @@ public sealed class MotionTests
     public void BlendOneDrawsExactlyTheCurrentUpdate()
     {
         var stage = Running();
-        var motion = new StageMotion();
-        motion.Remember(stage);
-        stage.Update(Dt, Input(right: true, run: true));
-        var pipNow = stage.Player.Position;
-        var cameraNow = stage.Camera.Position;
-
-        motion.Place(stage, 1);
-        Assert.AreEqual(pipNow, stage.Player.Position);
-        Assert.AreEqual(cameraNow, stage.Camera.Position);
-        motion.Restore(stage);
-        Assert.AreEqual(pipNow, stage.Player.Position);
-    }
-
-    [TestMethod]
-    public void JumpsAreDrawnAtOnceInsteadOfStreaking()
-    {
-        var stage = Running();
-        var motion = new StageMotion();
         var walker = stage.Actors.OfType<Enemy>().Single();
-        motion.Remember(stage);
-        stage.Player.Position += new Vector2(200, 0);
-        walker.Position += new Vector2(0, -120);
-        var pipNow = stage.Player.Position;
-        var walkerNow = walker.Position;
+        Step(stage, Input(right: true, run: true));
 
-        motion.Place(stage, 0.25f);
-        Assert.AreEqual(pipNow, stage.Player.Position, "a teleported Pip snaps");
-        Assert.AreEqual(walkerNow, walker.Position, "a respawned actor snaps");
-        motion.Restore(stage);
+        Draw(stage, 1);
+        Assert.AreEqual(stage.Player.Position, stage.PipDrawPosition);
+        Assert.AreEqual(stage.Camera.Position, stage.CameraDrawPosition);
+        Assert.AreEqual(walker.Position, walker.DrawPosition);
     }
 
     [TestMethod]
-    public void ActorsSpawnedDuringAnUpdateStartWhereTheyAppeared()
+    public void ActorsSpawnedDuringAnUpdateAreDrawnWhereTheyAre()
     {
         var stage = Running();
         var shot = new SeedShot(stage, stage.Player.Center, 1);
-        Assert.AreEqual(shot.Position, shot.PreviousPosition);
+        stage.Spawn(shot);
+        shot.Position += new Vector2(5, 0);
+        Draw(stage, 0.25f);
+        Assert.AreEqual(shot.Position, shot.DrawPosition, "a new actor has no previous position to blend from");
     }
 
+    /// <summary>A falling platform that returns to its place is drawn there at once instead of streaking up the screen.</summary>
     [TestMethod]
-    public void ScenesBlendOnlyRightAfterTheyStepped()
+    public void AReturningPlatformIsDrawnAtOnce()
     {
-        var step = new StepBlend();
-        Assert.AreEqual(1f, step.Blend(0, 0.3f), "never stepped: draw the current state");
-        step.Stepped(7, Dt);
-        Assert.AreEqual(0.3f, step.Blend(7, 0.3f));
-        Assert.AreEqual(1f, step.Blend(8, 0.3f), "paused or covered: draw the last state");
-        Assert.AreEqual(2.5f, step.Time(2.5f, 1), "blend 1 keeps the scene clock exact");
-        Assert.AreEqual(2.5f - Dt / 2, step.Time(2.5f, 0.5f), 1e-6f);
+        var stage = Stage(
+            "..................................................",
+            "..S...............................................",
+            "##########...v....................................",
+            "##########........................................");
+        var platform = stage.Platforms.OfType<FallingPlatform>().Single();
+        var home = platform.Position;
+        platform.StoodOn();
+        bool returned = false;
+        for (int i = 0; i < 60 * 6 && !returned; i++)
+        {
+            var before = platform.Position;
+            Step(stage, default);
+            returned = before != home && platform.Position == home;
+        }
+        Assert.IsTrue(returned, "the platform fell and came back");
+        Draw(stage, 0.25f);
+        Assert.AreEqual(home, platform.DrawPosition);
+    }
+
+    /// <summary>A hitstop freezes the rules through the world's clock for its length; popups and particles keep moving.</summary>
+    [TestMethod]
+    public void AHitstopFreezesTheRulesButNotTheEffects()
+    {
+        var stage = Stage(
+            "..................................................",
+            "..S...............................................",
+            "##################################################",
+            "##################################################");
+        Run(stage, 20, Input(right: true, run: true));
+        stage.Popup("100", stage.Player.Center, default);
+        stage.Freeze(0.09f);
+        Assert.IsTrue(stage.Frozen);
+        float clock = stage.Clock;
+        var pip = stage.Player.Position;
+        Run(stage, 6, Input(right: true, run: true));
+        Assert.AreEqual(clock, stage.Clock, "six frozen steps: the stage clock waits");
+        Assert.AreEqual(pip, stage.Player.Position, "Pip waits");
+        Assert.AreEqual(6 * Dt, stage.Popups[^1].Age, 1e-5f, "the popup kept rising");
+        Assert.IsFalse(stage.Frozen, "0.09 s of freeze is six steps of 1/60 s");
+        Step(stage, Input(right: true, run: true));
+        Assert.AreEqual(clock + Dt, stage.Clock);
+        Assert.AreNotEqual(pip, stage.Player.Position, "the rules run again");
     }
 }

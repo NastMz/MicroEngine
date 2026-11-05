@@ -16,7 +16,6 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
     private Stage _stage = null!;
     private StageView _view = null!;
     private bool _leaving;
-    private readonly StepBlend _step = new();
     private readonly HudLabels _hud = new();
     private readonly NumberLabel _flag = new(), _bonus = new(), _total = new();
     private int _coinsAtStart, _scoreAtStart;
@@ -29,8 +28,8 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
 
     /// <summary>
     /// Hashes the level and checkpoint, whether the scene is leaving, the session totals at the start (the clear
-    /// record uses them) and the stage. Leaves out the stage view, step blend and HUD/tally labels: drawing and
-    /// presentation write them (held positions for blending, label text caches).
+    /// record uses them) and the stage (the stage's actors are in the scene's world, which the engine hashes with the
+    /// scene). Leaves out the stage view and HUD/tally labels: presentation writes them (squash, label text caches).
     /// </summary>
     public override void HashState(StateHasher hash)
     {
@@ -44,7 +43,7 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
 
     public override void Enter()
     {
-        _stage = new Stage(new Level(Def), game.Session, checkpoint)
+        _stage = new Stage(new Level(Def), game.Session, Objects, checkpoint)
         {
             SoundSink = (name, volume, pitch, pan) => game.Sfx(name, volume, pitch, pan),
             MusicSink = game.Music,
@@ -72,6 +71,7 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
 
     public override void Resume() => Audio.PauseMusic(false);
 
+    /// <param name="dt">The step of the scene's world: 0 while a hit-stop freezes it (the stage reads that from the world's clock).</param>
     public override void Update(float dt)
     {
         if (_leaving) return;
@@ -86,10 +86,10 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
             Input.Down("left"), Input.Down("right"), Input.Down("down"),
             Input.Pressed("jump"), Input.Down("jump"), Input.Down("run"), Input.Pressed("run"));
         _view.SetCrouch(input.Down && !input.Left && !input.Right);
-        _view.Remember(_stage);
-        _stage.Update(dt, input);
-        _step.Stepped(Game, dt);
-        _view.Observe(_stage, dt);
+        // Effects, shake and squash keep moving through a hit-stop: they advance by the engine's step.
+        float step = (float)Game.TimeSettings.FixedDelta;
+        _stage.Update(step, input);
+        _view.Observe(_stage, step);
         if (_stage.Player.Form == PipForm.Ember) game.Achievements.Unlock(MeadowAchievements.EmberHeart);
         if (_stage.Outcome != StageOutcome.None) Finish(_stage.Outcome);
     }
@@ -126,7 +126,7 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
 
     public override void Draw(IRenderer r)
     {
-        _view.Draw(r, _stage, _step.Time(Game, Age), _step.Blend(Game));
+        _view.Draw(r, _stage, DrawTime.Of(this), Objects.Blend);
         Ui.Hud(r, Font, game.Art, game.Session, _stage, Age, _hud);
         if (_stage.Phase == StagePhase.Tally) DrawTally(r);
         if (_stage.Phase == StagePhase.Victory)

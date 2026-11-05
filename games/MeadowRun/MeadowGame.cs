@@ -5,6 +5,7 @@ using MeadowRun.Gameplay;
 using MeadowRun.Scenes;
 using MicroEngine;
 using MicroEngine.Core;
+using MicroEngine.Hosting;
 using MicroEngine.Input;
 using MicroEngine.Kernel;
 
@@ -31,15 +32,23 @@ public sealed class SaveData : IStateHashed
     }
 }
 
-/// <summary>Developer launch options (environment variables), used for captures and debugging.</summary>
+/// <summary>
+/// Developer launch options, used for captures and debugging: where the game starts (MEADOW_START), the level
+/// (MEADOW_LEVEL, 1 to 5), the checkpoint (MEADOW_CHECKPOINT) and Pip's form (MEADOW_FORM).
+/// </summary>
 public sealed record LaunchOptions(string Start = "title", int Level = 1, int Checkpoint = 0, PipForm Form = PipForm.Sprout)
 {
-    public static LaunchOptions FromEnvironment()
+    /// <summary>
+    /// Reads the options from the host's developer variables (<see cref="HostEnvironment.Variable"/>): environment
+    /// variables on desktop, a phone test's <c>--env</c>, a page's query. Missing or unreadable values keep their defaults.
+    /// </summary>
+    public static LaunchOptions From(HostEnvironment host)
     {
-        var start = Environment.GetEnvironmentVariable("MEADOW_START") ?? "title";
-        int level = int.TryParse(Environment.GetEnvironmentVariable("MEADOW_LEVEL"), out var l) ? l : 1;
-        int cp = int.TryParse(Environment.GetEnvironmentVariable("MEADOW_CHECKPOINT"), out var c) ? c : 0;
-        var form = Enum.TryParse<PipForm>(Environment.GetEnvironmentVariable("MEADOW_FORM"), true, out var f) ? f : PipForm.Sprout;
+        ArgumentNullException.ThrowIfNull(host);
+        var start = host.Variable("MEADOW_START") ?? "title";
+        int level = int.TryParse(host.Variable("MEADOW_LEVEL"), out var l) ? l : 1;
+        int cp = int.TryParse(host.Variable("MEADOW_CHECKPOINT"), out var c) ? c : 0;
+        var form = Enum.TryParse<PipForm>(host.Variable("MEADOW_FORM"), true, out var f) ? f : PipForm.Sprout;
         return new LaunchOptions(start, level, cp, form);
     }
 }
