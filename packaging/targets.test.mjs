@@ -1,7 +1,7 @@
 // Tests of the packaging rules that need no package or container: node --test packaging/*.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { glibcRefusal } from './targets.mjs';
+import { glibcRefusal, requiredFiles, androidNoticeFiles, target } from './targets.mjs';
 
 // What a Linux package printed in a debian:11 container (glibc 2.31) on a hosted runner: the launcher tries sdl, then
 // raylib, then sdl-software, and the last failure is the error it exits with.
@@ -54,4 +54,18 @@ test('the refusal must end the process with exit code 1', () => {
 test('what is not a refusal says what was seen instead', () => {
   const result = glibcRefusal('line one\nline two\nline three\nline four\n');
   assert.equal(result.detail, 'line two | line three | line four');
+});
+
+// Every package that holds SDL's binaries carries SDL's licence; desktop packages also hold raylib's binaries.
+for (const id of ['windows-x64', 'linux-x64', 'macos-arm64']) {
+  test(`a ${id} package must carry the SDL and raylib licences`, () => {
+    const files = requiredFiles({ game: 'NeonRift', title: 'Neon Rift', applicationId: 'dev.microengine.neonrift' }, target(id));
+    assert.ok(files.includes('licenses/SDL-LICENSE.txt'), files.join(', '));
+    assert.ok(files.includes('licenses/raylib-LICENSE.txt'), files.join(', '));
+  });
+}
+
+test('an APK must carry the SDL licence with the other notices', () => {
+  assert.ok(androidNoticeFiles.includes('assets/licenses/SDL-LICENSE.txt'));
+  assert.ok(androidNoticeFiles.includes('assets/licenses/microengine-LICENSE.txt'));
 });

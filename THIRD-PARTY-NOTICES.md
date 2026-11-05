@@ -126,7 +126,8 @@ SOFTWARE.
 ### zlib/libpng License
 
 SDL 3, Raylib-cs, raylib, rprand and GLFW are provided under these terms, each with its copyright line from the tables
-(browser packages also ship SDL's own licence file in `licenses/SDL-LICENSE.txt`):
+(every package also ships SDL's own licence file in `licenses/SDL-LICENSE.txt`, `assets/licenses/` in an APK, and
+desktop packages raylib's in `licenses/raylib-LICENSE.txt`):
 
 ```text
 This software is provided "as-is", without any express or implied warranty. In no event

@@ -19,6 +19,9 @@ raylib (`--platform raylib`), the `Content` folder, `README.txt` (how to run it)
 runtime's licence and notices). Everything is in one folder named after the game. Builds use invariant globalization,
 so no ICU library is needed on the player's system, and carry no debug information or build-machine path.
 
+Next SDK version (not published yet): `licenses/` also holds SDL's and raylib's licence files, and Android and iOS
+packages carry SDL's licence file with their other notices (`assets/licenses/` in an APK, `licenses/` in the app).
+
 | | Windows | Linux | macOS |
 | --- | --- | --- | --- |
 | Architecture | x64 | x86_64 | Apple silicon (arm64) |

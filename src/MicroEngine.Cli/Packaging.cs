@@ -166,6 +166,8 @@ public static class Packaging
         }
         File.Copy(game.ThirdPartyNotices, Path.Combine(top, "THIRD-PARTY-NOTICES.txt"));
         File.Copy(Path.Combine(Tool.Home, "Notices", "microengine-LICENSE.txt"), Path.Combine(top, "licenses", "microengine-LICENSE.txt"));
+        // SDL's and raylib's licences, for each of their native libraries the package holds (on macOS inside the bundle).
+        foreach (string engine in EngineNotices.ForFiles(Walk(top))) File.Copy(EngineNotices.PathOf(engine), Path.Combine(top, "licenses", engine));
         File.Copy(Path.Combine(pack, "LICENSE.TXT"), Path.Combine(top, "licenses", "dotnet-LICENSE.txt"));
         File.Copy(Path.Combine(pack, "THIRD-PARTY-NOTICES.TXT"), Path.Combine(top, "licenses", "dotnet-THIRD-PARTY-NOTICES.txt"));
     }
