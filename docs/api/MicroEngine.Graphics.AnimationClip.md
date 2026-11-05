@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Graphics2D.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 An immutable sequence of sprites played at a fixed rate, or with a duration per frame (Aseprite timing).

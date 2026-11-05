@@ -76,7 +76,7 @@ public static SaveStore SaveStore(this HostBuilder host, string gameId)
 
 #### Returns
 
- [SaveStore](MicroEngine.Core.SaveStore.md)
+ SaveStore
 
 ### <a id="MicroEngine_Core_HostBuilderExtensions_UseGame_MicroEngine_Hosting_HostBuilder_System_Func_MicroEngine_Core_Game__"></a> UseGame\(HostBuilder, Func<Game\>\)
 

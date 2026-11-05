@@ -8,6 +8,30 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- Achievements are an optional engine module: a game declares them before the engine is composed, and a game that
+  never declares them has no achievement service, no `engine.achievements` frame system and no achievement file.
+  **Migration:** move the `UseAchievements(catalog, store, theme)` call out of `Load` into the game's constructor or
+  into `public override void Configure(EngineBuilder builder)` (a store created in `Load` moves with it); code that
+  needs the running game (`AchievementToasts.Top`, `Achievements.Unlocked += ...` playing a sound) stays in `Load`.
+  Calling `UseAchievements` from `Load` or later now throws an `InvalidOperationException` that says so. A declared
+  game's tracker and store are services (`Services.Get<AchievementTracker>()`, `Services.Get<SaveStore>()`);
+  compositions without the `Game` façade add `AchievementsModule` (namespace `MicroEngine.Achievements`) and
+  `SavesModule` (namespace `MicroEngine.Saves`) themselves.
+- `SaveStore`, `ISaveStorage` and `FileSaveStorage` moved to the new `MicroEngine.Saves.dll` (carried by the
+  `MicroEngine` package) with their namespace unchanged; nothing to change.
+
+- A frame has a world view and a UI view: `Scene.DrawUi(IRenderer ui)` draws the interface at the window's resolution
+  over the world (UI units: window pixels / `Presentation.UiScale`), `Scene.UiContains` says where it takes the pointer,
+  `Scene.WorldCamera` is pushed around `Draw`, and `Game.Views` maps positions and the pointer between window pixels,
+  canvas pixels and UI units. Nothing to change: a scene without `DrawUi` draws as before. Platforms of your own may
+  offer the UI view as the `IScreenView` capability; without it `DrawUi` draws in the canvas.
+- `Presentation.Aspect = AspectMode.Expand` grows the canvas with the window instead of letterboxing; the canvas's
+  current size is `IRenderer.Width`/`Height` (and `Game.Views.CanvasSize`), while `Game.Width`/`Height` stay the
+  configured size.
+- Glyph pages of TTF/OTF fonts created without `FontOptions.Filter` follow the game's default filter (the presentation's
+  `DefaultSampler`) instead of choosing from `Antialiasing`; `FontOptions.Pixel` now sets nearest itself. **Migration:** a
+  pixel-art game whose antialiased `ScalableFont` must stay linear passes `new FontOptions(Filter: TextureFilter.Linear)`.
+
 - Scenes can hold their objects in a world (`Scene.Objects`, an `IWorld` in the `MicroEngine.Scenes` namespace, from
   the new `MicroEngine.Scene.dll` the `MicroEngine` package carries), and a `Scene<TResult>` can return a value to the
   scene below (`Game.Scenes.Push(scene, onResult)`, `Finish(value)`). Nothing changes for a scene that does not read
@@ -214,6 +238,10 @@ Not published yet. Behaviour that changes:
 - `SpriteAtlas.Frames(name)` also finds frames numbered from 1 when there is no `name0`.
 - Windows larger than the display open at the largest size that fits (a `Scale` of 4 on a small laptop used to open a
   window bigger than the screen).
+- The 2D drawing model (`IRenderer`, `Texture`, `IGraphicsDevice`, `PixelImage`, sprites, atlases, animation, particles,
+  light, parallax and their helpers) lives in `MicroEngine.Graphics2D.dll`, carried by the `MicroEngine` package, with its
+  namespace unchanged; `MicroEngine.dll` forwards every moved type. Nothing to change: source and compiled code find the
+  types as before. Fonts, the headless renderer and the reference rasterizer stay in `MicroEngine.dll` for now.
 - The SDL and raylib platforms draw through the graphics device: `IRenderer` is a façade over the 2D batcher, and the
   canvas is premultiplied. Behaviour that changes: `BlendMode.Multiply` with a translucent colour now computes
   s·a·d + d·(1 − a) (it computed s·d + d·(1 − a), which brightened as the colour became more transparent); a

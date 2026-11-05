@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Graphics2D.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 Darkness with point lights for caves, dungeons and night scenes. Each frame the game clears the
@@ -221,6 +221,6 @@ public void Draw(IRenderer r, Camera2D camera)
 
 `r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`camera` Camera2D
+`camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)
 
 </div>

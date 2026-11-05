@@ -27,6 +27,12 @@ public enum AspectMode
     Keep,
     /// <summary>Fill the whole area, stretching the canvas to the window's shape (pixels stop being square).</summary>
     Stretch,
+    /// <summary>
+    /// Keep the scale and square pixels, and grow the canvas along the window's longer side so it fills the area: a
+    /// wider window shows more of the world, never letterbox (<see cref="Presentation.CanvasSize"/>). The canvas's
+    /// configured size is its minimum.
+    /// </summary>
+    Expand,
 }
 
 /// <summary>
@@ -116,6 +122,44 @@ public sealed record Presentation
     /// </summary>
     public bool CameraPixelSnap { get; init; }
 
+    private readonly float _uiScale = 1f;
+
+    /// <summary>
+    /// UI units per screen pixel of the UI view, drawn over the world at the window's resolution (1 by default: one UI unit
+    /// is one window pixel). 2 makes the UI twice as large on a high-density screen.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a positive finite number.</exception>
+    public float UiScale
+    {
+        get => _uiScale;
+        init => _uiScale = float.IsFinite(value) && value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), "The UI scale must be a positive number.");
+    }
+
+    /// <summary>
+    /// The canvas size for <paramref name="area"/>: the configured size, except with <see cref="AspectMode.Expand"/>,
+    /// where the side the window has room for grows (at the scale <see cref="Rounding"/> chooses) until the scaled canvas
+    /// fills the area. Never smaller than the configured size.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The configured size is not positive.</exception>
+    public (int Width, int Height) CanvasSize(RectF area, int canvasWidth, int canvasHeight)
+    {
+        if (canvasWidth <= 0 || canvasHeight <= 0) throw new ArgumentOutOfRangeException(nameof(canvasWidth), "The canvas size must be positive.");
+        if (Aspect != AspectMode.Expand || area.Width <= 0 || area.Height <= 0) return (canvasWidth, canvasHeight);
+        float scale = Scale(area, canvasWidth, canvasHeight);
+        return (Math.Max(canvasWidth, (int)MathF.Floor(area.Width / scale + 1e-4f)), Math.Max(canvasHeight, (int)MathF.Floor(area.Height / scale + 1e-4f)));
+    }
+
+    private float Scale(RectF area, int canvasWidth, int canvasHeight)
+    {
+        float fit = MathF.Min(area.Width / canvasWidth, area.Height / canvasHeight);
+        return Rounding switch
+        {
+            ScaleRounding.Integer when fit >= 1 => MathF.Floor(fit),
+            ScaleRounding.IntegerUnlessWasteful when fit >= 1 && MathF.Floor(fit) >= fit * WastefulThreshold => MathF.Floor(fit),
+            _ => fit,
+        };
+    }
+
     /// <summary>
     /// Where the canvas lands in <paramref name="area"/> (the window, or its safe area on a phone), in window pixels: the
     /// largest scale that fits, rounded by <see cref="Rounding"/>, centred; with <paramref name="portrait"/> it sits at the
@@ -131,13 +175,8 @@ public sealed record Presentation
     {
         if (canvasWidth <= 0 || canvasHeight <= 0) throw new ArgumentOutOfRangeException(nameof(canvasWidth), "The canvas size must be positive.");
         if (Aspect == AspectMode.Stretch) return area;
-        float fit = MathF.Min(area.Width / canvasWidth, area.Height / canvasHeight);
-        float scale = Rounding switch
-        {
-            ScaleRounding.Integer when fit >= 1 => MathF.Floor(fit),
-            ScaleRounding.IntegerUnlessWasteful when fit >= 1 && MathF.Floor(fit) >= fit * WastefulThreshold => MathF.Floor(fit),
-            _ => fit,
-        };
+        float scale = Scale(area, canvasWidth, canvasHeight);
+        if (Aspect == AspectMode.Expand) (canvasWidth, canvasHeight) = CanvasSize(area, canvasWidth, canvasHeight);
         float w = canvasWidth * scale, h = canvasHeight * scale;
         float x = MathF.Floor(area.X + (area.Width - w) / 2);
         float y = portrait ? area.Y : MathF.Floor(area.Y + (area.Height - h) / 2);

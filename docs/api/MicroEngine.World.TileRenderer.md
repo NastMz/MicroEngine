@@ -29,7 +29,7 @@ public static void Draw(IRenderer renderer, TileLayer layer, int tileSize, Camer
 
 #### Parameters
 
-`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`renderer` IRenderer
 
 The renderer; push <code class="paramref">camera</code> on it first when there is one.
 
@@ -45,7 +45,7 @@ Tile size in pixels.
 
 The camera, used only to skip tiles outside its view; null draws the tiles over the screen area.
 
-`spriteFor` [Func](https://learn.microsoft.com/dotnet/api/system.func\-4)<[int](https://learn.microsoft.com/dotnet/api/system.int32), [int](https://learn.microsoft.com/dotnet/api/system.int32), [int](https://learn.microsoft.com/dotnet/api/system.int32), [Sprite](MicroEngine.Graphics.Sprite.md)?\>
+`spriteFor` [Func](https://learn.microsoft.com/dotnet/api/system.func\-4)<[int](https://learn.microsoft.com/dotnet/api/system.int32), [int](https://learn.microsoft.com/dotnet/api/system.int32), [int](https://learn.microsoft.com/dotnet/api/system.int32), Sprite?\>
 
 Returns the sprite for a tile id at tile (x, y), or null to draw nothing.
 

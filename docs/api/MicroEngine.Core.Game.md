@@ -173,7 +173,7 @@ public IGraphicsDevice Graphics { get; }
 
 #### Property Value
 
- [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+ IGraphicsDevice
 
 ### <a id="MicroEngine_Core_Game_HasAchievements"></a> HasAchievements
 
@@ -416,6 +416,19 @@ public long UpdateCount { get; }
 
  [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
+### <a id="MicroEngine_Core_Game_Views"></a> Views
+
+The world view and the UI view, and the mapping between window pixels, canvas pixels and UI units, with the
+pointer in each ([GameViews](MicroEngine.Core.GameViews.md)).
+
+```csharp
+public GameViews Views { get; }
+```
+
+#### Property Value
+
+ [GameViews](MicroEngine.Core.GameViews.md)
+
 ### <a id="MicroEngine_Core_Game_Width"></a> Width
 
 Width of the virtual canvas in pixels ([VirtualWidth](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_VirtualWidth)).
@@ -623,9 +636,12 @@ protected virtual void Unload()
 
 ### <a id="MicroEngine_Core_Game_UseAchievements_System_Collections_Generic_IEnumerable_MicroEngine_Core_Achievement__MicroEngine_Core_SaveStore_MicroEngine_UI_UiTheme_"></a> UseAchievements\(IEnumerable<Achievement\>, SaveStore, UiTheme?\)
 
-Turns on achievements, usually from [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load). Progress persists in the "achievements" slot
-of <code class="paramref">store</code> (the game's own save folder) and every unlock shows a banner styled with
-<code class="paramref">theme</code>. Report progress through [Achievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Achievements).
+Declares the game's achievements: call it from the game's constructor or from [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_), before
+the engine is composed, so the engine adds the achievements module (the tracker and <code class="paramref">store</code> as
+services, and the <code>engine.achievements</code> system that writes progress). Progress persists in the
+"achievements" slot of <code class="paramref">store</code> (the game's own save folder) and every unlock shows a banner
+styled with <code class="paramref">theme</code>. Report progress through [Achievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Achievements). A game that never calls
+it has no achievement service, system or file.
 
 ```csharp
 protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, SaveStore store, UiTheme? theme = null)
@@ -635,12 +651,18 @@ protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, S
 
 `catalog` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[Achievement](MicroEngine.Core.Achievement.md)\>
 
-`store` [SaveStore](MicroEngine.Core.SaveStore.md)
+`store` SaveStore
 
 `theme` [UiTheme](MicroEngine.UI.UiTheme.md)?
 
 #### Returns
 
  [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The engine was already composed (called from [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) or later).
 
 </div>

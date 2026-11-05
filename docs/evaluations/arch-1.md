@@ -247,7 +247,7 @@ Assemblies (each is a project; arrows are the only allowed references, checked b
 | `MicroEngine.Backend.Raylib` | A host, a tier-0 device whose factory accepts only raylib's own surfaces (`UnsupportedReason`), and a sink, in one assembly; no special contract shape. Desktop: the second tier-0 implementation (real substitution evidence), future decided in stage 2a. Browsers: until the SDL browser launcher replaces it in stage 5 | abstractions |
 | `MicroEngine.Testing` | Headless host, deterministic clock, device-event scripts, recording device + CPU reference rasterizer, conformance suites, architecture test helpers | abstractions + modules |
 | `MicroEngine` (metapackage) | Default modules, presets, `Game` façade | modules |
-| `MicroEngine.Migration.Entities` (transitional) | The legacy `Entity`/`EntityList` adapter over `IWorld`, `[Obsolete]` from its first commit; a non-packable project consumed only by the demos while they migrate; **deleted at the end of stage 5** | Scene, Graphics2D |
+| `MicroEngine.Migration.Entities` (transitional) | The legacy `Entity`/`EntityList` adapter over `IWorld`, `[Obsolete]` from its first commit; a non-packable project consumed only by the demos while they migrate; **deleted at the end of stage 5** | Scene, Graphics2D (as implemented in #59, also the core `MicroEngine`, transitionally: the legacy `Draw(IRenderer)` needs the `IRenderer` façade) |
 
 The migration adapter is never part of `MicroEngine.Scene` nor of any published package, and it is not a permanent
 public API. The architecture test fails if any project still references it once stage 5 closes; stage 5 cannot close
@@ -268,7 +268,7 @@ packages only if the SDL_GPU work or the static `SDL3.a` the web build links (P4
 
 The sketches with rationale are in A1 §4.2, A2 §6 and A3 §7; this is the integrated core. A contract is frozen only at
 its gate in §9; after that, any change is a recorded contract revision with evidence (a version bump in the contract
-text). State on 2026-11-03 (after stage 2 closed and P7 concluded):
+text). State on 2026-11-03 (after stage 3 closed):
 
 | Contract | State | Where the text lives |
 | --- | --- | --- |
@@ -280,8 +280,8 @@ text). State on 2026-11-03 (after stage 2 closed and P7 concluded):
 | Input (device events, players, layers, `IInputBackend`) | implemented in stage 2b (ADR 0032, #46, #49, #51) | `src/MicroEngine.Input`; `IInputBackend` lives there, not in `MicroEngine.Platform` as §6.3 sketches (open point, below) |
 | `IAudioSink` | **frozen, v1** (P5, architect directive 7); implemented in stage 2c (ADR 0033, #47) | `src/MicroEngine.Platform/Audio/IAudioSink.cs`; the sketch below |
 | Content (`AssetStore`, `Asset<T>`, loader registry, sources) | implemented in stage 2c (ADR 0034, #44, #50) | `src/MicroEngine.Content` |
-| `IPhysicsWorld2D` and `PhysicsCapabilities` | P6 gate met; revised by P6 (architect directive 8); written and frozen in stage 3b | the sketch below and §9.1 |
-| `IWorld` | **frozen, v1** (P7, architect directive 11); implemented in stage 3a-1 | the Scene part of the sketch below, which restates P7's [verdict](../../experiments/arch-1/p7-entities/README.md#verdict-the-api-to-freeze-in-stage-3) with directive 11's corrections |
+| `IPhysicsWorld2D` and `PhysicsCapabilities` | P6 gate met; revised by P6 (architect directive 8); implemented in stage 3b (ADR 0031, #60): `PhysicsContract.Version = 1`, a common conformance suite with a `Scale` override and capability-specific suites | `src/MicroEngine.Physics` (the XML documentation is the contract text) and the tile backend in `src/MicroEngine.Physics.Tiles`; the sketch below and §9.1 |
+| `IWorld` | **frozen, v1** (P7, architect directive 11); implemented in stage 3a (ADR 0030, #56, #57, #59) | `src/MicroEngine.Scene` (namespace `MicroEngine.Scenes`; a scene hosts its world as `Scene.Objects`); the Scene part of the sketch below, which restates P7's [verdict](../../experiments/arch-1/p7-entities/README.md#verdict-the-api-to-freeze-in-stage-3) with directive 11's corrections |
 
 #### Graphics device contract v1 (frozen)
 
@@ -450,7 +450,8 @@ public interface IRenderer2D                              // implemented once, i
 // façade over IRenderer2D.
 
 // Scene: IWorld v1, frozen by P7 with architect directive 11 (implemented in stage 3a-1) --------
-// Namespace MicroEngine.Scene (assembly references Kernel only). Games program against IWorld; the concrete,
+// Assembly MicroEngine.Scene, namespace MicroEngine.Scenes as implemented in #56 (references Kernel only).
+// Games program against IWorld; the concrete,
 // engine-owned type is SceneWorld. Signatures are P7's verdict with directive 11's corrections applied: no blend
 // arguments (the world owns its blend), Children(parent) added, struct attachments left out of v1.
 public readonly record struct EntityId(uint Index, uint Generation)
@@ -670,9 +671,9 @@ prototype in the stage where it must conclude, with its gate.
 | 2b. Input | Device events and ids, all pads, text/IME, touches as pointers, layers, default player; taps expire by updates, not by drawn frames (browser determinism finding) | — | 1 | parallel |
 | 2c. Audio and content | Managed mixer over sinks, handles, buses, streaming; content handles, loader registry, sources; audio as assets; implements `IAudioSink` v1 and its default sinks; music rendering and logical music state independent of the wall clock (browser determinism R2); hidden-page audio suspension in the contract | P5 concluded: `IAudioSink` v1 frozen (gate met) | 1 | parallel |
 | 3. World and physics | `MicroEngine.Scene` (ids, transforms, attachments, interpolation, clocks, scene results); physics common contract, `PhysicsCapabilities` and suites; `Physics.Tiles` with the fixed mover as the first backend; the **transitional** `Entity` adapter (`[Obsolete]`, in the non-packable `MicroEngine.Migration.Entities`, consumed only by the demos) | P7 concluded: `IWorld` v1 frozen (directive 11; gate met); P6 concluded: the physics contract is written with its revisions (§6.4, §9.1) | 1, 2a (presentation reads transforms) | two (architect directive 12): 3a `MicroEngine.Scene` as chained PRs (3a-1 world, 3a-2 scenes own worlds, 3a-3 `Entity` adapter; ADR 0030); 3b `MicroEngine.Physics` and `Physics.Tiles` after 3a-1 merges (ADR 0031) |
-| 4. UI and modules | UI with pointer/focus/layout/screen-unit view; saves, achievements, touch controls as modules | — | 2a, 2b, 3 | parallel per module |
+| 4. UI and modules | UI with pointer/focus/layout/screen-unit view; saves, achievements, touch controls as modules | — | 2a, 2b, 3 | two (architect directive 14): 4a `MicroEngine.Text`, then `MicroEngine.UI` (chained); 4b `MicroEngine.Saves`, `MicroEngine.Achievements` and `Input.Touch` as opt-in modules (`Input.Touch` after 4a-1 merges) |
 | 5. Consumers | Migrate the four demos, gallery, samples, template; docs, snippets and API reference regenerated; CLI hosts on the `Configure` entry point; packages and SDK acceptance; the SDL browser launcher replaces raylib on the web (gates under P4 below); release notes as a breaking Alpha (written, not published). **Deletes the `Entity` adapter** (the architecture test fails on any reference) and **empties the exclusion list**; the stage cannot close otherwise | — | 2-4 | per demo |
-| 6. Phase II completion | The tier-1 pure SDL_GPU device, offline shader toolchain and the 3D vertical slice; the native Box2D v3 backend, its CI-built native binaries and optional package (validated on Linux, macOS, iOS and Android arm64, not published) and the physics substitution demonstration; the final report (§9.1) | P2 before the tier-1 shader toolchain is fixed (inside the 3D vertical slice) | 2a, 3 (contracts it exercises), P2, P6; Phase II completes only with stages 0-5 closed | 3D slice and physics substitution in parallel |
+| 6. Phase II completion | The tier-1 pure SDL_GPU device, offline shader toolchain and the 3D vertical slice; the native Box2D v3 backend, its CI-built native binaries and optional package (validated on Linux, macOS, iOS and Android arm64, not published) and the physics substitution demonstration; the final report (§9.1) | P2 before the tier-1 shader toolchain is fixed (inside the 3D vertical slice) | 2a, 3 (contracts it exercises), P2, P6; Phase II completes only with stages 0-5 closed | two in parallel (architect directive 13): 6a the 3D vertical slice (tier-1 SDL_GPU device, offline shader toolchain with P2, minimal glTF, `Camera3D`, a Linux lavapipe CI job); 6b the Box2D backend with CI-built natives, the physics substitution demonstration and a broad phase for the tile backend |
 
 Prototypes (each a throwaway in `experiments/` or a draft PR, measured, recorded in the register; verdict written
 here before its gate):
@@ -680,7 +681,7 @@ here before its gate):
 | P | Question | Decides | Must be resolved before | Verdict |
 | --- | --- | --- | --- | --- |
 | P1 | Do the four demos run on SDL_Renderer's `gpu` driver matching references (draw calls, frame and start-up time) on every desktop and phone? | The tier-0 SDL base driver; tier 1 path | Stage 2a starts | Concluded 2026-11-02: tier-0 SDL keeps SDL's default driver; Windows only measured ([evidence](#p1-verdict)) |
-| P2 | One palette-swap and one full-screen effect with shaders compiled offline for every backend | Shader toolchain in the tool (toolchain, not contract shape, since P3 already exercises shaders) | The tier-1 shader toolchain is fixed (inside the 3D vertical slice) | Open; P3 supplied its input toolchain |
+| P2 | One palette-swap and one full-screen effect with shaders compiled offline for every backend | Shader toolchain in the tool (toolchain, not contract shape, since P3 already exercises shaders) | The tier-1 shader toolchain is fixed (inside the 3D vertical slice) | Open; run inside stage 6a (directive 13); P3 supplied its input toolchain |
 | P3 | A depth-tested mesh drawn with SDL_GPU composited with 2D on the same device; System.Numerics projection handedness vs SDL_GPU clip space. It is also the tier-1 half of the graphics contract spike | Whether the proposed device has limits; 3D readiness of the contract | The graphics contract is frozen (end of the stage 1 spike, before 2a implementation) | Concluded 2026-11-02: viable with sixteen revisions, applied in §6.4 ([evidence](#p3-verdict)) |
 | P4 | SDL3 built for .NET 10's Emscripten running one demo in a browser vs raylib (size, frame time, audio) | Whether raylib stays the browser backend, and whether integrated (fused host + device) backends must exist in the contract | The platform/device split of stage 1 is frozen (hosts consolidated) | Concluded 2026-11-02: SDL runs the games in browsers; no integrated backends; raylib web retired in stage 5 ([evidence](#p4-verdict)) |
 | P5 | Pull-callback PCM sink on web (AudioWorklet), Android and iOS output threads | The shape of `IAudioSink` | `IAudioSink` is frozen (before stage 2c closes; run at 2c start or earlier) | Concluded 2026-11-03: `IAudioSink` v1 frozen; feeder-thread default on SDL3 platforms, AudioWorklet sink in browsers; iOS unverified ([evidence](#p5-verdict)) |
@@ -919,9 +920,9 @@ and owners are in the register ([`odd/tasks/arch-1.md`](../../odd/tasks/arch-1.m
   - 2a graphics (#45 device contract v1 in the engine, reference device and conformance suite, ADR 0028; #48 tier-0
     SDL and raylib devices, `Presentation` and its presets, ADR 0029; #52 `Graphics2D` batcher, `IRenderer` façade over
     the device, old renderers deleted, `Camera2D` zoom and rotation with pixel snap set per preset; premultiplied alpha
-    changed the translucent `Multiply` and `Clear` rules; SDL vs raylib captures within 3/255). Open: the F11/Alt+Enter
-    rebindable action (in progress); the views hook for games (stage 3a-2); `Aspect.Expand` and font pages following
-    `DefaultSampler` (follow-ups); the tier-1 adapter port (stage 6).
+    changed the translucent `Multiply` and `Clear` rules; SDL vs raylib captures within 3/255). Follow-ups landed since:
+    the full-screen engine action (#54) and the views hook with `Aspect.Expand` and font pages following
+    `DefaultSampler` (#61); still open: the tier-1 adapter port (stage 6a).
   - 2b input (#46 the input model, ADR 0032, with `IInputBackend` in `MicroEngine.Input` as an open point; #49 SDL and
     raylib event backends; #51 scripted device events, widgets consume the presses they act on, a two-player test).
   - 2c audio and content (#44 `MicroEngine.Content`, audio bytes as assets, ADR 0034; #47 one managed mixer over
@@ -929,11 +930,41 @@ and owners are in the register ([`odd/tasks/arch-1.md`](../../odd/tasks/arch-1.m
     ADR 0033; #50 sounds and music as asset kinds, `Synth`/`Song` in a `Retro` folder with the namespace move deferred to
     stage 5). Recorded: the voice handle is named `VoiceHandle`; streamed music is decoded only half a second ahead
     (a risk under long stalls).
-- Stage 3 **started** (directive 12): 3a (`MicroEngine.Scene`: 3a-1 world, 3a-2 scenes own worlds, 3a-3 the `Entity`
-  adapter); 3b (physics) starts after 3a-1 merges.
-- Prototypes: P1, P3, P4, P5, P6, P7 concluded; P2 open (inside the 3D vertical slice, stage 6).
-- The exclusion list of temporarily incompatible consumers is empty: stages 1 and 2 kept every demo, the gallery and
-  the samples building and running in CI through the existing façades.
+- Full-screen engine action (#54, after 2b): `fullscreen` (`ActionNames.Fullscreen`), F11 and Alt+Enter by default
+  through key chords (`KeyChord`), handled by the engine system `engine.fullscreen`; the SDL and raylib backends no
+  longer hard-wire the hotkeys. Chord precedence is a rule of the whole input map: a key pressed while a modifier of
+  one of its chords is held belongs to the chord until released (Alt+Enter does not confirm; Ctrl+S does not press an
+  S action).
+- Allocation checks (#58): their occasional failures came from the runtime's own count, not from the code under test
+  (a background collection counts the unused rest of the measuring thread's allocation buffer, a jump of about 8 KB);
+  `AllocationAssert` warms the action up and requires at least one round of 0 bytes. Follow-ups: the SDL audio feeder
+  thread's allocations are not measured; the frame loop allocates 240 B per frame against its 256 B limit (the growth
+  is to be investigated); a timing flake in `Loads_during_play_are_counted_and_slow_ones_reported_once`.
+- Stage 3 **closed** (directive 13), two units (directive 12):
+  - 3a scene (#56 `MicroEngine.Scene`, namespace `MicroEngine.Scenes`: `EntityId`, `Transform`, `IWorld`,
+    `SceneWorld`, the conformance suite and T0 hashing, ADR 0030; #57 scenes own worlds: `Scene.Objects`, world-owned
+    blend from per-scene step tracking, so D11/SC-2 is fixed in the engine, world clocks SC-3, scene results SC-1; #59
+    the transitional adapter `MicroEngine.Migration.Entities`, `[Obsolete]` with diagnostic `MEMIG001`, referenced
+    only by the three demos that use `Entity` (an architecture test checks it), `PlatformerExample` rewritten without
+    `Entity`, and the documentation labelling `Entity` "removed in the next SDK version"). The views hook directive 12
+    placed in 3a-2 could not be built there (no UI view existed) and landed separately (#61, directive 13).
+  - 3b physics (#60 `MicroEngine.Physics` and `MicroEngine.Physics.Tiles`: the contract, the common conformance suite
+    with a `Scale` override converting suite units to a backend's world units, capability suites, D6 fixed with no T0
+    trace change, the tile types moved into `MicroEngine.Physics.Tiles` with type forwards from `MicroEngine`, ADR
+    0031). Follow-ups: no broad phase (0.75 ms per step for 200 boxes; stage 6b); `MoveResult` exists in both
+    `MicroEngine.World` and `MicroEngine.Physics` (stage 5 decides `TileMotion`'s future).
+- Views hook (#61, directive 13, before stage 4): a UI view at screen resolution composited over the world view;
+  `Scene.DrawUi`, `Scene.UiContains`, `Scene.WorldCamera`, `Game.Views`, the `IScreenView` capability,
+  `Presentation.UiScale`, `AspectMode.Expand`, font pages following `DefaultSampler`. Carried to stage 4a by the
+  architect (directive 14): captures composite the UI view over the world view (the world-only capture stays available
+  for tests), and `UiScale` defaults to the surface's pixel density (#61 ships 1).
+- Stage 4 **started** (directive 14): 4a `MicroEngine.Text`, then `MicroEngine.UI`; 4b `MicroEngine.Saves`,
+  `MicroEngine.Achievements` and `Input.Touch` as modules.
+- Stage 6 **started** (directive 13): 6a the 3D vertical slice; 6b the Box2D backend, the physics substitution
+  demonstration and a tile broad phase.
+- Prototypes: P1, P3, P4, P5, P6, P7 concluded; P2 open (inside stage 6a).
+- The exclusion list of temporarily incompatible consumers is empty: stages 1 to 3 kept every demo, the gallery and
+  the samples building and running in CI, stage 3 through the existing façades and the transitional adapter.
 
 ### 9.1 Definition of done for Phase II
 
@@ -985,20 +1016,22 @@ editor.
 | Rebuild scope: every public API changes; four demos and the docs must follow. Roughly the size of the original rebuild. | Stages close on their own contracts and integration consumers, not on the demos; the demos are migrated once, in stage 5. The `Game` and `IRenderer` façades keep that migration small; the `Entity` adapter is transitional and deleted at the end of stage 5. |
 | The exclusion list hides breakage: consumers left out of CI rot, or the list outlives its stage. | Every entry names consumer, reason, owner and resolving stage; the register mirrors it; the CI result check runs everything else; stage closure (e) reviews the list; stage 5 cannot close until it is empty. |
 | The graphics contract spike costs time before any real backend exists (two adapters, one of them on SDL_GPU at stage 1). | Both adapters are minimal (built-in pipelines and the 2D batcher, plus P3's depth-tested mesh for tier 1); they are the cheapest way to avoid building two real backends on a contract that would then change. |
-| The transitional `Entity` adapter becomes permanent. | `[Obsolete]` from the first commit, non-packable, outside the engine packages; the architecture test fails on any reference after stage 5. |
+| The transitional `Entity` adapter becomes permanent. | `[Obsolete]` from the first commit, non-packable, outside the engine packages; the architecture test fails on any reference after stage 5. Implemented so in #59: diagnostic `MEMIG001`, and the architecture test already lets only the three demos and the adapter's own tests reference it. |
 | A physics abstraction leaks the backend's semantics (Godot/Jolt). | Common suite per backend; capability-specific suites only where declared; typed errors for undeclared capabilities; semantics the contract does not fix are documented in the substitution demonstration. |
 | SDL's GPU renderer (added in 3.4) and SDL_GPU fixes are recent; Android Vulkan driver quality varies; iOS simulator lacks SDL_GPU. | Tier 0 remains the default and keeps SDL's default renderer driver (P1); tier is a capability, not an assumption. |
 | The binding (`ppy.SDL3-CS` 2026.1002.1) bundles SDL 3.5.0 (`ea7a2da`), a development series that tracks SDL `main`; P1, P3, P4, P5 and the graphics contract spike all ran on it, and results may move with point releases; the tier-0 adapter relies on recent APIs (`SDL_SetRenderTextureAddressMode`, per-draw scale mode) and tier 1 on SDL_GPU itself. | The spike recorded the exact SDL version (`SDL-3.5.0-ea7a2da`); binding updates are deliberate, re-run the conformance suites, and are paired with the web workload's Emscripten (P4). |
 | SDL_Renderer's `gpu` driver on D3D12 ignores VSync off in desktop full screen (K-P1-1, measured by P1: 10 ms frames on a 100 Hz display). | Closed for tier 1: pure SDL_GPU with an explicit present mode runs unthrottled with Immediate (graphics contract spike); tier 0 keeps SDL's default driver, which does not take this path. Not reported upstream: outward publication is not authorised; listed for the owner. |
-| Tier 1 renders the surface into its own texture and copies it to the swapchain at `Present` (E12): one full-surface copy per frame, negligible on the desktop GPUs measured, unmeasured on mobile. | Measured in the 3D vertical slice; if it matters, a later contract version may add an additive rule letting a list declared final for the frame render straight into the swapchain. |
+| Tier 1 renders the surface into its own texture and copies it to the swapchain at `Present` (E12): one full-surface copy per frame, negligible on the desktop GPUs measured, unmeasured on mobile. | Measured on desktop in the 3D vertical slice (stage 6a; directive 13 leaves mobile unverified unless a device is reachable); if it matters, a later contract version may add an additive rule letting a list declared final for the frame render straight into the swapchain. |
 | SDL_GPU 3.5 has no ETC2 format and the measured desktop GPUs lack ASTC, so Android compressed textures have no path yet. | Compressed formats stay a per-format capability (`Supports`); the Android texture decision belongs to stages 2c and 6. |
 | Graphics contract v1 is unexercised on Metal, phones, the web, raylib, mipmaps, sRGB, several colour attachments and `DeviceLost` (SDL_Renderer reports device reset through the host's event queue). | Stage 2a and stage 6 work; none changes the shape; a needed change is a versioned contract revision with evidence. |
 | Audio sinks are unverified on iOS (read from SDL's CoreAudio source only) and on real phones (Android only on an emulator), on Safari and on any browser with a real audio device (headless only); interruptions, background and device changes not tested (P5). | Default targets are documented, configurable audio settings; the feeder needs only a managed thread and `SDL_PutAudioStreamData` on iOS (the reverse P/Invoke is needed only for the optional callback mode). Verification on iOS and real devices stays open. |
-| Box2D natives are unverified on Linux, macOS, iOS and Android arm64 (P6 ran Windows, Chrome and an x86_64 emulator), and the backend means six native builds to own, wasm archives rebuilt whenever .NET moves Emscripten, and wasm SIMD in browsers. | Stage 6 designs and validates the CI-built binaries with checksums on every target before the substitution demonstration; a test calls every export of the C layer on the wasm interpreter; Box2D.NET remains the documented fallback. |
+| Box2D natives are unverified on Linux, macOS, iOS and Android arm64 (P6 ran Windows, Chrome and an x86_64 emulator), and the backend means six native builds to own, wasm archives rebuilt whenever .NET moves Emscripten, and wasm SIMD in browsers. | Stage 6 designs and validates the CI-built binaries with checksums on every target before the substitution demonstration; a test calls every export of the C layer on the wasm interpreter; Box2D.NET remains the documented fallback. Directive 13 (stage 6b): a CI job cached by source and toolchain hash builds win-x64, linux-x64, osx-arm64/x64, android-arm64/x64, ios-arm64 and browser-wasm; tests run on Windows, Linux and macOS CI and in a browser; mobile is build-only unless a device is reachable. |
 | Cross-platform float differences (FMA contraction in `Vector2.Lerp`, per-libm `MathF`) make the same game logic produce last-bit different state on desktop and in the browser (browser determinism R4). | T0 gates run-to-run identity on each OS and reports cross-platform differences; deterministic engine math is later work. |
 | .NET wasm interpreter defects: P/Invoke parameters of 64-bit enum type, `delegate* unmanaged` parameters (K-P4-1) and 8-byte structs passed by value (P6: Box2D's ids) fail at run time, not at build time. | The engine's own P/Invoke declarations use `ulong` and `nint` for the affected SDL functions (P4 recommends a browser test for each such call); the Box2D layer passes only scalars and pointers. Not reported upstream: listed for the owner. |
-| Software rasterizers for SDL_GPU are unproven: P3 and the graphics spike found no lavapipe ICD locally and SDL_GPU exposes no way to request WARP; whether hosted runners can run tier 1 is unknown. SDL's software renderer fails the coverage rule (18 of 240 pixels). | The 3D slice's CI check must be proven on Linux lavapipe (§9.1); `sdl-software` stays a diagnostic fallback that does not claim conformance. |
-| `IWorld` v1 was measured on desktop CoreCLR only (P7: not on WebAssembly or Android), its traces ran at blend 1, and iteration order is latent behaviour (one script in eleven caught a changed order). | Stage 3a-1's conformance suite pins the order and the hot accessor's cost; drawing between steps is covered by tests; stage 5 compares each demo's traces before and after its migration. |
+| Software rasterizers for SDL_GPU are unproven: P3 and the graphics spike found no lavapipe ICD locally and SDL_GPU exposes no way to request WARP; whether hosted runners can run tier 1 is unknown. SDL's software renderer fails the coverage rule (18 of 240 pixels). | The 3D slice's CI check must be proven on Linux lavapipe (§9.1), with a record of why if it cannot (directive 13; stage 6a in progress); `sdl-software` stays a diagnostic fallback that does not claim conformance. |
+| `IWorld` v1 was measured on desktop CoreCLR only (P7: not on WebAssembly or Android), its traces ran at blend 1, and iteration order is latent behaviour (one script in eleven caught a changed order). | Stage 3a-1's conformance suite pins the order (#56); `benchmarks/WorldBench` (#59) measures the accessors (0 B on every path, desktop only); drawing between steps is covered by tests; stage 5 compares each demo's traces before and after its migration. |
+| The frame loop allocates 240 B per frame against the 256 B limit of its check (#58), and the SDL audio feeder thread's allocations are not measured (the checks count the calling thread). | Recorded; the growth is investigated before any limit changes; measuring the feeder needs an engine counter the feeder exposes (follow-up). |
+| The tile backend has no broad phase: `Move` and queries scan every body (`benchmarks/PhysicsBench`: 0.75 ms per step for 200 boxes, #60). | A spatial grid broad phase in stage 6b, keeping T0 traces identical. |
 | Streamed music is decoded only half a second ahead of playback by the mixer's `Pump` (stage 2c, #47); a main-thread stall longer than that starves the stream. | Recorded; the buffer length is a mixer setting; measured on real devices with the audio sink verification still open. |
 | Two GPU paths on the web for years. | No engine-written web GPU backend in Phase II (web tier 1 is later); 3D marked unavailable on tier 0 through capabilities. |
 | Interpolation adds one step of visual latency and needs previous state. | Opt-out per entity; teleport API; input sampled per frame for UI. |
@@ -1048,6 +1081,16 @@ blend, attach-order iteration stable under removal, dense per-type storage, `Chi
 advancing with the world's step, no struct attachments in v1 and the concrete type named `SceneWorld` (directive 11);
 stage 3 runs as 3a (`MicroEngine.Scene`, chained 3a-1 to 3a-3, ADR 0030) and 3b (physics with `Physics.Tiles`, ADR
 0031, after 3a-1 merges), with the Box2D backend in stage 6 (directive 12).
+
+Decisions of directives 13 and 14 (2026-11-03): stage 3 closed; a views hook unit before stage 4 (a UI view at screen
+resolution composited over the world view, a scene-level hook, pointer coordinates per view, `Aspect.Expand`, font
+pages following `DefaultSampler`); stage 6 runs as 6a (the 3D vertical slice of §9.1 item 2: the tier-1 SDL_GPU
+device, the offline shader toolchain with P2, minimal glTF, `Camera3D`, a Linux lavapipe CI job, E12 measured on
+desktop) and 6b (the Box2D backend from pinned upstream source with CI-built natives in an optional package that is not
+published, the substitution demonstration of §9.1 item 3, a broad phase for the tile backend) (directive 13); stage 4
+runs as 4a (`MicroEngine.Text`, then `MicroEngine.UI`; captures composite the UI view; `UiScale` defaults to the
+surface's pixel density) and 4b (`MicroEngine.Saves`, `MicroEngine.Achievements` and `Input.Touch` as opt-in modules,
+with type forwards so the demos compile unchanged) (directive 14).
 
 Governance for Phase II (the owner's protocol of 2026-11-02): the architect directs, reviews and merges; agents
 implement every unit through a pull request and never merge their own; the architect may merge to `main` after

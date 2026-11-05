@@ -36,7 +36,6 @@ public abstract class Game : IEngineModule, IStateHashed
 {
     private IPlatform? _platform;
     private Engine? _engine;
-    private float _achievementFlush;
 
     /// <summary>The title, virtual canvas size, window scale, update rate and background colour of the game. Read once when the game starts; keep it constant.</summary>
     public abstract GameSettings Settings { get; }
@@ -66,6 +65,12 @@ public abstract class Game : IEngineModule, IStateHashed
     public ActionPrompts Prompts { get; private set; } = null!;
     /// <summary>The scene stack. Push the first scene from <see cref="Load"/>.</summary>
     public SceneManager Scenes { get; private set; } = null!;
+    /// <summary>
+    /// The world view and the UI view, and the mapping between window pixels, canvas pixels and UI units, with the
+    /// pointer in each (<see cref="GameViews"/>).
+    /// </summary>
+    public GameViews Views => _views ??= new GameViews(this);
+    private GameViews? _views;
     /// <summary>
     /// The game's content files: textures, atlases and fonts loaded from <c>Content/</c>, shared and released by the
     /// engine (<see cref="AssetCache"/>). Created before <see cref="Load"/>; everything it loaded is disposed after
@@ -120,7 +125,7 @@ public abstract class Game : IEngineModule, IStateHashed
     public Camera2D CreateCamera() => new(Width, Height, Settings.EffectivePresentation);
     private AchievementTracker? _achievements;
     /// <summary>The game's achievements; available after <see cref="UseAchievements"/>.</summary>
-    public AchievementTracker Achievements => _achievements ?? throw new InvalidOperationException("Achievements are off: call UseAchievements in Load.");
+    public AchievementTracker Achievements => _achievements ?? throw new InvalidOperationException("Achievements are off: call UseAchievements from the game's constructor or Configure.");
     /// <summary>Whether <see cref="UseAchievements"/> was called, so <see cref="Achievements"/> can be read without throwing.</summary>
     public bool HasAchievements => _achievements is not null;
     /// <summary>Unlock banners drawn above every scene (null without achievements).</summary>
@@ -193,16 +198,36 @@ public abstract class Game : IEngineModule, IStateHashed
     public void Quit() => QuitRequested = true;
 
     /// <summary>
-    /// Turns on achievements, usually from <see cref="Load"/>. Progress persists in the "achievements" slot
-    /// of <paramref name="store"/> (the game's own save folder) and every unlock shows a banner styled with
-    /// <paramref name="theme"/>. Report progress through <see cref="Achievements"/>.
+    /// Declares the game's achievements: call it from the game's constructor or from <see cref="Configure"/>, before
+    /// the engine is composed, so the engine adds the achievements module (the tracker and <paramref name="store"/> as
+    /// services, and the <c>engine.achievements</c> system that writes progress). Progress persists in the
+    /// "achievements" slot of <paramref name="store"/> (the game's own save folder) and every unlock shows a banner
+    /// styled with <paramref name="theme"/>. Report progress through <see cref="Achievements"/>. A game that never calls
+    /// it has no achievement service, system or file.
     /// </summary>
+    /// <exception cref="InvalidOperationException">The engine was already composed (called from <see cref="Load"/> or later).</exception>
     protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, SaveStore store, UiTheme? theme = null)
     {
+        if (_engine is not null)
+            throw new InvalidOperationException("Achievements are declared before the engine is composed: call UseAchievements from the game's constructor or from Configure, not from Load.");
+        ArgumentNullException.ThrowIfNull(store);
         _achievements = new AchievementTracker(catalog, store);
+        _achievementStore = store;
         AchievementToasts = new AchievementToasts { Theme = theme ?? UiTheme.Default };
         _achievements.Unlocked += AchievementToasts.Show;
         return _achievements;
+    }
+
+    private SaveStore? _achievementStore;
+
+    /// <summary>The modules of what the game declared: saves and achievements when it called <see cref="UseAchievements"/>.</summary>
+    private void AddDeclaredModules(EngineBuilder builder)
+    {
+        if (_achievements is not { } tracker) return;
+        if (!builder.HasModule<Saves.SavesModule>() && !builder.Services.Contains<SaveStore>()) builder.Add(new Saves.SavesModule(_achievementStore!));
+        var module = new Achievements.AchievementsModule(tracker);
+        module.Stepped += AchievementToasts!.Update;
+        builder.Add(module);
     }
 
     internal void Initialize(IPlatform platform, int seed) => Initialize(platform, seed, Settings.Graphics);
@@ -222,6 +247,7 @@ public abstract class Game : IEngineModule, IStateHashed
         builder.Configure<TimeSettings>(time => time with { FixedRate = Settings.UpdateRate, Mode = preset?.TimeMode ?? time.Mode });
         builder.Add(new GameModule(this, platform, seed, graphics));
         builder.Add(this);
+        AddDeclaredModules(builder);
         host?.Invoke(builder);
         if (mode is { } chosen) builder.Configure<TimeSettings>(time => time with { Mode = chosen });
         var engine = _engine = builder.Build();
@@ -296,7 +322,6 @@ public abstract class Game : IEngineModule, IStateHashed
             });
             schedule.Add(FramePhase.FixedUpdate, "engine.scenes", step => game.Scenes.Update((float)step.FixedDelta));
             schedule.Add(FramePhase.PostFixed, "engine.audio", step => game.Audio.Update((float)step.FixedDelta));
-            schedule.Add(FramePhase.PostFixed, "engine.achievements", step => game.UpdateAchievements((float)step.FixedDelta));
             schedule.Add(FramePhase.PostFixed, "engine.input.end", _ => game.InputSystem.EndUpdate());
             // From the first update on, a load can show as a hitch: the cache reports slow ones.
             schedule.Add(FramePhase.PostFixed, "engine.assets.playing", _ => game.Assets.Playing = true);
@@ -373,21 +398,15 @@ public abstract class Game : IEngineModule, IStateHashed
 
     internal void UpdateTouch(ITouchScreen? screen, float dt) => Touch.EndFrame(dt, Input.LastDevice);
 
-    private void UpdateAchievements(float dt)
-    {
-        AchievementToasts?.Update(dt);
-        if (_achievements is { } achievements && (_achievementFlush += dt) >= 1f)
-        {
-            _achievementFlush = 0;
-            achievements.Flush();
-        }
-    }
 
     internal void Render(IRenderer renderer)
     {
         renderer.Clear(Settings.Background);
         Scenes.Draw(renderer);
         AchievementToasts?.Draw(renderer, Font);
+        // The UI view: at the window's resolution where the platform offers it, else in the canvas over the world.
+        var ui = TryGetCapability(out IScreenView? screen) ? screen.BeginUi() : renderer;
+        Scenes.DrawUi(ui, separate: !ReferenceEquals(ui, renderer));
     }
 
     private bool _pausedMusicForSuspension;

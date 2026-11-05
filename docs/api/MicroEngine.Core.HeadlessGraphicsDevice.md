@@ -20,7 +20,7 @@ public sealed class HeadlessGraphicsDevice : IGraphicsDevice
 
 #### Implements
 
-[IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+IGraphicsDevice
 
 ## Constructors
 
@@ -35,9 +35,8 @@ public HeadlessGraphicsDevice()
 ### <a id="MicroEngine_Core_HeadlessGraphicsDevice_DefaultFilter"></a> DefaultFilter
 
 The filter of textures created without one: [CreateTexture](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_CreateTexture_MicroEngine_Graphics_PixelImage_MicroEngine_Graphics_TextureFilter_), atlases. The engine sets it
-from [TextureFilter](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_TextureFilter) before <code>Game.Load</code>. Glyph pages of a
-[ScalableFont](MicroEngine.Graphics.ScalableFont.md) do not follow it: their filter is [Filter](MicroEngine.Graphics.FontOptions.md#MicroEngine_Graphics_FontOptions_Filter), or linear for
-antialiased text and nearest otherwise.
+from the game settings (<code>TextureFilter</code>, or its presentation's default sampler) before <code>Game.Load</code>.
+Glyph pages of a scalable font follow it too unless the font's options choose a filter.
 
 ```csharp
 public TextureFilter DefaultFilter { get; set; }
@@ -45,7 +44,7 @@ public TextureFilter DefaultFilter { get; set; }
 
 #### Property Value
 
- [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
+ TextureFilter
 
 ### <a id="MicroEngine_Core_HeadlessGraphicsDevice_KeepsPixels"></a> KeepsPixels
 
@@ -120,11 +119,11 @@ public Texture CreateTexture(PixelImage image)
 
 #### Parameters
 
-`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
+`image` PixelImage
 
 #### Returns
 
- [Texture](MicroEngine.Graphics.Texture.md)
+ Texture
 
 ### <a id="MicroEngine_Core_HeadlessGraphicsDevice_CreateTexture_MicroEngine_Graphics_PixelImage_MicroEngine_Graphics_TextureFilter_"></a> CreateTexture\(PixelImage, TextureFilter\)
 
@@ -136,12 +135,12 @@ public Texture CreateTexture(PixelImage image, TextureFilter filter)
 
 #### Parameters
 
-`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
+`image` PixelImage
 
-`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
+`filter` TextureFilter
 
 #### Returns
 
- [Texture](MicroEngine.Graphics.Texture.md)
+ Texture
 
 </div>

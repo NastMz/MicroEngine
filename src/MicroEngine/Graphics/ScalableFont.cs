@@ -12,8 +12,9 @@ namespace MicroEngine.Graphics;
 /// their design size or whole multiples of it.
 /// </param>
 /// <param name="Filter">
-/// How glyph pages are sampled when text is scaled or rotated; null picks linear for antialiased text and nearest
-/// otherwise.
+/// How glyph pages are sampled when text is scaled or rotated; null follows the game's default
+/// (<see cref="IGraphicsDevice.DefaultFilter"/>, from its presentation's default sampler), whether the text is
+/// antialiased or not.
 /// </param>
 /// <param name="PageSize">
 /// Width and height of each glyph page texture: 512 by default (1 MB), enough for the printable ASCII of a few sizes;
@@ -26,10 +27,10 @@ namespace MicroEngine.Graphics;
 /// </param>
 public sealed record FontOptions(bool Antialiasing = true, TextureFilter? Filter = null, int PageSize = 512, bool Kerning = true, bool SnapToPixels = true)
 {
-    /// <summary>The default: antialiased, linear, kerned, snapped to pixels.</summary>
+    /// <summary>The default: antialiased, sampled with the game's default filter, kerned, snapped to pixels.</summary>
     public static FontOptions Default { get; } = new();
-    /// <summary>For pixel fonts in TTF/OTF files: no antialiasing, nearest sampling.</summary>
-    public static FontOptions Pixel { get; } = new(Antialiasing: false);
+    /// <summary>For pixel fonts in TTF/OTF files: no antialiasing, nearest sampling whatever the game's default.</summary>
+    public static FontOptions Pixel { get; } = new(Antialiasing: false, Filter: TextureFilter.Nearest);
 }
 
 /// <summary>
@@ -65,7 +66,7 @@ public sealed class ScalableFont : IDisposable
         ArgumentNullException.ThrowIfNull(data);
         _options = options ?? FontOptions.Default;
         if (_options.PageSize is < 64 or > 8192) throw new ArgumentOutOfRangeException(nameof(options), "PageSize must be between 64 and 8192.");
-        _filter = _options.Filter ?? (_options.Antialiasing ? TextureFilter.Linear : TextureFilter.Nearest);
+        _filter = _options.Filter ?? device.DefaultFilter;
         Name = name ?? "font";
         _pages = new PageManager(device, this);
         var settings = new FontSystemSettings

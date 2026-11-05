@@ -31,7 +31,7 @@ public static void DrawCentered(this IFont font, IRenderer renderer, string text
 
 `font` [IFont](MicroEngine.Graphics.IFont.md)
 
-`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`renderer` IRenderer
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
@@ -51,7 +51,7 @@ public static void DrawShadowed(this IFont font, IRenderer renderer, string text
 
 `font` [IFont](MicroEngine.Graphics.IFont.md)
 
-`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`renderer` IRenderer
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 

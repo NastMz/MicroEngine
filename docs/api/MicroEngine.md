@@ -8,6 +8,8 @@ Guide: [Graphics](../manual/rendering.md)
 
 ### Namespaces
 
+ [MicroEngine.Achievements](MicroEngine.Achievements.md)
+
  [MicroEngine.Audio](MicroEngine.Audio.md)
 
  [MicroEngine.Content](MicroEngine.Content.md)
@@ -29,6 +31,8 @@ Guide: [Graphics](../manual/rendering.md)
  [MicroEngine.Platform](MicroEngine.Platform.md)
 
  [MicroEngine.Raylib](MicroEngine.Raylib.md)
+
+ [MicroEngine.Saves](MicroEngine.Saves.md)
 
  [MicroEngine.Scenes](MicroEngine.Scenes.md)
 

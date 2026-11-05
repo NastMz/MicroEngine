@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Saves, an optional module: SaveStore (small JSON slots over the platform's IStorage), the file medium
+       (FileSaveStorage) and SavesModule, which registers a store as a service of the engine. The types keep their
+       MicroEngine.Core namespace; MicroEngine.dll forwards them. It references only the kernel and the platform contracts
+       (the architecture test checks it). It is not a package of its own: the MicroEngine package carries
+       MicroEngine.Saves.dll (src/MicroEngine/MicroEngine.csproj). Not marked AOT-compatible: slots are serialized with
+       System.Text.Json's reflection-based API over the game's own types, as before the move. -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Saves</RootNamespace>
+    <Description>MicroEngine saves: small JSON save slots over the platform's storage, and the module that registers a store with the engine. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+</Project>

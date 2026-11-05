@@ -16,7 +16,7 @@ surface size is the canvas's, read after start. Its capabilities ([TryGetCapabil
 [IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md).
 
 ```csharp
-public sealed class RaylibPlatform : IPlatform, IPlatformHost, IDisposable, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock
+public sealed class RaylibPlatform : IPlatform, IPlatformHost, IDisposable, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView
 ```
 
 #### Inheritance
@@ -32,7 +32,8 @@ IPlatformHost,
 IDisplayControl, 
 IDisplayPacing, 
 IPreciseDelay, 
-IMonotonicClock
+IMonotonicClock, 
+IScreenView
 
 ## Constructors
 

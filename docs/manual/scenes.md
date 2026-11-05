@@ -17,6 +17,7 @@ owns a coroutine runner and a tweener that stop when it leaves the stack.
 | `Game`, `Input`, `Audio`, `Font` | Shortcuts to the owning game's services |
 | `Coroutines`, `Tweens` | Per-scene `CoroutineRunner` and `Tweener` |
 | `Age` | Seconds this scene has been updated |
+| `DrawUi(IRenderer ui)`, `UiContains(Vector2)`, `WorldCamera` | Next SDK version: the interface drawn at the window's resolution over the world, where it takes the pointer, and the camera pushed around `Draw` ([The world view and the UI view](rendering.md#the-world-view-and-the-ui-view)) |
 
 ```csharp
 public abstract class Scene

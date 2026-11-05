@@ -11,6 +11,7 @@ with the [tutorial](../tutorial/README.md).
 
 | Namespace | Contains | Guide |
 | --- | --- | --- |
+| [MicroEngine.Achievements](MicroEngine.Achievements.md) | Achievements as an optional engine module: the module that registers the tracker as a service of the engine and writes its progress. | [Achievements](../manual/achievements.md) |
 | [MicroEngine.Audio](MicroEngine.Audio.md) | Sound effects and music: the one mixer every backend plays through (voices with handles and priorities, buses, music streams, exact-frame scheduling), the sound bank and music games play through, the audio device contract, offline rendering for tests, WAV and OGG decoding, synthesis. | [Audio](../manual/audio.md) |
 | [MicroEngine.Content](MicroEngine.Content.md) | Content: the asset store under Game.Assets (typed handles, scopes that share and release, the loader registry, the reserved import step) and content sources beyond folders (zip archives, files a host lists). | [Assets](../manual/assets.md#handles-loaders-and-content-sources) |
 | [MicroEngine.Core](MicroEngine.Core.md) | The game and its loop: `Game`, settings, runners and sessions, launchers and platform composition, scripted input, saves, content files, achievements, application identity, the headless platform. | [Game lifecycle and time](../manual/lifecycle.md) |
@@ -24,6 +25,7 @@ with the [tutorial](../tutorial/README.md).
 | [MicroEngine.Physics](MicroEngine.Physics.md) | The 2D physics contract: worlds of bodies owned by entities, box shapes with collision layers, collide-and-slide moves with their contacts, ray and overlap queries, sensors with buffered events, declared capabilities and the typed capability error, and the module that steps worlds and writes body poses to transforms. | [Physics worlds](../manual/world.md#physics-worlds) |
 | [MicroEngine.Platform](MicroEngine.Platform.md) | The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the surface, display pacing and precise waits, storage for saves and content sources. | [The platform host](../manual/backends.md#the-platform-host) |
 | [MicroEngine.Raylib](MicroEngine.Raylib.md) | The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and the browser page it reads. | [Backends and platforms](../manual/backends.md) |
+| [MicroEngine.Saves](MicroEngine.Saves.md) | Saves as an optional engine module: the module that registers a save store as a service of the engine. | [Persistence](../manual/persistence.md) |
 | [MicroEngine.Scenes](MicroEngine.Scenes.md) | The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks. | [Scenes](../manual/scenes.md) |
 | [MicroEngine.Sdl](MicroEngine.Sdl.md) | The SDL 3 platform: Windows, Linux, macOS, Android and iOS. | [Backends and platforms](../manual/backends.md) |
 | [MicroEngine.UI](MicroEngine.UI.md) | Pixel-art widgets: dialogue boxes, menus, typewriter text, themes, achievement banners and list. | [UI widgets](../manual/ui.md) |

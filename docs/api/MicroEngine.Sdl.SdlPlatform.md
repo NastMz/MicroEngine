@@ -17,7 +17,7 @@ also reports the window's safe area and density; a system that sends the app to 
 [IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md) and [ITouchScreen](MicroEngine.Input.ITouchScreen.md).
 
 ```csharp
-public sealed class SdlPlatform : IPlatform, IPlatformHost, IDisposable, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock
+public sealed class SdlPlatform : IPlatform, IPlatformHost, IDisposable, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView
 ```
 
 #### Inheritance
@@ -34,7 +34,8 @@ IPlatformDiagnostics,
 IDisplayControl, 
 IDisplayPacing, 
 IPreciseDelay, 
-IMonotonicClock
+IMonotonicClock, 
+IScreenView
 
 ## Constructors
 

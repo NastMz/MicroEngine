@@ -16,12 +16,13 @@ import { fileURLToPath } from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const out = path.join(repo, 'docs', 'api');
 const check = process.argv.includes('--check');
-const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Graphics2D', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine.Scene', 'MicroEngine.Physics', 'MicroEngine.Physics.Tiles', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
+const assemblies = ['MicroEngine.Kernel', 'MicroEngine.Platform', 'MicroEngine.Graphics', 'MicroEngine.Graphics2D', 'MicroEngine.Input', 'MicroEngine.Hosting', 'MicroEngine.Content', 'MicroEngine.Audio', 'MicroEngine.Scene', 'MicroEngine.Physics', 'MicroEngine.Physics.Tiles', 'MicroEngine.Saves', 'MicroEngine', 'MicroEngine.Sdl', 'MicroEngine.Raylib', 'MicroEngine.Desktop'];
 const version = fs.readFileSync(path.join(repo, 'Directory.Build.props'), 'utf8').match(/<MicroEngineVersion>([^<]+)</)[1];
 
 // Where each namespace is explained in the manual: every page of the namespace links its guide.
 const guides = {
   'MicroEngine': ['Graphics', '../manual/rendering.md'],
+  'MicroEngine.Achievements': ['Achievements', '../manual/achievements.md'],
   'MicroEngine.Audio': ['Audio', '../manual/audio.md'],
   'MicroEngine.Content': ['Assets', '../manual/assets.md#handles-loaders-and-content-sources'],
   'MicroEngine.Core': ['Game lifecycle and time', '../manual/lifecycle.md'],
@@ -35,6 +36,7 @@ const guides = {
   'MicroEngine.Physics.Tiles': ['Physics worlds', '../manual/world.md#physics-worlds'],
   'MicroEngine.Platform': ['The platform host', '../manual/backends.md#the-platform-host'],
   'MicroEngine.Raylib': ['Backends and platforms', '../manual/backends.md'],
+  'MicroEngine.Saves': ['Persistence', '../manual/persistence.md'],
   'MicroEngine.Scenes': ['Scenes', '../manual/scenes.md'],
   'MicroEngine.Sdl': ['Backends and platforms', '../manual/backends.md'],
   'MicroEngine.UI': ['UI widgets', '../manual/ui.md'],
@@ -60,6 +62,8 @@ const typeGuides = {
   'MicroEngine.Graphics.Renderer2D': ['The 2D batcher and the camera', '../manual/rendering.md#the-2d-batcher-and-the-camera'],
   'MicroEngine.Graphics.IRenderer2D': ['The 2D batcher and the camera', '../manual/rendering.md#the-2d-batcher-and-the-camera'],
   'MicroEngine.Graphics.DeviceCanvas': ['The 2D batcher and the camera', '../manual/rendering.md#the-2d-batcher-and-the-camera'],
+  'MicroEngine.Core.GameViews': ['The world view and the UI view', '../manual/rendering.md#the-world-view-and-the-ui-view'],
+  'MicroEngine.Core.IScreenView': ['The world view and the UI view', '../manual/rendering.md#the-world-view-and-the-ui-view'],
   'MicroEngine.Graphics.Presentation': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],
   'MicroEngine.Graphics.ScaleRounding': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],
   'MicroEngine.Graphics.AspectMode': ['Presentation', '../manual/rendering.md#presentation-one-choice-per-field'],
@@ -70,6 +74,7 @@ const typeGuides = {
 };
 const namespaceSummaries = {
   'MicroEngine': 'Basic value types: colours, rectangles, maths and easing helpers.',
+  'MicroEngine.Achievements': 'Achievements as an optional engine module: the module that registers the tracker as a service of the engine and writes its progress.',
   'MicroEngine.Audio': 'Sound effects and music: the one mixer every backend plays through (voices with handles and priorities, buses, music streams, exact-frame scheduling), the sound bank and music games play through, the audio device contract, offline rendering for tests, WAV and OGG decoding, synthesis.',
   'MicroEngine.Content': 'Content: the asset store under Game.Assets (typed handles, scopes that share and release, the loader registry, the reserved import step) and content sources beyond folders (zip archives, files a host lists).',
   'MicroEngine.Core': 'The game and its loop: `Game`, settings, runners and sessions, launchers and platform composition, scripted input, saves, content files, achievements, application identity, the headless platform.',
@@ -82,6 +87,7 @@ const namespaceSummaries = {
   'MicroEngine.Physics': 'The 2D physics contract: worlds of bodies owned by entities, box shapes with collision layers, collide-and-slide moves with their contacts, ray and overlap queries, sensors with buffered events, declared capabilities and the typed capability error, and the module that steps worlds and writes body poses to transforms.',
   'MicroEngine.Physics.Tiles': 'The tile backend of the physics contract: tile grids as static geometry, the exact swept mover, one-way platforms and moving solids that push and carry bodies.',
   'MicroEngine.Platform': 'The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the surface, display pacing and precise waits, storage for saves and content sources.',
+  'MicroEngine.Saves': 'Saves as an optional engine module: the module that registers a save store as a service of the engine.',
   'MicroEngine.Raylib': 'The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and the browser page it reads.',
   'MicroEngine.Scenes': 'The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks.',
   'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android and iOS.',

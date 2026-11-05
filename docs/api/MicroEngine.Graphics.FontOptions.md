@@ -38,10 +38,11 @@ public FontOptions(bool Antialiasing = true, TextureFilter? Filter = null, int P
 Smooth glyph edges (true, the default: HD text). False gives hard edges, for pixel fonts distributed as TTF and drawn at
 their design size or whole multiples of it.
 
-`Filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
+`Filter` TextureFilter?
 
-How glyph pages are sampled when text is scaled or rotated; null picks linear for antialiased text and nearest
-otherwise.
+How glyph pages are sampled when text is scaled or rotated; null follows the game's default
+([DefaultFilter](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_DefaultFilter), from its presentation's default sampler), whether the text is
+antialiased or not.
 
 `PageSize` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
@@ -74,7 +75,7 @@ public bool Antialiasing { get; init; }
 
 ### <a id="MicroEngine_Graphics_FontOptions_Default"></a> Default
 
-The default: antialiased, linear, kerned, snapped to pixels.
+The default: antialiased, sampled with the game's default filter, kerned, snapped to pixels.
 
 ```csharp
 public static FontOptions Default { get; }
@@ -86,8 +87,9 @@ public static FontOptions Default { get; }
 
 ### <a id="MicroEngine_Graphics_FontOptions_Filter"></a> Filter
 
-How glyph pages are sampled when text is scaled or rotated; null picks linear for antialiased text and nearest
-otherwise.
+How glyph pages are sampled when text is scaled or rotated; null follows the game's default
+([DefaultFilter](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_DefaultFilter), from its presentation's default sampler), whether the text is
+antialiased or not.
 
 ```csharp
 public TextureFilter? Filter { get; init; }
@@ -95,7 +97,7 @@ public TextureFilter? Filter { get; init; }
 
 #### Property Value
 
- [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
+ TextureFilter?
 
 ### <a id="MicroEngine_Graphics_FontOptions_Kerning"></a> Kerning
 
@@ -124,7 +126,7 @@ public int PageSize { get; init; }
 
 ### <a id="MicroEngine_Graphics_FontOptions_Pixel"></a> Pixel
 
-For pixel fonts in TTF/OTF files: no antialiasing, nearest sampling.
+For pixel fonts in TTF/OTF files: no antialiasing, nearest sampling whatever the game's default.
 
 ```csharp
 public static FontOptions Pixel { get; }
@@ -169,7 +171,7 @@ public void Deconstruct(out bool Antialiasing, out TextureFilter? Filter, out in
 
 `Antialiasing` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-`Filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
+`Filter` TextureFilter?
 
 `PageSize` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 

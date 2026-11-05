@@ -87,7 +87,7 @@ public void Draw(IRenderer r, IFont font, Vector2 position, UiTheme theme, float
 
 #### Parameters
 
-`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`r` IRenderer
 
 The renderer.
 

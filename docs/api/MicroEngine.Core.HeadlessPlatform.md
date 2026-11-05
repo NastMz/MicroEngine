@@ -14,7 +14,7 @@ Its run preset ([Preset](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_H
 run or a game overrides. Nothing the platform does depends on the time mode.
 
 ```csharp
-public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable
+public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable, IScreenView
 ```
 
 #### Inheritance
@@ -26,7 +26,8 @@ public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable
 
 [IPlatform](MicroEngine.Core.IPlatform.md), 
 IPlatformHost, 
-[IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
+[IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable), 
+[IScreenView](MicroEngine.Core.IScreenView.md)
 
 ## Constructors
 
@@ -132,7 +133,7 @@ public IGraphicsDevice Graphics { get; }
 
 #### Property Value
 
- [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+ IGraphicsDevice
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Input"></a> Input
 
@@ -181,6 +182,19 @@ public ISurface MainSurface { get; }
 #### Property Value
 
  ISurface
+
+### <a id="MicroEngine_Core_HeadlessPlatform_Presentation"></a> Presentation
+
+How the canvas is placed in the surface for the UI view's mapping ([WorldFrame](MicroEngine.Core.IScreenView.md#MicroEngine_Core_IScreenView_WorldFrame)): the
+game's presentation when the platform was made for its settings, else [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt).
+
+```csharp
+public Presentation Presentation { get; init; }
+```
+
+#### Property Value
+
+ Presentation
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Preset"></a> Preset
 
@@ -298,6 +312,19 @@ public HeadlessTouchScreen TouchScreen { get; }
 
  [HeadlessTouchScreen](MicroEngine.Core.HeadlessTouchScreen.md)
 
+### <a id="MicroEngine_Core_HeadlessPlatform_UiRenderer"></a> UiRenderer
+
+The UI view's counting renderer of the current frame ([IScreenView](MicroEngine.Core.IScreenView.md)): the surface's size in pixels, one UI
+unit per pixel; it records draw calls but draws nothing and is not part of captures.
+
+```csharp
+public HeadlessRenderer UiRenderer { get; }
+```
+
+#### Property Value
+
+ [HeadlessRenderer](MicroEngine.Core.HeadlessRenderer.md)
+
 ## Methods
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_BeginFrame"></a> BeginFrame\(\)
@@ -310,7 +337,7 @@ public IRenderer BeginFrame()
 
 #### Returns
 
- [IRenderer](MicroEngine.Graphics.IRenderer.md)
+ IRenderer
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Dispose"></a> Dispose\(\)
 

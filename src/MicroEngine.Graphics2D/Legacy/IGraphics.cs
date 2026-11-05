@@ -9,7 +9,7 @@ namespace MicroEngine.Graphics;
 public enum TextureFilter { Nearest, Linear }
 
 /// <summary>
-/// How the virtual canvas reaches the window (<see cref="Core.GameSettings.Scaling"/>). <c>Pixel</c> prefers whole
+/// How the virtual canvas reaches the window (the game settings' <c>Scaling</c>; obsolete: the game's <c>Presentation</c> replaces it). <c>Pixel</c> prefers whole
 /// factors (fractional only when whole ones would waste a fifth of the screen) and samples nearest, so pixels stay square
 /// and even; <c>Smooth</c> fills the largest area of the canvas's shape and samples linearly, for high-resolution art.
 /// </summary>
@@ -167,7 +167,7 @@ public interface IRenderer
     /// <summary>
     /// Replaces every pixel of the canvas with <paramref name="color"/>, alpha included, whatever the clip
     /// (<see cref="SetClip"/>) and blend mode, and replaces what was drawn before it in the frame. The clip still applies
-    /// to the draws after it. The game clears to <see cref="Core.GameSettings.Background"/> before the scenes draw.
+    /// to the draws after it. The game clears to its settings' <c>Background</c> colour before the scenes draw.
     /// </summary>
     void Clear(Color color);
     /// <summary>Draws the <paramref name="source"/> part of <paramref name="texture"/> with its top-left at <paramref name="position"/>, multiplied by <paramref name="tint"/>.</summary>
@@ -218,9 +218,8 @@ public interface IGraphicsDevice
 {
     /// <summary>
     /// The filter of textures created without one: <see cref="CreateTexture(PixelImage)"/>, atlases. The engine sets it
-    /// from <see cref="Core.GameSettings.TextureFilter"/> before <c>Game.Load</c>. Glyph pages of a
-    /// <see cref="ScalableFont"/> do not follow it: their filter is <see cref="FontOptions.Filter"/>, or linear for
-    /// antialiased text and nearest otherwise.
+    /// from the game settings (<c>TextureFilter</c>, or its presentation's default sampler) before <c>Game.Load</c>.
+    /// Glyph pages of a scalable font follow it too unless the font's options choose a filter.
     /// </summary>
     TextureFilter DefaultFilter { get; set; }
     /// <summary>Uploads <paramref name="image"/> as a texture sampled with <paramref name="filter"/>. The caller owns the texture and disposes it.</summary>

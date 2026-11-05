@@ -217,6 +217,20 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_saves_reference_only_the_kernel_and_the_platform_contracts()
+    {
+        var saves = typeof(SaveStore).Assembly;
+        Assert.AreEqual(Saves, saves.GetName().Name);
+        Assert.AreEqual(Saves, typeof(FileSaveStorage).Assembly.GetName().Name, "the file medium is the saves'");
+        Assert.AreEqual(Saves, typeof(MicroEngine.Saves.SavesModule).Assembly.GetName().Name);
+        var engine = saves.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToList();
+        CollectionAssert.AreEqual(new[] { Kernel, Platform }, engine, string.Join(", ", engine));
+        // Code compiled against an earlier MicroEngine.dll still finds the save types there.
+        var forwarded = typeof(Game).Assembly.GetForwardedTypes();
+        CollectionAssert.IsSubsetOf(new[] { typeof(SaveStore), typeof(ISaveStorage), typeof(FileSaveStorage) }, forwarded);
+    }
+
+    [TestMethod]
     public void The_compiled_graphics_contract_references_only_the_kernel_and_the_platform_contracts()
     {
         var graphics = typeof(MicroEngine.Graphics.Devices.IGraphicsDevice).Assembly;
