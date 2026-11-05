@@ -152,9 +152,10 @@ test('scope: the project graph narrows the .NET tests and native captures to wha
     { tests: ['tests/NeonRift.Tests/NeonRift.Tests.csproj'], games: ['NeonRift'] }, 'documentation does not widen the scope');
   assert.deepEqual(scope(['src/MicroEngine.Graphics/Devices/Device.cs']), { tests: 'all', games: 'all' }, 'the graphics contract reaches every test');
   const everyTest = Object.keys(graph.projects).filter(isTestProject).sort();
+  const belowTheCore = ['tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj', 'tests/MicroEngine.Graphics3D.Tests/MicroEngine.Graphics3D.Tests.csproj'];
   assert.deepEqual(scope(['src/MicroEngine/Core/GameRunner.cs']),
-    { tests: everyTest.filter(p => p !== 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj'), games: 'all' },
-    'the core reaches every test but the graphics contract\'s own');
+    { tests: everyTest.filter(p => !belowTheCore.includes(p)), games: 'all' },
+    'the core reaches every test but those of the graphics contract and of the 3D path, which do not reference it');
   assert.deepEqual(scope(['web/tests/scenarios.json']), { tests: 'all', games: 'all' }, 'a file outside every project');
   assert.deepEqual(scope(['Directory.Build.props']), { tests: 'all', games: 'all' });
   assert.deepEqual(scope(['newfolder/thing.txt']), { tests: 'all', games: 'all' }, 'unknown paths stay conservative');

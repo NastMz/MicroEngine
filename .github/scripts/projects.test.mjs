@@ -55,11 +55,16 @@ test("this repository's graph: a game change stays inside that game, an engine c
   const real = readGraph(root);
   assert.deepEqual(affectedScope(real, ['games/MeadowRun/MeadowRunGame.cs']), { tests: ['tests/MeadowRun.Tests/MeadowRun.Tests.csproj'], games: ['MeadowRun'] });
   // The engine's contracts below the core (the graphics device contract) reach every test project and game; the core
-  // reaches every one except the graphics contract's own tests, which reference the contract alone.
+  // reaches every one except the tests of the assemblies that do not reference it: the graphics contract's own tests
+  // (the contract alone) and the 3D path's (graphics, content and scene).
   assert.deepEqual(affectedScope(real, ['src/MicroEngine.Graphics/Devices/Device.cs']), { tests: 'all', games: 'all' });
   const everyTest = Object.keys(real.projects).filter(isTestProject).sort();
+  const belowTheCore = ['tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj', 'tests/MicroEngine.Graphics3D.Tests/MicroEngine.Graphics3D.Tests.csproj'];
   assert.deepEqual(affectedScope(real, ['src/MicroEngine/Core/GameRunner.cs']),
-    { tests: everyTest.filter(p => p !== 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj'), games: 'all' });
+    { tests: everyTest.filter(p => !belowTheCore.includes(p)), games: 'all' });
+  // A change to the 3D path reaches its own tests and the native tests that drive it on SDL_GPU, and no game.
+  assert.deepEqual(affectedScope(real, ['src/MicroEngine.Graphics3D/Renderer3D.cs']).tests,
+    ['tests/MicroEngine.Desktop.Tests/MicroEngine.Desktop.Tests.csproj', 'tests/MicroEngine.Graphics3D.Tests/MicroEngine.Graphics3D.Tests.csproj']);
   const backend = affectedScope(real, ['src/MicroEngine.Raylib/RaylibPlatform.cs']);
   assert.equal(backend.games, 'all');
   assert.ok(!backend.tests.includes('tests/MicroEngine.Tests/MicroEngine.Tests.csproj'), 'core tests do not reference the backend');
