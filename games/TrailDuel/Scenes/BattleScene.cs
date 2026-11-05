@@ -50,7 +50,7 @@ internal sealed partial class BattleScene : Scene
     public Battle Battle => _battle;
     public bool AwaitingChoice => _mode != Mode.Busy;
     /// <summary>On touch screens: while the battle narrates, only A and B; menus get every control.</summary>
-    public override IReadOnlyCollection<string>? TouchActions => _mode == Mode.Busy && _choice is null ? OverworldScene.TextActions : null;
+    public override IReadOnlyCollection<string>? TouchActions => _mode == Mode.Busy && _choice is not { Menu: not null } ? OverworldScene.TextActions : null;
     internal bool InMoveMenu => _mode == Mode.Moves;
     internal int MoveCursor => _moveIndex;
     internal bool MoveInfoOpen => _moveInfo;
@@ -100,6 +100,7 @@ internal sealed partial class BattleScene : Scene
     public override void Enter()
     {
         _text = new TextPanel(Font, Audio) { Area = new RectF(4, 134, 312, 42), AutoAdvance = 1.6f };
+        _choice = new ChoicePrompt(Font, Audio);
         Audio.PlayMusic(_setup.Music, 0f);
         _enemy = new Display { Creature = _battle.Enemy, Hp = _battle.Enemy.Hp, Visible = _setup.Trainer is null };
         _player = new Display { Creature = _battle.Player, Hp = _battle.Player.Hp, Xp = _battle.Player.XpFraction };
@@ -183,6 +184,7 @@ internal sealed partial class BattleScene : Scene
     {
         _menuTime += dt;
         _text.Update(dt, Input);
+        _choice.Update(dt, Input);
         UpdateEffects(dt);
         if (_mode == Mode.Busy) return;
         if (_battle.Player.HpFraction <= 0.2f && !_battle.Player.Fainted)
@@ -194,6 +196,10 @@ internal sealed partial class BattleScene : Scene
         else UpdateMoves();
     }
 
+    /// <summary>
+    /// The action and move menus are two-by-two grids (left and right change column), which the engine's vertical
+    /// <c>SelectionList</c> does not cover, so their cursor stays here.
+    /// </summary>
     private int GridMove(int index, int count)
     {
         int col = index % 2, row = index / 2;
@@ -273,18 +279,6 @@ internal sealed partial class BattleScene : Scene
         Game.Scenes.Pop(Transition.Fade(0.8f, color));
     }
 
-    /// <summary>A Yes/No prompt drawn beside the text box (used for learning moves).</summary>
-    private ChoiceMenu? _choice;
-
-    private IEnumerator Choose(string[] options, Action<int> result, bool canCancel = true)
-    {
-        _choice = new ChoiceMenu(Font, Audio, options) { CanCancel = canCancel };
-        while (_choice.Result is null)
-        {
-            _choice.Update(EngineStep, Input);
-            yield return null;
-        }
-        result(_choice.Result.Value);
-        _choice = null;
-    }
+    /// <summary>The menus drawn beside the text box while learning a move (forget one? which one?).</summary>
+    private ChoicePrompt _choice = null!;
 }

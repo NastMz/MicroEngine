@@ -410,7 +410,7 @@ internal sealed partial class BattleScene
         while (!_text.PageComplete) yield return null;
         int yes = -1;
         _forgetOptions = [(move, null)];
-        yield return Choose(["YES", "NO"], i => yes = i);
+        yield return _choice.Choose(["YES", "NO"], i => yes = i);
         _forgetOptions = null;
         _text.WaitForConfirmOnLast = true;
         _text.Close();
@@ -421,7 +421,7 @@ internal sealed partial class BattleScene
             _text.FinishTyping();
             int slot = -1;
             _forgetOptions = [.. c.Moves.Select(m => (m.Data, (int?)m.Pp)), (move, null)];
-            yield return Choose([.. c.Moves.Select(m => m.Data.Name), "Keep all"], i => slot = i);
+            yield return _choice.Choose([.. c.Moves.Select(m => m.Data.Name), "Keep all"], i => slot = i);
             _forgetOptions = null;
             _text.WaitForConfirmOnLast = true;
             _text.Close();

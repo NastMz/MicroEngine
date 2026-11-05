@@ -3,6 +3,7 @@ using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
+using MicroEngine.UI;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
 using TrailDuel.Visuals;
@@ -16,7 +17,7 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
     private CachedText _quantityText;
     public static readonly IReadOnlyList<ItemData> Stock = ItemDex.All;
 
-    private int _index;
+    private SelectionList _list = null!;
     private int _quantity = 1;
     private bool _choosingQuantity;
     private string? _message;
@@ -33,11 +34,13 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
         return true;
     }
 
+    public override void Enter() => _list = UiKit.List(Audio, [.. Stock.Select(item => item.Name)]);
+
     public override void Update(float dt)
     {
         _messageTime -= dt;
         _coinPop = MathF.Max(0, _coinPop - dt * 3);
-        var item = Stock[_index];
+        var item = Stock[_list.Index];
         if (_choosingQuantity)
         {
             int max = Math.Clamp(game.State.Money / item.Price, 1, 99);
@@ -58,10 +61,9 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
             return;
         }
         if (Input.Pressed("cancel")) { Audio.Play("cancel", 0.7f); onDone(); Game.Scenes.Pop(); return; }
-        int dir = (Input.Pressed("down") ? 1 : 0) - (Input.Pressed("up") ? 1 : 0);
-        if (dir != 0) { _index = (_index + dir + Stock.Count) % Stock.Count; Audio.Play("move", 0.6f); }
-        if (Input.Pressed("confirm"))
+        if (_list.Update(Input) is { } chosen)
         {
+            item = Stock[chosen];
             if (game.State.Money < item.Price) { Audio.Play("deny"); Say("You don't have enough money."); return; }
             Audio.Play("confirm", 0.7f);
             _quantity = 1;
@@ -74,7 +76,7 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
     /// <summary>State hash: cursor, quantity and whether it is being chosen, the message with its timer. Left out: the coin pop animation and the quantity text cache.</summary>
     public override void HashState(StateHasher hash)
     {
-        hash.Add(_index);
+        hash.Add(_list.Index);
         hash.Add(_quantity);
         hash.Add(_choosingQuantity);
         hash.Add(_message);
@@ -98,13 +100,13 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
             r.Draw(game.Sprite(SpriteKeys.Icon[item.Id]), new Vector2(list.X + 16, y - 2));
             UiKit.Text(r, Font, item.Name, list.X + 34, y, game.State.Money < item.Price ? UiKit.Muted : null);
             UiKit.TextRight(r, Font, NumberTexts.Money(item.Price), list.Right - 10, y);
-            if (i == _index) UiKit.Cursor(r, Font, list.X + 5, y, Age);
+            if (i == _list.Index) UiKit.Cursor(r, Font, list.X + 5, y, Age);
         }
 
         var owned = new RectF(6, 32, 104, 22);
         UiKit.Box(r, owned);
         UiKit.Text(r, Font, "IN BAG", owned.X + 8, owned.Y + 7, UiKit.Muted);
-        UiKit.TextRight(r, Font, NumberTexts.Of(game.State.Bag.Count(Stock[_index].Id)), owned.Right - 8, owned.Y + 7);
+        UiKit.TextRight(r, Font, NumberTexts.Of(game.State.Bag.Count(Stock[_list.Index].Id)), owned.Right - 8, owned.Y + 7);
 
         // A clerk counter illustration.
         var clerk = game.Sprite(ClerkKey);
@@ -113,17 +115,17 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
         r.FillRect(new RectF(14, 94, 88, 2), Color.Hex("b49ae0"));
         r.FillRect(new RectF(12, 90, 92, 5), Pal.Cream);
         r.DrawRect(new RectF(12, 90, 92, 20), Pal.Ink);
-        r.Draw(game.Sprite(SpriteKeys.Icon[Stock[_index].Id]), new Vector2(70, 76 + MathF.Round(MathX.Wave(Age, 1, 2))));
+        r.Draw(game.Sprite(SpriteKeys.Icon[Stock[_list.Index].Id]), new Vector2(70, 76 + MathF.Round(MathX.Wave(Age, 1, 2))));
 
         if (_choosingQuantity)
         {
             var q = new RectF(178, 128, 136, 22);
             UiKit.Box(r, q);
             UiKit.Text(r, Font, _quantityText.Get(_quantity, static n => $"← ×{n:00} →"), q.X + 8, q.Y + 7);
-            UiKit.TextRight(r, Font, NumberTexts.Money(Stock[_index].Price * _quantity), q.Right - 8, q.Y + 7);
+            UiKit.TextRight(r, Font, NumberTexts.Money(Stock[_list.Index].Price * _quantity), q.Right - 8, q.Y + 7);
         }
         var desc = new RectF(4, 152, 312, 24);
         UiKit.Box(r, desc);
-        UiKit.Text(r, Font, _messageTime > 0 && _message is not null ? _message : Stock[_index].Description, desc.X + 10, desc.Y + 8);
+        UiKit.Text(r, Font, _messageTime > 0 && _message is not null ? _message : Stock[_list.Index].Description, desc.X + 10, desc.Y + 8);
     }
 }

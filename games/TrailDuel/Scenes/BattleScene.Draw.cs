@@ -226,12 +226,12 @@ internal sealed partial class BattleScene
         _text.Area = new RectF(4, 134, 312, 42);
         if (!_text.Active) UiKit.Box(r, _text.Area);
         _text.Draw(r);
-        _choice?.Draw(r, new Vector2(316, 132));
+        _choice.Draw(r, new Vector2(316, 132));
         // Choosing a move to forget: the card follows the highlighted option ("Keep all" shows the new move).
-        if (_choice is not null && _forgetOptions is { } options)
+        if (_choice.Menu is { } menu && _forgetOptions is { } options)
         {
-            var (move, pp) = options[Math.Clamp(_choice.Index, 0, options.Length - 1)];
-            float left = _choice.Bounds(new Vector2(316, 132)).X;
+            var (move, pp) = options[Math.Clamp(menu.Index, 0, options.Length - 1)];
+            float left = menu.Bounds(new Vector2(316, 132)).X;
             DrawMoveCard(r, move, pp, 4, left - 8);
         }
     }

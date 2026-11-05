@@ -1,6 +1,8 @@
 using System.Numerics;
 using MicroEngine;
+using MicroEngine.Audio;
 using MicroEngine.Graphics;
+using MicroEngine.UI;
 using TrailDuel.Rules;
 using TrailDuel.Visuals;
 
@@ -17,7 +19,7 @@ internal static class UiKit
     public static readonly Color TextShade = Pal.TextShadow;
     public static readonly Color Muted = Color.Hex("9a8e82");
     /// <summary>The same look for the engine's shared widgets (achievement list and banners).</summary>
-    public static readonly MicroEngine.UI.UiTheme Theme = new(new PanelStyle(Fill, Border, FillShade, Pal.Ink.WithAlpha(0.35f), Accent.WithAlpha(0.55f)), TextColor, TextShade, Pal.CoralDark, Muted);
+    public static readonly UiTheme Theme = new(new PanelStyle(Fill, Border, FillShade, Pal.Ink.WithAlpha(0.35f), Accent.WithAlpha(0.55f)), TextColor, TextShade, Pal.CoralDark, Muted);
 
     /// <summary>A rounded cream box with a double plum border and a soft drop shadow.</summary>
     public static void Box(IRenderer r, RectF rect, Color? fill = null)
@@ -44,6 +46,17 @@ internal static class UiKit
         var size = font.Measure(text, scale);
         var pos = new Vector2(MathF.Round(center.X - size.X / 2), MathF.Round(center.Y - size.Y / 2));
         font.DrawOutlined(r, text, pos, color ?? Pal.White, Pal.Ink, scale);
+    }
+
+    /// <summary>
+    /// The engine's list navigation (up and down move and wrap, confirm chooses) with the game's cursor sound. Screens draw
+    /// their lists themselves, with <see cref="Cursor"/> beside the highlighted row.
+    /// </summary>
+    public static SelectionList List(AudioMixer audio, params string[] options)
+    {
+        var list = new SelectionList(options);
+        list.Moved += () => audio.Play("move", 0.6f);
+        return list;
     }
 
     public static void Cursor(IRenderer r, BitmapFont font, float x, float y, float time)

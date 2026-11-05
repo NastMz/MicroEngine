@@ -31,7 +31,7 @@ internal sealed partial class OverworldScene : Scene
     private MapRuntime _map = null!;
     private Actor _player = null!;
     private TextPanel _text = null!;
-    private ChoiceMenu? _choice;
+    private ChoicePrompt _choice = null!;
     private int _busy;
     private float _turnTimer, _bumpTimer, _bannerTime = -10, _fade, _npcClock;
     private string _bannerText = "";
@@ -55,7 +55,7 @@ internal sealed partial class OverworldScene : Scene
     public bool Busy => _busy > 0;
     /// <summary>On touch screens: a question keeps the d-pad (up and down choose) with A and B; plain text keeps A and B only.</summary>
     public override IReadOnlyCollection<string>? TouchActions =>
-        _choice is not null ? ChoiceActions : _text is { Active: true } ? TextActions : null;
+        _choice is { Menu: not null } ? ChoiceActions : _text is { Active: true } ? TextActions : null;
     internal static readonly IReadOnlyCollection<string> TextActions = ["confirm", "cancel"];
     internal static readonly IReadOnlyCollection<string> ChoiceActions = ["up", "down", "confirm", "cancel"];
     public TextPanel Text => _text;
@@ -91,6 +91,7 @@ internal sealed partial class OverworldScene : Scene
     public override void Enter()
     {
         _text = new TextPanel(Font, Audio);
+        _choice = new ChoicePrompt(Font, Audio);
         _cameraEntity = Objects.Create();
         LoadMap(State.MapId, State.X, State.Y, State.Facing);
         if (_intro) RunScript(IntroScript());
@@ -138,7 +139,7 @@ internal sealed partial class OverworldScene : Scene
         for (int i = _rustles.Count - 1; i >= 0; i--)
             if (Age - _rustles[i].Time > 0.45f) _rustles.RemoveAt(i);
         _text.Update(dt, Input);
-        _choice?.Update(dt, Input);
+        _choice.Update(dt, Input);
         foreach (var npc in _map.Npcs) npc.Update(dt);
         bool arrived = _player.Update(dt);
         State.X = _player.X;
@@ -298,23 +299,13 @@ internal sealed partial class OverworldScene : Scene
         foreach (var p in pages) yield return Say(p);
     }
 
-    /// <summary>Shows a menu next to the text box and waits; returns the choice through <paramref name="result"/>.</summary>
-    private IEnumerator Choose(string[] options, Action<int> result, bool canCancel = true)
-    {
-        _choice = new ChoiceMenu(Font, Audio, options) { CanCancel = canCancel };
-        while (_choice.Result is null) yield return null;
-        int r = _choice.Result.Value;
-        _choice = null;
-        result(r);
-    }
-
     private IEnumerator Ask(string question, string? speaker, Action<bool> result)
     {
         _text.WaitForConfirmOnLast = false;
         _text.Show(question, speaker);
         while (!_text.PageComplete) yield return null;
         bool yes = false;
-        yield return Choose(["YES", "NO"], i => yes = i == 0);
+        yield return _choice.Choose(["YES", "NO"], i => yes = i == 0);
         _text.WaitForConfirmOnLast = true;
         _text.Close();
         result(yes);

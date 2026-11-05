@@ -4,6 +4,7 @@ using MicroEngine.Graphics;
 using MicroEngine.Input;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
+using MicroEngine.UI;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
 using TrailDuel.Visuals;
@@ -15,22 +16,22 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
 {
     private CachedText _timeText;
     private static readonly string[] Options = ["CREATURES", "BAG", "TRAIL LOG", "SAVE", "CONTROLS", "CLOSE"];
-    private int _index;
+    private SelectionList _list = null!;
     private string? _message;
     private float _messageTime, _open;
 
     public override bool IsOverlay => true;
+
+    public override void Enter() => _list = UiKit.List(Audio, Options);
 
     public override void Update(float dt)
     {
         _open = MathF.Min(1, _open + dt * 8);
         _messageTime -= dt;
         if (Input.Pressed("cancel") || Input.Pressed("pause")) { Audio.Play("cancel", 0.7f); Game.Scenes.Pop(); return; }
-        int dir = (Input.Pressed("down") ? 1 : 0) - (Input.Pressed("up") ? 1 : 0);
-        if (dir != 0) { _index = (_index + dir + Options.Length) % Options.Length; Audio.Play("move", 0.6f); }
-        if (!Input.Pressed("confirm")) return;
+        if (_list.Update(Input) is not { } chosen) return;
         Audio.Play("confirm", 0.7f);
-        switch (_index)
+        switch (chosen)
         {
             case 0:
                 if (game.State.Party.Count == 0) { Say("You don't have any creatures yet."); Audio.Play("deny"); break; }
@@ -53,7 +54,7 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
     /// <summary>State hash: the cursor and the message with its timer. Left out: the opening slide and the play-time text cache.</summary>
     public override void HashState(StateHasher hash)
     {
-        hash.Add(_index);
+        hash.Add(_list.Index);
         hash.Add(_message);
         hash.Add(_messageTime);
     }
@@ -67,7 +68,7 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
         {
             float y = box.Y + 8 + i * 14;
             UiKit.Text(r, Font, Options[i], box.X + 16, y);
-            if (i == _index) UiKit.Cursor(r, Font, box.X + 6, y, Age);
+            if (i == _list.Index) UiKit.Cursor(r, Font, box.X + 6, y, Age);
         }
         var s = game.State;
         var info = new RectF(6, 6, 124, 46);
@@ -150,17 +151,18 @@ internal sealed class TrailLogScene(TrailDuelGame game) : Scene
 
     /// <summary>The dex number as three digits, built once per number.</summary>
     private static string DexNumber(int n) => (uint)n < (uint)DexNumbers.Length ? DexNumbers[n] ??= $"{n:000}" : $"{n:000}";
-    private int _index;
+    /// <summary>One row per species; confirm picks nothing here, the list only browses.</summary>
+    private SelectionList _list = null!;
+
+    public override void Enter() => _list = UiKit.List(Audio, [.. SpeciesDex.All.Select(s => s.Id)]);
 
     /// <summary>State hash: the cursor. Left out: the seen/caught text cache.</summary>
-    public override void HashState(StateHasher hash) => hash.Add(_index);
+    public override void HashState(StateHasher hash) => hash.Add(_list.Index);
 
     public override void Update(float dt)
     {
         if (Input.Pressed("cancel") || Input.Pressed("pause")) { Audio.Play("cancel", 0.7f); Game.Scenes.Pop(); return; }
-        int n = SpeciesDex.All.Count;
-        int dir = (Input.Pressed("down") ? 1 : 0) - (Input.Pressed("up") ? 1 : 0);
-        if (dir != 0) { _index = (_index + dir + n) % n; Audio.Play("move", 0.6f); }
+        _list.Update(Input);
     }
 
     public override void Draw(IRenderer r)
@@ -169,7 +171,7 @@ internal sealed class TrailLogScene(TrailDuelGame game) : Scene
         r.FillGradient(new RectF(0, 0, 320, 180), Color.Hex("e88a6a"), Color.Hex("f8dcc0"), 10);
         var list = new RectF(176, 6, 138, 168);
         UiKit.Box(r, list);
-        int start = Math.Clamp(_index - 5, 0, Math.Max(0, SpeciesDex.All.Count - 11));
+        int start = Math.Clamp(_list.Index - 5, 0, Math.Max(0, SpeciesDex.All.Count - 11));
         for (int i = start; i < Math.Min(SpeciesDex.All.Count, start + 11); i++)
         {
             var sp = SpeciesDex.All[i];
@@ -178,9 +180,9 @@ internal sealed class TrailLogScene(TrailDuelGame game) : Scene
             UiKit.Text(r, Font, DexNumber(i + 1), list.X + 16, y, UiKit.Muted);
             UiKit.Text(r, Font, seen ? sp.Name : "-----", list.X + 40, y);
             if (caught) r.Draw(game.Sprite("orbsmall"), new Vector2(list.Right - 12, y + 3));
-            if (i == _index) UiKit.Cursor(r, Font, list.X + 5, y, Age);
+            if (i == _list.Index) UiKit.Cursor(r, Font, list.X + 5, y, Age);
         }
-        var sel = SpeciesDex.All[_index];
+        var sel = SpeciesDex.All[_list.Index];
         var card = new RectF(6, 6, 166, 120);
         UiKit.Box(r, card);
         bool known = s.Seen.Contains(sel.Id);

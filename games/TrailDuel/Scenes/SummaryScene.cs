@@ -22,7 +22,10 @@ internal sealed class SummaryScene(TrailDuelGame game, int index) : Scene
     private IReadOnlyList<string> _descriptionLines = [];
     private int _index = index;
     private float _switchTime;
-    /// <summary>The highlighted move on the moves page, or -1 on the overview.</summary>
+    /// <summary>
+    /// The highlighted move on the moves page, or -1 on the overview. Not the engine's <c>SelectionList</c>: the page has
+    /// a no-move state, down opens it on the first move and up on the last, and confirm goes back instead of choosing.
+    /// </summary>
     private int _move = -1;
 
     internal int MoveCursor => _move;

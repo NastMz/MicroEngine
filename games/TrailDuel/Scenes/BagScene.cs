@@ -3,6 +3,7 @@ using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
+using MicroEngine.UI;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
 using TrailDuel.Visuals;
@@ -12,7 +13,9 @@ namespace TrailDuel.Scenes;
 /// <summary>The bag: items with counts and descriptions. In the field it heals; in battle it hands the choice back.</summary>
 internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string?, int>? onUse = null) : Scene
 {
-    private int _index;
+    /// <summary>The item rows (null while the bag is empty: a list needs at least one row).</summary>
+    private SelectionList? _list;
+    private int Index => _list?.Index ?? 0;
     private string? _message;
     private float _messageTime;
     private bool _closed;
@@ -43,12 +46,10 @@ internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string
         var items = Items;
         if (Input.Pressed("cancel")) { Audio.Play("cancel", 0.7f); Close(null, -1); return; }
         if (items.Count == 0) return;
-        _index = Math.Clamp(_index, 0, items.Count - 1);
-        int dir = (Input.Pressed("down") ? 1 : 0) - (Input.Pressed("up") ? 1 : 0);
-        if (dir != 0) { _index = (_index + dir + items.Count) % items.Count; Audio.Play("move", 0.6f); }
-        if (!Input.Pressed("confirm")) return;
+        SyncList(items);
+        if (_list!.Update(Input) is not { } chosen) return;
         Audio.Play("confirm", 0.7f);
-        var item = items[_index].Item;
+        var item = items[chosen].Item;
         if (item.Kind == ItemKind.Orb)
         {
             if (battle is null) { Say("There's nothing to catch here!"); Audio.Play("deny"); return; }
@@ -68,6 +69,13 @@ internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string
         }, prompt: $"Use the {item.Name} on which creature?"));
     }
 
+    /// <summary>Gives the list one row per owned item; rebuilt only when an item runs out, keeping the cursor in range.</summary>
+    private void SyncList(List<(ItemData Item, int Count)> items)
+    {
+        if (_list is null) _list = UiKit.List(Audio, [.. items.Select(i => i.Item.Name)]);
+        else if (_list.Options.Count != items.Count) _list.SetOptions(items.Select(i => i.Item.Name));
+    }
+
     private void Say(string text) { _message = text; _messageTime = 2.4f; }
 
     /// <summary>
@@ -76,7 +84,7 @@ internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string
     /// </summary>
     public override void HashState(StateHasher hash)
     {
-        hash.Add(_index);
+        hash.Add(Index);
         hash.Add(_message);
         hash.Add(_messageTime);
         hash.Add(_closed);
@@ -109,11 +117,11 @@ internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string
             r.Draw(game.Sprite(SpriteKeys.Icon[item.Id]), new Vector2(list.X + 16, y - 2));
             UiKit.Text(r, Font, item.Name, list.X + 34, y);
             UiKit.TextRight(r, Font, NumberTexts.Count(count), list.Right - 10, y);
-            if (i == _index) UiKit.Cursor(r, Font, list.X + 5, y, Age);
+            if (i == Index) UiKit.Cursor(r, Font, list.X + 5, y, Age);
         }
         var desc = new RectF(4, 134, 312, 42);
         UiKit.Box(r, desc);
-        string text = _messageTime > 0 && _message is not null ? _message : items.Count > 0 ? items[Math.Clamp(_index, 0, items.Count - 1)].Item.Description : "";
+        string text = _messageTime > 0 && _message is not null ? _message : items.Count > 0 ? items[Math.Clamp(Index, 0, items.Count - 1)].Item.Description : "";
         UiKit.Text(r, Font, text, desc.X + 10, desc.Y + 9);
         UiKit.Text(r, Font, _hint.Get(Game.Prompts.Version, Game.Prompts, static p => p.Format("{confirm}: use   {cancel}: back")), desc.X + 10, desc.Y + 23, UiKit.Muted);
     }

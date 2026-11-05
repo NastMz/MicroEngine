@@ -260,7 +260,7 @@ internal sealed partial class OverworldScene
         // The fade darkens the world, not the dialogue: narration over a dark screen must stay readable.
         if (_fade > 0) r.FillRect(new RectF(0, 0, 320, 180), Pal.Ink.WithAlpha(_fade));
         _text.Draw(r);
-        _choice?.Draw(r, new Vector2(316, 130));
+        _choice.Draw(r, new Vector2(316, 130));
         if (_flash) r.FillRect(new RectF(0, 0, 320, 180), Pal.White.WithAlpha(0.85f));
     }
 

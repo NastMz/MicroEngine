@@ -14,6 +14,12 @@ namespace TrailDuel.Ui;
 /// The message box used everywhere: typewriter reveal with soft blips, automatic paging at two
 /// lines, a speaker name tag and a bouncing "more" arrow. Coroutines await <see cref="Say"/>.
 /// </summary>
+/// <remarks>
+/// Kept instead of the engine's <see cref="DialogueBox"/>: battle menus sit under a last page that stays up
+/// (<see cref="WaitForConfirmOnLast"/>), battle narration closes by itself (<see cref="AutoAdvance"/>), cancel also turns
+/// a typed page, and the box, name tag and bobbing arrow have the game's own look; DialogueBox has none of these, so it
+/// would change both the controls and the screens.
+/// </remarks>
 internal sealed class TextPanel : IStateHashed
 {
     private readonly BitmapFont _font;
@@ -156,7 +162,10 @@ internal sealed class TextPanel : IStateHashed
     }
 }
 
-/// <summary>A small vertical menu box (Yes/No, shop lists...). Returns the chosen index, or -1 on cancel.</summary>
+/// <summary>
+/// A small vertical menu box (Yes/No, learning moves...). Returns the chosen index, or -1 on cancel. The engine's
+/// <see cref="SelectionList"/> moves the cursor and chooses; the box and cursor are drawn in the game's <see cref="UiKit"/> look.
+/// </summary>
 internal sealed class ChoiceMenu : IStateHashed
 {
     /// <summary>
@@ -165,20 +174,20 @@ internal sealed class ChoiceMenu : IStateHashed
     /// </summary>
     public void HashState(StateHasher hash)
     {
-        hash.Add(_options.Length);
-        foreach (var option in _options) hash.Add(option);
+        hash.Add(_list.Options.Count);
+        foreach (var option in _list.Options) hash.Add(option);
         hash.Add(Index);
         hash.Add(CanCancel);
         hash.Add(Result is not null);
         hash.Add(Result ?? 0);
     }
 
-    private readonly string[] _options;
+    private readonly SelectionList _list;
     private readonly BitmapFont _font;
     private readonly AudioMixer _audio;
     private float _time;
     private int _width = -1;
-    public int Index { get; set; }
+    public int Index => _list.Index;
     public bool CanCancel { get; init; } = true;
     public int? Result { get; private set; }
 
@@ -186,14 +195,14 @@ internal sealed class ChoiceMenu : IStateHashed
     {
         _font = font;
         _audio = audio;
-        _options = options;
+        _list = UiKit.List(audio, options);
     }
 
     public RectF Bounds(Vector2 anchorBottomRight)
     {
-        if (_width < 0) _width = _options.Max(o => _font.MeasureWidth(o)) + 24;
+        if (_width < 0) _width = _list.Options.Max(o => _font.MeasureWidth(o)) + 24;
         int w = _width;
-        int h = _options.Length * 12 + 10;
+        int h = _list.Options.Count * 12 + 10;
         return new RectF(anchorBottomRight.X - w, anchorBottomRight.Y - h, w, h);
     }
 
@@ -201,13 +210,7 @@ internal sealed class ChoiceMenu : IStateHashed
     {
         _time += dt;
         if (Result is not null) return;
-        int dir = (input.Pressed("down") ? 1 : 0) - (input.Pressed("up") ? 1 : 0);
-        if (dir != 0)
-        {
-            Index = (Index + dir + _options.Length) % _options.Length;
-            _audio.Play("move", 0.6f);
-        }
-        if (input.Pressed("confirm")) { Result = Index; _audio.Play("confirm", 0.7f); }
+        if (_list.Update(input) is { } chosen) { Result = chosen; _audio.Play("confirm", 0.7f); }
         else if (CanCancel && input.Pressed("cancel")) { Result = -1; _audio.Play("cancel", 0.7f); }
     }
 
@@ -215,11 +218,38 @@ internal sealed class ChoiceMenu : IStateHashed
     {
         var b = Bounds(anchorBottomRight);
         UiKit.Box(r, b);
-        for (int i = 0; i < _options.Length; i++)
+        for (int i = 0; i < _list.Options.Count; i++)
         {
             float y = b.Y + 6 + i * 12;
-            UiKit.Text(r, _font, _options[i], b.X + 14, y);
+            UiKit.Text(r, _font, _list.Options[i], b.X + 14, y);
             if (i == Index) UiKit.Cursor(r, _font, b.X + 5, y, _time);
         }
     }
+}
+
+/// <summary>
+/// A question's menu beside the text box, the same in the overworld and in battle: a cutscene awaits
+/// <see cref="Choose"/>, and the scene updates and draws the open <see cref="Menu"/>.
+/// </summary>
+internal sealed class ChoicePrompt(BitmapFont font, AudioMixer audio) : IStateHashed
+{
+    /// <summary>The open menu, or null between questions.</summary>
+    public ChoiceMenu? Menu { get; private set; }
+
+    /// <summary>Opens a menu, waits until it is answered, closes it and hands the answer (-1 when cancelled) to <paramref name="result"/>.</summary>
+    public IEnumerator Choose(string[] options, Action<int> result, bool canCancel = true)
+    {
+        Menu = new ChoiceMenu(font, audio, options) { CanCancel = canCancel };
+        while (Menu.Result is null) yield return null;
+        int chosen = Menu.Result.Value;
+        Menu = null;
+        result(chosen);
+    }
+
+    public void Update(float dt, InputMap input) => Menu?.Update(dt, input);
+
+    public void Draw(IRenderer r, Vector2 anchorBottomRight) => Menu?.Draw(r, anchorBottomRight);
+
+    /// <summary>State hash: the open menu, if any.</summary>
+    public void HashState(StateHasher hash) => hash.Add(Menu);
 }

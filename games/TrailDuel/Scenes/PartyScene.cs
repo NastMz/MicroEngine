@@ -3,6 +3,7 @@ using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
+using MicroEngine.UI;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
 using TrailDuel.Visuals;
@@ -22,7 +23,9 @@ internal sealed class PartyScene : Scene
     private readonly Action<int>? _picked;
     private readonly int _activeIndex;
     private readonly string _prompt;
-    private int _index;
+    /// <summary>One row per creature (null while the party is empty: a list needs at least one row).</summary>
+    private SelectionList? _list;
+    private int Index => _list?.Index ?? 0;
     private int _swapFrom = -1;
     private ChoiceMenu? _menu;
     private string? _message;
@@ -57,8 +60,8 @@ internal sealed class PartyScene : Scene
             return;
         }
         if (Party.Count == 0) { Close(-1); return; }
-        int dir = (Input.Pressed("down") ? 1 : 0) - (Input.Pressed("up") ? 1 : 0);
-        if (dir != 0) { _index = (_index + dir + Party.Count) % Party.Count; Audio.Play("move", 0.6f); }
+        _list ??= UiKit.List(Audio, [.. Party.Select(c => c.Name)]);
+        int? chosen = _list.Update(Input);
         if (Input.Pressed("cancel"))
         {
             if (_swapFrom >= 0) { _swapFrom = -1; Audio.Play("cancel", 0.7f); return; }
@@ -67,18 +70,19 @@ internal sealed class PartyScene : Scene
             Close(-1);
             return;
         }
-        if (!Input.Pressed("confirm")) return;
+        if (chosen is null) return;
         Audio.Play("confirm", 0.7f);
         if (_swapFrom >= 0)
         {
-            (Party[_swapFrom], Party[_index]) = (Party[_index], Party[_swapFrom]);
+            (Party[_swapFrom], Party[Index]) = (Party[Index], Party[_swapFrom]);
+            _list.SetOptions(Party.Select(c => c.Name));
             _swapFrom = -1;
             Audio.Play("sendout", 0.5f);
             return;
         }
         switch (_purpose)
         {
-            case Purpose.ItemTarget: Close(_index); break;
+            case Purpose.ItemTarget: Close(Index); break;
             case Purpose.Field: _menu = new ChoiceMenu(Font, Audio, "SUMMARY", "SWITCH", "CANCEL"); break;
             default: _menu = new ChoiceMenu(Font, Audio, "SEND OUT", "SUMMARY", "CANCEL") { CanCancel = true }; break;
         }
@@ -88,12 +92,12 @@ internal sealed class PartyScene : Scene
     {
         bool field = _purpose == Purpose.Field;
         if (choice < 0 || choice == 2) return;
-        if (field ? choice == 0 : choice == 1) { Game.Scenes.Push(new SummaryScene(_game, _index)); return; }
-        if (field) { _swapFrom = _index; Say("Move to where?"); return; }
-        var c = Party[_index];
+        if (field ? choice == 0 : choice == 1) { Game.Scenes.Push(new SummaryScene(_game, Index)); return; }
+        if (field) { _swapFrom = Index; Say("Move to where?"); return; }
+        var c = Party[Index];
         if (c.Fainted) { Audio.Play("deny"); Say($"{c.Name} has no energy left to fight!"); return; }
-        if (_index == _activeIndex) { Audio.Play("deny"); Say($"{c.Name} is already in battle!"); return; }
-        Close(_index);
+        if (Index == _activeIndex) { Audio.Play("deny"); Say($"{c.Name} is already in battle!"); return; }
+        Close(Index);
     }
 
     private void Say(string text) { _message = text; _messageTime = 2.2f; }
@@ -106,7 +110,7 @@ internal sealed class PartyScene : Scene
     {
         hash.Add((int)_purpose);
         hash.Add(_activeIndex);
-        hash.Add(_index);
+        hash.Add(Index);
         hash.Add(_swapFrom);
         hash.Add(_menu);
         hash.Add(_message);
@@ -142,7 +146,7 @@ internal sealed class PartyScene : Scene
     private void DrawSlot(IRenderer r, int i)
     {
         var c = Party[i];
-        bool selected = i == _index;
+        bool selected = i == Index;
         var rect = new RectF(selected ? 10 : 6, 4 + i * 25, 300, 23);
         var fill = c.Fainted ? Color.Hex("e8d0c8") : selected ? Color.Hex("fff3d6") : (Color?)null;
         UiKit.Box(r, rect, fill);
