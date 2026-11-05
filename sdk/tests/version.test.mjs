@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { check, release, findReferences, activeFiles, documentedVersion, preparedVersion, publicState, isPublic, waitPublic, packageIds, releasePlan } from '../version.mjs';
+import { reportOnlyVersion, publishedBuildRequired } from './docs.mjs';
 
 function fixture(files = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdk-version-'));
@@ -200,4 +201,14 @@ test('release-plan: a frozen tree answers frozen without asking nuget.org or Git
   // Without the file the same tree asks GitHub, which fails here: the freeze is what stopped it.
   fs.rmSync(path.join(root, '.github/phase-freeze'));
   assert.notEqual(plan([]).status, 0);
+});
+
+test('the documented samples check reports the published SDK build only while the documented version is its anchor', () => {
+  // sdk/tests/docs.mjs: the anchor is the last SDK published before stage 5's breaking renames.
+  assert.equal(publishedBuildRequired(reportOnlyVersion), false, 'documented version == anchor: report only');
+  assert.equal(publishedBuildRequired('0.4.0-alpha.3'), true, 'the next release documents another version: required again');
+  assert.equal(publishedBuildRequired('1.0.0'), true);
+  // A release rewrites only active references: the anchor is not one, so releasing never moves it.
+  assert.ok(!activeFiles().includes('sdk/tests/docs.mjs'));
+  assert.deepEqual(findReferences(fs.readFileSync(new URL('./docs.mjs', import.meta.url), 'utf8')), []);
 });
