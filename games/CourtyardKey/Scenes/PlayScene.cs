@@ -271,19 +271,24 @@ public sealed partial class PlayScene : Scene
     }
 
     // ------------------------------------------------------------------ fades
+    // Coroutines advance by the engine's step, so fades count it too: they last the same seconds at any update rate
+    // and keep running through a hitstop.
+
+    /// <summary>How far the screen is covered by the current fade (0 to 1).</summary>
+    internal float FadeAmount => _fade;
 
     private IEnumerator<object?> FadeIn(float seconds, Color? color = null)
     {
         _fadeColor = color ?? Color.Black;
         _fade = 1;
-        for (float t = 0; t < seconds; t += 1 / 60f) { _fade = 1 - t / seconds; yield return null; }
+        for (float t = 0; t < seconds; t += EngineStep) { _fade = 1 - t / seconds; yield return null; }
         _fade = 0;
     }
 
     private IEnumerator<object?> FadeOut(float seconds, Color? color = null)
     {
         _fadeColor = color ?? Color.Black;
-        for (float t = 0; t < seconds; t += 1 / 60f) { _fade = t / seconds; yield return null; }
+        for (float t = 0; t < seconds; t += EngineStep) { _fade = t / seconds; yield return null; }
         _fade = 1;
     }
 

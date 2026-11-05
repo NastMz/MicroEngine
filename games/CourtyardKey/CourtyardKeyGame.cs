@@ -28,6 +28,10 @@ public sealed class CourtyardKeyGame : Game
         UseAchievements(CourtyardAchievements.Catalog, Saves.Store, UI.UiStyle.Theme);
     }
 
+    /// <summary>The same game simulated at <paramref name="updateRate"/> updates per second (tests check that timings hold at any rate).</summary>
+    internal CourtyardKeyGame(string? saveDirectory, string? start, int updateRate) : this(saveDirectory, start)
+        => Settings = Settings with { UpdateRate = updateRate };
+
     public override GameSettings Settings { get; } = new("Courtyard Key") { Background = Pal.Ink };
     public Sprites Art { get; private set; } = null!;
     public SaveSlots Saves { get; }
