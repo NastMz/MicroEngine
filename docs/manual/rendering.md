@@ -437,6 +437,29 @@ A backend derives from `GraphicsDeviceBase`, which validates every call before t
 moment they are raised are identical on every device; the backend implements only the members whose names end in
 `Core`.
 
+## The 3D path
+
+In the repository only, not in a package yet (`MicroEngine.Graphics3D`, with the programmable device above; the
+`samples/Slice3D` sample shows every piece together). It is a minimal path that proves 3D on the same device as 2D, not
+a 3D renderer:
+
+- **Meshes as assets.** `loaders.AddMeshes()` registers the `mesh` asset kind on an `AssetLoaderRegistry`: glTF 2.0
+  files (`.gltf` with its buffers and images beside it or embedded, or `.glb`) become `MeshData` (positions, normals,
+  the first texture coordinate, triangle indices and each primitive's base colour factor and PNG or JPEG texture), with
+  the default scene's node transforms applied. Skins, animation, morph targets, other material properties, sparse data
+  and required extensions are refused with an `InvalidDataException` naming them.
+- **`Camera3D`**: position, target, up, vertical field of view, near and far planes; `View`, `Projection(aspect)` and
+  `Project(point, width, height)` (where a world point lands in pixels) use the System.Numerics conventions above.
+- **`Renderer3D`**: `Upload(mesh)` puts a mesh on the device; each frame is `Begin(target, camera)`, `Draw(mesh,
+  world)` or `DrawWorld(world)`, then `End()`, one pass with depth testing and back faces culled. `DrawWorld` draws every
+  entity with a `MeshRenderer` attachment at its interpolated world matrix, so a transform hierarchy moves smoothly
+  between fixed steps. There is one material: the base colour texture times the base colour and a tint, lit by one
+  directional light (`LightDirection`) with an `Ambient` term.
+- **2D over 3D.** Targets come from `renderer.CreateTarget(width, height)` (colour plus a depth format the device
+  supports); the 2D batcher drawing into the same target afterwards, without a clear, lands over the 3D.
+- On a device without custom shaders or depth, `new Renderer3D(device)` throws `GraphicsCapabilityException`: tier-0
+  devices have no 3D path.
+
 ## Limitations
 
 - No shaders, render targets or post-processing are exposed through `IRenderer`.
