@@ -62,9 +62,9 @@ const games: Omit<DemoGame, 'shots'>[] = [
     tagline: 'Screen-by-screen exploration, a sword and a boomerang.',
     summary: [
       'The bells beneath the old ruins rang again. Elder Oswin hands Wren his old sword: cross the vale, descend into the Sunken Courtyard and take the Courtyard Key back from the Moss Warden.',
-      'A hybrid: the world, hero, villagers, enemies, boss and all audio are generated in code; one hand-drawn CC0 monster is repainted in the game’s palette when it loads.',
+      'A hybrid: the textured ground, the lit dungeon, the hero, villagers, most enemies, the boss and all audio are generated in code; the village houses, the trees and one monster are hand-drawn CC0 pieces recoloured in the game’s palette when it loads.',
     ],
-    content: { kind: 'Hybrid', detail: 'Procedural world and audio, one CC0 sprite.' },
+    content: { kind: 'Hybrid', detail: 'Procedural ground, dungeon, cast and audio; CC0 houses, trees and one monster.' },
     controls: [
       ['Move', 'Arrows / WASD'],
       ['Sword, talk, read, open chests, confirm', 'Z / Space / Enter'],
@@ -82,9 +82,9 @@ const games: Omit<DemoGame, 'shots'>[] = [
     tagline: 'Turn-based battles, captures, evolutions and a rival.',
     summary: [
       'Leave Sprout Town with a partner creature, walk Route 1 and Hollow Wood, beat your rival twice and earn the title of Trail Champion by defeating Master Odessa in Brookhaven’s hall.',
-      'A hybrid: creatures and trainers come from hand-drawn CC0 sprites with crafted battle effects; the world, stages and music are painted in code to match.',
+      'A hybrid: the village comes from a hand-drawn CC BY 4.0 tileset, colour-graded with drawn shadows when it loads; creatures, trainers and battle effects are hand-drawn CC0 sprites; tall grass, ledges, the town’s landmark buildings, battle stages, the interface and music are made in code to match.',
     ],
-    content: { kind: 'Hybrid', detail: 'CC0 creature sprites, procedural world and music.' },
+    content: { kind: 'Hybrid', detail: 'CC BY 4.0 village tileset, CC0 creatures and trainers, procedural stages and music.' },
     controls: [
       ['Walk, move cursors', 'Arrows / WASD'],
       ['Confirm, talk, read signs, advance text', 'Z / Space / Enter'],

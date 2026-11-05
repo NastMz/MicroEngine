@@ -84,8 +84,11 @@ and third-party notices are shipped inside every package, in its `licenses/` fol
 
 ## Demo game art and audio
 
-Courtyard Key, Trail Duel and Neon Rift use art and audio released under CC0 1.0 (public domain dedication).
-Credit is not required and is given in each game's asset credits. Meadow Run uses no third-party assets.
+Courtyard Key, Trail Duel and Neon Rift use third-party art and audio. Most of it is released under CC0 1.0 (public
+domain dedication): credit is not required and is given in each game's asset credits. Trail Duel's village art is
+"Serene Village revamped" by LimeZu (https://limezu.itch.io/serenevillagerevamped), licensed under CC BY 4.0
+(https://creativecommons.org/licenses/by/4.0/); the colours of the sheets are graded when the game loads them. Each
+game's credits list every file, its author and its licence. Meadow Run uses no third-party assets.
 
 ## This website
 

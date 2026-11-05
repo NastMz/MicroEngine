@@ -74,62 +74,77 @@ Because scripts force the same action names (`470 press jump`, `640 hold run 120
 [`smoke.script`](../../games/MeadowRun/scripts/smoke.script)), automated runs exercise exactly the code a player
 does. See [Input](../manual/input.md).
 
-## Entities in an `EntityList<T>`
+## Game objects in the scene world
 
-Published SDK; removed in the next SDK version: a scene keeps its objects in `Scene.Objects`, an `IWorld` ([The scene world](../manual/scenes.md#the-scene-world)). Plain classes deriving from `Entity` live in an `EntityList<T>`. Adds and removes made while the list updates are
-deferred, so entities can spawn and destroy each other safely. Courtyard Key queues spawns and flushes them
-between update phases. From [`games/CourtyardKey/Scenes/PlayScene.cs`](../../games/CourtyardKey/Scenes/PlayScene.cs):
+Next SDK version (merged, not published yet; the published SDK keeps objects in an `EntityList<T>`, see
+[Entities](../manual/world.md#entities)). A scene keeps its objects in `Scene.Objects`, an `IWorld`
+([The scene world](../manual/scenes.md#the-scene-world)): each object is one of your own classes, attached to an
+entity that has an id and a transform. Courtyard Key's actors create their entity as a child of the room being
+played, so leaving a room destroys its actors with it. From
+[`games/CourtyardKey/Entities/Actor.cs`](../../games/CourtyardKey/Entities/Actor.cs):
 
 ```csharp
-private EntityList<Actor> _actors = new();
+protected Actor(PlayScene world, bool inRoom = true)
+{
+    World = world;
+    Id = world.Objects.Create(inRoom ? world.RoomGroup : EntityId.None);
+    world.Objects.Attach(Id, this);
+}
 // ...
+public void Destroy() => World.Objects.Destroy(Id);
+```
+
+The play scene updates the room's actors in creation order. From
+[`games/CourtyardKey/Scenes/PlayScene.cs`](../../games/CourtyardKey/Scenes/PlayScene.cs):
+
+```csharp
 private void UpdatePlay(float dt)
 {
     Hero.Update(dt);
-    FlushSpawns();
-    _actors.Update(dt);
-    FlushSpawns();
+    foreach (var a in Actors) a.Update(dt);
     ResolveCombat();
     // ...
 }
-
-/// <summary>Queues an actor; it joins the room after the current update phase (safe during iteration).</summary>
-public T Spawn<T>(T actor) where T : Actor
-{
-    _pending.Add(actor);
-    return actor;
-}
 ```
 
-Queries such as `_actors.OfType<Enemy>()` skip destroyed entities. See [Architecture](../architecture.md) for why
-the engine has no ECS.
+A created entity is visible at once and a destroyed one is skipped at once, so actors can spawn and destroy each
+other during the walk; there is no spawn queue to flush. See [Architecture](../architecture.md) for why the engine
+has no ECS.
 
 ## Procedural art built once
 
 Art is built in `Load` (or in a factory called from it) as `PixelImage`s and packed into atlases. Noise and
-dithering give texture without image files. From
-[`games/CourtyardKey/Visuals/TileArt.cs`](../../games/CourtyardKey/Visuals/TileArt.cs):
+hashing give texture without image files. Courtyard Key paves its ruins with a block of stones that tiles
+seamlessly, built once and kept. From
+[`games/CourtyardKey/Visuals/GroundArt.cs`](../../games/CourtyardKey/Visuals/GroundArt.cs):
 
 ```csharp
-public static PixelImage Floor(int variant)
+public static PixelImage RuinStones()
 {
-    var img = new PixelImage(S, S);
-    for (int y = 0; y < S; y++)
-        for (int x = 0; x < S; x++)
-        {
-            float n = Art.ValueNoise(x + variant * 16, y, 6, 101);
-            var c = n > 0.62f && Art.Dither(x, y, 0.5f) ? Pal.Stone[3] : Pal.Stone[2];
-            if (x == 15 || y == 15) c = Pal.Stone[1];
-            else if (x == 0 || y == 0) c = Color.Lerp(Pal.Stone[2], Pal.Stone[4], 0.5f);
-            img[x, y] = c;
-        }
+    if (_ruinStones is not null) return _ruinStones;
+    const int P = 32;
+    var img = new PixelImage(P, P);
+    var r = Pal.Boulder;
+    Color[] body = [r[2], r[3], r[4]];
     // ...
-    return img;
+                for (int ly = 0; ly < h; ly++)
+                    for (int lx = 0; lx < w; lx++)
+                    {
+                        int x = (left + lx) % P, y = top + ly;
+                        Color c;
+                        if (lx == w - 1 || ly == h - 1) c = Art.Hash(x, y, 572) > 0.45f ? Pal.Turf[1] : Pal.Turf[2];
+                        else if (lx == 0 || ly == 0) c = r[5];
+                        else if (lx == w - 2 || ly == h - 2) c = r[2];
+                        else c = ArtKit.Band(body, ArtKit.PeriodicNoise(x, y, 8, P, 573) * 0.6f + Art.Hash(x, y, 574) * 0.2f + tone, x, y, 0.3f);
+                        img[x, y] = c;
+                    }
+    // ...
+    return _ruinStones = img;
 }
 ```
 
-Games that use files load them through `ContentFolder` in the same `Load`. See [Rendering](../manual/rendering.md)
-and [Assets](../manual/assets.md).
+Games that use files load them through `ContentFolder` in the same `Load` (next SDK version: through `Game.Assets`,
+as all four demos do). See [Rendering](../manual/rendering.md) and [Assets](../manual/assets.md).
 
 ## Saving progress through `SaveStore`
 
@@ -156,9 +171,29 @@ Trail Duel keeps the same calls on its state type, from
 [`games/TrailDuel/Rules/GameState.cs`](../../games/TrailDuel/Rules/GameState.cs):
 
 ```csharp
-public void Save(SaveStore store) => store.Save(SaveSlot, this);
-public static GameState? Load(SaveStore store) => store.Load<GameState>(SaveSlot);
+public const int CurrentSaveVersion = 1;
+
+/// <summary>The format of the save this state was read from (0 for a save written before versions existed); stamped on saving.</summary>
+public int SaveVersion { get; set; }
+
+public void Save(SaveStore store)
+{
+    SaveVersion = CurrentSaveVersion;
+    store.Save(SaveSlot, this);
+}
+
+/// <summary>The saved adventure, or null without one; an older save is brought up to <see cref="CurrentSaveVersion"/>.</summary>
+public static GameState? Load(SaveStore store)
+{
+    var state = store.Load<GameState>(SaveSlot);
+    // Version 0 (no field) has the same layout as version 1: nothing to convert.
+    if (state is { SaveVersion: < CurrentSaveVersion }) state.SaveVersion = CurrentSaveVersion;
+    return state;
+}
 ```
+
+The saved data carries a format version. A save written before the field existed reads as version 0; when the
+format changes, the game raises the number and converts older saves in `Load`, so players keep their progress.
 
 The same code saves to `localStorage` in a browser. See [Persistence](../manual/persistence.md).
 

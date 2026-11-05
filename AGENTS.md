@@ -19,8 +19,9 @@ sufficient without previous chats or agent memory.
   hashes and Actions run IDs quoted in older records point there. Never push branches from an old clone.
 - The active rebuild record (specs, tasks, log) is [`odd/tasks/engine-rebuild.md`](odd/tasks/engine-rebuild.md); the latest
   feature records are [`odd/tasks/docs-1.md`](odd/tasks/docs-1.md), [`odd/tasks/sdk-1.md`](odd/tasks/sdk-1.md),
-  [`odd/tasks/input-1.md`](odd/tasks/input-1.md), [`odd/tasks/product-1.md`](odd/tasks/product-1.md) and
-  [`odd/tasks/asset-1.md`](odd/tasks/asset-1.md) (the asset pipeline, ADR 0025).
+  [`odd/tasks/input-1.md`](odd/tasks/input-1.md), [`odd/tasks/product-1.md`](odd/tasks/product-1.md),
+  [`odd/tasks/asset-1.md`](odd/tasks/asset-1.md) (the asset pipeline, ADR 0025) and
+  [`odd/tasks/demo-refresh.md`](odd/tasks/demo-refresh.md) (the four demos modernized, new art for the two hybrids).
 - CI ([docs/ci.md](docs/ci.md), ADR 0013): `ci.yml` runs the checks a change needs, once per content (evidence),
   the SDK check included; `validate.yml` runs everything on demand; `platforms.yml` holds the monthly and manual
   macOS, Android and iOS experiments of [`platforms/`](platforms/README.md), which are not supported platforms. Demos
@@ -40,7 +41,8 @@ sufficient without previous chats or agent memory.
 
 - Keep the engine genre-neutral; game rules live in `games/<Name>`.
 - Content is code-first by default (ADR 0002). Neon Rift (ADR 0004) and the Courtyard Key and Trail Duel hybrids
-  (ADR 0005) ship CC0 files under `games/<Name>/Content`, each listed in the game's `CREDITS.md`; Meadow Run stays fully procedural.
+  (ADR 0005) ship CC0 or CC BY files under `games/<Name>/Content`, each listed (with its attribution) in the game's
+  `CREDITS.md`; Meadow Run stays fully procedural.
 - Test public behaviour; for visual or feel changes, run scripted captures and inspect them.
   Never report something as verified unless it was run or looked at.
 - Significant architectural changes get an ADR in `docs/decisions/`.
