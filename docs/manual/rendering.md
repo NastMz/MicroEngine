@@ -334,10 +334,17 @@ public sealed class PlayScene : Scene
 
 `Game.Views` maps positions between window pixels, canvas pixels and UI units (`CanvasToUi` places a label over a world
 object), gives the pointer in the UI view (`UiPointer`) and in a camera's world (`WorldPointer(camera)`), and gives it to
-the UI first: while it is over a visible scene's interface (`UiContains`), `PointerOnUi` is true and the world pointer is
-not present. Transitions cover both views. The SDL, raylib and headless platforms offer the UI view (`IScreenView`); a
-platform without one draws `DrawUi` into the canvas, where UI units are canvas pixels. Captures (`--captures`) record the
-world view.
+the UI first: while it is over a visible scene's interface (`UiContains`, or its widgets, see [UI widgets](ui.md)),
+`PointerOnUi` is true and the world pointer is not present. Transitions cover both views. The SDL, raylib and headless
+platforms offer the UI view (`IScreenView`); a platform without one draws `DrawUi` into the canvas, where UI units are
+canvas pixels. The UI view starts with the first thing a scene draws in it.
+
+Captures (`--captures`) record what the player sees. A frame whose scenes drew an interface is captured as the window:
+the letterbox, the world scaled into its frame with the presentation's filter, and the UI view over both, at the
+window's size. A frame without one is captured as the canvas, at the presentation's capture scale. Tests that need the
+world alone read it from the platform's `IViewCapture` capability (`CaptureWorld`, `SaveWorldScreenshot`), which also
+gives the UI view (`CaptureUi`) and the composite (`CaptureScreen`); the headless platform draws its UI view when it
+rasterizes.
 
 ## The 2D batcher and the camera
 

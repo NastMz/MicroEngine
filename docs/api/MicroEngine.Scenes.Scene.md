@@ -205,6 +205,31 @@ public Tweener Tweens { get; }
 
  [Tweener](MicroEngine.Scenes.Tweener.md)
 
+### <a id="MicroEngine_Scenes_Scene_Widgets"></a> Widgets
+
+The scene's widgets ([UiRoot](MicroEngine.UI.UiRoot.md)), created the first time it is read (from [Enter](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Enter) on; the
+scene must be on the stack). Set its [Content](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_Content) and the engine does the rest: it lays the
+widgets out in UI units in the UI view and draws them after [DrawUi](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_DrawUi_MicroEngine_Graphics_IRenderer_), updates them before
+[Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) (so the actions they act on are consumed before the scene reads them), and, while the scene is
+on top, routes input to them as the highest input layer: a press on a widget, and the keyboard while a text field
+has the focus, never reach gameplay, and the pointer over them is on the UI ([PointerOnUi](MicroEngine.Core.GameViews.md#MicroEngine_Core_GameViews_PointerOnUi)).
+The widgets use the game's font and the map's action names until the game sets others. A scene that never reads
+it has no UI and pays nothing.
+
+```csharp
+public UiRoot Widgets { get; }
+```
+
+#### Property Value
+
+ UiRoot
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The scene is not attached to a game yet (read from its constructor).
+
 ### <a id="MicroEngine_Scenes_Scene_WorldCamera"></a> WorldCamera
 
 The camera of the scene's world view: when set, the engine pushes it before [Draw](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Draw_MicroEngine_Graphics_IRenderer_) and pops it after,
