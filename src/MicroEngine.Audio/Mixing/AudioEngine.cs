@@ -143,6 +143,10 @@ public sealed class AudioEngine : IDisposable
     private readonly List<StreamFeed> _feeds = [];
     private long _step, _offset, _played, _position;
     private bool _disposed;
+    // RenderAllocations: written by the rendering thread only.
+    private readonly bool _sinkThread;
+    private long _renders, _renderBytes, _renderEnd;
+    private int _renderThread = -1;
 
     /// <summary>Creates the mixer and starts <paramref name="sink"/> rendering it.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The sink's format is not 1 or 2 channels at a positive rate, or a setting is out of range.</exception>
@@ -166,7 +170,30 @@ public sealed class AudioEngine : IDisposable
         CreateBus(MasterBus, null);
         CreateBus(SfxBus, _buses[0]);
         CreateBus(MusicBus, _buses[0]);
-        sink.Start(Render);
+        _sinkThread = sink.Schedule == AudioSinkSchedule.SinkThread;
+        sink.Start(CountedRender);
+    }
+
+    /// <summary>
+    /// Renders the sink asked for so far and the bytes the rendering thread allocated, counted exactly on that thread
+    /// (<see cref="GC.GetAllocatedBytesForCurrentThread"/>): during each render, and for a
+    /// <see cref="AudioSinkSchedule.SinkThread"/> sink also from the end of one render to the start of the next on the
+    /// same thread, which is the sink's own loop (an SDL feeder queueing the block and sleeping). Tests read it from any
+    /// thread to check that the audio thread makes no garbage.
+    /// </summary>
+    internal RenderAllocationCount RenderAllocations => new(Volatile.Read(ref _renders), Volatile.Read(ref _renderBytes));
+
+    /// <summary>The render function the sink is given: <see cref="Render"/>, counted (<see cref="RenderAllocations"/>).</summary>
+    private void CountedRender(Span<float> buffer)
+    {
+        long start = GC.GetAllocatedBytesForCurrentThread();
+        int thread = Environment.CurrentManagedThreadId;
+        long loop = _sinkThread && thread == _renderThread ? start - _renderEnd : 0;
+        Render(buffer);
+        long end = GC.GetAllocatedBytesForCurrentThread();
+        (_renderThread, _renderEnd) = (thread, end);
+        Volatile.Write(ref _renderBytes, _renderBytes + loop + (end - start));
+        Volatile.Write(ref _renders, _renders + 1);
     }
 
     /// <summary>The sink's format, which the mixer renders.</summary>
@@ -655,3 +682,8 @@ public sealed class AudioEngine : IDisposable
         public StreamFeed? Feed;
     }
 }
+
+/// <summary>What <see cref="AudioEngine.RenderAllocations"/> counted.</summary>
+/// <param name="Renders">Render calls so far.</param>
+/// <param name="Bytes">Bytes the rendering thread allocated.</param>
+internal readonly record struct RenderAllocationCount(long Renders, long Bytes);
