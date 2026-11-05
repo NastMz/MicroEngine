@@ -47,3 +47,11 @@ maintainer's archive, not in the public history.
 | [0044](0044-ui-module.md) | A UI module of widgets driven as the highest input layer, renamable widget actions, captures that show what the player sees | Accepted |
 | [0045](0045-touch-controls-module.md) | Touch controls as an opt-in input module in `MicroEngine.Input.Touch`: active on touch-first screens or once the game sets a layout, free otherwise | Accepted |
 | [0046](0046-tier1-device-selection.md) | The tier-1 device chosen through the normal composition path (`GraphicsSettings.Device`, `--graphics`, `PlatformProfile.GraphicsDevices`); `DeviceRenderer.Flush`/`Target` for 3D from a scene | Accepted |
+
+Each number is used once. The numbers missing from the table:
+
+- **0035 and 0036** are reserved for two decisions of the [ARCH-1 plan](../evaluations/arch-1.md) (section 7: validation
+  by contract; assemblies by boundary with an architecture test). Each is written in the stage that records it; until
+  then the plan holds the decision. ADR 0037 was numbered after this reserved range.
+- **0039 and 0040** are not used: no record was merged under them, and the numbers stay empty rather than renumbering
+  the records after them.
