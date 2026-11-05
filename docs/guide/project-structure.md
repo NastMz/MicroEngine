@@ -43,8 +43,9 @@ hosts run the same composition in browsers and on phones. Which namespace and ty
 | Backends and optional modules | `MicroEngine.Sdl`, `MicroEngine.Raylib`, `MicroEngine.Graphics.SdlGpu` (the tier-1 device), `MicroEngine.Graphics3D` (the minimal 3D path), `MicroEngine.Physics.Box2D` (native Box2D, an optional package) |
 | Hosts and tools | `MicroEngine.Desktop`, `MicroEngine.Cli` |
 
-`src/MicroEngine.Migration.Entities` is transitional: the old `Entity` API rebuilt over the scene world, never packed,
-and referenced by no engine assembly (the architecture test enforces it).
+There is no `MicroEngine.Migration.Entities` any more: the transitional copy of the old `Entity` API was removed once no
+game used it, and the architecture test refuses any project that references it again. A scene keeps its objects in its
+world (`Scene.Objects`, [The scene world](../manual/scenes.md#the-scene-world)).
 
 ## A game project
 

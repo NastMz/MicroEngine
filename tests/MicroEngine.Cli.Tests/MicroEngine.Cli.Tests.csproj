@@ -14,4 +14,8 @@
     <ProjectReference Include="../../src/MicroEngine.Cli/MicroEngine.Cli.csproj" />
     <ProjectReference Include="../../games/CourtyardKey/CourtyardKey.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The phone hosts' launch description, compiled into the Android and iOS hosts; it needs no SDK toolchain. -->
+    <Compile Include="../../src/MicroEngine.Cli/Hosts/mobile/MobileLaunch.cs" Link="Hosts/MobileLaunch.cs" />
+  </ItemGroup>
 </Project>

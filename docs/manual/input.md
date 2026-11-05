@@ -435,7 +435,8 @@ controls fit in the letterbox bars. Smaller controls (`Radius`, `TouchLayout.Sca
   leaves.
 - **Quick taps are never lost.** A tap that starts and ends within one frame is kept until a simulation step has read
   it, as keys are. Next SDK version: it is kept however many frames run before that step (taps expire by steps, not
-  by drawn frames).
+  by drawn frames), and it is down in exactly one step, the first that reads it, also when a slow frame catches up
+  with several steps (it used to stay down in every step of its frame).
 - **Fingers that land on no control go to the game.** Next SDK version: they reach gameplay as pointers
   (`Input.Pointers`, `Input.Pointer`, `InputSystem.Events`) in canvas pixels; a finger that started on a control is
   never also a pointer.
@@ -551,7 +552,11 @@ also be added as an `IInputSource` through `PlatformRequest.ExtraInput` ([Backen
 Both backends add one more guarantee: a key pressed and released between two frames is reported as down until a
 simulation step has read it (see `RaylibInput.CollectTaps` in
 [`RaylibPlatform.cs`](../../src/MicroEngine.Raylib/RaylibPlatform.cs) and `SdlInput` in
-[`SdlInput.cs`](../../src/MicroEngine.Sdl/SdlInput.cs)); touch taps are kept the same way.
+[`SdlInput.cs`](../../src/MicroEngine.Sdl/SdlInput.cs)); touch taps are kept the same way. Next SDK version: a press
+shorter than a frame (a key, a gamepad button or a touch control) is down in exactly one step, the first that reads it,
+and released in the next, even when the frame catches up with several steps; a press still held stays down in every
+step. The engine's loop calls `VirtualControls.EndUpdate()` after each step for the touch controls; code that samples
+`VirtualControls` itself calls it after each of its steps.
 
 ## Scripted input
 

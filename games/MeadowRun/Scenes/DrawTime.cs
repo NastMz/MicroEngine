@@ -10,5 +10,5 @@ internal static class DrawTime
     /// is 1 whenever the scene did not step in the latest update (paused, frozen under an overlay, leaving), so a frozen
     /// scene animates nothing.
     /// </summary>
-    public static float Of(Scene scene) => scene.Age - (1 - scene.Objects.Blend) * (float)scene.Game.TimeSettings.FixedDelta;
+    public static float Of(Scene scene) => scene.Age - (1 - scene.Objects.Blend) * scene.EngineStep;
 }

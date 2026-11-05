@@ -87,7 +87,7 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
             Input.Pressed("jump"), Input.Down("jump"), Input.Down("run"), Input.Pressed("run"));
         _view.SetCrouch(input.Down && !input.Left && !input.Right);
         // Effects, shake and squash keep moving through a hit-stop: they advance by the engine's step.
-        float step = (float)Game.TimeSettings.FixedDelta;
+        float step = EngineStep;
         _stage.Update(step, input);
         _view.Observe(_stage, step);
         if (_stage.Player.Form == PipForm.Ember) game.Achievements.Unlock(MeadowAchievements.EmberHeart);

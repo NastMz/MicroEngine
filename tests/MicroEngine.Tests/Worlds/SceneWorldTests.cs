@@ -291,4 +291,95 @@ public sealed class SceneWorldTests
 
         CollectionAssert.AreEqual(new[] { "exit question", "resume asker" }, log);
     }
+
+    /// <summary>Records, at each update, the step it receives and the scene's engine step.</summary>
+    private sealed class StepWatcher(bool world) : Scene
+    {
+        public readonly List<float> Steps = [], EngineSteps = [];
+        public float EngineStepOnEnter = -1;
+        public override void Enter()
+        {
+            EngineStepOnEnter = EngineStep;
+            if (world) _ = Objects;
+        }
+        public override void Update(float dt)
+        {
+            Steps.Add(dt);
+            EngineSteps.Add(EngineStep);
+        }
+        public override void Draw(IRenderer renderer) { }
+    }
+
+    [TestMethod]
+    public void The_engine_step_is_the_step_before_the_world_clock_scales_or_freezes_it()
+    {
+        var level = new StepWatcher(world: true);
+        var (game, _) = Start(level);
+        Assert.AreEqual(Dt, level.EngineStepOnEnter, "Known before the first update: the engine's fixed step.");
+        game.StepForTest();
+        level.Objects.Clock.Freeze(0.03f);
+        game.StepForTest();
+        game.StepForTest();
+        level.Objects.Clock.Scale = 0.5f;
+        game.StepForTest();
+
+        CollectionAssert.AreEqual(new[] { Dt, 0, 0, Dt * 0.5f }, level.Steps, "Update receives the world clock's step.");
+        CollectionAssert.AreEqual(new[] { Dt, Dt, Dt, Dt }, level.EngineSteps, "EngineStep is the engine's, whatever the clock does.");
+        Assert.AreEqual((float)game.TimeSettings.FixedDelta, level.EngineStep);
+    }
+
+    [TestMethod]
+    public void A_scene_without_a_world_receives_its_engine_step()
+    {
+        var plain = new StepWatcher(world: false);
+        var (game, _) = Start(plain);
+        game.StepForTest();
+        game.StepForTest();
+
+        CollectionAssert.AreEqual(new[] { Dt, Dt }, plain.Steps);
+        CollectionAssert.AreEqual(plain.Steps, plain.EngineSteps);
+        Assert.IsFalse(plain.HasWorld, "Reading the engine step creates no world.");
+    }
+
+    /// <summary>A scene that reads its world for the first time while drawing.</summary>
+    private sealed class DrawsItsWorld(bool ui) : Scene
+    {
+        public override void Update(float dt) { }
+        public override void Draw(IRenderer renderer) { if (!ui) _ = Objects.Blend; }
+        public override void DrawUi(IRenderer ui2) { if (ui) _ = Objects.Blend; }
+    }
+
+    [TestMethod]
+    public void Creating_a_scenes_world_while_drawing_is_refused_and_changes_nothing()
+    {
+        foreach (bool ui in new[] { false, true })
+        {
+            var scene = new DrawsItsWorld(ui);
+            var (game, platform) = Start(scene);
+            game.StepForTest();
+            var before = game.ComputeStateHash(sections: true);
+
+            var error = Assert.ThrowsExactly<InvalidOperationException>(() => Draw(game, platform, 0.5f));
+
+            StringAssert.Contains(error.Message, "Objects");
+            StringAssert.Contains(error.Message, "Enter");
+            Assert.IsFalse(scene.HasWorld, "No world was created.");
+            Assert.AreEqual(before.Hash, game.ComputeStateHash().Hash, "The state hash is unchanged.");
+            game.StepForTest();
+            Assert.IsFalse(scene.HasWorld);
+        }
+    }
+
+    [TestMethod]
+    public void A_world_created_before_drawing_is_read_while_drawing()
+    {
+        var level = new Mover();
+        var (game, platform) = Start(level);
+        game.StepForTest();
+        Draw(game, platform, 0.5f);
+        Assert.AreEqual(0.5f, level.DrawnBlend);
+        var created = new DrawsItsWorld(ui: false);
+        _ = created.Objects;   // outside drawing, even before the scene is pushed
+        Assert.IsTrue(created.HasWorld);
+    }
 }

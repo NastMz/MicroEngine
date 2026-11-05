@@ -8,6 +8,27 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- A tap shorter than a frame on a touch control is down in exactly one fixed update, the first that reads it, as a
+  key's or a gamepad button's is: when a slow frame catches up with several updates, the later ones see it released
+  (it used to stay down in every update of its frame). A control still held stays down in every update. Nothing to
+  change in a game that reads `Pressed`; code that samples `VirtualControls` itself (not through the game's loop) calls
+  the new `VirtualControls.EndUpdate()` after each of its updates.
+- Reading `Scene.Objects` for the first time while the game draws (from `Draw` or `DrawUi`) throws an
+  `InvalidOperationException` instead of creating the world there: a world created by drawing was stepped and hashed
+  only in runs that drew a frame. **Migration:** a scene whose drawing alone reads its world (its `Blend`, say) reads
+  `Objects` once in `Enter`; a scene that creates entities in `Enter` or `Update` needs no change.
+- New: `Scene.EngineStep`, the engine's step before the world's clock scales or freezes it, for what keeps moving
+  through a hitstop or slow motion. **Migration:** code that computed `1f / Game.Settings.UpdateRate` or read
+  `Game.TimeSettings.FixedDelta` in a scene's update can read `EngineStep`; a scene member named `EngineStep` now hides
+  the inherited one (compiler warning CS0108): rename it or delete it.
+- New: `Camera2D.DrawPosition` and `Camera2D.DrawnPosition`, so a camera is drawn at an interpolated position while
+  the rules keep `Position`. **Migration:** code that moved a camera to its drawn position before drawing and moved it
+  back afterwards sets `DrawPosition` instead, and reads `VisibleBounds` (not `View`) and `DrawnPosition` (not
+  `Position`) where it draws.
+- Phone hosts (Android, iOS) hand a test's `--env` pairs to the game as its host's developer variables
+  (`HostEnvironment.Variables`) and no longer write them into the process environment. **Migration:** game code that
+  read such a variable with `Environment.GetEnvironmentVariable` reads it through the `HostEnvironment` its
+  `Configure` receives (`host.Environment.Variable(name)`), as on desktop and in pages.
 - Browsers run the SDL platform: `microengine package web` builds the page on SDL 3 compiled to WebAssembly (shipped in
   the `MicroEngine.Sdl` package) instead of raylib; desktops keep raylib as an alternative platform. The page, its
   input, touch controls, sound, saves and embedding are unchanged. **Migration:** a game that references

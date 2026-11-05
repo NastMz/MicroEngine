@@ -67,7 +67,7 @@ internal sealed class TitleScene(MeadowGame game) : Scene
         _menu.Moved += () => game.Sfx("menu_move", 0.7f);
         game.Music("title");
         Tweens.Add(1.1f, t => _logoDrop = t, Ease.OutBounce);
-        _ = Objects;   // the scene's world, created before the first frame: frames animate at its blend (DrawTime)
+        _ = Objects;   // the scene's world, created here because drawing may not create it: frames animate at its blend (DrawTime)
     }
 
     public override void Update(float dt)

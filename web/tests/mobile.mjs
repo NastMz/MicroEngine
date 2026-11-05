@@ -335,6 +335,22 @@ async function common(o, c, label, game) {
   check(`${label}: a very short tap is seen`, (await since(page, mark)).some(f => f.actions.includes(action)));
   if (game === 'TrailDuel') { await sleep(500); if ((await now(page)).scene !== 'OverworldScene') { await fingers.tap(3, c.cancel.at); await sleep(500); } }
 
+  // The same tap read by a slow frame (a loaded device): the page stalls 50 ms right after the finger lifts, so the
+  // next frame catches up with several fixed updates. The tap is down in the first of them only (as a key's is), and
+  // the trace, which lists the actions down in any update of a frame, must still show it (run.mjs's keyboard check).
+  const slowMark = await traced(page);
+  await page.evaluate(() => addEventListener('touchend', () => {
+    const until = performance.now() + 50;
+    while (performance.now() < until);
+  }, { once: true, capture: true }));
+  await o.client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: quick.at[0], y: quick.at[1], id: 9 }] });
+  await o.client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await sleep(300);
+  const slowFrames = await since(page, slowMark);
+  check(`${label}: a very short tap is seen when its frame catches up with several updates`, slowFrames.some(f => f.actions.includes(action)),
+    `${slowFrames.length} frames traced`);
+  if (game === 'TrailDuel') { await sleep(500); if ((await now(page)).scene !== 'OverworldScene') { await fingers.tap(3, c.cancel.at); await sleep(500); } }
+
   // Rotation with a finger down: the finger is released, the controls move, and touch works in the new orientation.
   const viewport = page.viewport();
   await fingers.down(1, move.at);

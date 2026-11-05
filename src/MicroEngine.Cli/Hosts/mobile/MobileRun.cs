@@ -3,24 +3,6 @@ using MicroEngine.Hosting;
 using MicroEngine.Platform;
 using MicroEngine.Sdl;
 
-/// <summary>What a mobile host was asked to run: an input script (its text), developer environment variables
-/// (the games' desktop shortcuts, such as MEADOW_START) and where captures go.</summary>
-internal sealed record MobileLaunch(string? ScriptName, string? Script, IReadOnlyDictionary<string, string> Environment, string CaptureDirectory)
-{
-    /// <summary>Parses "NAME=value;NAME=value" as given on the command line of a test.</summary>
-    public static IReadOnlyDictionary<string, string> ParseEnvironment(string? pairs)
-    {
-        var result = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var pair in (pairs ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            int eq = pair.IndexOf('=');
-            if (eq <= 0) throw new FormatException($"Environment entry '{pair}' is not NAME=value.");
-            result[pair[..eq]] = pair[(eq + 1)..];
-        }
-        return result;
-    }
-}
-
 /// <summary>
 /// One run of the selected game for a mobile host, composed by the game's own <c>Configure</c> entry point
 /// (<see cref="GameEntry"/>) through the launcher model every host shares (<see cref="GameHost"/>): a scripted run is in
@@ -33,13 +15,13 @@ internal static class MobileRun
     public static int Run(MobileLaunch launch, HostKind kind, IContentSource? content, Action<string> log, Action? firstFrame = null)
     {
         // A test's developer variables (the games' desktop shortcuts, such as MEADOW_START) reach the game the way a
-        // desktop shell's or the page's do: as the process environment, which game code reads.
-        foreach (var (name, value) in launch.Environment) Environment.SetEnvironmentVariable(name, value);
+        // desktop shell's or the page's do: as the host environment's variables, which game code reads.
+        var environment = launch.CreateEnvironment(kind);
         var request = new LaunchRequest { ScriptText = launch.Script, ScriptName = launch.ScriptName, CaptureDirectory = launch.CaptureDirectory, Audio = "device" };
         GameHost host;
         try
         {
-            host = GameHost.Create(new HostEnvironment(kind), request, GameEntry.Configure, defaults =>
+            host = GameHost.Create(environment, request, GameEntry.Configure, defaults =>
             {
                 defaults.UsePlatforms(new PlatformCatalog().Add(SdlPlatform.Profile));
                 defaults.Content = content;
@@ -81,7 +63,7 @@ internal static class MobileRun
         // MICROENGINE_PROBE=1 (a test's --env) also logs where the touch controls are on this screen, once, and the
         // actions down with the scene's own description whenever they change, so a check can tell that touches moved
         // the player rather than only that a scene changed.
-        bool probing = Environment.GetEnvironmentVariable("MICROENGINE_PROBE") == "1";
+        bool probing = environment.Variable("MICROENGINE_PROBE") == "1";
         using var watch = new Timer(_ =>
         {
             string? now = game.Scenes?.Current?.GetType().Name;

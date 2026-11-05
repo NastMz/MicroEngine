@@ -126,6 +126,41 @@ public Vector2 DeadZone { get; set; }
 
  [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
+### <a id="MicroEngine_Graphics_Camera2D_DrawPosition"></a> DrawPosition
+
+Where the view is drawn when that is not [Position](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Position), or null (the default) to draw at
+[Position](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Position). Set it before drawing to show the camera somewhere the rules do not keep it, for example
+its position interpolated between the last two updates (a scene world's <code>DrawPosition2D</code> of an entity that
+follows the camera): the rules keep reading and moving [Position](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Position), and drawing never changes it. It
+stays until it is set again or set to null.
+
+```csharp
+public Vector2? DrawPosition { get; set; }
+```
+
+#### Property Value
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)?
+
+#### Remarks
+
+Drawing reads it through [DrawnPosition](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_DrawnPosition): [RenderOffset](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_RenderOffset), [WorldToView](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_WorldToView),
+[ViewToWorld](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_ViewToWorld), [WorldToScreen](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_WorldToScreen_System_Numerics_Vector2_), [ScreenToWorld](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_ScreenToWorld_System_Numerics_Vector2_), [VisibleBounds](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_VisibleBounds) and
+[IsVisible](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_IsVisible_MicroEngine_RectF_System_Single_). [View](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_View), [Center](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Center), [Follow](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Follow_System_Numerics_Vector2_System_Single_), [CenterOn](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_CenterOn_System_Numerics_Vector2_) and
+[Clamp](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Clamp) are the rules' and use [Position](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Position).
+
+### <a id="MicroEngine_Graphics_Camera2D_DrawnPosition"></a> DrawnPosition
+
+The position the view is drawn at: [DrawPosition](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_DrawPosition) when it is set, else [Position](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Position).
+
+```csharp
+public Vector2 DrawnPosition { get; }
+```
+
+#### Property Value
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
 ### <a id="MicroEngine_Graphics_Camera2D_FollowSharpness"></a> FollowSharpness
 
 Per-second follow sharpness; 0 snaps immediately.
@@ -179,7 +214,7 @@ public Vector2 Position { get; set; }
 
 ### <a id="MicroEngine_Graphics_Camera2D_RenderOffset"></a> RenderOffset
 
-The translation the renderer should apply (negative position plus shake), snapped if requested.
+The translation the renderer should apply (negative [DrawnPosition](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_DrawnPosition) plus shake), snapped if requested.
 
 ```csharp
 public Vector2 RenderOffset { get; }
@@ -203,7 +238,7 @@ public float Rotation { get; set; }
 
 ### <a id="MicroEngine_Graphics_Camera2D_ShakeOffset"></a> ShakeOffset
 
-Shake offset applied on top of [Position](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Position) when rendering.
+Shake offset applied on top of [DrawnPosition](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_DrawnPosition) when rendering.
 
 ```csharp
 public Vector2 ShakeOffset { get; }
@@ -263,8 +298,9 @@ public float ViewWidth { get; }
 
 ### <a id="MicroEngine_Graphics_Camera2D_VisibleBounds"></a> VisibleBounds
 
-The world rectangle that covers what the canvas shows, without shake: [View](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_View) with no zoom or rotation,
-otherwise the bounding box of the canvas's corners in the world.
+The world rectangle that covers what the canvas shows, without shake: the view at [DrawnPosition](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_DrawnPosition)
+([View](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_View) while no [DrawPosition](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_DrawPosition) is set) with no zoom or rotation, otherwise the bounding box
+of the canvas's corners in the world.
 
 ```csharp
 public RectF VisibleBounds { get; }
@@ -276,7 +312,8 @@ public RectF VisibleBounds { get; }
 
 ### <a id="MicroEngine_Graphics_Camera2D_WorldToView"></a> WorldToView
 
-World coordinates to canvas pixels: the view's centre (with shake) moves to the canvas centre, then the world is
+World coordinates to canvas pixels: the drawn view's centre (at [DrawnPosition](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_DrawnPosition), with shake) moves to
+the canvas centre, then the world is
 rotated by [Rotation](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Rotation) and scaled by [Zoom](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_Zoom) around it; with [PixelSnap](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_PixelSnap) the
 final translation is rounded. With no zoom or rotation it is the translation by [RenderOffset](MicroEngine.Graphics.Camera2D.md#MicroEngine_Graphics_Camera2D_RenderOffset).
 

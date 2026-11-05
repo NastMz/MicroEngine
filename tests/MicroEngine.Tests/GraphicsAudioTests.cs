@@ -119,6 +119,68 @@ public sealed class GraphicsTests
     }
 
     [TestMethod]
+    public void Camera_draws_at_its_position_until_a_draw_position_is_set()
+    {
+        var camera = new Camera2D(320, 180) { PixelSnap = false };
+        camera.Position = new Vector2(100, 40);
+        Assert.IsNull(camera.DrawPosition);
+        Assert.AreEqual(new Vector2(100, 40), camera.DrawnPosition);
+        Assert.AreEqual(new Vector2(-100, -40), camera.RenderOffset);
+        Assert.AreEqual(new RectF(100, 40, 320, 180), camera.VisibleBounds);
+        Assert.AreEqual(new Vector2(0, 0), camera.WorldToScreen(new Vector2(100, 40)));
+    }
+
+    [TestMethod]
+    public void Camera_draw_position_moves_only_what_is_drawn()
+    {
+        var camera = new Camera2D(320, 180) { PixelSnap = false, Bounds = new RectF(0, 0, 2000, 180), FollowSharpness = 0 };
+        camera.Position = new Vector2(100, 0);
+        camera.DrawPosition = new Vector2(90.5f, 0);
+
+        // Drawing reads the draw position.
+        Assert.AreEqual(new Vector2(90.5f, 0), camera.DrawnPosition);
+        Assert.AreEqual(new Vector2(-90.5f, 0), camera.RenderOffset);
+        Assert.AreEqual(Matrix3x2.CreateTranslation(-90.5f, 0), camera.WorldToView);
+        Assert.AreEqual(new Vector2(9.5f, 10), camera.WorldToScreen(new Vector2(100, 10)));
+        Assert.AreEqual(new Vector2(100, 10), camera.ScreenToWorld(new Vector2(9.5f, 10)));
+        Assert.AreEqual(new RectF(90.5f, 0, 320, 180), camera.VisibleBounds);
+        Assert.IsTrue(camera.IsVisible(new RectF(85, 0, 4, 4)), "Visible where it is drawn.");
+        // The rules keep the position.
+        Assert.AreEqual(new Vector2(100, 0), camera.Position);
+        Assert.AreEqual(new RectF(100, 0, 320, 180), camera.View);
+        Assert.AreEqual(new Vector2(260, 90), camera.Center);
+        camera.Follow(new Vector2(500, 90), 1 / 60f);
+        Assert.AreEqual(500 - 160, camera.Position.X, 0.001f, "Following moves the position, from the position.");
+        Assert.AreEqual(new Vector2(90.5f, 0), camera.DrawPosition, "The draw position stays until it is set again.");
+
+        camera.DrawPosition = null;
+        Assert.AreEqual(camera.Position, camera.DrawnPosition);
+        Assert.AreEqual(-camera.Position, camera.RenderOffset);
+    }
+
+    [TestMethod]
+    public void Camera_draw_position_is_snapped_shaken_zoomed_and_rotated_like_the_position()
+    {
+        var camera = new Camera2D(320, 180) { Zoom = 2, Rotation = 0.5f };
+        camera.Position = new Vector2(10.6f, 3.2f);
+        var atPosition = camera.WorldToView;
+        var bounds = camera.VisibleBounds;
+        camera.Position = new Vector2(500, 500);
+        camera.DrawPosition = new Vector2(10.6f, 3.2f);
+        Assert.AreEqual(atPosition, camera.WorldToView, "The same view as a camera whose position is the draw position.");
+        Assert.AreEqual(bounds, camera.VisibleBounds);
+
+        var flat = new Camera2D(320, 180) { MaxShake = 4 };
+        flat.Position = new Vector2(200, 0);
+        flat.DrawPosition = new Vector2(10.6f, 0);
+        Assert.AreEqual(new Vector2(-11, 0), flat.RenderOffset, "Pixel snapping applies to the draw position.");
+        flat.Shake(1);
+        flat.Update(1 / 60f);
+        var expected = -(new Vector2(10.6f, 0) + flat.ShakeOffset);
+        Assert.AreEqual(new Vector2(MathF.Round(expected.X), MathF.Round(expected.Y)), flat.RenderOffset, "Shake applies on top of it.");
+    }
+
+    [TestMethod]
     public void Camera_shake_decays_to_rest()
     {
         var camera = new Camera2D(320, 180);

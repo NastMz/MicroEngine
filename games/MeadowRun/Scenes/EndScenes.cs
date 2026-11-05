@@ -88,7 +88,7 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
     public override void Enter()
     {
         game.Music("credits");
-        _ = Objects;   // the scene's world, created before the first frame: frames animate at its blend (DrawTime)
+        _ = Objects;   // the scene's world, created here because drawing may not create it: frames animate at its blend (DrawTime)
     }
 
     /// <summary>Hashes whether the credits are leaving; the scroll follows the scene's age, which the engine hashes.</summary>
