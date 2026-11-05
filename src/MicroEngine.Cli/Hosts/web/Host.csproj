@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.WebAssembly">
-  <!-- Browser host of `microengine package web` (docs/guide/packaging.md): the game runs on raylib compiled to
-       WebAssembly; wwwroot/main.js is the page bridge. `microengine` copies this folder into the game's obj folder and
-       writes Game.props, GameEntry.cs, game.json and content.txt. Needs the wasm-tools workload. -->
+  <!-- Browser host of `microengine package web` (docs/guide/packaging.md): the game runs on SDL 3 or raylib compiled to
+       WebAssembly (WebBackend, the option web-backend of the tool); wwwroot/main.js is the page bridge. `microengine` copies this
+       folder into the game's obj folder and writes Game.props, GameEntry.cs, game.json and content.txt. Needs the
+       wasm-tools workload. -->
   <Import Project="Game.props" />
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -13,8 +14,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WasmBuildNative>true</WasmBuildNative>
     <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
-    <!-- SaveStore serializes game types with reflection-based System.Text.Json: trim only framework assemblies. The
-         trimmer's warnings about those two calls (IL2026/IL3050) are known (docs/evaluations/web-support.md). -->
+    <!-- SaveStore serializes game types with reflection-based System.Text.Json: trim only framework assemblies (and the
+         native bindings below). The trimmer's warnings about those two calls (IL2026/IL3050) are known. -->
     <TrimMode>partial</TrimMode>
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
     <NoWarn>$(NoWarn);IL2026;IL3050</NoWarn>
@@ -22,6 +23,7 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
+    <WebBackend Condition="'$(WebBackend)' == ''">raylib</WebBackend>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(GameProject)" />
@@ -30,9 +32,35 @@
     <Content Include="$(GameContentDir)**" Exclude="$(GameContentDir)**/*.cs" Link="wwwroot/Content/%(RecursiveDir)%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" Condition="'$(GameContentDir)' != ''" />
     <Content Include="$(GameScriptsDir)*.script" Link="wwwroot/scripts/%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" Condition="'$(GameScriptsDir)' != '' and '$(WebDevHooks)' == 'true'" />
   </ItemGroup>
-  <!-- Raylib-cs ships a browser raylib.a built by a newer emscripten than .NET's (wasm-opt rejects it), so link the copy
-       built with the workload's own emscripten: from the MicroEngine.Raylib package, or web/setup.sh's. -->
-  <Target Name="_UseWorkloadRaylib" BeforeTargets="_PrepareForBrowserWasmBuildNative">
+
+  <!-- SDL 3: SDL3.a built with the workload's own emscripten (src/MicroEngine.Sdl/native/build.sh), from the
+       MicroEngine.Sdl package or web/setup.sh's. SDL_Renderer's OpenGL ES 2 driver draws on WebGL. The bindings are
+       trimmed, so only the SDL functions the engine calls reach the native link (SDL3-CS declares about 1300); a game
+       that also references raylib (MicroEngine.Desktop) keeps none of it. -->
+  <PropertyGroup Condition="'$(WebBackend)' == 'sdl'">
+    <DefineConstants>$(DefineConstants);MICROENGINE_WEB_SDL</DefineConstants>
+    <EmccExtraLDFlags>$(EmccExtraLDFlags) -sMAX_WEBGL_VERSION=2</EmccExtraLDFlags>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(WebBackend)' == 'sdl'">
+    <TrimmableAssembly Include="SDL3-CS" />
+    <TrimmableAssembly Include="Raylib-cs" />
+    <TrimmableAssembly Include="MicroEngine.Raylib" />
+  </ItemGroup>
+  <Target Name="_UseWorkloadSdl" BeforeTargets="_PrepareForBrowserWasmBuildNative" Condition="'$(WebBackend)' == 'sdl'">
+    <Error Condition="!Exists('$(SdlWasmLib)')" Text="SDL for the web is missing ($(SdlWasmLib)). It comes with the MicroEngine.Sdl package; in a MicroEngine checkout run web/setup.sh, or pass --sdl-wasm &lt;path&gt;." />
+    <PropertyGroup>
+      <!-- Raylib-cs adds GLFW's JavaScript for raylib; an SDL page has no raylib. -->
+      <EmccFlags>$(EmccFlags.Replace('-sUSE_GLFW=3', ''))</EmccFlags>
+    </PropertyGroup>
+    <ItemGroup>
+      <NativeFileReference Remove="@(NativeFileReference)" Condition="'%(Filename)' == 'raylib'" />
+      <NativeFileReference Include="$(SdlWasmLib)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- raylib: Raylib-cs ships a browser raylib.a built by a newer emscripten than .NET's (wasm-opt rejects it), so link
+       the copy built with the workload's own emscripten: from the MicroEngine.Raylib package, or web/setup.sh's. -->
+  <Target Name="_UseWorkloadRaylib" BeforeTargets="_PrepareForBrowserWasmBuildNative" Condition="'$(WebBackend)' == 'raylib'">
     <Error Condition="!Exists('$(RaylibWasmLib)')" Text="raylib for the web is missing ($(RaylibWasmLib)). It comes with the MicroEngine.Raylib package; in a MicroEngine checkout run web/setup.sh, or pass --raylib-wasm &lt;path&gt;." />
     <ItemGroup>
       <NativeFileReference Remove="@(NativeFileReference)" Condition="'%(Filename)' == 'raylib'" />

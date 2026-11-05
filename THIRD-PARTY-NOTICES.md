@@ -13,7 +13,7 @@ keep all rights reserved (`games/LICENSE`). Both notices also ship in every brow
 | --- | --- | --- | --- |
 | Raylib-cs 8.1.0 | C# bindings for raylib | zlib | Copyright (C) 2018-2025 raylib-cs |
 | raylib 6.0 | windowing, graphics, input and audio | zlib/libpng | Copyright (c) 2013-2026 Ramon Santamaria (@raysan5) |
-| SDL 3.5 | windowing, graphics, input, touch and audio on Windows, Linux, macOS, Android and iOS | zlib | Copyright (C) 2026 Sam Lantinga |
+| SDL 3.5 | windowing, graphics, input, touch and audio on Windows, Linux, macOS, Android and iOS, and in browser packages built for SDL (compiled to WebAssembly from SDL's sources) | zlib | Copyright (C) 1997-2026 Sam Lantinga |
 | ppy.SDL3-CS 2026.1002.1 | C# bindings for SDL 3 and its native builds | MIT | Copyright (c) 2024 ppy Pty Ltd |
 | NVorbis 0.10.5 | OGG Vorbis music decoding in the engine's mixer, on every platform (a dependency of the `MicroEngine` package, used by `MicroEngine.Audio`) | MIT | Copyright (c) 2020 Andrew Ward |
 | StbImageSharp 2.30.15 | JPEG, BMP, TGA, GIF, PSD and 16-bit or interlaced PNG decoding (a dependency of the `MicroEngine` package, used by `MicroEngine.Graphics2D`) | public domain (Unlicense) or MIT | StbSharp team (Roman Shapiro), a port of stb_image by Sean Barrett |

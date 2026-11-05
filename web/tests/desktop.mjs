@@ -6,7 +6,8 @@
 //                              [--reference FILE [--names-only]] [--write-reference FILE]
 //
 // --backend runs the games on another desktop platform (sdl, sdl-software; the games' --platform); the default stays
-// raylib, the platform the browser build shares, because the browser comparison is byte for byte on the PNG files.
+// raylib. Compare browser captures with the desktop build of the platform the browser package runs on (--backend sdl
+// for an SDL package): SDL and raylib already draw some frames differently on desktop (their own references).
 // --platform labels a new reference (--write-reference). --jobs runs that many scenarios at once (default: up to 4).
 // --skip-run compares captures already in --out/desktop/<Game>/<script> (for example pulled from a device).
 // --packages DIR runs the executables of extracted native packages instead of the repository's build

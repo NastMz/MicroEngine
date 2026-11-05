@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>MicroEngine.Sdl</RootNamespace>
-    <Description>MicroEngine backend built on SDL3: window, 2D renderer, input, touch and audio on Windows, Linux, macOS, Android and iOS.</Description>
+    <Description>MicroEngine backend built on SDL3: window, 2D renderer, input, touch and audio on Windows, Linux, macOS, Android, iOS and in browsers (WebAssembly).</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
@@ -13,7 +13,25 @@
     <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
     <!-- OGG Vorbis decoding in managed code, so music streams on every platform without another native library. -->
     <PackageReference Include="NVorbis" Version="[0.10.5]" />
+    <InternalsVisibleTo Include="MicroEngine.Desktop.Tests" />
   </ItemGroup>
+  <!-- Browser builds link SDL compiled as a static WebAssembly library by the emscripten of .NET's wasm-tools workload
+       (native/build.sh; ppy.SDL3-CS has no browser build). web/setup.sh builds it into its toolchain folder, CI in its
+       own cached job; the package carries it, and build/MicroEngine.Sdl.props tells the browser host where it is.
+       Release packs (-p:MicroEngineRelease=true, or -p:MicroEngineRequireWebSdl=true) require it. -->
+  <PropertyGroup>
+    <_WebTools>$(MICROENGINE_WEB_TOOLS)</_WebTools>
+    <_WebTools Condition="'$(_WebTools)' == ''">$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))/.microengine/web-tools</_WebTools>
+    <MicroEngineWebSdl Condition="'$(MicroEngineWebSdl)' == ''">$(_WebTools)/sdl-web/browser-wasm/SDL3.a</MicroEngineWebSdl>
+    <MicroEngineRequireWebSdl Condition="'$(MicroEngineRequireWebSdl)' == ''">$(MicroEngineRelease)</MicroEngineRequireWebSdl>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="build/MicroEngine.Sdl.props" Pack="true" PackagePath="build/;buildTransitive/" />
+    <None Include="$(MicroEngineWebSdl)" Condition="Exists('$(MicroEngineWebSdl)')" Pack="true" PackagePath="native/browser-wasm/SDL3.a" />
+  </ItemGroup>
+  <Target Name="_RequireWebSdl" BeforeTargets="_GetPackageFiles" Condition="'$(MicroEngineRequireWebSdl)' == 'true' and !Exists('$(MicroEngineWebSdl)')">
+    <Error Text="SDL for the web is missing ($(MicroEngineWebSdl)); run web/setup.sh before packing a release." />
+  </Target>
   <ItemGroup>
     <_SdlBundledProject Include="../MicroEngine.Graphics.SdlGpu/MicroEngine.Graphics.SdlGpu.csproj" />
   </ItemGroup>
