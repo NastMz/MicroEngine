@@ -1,8 +1,10 @@
 ---
-// The supported platforms (src/data/platforms.ts): how a game runs on each, where it is built, what players need and
-// what to plan around. The developer guide is docs/guide/platforms.md.
+// The supported platforms (src/data/platforms.ts), drawn as the platform family's modules seated on one board: one game
+// project, six hosts. Then each platform as a parts list: how a game runs there, where it is built, what players need
+// and what to plan around. The developer guide is docs/guide/platforms.md.
 import SiteLayout from '../layouts/SiteLayout.astro';
-import { platforms, supportLabels } from '../data/platforms';
+import FamilyIcon from '../components/brand/FamilyIcon.astro';
+import { platforms, supportLabels } from '../data/platforms.ts';
 import { targets } from '../lib/versions.mjs';
 import { playManifest } from '../lib/play-manifest.mjs';
 
@@ -11,26 +13,46 @@ const released = new Set(Object.values(downloads).flatMap(byTarget => Object.key
 const rows = (row: (typeof platforms)[number]) => [
   ['Runs on', row.runtime], ['Build', row.build], ['Players need', row.requires], ['Input', row.input], ['Plan for', row.notes],
 ] as const;
+const verdict = (row: (typeof platforms)[number]) => (row.support === 'supported' ? 'ok' : 'partial');
 ---
 <SiteLayout title="Platforms" description="Where MicroEngine games run: Windows, Linux, macOS, Android, iOS and web browsers, from one game project, and what each platform needs." current="platforms">
-  <div class="wrap page">
+  <div class="wrap platforms-page">
     <header class="page-head">
-      <h1>Platforms</h1>
-      <p class="lede">One game project, six targets. The game's code is the same everywhere; the platform underneath is SDL 3 on desktops and phones and raylib in browsers, and <code>microengine package</code> builds what players install.</p>
+      <p class="eyebrow"><FamilyIcon family="platform" size={14} /><span>Platform hosts</span></p>
+      <h1>One game project, six hosts.</h1>
+      <p class="lede">The game's code is the same everywhere: it talks to one platform contract, and a host seats underneath. SDL 3 is the platform on desktops and phones; in browsers the published SDK runs raylib compiled to WebAssembly, and the next SDK version runs SDL 3 there too. <code>microengine package</code> builds what players install.</p>
     </header>
+
+    <figure class="board" aria-labelledby="board-caption">
+      <p class="rail"><span>Your game</span><span class="rail-note">one .NET project</span></p>
+      <ul class="hosts" data-family="platform">
+        {platforms.map(row => (
+          <li class="bay">
+            <a class="module" href={`#${row.id}`}>
+              <strong>{row.name}</strong>
+              <span class={`verdict ${verdict(row)}`}>{supportLabels[row.support]}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <figcaption id="board-caption">Each host is a module in the platform socket, under the same game. A preview builds and runs, with the limits listed below.</figcaption>
+    </figure>
 
     {platforms.map(row => {
       const target = 'target' in row.download ? targets.find(t => t.id === (row.download as { target: string }).target) : null;
       return (
-        <section class="platform" id={row.id} aria-labelledby={`${row.id}-title`}>
+        <section class="platform" id={row.id} aria-labelledby={`${row.id}-title`} data-family="platform">
           <div class="platform-head">
-            <h2 id={`${row.id}-title`}>{row.name}</h2>
-            <span class={`status ${row.support === 'supported' ? 'ok' : 'partial'}`}>{supportLabels[row.support]}</span>
+            <h2 id={`${row.id}-title`}><FamilyIcon family="platform" size={18} />{row.name}</h2>
+            <span class={`verdict ${verdict(row)}`}>{supportLabels[row.support]}</span>
           </div>
           <dl class="facts">
             {rows(row).map(([name, value]) => <div><dt>{name}</dt><dd>{value}</dd></div>)}
+            {row.runtimeNext && (
+              <div data-status="next"><dt><span class="status-mark" aria-hidden="true"></span>Next SDK version</dt><dd>{row.runtimeNext}</dd></div>
+            )}
           </dl>
-          <p class="small muted">
+          <p class="demos">
             {target
               ? (released.has(target.id) ? <>The demos: <a href="/docs/downloads/">{target.detail} downloads</a>.</> : <>The demos: no {target.label} download in the current release.</>)
               : row.download.none}
@@ -39,20 +61,67 @@ const rows = (row: (typeof platforms)[number]) => [
       );
     })}
 
-    <p class="muted small">Building for a platform: <a href="/docs/platforms/">Platforms guide</a> · <a href="/docs/packaging/">Packaging a game</a> · <a href="/docs/signing/">Signing</a>.</p>
+    <p class="foot">Building for a platform: <a href="/docs/platforms/">Platforms guide</a> · <a href="/docs/packaging/">Packaging a game</a> · <a href="/docs/signing/">Signing</a>.</p>
   </div>
 </SiteLayout>
 
 <style>
-  .page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); padding-top: var(--space-3xl); }
-  .page-head { display: grid; gap: var(--space-lg); }
-  .small { font-size: var(--text-sm); }
-  .platform { display: grid; gap: var(--space-sm); padding-top: var(--space-lg); border-top: var(--rule-pixel) solid var(--color-rule); scroll-margin-top: var(--space-lg); }
-  .platform-head { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-md); align-items: baseline; }
-  .facts { margin: 0; display: grid; gap: var(--space-xs); grid-template-columns: minmax(0, 1fr); }
-  .facts > div { display: grid; gap: var(--space-2xs); padding: var(--space-sm); background: var(--color-paper-2); border: var(--rule-thin) solid var(--color-rule); min-width: 0; }
-  .facts dt { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
-  .facts dd { margin: 0; font-size: var(--text-sm); }
-  @media (min-width: 40rem) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (min-width: 64rem) { .facts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .platforms-page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); padding-top: var(--space-3xl); }
+  .platforms-page p { margin: 0; }
+  .platforms-page a { color: var(--color-accent); }
+  .page-head { display: grid; gap: var(--space-md); max-width: 52rem; }
+  .eyebrow { display: inline-flex; align-items: center; gap: var(--space-xs); font-family: var(--font-mono); font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--family-platform); }
+  h1 { margin: 0; font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--text-display);
+    letter-spacing: var(--tracking-display); line-height: var(--leading-tight); color: var(--color-ink); }
+  .lede { font-size: var(--text-lg); line-height: var(--leading-body); color: var(--color-ink-2); max-width: var(--measure); }
+  .lede code { font-size: 0.9em; }
+
+  /* The board: a kernel rail ("your game"), and the six hosts seated under it. */
+  .board { display: grid; gap: var(--space-sm); margin: 0; min-width: 0; }
+  .rail { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2xs) var(--space-sm); padding: var(--space-xs) var(--space-sm);
+    background: var(--color-ink); color: var(--color-paper); border-radius: var(--radius-sm);
+    font-family: var(--font-mono); font-size: var(--text-sm); text-transform: uppercase; letter-spacing: var(--tracking-label); }
+  .rail-note { font-size: var(--text-xs); text-transform: none; letter-spacing: 0; }
+  .hosts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-xs); margin: 0; padding: 0; list-style: none; }
+  .hosts .bay { min-width: 0; padding: var(--rule-gap); border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm); background: var(--color-paper); }
+  .hosts .module { display: grid; gap: var(--space-2xs); min-height: var(--tap); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm);
+    border: var(--rule-thin) solid var(--family-color); background: color-mix(in oklch, var(--family-color) var(--tint), var(--color-paper));
+    color: var(--color-ink); text-decoration: none; transition: transform var(--dur-fast) var(--ease-seat); }
+  .hosts .module:hover { transform: translateY(-2px); }
+  .hosts strong { font-weight: 600; font-size: var(--text-sm); }
+  .board figcaption { font-size: var(--text-sm); color: var(--color-ink-2); max-width: var(--measure); }
+
+  .verdict { display: inline-flex; align-items: center; gap: var(--space-2xs); font-family: var(--font-mono); font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: var(--tracking-label); white-space: nowrap; }
+  .verdict::before { content: ''; width: 0.625rem; height: 0.625rem; box-sizing: border-box; border: var(--rule-pixel) solid currentColor; background: currentColor; }
+  .verdict.ok { color: var(--color-ok); }
+  .verdict.partial { color: var(--color-partial); }
+  .verdict.partial::before { background: linear-gradient(to top, currentColor 50%, transparent 50%); }
+
+  /* Each platform: a parts list under a rail. */
+  .platform { display: grid; gap: var(--space-md); padding-top: var(--space-md); border-top: var(--rule-pixel) solid var(--color-ink); scroll-margin-top: var(--space-lg); }
+  .platform-head { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-md); align-items: baseline; justify-content: space-between; }
+  .platform h2 { display: inline-flex; align-items: center; gap: var(--space-xs); margin: 0; font-family: var(--font-display);
+    font-weight: var(--weight-display); font-size: var(--text-xl); letter-spacing: var(--tracking-display); line-height: var(--leading-snug); color: var(--color-ink); }
+  .facts { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
+  .facts > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xs); padding-block: var(--space-xs);
+    border-bottom: var(--rule-thin) solid var(--color-rule); min-width: 0; }
+  .facts dt { display: inline-flex; align-items: center; gap: var(--space-2xs); font-family: var(--font-mono); font-size: var(--text-xs);
+    color: var(--color-ink-2); text-transform: uppercase; letter-spacing: var(--tracking-label); }
+  .facts dd { margin: 0; font-size: var(--text-sm); line-height: var(--leading-snug); overflow-wrap: break-word; }
+  .facts [data-status='next'] dt { color: var(--status-next); }
+  .demos, .foot { font-size: var(--text-sm); color: var(--color-ink-2); }
+
+  @media (min-width: 40rem) {
+    .hosts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .facts > div { grid-template-columns: 9rem minmax(0, 1fr); gap: var(--space-md); }
+  }
+  @media (min-width: 64rem) {
+    .hosts { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .platform { grid-template-columns: 16rem minmax(0, 1fr); column-gap: var(--space-xl); }
+    .platform-head { flex-direction: column; justify-content: start; align-items: start; }
+    .platform .facts, .platform .demos { grid-column: 2; }
+  }
+  @media (prefers-reduced-motion: reduce) { .hosts .module { transition: none; } .hosts .module:hover { transform: none; } }
 </style>
