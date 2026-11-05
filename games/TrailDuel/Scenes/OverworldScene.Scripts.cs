@@ -240,7 +240,7 @@ internal sealed partial class OverworldScene
         yield return Say("Please rest your orbs on the altar for a moment...", def.Speaker);
         _healGlow = 0;
         Audio.Play("jingle:heal");
-        for (float t = 0; t < 1.8f; t += 1f / 60f) { _healGlow = t; yield return null; }
+        for (float t = 0; t < 1.8f; t += EngineStep) { _healGlow = t; yield return null; }
         _healGlow = -1;
         State.HealParty();
         State.RespawnMap = "shrine";

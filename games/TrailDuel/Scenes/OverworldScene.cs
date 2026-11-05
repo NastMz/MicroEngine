@@ -322,13 +322,13 @@ internal sealed partial class OverworldScene : Scene
 
     private IEnumerator FadeOut(float seconds = 0.25f)
     {
-        for (float t = 0; t < seconds; t += 1f / 60f) { _fade = t / seconds; yield return null; }
+        for (float t = 0; t < seconds; t += EngineStep) { _fade = t / seconds; yield return null; }
         _fade = 1;
     }
 
     private IEnumerator FadeIn(float seconds = 0.25f)
     {
-        for (float t = 0; t < seconds; t += 1f / 60f) { _fade = 1 - t / seconds; yield return null; }
+        for (float t = 0; t < seconds; t += EngineStep) { _fade = 1 - t / seconds; yield return null; }
         _fade = 0;
     }
 
@@ -351,7 +351,7 @@ internal sealed partial class OverworldScene : Scene
         _bubbleOn = actor;
         _bubbleTime = 0;
         Audio.Play("exclaim");
-        for (float t = 0; t < 0.7f; t += 1f / 60f) { _bubbleTime = t; yield return null; }
+        for (float t = 0; t < 0.7f; t += EngineStep) { _bubbleTime = t; yield return null; }
         _bubbleOn = null;
     }
 

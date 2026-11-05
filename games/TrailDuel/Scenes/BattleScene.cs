@@ -281,7 +281,7 @@ internal sealed partial class BattleScene : Scene
         _choice = new ChoiceMenu(Font, Audio, options) { CanCancel = canCancel };
         while (_choice.Result is null)
         {
-            _choice.Update(1f / 60f, Input);
+            _choice.Update(EngineStep, Input);
             yield return null;
         }
         result(_choice.Result.Value);

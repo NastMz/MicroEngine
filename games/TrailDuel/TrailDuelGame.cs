@@ -34,7 +34,11 @@ public sealed class TrailDuelGame : Game
         UseAchievements(TrailAchievements.Catalog, Saves, Ui.UiKit.Theme);
     }
 
-    public override GameSettings Settings { get; } = new("Trail Duel") { Background = Color.Hex("2b2140") };
+    private readonly GameSettings _settings = new("Trail Duel") { Background = Color.Hex("2b2140") };
+    public override GameSettings Settings => _settings;
+
+    /// <summary>Updates per second (60 by default); every timing follows the loop's step, so tests run other rates.</summary>
+    internal int UpdateRate { get => _settings.UpdateRate; init => _settings = _settings with { UpdateRate = value }; }
     /// <summary>The species that evolves under the <c>evolve</c> debug start (TRAIL_EVOLVE), or null for the default.</summary>
     internal string? DebugEvolve { get; }
     internal SpriteAtlas Atlas { get; private set; } = null!;

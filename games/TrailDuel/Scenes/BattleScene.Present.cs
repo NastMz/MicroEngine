@@ -74,7 +74,7 @@ internal sealed partial class BattleScene
     private IEnumerator Tween(float seconds, Action<float> apply, Func<float, float>? ease = null)
     {
         ease ??= Ease.OutQuad;
-        for (float t = 0; t < seconds; t += 1f / 60f)
+        for (float t = 0; t < seconds; t += EngineStep)
         {
             apply(ease(Math.Clamp(t / seconds, 0, 1)));
             yield return null;
@@ -341,7 +341,7 @@ internal sealed partial class BattleScene
         float speed = MathF.Max(18, disp.MaxHp * 1.1f);
         while (MathF.Abs(disp.Hp - target) > 0.01f)
         {
-            disp.Hp = MathX.Approach(disp.Hp, target, speed / 60f);
+            disp.Hp = MathX.Approach(disp.Hp, target, speed * EngineStep);
             yield return null;
         }
     }
