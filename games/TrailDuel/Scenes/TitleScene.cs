@@ -88,7 +88,7 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
         r.FillCircle(new Vector2(262, 34), 13, Color.Hex("fff6d0").WithAlpha(0.9f));
         for (int i = 0; i < 4; i++)
             r.Draw(game.Sprite(i % 2 == 0 ? "cloud" : "cloud2"), new Vector2(MathF.Round((i * 110 + Age * (5 + i * 2)) % 440 - 60), 14 + i * 13 % 40), Pal.White.WithAlpha(0.9f));
-        for (int x = 4; x < 320; x += 11) r.Draw(game.Sprite("t:tallover"), new Vector2(x, 162 + (x * 7) % 9));
+        for (int x = 4; x < TrailDuelGame.CanvasWidth; x += 11) r.Draw(game.Sprite("t:tallover"), new Vector2(x, 162 + (x * 7) % 9));
 
         // Starters on the hill, each bobbing on its own beat.
         string[] starters = SpeciesDex.Starters;

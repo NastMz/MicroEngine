@@ -72,7 +72,7 @@ internal sealed class SummaryScene(TrailDuelGame game, int index) : Scene
     {
         var c = Party[_index];
         var typeColor = Pal.TypeColor(c.Type);
-        r.FillGradient(new RectF(0, 0, 320, 180), Color.Lerp(typeColor, Pal.White, 0.55f), Pal.Cream, 10);
+        r.FillGradient(TrailDuelGame.Canvas, Color.Lerp(typeColor, Pal.White, 0.55f), Pal.Cream, 10);
 
         // Portrait card
         var card = new RectF(6, 6, 118, 130);

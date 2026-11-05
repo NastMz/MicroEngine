@@ -34,7 +34,12 @@ public sealed class TrailDuelGame : Game
         UseAchievements(TrailAchievements.Catalog, Saves, Ui.UiKit.Theme);
     }
 
-    private readonly GameSettings _settings = new("Trail Duel") { Background = Color.Hex("2b2140") };
+    /// <summary>The virtual canvas in pixels: every screen is laid out on it.</summary>
+    public const int CanvasWidth = 320, CanvasHeight = 180;
+    /// <summary>The whole canvas, for full-screen fills, fades and flashes.</summary>
+    internal static readonly RectF Canvas = new(0, 0, CanvasWidth, CanvasHeight);
+
+    private readonly GameSettings _settings = new("Trail Duel", CanvasWidth, CanvasHeight) { Background = Color.Hex("2b2140") };
     public override GameSettings Settings => _settings;
 
     /// <summary>Updates per second (60 by default); every timing follows the loop's step, so tests run other rates.</summary>

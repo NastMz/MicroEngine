@@ -61,7 +61,7 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
 
     public override void Draw(IRenderer r)
     {
-        r.FillRect(new RectF(0, 0, 320, 180), Pal.Ink.WithAlpha(0.25f * _open));
+        r.FillRect(TrailDuelGame.Canvas, Pal.Ink.WithAlpha(0.25f * _open));
         var box = new RectF(MathF.Round(222 + (1 - _open) * 110), 6, 92, Options.Length * 14 + 12);
         UiKit.Box(r, box);
         for (int i = 0; i < Options.Length; i++)
@@ -114,7 +114,7 @@ internal sealed class ControlsScene : Scene
 
     public override void Draw(IRenderer r)
     {
-        r.FillGradient(new RectF(0, 0, 320, 180), Color.Hex("b8a6d8"), Color.Hex("ece4f6"), 10);
+        r.FillGradient(TrailDuelGame.Canvas, Color.Hex("b8a6d8"), Color.Hex("ece4f6"), 10);
         var box = new RectF(30, 18, 260, 144);
         UiKit.Box(r, box);
         UiKit.Text(r, Font, "CONTROLS", box.X + 12, box.Y + 10, Pal.Coral);
@@ -168,7 +168,7 @@ internal sealed class TrailLogScene(TrailDuelGame game) : Scene
     public override void Draw(IRenderer r)
     {
         var s = game.State;
-        r.FillGradient(new RectF(0, 0, 320, 180), Color.Hex("e88a6a"), Color.Hex("f8dcc0"), 10);
+        r.FillGradient(TrailDuelGame.Canvas, Color.Hex("e88a6a"), Color.Hex("f8dcc0"), 10);
         var list = new RectF(176, 6, 138, 168);
         UiKit.Box(r, list);
         int start = Math.Clamp(_list.Index - 5, 0, Math.Max(0, SpeciesDex.All.Count - 11));

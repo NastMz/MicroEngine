@@ -22,7 +22,7 @@ internal sealed partial class OverworldScene : Scene
 
     private readonly TrailDuelGame _game;
     private readonly bool _intro;
-    private readonly Camera2D _camera = new(320, 180) { FollowSharpness = 0 };
+    private readonly Camera2D _camera = new(TrailDuelGame.CanvasWidth, TrailDuelGame.CanvasHeight) { FollowSharpness = 0 };
     /// <summary>The camera's position in the scene's objects, so the world draws it between steps like the actors.</summary>
     private EntityId _cameraEntity;
     private readonly ParticleSystem _dust = new(128, 17);
@@ -114,7 +114,7 @@ internal sealed partial class OverworldScene : Scene
         State.X = x;
         State.Y = y;
         State.Facing = facing;
-        _camera.Bounds = new RectF(0, 0, def.Width * 16, def.Height * 16);
+        _camera.Bounds = new RectF(0, 0, def.Width * MapDef.TileSize, def.Height * MapDef.TileSize);
         SnapCamera();
         _rustles.Clear();
         _dust.Clear();

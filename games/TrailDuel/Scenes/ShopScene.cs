@@ -85,7 +85,7 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
 
     public override void Draw(IRenderer r)
     {
-        r.FillGradient(new RectF(0, 0, 320, 180), Color.Hex("86aee2"), Color.Hex("e6eef8"), 10);
+        r.FillGradient(TrailDuelGame.Canvas, Color.Hex("86aee2"), Color.Hex("e6eef8"), 10);
         var money = new RectF(6, 6, 104, 22);
         UiKit.Box(r, money);
         UiKit.Text(r, Font, "MONEY", money.X + 8, money.Y + 7, UiKit.Muted);

@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using TrailDuel.World;
 
 namespace TrailDuel.Visuals;
 
@@ -10,7 +11,7 @@ namespace TrailDuel.Visuals;
 /// </summary>
 internal static partial class TileArt
 {
-    public const int T = 16;
+    public const int T = MapDef.TileSize;
     public const int TreeVariants = 3, PineVariants = 4;
 
     public static void AddAll(SpriteAtlasBuilder b)

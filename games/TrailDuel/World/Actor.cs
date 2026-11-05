@@ -77,14 +77,16 @@ internal sealed class Actor : IStateHashed
     {
         get
         {
-            if (!Moving) return new Vector2(X * 16, Y * 16);
+            if (!Moving) return new Vector2(X * Tile, Y * Tile);
             float t = Math.Clamp(_progress / _duration, 0, 1);
-            return Vector2.Lerp(new Vector2(_fromX * 16, _fromY * 16), new Vector2(X * 16, Y * 16), t);
+            return Vector2.Lerp(new Vector2(_fromX * Tile, _fromY * Tile), new Vector2(X * Tile, Y * Tile), t);
         }
     }
 
-    /// <summary>The tile whose row the actor should be drawn with (its feet).</summary>
-    public int DrawRow => (int)MathF.Floor((PixelPosition.Y + 15) / 16);
+    private const int Tile = MapDef.TileSize;
+
+    /// <summary>The tile whose row the actor should be drawn with (its feet, on the tile's last pixel row).</summary>
+    public int DrawRow => (int)MathF.Floor((PixelPosition.Y + Tile - 1) / Tile);
 
     /// <summary>Moves to a tile at once; it is drawn there from this step on, never sliding from where it was.</summary>
     public void Teleport(int x, int y)

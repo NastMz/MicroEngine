@@ -100,7 +100,7 @@ internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string
 
     public override void Draw(IRenderer r)
     {
-        r.FillGradient(new RectF(0, 0, 320, 180), Color.Hex("e8b878"), Color.Hex("f6e2b8"), 10);
+        r.FillGradient(TrailDuelGame.Canvas, Color.Hex("e8b878"), Color.Hex("f6e2b8"), 10);
         // The satchel bobs gently on the left.
         r.Draw(game.Sprite("satchel"), new Vector2(56, 60 + MathF.Round(MathX.Wave(Age, 0.6f, 1.5f))));
         UiKit.Title(r, Font, "BAG", new Vector2(56, 102));

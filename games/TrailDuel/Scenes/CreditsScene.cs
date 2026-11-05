@@ -116,7 +116,7 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
         float scroll = Objects.DrawPosition2D(_scrollEntity).Y;
         for (int i = 0; i < Lines.Length; i++)
         {
-            float y = 180 + i * LineHeight - scroll;
+            float y = TrailDuelGame.CanvasHeight + i * LineHeight - scroll;
             if (y < -10 || y > 140) continue;
             bool header = Headers[i];
             UiKit.Title(r, Font, Lines[i], new Vector2(160, y), Lines[i] is "TRAIL DUEL" or "THE END" ? 2 : 1, header ? Pal.Gold : Pal.White);

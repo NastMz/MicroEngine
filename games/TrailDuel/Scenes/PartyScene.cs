@@ -128,7 +128,7 @@ internal sealed class PartyScene : Scene
 
     public override void Draw(IRenderer r)
     {
-        r.FillGradient(new RectF(0, 0, 320, 180), Color.Hex("8ac8b0"), Color.Hex("cfe8c8"), 12);
+        r.FillGradient(TrailDuelGame.Canvas, Color.Hex("8ac8b0"), Color.Hex("cfe8c8"), 12);
         for (int i = 0; i < 12; i++)
         {
             float x = (i * 37 + Age * 6) % 360 - 20;
