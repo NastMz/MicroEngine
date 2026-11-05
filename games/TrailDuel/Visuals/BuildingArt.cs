@@ -226,15 +226,20 @@ internal static class BuildingArt
                 img.FillRect(cx - 9, cy - 5, 18, 10, Pal.Cream);
                 img.FillRect(cx - 9, cy + 4, 18, 1, Pal.CreamShade);
                 img.DrawRect(cx - 10, cy - 6, 20, 12, ink);
-                OrbIcon(img, cx, cy);
+                BasketIcon(img, cx, cy);
                 break;
             case BuildingStyle.Shrine:
+                // A spring drop with a sprouting leaf: the shrine's healing water.
                 img.FillCircle(cx, cy, 6, ink);
                 img.FillCircle(cx, cy, 5.2f, Pal.Cream);
-                img.FillCircle(cx - 1.5f, cy - 0.5f, 2.2f, Pal.Coral);
-                img.FillCircle(cx + 1.5f, cy - 0.5f, 2.2f, Pal.Coral);
-                img.FillRect(cx - 2, cy, 4, 2, Pal.Coral);
-                img[cx, cy + 3] = Pal.Coral;
+                var water = Color.Hex("4f93d6");
+                img.FillRect(cx - 1, cy - 3, 1, 2, water);
+                img.FillRect(cx - 2, cy - 1, 3, 1, water);
+                img.FillRect(cx - 3, cy, 5, 3, water);
+                img.FillRect(cx - 2, cy + 3, 3, 1, water);
+                img[cx - 2, cy + 1] = Pal.White;
+                img.FillEllipse(cx + 2.5f, cy - 1.5f, 1.8f, 1.1f, VillagePal.Leaf[3]);
+                img[cx + 2, cy - 1] = VillagePal.Leaf[2];
                 break;
             case BuildingStyle.Hall:
                 img.FillCircle(cx, cy, 9, ink);
@@ -256,16 +261,28 @@ internal static class BuildingArt
         }
     }
 
-    private static void OrbIcon(PixelImage img, int cx, int cy)
+    /// <summary>A small shopping basket: a woven body under a bent handle, with an apple and a bottle peeking out.</summary>
+    private static void BasketIcon(PixelImage img, int cx, int cy)
     {
-        for (int y = -4; y <= 4; y++)
+        var ink = VillagePal.Outline;
+        Color[] weave = [Color.Hex("8a5a3c"), Color.Hex("b07a4c"), Color.Hex("d39d64")];
+        // Handle.
         for (int x = -4; x <= 4; x++)
         {
-            if (x * x + y * y > 13) continue;
-            img[cx + x, cy + y] = y < 0 ? Pal.Coral : y == 0 ? VillagePal.Outline : Pal.White;
+            int y = x is -4 or 4 ? -1 : x is -3 or 3 ? -3 : -4;
+            img[cx + x, cy + y] = ink;
         }
-        img[cx, cy] = Pal.White;
-        img[cx - 1, cy] = VillagePal.Outline;
-        img[cx + 1, cy] = VillagePal.Outline;
+        img[cx - 4, cy] = ink; img[cx + 4, cy] = ink;
+        // Goods: an apple and a bottle.
+        img.FillRect(cx - 3, cy - 1, 2, 2, Pal.Coral);
+        img[cx - 2, cy - 2] = VillagePal.Leaf[2];
+        img.FillRect(cx + 1, cy - 2, 2, 3, Color.Hex("6fb0e0"));
+        // Body: a trapezoid of woven rows.
+        for (int y = 0; y < 4; y++)
+        for (int x = -5 + y / 2; x <= 5 - y / 2; x++)
+            img[cx + x, cy + 1 + y] = (x + y) % 2 == 0 ? weave[1] : weave[y == 0 ? 2 : 0];
+        for (int x = -5; x <= 5; x++) img[cx + x, cy + 1] = weave[2];
+        img[cx - 6, cy + 1] = ink; img[cx + 6, cy + 1] = ink;
+        for (int x = -4; x <= 4; x++) img[cx + x, cy + 5] = ink;
     }
 }

@@ -93,14 +93,25 @@ internal static partial class TileArt
     public static PixelImage Grass(Village v, int variant)
     {
         var img = v.Cell(4, 0);
-        (int X, int Y)[][] tufts = [[], [(3, 6)], [(10, 11)], [(12, 4), (4, 12)]];
+        // Small blade tufts (rim green with a deep root) and a few sunlit blade tips, so short grass has a little of the
+        // texture of the tall grass beside it. Positions are fixed per variant.
+        (int X, int Y)[][] tufts = [[(11, 9)], [(3, 6), (12, 13)], [(10, 11), (2, 3)], [(12, 4), (4, 12)]];
         foreach (var (x, y) in tufts[variant % 4])
         {
             img[x, y] = VillagePal.GrassRim; img[x + 2, y] = VillagePal.GrassRim;
             img[x + 1, y - 1] = VillagePal.GrassRim; img[x + 1, y] = VillagePal.GrassDeep;
+            img[x + 1, y - 2] = SunBlade;
+        }
+        for (int i = 0; i < 3; i++)
+        {
+            int x = 1 + (int)(Art.Hash(i, variant, 141) * 14), y = 1 + (int)(Art.Hash(variant, i, 142) * 14);
+            if (img[x, y] == VillagePal.GrassA || img[x, y] == VillagePal.GrassB) img[x, y] = i == 0 ? VillagePal.GrassRim : SunBlade;
         }
         return img;
     }
+
+    /// <summary>The lit tip of a blade, between the pack's grass and its bright leaf.</summary>
+    private static readonly Color SunBlade = Color.Hex("8fd474");
 
     /// <summary>One of the pack's flower clumps on grass; the second frame leans the blooms a pixel in the breeze.</summary>
     private static PixelImage Flowers(Village v, int kind, int frame)
@@ -182,6 +193,25 @@ internal static partial class TileArt
     {
         bool up = (mask & 1) != 0, right = (mask & 2) != 0, down = (mask & 4) != 0, left = (mask & 8) != 0;
         var img = v.Cell(10, 2);
+        // Wear on the dirt: two pebbles (the pack's pebble colour over a dark grain), a darker grain and a sun-worn spot,
+        // placed per tile shape and only on open dirt, so the edges stay the pack's.
+        var worn = Color.Hex("dcae62");
+        for (int i = 0; i < 4; i++)
+        {
+            int x = 4 + (int)(Art.Hash(i, mask, 151) * 8), y = 4 + (int)(Art.Hash(mask, i, 152) * 7);
+            switch (i)
+            {
+                case 0 or 1:
+                    img[x, y] = VillagePal.Pebble; img[x + 1, y] = VillagePal.Pebble; img[x, y + 1] = VillagePal.DirtRim;
+                    break;
+                case 2:
+                    img[x, y] = VillagePal.DirtRim;
+                    break;
+                default:
+                    img[x, y] = worn; img[x + 1, y] = worn; img[x + 1, y + 1] = worn;
+                    break;
+            }
+        }
         if (!left) Copy(v, img, 144, 32, 7, 16, 0, 0);
         if (!right) Copy(v, img, 103, 32, 7, 16, 9, 0);
         if (!down) Copy(v, img, 112, 23, 16, 3, 0, 13);
