@@ -16,6 +16,17 @@ Not published yet. Behaviour that changes:
   (`PlatformProfile.GraphicsDevices`).
 - `DeviceRenderer` (the renderer the device-backed platforms give a scene) has `Target` and `Flush()`, to put device work
   such as a 3D pass between the 2D drawn before and after it. Code that does not call them is unchanged.
+- Touch controls are an optional module: `Game.Touch` is active (drawn, read, taking the touches over it) on touch-first
+  screens (phones, tablets, touch-only browsers) or once the game sets a layout of its own (overriding
+  `CreateTouchLayout`, or setting `Game.Touch.Layout` in `Configure`, `Load` or a scene); otherwise it is inactive and
+  costs nothing (`VirtualControls.IsActive`). `Game.Touch` always exists, now from `Configure` on. **Migration:** a game
+  that relied on the default controls appearing on a touch laptop or a desktop browser sets a layout:
+  `protected override TouchLayout CreateTouchLayout() => TouchLayout.CreateDefault();`. Tests that touch the headless
+  screen of a game without a layout set `platform.TouchScreen.TouchFirst = true` first. The touch types (`ITouchScreen`,
+  `TouchEvent`, `ITouchOverlay`, `IOverlayCanvas`, `FrameLayout`, `TouchLayout` and its controls, `VirtualControls`,
+  `TouchStyle`, `ITouchSkin`, `DefaultTouchSkin`) moved to the new `MicroEngine.Input.Touch.dll` (carried by the
+  `MicroEngine` package) with their namespace unchanged.
+
 - Achievements are an optional engine module: a game declares them before the engine is composed, and a game that
   never declares them has no achievement service, no `engine.achievements` frame system and no achievement file.
   **Migration:** move the `UseAchievements(catalog, store, theme)` call out of `Load` into the game's constructor or
@@ -37,6 +48,10 @@ Not published yet. Behaviour that changes:
   package) with their `MicroEngine.UI` namespace unchanged; nothing to change. The new widget tree (`Scene.Widgets`,
   `UiRoot`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts`) is opt-in: a scene that never reads `Widgets`
   behaves as before. A game type called `Widgets` inside a scene now needs its namespace there.
+- `Presentation.UiScale` is a `float?`: null (the default) makes the UI scale the surface's pixel density (2 on a
+  high-density screen, 1 headless) instead of 1. **Migration:** a game whose interface must keep one UI unit per window
+  pixel everywhere sets `UiScale = 1`; code that read the scale reads `Game.Views.UiScale` or
+  `Presentation.UiScaleFor(density)`.
 - `AchievementToasts` shows its banners through the UI's `Toasts` (`AchievementToasts.Banners`); a banner's heading is
   `Heading` as it was when the achievement was unlocked.
 - A run's capture of a frame whose scenes drew an interface in the UI view (`DrawUi`, `Widgets`) is the window as the
@@ -46,7 +61,7 @@ Not published yet. Behaviour that changes:
   that drew an interface there; the canvas shows it over the world as before.
 
 - A frame has a world view and a UI view: `Scene.DrawUi(IRenderer ui)` draws the interface at the window's resolution
-  over the world (UI units: window pixels / `Presentation.UiScale`), `Scene.UiContains` says where it takes the pointer,
+  over the world (UI units: window pixels / the UI scale), `Scene.UiContains` says where it takes the pointer,
   `Scene.WorldCamera` is pushed around `Draw`, and `Game.Views` maps positions and the pointer between window pixels,
   canvas pixels and UI units. Nothing to change: a scene without `DrawUi` draws as before. Platforms of your own may
   offer the UI view as the `IScreenView` capability; without it `DrawUi` draws in the canvas.

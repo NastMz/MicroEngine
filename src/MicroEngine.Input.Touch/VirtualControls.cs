@@ -234,7 +234,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
     private bool _touchedSinceOtherDevice, _touchFirst, _laidOut, _began;
     private ITouchScreen? _screen;
 
-    /// <summary>Creates the controls for <paramref name="layout"/> (null: <see cref="TouchLayout.CreateDefault"/>). Games use the instance in <see cref="Core.Game.Touch"/>.</summary>
+    /// <summary>Creates the controls for <paramref name="layout"/> (null: <see cref="TouchLayout.CreateDefault"/>). Games use the instance in <c>Game.Touch</c>.</summary>
     /// <exception cref="ArgumentException">Two controls share an id.</exception>
     public VirtualControls(TouchLayout? layout = null)
     {
@@ -242,7 +242,10 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
         Build();
     }
 
-    /// <summary>The layout in use. Setting it (a scene with other controls) releases every finger.</summary>
+    /// <summary>
+    /// The layout in use. Setting it (a scene with other controls) releases every finger and activates the controls
+    /// (<see cref="IsActive"/>).
+    /// </summary>
     public TouchLayout Layout
     {
         get => _layout;
@@ -252,8 +255,20 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
             CancelAll();
             _layout = value;
             Build();
+            Activate();
         }
     }
+
+    /// <summary>
+    /// Whether the controls take part in the game: the game drawing them over the frame, reading them as an action source
+    /// and giving them the touches over them. A game's controls start inactive and cost nothing; they become active when
+    /// the game sets a <see cref="Layout"/> or the platform's touch screen is touch-first (<see cref="ITouchScreen.TouchFirst"/>),
+    /// and stay active. Controls created and driven directly (<see cref="Update"/>) work whatever this says.
+    /// </summary>
+    public bool IsActive { get; private set; }
+
+    /// <summary>Activates the controls (<see cref="IsActive"/>); the game wires them in at its next frame. Does nothing when they already are.</summary>
+    public void Activate() => IsActive = true;
 
     /// <summary>Always <see cref="InputDevice.Touch"/>.</summary>
     public InputDevice Device => InputDevice.Touch;
@@ -298,7 +313,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
     public bool IsVisible(string id) => Find(id).Visible;
 
     /// <summary>
-    /// The actions the current context needs (the top scene's <see cref="Scenes.Scene.TouchActions"/>, set by the game
+    /// The actions the current context needs (the top scene's <c>Scene.TouchActions</c>, set by the game
     /// every frame): only controls that press at least one of them are shown and touchable; null shows them all. A
     /// dialogue that only advances with "confirm" hides the d-pad over its text, keeps the button that confirms, and
     /// the hidden controls release their fingers. The game frame does not change size with the context.

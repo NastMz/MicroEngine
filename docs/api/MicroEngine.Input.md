@@ -256,7 +256,7 @@ A screen that may be touched, a capability a backend offers ([TryGetCapability``
 area free of notches, rounded corners and system bars, its density, the touches since the last frame, and a layer
 drawn over the game for on-screen controls. Coordinates are drawable pixels with the origin at the top left.
 SDL reports phones and touch screens, the browser host reports Pointer Events, the headless platform lets tests
-touch it ([HeadlessTouchScreen](MicroEngine.Core.HeadlessTouchScreen.md)).
+touch it (<code>HeadlessTouchScreen</code>).
 
  [ITouchSkin](MicroEngine.Input.ITouchSkin.md)
 

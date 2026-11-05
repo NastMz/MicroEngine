@@ -603,12 +603,12 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     (int Width, int Height) IScreenView.ScreenPixels => WindowPixels();
     (int Width, int Height) IScreenView.CanvasSize => (_canvas.Target.Width, _canvas.Target.Height);
     RectF IScreenView.WorldFrame => FrameRect();
-    float IScreenView.UiScale => _settings.EffectivePresentation.UiScale;
+    float IScreenView.UiScale => _settings.EffectivePresentation.UiScaleFor(_surface.PixelDensity);
     IRenderer IScreenView.BeginUi()
     {
         var (width, height) = WindowPixels();
         _frameHasUi = true;
-        return _canvas.BeginUi(width, height, _settings.EffectivePresentation.UiScale);
+        return _canvas.BeginUi(width, height, _settings.EffectivePresentation.UiScaleFor(_surface.PixelDensity));
     }
 
     private bool _frameHasUi;

@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.Touch.dll  
 Guide: [Input](../manual/input.md)  
 
 One change of one finger, in the touch screen's pixels ([Size](MicroEngine.Input.ITouchScreen.md#MicroEngine_Input_ITouchScreen_Size)).

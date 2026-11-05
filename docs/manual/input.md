@@ -331,6 +331,17 @@ has a touch screen: SDL on Android, iOS and touch-screen desktops, and the brows
 laptops). A game picks its controls by overriding `CreateTouchLayout`; the default is a d-pad and A/B/C/pause for the
 default actions.
 
+Next SDK version: touch controls are an optional module, in their own assembly (`MicroEngine.Input.Touch`, carried by
+the `MicroEngine` package, namespace `MicroEngine.Input` unchanged). They are active, drawn and read when the screen is
+touch-first (phones, tablets, touch-only browsers: `ITouchScreen.TouchFirst`), with the default layout unless the game
+has its own, or when the game sets a layout of its own on any platform with a touch screen: by overriding
+`CreateTouchLayout` (without calling the base method), by setting `Game.Touch.Layout` in `Configure`, or by setting it
+later, in `Load` or a scene. Otherwise `Game.Touch` exists but is inactive (`IsActive` is false): no frame system, no
+input layer, no action source and nothing drawn, and every finger reaches the game as a pointer. Controls activated at
+composition run in the `engine.touch` system; controls activated later (a layout set in `Load` or by a scene, or a
+screen that becomes touch-first) join the game at the start of the next frame, before its input is routed. A touch
+laptop shows the controls only for games that set a layout.
+
 ```csharp
 protected override TouchLayout CreateTouchLayout() => TouchLayout.Of(
     new TouchDPad { Offset = new(104, 100), Diagonals = false },

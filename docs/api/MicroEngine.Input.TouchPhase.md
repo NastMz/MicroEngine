@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.Touch.dll  
 Guide: [Input](../manual/input.md)  
 
 What happened to a finger in a [TouchEvent](MicroEngine.Input.TouchEvent.md): it touched the screen (<code>Began</code>), moved (<code>Moved</code>),

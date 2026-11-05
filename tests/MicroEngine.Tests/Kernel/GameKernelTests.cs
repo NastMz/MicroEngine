@@ -73,7 +73,7 @@ public sealed class GameKernelTests
         CollectionAssert.AreEqual(new[] { "engine.time", "engine.scenes", "test.after-scenes" }, game.Schedule.Order(FramePhase.FixedUpdate).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.audio", "engine.input.end", "engine.assets.playing" }, game.Schedule.Order(FramePhase.PostFixed).ToArray(), "achievements are a module of the games that declare them");
         CollectionAssert.AreEqual(new[] { "engine.assets" }, game.Schedule.Order(FramePhase.BeginFrame).ToArray());
-        CollectionAssert.AreEqual(new[] { "engine.input.events", "engine.touch" }, game.Schedule.Order(FramePhase.Input).ToArray());
+        CollectionAssert.AreEqual(new[] { "engine.input.events" }, game.Schedule.Order(FramePhase.Input).ToArray(), "touch controls are a module of touch-first screens and games that set a layout");
         CollectionAssert.AreEqual(new[] { "engine.render" }, game.Schedule.Order(FramePhase.Render).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.present" }, game.Schedule.Order(FramePhase.Present).ToArray());
         CollectionAssert.AreEqual(new[] { "engine.audio.pump", "test.end" }, game.Schedule.Order(FramePhase.EndFrame).ToArray(), "audio work of the frame runs outside the simulation step");

@@ -21,6 +21,7 @@ flowchart TB
   platform["<b> src/MicroEngine.Platform </b> <br/> Platform contracts: host, surface, capabilities, storage, content sources"]
   graphics["<b> src/MicroEngine.Graphics </b> <br/> Graphics device contract: capabilities, resources, command lists, the reference device"]
   input["<b> src/MicroEngine.Input </b> <br/> Input: device events, players, layers, text, actions and saved bindings"]
+  touch["<b> src/MicroEngine.Input.Touch </b> <br/> Touch controls: the touch screen contract, on-screen controls and their look"]
   hosting["<b> src/MicroEngine.Hosting </b> <br/> Hosting: launch requests and their rules, platform selection, the composition a game configures once"]
   content["<b> src/MicroEngine.Content </b> <br/> Content: asset store, typed handles, scopes, loader registry, zip and listed sources"]
   audio["<b> src/MicroEngine.Audio </b> <br/> Audio: the one mixer over PCM sinks, sound bank and music, synthesis"]
@@ -54,6 +55,8 @@ flowchart TB
   hosting -- builds on --> platform
   core -- builds on --> input
   input -- builds on --> platform
+  core -- builds on --> touch
+  touch -- builds on --> input
   core -- builds on --> content
   content -- builds on --> platform
   core -- builds on --> audio
@@ -81,6 +84,9 @@ nothing a platform does depends on the time mode ([The platform host](manual/bac
 Input is a third assembly, `MicroEngine.Input` (kernel and platform contracts only, shipped inside the `MicroEngine`
 package): device events with ids, the polled state derived from the events no input layer took, players with device
 pairing, input layers, the text channel and `InputMap` ([Devices, players and layers](manual/input.md#devices-players-and-layers)).
+The touch controls are `MicroEngine.Input.Touch` (input, 2D graphics, kernel and platform contracts): the touch screen
+contract and the on-screen controls, an optional module that is active on touch-first screens or once the game sets a
+layout, and costs nothing otherwise ([Touch controls](manual/input.md#touch-controls)).
 
 Next SDK version (not published yet: arrives with the next SDK version): the graphics device contract is an assembly
 of the `MicroEngine` package too, `MicroEngine.Graphics`, which references only the kernel and the platform contracts.
@@ -205,7 +211,7 @@ and the engine's `FrameClock` turns each frame's time into fixed steps following
 `MaxStepsPerFrame` steps, frames of at most `MaxFrameDelta`, real or deterministic time). A frame runs the engine's
 frame schedule: `BeginFrame` and `Input` once, `PreFixed`, `FixedUpdate`, `Physics` and `PostFixed` once per step,
 then `Update`, `LateUpdate`, `Extract`, `Render`, `Present` and `EndFrame`. `Game` registers the built-in systems
-(`engine.assets`, `engine.input.events`, `engine.touch`, `engine.input`, `engine.time`, `engine.scenes`, `engine.audio`,
+(`engine.assets`, `engine.input.events`, `engine.touch` (only with active touch controls), `engine.input`, `engine.time`, `engine.scenes`, `engine.audio`,
 `engine.achievements` (only in games that declare achievements), `engine.input.end`, `engine.render`, `engine.present`...) in the order listed below, and a game
 adds its own from `Game.Configure`. Hosts that outlive a run (a browser page) use `GameSession`, which builds the game and platform, ticks the
 loop from `requestAnimationFrame` and releases the platform when the run ends. Each frame:
@@ -238,7 +244,7 @@ scripted playthrough tests and reproducible screenshots possible.
 | `MicroEngine.Core` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `InputScript`, `HeadlessPlatform`, `SaveStore` (over `ISaveStorage`), `ContentFolder`, `AssetCache` (`Game.Assets`), `Achievement`, `AchievementTracker` |
 | `MicroEngine.Scenes` in `MicroEngine.Scene.dll` (next SDK version) | `IWorld`, `SceneWorld`, `EntityId`, `Transform`, `Attachments<T>`, `EntityChildren`, `IDestroyedCallback`, `WorldClock` |
 | `MicroEngine.Scenes` | `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener` |
-| `MicroEngine.Input` | In the `MicroEngine.Input` assembly (kernel and platform contracts only): device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem` over them, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources, with saved bindings. In the core assembly (they draw): `VirtualControls` and `TouchLayout` (per-game on-screen d-pads, joysticks and buttons, an input layer), `ActionPrompts`, `ITouchScreen`, `FrameLayout` |
+| `MicroEngine.Input` | In the `MicroEngine.Input` assembly (kernel and platform contracts only): device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem` over them, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources, with saved bindings. In the core assembly: `ActionPrompts`; in the published SDK also `VirtualControls`, `TouchLayout` (per-game on-screen d-pads, joysticks and buttons, an input layer), `ITouchScreen` and `FrameLayout`, which move to `MicroEngine.Input.Touch.dll` in the next SDK version |
 | `MicroEngine.Graphics` | `PixelImage` (CPU art, image decoding, crop/rotate), `Art` (noise, dither, ramps), `SpriteAtlasBuilder` (incl. grid sheets), `AtlasData` (packing tools' files), `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `IFont` (`BitmapFont`, `ScalableFont`), `TextureFilter`, `IRenderer`; next SDK version: all but the fonts in `MicroEngine.Graphics2D.dll` |
 | `MicroEngine.Graphics` in `MicroEngine.Text.dll` (next SDK version) | `IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions` |
 | `MicroEngine.UI` in `MicroEngine.UI.dll` (next SDK version) | `UiRoot`, `UiActions`, `UiContext`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts`, `Toast`, `Typewriter`, `SelectionList`, `UiTheme`; `DialogueBox`, `PromptText` and the achievement views stay in `MicroEngine.dll` |

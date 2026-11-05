@@ -394,7 +394,12 @@ public TimeSettings TimeSettings { get; }
 
 ### <a id="MicroEngine_Core_Game_Touch"></a> Touch
 
-The on-screen touch controls ([CreateTouchLayout](MicroEngine.Core.Game.md#MicroEngine_Core_Game_CreateTouchLayout)), drawn and read wherever the platform has a touch screen.
+The on-screen touch controls ([CreateTouchLayout](MicroEngine.Core.Game.md#MicroEngine_Core_Game_CreateTouchLayout)), available from [Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_) on. They are
+an opt-in module: active, drawn and read on a touch-first screen ([TouchFirst](MicroEngine.Input.ITouchScreen.md#MicroEngine_Input_ITouchScreen_TouchFirst): phones,
+tablets, touch-only browsers) or once the game sets their [Layout](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_Layout) (in
+[Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_), [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) or a scene), on any platform with a touch screen; otherwise inactive,
+with no frame system, input layer, action source or overlay ([IsActive](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_IsActive)). Controls
+activated after the engine was built join the game at the start of the next frame.
 
 ```csharp
 public VirtualControls Touch { get; }
@@ -402,7 +407,7 @@ public VirtualControls Touch { get; }
 
 #### Property Value
 
- [VirtualControls](MicroEngine.Input.VirtualControls.md)
+ VirtualControls
 
 ### <a id="MicroEngine_Core_Game_UpdateCount"></a> UpdateCount
 
@@ -518,7 +523,9 @@ protected virtual InputMap CreateInput()
 ### <a id="MicroEngine_Core_Game_CreateTouchLayout"></a> CreateTouchLayout\(\)
 
 Override to choose the on-screen controls for touch screens: which d-pad, joystick and buttons press which actions,
-and where. The default ([CreateDefault](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_CreateDefault_MicroEngine_Input_ActionNames_)) matches [CreateDefault](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_CreateDefault_MicroEngine_Input_ActionNames_).
+and where. The default ([CreateDefault](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_CreateDefault_MicroEngine_Input_ActionNames_)) matches [CreateDefault](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_CreateDefault_MicroEngine_Input_ActionNames_) and is
+used on touch-first screens only. A layout of the game's own, returned without calling the base method, is the
+game setting a layout: it activates the controls on any platform with a touch screen ([Touch](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Touch)).
 
 ```csharp
 protected virtual TouchLayout CreateTouchLayout()
@@ -526,7 +533,7 @@ protected virtual TouchLayout CreateTouchLayout()
 
 #### Returns
 
- [TouchLayout](MicroEngine.Input.TouchLayout.md)
+ TouchLayout
 
 ### <a id="MicroEngine_Core_Game_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
 

@@ -42,7 +42,7 @@ public ActionPrompts(InputMap input, VirtualControls? touch = null)
 
 `input` InputMap
 
-`touch` [VirtualControls](MicroEngine.Input.VirtualControls.md)?
+`touch` VirtualControls?
 
 ## Properties
 
