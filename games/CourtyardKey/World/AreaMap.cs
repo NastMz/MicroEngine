@@ -8,6 +8,11 @@ namespace CourtyardKey.World;
 /// </summary>
 public sealed class AreaMap
 {
+    /// <summary>The vale, parsed once: its pristine rooms never change, so every play scene shares them.</summary>
+    public static readonly AreaMap Overworld = new(Content.Overworld.Create());
+    /// <summary>The Sunken Courtyard, parsed once and shared like <see cref="Overworld"/>.</summary>
+    public static readonly AreaMap Dungeon = new(Content.Dungeon.Create());
+
     private readonly Room?[,] _pristine;
 
     public AreaMap(AreaDef def)

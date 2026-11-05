@@ -107,8 +107,8 @@ public sealed partial class PlayScene : Scene
     public PlayMode Mode { get; private set; }
     public Room Room { get; private set; } = null!;
     public AreaMap Area { get; private set; } = null!;
-    public AreaMap OverworldMap { get; private set; } = null!;
-    public AreaMap DungeonMap { get; private set; } = null!;
+    public AreaMap OverworldMap => AreaMap.Overworld;
+    public AreaMap DungeonMap => AreaMap.Dungeon;
     /// <summary>The live actors of the current room, in creation order (the hero is in no room).</summary>
     public RoomActors<Actor> Actors => new(Objects, _room);
     /// <summary>
@@ -139,8 +139,6 @@ public sealed partial class PlayScene : Scene
         Light = new LightMap(G.Graphics) { Shade = Visuals.Pal.DungeonDark };
         _tiles = new RoomRenderer(Art);
         _hud = new Hud(this);
-        OverworldMap = new AreaMap(Overworld.Create());
-        DungeonMap = new AreaMap(Content.Dungeon.Create());
         Hero = new Hero(this, new Health(Progress.MaxHealth, Math.Max(2, Progress.Health)));
         PlaceAtCheckpoint(Progress.Entrance);
         Coroutines.Start(FadeIn(0.5f));
@@ -203,6 +201,7 @@ public sealed partial class PlayScene : Scene
     /// <summary>Moves an actor through the room's tiles and every other solid actor.</summary>
     public TileMoveResult MoveActor(Actor actor, Vector2 delta, bool flying, bool throughActors = false)
     {
+        // Gathered on every move into one reused list: an actor moved earlier in this step blocks from where it stands now.
         _solids.Clear();
         if (!throughActors)
             foreach (var a in Actors)

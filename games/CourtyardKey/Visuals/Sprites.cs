@@ -28,6 +28,15 @@ public sealed class Sprites : IDisposable
     public Sprite this[string name] => _atlas[name];
     public bool Contains(string name) => _atlas.Contains(name);
 
+    private readonly Dictionary<string, Sprite> _flashes = [];
+
+    /// <summary>The white hit-flash twin of a sprite (<c>"name!"</c>), looked up once per name instead of every frame of a flash.</summary>
+    public Sprite Flash(string name)
+    {
+        if (!_flashes.TryGetValue(name, out var sprite)) _flashes[name] = sprite = _atlas[name + "!"];
+        return sprite;
+    }
+
     /// <summary>The "nameN" frame sequence (the atlas collects each once).</summary>
     public IReadOnlyList<Sprite> Frames(string name) => _atlas.Frames(name);
 
