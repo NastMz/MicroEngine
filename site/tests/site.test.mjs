@@ -108,3 +108,38 @@ test('public pages never show the engineering record', () => {
   assert.ok(found.some(f => f.startsWith('link to docs/decisions/')));
   assert.ok(found.includes('an evidence or validation-history section'));
 });
+
+test('brand: the favicon and logo files are drawn from the brand geometry', async () => {
+  const { mark, faviconSvg, fixed } = await import('../src/components/brand/geometry.mjs');
+  const favicon = faviconSvg();
+  assert.ok(favicon.includes(mark.board) && favicon.includes(mark.module));
+  assert.match(favicon, /prefers-color-scheme:dark/);
+  for (const colour of [fixed.light.board, fixed.light.module, fixed.dark.board, fixed.dark.module]) assert.ok(favicon.includes(colour));
+  const { files } = await import('../design/tools/build-assets.mjs');
+  for (const [name, svg] of Object.entries(files())) {
+    const committed = fs.readFileSync(path.join(siteRoot, 'src/assets/brand', name), 'utf8').replace(/\r\n/g, '\n');
+    assert.equal(committed, svg + '\n', `${name} is stale: run node design/tools/build-assets.mjs`);
+  }
+});
+
+test('brand: the fixed colours of the favicon and Open Graph image equal their tokens', async () => {
+  const { fixed } = await import('../src/components/brand/geometry.mjs');
+  const { readTokens, resolve, parseOklch, toLinearSrgb } = await import('../scripts/contrast.mjs');
+  const tokens = readTokens(fs.readFileSync(path.join(siteRoot, 'src/styles/tokens.css'), 'utf8'));
+  const hex = (name, theme) => '#' + toLinearSrgb(parseOklch(resolve(tokens, tokens[name], theme)))
+    .map(x => Math.min(1, Math.max(0, x)))
+    .map(x => Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055)).toString(16).padStart(2, '0'))
+    .join('');
+  const names = { board: '--color-ink', module: '--color-mark-module', paper: '--color-paper', paper2: '--color-paper-2',
+    rule: '--color-rule', ink2: '--color-ink-2', ink3: '--color-ink-3' };
+  for (const theme of ['light', 'dark']) {
+    for (const [key, value] of Object.entries(fixed[theme])) assert.equal(value, hex(names[key], theme), `${theme}.${key}`);
+  }
+});
+
+test('brand: headings use the display face from the tokens, and no pixel face is loaded', () => {
+  const styles = path.join(siteRoot, 'src/styles');
+  for (const file of fs.readdirSync(styles)) assert.doesNotMatch(fs.readFileSync(path.join(styles, file), 'utf8'), /Pixelify/i, file);
+  assert.match(fs.readFileSync(path.join(styles, 'tokens.css'), 'utf8'), /--font-display: 'Bricolage Grotesque'/);
+  assert.match(fs.readFileSync(path.join(styles, 'fonts.css'), 'utf8'), /@fontsource\/bricolage-grotesque\/latin-600\.css/);
+});

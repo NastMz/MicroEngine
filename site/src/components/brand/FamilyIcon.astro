@@ -1,0 +1,34 @@
+---
+// A subsystem family's icon, drawn in the mark's construction: the board in the current text colour, the module in
+// the family's colour. Decorative unless given a title.
+//   <FamilyIcon family="physics" />                 beside a written family name
+//   <FamilyIcon family="audio" title="Audio" />     standalone
+import { families, grid } from './geometry.mjs';
+
+interface Props { family: keyof typeof families; size?: number; title?: string; mono?: boolean; class?: string }
+const { family, size = 16, title, mono = false, class: className } = Astro.props;
+const shape = families[family];
+if (!shape) throw new Error(`FamilyIcon: unknown family "${family}" (one of ${Object.keys(families).join(', ')})`);
+---
+<svg
+  class:list={['family-icon', { mono }, className]}
+  data-family={family}
+  viewBox={`0 0 ${grid} ${grid}`}
+  width={size}
+  height={size}
+  role={title ? 'img' : undefined}
+  aria-label={title}
+  aria-hidden={title ? undefined : 'true'}
+  focusable="false"
+>
+  {title && <title>{title}</title>}
+  <path class="board" d={shape.board} fill-rule="evenodd" />
+  {shape.module && <path class="module" d={shape.module} />}
+</svg>
+
+<style>
+  .family-icon { display: inline-block; flex: none; vertical-align: -0.125em; }
+  .board { fill: currentColor; }
+  .module { fill: var(--family-color, currentColor); }
+  .mono .module { fill: currentColor; }
+</style>

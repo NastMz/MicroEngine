@@ -1,0 +1,28 @@
+---
+// The strip above a code panel: a label, like the legend on a module, naming what the code is and where it lives.
+// It is not a window: no title bar, no dots, no buttons. Place it directly before the code block it names.
+//   <CodeLabel file="samples/HelloEngine/Program.cs" lang="C#" />
+//   <CodeLabel file="Game.cs" lang="C#" family="input" note="actions, not keys" />
+import FamilyIcon from './FamilyIcon.astro';
+import { families } from './geometry.mjs';
+
+interface Props { file: string; lang?: string; family?: keyof typeof families; note?: string }
+const { file, lang, family, note } = Astro.props;
+---
+<p class="code-label" data-family={family}>
+  {family && <FamilyIcon family={family} size={14} title={families[family].label} />}
+  <span class="file">{file}</span>
+  {note && <span class="note">{note}</span>}
+  {lang && <span class="lang">{lang}</span>}
+</p>
+
+<style>
+  .code-label { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; margin: 0;
+    padding: var(--space-2xs) var(--space-sm); border-top: var(--rule-pixel) solid var(--family-color, var(--color-ink));
+    background: var(--color-paper-2); color: var(--color-ink-2);
+    font-family: var(--font-mono); font-size: var(--text-xs); line-height: var(--leading-snug); }
+  .file { color: var(--color-ink); overflow-wrap: anywhere; min-width: 0; }
+  .note { color: var(--color-ink-2); }
+  .note::before { content: '— '; }
+  .lang { margin-inline-start: auto; text-transform: uppercase; letter-spacing: var(--tracking-label); }
+</style>

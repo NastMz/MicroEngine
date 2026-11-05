@@ -1,0 +1,44 @@
+/* The graphic language's shared rules (site/design/README.md). Loaded on every page, landing and documentation alike,
+   after tokens.css. Components in src/components/brand/ carry their own layout; what several of them share lives here. */
+
+/* A family is chosen with data-family; everything inside reads --family-color. */
+[data-family='kernel'] { --family-color: var(--family-kernel); }
+[data-family='graphics'] { --family-color: var(--family-graphics); }
+[data-family='physics'] { --family-color: var(--family-physics); }
+[data-family='audio'] { --family-color: var(--family-audio); }
+[data-family='input'] { --family-color: var(--family-input); }
+[data-family='platform'] { --family-color: var(--family-platform); }
+[data-family='tools'] { --family-color: var(--family-tools); }
+
+/* Status markers: the shape carries the status, the colour repeats it. A solid square ships; a half-filled square
+   ships in the next SDK version; a dashed square is in the repository but not published; a dotted square is planned.
+   Always followed by the written status. */
+.status-mark { display: inline-block; flex: none; width: 0.625rem; height: 0.625rem; box-sizing: border-box;
+  border: var(--rule-pixel) solid var(--status-color); }
+[data-status='available'] { --status-color: var(--status-available); }
+[data-status='next'] { --status-color: var(--status-next); }
+[data-status='repo'] { --status-color: var(--status-repo); }
+[data-status='planned'] { --status-color: var(--status-planned); }
+[data-status='available'] .status-mark, .status-mark[data-status='available'] { background: var(--status-color); }
+[data-status='next'] .status-mark, .status-mark[data-status='next'] {
+  background: linear-gradient(to top, var(--status-color) 50%, transparent 50%); }
+[data-status='repo'] .status-mark, .status-mark[data-status='repo'] { border-style: dashed; }
+[data-status='planned'] .status-mark, .status-mark[data-status='planned'] { border-style: dotted; }
+
+/* Technical illustrations (inline SVG): hairline leaders that end in a square anchor, numbered square callouts, and
+   mono legends. Use with <Callout> inside an <svg class="illustration">. */
+.illustration { max-width: 100%; height: auto; overflow: visible; color: var(--color-ink); }
+.illustration text { font-family: var(--font-mono); fill: currentColor; }
+.illustration .board-line { fill: none; stroke: var(--color-ink); stroke-width: var(--rule-pixel); }
+.illustration .socket-line { fill: none; stroke: var(--color-rule); stroke-width: var(--rule-thin); }
+.illustration .socket-line.empty { stroke: var(--color-ink-3); stroke-dasharray: var(--dash) var(--dash); }
+/* Code is printed on graphite in both themes: its highlighting theme is a dark one, and a code panel reads as one
+   object across the site. `color-scheme: dark` makes every token inside resolve to its dark value. The landing's
+   hero code figure (.sprite-code) is listed until the hero is redrawn with .code-surface. */
+.code-surface, .astro-code, .sprite-code { color-scheme: dark; color: var(--color-ink); }
+/* The same holds for the stage of a game player: panels and controls sit over the game's own picture. (The colour is
+   set again here because an inherited colour arrives already resolved in the page's theme.) */
+.media-surface, [data-stage] { color-scheme: dark; color: var(--color-ink); }
+
+.illustration .module-fill { fill: color-mix(in oklch, var(--family-color, var(--color-ink)) var(--tint), var(--color-paper));
+  stroke: var(--family-color, var(--color-ink)); stroke-width: var(--rule-thin); }

@@ -6,42 +6,30 @@
 }
 
 :root,
-::backdrop {
-  --sl-color-accent-low: oklch(30% 0.06 85);
+::backdrop,
+:root[data-theme='light'],
+[data-theme='light'] ::backdrop {
+  /* One mapping for both schemes: the tokens resolve per theme through light-dark() and color-scheme. */
+  --sl-color-accent-low: var(--color-accent-low);
   --sl-color-accent: var(--color-accent);
   --sl-color-accent-high: var(--color-accent-strong);
   --sl-color-white: var(--color-ink);
-  --sl-color-gray-1: oklch(90% 0.012 265);
+  --sl-color-gray-1: var(--color-ink);
   --sl-color-gray-2: var(--color-ink-2);
   --sl-color-gray-3: var(--color-ink-3);
-  --sl-color-gray-4: oklch(50% 0.016 265);
+  --sl-color-gray-4: var(--color-ink-4);
   --sl-color-gray-5: var(--color-rule);
   --sl-color-gray-6: var(--color-paper-2);
+  --sl-color-gray-7: var(--color-paper-2);
   --sl-color-black: var(--color-paper);
 }
 
-:root[data-theme='light'],
-[data-theme='light'] ::backdrop {
-  --sl-color-accent-low: oklch(92% 0.06 85);
-  --sl-color-accent: oklch(52% 0.12 70);
-  --sl-color-accent-high: oklch(36% 0.09 65);
-  --sl-color-white: oklch(19% 0.012 265);
-  --sl-color-gray-1: oklch(26% 0.014 265);
-  --sl-color-gray-2: oklch(36% 0.014 265);
-  --sl-color-gray-3: oklch(48% 0.014 265);
-  --sl-color-gray-4: oklch(64% 0.012 265);
-  --sl-color-gray-5: oklch(84% 0.01 265);
-  --sl-color-gray-6: oklch(95% 0.008 95);
-  --sl-color-gray-7: oklch(97% 0.006 95);
-  --sl-color-black: oklch(99% 0.004 95);
-}
-
-/* Headings stay in the body face: the pixel face is reserved for short display lines. */
+/* Documentation headings stay in the body face for now; the display face is for page titles and short lines. */
 .sl-markdown-content :is(h2, h3) { letter-spacing: -0.01em; }
 .sl-markdown-content table { display: block; overflow-x: auto; }
 .sl-markdown-content img { image-rendering: pixelated; border: var(--rule-thin) solid var(--sl-color-gray-5); }
 
-:focus-visible { outline: 3px solid var(--sl-color-accent); outline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
 
 /* Diagrams (```mermaid blocks, drawn in the browser by astro-mermaid). Mermaid's own palette is replaced by the
    documentation's, so a diagram follows the light/dark switch without being redrawn. Wide diagrams keep their natural
@@ -49,10 +37,7 @@
    never below 36rem, so a wide diagram's text stays readable. */
 :root {
   --diagram-surface: var(--sl-color-gray-6);
-  --diagram-node: var(--color-paper-3);
-}
-:root[data-theme='light'] {
-  --diagram-node: var(--sl-color-black);
+  --diagram-node: light-dark(var(--color-paper), var(--color-paper-3));
 }
 
 .sl-markdown-content pre.mermaid {

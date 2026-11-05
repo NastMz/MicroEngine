@@ -3,8 +3,10 @@
 // with the same tokens and fonts.
 import '../styles/fonts.css';
 import '../styles/tokens.css';
+import '../styles/brand.css';
 import '../styles/site.css';
-import mark from '../assets/mark.svg?url';
+import Lockup from '../components/brand/Lockup.astro';
+import { fixed } from '../components/brand/geometry.mjs';
 
 interface Props { title: string; description: string; image?: string; noindex?: boolean; current?: 'home' | 'demos' | 'platforms' | 'roadmap' }
 const { title, description, image = '/og.png', noindex = false, current } = Astro.props;
@@ -29,7 +31,16 @@ const nav = [
   {noindex && <meta name="robots" content="noindex" />}
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="sitemap" href="/sitemap-index.xml" />
-  <meta name="theme-color" content="#15171c" />
+  <meta name="theme-color" content={fixed.light.paper} media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content={fixed.dark.paper} media="(prefers-color-scheme: dark)" />
+  {/* Both themes follow the system; a choice made with the documentation's theme switch (stored by Starlight)
+      applies here too. Inline in the head, so the page never paints in the wrong theme first. */}
+  <script is:inline>
+    try {
+      const stored = localStorage.getItem('starlight-theme');
+      if (stored === 'light' || stored === 'dark') document.documentElement.dataset.theme = stored;
+    } catch {}
+  </script>
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="MicroEngine" />
   <meta property="og:title" content={fullTitle} />
@@ -44,8 +55,7 @@ const nav = [
   <header class="site-header">
     <div class="wrap header-row">
       <a href="/" class="wordmark" aria-label="MicroEngine home">
-        <img src={mark} alt="" width="28" height="28" />
-        <span>MicroEngine</span>
+        <Lockup />
       </a>
       <nav aria-label="Main">
         <ul>

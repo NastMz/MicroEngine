@@ -58,7 +58,7 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
 
 | ID | Specs | Task | Route | Status |
 |---|---|---|---|---|
-| T1 | S1-S3, S6, S9 | Art direction doc, tokens, type, mark and logo set (explored variants, 16 px test), family icons, favicon, OG image | delegated (context backstop) | pending |
+| T1 | S1-S3, S6, S9 | Art direction doc, tokens, type, mark and logo set (explored variants, 16 px test), family icons, favicon, OG image | delegated (context backstop) | done, branch `feat/site-redesign-t1-brand` (PR into `feat/site-redesign`) |
 | T2 | S3-S6 | Site shell (header, nav, footer) and landing narrative with the socket-board illustrations | delegated | pending |
 | T3 | S3, S5, S7 | Demo index and demo pages, player integration | delegated, parallel with T4/T5 | pending |
 | T4 | S3, S5, S7 | Starlight docs theme, code blocks, docs header; platforms, roadmap, 404 pages | delegated, parallel with T3/T5 | pending |
@@ -215,3 +215,20 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
   excerpt over-matching, no mention of physics, the scene world, HD rendering or TTF fonts.
 - L3 (2026-11-05): CI runs only on pull requests to `main`, so unit PRs into `feat/site-redesign` are verified locally by
   their writer and spot-checked by the architect; the final PR to `main` runs the full CI.
+- L4 (2026-11-05): T1 brand foundation. Mark: three constructions drawn on a 16-unit grid and rasterised at
+  16/32/64/256 px, one colour and full colour, light and dark (`site/design/explorations/`); chosen B "m-socket" (the
+  kernel bar with two sockets, one module seated: reads as "m", holds at 16 px in one colour); A (corner module) read
+  as a generic copy icon, C (`[■]`) became the Tools family icon. Geometry lives in
+  `site/src/components/brand/geometry.mjs`; logo files are generated from it (`site/design/tools/build-assets.mjs`) and
+  a test fails on drift. Tokens rebuilt in OKLCH with `light-dark()`: warm paper and graphite neutrals, amber signal,
+  six family hues plus a neutral kernel, status tokens (only what ships gets colour; future drawn dashed/dotted in
+  neutral), game tones kept. Decision: the landing and demo pages get both themes (system preference, and Starlight's
+  stored choice); code panels and the player stage stay graphite in both (`color-scheme: dark`). Display face
+  Bricolage Grotesque 600 (OFL) replaces Pixelify Sans; Plex kept. `site/scripts/contrast.mjs` checks 198 pairs (AA,
+  both themes, inside sRGB). Components in `site/src/components/brand/`: Mark, Lockup, FamilyIcon, Socket, Callout,
+  CodeLabel, FrameStrip; shared rules in `site/src/styles/brand.css`. OG image now drawn at build time from the
+  lockup and a socket board (four shipping families, one empty dashed socket). Art direction: `site/design/README.md`
+  (not published). Checks: `npm ci`; `SITE_DEMOS=none npm run build` (check-dist complete); `npm test` 51/51;
+  `node scripts/snippets.mjs` 104 blocks; contrast 198/198. Screenshots of /, /demos/neon-rift/ and a docs page,
+  light and dark, 1280 and 375: no horizontal overflow; two light-theme defects found and fixed (hero code figure and
+  player panel title inheriting light ink).
