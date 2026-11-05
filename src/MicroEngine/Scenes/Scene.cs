@@ -45,6 +45,16 @@ public abstract class Scene : IStateHashed
     public Tweener Tweens { get; } = new();
     /// <summary>Seconds this scene has been updated.</summary>
     public float Age { get; private set; }
+    /// <summary>
+    /// The engine's step in seconds (<c>1 / UpdateRate</c>): the step of the current update before the world's clock
+    /// scales or freezes it. <see cref="Age"/>, <see cref="Coroutines"/> and <see cref="Tweens"/> advance by it, and it
+    /// is what <see cref="Update"/> receives when the scene has no <see cref="Objects"/>. Use it for what keeps moving
+    /// through a hitstop or slow motion (play time, camera shake, particles, a pause button) while the rules advance by
+    /// <see cref="Update"/>'s step. Known from <see cref="Enter"/> on.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Read before the scene is on a running game's stack and was updated.</exception>
+    public float EngineStep => _engineStep > 0 ? _engineStep : (float)Game.TimeSettings.FixedDelta;
+    private float _engineStep;
 
     /// <summary>When true, the scene below is drawn first.</summary>
     public virtual bool IsOverlay => false;
@@ -61,7 +71,16 @@ public abstract class Scene : IStateHashed
     /// through <see cref="IWorld.DrawPosition2D"/> and <see cref="IWorld.WorldMatrix"/> is smooth while it plays and
     /// still while it is frozen. Its state is part of the scene's state hash.
     /// </summary>
-    public IWorld Objects => _world ??= new SceneWorld();
+    /// <remarks>
+    /// Create it outside drawing: read it first from <see cref="Enter"/>, <see cref="Update"/> or the scene's constructor.
+    /// A world created by drawing would be stepped and hashed only in runs that drew a frame, so the state hash would
+    /// depend on the display; the first read from <see cref="Draw"/> or <see cref="DrawUi"/> is refused instead.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Read for the first time while the game draws.</exception>
+    public IWorld Objects => _world ??= _game is { Drawing: true }
+        ? throw new InvalidOperationException($"{GetType().Name}.Objects was first read while drawing. A scene's world is simulation state: "
+            + "create it in Enter (read Objects there) or in Update, so drawing never changes the state hash.")
+        : new SceneWorld();
     /// <summary>Whether <see cref="Objects"/> was created (a scene that never reads it has none and pays nothing).</summary>
     internal bool HasWorld => _world is not null;
 
@@ -173,6 +192,7 @@ public abstract class Scene : IStateHashed
 
     internal void Tick(float dt)
     {
+        _engineStep = dt;
         if (_world is not { } world)
         {
             Age += dt;

@@ -224,9 +224,6 @@ public sealed partial class PlayScene : Scene
         return grid;
     }
 
-    /// <summary>The engine's fixed step in seconds, computed as the engine computes it (the world clock's step at scale 1).</summary>
-    private float EngineStep => (float)(1.0 / Game.Settings.UpdateRate);
-
     public void Burst(Vector2 at, ParticleSpec spec, int count, bool additive = false)
         => (additive ? Glows : Particles).Emit(at, spec, count);
 

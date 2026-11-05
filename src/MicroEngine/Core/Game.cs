@@ -492,7 +492,17 @@ public abstract class Game : IEngineModule, IStateHashed
     internal void UpdateTouch(ITouchScreen? screen, float dt) => Touch.EndFrame(dt, Input.LastDevice);
 
 
+    /// <summary>Whether the game is drawing a frame (<see cref="Render"/>): simulation state must not be created now.</summary>
+    internal bool Drawing { get; private set; }
+
     internal void Render(IRenderer renderer)
+    {
+        Drawing = true;
+        try { RenderFrame(renderer); }
+        finally { Drawing = false; }
+    }
+
+    private void RenderFrame(IRenderer renderer)
     {
         renderer.Clear(Settings.Background);
         Scenes.Draw(renderer);
