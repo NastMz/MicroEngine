@@ -125,7 +125,7 @@ public interface IRenderer
 }
 ```
 
-Source: [`src/MicroEngine/Graphics/IGraphics.cs`](../../src/MicroEngine/Graphics/IGraphics.cs)
+Source: [`src/MicroEngine.Graphics2D/Legacy/IGraphics.cs`](../../src/MicroEngine.Graphics2D/Legacy/IGraphics.cs)
 
 - `DrawOptions` carries `FlipX`, `FlipY`, `Rotation` (radians), `Origin` (pivot in source pixels) and `Scale`.
 - `BlendMode` is `Alpha`, `Additive` or `Multiply`.
@@ -150,7 +150,7 @@ Next SDK version (not published yet: arrives with the next SDK version): every b
 - Captures are opaque (alpha 255) on every backend.
 - Circles, lines and triangles cover their shape, but the pixels along their edges may differ between backends.
 
-Extension methods in [`RendererExtensions.cs`](../../src/MicroEngine/Graphics/RendererExtensions.cs) add
+Extension methods in [`RendererExtensions.cs`](../../src/MicroEngine.Graphics2D/Legacy/RendererExtensions.cs) add
 `Draw(sprite, position, tint?, flipX)` (places the sprite's origin at the position), `DrawPivoted` (rotate and
 scale around the origin), `FillEllipse`, `DrawRect`, `FillGradient` and `Panel` (bordered UI box from a
 `PanelStyle`).
@@ -212,7 +212,7 @@ called while drawing. Duplicate names and unknown names throw.
 `AnimationClip(frames, framesPerSecond, loop = true)` is an immutable frame sequence; `FrameAt(time)` picks a
 frame. `Animator` plays named clips: `Add(name, clip)`, `Play(name, restart = false)` (playing the current clip
 again does not restart it), `Update(dt)`, `Frame`, `Speed`, `Finished` (for non-looping clips). Source:
-[`src/MicroEngine/Graphics/Animation.cs`](../../src/MicroEngine/Graphics/Animation.cs). Games may equally pick
+[`src/MicroEngine.Graphics2D/Legacy/Animation.cs`](../../src/MicroEngine.Graphics2D/Legacy/Animation.cs). Games may equally pick
 frames themselves from `atlas.Frames(...)` and a timer.
 
 ## Camera
@@ -226,11 +226,19 @@ frames themselves from `atlas.Frames(...)` and a timer.
 
 Draw world content between `r.PushCamera(camera)` and `r.PopCamera()`; HUD drawn outside stays in screen space.
 
+Next SDK version (not published yet: arrives with the next SDK version): a camera can be drawn somewhere its rules do
+not keep it. Set `DrawPosition` before drawing (for example to the camera's position interpolated between the last two
+updates, a scene world's `DrawPosition2D` of an entity that follows the camera) and drawing reads it: `RenderOffset`,
+`WorldToView`, `ViewToWorld`, `WorldToScreen`, `ScreenToWorld`, `VisibleBounds` and `IsVisible` use `DrawnPosition`
+(`DrawPosition` when set, else `Position`). `Position`, `View`, `Center`, `Follow`, `CenterOn` and `Clamp` stay the
+rules', so drawing never moves the camera the game simulates. `DrawPosition` stays until it is set again or set to null.
+
 ```csharp
-public void Draw(IRenderer r, Stage stage, float time)
+public void Draw(IRenderer r, Stage stage, float time, float blend)
 {
+    stage.Camera.DrawPosition = stage.CameraDrawPosition;   // interpolated; the rules keep Camera.Position
     var cam = stage.Camera;
-    DrawBackdrop(r, stage, time);
+    DrawBackdrop(r, stage, time);   // parallax from cam.DrawnPosition
     r.PushCamera(cam);
     DrawTiles(r, stage, time, background: true);
     // ...
@@ -249,7 +257,7 @@ Source: [`games/MeadowRun/Scenes/StageView.cs`](../../games/MeadowRun/Scenes/Sta
 `ParallaxLayer(texture)` is drawn in screen space (no camera pushed) with `Draw(r, cameraPosition, time)`.
 Init properties: `Factor` (0 fixed, 1 moves with the world; default 0.5), `VerticalFactor`, `Y`, `Drift`
 (pixels per second), `RepeatX` (default true), `Tint`. Source:
-[`src/MicroEngine/Graphics/Parallax.cs`](../../src/MicroEngine/Graphics/Parallax.cs).
+[`src/MicroEngine.Graphics2D/Legacy/Parallax.cs`](../../src/MicroEngine.Graphics2D/Legacy/Parallax.cs).
 
 ## Particles
 

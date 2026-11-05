@@ -163,7 +163,7 @@ Source: [`games/CourtyardKey/Scenes/PlayScene.Events.cs`](../../games/CourtyardK
 
 `Tweens.Add(duration, apply, ease?, done?, delay?)` calls `apply` with eased progress 0..1 every update for
 `duration` seconds, then calls `done`. The default easing is `Ease.OutQuad`; other curves live in the `Ease`
-class ([`src/MicroEngine/Math/MathX.cs`](../../src/MicroEngine/Math/MathX.cs)).
+class ([`src/MicroEngine.Kernel/Math/MathX.cs`](../../src/MicroEngine.Kernel/Math/MathX.cs)).
 
 ```csharp
 Tweens.Add(1.2f, t => _revealed = t, Ease.Linear, () =>
@@ -181,7 +181,10 @@ Tweens have no handle; `Tweens.Clear()` drops all of them, and popping the scene
 ## The scene world
 
 Next SDK version (not published yet: arrives with the next SDK version). Every scene can hold its objects in a world,
-`Objects` (an `IWorld`), created the first time the scene reads it; a scene that never reads it has none. The world
+`Objects` (an `IWorld`), created the first time the scene reads it; a scene that never reads it has none. Create it
+outside drawing, from `Enter`, `Update` or the scene's constructor: the world is simulation state, so reading `Objects`
+for the first time from `Draw` or `DrawUi` throws an `InvalidOperationException` (a scene whose drawing alone reads the
+world, for its `Blend`, reads `Objects` once in `Enter`). The world
 holds entities: each has an `EntityId` (a slot and a generation, so the id of a destroyed entity never reaches the entity
 that reuses its slot), a `Transform` relative to an optional parent (stored in 3D; `Position2D`, `Rotation2D` and
 `Scale2D` read and write the 2D part) and typed attachments, which are your own classes (`Attach`, `TryGet`, `Get`,
@@ -200,7 +203,9 @@ programs against `IWorld`. The rules a game can rely on:
   start of the step to where it is now, by the world's `Blend`; at blend 1, or for an entity that did not move, they
   return exactly the simulated transform. A new, `Teleport`ed or re-parented entity is drawn where it is until the
   next step. `Blend` is 1 when the world did not step in the engine's latest step (its scene was paused or under an
-  overlay), so a frozen world is drawn as its last step instead of rocking between its last two.
+  overlay), so a frozen world is drawn as its last step instead of rocking between its last two. A `Camera2D` the
+  rules move is drawn the same way by setting its `DrawPosition` to the `DrawPosition2D` of an entity that follows it
+  ([Camera](rendering.md#camera)).
 - **Clock**: each world has a `WorldClock` that advances with the world's step: `Scale` slows it down (0 pauses it),
   `Freeze(seconds)` stops whole steps for a hitstop (the longer freeze wins), and a world that does not step consumes
   no time. At scale 1 the step it reports is exactly the engine's.
@@ -210,7 +215,19 @@ programs against `IWorld`. The rules a game can rely on:
 The engine steps a scene's world with the scene. While the scene is updated, each step starts before its coroutines,
 tweens and `Update`, and ends after them (releasing what was destroyed); `Update` then receives the step on the
 world's clock: the same `dt` at scale 1, scaled in slow motion, 0 during a freeze. The scene's `Age`, coroutines and
-tweens keep the engine's time. Before the scene is drawn, the engine sets the world's `Blend`: the frame's blend while
+tweens keep the engine's time, and `EngineStep` is the engine's step before the clock scales or freezes it (the same
+value every update, `1 / UpdateRate`; it is what `Update` receives when the scene has no world). Advance what keeps
+moving through a hitstop or slow motion, such as play time, camera shake or particles, by `EngineStep`:
+
+```csharp
+public override void Update(float dt)   // 0 while Objects.Clock is frozen
+{
+    camera.Update(EngineStep);          // the shake decays during a hitstop
+    if (dt == 0) return;
+    // the rules, by dt
+}
+```
+ Before the scene is drawn, the engine sets the world's `Blend`: the frame's blend while
 the scene plays, 1 while it is frozen under a blocking overlay or by a transition, so a paused level stays still
 instead of rocking between its last two updates, with no code in the game. The world's state is part of the scene's
 section of the state hash.

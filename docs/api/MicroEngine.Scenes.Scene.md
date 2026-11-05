@@ -113,6 +113,28 @@ public CoroutineRunner Coroutines { get; }
 
  [CoroutineRunner](MicroEngine.Scenes.CoroutineRunner.md)
 
+### <a id="MicroEngine_Scenes_Scene_EngineStep"></a> EngineStep
+
+The engine's step in seconds (<code>1 / UpdateRate</code>): the step of the current update before the world's clock
+scales or freezes it. [Age](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Age), [Coroutines](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Coroutines) and [Tweens](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Tweens) advance by it, and it
+is what [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) receives when the scene has no [Objects](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Objects). Use it for what keeps moving
+through a hitstop or slow motion (play time, camera shake, particles, a pause button) while the rules advance by
+[Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_)'s step. Known from [Enter](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Enter) on.
+
+```csharp
+public float EngineStep { get; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+Read before the scene is on a running game's stack and was updated.
+
 ### <a id="MicroEngine_Scenes_Scene_Font"></a> Font
 
 The game's built-in font ([Font](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Font)).
@@ -178,6 +200,18 @@ public IWorld Objects { get; }
 #### Property Value
 
  IWorld
+
+#### Remarks
+
+Create it outside drawing: read it first from [Enter](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Enter), [Update](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Update_System_Single_) or the scene's constructor.
+A world created by drawing would be stepped and hashed only in runs that drew a frame, so the state hash would
+depend on the display; the first read from [Draw](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Draw_MicroEngine_Graphics_IRenderer_) or [DrawUi](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_DrawUi_MicroEngine_Graphics_IRenderer_) is refused instead.
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+Read for the first time while the game draws.
 
 ### <a id="MicroEngine_Scenes_Scene_TouchActions"></a> TouchActions
 

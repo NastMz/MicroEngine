@@ -260,6 +260,17 @@ public void EndFrame(float dt, InputDevice otherDevice = InputDevice.None)
 
 `otherDevice` InputDevice
 
+### <a id="MicroEngine_Input_VirtualControls_EndUpdate"></a> EndUpdate\(\)
+
+Ends a fixed update: the taps it read stop counting, so a tap shorter than a frame is down in exactly one update,
+the first that reads it, as a key's or a gamepad button's is, also when a slow frame catches up with several
+updates. The engine's loop calls it after every update; code that samples the controls itself calls it after each
+of its updates (without it, read taps expire at the next [BeginFrame](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_BeginFrame_MicroEngine_Input_ITouchScreen_)).
+
+```csharp
+public void EndUpdate()
+```
+
 ### <a id="MicroEngine_Input_VirtualControls_Frame_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_Presentation_"></a> Frame\(Vector2, RectF, int, int, Presentation?\)
 
 Where the backend draws the game frame. Without shown controls it is [Fit](MicroEngine.Input.FrameLayout.md#MicroEngine_Input_FrameLayout_Fit_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_Presentation_). With shown
