@@ -167,7 +167,7 @@ public void ApplyTouches(long update, VirtualControls controls)
 
 `update` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-`controls` [VirtualControls](MicroEngine.Input.VirtualControls.md)
+`controls` VirtualControls
 
 ### <a id="MicroEngine_Core_InputScript_Axis_System_Int64_System_Int32_MicroEngine_Input_PadAxis_System_Single_"></a> Axis\(long, int, PadAxis, float\)
 

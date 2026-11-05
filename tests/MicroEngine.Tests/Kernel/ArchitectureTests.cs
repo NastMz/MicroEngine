@@ -13,7 +13,7 @@ namespace MicroEngine.Tests.Kernel;
 public sealed class ArchitectureTests
 {
     private const string Kernel = "MicroEngine.Kernel", Platform = "MicroEngine.Platform", Graphics = "MicroEngine.Graphics",
-        Content = "MicroEngine.Content", Graphics2D = "MicroEngine.Graphics2D", Text = "MicroEngine.Text", Input = "MicroEngine.Input",
+        Content = "MicroEngine.Content", Graphics2D = "MicroEngine.Graphics2D", Text = "MicroEngine.Text", Input = "MicroEngine.Input", InputTouch = "MicroEngine.Input.Touch",
         Audio = "MicroEngine.Audio", Scene = "MicroEngine.Scene", Physics = "MicroEngine.Physics", PhysicsTiles = "MicroEngine.Physics.Tiles", Box2D = "MicroEngine.Physics.Box2D",
         UI = "MicroEngine.UI", Saves = "MicroEngine.Saves", Achievements = "MicroEngine.Achievements", Hosting = "MicroEngine.Hosting",
         Testing = "MicroEngine.Testing", Migration = "MicroEngine.Migration.Entities",
@@ -21,7 +21,7 @@ public sealed class ArchitectureTests
         Core = "MicroEngine", Sdl = "MicroEngine.Sdl", Raylib = "MicroEngine.Raylib", Desktop = "MicroEngine.Desktop", Cli = "MicroEngine.Cli";
 
     private static readonly string[] Abstractions = [Kernel, Platform, Graphics, Content];
-    private static readonly string[] Modules = [Graphics2D, Text, Input, Audio, Scene, Physics, PhysicsTiles, UI, Saves, Achievements, Hosting];
+    private static readonly string[] Modules = [Graphics2D, Text, Input, InputTouch, Audio, Scene, Physics, PhysicsTiles, UI, Saves, Achievements, Hosting];
 
     /// <summary>Each engine assembly and the engine assemblies it may reference.</summary>
     internal static readonly Dictionary<string, string[]> Allowed = new()
@@ -33,6 +33,8 @@ public sealed class ArchitectureTests
         [Graphics2D] = [Graphics, Content, Kernel, Platform],
         [Text] = [Graphics2D, Graphics, Content, Kernel, Platform],
         [Input] = [Kernel, Platform, Graphics2D, Text, Graphics, Content],
+        // The on-screen controls draw (2D graphics) and may label with text.
+        [InputTouch] = [Input, Graphics2D, Text, Graphics, Content, Kernel, Platform],
         [Audio] = [Kernel, Platform, Content],
         [Scene] = [Kernel],
         [Physics] = [Scene, Kernel],
@@ -231,6 +233,25 @@ public sealed class ArchitectureTests
         // Code compiled against an earlier MicroEngine.dll still finds the save types there.
         var forwarded = typeof(Game).Assembly.GetForwardedTypes();
         CollectionAssert.IsSubsetOf(new[] { typeof(SaveStore), typeof(ISaveStorage), typeof(FileSaveStorage) }, forwarded);
+    }
+
+    [TestMethod]
+    public void The_compiled_touch_controls_reference_only_their_allowed_assemblies()
+    {
+        var touch = typeof(MicroEngine.Input.VirtualControls).Assembly;
+        Assert.AreEqual(InputTouch, touch.GetName().Name);
+        var moved = new[]
+        {
+            typeof(MicroEngine.Input.TouchLayout), typeof(MicroEngine.Input.TouchStyle), typeof(MicroEngine.Input.ITouchSkin),
+            typeof(MicroEngine.Input.ITouchScreen), typeof(MicroEngine.Input.TouchEvent), typeof(MicroEngine.Input.IOverlayCanvas),
+            typeof(MicroEngine.Input.ITouchOverlay), typeof(MicroEngine.Input.FrameLayout),
+        };
+        foreach (var type in moved) Assert.AreEqual(InputTouch, type.Assembly.GetName().Name, type.Name);
+        var engine = touch.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
+        Assert.IsTrue(engine.All(Allowed[InputTouch].Contains), string.Join(", ", engine));
+        CollectionAssert.DoesNotContain(engine, Core);
+        // Code compiled against an earlier MicroEngine.dll still finds the touch types there.
+        CollectionAssert.IsSubsetOf(moved.Append(typeof(MicroEngine.Input.VirtualControls)).ToArray(), typeof(Game).Assembly.GetForwardedTypes());
     }
 
     [TestMethod]

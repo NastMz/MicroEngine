@@ -8,6 +8,17 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- Touch controls are an optional module: `Game.Touch` is active (drawn, read, taking the touches over it) on touch-first
+  screens (phones, tablets, touch-only browsers) or once the game sets a layout of its own (overriding
+  `CreateTouchLayout`, or setting `Game.Touch.Layout` in `Configure`, `Load` or a scene); otherwise it is inactive and
+  costs nothing (`VirtualControls.IsActive`). `Game.Touch` always exists, now from `Configure` on. **Migration:** a game
+  that relied on the default controls appearing on a touch laptop or a desktop browser sets a layout:
+  `protected override TouchLayout CreateTouchLayout() => TouchLayout.CreateDefault();`. Tests that touch the headless
+  screen of a game without a layout set `platform.TouchScreen.TouchFirst = true` first. The touch types (`ITouchScreen`,
+  `TouchEvent`, `ITouchOverlay`, `IOverlayCanvas`, `FrameLayout`, `TouchLayout` and its controls, `VirtualControls`,
+  `TouchStyle`, `ITouchSkin`, `DefaultTouchSkin`) moved to the new `MicroEngine.Input.Touch.dll` (carried by the
+  `MicroEngine` package) with their namespace unchanged.
+
 - Achievements are an optional engine module: a game declares them before the engine is composed, and a game that
   never declares them has no achievement service, no `engine.achievements` frame system and no achievement file.
   **Migration:** move the `UseAchievements(catalog, store, theme)` call out of `Load` into the game's constructor or

@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.Touch.dll  
 Guide: [Input](../manual/input.md)  
 
 On-screen controls at run time: hit testing, finger tracking, d-pad and joystick values, tap latching, haptics and
@@ -32,7 +32,7 @@ IInputLayer
 
 ### <a id="MicroEngine_Input_VirtualControls__ctor_MicroEngine_Input_TouchLayout_"></a> VirtualControls\(TouchLayout?\)
 
-Creates the controls for <code class="paramref">layout</code> (null: [CreateDefault](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_CreateDefault_MicroEngine_Input_ActionNames_)). Games use the instance in [Touch](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Touch).
+Creates the controls for <code class="paramref">layout</code> (null: [CreateDefault](MicroEngine.Input.TouchLayout.md#MicroEngine_Input_TouchLayout_CreateDefault_MicroEngine_Input_ActionNames_)). Games use the instance in <code>Game.Touch</code>.
 
 ```csharp
 public VirtualControls(TouchLayout? layout = null)
@@ -86,6 +86,21 @@ public int FingerCount { get; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
+### <a id="MicroEngine_Input_VirtualControls_IsActive"></a> IsActive
+
+Whether the controls take part in the game: the game drawing them over the frame, reading them as an action source
+and giving them the touches over them. A game's controls start inactive and cost nothing; they become active when
+the game sets a [Layout](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_Layout) or the platform's touch screen is touch-first ([TouchFirst](MicroEngine.Input.ITouchScreen.md#MicroEngine_Input_ITouchScreen_TouchFirst)),
+and stay active. Controls created and driven directly ([Update](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_Update_MicroEngine_Input_ITouchScreen_System_Single_MicroEngine_Input_InputDevice_)) work whatever this says.
+
+```csharp
+public bool IsActive { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_Input_VirtualControls_KeepFrameClear"></a> KeepFrameClear
 
 Whether the game frame is fitted around the controls while they are shown (default true): on screens close to
@@ -114,7 +129,8 @@ public RectF LastFrame { get; }
 
 ### <a id="MicroEngine_Input_VirtualControls_Layout"></a> Layout
 
-The layout in use. Setting it (a scene with other controls) releases every finger.
+The layout in use. Setting it (a scene with other controls) releases every finger and activates the controls
+([IsActive](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_IsActive)).
 
 ```csharp
 public TouchLayout Layout { get; set; }
@@ -185,6 +201,14 @@ public int Vibrations { get; }
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 ## Methods
+
+### <a id="MicroEngine_Input_VirtualControls_Activate"></a> Activate\(\)
+
+Activates the controls ([IsActive](MicroEngine.Input.VirtualControls.md#MicroEngine_Input_VirtualControls_IsActive)); the game wires them in at its next frame. Does nothing when they already are.
+
+```csharp
+public void Activate()
+```
 
 ### <a id="MicroEngine_Input_VirtualControls_BeginFrame_MicroEngine_Input_ITouchScreen_"></a> BeginFrame\(ITouchScreen?\)
 
@@ -415,7 +439,7 @@ public void ScriptTouchAt(int finger, Vector2 normalized)
 
 ### <a id="MicroEngine_Input_VirtualControls_SetContext_System_Collections_Generic_IEnumerable_System_String__"></a> SetContext\(IEnumerable<string\>?\)
 
-The actions the current context needs (the top scene's [TouchActions](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_TouchActions), set by the game
+The actions the current context needs (the top scene's <code>Scene.TouchActions</code>, set by the game
 every frame): only controls that press at least one of them are shown and touchable; null shows them all. A
 dialogue that only advances with "confirm" hides the d-pad over its text, keeps the button that confirms, and
 the hidden controls release their fingers. The game frame does not change size with the context.

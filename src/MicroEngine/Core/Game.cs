@@ -56,7 +56,14 @@ public abstract class Game : IEngineModule, IStateHashed
     /// <see cref="Load"/>.
     /// </summary>
     public InputSystem InputSystem { get; private set; } = null!;
-    /// <summary>The on-screen touch controls (<see cref="CreateTouchLayout"/>), drawn and read wherever the platform has a touch screen.</summary>
+    /// <summary>
+    /// The on-screen touch controls (<see cref="CreateTouchLayout"/>), available from <see cref="Configure"/> on. They are
+    /// an opt-in module: active, drawn and read on a touch-first screen (<see cref="ITouchScreen.TouchFirst"/>: phones,
+    /// tablets, touch-only browsers) or once the game sets their <see cref="VirtualControls.Layout"/> (in
+    /// <see cref="Configure"/>, <see cref="Load"/> or a scene), on any platform with a touch screen; otherwise inactive,
+    /// with no frame system, input layer, action source or overlay (<see cref="VirtualControls.IsActive"/>). Controls
+    /// activated after the engine was built join the game at the start of the next frame.
+    /// </summary>
     public VirtualControls Touch { get; private set; } = null!;
     /// <summary>
     /// How to name each action to the player on the device in use (<c>Prompts.Format("Press {confirm}")</c>), from the
@@ -216,11 +223,18 @@ public abstract class Game : IEngineModule, IStateHashed
     protected virtual InputMap CreateInput() => InputMap.CreateDefault();
     /// <summary>
     /// Override to choose the on-screen controls for touch screens: which d-pad, joystick and buttons press which actions,
-    /// and where. The default (<see cref="TouchLayout.CreateDefault"/>) matches <see cref="InputMap.CreateDefault"/>.
+    /// and where. The default (<see cref="TouchLayout.CreateDefault"/>) matches <see cref="InputMap.CreateDefault"/> and is
+    /// used on touch-first screens only. A layout of the game's own, returned without calling the base method, is the
+    /// game setting a layout: it activates the controls on any platform with a touch screen (<see cref="Touch"/>).
     /// </summary>
-    protected virtual TouchLayout CreateTouchLayout() => TouchLayout.CreateDefault(_inputNames);
+    protected virtual TouchLayout CreateTouchLayout()
+    {
+        _touchLayoutDeclared = false;
+        return TouchLayout.CreateDefault(_inputNames);
+    }
 
     private ActionNames? _inputNames; // the names of the map CreateInput built, for the default touch layout
+    private bool _touchLayoutDeclared; // CreateTouchLayout returned the game's own layout
 
     /// <summary>Asks the loop to stop. The current frame finishes, then every scene exits and <see cref="Unload"/> runs.</summary>
     public void Quit() => QuitRequested = true;
@@ -276,6 +290,8 @@ public abstract class Game : IEngineModule, IStateHashed
         builder.Add(new GameModule(this, platform, seed, graphics));
         builder.Add(this);
         AddDeclaredModules(builder);
+        // A layout set in Configure activates the on-screen controls on any screen.
+        if (Touch.IsActive && !_touchScheduled) AddTouchControls(builder, builder.Services.Get<InputMap>(), builder.Services.Get<InputSystem>());
         host?.Invoke(builder);
         if (mode is { } chosen) builder.Configure<TimeSettings>(time => time with { Mode = chosen });
         var engine = _engine = builder.Build();
@@ -316,9 +332,12 @@ public abstract class Game : IEngineModule, IStateHashed
             // that unbound or rebound it keeps its choice.
             if (input.GetBindings(input.Names.Fullscreen) is null) input.BindFullscreenDefaults();
             game._inputNames = input.Names;
-            var touch = new VirtualControls(game.CreateTouchLayout());
-            input.AddSource(touch);
-            var system = CreateInputSystem(platform, input, touch);
+            // The on-screen controls exist from here on (Configure may set their layout) but stay inactive, costing
+            // nothing, until the game sets a layout or the screen is touch-first (AddTouchControls, RouteInput).
+            game._touchLayoutDeclared = true;
+            var touch = game.Touch = new VirtualControls(game.CreateTouchLayout());
+            if (game._touchLayoutDeclared) touch.Activate();
+            var system = CreateInputSystem(platform, input);
             services.Add(input);
             services.Add(system);
             services.Add(system.Players);
@@ -327,7 +346,7 @@ public abstract class Game : IEngineModule, IStateHashed
             services.Add(new ActionPrompts(input, touch) { KeyLabels = system.KeyLabels });
             // Optional features are found by query, never by casting the platform.
             platform.TryGetCapability<ITouchScreen>(out var screen);
-            if (screen is not null) screen.Overlay = touch;
+            game._touchScreen = screen;
             platform.Graphics.DefaultFilter = game.Settings.DefaultTextureFilter;
             services.Add(new AssetCache(platform.Graphics, game.ContentRoot));
             services.Add(new AudioMixer(platform.Audio));
@@ -336,8 +355,9 @@ public abstract class Game : IEngineModule, IStateHashed
 
             var schedule = builder.Schedule;
             schedule.Add(FramePhase.BeginFrame, "engine.assets", _ => game.Assets.Update());
-            schedule.Add(FramePhase.Input, "engine.input.events", _ => game.RouteInput(screen));
-            schedule.Add(FramePhase.Input, "engine.touch", frame => game.UpdateTouch(screen, (float)frame.Delta));
+            schedule.Add(FramePhase.Input, "engine.input.events", frame => game.RouteInput(screen, (float)frame.Delta));
+            // A touch-first screen or a layout of the game's own activates the controls now, so their system keeps its place.
+            if (touch.IsActive || screen is { TouchFirst: true }) game.AddTouchControls(builder, input, system);
             schedule.Add(FramePhase.PreFixed, "engine.input", _ => game.InputSystem.Sample());
             schedule.Add(FramePhase.PreFixed, "engine.fullscreen", _ =>
             {
@@ -368,10 +388,10 @@ public abstract class Game : IEngineModule, IStateHashed
 
     /// <summary>
     /// The engine's input over <paramref name="platform"/>: its event backend and the optional features it offers when
-    /// it has one, otherwise its polled source as one device; a host's extra polled sources as devices of their own;
-    /// the on-screen controls as the touch layer.
+    /// it has one, otherwise its polled source as one device; a host's extra polled sources as devices of their own.
+    /// The on-screen controls join as the touch layer when they activate (<see cref="WireTouch"/>).
     /// </summary>
-    private static InputSystem CreateInputSystem(IPlatform platform, InputMap input, VirtualControls touch)
+    private static InputSystem CreateInputSystem(IPlatform platform, InputMap input)
     {
         var system = new InputSystem(input);
         platform.TryGetCapability<IInputBackend>(out var backend);
@@ -388,8 +408,33 @@ public abstract class Game : IEngineModule, IStateHashed
                 if (!ReferenceEquals(source, backend)) system.AddPolled(source);
         }
         else if (!ReferenceEquals(polled, backend)) system.AddPolled(polled);
-        system.Layers.Add(touch, InputLayerOrder.TouchControls);
         return system;
+    }
+
+    private ITouchScreen? _touchScreen;
+    // Whether the on-screen controls are wired in (source, layer, overlay), and whether engine.touch runs them.
+    private bool _touchWired, _touchScheduled;
+
+    /// <summary>
+    /// Activates the on-screen controls while the engine is composed: wires them in and schedules <c>engine.touch</c>
+    /// right after <c>engine.input.events</c>. Called for a touch-first screen, and after <see cref="Configure"/> when it
+    /// set a layout.
+    /// </summary>
+    private void AddTouchControls(EngineBuilder builder, InputMap input, InputSystem system)
+    {
+        Touch.Activate();
+        WireTouch(input, system);
+        builder.Schedule.Add(FramePhase.Input, "engine.touch", frame => UpdateTouch(_touchScreen, (float)frame.Delta), after: "engine.input.events");
+        _touchScheduled = true;
+    }
+
+    /// <summary>The on-screen controls join the game: an action source of <paramref name="input"/>, the touch layer, the screen's overlay.</summary>
+    private void WireTouch(InputMap input, InputSystem system)
+    {
+        input.AddSource(Touch);
+        system.Layers.Add(Touch, InputLayerOrder.TouchControls);
+        if (_touchScreen is not null) _touchScreen.Overlay = Touch;
+        _touchWired = true;
     }
 
     private readonly List<TouchEvent> _touches = [];
@@ -398,15 +443,35 @@ public abstract class Game : IEngineModule, IStateHashed
     /// The frame's input routing: the backend's events and those sent by scripts and tests, then the screen's touches
     /// (and scripted touches) as pointers in screen and canvas pixels, all through the input layers to gameplay.
     /// </summary>
-    internal void RouteInput(ITouchScreen? screen)
+    /// <remarks>
+    /// The safe point where on-screen controls activated after the engine was built (a layout set in <see cref="Load"/>
+    /// or by a scene, or a screen that became touch-first) join the game: at the start of the next frame, before its
+    /// input is routed. Those controls are then updated here, at the end of the routing, where <c>engine.touch</c> would
+    /// have run them.
+    /// </remarks>
+    internal void RouteInput(ITouchScreen? screen, float dt = 0)
     {
-        Touch.SetContext(Scenes.Current?.TouchActions);
-        Touch.BeginFrame(screen);
+        if (!_touchWired)
+        {
+            if (screen is { TouchFirst: true }) Touch.Activate();
+            if (Touch.IsActive) WireTouch(Input, InputSystem);
+        }
+        RouteEvents(screen);
+        if (_touchWired && !_touchScheduled) UpdateTouch(screen, dt);
+    }
+
+    private void RouteEvents(ITouchScreen? screen)
+    {
+        if (_touchWired)
+        {
+            Touch.SetContext(Scenes.Current?.TouchActions);
+            Touch.BeginFrame(screen);
+        }
         InputSystem.BeginFrame();
         if (screen is null) return;
         _touches.Clear();
         screen.ReadTouches(_touches);
-        Touch.TakeScripted(_touches);
+        if (_touchWired) Touch.TakeScripted(_touches);
         if (_touches.Count == 0) return;
         var frame = screen.Overlay?.Frame(screen.Size, screen.SafeArea, Settings.VirtualWidth, Settings.VirtualHeight, Settings.Scaling)
             ?? FrameLayout.Fit(screen.Size, screen.SafeArea, Settings.VirtualWidth, Settings.VirtualHeight, Settings.Scaling);

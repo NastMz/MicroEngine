@@ -18,7 +18,7 @@ public readonly record struct TouchEvent(long Finger, TouchPhase Phase, Vector2 
 /// area free of notches, rounded corners and system bars, its density, the touches since the last frame, and a layer
 /// drawn over the game for on-screen controls. Coordinates are drawable pixels with the origin at the top left.
 /// SDL reports phones and touch screens, the browser host reports Pointer Events, the headless platform lets tests
-/// touch it (<see cref="Core.HeadlessTouchScreen"/>).
+/// touch it (<c>HeadlessTouchScreen</c>).
 /// </summary>
 public interface ITouchScreen
 {

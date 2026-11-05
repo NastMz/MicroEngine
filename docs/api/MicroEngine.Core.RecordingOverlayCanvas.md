@@ -19,7 +19,7 @@ public sealed class RecordingOverlayCanvas : IOverlayCanvas
 
 #### Implements
 
-[IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md)
+IOverlayCanvas
 
 ## Constructors
 

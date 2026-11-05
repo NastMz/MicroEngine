@@ -47,7 +47,7 @@ public abstract class Game
 | `Unload` | Called once before the platform is disposed |
 | `CreateInput` | Override to change or add action bindings |
 | `CreateTouchLayout` | Override to choose the on-screen controls ([Touch controls](../manual/input.md#touch-controls)) |
-| `Touch` | The on-screen controls at run time: shown, pressed, geometry, `SetVisible`, `Layout` |
+| `Touch` | The on-screen controls at run time: shown, pressed, geometry, `SetVisible`, `Layout`. Next SDK version: available from `Configure`; active on touch-first screens or once the game sets a layout, inactive and free otherwise (`IsActive`) |
 | `Random` | Deterministic per run; seeded by the launcher (seed 1 under a script) |
 | `UseAchievements` | Declares the achievements. Next SDK version: called from the constructor or `Configure` (before the engine is composed), it adds the achievements module; from `Load` or later it throws `InvalidOperationException` |
 | `Achievements` | Throws until `UseAchievements` was called |
@@ -242,7 +242,7 @@ public interface IInputSource
 }
 ```
 
-[`src/MicroEngine/Input/Touch.cs`](../../src/MicroEngine/Input/Touch.cs):
+[`src/MicroEngine.Input.Touch/Touch.cs`](../../src/MicroEngine.Input.Touch/Touch.cs):
 
 ```csharp
 public readonly record struct TouchEvent(long Finger, TouchPhase Phase, Vector2 Position);
@@ -322,7 +322,7 @@ public sealed class InputMap
 are digital; `Value`/`AnalogAxis`/`Vector` analog. Action sources implement
 `IActionSource { bool IsDown(string); float Value(string); InputDevice Device; IEnumerable<string> Actions; }` (the
 last three have defaults). Touch controls: `TouchLayout`, `TouchDPad`, `TouchStick`, `TouchButton`, `VirtualControls`
-([Touch controls](../manual/input.md#touch-controls), [`VirtualControls.cs`](../../src/MicroEngine/Input/VirtualControls.cs)). Default bindings are listed
+([Touch controls](../manual/input.md#touch-controls), [`VirtualControls.cs`](../../src/MicroEngine.Input.Touch/VirtualControls.cs)). Default bindings are listed
 in [Configuration](configuration.md#default-input-actions).
 
 ## SaveStore and ISaveStorage

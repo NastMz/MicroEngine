@@ -5,6 +5,7 @@
     <Project Path="src/MicroEngine.Graphics/MicroEngine.Graphics.csproj" />
     <Project Path="src/MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj" />
     <Project Path="src/MicroEngine.Input/MicroEngine.Input.csproj" />
+    <Project Path="src/MicroEngine.Input.Touch/MicroEngine.Input.Touch.csproj" />
     <Project Path="src/MicroEngine.Hosting/MicroEngine.Hosting.csproj" />
     <Project Path="src/MicroEngine.Content/MicroEngine.Content.csproj" />
     <Project Path="src/MicroEngine.Audio/MicroEngine.Audio.csproj" />
