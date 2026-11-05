@@ -18,7 +18,7 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
     private bool _leaving;
     private readonly HudLabels _hud = new();
     private readonly NumberLabel _flag = new(), _bonus = new(), _total = new();
-    private int _coinsAtStart, _scoreAtStart;
+    private int _scoreAtStart;
 
     public Stage Stage => _stage;
     public override string? Describe() => _stage is null ? null
@@ -27,8 +27,8 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
     public LevelDef Def => Levels.All[levelIndex];
 
     /// <summary>
-    /// Hashes the level and checkpoint, whether the scene is leaving, the session totals at the start (the clear
-    /// record uses them) and the stage (the stage's actors are in the scene's world, which the engine hashes with the
+    /// Hashes the level and checkpoint, whether the scene is leaving, the score at the start (the clear record uses
+    /// it) and the stage (the stage's actors are in the scene's world, which the engine hashes with the
     /// scene). Leaves out the stage view and HUD/tally labels: presentation writes them (squash, label text caches).
     /// </summary>
     public override void HashState(StateHasher hash)
@@ -36,7 +36,6 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
         hash.Add(levelIndex);
         hash.Add(checkpoint);
         hash.Add(_leaving);
-        hash.Add(_coinsAtStart);
         hash.Add(_scoreAtStart);
         hash.Add(_stage);
     }
@@ -51,7 +50,6 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
         };
         _view = new StageView(game.Art, Font, game.Lights);
         _view.Bind(_stage);
-        _coinsAtStart = game.Session.Coins;
         _scoreAtStart = game.Session.Score;
         game.Session.LifeGained -= OnLife;
         game.Session.LifeGained += OnLife;
@@ -106,12 +104,12 @@ internal sealed class PlayScene(MeadowGame game, int levelIndex, int checkpoint 
             case StageOutcome.Cleared:
                 if (levelIndex == 0) game.Achievements.Unlock(MeadowAchievements.FirstCourse);
                 game.Session.Form = _stage.Player.Form;
-                bool unlocked = game.RecordClear(levelIndex, game.Session.Score - _scoreAtStart, game.Session.Coins - _coinsAtStart);
+                bool unlocked = game.RecordClear(levelIndex, game.Session.Score - _scoreAtStart, _stage.CoinsCollected);
                 Game.Scenes.Replace(new MapScene(game, unlocked ? levelIndex + 1 : -1, levelIndex), Transition.Diamonds(0.8f, Pal.Ink));
                 break;
             case StageOutcome.Won:
                 game.Achievements.Unlock(MeadowAchievements.Sunstone);
-                game.RecordClear(levelIndex, game.Session.Score - _scoreAtStart, game.Session.Coins - _coinsAtStart);
+                game.RecordClear(levelIndex, game.Session.Score - _scoreAtStart, _stage.CoinsCollected);
                 Game.Scenes.Replace(new CreditsScene(game), Transition.Fade(1.6f, Pal.Cream));
                 break;
         }
