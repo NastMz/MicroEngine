@@ -25,7 +25,7 @@ public sealed record LaunchRequest
     public static IReadOnlyList<string> WindowWords { get; } = ["windowed", "fullscreen", "exclusive"];
 
     /// <summary>The one-line usage text desktop launchers print after an argument error.</summary>
-    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]";
+    public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--graphics NAME] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]";
 
     /// <summary><c>--script</c>: the input script file to read, or null. Hosts that hold the text itself use <see cref="ScriptText"/>.</summary>
     public string? ScriptPath { get; init; }
@@ -65,6 +65,8 @@ public sealed record LaunchRequest
     public string? Gpu { get; init; }
     /// <summary><c>--renderer</c>: graphics APIs to try first, or null to keep the game's choice.</summary>
     public IReadOnlyList<string>? Renderers { get; init; }
+    /// <summary><c>--graphics</c>: the graphics device to draw with ("sdl-renderer", "sdl-gpu"...), or null to keep the game's choice.</summary>
+    public string? Graphics { get; init; }
     /// <summary><c>--vsync</c>: on or off, or null to keep the game's choice.</summary>
     public bool? VSync { get; init; }
     /// <summary><c>--fps-limit</c>: the frame limit (0 for none), or null to keep the game's choice.</summary>
@@ -145,6 +147,7 @@ public sealed record LaunchRequest
                 "--state-trace" => request with { StateTracePath = Next() },
                 "--gpu" => request with { Gpu = Word(GpuWords, "auto, high-performance or power-saving") },
                 "--renderer" => request with { Renderers = RendererNames(Next()) },
+                "--graphics" => request with { Graphics = Next() },
                 "--vsync" => request with { VSync = Word(["on", "off"], "on or off") == "on" },
                 "--fps-limit" => request with { FrameRateLimit = Count() },
                 "--display" => request with { Display = Count() },

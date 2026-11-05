@@ -100,6 +100,7 @@ public sealed class Renderer3D : IDisposable
     private readonly Texture _white;
     private readonly List<Item> _items = [];
     private RenderTarget? _target;
+    private RenderTarget? _depth;
     private Camera3D? _camera;
     private ColorF? _clear;
     private RectI? _viewport;
@@ -182,18 +183,22 @@ public sealed class Renderer3D : IDisposable
     }
 
     /// <summary>Starts a frame into <paramref name="target"/> seen by <paramref name="camera"/>.</summary>
-    /// <param name="target">A target with a depth texture in <see cref="DepthFormat"/> and colour in <see cref="ColorFormat"/>.</param>
+    /// <param name="target">
+    /// A target with colour in <see cref="ColorFormat"/>: with a depth texture in <see cref="DepthFormat"/>
+    /// (<see cref="CreateTarget"/>), or without one (a game's canvas), in which case the renderer depth-tests against a
+    /// depth texture of its own of the same size.
+    /// </param>
     /// <param name="camera">The camera; its aspect is the viewport's.</param>
     /// <param name="clear">A premultiplied colour to clear to first, or null to draw over the target's contents (depth is always cleared).</param>
     /// <param name="viewport">The viewport in target pixels, or null for the whole target.</param>
-    /// <exception cref="InvalidOperationException">A frame is already open, or the target's formats differ from the renderer's.</exception>
+    /// <exception cref="InvalidOperationException">A frame is already open, or the target's colour format (or its depth format, when it has one) differs from the renderer's.</exception>
     public void Begin(RenderTarget target, Camera3D camera, ColorF? clear = null, RectI? viewport = null)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(camera);
         if (_target is not null) throw new InvalidOperationException("Begin inside a frame; call End first");
-        if (target.ColorFormat != ColorFormat || target.DepthFormat != DepthFormat)
-            throw new InvalidOperationException($"the target is {target.ColorFormat}/{target.DepthFormat?.ToString() ?? "no depth"}; the renderer draws to {ColorFormat}/{DepthFormat} (use CreateTarget)");
+        if (target.ColorFormat != ColorFormat || (target.DepthFormat is { } own && own != DepthFormat))
+            throw new InvalidOperationException($"the target is {target.ColorFormat}/{target.DepthFormat?.ToString() ?? "no depth"}; the renderer draws to {ColorFormat} with depth in {DepthFormat} (use CreateTarget, or a target without depth)");
         _target = target;
         _camera = camera;
         _clear = clear;
@@ -232,7 +237,7 @@ public sealed class Renderer3D : IDisposable
         var sampler = _device.GetSampler(TextureSampler);
         var list = _device.BeginCommands();
         var color = _clear is { } clear ? new ColorAttachment(target, LoadOp.Clear, StoreOp.Store, clear) : new ColorAttachment(target, LoadOp.Load);
-        list.BeginPass(new PassDescription(color, new DepthAttachment(target, LoadOp.Clear, StoreOp.DontCare, 1)));
+        list.BeginPass(new PassDescription(color, new DepthAttachment(DepthTargetFor(target), LoadOp.Clear, StoreOp.DontCare, 1)));
         if (_viewport is { } v) list.SetViewport(v);
         list.SetPipeline(_pipeline);
         int draws = 0, triangles = 0;
@@ -260,9 +265,22 @@ public sealed class Renderer3D : IDisposable
         _items.Clear();
     }
 
-    /// <summary>Releases the pipeline, shaders and the white texture (meshes are released by their owner).</summary>
+    /// <summary>The target whose depth texture a pass into <paramref name="target"/> uses: its own, or the renderer's of the same size.</summary>
+    private RenderTarget DepthTargetFor(RenderTarget target)
+    {
+        if (target.DepthFormat is not null) return target;
+        if (_depth is null || _depth.Width != target.Width || _depth.Height != target.Height)
+        {
+            _depth?.Dispose();
+            _depth = CreateTarget(target.Width, target.Height, "Renderer3D depth");
+        }
+        return _depth;
+    }
+
+    /// <summary>Releases the pipeline, shaders, the white texture and the renderer's depth texture (meshes are released by their owner).</summary>
     public void Dispose()
     {
+        _depth?.Dispose();
         _pipeline.Dispose();
         _vertex.Dispose();
         _fragment.Dispose();

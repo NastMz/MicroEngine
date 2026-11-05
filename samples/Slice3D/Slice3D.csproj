@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- The 3D vertical slice: a glTF mesh loaded as a content asset, a world whose transform hierarchy is drawn at the
-       engine's interpolation, a perspective camera, depth testing and one material compiled ahead of time, composited
-       with 2D on the same tier-1 SDL_GPU device. Not a game. It references the engine's projects directly: the tier-1
-       device and the 3D path are not in a package yet, so this sample cannot be copied out of the repository. -->
+  <!-- The 3D vertical slice: an ordinary game (a Configure entry point, the desktop launcher, the engine's loop and scene
+       world) on SDL's tier-1 graphics device, with a glTF mesh loaded as a content asset, a transform hierarchy drawn at
+       the engine's interpolation, a perspective camera, depth testing and one material compiled ahead of time, 2D on the
+       canvas and text in the UI view over it. Not a 3D game. The 3D path is not in a package yet, so this sample
+       references the engine's projects directly and cannot be copied out of the repository. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
@@ -13,14 +14,14 @@
     <ApplicationTitle>MicroEngine 3D slice</ApplicationTitle>
     <ApplicationId>com.example.microengine_slice3d</ApplicationId>
     <Version>1.0.0</Version>
-    <Description>The 3D vertical slice of the tier-1 SDL_GPU device: glTF mesh, interpolated hierarchy, depth, one material, 2D over 3D.</Description>
+    <Description>The 3D vertical slice on the tier-1 SDL_GPU device: glTF mesh, interpolated hierarchy, depth, one material, 2D and UI over 3D.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/MicroEngine.Graphics.SdlGpu/MicroEngine.Graphics.SdlGpu.csproj" />
+    <ProjectReference Include="../../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
     <ProjectReference Include="../../src/MicroEngine.Graphics3D/MicroEngine.Graphics3D.csproj" />
-    <ProjectReference Include="../../src/MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Content/**" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />
+    <None Include="slice.script" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

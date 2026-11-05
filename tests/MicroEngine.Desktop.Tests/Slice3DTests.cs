@@ -208,11 +208,57 @@ public sealed class Slice3DTests
     }
 
     [TestMethod]
-    public void Renderer_RefusesATargetWithoutItsDepthFormat()
+    public void Canvas_Flush_PutsThe3DPassBetweenThe2DDrawnBeforeAndAfterIt()
+    {
+        // The game's canvas on the tier-1 device: clear, a red 2D rectangle, Flush, a 3D cube over it, Flush, a blue 2D
+        // rectangle over the cube. The cube covers the red; the blue covers the cube.
+        using var cube = _renderer.Upload(TestMeshes.Cube(2, Green));
+        using var canvas = new DeviceCanvas(_device, W, H);
+        var camera = Camera();
+        var r = canvas.BeginFrame();
+        r.Clear(new MicroEngine.Color(0, 0, 0));
+        r.FillRect(new RectF(0, 0, W, H), new MicroEngine.Color(255, 0, 0));
+        canvas.Renderer.Flush();
+        _renderer.Begin(canvas.Renderer.Target, camera);
+        _renderer.Draw(cube, Matrix4x4.Identity);
+        _renderer.End();
+        canvas.Renderer.Flush();
+        r.FillRect(new RectF(W / 2 - 4, H / 2 - 4, 8, 8), new MicroEngine.Color(0, 0, 255));
+        canvas.EndFrame();
+        var image = Read(canvas.Target);
+        Assert.AreEqual(0xFF0000FFu, image[1, 1], "the red outside the cube");
+        var (cx, cy) = PixelOf(camera, new Vector3(0.7f, 0.7f, 1));
+        Assert.AreEqual(Bytes(Green), image[cx, cy], "the 3D pass after the first flush covers the red");
+        Assert.AreEqual(0x0000FFFFu, image[W / 2, H / 2], "2D recorded after the flush lands over the 3D");
+    }
+
+    [TestMethod]
+    public void Renderer_RefusesATargetWithAnotherDepthFormat()
     {
         var camera = Camera();
-        var plain = _device.CreateRenderTarget(new RenderTargetDescription(8, 8));
-        Assert.ThrowsExactly<InvalidOperationException>(() => _renderer.Begin(plain, camera));
+        var other = new[] { TextureFormat.D16Unorm, TextureFormat.D32Float, TextureFormat.D24UnormS8 }
+            .FirstOrDefault(f => f != _renderer.DepthFormat && _device.Capabilities.Supports(f, TextureUsage.DepthStencil));
+        var mismatched = _device.CreateRenderTarget(new RenderTargetDescription(8, 8, Depth: other));
+        Assert.ThrowsExactly<InvalidOperationException>(() => _renderer.Begin(mismatched, camera));
+    }
+
+    [TestMethod]
+    public void Depth_OnATargetWithoutDepth_UsesTheRenderersOwn_AndKeepsTheNearerMeshInFront()
+    {
+        // A game's canvas has no depth texture: the renderer depth-tests against one of its own of the canvas's size.
+        using var near = _renderer.Upload(TestMeshes.Cube(1, Red));
+        using var far = _renderer.Upload(TestMeshes.Cube(3, Green));
+        var camera = Camera();
+        var canvas = _device.CreateRenderTarget(new RenderTargetDescription(W, H));
+        _renderer.Begin(canvas, camera, clear: PremultipliedColor.FromBytes(0, 0, 0));
+        _renderer.Draw(near, Matrix4x4.CreateTranslation(0, 0, 1));
+        _renderer.Draw(far, Matrix4x4.CreateTranslation(0, 0, -2));
+        _renderer.End();
+        var image = Read(canvas);
+        var centre = PixelOf(camera, new Vector3(0, 0, 1.5f));
+        Assert.AreEqual(Bytes(Red), image[centre.X, centre.Y]);
+        var farOnly = PixelOf(camera, new Vector3(1.2f, 1.2f, -0.5f));
+        Assert.AreEqual(Bytes(Green), image[farOnly.X, farOnly.Y]);
     }
 
     private sealed class MemoryFiles(Dictionary<string, byte[]> files) : IContentSource

@@ -60,6 +60,34 @@ The game's settings and window options.
 
 An SDL render driver name (see [RenderDrivers](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_RenderDrivers)), or null to let SDL choose.
 
+## Fields
+
+### <a id="MicroEngine_Sdl_SdlPlatform_GpuDevice"></a> GpuDevice
+
+The tier-1 graphics device ([Device](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Device), <code>--graphics sdl-gpu</code>): SDL_GPU (Direct3D 12,
+Vulkan, Metal) with custom shaders and depth, which the 3D path needs. A system without an SDL_GPU driver refuses
+it when the platform starts, saying why. On-screen touch controls are not drawn on it.
+
+```csharp
+public const string GpuDevice = "sdl-gpu"
+```
+
+#### Field Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+### <a id="MicroEngine_Sdl_SdlPlatform_RendererDevice"></a> RendererDevice
+
+The default graphics device ([Device](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Device)): SDL's 2D renderer behind the device contract, tier 0.
+
+```csharp
+public const string RendererDevice = "sdl-renderer"
+```
+
+#### Field Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
 ## Properties
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Audio"></a> Audio
@@ -124,15 +152,16 @@ public int CurrentDisplay { get; }
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Device"></a> Device
 
-The graphics device the platform draws with (SDL's renderer behind the device contract).
+The graphics device the platform draws with: SDL's renderer behind the device contract ([SdlRendererDevice](MicroEngine.Sdl.SdlRendererDevice.md)),
+or SDL_GPU (<code>SdlGpuDevice</code>) when [Device](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Device) is [GpuDevice](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_GpuDevice).
 
 ```csharp
-public SdlRendererDevice Device { get; }
+public GraphicsDeviceBase Device { get; }
 ```
 
 #### Property Value
 
- [SdlRendererDevice](MicroEngine.Sdl.SdlRendererDevice.md)
+ GraphicsDeviceBase
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Diagnostics"></a> Diagnostics
 
@@ -181,6 +210,18 @@ public IGraphicsDevice Graphics { get; }
 #### Property Value
 
  IGraphicsDevice
+
+### <a id="MicroEngine_Sdl_SdlPlatform_GraphicsDeviceName"></a> GraphicsDeviceName
+
+The graphics device the platform draws with: [RendererDevice](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_RendererDevice) or [GpuDevice](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_GpuDevice).
+
+```csharp
+public string GraphicsDeviceName { get; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Input"></a> Input
 
@@ -258,7 +299,8 @@ public static IReadOnlyList<string> RenderDrivers { get; }
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_RendererName"></a> RendererName
 
-The graphics API SDL chose ("direct3d11", "metal", "opengl", "software"...), for logs and tests.
+The graphics API in use, for logs and tests: SDL_Renderer's driver ("direct3d11", "metal", "opengl", "software"...),
+or "sdl-gpu" and the SDL_GPU API ("sdl-gpu vulkan") on the tier-1 device.
 
 ```csharp
 public string RendererName { get; }
@@ -457,7 +499,7 @@ public bool SetWindowMode(WindowMode mode)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_ToString"></a> ToString\(\)
 
-"SDL renderer" followed by the name of the render driver in use.
+"SDL renderer" followed by the name of the render driver in use, or "SDL sdl-gpu" and the API.
 
 ```csharp
 public override string ToString()
