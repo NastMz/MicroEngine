@@ -546,18 +546,16 @@ public sealed unsafe class SdlGpuDevice : GraphicsDeviceBase
 
     private SDL_GPUShader* LoadBuiltInShader(string name, ShaderStage stage, ShaderResources resources)
     {
-        var (extension, format, entry) = Capabilities.ShaderFormats switch
-        {
-            var f when f.HasFlag(ShaderFormat.Dxil) && Capabilities.ApiName == "direct3d12" => ("dxil", ShaderFormat.Dxil, "main"),
-            var f when f.HasFlag(ShaderFormat.SpirV) && Capabilities.ApiName != "metal" => ("spv", ShaderFormat.SpirV, "main"),
-            var f when f.HasFlag(ShaderFormat.Msl) => ("msl", ShaderFormat.Msl, "main0"),
-            _ => throw new InvalidOperationException($"no built-in shader blob for {Capabilities.ShaderFormats} on {Capabilities.ApiName}"),
-        };
-        using var stream = typeof(SdlGpuDevice).Assembly.GetManifestResourceStream($"builtin/{name}.{extension}")
-                           ?? throw new InvalidOperationException($"missing embedded shader builtin/{name}.{extension}");
-        var code = new byte[stream.Length];
-        stream.ReadExactly(code);
-        return LoadShader(stage, format, code, entry, resources);
+        // The built-ins are compiled ahead of time like any game shader (microengine shaders) and embedded.
+        using var stream = typeof(SdlGpuDevice).Assembly.GetManifestResourceStream($"builtin/{name}{CompiledShader.FileExtension}")
+                           ?? throw new InvalidOperationException($"missing embedded shader builtin/{name}{CompiledShader.FileExtension}");
+        var bytes = new byte[stream.Length];
+        stream.ReadExactly(bytes);
+        var compiled = CompiledShader.Parse(bytes);
+        if (compiled.Stage != stage || compiled.Resources != resources)
+            throw new InvalidOperationException($"embedded {name} is a {compiled.Stage} shader with {compiled.Resources}; the built-in pipeline needs {stage} with {resources}");
+        var d = compiled.DescriptionFor(Capabilities);
+        return LoadShader(stage, d.Format, d.Code.Span, d.EntryPoint, resources);
     }
 
     private SDL_GPUShader* LoadShader(ShaderStage stage, ShaderFormat format, ReadOnlySpan<byte> code, string entryPoint, ShaderResources resources)

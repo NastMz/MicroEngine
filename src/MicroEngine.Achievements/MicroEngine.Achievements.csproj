@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Achievements, an optional module: the catalog types (Achievement, AchievementStatus), the tracker that owns progress,
+       unlocking and persistence (AchievementTracker, AchievementSaveData, AchievementRecord), and AchievementsModule,
+       which registers a tracker with the engine and schedules engine.achievements. The catalog and tracker types keep
+       their MicroEngine.Core namespace; MicroEngine.dll forwards them. It references the kernel, the platform contracts,
+       saves (progress persists through SaveStore) and 2D graphics (an achievement's icon is a Sprite); the architecture
+       test checks it. The banners and the list scene are UI and stay with the UI module. It is not a package of its own:
+       the MicroEngine package carries MicroEngine.Achievements.dll (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Achievements</RootNamespace>
+    <Description>MicroEngine achievements: the catalog, the tracker that owns progress, unlocking and persistence, and the module that registers it with the engine. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+    <ProjectReference Include="../MicroEngine.Saves/MicroEngine.Saves.csproj" />
+    <ProjectReference Include="../MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+</Project>

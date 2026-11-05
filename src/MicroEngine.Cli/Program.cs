@@ -20,6 +20,7 @@ namespace MicroEngine.Cli
               package <target>      build a package for players: windows, linux, macos, android, ios, ios-simulator, web
               info                  show the game's identity and what each target needs from it
               doctor [target]       check this machine's tools for every target (or one)
+              shaders               compile the game's HLSL shaders ahead of time (Shaders/ to Content/shaders/)
               version               print the tool's version
 
             Common options:
@@ -75,6 +76,21 @@ namespace MicroEngine.Cli
                 """,
             ["info"] = "Usage: microengine info [--project P]\n\nShows the identity the project declares and whether each target can use it.",
             ["doctor"] = "Usage: microengine doctor [target]\n\nChecks the tools each target needs on this machine and says how to install what is missing.",
+            ["shaders"] = """
+                Usage: microengine shaders [--project P] [--source DIR] [--out DIR] [--check]
+
+                Compiles every *.vert.hlsl and *.frag.hlsl in the game's Shaders folder (or --source) into .shader files in
+                Content/shaders (or --out): DXIL for Direct3D 12 and SPIR-V for Vulkan (DXC), MSL for Metal (SPIRV-Cross),
+                and the resource counts the device needs. Entry point main, shader model 6.0, SDL_GPU register spaces
+                (vertex uniforms in space1; fragment textures and samplers in space2, uniforms in space3). Commit the
+                .shader files: games load them on every platform and never compile at run time.
+
+                --check   write nothing; fail (exit code 1) when a .shader file is missing or differs from its source
+
+                Needs Windows: DXC comes from Microsoft's Microsoft.Direct3D.DXC package (its own licence terms), which
+                has Windows binaries only. The tool restores that package into the NuGet packages folder on first use;
+                MICROENGINE_DXC names another dxc.exe.
+                """,
         };
 
         public static async Task<int> RunAsync(string[] args)
@@ -98,7 +114,7 @@ namespace MicroEngine.Cli
             }
             try
             {
-                var options = Options.Parse(rest, "verbose", "debug-key", "dev");
+                var options = Options.Parse(rest, "verbose", "debug-key", "dev", "check");
                 Tool.Verbose = options.Has("verbose");
                 return command switch
                 {
@@ -108,6 +124,7 @@ namespace MicroEngine.Cli
                     "package" => await Package(options),
                     "info" => Info(options),
                     "doctor" => Doctor.Check(options.Positional.FirstOrDefault()) ? 0 : 1,
+                    "shaders" => CompileShaders(options),
                     _ => throw new CliException($"unknown command '{command}'. Run 'microengine --help' for the list.", 2),
                 };
             }
@@ -190,6 +207,25 @@ namespace MicroEngine.Cli
                 """);
             if (game.ApplicationId is { } id && !GameProject.IsValidId(id)) Console.WriteLine($"Problem      ApplicationId '{id}' is not valid.");
             return iconProblem is null ? 0 : 1;
+        }
+
+        private static int CompileShaders(Options o)
+        {
+            string? sourceOption = o.Get("source"), outOption = o.Get("out"), projectOption = o.Get("project");
+            bool check = o.Has("check");
+            o.RejectUnknown("shaders");
+            string source, output;
+            if (sourceOption is not null && outOption is not null && projectOption is null) (source, output) = (Path.GetFullPath(sourceOption), Path.GetFullPath(outOption));
+            else
+            {
+                string directory = Path.GetDirectoryName(GameProject.Locate(projectOption))!;
+                source = Path.GetFullPath(sourceOption ?? Path.Combine(directory, "Shaders"));
+                output = Path.GetFullPath(outOption ?? Path.Combine(directory, "Content", "shaders"));
+            }
+            var result = Shaders.Compile(source, output, check);
+            foreach (var file in result.Written) Console.WriteLine(check ? $"out of date: {file}" : $"wrote {file}");
+            Console.WriteLine($"shaders: {result.Written.Count} {(check ? "out of date" : "written")}, {result.Unchanged.Count} unchanged ({Shaders.DxcVersion.Split('\n')[0].Trim()})");
+            return check && result.Written.Count > 0 ? 1 : 0;
         }
 
         private static async Task<int> Package(Options o)

@@ -56,6 +56,9 @@ the frame schedule is fixed when the engine is built, before `Load`. Every game 
 - **Achievements are an opt-in module.** `AchievementsModule(tracker)` registers the tracker as a service, schedules
   `engine.achievements` in `PostFixed` (before `engine.input.end`, its place in the step), writes progress about
   once a second of simulated time and on suspension, and raises `Stepped` each step for the banners.
+  The module and the catalog and tracker types live in the `MicroEngine.Achievements` assembly (namespace of the
+  types unchanged, forwarded from `MicroEngine.dll`); it references the kernel, the platform contracts, saves (the
+  tracker persists through `SaveStore`) and 2D graphics (`Achievement.Icon` is a `Sprite`).
 - **Declared before composition.** `UseAchievements(catalog, store, theme)` is called from the game's constructor or
   from `Configure`. `Game` then adds `SavesModule` (unless the composition already has a store) and
   `AchievementsModule`, and wires the banners to it. A call from `Load` or later throws `InvalidOperationException`:
