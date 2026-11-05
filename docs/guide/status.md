@@ -8,8 +8,8 @@ iOS and in web browsers. It is in Alpha: public APIs may still change between 0.
 
 | Area | What it does |
 | --- | --- |
-| Engine core | Game loop with a fixed step, scene stack with overlays and transitions, coroutines and tweens, input actions (digital and analog) with per-game touch controls, pixel-art and HD graphics (smooth scaling and texture filtering in the next SDK version), sprite atlases, tile worlds, cameras and parallax, particles and light, synthesized and file-based audio, UI widgets, saves, achievements; next SDK version: an asset cache for images, atlases from packing tools and TTF/OTF fonts ([Assets](../manual/assets.md)) |
-| Platforms | SDL 3 on Windows, Linux, macOS, Android and iOS; raylib on desktops and in browsers (WebAssembly); a headless platform for tests; your own platforms as profiles ([Platforms](platforms.md)) |
+| Engine core | Game loop with a fixed step, scene stack with overlays and transitions, coroutines and tweens, input actions (digital and analog) with per-game touch controls, pixel-art and HD graphics (smooth scaling and texture filtering in the next SDK version), sprite atlases, tile worlds, cameras and parallax, particles and light, synthesized and file-based audio, UI widgets, saves, achievements; next SDK version: an asset cache for images, atlases from packing tools and TTF/OTF fonts ([Assets](../manual/assets.md)), a scene world of entities with transform hierarchies ([Scenes](../manual/scenes.md#the-scene-world)) and physics worlds with a tile backend ([Physics worlds](../manual/world.md#physics-worlds)) |
+| Platforms | SDL 3 on Windows, Linux, macOS, Android and iOS; raylib on desktops and in browsers (WebAssembly); a headless platform for tests; your own platforms as profiles ([Platforms](platforms.md)). Next SDK version: SDL 3 in browsers too, and raylib on desktops only |
 | Tooling | The `microengine` tool: create a game from a template, run it, build it, and package it for every target ([The microengine tool](cli.md)) |
 | Distribution | Packages for players on each platform, with the game's own name, id, version and icon ([Packaging](packaging.md), [Application identity](app-identity.md)) |
 | Testing | Headless runs, scripted input and screenshot captures for automated tests of your game ([Testing](../examples/testing.md)) |
@@ -20,7 +20,9 @@ iOS and in web browsers. It is in Alpha: public APIs may still change between 0.
 | Not included | Notes |
 | --- | --- |
 | A visual editor, level editor or asset tool | MicroEngine is code-first: content is code (`PixelImage.FromMap`, `TileLayer.Parse` over text rows) or files made with other tools (images, packing tools' atlases, fonts) loaded at run time. A visual editor is a long-term vision on the [roadmap](/roadmap/) |
-| 3D, an ECS, a physics engine, networking or a scripting language | Not part of the engine's design ([Architecture](../architecture.md)); 3D is a long-term vision |
+| A rigid-body physics engine | The published SDK moves boxes through tile maps (`TileMotion`). The next SDK version adds physics worlds with the engine's tile backend: kinematic bodies, sensors, layers and ray casts, no forces or rotation ([Physics worlds](../manual/world.md#physics-worlds)). A Box2D backend with dynamic bodies exists in the engine's repository; it is optional and not published |
+| 3D | The published SDK is 2D. A minimal 3D path (glTF meshes, a perspective camera, depth) exists in the engine's repository only, in no package ([The 3D path](../manual/rendering.md#the-3d-path)); a 3D renderer is a long-term vision |
+| An ECS, networking or a scripting language | Not part of the engine's design ([Architecture](../architecture.md)) |
 | Cloud saves | Saves stay on the device (files) or in the browser (`localStorage`) |
 | Android App Bundles (`.aab`) for Google Play | `microengine package android` builds APKs |
 
@@ -28,7 +30,8 @@ The complete list, with requirements per platform: [Requirements and limitations
 
 ## Planned work
 
-The [roadmap](/roadmap/) lists what comes next, without dates. A visual editor and 3D appear there only as a
+The [roadmap](/roadmap/) lists what comes next, without dates, and keeps apart what is published, what arrives with
+the next SDK version and what is only in the repository. A visual editor and a 3D renderer appear there only as a
 long-term vision, not as available or committed features.
 
 ## Stability of the API

@@ -143,3 +143,41 @@ test('brand: headings use the display face from the tokens, and no pixel face is
   assert.match(fs.readFileSync(path.join(styles, 'tokens.css'), 'utf8'), /--font-display: 'Bricolage Grotesque'/);
   assert.match(fs.readFileSync(path.join(styles, 'fonts.css'), 'utf8'), /@fontsource\/bricolage-grotesque\/latin-600\.css/);
 });
+
+test('content: every capability and roadmap item has an availability and a subsystem family', async () => {
+  const { capabilities, families, availabilityLabels } = await import('../src/data/capabilities.ts');
+  const { roadmap, stages } = await import('../src/data/roadmap.ts');
+  const { platforms } = await import('../src/data/platforms.ts');
+  const statuses = Object.keys(availabilityLabels);
+  assert.deepEqual(statuses, ['available', 'next', 'repository', 'planned']);
+  assert.deepEqual(stages.map(s => s.status), statuses);
+  for (const item of [...capabilities, ...roadmap, ...platforms]) {
+    const name = item.name ?? item.text;
+    assert.ok(statuses.includes(item.status), `${name}: status ${item.status}`);
+    assert.ok(families.includes(item.family), `${name}: family ${item.family}`);
+  }
+  for (const status of statuses) assert.ok(roadmap.some(i => i.status === status), `the roadmap has ${status} items`);
+  assert.equal(new Set(capabilities.map(c => c.id)).size, capabilities.length, 'capability ids are unique');
+});
+
+test('content: the site names the published SDK version and never presents 3D or Box2D as available', async () => {
+  const { publishedSdk, capabilities } = await import('../src/data/capabilities.ts');
+  const { roadmap, completed } = await import('../src/data/roadmap.ts');
+  const published = JSON.parse(fs.readFileSync(path.join(siteRoot, '..', 'sdk', 'version.json'), 'utf8')).documented;
+  assert.equal(publishedSdk, published);
+  const data = ['roadmap.ts', 'platforms.ts', 'capabilities.ts', 'distribution.ts']
+    .map(f => fs.readFileSync(path.join(siteRoot, 'src', 'data', f), 'utf8')).join('\n');
+  assert.doesNotMatch(data, /\d+\.\d+\.\d+-alpha\.\d+/, 'versions are read, never written into the data');
+  assert.ok(completed.some(t => t.includes(`SDK ${published} on nuget.org`)));
+  const shipping = [...capabilities.filter(c => c.status === 'available' || c.status === 'next').map(c => `${c.name} ${c.summary}`),
+    ...roadmap.filter(i => i.status === 'available' || i.status === 'next').map(i => i.text)];
+  for (const text of shipping) assert.doesNotMatch(text, /\b3D\b|Box2D|glTF|visual editor/i, text);
+  for (const id of ['3d-path', 'box2d']) assert.equal(capabilities.find(c => c.id === id)?.status, 'repository', id);
+});
+
+test('content: capability documentation links point at published pages', async () => {
+  const { capabilities } = await import('../src/data/capabilities.ts');
+  const { pages } = await import('../src/lib/repo-docs.mjs');
+  const published = new Set(pages.map(p => `/${p.slug}/`));
+  for (const { id, docs } of capabilities) if (docs) assert.ok(published.has(docs.split('#')[0]), `${id}: ${docs}`);
+});
