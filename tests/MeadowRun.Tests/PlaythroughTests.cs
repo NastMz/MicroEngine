@@ -28,6 +28,68 @@ public sealed class PlaythroughTests
     }
 
     /// <summary>
+    /// Plays the current level with the autopilot through the real input bindings until the map shows; after a lost
+    /// life the level card and a fresh attempt follow. Returns the number of attempts and the coins picked up in the
+    /// last one. <paramref name="onLevelCard"/> runs on every update the level card shows, before the attempt starts.
+    /// </summary>
+    private static int PlayLevelToMap(MeadowGame game, out int coinsInLastAttempt, Action? onLevelCard = null)
+    {
+        string[] actions = ["left", "right", "down", "jump", "run"];
+        PlayScene? play = null;
+        Autopilot bot = new();
+        int attempts = 0, coins = 0;
+        void Count() => coins++;
+        game.Session.CoinCollected += Count;
+        for (int f = 0; f < 60 * 600 && game.Scenes.Current is not MapScene; f++)
+        {
+            bool[] down = new bool[actions.Length];
+            if (game.Scenes.Current is LevelCardScene) onLevelCard?.Invoke();
+            if (game.Scenes.Current is PlayScene current)
+            {
+                if (current != play) { play = current; bot = new Autopilot(attempts++); coins = 0; }
+                if (current.Stage.Phase == StagePhase.Playing)
+                {
+                    var input = bot.Next(current.Stage);
+                    down = [input.Left, input.Right, input.Down, input.JumpHeld || input.JumpPressed, input.RunHeld];
+                }
+            }
+            for (int a = 0; a < actions.Length; a++) game.Input.SetForced(actions[a], down[a]);
+            game.StepForTest();
+        }
+        game.Session.CoinCollected -= Count;
+        foreach (var a in actions) game.Input.SetForced(a, false);
+        coinsInLastAttempt = coins;
+        return attempts;
+    }
+
+    /// <summary>
+    /// A level's best coins are the coins picked up in the clearing attempt, also when the hundredth coin of the run
+    /// turns into a life during it (the session's coin counter wraps back to zero).
+    /// </summary>
+    [TestMethod]
+    public void BestCoinsCountTheLevelsCoinsWhenTheHundredthCoinBecomesALife()
+    {
+        var game = new MeadowGame(TempDir());
+        game.InitializeForTest(new HeadlessPlatform());
+        for (int i = 0; i < 40; i++) game.StepForTest();
+        Press(game, "confirm");
+        StepUntil(game, () => game.Scenes.Current is MapScene && !game.Scenes.InTransition, 200, "map");
+        Press(game, "confirm");
+        StepUntil(game, () => game.Scenes.Current is LevelCardScene, 200, "level card");
+
+        // Every attempt starts one coin short of a life: the attempt's first coin wraps the session's counter.
+        PlayLevelToMap(game, out int coins, () =>
+        {
+            while (game.Session.Coins < Session.CoinsPerLife - 1) game.Session.AddCoin();
+        });
+
+        Assert.IsInstanceOfType<MapScene>(game.Scenes.Current, "level 1 cleared");
+        Assert.IsTrue(coins > 1, $"the autopilot picks up several coins ({coins})");
+        Assert.AreEqual(coins - 1, game.Session.Coins, "the hundredth coin became a life");
+        Assert.AreEqual(coins, game.Save.BestCoins[0], "the best coins are the clearing attempt's coins");
+    }
+
+    /// <summary>
     /// The whole game loop headlessly: title, new game, world map, level card, level 1 played by the
     /// autopilot through the real input bindings, the clear tally, and back to the map with progress saved.
     /// </summary>
@@ -46,27 +108,7 @@ public sealed class PlaythroughTests
         Press(game, "confirm");
         StepUntil(game, () => game.Scenes.Current is PlayScene && !game.Scenes.InTransition, 400, "play");
 
-        // Play until back on the map; after a lost life the level card and a fresh attempt follow.
-        string[] actions = ["left", "right", "down", "jump", "run"];
-        PlayScene? play = null;
-        Autopilot bot = new();
-        int attempts = 0;
-        for (int f = 0; f < 60 * 600 && game.Scenes.Current is not MapScene; f++)
-        {
-            bool[] down = new bool[actions.Length];
-            if (game.Scenes.Current is PlayScene current)
-            {
-                if (current != play) { play = current; bot = new Autopilot(attempts++); }
-                if (current.Stage.Phase == StagePhase.Playing)
-                {
-                    var input = bot.Next(current.Stage);
-                    down = [input.Left, input.Right, input.Down, input.JumpHeld || input.JumpPressed, input.RunHeld];
-                }
-            }
-            for (int a = 0; a < actions.Length; a++) game.Input.SetForced(actions[a], down[a]);
-            game.StepForTest();
-        }
-        foreach (var a in actions) game.Input.SetForced(a, false);
+        int attempts = PlayLevelToMap(game, out _);
         Assert.IsInstanceOfType<MapScene>(game.Scenes.Current, $"back on the map after {attempts} attempt(s)");
         Assert.IsTrue(attempts <= Session.StartingLives);
 

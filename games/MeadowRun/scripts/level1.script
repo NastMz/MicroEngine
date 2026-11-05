@@ -1,4 +1,4 @@
-# Level 1 direct: hold right, hop periodically, capture along the way.
+# Level 1 direct (MEADOW_START=level): hold right, hop periodically, capture along the way.
 10 hold right 3000
 40 press jump
 100 down jump

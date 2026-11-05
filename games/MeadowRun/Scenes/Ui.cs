@@ -15,7 +15,7 @@ internal static class Ui
         new PanelStyle(Pal.Night, Pal.Ink, Pal.Slate, Pal.Ink.WithAlpha(0.5f), Pal.Dusk),
         Pal.Cream, Pal.Ink, Pal.Gold, Pal.Dusk);
 
-    public static readonly PanelStyle Card = new(Color.Hex("2b2a45f0"), Pal.Ink, Pal.Slate, Pal.Ink.WithAlpha(0.45f), Pal.Gold.WithAlpha(0.5f));
+    public static readonly PanelStyle Card = new(Pal.Night.WithAlpha((byte)0xf0), Pal.Ink, Pal.Slate, Pal.Ink.WithAlpha(0.45f), Pal.Gold.WithAlpha(0.5f));
 
     public static string N(int value, int digits = 0) => value.ToString(digits > 0 ? new string('0', digits) : "0", CultureInfo.InvariantCulture);
 
@@ -58,9 +58,8 @@ internal static class Ui
         r.Draw(art["icon_coin"], new Vector2(46, 4));
         Text(r, font, labels.Coins.For(session.Coins), new Vector2(56, 4), Pal.Butter);
         Centered(r, font, labels.Score.For(session.Score), 160, 4);
-        // Power state: a small form badge.
-        var badge = art.Pip(stage.Player.Form, "idle")[0];
-        r.Draw(badge.Texture, badge.Source, new Vector2(246, 1), Color.White, new DrawOptions(Scale: new Vector2(0.6f)));
+        // Power state: a small form badge, drawn at its own size so it keeps the pixel grid.
+        r.Draw(art.FormIcon(stage.Player.Form), new Vector2(249, 2));
         int t = (int)MathF.Ceiling(stage.TimeLeft);
         bool hurry = t <= 100 && stage.Phase == StagePhase.Playing;
         r.Draw(art["icon_clock"], new Vector2(266, 3));

@@ -1,4 +1,4 @@
-# Level 1 with a Bloom Pip: block bumps, coins, stomp.
+# Level 1 with a Bloom Pip (MEADOW_START=level MEADOW_FORM=bloom): block bumps, coins, stomp.
 10 hold right 260
 70 down jump
 95 up jump
