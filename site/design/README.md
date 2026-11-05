@@ -303,3 +303,27 @@ Added by the shell and landing unit; this section extends the rules above, it ch
   its border to the game's colour. The default slot adds lines (sizes, downloads) to the plate.
 - **Code panels** on the landing are `.code-surface` figures: `<CodeLabel>` then the block, both graphite in both
   themes. The block takes `--color-paper-2` as its background so it matches the label.
+
+## Documentation
+
+The Starlight documentation is drawn with the same tokens, type and devices as the landing (T4). Legibility comes
+first: body text in ink at `--text-md` with `--leading-body`, a 46 rem column, square shapes and hairline rules.
+
+| Part | Where | Treatment |
+|---|---|---|
+| Starlight variables and components | `src/styles/starlight.css` | Every `--sl-*` colour maps onto a token in both themes; header on a 2px ink rail; sidebar group names as mono legends; the current page seated like a module (amber tint, 1px amber edge); h1 and h2 in the display face, h2 on a hairline rail; tables as parts lists (mono heads over a 2px ink rule); blockquote notes with a 2px ink edge; pagination as labelled cards; the search dialog on paper |
+| Header | `src/components/DocsSiteTitle.astro` | The lockup, a "Docs" legend, then Demos and Roadmap |
+| Family legend | `src/components/docs/PageTitle.astro` | Above each title: the page's family icon and name, then its sidebar group. The family comes from `src/components/docs/families.mjs`, keyed by slug (the Markdown has no frontmatter); API pages take the family of their namespace. Pages about no single module stay neutral |
+| Socket card | `src/components/docs/SocketCard.astro` | Under the title of the Graphics, Audio, Input, Tile maps and collision, and Backends pages: the contract as the socket, the modules that seat in it, each with its status written. Not published: an empty dashed bay |
+| Written statuses | `src/components/docs/status-phrases.mjs`, via the `MarkdownContent` override | "Next SDK version:", "Not in a published SDK yet" and "In the repository, not published" in the text get the status marker and colour. Only where the phrase is a label (followed by a colon or a parenthesis); never inside code or headings |
+| Code | `ec.config.mjs` + `starlight.css` | Expressive Code with one dark theme (`github-dark-dimmed`) in both site themes, on `--color-paper-2` under `color-scheme: dark`. The strip above is the `CodeLabel` idea: a 2px ink rail, the file name on the left, the language on the right (added by a small plugin). Shell blocks get the same strip, no terminal window. Syntax colours are lifted to 5.5:1 (`minSyntaxHighlightingColorContrast`), comments included |
+| API reference | `starlight.css` only | Generated pages keep the same treatment; member headings with an anchor set in mono |
+
+Family mapping decisions: content (assets) is drawn as **kernel**, because `Game.Assets` is a core service rather than a
+module; persistence as **platform**, because where saves live is the host's storage; packaging, signing and the tool
+as **tools**; UI widgets and achievements stay neutral.
+
+Platforms, roadmap and 404 pages: the platforms page is one rail ("your game") with six platform modules seated under
+it, then each platform as a parts list; the roadmap is two boards, **Present** (solid ink rail: available and next SDK
+version, seated modules in their family colours) and **Future** (dashed rail: repository items as empty dashed bays in
+mono, planned items as dotted outlines grouped by track); the 404 is an empty dashed socket.

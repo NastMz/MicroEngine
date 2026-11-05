@@ -61,7 +61,7 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
 | T1 | S1-S3, S6, S9 | Art direction doc, tokens, type, mark and logo set (explored variants, 16 px test), family icons, favicon, OG image | delegated (context backstop) | done, branch `feat/site-redesign-t1-brand` (PR into `feat/site-redesign`) |
 | T2 | S3-S6 | Site shell (header, nav, footer) and landing narrative with the socket-board illustrations | delegated | done, branch `feat/site-redesign-t2-landing` (PR into `feat/site-redesign`) |
 | T3 | S3, S5, S7 | Demo index and demo pages, player integration | delegated, parallel with T4/T5 | pending |
-| T4 | S3, S5, S7 | Starlight docs theme, code blocks, docs header; platforms, roadmap, 404 pages | delegated, parallel with T3/T5 | pending |
+| T4 | S3, S5, S7 | Starlight docs theme, code blocks, docs header; platforms, roadmap, 404 pages | delegated, parallel with T3/T5 | done, branch `feat/site-redesign-t4-docs` (PR into `feat/site-redesign`) |
 | T5 | S1, S4, S10 | Content truth: stale claims in site data and public docs against `main` | delegated, parallel with T3/T4 | done, branch `feat/site-redesign-t5-content` (PR into `feat/site-redesign`) |
 | T6 | S7-S9 | Browser, visual, responsive and accessibility checks; creative rationale; PR to `main` | delegated + architect review | pending |
 
@@ -268,3 +268,18 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
   build` (check-dist complete); `npm test` 56/56; snippets 104; contrast 198/198. Screenshots of / (1280/768/414/375/320) and /demos/,
   /demos/neon-rift/, /platforms/, /roadmap/ and the 404 page (1280/375/320), light and dark: no horizontal
   overflow, no content past the right edge, navigation on one line, no /play/ request, no script errors.
+- L7 (2026-11-05): T4 docs and product pages. `starlight.css` rewritten: every `--sl-*` colour on tokens in both themes,
+  header on a 2px ink rail with the lockup and a "Docs" legend, mono sidebar group legends, current page seated (amber
+  tint and edge), display-face h1/h2, tables as parts lists, pagination, search, TOC and asides from tokens; Mermaid
+  recolouring kept. Overrides in `site/src/components/docs/`: `PageTitle` (family icon and name plus sidebar group above
+  the title, from a slug mapping in `families.mjs`; API pages by namespace; socket cards under Graphics, Audio, Input,
+  Tile maps and collision, Backends, with SDL_GPU `next` and Box2D an empty dashed `repo` bay) and `MarkdownContent`
+  (written statuses rendered as status tags, outside code and headings). Expressive Code (`site/ec.config.mjs`): one
+  dark theme on graphite in both themes, the CodeLabel strip (file left, language right via a small plugin, 2px ink
+  rail), no tabs or terminal chrome, syntax contrast lifted to 5.5:1. `/platforms/` (six platform modules under one
+  rail, parts lists, `runtimeNext` as a next-version row), `/roadmap/` (Present board: available and next seated;
+  Future board on a dashed rail: repository items dashed, planned dotted by track; the 3D and editor sentence corrected)
+  and `/404` (empty dashed socket) redrawn on T5's data. Checks: `npm ci`; `SITE_DEMOS=none npm run build` (check-dist
+  complete); `npm test` 56/56; snippets 104; contrast 198/198; `node tests/browser.mjs --browsers chrome --suites
+  layout` all checks passed (diagrams themed). Screenshots of every changed page, light and dark, at 1280/768/375 and
+  320 for platforms and roadmap: no horizontal overflow.

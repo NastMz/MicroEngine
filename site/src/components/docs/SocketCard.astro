@@ -1,0 +1,59 @@
+---
+// The socket card a manual page opens with: the contract the page documents (the socket) and the modules that seat in
+// it, each with its status written out. A module that is not published is an empty dashed bay with its name in mono,
+// the same drawing as <Socket empty>. Data: socketCards in ./families.mjs.
+import FamilyIcon from '../brand/FamilyIcon.astro';
+import { families } from '../brand/geometry.mjs';
+import { statusText } from './families.mjs';
+
+type Status = keyof typeof statusText;
+interface Module { name: string; role: string; status: Status }
+interface Props { family: keyof typeof families; contract: string; modules: Module[]; note?: { text: string; href: string } }
+const { family, contract, modules, note } = Astro.props;
+---
+<section class="socket-card not-content" data-family={family} aria-label={`${families[family].label} socket: ${contract}`}>
+  <p class="socket-card-legend">
+    <FamilyIcon family={family} size={14} />
+    <span class="socket-card-family">{families[family].label} socket</span>
+    <code>{contract}</code>
+    {note && <a href={note.href}>{note.text}</a>}
+  </p>
+  <ul class="socket-card-bays">
+    {modules.map(m => (
+      <li data-status={m.status} data-state={m.status === 'repo' || m.status === 'planned' ? 'empty' : 'seated'}>
+        <span class="bay">
+          <span class="module">
+            <strong>{m.name}</strong>
+            <span class="role">{m.role}</span>
+          </span>
+        </span>
+        <span class="status-line"><span class="status-mark" aria-hidden="true"></span>{statusText[m.status]}</span>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .socket-card { display: grid; gap: var(--space-xs); margin-block: var(--space-md) 0; padding-top: var(--space-xs);
+    border-top: var(--rule-pixel) solid var(--color-ink); }
+  .socket-card p { margin: 0; }
+  .socket-card-legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) var(--space-xs);
+    font-family: var(--font-mono); font-size: var(--text-xs); line-height: var(--leading-snug); color: var(--color-ink-2); }
+  .socket-card-family { color: var(--family-color); text-transform: uppercase; letter-spacing: var(--tracking-label); font-weight: 500; }
+  .socket-card-legend code { font-size: inherit; color: var(--color-ink); background: none; padding: 0; border: 0; }
+  .socket-card-legend a { margin-inline-start: auto; color: var(--color-accent); }
+  .socket-card-bays { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 1fr)); gap: var(--space-xs);
+    margin: 0; padding: 0; list-style: none; }
+  .socket-card-bays li { display: grid; gap: var(--space-2xs); align-content: start; min-width: 0; margin: 0; }
+  .bay { display: block; padding: var(--rule-gap); border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm);
+    background: var(--color-paper); }
+  .module { display: grid; gap: 0; min-height: var(--tap); align-content: center; padding: var(--space-2xs) var(--space-xs);
+    border-radius: var(--radius-sm); border: var(--rule-thin) solid var(--family-color);
+    background: color-mix(in oklch, var(--family-color) var(--tint), var(--color-paper)); color: var(--color-ink); }
+  .module strong { font-family: var(--font-mono); font-weight: 500; font-size: var(--text-sm); line-height: var(--leading-snug); overflow-wrap: anywhere; }
+  .role { font-size: var(--text-xs); line-height: var(--leading-snug); color: var(--color-ink); }
+  [data-state='empty'] .bay { border-style: dashed; border-color: var(--color-ink-3); background: transparent; }
+  [data-state='empty'] .module { border-color: transparent; background: transparent; color: var(--color-ink-2); }
+  .status-line { display: flex; align-items: baseline; gap: var(--space-2xs); color: var(--status-color);
+    font-family: var(--font-mono); font-size: var(--text-xs); line-height: var(--leading-snug); text-transform: uppercase; letter-spacing: var(--tracking-label); }
+</style>

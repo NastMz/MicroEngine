@@ -1,8 +1,26 @@
-/* Documentation theme: Starlight's variables mapped onto the site tokens (tokens.css), in both colour schemes. */
+/* Documentation theme: Starlight drawn in the Socket language (site/design/README.md, "Documentation"). Every colour,
+   font and size is a token from tokens.css, in both colour schemes: Starlight's own variables are mapped onto the
+   tokens once, and its components are restyled below. Legibility first: body text in ink at 17 px with a 1.6 leading,
+   a reading measure near 66 characters, square shapes and hairline rules. */
 :root {
   --sl-font: var(--font-body);
   --sl-font-mono: var(--font-mono);
   --sl-content-width: 46rem;
+  --sl-text-body: var(--text-md);
+  --sl-text-body-sm: var(--text-sm);
+  --sl-text-code: var(--text-sm);
+  --sl-text-code-sm: var(--text-xs);
+  --sl-text-h1: var(--text-2xl);
+  --sl-text-h2: var(--text-xl);
+  --sl-text-h3: var(--text-lg);
+  --sl-text-h4: var(--text-md);
+  --sl-text-h5: var(--text-md);
+  --sl-line-height: var(--leading-body);
+  --sl-line-height-headings: var(--leading-snug);
+  --sl-nav-height: 3.75rem;
+  --sl-shadow-sm: none;
+  --sl-shadow-md: 0 0 0 var(--rule-thin) var(--color-rule);
+  --sl-shadow-lg: 0 0 0 var(--rule-thin) var(--color-rule);
 }
 
 :root,
@@ -22,14 +40,180 @@
   --sl-color-gray-6: var(--color-paper-2);
   --sl-color-gray-7: var(--color-paper-2);
   --sl-color-black: var(--color-paper);
+  --sl-color-text: var(--color-ink);
+  --sl-color-text-accent: var(--color-accent);
+  --sl-color-text-invert: var(--color-accent-ink);
+  --sl-color-bg: var(--color-paper);
+  --sl-color-bg-nav: var(--color-paper);
+  --sl-color-bg-sidebar: var(--color-paper);
+  --sl-color-bg-inline-code: var(--color-paper-2);
+  --sl-color-bg-accent: var(--color-accent-fill);
+  --sl-color-hairline-light: var(--color-rule);
+  --sl-color-hairline: var(--color-rule);
+  --sl-color-hairline-shade: var(--color-rule);
+  --sl-color-backdrop-overlay: var(--color-scrim);
+  /* Asides and badges: verdict colours for caution and danger, ink and the accent for notes and tips. */
+  --sl-color-orange-low: var(--color-paper-2);
+  --sl-color-orange: var(--color-partial);
+  --sl-color-orange-high: var(--color-partial);
+  --sl-color-red-low: var(--color-paper-2);
+  --sl-color-red: var(--color-no);
+  --sl-color-red-high: var(--color-no);
+  --sl-color-green-low: var(--color-paper-2);
+  --sl-color-green: var(--color-ok);
+  --sl-color-green-high: var(--color-ok);
+  --sl-color-blue-low: var(--color-paper-2);
+  --sl-color-blue: var(--color-ink-2);
+  --sl-color-blue-high: var(--color-ink);
+  --sl-color-purple-low: var(--color-paper-2);
+  --sl-color-purple: var(--color-accent);
+  --sl-color-purple-high: var(--color-accent);
 }
 
-/* Documentation headings stay in the body face for now; the display face is for page titles and short lines. */
-.sl-markdown-content :is(h2, h3) { letter-spacing: -0.01em; }
-.sl-markdown-content table { display: block; overflow-x: auto; }
-.sl-markdown-content img { image-rendering: pixelated; border: var(--rule-thin) solid var(--sl-color-gray-5); }
-
+body { background: var(--color-paper); color: var(--color-ink); }
 :focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+
+/* ---- Header: the board's rail. The lockup on the left, then the section links, search and the theme switch. ---- */
+header.header { border-bottom: var(--rule-pixel) solid var(--color-ink); background: var(--color-paper); }
+site-search button[data-open-modal] {
+  border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm); background: var(--color-paper-2);
+  color: var(--color-ink-2); font-family: var(--font-mono); font-size: var(--text-xs); }
+site-search button[data-open-modal]:hover { border-color: var(--color-ink-3); color: var(--color-ink); }
+site-search button[data-open-modal] kbd { border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-ink-2); }
+starlight-theme-select select, starlight-theme-select label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); }
+starlight-theme-select label:hover { color: var(--color-ink); }
+
+/* Search dialog (Pagefind): paper, hairlines, mono metadata, the accent for matches. */
+site-search dialog { border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm); background: var(--color-paper); }
+site-search {
+  --pagefind-ui-primary: var(--color-accent);
+  --pagefind-ui-text: var(--color-ink);
+  --pagefind-ui-background: var(--color-paper);
+  --pagefind-ui-border: var(--color-rule);
+  --pagefind-ui-tag: var(--color-paper-2);
+  --pagefind-ui-border-radius: var(--radius-sm);
+  --pagefind-ui-font: var(--font-body);
+}
+site-search mark { background: var(--color-accent-low); color: var(--color-ink); }
+
+/* ---- Sidebar: group names are mono legends; the current page is a module seated in its socket. ---- */
+.sidebar-pane { border-inline-end: var(--rule-thin) solid var(--color-rule); }
+.sidebar-content .top-level > li + li { margin-top: var(--space-md); }
+.sidebar-content summary { padding-block: var(--space-2xs); }
+.sidebar-content .group-label .large {
+  font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 500; text-transform: uppercase;
+  letter-spacing: var(--tracking-label); color: var(--color-ink-2); }
+.sidebar-content summary:hover .large { color: var(--color-ink); }
+.sidebar-content a { border-radius: var(--radius-sm); color: var(--color-ink-2); font-size: var(--text-sm); }
+.sidebar-content a:hover, .sidebar-content a:focus { color: var(--color-ink); background: var(--color-paper-2); }
+.sidebar-content ul ul li { border-inline-start-color: var(--color-rule); }
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+  color: var(--color-ink); font-weight: 600;
+  background: color-mix(in oklch, var(--color-accent-fill) var(--tint), var(--color-paper));
+  box-shadow: inset 0 0 0 var(--rule-thin) var(--color-accent-fill); }
+
+/* ---- Page title area: the family legend (components/docs/PageTitle.astro), then the title in the display face. ---- */
+.content-panel { border-top-color: var(--color-rule); }
+.content-panel:first-of-type .sl-container { padding-top: var(--space-xs); }
+h1#_top {
+  margin-top: var(--space-xs); font-family: var(--font-display); font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display); line-height: var(--leading-tight); color: var(--color-ink); }
+
+/* ---- Body typography ---- */
+.sl-markdown-content { color: var(--color-ink); }
+.sl-markdown-content :is(h2, h3, h4, h5) { color: var(--color-ink); }
+/* Section heads: the display face on a hairline rail, like a new board on a sheet. */
+.sl-markdown-content h2 {
+  font-family: var(--font-display); font-weight: var(--weight-display); letter-spacing: var(--tracking-display);
+  padding-top: var(--space-md); border-top: var(--rule-thin) solid var(--color-rule); }
+.sl-markdown-content :is(h3, h4) { font-weight: 600; letter-spacing: -0.005em; }
+.sl-markdown-content :is(h2, h3, h4) + * { margin-top: var(--space-sm); }
+.sl-markdown-content a { color: var(--color-accent); text-underline-offset: 0.18em; text-decoration-thickness: var(--rule-thin); }
+.sl-markdown-content a:hover { color: var(--color-accent-strong); text-decoration-thickness: var(--rule-pixel); }
+.sl-markdown-content :not(pre) > code {
+  padding: 0.05em 0.3em; border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm);
+  background: var(--color-paper-2); color: var(--color-ink); font-size: 0.9em; overflow-wrap: break-word; }
+.sl-markdown-content strong { color: var(--color-ink); }
+.sl-markdown-content hr { border-top: var(--rule-thin) solid var(--color-rule); }
+.sl-markdown-content img { image-rendering: pixelated; border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm); }
+/* Notes written as blockquotes: a label on the side, not a call-out box. */
+.sl-markdown-content blockquote {
+  padding: var(--space-xs) var(--space-md); border-inline-start: var(--rule-pixel) solid var(--color-ink);
+  background: var(--color-paper-2); color: var(--color-ink); font-style: normal; }
+
+/* ---- Tables: a parts list. Mono legends in the head, hairline rows, a light band, horizontal scroll inside. ---- */
+.sl-markdown-content table { display: block; overflow-x: auto; border-collapse: collapse; font-size: var(--text-sm); }
+.sl-markdown-content :is(th, td) { padding: var(--space-xs) var(--space-sm); border-bottom: var(--rule-thin) solid var(--color-rule); vertical-align: top; }
+.sl-markdown-content thead th {
+  border-bottom: var(--rule-pixel) solid var(--color-ink); background: transparent; color: var(--color-ink-2);
+  font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 500; text-transform: uppercase;
+  letter-spacing: var(--tracking-label); white-space: nowrap; }
+.sl-markdown-content tbody tr:nth-child(2n) { background: var(--color-paper-2); }
+
+/* ---- Asides and cards (Starlight components), in case a page uses them: a labelled strip on paper. ---- */
+.starlight-aside {
+  border: 0; border-top: var(--rule-pixel) solid var(--sl-color-asides-border, var(--color-ink));
+  border-radius: 0; background: var(--color-paper-2); color: var(--color-ink); }
+.starlight-aside__title { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: var(--tracking-label); }
+.starlight-aside--note { --sl-color-asides-border: var(--color-ink); --sl-color-asides-text-accent: var(--color-ink); }
+.starlight-aside--tip { --sl-color-asides-border: var(--color-accent-fill); --sl-color-asides-text-accent: var(--color-accent); }
+.starlight-aside--caution { --sl-color-asides-border: var(--color-partial); --sl-color-asides-text-accent: var(--color-partial); }
+.starlight-aside--danger { --sl-color-asides-border: var(--color-no); --sl-color-asides-text-accent: var(--color-no); }
+.card, .sl-link-card { border-radius: var(--radius-sm); border-color: var(--color-rule); box-shadow: none; background: var(--color-paper); }
+.sl-link-card:hover { border-color: var(--color-ink-3); background: var(--color-paper-2); }
+
+/* ---- Status written in the text (components/docs/status-phrases.mjs): the brand's status marker and colour. ---- */
+.sl-markdown-content .status-tag { display: inline; color: var(--status-color); font-weight: 600; }
+.sl-markdown-content .status-tag .status-mark { width: 0.55em; height: 0.55em; margin-inline-end: 0.3em; vertical-align: 0.05em; }
+
+/* ---- Code blocks (Expressive Code, configured in ec.config.mjs): the CodeLabel strip on top, graphite below. The
+   strip is a label like the legend on a module: file name on the left, language on the right, a 2px rail in ink
+   above it. No tabs, no window chrome. ---- */
+.expressive-code .frame { box-shadow: none; }
+.expressive-code .frame pre, .expressive-code .frame .copy { color-scheme: dark; }
+.expressive-code .frame pre { border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
+.expressive-code .frame .header {
+  display: flex; align-items: center; gap: var(--space-xs); min-height: 0;
+  padding: var(--space-2xs) var(--space-sm); border: var(--rule-thin) solid var(--color-rule); border-bottom: 0;
+  border-top: var(--rule-pixel) solid var(--color-ink); border-radius: 0; background: var(--color-paper-2);
+  color: var(--color-ink-2); font-family: var(--font-mono); font-size: var(--text-xs); line-height: var(--leading-snug); }
+.expressive-code .frame .header::before, .expressive-code .frame .header::after { content: none; display: none; }
+.expressive-code .frame .header .title {
+  padding: 0; border: 0; background: none; color: var(--color-ink); font-weight: 400; overflow-wrap: anywhere; min-width: 0; }
+.expressive-code .frame .header .title::after, .expressive-code .frame .header .title::before { content: none; display: none; }
+.expressive-code .frame .header .lang { margin-inline-start: auto; text-transform: uppercase; letter-spacing: var(--tracking-label); white-space: nowrap; }
+/* Untitled blocks keep the strip with only the language. */
+.expressive-code .frame:not(.has-title) .header .title { display: none; }
+.expressive-code .frame.has-title pre, .expressive-code .frame pre { border-top: 0; }
+/* The copy button sits on the graphite, clear of the strip. */
+.expressive-code .frame .copy button { border-radius: var(--radius-sm); }
+
+/* ---- API reference (generated pages): the same parts list. Member signatures sit in code panels already; member
+   headings carry their anchors in mono, and the inheritance lines read as quiet metadata. ---- */
+.sl-markdown-content [data-pagefind-weight] > p:first-child { color: var(--color-ink-2); font-size: var(--text-sm); }
+.sl-markdown-content :is(h3, h4):has(> a[id^='MicroEngine_']),
+.sl-markdown-content .sl-heading-wrapper:has(> :is(h3, h4) > a[id^='MicroEngine_']) :is(h3, h4) {
+  font-family: var(--font-mono); font-weight: 500; font-size: var(--text-md); overflow-wrap: anywhere; }
+
+/* ---- Pagination and the page footer ---- */
+.pagination-links a {
+  border: var(--rule-thin) solid var(--color-rule); border-top: var(--rule-pixel) solid var(--color-ink);
+  border-radius: 0; box-shadow: none; background: var(--color-paper); color: var(--color-ink); }
+.pagination-links a:hover { border-color: var(--color-ink-3); border-top-color: var(--color-accent-fill); background: var(--color-paper-2); }
+.pagination-links a span { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--color-ink-2); }
+.pagination-links a .link-title { font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--text-lg);
+  text-transform: none; letter-spacing: var(--tracking-display); color: var(--color-ink); }
+
+/* ---- On this page (table of contents) ---- */
+.right-sidebar { border-inline-start-color: var(--color-rule); }
+starlight-toc h2, mobile-starlight-toc .toggle {
+  font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 500; text-transform: uppercase;
+  letter-spacing: var(--tracking-label); color: var(--color-ink-2); }
+starlight-toc a { color: var(--color-ink-2); font-size: var(--text-sm); }
+starlight-toc a:hover { color: var(--color-ink); }
+starlight-toc a[aria-current='true'] { color: var(--color-accent); box-shadow: inset var(--rule-pixel) 0 0 var(--color-accent-fill); }
 
 /* Diagrams (```mermaid blocks, drawn in the browser by astro-mermaid). Mermaid's own palette is replaced by the
    documentation's, so a diagram follows the light/dark switch without being redrawn. Wide diagrams keep their natural
@@ -47,7 +231,8 @@
   padding: var(--space-md);
   overflow-x: auto;
   border: var(--rule-thin) solid var(--sl-color-gray-5);
-  border-radius: var(--radius-md);
+  border-top: var(--rule-pixel) solid var(--color-ink);
+  border-radius: var(--radius-sm);
   background: var(--diagram-surface);
   color: var(--sl-color-gray-3);
   font-family: var(--sl-font-mono);

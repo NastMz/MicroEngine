@@ -51,7 +51,13 @@ export default defineConfig({
         { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
         { tag: 'link', attrs: { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' } },
       ],
-      components: { SiteTitle: './src/components/DocsSiteTitle.astro' },
+      // Code blocks: Expressive Code, configured in ec.config.mjs (the brand's label strip on graphite).
+      components: {
+        SiteTitle: './src/components/DocsSiteTitle.astro',
+        // The family legend and socket card above a page, and the status tags in its body (src/components/docs/).
+        PageTitle: './src/components/docs/PageTitle.astro',
+        MarkdownContent: './src/components/docs/MarkdownContent.astro',
+      },
     }),
   ],
 });
