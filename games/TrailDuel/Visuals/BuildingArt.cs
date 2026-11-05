@@ -373,7 +373,7 @@ internal static class BuildingArt
     /// <summary>A small round shrub hugging a front corner, overlapping the foundation.</summary>
     private static void Shrub(PixelImage img, int cx, int cy, int seed)
     {
-        var c = new CreatureCanvas(12);
+        var c = new PropCanvas(12);
         var m = new Material(Pal.Canopy[1..5], Pal.Canopy[0]);
         c.Circle(3.5f, 7, 3.4f, m).Circle(8, 7, 3.4f, m).Circle(6, 4.5f, 3.6f, m, contour: false);
         c.Dot(4 + seed * 3, 4, 0.6f, Pal.FlowerColors[seed == 0 ? 0 : 1]);

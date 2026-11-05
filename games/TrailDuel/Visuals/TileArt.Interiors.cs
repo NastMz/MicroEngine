@@ -179,7 +179,7 @@ internal static partial class TileArt
 
     private static PixelImage Plant()
     {
-        var c = new CreatureCanvas(22);
+        var c = new PropCanvas(22);
         var pot = Material.Of("7a3a2a", "b0583a", "d8804a", "f0a868");
         var leaf = new Material(Pal.Canopy[1..5], Pal.Canopy[0]);
         c.Ellipse(5, 9, 4, 6, leaf).Ellipse(11, 9, 4, 6, leaf).Ellipse(8, 6, 4, 6, leaf, contour: false);
@@ -232,7 +232,7 @@ internal static partial class TileArt
 
     private static PixelImage Altar()
     {
-        var c = new CreatureCanvas(26);
+        var c = new PropCanvas(26);
         var stone = Material.Of("8a7aa8", "b4a6cc", "dcd2ec", "fbf6ff");
         var glow = Material.Of("c8608a", "f08aa8", "fbb6c8", "fff0f4");
         c.Ellipse(8, 22, 7.5f, 3.5f, stone, bulge: 0.6f);
@@ -287,7 +287,7 @@ internal static partial class TileArt
 
     private static PixelImage Statue()
     {
-        var c = new CreatureCanvas(28);
+        var c = new PropCanvas(28);
         var stone = Material.Of("6a6070", "9a90a6", "c8c0d2", "f0ecf6");
         c.Ellipse(8, 25, 7, 2.5f, stone, bulge: 0.5f);
         c.Capsule(8, 24, 8, 17, 4, 4, stone);

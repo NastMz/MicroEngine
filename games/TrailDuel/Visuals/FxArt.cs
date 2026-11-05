@@ -7,8 +7,8 @@ namespace TrailDuel.Visuals;
 
 /// <summary>
 /// Hand-animated battle effects from the Ninja Adventure pack (CC0, see CREDITS.md), sliced from
-/// <c>Content/fx</c> into atlas frames "fx:{name}0", "fx:{name}1", ... The creatures stay procedural;
-/// these give every element its own crafted impact.
+/// <c>Content/fx</c> into atlas frames "fx:{name}0", "fx:{name}1", ... They give every element its own
+/// crafted impact.
 /// </summary>
 internal static class FxArt
 {

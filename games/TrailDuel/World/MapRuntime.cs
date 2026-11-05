@@ -67,8 +67,6 @@ internal sealed class MapRuntime
 
     public bool TileSolid(int x, int y) => !InBounds(x, y) || _solid[y * Width + x];
 
-    public IEnumerable<ItemBallDef> ItemBalls => Def.Items.Where(i => !State.Has(i.Flag));
-
     // Plain loops: these run per tile while drawing and per step, where LINQ allocated a closure each call.
     public ItemBallDef? ItemAt(int x, int y)
     {

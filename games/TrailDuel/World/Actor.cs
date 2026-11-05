@@ -33,7 +33,6 @@ internal sealed class Actor : IStateHashed
     private int _fromX, _fromY;
     private float _progress, _duration;
     private int _stride;
-    private float _walkClock;
     private readonly IWorld? _world;
     private readonly EntityId _entity, _sprite;
 
@@ -145,7 +144,6 @@ internal sealed class Actor : IStateHashed
     /// <summary>Advances movement; returns true on the update the actor arrives on its tile.</summary>
     public bool Update(float dt)
     {
-        _walkClock += dt;
         if (!Moving) return false;
         _progress += dt;
         float t = Math.Clamp(_progress / _duration, 0, 1);
@@ -190,6 +188,4 @@ internal sealed class Actor : IStateHashed
         }
         return _spriteKey;
     }
-
-    public float WalkClock => _walkClock;
 }

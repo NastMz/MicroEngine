@@ -14,12 +14,13 @@ internal sealed record Material(Color[] Ramp, Color Line)
 }
 
 /// <summary>
-/// A tiny "sculpting" rasterizer for creature sprites. Species are composed from rounded
-/// primitives (ellipses, tapered capsules, triangles) that carry a pseudo surface normal, so
-/// every sprite gets consistent top-left lighting, dithered ramps, selective coloured outlines
-/// and inner contour lines where parts overlap. Faces and markings are painted afterwards as decals.
+/// A tiny "sculpting" rasterizer for drawn props: trees, rocks, bushes, shrubs, plants, the shrine's
+/// altar and statue, and the bag's satchel. Props are composed from rounded primitives (ellipses,
+/// tapered capsules, triangles) that carry a pseudo surface normal, so every sprite gets consistent
+/// top-left lighting, dithered ramps, selective coloured outlines and inner contour lines where parts
+/// overlap. Details are painted afterwards as decals.
 /// </summary>
-internal sealed class CreatureCanvas
+internal sealed class PropCanvas
 {
     private interface IShape
     {
@@ -34,49 +35,49 @@ internal sealed class CreatureCanvas
     private readonly List<Part> _parts = [];
     private readonly List<Action<PixelImage>> _decals = [];
     public int Size { get; }
-    /// <summary>Uniform scale and offset applied to every coordinate (used to enlarge back sprites).</summary>
+    /// <summary>Uniform scale and offset applied to every coordinate.</summary>
     public float Scale { get; set; } = 1f;
     public float OffsetX { get; set; }
     public float OffsetY { get; set; }
 
-    public CreatureCanvas(int size) => Size = size;
+    public PropCanvas(int size) => Size = size;
 
     private float X(float x) => x * Scale + OffsetX;
     private float Y(float y) => y * Scale + OffsetY;
     private float L(float v) => v * Scale;
 
-    public CreatureCanvas Ellipse(float cx, float cy, float rx, float ry, Material m, bool contour = true, float bulge = 1f)
+    public PropCanvas Ellipse(float cx, float cy, float rx, float ry, Material m, bool contour = true, float bulge = 1f)
     {
         _parts.Add(new Part(new EllipseShape(X(cx), Y(cy), L(rx), L(ry), bulge), m, contour));
         return this;
     }
 
-    public CreatureCanvas Circle(float cx, float cy, float r, Material m, bool contour = true) => Ellipse(cx, cy, r, r, m, contour);
+    public PropCanvas Circle(float cx, float cy, float r, Material m, bool contour = true) => Ellipse(cx, cy, r, r, m, contour);
 
     /// <summary>A tapered tube from (x0,y0) radius r0 to (x1,y1) radius r1: limbs, tails, necks.</summary>
-    public CreatureCanvas Capsule(float x0, float y0, float x1, float y1, float r0, float r1, Material m, bool contour = true)
+    public PropCanvas Capsule(float x0, float y0, float x1, float y1, float r0, float r1, Material m, bool contour = true)
     {
         _parts.Add(new Part(new CapsuleShape(X(x0), Y(y0), X(x1), Y(y1), L(r0), L(r1)), m, contour));
         return this;
     }
 
-    public CreatureCanvas Triangle(float ax, float ay, float bx, float by, float cx, float cy, Material m, bool contour = true)
+    public PropCanvas Triangle(float ax, float ay, float bx, float by, float cx, float cy, Material m, bool contour = true)
     {
         _parts.Add(new Part(new TriangleShape(X(ax), Y(ay), X(bx), Y(by), X(cx), Y(cy)), m, contour));
         return this;
     }
 
     /// <summary>A polygon given as x,y pairs: claws, spikes, crests, faceted rock and other sharp forms.</summary>
-    public CreatureCanvas Poly(Material m, params float[] xy) => Poly(m, true, xy);
+    public PropCanvas Poly(Material m, params float[] xy) => Poly(m, true, xy);
 
-    public CreatureCanvas Poly(Material m, bool contour, params float[] xy)
+    public PropCanvas Poly(Material m, bool contour, params float[] xy)
     {
         _parts.Add(new Part(new PolygonShape(Points(xy)), m, contour));
         return this;
     }
 
     /// <summary>A flat facet: the whole polygon faces (nx, ny) and takes one light value (rock planes, horns, plates).</summary>
-    public CreatureCanvas Facet(Material m, float nx, float ny, params float[] xy)
+    public PropCanvas Facet(Material m, float nx, float ny, params float[] xy)
     {
         float nz = MathF.Sqrt(MathF.Max(0.05f, 1 - nx * nx - ny * ny));
         var (a, b, c) = Normalize(nx, ny, nz);
@@ -93,63 +94,24 @@ internal sealed class CreatureCanvas
 
     // ---- decals (painted after shading, in canvas coordinates) ----
 
-    public CreatureCanvas Pixel(float x, float y, Color c)
+    public PropCanvas Pixel(float x, float y, Color c)
     {
         int px = (int)MathF.Floor(X(x)), py = (int)MathF.Floor(Y(y));
         _decals.Add(img => img.Blend(px, py, c));
         return this;
     }
 
-    public CreatureCanvas Dot(float cx, float cy, float r, Color c)
+    public PropCanvas Dot(float cx, float cy, float r, Color c)
     {
         float x = X(cx), y = Y(cy), rr = L(r);
         _decals.Add(img => img.FillCircle(x, y, rr, c));
         return this;
     }
 
-    public CreatureCanvas Oval(float cx, float cy, float rx, float ry, Color c)
-    {
-        float x = X(cx), y = Y(cy), a = L(rx), b = L(ry);
-        _decals.Add(img => img.FillEllipse(x, y, a, b, c));
-        return this;
-    }
-
-    public CreatureCanvas Stroke(float x0, float y0, float x1, float y1, Color c)
+    public PropCanvas Stroke(float x0, float y0, float x1, float y1, Color c)
     {
         int a = (int)MathF.Floor(X(x0)), b = (int)MathF.Floor(Y(y0)), d = (int)MathF.Floor(X(x1)), e = (int)MathF.Floor(Y(y1));
         _decals.Add(img => img.Line(a, b, d, e, c));
-        return this;
-    }
-
-    /// <summary>A big glossy anime-style eye: dark body, coloured lower iris and a white catch-light.</summary>
-    public CreatureCanvas Eye(float cx, float cy, float h = 3.5f, Color? iris = null, bool lookLeft = true)
-    {
-        float w = MathF.Max(1.6f, h * 0.62f);
-        Oval(cx, cy, w, h, Pal.Ink);
-        if (iris is { } ic) Oval(cx, cy + h * 0.45f, w * 0.7f, h * 0.38f, ic);
-        float hx = lookLeft ? -w * 0.35f : w * 0.35f;
-        Dot(cx + hx, cy - h * 0.4f, MathF.Max(0.9f, h * 0.32f), Pal.White);
-        Pixel(cx - hx * 0.9f, cy + h * 0.25f, Pal.White.WithAlpha(0.7f));
-        return this;
-    }
-
-    /// <summary>A closed happy eye "^".</summary>
-    public CreatureCanvas HappyEye(float cx, float cy, float w = 2.5f)
-    {
-        Stroke(cx - w, cy + 1, cx, cy - 1, Pal.Ink);
-        Stroke(cx, cy - 1, cx + w, cy + 1, Pal.Ink);
-        return this;
-    }
-
-    public CreatureCanvas Blush(float cx, float cy, float r = 1.6f) => Oval(cx, cy, r * 1.3f, r * 0.8f, Color.Hex("f27a8a").WithAlpha(0.65f));
-
-    public CreatureCanvas Smile(float cx, float cy, float w = 1.5f)
-    {
-        Pixel(cx - w, cy, Pal.Ink);
-        Pixel(cx - w + 1, cy + 1, Pal.Ink);
-        Pixel(cx + w - 1, cy + 1, Pal.Ink);
-        Pixel(cx + w, cy, Pal.Ink);
-        if (w >= 2) Stroke(cx - w + 1, cy + 1, cx + w - 1, cy + 1, Pal.Ink);
         return this;
     }
 

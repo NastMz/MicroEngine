@@ -258,7 +258,7 @@ internal static partial class TileArt
     /// </summary>
     private static PixelImage Tree(int variant)
     {
-        var c = new CreatureCanvas(26);
+        var c = new PropCanvas(26);
         var canopy = new Material(Pal.Canopy[1..5], Pal.Ink);
         var bark = new Material(Pal.Bark, Pal.Ink);
         c.Capsule(8, 18, 8, 24.5f, 2.2f, 3.2f, bark);
@@ -436,7 +436,7 @@ internal static partial class TileArt
 
     private static PixelImage Rock()
     {
-        var c = new CreatureCanvas(16);
+        var c = new PropCanvas(16);
         var m = new Material(Pal.Stone, Pal.Ink);
         c.Ellipse(8, 9.5f, 6.8f, 5.6f, m, bulge: 0.7f);
         c.Ellipse(5, 11, 3, 2.5f, m, contour: true);
@@ -446,7 +446,7 @@ internal static partial class TileArt
 
     private static PixelImage Bush()
     {
-        var c = new CreatureCanvas(16);
+        var c = new PropCanvas(16);
         var m = new Material(Pal.Canopy[1..5], Pal.Ink);
         c.Circle(5, 10, 4.5f, m).Circle(11, 10, 4.5f, m).Circle(8, 7, 5, m, contour: false);
         c.Dot(6, 6, 0.8f, Pal.FlowerColors[0]).Dot(11, 8, 0.8f, Pal.FlowerColors[2]);

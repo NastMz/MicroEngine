@@ -105,11 +105,9 @@ internal static class CharacterArt
     private static Color TurnHue(Color c, float turn)
     {
         if (c.A == 0) return c;
-        float r = c.R / 255f, g = c.G / 255f, b = c.B / 255f;
-        float max = MathF.Max(r, MathF.Max(g, b)), min = MathF.Min(r, MathF.Min(g, b)), d = max - min;
+        var (h, max, min) = Pal.Hue(c);
+        float d = max - min;
         if (d < 0.12f || max <= 0) return c;
-        float h = max == r ? (g - b) / d : max == g ? (b - r) / d + 2 : (r - g) / d + 4;
-        if (h < 0) h += 6;
         if (h is < 1.2f or > 3.4f) return c; // only greens turn: skin, hair and reds stay put
         h = (h / 6 + turn) % 1 * 6;
         float x = d * (1 - MathF.Abs(h % 2 - 1));

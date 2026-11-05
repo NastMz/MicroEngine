@@ -73,12 +73,11 @@ internal static class CreatureArt
     /// <summary>Hue (0..6), saturation (0..1) and perceived luminance (0..255) of a colour.</summary>
     private static (float Hue, float Sat, float Lum) Hsl(Color c)
     {
-        float r = c.R / 255f, g = c.G / 255f, b = c.B / 255f;
-        float max = MathF.Max(r, MathF.Max(g, b)), min = MathF.Min(r, MathF.Min(g, b)), d = max - min;
+        var (h, max, min) = Pal.Hue(c);
+        float d = max - min;
         float lum = (c.R * 3 + c.G * 6 + c.B) / 10f;
         if (d <= 0 || max <= 0) return (0, 0, lum);
-        float h = max == r ? (g - b) / d : max == g ? (b - r) / d + 2 : (r - g) / d + 4;
-        return (h < 0 ? h + 6 : h, d / max, lum);
+        return (h, d / max, lum);
     }
 
     /// <summary>The player-side sprite: the original mirrored to face right.</summary>
