@@ -147,6 +147,12 @@ public sealed class PlatformProfile : Hosting.IHostProfile
     public PlatformParts Replaceable { get; init; } = PlatformParts.Audio | PlatformParts.Input;
     /// <summary>Returns why the profile cannot run in this process (system, missing library), or null when it can.</summary>
     public Func<string?> CheckSupport { get; init; } = () => null;
+    /// <summary>
+    /// The graphics devices a request may name in <see cref="GraphicsSettings.Device"/> (compared case-insensitively),
+    /// the platform's default first; empty (the default) when the platform has only its own device, which a request then
+    /// selects by leaving <see cref="GraphicsSettings.Device"/> null.
+    /// </summary>
+    public IReadOnlyList<string> GraphicsDevices { get; init; } = [];
 
     /// <summary>Why the profile cannot run in this process, or null when it can; evaluates <see cref="CheckSupport"/> on each read.</summary>
     public string? UnsupportedReason => CheckSupport();
@@ -162,6 +168,10 @@ public sealed class PlatformProfile : Hosting.IHostProfile
     {
         ArgumentNullException.ThrowIfNull(request);
         if (UnsupportedReason is { } reason) throw new PlatformConfigurationException($"Platform '{Name}' cannot run here: {reason}.");
+        if (request.Settings.Graphics.Device is { } device && !GraphicsDevices.Contains(device, StringComparer.OrdinalIgnoreCase))
+            throw new PlatformConfigurationException(GraphicsDevices.Count == 0
+                ? $"Platform '{Name}' has no graphics device '{device}': it draws only with its own (leave the device unset, or choose a platform that offers '{device}')."
+                : $"Platform '{Name}' has no graphics device '{device}'; it offers: {string.Join(", ", GraphicsDevices)}.");
         if (request.Audio is not null && !Replaceable.HasFlag(PlatformParts.Audio))
             throw new PlatformConfigurationException($"Platform '{Name}' does not allow replacing its audio device.");
         if (request.ExtraInput.Count > 0 && !Replaceable.HasFlag(PlatformParts.Input))

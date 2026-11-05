@@ -93,6 +93,21 @@ public Renderer2DStatistics Statistics { get; }
 
  Renderer2DStatistics
 
+### <a id="MicroEngine_Graphics_DeviceRenderer_Target"></a> Target
+
+The render target this renderer draws into (the canvas, or the UI view's target). Valid only during the frame, between
+[Begin](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Begin) and [End](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_End): the canvas can be replaced between frames (an expanding presentation
+resizes it), so keep the renderer, not the target. Work submitted to the device into this target between two
+[Flush](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Flush) calls (a 3D pass) lands between the 2D drawn before and after it.
+
+```csharp
+public RenderTarget Target { get; }
+```
+
+#### Property Value
+
+ RenderTarget
+
 ### <a id="MicroEngine_Graphics_DeviceRenderer_Width"></a> Width
 
 Width of the virtual canvas in pixels.
@@ -254,6 +269,18 @@ public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
 `c` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
 `color` Color
+
+### <a id="MicroEngine_Graphics_DeviceRenderer_Flush"></a> Flush\(\)
+
+Submits to the device everything this renderer recorded since the frame began or since the last flush (the frame's
+[Clear](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Clear_MicroEngine_Color_) included, so a clear always lands before the first flush's other work) and keeps the frame
+open: state, camera and clip stay as they are, and draws recorded after the flush are submitted after anything
+submitted to the device in between. Use it to put device work (a 3D pass into [Target](MicroEngine.Graphics.DeviceRenderer.md#MicroEngine_Graphics_DeviceRenderer_Target)) between 2D
+draws. Outside a frame it does nothing.
+
+```csharp
+public void Flush()
+```
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_PopCamera"></a> PopCamera\(\)
 

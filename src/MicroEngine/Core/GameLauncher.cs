@@ -29,6 +29,8 @@ namespace MicroEngine.Core;
 /// <item><c>--gpu auto|high-performance|power-saving</c> the GPU to ask for on a machine with two
 /// (<see cref="GpuPreference"/>).</item>
 /// <item><c>--renderer NAME[,NAME...]</c> graphics APIs to try first (<see cref="GraphicsSettings.Renderers"/>).</item>
+/// <item><c>--graphics NAME</c> the graphics device to draw with, on platforms that offer several: SDL's
+/// <c>sdl-renderer</c> or <c>sdl-gpu</c> (<see cref="GraphicsSettings.Device"/>).</item>
 /// <item><c>--vsync on|off</c> wait for the display's refresh or not (<see cref="GraphicsSettings.VSync"/>).</item>
 /// <item><c>--fps-limit N</c> draw at most N frames per second; 0 removes the game's limit
 /// (<see cref="GraphicsSettings.FrameRateLimit"/>).</item>
@@ -170,6 +172,8 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
     public GpuPreference? Gpu { get; init; }
     /// <summary><c>--renderer</c>: graphics APIs to try first, or null to keep the game's choice.</summary>
     public IReadOnlyList<string>? Renderers { get; init; }
+    /// <summary><c>--graphics</c>: the graphics device to draw with, or null to keep the game's choice.</summary>
+    public string? Graphics { get; init; }
     /// <summary><c>--vsync</c>: on or off, or null to keep the game's choice.</summary>
     public bool? VSync { get; init; }
     /// <summary><c>--fps-limit</c>: the frame limit (0 for none), or null to keep the game's choice.</summary>
@@ -187,6 +191,7 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
         {
             Backend = Platform ?? graphics.Backend,
             Renderers = Renderers ?? graphics.Renderers,
+            Device = Graphics ?? graphics.Device,
             VSync = VSync ?? graphics.VSync,
             FrameRateLimit = FrameRateLimit ?? graphics.FrameRateLimit,
             Gpu = Gpu ?? graphics.Gpu,
@@ -229,6 +234,7 @@ public sealed record LaunchArguments(string? ScriptPath, string CaptureDirectory
             Time = request.EffectiveTime,
             Gpu = request.Gpu switch { null => null, "high-performance" => GpuPreference.HighPerformance, "power-saving" => GpuPreference.PowerSaving, _ => GpuPreference.Automatic },
             Renderers = request.Renderers,
+            Graphics = request.Graphics,
             VSync = request.VSync,
             FrameRateLimit = request.FrameRateLimit,
             WindowMode = request.Window switch { null => null, "fullscreen" => Core.WindowMode.Fullscreen, "exclusive" => Core.WindowMode.ExclusiveFullscreen, _ => Core.WindowMode.Windowed },

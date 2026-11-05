@@ -87,6 +87,24 @@ public sealed class InputEventTests
     }
 
     [TestMethod]
+    public void A_tap_in_a_frame_that_runs_two_updates_is_pressed_in_the_first_and_released_in_the_second()
+    {
+        // A slow frame catches up with two fixed updates: the tap belongs to the first, so state read after the
+        // frame (as a per-frame trace does) no longer shows it down, although the game saw the press.
+        var rig = new Rig();
+        rig.Send(InputEvent.KeyDown(Keyboard, Key.Space), InputEvent.KeyUp(Keyboard, Key.Space));
+        rig.Input.BeginFrame();
+        rig.Input.Sample();
+        Assert.IsTrue(rig.Map.Pressed("confirm") && rig.Map.Down("confirm"), "the first update sees the press");
+        rig.End();
+        rig.Input.Sample();
+        Assert.IsFalse(rig.Map.Down("confirm"), "the second update of the same frame no longer has it down");
+        Assert.IsFalse(rig.Map.Pressed("confirm"), "the press is reported once");
+        Assert.IsTrue(rig.Map.Released("confirm"), "the second update sees the release");
+        rig.End();
+    }
+
+    [TestMethod]
     public void Key_repeats_change_nothing_that_is_held()
     {
         var rig = new Rig();

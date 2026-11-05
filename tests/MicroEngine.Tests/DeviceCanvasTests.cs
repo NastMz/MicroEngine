@@ -131,4 +131,63 @@ public sealed class DeviceCanvasTests
         Assert.AreEqual(new Color(100, 50, 25), f[0, 0]);
         Assert.IsTrue(f.Pixels.ToArray().All(c => c.A == 255));
     }
+
+    /// <summary>One pass of device work into <paramref name="target"/>: an opaque quad, drawn after whatever was submitted before it.</summary>
+    private static void DeviceQuad(Dev.IGraphicsDevice device, Dev.RenderTarget target, RectF rect, ColorF color)
+    {
+        using var white = device.CreateTexture(new Dev.TextureDescription(1, 1), [255, 255, 255, 255]);
+        using var batch = new Renderer2D(device);
+        batch.Begin(new BatchSettings(target, Blend: Dev.BlendState.Opaque));
+        batch.Draw(white, new RectF(0, 0, 1, 1), Matrix3x2.CreateScale(rect.Width, rect.Height) * Matrix3x2.CreateTranslation(rect.X, rect.Y), color);
+        batch.End();
+    }
+
+    [TestMethod]
+    public void Flush_puts_device_work_between_the_2D_drawn_before_and_after_it()
+    {
+        // Clear, red on the left, Flush, device work (green over the whole canvas), Flush, blue on the right: the green
+        // covers the red (it was submitted after it) and the blue covers the green (recorded after it).
+        using var device = new Dev.ReferenceGraphicsDevice();
+        using var canvas = new DeviceCanvas(device, 12, 4);
+        var r = canvas.BeginFrame();
+        var renderer = canvas.Renderer;
+        Assert.AreSame(canvas.Target, renderer.Target, "during the frame the renderer draws into the canvas");
+        r.Clear(Bg);
+        r.FillRect(new RectF(0, 0, 4, 4), new Color(255, 0, 0));
+        renderer.Flush();
+        DeviceQuad(device, renderer.Target, new RectF(0, 0, 8, 4), new ColorF(0, 1, 0, 1));
+        renderer.Flush(); // nothing recorded since the last flush: submits nothing
+        r.FillRect(new RectF(8, 0, 4, 4), new Color(0, 0, 255));
+        canvas.EndFrame();
+        var f = canvas.Capture();
+        Assert.AreEqual(new Color(0, 255, 0), f[1, 1], "device work after the first flush covers the red drawn before it");
+        Assert.AreEqual(new Color(0, 255, 0), f[5, 1]);
+        Assert.AreEqual(new Color(0, 0, 255), f[9, 1], "2D recorded after the flush lands after the device work");
+        Assert.AreEqual(2, canvas.Renderer.Statistics.Flushes, "one flush with the clear and the red, one at the end with the blue");
+    }
+
+    [TestMethod]
+    public void Without_Flush_device_work_submitted_mid_frame_lands_before_the_frames_2D()
+    {
+        // The batch is deferred: what it recorded reaches the device only at Flush or End, so device work submitted in
+        // between without a flush is covered by the frame's clear. This is why Flush exists.
+        using var device = new Dev.ReferenceGraphicsDevice();
+        using var canvas = new DeviceCanvas(device, 4, 4);
+        var r = canvas.BeginFrame();
+        r.Clear(Bg);
+        DeviceQuad(device, canvas.Renderer.Target, new RectF(0, 0, 4, 4), new ColorF(0, 1, 0, 1));
+        canvas.EndFrame();
+        Assert.AreEqual(Bg, canvas.Capture()[1, 1]);
+        Assert.AreEqual(1, canvas.Renderer.Statistics.Flushes, "a frame without Flush still submits once");
+    }
+
+    [TestMethod]
+    public void Flush_outside_a_frame_does_nothing()
+    {
+        using var device = new Dev.ReferenceGraphicsDevice();
+        using var canvas = new DeviceCanvas(device, 4, 4);
+        var before = device.Counters.Submissions;
+        canvas.Renderer.Flush();
+        Assert.AreEqual(before, device.Counters.Submissions);
+    }
 }

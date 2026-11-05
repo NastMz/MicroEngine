@@ -280,4 +280,72 @@ public sealed class GraphicsSettingsTests
         Assert.AreEqual(0, started.Count);
         StringAssert.Contains(errors, "broken has no display");
     }
+
+    [TestMethod]
+    public void The_graphics_option_names_the_device_and_overrides_the_game_s()
+    {
+        var merged = LaunchArguments.Parse(["--graphics", "sdl-gpu"]).ApplyTo(new GraphicsSettings { Device = "sdl-renderer" });
+        Assert.AreEqual("sdl-gpu", merged.Device);
+        Assert.AreEqual("sdl-renderer", LaunchArguments.Parse([]).ApplyTo(new GraphicsSettings { Device = "sdl-renderer" }).Device, "kept without the option");
+        Assert.IsNull(LaunchArguments.Parse([]).ApplyTo(new GraphicsSettings()).Device, "the platform's default by default");
+        Assert.ThrowsExactly<FormatException>(() => LaunchArguments.Parse(["--graphics"]), "needs a value");
+        StringAssert.Contains(MicroEngine.Hosting.LaunchRequest.Usage, "[--graphics NAME]");
+    }
+
+    private static (int Code, string Errors, PlatformRequest? Request) LaunchWithDevices(GraphicsSettings graphics, PlatformProfile[] profiles, params string[] args)
+    {
+        var catalog = new PlatformCatalog();
+        foreach (var profile in profiles) catalog.Add(profile);
+        var errors = new StringWriter();
+        var (previousError, previousOut) = (Console.Error, Console.Out);
+        Console.SetError(errors);
+        Console.SetOut(new StringWriter());
+        try { return (GameLauncher.Run(new FrameGame(graphics), [.. args, "--frames", "1"], catalog), errors.ToString(), Seen); }
+        finally
+        {
+            Console.SetError(previousError);
+            Console.SetOut(previousOut);
+        }
+    }
+
+    private static PlatformRequest? Seen;
+
+    private static PlatformProfile Offering(string name, params string[] devices) =>
+        new(name, "", request => { Seen = request; return new HeadlessPlatform(); }) { GraphicsDevices = devices };
+
+    [TestMethod]
+    public void A_graphics_device_reaches_only_a_platform_that_offers_it()
+    {
+        // The first platform offers only its own device; the second offers "sdl-gpu": a game asking for it starts on the
+        // second, with the device in its request.
+        Seen = null;
+        var (code, errors, request) = LaunchWithDevices(new GraphicsSettings { Device = "sdl-gpu" }, [Offering("plain"), Offering("gpu", "sdl-renderer", "sdl-gpu")]);
+        Assert.AreEqual(0, code, errors);
+        Assert.AreEqual("sdl-gpu", request!.Settings.Graphics.Device);
+        StringAssert.Contains(errors, "Platform 'plain' has no graphics device 'sdl-gpu'");
+    }
+
+    [TestMethod]
+    public void A_graphics_device_no_platform_offers_is_a_clear_error_never_another_device()
+    {
+        Seen = null;
+        var (code, errors, request) = LaunchWithDevices(new GraphicsSettings(), [Offering("plain"), Offering("other", "sdl-renderer")], "--graphics", "sdl-gpu");
+        Assert.AreEqual(1, code);
+        Assert.IsNull(request, "no platform started on another device");
+        StringAssert.Contains(errors, "has no graphics device 'sdl-gpu'");
+
+        // Named with --platform, the refusal names what the platform offers.
+        (code, errors, _) = LaunchWithDevices(new GraphicsSettings(), [Offering("other", "sdl-renderer")], "--platform", "other", "--graphics", "sdl-gpu");
+        Assert.AreEqual(1, code);
+        StringAssert.Contains(errors, "Platform 'other' has no graphics device 'sdl-gpu'; it offers: sdl-renderer.");
+    }
+
+    [TestMethod]
+    public void Without_a_graphics_device_every_platform_starts_as_before()
+    {
+        Seen = null;
+        var (code, errors, request) = LaunchWithDevices(new GraphicsSettings(), [Offering("plain")]);
+        Assert.AreEqual(0, code, errors);
+        Assert.IsNull(request!.Settings.Graphics.Device);
+    }
 }

@@ -417,9 +417,10 @@ public interface IGraphicsDevice : IDisposable
   bindings and uploaded bytes exactly, the same on every device, so tests can hold a scene to a draw-call budget.
 - **The reference device.** `ReferenceGraphicsDevice` implements the contract on the CPU, rule by rule; it needs no
   window and draws identically on every machine.
-- **The programmable device.** In the repository only, not in a package yet: `SdlGpuDevice`
-  (`MicroEngine.Graphics.SdlGpu`, factory name `sdl-gpu`) implements the contract on SDL_GPU (Direct3D 12, Vulkan,
-  Metal) at tier 1: custom shaders compiled ahead of time, depth attachments, instancing and every blend state, as well
+- **The programmable device.** Not published yet: arrives with the next SDK version, carried by the `MicroEngine.Sdl`
+  package. `SdlGpuDevice` (`MicroEngine.Graphics.SdlGpu`, device name `sdl-gpu`) implements the contract on SDL_GPU
+  (Direct3D 12, Vulkan, Metal) at tier 1; a game draws with it by asking the SDL platform for it
+  (`GraphicsSettings.Device = "sdl-gpu"` or `--graphics sdl-gpu`; see [Backends](backends.md)). It offers custom shaders compiled ahead of time, depth attachments, instancing and every blend state, as well
   as everything tier 0 offers. `Capabilities.ApiName` and `Capabilities.Adapter` say which API and adapter SDL chose,
   software Vulkan included; check them after creation rather than assuming the requested API. Depth formats are
   declared per adapter (some have no 24-bit depth): pick one that `Capabilities.Supports(format,
@@ -455,8 +456,16 @@ a 3D renderer:
   entity with a `MeshRenderer` attachment at its interpolated world matrix, so a transform hierarchy moves smoothly
   between fixed steps. There is one material: the base colour texture times the base colour and a tint, lit by one
   directional light (`LightDirection`) with an `Ambient` term.
-- **2D over 3D.** Targets come from `renderer.CreateTarget(width, height)` (colour plus a depth format the device
-  supports); the 2D batcher drawing into the same target afterwards, without a clear, lands over the 3D.
+- **Targets.** `Begin` takes a target with colour in the renderer's format: one from `renderer.CreateTarget(width,
+  height)` (colour plus a depth format the device supports), or one without depth, such as the game's canvas, when the
+  renderer depth-tests against a depth texture of its own of the same size. The 2D batcher drawing into the same target
+  afterwards, without a clear, lands over the 3D.
+- **In a game.** A game on `sdl-gpu` creates the renderer on the device its textures live on
+  (`((DeviceGraphics)Game.Graphics).Device`) and draws 3D from its scene's `Draw` between two flushes of the canvas:
+  the scene's renderer is a `DeviceRenderer`, whose `Flush()` submits what the frame drew so far (the frame's clear
+  first) and whose `Target` is the canvas. The scene's world (`Scene.Objects`) is stepped by the engine and drawn at the
+  frame's blend; `DrawWorld(Objects)` draws its meshes there; 2D drawn after the 3D lands over it, and `DrawUi` draws the
+  UI view at the window's resolution over both.
 - On a device without custom shaders or depth, `new Renderer3D(device)` throws `GraphicsCapabilityException`: tier-0
   devices have no 3D path.
 

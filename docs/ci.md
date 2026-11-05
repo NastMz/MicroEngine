@@ -203,6 +203,17 @@ Native Linux in daily CI checks both desktop platforms: raylib against `linux-x6
 llvmpipe) against `sdl-linux-x64.json`, plus the native tests of both (`tests/MicroEngine.Raylib.Tests`,
 `tests/MicroEngine.Desktop.Tests`): keyboard and sound-server output for each, SDL gamepads, renderer equivalence.
 
+The same job checks the tier-1 graphics device (SDL_GPU) on a software rasterizer: it installs Mesa's Vulkan drivers,
+points the Vulkan loader at lavapipe alone (`lvp_icd*.json`, found by pattern because its file name changes between
+Mesa versions), logs `vulkaninfo`'s device lines, and runs the `Gpu` test category (`TestCategory=Gpu`: the device
+conformance suite on SDL_GPU, the 3D path's properties and a tier-1 game through the launcher) with
+`MICROENGINE_GPU_ADAPTER=llvmpipe`, which fails any device whose adapter is not lavapipe. The existing native step
+excludes that category. Then it runs the `samples/Slice3D` game with its script on the same adapter and keeps its
+capture as the `gpu-captures` artifact; the job summary records the adapter, driver, depth formats and the capture.
+The native category's tests of SDL_GPU are skipped where no SDL_GPU driver exists (macOS runners in this job's sense,
+machines without Direct3D 12, Vulkan or Metal) and fail under `MICROENGINE_NATIVE_TESTS=1` when the default driver
+cannot start.
+
 ## SDK checks and releases
 
 | Workflow | When | What |

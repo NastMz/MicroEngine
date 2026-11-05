@@ -58,7 +58,7 @@ public const string HeadlessName = "headless"
 The one-line usage text desktop launchers print after an argument error.
 
 ```csharp
-public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]"
+public const string Usage = "Usage: [--script FILE] [--captures DIR] [--platform NAME] [--list-platforms] [--headless] [--hidden] [--time realtime|deterministic] [--frames N] [--seed N] [--scale N] [--mute] [--report] [--audio auto|device|silent] [--audio-capture FILE] [--gpu auto|high-performance|power-saving] [--renderer NAME[,NAME...]] [--graphics NAME] [--vsync on|off] [--fps-limit N] [--window windowed|fullscreen|exclusive] [--display N] [--pacing display|measured] [--profile FILE] [--state-trace FILE]"
 ```
 
 #### Field Value
@@ -189,6 +189,18 @@ public static IReadOnlyList<string> GpuWords { get; }
 #### Property Value
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
+
+### <a id="MicroEngine_Hosting_LaunchRequest_Graphics"></a> Graphics
+
+<code>--graphics</code>: the graphics device to draw with ("sdl-renderer", "sdl-gpu"...), or null to keep the game's choice.
+
+```csharp
+public string? Graphics { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
 ### <a id="MicroEngine_Hosting_LaunchRequest_HasScript"></a> HasScript
 
