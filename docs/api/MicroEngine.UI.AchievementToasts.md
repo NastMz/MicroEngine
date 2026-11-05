@@ -77,7 +77,7 @@ public Achievement? Current { get; }
 
 #### Property Value
 
- [Achievement](MicroEngine.Core.Achievement.md)?
+ Achievement?
 
 ### <a id="MicroEngine_UI_AchievementToasts_Heading"></a> Heading
 
@@ -153,7 +153,7 @@ public void Show(Achievement achievement)
 
 #### Parameters
 
-`achievement` [Achievement](MicroEngine.Core.Achievement.md)
+`achievement` Achievement
 
 ### <a id="MicroEngine_UI_AchievementToasts_Update_System_Single_"></a> Update\(float\)
 

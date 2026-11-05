@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Achievements.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
 Owns a game's achievements: the catalog, progress, unlocking and persistence. Games decide when

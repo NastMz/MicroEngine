@@ -27,6 +27,7 @@ flowchart TB
   scene["<b> src/MicroEngine.Scene </b> <br/> Scene world: entity ids, transforms, attachments, interpolation, world clocks"]
   physics["<b> src/MicroEngine.Physics, src/MicroEngine.Physics.Tiles </b> <br/> Physics: the 2D contract and capabilities; tile grids and the swept tile backend"]
   saves["<b> src/MicroEngine.Saves </b> <br/> Saves: JSON save slots over the platform storage, the optional saves module"]
+  achievements["<b> src/MicroEngine.Achievements </b> <br/> Achievements: catalog, tracker, the optional achievements module"]
   kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
   samples -- started by --> hosts
@@ -57,6 +58,8 @@ flowchart TB
   audio -- builds on --> content
   core -- builds on --> saves
   saves -- builds on --> platform
+  core -- builds on --> achievements
+  achievements -- builds on --> saves
 ```
 
 Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
@@ -130,7 +133,9 @@ does not declare, and `PhysicsModule`, which steps worlds in the `Physics` phase
 Next SDK version (not published yet: arrives with the next SDK version): saves and achievements are optional engine
 modules. `MicroEngine.Saves` (kernel and platform contracts only, shipped inside the `MicroEngine` package) holds
 `SaveStore`, `ISaveStorage` and `FileSaveStorage` with their `MicroEngine.Core` namespace, and `SavesModule`, which
-registers a store as the engine's `SaveStore` service. `AchievementsModule` registers a game's `AchievementTracker`
+registers a store as the engine's `SaveStore` service. `MicroEngine.Achievements` (kernel, platform contracts, saves and 2D
+graphics, also shipped inside the `MicroEngine` package) holds the catalog and tracker types with their `MicroEngine.Core`
+namespace and `AchievementsModule`, which registers a game's `AchievementTracker`
 and schedules `engine.achievements`, which writes progress. `Game` adds both when the game declares achievements
 (`UseAchievements` from its constructor or `Configure`); a game that declares none has no achievement or save service,
 no `engine.achievements` system and no achievement file ([Achievements](manual/achievements.md)).
@@ -205,7 +210,7 @@ scripted playthrough tests and reproducible screenshots possible.
 | `MicroEngine.Physics` in `MicroEngine.Physics.dll` (next SDK version) | `IPhysicsWorld2D`, `PhysicsCapabilities`, `PhysicsCapabilityException`, `BodyId`, `ShapeId`, `BodyDescription`, `ShapeDescription`, `QueryFilter`, `MoveResult`, `RayHit`, `SensorEvent`, `ContactEvent`, `PhysicsModule`, `PhysicsSystem`, `PhysicsSync` |
 | `MicroEngine.Physics.Tiles` (next SDK version) | `TilePhysicsWorld2D`: tile grids as static geometry, the swept mover, one-way platforms, moving solids |
 | `MicroEngine.Saves` (next SDK version) | `SavesModule`; `SaveStore`, `ISaveStorage` and `FileSaveStorage` live in `MicroEngine.Saves.dll` with the `MicroEngine.Core` namespace |
-| `MicroEngine.Achievements` (next SDK version) | `AchievementsModule` (the tracker as a service, the `engine.achievements` system) |
+| `MicroEngine.Achievements` (next SDK version) | `AchievementsModule` (the tracker as a service, the `engine.achievements` system); `Achievement`, `AchievementStatus`, `AchievementTracker`, `AchievementSaveData` and `AchievementRecord` live in `MicroEngine.Achievements.dll` with the `MicroEngine.Core` namespace |
 | `MicroEngine.Audio` | `Synth` (retro SFX), `Song` (step sequencer), `AudioClip` (incl. WAV decoding), `AudioMixer` (incl. sound/music files) |
 | `MicroEngine.UI` | `Typewriter`, `DialogueBox`, `SelectionList`, `UiTheme`, `AchievementToasts`, `AchievementsScene` |
 

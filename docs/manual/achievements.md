@@ -16,7 +16,7 @@ public sealed record Achievement(string Id, string Name, string Description, int
 }
 ```
 
-Source: [`src/MicroEngine/Core/Achievements.cs`](../../src/MicroEngine/Core/Achievements.cs)
+Source: [`src/MicroEngine.Achievements/Achievements.cs`](../../src/MicroEngine.Achievements/Achievements.cs)
 
 `Goal` 1 is an immediate achievement; a larger goal is progressive. `Id` is the key stored in saves: names and
 descriptions may change freely, ids must stay stable. The catalog order is the display order.
