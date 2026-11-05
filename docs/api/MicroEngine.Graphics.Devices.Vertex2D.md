@@ -40,7 +40,7 @@ Pixels, relative to the viewport origin, y down. Pixel (x, y) has its centre at 
 
 Normalised texture coordinate; (0, 0) is the top-left corner of texel (0, 0).
 
-`Color` ColorF
+`Color` [ColorF](MicroEngine.ColorF.md)
 
 Premultiplied colour multiplied with the sampled texel.
 
@@ -70,7 +70,7 @@ public ColorF Color { get; init; }
 
 #### Property Value
 
- ColorF
+ [ColorF](MicroEngine.ColorF.md)
 
 ### <a id="MicroEngine_Graphics_Devices_Vertex2D_Position"></a> Position
 
@@ -110,7 +110,7 @@ public void Deconstruct(out Vector2 Position, out Vector2 TexCoord, out ColorF C
 
 `TexCoord` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`Color` ColorF
+`Color` [ColorF](MicroEngine.ColorF.md)
 
 ### <a id="MicroEngine_Graphics_Devices_Vertex2D_Equals_System_Object_"></a> Equals\(object\)
 

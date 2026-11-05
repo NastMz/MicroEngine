@@ -78,7 +78,7 @@ Width of the view in pixels.
 
 Height of the view in pixels.
 
-`presentation` Presentation
+`presentation` [Presentation](MicroEngine.Graphics.Presentation.md)
 
 The game's presentation (<code>GameSettings.Presentation</code>; <code>Game.CreateCamera</code> passes it).
 
@@ -100,7 +100,7 @@ public RectF? Bounds { get; set; }
 
 #### Property Value
 
- RectF?
+ [RectF](MicroEngine.RectF.md)?
 
 ### <a id="MicroEngine_Graphics_Camera2D_Center"></a> Center
 
@@ -223,7 +223,7 @@ public RectF View { get; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Graphics_Camera2D_ViewHeight"></a> ViewHeight
 
@@ -272,7 +272,7 @@ public RectF VisibleBounds { get; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Graphics_Camera2D_WorldToView"></a> WorldToView
 
@@ -352,7 +352,7 @@ public bool IsVisible(RectF world, float margin = 0)
 
 #### Parameters
 
-`world` RectF
+`world` [RectF](MicroEngine.RectF.md)
 
 `margin` [float](https://learn.microsoft.com/dotnet/api/system.single)
 

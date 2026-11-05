@@ -76,7 +76,7 @@ public IContentSource? Content { get; set; }
 
 #### Property Value
 
- IContentSource?
+ [IContentSource](MicroEngine.Platform.IContentSource.md)?
 
 ### <a id="MicroEngine_Hosting_HostBuilder_EngineConfiguration"></a> EngineConfiguration
 
@@ -88,7 +88,7 @@ public IReadOnlyList<Action<EngineBuilder>> EngineConfiguration { get; }
 
 #### Property Value
 
- [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<EngineBuilder\>\>
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[EngineBuilder](MicroEngine.Kernel.EngineBuilder.md)\>\>
 
 ### <a id="MicroEngine_Hosting_HostBuilder_Environment"></a> Environment
 
@@ -136,7 +136,7 @@ public ServiceRegistry Services { get; }
 
 #### Property Value
 
- ServiceRegistry
+ [ServiceRegistry](MicroEngine.Kernel.ServiceRegistry.md)
 
 ### <a id="MicroEngine_Hosting_HostBuilder_Storage"></a> Storage
 
@@ -149,7 +149,7 @@ public Func<string, IStorage>? Storage { get; set; }
 
 #### Property Value
 
- [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[string](https://learn.microsoft.com/dotnet/api/system.string), IStorage\>?
+ [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[string](https://learn.microsoft.com/dotnet/api/system.string), [IStorage](MicroEngine.Platform.IStorage.md)\>?
 
 ## Methods
 
@@ -163,7 +163,7 @@ public HostBuilder ConfigureEngine(Action<EngineBuilder> configure)
 
 #### Parameters
 
-`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<EngineBuilder\>
+`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[EngineBuilder](MicroEngine.Kernel.EngineBuilder.md)\>
 
 #### Returns
 

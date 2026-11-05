@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md)  
 Assembly: MicroEngine.Audio.dll  
-Guide: [Audio](../manual/audio.md)  
+Guide: [Synthesized sound effects](../manual/audio.md#synthesized-sound-effects)  
 
 A tiny step sequencer. Patterns are whitespace-separated tokens, one per step:
 a note ("C4", "F#3", "Bb5"), "-" to hold the previous note, "." to rest, "|" is ignored (bar lines).

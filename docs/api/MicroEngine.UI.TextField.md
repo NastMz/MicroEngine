@@ -160,7 +160,7 @@ protected override void DrawContent(IRenderer renderer, UiContext context)
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `context` [UiContext](MicroEngine.UI.UiContext.md)
 
@@ -174,7 +174,7 @@ protected override void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 ### <a id="MicroEngine_UI_TextField_Insert_System_String_"></a> Insert\(string\)
 

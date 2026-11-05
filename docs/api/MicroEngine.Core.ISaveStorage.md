@@ -16,6 +16,6 @@ public interface ISaveStorage : IStorage
 
 #### Implements
 
-IStorage
+[IStorage](MicroEngine.Platform.IStorage.md)
 
 </div>

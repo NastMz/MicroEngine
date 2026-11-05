@@ -32,7 +32,7 @@ public RayHit(ShapeId Shape, EntityId Owner, Vector2 Point, Vector2 Normal, floa
 
 The shape hit.
 
-`Owner` EntityId
+`Owner` [EntityId](MicroEngine.Scenes.EntityId.md)
 
 The entity owning that shape's body.
 
@@ -84,7 +84,7 @@ public EntityId Owner { get; init; }
 
 #### Property Value
 
- EntityId
+ [EntityId](MicroEngine.Scenes.EntityId.md)
 
 ### <a id="MicroEngine_Physics_RayHit_Point"></a> Point
 
@@ -122,7 +122,7 @@ public void Deconstruct(out ShapeId Shape, out EntityId Owner, out Vector2 Point
 
 `Shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
 
-`Owner` EntityId
+`Owner` [EntityId](MicroEngine.Scenes.EntityId.md)
 
 `Point` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 

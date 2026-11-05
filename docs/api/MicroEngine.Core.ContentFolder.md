@@ -22,7 +22,7 @@ public sealed class ContentFolder : IContentSource
 
 #### Implements
 
-IContentSource
+[IContentSource](MicroEngine.Platform.IContentSource.md)
 
 ## Constructors
 
@@ -141,7 +141,7 @@ public PixelImage Image(string relative)
 
 #### Returns
 
- PixelImage
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
 #### Exceptions
 

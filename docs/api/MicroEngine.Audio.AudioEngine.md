@@ -48,7 +48,7 @@ public AudioEngine(IAudioSink sink, AudioEngineSettings? settings = null)
 
 #### Parameters
 
-`sink` IAudioSink
+`sink` [IAudioSink](MicroEngine.Platform.IAudioSink.md)
 
 `settings` [AudioEngineSettings](MicroEngine.Audio.AudioEngineSettings.md)?
 
@@ -169,7 +169,7 @@ public AudioFormat Format { get; }
 
 #### Property Value
 
- AudioFormat
+ [AudioFormat](MicroEngine.Platform.AudioFormat.md)
 
 ### <a id="MicroEngine_Audio_AudioEngine_MaxVoices"></a> MaxVoices
 

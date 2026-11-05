@@ -55,7 +55,7 @@ public IGraphicsDevice Create(ISurface? surface, GraphicsDeviceOptions options)
 
 #### Parameters
 
-`surface` ISurface?
+`surface` [ISurface](MicroEngine.Platform.ISurface.md)?
 
 `options` [GraphicsDeviceOptions](MicroEngine.Graphics.Devices.GraphicsDeviceOptions.md)
 
@@ -73,7 +73,7 @@ public string? UnsupportedReason(ISurface? surface)
 
 #### Parameters
 
-`surface` ISurface?
+`surface` [ISurface](MicroEngine.Platform.ISurface.md)?
 
 #### Returns
 

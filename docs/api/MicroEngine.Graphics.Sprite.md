@@ -41,7 +41,7 @@ public Sprite(Texture Texture, RectF Source, Vector2 Origin)
 
 The texture that holds the pixels; owned by whoever created it (usually an atlas).
 
-`Source` RectF
+`Source` [RectF](MicroEngine.RectF.md)
 
 The sprite's rectangle in the texture, in texture pixels.
 
@@ -89,7 +89,7 @@ public RectF Source { get; init; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Graphics_Sprite_Texture"></a> Texture
 
@@ -137,7 +137,7 @@ public void Deconstruct(out Texture Texture, out RectF Source, out Vector2 Origi
 
 `Texture` [Texture](MicroEngine.Graphics.Texture.md)
 
-`Source` RectF
+`Source` [RectF](MicroEngine.RectF.md)
 
 `Origin` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 

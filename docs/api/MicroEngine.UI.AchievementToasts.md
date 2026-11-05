@@ -67,7 +67,7 @@ public Toasts Banners { get; }
 
 #### Property Value
 
- Toasts
+ [Toasts](MicroEngine.UI.Toasts.md)
 
 ### <a id="MicroEngine_UI_AchievementToasts_Bottom"></a> Bottom
 
@@ -91,7 +91,7 @@ public Achievement? Current { get; }
 
 #### Property Value
 
- Achievement?
+ [Achievement](MicroEngine.Core.Achievement.md)?
 
 ### <a id="MicroEngine_UI_AchievementToasts_Heading"></a> Heading
 
@@ -127,7 +127,7 @@ public UiTheme Theme { get; set; }
 
 #### Property Value
 
- UiTheme
+ [UiTheme](MicroEngine.UI.UiTheme.md)
 
 ### <a id="MicroEngine_UI_AchievementToasts_Top"></a> Top
 
@@ -153,9 +153,9 @@ public void Draw(IRenderer r, BitmapFont font)
 
 #### Parameters
 
-`r` IRenderer
+`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`font` BitmapFont
+`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
 ### <a id="MicroEngine_UI_AchievementToasts_Show_MicroEngine_Core_Achievement_"></a> Show\(Achievement\)
 
@@ -167,7 +167,7 @@ public void Show(Achievement achievement)
 
 #### Parameters
 
-`achievement` Achievement
+`achievement` [Achievement](MicroEngine.Core.Achievement.md)
 
 ### <a id="MicroEngine_UI_AchievementToasts_Update_System_Single_"></a> Update\(float\)
 

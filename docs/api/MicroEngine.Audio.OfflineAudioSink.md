@@ -21,7 +21,7 @@ public sealed class OfflineAudioSink : IAudioSink, IDisposable
 
 #### Implements
 
-IAudioSink, 
+[IAudioSink](MicroEngine.Platform.IAudioSink.md), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
 ## Constructors
@@ -36,7 +36,7 @@ public OfflineAudioSink(AudioFormat format, int updateRate = 60, int blockFrames
 
 #### Parameters
 
-`format` AudioFormat
+`format` [AudioFormat](MicroEngine.Platform.AudioFormat.md)
 
 The format to render.
 
@@ -70,7 +70,7 @@ public AudioFormat Format { get; }
 
 #### Property Value
 
- AudioFormat
+ [AudioFormat](MicroEngine.Platform.AudioFormat.md)
 
 ### <a id="MicroEngine_Audio_OfflineAudioSink_Frames"></a> Frames
 
@@ -118,7 +118,7 @@ public AudioSinkSchedule Schedule { get; }
 
 #### Property Value
 
- AudioSinkSchedule
+ [AudioSinkSchedule](MicroEngine.Platform.AudioSinkSchedule.md)
 
 ## Methods
 
@@ -148,6 +148,6 @@ public void Start(AudioRender render)
 
 #### Parameters
 
-`render` AudioRender
+`render` [AudioRender](MicroEngine.Platform.AudioRender.md)
 
 </div>

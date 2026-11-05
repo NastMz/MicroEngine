@@ -512,7 +512,7 @@ public bool TryGetResource<T>(Handle<GraphicsResource> handle, out T? resource) 
 
 #### Parameters
 
-`handle` Handle<[GraphicsResource](MicroEngine.Graphics.Devices.GraphicsResource.md)\>
+`handle` [Handle](MicroEngine.Kernel.Handle-1.md)<[GraphicsResource](MicroEngine.Graphics.Devices.GraphicsResource.md)\>
 
 `resource` T?
 

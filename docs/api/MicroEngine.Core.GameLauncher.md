@@ -179,9 +179,9 @@ public static int Run(string[] args, Action<HostBuilder> configure, Action<HostB
 
 `args` [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
 
-`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<HostBuilder\>
+`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[HostBuilder](MicroEngine.Hosting.HostBuilder.md)\>
 
-`defaults` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<HostBuilder\>?
+`defaults` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[HostBuilder](MicroEngine.Hosting.HostBuilder.md)\>?
 
 #### Returns
 

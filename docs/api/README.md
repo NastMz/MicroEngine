@@ -12,7 +12,7 @@ with the [tutorial](../tutorial/README.md).
 | Namespace | Contains | Guide |
 | --- | --- | --- |
 | [MicroEngine.Achievements](MicroEngine.Achievements.md) | Achievements as an optional engine module: the module that registers the tracker as a service of the engine and writes its progress. | [Achievements](../manual/achievements.md) |
-| [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md) |  |  |
+| [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md) | Retro sound in code: sound effects described by parameters (in the spirit of sfxr), the synthesizer that renders them, instruments and waveforms, and the tiny step sequencer behind `Song`. | [Synthesized sound effects](../manual/audio.md#synthesized-sound-effects) |
 | [MicroEngine.Audio](MicroEngine.Audio.md) | Sound effects and music: the one mixer every backend plays through (voices with handles and priorities, buses, music streams, exact-frame scheduling), the sound bank and music games play through, the audio device contract, offline rendering for tests, WAV and OGG decoding, synthesis. | [Audio](../manual/audio.md) |
 | [MicroEngine.Content](MicroEngine.Content.md) | Content: the asset store under Game.Assets (typed handles, scopes that share and release, the loader registry, the reserved import step) and content sources beyond folders (zip archives, files a host lists). | [Assets](../manual/assets.md#handles-loaders-and-content-sources) |
 | [MicroEngine.Core](MicroEngine.Core.md) | The game and its loop: `Game`, settings, runners and sessions, launchers and platform composition, scripted input, saves, content files, achievements, application identity, the headless platform. | [Game lifecycle and time](../manual/lifecycle.md) |

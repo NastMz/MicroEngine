@@ -56,6 +56,6 @@ public static void Register(AssetLoaderRegistry loaders)
 
 #### Parameters
 
-`loaders` AssetLoaderRegistry
+`loaders` [AssetLoaderRegistry](MicroEngine.Content.AssetLoaderRegistry.md)
 
 </div>

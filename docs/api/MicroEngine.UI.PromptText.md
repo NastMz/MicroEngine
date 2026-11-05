@@ -31,11 +31,11 @@ public static void Draw(IRenderer r, BitmapFont font, ActionPrompts prompts, str
 
 #### Parameters
 
-`r` IRenderer
+`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 The renderer.
 
-`font` BitmapFont
+`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
 The font of the text and of the glyph labels.
 
@@ -51,11 +51,11 @@ Text with <code>{action}</code> names (see [Format](MicroEngine.Input.ActionProm
 
 Top-left of the line, in virtual pixels.
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 Colour of the plain text.
 
-`shadow` Color?
+`shadow` [Color](MicroEngine.Color.md)?
 
 A 1px shadow under the plain text; null draws none.
 
@@ -73,9 +73,9 @@ public static void DrawCentered(IRenderer r, BitmapFont font, ActionPrompts prom
 
 #### Parameters
 
-`r` IRenderer
+`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`font` BitmapFont
+`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
 `prompts` [ActionPrompts](MicroEngine.Input.ActionPrompts.md)
 
@@ -85,9 +85,9 @@ public static void DrawCentered(IRenderer r, BitmapFont font, ActionPrompts prom
 
 `y` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
-`shadow` Color?
+`shadow` [Color](MicroEngine.Color.md)?
 
 `style` [PromptGlyphStyle](MicroEngine.UI.PromptGlyphStyle.md)?
 
@@ -103,9 +103,9 @@ public static void DrawGlyph(IRenderer r, BitmapFont font, ActionPrompt prompt, 
 
 #### Parameters
 
-`r` IRenderer
+`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`font` BitmapFont
+`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
 `prompt` [ActionPrompt](MicroEngine.Input.ActionPrompt.md)
 
@@ -123,7 +123,7 @@ public static int GlyphWidth(BitmapFont font, ActionPrompt prompt)
 
 #### Parameters
 
-`font` BitmapFont
+`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
 `prompt` [ActionPrompt](MicroEngine.Input.ActionPrompt.md)
 
@@ -141,7 +141,7 @@ public static int Measure(BitmapFont font, ActionPrompts prompts, string templat
 
 #### Parameters
 
-`font` BitmapFont
+`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
 `prompts` [ActionPrompts](MicroEngine.Input.ActionPrompts.md)
 

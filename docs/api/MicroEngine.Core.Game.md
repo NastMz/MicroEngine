@@ -20,8 +20,8 @@ public abstract class Game : IEngineModule, IStateHashed
 
 #### Implements
 
-IEngineModule, 
-IStateHashed
+[IEngineModule](MicroEngine.Kernel.IEngineModule.md), 
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 ## Examples
 
@@ -78,7 +78,7 @@ public AchievementTracker Achievements { get; }
 
 #### Property Value
 
- AchievementTracker
+ [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
 
 ### <a id="MicroEngine_Core_Game_Assets"></a> Assets
 
@@ -104,7 +104,7 @@ public AudioMixer Audio { get; }
 
 #### Property Value
 
- AudioMixer
+ [AudioMixer](MicroEngine.Audio.AudioMixer.md)
 
 ### <a id="MicroEngine_Core_Game_ContentRoot"></a> ContentRoot
 
@@ -131,7 +131,7 @@ public BitmapFont Font { get; }
 
 #### Property Value
 
- BitmapFont
+ [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
 ### <a id="MicroEngine_Core_Game_Frame"></a> Frame
 
@@ -143,7 +143,7 @@ public FrameContext Frame { get; }
 
 #### Property Value
 
- FrameContext
+ [FrameContext](MicroEngine.Kernel.FrameContext.md)
 
 ### <a id="MicroEngine_Core_Game_FrameBlend"></a> FrameBlend
 
@@ -173,7 +173,7 @@ public IGraphicsDevice Graphics { get; }
 
 #### Property Value
 
- IGraphicsDevice
+ [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
 
 ### <a id="MicroEngine_Core_Game_HasAchievements"></a> HasAchievements
 
@@ -210,7 +210,7 @@ public InputMap Input { get; }
 
 #### Property Value
 
- InputMap
+ [InputMap](MicroEngine.Input.InputMap.md)
 
 ### <a id="MicroEngine_Core_Game_InputSystem"></a> InputSystem
 
@@ -226,7 +226,7 @@ public InputSystem InputSystem { get; }
 
 #### Property Value
 
- InputSystem
+ [InputSystem](MicroEngine.Input.InputSystem.md)
 
 ### <a id="MicroEngine_Core_Game_Lifecycle"></a> Lifecycle
 
@@ -238,7 +238,7 @@ public IEngineLifecycle Lifecycle { get; }
 
 #### Property Value
 
- IEngineLifecycle
+ [IEngineLifecycle](MicroEngine.Kernel.IEngineLifecycle.md)
 
 ### <a id="MicroEngine_Core_Game_Log"></a> Log
 
@@ -250,7 +250,7 @@ public ILog Log { get; }
 
 #### Property Value
 
- ILog
+ [ILog](MicroEngine.Kernel.ILog.md)
 
 ### <a id="MicroEngine_Core_Game_Platform"></a> Platform
 
@@ -325,7 +325,7 @@ public FrameSchedule Schedule { get; }
 
 #### Property Value
 
- FrameSchedule
+ [FrameSchedule](MicroEngine.Kernel.FrameSchedule.md)
 
 ### <a id="MicroEngine_Core_Game_Screen"></a> Screen
 
@@ -354,7 +354,7 @@ public ServiceRegistry Services { get; }
 
 #### Property Value
 
- ServiceRegistry
+ [ServiceRegistry](MicroEngine.Kernel.ServiceRegistry.md)
 
 ### <a id="MicroEngine_Core_Game_Settings"></a> Settings
 
@@ -390,7 +390,7 @@ public TimeSettings TimeSettings { get; }
 
 #### Property Value
 
- TimeSettings
+ [TimeSettings](MicroEngine.Kernel.TimeSettings.md)
 
 ### <a id="MicroEngine_Core_Game_Touch"></a> Touch
 
@@ -407,7 +407,7 @@ public VirtualControls Touch { get; }
 
 #### Property Value
 
- VirtualControls
+ [VirtualControls](MicroEngine.Input.VirtualControls.md)
 
 ### <a id="MicroEngine_Core_Game_UpdateCount"></a> UpdateCount
 
@@ -470,7 +470,7 @@ Whether the result carries each section's hash, to name the state that differs.
 
 #### Returns
 
- StepHash
+ [StepHash](MicroEngine.Kernel.StepHash.md)
 
 #### Exceptions
 
@@ -492,7 +492,7 @@ public virtual void Configure(EngineBuilder builder)
 
 #### Parameters
 
-`builder` EngineBuilder
+`builder` [EngineBuilder](MicroEngine.Kernel.EngineBuilder.md)
 
 ### <a id="MicroEngine_Core_Game_CreateCamera"></a> CreateCamera\(\)
 
@@ -506,7 +506,7 @@ public Camera2D CreateCamera()
 
 #### Returns
 
- Camera2D
+ [Camera2D](MicroEngine.Graphics.Camera2D.md)
 
 ### <a id="MicroEngine_Core_Game_CreateInput"></a> CreateInput\(\)
 
@@ -518,7 +518,7 @@ protected virtual InputMap CreateInput()
 
 #### Returns
 
- InputMap
+ [InputMap](MicroEngine.Input.InputMap.md)
 
 ### <a id="MicroEngine_Core_Game_CreateTouchLayout"></a> CreateTouchLayout\(\)
 
@@ -533,7 +533,7 @@ protected virtual TouchLayout CreateTouchLayout()
 
 #### Returns
 
- TouchLayout
+ [TouchLayout](MicroEngine.Input.TouchLayout.md)
 
 ### <a id="MicroEngine_Core_Game_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
 
@@ -549,7 +549,7 @@ public virtual void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 ### <a id="MicroEngine_Core_Game_InitializeForTest_MicroEngine_Core_IPlatform_System_Int32_"></a> InitializeForTest\(IPlatform, int\)
 
@@ -656,15 +656,15 @@ protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, S
 
 #### Parameters
 
-`catalog` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<Achievement\>
+`catalog` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[Achievement](MicroEngine.Core.Achievement.md)\>
 
-`store` SaveStore
+`store` [SaveStore](MicroEngine.Core.SaveStore.md)
 
-`theme` UiTheme?
+`theme` [UiTheme](MicroEngine.UI.UiTheme.md)?
 
 #### Returns
 
- AchievementTracker
+ [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
 
 #### Exceptions
 

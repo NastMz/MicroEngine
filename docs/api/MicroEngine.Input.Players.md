@@ -22,7 +22,7 @@ public sealed class Players : IStateHashed
 
 #### Implements
 
-IStateHashed
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 ## Examples
 
@@ -126,7 +126,7 @@ public void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 ### <a id="MicroEngine_Input_Players_IsPaired_MicroEngine_Input_DeviceId_"></a> IsPaired\(DeviceId\)
 

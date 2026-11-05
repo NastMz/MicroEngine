@@ -42,7 +42,7 @@ public AchievementTracker(IEnumerable<Achievement> catalog, SaveStore? store = n
 
 The game's achievements, in display order.
 
-`store` SaveStore?
+`store` [SaveStore](MicroEngine.Core.SaveStore.md)?
 
 Where progress persists; null keeps it in memory only.
 

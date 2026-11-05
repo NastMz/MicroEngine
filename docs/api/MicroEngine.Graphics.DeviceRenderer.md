@@ -22,7 +22,7 @@ public sealed class DeviceRenderer : IRenderer
 
 #### Implements
 
-IRenderer
+[IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 ## Constructors
 
@@ -36,11 +36,11 @@ public DeviceRenderer(Renderer2D batcher, DeviceGraphics graphics, RenderTarget 
 
 #### Parameters
 
-`batcher` Renderer2D
+`batcher` [Renderer2D](MicroEngine.Graphics.Renderer2D.md)
 
 `graphics` [DeviceGraphics](MicroEngine.Graphics.DeviceGraphics.md)
 
-`target` RenderTarget
+`target` [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer__ctor_MicroEngine_Graphics_Renderer2D_MicroEngine_Graphics_DeviceGraphics_MicroEngine_Graphics_Devices_RenderTarget_System_Single_"></a> DeviceRenderer\(Renderer2D, DeviceGraphics, RenderTarget, float\)
 
@@ -53,11 +53,11 @@ public DeviceRenderer(Renderer2D batcher, DeviceGraphics graphics, RenderTarget 
 
 #### Parameters
 
-`batcher` Renderer2D
+`batcher` [Renderer2D](MicroEngine.Graphics.Renderer2D.md)
 
 `graphics` [DeviceGraphics](MicroEngine.Graphics.DeviceGraphics.md)
 
-`target` RenderTarget
+`target` [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
 
 `scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
@@ -91,7 +91,7 @@ public Renderer2DStatistics Statistics { get; }
 
 #### Property Value
 
- Renderer2DStatistics
+ [Renderer2DStatistics](MicroEngine.Graphics.Renderer2DStatistics.md)
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_Target"></a> Target
 
@@ -106,7 +106,7 @@ public RenderTarget Target { get; }
 
 #### Property Value
 
- RenderTarget
+ [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_Width"></a> Width
 
@@ -142,7 +142,7 @@ public void Clear(Color color)
 
 #### Parameters
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_Draw_MicroEngine_Graphics_Texture_MicroEngine_RectF_System_Numerics_Vector2_MicroEngine_Color_MicroEngine_Graphics_DrawOptions__"></a> Draw\(Texture, RectF, Vector2, Color, in DrawOptions\)
 
@@ -152,15 +152,15 @@ public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in
 
 #### Parameters
 
-`texture` Texture
+`texture` [Texture](MicroEngine.Graphics.Texture.md)
 
-`source` RectF
+`source` [RectF](MicroEngine.RectF.md)
 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`tint` Color
+`tint` [Color](MicroEngine.Color.md)
 
-`options` DrawOptions
+`options` [DrawOptions](MicroEngine.Graphics.DrawOptions.md)
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_DrawLine_System_Numerics_Vector2_System_Numerics_Vector2_System_Single_MicroEngine_Color_"></a> DrawLine\(Vector2, Vector2, float, Color\)
 
@@ -178,7 +178,7 @@ public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color)
 
 `thickness` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_DrawStretched_MicroEngine_Graphics_Texture_MicroEngine_RectF_MicroEngine_RectF_MicroEngine_Color_"></a> DrawStretched\(Texture, RectF, RectF, Color\)
 
@@ -190,13 +190,13 @@ public void DrawStretched(Texture texture, RectF source, RectF destination, Colo
 
 #### Parameters
 
-`texture` Texture
+`texture` [Texture](MicroEngine.Graphics.Texture.md)
 
-`source` RectF
+`source` [RectF](MicroEngine.RectF.md)
 
-`destination` RectF
+`destination` [RectF](MicroEngine.RectF.md)
 
-`tint` Color
+`tint` [Color](MicroEngine.Color.md)
 
 #### Exceptions
 
@@ -236,7 +236,7 @@ public void FillCircle(Vector2 center, float radius, Color color)
 
 `radius` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_FillRect_MicroEngine_RectF_MicroEngine_Color_"></a> FillRect\(RectF, Color\)
 
@@ -248,9 +248,9 @@ public void FillRect(RectF rect, Color color)
 
 #### Parameters
 
-`rect` RectF
+`rect` [RectF](MicroEngine.RectF.md)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_FillTriangle_System_Numerics_Vector2_System_Numerics_Vector2_System_Numerics_Vector2_MicroEngine_Color_"></a> FillTriangle\(Vector2, Vector2, Vector2, Color\)
 
@@ -268,7 +268,7 @@ public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
 
 `c` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_Flush"></a> Flush\(\)
 
@@ -307,7 +307,7 @@ public void PushCamera(Camera2D camera)
 
 #### Parameters
 
-`camera` Camera2D
+`camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_"></a> SetBlendMode\(BlendMode\)
 
@@ -322,7 +322,7 @@ public void SetBlendMode(BlendMode mode)
 
 #### Parameters
 
-`mode` BlendMode
+`mode` [BlendMode](MicroEngine.Graphics.BlendMode.md)
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_SetClip_System_Nullable_MicroEngine_RectF__"></a> SetClip\(RectF?\)
 
@@ -335,6 +335,6 @@ public void SetClip(RectF? screenRect)
 
 #### Parameters
 
-`screenRect` RectF?
+`screenRect` [RectF](MicroEngine.RectF.md)?
 
 </div>

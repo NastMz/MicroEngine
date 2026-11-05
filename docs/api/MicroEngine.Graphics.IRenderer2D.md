@@ -57,7 +57,7 @@ RenderTarget? Target { get; }
 
 #### Property Value
 
- RenderTarget?
+ [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)?
 
 ## Methods
 
@@ -89,7 +89,7 @@ void Clear(ColorF color)
 
 #### Parameters
 
-`color` ColorF
+`color` [ColorF](MicroEngine.ColorF.md)
 
 ### <a id="MicroEngine_Graphics_IRenderer2D_Draw_MicroEngine_Graphics_Devices_Texture_MicroEngine_RectF_System_Numerics_Matrix3x2__MicroEngine_ColorF_System_Single_MicroEngine_Graphics_SpriteFlip_"></a> Draw\(Texture, RectF, in Matrix3x2, ColorF, float, SpriteFlip\)
 
@@ -102,13 +102,13 @@ void Draw(Texture texture, RectF source, in Matrix3x2 world, ColorF tint, float 
 
 #### Parameters
 
-`texture` Texture
+`texture` [Texture](MicroEngine.Graphics.Devices.Texture.md)
 
-`source` RectF
+`source` [RectF](MicroEngine.RectF.md)
 
 `world` [Matrix3x2](https://learn.microsoft.com/dotnet/api/system.numerics.matrix3x2)
 
-`tint` ColorF
+`tint` [ColorF](MicroEngine.ColorF.md)
 
 `depth` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
@@ -124,9 +124,9 @@ void DrawGeometry(Texture? texture, ReadOnlySpan<Vertex2D> vertices, ReadOnlySpa
 
 #### Parameters
 
-`texture` Texture?
+`texture` [Texture](MicroEngine.Graphics.Devices.Texture.md)?
 
-`vertices` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<Vertex2D\>
+`vertices` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[Vertex2D](MicroEngine.Graphics.Devices.Vertex2D.md)\>
 
 `indices` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[ushort](https://learn.microsoft.com/dotnet/api/system.uint16)\>
 

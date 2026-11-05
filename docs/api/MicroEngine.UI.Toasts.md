@@ -127,9 +127,9 @@ public void Draw(IRenderer r, IFont font)
 
 #### Parameters
 
-`r` IRenderer
+`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`font` IFont
+`font` [IFont](MicroEngine.Graphics.IFont.md)
 
 ### <a id="MicroEngine_UI_Toasts_Show_MicroEngine_UI_Toast_"></a> Show\(Toast\)
 

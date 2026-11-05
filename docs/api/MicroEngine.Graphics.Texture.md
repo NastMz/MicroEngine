@@ -75,7 +75,7 @@ public RectF Bounds { get; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Graphics_Texture_Device"></a> Device
 
@@ -247,7 +247,7 @@ public void Update(int x, int y, int width, int height, ReadOnlySpan<Color> pixe
 
 `height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`pixels` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<Color\>
+`pixels` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[Color](MicroEngine.Color.md)\>
 
 #### Exceptions
 
@@ -293,6 +293,6 @@ protected abstract void Upload(int x, int y, int width, int height, ReadOnlySpan
 
 `height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`pixels` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<Color\>
+`pixels` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[Color](MicroEngine.Color.md)\>
 
 </div>

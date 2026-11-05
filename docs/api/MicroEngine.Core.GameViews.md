@@ -81,7 +81,7 @@ public PointerState UiPointer { get; }
 
 #### Property Value
 
- PointerState
+ [PointerState](MicroEngine.Input.PointerState.md)
 
 ### <a id="MicroEngine_Core_GameViews_UiScale"></a> UiScale
 
@@ -117,7 +117,7 @@ public RectF WorldFrame { get; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ## Methods
 
@@ -228,10 +228,10 @@ public PointerState WorldPointer(Camera2D? camera = null)
 
 #### Parameters
 
-`camera` Camera2D?
+`camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)?
 
 #### Returns
 
- PointerState
+ [PointerState](MicroEngine.Input.PointerState.md)
 
 </div>

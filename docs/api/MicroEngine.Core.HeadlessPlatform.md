@@ -25,7 +25,7 @@ public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable, IS
 #### Implements
 
 [IPlatform](MicroEngine.Core.IPlatform.md), 
-IPlatformHost, 
+[IPlatformHost](MicroEngine.Platform.IPlatformHost.md), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable), 
 [IScreenView](MicroEngine.Core.IScreenView.md), 
 [IViewCapture](MicroEngine.Core.IViewCapture.md)
@@ -58,7 +58,7 @@ public IAudioDevice Audio { get; }
 
 #### Property Value
 
- IAudioDevice
+ [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_CanBlock"></a> CanBlock
 
@@ -83,7 +83,7 @@ public IMonotonicClock Clock { get; }
 
 #### Property Value
 
- IMonotonicClock
+ [IMonotonicClock](MicroEngine.Platform.IMonotonicClock.md)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_CloseRequested"></a> CloseRequested
 
@@ -134,7 +134,7 @@ public IGraphicsDevice Graphics { get; }
 
 #### Property Value
 
- IGraphicsDevice
+ [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Input"></a> Input
 
@@ -146,7 +146,7 @@ public IInputSource Input { get; }
 
 #### Property Value
 
- IInputSource
+ [IInputSource](MicroEngine.Input.IInputSource.md)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Keys"></a> Keys
 
@@ -170,7 +170,7 @@ public Color Letterbox { get; set; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_MainSurface"></a> MainSurface
 
@@ -182,7 +182,7 @@ public ISurface MainSurface { get; }
 
 #### Property Value
 
- ISurface
+ [ISurface](MicroEngine.Platform.ISurface.md)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_PixelDensity"></a> PixelDensity
 
@@ -215,7 +215,7 @@ public Presentation Presentation { get; init; }
 
 #### Property Value
 
- Presentation
+ [Presentation](MicroEngine.Graphics.Presentation.md)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Preset"></a> Preset
 
@@ -295,7 +295,7 @@ public SilentAudioDevice SilentAudio { get; }
 
 #### Property Value
 
- SilentAudioDevice
+ [SilentAudioDevice](MicroEngine.Audio.SilentAudioDevice.md)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Suspended"></a> Suspended
 
@@ -319,7 +319,7 @@ public ITouchScreen Touch { get; }
 
 #### Property Value
 
- ITouchScreen
+ [ITouchScreen](MicroEngine.Input.ITouchScreen.md)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_TouchScreen"></a> TouchScreen
 
@@ -360,7 +360,7 @@ public IRenderer BeginFrame()
 
 #### Returns
 
- IRenderer
+ [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Dispose"></a> Dispose\(\)
 
@@ -451,7 +451,7 @@ public bool PumpEvents(IEngineEventSink sink)
 
 #### Parameters
 
-`sink` IEngineEventSink
+`sink` [IEngineEventSink](MicroEngine.Platform.IEngineEventSink.md)
 
 #### Returns
 

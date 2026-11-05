@@ -39,7 +39,7 @@ public static ColorF FromBytes(byte r, byte g, byte b, byte a = 255)
 
 #### Returns
 
- ColorF
+ [ColorF](MicroEngine.ColorF.md)
 
 ### <a id="MicroEngine_Graphics_Devices_PremultipliedColor_FromStraight_MicroEngine_Color_"></a> FromStraight\(Color\)
 
@@ -52,11 +52,11 @@ public static ColorF FromStraight(Color color)
 
 #### Parameters
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 #### Returns
 
- ColorF
+ [ColorF](MicroEngine.ColorF.md)
 
 ### <a id="MicroEngine_Graphics_Devices_PremultipliedColor_PremultiplyInPlace_System_Span_System_Byte__"></a> PremultiplyInPlace\(Span<byte\>\)
 

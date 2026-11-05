@@ -42,11 +42,11 @@ The sensor shape.
 
 The shape that entered or left.
 
-`SensorOwner` EntityId
+`SensorOwner` [EntityId](MicroEngine.Scenes.EntityId.md)
 
 The entity owning the sensor's body.
 
-`VisitorOwner` EntityId
+`VisitorOwner` [EntityId](MicroEngine.Scenes.EntityId.md)
 
 The entity owning the visitor's body.
 
@@ -86,7 +86,7 @@ public EntityId SensorOwner { get; init; }
 
 #### Property Value
 
- EntityId
+ [EntityId](MicroEngine.Scenes.EntityId.md)
 
 ### <a id="MicroEngine_Physics_SensorEvent_Visitor"></a> Visitor
 
@@ -110,7 +110,7 @@ public EntityId VisitorOwner { get; init; }
 
 #### Property Value
 
- EntityId
+ [EntityId](MicroEngine.Scenes.EntityId.md)
 
 ## Methods
 
@@ -128,9 +128,9 @@ public void Deconstruct(out SensorEventKind Kind, out ShapeId Sensor, out ShapeI
 
 `Visitor` [ShapeId](MicroEngine.Physics.ShapeId.md)
 
-`SensorOwner` EntityId
+`SensorOwner` [EntityId](MicroEngine.Scenes.EntityId.md)
 
-`VisitorOwner` EntityId
+`VisitorOwner` [EntityId](MicroEngine.Scenes.EntityId.md)
 
 ### <a id="MicroEngine_Physics_SensorEvent_Equals_System_Object_"></a> Equals\(object\)
 

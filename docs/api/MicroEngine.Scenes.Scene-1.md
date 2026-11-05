@@ -28,7 +28,7 @@ What the scene returns.
 
 #### Implements
 
-IStateHashed
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 #### Inherited Members
 

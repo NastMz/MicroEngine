@@ -170,7 +170,7 @@ public StateTrace? StateTrace { get; init; }
 
 #### Property Value
 
- StateTrace?
+ [StateTrace](MicroEngine.Kernel.StateTrace.md)?
 
 ### <a id="MicroEngine_Core_RunOptions_TimeMode"></a> TimeMode
 
@@ -186,7 +186,7 @@ public TimeMode? TimeMode { get; init; }
 
 #### Property Value
 
- TimeMode?
+ [TimeMode](MicroEngine.Kernel.TimeMode.md)?
 
 ## Methods
 

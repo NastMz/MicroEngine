@@ -40,7 +40,7 @@ Load operation.
 
 Store operation.
 
-`Clear` ColorF
+`Clear` [ColorF](MicroEngine.ColorF.md)
 
 Clear value when <code class="paramref">Load</code> is [Clear](MicroEngine.Graphics.Devices.LoadOp.md) (premultiplied).
 
@@ -56,7 +56,7 @@ public ColorF Clear { get; init; }
 
 #### Property Value
 
- ColorF
+ [ColorF](MicroEngine.ColorF.md)
 
 ### <a id="MicroEngine_Graphics_Devices_ColorAttachment_Load"></a> Load
 
@@ -110,7 +110,7 @@ public void Deconstruct(out RenderTarget Target, out LoadOp Load, out StoreOp St
 
 `Store` [StoreOp](MicroEngine.Graphics.Devices.StoreOp.md)
 
-`Clear` ColorF
+`Clear` [ColorF](MicroEngine.ColorF.md)
 
 ### <a id="MicroEngine_Graphics_Devices_ColorAttachment_Equals_System_Object_"></a> Equals\(object\)
 

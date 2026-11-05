@@ -26,8 +26,8 @@ public sealed class UiRoot : IInputLayer, IStateHashed
 
 #### Implements
 
-IInputLayer, 
-IStateHashed
+[IInputLayer](MicroEngine.Input.IInputLayer.md), 
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 ## Constructors
 
@@ -41,9 +41,9 @@ public UiRoot(InputMap input, TextInput? text = null)
 
 #### Parameters
 
-`input` InputMap
+`input` [InputMap](MicroEngine.Input.InputMap.md)
 
-`text` TextInput?
+`text` [TextInput](MicroEngine.Input.TextInput.md)?
 
 ## Properties
 
@@ -135,7 +135,7 @@ public IFont? Font { get; set; }
 
 #### Property Value
 
- IFont?
+ [IFont](MicroEngine.Graphics.IFont.md)?
 
 ### <a id="MicroEngine_UI_UiRoot_Hovered"></a> Hovered
 
@@ -208,7 +208,7 @@ public TextInput? TextInput { get; }
 
 #### Property Value
 
- TextInput?
+ [TextInput](MicroEngine.Input.TextInput.md)?
 
 ### <a id="MicroEngine_UI_UiRoot_Theme"></a> Theme
 
@@ -286,7 +286,7 @@ public void Draw(IRenderer ui)
 
 #### Parameters
 
-`ui` IRenderer
+`ui` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 #### Exceptions
 
@@ -323,7 +323,7 @@ public bool Handle(in InputEvent e)
 
 #### Parameters
 
-`e` InputEvent
+`e` [InputEvent](MicroEngine.Input.InputEvent.md)
 
 #### Returns
 
@@ -339,7 +339,7 @@ public void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 ### <a id="MicroEngine_UI_UiRoot_Layout"></a> Layout\(\)
 

@@ -58,7 +58,7 @@ public static PlatformCatalog CreateCatalog()
 
 #### Returns
 
- PlatformCatalog
+ [PlatformCatalog](MicroEngine.Core.PlatformCatalog.md)
 
 ### <a id="MicroEngine_Desktop_DesktopLauncher_Defaults_MicroEngine_Hosting_HostBuilder_"></a> Defaults\(HostBuilder\)
 
@@ -71,7 +71,7 @@ public static void Defaults(HostBuilder host)
 
 #### Parameters
 
-`host` HostBuilder
+`host` [HostBuilder](MicroEngine.Hosting.HostBuilder.md)
 
 ### <a id="MicroEngine_Desktop_DesktopLauncher_Run_System_Action_MicroEngine_Hosting_HostBuilder__System_String___"></a> Run\(Action<HostBuilder\>, string\[\]\)
 
@@ -85,7 +85,7 @@ public static int Run(Action<HostBuilder> configure, string[] args)
 
 #### Parameters
 
-`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<HostBuilder\>
+`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[HostBuilder](MicroEngine.Hosting.HostBuilder.md)\>
 
 `args` [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
 
@@ -105,7 +105,7 @@ public static int Run(Game game, string[] args)
 
 #### Parameters
 
-`game` Game
+`game` [Game](MicroEngine.Core.Game.md)
 
 The game to run.
 
@@ -129,13 +129,13 @@ public static int Run(Game game, string[] args, PlatformCatalog catalog, Func<Pl
 
 #### Parameters
 
-`game` Game
+`game` [Game](MicroEngine.Core.Game.md)
 
 `args` [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
 
-`catalog` PlatformCatalog
+`catalog` [PlatformCatalog](MicroEngine.Core.PlatformCatalog.md)
 
-`configure` [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<PlatformRequest, PlatformRequest\>?
+`configure` [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[PlatformRequest](MicroEngine.Core.PlatformRequest.md), [PlatformRequest](MicroEngine.Core.PlatformRequest.md)\>?
 
 #### Returns
 

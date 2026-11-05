@@ -34,7 +34,7 @@ public static IContentSource Open(string path)
 
 #### Returns
 
- IContentSource
+ [IContentSource](MicroEngine.Platform.IContentSource.md)
 
 #### Exceptions
 
@@ -60,7 +60,7 @@ public static byte[] ReadAllBytes(this IContentSource source, string path)
 
 #### Parameters
 
-`source` IContentSource
+`source` [IContentSource](MicroEngine.Platform.IContentSource.md)
 
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
 

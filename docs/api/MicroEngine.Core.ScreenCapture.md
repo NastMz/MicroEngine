@@ -31,21 +31,21 @@ public static PixelImage Compose(PixelImage world, PixelImage? ui, (int Width, i
 
 #### Parameters
 
-`world` PixelImage
+`world` [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
-`ui` PixelImage?
+`ui` [PixelImage](MicroEngine.Graphics.PixelImage.md)?
 
 `screen` \([int](https://learn.microsoft.com/dotnet/api/system.int32) [Width](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.int32,system.int32\-.width), [int](https://learn.microsoft.com/dotnet/api/system.int32) [Height](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.int32,system.int32\-.height)\)
 
-`frame` RectF
+`frame` [RectF](MicroEngine.RectF.md)
 
-`letterbox` Color
+`letterbox` [Color](MicroEngine.Color.md)
 
-`upscale` SamplerDescription
+`upscale` [SamplerDescription](MicroEngine.Graphics.Devices.SamplerDescription.md)
 
 #### Returns
 
- PixelImage
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
 #### Exceptions
 

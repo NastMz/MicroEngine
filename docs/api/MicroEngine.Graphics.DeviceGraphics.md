@@ -22,7 +22,7 @@ public sealed class DeviceGraphics : IGraphicsDevice
 
 #### Implements
 
-IGraphicsDevice
+[IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
 
 ## Constructors
 
@@ -36,7 +36,7 @@ public DeviceGraphics(IGraphicsDevice device)
 
 #### Parameters
 
-`device` IGraphicsDevice
+`device` [IGraphicsDevice](MicroEngine.Graphics.Devices.IGraphicsDevice.md)
 
 ## Properties
 
@@ -52,7 +52,7 @@ public TextureFilter DefaultFilter { get; set; }
 
 #### Property Value
 
- TextureFilter
+ [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 ### <a id="MicroEngine_Graphics_DeviceGraphics_Device"></a> Device
 
@@ -64,7 +64,7 @@ public IGraphicsDevice Device { get; }
 
 #### Property Value
 
- IGraphicsDevice
+ [IGraphicsDevice](MicroEngine.Graphics.Devices.IGraphicsDevice.md)
 
 ### <a id="MicroEngine_Graphics_DeviceGraphics_LiveTextures"></a> LiveTextures
 
@@ -90,13 +90,13 @@ public Texture CreateTexture(PixelImage image, TextureFilter filter)
 
 #### Parameters
 
-`image` PixelImage
+`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
-`filter` TextureFilter
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 #### Returns
 
- Texture
+ [Texture](MicroEngine.Graphics.Texture.md)
 
 ### <a id="MicroEngine_Graphics_DeviceGraphics_DisposeAll"></a> DisposeAll\(\)
 

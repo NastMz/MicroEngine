@@ -69,7 +69,7 @@ public PixelImage? Icon { get; init; }
 
 #### Property Value
 
- PixelImage?
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)?
 
 ### <a id="MicroEngine_Raylib_DesktopOptions_Mute"></a> Mute
 

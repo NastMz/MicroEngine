@@ -2,6 +2,10 @@
 
 <div data-pagefind-weight="0.3">
 
+Retro sound in code: sound effects described by parameters (in the spirit of sfxr), the synthesizer that renders them, instruments and waveforms, and the tiny step sequencer behind `Song`.
+
+Guide: [Synthesized sound effects](../manual/audio.md#synthesized-sound-effects)  
+
 ### Classes
 
  [Instrument](MicroEngine.Audio.Retro.Instrument.md)
