@@ -36,10 +36,10 @@ public sealed class ViewCaptureTests
         protected override void Load() => Scenes.Push(scene);
     }
 
-    private static (HeadlessPlatform Platform, string Directory) Run(bool ui)
+    private static (HeadlessPlatform Platform, string Directory) Run(bool ui, float density = 1)
     {
         var game = new CaptureGame(new CaptureScene(ui));
-        var platform = HeadlessPlatform.For(game.Settings, rasterize: true);
+        var platform = new HeadlessPlatform(320, 180) { Rasterize = true, PixelDensity = density, Presentation = game.Settings.EffectivePresentation };
         platform.Resize(640, 360);
         platform.PumpEvents(new IgnoredEvents());
         game.InitializeForTest(platform);
@@ -81,6 +81,21 @@ public sealed class ViewCaptureTests
             var worldFile = Path.Combine(dir, "world.png");
             capture.SaveWorldScreenshot(worldFile);
             Assert.AreEqual((320, 180), PngSize(worldFile));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [TestMethod]
+    public void On_a_density_2_surface_each_UI_unit_covers_two_window_pixels_in_the_capture()
+    {
+        var (platform, dir) = Run(ui: true, density: 2);
+        try
+        {
+            var screen = ((IViewCapture)platform).CaptureScreen();
+            Assert.AreEqual((640, 360), (screen.Width, screen.Height));
+            Assert.AreEqual(Red, screen[201, 101], "UI unit 100, 50 is window pixel 200, 100");
+            Assert.AreEqual(Red, screen[219, 119]);
+            Assert.AreEqual(Color.Black, screen[221, 121], "the 10-unit square ends at window pixel 220");
         }
         finally { Directory.Delete(dir, true); }
     }

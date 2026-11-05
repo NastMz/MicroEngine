@@ -122,18 +122,28 @@ public sealed record Presentation
     /// </summary>
     public bool CameraPixelSnap { get; init; }
 
-    private readonly float _uiScale = 1f;
+    private readonly float? _uiScale;
 
     /// <summary>
-    /// UI units per screen pixel of the UI view, drawn over the world at the window's resolution (1 by default: one UI unit
-    /// is one window pixel). 2 makes the UI twice as large on a high-density screen.
+    /// Window pixels per UI unit of the UI view, drawn over the world at the window's resolution. Null (the default)
+    /// follows the surface's pixel density (<see cref="Platform.ISurface.PixelDensity"/>): 1 on an ordinary screen, 2 on
+    /// a screen with twice the pixels per logical unit, so the interface keeps its physical size; the headless platform's
+    /// density is 1. A value overrides the density: 1 draws one UI unit per window pixel everywhere, 2 makes the UI twice
+    /// as large. Platforms resolve it with <see cref="UiScaleFor"/>.
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">The value is not a positive finite number.</exception>
-    public float UiScale
+    /// <exception cref="ArgumentOutOfRangeException">The value is not null and not a positive finite number.</exception>
+    public float? UiScale
     {
         get => _uiScale;
-        init => _uiScale = float.IsFinite(value) && value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), "The UI scale must be a positive number.");
+        init => _uiScale = value is not { } v || (float.IsFinite(v) && v > 0) ? value
+            : throw new ArgumentOutOfRangeException(nameof(value), "The UI scale must be a positive number, or null for the surface's pixel density.");
     }
+
+    /// <summary>
+    /// The UI scale on a surface of <paramref name="pixelDensity"/>: <see cref="UiScale"/> when it is set, else the density
+    /// (1 when the density is not a positive finite number).
+    /// </summary>
+    public float UiScaleFor(float pixelDensity) => _uiScale ?? (float.IsFinite(pixelDensity) && pixelDensity > 0 ? pixelDensity : 1f);
 
     /// <summary>
     /// The canvas size for <paramref name="area"/>: the configured size, except with <see cref="AspectMode.Expand"/>,

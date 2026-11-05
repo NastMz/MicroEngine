@@ -29,6 +29,10 @@ Not published yet. Behaviour that changes:
   package) with their `MicroEngine.UI` namespace unchanged; nothing to change. The new widget tree (`Scene.Widgets`,
   `UiRoot`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts`) is opt-in: a scene that never reads `Widgets`
   behaves as before. A game type called `Widgets` inside a scene now needs its namespace there.
+- `Presentation.UiScale` is a `float?`: null (the default) makes the UI scale the surface's pixel density (2 on a
+  high-density screen, 1 headless) instead of 1. **Migration:** a game whose interface must keep one UI unit per window
+  pixel everywhere sets `UiScale = 1`; code that read the scale reads `Game.Views.UiScale` or
+  `Presentation.UiScaleFor(density)`.
 - `AchievementToasts` shows its banners through the UI's `Toasts` (`AchievementToasts.Banners`); a banner's heading is
   `Heading` as it was when the achievement was unlocked.
 - A run's capture of a frame whose scenes drew an interface in the UI view (`DrawUi`, `Widgets`) is the window as the
@@ -38,7 +42,7 @@ Not published yet. Behaviour that changes:
   that drew an interface there; the canvas shows it over the world as before.
 
 - A frame has a world view and a UI view: `Scene.DrawUi(IRenderer ui)` draws the interface at the window's resolution
-  over the world (UI units: window pixels / `Presentation.UiScale`), `Scene.UiContains` says where it takes the pointer,
+  over the world (UI units: window pixels / the UI scale), `Scene.UiContains` says where it takes the pointer,
   `Scene.WorldCamera` is pushed around `Draw`, and `Game.Views` maps positions and the pointer between window pixels,
   canvas pixels and UI units. Nothing to change: a scene without `DrawUi` draws as before. Platforms of your own may
   offer the UI view as the `IScreenView` capability; without it `DrawUi` draws in the canvas.

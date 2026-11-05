@@ -135,22 +135,25 @@ public ScaleRounding Rounding { get; init; }
 
 ### <a id="MicroEngine_Graphics_Presentation_UiScale"></a> UiScale
 
-UI units per screen pixel of the UI view, drawn over the world at the window's resolution (1 by default: one UI unit
-is one window pixel). 2 makes the UI twice as large on a high-density screen.
+Window pixels per UI unit of the UI view, drawn over the world at the window's resolution. Null (the default)
+follows the surface's pixel density ([PixelDensity](MicroEngine.Platform.ISurface.md#MicroEngine_Platform_ISurface_PixelDensity)): 1 on an ordinary screen, 2 on
+a screen with twice the pixels per logical unit, so the interface keeps its physical size; the headless platform's
+density is 1. A value overrides the density: 1 draws one UI unit per window pixel everywhere, 2 makes the UI twice
+as large. Platforms resolve it with [UiScaleFor](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_UiScaleFor_System_Single_).
 
 ```csharp
-public float UiScale { get; init; }
+public float? UiScale { get; init; }
 ```
 
 #### Property Value
 
- [float](https://learn.microsoft.com/dotnet/api/system.single)
+ [float](https://learn.microsoft.com/dotnet/api/system.single)?
 
 #### Exceptions
 
  [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
 
-The value is not a positive finite number.
+The value is not null and not a positive finite number.
 
 ### <a id="MicroEngine_Graphics_Presentation_Upscale"></a> Upscale
 
@@ -368,6 +371,23 @@ public override string ToString()
 #### Returns
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+### <a id="MicroEngine_Graphics_Presentation_UiScaleFor_System_Single_"></a> UiScaleFor\(float\)
+
+The UI scale on a surface of <code class="paramref">pixelDensity</code>: [UiScale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_UiScale) when it is set, else the density
+(1 when the density is not a positive finite number).
+
+```csharp
+public float UiScaleFor(float pixelDensity)
+```
+
+#### Parameters
+
+`pixelDensity` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ## Operators
 

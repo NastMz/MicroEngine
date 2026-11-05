@@ -27,7 +27,7 @@ public sealed class ViewsTests
         var r = canvas.BeginFrame();
         r.Clear(Bg);
         world(r, canvas.Graphics);
-        if (ui is not null) ui(canvas.BeginUi(windowWidth, windowHeight, presentation.UiScale), canvas.Graphics);
+        if (ui is not null) ui(canvas.BeginUi(windowWidth, windowHeight, presentation.UiScaleFor(1)), canvas.Graphics);
         canvas.EndFrame();
         var frame = presentation.Fit(new Vector2(windowWidth, windowHeight), default, 320, 180);
         Assert.IsTrue(canvas.Compose(presentation, frame, Color.Black));
@@ -192,6 +192,44 @@ public sealed class ViewsTests
         Assert.AreEqual((320, 180), scene.UiSize, "UI units are canvas pixels");
         Assert.IsFalse(game.Views.HasScreenView);
         Assert.AreEqual(new Vector2(10, 15), game.Views.CanvasToUi(new Vector2(10, 15)));
+    }
+
+    [TestMethod]
+    public void The_UI_scale_follows_the_surfaces_pixel_density_unless_the_game_sets_one()
+    {
+        static GameViews Views(float density, float? uiScale)
+        {
+            var game = new ViewsGame(new HookScene());
+            var platform = new HeadlessPlatform(320, 180)
+            {
+                PixelDensity = density,
+                Presentation = Presentation.PixelArt with { UiScale = uiScale },
+            };
+            platform.Resize(640, 360);
+            platform.PumpEvents(new IgnoredEvents());
+            game.InitializeForTest(platform);
+            return game.Views;
+        }
+        Assert.AreEqual(1f, Views(1, null).UiScale, "headless: density 1 by default");
+        Assert.AreEqual(new Vector2(640, 360), Views(1, null).UiSize);
+        Assert.AreEqual(2f, Views(2, null).UiScale, "a density-2 surface gets two window pixels per UI unit");
+        Assert.AreEqual(new Vector2(320, 180), Views(2, null).UiSize);
+        Assert.AreEqual(1f, Views(2, 1).UiScale, "an explicit UI scale overrides the density");
+        Assert.AreEqual(new Vector2(640, 360), Views(2, 1).UiSize);
+        Assert.AreEqual(1f, new HeadlessPlatform().MainSurface.PixelDensity, "the headless surface's density is 1 unless set");
+    }
+
+    [TestMethod]
+    public void A_density_2_UI_view_draws_UI_units_as_two_window_pixels()
+    {
+        var scene = new HookScene();
+        var game = new ViewsGame(scene);
+        var platform = new HeadlessPlatform(320, 180) { PixelDensity = 2, Presentation = game.Settings.EffectivePresentation };
+        platform.Resize(640, 360);
+        platform.PumpEvents(new IgnoredEvents());
+        game.InitializeForTest(platform);
+        Frame(game, platform);
+        Assert.AreEqual((320, 180), scene.UiSize, "the UI view is the window's size in UI units");
     }
 
     /// <summary>A platform that hides the headless platform's UI view, as a third-party platform without one would.</summary>

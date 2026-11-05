@@ -195,7 +195,8 @@ public sealed class TitleScene : Scene
 | `TextField` | One line of editable text: `Text`, `Caret`, `Placeholder`, `MaxLength`, the input method's `Composition`; `Changed` and `Submitted` events |
 | `Toasts` | Banners that slide in one at a time (`Show(new Toast(heading, title, description))`); `AchievementToasts` shows achievements through it |
 
-**Layout.** Widgets are measured and placed in UI units (window pixels divided by `Presentation.UiScale`, see
+**Layout.** Widgets are measured and placed in UI units (window pixels divided by the UI scale, the screen's pixel
+density unless `Presentation.UiScale` sets one, see
 [The world view and the UI view](rendering.md#the-world-view-and-the-ui-view)) every frame, so a menu stays centred
 when the window changes size. Padding and spacing default to multiples of a layout unit taken from the font: 1 UI unit
 for the built-in 10-pixel font, more for a larger one, so a `ScalableFont` set as `Widgets.Font` grows the margins with
