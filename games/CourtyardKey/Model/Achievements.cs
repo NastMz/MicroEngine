@@ -21,5 +21,11 @@ public static class CourtyardAchievements
     ];
 
     /// <summary>Visited Sunken Courtyard rooms, the progress of <see cref="Cartographer"/>.</summary>
-    public static int VisitedDungeonRooms(Progress progress) => progress.Visited.Count(v => v.StartsWith(Dungeon.Id + ":", StringComparison.Ordinal));
+    public static int VisitedDungeonRooms(Progress progress)
+    {
+        int count = 0;
+        foreach (var room in progress.Visited)
+            if (room.StartsWith(Dungeon.Id + ":", StringComparison.Ordinal)) count++;
+        return count;
+    }
 }

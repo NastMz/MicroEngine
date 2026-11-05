@@ -23,9 +23,11 @@ internal sealed class Harness : IDisposable
     public CourtyardKeyGame Game { get; }
     public HeadlessPlatform Platform { get; }
 
-    public Harness(string? start = null)
+    /// <param name="start">The debug start, or null for the title.</param>
+    /// <param name="updateRate">Updates per second the game is simulated at (the game's 60 by default).</param>
+    public Harness(string? start = null, int updateRate = 60)
     {
-        Game = new CourtyardKeyGame(SaveDir, start);
+        Game = new CourtyardKeyGame(SaveDir, start, updateRate);
         Platform = HeadlessPlatform.For(Game.Settings);
         Game.InitializeForTest(Platform);
     }

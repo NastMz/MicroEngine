@@ -1,4 +1,3 @@
-using MicroEngine.Core;
 using MicroEngine.Graphics;
 
 namespace CourtyardKey.Visuals;
@@ -10,14 +9,16 @@ public sealed class Sprites : IDisposable
 
     private Sprites(SpriteAtlas atlas) => _atlas = atlas;
 
-    public static Sprites Build(IGraphicsDevice device, ContentFolder content)
+    /// <param name="device">The graphics device the atlas is uploaded to.</param>
+    /// <param name="image">Reads a content image by path (the game passes <c>Assets.Image</c>).</param>
+    public static Sprites Build(IGraphicsDevice device, Func<string, PixelImage> image)
     {
         var b = new SpriteAtlasBuilder();
         TileArt.AddAll(b);
         CharacterArt.AddHero(b);
         CharacterArt.AddVillagers(b);
         CreatureArt.AddAll(b);
-        MonsterArt.AddAll(b, content);
+        MonsterArt.AddAll(b, image);
         PropArt.AddAll(b);
         ItemArt.AddAll(b);
         TitleArt.AddAll(b);
@@ -26,7 +27,15 @@ public sealed class Sprites : IDisposable
 
     public Sprite this[string name] => _atlas[name];
     public bool Contains(string name) => _atlas.Contains(name);
-    public int Count => _atlas.Names.Count;
+
+    private readonly Dictionary<string, Sprite> _flashes = [];
+
+    /// <summary>The white hit-flash twin of a sprite (<c>"name!"</c>), looked up once per name instead of every frame of a flash.</summary>
+    public Sprite Flash(string name)
+    {
+        if (!_flashes.TryGetValue(name, out var sprite)) _flashes[name] = sprite = _atlas[name + "!"];
+        return sprite;
+    }
 
     /// <summary>The "nameN" frame sequence (the atlas collects each once).</summary>
     public IReadOnlyList<Sprite> Frames(string name) => _atlas.Frames(name);

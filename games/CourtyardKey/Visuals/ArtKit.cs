@@ -36,9 +36,6 @@ public static class ArtKit
     public static void Shadow(PixelImage img, float cx, float cy, float rx, float ry, byte alpha = 90)
         => img.FillEllipse(cx, cy, rx, ry, Pal.Ink.WithAlpha(alpha));
 
-    /// <summary>Selective outline: darkens transparent pixels next to the shape with <paramref name="color"/>.</summary>
-    public static PixelImage Outlined(PixelImage img, Color color) => img.Outline(color);
-
     /// <summary>
     /// Rounds a flat-coloured figure with the world's light (upper left): colour pixels just inside the
     /// <paramref name="ink"/> outline are lifted on the upper-left edges and shaded on the lower-right ones.

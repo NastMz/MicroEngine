@@ -107,8 +107,8 @@ public sealed partial class PlayScene : Scene
     public PlayMode Mode { get; private set; }
     public Room Room { get; private set; } = null!;
     public AreaMap Area { get; private set; } = null!;
-    public AreaMap OverworldMap { get; private set; } = null!;
-    public AreaMap DungeonMap { get; private set; } = null!;
+    public AreaMap OverworldMap => AreaMap.Overworld;
+    public AreaMap DungeonMap => AreaMap.Dungeon;
     /// <summary>The live actors of the current room, in creation order (the hero is in no room).</summary>
     public RoomActors<Actor> Actors => new(Objects, _room);
     /// <summary>
@@ -139,8 +139,6 @@ public sealed partial class PlayScene : Scene
         Light = new LightMap(G.Graphics) { Shade = Visuals.Pal.DungeonDark };
         _tiles = new RoomRenderer(Art);
         _hud = new Hud(this);
-        OverworldMap = new AreaMap(Overworld.Create());
-        DungeonMap = new AreaMap(Content.Dungeon.Create());
         Hero = new Hero(this, new Health(Progress.MaxHealth, Math.Max(2, Progress.Health)));
         PlaceAtCheckpoint(Progress.Entrance);
         Coroutines.Start(FadeIn(0.5f));
@@ -203,6 +201,7 @@ public sealed partial class PlayScene : Scene
     /// <summary>Moves an actor through the room's tiles and every other solid actor.</summary>
     public TileMoveResult MoveActor(Actor actor, Vector2 delta, bool flying, bool throughActors = false)
     {
+        // Gathered on every move into one reused list: an actor moved earlier in this step blocks from where it stands now.
         _solids.Clear();
         if (!throughActors)
             foreach (var a in Actors)
@@ -271,19 +270,24 @@ public sealed partial class PlayScene : Scene
     }
 
     // ------------------------------------------------------------------ fades
+    // Coroutines advance by the engine's step, so fades count it too: they last the same seconds at any update rate
+    // and keep running through a hitstop.
+
+    /// <summary>How far the screen is covered by the current fade (0 to 1).</summary>
+    internal float FadeAmount => _fade;
 
     private IEnumerator<object?> FadeIn(float seconds, Color? color = null)
     {
         _fadeColor = color ?? Color.Black;
         _fade = 1;
-        for (float t = 0; t < seconds; t += 1 / 60f) { _fade = 1 - t / seconds; yield return null; }
+        for (float t = 0; t < seconds; t += EngineStep) { _fade = 1 - t / seconds; yield return null; }
         _fade = 0;
     }
 
     private IEnumerator<object?> FadeOut(float seconds, Color? color = null)
     {
         _fadeColor = color ?? Color.Black;
-        for (float t = 0; t < seconds; t += 1 / 60f) { _fade = t / seconds; yield return null; }
+        for (float t = 0; t < seconds; t += EngineStep) { _fade = t / seconds; yield return null; }
         _fade = 1;
     }
 

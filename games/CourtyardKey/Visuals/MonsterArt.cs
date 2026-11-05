@@ -1,6 +1,5 @@
 using System.Numerics;
 using MicroEngine;
-using MicroEngine.Core;
 using MicroEngine.Graphics;
 
 namespace CourtyardKey.Visuals;
@@ -16,9 +15,9 @@ public static class MonsterArt
     private const int Cell = 16;
     private const int Down = 0;
 
-    public static void AddAll(SpriteAtlasBuilder b, ContentFolder content)
+    public static void AddAll(SpriteAtlasBuilder b, Func<string, PixelImage> image)
     {
-        foreach (var (name, img, origin) in Frames(content))
+        foreach (var (name, img, origin) in Frames(image))
         {
             b.Add(name, img, origin);
             b.Add(name + "!", img.Silhouette(Pal.White), origin);
@@ -26,12 +25,13 @@ public static class MonsterArt
     }
 
     /// <summary>Every heart-trap frame, repainted, with its pivot (hit-flash twins are added by <see cref="AddAll"/>).</summary>
-    public static IEnumerable<(string Name, PixelImage Image, Vector2 Origin)> Frames(ContentFolder content)
+    /// <param name="image">Reads a content image by path.</param>
+    public static IEnumerable<(string Name, PixelImage Image, Vector2 Origin)> Frames(Func<string, PixelImage> image)
     {
         var feet = new Vector2(8, 14);
 
         // Spitter: a snapping heart-trap; mouth shut, rearing up as the tell, then wide open as it fires.
-        var trap = Repaint(content.Image("monsters/spitter.png"),
+        var trap = Repaint(image("monsters/spitter.png"),
             ("543c52", Pal.Roof[0]), ("8f3e56", Pal.Roof[1]), ("e0394c", Pal.Roof[2]), ("e46d3a", Pal.Roof[3]), ("c8966b", Pal.Sand[2]), ("fce2ca", Pal.Cream));
         yield return ("spitter0", Cut(trap, Down, 0), feet);
         yield return ("spitter1", Cut(trap, Down, 1), feet);

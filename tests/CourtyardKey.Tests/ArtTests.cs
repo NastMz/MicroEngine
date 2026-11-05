@@ -28,7 +28,7 @@ public sealed class ArtTests
     [TestMethod]
     public void MonsterFramesAreRepaintedInTheGameInk()
     {
-        var frames = MonsterArt.Frames(new MicroEngine.Core.ContentFolder()).ToList();
+        var frames = MonsterArt.Frames(new MicroEngine.Core.ContentFolder().Image).ToList();
         CollectionAssert.AreEquivalent(new[] { "spitter0", "spitter1", "spitter2" }, frames.Select(f => f.Name).ToArray());
         foreach (var (name, img, _) in frames)
         {

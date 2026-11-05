@@ -141,9 +141,10 @@ public sealed partial class PlayScene
         Mode = PlayMode.Cutscene;
         Audio.StopMusic(0.2f);
         Audio.Play("death");
-        for (float t = 0; t < 1.8f; t += 1 / 60f)
+        // The hero's fall plays on the engine's step, the one the coroutine itself advances by.
+        for (float t = 0; t < 1.8f; t += EngineStep)
         {
-            Hero.Update(1 / 60f);
+            Hero.Update(EngineStep);
             yield return null;
         }
         Audio.Play("gameover");

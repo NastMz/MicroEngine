@@ -41,8 +41,9 @@ public sealed partial class PlayScene
         _drawList.Sort(ByDepth);
         foreach (var a in _drawList) a.DrawShadow(r);
         foreach (var a in _drawList) a.Draw(r);
+        // Every particle system is drawn at the world's blend, like the actors, so all of them move evenly between steps.
         Particles.Draw(r, Objects.Blend);
-        Ambient.Draw(r);
+        Ambient.Draw(r, Objects.Blend);
         r.PopCamera();
 
         Light.Clear();
@@ -56,7 +57,7 @@ public sealed partial class PlayScene
         if (darkness > 0.01f) Light.Draw(r, -Camera.RenderOffset, WorldView);
 
         r.PushCamera(Camera);
-        Glows.Draw(r);
+        Glows.Draw(r, Objects.Blend);
         if (PresentedItem != Item.None) DrawPresentedItem(r);
         r.PopCamera();
 
