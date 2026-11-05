@@ -131,7 +131,7 @@ public BitmapFont Font { get; }
 
 #### Property Value
 
- [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
+ BitmapFont
 
 ### <a id="MicroEngine_Core_Game_Frame"></a> Frame
 

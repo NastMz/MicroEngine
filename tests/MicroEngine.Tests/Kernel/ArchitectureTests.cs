@@ -269,6 +269,24 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_text_references_only_the_2D_layer_the_graphics_contract_content_the_kernel_and_the_platform()
+    {
+        var text = typeof(MicroEngine.Graphics.BitmapFont).Assembly;
+        Assert.AreEqual(Text, text.GetName().Name);
+        var fonts = new[] { typeof(MicroEngine.Graphics.IFont), typeof(MicroEngine.Graphics.FontExtensions), typeof(MicroEngine.Graphics.ScalableFont),
+            typeof(MicroEngine.Graphics.SizedFont), typeof(MicroEngine.Graphics.FontOptions) };
+        foreach (var type in fonts) Assert.AreEqual(Text, type.Assembly.GetName().Name, $"{type.Name} is text's");
+        var engine = text.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
+        Assert.IsTrue(engine.All(Allowed[Text].Contains), string.Join(", ", engine));
+        CollectionAssert.Contains(engine, Graphics2D, "fonts draw through the 2D layer");
+        CollectionAssert.Contains(engine, Content, "the font loader is registered with content");
+        Assert.IsTrue(text.GetReferencedAssemblies().Any(a => a.Name == "FontStashSharp"), "the scalable-font dependency follows text");
+        Assert.IsFalse(typeof(Game).Assembly.GetReferencedAssemblies().Any(a => a.Name == "FontStashSharp"), "the core no longer rasterizes fonts");
+        // Code compiled against an earlier MicroEngine.dll still finds the font types there.
+        CollectionAssert.IsSubsetOf(fonts.Append(typeof(MicroEngine.Graphics.BitmapFont)).ToArray(), typeof(Game).Assembly.GetForwardedTypes());
+    }
+
+    [TestMethod]
     public void The_compiled_input_references_only_the_kernel_and_the_platform_contracts()
     {
         var input = typeof(MicroEngine.Input.InputMap).Assembly;

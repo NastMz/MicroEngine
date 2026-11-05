@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Text: the built-in pixel font (BitmapFont), scalable TTF/OTF fonts (ScalableFont, SizedFont, FontOptions), the
+       IFont contract with its measurement, wrapping and drawing helpers, and the font loader the asset store registers
+       under the kind "font". The types keep their MicroEngine.Graphics namespace; MicroEngine.dll forwards them. It
+       references only the 2D layer, the graphics contract, content, the kernel and the platform contracts (the
+       architecture test checks it). It is not a package of its own: the MicroEngine package carries
+       MicroEngine.Text.dll (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Graphics</RootNamespace>
+    <Description>MicroEngine text: the built-in pixel font, scalable TTF/OTF fonts, text measurement and wrapping, and the font loader of the asset store. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+    <ProjectReference Include="../MicroEngine.Graphics/MicroEngine.Graphics.csproj" />
+    <ProjectReference Include="../MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj" />
+    <ProjectReference Include="../MicroEngine.Content/MicroEngine.Content.csproj" />
+  </ItemGroup>
+  <!-- Scalable fonts (FontStashSharp over StbTrueTypeSharp: managed, MIT; THIRD-PARTY-NOTICES.md). -->
+  <ItemGroup>
+    <PackageReference Include="FontStashSharp" Version="[1.3.10]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine" />
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+    <InternalsVisibleTo Include="MicroEngine.Graphics.Tests" />
+  </ItemGroup>
+</Project>

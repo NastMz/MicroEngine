@@ -19,6 +19,9 @@ Not published yet. Behaviour that changes:
   `SavesModule` (namespace `MicroEngine.Saves`) themselves.
 - `SaveStore`, `ISaveStorage` and `FileSaveStorage` moved to the new `MicroEngine.Saves.dll` (carried by the
   `MicroEngine` package) with their namespace unchanged; nothing to change.
+- The fonts (`IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`) moved to the new
+  `MicroEngine.Text.dll` (carried by the `MicroEngine` package) with their `MicroEngine.Graphics` namespace unchanged,
+  and `Game.Assets.Font` loads through it; nothing to change.
 - `Achievement`, `AchievementStatus`, `AchievementTracker`, `AchievementSaveData` and `AchievementRecord` moved to the
   new `MicroEngine.Achievements.dll` (carried by the `MicroEngine` package) with their namespace unchanged; nothing to
   change.

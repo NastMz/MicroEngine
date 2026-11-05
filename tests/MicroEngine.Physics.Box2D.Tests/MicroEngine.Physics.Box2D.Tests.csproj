@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Box2D backend's tests: the common physics suite, the capability suites of what it declares, and its own.
+       They need the native library of the machine's runtime (src/MicroEngine.Physics.Box2D/native/build.sh); without
+       it every test is inconclusive (reported as skipped), unless MICROENGINE_BOX2D_REQUIRED=1, which makes a missing
+       library fail them (the box2d workflow sets it). -->
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.4.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Physics.Box2D/MicroEngine.Physics.Box2D.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The physics conformance suites every 2D backend runs (common contract and capability suites). The tile
+         geometry suite needs the tile backend's types and is not one Box2D runs. -->
+    <Compile Include="../Shared/Physics/*.cs" Exclude="../Shared/Physics/TileGeometryConformance.cs" LinkBase="Shared/Physics" />
+    <!-- Browser/ is the browser runner of these same tests, a project of its own (web toolchain only). -->
+    <Compile Remove="Browser/**" />
+    <None Remove="Browser/**" />
+    <Content Remove="Browser/**" />
+  </ItemGroup>
+</Project>

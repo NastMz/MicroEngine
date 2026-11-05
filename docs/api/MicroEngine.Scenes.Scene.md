@@ -123,7 +123,7 @@ public BitmapFont Font { get; }
 
 #### Property Value
 
- [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
+ BitmapFont
 
 ### <a id="MicroEngine_Scenes_Scene_Game"></a> Game
 

@@ -6,7 +6,7 @@ using MicroEngine.Platform;
 namespace MicroEngine.Core;
 
 /// <summary>
-/// The image, atlas and font loaders of <see cref="AssetCache"/>, registered in its store under the kinds "texture",
+/// The image and atlas loaders of <see cref="AssetCache"/>, and the font loader of text (<see cref="FontLoader"/>), registered in its store under the kinds "texture",
 /// "atlas", "folder atlas" and "font". They read through the store's content source and create textures on the game's
 /// graphics device. Their keys: the sampling filter is the key's variant; an atlas's <see cref="AtlasOptions"/>, a
 /// folder atlas's pivot (a <see cref="Vector2"/>) and a font's <see cref="FontOptions"/> are its options.
@@ -14,7 +14,7 @@ namespace MicroEngine.Core;
 /// <remarks>These loaders move to the 2D graphics module when it exists; the kinds and keys stay.</remarks>
 internal static class GraphicsAssetLoaders
 {
-    public const string Texture = "texture", Atlas = "atlas", FolderAtlas = "folder atlas", Font = "font";
+    public const string Texture = "texture", Atlas = "atlas", FolderAtlas = "folder atlas", Font = FontLoader.Kind;
 
     /// <summary>Whether <paramref name="kind"/> is one of these loaders' kinds, whose sizes are texture memory.</summary>
     public static bool IsGraphics(string kind) => kind is Texture or Atlas or FolderAtlas or Font;
@@ -42,9 +42,8 @@ internal static class GraphicsAssetLoaders
             }
             return builder.Build(device, (TextureFilter)c.Key.Variant);
         }, size: AtlasBytes));
-        loaders.Add(new AssetLoader<ScalableFont>(Font,
-            c => OpenFont(device, c.Path, Read(c.Source, c.Path, c.Key.Kind), (FontOptions?)c.Options ?? FontOptions.Default),
-            [".ttf", ".otf"], f => f.TextureBytes));
+        // Scalable fonts are text's: its loader registers itself under the same kind.
+        FontLoader.Register(loaders, device);
     }
 
     private static long AtlasBytes(SpriteAtlas a) => a.Texture.IsDisposed ? 0 : a.Texture.SizeInBytes;
@@ -89,9 +88,6 @@ internal static class GraphicsAssetLoaders
         }
     }
 
-    public static ScalableFont OpenFont(IGraphicsDevice device, string path, byte[] bytes, FontOptions options)
-    {
-        try { return ScalableFont.FromBytes(device, bytes, options, path); }
-        catch (InvalidDataException e) { throw new AssetLoadException(path, Font, e.Message, e); }
-    }
+    public static ScalableFont OpenFont(IGraphicsDevice device, string path, byte[] bytes, FontOptions options) =>
+        FontLoader.Open(device, path, bytes, options);
 }

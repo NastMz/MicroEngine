@@ -54,12 +54,15 @@ test("this repository's graph: a game change stays inside that game, an engine c
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
   const real = readGraph(root);
   assert.deepEqual(affectedScope(real, ['games/MeadowRun/MeadowRunGame.cs']), { tests: ['tests/MeadowRun.Tests/MeadowRun.Tests.csproj'], games: ['MeadowRun'] });
-  // The engine's contracts below the core (the graphics device contract) reach every test project and game; the core
-  // reaches every one except the graphics contract's own tests, which reference the contract alone.
-  assert.deepEqual(affectedScope(real, ['src/MicroEngine.Graphics/Devices/Device.cs']), { tests: 'all', games: 'all' });
+  // The engine's contracts below the core reach every game; the graphics device contract reaches every test project but
+  // the Box2D backend's (physics, scene world and kernel only), the physics contract every one but the graphics contract's;
+  // the core every one except those two, which do not reference it.
   const everyTest = Object.keys(real.projects).filter(isTestProject).sort();
+  const box2dTests = 'tests/MicroEngine.Physics.Box2D.Tests/MicroEngine.Physics.Box2D.Tests.csproj';
+  assert.deepEqual(affectedScope(real, ['src/MicroEngine.Graphics/Devices/Device.cs']), { tests: everyTest.filter(p => p !== box2dTests), games: 'all' });
+  assert.deepEqual(affectedScope(real, ['src/MicroEngine.Physics/IPhysicsWorld2D.cs']), { tests: everyTest.filter(p => p !== 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj'), games: 'all' });
   assert.deepEqual(affectedScope(real, ['src/MicroEngine/Core/GameRunner.cs']),
-    { tests: everyTest.filter(p => p !== 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj'), games: 'all' });
+    { tests: everyTest.filter(p => p !== 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj' && p !== box2dTests), games: 'all' });
   const backend = affectedScope(real, ['src/MicroEngine.Raylib/RaylibPlatform.cs']);
   assert.equal(backend.games, 'all');
   assert.ok(!backend.tests.includes('tests/MicroEngine.Tests/MicroEngine.Tests.csproj'), 'core tests do not reference the backend');

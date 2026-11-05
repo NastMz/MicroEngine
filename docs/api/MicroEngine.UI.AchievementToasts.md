@@ -141,7 +141,7 @@ public void Draw(IRenderer r, BitmapFont font)
 
 `r` IRenderer
 
-`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
+`font` BitmapFont
 
 ### <a id="MicroEngine_UI_AchievementToasts_Show_MicroEngine_Core_Achievement_"></a> Show\(Achievement\)
 
