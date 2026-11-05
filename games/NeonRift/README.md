@@ -92,7 +92,8 @@ RIFT_START=stage RIFT_STAGE=2 RIFT_AUTO=1 RIFT_GOD=1 dotnet run --project games/
 | Folder | Contents |
 | --- | --- |
 | `Art/` | Asset loading (`Assets`), tile cutting and choice (`Tiles`), sound registration |
-| `Content/` | `StageBuilder` and the three stage definitions; `Content/` files are the shipped assets |
+| `Content/` | The shipped image and audio files, listed in [CREDITS.md](CREDITS.md) |
+| `Levels/` | `StageBuilder` and the three stage definitions |
 | `Gameplay/` | `Stage` (rules), `Player`, enemies, bosses, weapons, projectiles, pickups, `Autopilot`; actors are entities of the play scene's `Objects` |
 | `Scenes/` | Title, stage card, play, pause, game over, ending; `StageView` draws a stage and the HUD |
 
