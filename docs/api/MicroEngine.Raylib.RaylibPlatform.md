@@ -7,13 +7,10 @@ Assembly: MicroEngine.Raylib.dll
 Guide: [Backends and platforms](../manual/backends.md)  
 
 raylib-backed platform. Games draw into a virtual-resolution render texture which is
-scaled to the window by the largest integer factor that fits (letterboxed), keeping pixel art crisp.
-In a browser (raylib built for emscripten) the page paces frames: the window never asks to close and
-raylib's frame limiter is left off, because both would block the only thread; the page also owns
-fullscreen, and the canvas has no minimum size: it is a page-driven host ([CanBlock](MicroEngine.Raylib.RaylibPlatform.md#MicroEngine_Raylib_RaylibPlatform_CanBlock) is false), whose
-surface size is the canvas's, read after start. Its capabilities ([TryGetCapability``1](MicroEngine.Raylib.RaylibPlatform.md#MicroEngine_Raylib_RaylibPlatform_TryGetCapability__1___0__)):
-[IDisplayControl](MicroEngine.Core.IDisplayControl.md), [IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md), [ITouchScreen](MicroEngine.Input.ITouchScreen.md) and, outside browsers,
-[IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md).
+scaled to the window by the largest integer factor that fits (letterboxed), keeping pixel art crisp. A desktop
+platform (the second implementation of the platform contract beside SDL); browsers run the SDL platform. Its
+capabilities ([TryGetCapability``1](MicroEngine.Raylib.RaylibPlatform.md#MicroEngine_Raylib_RaylibPlatform_TryGetCapability__1___0__)): [IDisplayControl](MicroEngine.Core.IDisplayControl.md), [IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md),
+[ITouchScreen](MicroEngine.Input.ITouchScreen.md) and [IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md).
 
 ```csharp
 public sealed class RaylibPlatform : IPlatform, IPlatformHost, IDisposable, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture
@@ -240,7 +237,7 @@ public static PlatformProfile Profile { get; }
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Suspended"></a> Suspended
 
-In a browser, a hidden page ([Hidden](MicroEngine.Raylib.BrowserPage.md#MicroEngine_Raylib_BrowserPage_Hidden) of the page the platform was built for); a desktop window never suspends.
+False: a desktop window is never suspended.
 
 ```csharp
 public bool Suspended { get; }
@@ -299,30 +296,6 @@ public IRenderer BeginFrame()
 #### Returns
 
  [IRenderer](MicroEngine.Graphics.IRenderer.md)
-
-### <a id="MicroEngine_Raylib_RaylibPlatform_BrowserProfile_MicroEngine_Raylib_BrowserPage_"></a> BrowserProfile\(BrowserPage\)
-
-The raylib platform of a browser page as a catalog entry (named <code>raylib</code>, like [Profile](MicroEngine.Raylib.RaylibPlatform.md#MicroEngine_Raylib_RaylibPlatform_Profile)): every
-platform it builds reads touches, insets, visibility and vibration from <code class="paramref">page</code> only. The browser
-host offers this profile; a game's composition may offer others.
-
-```csharp
-public static PlatformProfile BrowserProfile(BrowserPage page)
-```
-
-#### Parameters
-
-`page` [BrowserPage](MicroEngine.Raylib.BrowserPage.md)
-
-#### Returns
-
- [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
-
-#### Exceptions
-
- [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
-
-<code class="paramref">page</code> is null.
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Delay_System_Double_"></a> Delay\(double\)
 

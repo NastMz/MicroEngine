@@ -2,8 +2,8 @@
 
 MicroEngine is a small, code-first 2D framework for C#/.NET 10, for pixel-art and HD games. It is
 deliberately compact: a kernel that knows no domain, one backend-independent core library on top of it, two platform
-backends (SDL 3 for Windows, Linux, macOS, Android and iOS, and, next SDK version, browsers; raylib for browsers and as
-a desktop alternative), and games that are ordinary .NET programs. This
+backends (SDL 3 for Windows, Linux, macOS, Android, iOS and, from the next SDK version, browsers; raylib as a desktop
+alternative, and for browsers in the published SDK), and games that are ordinary .NET programs. This
 document explains how the pieces fit and why.
 
 ## Layers
@@ -15,7 +15,7 @@ flowchart TB
   games["Games and samples"]
   hosts["Desktop launcher,<br/>tool hosts"]
   sdl["Sdl<br/>(desktops, phones, browsers)"]
-  raylib["Raylib<br/>(desktops, browsers)"]
+  raylib["Raylib<br/>(desktops)"]
   sdlgpu["Graphics.SdlGpu<br/>(tier-1 device)"]
   core["MicroEngine (core)"]
   hosting["Hosting"]
@@ -200,16 +200,16 @@ four device interfaces:
 | `IAudioDevice` | Loading/playing PCM sounds and looping music | SDL, raylib, `SilentAudioDevice` |
 | `IInputBackend` | Device events: keys, text, pointers, wheel, gamepads, devices connecting (a capability) | `HeadlessInputBackend` |
 | `IInputSource` | Raw key, gamepad and mouse state, polled; read as one device | SDL, raylib, `HeadlessInput` |
-| `ITouchScreen` (optional, `IPlatform.Touch`; next SDK version: a capability) | Touches, safe area, density, vibration and an overlay drawn over the frame | SDL, raylib (from the browser page), `HeadlessTouchScreen` |
+| `ITouchScreen` (optional, `IPlatform.Touch`; next SDK version: a capability) | Touches, safe area, density, vibration and an overlay drawn over the frame | SDL (phones; browsers from the page, next SDK version), raylib (from the browser page in the published SDK; a desktop window reports none), `HeadlessTouchScreen` |
 
 Hosts choose a platform through a `PlatformCatalog` of named `PlatformProfile`s (`sdl`, `raylib`, `sdl-software`,
 `headless`, or one of the developer's own) and may supply an audio device or extra input sources of their own; window,
 renderer and graphics device stay together because they share a graphics context ([Backends](manual/backends.md)).
-SDL is the default on desktops and phones. The raylib backend also runs in a browser (raylib compiled to
-WebAssembly): `BrowserLauncher` returns a `GameSession` that the page starts, ticks from `requestAnimationFrame` and
-restarts, and keeps saves in `localStorage`. Next SDK version (not published yet): SDL 3 also runs in a browser
-(compiled to WebAssembly, with its own `BrowserLauncher` and `BrowserPage` in `MicroEngine.Sdl`), chosen with
-`microengine package web --web-backend sdl`; raylib stays the default web backend. Every host composes the game with its `Configure` entry
+SDL is the default on desktops and phones, and, in the next SDK version, the platform of browsers too (SDL compiled to
+WebAssembly by `src/MicroEngine.Sdl/native/build.sh`, with its `BrowserLauncher` and `BrowserPage` in
+`MicroEngine.Sdl`); raylib then runs on desktops only. Until then the raylib backend also runs in a browser (raylib
+compiled to WebAssembly): `BrowserLauncher` returns a `GameSession` that the page starts, ticks from
+`requestAnimationFrame` and restarts, and keeps saves in `localStorage`. Next SDK version: every host composes the game with its `Configure` entry
 point through the same launcher model (`GameHost`), so a page's scripted run is deterministic like a desktop one.
 `microengine package web` builds any game into a static site
 ([The browser host](examples/embedding.md)).
@@ -273,8 +273,8 @@ published yet); in the published SDK, the engine types that existed then are in 
 | `MicroEngine.Graphics.SdlGpu` | `MicroEngine.Graphics.SdlGpu` | `SdlGpuDevice`: the tier-1 device (custom shaders compiled ahead of time, depth) on SDL_GPU, carried by the `MicroEngine.Sdl` package as the `sdl-gpu` graphics device |
 | `MicroEngine.Graphics3D` | `MicroEngine.Graphics3D` | `MeshAssets` (glTF meshes as an asset kind, `GltfReader`), `MeshData`, `GpuMesh`, `Camera3D`, `Renderer3D`, `MeshRenderer`; in the repository only |
 | `MicroEngine.Physics.Box2D` | `MicroEngine.Physics.Box2D` | `Box2DPhysicsWorld2D`, `Box2DWorldOptions`: native Box2D 3.2 behind the engine's flat C layer, with the native library of each platform; an optional package of its own, not published yet |
-| `MicroEngine.Sdl` | `MicroEngine.Sdl` | `SdlPlatform`, `SdlRendererDevice`, `SdlAudioDevice`; for browsers `BrowserLauncher` and `BrowserPage` (SDL 3 compiled to WebAssembly, chosen with `--web-backend sdl`) |
-| `MicroEngine.Raylib` | `MicroEngine.Raylib` | `RaylibPlatform`, `RaylibDevice`, the raylib audio device; for browsers `BrowserLauncher` and `BrowserPage` (the default web backend) |
+| `MicroEngine.Sdl` | `MicroEngine.Sdl` | `SdlPlatform`, `SdlRendererDevice`, `SdlAudioDevice`; for browsers `BrowserLauncher` and `BrowserPage` (SDL 3 compiled to WebAssembly, the platform of every browser build) |
+| `MicroEngine.Raylib` | `MicroEngine.Raylib` | `RaylibPlatform`, `RaylibDevice`, the raylib audio device: the second desktop platform (in the published SDK, also the browser platform, with its own `BrowserLauncher`) |
 | `MicroEngine.Desktop` | `MicroEngine.Desktop` | `DesktopLauncher` with the official desktop platforms (SDL 3, raylib, SDL software, headless) |
 
 ## Key design decisions

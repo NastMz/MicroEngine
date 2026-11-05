@@ -6,7 +6,7 @@ platform-specific sits behind `IPlatform` and four small interfaces. The officia
 | Platform | Project | Used for |
 | --- | --- | --- |
 | SDL 3 | `src/MicroEngine.Sdl` | The default on Windows, Linux, macOS, Android and iOS |
-| raylib | `src/MicroEngine.Raylib` | Browsers (WebAssembly), and an alternative desktop platform |
+| raylib | `src/MicroEngine.Raylib` | Browsers (WebAssembly), and an alternative desktop platform; next SDK version: the alternative desktop platform only (browsers run SDL) |
 | Headless | `src/MicroEngine` (`HeadlessPlatform`) | Automated tests |
 
 A game is an ordinary .NET program and does not change between them. Which platform runs is the host's choice
@@ -199,7 +199,7 @@ game's `Configure` runs, which may change them:
 
 | Part | Desktop | Browser | Android | iOS |
 | --- | --- | --- | --- | --- |
-| `host.Platforms()` | `sdl`, `raylib`, `sdl-software`, `headless` | `raylib` (the page's) | `sdl` | `sdl` |
+| `host.Platforms()` | `sdl`, `raylib`, `sdl-software`, `headless` | `raylib` (the page's; next SDK version: `sdl`, the page's) | `sdl` | `sdl` |
 | `host.Content` | `Content` next to the program; a macOS bundle's `Contents/Resources/Content` | `Content` next to the program | the folder the app unpacks its assets to | the bundle's `Content` |
 | Saves, while `host.Storage` is unset (`SaveStore.DefaultStorage`) | files (`SaveStore.DefaultDirectory`) | `localStorage` | the app's files folder | `Library/Application Support` |
 
@@ -377,7 +377,19 @@ private static readonly GameSession Session = BrowserLauncher.CreateSession(Game
 // on "play": Session.Start(new LaunchRequest { ScriptText = script, CaptureDirectory = "/captures" });
 ```
 
-Source: [`src/MicroEngine.Raylib/BrowserLauncher.cs`](../../src/MicroEngine.Raylib/BrowserLauncher.cs)
+Next SDK version (not published yet): browsers run the SDL platform instead (`MicroEngine.Sdl.BrowserLauncher`, `MicroEngine.Sdl.BrowserPage`,
+`SdlPlatform.BrowserProfile`), with the same session and page model; `MicroEngine.Raylib` no longer has a browser
+launcher, page or profile. In a page the SDL platform reports `CanBlock = false` and never waits (no VSync, no
+`IPreciseDelay`, no wait while suspended), takes its size from the canvas, is suspended while the page is hidden, reads
+touches, safe-area insets, density and vibration from the page, plays sound through the page's AudioWorklet and leaves
+fullscreen to the page; keyboard, mouse and gamepads are SDL's own.
+
+```csharp
+private static readonly BrowserPage Page = new();   // MicroEngine.Sdl
+private static readonly GameSession Session = BrowserLauncher.CreateSession(GameEntry.Configure, Page);
+```
+
+Source: [`src/MicroEngine.Sdl/BrowserLauncher.cs`](../../src/MicroEngine.Sdl/BrowserLauncher.cs)
 
 Not published yet: arrives with the next SDK version. `RaylibDevice` implements the
 [graphics device contract](rendering.md#the-graphics-device) on raylib's OpenGL layer, on raylib's own window only (raylib

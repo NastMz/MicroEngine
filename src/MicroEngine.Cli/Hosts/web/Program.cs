@@ -3,11 +3,7 @@ using System.Runtime.Versioning;
 using MicroEngine.Core;
 using MicroEngine.Hosting;
 using MicroEngine.Kernel;
-#if MICROENGINE_WEB_SDL
-using MicroEngine.Sdl; // BrowserLauncher and BrowserPage of the SDL platform (Host.csproj, WebBackend=sdl)
-#else
-using MicroEngine.Raylib; // BrowserLauncher and BrowserPage of the raylib platform (WebBackend=raylib)
-#endif
+using MicroEngine.Sdl;
 
 [assembly: SupportedOSPlatform("browser")]
 
