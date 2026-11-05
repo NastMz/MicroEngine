@@ -16,7 +16,9 @@ public sealed class ArchitectureTests
         Content = "MicroEngine.Content", Graphics2D = "MicroEngine.Graphics2D", Text = "MicroEngine.Text", Input = "MicroEngine.Input", InputTouch = "MicroEngine.Input.Touch",
         Audio = "MicroEngine.Audio", Scene = "MicroEngine.Scene", Physics = "MicroEngine.Physics", PhysicsTiles = "MicroEngine.Physics.Tiles", Box2D = "MicroEngine.Physics.Box2D",
         UI = "MicroEngine.UI", Saves = "MicroEngine.Saves", Achievements = "MicroEngine.Achievements", Hosting = "MicroEngine.Hosting",
-        Testing = "MicroEngine.Testing", Migration = "MicroEngine.Migration.Entities",
+        Testing = "MicroEngine.Testing",
+        // The transitional entity adapter of the demo migrations, deleted: no project may reference it again.
+        Migration = "MicroEngine.Migration.Entities",
         // Today's assemblies. MicroEngine still holds every module not yet split out of it; it becomes the metapackage.
         Core = "MicroEngine", Sdl = "MicroEngine.Sdl", Raylib = "MicroEngine.Raylib", Desktop = "MicroEngine.Desktop", Cli = "MicroEngine.Cli";
 
@@ -46,8 +48,6 @@ public sealed class ArchitectureTests
         [Achievements] = [Kernel, Platform, Saves, UI, Graphics2D, Text, Input, Graphics, Content],
         [Hosting] = [Kernel, Platform],
         [Testing] = [.. Abstractions, .. Modules, Core],
-        // Transitional, deleted at the end of stage 5: the legacy Draw(IRenderer) needs the IRenderer facade, still in the core.
-        [Migration] = [Scene, Graphics2D, Kernel, Graphics, Content, Platform, Core],
         // Transitional until the modules leave it: the defaults, presets and Game façade over every module.
         [Core] = [.. Abstractions, .. Modules],
         // Backends implement the abstractions; until those leave MicroEngine, they reach them through it.
@@ -97,26 +97,23 @@ public sealed class ArchitectureTests
         Assert.AreEqual(0, violations.Count, "Forbidden references: " + string.Join("; ", violations));
     }
 
-    /// <summary>The projects that may reference the transitional adapter: the demos that still use it, and its own tests.</summary>
-    private static readonly string[] MigrationConsumers = ["games/CourtyardKey/CourtyardKey.csproj", "games/MeadowRun/MeadowRun.csproj",
-        "games/NeonRift/NeonRift.csproj", "tests/MicroEngine.Migration.Entities.Tests/MicroEngine.Migration.Entities.Tests.csproj"];
-
     [TestMethod]
-    public void Only_the_demos_reference_the_transitional_entity_adapter()
+    public void No_project_references_the_removed_entity_adapter()
     {
         var root = Repository();
+        Assert.IsFalse(Directory.Exists(Path.Combine(root, "src", Migration)), "the transitional entity adapter is deleted");
         var offenders = new List<string>();
         foreach (var project in Directory.GetFiles(root, "*.csproj", SearchOption.AllDirectories))
         {
             string relative = Path.GetRelativePath(root, project).Replace('\\', '/');
             if (relative.Split('/').Any(part => part is "bin" or "obj" or "experiments" or "node_modules")) continue;
-            bool references = XDocument.Load(project).Descendants("ProjectReference")
-                .Any(r => Path.GetFileNameWithoutExtension(r.Attribute("Include")!.Value.Replace('\\', '/')) == Migration);
-            if (references && !MigrationConsumers.Contains(relative)) offenders.Add(relative);
+            if (Path.GetFileNameWithoutExtension(project) == Migration
+                || XDocument.Load(project).Descendants("ProjectReference")
+                    .Any(r => Path.GetFileNameWithoutExtension(r.Attribute("Include")!.Value.Replace('\\', '/')) == Migration))
+                offenders.Add(relative);
         }
-        Assert.AreEqual(0, offenders.Count, "Only the demos may use MicroEngine.Migration.Entities: " + string.Join(", ", offenders));
-        var packable = XDocument.Load(Path.Combine(root, "src", Migration, $"{Migration}.csproj")).Descendants("IsPackable").Select(e => e.Value).ToList();
-        CollectionAssert.AreEqual(new[] { "false" }, packable, "the adapter is never packaged");
+        Assert.AreEqual(0, offenders.Count, "MicroEngine.Migration.Entities is gone; nothing may reference it: " + string.Join(", ", offenders));
+        Assert.IsFalse(File.ReadAllText(Path.Combine(root, "MicroEngine.slnx")).Contains(Migration, StringComparison.Ordinal), "the solution lists no adapter project");
     }
 
     [TestMethod]
