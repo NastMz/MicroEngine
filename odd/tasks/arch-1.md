@@ -413,7 +413,7 @@ Windows unless stated):
 | #87 (5d-3) | `FrameGarbageTests` RED (3 failing) and the frame-loop check RED at 208 B; after: 0 B per median frame over 300 and 1,000,000 frames; feeder counter mutation 720-744 B per window caught; PerfBench 86,976 → 720 B per frame, 33 → 0 collections |
 | #88 (5d-2) | `api-reference.mjs --check` 444 pages up to date; 6873 links between API pages, 0 broken; snippets 104 blocks; site build 501 pages with `check-dist` |
 | #89 (5d-1) | RED observed for each item; 37 traced runs byte-identical before and after; `dotnet test` green except the gamepad test (MicroEngine.Tests 733 after merging main); `packages.mjs`, `external.mjs --targets windows`, `docs.mjs` passed; `mobile.mjs` stall check syntax-checked only; phone hosts not built locally |
-| `main` CI (T10 check, 2026-11-05) | runs on f94afbb (#62) and 80e7bf6 (#76) failed on Trail Duel's browser short-press check, the flake #79 fixed; 3efd395 (#87) failed only on an HTTP 502 uploading a demo artifact; every other run after #64 passed or was superseded; c0ae530 (#89) still running when T10 was written |
+| `main` CI (T10 check, 2026-11-05) | runs on f94afbb (#62) and 80e7bf6 (#76) failed on Trail Duel's browser short-press check, the flake #79 fixed; 3efd395 (#87) failed only on an HTTP 502 uploading a demo artifact; every other run after #64 passed or was superseded; c0ae530 (#89) passed (run 42039521432) |
 | P7 (#53) | `Scene.Tests` 44 passed (42/44 RED against a stub); `CourtyardKey.Port.Tests` 71 passed (47 game tests, 22 trace equivalence runs, swap-remove divergence at update 248 of `gameover.script`); frame time ±5 %, allocation ±0.1 %; dense storage 4.7× faster lookups than per-entity dictionaries; desktop CoreCLR only |
 
 ### Known problems
