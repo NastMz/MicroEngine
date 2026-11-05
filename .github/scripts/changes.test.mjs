@@ -166,15 +166,18 @@ test('scope: the project graph narrows the .NET tests and native captures to wha
   assert.deepEqual(scope(['games/NeonRift/Stages/Stage1.cs', 'docs/guide/platforms.md']),
     { tests: ['tests/NeonRift.Tests/NeonRift.Tests.csproj'], games: ['NeonRift'] }, 'documentation does not widen the scope');
   const everyTest = Object.keys(graph.projects).filter(isTestProject).sort();
-  // The Box2D backend's tests depend on the physics contract, the scene world and the kernel only.
+  // The Box2D backend's tests depend on the physics contract, the scene world and the kernel only; the 3D path's on the
+  // graphics contract, content and the scene world.
   const box2dTests = 'tests/MicroEngine.Physics.Box2D.Tests/MicroEngine.Physics.Box2D.Tests.csproj';
+  const graphicsTests = 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj';
+  const graphics3dTests = 'tests/MicroEngine.Graphics3D.Tests/MicroEngine.Graphics3D.Tests.csproj';
   assert.deepEqual(scope(['src/MicroEngine.Graphics/Devices/Device.cs']), { tests: everyTest.filter(p => p !== box2dTests), games: 'all' },
     'the graphics contract reaches every test but the Box2D backend\'s');
   assert.deepEqual(scope(['src/MicroEngine/Core/GameRunner.cs']),
-    { tests: everyTest.filter(p => p !== 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj' && p !== box2dTests), games: 'all' },
-    'the core reaches every test but the graphics contract\'s own and the Box2D backend\'s');
-  assert.deepEqual(scope(['src/MicroEngine.Physics/IPhysicsWorld2D.cs']), { tests: everyTest.filter(p => p !== 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj'), games: 'all' },
-    'the physics contract reaches every test but the graphics contract tests');
+    { tests: everyTest.filter(p => ![graphicsTests, graphics3dTests, box2dTests].includes(p)), games: 'all' },
+    'the core reaches every test but those of the graphics contract, the 3D path and the Box2D backend, which do not reference it');
+  assert.deepEqual(scope(['src/MicroEngine.Physics/IPhysicsWorld2D.cs']), { tests: everyTest.filter(p => ![graphicsTests, graphics3dTests].includes(p)), games: 'all' },
+    'the physics contract reaches every test but the graphics contract\'s and the 3D path\'s');
   assert.deepEqual(scope(['web/tests/scenarios.json']), { tests: 'all', games: 'all' }, 'a file outside every project');
   assert.deepEqual(scope(['Directory.Build.props']), { tests: 'all', games: 'all' });
   assert.deepEqual(scope(['newfolder/thing.txt']), { tests: 'all', games: 'all' }, 'unknown paths stay conservative');

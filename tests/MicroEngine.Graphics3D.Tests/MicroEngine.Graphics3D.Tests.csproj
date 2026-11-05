@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The 3D path without a GPU: the glTF reader and the mesh asset kind, Camera3D's projection, and the typed refusal
+       on tier-0 devices. The pixel properties (depth, projection, 2D over 3D, interpolation) run on SDL_GPU in
+       tests/MicroEngine.Desktop.Tests (category Gpu, lavapipe in CI). -->
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.4.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MicroEngine.Graphics3D/MicroEngine.Graphics3D.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/Graphics3D/*.cs" LinkBase="Shared/Graphics3D" />
+  </ItemGroup>
+</Project>
