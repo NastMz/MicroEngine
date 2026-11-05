@@ -14,7 +14,7 @@ Fingers go to the game's on-screen controls through [ITouchScreen](MicroEngine.I
 also reports the window's safe area and density; a system that sends the app to the background suspends it
 ([Suspending](MicroEngine.Platform.IEngineEventSink.md#MicroEngine_Platform_IEngineEventSink_Suspending)). Its capabilities ([TryGetCapability``1](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_TryGetCapability__1___0__)):
 [IDisplayControl](MicroEngine.Core.IDisplayControl.md), [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md), [IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md),
-[IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md) and [ITouchScreen](MicroEngine.Input.ITouchScreen.md).
+[ITouchScreen](MicroEngine.Input.ITouchScreen.md) and, outside browsers, [IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md).
 
 ```csharp
 public sealed class SdlPlatform : IPlatform, IPlatformHost, IDisposable, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture
@@ -37,6 +37,16 @@ IPreciseDelay,
 IMonotonicClock, 
 IScreenView, 
 IViewCapture
+
+## Remarks
+
+In a browser (SDL compiled to WebAssembly, [BrowserProfile](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_BrowserProfile_MicroEngine_Sdl_BrowserPage_)) the platform is page-driven
+([CanBlock](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_CanBlock) is false): the page calls one frame per animation frame, so nothing waits (no VSync, no
+delay, no wait while suspended); the window is the page's canvas, sized from the canvas after start; a hidden page
+suspends the game; touches, safe-area insets, density and vibration come from the page ([BrowserPage](MicroEngine.Sdl.BrowserPage.md));
+sound plays through the page's AudioWorklet ([SdlAudioDevice](MicroEngine.Sdl.SdlAudioDevice.md)); full screen and the window's place
+belong to the page. A few SDL calls go through declarations of the engine's own there (<code>SdlWeb</code>), because .NET's
+WebAssembly interpreter mispasses SDL3-CS's 64-bit enum parameters.
 
 ## Constructors
 
@@ -76,7 +86,7 @@ public IAudioDevice Audio { get; }
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_CanBlock"></a> CanBlock
 
-True: SDL's native hosts own their thread.
+True on SDL's native hosts, which own their thread; false in a browser, whose page drives the frames.
 
 ```csharp
 public bool CanBlock { get; }
@@ -234,7 +244,8 @@ public double Now { get; }
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Profile"></a> Profile
 
-The SDL3 platform as a catalog entry. SDL3 is packaged for Windows, Linux, macOS, Android and iOS, not for browsers.
+The SDL3 platform as a catalog entry for Windows, Linux, macOS, Android and iOS. A browser page uses
+[BrowserProfile](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_BrowserProfile_MicroEngine_Sdl_BrowserPage_), which knows its page.
 
 ```csharp
 public static PlatformProfile Profile { get; }
@@ -270,7 +281,7 @@ public string RendererName { get; }
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Suspended"></a> Suspended
 
-Whether the system took the app away (a phone app in the background); no frame runs meanwhile.
+Whether the system took the app away (a phone app in the background, a hidden page); no frame runs meanwhile.
 
 ```csharp
 public bool Suspended { get; }
@@ -330,6 +341,30 @@ public IRenderer BeginFrame()
 
  IRenderer
 
+### <a id="MicroEngine_Sdl_SdlPlatform_BrowserProfile_MicroEngine_Sdl_BrowserPage_"></a> BrowserProfile\(BrowserPage\)
+
+The SDL3 platform of a browser page, named <code>sdl</code>: the WebGL canvas, page input and Web Audio sound, with the
+touches, screen facts, visibility and vibration of <code class="paramref">page</code>. The browser host offers this
+profile; a game's composition may offer others.
+
+```csharp
+public static PlatformProfile BrowserProfile(BrowserPage page)
+```
+
+#### Parameters
+
+`page` [BrowserPage](MicroEngine.Sdl.BrowserPage.md)
+
+#### Returns
+
+ PlatformProfile
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+<code class="paramref">page</code> is null.
+
 ### <a id="MicroEngine_Sdl_SdlPlatform_CreateProfile_System_String_"></a> CreateProfile\(string?\)
 
 The SDL3 platform with a fixed render driver ("direct3d11", "direct3d12", "metal", "opengl", "opengles2",
@@ -350,7 +385,7 @@ public static PlatformProfile CreateProfile(string? renderer = null)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Delay_System_Double_"></a> Delay\(double\)
 
-Waits with SDL's precise delay (a high-resolution timer, then a short spin).
+Waits with SDL's precise delay (a high-resolution timer, then a short spin); never offered in a browser, whose page cannot be blocked.
 
 ```csharp
 public void Delay(double seconds)
@@ -397,7 +432,7 @@ public bool MoveToDisplay(int index)
 Processes SDL's pending events and delivers the engine's: a trip to the background (latched by the lifecycle
 watch, so one that ended before this pump is still delivered as <code>Suspending</code> then <code>Resumed</code>), one quit
 request however many close and quit events arrived together, focus changes and size changes of the window.
-While suspended it waits 50 ms instead of spinning.
+While suspended it waits 50 ms instead of spinning, except in a browser, whose page stops calling while hidden.
 
 ```csharp
 public bool PumpEvents(IEngineEventSink sink)
@@ -441,7 +476,7 @@ public bool SetVSync(bool on)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_SetWindowMode_MicroEngine_Core_WindowMode_"></a> SetWindowMode\(WindowMode\)
 
-Changes the window's mode; phones keep theirs (always full screen).
+Changes the window's mode; phones keep theirs (always full screen), and a page owns its full screen (the Fullscreen API needs a gesture).
 
 ```csharp
 public bool SetWindowMode(WindowMode mode)
