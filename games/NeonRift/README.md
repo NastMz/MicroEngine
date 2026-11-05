@@ -68,7 +68,8 @@ SCRATCH (clear a stage from its start without losing a life) and LEVIATHAN DOWN.
 ## Developer switches
 
 The desktop launcher accepts `--script`, `--captures`, `--hidden`, `--mute` and the other flags listed
-in [CONTRIBUTING](../../CONTRIBUTING.md). Extra options come from environment variables:
+in [CONTRIBUTING](../../CONTRIBUTING.md). Extra options come from the host's developer variables (environment
+variables on desktop), read in the game's `Configure`:
 
 | Variable | Effect |
 | --- | --- |
@@ -92,7 +93,7 @@ RIFT_START=stage RIFT_STAGE=2 RIFT_AUTO=1 RIFT_GOD=1 dotnet run --project games/
 | --- | --- |
 | `Art/` | Asset loading (`Assets`), tile cutting and choice (`Tiles`), sound registration |
 | `Content/` | `StageBuilder` and the three stage definitions; `Content/` files are the shipped assets |
-| `Gameplay/` | `Stage` (rules), `Player`, enemies, bosses, weapons, projectiles, pickups, `Autopilot` |
+| `Gameplay/` | `Stage` (rules), `Player`, enemies, bosses, weapons, projectiles, pickups, `Autopilot`; actors are entities of the play scene's `Objects` |
 | `Scenes/` | Title, stage card, play, pause, game over, ending; `StageView` draws a stage and the HUD |
 
 Tests live in `tests/NeonRift.Tests`: movement and aiming, weapons, lives and continues, enemy rules,

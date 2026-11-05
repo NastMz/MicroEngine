@@ -3,6 +3,7 @@ using NeonRift.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
+using MicroEngine.Scenes;
 using MicroEngine.World;
 
 namespace NeonRift.Gameplay;
@@ -13,6 +14,7 @@ public sealed class PlayerShot : Actor
     private readonly HashSet<Enemy> _hit = [];
     public WeaponSpec Weapon { get; }
     public float Life { get; set; } = 1.4f;
+    private protected override void AttachTo(IWorld world, EntityId id) => world.Attach<PlayerShot>(id, this);
 
     public PlayerShot(WeaponSpec weapon, Vector2 at, Vector2 velocity)
     {
@@ -46,7 +48,8 @@ public sealed class PlayerShot : Actor
         // Copied first: a hit can spawn or destroy enemies. The stage's buffer is reused instead of a new list per shot.
         var targets = Stage.HitBuffer;
         targets.Clear();
-        foreach (var e in Stage.Enemies.Overlapping(Bounds.Inflate(Weapon.Kind == WeaponKind.Lance ? 6 : 0))) targets.Add(e);
+        var reach = Bounds.Inflate(Weapon.Kind == WeaponKind.Lance ? 6 : 0);
+        foreach (var e in Stage.Enemies) if (e.Bounds.Intersects(reach)) targets.Add(e);
         foreach (var enemy in targets)
         {
             if (_hit.Contains(enemy)) continue;
@@ -80,6 +83,7 @@ public sealed class EnemyShot : Actor
 {
     public bool Heavy { get; init; }
     public float Gravity { get; init; }
+    private protected override void AttachTo(IWorld world, EntityId id) => world.Attach<EnemyShot>(id, this);
 
     public EnemyShot(Vector2 at, Vector2 velocity, bool heavy = false)
     {

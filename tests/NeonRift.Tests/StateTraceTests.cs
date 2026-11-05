@@ -14,9 +14,10 @@ namespace NeonRift.Tests;
 public sealed partial class StateTraceTests
 {
     /// <summary>
-    /// The scripts of <c>games/NeonRift/scripts</c> with the start their environment stands for: the three scenarios of
+    /// Every script of <c>games/NeonRift/scripts</c> with the start its environment stands for: the three scenarios of
     /// <c>web/tests/scenarios.json</c> first, then the capture scripts their headers (and the README) describe.
-    /// <c>touch.script</c> is left out: it drives the on-screen controls of a touch layout.
+    /// <c>touch.script</c> starts in stage 1 (<c>RIFT_START=stage</c>, its header); its touches go through the on-screen
+    /// controls' hit testing, which the headless platform has too.
     /// </summary>
     public static IEnumerable<object[]> Scenarios =>
     [
@@ -26,6 +27,7 @@ public sealed partial class StateTraceTests
         ["poses", "stage", 1, true, false],
         ["tour", "stage", 1, true, false],
         ["autotour", "stage", 2, true, true],
+        ["touch", "stage", 1, false, false],
     ];
 
     private static LaunchOptions Options(string start, int stage, bool god, bool auto) => new(start, stage, God: god, Auto: auto);
@@ -86,5 +88,21 @@ public sealed partial class StateTraceTests
         }
         Assert.IsTrue(scoreChanged, "the game section never changed: the session (score, lives) is not hashed");
         Assert.IsTrue(playerChanged, "the stage.player section never changed: the player's state is not hashed");
+    }
+
+    /// <summary>
+    /// The touch script's starting point really plays its touches: before FIRE is touched (update 135) the player's
+    /// shots section stays as it started; while the stick and FIRE are held, it changes.
+    /// </summary>
+    [TestMethod]
+    public void TheTouchScriptFiresThroughTheOnScreenControls()
+    {
+        var steps = RunOnce("touch", Options("stage", 1, false, false)).Trace.Steps;
+
+        static ulong Shots(StepHash step) => step.Sections.Single(s => s.Name == "stage.shots").Hash;
+
+        var first = Shots(steps[0]);
+        Assert.IsTrue(steps.Where(s => s.Update < 135).All(s => Shots(s) == first), "a shot before any touch");
+        Assert.IsTrue(steps.Where(s => s.Update is > 135 and < 180).Any(s => Shots(s) != first), "touching FIRE fired nothing");
     }
 }

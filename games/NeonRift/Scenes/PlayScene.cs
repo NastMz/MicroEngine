@@ -16,7 +16,6 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
     private bool _leaving;
     private readonly Autopilot? _autopilot = game.Launch.Auto ? new Autopilot() : null;
     private int _deathsAtStart;
-    private DrawBlend _blend;
 
     public Stage Stage => _stage;
     public override string? Describe() => _stage is null ? null
@@ -25,8 +24,9 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
 
     /// <summary>
     /// Adds the scene's own state (which stage, whether it is leaving, the deaths counted at its start, the autopilot's
-    /// timers), then the stage's, which opens sections of its own (<see cref="Gameplay.Stage.HashState"/>). The view and
-    /// the drawing blend are left out: drawing only.
+    /// timers), then the stage's, which opens sections of its own (<see cref="Gameplay.Stage.HashState"/>). The view is
+    /// left out: drawing only. The stage's actors are entities of the scene's <see cref="Scene.Objects"/>, which the
+    /// engine hashes with the scene.
     /// </summary>
     public override void HashState(StateHasher hash)
     {
@@ -41,11 +41,12 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
     public override void Enter()
     {
         var def = Stages.All[stageIndex];
-        _stage = new Stage(def, game.Session, checkpoint, seed: 11 + stageIndex)
+        _stage = new Stage(def, game.Session, Objects, checkpoint, seed: 11 + stageIndex)
         {
             SoundSink = (name, volume, pitch, pan) => game.Sfx(name, volume, pitch, pan),
             MusicSink = game.Music,
             Rigs = name => game.Art.Rig(name),
+            Strips = name => game.Art.Frames(name).Count,
             DefeatSink = _ =>
             {
                 game.Achievements.Unlock(RiftAchievements.FirstScrap);
@@ -78,7 +79,6 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
             Input.Down("left"), Input.Down("right"), Input.Down("up"), Input.Down("down"),
             Input.Pressed("jump"), Input.Down("jump"), Input.Down("fire"), Input.Down("lock"));
         _stage.Update(dt, input);
-        _blend.Mark(Game);
 
         if (_stage.Finished)
         {
@@ -104,7 +104,6 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
 
     public override void Draw(IRenderer r)
     {
-        _stage.Blend = _blend.Of(Game);
         _view.Draw(r, _stage);
         Ui.Scanlines(r);
     }

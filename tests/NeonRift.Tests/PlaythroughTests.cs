@@ -18,7 +18,7 @@ public sealed class PlaythroughTests
     public void Autopilot_clears_the_stage(int index)
     {
         var session = new Session { Lives = 99 };
-        var stage = new Stage(Stages.All[index], session);
+        var stage = Stage(Stages.All[index], session);
         stage.Player.God = true;
         var bot = new Autopilot();
         int steps = 0;
@@ -26,7 +26,7 @@ public sealed class PlaythroughTests
         var previous = PlayerState.Alive;
         while (!stage.Finished && steps < 60 * 60 * 6)
         {
-            stage.Update(Dt, bot.Next(stage, Dt));
+            Step(stage, bot.Next(stage, Dt));
             if (stage.Player.State == PlayerState.Dying && previous == PlayerState.Alive) falls.Add($"col {stage.Player.Position.X / 16:0}");
             previous = stage.Player.State;
             steps++;
