@@ -33,7 +33,7 @@ public UiTheme(PanelStyle Panel, Color Text, Color TextShadow, Color Accent, Col
 
 #### Parameters
 
-`Panel` [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
+`Panel` PanelStyle
 
 Colours of panels and boxes.
 
@@ -103,7 +103,7 @@ public PanelStyle Panel { get; init; }
 
 #### Property Value
 
- [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
+ PanelStyle
 
 ### <a id="MicroEngine_UI_UiTheme_Text"></a> Text
 
@@ -149,7 +149,7 @@ public void Deconstruct(out PanelStyle Panel, out Color Text, out Color TextShad
 
 #### Parameters
 
-`Panel` [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
+`Panel` PanelStyle
 
 `Text` Color
 

@@ -133,7 +133,7 @@ public IGraphicsDevice Graphics { get; }
 
 #### Property Value
 
- [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+ IGraphicsDevice
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Input"></a> Input
 
@@ -337,7 +337,7 @@ public IRenderer BeginFrame()
 
 #### Returns
 
- [IRenderer](MicroEngine.Graphics.IRenderer.md)
+ IRenderer
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Dispose"></a> Dispose\(\)
 

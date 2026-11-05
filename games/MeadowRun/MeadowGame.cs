@@ -81,6 +81,9 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
         PressedTint = MeadowRun.Art.Pal.Leaf,
     };
 
+    // Achievements are declared before the engine is composed, so it adds their module.
+    public override void Configure(EngineBuilder builder) => UseAchievements(MeadowAchievements.Catalog, Store, MeadowRun.Scenes.Ui.Theme);
+
     protected override void Load()
     {
         Art = new Assets(Graphics);
@@ -88,7 +91,6 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
         Lights = new MicroEngine.Graphics.LightMap(Graphics, DecoArt.Glow(24)) { Darkness = 1 };
         foreach (var (name, clip) in SoundBank.All()) Audio.AddSound(name, clip);
         foreach (var (name, song, loop) in MusicBank.All()) Audio.AddMusic(name, song, loop);
-        UseAchievements(MeadowAchievements.Catalog, Store, MeadowRun.Scenes.Ui.Theme);
         AchievementToasts!.Top = 17;   // below the HUD row
         Achievements.Unlocked += _ => Sfx("checkpoint", 0.8f);
         Save = Store.Load<SaveData>(SaveSlot) ?? new SaveData();

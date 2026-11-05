@@ -15,7 +15,7 @@ public sealed class DeviceTexture : Texture, IDisposable
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
-[Texture](MicroEngine.Graphics.Texture.md) ← 
+Texture ← 
 [DeviceTexture](MicroEngine.Graphics.DeviceTexture.md)
 
 #### Implements
@@ -24,17 +24,17 @@ public sealed class DeviceTexture : Texture, IDisposable
 
 #### Inherited Members
 
-[Texture.CheckDrawable<TTexture\>\(Texture, IGraphicsDevice\)](MicroEngine.Graphics.Texture.md\#MicroEngine\_Graphics\_Texture\_CheckDrawable\_\_1\_MicroEngine\_Graphics\_Texture\_MicroEngine\_Graphics\_IGraphicsDevice\_), 
-[Texture.Update\(int, int, int, int, ReadOnlySpan<Color\>\)](MicroEngine.Graphics.Texture.md\#MicroEngine\_Graphics\_Texture\_Update\_System\_Int32\_System\_Int32\_System\_Int32\_System\_Int32\_System\_ReadOnlySpan\_MicroEngine\_Color\_\_), 
-[Texture.Update\(PixelImage, int, int\)](MicroEngine.Graphics.Texture.md\#MicroEngine\_Graphics\_Texture\_Update\_MicroEngine\_Graphics\_PixelImage\_System\_Int32\_System\_Int32\_), 
-[Texture.Dispose\(\)](MicroEngine.Graphics.Texture.md\#MicroEngine\_Graphics\_Texture\_Dispose), 
-[Texture.Width](MicroEngine.Graphics.Texture.md\#MicroEngine\_Graphics\_Texture\_Width), 
-[Texture.Height](MicroEngine.Graphics.Texture.md\#MicroEngine\_Graphics\_Texture\_Height), 
-[Texture.IsDisposed](MicroEngine.Graphics.Texture.md\#MicroEngine\_Graphics\_Texture\_IsDisposed), 
-[Texture.Device](MicroEngine.Graphics.Texture.md\#MicroEngine\_Graphics\_Texture\_Device), 
-[Texture.Bounds](MicroEngine.Graphics.Texture.md\#MicroEngine\_Graphics\_Texture\_Bounds), 
-[Texture.SizeInBytes](MicroEngine.Graphics.Texture.md\#MicroEngine\_Graphics\_Texture\_SizeInBytes), 
-[Texture.Filter](MicroEngine.Graphics.Texture.md\#MicroEngine\_Graphics\_Texture\_Filter), 
+Texture.CheckDrawable<TTexture\>\(Texture, IGraphicsDevice\), 
+Texture.Update\(int, int, int, int, ReadOnlySpan<Color\>\), 
+Texture.Update\(PixelImage, int, int\), 
+Texture.Dispose\(\), 
+Texture.Width, 
+Texture.Height, 
+Texture.IsDisposed, 
+Texture.Device, 
+Texture.Bounds, 
+Texture.SizeInBytes, 
+Texture.Filter, 
 [object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
 [object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 
 [object.Equals\(object?\)](https://learn.microsoft.com/dotnet/api/system.object.equals\#system\-object\-equals\(system\-object\)), 
@@ -80,7 +80,7 @@ protected override void ApplyFilter(TextureFilter filter)
 
 #### Parameters
 
-`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
+`filter` TextureFilter
 
 ### <a id="MicroEngine_Graphics_DeviceTexture_Release"></a> Release\(\)
 

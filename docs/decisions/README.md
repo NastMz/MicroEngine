@@ -10,7 +10,7 @@ maintainer's archive, not in the public history.
 | [0003](0003-scenes-entities-runtime.md) | Scene stack, plain entities, fixed-step runner, raylib behind `IPlatform` | Accepted |
 | [0004](0004-external-asset-files.md) | Load external image and audio files (amends 0002) | Accepted |
 | [0005](0005-hybrid-content.md) | Hybrid games: generated and file content side by side (amends 0004) | Accepted |
-| [0006](0006-achievements.md) | Engine-owned achievements, game-owned rules | Accepted |
+| [0006](0006-achievements.md) | Engine-owned achievements, game-owned rules (amended: achievements and saves as optional modules, declared before composition) | Accepted |
 | [0007](0007-browser-host.md) | Browser host: page-driven loop and pluggable save storage | Accepted |
 | [0008](0008-web-packages.md) | Web packages: one host, gesture start, pinned toolchain | Accepted |
 | [0009](0009-public-site.md) | Public site: Astro and Starlight, documentation read from the repository, pinned demo archive | Accepted |

@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Graphics2D.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 A GPU (or headless) texture owned by the active graphics device.
@@ -16,10 +16,6 @@ public abstract class Texture : IDisposable
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
 [Texture](MicroEngine.Graphics.Texture.md)
-
-#### Derived
-
-[DeviceTexture](MicroEngine.Graphics.DeviceTexture.md)
 
 #### Implements
 

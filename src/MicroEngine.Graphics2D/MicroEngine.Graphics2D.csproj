@@ -15,7 +15,12 @@
     <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
     <ProjectReference Include="../MicroEngine.Graphics/MicroEngine.Graphics.csproj" />
   </ItemGroup>
+  <!-- Image decoding for PixelImage (StbImageSharp: managed, public domain or MIT; THIRD-PARTY-NOTICES.md). -->
   <ItemGroup>
+    <PackageReference Include="StbImageSharp" Version="[2.30.15]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine" />
     <InternalsVisibleTo Include="MicroEngine.Tests" />
     <InternalsVisibleTo Include="MicroEngine.Graphics.Tests" />
   </ItemGroup>

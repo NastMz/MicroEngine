@@ -170,7 +170,7 @@ public override void Draw(IRenderer r)
 
 #### Parameters
 
-`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`r` IRenderer
 
 ### <a id="MicroEngine_UI_AchievementsScene_Update_System_Single_"></a> Update\(float\)
 

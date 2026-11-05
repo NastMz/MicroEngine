@@ -18,7 +18,7 @@ the step-by-step tutorial is [Gem Garden](../tutorial/README.md).
 | `Random` | Per-run `Random`, seeded by the launcher (`RunOptions.Seed`) |
 | `Width`, `Height` | The virtual canvas size from `Settings` |
 | `Quit()` / `QuitRequested` | Asks the loop to stop after the current frame |
-| `UseAchievements(...)`, `Achievements` | Optional achievements (see [Achievements](achievements.md)) |
+| `UseAchievements(...)`, `Achievements` | Optional achievements (see [Achievements](achievements.md)); next SDK version: declared from the constructor or `Configure` |
 
 ```csharp
 public abstract GameSettings Settings { get; }
@@ -148,7 +148,7 @@ The phases run in this order; the four fixed phases run once per fixed step, the
 | `PreFixed` | `engine.input` (samples every player's actions from their devices; `Input` is player 1's), `engine.fullscreen` (switches full screen when the `fullscreen` action is pressed; next SDK version) | Work before each step's simulation |
 | `FixedUpdate` | `engine.time` (`Time`, `UpdateCount`), `engine.scenes` (`Scene.Update`) | Game rules |
 | `Physics` | — | Physics and collision |
-| `PostFixed` | `engine.audio`, `engine.achievements`, `engine.input.end` (edge detection), `engine.assets.playing` | What follows the simulated state |
+| `PostFixed` | `engine.audio`, `engine.achievements` (writes achievement progress; next SDK version: only in games that declare achievements), `engine.input.end` (edge detection), `engine.assets.playing` | What follows the simulated state |
 | `Update`, `LateUpdate` | — | Camera smoothing, UI animation, interpolation, at the display's rate |
 | `Extract` | — | Copying what will be drawn |
 | `Render` | `engine.render` (clear, scenes, achievement banners) | Drawing |

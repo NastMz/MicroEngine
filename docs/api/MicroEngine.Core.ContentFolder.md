@@ -141,7 +141,7 @@ public PixelImage Image(string relative)
 
 #### Returns
 
- [PixelImage](MicroEngine.Graphics.PixelImage.md)
+ PixelImage
 
 #### Exceptions
 

@@ -307,7 +307,7 @@ How a run ended.
 Small JSON persistence for settings and progress. Without a directory or a storage of its own, a store keeps its slots
 in the platform's default medium ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)): files under the user's data folder
 ([DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_)), and the page's localStorage in browsers. A composition can hand a game another medium
-([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)); tests pass a temporary directory.
+(<code>HostBuilder.Storage</code>); tests pass a temporary directory.
 Corrupt or missing data yields null instead of crashing the game; corrupt data is set aside
 ("&lt;slot&gt;.corrupt.json" for files) so the next save cannot destroy it. A slot that exists but could not be
 read (locked file, blocked browser storage) is never written by this store, because the game is then

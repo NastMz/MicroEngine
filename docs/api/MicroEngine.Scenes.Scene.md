@@ -244,7 +244,7 @@ public abstract void Draw(IRenderer renderer)
 
 #### Parameters
 
-`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`renderer` IRenderer
 
 The renderer of the current frame.
 
@@ -261,7 +261,7 @@ public virtual void DrawUi(IRenderer ui)
 
 #### Parameters
 
-`ui` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`ui` IRenderer
 
 The UI view's renderer: <code>ui.Width</code> and <code>ui.Height</code> are its size in UI units.
 

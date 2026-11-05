@@ -49,6 +49,7 @@ public abstract class Game
 | `CreateTouchLayout` | Override to choose the on-screen controls ([Touch controls](../manual/input.md#touch-controls)) |
 | `Touch` | The on-screen controls at run time: shown, pressed, geometry, `SetVisible`, `Layout` |
 | `Random` | Deterministic per run; seeded by the launcher (seed 1 under a script) |
+| `UseAchievements` | Declares the achievements. Next SDK version: called from the constructor or `Configure` (before the engine is composed), it adds the achievements module; from `Load` or later it throws `InvalidOperationException` |
 | `Achievements` | Throws until `UseAchievements` was called |
 | `InitializeForTest` / `StepForTest` | Run `Load`, then advance one fixed update after sampling input, without a loop |
 
@@ -326,7 +327,7 @@ in [Configuration](configuration.md#default-input-actions).
 
 ## SaveStore and ISaveStorage
 
-[`src/MicroEngine/Core/SaveStore.cs`](../../src/MicroEngine/Core/SaveStore.cs).
+[`src/MicroEngine.Saves/SaveStore.cs`](../../src/MicroEngine.Saves/SaveStore.cs).
 
 ```csharp
 public sealed class SaveStore
@@ -360,8 +361,10 @@ public interface ISaveStorage
 | Refused write | `Save` returns false; the game keeps running |
 | Where | Files under `DefaultDirectory(gameId)` by default (local application data on Windows and macOS, the XDG data folder on Linux); `localStorage` in the browser via `DefaultStorage` (next SDK version: `DefaultStorage(gameId)` is a method returning the platform's default medium, `BrowserStorage` in browsers; Android and iOS folders are part of `DefaultDirectory`) |
 
-Implementations: `FileSaveStorage` (core), `BrowserSaveStorage` (`MicroEngine.Raylib`; next SDK version: `BrowserStorage` in `MicroEngine.Platform`). See
+Implementations: `FileSaveStorage` (core; next SDK version: `MicroEngine.Saves.dll`, carried by the `MicroEngine` package, namespace unchanged), `BrowserSaveStorage` (`MicroEngine.Raylib`; next SDK version: `BrowserStorage` in `MicroEngine.Platform`). See
 [Persistence](../manual/persistence.md).
+
+`SavesModule` (next SDK version, namespace `MicroEngine.Saves`): `new SavesModule(store)` registers `store` as the engine's `SaveStore` service; it schedules no frame system.
 
 ## Achievement and AchievementTracker
 

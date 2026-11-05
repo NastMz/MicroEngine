@@ -176,12 +176,20 @@ public static readonly Achievement[] Catalog =
 ];
 ```
 
-Turned on in `Load` with the game's store and theme, from `MeadowGame.cs`:
+Declared before the engine is composed, with the game's store and theme: in `Configure` (next SDK version), or in the
+game's constructor with the published SDK. What needs the running game (the banners' position, the unlock sound)
+stays in `Load`, from `MeadowGame.cs`:
 
 ```csharp
-UseAchievements(MeadowAchievements.Catalog, Store, MeadowRun.Scenes.Ui.Theme);
-AchievementToasts!.Top = 17;   // below the HUD row
-Achievements.Unlocked += _ => Sfx("checkpoint", 0.8f);
+public override void Configure(EngineBuilder builder) => UseAchievements(MeadowAchievements.Catalog, Store, MeadowRun.Scenes.Ui.Theme);
+
+protected override void Load()
+{
+    // ...
+    AchievementToasts!.Top = 17;   // below the HUD row
+    Achievements.Unlocked += _ => Sfx("checkpoint", 0.8f);
+    // ...
+}
 ```
 
 Reported where the events already happen, from `PlayScene.cs`:

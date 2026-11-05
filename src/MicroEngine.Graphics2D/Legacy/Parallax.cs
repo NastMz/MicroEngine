@@ -28,7 +28,7 @@ public sealed class ParallaxLayer(Texture texture)
     /// <summary>Draws the layer in screen space.</summary>
     /// <param name="r">The renderer, with no camera pushed.</param>
     /// <param name="cameraPosition">The camera's <see cref="Camera2D.Position"/>.</param>
-    /// <param name="time">Seconds used by <see cref="Drift"/>, for example <see cref="Core.Game.Time"/>.</param>
+    /// <param name="time">Seconds used by <see cref="Drift"/>, for example the game's <c>Time</c>.</param>
     public void Draw(IRenderer r, Vector2 cameraPosition, float time = 0)
     {
         ArgumentNullException.ThrowIfNull(r);
