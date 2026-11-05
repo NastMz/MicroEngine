@@ -9,6 +9,9 @@ receives the global blend), §6.3 (the `MicroEngine.Scene` and `MicroEngine.Migr
 ([`experiments/arch-1/p7-entities`](../../experiments/arch-1/p7-entities/README.md)) with architect directive 11
 (the P7 verdict) and directive 12 (stage 3).
 
+Amended 2026-11-05 (ARCH-1 stage 5, below): the transitional `Entity` adapter is deleted. No demo, sample or engine
+assembly uses it any more, and the architecture test refuses any reference to it.
+
 ## Context
 
 `Entity` was a sprite object with a 16×16 hitbox: no ids, no transform or hierarchy, no attachments, drawing inside
@@ -67,3 +70,27 @@ calls lets games reintroduce D11.
   after.
 - Data readable after `Destroy` is a feature and a footgun: `IsAlive` is the only guard.
 - Measured on desktop CoreCLR only; WebAssembly and Android costs are not measured yet.
+
+## Amendment (2026-11-05, ARCH-1 stage 5): the entity adapter is deleted
+
+The adapter was transitional, as decided above. Stage 5 removed it, so one object model remains.
+
+- **The demos left it** (ARCH-1 stage 5c, one pull request per game: #83 Neon Rift, #84 Trail Duel, #85 Courtyard
+  Key, #86 Meadow Run). Their objects are entities of `Scene.Objects`. The world now does the interpolation, the
+  snapping (`Teleport`), the per-scene step tracking, the spawn timing and the hitstop clock that each game did itself.
+  The game sections of the state traces are unchanged step for step, with one exception: in Courtyard Key's
+  `gallery.script`, a pause pressed inside a hitstop now consumes one step of the freeze (40 steps of `play.progress`
+  differ). Meadow Run has the same rule, but no script reaches it. The scene sections differ because they now include
+  the world. Every scripted capture is byte-identical.
+- **The adapter is gone** (#89). `src/MicroEngine.Migration.Entities` and its tests are deleted and the solution no
+  longer lists them. `MEMIG001` no longer exists. The architecture test `No_project_references_the_removed_entity_adapter`
+  fails when a project outside `experiments/` references or recreates the adapter, or when the solution lists it. The
+  allow-list of demos is removed. `The_core_no_longer_carries_the_legacy_entities` checks that `MicroEngine.World.Entity`
+  and `EntityList<T>` are not in the core.
+- **Gaps the migrations found, closed in the engine** (#89). `Scene.EngineStep` gives the engine's step before the
+  world clock scales or freezes it. `Camera2D.DrawPosition` and `DrawnPosition` let a camera be drawn at an
+  interpolated position. Creating `Scene.Objects` while drawing is refused with `InvalidOperationException`, because a
+  world created by drawing would exist only in runs that drew a frame. All 37 traced runs of the demos and the gallery
+  are byte-identical before and after.
+- The published SDK (0.4.0-alpha.2) still has `Entity` and `EntityList<T>`. The migration notes say how a game moves
+  to `Scene.Objects` in the next SDK version. The adapter was never packaged, so no published package goes away.

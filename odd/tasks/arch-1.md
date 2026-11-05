@@ -2,8 +2,9 @@
 
 Objective: Phase I (done) audited every subsystem against the vision of a generalist, modular, multi-platform
 2D/2.5D/3D engine, researched other engines and designed the target architecture; the owner approved it on 2026-11-02
-with five amendments (`L4`-`L5`). **Phase II (reconstruction) is under way** under the approved plan in
-[`docs/evaluations/arch-1.md`](../../docs/evaluations/arch-1.md) §9-§9.1; this file is its persistent register.
+with five amendments (`L4`-`L5`). **Phase II (reconstruction) is complete on `main` (2026-11-05, c0ae530) and
+unpublished**, under the approved plan in [`docs/evaluations/arch-1.md`](../../docs/evaluations/arch-1.md)
+§9-§9.1; its final report is dossier §12. This file is its persistent register.
 Governance (`L6`): the architect directs, reviews and merges; agents implement every unit through a pull request and
 never merge their own; no NuGet publication, public or demo release, production site deployment, visibility,
 secrets or permission change. Phase I branch `docs/arch-1` from `feat/asset-1` at 5706285; Phase II branches per unit.
@@ -94,7 +95,8 @@ A stage's tasks are checked against the stage closure criteria in dossier §9.
 | T6 | S11, S16 | delegated: documentation agent, branch `docs/arch-1-prototype-verdicts` | done | [#29](https://github.com/NastMz/MicroEngine/pull/29), 32006ca | dossier §9 prototype verdicts; §6.4 graphics contract revised per directive 2 (16 points); directive 3 decisions in §5, §6.1-§6.5, §7, §9, §10, §11; this register |
 | T7 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-2` | done | [#41](https://github.com/NastMz/MicroEngine/pull/41), 3aa486e | directives 4-9 applied: dossier §6.4 (graphics contract v1 summary + link, `IAudioSink` v1, physics revisions), §9 verdicts (graphics spike, P5, P6, browser determinism), §5-§11; this register |
 | T8 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-3` | done | [#55](https://github.com/NastMz/MicroEngine/pull/55), f08a3e3 | directives 9-12 applied: stages 0-2 closed, P7 verdict; dossier §6.4 (contract states, frozen `IWorld` v1 sketch, stage 2 notes), §8 (T0 OS precision), §9 (P7 verdict, stage 3 units, progress), §10 (two risks), §11; this register |
-| T9 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-4` | PR open | [#64](https://github.com/NastMz/MicroEngine/pull/64) | directives 12-14 and #54-#61 applied: stage 3 closed, stages 4 and 6 started; dossier §6.3-§6.4 (implemented states), §9 (stage units, progress), §10 (risks), §11; this register |
+| T9 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-4` | done | [#64](https://github.com/NastMz/MicroEngine/pull/64), 251f1e2 | directives 12-14 and #54-#61 applied: stage 3 closed, stages 4 and 6 started; dossier §6.3-§6.4 (implemented states), §9 (stage units, progress), §10 (risks), §11; this register |
+| T10 | S11, S13, S16 | delegated: closing registrar agent, branch `docs/arch-1-close` | PR open | [#90](https://github.com/NastMz/MicroEngine/pull/90) | #62-#89 registered with merge commits and evidence; stages 4, 5 and 6 checked against their criteria; dossier §12 (final report, §9.1 item 4); ADRs 0030 and 0038 amended; migration notes: upgrade checklist; release-notes draft; SDL in the notices' zlib text |
 | G1 | S15 | delegated: another agent, branch `fix/phase-ii-deploy-freeze` | done | [#22](https://github.com/NastMz/MicroEngine/pull/22), 9a8020e | automatic public publication frozen for Phase II (`.github/phase-freeze`); validation CI keeps running |
 | S0-D1 | S11 | delegated: stage 0 defects agent, branch `fix/arch-1-stage0-defects` | done | [#24](https://github.com/NastMz/MicroEngine/pull/24), 59fae72 | `ComposedPlatform` forwards every `IPlatform` member and exactly the backend's optional interfaces; tests RED first (since deleted by 1B) |
 | S0-D2 | S11 | delegated: stage 0 CI agent, branch `fix/arch-1-stage0-ci` | done | [#27](https://github.com/NastMz/MicroEngine/pull/27), a89d031 | Windows WARP reference drift (eight entries of `sdl-windows-ci.json`) and the Debian 11 glibc check rule (`packaging/targets.mjs`, `glibcRefusal`) |
@@ -130,13 +132,17 @@ A stage's tasks are checked against the stage closure criteria in dossier §9.
 | P7 | S11 | delegated: prototype agent, `experiments/arch-1/p7-entities` | concluded: verdict accepted | [#53](https://github.com/NastMz/MicroEngine/pull/53), d2191cc | Courtyard Key port: bit-identical traces on 11 scripts × 2 storages, 47 game tests, 12 helpers removed; `IWorld` v1 frozen with corrections (directive 11); gate met |
 | S3a | S11, S12 | delegated: stage 3a agent (directive 12), branches `feat/arch-1-stage3a-scene-1`..`-3` (chained) | done | [#56](https://github.com/NastMz/MicroEngine/pull/56), 9b7022c; [#57](https://github.com/NastMz/MicroEngine/pull/57), 4705135; [#59](https://github.com/NastMz/MicroEngine/pull/59), d5515b2 | #56 `MicroEngine.Scene` (namespace `MicroEngine.Scenes`, so the `Scene` class is not hidden): `EntityId`, `Transform`, `IWorld`/`SceneWorld` per P7 + directive 11, conformance suite (38 tests: every v1 rule of P7's 44 cases on one storage, plus new rules), T0 hashing, ADR 0030; #57 scenes own worlds (`Scene.Objects`, not `Scene.World`, which broke two consumers), engine interpolation and `Teleport`, world-owned blend from per-scene step tracking (D11/SC-2 fixed), world clocks (SC-3), scene results (SC-1); the views hook was not possible there (moved to S2a-V); #59 transitional adapter `MicroEngine.Migration.Entities` (non-packable, `[Obsolete]` `MEMIG001`, demos only, architecture test), `PlatformerExample` without `Entity`, docs label `Entity` "removed in the next SDK version", ADR 0003 amended by 0030. Closed stage 3a |
 | S3b | S11, S12 | delegated: stage 3b agent (directive 12), branch `feat/arch-1-stage3b-physics-1` | done | [#60](https://github.com/NastMz/MicroEngine/pull/60), e39d8bb | `MicroEngine.Physics` (`IPhysicsWorld2D`, `PhysicsContract.Version = 1`, `PhysicsCapabilities`, `PhysicsCapabilityException`, P6 revisions a-h, `PhysicsModule` in `FramePhase.Physics`), common conformance suite with a `Scale` override, capability suites; `MicroEngine.Physics.Tiles` (exact swept mover, D6 fixed with no T0 trace change, `TileGeometry`, `OneWayPlatforms`, `MovingSolids`); tile types moved with type forwards from `MicroEngine`; ADR 0031. Follow-ups: no broad phase (0.75 ms/step for 200 boxes; stage 6b); `MoveResult` name clash between `MicroEngine.World` and `MicroEngine.Physics` (stage 5 decides `TileMotion`'s future). Closed stage 3 |
-| S4a | S11 | delegated: stage 4a agent (directive 14), chained PRs | in progress (no PR yet) | — | 4a-1 `MicroEngine.Text` (bitmap and scalable fonts, layout, loaders registered with Content, type forwards, FontStashSharp moves with it); 4a-2 `MicroEngine.UI` (widgets, focus navigation, layout in UI units on the UI view, theme, text field over the text/IME channel, highest input layer, renamable engine widget actions, existing widgets moved with type forwards); captures composite the UI view over the world view (world-only capture kept); `UiScale` default = surface density (headless 1); ADR at the next free number |
-| S4b | S11 | delegated: stage 4b agent (directive 14) | in progress (no PR yet) | — | `MicroEngine.Saves` and `MicroEngine.Achievements` as opt-in modules (a game without achievements pays nothing); `Input.Touch` (`VirtualControls`, `TouchLayout`, `TouchSkin`) out of the core after 4a-1 merges, enabled by default on touch platforms; type forwards, demos green, T0 traces unchanged |
-| S5 | S11 | delegated (unassigned) | pending | — | consumers migrated; `Entity` adapter deleted; exclusion list empty; SDL browser launcher replaces raylib on the web behind the P4 gates (dossier §9) |
-| P2 | S11, S13 | delegated: inside stage 6a (directive 13) | in progress (with S6-1) | — | P2's two effects (palette swap, full-screen effect) are 6a's evidence; gate: tier-1 shader toolchain fixed (inside the 3D vertical slice); input from P3: HLSL, DXC package, SPIRV-Cross; risks: Windows-only DXC, unverified MSL |
-| S6-1 | S13 | delegated: stage 6a agent (directive 13), chained PRs | in progress | [#62](https://github.com/NastMz/MicroEngine/pull/62) (6a-1, open) | 3D vertical slice (dossier §9.1 item 2): tier-1 SDL_GPU device on contract v1 with conformance (D3D12, Vulkan, lavapipe in CI); offline shader toolchain (DXC, SPIRV-Cross) with P2; minimal glTF 2.0 as a Content kind; 3D batch path; `Camera3D`; a scene with a transform hierarchy and interpolation; a sample; E12 measured on desktop (mobile unverified unless reachable) |
-| S6-2 | S12, S13 | delegated: stage 6b agent (directive 13) | in progress | [#63](https://github.com/NastMz/MicroEngine/pull/63) (6b-1, open) | `MicroEngine.Physics.Box2D`: Box2D v3.2.0 from pinned source + the flat C layer, natives built by a cached CI job for win-x64, linux-x64, osx-arm64/x64, android-arm64/x64, ios-arm64, browser-wasm, in an optional package that is not published; passes `PhysicsConformance` with its metre `Scale` and its capability suites; substitution scenarios 1 and 2 (§9.1 item 3); a spatial grid broad phase for the tile backend, T0 traces identical |
-| S6-3 | S13 | delegated (unassigned) | pending | — | final report, integrated in `main`, no release (§9.1 item 4) |
+| S4a | S11 | delegated: stage 4a agent (directive 14), chained PRs | done | [#66](https://github.com/NastMz/MicroEngine/pull/66), 3fee335; [#70](https://github.com/NastMz/MicroEngine/pull/70), faca750; [#74](https://github.com/NastMz/MicroEngine/pull/74), 5af531a; [#75](https://github.com/NastMz/MicroEngine/pull/75), 608f470 | 4a-0 #66 the 2D façade model moves to `MicroEngine.Graphics2D` with forwards (27 forwarding tests, RED first); 4a-1 #70 `MicroEngine.Text` (fonts, FontStashSharp, the font loader under kind "font"); 4a-2 #74 `MicroEngine.UI` (widget tree, highest input layer, renamable widget actions, text field with IME, captures composite the UI view; ADR 0044); #75 `UiScale` defaults to the surface density (`float?`, `UiScaleFor`) |
+| S4b | S11 | delegated: stage 4b agent (directive 14) | done | [#65](https://github.com/NastMz/MicroEngine/pull/65), 427fa4e; [#68](https://github.com/NastMz/MicroEngine/pull/68), 70b385e; [#76](https://github.com/NastMz/MicroEngine/pull/76), 80e7bf6 | #65 `MicroEngine.Saves`, `SavesModule`, `AchievementsModule`, achievements declared before composition (ADR 0006 amended); #68 `MicroEngine.Achievements` (architecture edge `Achievements -> Saves` added); #76 `MicroEngine.Input.Touch` as an opt-in module (active on touch-first screens or with a game layout; architecture row added; ADR 0045); T0 traces byte-identical on 16 scripts (#76) |
+| S5a | S11 | delegated (directive 15 §5a), branch `feat/arch-1-stage5a-api` | done | [#78](https://github.com/NastMz/MicroEngine/pull/78), 9cce0ef | `Synth`, `SfxParams`, `Wave`, `Song`, `Instrument` to `MicroEngine.Audio.Retro`; `CanvasScaling`, `GameSettings.Scaling`, `EffectivePresentation` removed (never published; ADR 0029 amended); `TileMoveResult` (ADR 0031 amended); `docs.mjs` required build against the source-built SDK, nuget.org build report-only until the next release; 78/78 deterministic traces identical |
+| S5b | S11 | delegated (directive 15 §5b), branches `feat/arch-1-stage5b-sdl-web`, `-2` | done | [#80](https://github.com/NastMz/MicroEngine/pull/80), 1130603; [#81](https://github.com/NastMz/MicroEngine/pull/81), 2996563 | #80 SDL 3 browser host behind `--web-backend sdl`, SDL built from source by `sdl-web.yml`, every CI-verifiable gate passed (run 41981413614); #81 SDL is the browser platform, raylib web retired, ADR 0047 |
+| S5c | S11, S13 | delegated: one agent per demo | done | [#83](https://github.com/NastMz/MicroEngine/pull/83), 44a32d6; [#84](https://github.com/NastMz/MicroEngine/pull/84), d597a23; [#85](https://github.com/NastMz/MicroEngine/pull/85), 049f948; [#86](https://github.com/NastMz/MicroEngine/pull/86), 4cbe45e | Neon Rift, Trail Duel, Courtyard Key, Meadow Run on `Scene.Objects`; per-script trace comparisons (game sections identical, except 40 steps of Courtyard Key `gallery.script`: a pause inside a hitstop now consumes one step); captures byte-identical (67, 118, 43, 44); launch options through `HostEnvironment`; T0 starting points declared |
+| S5d | S11, S13 | delegated (directive 16), three PRs | done | [#89](https://github.com/NastMz/MicroEngine/pull/89), c0ae530 (5d-1); [#88](https://github.com/NastMz/MicroEngine/pull/88), 6833daa (5d-2); [#87](https://github.com/NastMz/MicroEngine/pull/87), 3efd395 (5d-3) | 5d-1: `Scene.EngineStep`, `Camera2D.DrawPosition`, `Objects` refused while drawing, one tap rule for every device, phone `--env` as host variables, **the entity adapter deleted** and refused by the architecture test; 5d-2: API reference links for moved types, `docs/ci.md`, the architecture diagram and module table, the decisions index; 5d-3: frame loop 208 → 0 B per frame (limit < 24 B), audio feeder allocation counter |
+| X2 | S11 | delegated, branch `fix/arch-1-short-press-check-2` | done | [#79](https://github.com/NastMz/MicroEngine/pull/79), 3682cfb | the browser short-press check missed presses read by a catch-up frame (the trace listed actions after the frame's last update; harness, not engine); development `Probe()` records actions per update; new gating catch-up check 80/80 (4/80 before) |
+| P2 | S11, S13 | delegated: inside stage 6a (directive 13) | concluded | [#71](https://github.com/NastMz/MicroEngine/pull/71), 9973599 | palette swap (exact) and full-screen effect (±1/255) on tier 1 with shaders compiled offline by `microengine shaders`; typed error on tier 0; toolchain fixed (ADR 0042): DXC restored on first use, compiling needs Windows, MSL generated but not executed |
+| S6-1 | S13 | delegated: stage 6a agent (directive 13), chained PRs | done | [#62](https://github.com/NastMz/MicroEngine/pull/62), f94afbb; [#71](https://github.com/NastMz/MicroEngine/pull/71), 9973599; [#72](https://github.com/NastMz/MicroEngine/pull/72), 87e7de9; [#77](https://github.com/NastMz/MicroEngine/pull/77), 4350249; [#82](https://github.com/NastMz/MicroEngine/pull/82), ee57db0 | #62 tier-1 `SdlGpuDevice`, conformance on D3D12, Vulkan and lavapipe (ADR 0041); #71 shader toolchain with P2 (ADR 0042); #72 glTF mesh kind, `Camera3D`, `Renderer3D`, Slice3D, E12 on desktop (ADR 0043); #77 device chosen through composition (`--graphics sdl-gpu`), Slice3D an ordinary game, run in CI on lavapipe (ADR 0046); #82 NVIDIA driver crash analysed. Evidence map: dossier §12.4 |
+| S6-2 | S12, S13 | delegated: stage 6b agent (directive 13), chained PRs | done | [#63](https://github.com/NastMz/MicroEngine/pull/63), 9d159de; [#67](https://github.com/NastMz/MicroEngine/pull/67), 12ebdf2; [#69](https://github.com/NastMz/MicroEngine/pull/69), 7bab790; [#73](https://github.com/NastMz/MicroEngine/pull/73), 308d0f0 | #63 Box2D v3.2.0 natives for eight runtimes (`box2d.yml`, checksums, determinism comparison); #67 `Box2DPhysicsWorld2D`, capability suites, optional package never published; #69 tile grid broad phase (results identical to a full scan); #73 substitution scenarios 1 and 2, ADR 0031 amended. Shared and specific capabilities: dossier §12.5 |
+| S6-3 | S13 | delegated: closing registrar (T10) | PR open | [#90](https://github.com/NastMz/MicroEngine/pull/90) | final report: dossier §12 (§9.1 item 4), integrated in `main` when merged; no release |
 
 Route evidence: T1/T2 fire the mapping trigger (the audit spans the whole repository and external sources, far beyond
 the inline evidence budget); the owner explicitly asked for delegated, parallel, domain-specialised agents. Phase II:
@@ -145,23 +151,23 @@ every unit is delegated by the owner's protocol (S14).
 ## Register
 
 Updated by agents at each merge, gate and stage closure (S16). Dates are ISO; PR numbers link to the pull request.
-Last update: 2026-11-03 (T9).
+Last update: 2026-11-05 (T10, closing Phase II).
 
 ### Stage status
 
 | Stage | Status | Gates still open | Closure criteria met (dossier §9 a-e) |
 | --- | --- | --- | --- |
-| 0. Repair and measure | **closed** (directive 10): defects #24, CI #27, validation tooling #30, gallery #31 and #35, browser harness #36, T0 #42; P1, P3, P4 concluded | — | closed by the architect (directives 10, 12) |
-| 1. Kernel and composition | **closed** (directive 12): 1A #33, #34; 1B #37; 1C #43 (ADR 0038) | — | closed by the architect (directive 12) |
+| 0. Repair and measure | **closed** (directive 10): defects #24, CI #27, validation tooling #30, gallery #31 and #35, browser harness #36, T0 #42; P1, P3, P4 concluded | — | closed by the architect (directives 10, 12); (d): ADR 0035 reserved, not written (T10 check) |
+| 1. Kernel and composition | **closed** (directive 12): 1A #33, #34; 1B #37; 1C #43 (ADR 0038) | — | closed by the architect (directive 12); (d): ADR 0036 reserved, not written; the architecture test it would record is in force (T10 check) |
 | 2a. Graphics foundation | **closed** (directive 12): #45, #48, #52 (ADRs 0028, 0029); follow-ups landed: F11 action #54, views hook with `Aspect.Expand` and font pages #61 | — (tier-1 port → stage 6a) | closed by the architect (directive 12) |
 | 2b. Input | **closed** (directive 12): #46, #49, #51 (ADR 0032) | — (open point: `IInputBackend` location) | closed by the architect (directive 12) |
 | 2c. Audio and content | **closed** (directive 12): #44, #47, #50 (ADRs 0033, 0034) | — | closed by the architect (directive 12) |
 | 3. World and physics | **closed** (directive 13): 3a #56, #57, #59 (ADR 0030); 3b #60 (ADR 0031) | — | closed by the architect (directive 13) |
-| 4. UI and modules | **in progress** (directive 14): 4a (4a-1 `MicroEngine.Text`, then 4a-2 `MicroEngine.UI`); 4b (Saves, Achievements, `Input.Touch` after 4a-1) | — | — |
-| 5. Consumers | not started | `Entity` adapter deleted; exclusion list empty; raylib web retirement gates (P4) | — |
-| 6. Phase II completion | **in progress** (directive 13): 6a 3D vertical slice (#62 open); 6b Box2D and substitution (#63 open) | P2 (shader toolchain, inside 6a); lavapipe proven for SDL_GPU; Box2D natives validated (directive 13: mobile build-only unless reachable); Phase II completes only with stages 0-5 closed | — |
+| 4. UI and modules | **closed** (2026-11-05): 4a-0 #66, 4a-1 #70, 4a-2 #74 and #75 (ADR 0044); 4b #65, #68, #76 (ADR 0006 amended, ADR 0045) | — | (a) suites green on each PR; (b) the demos (achievements, saves, touch tests), the UI widget and capture tests, Slice3D's UI-view label; (c) rows for Text, UI, Saves, Achievements, Input.Touch; (d) merged; (e) T10 |
+| 5. Consumers | **closed** (2026-11-05) with one content item open: 5a #78; 5b #80, #81 (ADR 0047); 5c #83-#86; 5d #87, #88, #89; X2 #79 | the public release notes (`docs/guide/release-notes.md`, "Next release") do not list stages 2-6: drafted in `docs/evaluations/arch-1/release-notes-draft.md` (outside T10's edit surfaces) | (a) green on each PR; (b) the four demos, the gallery, the samples, the template; (c) green, the adapter refused; (d) 0029 and 0031 amended, 0047, 0030 and 0038 amended (T10); (e) T10. Adapter deleted (#89); exclusion list never used |
+| 6. Phase II completion | **closed** (2026-11-05): 6a #62, #71, #72, #77, #82 (ADRs 0041, 0042, 0043, 0046); 6b #63, #67, #69, #73 (ADR 0031 amended); final report dossier §12 (T10) | — (lavapipe proven; Box2D tested on Windows, Linux, macOS and in Chrome; iOS and Android arm64 build only, directive 13) | §9.1 item 2 met (§12.4), item 3 met (§12.5), item 1 met with open items (ADRs 0035/0036, release-notes page, owner validation), item 4 by T10 |
 
-Prototypes: P1, P3, P4, P5, P6, P7 concluded; P2 open (inside stage 6a).
+Prototypes: P1-P7 concluded (P2 inside stage 6a, #71).
 
 ### Approved decisions
 
@@ -174,21 +180,31 @@ it; "written" records the merged ADR file.
 | 0027 | The loop owns time; engine interpolation with teleport; world clocks | 1, 3 | yes: [0027](../../docs/decisions/0027-loop-owned-time.md) (#34) for loop-owned time; interpolation and world clocks are stage 3 |
 | 0028 | One complete graphics device contract with capabilities, built-in pipelines, typed capability error; tier 1 pure SDL_GPU (P3); frozen as v1 (directive 5) | 1 (spike), 2a | yes: [0028](../../docs/decisions/0028-graphics-device-contract.md) (#45) |
 | 0029 | `Presentation` replaces `CanvasScaling`; pixel art is a preset | 2a | yes: [0029](../../docs/decisions/0029-presentation-replaces-canvas-scaling.md) (#48) |
-| 0030 | One object model; `IWorld` v1 as frozen by P7 (directive 11); transitional `Entity` adapter deleted at the end of stage 5 | 3a | yes: [0030](../../docs/decisions/0030-one-object-model.md) (#56); ADR 0003 marked as amended by it (#59) |
-| 0031 | Physics common contract + declared capabilities; tile backend first; native Box2D after P6, with P6's revisions (directive 8) | 3b, 6 | yes: [0031](../../docs/decisions/0031-physics-contract.md) (#60); the Box2D backend is stage 6b |
+| 0030 | One object model; `IWorld` v1 as frozen by P7 (directive 11); transitional `Entity` adapter deleted at the end of stage 5 | 3a, 5 | yes: [0030](../../docs/decisions/0030-one-object-model.md) (#56); ADR 0003 marked as amended by it (#59); amended by T10: the adapter is deleted (#89) |
+| 0031 | Physics common contract + declared capabilities; tile backend first; native Box2D after P6, with P6's revisions (directive 8) | 3b, 6 | yes: [0031](../../docs/decisions/0031-physics-contract.md) (#60); amended in 6b (#73: Box2D backend, natives, 128-world limit, substitution, broad phase) and 5a (#78: `TileMoveResult`) |
 | 0032 | Input as device events with ids, players, layers | 2b | yes: [0032](../../docs/decisions/0032-input-devices-players-layers.md) (#46); open point: `IInputBackend` lives in `MicroEngine.Input`, not `MicroEngine.Platform` |
 | 0033 | One managed mixer; backends are PCM sinks; default SDL sink a feeder thread (directive 7) | 2c | yes: [0033](../../docs/decisions/0033-one-mixer-over-pcm-sinks.md) (#47) |
 | 0034 | Content handles, loader registry, sources; optional build-time import | 2c | yes: [0034](../../docs/decisions/0034-content-handles-loaders-sources.md) (#44) |
-| 0035 | Validation by contract: declared properties, justified tolerances, closure criteria, exclusion list | 0 | no |
-| 0036 | Assemblies by boundary, architecture test; few packages, one version | 1 | no (the architecture test exists since #33) |
+| 0035 | Validation by contract: declared properties, justified tolerances, closure criteria, exclusion list | 0 | **no**: reserved (decisions index, #88); the decision is applied (§8, conformance suites, T0) |
+| 0036 | Assemblies by boundary, architecture test; few packages, one version | 1 | **no**: reserved (decisions index, #88); the architecture test exists since #33 |
 | 0037 | Platform host contract with capabilities, explicit options and no time coupling (amends 0016, 0027); numbered after the reserved 0028-0036 (directive 6) | 1 | yes: [0037](../../docs/decisions/0037-platform-host-contract.md) (#37) |
-| 0038 | One composition path (`MicroEngine.Hosting`, `GameHost`, `Configure` entry point, no process-wide statics) (directive 9) | 1 | yes: [0038](../../docs/decisions/0038-one-composition-path.md) (#43) |
+| 0038 | One composition path (`MicroEngine.Hosting`, `GameHost`, `Configure` entry point, no process-wide statics) (directive 9) | 1 | yes: [0038](../../docs/decisions/0038-one-composition-path.md) (#43); amended by T10: phone `--env` pairs as host variables (#89), SDL browser host (#81) |
+| 0039, 0040 | — | — | unused numbers (decisions index, #88) |
+| 0041 | Tier-1 graphics device on pure SDL_GPU, conformance on D3D12, Vulkan and lavapipe | 6a | yes: [0041](../../docs/decisions/0041-tier1-device-on-sdl-gpu.md) (#62) |
+| 0042 | Offline shader toolchain (`microengine shaders`, `CompiledShader`); DXC restored on first use, not redistributed | 6a | yes: [0042](../../docs/decisions/0042-offline-shader-toolchain.md) (#71) |
+| 0043 | Minimal 3D path: glTF meshes as an asset kind, `Camera3D`, one material, `Renderer3D` | 6a | yes: [0043](../../docs/decisions/0043-minimal-3d-path.md) (#72) |
+| 0044 | UI module: widgets as the highest input layer, renamable widget actions, captures of what the player sees | 4a | yes: [0044](../../docs/decisions/0044-ui-module.md) (#74, #75) |
+| 0045 | Touch controls as an opt-in module in `MicroEngine.Input.Touch` | 4b | yes: [0045](../../docs/decisions/0045-touch-controls-module.md) (#76) |
+| 0046 | Tier-1 device chosen through the composition path; `DeviceRenderer.Flush`/`Target` | 6a | yes: [0046](../../docs/decisions/0046-tier1-device-selection.md) (#77; crash analysis #82) |
+| 0047 | SDL 3 is the browser platform; raylib leaves the web (amends 0007, 0008, 0017) | 5b | yes: [0047](../../docs/decisions/0047-sdl-browser-platform.md) (#81) |
 
-Existing ADR amended in Phase II: 0025 (asset pipeline), for scopes that share assets (#24, 745221e), and for the
-asset store that now holds those semantics (#44).
+Existing ADRs amended in Phase II: 0025 (asset pipeline), for scopes that share assets (#24, 745221e), and for the
+asset store that now holds those semantics (#44); 0006 (achievements and saves as modules, #65, #68); 0029
+(`CanvasScaling` removed, #78). The full list of amended ADRs is in dossier §12.6.
 
-Architect decisions on prototype evidence (directives 2-14 of 2026-11-02 and 2026-11-03; dossier §9 prototype
-verdicts, §11):
+Architect decisions on prototype evidence (directives 2-16 of 2026-11-02 to 2026-11-05; dossier §9 prototype
+verdicts, §11, §12). Directives 15 and 16 are recorded from the pull requests that cite them (#78, #80, #81, #87);
+their full text was not given to the registrar.
 
 | Source | Decision | Applied in dossier |
 | --- | --- | --- |
@@ -206,6 +222,10 @@ verdicts, §11):
 | Directive 12 | Stage 3 as 3a (`MicroEngine.Scene`, chained 3a-1 world, 3a-2 scenes own worlds, 3a-3 `Entity` adapter; ADR 0030) and 3b (`MicroEngine.Physics` + `Physics.Tiles` after 3a-1 merges; ADR 0031); Box2D backend in stage 6; stages 0-2 closed | §9, §11 |
 | Directive 13 | Stages 0-3 closed; views hook as a graphics unit before stage 4 (UI view at screen resolution, scene-level hook, pointer per view, `Aspect.Expand`, font pages following `DefaultSampler`); stage 6 as 6a (3D vertical slice: tier-1 SDL_GPU device, offline shader toolchain with P2, minimal glTF, `Camera3D`, lavapipe CI job, E12 measured on desktop) and 6b (Box2D from pinned source, CI-built natives for eight RIDs in an unpublished optional package, mobile build-only unless reachable; substitution scenarios 1 and 2; tile broad phase) | §9, §10, §11 |
 | Directive 14 | Stage 4 as 4a (`MicroEngine.Text`, then `MicroEngine.UI`, chained; from the #61 review: captures composite the UI view over the world view, `UiScale` defaults to the surface density) and 4b (`Saves`, `Achievements`, `Input.Touch` as opt-in modules, type forwards, demos green, T0 traces unchanged); UI ADR at the next free number | §9, §11 |
+| Directive 15 | Stage 5 opens with two units: 5a settles the public names before the demos migrate (`Audio.Retro`, `Presentation` only, `TileMoveResult`, the docs-check switch); 5b makes SDL 3 a browser host behind an option with CI gates, then the default with raylib web retired once every CI-verifiable gate passes | §12.3 |
+| Stage 5c | One migration unit per demo off the entity adapter, each with a per-script state-trace comparison | §12.3 |
+| Directive 16 | Stage 5d: 5d-1 the engine gaps the demo migrations found and the adapter's deletion; 5d-2 documentation and CI pages; 5d-3 the frame loop's and the audio feeder's allocations | §12.3 |
+| Architect reviews | `Achievements -> Saves` edge (#68); the `Input.Touch` row and activation rule (#76); `UiScale` default granted as a separate unit (#75); 6a-4 follow-up after #72 (#77); WinDbg analysis with the owner's approval (#82) | §12 |
 
 ### Contracts in force
 
@@ -218,27 +238,28 @@ revisions with evidence.
 | Kernel per-step state hash (`StateHasher`, `IStateHashed`, `StateTrace`) | T0 | in force on `main` (#42) | `src/MicroEngine.Kernel`, `src/MicroEngine` |
 | Platform host (`IPlatformHost`, `ISurface`, `IStorage`, `IContentSource`, page-driven rules) | P4 concluded; stage 1B | in force on `main` per ADR 0037 (#37) | `src/MicroEngine.Platform` |
 | Hosting (`GameHost`, `HostBuilder`, `Configure` entry point) | stage 1C | in force on `main` per ADR 0038 (#43) | `src/MicroEngine.Hosting`, `src/MicroEngine` |
-| Graphics device contract v1 | graphics contract spike (S1-2) | **frozen** (directive 5; #32); in force on `main` (#45, ADR 0028): `GraphicsContract.Version = 1`, `Textured`; the XML documentation is the contract text | `src/MicroEngine.Graphics` (namespace `MicroEngine.Graphics.Devices`); devices in `src/MicroEngine.Sdl`, `src/MicroEngine.Raylib` (#48) |
+| Graphics device contract v1 | graphics contract spike (S1-2) | **frozen** (directive 5; #32); in force on `main` (#45, ADR 0028): `GraphicsContract.Version = 1`, `Textured`; the XML documentation is the contract text; no change through stage 6 | `src/MicroEngine.Graphics` (namespace `MicroEngine.Graphics.Devices`); tier 0 in `src/MicroEngine.Sdl`, `src/MicroEngine.Raylib` (#48); tier 1 `src/MicroEngine.Graphics.SdlGpu` (#62, ADR 0041; `sdl-gpu`, #77) |
 | `Presentation`, `IRenderer2D`, `Camera2D` | stage 2a | in force on `main` (#48, #52; ADR 0029) | `src/MicroEngine.Graphics`, `src/MicroEngine.Graphics2D` |
-| Input (device events, players, layers, `IInputBackend`, key chords) | stage 2b | in force on `main` (#46, #49, #51; ADR 0032); key chords and the `fullscreen` engine action (#54); `IInputBackend` location open | `src/MicroEngine.Input` |
-| Views (`IScreenView`, `Game.Views`, `Scene.DrawUi`/`UiContains`/`WorldCamera`, `Presentation.UiScale`, `AspectMode.Expand`) | directive 13 | in force on `main` (#61); 4a changes the `UiScale` default and the captures | `src/MicroEngine` (`Core/GameViews.cs`, scenes), `src/MicroEngine.Graphics` (`Presentation`) |
+| Input (device events, players, layers, `IInputBackend`, key chords) | stage 2b | in force on `main` (#46, #49, #51; ADR 0032); key chords and the `fullscreen` engine action (#54); one tap rule for every device (#89); `IInputBackend` kept in `MicroEngine.Input` | `src/MicroEngine.Input` |
+| Views (`IScreenView`, `Game.Views`, `Scene.DrawUi`/`UiContains`/`WorldCamera`, `Presentation.UiScale`, `AspectMode.Expand`) | directive 13 | in force on `main` (#61); captures composite the UI view (#74); `UiScale` defaults to the surface density (#75) | `src/MicroEngine` (`Core/GameViews.cs`, scenes), `src/MicroEngine.Graphics` (`Presentation`) |
 | `IAudioSink` v1 | P5 | **frozen** (directive 7; #38); in force on `main` (#47) | `src/MicroEngine.Platform/Audio/IAudioSink.cs`; mixer in `src/MicroEngine.Audio` (ADR 0033) |
 | Content (`AssetStore`, `Asset<T>`, `IAssetLoader<T>`, sources) | stage 2c | in force on `main` (#44, #50; ADR 0034) | `src/MicroEngine.Content` |
-| `IPhysicsWorld2D` common contract and `PhysicsCapabilities` | P6 concluded; written in stage 3b | in force on `main` (#60; ADR 0031): `PhysicsContract.Version = 1`, P6's eight revisions; the XML documentation is the contract text | `src/MicroEngine.Physics`, `src/MicroEngine.Physics.Tiles`; Box2D in stage 6b |
-| `IWorld` v1 | P7 concluded | **frozen** (directive 11; #53); in force on `main` (#56, #57; ADR 0030) | `src/MicroEngine.Scene` (namespace `MicroEngine.Scenes`); `Scene.Objects` in `src/MicroEngine` |
-| Tier-1 shader toolchain | P2 concluded; inside the 3D vertical slice | draft (P3 input: HLSL, DXC, SPIRV-Cross) | stage 6 |
+| `IPhysicsWorld2D` common contract and `PhysicsCapabilities` | P6 concluded; written in stage 3b | in force on `main` (#60; ADR 0031): `PhysicsContract.Version = 1`, P6's eight revisions; the XML documentation is the contract text; two backends pass the common suite (#60, #67) | `src/MicroEngine.Physics`, `src/MicroEngine.Physics.Tiles`; `src/MicroEngine.Physics.Box2D` (#67, unpublished) |
+| `IWorld` v1 | P7 concluded | **frozen** (directive 11; #53); in force on `main` (#56, #57; ADR 0030); the four demos on it (#83-#86); adapter deleted (#89) | `src/MicroEngine.Scene` (namespace `MicroEngine.Scenes`); `Scene.Objects`, `Scene.EngineStep` in `src/MicroEngine` |
+| Tier-1 shader toolchain (`CompiledShader`, `.shader` version 1, `microengine shaders`) | P2 concluded (#71) | in force on `main` (ADR 0042) | `src/MicroEngine.Graphics` (`CompiledShader`), `src/MicroEngine.Cli/Shaders.cs` |
+| Text, UI | stage 4a | in force on `main` (#70; #74, #75; ADR 0044) | `src/MicroEngine.Text`, `src/MicroEngine.UI` |
+| Opt-in modules: saves, achievements, touch controls | stage 4b | in force on `main` (#65, #68, #76; ADRs 0006 amended, 0045) | `src/MicroEngine.Saves`, `src/MicroEngine.Achievements`, `src/MicroEngine.Input.Touch` |
+| Tier-1 device selection (`GraphicsSettings.Device`, `--graphics`, `PlatformProfile.GraphicsDevices`, `DeviceRenderer.Flush`/`Target`) | stage 6a | in force on `main` (#77; ADR 0046) | `src/MicroEngine`, `src/MicroEngine.Sdl` |
+| 3D path (`MeshAssets`, `Camera3D`, `Renderer3D`) | stage 6a | on `main`, repository only, not packed (#72; ADR 0043) | `src/MicroEngine.Graphics3D` |
+| Browser platform (SDL 3 `BrowserLauncher`, `BrowserPage`, `SdlPlatform.BrowserProfile`) | P4 gates (stage 5b) | in force on `main` (#80, #81; ADR 0047) | `src/MicroEngine.Sdl`, `src/MicroEngine.Cli/Hosts/web` |
 
 ### Open PRs
 
 | PR | Task | Branch | Owner | Notes |
 | --- | --- | --- | --- | --- |
-| [#64](https://github.com/NastMz/MicroEngine/pull/64) | T9 | `docs/arch-1-register-4` | registrar agent | this register and dossier update |
-| [#62](https://github.com/NastMz/MicroEngine/pull/62) | S6-1 (6a-1) | `feat/arch-1-stage6a-3d-1` | stage 6a agent | tier-1 SDL_GPU device with conformance on D3D12, Vulkan and lavapipe |
-| [#63](https://github.com/NastMz/MicroEngine/pull/63) | S6-2 (6b-1) | `feat/arch-1-stage6b-box2d-1` | stage 6b agent | Box2D v3.2.0 natives for every runtime |
-| — (not yet opened) | S4a (4a-1) | — | stage 4a agent | in progress |
-| — (not yet opened) | S4b | — | stage 4b agent | in progress |
+| [#90](https://github.com/NastMz/MicroEngine/pull/90) | T10, S6-3 | `docs/arch-1-close` | closing registrar agent | this register, dossier §12, ADR amendments, migration notes |
 
-No other pull request is open (`gh pr list --state all`, 2026-11-03).
+No other pull request is open (`gh pr list --state all`, 2026-11-05).
 
 ### Merged PRs
 
@@ -284,9 +305,38 @@ No other pull request is open (`gh pr list --state all`, 2026-11-03).
 | [#57](https://github.com/NastMz/MicroEngine/pull/57) | S3a (3a-2) | 4705135 | 2026-11-03 11:35 | scenes own worlds, step tracking, world clocks, scene results |
 | [#59](https://github.com/NastMz/MicroEngine/pull/59) | S3a (3a-3) | d5515b2 | 2026-11-03 11:46 | `Entity`/`EntityList` move to the transitional adapter; the demos use it; closes stage 3 |
 | [#61](https://github.com/NastMz/MicroEngine/pull/61) | S2a-V | 4ff6857 | 2026-11-03 12:16 | UI view at screen resolution and the scene view hook; `Aspect.Expand`; font pages follow `DefaultSampler` |
+| [#64](https://github.com/NastMz/MicroEngine/pull/64) | T9 | 251f1e2 | 2026-11-03 12:31 | register and dossier: stage 3 closed, stages 4 and 6 started |
+| [#66](https://github.com/NastMz/MicroEngine/pull/66) | S4a (4a-0) | 3fee335 | 2026-11-03 12:55 | the 2D façade model moves into `MicroEngine.Graphics2D` |
+| [#65](https://github.com/NastMz/MicroEngine/pull/65) | S4b (4b-1) | 427fa4e | 2026-11-05 03:01 | saves and achievements as opt-in modules |
+| [#63](https://github.com/NastMz/MicroEngine/pull/63) | S6-2 (6b-1) | 9d159de | 2026-11-05 03:16 | Box2D v3.2.0 natives for every runtime |
+| [#67](https://github.com/NastMz/MicroEngine/pull/67) | S6-2 (6b-2) | 12ebdf2 | 2026-11-05 03:44 | Box2D backend of the 2D physics contract |
+| [#70](https://github.com/NastMz/MicroEngine/pull/70) | S4a (4a-1) | faca750 | 2026-11-05 03:44 | `MicroEngine.Text` |
+| [#69](https://github.com/NastMz/MicroEngine/pull/69) | S6-2 (6b-3) | 7bab790 | 2026-11-05 03:59 | grid broad phase for the tile backend |
+| [#62](https://github.com/NastMz/MicroEngine/pull/62) | S6-1 (6a-1) | f94afbb | 2026-11-05 04:06 | tier-1 SDL_GPU device, conformance on D3D12, Vulkan, lavapipe; ADR 0041 |
+| [#73](https://github.com/NastMz/MicroEngine/pull/73) | S6-2 (6b-4) | 308d0f0 | 2026-11-05 04:11 | physics substitution demonstration; ADR 0031 amended |
+| [#71](https://github.com/NastMz/MicroEngine/pull/71) | S6-1 (6a-2), P2 | 9973599 | 2026-11-05 04:19 | offline shader toolchain and P2 effects; ADR 0042 |
+| [#68](https://github.com/NastMz/MicroEngine/pull/68) | S4b (4b-2) | 70b385e | 2026-11-05 04:22 | `MicroEngine.Achievements` |
+| [#72](https://github.com/NastMz/MicroEngine/pull/72) | S6-1 (6a-3) | 87e7de9 | 2026-11-05 04:35 | 3D vertical slice on the tier-1 device; ADR 0043 |
+| [#74](https://github.com/NastMz/MicroEngine/pull/74) | S4a (4a-2) | 5af531a | 2026-11-05 04:51 | `MicroEngine.UI`, captures of what the player sees; ADR 0044 |
+| [#75](https://github.com/NastMz/MicroEngine/pull/75) | S4a (4a-2 b) | 608f470 | 2026-11-05 05:03 | `UiScale` follows the surface density |
+| [#76](https://github.com/NastMz/MicroEngine/pull/76) | S4b (4b-3) | 80e7bf6 | 2026-11-05 05:15 | `MicroEngine.Input.Touch` opt-in module; ADR 0045; closes stage 4 |
+| [#77](https://github.com/NastMz/MicroEngine/pull/77) | S6-1 (6a-4) | 4350249 | 2026-11-05 11:30 | tier-1 device through composition, Slice3D as a game; ADR 0046 |
+| [#79](https://github.com/NastMz/MicroEngine/pull/79) | X2 | 3682cfb | 2026-11-05 11:30 | short presses never lost between frames in the browser check |
+| [#82](https://github.com/NastMz/MicroEngine/pull/82) | S6-1 (6a-5) | ee57db0 | 2026-11-05 11:43 | NVIDIA driver fault behind the Vulkan test-host crash; closes stage 6 implementation |
+| [#78](https://github.com/NastMz/MicroEngine/pull/78) | S5a | 9cce0ef | 2026-11-05 11:49 | API cleanup: `Audio.Retro`, `Presentation` only, `TileMoveResult` |
+| [#83](https://github.com/NastMz/MicroEngine/pull/83) | S5c | 44a32d6 | 2026-11-05 12:21 | Neon Rift off the entity adapter |
+| [#84](https://github.com/NastMz/MicroEngine/pull/84) | S5c | d597a23 | 2026-11-05 12:23 | Trail Duel on the scene world |
+| [#85](https://github.com/NastMz/MicroEngine/pull/85) | S5c | 049f948 | 2026-11-05 12:28 | Courtyard Key off the entity adapter |
+| [#86](https://github.com/NastMz/MicroEngine/pull/86) | S5c | 4cbe45e | 2026-11-05 12:29 | Meadow Run off the entity adapter |
+| [#80](https://github.com/NastMz/MicroEngine/pull/80) | S5b (part 1) | 1130603 | 2026-11-05 12:37 | SDL 3 browser host behind `--web-backend sdl` |
+| [#81](https://github.com/NastMz/MicroEngine/pull/81) | S5b (part 2) | 2996563 | 2026-11-05 13:00 | SDL 3 is the browser platform; raylib web retired; ADR 0047 |
+| [#87](https://github.com/NastMz/MicroEngine/pull/87) | S5d (5d-3) | 3efd395 | 2026-11-05 13:14 | frame loop and audio feeder allocations |
+| [#88](https://github.com/NastMz/MicroEngine/pull/88) | S5d (5d-2) | 6833daa | 2026-11-05 13:16 | API reference links, CI and guide pages match the code |
+| [#89](https://github.com/NastMz/MicroEngine/pull/89) | S5d (5d-1) | c0ae530 | 2026-11-05 13:51 | engine gaps closed; the entity adapter deleted; closes stage 5 |
 
-Times are UTC merge times (`gh pr view N --json mergedAt`; hours shown from #41). Every pull request from #27 to #61
-is merged; none is closed unmerged. Chained PRs (#48 on #45, #52 on #48, #49 on #46, #51 on #49, #57 on #56, #59 on
+Times are UTC merge times (`gh pr view N --json mergedAt`; hours shown from #41). Every pull request from #27 to #89
+is merged; none is closed unmerged; every commit on `main`'s first-parent history after #61 is one of these merges
+(`git log --first-parent 4ff6857..c0ae530`). Chained PRs (#48 on #45, #52 on #48, #49 on #46, #51 on #49, #57 on #56, #59 on
 #57) were retargeted to `main` and merged there.
 
 ### Temporary incompatibilities
@@ -296,7 +346,7 @@ empties it.
 
 | Consumer | Reason | Owner | Resolved by stage |
 | --- | --- | --- | --- |
-| — (empty; stages 0-3 kept every demo, the gallery and the samples building and tested; no exclusion-list mechanism has been needed yet: #50 deferred the `Synth`/`Song` namespace move to stage 5 to avoid one, and in #59 the three demos that use `Entity` reference the transitional adapter while the documented samples build against the published SDK, `sdk/tests/docs.mjs` passed) | | | |
+| — (empty at the end of Phase II: no exclusion-list mechanism was ever needed. Stages 1-4 kept every consumer building through type forwards and façades; stage 5 migrated the four demos (#83-#86), the gallery and samples (#78) and deleted the adapter (#89), with the documented samples built against the source-built SDK and reported against nuget.org 0.4.0-alpha.2 (`sdk/tests/docs.mjs`, #78)) | | | |
 
 ### Validation results
 
@@ -336,6 +386,34 @@ Windows unless stated):
 | #60 (3b) | three D6 `TileMotion` tests RED on `origin/main`, two preservation tests green on both; physics tests 64 (common 22, capability 14, tile backend 6, module 3, world/façade 19); `dotnet test` all pass (MicroEngine.Tests 619 + 1 skipped); 30 demo state traces byte-identical; `packages.mjs` passed; `PhysicsBench` 200 boxes: tile world 0.75 ms/step (30 B/step), `TileMotion` 0.08 ms/step (0 B); `docs.mjs`, `external.mjs` and the site build not run |
 | #59 (3a-3) | `PlatformerExample` test RED first; Courtyard Key scroll test RED against the first adapter; the 11 adapter tests were written first but not run RED; `dotnet test` all green (MicroEngine.Tests 578 + 1 skipped, Migration.Entities 11, Samples 21); traces 35/36 byte-identical (the same `smoke.script` exception); `packages.mjs`, `external.mjs --targets windows` and `docs.mjs` (six documented samples on nuget.org 0.4.0-alpha.2) passed; `WorldBench` 0 B on every path |
 | #61 (views hook) | `ViewsTests` (UI at window resolution over a world at canvas resolution, `UiScale` 2, `Expand`, pointer per view, fallback without a UI view); with the UI composite disabled 3 view tests fail; `dotnet test` all green (MicroEngine.Tests 636 + 1 skipped, Graphics 70, Samples 21, Desktop 440 + 15 skipped); demos' T0 trace tests unchanged; `packages.mjs`, `external.mjs --targets windows`, `docs.mjs` passed |
+| #66 (4a-0) | `Graphics2DForwardingTests` 27 (26 RED before the forwards); `dotnet test` green (MicroEngine.Tests 663 + 1); games' T0 traces unchanged; `packages.mjs`, `external.mjs --targets windows`, `docs.mjs` passed |
+| #65 (4b-1) | RED first (saves assembly test; 4 opt-in tests); `dotnet test` green (MicroEngine.Tests 643 + 1 skipped); snippets pass; site build and `packages.mjs` left to CI |
+| #63 (6b-1) | layer self-test 22/22 and state hash `93f3a79ebf294b23` on win-x64, browser-wasm, linux-x64 (container), android-x64 (emulator); android-arm64 built only; macOS/iOS in CI; planner tests written after the rules (no RED) |
+| #67 (6b-2) | Box2D tests 89 passed on Windows and 89 in Chrome (wasm interpreter); 89 skipped without the library, 89 failed with `MICROENGINE_BOX2D_REQUIRED=1`; tests written alongside, not first |
+| #70 (4a-1) | architecture test RED first; `dotnet test` green except the machine-specific gamepad test (fails on the base too); `packages.mjs`, `docs.mjs` passed |
+| #69 (6b-3) | `TileBroadPhaseTests` RED first; a 300-step scripted history identical for a full scan and cells of 16, 64, 300; PhysicsBench 200 boxes 0.74-0.83 → 0.30-0.31 ms, 800 boxes 10.0 → 1.3-1.7 ms |
+| #62 (6a-1) | `Gpu` category 120/120 on NVIDIA (D3D12, Vulkan) and AMD; mutation 9/9 failed; `dotnet test` green (Desktop 608 + 15 skipped, MicroEngine.Tests 629 + 1); lavapipe proven by the PR's CI run |
+| #73 (6b-4) | Box2D tests 101 (89 + 12 substitution) on Windows and in Chrome; sample: both backends reach the goal at step 653 with 2 of 3 coins (tiles (618, 121), Box2D (617.84, 120.84)); no RED (properties the backends already had). T10 checked CI run 41965084699: every Box2D job green (eight natives, tests on win-x64, linux-x64, osx-arm64, Chrome, package, determinism) |
+| #71 (6a-2, P2) | Graphics 82/82; Cli 8 + 1 skipped; Desktop `Gpu` 126/126 (NVIDIA D3D12 + Vulkan); stale-shader check RED by editing `color.frag.hlsl` |
+| #68 (4b-2) | architecture test RED first; focused 49 pass; `dotnet test` green except the machine-specific gamepad test |
+| #72 (6a-3) | Graphics3D 8/8; `Slice3DTests` 6/6 on D3D12 NVIDIA, Vulkan NVIDIA, Vulkan AMD; depth-test mutation fails; captures looked at (D3D12, Vulkan); E12 desktop +1.06 ms (D3D12), +0.97 ms (Vulkan) |
+| #74 (4a-2) | widget and capture tests RED first (did not compile); MicroEngine.Tests 693 + 1; composite equals the reference device's presented frame pixel for pixel; demo tests and T0 traces unchanged; `docs.mjs`, `packages.mjs` passed |
+| #75 (4a-2 b) | RED first (did not compile); `UiScale` unset → density 1 or 2, explicit override, invalid density → 1; density-2 capture maps each UI unit to 2×2 pixels |
+| #76 (4b-3) | architecture and behaviour tests RED first; T0 traces byte-identical on 16 scripts (base 70b385e vs branch, clean builds); `docs.mjs` passed |
+| #77 (6a-4) | `DeviceCanvasTests`, `GraphicsSettingsTests`, `TierOneGameTests`; full suite green except the gamepad test. T10 checked CI run 41973605483: lavapipe `llvmpipe (LLVM 20.1.2)`, Mesa 25.2.8; `Gpu` 138 tests: 94 passed, 44 inconclusive (Direct3D 12 class, minimise); `slice.script` ran as `platform: sdl (SDL sdl-gpu vulkan)` |
+| #79 (X2) | catch-up check 4/80 before, 80/80 after; whole platform suite 66/66 in 20/20 runs (62-64 of 66 before); `mobile.mjs` 272/272; release package plays with no trace hooks |
+| #82 (6a-5) | docs only: full dump analysed with cdb (WinDbg); faulting thread in `nvoglv64.dll` 32.0.16.1088, use-after-free; 1 crash in 40 runs of the 138-test `Gpu` category |
+| #78 (5a) | `RenamedApiTests` 4 RED first; presets reproduce the old Pixel/Smooth rule over 13 × 3 × 5 cases; 78/78 deterministic traces identical (the 2 differing are the deliberately unseeded `Noisy` scene); `docs.mjs` required checks pass, nuget.org report shows the Retro break as expected; `packages.mjs`, `external.mjs` passed |
+| #83 (5c Neon Rift) | NeonRift.Tests 56; 7 scripts, 11 670 steps bit-identical with the world's hash masked; 67 captures byte-identical; whole solution 1890 tests, 0 failed |
+| #84 (5c Trail Duel) | TrailDuel.Tests 118; 8 scripts: every game and engine section identical on every step; 118 captures identical; two save folders give identical traces |
+| #85 (5c Courtyard Key) | CourtyardKey.Tests 52; 12 scripts: game sections identical except `gallery.script` `play.progress` from update 321 (hitstop and pause); 43 captures byte-identical |
+| #86 (5c Meadow Run) | MeadowRun.Tests 70; 27 runs with game-owned state identical at every step; 44 captures byte-identical; code 5887 → 5877 lines |
+| #80 (5b-1) | gate table on CI run 41981413614 (four demos, Chrome and Firefox, emulated phones and pads, layout, suspension): all passed; first run 41978009538 failed three gates, each fixed |
+| #81 (5b-2) | CI run 42022955265: CI result passed; Trail Duel's first attempt failed one repeat comparison (`master-battle.script`, typewriter one character behind), passed on re-run (Known problems); packages about 190 KB smaller with SDL |
+| #87 (5d-3) | `FrameGarbageTests` RED (3 failing) and the frame-loop check RED at 208 B; after: 0 B per median frame over 300 and 1,000,000 frames; feeder counter mutation 720-744 B per window caught; PerfBench 86,976 → 720 B per frame, 33 → 0 collections |
+| #88 (5d-2) | `api-reference.mjs --check` 444 pages up to date; 6873 links between API pages, 0 broken; snippets 104 blocks; site build 501 pages with `check-dist` |
+| #89 (5d-1) | RED observed for each item; 37 traced runs byte-identical before and after; `dotnet test` green except the gamepad test (MicroEngine.Tests 733 after merging main); `packages.mjs`, `external.mjs --targets windows`, `docs.mjs` passed; `mobile.mjs` stall check syntax-checked only; phone hosts not built locally |
+| `main` CI (T10 check, 2026-11-05) | runs on f94afbb (#62) and 80e7bf6 (#76) failed on Trail Duel's browser short-press check, the flake #79 fixed; 3efd395 (#87) failed only on an HTTP 502 uploading a demo artifact; every other run after #64 passed or was superseded; c0ae530 (#89) passed (run 42039521432) |
 | P7 (#53) | `Scene.Tests` 44 passed (42/44 RED against a stub); `CourtyardKey.Port.Tests` 71 passed (47 game tests, 22 trace equivalence runs, swap-remove divergence at update 248 of `gameover.script`); frame time ±5 %, allocation ±0.1 %; dense storage 4.7× faster lookups than per-entity dictionaries; desktop CoreCLR only |
 
 ### Known problems
@@ -361,7 +439,7 @@ Found in Phase II:
 | ID | Summary | Handling | Owner | Status |
 | --- | --- | --- | --- | --- |
 | K-P1-1 | SDL_Renderer's `gpu` driver on D3D12 ignores VSync off in desktop full screen (P1: 10 ms frames on a 100 Hz display) | Pure SDL_GPU with an explicit present mode runs unthrottled with Immediate (graphics spike); tier 0 keeps SDL's default driver. Not reported upstream (owner item) | S1-2 | closed for tier 1 (directive 5) |
-| K-P4-1 | .NET wasm interpreter mis-calls P/Invokes with 64-bit enum parameters, `delegate* unmanaged` parameters (P4) and 8-byte structs passed by value (P6) | The engine's own P/Invoke declarations use `ulong` / `nint` for the affected SDL functions (SDL browser launcher, stage 5); the Box2D C layer passes only scalars and pointers (stage 6). Not reported upstream (owner item) | S5, S6-2 | open |
+| K-P4-1 | .NET wasm interpreter mis-calls P/Invokes with 64-bit enum parameters, `delegate* unmanaged` parameters (P4) and 8-byte structs passed by value (P6) | Worked around: engine-owned `ulong` declarations for the SDL browser host (`SdlWeb`, #80); the Box2D layer passes only scalars and pointers (#63, #67). Not reported upstream (owner item) | S5b, S6-2 | worked around; upstream report open (owner) |
 | R1 (determinism) | Browser scripted runs are real time (`BrowserLauncher` builds `new DesktopOptions()`): steps per frame and draw blend from the wall clock | One launcher model decides the time mode; browser test proves byte-identical captures across two runs | S1-1C | fixed (#43) |
 | R2 (determinism) | Music renders in wall-clock slices inside `Game.Step` in browsers; `CurrentMusic` depends on CPU speed | Logical music state independent of rendering; render outside the step | S2c | fixed (#47) |
 | R3 (determinism) | Scene caches written while drawing | T0 hashes explicit contributions only; a test proves drawing never changes the hash | T0 | fixed by design (#42) |
@@ -370,37 +448,48 @@ Found in Phase II:
 | raylib canvas alpha | raylib's canvas alpha follows OpenGL's default blend (0xBF after a 50 % draw) and the frame is presented with alpha blending over the letterbox, which may darken translucent areas on screen (not in captures) (#30) | New raylib tier-0 device on the frozen contract | S2a | fixed (#52: opaque composite) |
 | Browser vs desktop frames | Meadow Run's level and map, Neon Rift's stage 1 and single Courtyard Key frames differ between browser and desktop (Meadow Run's camera about 3 px off) (#27) | Reported in the CI job summary, not a gate (pixel identity across backends is not a contract); cause R1, fixed by #43 (Meadow Run: 13/13 browser captures identical to desktop raylib locally) | S1-1C (R1) | report only |
 | R-SDL-3.5 | `ppy.SDL3-CS` 2026.1002.1 bundles SDL 3.5.0 (`ea7a2da`), a development series; P1, P3, P4, P5 and the graphics spike ran on it | Exact version recorded by the spike; binding updates re-run the conformance suites; dossier §10 | — | open (risk) |
-| R-SW-RAST | lavapipe/WARP for SDL_GPU unproven; SDL's software renderer fails the coverage rule (18/240 pixels) | The 3D slice's CI check must be proven on Linux lavapipe; `sdl-software` is a non-conformant diagnostic fallback (dossier §9.1, §10) | S6-1 | open (risk) |
-| R-E12 | Tier 1's per-frame surface copy (E12) unmeasured on mobile | Measured in the 3D vertical slice | S6-1 | open (risk) |
+| R-SW-RAST | lavapipe/WARP for SDL_GPU unproven; SDL's software renderer fails the coverage rule (18/240 pixels) | lavapipe runs the tier-1 suites and the slice in CI (#62, #72, #77; run 41973605483); WARP still unreachable through SDL_GPU; `sdl-software` stays a diagnostic fallback | S6-1 | closed for lavapipe |
+| R-E12 | Tier 1's per-frame surface copy (E12) unmeasured on mobile | Measured on desktop (#72: +1.06 ms D3D12, +0.97 ms Vulkan at 1920×1080, upper bounds); no phone reachable | S6-1 | desktop measured; mobile open |
 | R-ETC2 | No ETC2 in SDL_GPU 3.5; ASTC unsupported on the measured desktop GPUs: Android compressed textures have no path | Per-format capability; decision in 2c/6 | S2c, S6-1 | open (risk) |
 | R-AUDIO-DEV | Audio sinks unverified on iOS and real phones (Android emulator only), Safari and real browser audio devices | Recorded in dossier §10 | S2c | open (risk) |
-| R-BOX2D-NATIVE | Box2D natives unverified on Linux, macOS, iOS and Android arm64; six native builds to own; wasm archives tied to the workload's Emscripten | Stage 6 designs and validates CI-built natives on every target | S6-2 | open (risk) |
+| R-BOX2D-NATIVE | Box2D natives unverified on Linux, macOS, iOS and Android arm64 | CI builds eight runtimes; self-test, tests and the determinism hash on Windows, Linux, macOS arm64 (and x64 under Rosetta) and in Chrome (#63, #67, #73); iOS and Android arm64 build only (directive 13); iOS static linking unverified | S6-2 | closed for desktop and browser; mobile build only (owner item) |
 | P1-gallery | The asset gallery's captures embedded wall-clock load times | S0-V4 | — | fixed (#31, #35) |
 | F11 action | Backends toggled full screen on F11/Alt+Enter hard-wired; directive 10 asked for a rebindable engine action (#52) | `fullscreen` engine action, key chords, chord precedence general to the input map | S2a-F11 | fixed (#54); the toggle happens in the first update after the press |
 | Views hook | World view + screen-resolution UI view were possible (`DeviceCanvas.Compose`) but games had no scene-level drawing hook (#52); 3a-2 could not build it (#57) | UI view at screen resolution and the scene hook (directive 13) | S2a-V | fixed (#61) |
 | 2a follow-ups | `Aspect.Expand` missing; font pages did not follow `DefaultSampler` (#48, #52) | Done in the views unit | S2a-V | fixed (#61) |
-| UI view in captures | Captures record the world view only, not the UI view (#61); no current game draws UI | Captures composite the UI view over the world view, world-only capture kept (architect, directive 14) | S4a | open |
-| `UiScale` default | `Presentation.UiScale` defaults to 1, not the display density (#61) | Default = the surface's pixel density, documented and overridable; headless 1 (architect, directive 14) | S4a | open |
-| Tier-1 adapter | The spike's tier-1 pure SDL_GPU adapter is not ported to the engine contract (#45) | 3D vertical slice | S6-1 | in progress (#62) |
-| Tile broad phase | The tile backend scans every body in `Move` and queries: 0.75 ms per step for 200 boxes (`PhysicsBench`, #60) | Spatial grid broad phase, T0 traces identical (directive 13) | S6-2 | open |
-| `MoveResult` name clash | `MoveResult` exists in `MicroEngine.World` (the moved `TileMotion` type) and `MicroEngine.Physics`; a file importing both must qualify it (#60) | Stage 5 decides `TileMotion`'s future | S5 | open |
-| Legacy `Entity` mentions | `docs/reference/components.md` and `docs/reference/configuration.md` list `Entity` without the "removed in the next SDK version" label (#59) | True of the published SDK; label or update with the stage 5 migration | S5 | open |
+| UI view in captures | Captures recorded the world view only (#61) | Captures composite the UI view; `CaptureWorld` keeps the world-only capture | S4a | fixed (#74) |
+| `UiScale` default | `Presentation.UiScale` defaulted to 1 (#61) | `float?`, null = the surface density; headless 1 | S4a | fixed (#75) |
+| Tier-1 adapter | The spike's tier-1 adapter was not ported to the engine contract (#45) | `SdlGpuDevice` | S6-1 | fixed (#62) |
+| Tile broad phase | The tile backend scanned every body (0.75 ms per step for 200 boxes, #60) | Spatial grid, results identical to a full scan | S6-2 | fixed (#69) |
+| `MoveResult` name clash | `MoveResult` in both `MicroEngine.World` and `MicroEngine.Physics` (#60) | The tile mover's result is `TileMoveResult`; `TileMotion` stays a stateless convenience | S5a | fixed (#78) |
+| Legacy `Entity` mentions | Two reference pages listed `Entity` without the removal label (#59) | Both labelled "removed in the next SDK version" (checked by T10: `docs/reference/components.md`, `configuration.md`) | S5 | fixed |
 | `smoke.script` achievements | Meadow Run's `smoke.script` state trace differs between two runs of the same build in `engine.achievements`: saved achievements persist in the user's save folder (#57, #59) | Pre-existing determinism gap of that script; not caused by stage 3 | — (unassigned) | open |
-| Audio feeder allocations | The SDL audio allocation check counts the game thread only; the feeder thread's render loop is not measured (#58) | Needs an engine change, for example a per-render allocation counter the feeder exposes | — (unassigned) | follow-up |
-| Frame loop allocation margin | The frame loop allocates 240 B per frame, 16 B under the 256 B limit of its check (#58) | Investigate the growth before any limit change | — (unassigned) | follow-up |
+| Audio feeder allocations | The feeder thread's render loop was not measured (#58) | `AudioEngine.RenderAllocations` (internal) counts render-thread bytes; the SDL feeder allocates nothing per render | S5d | fixed (#87) |
+| Frame loop allocation margin | 240 B per frame against a 256 B limit (#58) | Three sources removed (headless command text, boxed enumerators, scope copies); median frame 0 B, limit < 24 B | S5d | fixed (#87) |
 | Timing flake | `Loads_during_play_are_counted_and_slow_ones_reported_once` reported 2 slow loads instead of 1 once in 60 contended runs (#58) | Timing-based, not an allocation check | — (unassigned) | open |
-| `Input.Touch` assembly row | Directive 14 makes `Input.Touch` an assembly "references per the architecture table", but the table in `tests/MicroEngine.Tests/Kernel/ArchitectureTests.cs` has no `MicroEngine.Input.Touch` row (dossier §6.3 places `Input.Touch` inside `MicroEngine.Input`, whose row allows Graphics2D and Text) | Architect decision: add the row (or keep `Input.Touch` inside `MicroEngine.Input`) before 4b needs it | — (architect) | open point |
-| Mobile validation wording | Dossier §9 (stage 6) says the Box2D natives are "validated on Linux, macOS, iOS and Android arm64" and §10 measured E12 "in the 3D vertical slice"; directive 13 makes mobile build-only for Box2D and leaves E12 on mobile unverified unless a device is reachable | Architect decision on the §9/§9.1 wording (the register records directive 13) | — (architect) | open point |
-| Input backend location | `IInputBackend` and the event types live in `MicroEngine.Input`, not `MicroEngine.Platform` as dossier §6.3 sketches (#46, #49) | Architect decision (a one-file move) | — (architect) | open point |
-| Hosting options | `MicroEngine.Hosting` carries GPU, window and audio options as command-line words until the modules split (#43) | Typed options when modules split | later stage | follow-up |
-| Phone `--env` | Phone developer variables are still exported to the process environment, where the demos read them (#43) | Read through the composition | S5 | follow-up |
+| `Input.Touch` assembly row | The architecture table had no `MicroEngine.Input.Touch` row | Row added: `Input.Touch -> Input, Graphics2D, Text, Graphics, Content, Kernel, Platform` | S4b | resolved (#76) |
+| Mobile validation wording | Dossier §9 said Box2D natives are "validated on Linux, macOS, iOS and Android arm64"; directive 13 makes mobile build-only | Dossier §9 stage 6 row corrected and §12 records what ran where | T10 | resolved (T10) |
+| Input backend location | `IInputBackend` lives in `MicroEngine.Input`, not `MicroEngine.Platform` as §6.3 sketched | Kept there through Phase II (the architecture test and #88's diagram record it) | — | accepted deviation |
+| Hosting options | `MicroEngine.Hosting` carries GPU, window and audio options as command-line words (#43) | The graphics device is typed (`GraphicsSettings.Device`, `LaunchRequest.Graphics`, #77); the other options stay words | later | follow-up (partly done) |
+| Phone `--env` | Phone developer variables were exported to the process environment (#43) | The demos read through `HostEnvironment` (#83-#86); phone hosts pass the pairs as `HostEnvironment.Variables` (#89); ADR 0038 amended (T10) | S5d | fixed (#89) |
 | Trace export | No state-trace export from web or phone runs (#43) | — | — | declined |
-| T0 coverage | T0 skips scripts whose starting point is not stated: every game's touch script, Meadow Run's `boss` and `tour`, Trail Duel's `catch` (#42) | Declare starting points so T0 covers them | S5 | follow-up |
-| `Audio.Retro` namespace | `Synth`/`Song` sit in a `Retro` folder with namespace `MicroEngine.Audio` (a namespace move would break consumers outside the exclusion list) (#50) | Namespace move with a migration note | S5 | deferred |
+| T0 coverage | T0 skipped scripts with no stated start (touch, Meadow Run `boss` and `tour`, Trail Duel `catch`) (#42) | Starting points declared and traced (#83-#86); Courtyard Key, Meadow Run and Trail Duel fail on a script without one | S5c | fixed |
+| `Audio.Retro` namespace | `Synth`/`Song` in a `Retro` folder with namespace `MicroEngine.Audio` (#50) | Moved to `MicroEngine.Audio.Retro` with a migration note | S5a | fixed (#78) |
 | `VoiceHandle` naming | The implemented handle is `VoiceHandle(int Index, uint Generation)`; the dossier sketch and directive 10 say `SoundHandle` (#47) | Recorded in dossier §6.4 (the code is authoritative) | — | recorded |
 | R-MUSIC-BUFFER | Streamed music is decoded only 0.5 s ahead by `Pump` (#47); a longer main-thread stall starves it | Recorded in dossier §10 | S2c | open (risk) |
 | Flaky allocation tests | `Measuring_text_allocates_nothing` (and similar allocation-counter tests) failed once in #47 and #49 runs and passed on rerun | Root cause: background-GC allocation-buffer accounting; `AllocationAssert` requires one 0-byte round after warm-up | X1 | fixed (#58) |
-| R-P7-SCOPE | `IWorld` measured on desktop CoreCLR only (not wasm/Android); P7 traces at blend 1; iteration order latent behaviour | Conformance pins the order (#56); `WorldBench` measures the accessors (#59); stage 5 compares traces per demo (dossier §10) | S5 | open (risk) |
+| R-P7-SCOPE | `IWorld` measured on desktop CoreCLR only; iteration order latent behaviour | Conformance pins the order (#56); each demo's traces compared before and after its migration (#83-#86); wasm and Android costs still unmeasured | S5 | open (risk: wasm/Android cost) |
+| NVIDIA Vulkan crash | Intermittent crash of the test host on the development machine (1 in 40 full `Gpu` runs) | Analysed with WinDbg (#82): use-after-free on a thread of `nvoglv64.dll` 32.0.16.1088 when one process creates and destroys many Vulkan devices; no SDL or engine frame on the stack; never in CI. Documented in ADR 0046 (Consequences) and `docs/manual/rendering.md` (limitations) | S6-1 | closed (environmental driver defect); NVIDIA report is an owner item |
+| Trail Duel typewriter capture | One CI browser `repeat` run (#81, run 42022955265): capture `b_596` of `master-battle.script` showed the typewriter one step behind ("Em" vs "Emb"); 80 other captures byte-identical; state-trace tests pass; not reproduced in 23 local headless Chrome runs | Suspected, unproven: the capture read-back with WebGL on Linux/llvmpipe (`SdlRendererDevice.ReadPixelsCore`). Proof: log the step number with the read-back pixels in development builds, or capture twice | — (unassigned) | open |
+| Browser short-press check | The gating check failed intermittently on loaded runners (main runs on f94afbb and 80e7bf6) | Harness: the trace listed actions after the frame's last update; development `Probe()` records them per update; catch-up check added | X2 | fixed (#79) |
+| Key vs touch taps | A key tap was down in one update of a catch-up frame, a touch tap in every update (#79) | One rule: a press shorter than a frame is down in exactly one update for every device (`VirtualControls.EndUpdate`) | S5d | fixed (#89) |
+| SDL licence notice | Native (desktop, Android, iOS) packages carry no `licenses/SDL-LICENSE.txt`; the `MicroEngine.Sdl` package packs `SDL3.a` without SDL's licence; `site/scripts/demos.mjs` and `packaging/targets.mjs` do not require it; the notices' zlib text did not name SDL | zlib text fixed by T10 (`THIRD-PARTY-NOTICES.md`); the rest are code changes before the next release (dossier §12.7 c; `docs/releasing.md`) | — (unassigned) | open (before the next release) |
+| Release notes page | `docs/guide/release-notes.md` "Next release" lists none of stages 2-6 (worlds, physics, UI, SDL browsers, `sdl-gpu`, entity removal) | Drafted in `docs/evaluations/arch-1/release-notes-draft.md`; merge it in the release pull request (`docs/releasing.md`). Outside T10's edit surfaces | — (owner / release PR) | open |
+| ADRs 0035, 0036 | The plan's two reserved decisions (validation by contract; assemblies by boundary) were never written, although stages 0 and 1 were closed (criterion d) | Write them, or record that the plan (§7, §8) stands as their record | — (architect) | open |
+| Demo artifact upload | `main` CI on 3efd395 (#87) failed: `TrailDuel-….tar.gz` upload to `demo-artifacts` returned HTTP 502 (run 42034089258) | Infrastructure; the next run on 6833daa rebuilds | — | infrastructure, not a defect |
+| Gamepad test on development machines | `GamepadTests.Pads_connect_are_recognised_press_and_hand_over_when_unplugged` fails locally when a real pad is attached (#68-#89) | Environmental; green in CI on clean runners | — | known, environmental |
+| `DialogueBox`, `PromptText` in the façade | They depend on `ActionPrompts` (#74) | Needs a prompt-formatting interface in UI | — | follow-up |
+| Owner validation items | Real phones and tablets, Safari, real gamepads, haptics, high-density screens, long sessions (#80, #81); iOS static linking of natives (#63, #67); Metal/MSL shaders (#71) | Not verifiable in CI; never marked passed by an agent | owner | open (owner) |
 
 ### Items for the owner
 
@@ -414,6 +503,12 @@ Outward publication is not authorised for agents or the architect (S15); these a
    `experiments/arch-1/p4-sdl3-web/README.md`, "Blockers found") and 8-byte structs passed by value (abort at
    `aot-runtime-wasm.c:188` in `mono_wasm_get_interp_to_native_trampoline`; evidence:
    `experiments/arch-1/p6-box2d/README.md`, "Raw binding probe").
+3. NVIDIA: the use-after-free in `nvoglv64.dll` 32.0.16.1088 (#82; ADR 0046 Consequences).
+4. Validation on real devices (not verifiable in CI): Android and iOS phones and tablets, Safari on macOS and iOS,
+   real gamepads (vendor mappings, rumble), haptics on a real Android browser, high-density screens, long sessions;
+   iOS static-library linking of the Box2D natives; Metal and MSL shaders on Apple; E12 and audio sinks on phones.
+5. Lifting the publication freeze (`.github/phase-freeze`) and releasing the next SDK version, a breaking Alpha:
+   the release-notes draft, the SDL licence items and ADRs 0035/0036 are open (Known problems).
 
 ### Process lessons
 
@@ -432,24 +527,29 @@ Outward publication is not authorised for agents or the architect (S15); these a
   (no UI view on `main`); the agent reported it instead of widening its edit surface, and the architect made it a
   separate unit (directive 13).
 
+- Final registration (T10): the PR descriptions were the evidence, but CI facts were checked separately. The lavapipe
+  run, the Box2D jobs and the two `main` failures were all read from the Actions logs. Two `main` runs failed on a
+  flake (#79) and one on infrastructure, so a green PR check does not prove `main` stayed green. Read the runs after
+  each merge.
+- Directives 15 and 16 are known only from the PRs that cite them. Directives given outside the repository should be
+  added to the register's Log when they are issued, as L4-L6 were.
+
 ### Blocks
 
-- None. `Input.Touch` (4b) waits for 4a-1 by plan (directive 14), not by a block. Two open points need the architect
-  before they matter (Known problems): the `Input.Touch` row of the architecture table, and the stage 6 mobile
-  validation wording.
+- None for Phase II's implementation. The definition of done is met except the open items below, which need
+  the owner or the architect: the release-notes page (drafted), ADRs 0035 and 0036, the SDL licence items before
+  the next release, and the owner's device validation.
 
 ### Next steps
 
-1. Stage 4a: 4a-1 `MicroEngine.Text`, then 4a-2 `MicroEngine.UI`, with captures compositing the UI view and the
-   `UiScale` default at the surface density; the UI ADR at the next free number.
-2. Stage 4b: `MicroEngine.Saves` and `MicroEngine.Achievements` as opt-in modules; `Input.Touch` after 4a-1 merges
-   (the architect decides its architecture-table row first).
-3. Stage 6a: review #62 (tier-1 SDL_GPU device, lavapipe in CI), then the shader toolchain with P2, glTF, `Camera3D`
-   and the slice's sample; stage 6b: review #63 (Box2D natives), then the backend, the substitution scenarios and the
-   tile broad phase.
-4. The architect decides the `IInputBackend` location and the stage 6 mobile validation wording; the allocation and
-   timing follow-ups of #58 stay listed under Known problems. Stage 5 follows stage 4. Owner items above stay listed
-   until the owner decides.
+1. Review and merge #90 (T10). Its CI must be green.
+2. The architect decides on ADRs 0035 and 0036 (write them, or record that the plan stands as their record).
+3. Before the next SDK release: ship SDL's licence file in the native packages and the `MicroEngine.Sdl` package;
+   require it in `site/scripts/demos.mjs` when the next demo release is built on SDL; merge the release-notes draft
+   in the release pull request (`node sdk/version.mjs release <version>`).
+4. The owner validates on real devices (Items for the owner, 4), lifts the freeze and decides the release.
+5. Open follow-ups stay listed under Known problems: the Trail Duel typewriter capture, Meadow Run's `smoke.script`
+   achievements, the timing flake, `DialogueBox`/`PromptText`, the typed hosting options, wasm/Android `IWorld` cost.
 
 ## Log
 
@@ -1010,3 +1110,38 @@ Outward publication is not authorised for agents or the architect (S15); these a
   listed the adapter's references as Scene and Graphics2D, #59 added the core `MicroEngine` (recorded); (5) #57 and
   #59 traced 36 demo scripts, #60 reports 30 (as reported; not reconciled). Not re-run by T9: any test or benchmark;
   the results above are the PRs' own reports. Next: 4a-1 and 4b; review #62 and #63.
+- L12 (2026-11-05) T10 closed the register for Phase II (`main` at c0ae530). Merged since L11, all through pull
+  requests and none closed unmerged (`gh pr list --state all`; `git log --first-parent 4ff6857..c0ae530` holds only
+  their merges): #64 (T9, 251f1e2), #66 (4a-0, 3fee335), #65 (4b-1, 427fa4e), #63 (6b-1, 9d159de), #67 (6b-2,
+  12ebdf2), #70 (4a-1, faca750), #69 (6b-3, 7bab790), #62 (6a-1, f94afbb), #73 (6b-4, 308d0f0), #71 (6a-2,
+  9973599), #68 (4b-2, 70b385e), #72 (6a-3, 87e7de9), #74 (4a-2, 5af531a), #75 (4a-2 b, 608f470), #76 (4b-3,
+  80e7bf6), #77 (6a-4, 4350249), #79 (X2, 3682cfb), #82 (6a-5, ee57db0), #78 (5a, 9cce0ef), #83-#86 (5c, 44a32d6,
+  d597a23, 049f948, 4cbe45e), #80 (5b-1, 1130603), #81 (5b-2, 2996563), #87 (5d-3, 3efd395), #88 (5d-2, 6833daa),
+  #89 (5d-1, c0ae530). Stages 4, 5 and 6 closed against the §9 criteria. These were checked on `main` and in CI,
+  not only taken from the PRs:
+  - `src/MicroEngine.Migration.Entities` is absent, and `No_project_references_the_removed_entity_adapter` refuses it.
+  - The template uses `Configure`.
+  - The phone launch passes `--env` pairs through `HostEnvironment.Variables`, with no `SetEnvironmentVariable` in
+    the hosts.
+  - Declared capabilities: tiles `TileGeometry | OneWayPlatforms | MovingSolids`; Box2D the eight solver
+    capabilities plus `OneWayPlatforms`.
+  - Lavapipe in run 41973605483, and the Box2D jobs in run 41965084699.
+  - The two failing `main` runs are the #79 flake, and #87's run failed on an HTTP 502.
+  §9.1: item 2 met (dossier §12.4, the 3D slice in #62, #71, #72, #77); item 3 met (§12.5, the substitution in #73,
+  with shared and specific capabilities separated); item 1 met with open items; item 4 is dossier §12. Open items:
+  - ADRs 0035 and 0036 are not written (stages 0 and 1, criterion d).
+  - `docs/guide/release-notes.md` lacks stages 2-6: drafted in `docs/evaluations/arch-1/release-notes-draft.md`,
+    outside T10's surfaces.
+  - The SDL licence file is missing from native packages and `MicroEngine.Sdl`.
+  - Owner device validation.
+  T10 also:
+  - amended ADR 0030 (the adapter deleted) and ADR 0038 (phone `--env` as host variables; SDL browser host), and
+    updated the index;
+  - opened "Next release" in `docs/migrations.md` with a twelve-item upgrade checklist, and corrected two stale
+    entries (fonts, `EntityList`);
+  - named SDL in the notices' zlib text;
+  - added the release note to `docs/releasing.md`;
+  - corrected the dossier §9 stage 6 wording (mobile build only) and added §12.
+  Not re-run by T10: any test or benchmark; the figures are the PRs' own. The Trail Duel typewriter details (`b_596`,
+  23 local runs) come from the architect's brief. Next: review and merge T10; the owner decides the freeze and the
+  release.
