@@ -58,12 +58,12 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
 
 | ID | Specs | Task | Route | Status |
 |---|---|---|---|---|
-| T1 | S1-S3, S6, S9 | Art direction doc, tokens, type, mark and logo set (explored variants, 16 px test), family icons, favicon, OG image | delegated (context backstop) | done, branch `feat/site-redesign-t1-brand` (PR into `feat/site-redesign`) |
-| T2 | S3-S6 | Site shell (header, nav, footer) and landing narrative with the socket-board illustrations | delegated | done, branch `feat/site-redesign-t2-landing` (PR into `feat/site-redesign`) |
-| T3 | S3, S5, S7 | Demo index and demo pages, player integration | delegated, parallel with T4/T5 | done, branch `feat/site-redesign-t3-demos` (PR into `feat/site-redesign`) |
-| T4 | S3, S5, S7 | Starlight docs theme, code blocks, docs header; platforms, roadmap, 404 pages | delegated, parallel with T3/T5 | done, branch `feat/site-redesign-t4-docs` (PR into `feat/site-redesign`) |
-| T5 | S1, S4, S10 | Content truth: stale claims in site data and public docs against `main` | delegated, parallel with T3/T4 | done, branch `feat/site-redesign-t5-content` (PR into `feat/site-redesign`) |
-| T6 | S7-S9 | Browser, visual, responsive and accessibility checks; creative rationale; PR to `main` | delegated + architect review | pending |
+| T1 | S1-S3, S6, S9 | Art direction doc, tokens, type, mark and logo set (explored variants, 16 px test), family icons, favicon, OG image | delegated (context backstop) | done, branch `feat/site-redesign-t1-brand`, PR #92 merged into `feat/site-redesign` at ea30d6e |
+| T2 | S3-S6 | Site shell (header, nav, footer) and landing narrative with the socket-board illustrations | delegated | done, branch `feat/site-redesign-t2-landing`, PR #94 merged into `feat/site-redesign` at 71c5ff0 |
+| T3 | S3, S5, S7 | Demo index and demo pages, player integration | delegated, parallel with T4/T5 | done, branch `feat/site-redesign-t3-demos`, PR #96 merged into `feat/site-redesign` at e718a10 |
+| T4 | S3, S5, S7 | Starlight docs theme, code blocks, docs header; platforms, roadmap, 404 pages | delegated, parallel with T3/T5 | done, branch `feat/site-redesign-t4-docs`, PR #95 merged into `feat/site-redesign` at 05335ed |
+| T5 | S1, S4, S10 | Content truth: stale claims in site data and public docs against `main` | delegated, parallel with T3/T4 | done, branch `feat/site-redesign-t5-content`, PR #93 merged into `feat/site-redesign` at f8137aa |
+| T6 | S7-S9 | Browser, visual, responsive and accessibility checks; creative rationale; PR to `main` | delegated + architect review | done, branch `feat/site-redesign-t6-close` (PR into `feat/site-redesign`); the PR to `main` is the architect's |
 
 ## Log
 
@@ -253,7 +253,7 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
   SDK version and BMFont files are not read. `site/design/README.md` §7: SDL_GPU is a seated `next` module; Graphics3D
   and Box2D stay repository-only. Checks rerun: build (check-dist complete), `npm test` 54/54, snippets 104, contrast
   198/198; limitations page screenshots in both themes at 1280/768/375/320, no overflow.
-- L6 (2026-11-05): T2 shell and landing. Shell: plain paper (the 32 px grid is gone), header nav on one line at every
+- L7 (2026-11-05): T2 shell and landing. Shell: plain paper (the 32 px grid is gone), header nav on one line at every
   width (its own line under the lockup below 48 rem), current page marked by a short amber bar, grouped footer opening
   with the board's 2 px ink edge, flat buttons (offset shadows removed). Landing rewritten around the engine: opening
   (claim, who it is for, an SVG board drawing with callouts, a facts line), the stance (SDL 3, raylib, .NET 10, NVorbis as
@@ -268,7 +268,7 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
   build` (check-dist complete); `npm test` 56/56; snippets 104; contrast 198/198. Screenshots of / (1280/768/414/375/320) and /demos/,
   /demos/neon-rift/, /platforms/, /roadmap/ and the 404 page (1280/375/320), light and dark: no horizontal
   overflow, no content past the right edge, navigation on one line, no /play/ request, no script errors.
-- L7 (2026-11-05): T4 docs and product pages. `starlight.css` rewritten: every `--sl-*` colour on tokens in both themes,
+- L8 (2026-11-05): T4 docs and product pages. `starlight.css` rewritten: every `--sl-*` colour on tokens in both themes,
   header on a 2px ink rail with the lockup and a "Docs" legend, mono sidebar group legends, current page seated (amber
   tint and edge), display-face h1/h2, tables as parts lists, pagination, search, TOC and asides from tokens; Mermaid
   recolouring kept. Overrides in `site/src/components/docs/`: `PageTitle` (family icon and name plus sidebar group above
@@ -283,7 +283,7 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
   complete); `npm test` 56/56; snippets 104; contrast 198/198; `node tests/browser.mjs --browsers chrome --suites
   layout` all checks passed (diagrams themed). Screenshots of every changed page, light and dark, at 1280/768/375 and
   320 for platforms and roadmap: no horizontal overflow.
-- L8 (2026-11-05): T3 demos and players. `/demos/` presents the games as proof ("Proof, built with MicroEngine"): T2's
+- L9 (2026-11-05): T3 demos and players. `/demos/` presents the games as proof ("Proof, built with MicroEngine"): T2's
   `DemoCard` under a rail, each with family markers of the engine features its code calls
   (`src/components/demos/exercises.mjs` + `Exercises.astro`: saves and achievements, tile maps, particles, tile
   collision, synthesized sound, sound files, input actions, touch controls). Each marker carries the C# patterns that
@@ -299,3 +299,27 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
   packages, mirrored from the public release into a local folder store without a token, download URLs set to the
   public release addresses: 985 ok, 9 failed, all `firefox phone /docs/*: controls at least 24px — SearchCtrlK` (the
   docs search button, not touched by T3); every demo, play and touch check passed.
+- L10 (2026-11-05): T6 verification and close. Fixes: the docs search button is a 44 px magnifier on phones (Firefox
+  measured it under 24 px; the browser check was kept); `docs/manual/backends.md` no longer names
+  `SdlGraphicsDevice`/`RaylibGraphicsDevice` (internal, non-public types in 0.4.0-alpha.2 and gone on `main`): the
+  table says "Internal to the platform" with the next SDK version's `SdlRendererDevice`, `SdlGpuDevice` (when the game
+  asks for the GPU device), `RaylibDevice` and `DeviceRenderer`; `Socket.astro` usage shows SDL_GPU seated `next` and
+  Box2D as the empty `repo` socket; unused tokens removed (`--color-grid`, `--color-planned`, `--color-exploring`,
+  `--color-vision`, `--radius-md`, `--ease-in`, `--ease-in-out`; contrast pairs 198 → 186). Accessibility: axe-core
+  4.10.3 (scratch install, injected by puppeteer, not a site dependency) found 8 serious `scrollable-region-focusable`
+  issues (landing frame strip and install commands at 375 px, docs tables): frame strips take focus with their caption
+  as label, install commands wrap, docs tables and Mermaid diagrams get `tabindex="0"` (`docs/scroll-regions.mjs`,
+  unit test), and a new browser check "sideways-scrolling regions are reachable from the keyboard" (RED: 25 failures
+  in Chrome; GREEN after). Visual fixes: landing board drawing ("Actions" touched its module; callout 2's leader crossed
+  "SDL 3"), sockets in a row now share a height so status lines align (graphics row, kernel bar), empty-socket notes
+  in the body face. Design doc opens with "Creative decisions" (choices, philosophy, how to extend). Checks: `npm
+  ci`; `SITE_DEMOS=none npm run build` (check-dist complete); `npm test` 60/60; snippets 104; contrast 186/186; build
+  with the v0.4.0 release packages from a folder store (check-dist complete, 4 packages); `npm run test:browser`
+  all suites, Chrome and Firefox: 1102 ok, 0 failed; axe on 11 routes x light/dark x 1280/375: 0 serious or critical
+  (16 moderate left: Expressive Code's unnamed `pre` regions and generated API heading order); keyboard walk:
+  skip link first, focus visible on every stop, Play → Fullscreen → Restart → Exit returns focus to Play, Ctrl+K
+  search opens, finds and closes; no animation runs under reduced motion. Performance, local server without
+  compression, versus `main` at b551c7c: `/` 14 requests, 281.6 → 331.2 KiB (fonts 84.5 → 98.6, CSS 16.8 → 34.9);
+  `/demos/neon-rift/` before Play 12 requests, 236.0 → 273.4 KiB, no /play/ request; `/docs/manual/rendering/` 19
+  requests, 412.6 → 441.8 KiB. Screenshots of 11 routes at 1280/768/375/320 in both themes: no overflow, no clipped
+  content, no small targets, no italic headings, no script errors.
