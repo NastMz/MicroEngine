@@ -93,16 +93,6 @@ internal static class UiArt
         return img;
     }
 
-    public static PixelImage StarIcon(bool filled)
-    {
-        var img = new PixelImage(9, 9);
-        var map = new[] { "....#....", "...###...", "#########", ".#######.", "..#####..", ".###.###.", ".##...##." };
-        img.Paint(0, 1, new Dictionary<char, Color> { ['#'] = filled ? Pal.Gold : Pal.Slate }, map);
-        if (filled) { img[4, 2] = Pal.Cream; img[3, 3] = Pal.Butter; }
-        Brush.SelOutline(img, Pal.Ink);
-        return img;
-    }
-
     /// <summary>World map node: 0 locked, 1 open, 2 cleared, 3 boss.</summary>
     public static PixelImage MapNode(int state)
     {
