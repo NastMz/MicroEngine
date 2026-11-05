@@ -142,6 +142,20 @@ public sealed class SdlBrowserPageTests
     }
 
     [TestMethod]
+    public void A_window_without_a_page_is_measured_on_the_window_while_the_game_draws_into_its_canvas()
+    {
+        // A phone (Android) is such a window: the on-screen controls, the safe area and the fingers all use its pixels.
+        using var window = new SdlPlatform(new PlatformRequest(new GameSettings("window", 160, 90, 2)) { Hidden = true, Mute = true });
+        var screen = ((IScreenView)window).ScreenPixels;
+        window.BeginFrame(); // the game's canvas (160×90) is the render target until the frame ends
+        Assert.AreEqual(new Vector2(screen.Width, screen.Height), window.Touch.Size, "Measured on the window, not on the bound canvas.");
+        Assert.AreEqual(new RectF(0, 0, screen.Width, screen.Height), window.Touch.SafeArea);
+        var frame = ((IScreenView)window).WorldFrame;
+        Assert.IsTrue(frame.Width > 160 && frame.Width <= screen.Width, $"The frame is laid out on the window ({frame}).");
+        window.EndFrame();
+    }
+
+    [TestMethod]
     public void The_browser_profile_runs_only_in_a_browser_and_the_desktop_one_everywhere_else()
     {
         var profile = SdlPlatform.BrowserProfile(_page);
