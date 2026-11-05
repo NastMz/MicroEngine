@@ -41,7 +41,9 @@ public sealed class TrailDuelGame : Game
     internal int UpdateRate { get => _settings.UpdateRate; init => _settings = _settings with { UpdateRate = value }; }
     /// <summary>The species that evolves under the <c>evolve</c> debug start (TRAIL_EVOLVE), or null for the default.</summary>
     internal string? DebugEvolve { get; }
-    internal SpriteAtlas Atlas { get; private set; } = null!;
+    /// <summary>The art built at load: the sprite atlas and the creatures' measured heights.</summary>
+    internal GameArt Art { get; private set; } = null!;
+    internal SpriteAtlas Atlas => Art.Atlas;
     internal SaveStore Saves { get; private set; } = null!;
     /// <summary>The adventure in progress (null on the title screen before starting).</summary>
     public GameState State { get; internal set; } = GameState.NewGame();
@@ -77,17 +79,19 @@ public sealed class TrailDuelGame : Game
 
     protected override void Load()
     {
-        var content = new ContentFolder();
-        Atlas = AtlasFactory.Build(Graphics, content);
+        // Images and jingles come from the composition's content source (a folder, a zip or a phone's packaged files);
+        // everything loads once for the whole game, so it stays in the root scope.
+        Art = AtlasFactory.Build(Graphics, Assets.Image);
         SoundBank.Register(Audio);
-        MusicBank.Register(Audio, content);
+        MusicBank.Register(Audio, Assets);
         Audio.MusicVolume = 0.6f;
         Achievements.Unlocked += _ => Audio.Play("sparkle", 0.8f);
         if (_debugStart is { Length: > 0 } debug && DebugStart.Create(this, debug) is { } scene) Scenes.Push(scene);
         else Scenes.Push(new TitleScene(this));
     }
 
-    protected override void Unload() => Atlas.Dispose();
+    /// <summary>Disposes the generated atlas; the jingles belong to <c>Game.Assets</c>, which the engine releases.</summary>
+    protected override void Unload() => Art.Dispose();
 
     /// <summary>
     /// State hash (section <c>game</c>): the adventure in progress (<see cref="GameState"/>). Left out: the save folder

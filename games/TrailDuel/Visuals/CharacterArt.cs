@@ -44,9 +44,9 @@ internal static class CharacterArt
     /// <summary>Pixel row of the feet; battle and menus anchor characters here.</summary>
     public const int FeetY = 25;
 
-    public static void AddAll(SpriteAtlasBuilder b, ContentFolder content)
+    public static void AddAll(SpriteAtlasBuilder b, Func<string, PixelImage> image)
     {
-        var sheets = new[] { content.Image("characters/trainers1.png"), content.Image("characters/trainers2.png") };
+        var sheets = new[] { image("characters/trainers1.png"), image("characters/trainers2.png") };
         foreach (var look in CharacterLook.All)
         {
             foreach (var dir in new[] { Direction.Down, Direction.Up, Direction.Left, Direction.Right })

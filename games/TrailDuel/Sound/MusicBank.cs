@@ -21,9 +21,11 @@ internal static class MusicBank
     /// <summary>Short fanfares played over the music as sound effects, from <c>Content/jingles</c>.</summary>
     public static readonly string[] Jingles = ["heal", "levelup", "item", "catch"];
 
-    public static void Register(AudioMixer audio, ContentFolder content)
+    /// <param name="audio">The game's mixer.</param>
+    /// <param name="assets">The game's content (<c>Game.Assets</c>), read from the composition's content source.</param>
+    public static void Register(AudioMixer audio, AssetCache assets)
     {
-        foreach (var jingle in Jingles) audio.AddSoundFile("jingle:" + jingle, content.PathOf($"jingles/{jingle}.wav"));
+        foreach (var jingle in Jingles) audio.AddSound("jingle:" + jingle, assets.Sound($"jingles/{jingle}.wav"));
         audio.AddMusic("title", Title());
         audio.AddMusic("town", Town());
         audio.AddMusic("route", Route());

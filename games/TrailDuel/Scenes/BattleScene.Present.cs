@@ -58,7 +58,7 @@ internal sealed partial class BattleScene
     /// <summary>The middle of the creature on that side, from its drawn height.</summary>
     private Vector2 CenterOf(Side side)
     {
-        float h = CreatureArt.Heights.GetValueOrDefault(Of(side).Creature.SpeciesId, 44);
+        float h = _game.Art.CreatureHeight(Of(side).Creature.SpeciesId);
         return BaseOf(side) + new Vector2(0, (side == Side.Enemy ? -2 : 0) - h * 0.5f);
     }
 

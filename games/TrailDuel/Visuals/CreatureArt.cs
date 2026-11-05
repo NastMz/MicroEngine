@@ -17,9 +17,11 @@ internal static class CreatureArt
     public const int Size = 64;
 
     /// <summary>The opponent-side sprite: the original drawing, facing left, recoloured where an evolution line asks for it.</summary>
-    public static PixelImage Front(ContentFolder content, string speciesId)
+    /// <param name="image">Reads a content image by path (<c>Game.Assets.Image</c>).</param>
+    /// <param name="speciesId">The species.</param>
+    public static PixelImage Front(Func<string, PixelImage> image, string speciesId)
     {
-        var img = content.Image($"creatures/{speciesId}.png");
+        var img = image($"creatures/{speciesId}.png");
         return speciesId switch
         {
             "bouldox" => img.Map((_, _, c) => PebblitHide(c)),
@@ -81,9 +83,6 @@ internal static class CreatureArt
 
     /// <summary>The player-side sprite: the original mirrored to face right.</summary>
     public static PixelImage Back(PixelImage front) => front.FlipX();
-
-    /// <summary>Drawn height of each species' sprite in pixels, filled when the atlas is built (effects aim at the middle).</summary>
-    public static Dictionary<string, int> Heights { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Where a sprite stands: the middle of its feet (bottom of its opaque bounds).</summary>
     public static Vector2 Feet(PixelImage img)

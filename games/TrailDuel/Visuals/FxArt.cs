@@ -33,10 +33,10 @@ internal static class FxArt
         ("aura", 25, 24, 0.8f),
     ];
 
-    public static void AddAll(SpriteAtlasBuilder b, ContentFolder content)
+    public static void AddAll(SpriteAtlasBuilder b, Func<string, PixelImage> image)
     {
         foreach (var (name, w, h, oy) in Sheets)
-            b.AddGrid("fx:" + name, content.Image($"fx/{name}.png"), w, h, origin: new Vector2(w / 2f, h * oy));
+            b.AddGrid("fx:" + name, image($"fx/{name}.png"), w, h, origin: new Vector2(w / 2f, h * oy));
     }
 
     /// <summary>The impact a move of this element leaves on its target; strong moves get the bigger version.</summary>
