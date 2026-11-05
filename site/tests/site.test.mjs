@@ -117,7 +117,7 @@ test('brand: the favicon and logo files are drawn from the brand geometry', asyn
   for (const colour of [fixed.light.board, fixed.light.module, fixed.dark.board, fixed.dark.module]) assert.ok(favicon.includes(colour));
   const { files } = await import('../design/tools/build-assets.mjs');
   for (const [name, svg] of Object.entries(files())) {
-    const committed = fs.readFileSync(path.join(siteRoot, 'src/assets/brand', name), 'utf8');
+    const committed = fs.readFileSync(path.join(siteRoot, 'src/assets/brand', name), 'utf8').replace(/\r\n/g, '\n');
     assert.equal(committed, svg + '\n', `${name} is stale: run node design/tools/build-assets.mjs`);
   }
 });
