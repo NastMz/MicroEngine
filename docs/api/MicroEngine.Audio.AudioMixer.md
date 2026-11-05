@@ -21,7 +21,7 @@ public sealed class AudioMixer
 ## Examples
 
 ```csharp
-// In Game.Load:
+// In Game.Load (Synth, SfxParams and Wave are in MicroEngine.Audio.Retro):
 Audio.AddSound("jump", Synth.Render(new SfxParams { Wave = Wave.Square, Frequency = 520, EndFrequency = 880 }));
 Audio.AddMusicFile("theme", "Content/theme.ogg");
 Audio.PlayMusic("theme");
@@ -137,7 +137,7 @@ public float SfxVolume { get; set; }
 
 ### <a id="MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_AudioClip_System_Boolean_"></a> AddMusic\(string, AudioClip, bool\)
 
-Registers decoded music, such as a rendered [Song](MicroEngine.Audio.Song.md), under <code class="paramref">name</code>.
+Registers decoded music, such as a rendered [Song](MicroEngine.Audio.Retro.Song.md), under <code class="paramref">name</code>.
 
 ```csharp
 public void AddMusic(string name, AudioClip clip, bool loop = true)
@@ -157,9 +157,9 @@ The music samples.
 
 Whether the music restarts when it reaches its end.
 
-### <a id="MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_Song_System_Boolean_"></a> AddMusic\(string, Song, bool\)
+### <a id="MicroEngine_Audio_AudioMixer_AddMusic_System_String_MicroEngine_Audio_Retro_Song_System_Boolean_"></a> AddMusic\(string, Song, bool\)
 
-Registers a [Song](MicroEngine.Audio.Song.md) under <code class="paramref">name</code> without waiting for it to be rendered: songs render
+Registers a [Song](MicroEngine.Audio.Retro.Song.md) under <code class="paramref">name</code> without waiting for it to be rendered: songs render
 in the background, side by side, and each is handed to the device the first time it plays (waiting then only for
 that song if it is not ready yet). Registering every song of a game this way keeps their synthesis out of
 <code>Load</code>. Where the runtime has no background threads (browsers), songs render a few milliseconds per
@@ -177,7 +177,7 @@ public void AddMusic(string name, Song song, bool loop = true)
 
 Name used by [PlayMusic](MicroEngine.Audio.AudioMixer.md#MicroEngine_Audio_AudioMixer_PlayMusic_System_String_System_Single_).
 
-`song` [Song](MicroEngine.Audio.Song.md)
+`song` [Song](MicroEngine.Audio.Retro.Song.md)
 
 The song; do not change it after registering it.
 

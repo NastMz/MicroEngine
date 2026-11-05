@@ -36,7 +36,8 @@ public void Update(float dt, InputMap input, Level level)
 ```
 
 `TileMotion.Move(box, delta, grid)` moves the box by `delta`, first horizontally then vertically, in sub-steps of at
-most half a tile, so a fast object never jumps through a thin wall. It returns a `MoveResult`: the new `Bounds`, which
+most half a tile, so a fast object never jumps through a thin wall. It returns a `MoveResult` (a `TileMoveResult` in the
+next SDK version, not published yet): the new `Bounds`, which
 sides hit something (`HitLeft`, `HitRight`, `HitCeiling`, `HitFloor`, `HitWall`), and the flags of the tiles the box
 ends up touching (`Touched`, to detect water or hazards). Moving X and Y separately is what lets the gardener slide
 along a hedge when he walks diagonally into it.

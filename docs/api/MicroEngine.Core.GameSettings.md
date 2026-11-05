@@ -79,18 +79,6 @@ public TextureFilter DefaultTextureFilter { get; }
 
  TextureFilter
 
-### <a id="MicroEngine_Core_GameSettings_EffectivePresentation"></a> EffectivePresentation
-
-The presentation in effect: [Presentation](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Presentation), or the preset [Scaling](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scaling) names.
-
-```csharp
-public Presentation EffectivePresentation { get; }
-```
-
-#### Property Value
-
- Presentation
-
 ### <a id="MicroEngine_Core_GameSettings_Graphics"></a> Graphics
 
 Graphics options: platform, graphics API, VSync, frame limit, GPU, window mode and display (all automatic by default).
@@ -118,17 +106,24 @@ public Color Letterbox { get; init; }
 ### <a id="MicroEngine_Core_GameSettings_Presentation"></a> Presentation
 
 How the canvas reaches the window, one choice per field (scale rounding, aspect, the canvas's upscale sampler, the
-textures' default sampler, the capture scale, whole-factor windows). Null (the default) uses the preset
-[Scaling](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Scaling) names; a game that sets it starts from a preset and changes what it needs:
-<code>Presentation = Presentation.PixelArt with { Upscale = SamplerDescription.LinearClamp }</code>.
+textures' default sampler, the capture scale, whole-factor windows, camera snapping, the UI scale).
+[PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt) by default; a high-resolution game sets
+[HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D), and a game that needs another combination starts from a preset
+and changes what it needs: <code>Presentation = Presentation.PixelArt with { Upscale = SamplerDescription.LinearClamp }</code>.
 
 ```csharp
-public Presentation? Presentation { get; init; }
+public Presentation Presentation { get; init; }
 ```
 
 #### Property Value
 
- Presentation?
+ Presentation
+
+#### Exceptions
+
+ [ArgumentNullException](https://learn.microsoft.com/dotnet/api/system.argumentnullexception)
+
+The value is null.
 
 ### <a id="MicroEngine_Core_GameSettings_Scale"></a> Scale
 
@@ -142,20 +137,6 @@ public int Scale { get; init; }
 #### Property Value
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
-
-### <a id="MicroEngine_Core_GameSettings_Scaling"></a> Scaling
-
-A shorthand for the two presentation presets when [Presentation](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Presentation) is null:
-[Pixel](MicroEngine.Graphics.CanvasScaling.md) (the default) is [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt),
-[Smooth](MicroEngine.Graphics.CanvasScaling.md) is [HighResolution2D](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_HighResolution2D).
-
-```csharp
-public CanvasScaling Scaling { get; init; }
-```
-
-#### Property Value
-
- CanvasScaling
 
 ### <a id="MicroEngine_Core_GameSettings_TextureFilter"></a> TextureFilter
 

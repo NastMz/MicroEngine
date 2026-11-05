@@ -2,11 +2,11 @@
 
 <div data-pagefind-weight="0.3">
 
-Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
+Namespace: [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md)  
 Assembly: MicroEngine.Audio.dll  
 Guide: [Audio](../manual/audio.md)  
 
-Oscillator waveforms for [SfxParams](MicroEngine.Audio.SfxParams.md) and [Instrument](MicroEngine.Audio.Instrument.md): <code>Square</code>, <code>Triangle</code>, <code>Saw</code>,
+Oscillator waveforms for [SfxParams](MicroEngine.Audio.Retro.SfxParams.md) and [Instrument](MicroEngine.Audio.Retro.Instrument.md): <code>Square</code>, <code>Triangle</code>, <code>Saw</code>,
 <code>Sine</code>, <code>Noise</code> (a random value held for each cycle, so its frequency sets the colour of the noise), and the
 thinner pulse waves <code>Pulse25</code> and <code>Pulse12</code> (25% and 12.5% duty cycle).
 

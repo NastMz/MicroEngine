@@ -8,6 +8,27 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- `Synth`, `SfxParams`, `Wave`, `Song` and `Instrument` moved from the `MicroEngine.Audio` namespace to
+  `MicroEngine.Audio.Retro` (same assembly, same members). **Migration:** add `using MicroEngine.Audio.Retro;` to each
+  file that makes sounds or music in code; code that wrote `MicroEngine.Audio.Synth` in full writes
+  `MicroEngine.Audio.Retro.Synth`. The rest of the audio API (`AudioClip`, `AudioMixer`, `IAudioDevice`...) stays in
+  `MicroEngine.Audio`.
+- `TileMotion.Move` returns a `TileMoveResult` (namespace `MicroEngine.World`) instead of a `MoveResult`, with the same
+  members (`Bounds`, `Position`, `HitLeft`, `HitRight`, `HitWall`, `HitCeiling`, `HitFloor`, `Touched`); the name
+  `MoveResult` belongs to the physics contract (`MicroEngine.Physics.MoveResult`) alone. **Migration:** rename the
+  type where you store or return it (`MoveResult last` becomes `TileMoveResult last`); `var` needs no change.
+- For games that followed the unreleased `GameSettings.Scaling` (it was never in a published SDK): `Scaling` and the
+  `CanvasScaling` enum are removed, together with `GameSettings.EffectivePresentation`; `GameSettings.Presentation` is
+  never null and defaults to `Presentation.PixelArt`. **Migration:** `Scaling = CanvasScaling.Smooth` becomes
+  `Presentation = Presentation.HighResolution2D`, `Scaling = CanvasScaling.Pixel` is the default and can be deleted, and
+  `EffectivePresentation` reads `Presentation`. `FrameLayout.Fit`, `ITouchOverlay.Frame` and `VirtualControls.Frame`
+  take the game's `Presentation` (null is `Presentation.PixelArt`) instead of a `CanvasScaling`: the presets place the
+  frame exactly where `Pixel` and `Smooth` did, and other presentations (`Rounding = Integer`, `Aspect = Stretch` or
+  `Expand`) are now followed by `FrameLayout.Fit` and by `VirtualControls.Frame` while no shown control covers the
+  frame, so touches map to where the canvas is drawn (a frame that moves clear of the controls keeps the configured
+  canvas shape).
+  `FrameLayout.Fit` throws `ArgumentOutOfRangeException` for a canvas size that is not positive.
+
 - Touch controls are an optional module: `Game.Touch` is active (drawn, read, taking the touches over it) on touch-first
   screens (phones, tablets, touch-only browsers) or once the game sets a layout of its own (overriding
   `CreateTouchLayout`, or setting `Game.Touch.Layout` in `Configure`, `Load` or a scene); otherwise it is inactive and
@@ -86,12 +107,12 @@ Not published yet. Behaviour that changes:
   ending inside it. Moves with nothing thin in their way end exactly where they did. Nothing to change; a game that
   relied on passing through thin rectangles makes them thicker or leaves them out of `solids`.
 - The tile types (`TileLayer`, `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`) and `TileMotion` with its
-  `MoveResult` moved to the new `MicroEngine.Physics.Tiles.dll` (carried by the `MicroEngine` package) with their
-  namespace, `MicroEngine.World`, unchanged, and `MicroEngine.dll` forwards them: nothing to change in games.
+  result (now `TileMoveResult`, see above) moved to the new `MicroEngine.Physics.Tiles.dll` (carried by the
+  `MicroEngine` package) with their namespace, `MicroEngine.World`, unchanged, and `MicroEngine.dll` forwards them.
   `TileRenderer` stays in `MicroEngine.dll`.
 - New: physics worlds (`MicroEngine.Physics`, `MicroEngine.Physics.Tiles`; [Physics worlds](manual/world.md#physics-worlds)).
-  A file that imports both `MicroEngine.World` and `MicroEngine.Physics` sees two `MoveResult` types: write
-  `MicroEngine.World.MoveResult` or `MicroEngine.Physics.MoveResult`.
+  Their move result is `MicroEngine.Physics.MoveResult`; the tile mover's is `TileMoveResult`, so a file can import
+  both namespaces.
 - F11 and Alt+Enter no longer switch full screen inside the SDL and raylib backends: the engine's `fullscreen` action
   (`ActionNames.Fullscreen`, bound to F11 and Alt+Enter by `InputMap.CreateDefault` and added to a map that has no such
   action) does, through `Game.Screen.ToggleFullscreen()`. Players see no change. **Migration:** a game that wants F11
@@ -286,10 +307,9 @@ Not published yet. Behaviour that changes:
   `new Camera2D(width, height)` keeps snapping as before. **Migration:** a game that relied on the old translucent `Multiply` uses an
   opaque colour or `Color.Lerp(Color.White, shade, alpha)`.
 - `GameSettings.Presentation` (a `Presentation` record) states how the canvas reaches the window, one choice per
-  field; `GameSettings.Scaling` keeps working and picks the preset `Presentation.PixelArt` or
-  `Presentation.HighResolution2D`, which reproduce what `Pixel` and `Smooth` did. `PlatformRequest.CaptureScale`
-  defaults to the presentation's `CaptureScale`, and `WindowSizing.Initial` uses its `WholeFactorWindows`. Nothing to
-  change; to combine choices `Scaling` could not express, set `Presentation`
+  field, starting from the presets `Presentation.PixelArt` (the default) and `Presentation.HighResolution2D`.
+  `PlatformRequest.CaptureScale` defaults to the presentation's `CaptureScale`, and `WindowSizing.Initial` uses its
+  `WholeFactorWindows`. Nothing to change for a pixel-art game
   ([Presentation](manual/rendering.md#presentation-one-choice-per-field)).
 - New, nothing to change: the `MicroEngine` package carries a fourth assembly, `MicroEngine.Graphics.dll`, with the
   graphics device contract (namespace `MicroEngine.Graphics.Devices`: `IGraphicsDevice`, `GraphicsDeviceBase`, command

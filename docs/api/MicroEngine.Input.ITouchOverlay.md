@@ -26,14 +26,14 @@ void Draw(IOverlayCanvas canvas)
 
 `canvas` [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md)
 
-### <a id="MicroEngine_Input_ITouchOverlay_Frame_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_CanvasScaling_"></a> Frame\(Vector2, RectF, int, int, CanvasScaling\)
+### <a id="MicroEngine_Input_ITouchOverlay_Frame_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_Presentation_"></a> Frame\(Vector2, RectF, int, int, Presentation?\)
 
 Where the backend should draw the game frame in this window, so the overlay does not cover it. The default is
-the plain letterbox rule ([Fit](MicroEngine.Input.FrameLayout.md#MicroEngine_Input_FrameLayout_Fit_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_CanvasScaling_)); [VirtualControls](MicroEngine.Input.VirtualControls.md) fits the frame around
-its controls.
+the plain letterbox rule of the game's presentation ([Fit](MicroEngine.Input.FrameLayout.md#MicroEngine_Input_FrameLayout_Fit_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_Presentation_)); [VirtualControls](MicroEngine.Input.VirtualControls.md)
+fits the frame around its controls. Null <code class="paramref">presentation</code> is [PixelArt](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_PixelArt).
 
 ```csharp
-RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, CanvasScaling scaling = CanvasScaling.Pixel)
+RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, Presentation? presentation = null)
 ```
 
 #### Parameters
@@ -46,7 +46,7 @@ RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight,
 
 `virtualHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`scaling` CanvasScaling
+`presentation` Presentation?
 
 #### Returns
 

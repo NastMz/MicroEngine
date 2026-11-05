@@ -216,6 +216,9 @@ public override void Update(float dt)
 ```
 
 Music: WAV or OGG files on every platform, MP3 only on raylib, or songs made in code with `Song`. [Audio](manual/audio.md).
+Next SDK version (not published yet: arrives with the next SDK version): `Synth`, `SfxParams`, `Wave`, `Song` and
+`Instrument` are in `MicroEngine.Audio.Retro` (`using MicroEngine.Audio.Retro;`); in the published SDK they are in
+`MicroEngine.Audio`.
 
 ## ...draw text?
 
@@ -253,13 +256,13 @@ font.Draw(r, "Score 1200", new Vector2(24, 24), 32, Color.White);
 
 ## ...make an HD game?
 
-Next SDK version (not published yet: arrives with the next SDK version). Choose an HD canvas and smooth scaling, put
+Next SDK version (not published yet: arrives with the next SDK version). Choose an HD canvas and the high-resolution presentation, put
 images, atlases and fonts under `Content/`, and load them through `Assets`:
 
 ```csharp
 public sealed class MainGame : Game
 {
-    public override GameSettings Settings { get; } = new("My HD Game", 1280, 720, 1) { Scaling = CanvasScaling.Smooth };
+    public override GameSettings Settings { get; } = new("My HD Game", 1280, 720, 1) { Presentation = Presentation.HighResolution2D };
 
     protected override void Load()
     {

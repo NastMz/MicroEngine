@@ -34,9 +34,10 @@ Draws the visible part of a layer, asking the game which sprite each tile uses.
 
 ### Structs
 
- [MoveResult](MicroEngine.World.MoveResult.md)
+ [TileMoveResult](MicroEngine.World.TileMoveResult.md)
 
-What happened during a [Move](MicroEngine.World.TileMotion.md#MicroEngine_World_TileMotion_Move_MicroEngine_RectF_System_Numerics_Vector2_MicroEngine_World_ICollisionGrid_System_Collections_Generic_IReadOnlyList_MicroEngine_RectF__System_Boolean_).
+What happened during a [Move](MicroEngine.World.TileMotion.md#MicroEngine_World_TileMotion_Move_MicroEngine_RectF_System_Numerics_Vector2_MicroEngine_World_ICollisionGrid_System_Collections_Generic_IReadOnlyList_MicroEngine_RectF__System_Boolean_). A body of the physics contract reports its move in
+[MoveResult](MicroEngine.Physics.MoveResult.md) instead.
 
 ### Interfaces
 

@@ -7,6 +7,12 @@ canvas reaches the window becomes one record of independent choices). Builds on
 [ADR 0028](0028-graphics-device-contract.md) (`SamplerDescription`). Evidence: ARCH-1 dossier §3 (S14, S15), §7;
 annex [A2](../evaluations/arch-1/A2-render.md) R6 and §4 items 1, 3, 4, 5, 6 and 8.
 
+Amended 2026-11-05 (ARCH-1 stage 5, architect directive 15): `CanvasScaling` and `GameSettings.Scaling` are removed
+(they never reached a published SDK), and with them `EffectivePresentation`; `GameSettings.Presentation` is never null
+and defaults to `Presentation.PixelArt`. `FrameLayout.Fit`, `ITouchOverlay.Frame` and `VirtualControls.Frame` take the
+`Presentation`: the plain frame is `Presentation.Fit`, and the on-screen controls keep whole factors unless the
+rounding is `Fractional`. The "Remove `Scaling`" alternative below is therefore taken.
+
 ## Context
 
 `GameSettings.Scaling` (`CanvasScaling.Pixel` or `Smooth`) decided five things at once: the canvas's present filter, the
