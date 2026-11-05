@@ -1,0 +1,40 @@
+---
+// A strip of frames captured from a running game, in order, each with its step number: the output a piece of code
+// produces, shown next to that code. Frames must be real captures (the engine's scripted, headless runs), never
+// mock-ups; every frame needs alt text.
+//   <FrameStrip caption="Pressing jump: frames 0, 6, 12 and 18" frames={[{ src, alt, label: 'frame 0' }, ...]} />
+// On narrow screens the strip scrolls sideways and snaps to each frame.
+interface Frame { src: string; alt: string; label?: string; width?: number; height?: number }
+interface Props { frames: Frame[]; caption: string; pixelated?: boolean; start?: number }
+const { frames, caption, pixelated = true, start = 1 } = Astro.props;
+if (!frames.length) throw new Error('FrameStrip: no frames');
+for (const frame of frames) if (!frame.alt?.trim()) throw new Error(`FrameStrip: frame ${frame.src} has no alt text`);
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+<figure class="frame-strip">
+  <ol class:list={['frames', { pixelated }]} start={start} style={`--count: ${frames.length}`}>
+    {frames.map((frame, i) => (
+      <li>
+        <span class="step" aria-hidden="true">{pad(start + i)}</span>
+        <img src={frame.src} alt={frame.alt} width={frame.width} height={frame.height} loading="lazy" decoding="async" />
+        {frame.label && <span class="frame-label">{frame.label}</span>}
+      </li>
+    ))}
+  </ol>
+  <figcaption>{caption}</figcaption>
+</figure>
+
+<style>
+  .frame-strip { margin: 0; display: grid; gap: var(--space-xs); min-width: 0; }
+  .frames { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(9rem, 1fr); gap: var(--rule-gap);
+    margin: 0; padding: 0 0 var(--space-2xs); list-style: none; overflow-x: auto; scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain; }
+  .frames li { display: grid; gap: var(--space-2xs); min-width: 0; scroll-snap-align: start; }
+  .step { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2);
+    padding-top: var(--space-2xs); border-top: var(--rule-pixel) solid var(--color-ink); letter-spacing: var(--tracking-label); }
+  .frames img { width: 100%; height: auto; display: block; border: var(--rule-thin) solid var(--color-rule);
+    background: var(--color-paper-2); }
+  .pixelated img { image-rendering: pixelated; }
+  .frame-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); }
+  figcaption { font-size: var(--text-sm); color: var(--color-ink-2); }
+</style>

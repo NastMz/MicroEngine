@@ -1,0 +1,27 @@
+---
+// A numbered callout for technical illustrations, used inside an <svg class="illustration"> (styles in brand.css and
+// below). A hairline leader runs from a square anchor on the drawing, vertically then horizontally, to a numbered
+// square and its legend, like the parts list of a product manual.
+//   <Callout n={1} x={120} y={40} lx={260} ly={20} label="Graphics device" />
+// The legend is real SVG text; give the parent <svg> a <title> or aria-labelledby that describes the whole drawing.
+interface Props { n: number; x: number; y: number; lx: number; ly: number; label: string; align?: 'start' | 'end' }
+const { n, x, y, lx, ly, label, align = lx >= x ? 'start' : 'end' } = Astro.props;
+const box = 18;
+const boxX = align === 'start' ? lx : lx - box;
+const textX = align === 'start' ? lx + box + 6 : lx - box - 6;
+---
+<g class="callout">
+  <polyline class="leader" points={`${x},${y} ${x},${ly} ${lx},${ly}`} />
+  <rect class="anchor" x={x - 2} y={y - 2} width="4" height="4" />
+  <rect class="number-box" x={boxX} y={ly - box / 2} width={box} height={box} />
+  <text class="number" x={boxX + box / 2} y={ly} text-anchor="middle" dominant-baseline="central">{n}</text>
+  <text class="legend" x={textX} y={ly} text-anchor={align} dominant-baseline="central">{label}</text>
+</g>
+
+<style>
+  .leader { fill: none; stroke: var(--color-ink-3); stroke-width: var(--rule-thin); vector-effect: non-scaling-stroke; }
+  .anchor { fill: var(--color-ink); }
+  .number-box { fill: var(--color-paper); stroke: var(--color-ink); stroke-width: var(--rule-thin); }
+  .number { font-family: var(--font-mono); font-size: 11px; font-weight: 500; fill: var(--color-ink); }
+  .legend { font-family: var(--font-mono); font-size: 12px; fill: var(--color-ink-2); }
+</style>

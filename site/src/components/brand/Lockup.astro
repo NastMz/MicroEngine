@@ -1,0 +1,19 @@
+---
+// The horizontal lockup: the mark at the wordmark's cap height, then "MicroEngine" in the display face. The name is
+// real text (it is the link's accessible name); the mark beside it is decorative. Size follows font-size.
+import Mark from './Mark.astro';
+
+interface Props { seat?: boolean; class?: string }
+const { seat = false, class: className } = Astro.props;
+---
+<span class:list={['lockup', className]}>
+  {/* The cropped drawing is 16:12; 0.88em wide makes it 0.66em tall, Bricolage Grotesque's cap height. */}
+  <Mark crop size="0.88em" seat={seat} />
+  <span class="lockup-word">MicroEngine</span>
+</span>
+
+<style>
+  .lockup { display: inline-flex; align-items: baseline; gap: 0.3em; white-space: nowrap;
+    font-family: var(--font-display); font-weight: var(--weight-display); letter-spacing: var(--tracking-display);
+    line-height: 1; }
+</style>
