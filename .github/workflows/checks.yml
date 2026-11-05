@@ -488,7 +488,7 @@ jobs:
   # their end: any failure fails the job. The SDL backend (microengine package web --web-backend sdl) is also played in
   # Firefox, its scripts twice (byte-identical captures), with an emulated gamepad and on emulated phones and tablets
   # (web/tests/mobile.mjs: multi-touch, safe-area insets): the gates for making it the default (docs/ci.md). Then the
-  # same scripts on the desktop build (raylib under Mesa), whose captures are compared byte for byte with the browser's
+  # same scripts on the desktop build of the same platform under Mesa, whose captures are compared byte for byte with the browser's
   # and reported, and the package's size, start-up and frame time (web/tests/measure.mjs), reported.
   browser-engine:
     name: Browser engine ${{ matrix.game }} (${{ matrix.backend }})
@@ -594,7 +594,7 @@ jobs:
         id: frames
         if: ${{ !cancelled() }}
         continue-on-error: true
-        run: xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --out web-tests --games "$GAME" | tee -a "$GITHUB_STEP_SUMMARY"
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --out web-tests --games "$GAME" --backend "$MICROENGINE_WEB_BACKEND" | tee -a "$GITHUB_STEP_SUMMARY"
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
