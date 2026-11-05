@@ -1,0 +1,63 @@
+---
+// A demo game as a card: its screenshot in a hairline frame, then a plate with its genre, title, tagline and how its
+// content is made. The game's own colour appears only inside the card's frame (the rule over the screenshot, the
+// genre marker and its label), never around it; the card itself is the brand's paper and rules. The whole card is one
+// link to the game's page. Extra lines (sizes, downloads) go in the default slot, inside the plate.
+//   <DemoCard game={game} />
+//   <DemoCard game={game} shot={1} heading="h2" loading="eager"><p>About 12 MB</p></DemoCard>
+import { Image } from 'astro:assets';
+import type { DemoGame } from '../data/games';
+
+interface Props {
+  game: DemoGame;
+  /** Which of the game's screenshots to show (default: the first, its title screen). */
+  shot?: number;
+  heading?: 'h2' | 'h3';
+  loading?: 'eager' | 'lazy';
+  sizes?: string;
+}
+const { game, shot = 0, heading: Heading = 'h3', loading = 'lazy', sizes = '(min-width: 64rem) 36rem, (min-width: 48rem) 50vw, 100vw' } = Astro.props;
+const picture = game.shots[shot] ?? game.shots[0];
+const href = `/demos/${game.slug}/`;
+---
+<article class="demo-card" style={`--game: var(${game.colorToken})`}>
+  <div class="frame">
+    <Image src={picture.src} alt={picture.alt} widths={[480, 720, 960]} sizes={sizes} loading={loading} />
+  </div>
+  <div class="plate">
+    <p class="genre"><span class="tone" aria-hidden="true"></span>{game.genre}</p>
+    <Heading class="title"><a href={href}>{game.title}</a></Heading>
+    <p class="tagline">{game.tagline}</p>
+    <p class="kind"><span class="kind-name">{game.content.kind}</span> {game.content.detail}</p>
+    <slot />
+  </div>
+</article>
+
+<style>
+  .demo-card { position: relative; display: grid; grid-template-rows: auto 1fr; min-width: 0; height: 100%;
+    border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm); background: var(--color-paper);
+    transition: transform var(--dur-fast) var(--ease-seat), border-color var(--dur-fast) var(--ease-out); }
+  /* The screenshot sits in the frame one gap below the game's rule, like a module in its socket. */
+  .frame { padding: var(--rule-gap); border-top: var(--rule-pixel) solid var(--game); }
+  .frame :global(img) { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover;
+    image-rendering: pixelated; background: var(--color-paper-2); }
+  .plate { display: grid; align-content: start; gap: var(--space-xs); padding: var(--space-sm) var(--space-md) var(--space-md); }
+  .plate :global(p) { margin: 0; }
+  .genre { display: flex; align-items: center; gap: var(--space-xs); color: var(--game); font-family: var(--font-mono);
+    font-size: var(--text-xs); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+  .tone { width: 0.625rem; height: 0.625rem; flex: none; background: var(--game); }
+  .title { margin: 0; font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--text-xl);
+    line-height: var(--leading-snug); letter-spacing: var(--tracking-display); }
+  .title a { color: var(--color-ink); text-decoration: none; }
+  /* The title's link covers the whole card. */
+  .title a::after { content: ''; position: absolute; inset: 0; }
+  .title a:focus-visible { outline: none; }
+  .tagline { color: var(--color-ink-2); }
+  .kind { font-size: var(--text-sm); color: var(--color-ink-2); }
+  .kind-name { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink); text-transform: uppercase;
+    letter-spacing: var(--tracking-label); margin-inline-end: var(--space-2xs); }
+  .demo-card:hover { border-color: var(--game); transform: translateY(-2px); }
+  .demo-card:hover .title a { color: var(--game); }
+  .demo-card:has(a:focus-visible) { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .demo-card { transition: none; } .demo-card:hover { transform: none; } }
+</style>
