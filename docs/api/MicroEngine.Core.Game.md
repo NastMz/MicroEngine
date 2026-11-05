@@ -78,7 +78,7 @@ public AchievementTracker Achievements { get; }
 
 #### Property Value
 
- [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
+ AchievementTracker
 
 ### <a id="MicroEngine_Core_Game_Assets"></a> Assets
 
@@ -649,7 +649,7 @@ protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, S
 
 #### Parameters
 
-`catalog` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[Achievement](MicroEngine.Core.Achievement.md)\>
+`catalog` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<Achievement\>
 
 `store` SaveStore
 
@@ -657,7 +657,7 @@ protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, S
 
 #### Returns
 
- [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
+ AchievementTracker
 
 #### Exceptions
 

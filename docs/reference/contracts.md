@@ -368,7 +368,7 @@ Implementations: `FileSaveStorage` (core; next SDK version: `MicroEngine.Saves.d
 
 ## Achievement and AchievementTracker
 
-[`src/MicroEngine/Core/Achievements.cs`](../../src/MicroEngine/Core/Achievements.cs).
+[`src/MicroEngine.Achievements/Achievements.cs`](../../src/MicroEngine.Achievements/Achievements.cs) (next SDK version: in `MicroEngine.Achievements.dll`, carried by the `MicroEngine` package, namespace unchanged).
 
 ```csharp
 public sealed record Achievement(string Id, string Name, string Description, int Goal = 1)

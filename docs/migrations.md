@@ -22,6 +22,9 @@ Not published yet. Behaviour that changes:
 - The fonts (`IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`) moved to the new
   `MicroEngine.Text.dll` (carried by the `MicroEngine` package) with their `MicroEngine.Graphics` namespace unchanged,
   and `Game.Assets.Font` loads through it; nothing to change.
+- `Achievement`, `AchievementStatus`, `AchievementTracker`, `AchievementSaveData` and `AchievementRecord` moved to the
+  new `MicroEngine.Achievements.dll` (carried by the `MicroEngine` package) with their namespace unchanged; nothing to
+  change.
 
 - A frame has a world view and a UI view: `Scene.DrawUi(IRenderer ui)` draws the interface at the window's resolution
   over the world (UI units: window pixels / `Presentation.UiScale`), `Scene.UiContains` says where it takes the pointer,

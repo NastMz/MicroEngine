@@ -8,7 +8,7 @@ namespace MicroEngine.Achievements;
 /// service and schedules <see cref="SystemName"/> in <see cref="FramePhase.PostFixed"/>, which writes pending progress
 /// about once a second of simulated time (<see cref="FlushInterval"/>; unlocks are written at once by the tracker) and
 /// raises <see cref="Stepped"/> every step; progress is written too when the platform suspends the game. A composition
-/// that never adds the module has no tracker, no system and no achievement file. <see cref="Game"/> adds it when the game
+/// that never adds the module has no tracker, no system and no achievement file. The <c>Game</c> façade adds it when the game
 /// declares achievements (<c>UseAchievements</c> before the engine is composed).
 /// </summary>
 /// <example>
