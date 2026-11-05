@@ -134,6 +134,32 @@ public abstract class Scene : IStateHashed
     /// </summary>
     public Camera2D? WorldCamera { get; set; }
 
+    private UI.UiRoot? _ui;
+    /// <summary>
+    /// The scene's widgets (<see cref="UI.UiRoot"/>), created the first time it is read (from <see cref="Enter"/> on; the
+    /// scene must be on the stack). Set its <see cref="UI.UiRoot.Content"/> and the engine does the rest: it lays the
+    /// widgets out in UI units in the UI view and draws them after <see cref="DrawUi"/>, updates them before
+    /// <see cref="Update"/> (so the actions they act on are consumed before the scene reads them), and, while the scene is
+    /// on top, routes input to them as the highest input layer: a press on a widget, and the keyboard while a text field
+    /// has the focus, never reach gameplay, and the pointer over them is on the UI (<see cref="Core.GameViews.PointerOnUi"/>).
+    /// The widgets use the game's font and the map's action names until the game sets others. A scene that never reads
+    /// it has no UI and pays nothing.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The scene is not attached to a game yet (read from its constructor).</exception>
+    public UI.UiRoot Widgets => _ui ??= Game.CreateUi();
+    /// <summary>The scene's widgets when <see cref="Widgets"/> was read, else null.</summary>
+    internal UI.UiRoot? UiOrNull => _ui;
+
+    /// <summary>The scene's interface in the UI view: <see cref="DrawUi"/>, then its widgets.</summary>
+    internal void DrawInterface(IRenderer ui)
+    {
+        DrawUi(ui);
+        _ui?.Draw(ui);
+    }
+
+    /// <summary>Whether <paramref name="uiPoint"/> lies on the scene's interface: <see cref="UiContains"/> or its widgets.</summary>
+    internal bool InterfaceContains(Vector2 uiPoint) => UiContains(uiPoint) || (_ui?.Contains(uiPoint) ?? false);
+
     /// <summary>The engine's part of the scene's state, then the scene's own (<see cref="HashState"/>).</summary>
     internal void HashAll(StateHasher hash)
     {
@@ -141,6 +167,7 @@ public abstract class Scene : IStateHashed
         Coroutines.HashState(hash);
         Tweens.HashState(hash);
         _world?.HashState(hash);
+        _ui?.HashState(hash);
         HashState(hash);
     }
 
@@ -151,6 +178,7 @@ public abstract class Scene : IStateHashed
             Age += dt;
             Coroutines.Update(dt);
             Tweens.Update(dt);
+            TickUi(dt);
             Update(dt);
             return;
         }
@@ -158,8 +186,16 @@ public abstract class Scene : IStateHashed
         Age += dt;
         Coroutines.Update(dt);
         Tweens.Update(dt);
+        TickUi(dt);
         Update(step);
         world.EndStep();
+    }
+
+    private void TickUi(float dt)
+    {
+        if (_ui is null) return;
+        _ui.Size = Game.Views.UiSize;
+        _ui.Update(dt);
     }
 
     internal void BeginDraw() => _world?.BeginDraw(Game.UpdateCount, Game.FrameBlend);
@@ -268,6 +304,8 @@ public sealed class SceneManager
         scene.ResultHandler = null;
         scene.Finishing = scene.HasResult = false;
         scene.Result = null;
+        // A text field under the new scene stops typing: input goes to the top scene's widgets.
+        if (Current?.UiOrNull is { Focused: UI.TextField } below) below.Focus(null);
         _stack.Add(scene);
         _game.Input.Reset();
         scene.Enter();
@@ -281,6 +319,7 @@ public sealed class SceneManager
         top.Coroutines.StopAll();
         top.Tweens.Clear();
         top.Exit();
+        top.UiOrNull?.Focus(null); // releases the text channel a focused text field holds
         var handler = top.HasResult ? top.ResultHandler : null;
         object? result = top.Result;
         top.ResultHandler = null;
@@ -361,18 +400,24 @@ public sealed class SceneManager
         _transition?.DrawAt(renderer, _game.FrameBlend);
     }
 
-    /// <summary>The visible scenes' interfaces in the UI view; a transition covers it too when it is a view of its own.</summary>
-    internal void DrawUi(IRenderer ui, bool separate)
+    /// <summary>The visible scenes' interfaces in the UI view.</summary>
+    /// <remarks>
+    /// Where the UI view is a view of its own, the game draws the transition over it (<see cref="DrawTransitionUi"/>) once
+    /// a scene drew in it; the canvas already shows the transition over the world.
+    /// </remarks>
+    internal void DrawUi(IRenderer ui)
     {
-        for (int i = FirstVisible(); i < _stack.Count; i++) _stack[i].DrawUi(ui);
-        if (separate) _transition?.DrawAt(ui, _game.FrameBlend);
+        for (int i = FirstVisible(); i < _stack.Count; i++) _stack[i].DrawInterface(ui);
     }
+
+    /// <summary>The playing transition over the UI view, when the UI view is a view of its own.</summary>
+    internal void DrawTransitionUi(IRenderer ui) => _transition?.DrawAt(ui, _game.FrameBlend);
 
     /// <summary>Whether a visible scene's interface contains <paramref name="uiPoint"/> (topmost first).</summary>
     internal bool VisibleUiContains(Vector2 uiPoint)
     {
         for (int i = _stack.Count - 1; i >= FirstVisible(); i--)
-            if (_stack[i].UiContains(uiPoint)) return true;
+            if (_stack[i].InterfaceContains(uiPoint)) return true;
         return false;
     }
 
