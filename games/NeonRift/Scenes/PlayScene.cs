@@ -43,6 +43,7 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
         var def = Stages.All[stageIndex];
         _stage = new Stage(def, game.Session, Objects, checkpoint, seed: 11 + stageIndex)
         {
+            Final = stageIndex == Stages.Count - 1,
             SoundSink = (name, volume, pitch, pan) => game.Sfx(name, volume, pitch, pan),
             MusicSink = game.Music,
             Rigs = name => game.Art.Rig(name),
@@ -85,6 +86,7 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
             _leaving = true;
             game.Session.Weapon = _stage.Player.Weapon.Kind;
             RecordClear();
+            game.SaveHighScore();
             Scene next = stageIndex + 1 < Stages.Count ? new StageCardScene(game, stageIndex + 1) : new EndingScene(game);
             Game.Scenes.Replace(next, Transition.Fade(1.0f));
         }

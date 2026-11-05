@@ -36,7 +36,7 @@ internal static class Tiles
         ["lab_fill"] = ("stages/lab/tileset.png", [(504, 80), (520, 80), (504, 96), (520, 96)]),
     };
 
-    public static void AddAll(SpriteAtlasBuilder b, ContentFolder content)
+    public static void AddAll(SpriteAtlasBuilder b, AssetCache content)
     {
         var cache = new Dictionary<string, PixelImage>();
         foreach (var (name, (file, cells)) in Sets)

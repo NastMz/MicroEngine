@@ -52,9 +52,10 @@ screen lists them while they are in use.
   only be hurt while open, and skiff squadrons in sine formation.
 - **Weapons** dropped by supply carriers (shoot them down): Pulse (default), Scatter (five-way fan),
   Lance (piercing beam, heavy damage) and Rapid (stream of bolts). Dying returns you to Pulse.
-- **Lives**: one hit is fatal, as in the genre's classics. Three spare lives, an extra life every 20 000
-  points, a short invulnerability after respawning in place, and three continues that restart from the
-  last checkpoint passed.
+- **Lives**: each life takes three hits (the health cells under the medals), with a short flashing
+  invulnerability after each one; pits and lava are always fatal. Three spare lives, an extra life every
+  20 000 points, a short invulnerability after respawning in place, and three continues that restart from
+  the last checkpoint passed. The best score is saved as the high score.
 - **Presentation**: three-layer parallax per stage, a foreground layer in the lab, arm poses for every
   aim direction derived from the authored sprites, hit flashes, explosions, screen shake, a boss
   warning sequence, health bars, stage cards, pause menu, game over and an ending with credits.
@@ -79,7 +80,7 @@ variables on desktop), read in the game's `Configure`:
 | `RIFT_WEAPON` | `Pulse`, `Spread`, `Lance` or `Rapid` |
 | `RIFT_GOD=1` | Shots and contact do not kill (pits and lava still do) |
 | `RIFT_AUTO=1` | The test autopilot plays |
-| `RIFT_SAVE_DIR` | Separate folder for achievements (capture runs) |
+| `RIFT_SAVE_DIR` | Separate folder for achievements and the high score (capture runs) |
 
 Full-stage capture tour used for the screenshots:
 
@@ -92,7 +93,8 @@ RIFT_START=stage RIFT_STAGE=2 RIFT_AUTO=1 RIFT_GOD=1 dotnet run --project games/
 | Folder | Contents |
 | --- | --- |
 | `Art/` | Asset loading (`Assets`), tile cutting and choice (`Tiles`), sound registration |
-| `Content/` | `StageBuilder` and the three stage definitions; `Content/` files are the shipped assets |
+| `Content/` | The shipped image and audio files, listed in [CREDITS.md](CREDITS.md) |
+| `Levels/` | `StageBuilder` and the three stage definitions |
 | `Gameplay/` | `Stage` (rules), `Player`, enemies, bosses, weapons, projectiles, pickups, `Autopilot`; actors are entities of the play scene's `Objects` |
 | `Scenes/` | Title, stage card, play, pause, game over, ending; `StageView` draws a stage and the HUD |
 

@@ -17,6 +17,11 @@ internal sealed class TitleScene(RiftGame game) : Scene
     private EntityId _skyline;
     private StageView? _view;
     private readonly NumberText _high = new(static (high, _) => "HI " + Ui.N(high, 7));
+    private static readonly string[] TouchControlNames = ["MOVE / AIM", "JUMP", "FIRE", "FIRE + JUMP", "KNEEL", "DROP DOWN", "PLANT FEET", "PAUSE"];
+    private static readonly string[] ButtonControlNames = ["MOVE", "JUMP", "FIRE", "AIM", "KNEEL", "DROP DOWN", "PLANT FEET", "PAUSE"];
+    // The controls panel's lines and the prompts version they were built for (drawing only).
+    private (string Action, string Keys)[] _lines = [];
+    private int _linesVersion = -1;
 
     /// <summary>Adds the menu cursor and whether the controls panel is open or the scene is leaving; the backdrop view and the high-score text are drawing only (the engine hashes the skyline's entity with the scene).</summary>
     public override void HashState(StateHasher hash)
@@ -32,6 +37,8 @@ internal sealed class TitleScene(RiftGame game) : Scene
         // The skyline drifts 40 pixels a second: an entity, so the world draws its scroll between updates.
         _skyline = Objects.Create();
         game.Music("title");
+        // Back from a run (quit from the pause menu, game over, the ending): keep its high score.
+        game.SaveHighScore();
     }
 
     public override void Update(float dt)
@@ -74,37 +81,8 @@ internal sealed class TitleScene(RiftGame game) : Scene
         Ui.Centered(r, Font, "A RUN & GUN THROUGH HALCYON CITY", r.Width / 2f, 96, Ui.Cyan);
         if (_controls)
         {
-            r.Panel(new RectF(110, 118, 260, 120), new PanelStyle(Ui.Ink.WithAlpha(0.92f), Ui.Magenta, Ui.Magenta.WithAlpha(0.4f)));
-            // The controls of the device being played: keys, a gamepad's buttons, or the on-screen controls.
-            var p = Game.Prompts;
-            bool touch = p.Device == InputDevice.Touch;
-            string[] keys = touch
-                ?
-                [
-                    "STICK, 8 DIRECTIONS",
-                    p.TextAll("jump"),
-                    $"{p.TextAll("fire")} (HOLD), AIM WITH STICK",
-                    $"SLIDE THUMB FROM {p.Text("fire")}",
-                    "STICK DOWN ON THE GROUND",
-                    $"STICK DOWN + {p.Text("jump")}",
-                    $"{p.TextAll("lock")} (TAP ON, TAP OFF)",
-                    p.TextAll("pause"),
-                ]
-                :
-                [
-                    p.Directions(separator: " / "),
-                    p.TextAll("jump"),
-                    $"{p.TextAll("fire")}  (HOLD)",
-                    "UP, DIAGONALS, DOWN IN AIR",
-                    "DOWN ON THE GROUND",
-                    p.Format("{down} + {jump} ON A LEDGE"),
-                    p.TextAll("lock"),
-                    p.TextAll("pause"),
-                ];
-            string[] actions = touch
-                ? ["MOVE / AIM", "JUMP", "FIRE", "FIRE + JUMP", "KNEEL", "DROP DOWN", "PLANT FEET", "PAUSE"]
-                : ["MOVE", "JUMP", "FIRE", "AIM", "KNEEL", "DROP DOWN", "PLANT FEET", "PAUSE"];
-            var lines = actions.Zip(keys, (action, key) => (Action: action, Keys: key.ToUpperInvariant())).ToArray();
+            r.Panel(new RectF(110, 118, 260, 120), Ui.Theme.Panel);
+            var lines = ControlLines();
             for (int i = 0; i < lines.Length; i++)
             {
                 Ui.Label(r, Font, lines[i].Action, new Vector2(124, 128 + i * 13), Ui.Cyan);
@@ -114,10 +92,50 @@ internal sealed class TitleScene(RiftGame game) : Scene
         else
         {
             Ui.Menu(r, Font, _menu, r.Width / 2f, 150, Age);
-            Ui.Centered(r, Font, _high.Get(Math.Max(game.Session.HighScore, 30000)), r.Width / 2f, 220, Ui.Muted);
+            Ui.Centered(r, Font, _high.Get(game.Session.HighScore), r.Width / 2f, 220, Ui.Muted);
         }
         Ui.Centered(r, Font, "ART & AUDIO: ANSIMUZ, JUHANI JUNKALA (CC0)  -  ENGINE: MICROENGINE", r.Width / 2f, 256, Ui.Muted);
         Ui.Scanlines(r);
+    }
+
+    /// <summary>
+    /// The controls of the device being played (keys, a gamepad's buttons, or the on-screen controls), built again only
+    /// when the prompts change (<see cref="ActionPrompts.Version"/>: another device or pad family).
+    /// </summary>
+    private (string Action, string Keys)[] ControlLines()
+    {
+        var p = Game.Prompts;
+        int version = p.Version;
+        if (version == _linesVersion) return _lines;
+        bool touch = p.Device == InputDevice.Touch;
+        string[] keys = touch
+            ?
+            [
+                "STICK, 8 DIRECTIONS",
+                p.TextAll("jump"),
+                $"{p.TextAll("fire")} (HOLD), AIM WITH STICK",
+                $"SLIDE THUMB FROM {p.Text("fire")}",
+                "STICK DOWN ON THE GROUND",
+                $"STICK DOWN + {p.Text("jump")}",
+                $"{p.TextAll("lock")} (TAP ON, TAP OFF)",
+                p.TextAll("pause"),
+            ]
+            :
+            [
+                p.Directions(separator: " / "),
+                p.TextAll("jump"),
+                $"{p.TextAll("fire")}  (HOLD)",
+                "UP, DIAGONALS, DOWN IN AIR",
+                "DOWN ON THE GROUND",
+                p.Format("{down} + {jump} ON A LEDGE"),
+                p.TextAll("lock"),
+                p.TextAll("pause"),
+            ];
+        var actions = touch ? TouchControlNames : ButtonControlNames;
+        _lines = new (string, string)[actions.Length];
+        for (int i = 0; i < actions.Length; i++) _lines[i] = (actions[i], keys[i].ToUpperInvariant());
+        _linesVersion = version;
+        return _lines;
     }
 }
 
@@ -161,6 +179,7 @@ internal sealed class StageCardScene(RiftGame game, int stageIndex) : Scene
 /// <summary>Game over: continue from the last checkpoint while continues remain, otherwise back to the title.</summary>
 internal sealed class GameOverScene(RiftGame game, int stageIndex, int checkpoint = 0) : Scene
 {
+    private static readonly Color Red = Color.Hex("ff3050");
     private readonly SelectionList _menu = new("CONTINUE", "QUIT");
     private readonly NumberText _score = new(static (score, _) => $"SCORE {Ui.N(score, 7)}");
     private readonly NumberText _continues = new(static (left, _) => $"CONTINUES LEFT {left}");
@@ -182,6 +201,7 @@ internal sealed class GameOverScene(RiftGame game, int stageIndex, int checkpoin
         if (game.Session.Continues <= 0) _menu.Index = 1;
         _menu.Moved += () => game.Sfx("menu-move", 0.6f);
         game.Music("");
+        game.SaveHighScore();
     }
 
     public override void Update(float dt)
@@ -198,7 +218,7 @@ internal sealed class GameOverScene(RiftGame game, int stageIndex, int checkpoin
     public override void Draw(IRenderer r)
     {
         r.FillRect(new RectF(0, 0, r.Width, r.Height), Ui.Ink);
-        Ui.Neon(r, Font, "GAME OVER", r.Width / 2f, 80, 4, Color.Hex("ff3050"), Age);
+        Ui.Neon(r, Font, "GAME OVER", r.Width / 2f, 80, 4, Red, Age);
         Ui.Centered(r, Font, _score.Get(game.Session.Score), r.Width / 2f, 130, Ui.Text);
         Ui.Centered(r, Font, _continues.Get(game.Session.Continues), r.Width / 2f, 146, Ui.Muted);
         Ui.Menu(r, Font, _menu, r.Width / 2f, 180, Age);

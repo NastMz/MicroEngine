@@ -3,7 +3,8 @@ using MicroEngine.Kernel;
 namespace NeonRift.Gameplay;
 
 /// <summary>Run-wide state: lives, continues, score and the weapon carried between stages.</summary>
-public sealed class Session : IStateHashed
+/// <param name="highScore">The best score before this run (the saved record), which the run's score may beat.</param>
+public sealed class Session(int highScore = 0) : IStateHashed
 {
     /// <summary>Adds every field of the run: lives, continues, score, high score, weapon and deaths.</summary>
     public void HashState(StateHasher hash)
@@ -24,7 +25,8 @@ public sealed class Session : IStateHashed
     public int Lives { get; set; } = StartLives;
     public int Continues { get; set; } = StartContinues;
     public int Score { get; private set; }
-    public int HighScore { get; private set; }
+    /// <summary>The best score ever reached: the saved record, or this run's score once it is higher.</summary>
+    public int HighScore { get; private set; } = Math.Max(0, highScore);
     public WeaponKind Weapon { get; set; } = WeaponKind.Pulse;
     public int Deaths { get; set; }
     public event Action? LifeGained;

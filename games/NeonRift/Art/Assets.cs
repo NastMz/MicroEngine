@@ -12,11 +12,14 @@ internal sealed record ArmRig(Sprite Body, Sprite Arm, Vector2 Shoulder, float L
 internal sealed record BackdropLayer(Texture Texture, float Factor, float Y, Color Fill, bool Foreground = false);
 
 /// <summary>
-/// Loads every image in <c>Content/</c> once: sprite strips are sliced into one atlas, tiles are cut
-/// from the stage tilesets, and the hero's aiming poses are derived from the authored frames.
+/// Loads every image in <c>Content/</c> once, through the game's content source (<c>Game.Assets</c>): sprite strips
+/// are sliced into one atlas, tiles are cut from the stage tilesets, and the hero's aiming poses are derived from the
+/// authored frames. The game's asset store holds it (<see cref="Kind"/>) and disposes it with the game.
 /// </summary>
 internal sealed class Assets : IDisposable
 {
+    /// <summary>The asset kind the game's store keeps this bundle under.</summary>
+    public const string Kind = "neon rift art";
     public const int HeroFrame = 71;
     /// <summary>Feet pivot of the hero frames (all frames share one 71×67 canvas).</summary>
     public static readonly Vector2 HeroOrigin = new(31, 66);
@@ -26,7 +29,7 @@ internal sealed class Assets : IDisposable
     private readonly Dictionary<string, ArmRig> _rigs = new(StringComparer.Ordinal);
     private readonly Dictionary<string, BackdropLayer[]> _backdrops = new(StringComparer.Ordinal);
 
-    public Assets(IGraphicsDevice device, ContentFolder content)
+    public Assets(IGraphicsDevice device, AssetCache content)
     {
         var b = new SpriteAtlasBuilder();
         // Hero (Warped City): every strip shares the 71×67 canvas and the feet pivot.
@@ -50,7 +53,6 @@ internal sealed class Assets : IDisposable
         Strip(b, content, "shot", "fx/shot.png", 15, 11, new Vector2(7, 5));
         Strip(b, content, "shot_hit", "fx/shot-hit.png", 15, 11, new Vector2(7, 5));
         Strip(b, content, "bolt", "fx/bolt.png", 48, 32, new Vector2(24, 16));
-        Strip(b, content, "pulse", "fx/pulse.png", 63, 32, new Vector2(31, 16));
         Strip(b, content, "charged", "fx/charged.png", 63, 48, new Vector2(31, 24));
         Strip(b, content, "crossed", "fx/crossed.png", 32, 32, new Vector2(16, 16));
         Strip(b, content, "waveform", "fx/waveform.png", 95, 32, new Vector2(47, 16));
@@ -111,7 +113,7 @@ internal sealed class Assets : IDisposable
     public ArmRig Rig(string pose) => _rigs[pose];
     public IReadOnlyList<BackdropLayer> Backdrop(string theme) => _backdrops[theme];
 
-    private static void Strip(SpriteAtlasBuilder b, ContentFolder content, string name, string file, int w, int h, Vector2 origin)
+    private static void Strip(SpriteAtlasBuilder b, AssetCache content, string name, string file, int w, int h, Vector2 origin)
         => b.AddGrid(name, content.Image(file), w, h, origin: origin);
 
     private Texture Upload(IGraphicsDevice device, PixelImage image)
@@ -121,7 +123,7 @@ internal sealed class Assets : IDisposable
         return t;
     }
 
-    private BackdropLayer Layer(IGraphicsDevice device, ContentFolder content, string file, float factor, float y, bool foreground = false)
+    private BackdropLayer Layer(IGraphicsDevice device, AssetCache content, string file, float factor, float y, bool foreground = false)
     {
         var image = content.Image(file);
         // Images are shorter than the canvas: the strip above them is filled with their top colour.

@@ -98,6 +98,8 @@ public sealed class Stage : IStateHashed
     /// <summary>Seconds since the screen last scrolled forward.</summary>
     public float IdleTime => _idleTime;
 
+    /// <summary>Whether this is the last stage: its boss falls to the victory jingle instead of the stage fanfare.</summary>
+    public bool Final { get; init; }
     public Action<string, float, float, float>? SoundSink { get; set; }
     public Action<string>? MusicSink { get; set; }
     /// <summary>Called when the player destroys an enemy (achievement progress).</summary>
@@ -374,7 +376,7 @@ public sealed class Stage : IStateHashed
         Camera.Shake(0.8f);
         MusicSink?.Invoke("");
         Schedule(2.6f, () => { Sound("explode-big", 1f); Camera.Shake(0.6f); });
-        Schedule(3.4f, () => Sound("fanfare", 0.9f));
+        Schedule(3.4f, () => Sound(Final ? "victory" : "fanfare", 0.9f));
     }
 
     public bool OnScreen(RectF bounds) => Camera.View.Intersects(bounds);
@@ -395,7 +397,13 @@ public sealed class Stage : IStateHashed
         if (big) Camera.Shake(0.15f);
     }
 
-    public void Spark(Vector2 at) => Spawn(new Effect("shot_hit", at, 20));
+    /// <summary>A shot's impact effect (<see cref="WeaponSpec.Impact"/>) at <paramref name="at"/>.</summary>
+    public void Impact(Vector2 at, ImpactSpec impact) => Spawn(new Effect(impact.Sprite, at, impact.Fps) { Scale = impact.Scale });
+
+    /// <summary>The burst of sparks of a shot glancing off armour.</summary>
+    public void Deflect(Vector2 at) => Impact(at, Deflection);
+
+    private static readonly ImpactSpec Deflection = new("hit3", 28, 0.5f);
 
     public void Flash(Vector2 at) => Spawn(new Effect("shot_hit", at, 40));
 

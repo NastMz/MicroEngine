@@ -222,6 +222,7 @@ public sealed class Interceptor : Boss
 /// </summary>
 public sealed class Dreadnought : Boss
 {
+    private static readonly Color CoreGlow = Color.Hex("ff3050");
     private static readonly Vector2[] TurretOffsets = [new(-150, -28), new(-128, 22), new(-70, 76)];
     private readonly List<DreadTurret> _turrets = [];
     private float _timer = 1.5f;
@@ -319,7 +320,7 @@ public sealed class Dreadnought : Boss
             // The exposed core pulses red so the new weak point is unmistakable.
             r.SetBlendMode(BlendMode.Additive);
             float pulse = 0.5f + 0.5f * MathF.Sin(Age * 8);
-            r.DrawPivoted(art.Frames("hit5")[3], at + new Vector2(-20, -10), Age, new Vector2(1.8f), Color.Hex("ff3050").WithAlpha(0.4f + 0.4f * pulse));
+            r.DrawPivoted(art.Frames("hit5")[3], at + new Vector2(-20, -10), Age, new Vector2(1.8f), CoreGlow.WithAlpha(0.4f + 0.4f * pulse));
             r.SetBlendMode(BlendMode.Alpha);
         }
     }
@@ -328,6 +329,7 @@ public sealed class Dreadnought : Boss
 /// <summary>A gun pod bolted to the dreadnought hull. Follows its parent and fires aimed pairs.</summary>
 public sealed class DreadTurret : Enemy
 {
+    private static readonly Color Mount = Color.Hex("1b1630"), Eye = Color.Hex("ff5070");
     private readonly Dreadnought _parent;
     private readonly Vector2 _offset;
     private float _timer;
@@ -373,12 +375,12 @@ public sealed class DreadTurret : Enemy
     internal override void Render(IRenderer r, Assets art)
     {
         var at = Vector2.Round(DrawPosition);
-        r.FillCircle(at, 12, Color.Hex("1b1630"));
+        r.FillCircle(at, 12, Mount);
         var frames = art.Frames("turret");
         // Hung upside down: the half-turn already mirrors the left-facing frame, so flip when the player is left.
         DrawFlashing(r, frames[0], at + new Vector2(0, 10), Stage.Player.Position.X < Position.X, Flash, MathF.PI);
         r.SetBlendMode(BlendMode.Additive);
-        r.FillCircle(at, 3 + MathF.Sin(Age * 6), Color.Hex("ff5070").WithAlpha(0.7f));
+        r.FillCircle(at, 3 + MathF.Sin(Age * 6), Eye.WithAlpha(0.7f));
         r.SetBlendMode(BlendMode.Alpha);
     }
 }
