@@ -65,7 +65,7 @@ A game references one of these; the template references `MicroEngine.Desktop`.
 | --- | --- |
 | [`MicroEngine`](https://www.nuget.org/packages/MicroEngine) | the core: loop, scenes, input, graphics, tiles, audio synthesis, UI, saves, achievements, headless platform, identity build targets |
 | [`MicroEngine.Sdl`](https://www.nuget.org/packages/MicroEngine.Sdl) | the SDL 3 platform (Windows, Linux, macOS, Android, iOS) |
-| [`MicroEngine.Raylib`](https://www.nuget.org/packages/MicroEngine.Raylib) | the raylib platform (desktops and browsers) |
+| [`MicroEngine.Raylib`](https://www.nuget.org/packages/MicroEngine.Raylib) | the raylib platform (desktops and browsers; desktops only from the next SDK version) |
 | [`MicroEngine.Desktop`](https://www.nuget.org/packages/MicroEngine.Desktop) | `DesktopLauncher` with SDL 3, raylib, SDL's software renderer and headless |
 | [`MicroEngine.Cli`](https://www.nuget.org/packages/MicroEngine.Cli) | the `microengine` tool |
 | [`MicroEngine.Templates`](https://www.nuget.org/packages/MicroEngine.Templates) | `dotnet new microengine-game` |
@@ -83,7 +83,8 @@ dotnet add package MicroEngine.Desktop --prerelease
 Then subclass `Game`, start it with `DesktopLauncher.Run(new MyGame(), args)` from `Program.cs`, and add the identity
 properties ([Name, id, version and icon](app-identity.md)) before packaging. A game that wants SDL only references
 `MicroEngine.Sdl` instead and passes its own platform catalog ([Backends and platforms](../manual/backends.md)); it
-can then be packaged for every target except the web, whose platform is raylib.
+can then be packaged for every target except the web, whose platform is raylib (from the next SDK version it is SDL 3,
+so a game that references only `MicroEngine.Sdl` can be packaged for the web too).
 
 ## Next
 
