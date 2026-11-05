@@ -49,7 +49,7 @@ internal sealed class PopCoin : Actor
     public override void Render(IRenderer r, Assets a, float time)
     {
         var frames = a.Frames("coin");
-        r.Draw(frames[(int)(Age * 24) % frames.Count], Snap(Position));
+        r.Draw(frames[(int)(Age * 24) % frames.Count], Snap(DrawPosition));
     }
 }
 
@@ -103,7 +103,7 @@ internal sealed class PowerItem : Actor
 
     public override void Render(IRenderer r, Assets a, float time)
     {
-        var pos = Snap(Feet);
+        var pos = Snap(DrawFeet);
         Sprite sprite = Kind switch
         {
             PowerKind.Sunpetal => a.Frames("sunpetal")[(int)(time * 6) % 4],
@@ -153,6 +153,6 @@ internal sealed class Shard : Actor
     public override void Render(IRenderer r, Assets a, float time)
     {
         var s = a[_sprite];
-        r.Draw(s.Texture, s.Source, Snap(Position) - s.Origin, Color.White, new DrawOptions(Rotation: Age * _spin, Origin: s.Origin));
+        r.Draw(s.Texture, s.Source, Snap(DrawPosition) - s.Origin, Color.White, new DrawOptions(Rotation: Age * _spin, Origin: s.Origin));
     }
 }

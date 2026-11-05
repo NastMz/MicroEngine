@@ -30,17 +30,22 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
     private const float LineHeight = 14;
     private CachedText _timeText;
     private float _scroll;
-    /// <summary>The scroll kept from the previous update, to draw the rolling credits between updates.</summary>
-    private Interpolated _drawnScroll;
+    /// <summary>The scroll in the scene's objects, so the world draws the rolling credits between steps.</summary>
+    private EntityId _scrollEntity;
     private bool _champion = true;
     private float _phase;
     private bool _leaving;
 
-    public override void Enter() => Audio.PlayMusic("victory", 0f);
+    public override void Enter()
+    {
+        Audio.PlayMusic("victory", 0f);
+        _scrollEntity = Objects.Create();
+    }
 
     /// <summary>
     /// State hash: the champion card or the roll, its phase clock, the scroll (it decides when the credits end) and
-    /// whether it is leaving. Left out: the scroll held for drawing between updates and the time text cache.
+    /// whether it is leaving. Left out: the time text cache (the scroll's entity is in the scene's objects, which the
+    /// engine hashes).
     /// </summary>
     public override void HashState(StateHasher hash)
     {
@@ -53,7 +58,7 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
     public override void Update(float dt)
     {
         Advance(dt);
-        _drawnScroll.Record(new Vector2(0, _scroll), Game.UpdateCount);
+        Objects.Local(_scrollEntity).Position2D = new Vector2(0, _scroll);
     }
 
     private void Advance(float dt)
@@ -108,7 +113,7 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
             }
             return;
         }
-        float scroll = _drawnScroll.At(new Vector2(0, _scroll), Game.UpdateCount, Game.FrameBlend).Y;
+        float scroll = Objects.DrawPosition2D(_scrollEntity).Y;
         for (int i = 0; i < Lines.Length; i++)
         {
             float y = 180 + i * LineHeight - scroll;

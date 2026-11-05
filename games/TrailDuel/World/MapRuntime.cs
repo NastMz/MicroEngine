@@ -1,3 +1,4 @@
+using MicroEngine.Scenes;
 using TrailDuel.Rules;
 
 namespace TrailDuel.World;
@@ -7,21 +8,24 @@ public enum StepKind { Blocked, Step, Hop }
 /// <summary>
 /// The live state of the current map: collision (tiles, buildings, signs, NPCs, item balls),
 /// warps, triggers and which NPCs are present given the story flags. No rendering here,
-/// so movement rules are testable headlessly.
+/// so movement rules are testable headlessly; given the scene's objects, its NPCs are drawn through them.
 /// </summary>
 internal sealed class MapRuntime
 {
     private readonly bool[] _solid;
+    private readonly IWorld? _world;
     public MapDef Def { get; }
     public GameState State { get; }
     public List<Actor> Npcs { get; } = [];
     public int Width => Def.Width;
     public int Height => Def.Height;
 
-    public MapRuntime(MapDef def, GameState state)
+    /// <param name="world">The scene's objects its NPCs are drawn through; none for rule tests.</param>
+    public MapRuntime(MapDef def, GameState state, IWorld? world = null)
     {
         Def = def;
         State = state;
+        _world = world;
         _solid = new bool[def.Width * def.Height];
         for (int y = 0; y < def.Height; y++)
         for (int x = 0; x < def.Width; x++)
@@ -37,10 +41,21 @@ internal sealed class MapRuntime
     /// <summary>Re-evaluates which NPCs exist after story flags change, keeping existing actors in place.</summary>
     public void RefreshNpcs()
     {
-        Npcs.RemoveAll(a => a.Def is { } d && !IsPresent(d));
+        Npcs.RemoveAll(a =>
+        {
+            if (a.Def is not { } d || IsPresent(d)) return false;
+            a.Destroy();
+            return true;
+        });
         foreach (var d in Def.Npcs)
             if (IsPresent(d) && Npcs.All(a => a.Def != d))
-                Npcs.Add(new Actor(d.Look, d.X, d.Y, d.Facing) { Def = d });
+                Npcs.Add(new Actor(d.Look, d.X, d.Y, d.Facing, _world) { Def = d });
+    }
+
+    /// <summary>Takes its NPCs out of the scene's objects (the player leaves the map).</summary>
+    public void Unload()
+    {
+        foreach (var npc in Npcs) npc.Destroy();
     }
 
     private bool IsPresent(NpcDef d)

@@ -54,7 +54,7 @@ public sealed class PlayerTests
             float start = Feet(stage).Y, best = start;
             for (int i = 0; i < 70; i++)
             {
-                stage.Update(Dt, In(jump: i == 0, jumpHeld: i < hold));
+                Step(stage, In(jump: i == 0, jumpHeld: i < hold));
                 best = MathF.Min(best, Feet(stage).Y);
             }
             return start - best;
@@ -82,11 +82,11 @@ public sealed class PlayerTests
         var stage = Settled();
         stage.Player.Equip(WeaponKind.Spread);
         Run(stage, 1, In(fire: true));
-        Assert.AreEqual(5, stage.PlayerShots.Count);
+        Assert.AreEqual(5, Actor.Count(stage.PlayerShots));
         Run(stage, 5, In(fire: true));
-        Assert.AreEqual(5, stage.PlayerShots.Count, "Still cooling down.");
+        Assert.AreEqual(5, Actor.Count(stage.PlayerShots), "Still cooling down.");
         Run(stage, 20, In(fire: true));
-        Assert.IsGreaterThan(5, stage.PlayerShots.Count);
+        Assert.IsGreaterThan(5, Actor.Count(stage.PlayerShots));
     }
 
     [TestMethod]

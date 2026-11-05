@@ -84,9 +84,12 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
 
     private const float Speed = 14f;
     private bool _leaving;
-    private readonly StepBlend _step = new();
 
-    public override void Enter() => game.Music("credits");
+    public override void Enter()
+    {
+        game.Music("credits");
+        _ = Objects;   // the scene's world, created before the first frame: frames animate at its blend (DrawTime)
+    }
 
     /// <summary>Hashes whether the credits are leaving; the scroll follows the scene's age, which the engine hashes.</summary>
     public override void HashState(StateHasher hash) => hash.Add(_leaving);
@@ -95,7 +98,6 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
 
     public override void Update(float dt)
     {
-        _step.Stepped(Game, dt);
         if (_leaving) return;
         if (Age > EndTime || (Age > 2 && Input.Pressed("confirm")))
         {
@@ -107,7 +109,7 @@ internal sealed class CreditsScene(MeadowGame game) : Scene
 
     public override void Draw(IRenderer r)
     {
-        float t = _step.Time(Game, Age);
+        float t = DrawTime.Of(this);
         Diorama.Draw(r, game.Art, t, t * 12);
         // The Sunstone hangs in the sky, radiating.
         var sun = game.Art.Frames("sunstone")[(int)(t * 6) % 4];

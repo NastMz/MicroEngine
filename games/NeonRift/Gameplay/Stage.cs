@@ -4,6 +4,7 @@ using NeonRift.Content;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
+using MicroEngine.Scenes;
 using MicroEngine.World;
 
 namespace NeonRift.Gameplay;
@@ -13,7 +14,8 @@ public enum StagePhase { Playing, Warning, Boss, Cleared, GameOver }
 /// <summary>
 /// One stage in play: forward-only scrolling camera, spawn triggers, collisions between the player,
 /// enemies, shots and pickups, deaths and respawns, and the boss arena. Contains no drawing code
-/// besides what actors render, so tests can run it headlessly.
+/// besides what actors render, so tests can run it headlessly. Its actors and its camera are entities of
+/// <see cref="World"/> (the play scene's objects), which keeps them in spawn order and interpolates their drawing.
 /// </summary>
 public sealed class Stage : IStateHashed
 {
@@ -28,9 +30,15 @@ public sealed class Stage : IStateHashed
     /// <summary>Seconds without lingering pressure; after this, troopers keep arriving until the screen scrolls.</summary>
     public const float LingerGrace = 3.5f;
 
-    public Stage(StageDef def, Session session, int checkpoint = 0, int seed = 7)
+    /// <param name="def">The stage to play.</param>
+    /// <param name="session">The run's lives, score and weapon.</param>
+    /// <param name="world">Where the stage's actors live: the play scene's <c>Objects</c>, stepped with the scene.</param>
+    /// <param name="checkpoint">The checkpoint to start from (0: the start).</param>
+    /// <param name="seed">The seed of the stage's generator.</param>
+    public Stage(StageDef def, Session session, IWorld world, int checkpoint = 0, int seed = 7)
     {
         Def = def;
+        World = world;
         _session = session;
         // Simulation draws from it (the rapid gun's jitter, trooper timing, boss explosions): a SeededRandom draws the
         // same sequence as new Random(seed) and takes part in the state hash.
@@ -51,11 +59,12 @@ public sealed class Stage : IStateHashed
         CheckpointIndex = checkpoint > 0 && checkpoint <= checkpoints.Length ? checkpoint : 0;
         Camera.Position = new Vector2(MathF.Max(0, startX - 80), def.PixelHeight - 270);
         Camera.Clamp();
-        PreviousCameraPosition = Camera.Position;
+        CameraEntity = world.Create();
+        world.Local(CameraEntity).Position2D = Camera.Position;
         _lockLeft = Camera.Position.X;
         // Skip spawns already behind the starting screen.
         while (_nextSpawn < def.Spawns.Count && def.Spawns[_nextSpawn].X < Camera.View.Left) _nextSpawn++;
-        Player = new Player(new Vector2(startX, GroundBelow(startX, 0) ?? StageBuilder.Surface(3)), session.Weapon) { Stage = this };
+        Player = Spawn(new Player(new Vector2(startX, GroundBelow(startX, 0) ?? StageBuilder.Surface(3)), session.Weapon));
     }
 
     public StageDef Def { get; }
@@ -63,11 +72,20 @@ public sealed class Stage : IStateHashed
     public Camera2D Camera { get; }
     public SeededRandom Random { get; }
     public Player Player { get; }
-    public EntityList<Enemy> Enemies { get; } = new();
-    public EntityList<PlayerShot> PlayerShots { get; } = new();
-    public EntityList<EnemyShot> EnemyShots { get; } = new();
-    public EntityList<Capsule> Pickups { get; } = new();
-    public EntityList<Effect> Effects { get; } = new();
+    /// <summary>The world the stage's actors and camera live in.</summary>
+    public IWorld World { get; }
+    /// <summary>The camera's entity: its transform follows <see cref="Camera"/> after every update, so the scroll is drawn between updates.</summary>
+    public EntityId CameraEntity { get; }
+    /// <summary>Living enemies (bosses and their turrets included), in spawn order.</summary>
+    public Attachments<Enemy> Enemies => World.All<Enemy>();
+    /// <summary>Living player shots, in spawn order.</summary>
+    public Attachments<PlayerShot> PlayerShots => World.All<PlayerShot>();
+    /// <summary>Living enemy shots, in spawn order.</summary>
+    public Attachments<EnemyShot> EnemyShots => World.All<EnemyShot>();
+    /// <summary>Living weapon capsules, in spawn order.</summary>
+    public Attachments<Capsule> Pickups => World.All<Capsule>();
+    /// <summary>Living visual effects, in spawn order.</summary>
+    public Attachments<Effect> Effects => World.All<Effect>();
     public Session Session => _session;
     public StagePhase Phase { get; private set; } = StagePhase.Playing;
     public float PhaseTime => _phaseTime;
@@ -79,16 +97,6 @@ public sealed class Stage : IStateHashed
     public bool InArena => Camera.Position.X >= Def.ArenaX - 0.5f;
     /// <summary>Seconds since the screen last scrolled forward.</summary>
     public float IdleTime => _idleTime;
-    /// <summary>The camera position at the start of the latest update, for drawing the scroll between updates.</summary>
-    public Vector2 PreviousCameraPosition { get; private set; }
-    /// <summary>
-    /// Drawing only: how far between the previous and the current update the next draw shows (0..1, see
-    /// <c>Game.FrameBlend</c>). 1 draws exactly the current state; rules never read it.
-    /// </summary>
-    internal float Blend { get; set; } = 1;
-
-    /// <summary>The point <see cref="Blend"/> of the way from <paramref name="previous"/> to <paramref name="current"/>; exactly <paramref name="current"/> at blend 1.</summary>
-    internal Vector2 Between(Vector2 previous, Vector2 current) => Blend >= 1 ? current : Vector2.Lerp(previous, current, Blend);
 
     public Action<string, float, float, float>? SoundSink { get; set; }
     public Action<string>? MusicSink { get; set; }
@@ -96,6 +104,10 @@ public sealed class Stage : IStateHashed
     public Action<Enemy>? DefeatSink { get; set; }
     /// <summary>Optional lookup of the hero's arm rigs so bullets leave the drawn gun; tests can leave it null.</summary>
     internal Func<string, ArmRig?>? Rigs { get; set; }
+    /// <summary>Optional lookup of an animation strip's length in frames (an effect plays its strip once); 1 frame when null, as in tests.</summary>
+    public Func<string, int>? Strips { get; set; }
+    /// <summary>The length in frames of the strip <paramref name="sprite"/>, from <see cref="Strips"/>; 1 without it.</summary>
+    public int StripLength(string sprite) => Strips?.Invoke(sprite) ?? 1;
     /// <summary>Scratch list player shots fill with the enemies they touch, reused every update.</summary>
     internal List<Enemy> HitBuffer { get; } = [];
 
@@ -103,10 +115,9 @@ public sealed class Stage : IStateHashed
     /// Adds the stage's simulation state in sections named after its parts, so a divergence names the part:
     /// <c>stage</c> (phase and its timers, clock, scroll and linger timers, next spawn, checkpoint, camera position, the
     /// stage's generator, pending scheduled actions by time, the boss), <c>stage.player</c>, <c>stage.enemies</c>,
-    /// <c>stage.shots</c> (the player's, then the enemies') and <c>stage.pickups</c>. Left out: effects (presentation
-    /// only, see <see cref="Effect"/>), the camera's shake (drawing only), what is kept for drawing between updates
-    /// (<see cref="PreviousCameraPosition"/>, <see cref="Blend"/>), the session (hashed by the game) and the stage
-    /// definition (fixed).
+    /// <c>stage.shots</c> (the player's, then the enemies') and <c>stage.pickups</c>. Left out: effects (nothing in play
+    /// reads them, see <see cref="Effect"/>), the camera's shake (drawing only), the session (hashed by the game) and the
+    /// stage definition (fixed). The world hashes every entity (actors, effects and the camera) in the scene's section.
     /// </summary>
     public void HashState(StateHasher hash)
     {
@@ -132,7 +143,8 @@ public sealed class Stage : IStateHashed
             hash.Add(Boss.Position);
         }
         hash.Section("stage.player");
-        hash.Add(Player);
+        hash.Add(true);   // the player is always there (the section's layout from before actors were entities)
+        Player.HashState(hash);
         hash.Section("stage.enemies");
         Actor.HashAll(hash, Enemies);
         hash.Section("stage.shots");
@@ -144,7 +156,6 @@ public sealed class Stage : IStateHashed
 
     public void Update(float dt, PlayerInput input)
     {
-        PreviousCameraPosition = Camera.Position;
         _time += dt;
         _phaseTime += dt;
         for (int i = _scheduled.Count - 1; i >= 0; i--)
@@ -157,11 +168,11 @@ public sealed class Stage : IStateHashed
         Player.Step(dt, Phase is StagePhase.Cleared or StagePhase.GameOver ? PlayerInput.None : input);
         UpdateCamera(dt);
         ActivateSpawns();
-        Enemies.Update(dt);
-        PlayerShots.Update(dt);
-        EnemyShots.Update(dt);
-        Pickups.Update(dt);
-        Effects.Update(dt);
+        foreach (var e in Enemies) e.Update(dt);
+        foreach (var s in PlayerShots) s.Update(dt);
+        foreach (var s in EnemyShots) s.Update(dt);
+        foreach (var c in Pickups) c.Update(dt);
+        foreach (var fx in Effects) fx.Update(dt);
         Collide();
         UpdatePhase(dt);
     }
@@ -191,6 +202,7 @@ public sealed class Stage : IStateHashed
         else _lingerTimer = 0;
         _lockLeft = Camera.Position.X;
         Camera.Update(dt);
+        World.Local(CameraEntity).Position2D = Camera.Position;
     }
 
     private void ActivateSpawns()
@@ -234,18 +246,23 @@ public sealed class Stage : IStateHashed
         }
     }
 
+    /// <summary>
+    /// Adds <paramref name="actor"/> to the stage: it becomes an entity of <see cref="World"/>, attached under its kind
+    /// (enemy, player shot, enemy shot, capsule, effect or the player), at once. A walk already running does not visit
+    /// it; every later one does, in spawn order.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The actor already joined a stage.</exception>
     public T Spawn<T>(T actor) where T : Actor
     {
-        actor.Stage = this;
-        switch (actor)
-        {
-            case Enemy e: Enemies.Add(e); break;
-            case Capsule c: Pickups.Add(c); break;
-            case Effect fx: Effects.Add(fx); break;
-            case PlayerShot ps: PlayerShots.Add(ps); break;
-            case EnemyShot es: EnemyShots.Add(es); break;
-        }
+        ArgumentNullException.ThrowIfNull(actor);
+        actor.Join(this, World);
         return actor;
+    }
+
+    /// <summary>Destroys every living enemy shot.</summary>
+    private void ClearEnemyShots()
+    {
+        foreach (var shot in EnemyShots) shot.Destroy();
     }
 
     public void Schedule(float delay, Action action) => _scheduled.Add((_time + delay, action));
@@ -297,7 +314,7 @@ public sealed class Stage : IStateHashed
                 {
                     _session.Lives--;
                     _session.Weapon = WeaponKind.Pulse;
-                    EnemyShots.Clear();
+                    ClearEnemyShots();
                     Player.Respawn(SafeRespawnX(), WeaponKind.Pulse);
                 }
             }
@@ -350,7 +367,7 @@ public sealed class Stage : IStateHashed
         Phase = StagePhase.Cleared;
         _phaseTime = 0;
         Boss = boss;
-        EnemyShots.Clear();
+        ClearEnemyShots();
         foreach (var e in Enemies) if (e != boss) e.Destroy();
         Explode(boss.Center, true);
         Sound("explode-big", 1f);

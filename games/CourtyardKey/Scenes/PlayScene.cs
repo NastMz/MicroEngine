@@ -26,12 +26,11 @@ public sealed partial class PlayScene : Scene
 
     private readonly List<RectF> _solids = [];
     private readonly List<Actor> _drawList = [];
-    private readonly List<Actor> _pending = [];
-    private EntityList<Actor> _actors = new();
-    private EntityList<Actor> _leaving = new();
+    private readonly EntityId _camera;
+    private EntityId _room, _leaving;
     private RoomRenderer _tiles = null!;
     private Hud _hud = null!;
-    private float _hitstop, _lowHealthTimer, _ambientTimer;
+    private float _lowHealthTimer, _ambientTimer;
     private float _fade;
     private Color _fadeColor = Color.Black;
 
@@ -41,14 +40,17 @@ public sealed partial class PlayScene : Scene
         Progress = progress;
         // Draws what new Random(seed) draws; a SeededRandom so its state takes part in the state hash.
         Rng = new SeededRandom(1234 + progress.Deaths);
+        // The camera is an entity too, so the world interpolates it with everything else.
+        _camera = Objects.Create();
     }
 
     /// <summary>
-    /// State hash: the progress, the room's generator, the mode and its timers (hitstop, heartbeat, ambience), the
-    /// scroll in progress, the camera position, the current room (area, cell and tiles: bushes can be cut), the hero,
-    /// then every actor of the room, the room being left and the spawns not yet flushed, in list order.
+    /// State hash: the progress, the room's generator, the mode and its timers (the hitstop left on the world's clock,
+    /// heartbeat, ambience), the scroll in progress, the camera position, the current room (area, cell and tiles: bushes
+    /// can be cut), the hero, then every actor of the room and of the room being left, in creation order. The engine also
+    /// hashes the world itself (every entity's transform and the actors' state) in the scene's own section.
     /// Left out: particles (presentation only, with generators of their own), the HUD (toasts and banners only show),
-    /// the fade (drawing), the positions held for blending, and the light map and renderers (platform objects).
+    /// the fade (drawing), the transforms the world keeps for blending, and the light map and renderers (platform objects).
     /// </summary>
     public override void HashState(StateHasher hash)
     {
@@ -56,11 +58,11 @@ public sealed partial class PlayScene : Scene
         hash.Add(Progress);
         hash.Add((IStateHashed)Rng);
         hash.Add((int)Mode);
-        hash.Add(_hitstop);
+        hash.Add(Objects.Clock.FreezeRemaining);
         hash.Add(_lowHealthTimer);
         hash.Add(_ambientTimer);
         hash.Add((int)PresentedItem);
-        hash.Add(Camera.Position);
+        hash.Add(CameraPosition);
         hash.Section("play.room");
         HashRoom(hash, Room);
         HashRoom(hash, _scrollFrom);
@@ -73,9 +75,8 @@ public sealed partial class PlayScene : Scene
         hash.Section("play.hero");
         hash.Add(Hero);
         hash.Section("play.actors");
-        HashActors(hash, _actors);
-        HashActors(hash, _leaving);
-        HashActors(hash, _pending);
+        HashActors(hash, Actors);
+        HashActors(hash, LeavingActors);
     }
 
     private static void HashRoom(StateHasher hash, Room? room)
@@ -91,9 +92,9 @@ public sealed partial class PlayScene : Scene
                 hash.Add(tiles[x, y]);
     }
 
-    private static void HashActors(StateHasher hash, IEnumerable<Actor> actors)
+    private static void HashActors(StateHasher hash, RoomActors<Actor> actors)
     {
-        hash.Add(actors.Count());
+        hash.Add(actors.Count);
         foreach (var actor in actors) hash.Add(actor);
     }
 
@@ -108,13 +109,27 @@ public sealed partial class PlayScene : Scene
     public AreaMap Area { get; private set; } = null!;
     public AreaMap OverworldMap { get; private set; } = null!;
     public AreaMap DungeonMap { get; private set; } = null!;
-    public EntityList<Actor> Actors => _actors;
+    /// <summary>The live actors of the current room, in creation order (the hero is in no room).</summary>
+    public RoomActors<Actor> Actors => new(Objects, _room);
+    /// <summary>
+    /// The entity the current room's actors are children of: each room loaded gets one, and destroying it destroys the
+    /// room's actors with it (leaving a room, changing area). <see cref="EntityId.None"/> before the first room.
+    /// </summary>
+    public EntityId RoomGroup => _room;
+    /// <summary>The camera's entity.</summary>
+    public EntityId CameraEntity => _camera;
+    /// <summary>The camera's logical position: an entity's transform, so drawing blends it like any actor.</summary>
+    public Vector2 CameraPosition
+    {
+        get => Objects.Local(_camera).Position2D;
+        private set => Objects.Local(_camera).Position2D = value;
+    }
     public ParticleSystem Particles { get; } = new(1024, 11);
     public ParticleSystem Glows { get; } = new(512, 12) { Additive = true };
     public ParticleSystem Ambient { get; } = new(256, 13);
     public Camera2D Camera { get; } = new(AreaDef.RoomPixelWidth, AreaDef.RoomPixelHeight + HudHeight) { MaxShake = 4 };
     public LightMap Light { get; private set; } = null!;
-    public Boomerang? ActiveBoomerang => _actors.OfType<Boomerang>().FirstOrDefault();
+    public Boomerang? ActiveBoomerang => Actors.OfType<Boomerang>().FirstOrDefault();
     /// <summary>The Warden while it is in the room (drives the boss health bar).</summary>
     public Warden? Boss { get; private set; }
 
@@ -141,27 +156,28 @@ public sealed partial class PlayScene : Scene
 
     public override void Update(float dt)
     {
-        RememberDrawPositions();
-        Progress.PlaySeconds += dt;
-        Camera.Update(dt);
-        Particles.Update(dt);
-        Glows.Update(dt);
-        Ambient.Update(dt);
-        UpdateAmbience(dt);
+        // dt is the step on the world's clock: 0 while a hitstop freezes it (Hitstop). Play time, the camera's shake,
+        // particles, ambience and the pause button run on the engine's step meanwhile.
+        float step = EngineStep;
+        Progress.PlaySeconds += step;
+        Camera.Update(step);
+        Particles.Update(step);
+        Glows.Update(step);
+        Ambient.Update(step);
+        UpdateAmbience(step);
         if (Mode == PlayMode.Play && Input.Pressed("pause") && !Hero.Health.IsDead)
         {
             Audio.Play("pause");
             Game.Scenes.Push(new PauseScene(this));
             return;
         }
-        if (_hitstop > 0) { _hitstop -= dt; return; }
+        if (dt == 0) return;   // hitstop
         switch (Mode)
         {
             case PlayMode.Play: UpdatePlay(dt); break;
             case PlayMode.Scroll: UpdateScroll(dt); break;
             case PlayMode.Cutscene:
-                foreach (var e in _actors.OfType<Effect>()) e.Update(dt);
-                FlushSpawns();
+                foreach (var e in Actors.OfType<Effect>()) e.Update(dt);
                 break;
         }
         _hud.Update(dt);
@@ -170,11 +186,8 @@ public sealed partial class PlayScene : Scene
     private void UpdatePlay(float dt)
     {
         Hero.Update(dt);
-        FlushSpawns();
-        _actors.Update(dt);
-        FlushSpawns();
+        foreach (var a in Actors) a.Update(dt);
         ResolveCombat();
-        FlushSpawns();
         UpdateRoomRules(dt);
         if (Mode == PlayMode.Play) CheckExits();
         // A soft heartbeat when one heart or less remains.
@@ -192,7 +205,7 @@ public sealed partial class PlayScene : Scene
     {
         _solids.Clear();
         if (!throughActors)
-            foreach (var a in _actors)
+            foreach (var a in Actors)
                 if (a.IsSolid && a != actor) _solids.Add(a.SolidBox);
         var result = TileMotion.Move(actor.Bounds, delta, GridFor(flying), _solids);
         actor.Position += result.Position - actor.Bounds.Position;
@@ -211,33 +224,23 @@ public sealed partial class PlayScene : Scene
         return grid;
     }
 
-    /// <summary>Queues an actor; it joins the room after the current update phase (safe during iteration).</summary>
-    public T Spawn<T>(T actor) where T : Actor
-    {
-        _pending.Add(actor);
-        return actor;
-    }
-
-    private void FlushSpawns()
-    {
-        foreach (var a in _pending) _actors.Add(a);
-        _pending.Clear();
-        _actors.Flush();
-    }
+    /// <summary>The engine's fixed step in seconds, computed as the engine computes it (the world clock's step at scale 1).</summary>
+    private float EngineStep => (float)(1.0 / Game.Settings.UpdateRate);
 
     public void Burst(Vector2 at, ParticleSpec spec, int count, bool additive = false)
         => (additive ? Glows : Particles).Emit(at, spec, count);
 
     public void Puff(Vector2 at, bool big = false)
     {
-        Spawn(new Effect(this, at, Art.Frames("puff"), 14));
+        new Effect(this, at, Art.Frames("puff"), 14);
         if (big)
             for (int i = 0; i < 4; i++)
-                Spawn(new Effect(this, at + MathX.FromAngle(i * MathF.PI / 2, 10), Art.Frames("puff"), 10));
+                new Effect(this, at + MathX.FromAngle(i * MathF.PI / 2, 10), Art.Frames("puff"), 10);
     }
 
     public void ShakeCamera(float trauma) => Camera.Shake(trauma);
-    public void Hitstop(float seconds) => _hitstop = MathF.Max(_hitstop, seconds);
+    /// <summary>Freezes the room (the world's clock) for <paramref name="seconds"/>; the longer freeze wins.</summary>
+    public void Hitstop(float seconds) => Objects.Clock.Freeze(seconds);
 
     /// <summary>Rolls a drop with the given chance. Hearts are favoured when the hero is hurt.</summary>
     public void DropLoot(Vector2 at, float chance)
@@ -249,7 +252,7 @@ public sealed partial class PlayScene : Scene
             : roll < 0.8 ? PickupKind.Gem
             : roll < 0.96 ? PickupKind.BlueGem
             : PickupKind.RedGem;
-        Spawn(new Pickup(this, at, kind));
+        new Pickup(this, at, kind);
     }
 
     private void UpdateAmbience(float dt)
@@ -294,5 +297,65 @@ public sealed partial class PlayScene : Scene
         Progress.MaxHealth = Hero.Health.Max;
         G.Saves.Save(Progress);
         if (toast) _hud.Toast("Progress saved");
+    }
+}
+
+/// <summary>
+/// The live actors of one room that are a <typeparamref name="T"/>, in creation order: the <see cref="Actor"/>
+/// attachments of the children of the room's group entity (<see cref="IWorld.Children"/>); none once the group is
+/// destroyed. <c>foreach</c> allocates nothing.
+/// </summary>
+public readonly struct RoomActors<T>(IWorld objects, EntityId room) : IEnumerable<T> where T : Actor
+{
+    /// <summary>The ones that are also a <typeparamref name="TOther"/>.</summary>
+    public RoomActors<TOther> OfType<TOther>() where TOther : Actor => new(objects, room);
+    /// <summary>How many there are (walks them).</summary>
+    public int Count
+    {
+        get
+        {
+            int n = 0;
+            foreach (var _ in this) n++;
+            return n;
+        }
+    }
+    /// <summary>The first one, or null.</summary>
+    public T? FirstOrDefault()
+    {
+        foreach (var a in this) return a;
+        return null;
+    }
+
+    public Enumerator GetEnumerator() => new(objects, room);
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public struct Enumerator : IEnumerator<T>
+    {
+        private readonly IWorld _objects;
+        private readonly bool _live;
+        private EntityChildren.Enumerator _children;
+
+        internal Enumerator(IWorld objects, EntityId room)
+        {
+            _objects = objects;
+            _live = objects.IsAlive(room);
+            _children = _live ? objects.Children(room).GetEnumerator() : default;
+            Current = null!;
+        }
+
+        public T Current { get; private set; }
+        readonly object System.Collections.IEnumerator.Current => Current;
+
+        public bool MoveNext()
+        {
+            if (!_live) return false;
+            while (_children.MoveNext())
+                if (_objects.TryGet<Actor>(_children.Current, out var actor) && actor is T a) { Current = a; return true; }
+            return false;
+        }
+
+        public void Reset() { if (_live) _children.Reset(); }
+        public readonly void Dispose() { }
     }
 }

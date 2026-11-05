@@ -13,6 +13,8 @@ namespace TrailDuel.Scenes;
 internal sealed partial class OverworldScene
 {
     private readonly List<Actor> _rowActors = [];
+    /// <summary>The camera drawing looks through: the simulated one's position drawn between steps.</summary>
+    private readonly Camera2D _view = new(320, 180);
 
     // Tile keys built once: formatting them per tile per frame was most of the overworld's garbage.
     private static readonly string[] FlowerKeys = SpriteKeys.Numbered("t:flowers", 2), TallKeys = SpriteKeys.Numbered("t:tall", 2),
@@ -48,31 +50,24 @@ internal sealed partial class OverworldScene
         for (int i = 0; i < _buildingKeys.Length; i++) _buildingKeys[i] = $"bld:{_map.Def.Id}:{i}";
     }
 
-    /// <summary>Update the drawn positions belong to and how far the frame is past it (1 in fixed-step runs).</summary>
-    private long DrawUpdate => Game.UpdateCount;
-    private float Blend => Game.FrameBlend;
-
-    /// <summary>The camera position drawn at <paramref name="blend"/>, between the previous update's and the current one.</summary>
-    internal Vector2 CameraDrawPosition(float blend) => _drawnCamera.At(_camera.Position, DrawUpdate, blend);
+    /// <summary>The camera position drawn this frame, between the start and the end of the scene's latest step.</summary>
+    internal Vector2 CameraDrawPosition => Objects.DrawPosition2D(_cameraEntity);
 
     public override void Draw(IRenderer r)
     {
-        // The camera is drawn between updates like the characters it follows, then put back.
-        var cameraPosition = _camera.Position;
-        _camera.Position = CameraDrawPosition(Blend);
+        _view.Position = CameraDrawPosition;
         DrawWorld(r);
-        _camera.Position = cameraPosition;
         DrawHud(r);
     }
 
     private void DrawWorld(IRenderer r)
     {
         RefreshMapKeys();
-        var view = _camera.View;
+        var view = _view.View;
         int x0 = Math.Max(0, (int)MathF.Floor(view.X / 16) - 1), x1 = Math.Min(_map.Width - 1, (int)MathF.Ceiling(view.Right / 16) + 1);
         int y0 = Math.Max(0, (int)MathF.Floor(view.Y / 16) - 1), y1 = Math.Min(_map.Height - 1, (int)MathF.Ceiling(view.Bottom / 16) + 2);
 
-        r.PushCamera(_camera);
+        r.PushCamera(_view);
         for (int y = y0; y <= y1; y++)
         for (int x = x0; x <= x1; x++)
             DrawGround(r, x, y);
@@ -104,7 +99,7 @@ internal sealed partial class OverworldScene
         if (_bubbleOn is { } bubbleActor)
         {
             float pop = _bubbleTime < 0.12f ? _bubbleTime / 0.12f : 1;
-            var p = bubbleActor.DrawPosition(DrawUpdate, Blend) + new Vector2(2, -20 + (1 - pop) * 6);
+            var p = bubbleActor.DrawPosition + new Vector2(2, -20 + (1 - pop) * 6);
             r.Draw(_game.Sprite("bubble"), new Vector2(MathF.Round(p.X), MathF.Round(p.Y)));
         }
         r.PopCamera();
@@ -204,12 +199,13 @@ internal sealed partial class OverworldScene
 
     private void DrawActor(IRenderer r, Actor a)
     {
-        var p = a.DrawPosition(DrawUpdate, Blend);
+        var p = a.DrawPosition;
         r.Draw(_game.Sprite("t:shadow"), p + new Vector2(0, 1));
         int frame = a.Frame;
         if (a == _player && !a.Moving && _bumpTimer > 0 && !Busy && AnyDirectionHeld()) frame = a.BumpFrame(Age);
         var sprite = _game.Sprite(a.SpriteKey(frame));
-        r.Draw(sprite, new Vector2(MathF.Round(p.X), MathF.Round(p.Y - a.DrawLift(DrawUpdate, Blend))));
+        var s = a.DrawSpritePosition;
+        r.Draw(sprite, new Vector2(MathF.Round(s.X), MathF.Round(s.Y)));
         // Tall grass hides the feet of anyone standing in it.
         if (!a.Hopping && _map.KindAt(a.X, a.Y) == TileKind.TallGrass && !a.Moving)
             r.Draw(_game.Sprite("t:tallover"), new Vector2(a.X * 16, a.Y * 16));

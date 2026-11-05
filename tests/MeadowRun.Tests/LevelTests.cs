@@ -66,12 +66,12 @@ public sealed class LevelTests
         Stage stage = null!;
         for (int attempt = 0; attempt < Session.StartingLives; attempt++)
         {
-            stage = new Stage(new Level(def), session, checkpoint);
+            stage = StageHarness.New(new Level(def), session, checkpoint);
             var bot = new Autopilot(attempt);
             for (int f = 0; f < 60 * 200 && stage.Phase != StagePhase.Done; f++)
             {
                 if (ignoreEnemies) stage.IgnoreEnemiesForTesting = true;
-                stage.Update(StageHarness.Dt, bot.Next(stage));
+                StageHarness.Step(stage, bot.Next(stage));
             }
             if (stage.Outcome == StageOutcome.Cleared) break;
             checkpoint = stage.CheckpointReached;

@@ -3,6 +3,7 @@ using NeonRift.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
+using MicroEngine.Scenes;
 
 namespace NeonRift.Gameplay;
 
@@ -15,6 +16,7 @@ public sealed class Capsule : Actor
     public const float Lifetime = 12f;
     private Body _body = new() { Box = new RectF(-6, -6, 12, 12) };
     public char Letter { get; }
+    private protected override void AttachTo(IWorld world, EntityId id) => world.Attach<Capsule>(id, this);
 
     public Capsule(Vector2 at, char letter)
     {

@@ -1,6 +1,7 @@
 using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
+using MicroEngine.Scenes;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
 using TrailDuel.Visuals;
@@ -32,28 +33,48 @@ internal sealed partial class BattleScene
     private Vector2 EnemyTrainerOffset => new(_enemyTrainerX * 120, 0);
     private Vector2 PlayerTrainerOffset => new(-_playerTrainerX * 140, -2);
 
-    /// <summary>Keeps where everything that slides ended update <paramref name="update"/>; hidden things snap so they never streak.</summary>
-    private void RecordDrawn(long update)
+    /// <summary>The things that slide, as entities of the scene's objects (placed at once, drawn there until a step).</summary>
+    private void CreateObjects()
     {
-        _drawnEnemyPlatform.Record(EnemyPlatform, update);
-        _drawnPlayerPlatform.Record(PlayerPlatform, update);
-        _drawnEnemyTrainer.Record(EnemyTrainerOffset, update);
-        _drawnPlayerTrainer.Record(PlayerTrainerOffset, update);
-        RecordOffset(_enemy, update);
-        RecordOffset(_player, update);
-        // A thrown orb appears at its start: never draw it sliding from where the last one rested.
-        if (!_orbWasVisible) _drawnOrb.Snap();
-        _drawnOrb.Record(_orbPos, update);
-        _orbWasVisible = _orbVisible;
+        _enemyPlatform = Objects.Create();
+        _playerPlatform = Objects.Create();
+        _enemyTrainer = Objects.Create();
+        _playerTrainer = Objects.Create();
+        _enemy.Entity = Objects.Create();
+        _player.Entity = Objects.Create();
+        _orb = Objects.Create();
+        Place();
     }
 
-    private static void RecordOffset(Display d, long update)
+    /// <summary>Puts every sliding thing where the step left it; hidden creatures are never drawn sliding.</summary>
+    private void Place()
     {
-        if (!d.Visible) d.DrawnOffset.Snap();
-        d.DrawnOffset.Record(d.Offset, update);
+        Objects.Local(_enemyPlatform).Position2D = EnemyPlatform;
+        Objects.Local(_playerPlatform).Position2D = PlayerPlatform;
+        Objects.Local(_enemyTrainer).Position2D = EnemyTrainerOffset;
+        Objects.Local(_playerTrainer).Position2D = PlayerTrainerOffset;
+        PlaceOffset(_enemy);
+        PlaceOffset(_player);
+        Objects.Local(_orb).Position2D = _orbPos;
     }
 
-    private Vector2 Drawn(in Interpolated drawn, Vector2 current) => drawn.At(current, Game.UpdateCount, Game.FrameBlend);
+    private void PlaceOffset(Display d)
+    {
+        Objects.Local(d.Entity).Position2D = d.Offset;
+        if (!d.Visible) Objects.Teleport(d.Entity);
+    }
+
+    /// <summary>A thrown orb appears at its start: it is never drawn sliding from where the last one rested.</summary>
+    private void ShowOrb()
+    {
+        _orbVisible = true;
+        Objects.Teleport(_orb);
+    }
+
+    private Vector2 Drawn(EntityId entity) => Objects.DrawPosition2D(entity);
+
+    /// <summary>The enemy's platform drawn this frame, between the start and the end of the latest step.</summary>
+    internal Vector2 EnemyPlatformDrawPosition => Drawn(_enemyPlatform);
 
     public override void Draw(IRenderer r)
     {
@@ -74,8 +95,8 @@ internal sealed partial class BattleScene
                 r.Draw(_game.Sprite("mote"), new Vector2(MathF.Round(x), MathF.Round(y)), Color.White.WithAlpha(0.45f + 0.4f * MathF.Sin(Age * 2 + i * 1.7f)));
             }
 
-        var enemyPlat = Drawn(_drawnEnemyPlatform, EnemyPlatform) + shake;
-        var playerPlat = Drawn(_drawnPlayerPlatform, PlayerPlatform) + shake;
+        var enemyPlat = Drawn(_enemyPlatform) + shake;
+        var playerPlat = Drawn(_playerPlatform) + shake;
         r.Draw(_game.Sprite(_enemyPlatformKey ??= "platform:enemy" + PlatformSuffix), enemyPlat + new Vector2(0, -2));
         r.Draw(_game.Sprite(_playerPlatformKey ??= "platform:player" + PlatformSuffix), playerPlat + new Vector2(0, -10));
 
@@ -83,10 +104,10 @@ internal sealed partial class BattleScene
         if (_setup.Trainer is { } trainerDef && _enemyTrainerX < 1)
         {
             _trainerPortraitKey ??= CharacterArt.PortraitKey(LookFor(trainerDef).Key, Direction.Down);
-            r.Draw(_game.Sprite(_trainerPortraitKey), enemyPlat + Drawn(_drawnEnemyTrainer, EnemyTrainerOffset));
+            r.Draw(_game.Sprite(_trainerPortraitKey), enemyPlat + Drawn(_enemyTrainer));
         }
         if (_playerTrainerX < 1)
-            r.Draw(_game.Sprite(PlayerPortraitKey), playerPlat + Drawn(_drawnPlayerTrainer, PlayerTrainerOffset));
+            r.Draw(_game.Sprite(PlayerPortraitKey), playerPlat + Drawn(_playerTrainer));
 
         DrawCreature(r, _enemy, EnemyKeys, enemyPlat, clipBottom: enemyPlat.Y + 2);
         DrawCreature(r, _player, PlayerKeys, playerPlat, clipBottom: 180);
@@ -94,7 +115,7 @@ internal sealed partial class BattleScene
         if (_orbVisible)
         {
             var orb = _game.Sprite(_orbOpen ? "orbopen" : _orbSprite);
-            r.Draw(orb.Texture, orb.Source, Drawn(_drawnOrb, _orbPos) - orb.Origin, Color.White, new DrawOptions(Rotation: _orbAngle, Origin: orb.Origin));
+            r.Draw(orb.Texture, orb.Source, Drawn(_orb) - orb.Origin, Color.White, new DrawOptions(Rotation: _orbAngle, Origin: orb.Origin));
         }
         _sprites.Draw(r);
         _fx.Draw(r);
@@ -125,7 +146,7 @@ internal sealed partial class BattleScene
     {
         if (!d.Visible || d.Blink) return;
         bool player = keys.Player;
-        var anchor = platform + (player ? new Vector2(0, 0) : new Vector2(0, -2)) + Drawn(d.DrawnOffset, d.Offset);
+        var anchor = platform + (player ? new Vector2(0, 0) : new Vector2(0, -2)) + Drawn(d.Entity);
         var white = _game.Sprite(keys.White[d.Creature.SpeciesId]);
         if (!player && d.SinkDepth <= 0)
         {

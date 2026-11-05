@@ -5,6 +5,7 @@ using CourtyardKey.World;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
+using MicroEngine.Scenes;
 using MicroEngine.World;
 
 namespace CourtyardKey.Entities;
@@ -17,18 +18,59 @@ public readonly record struct Hit(int Damage, Vector2 From, HitKind Kind);
 public enum HitOutcome { Ignored, Damaged, Blocked, Stunned, Destroyed }
 
 /// <summary>
-/// Base for everything in a room. <see cref="Entity.Position"/> is the feet point: hitboxes sit
-/// around it and draw order is the feet Y, which gives correct top-down overlap for free.
+/// Base for everything in a room: the class attachment of one entity of the play scene's world
+/// (<see cref="MicroEngine.Scenes.Scene.Objects"/>). Its transform is the world's, so the engine interpolates it;
+/// <see cref="Position"/> is the feet point: hitboxes sit around it and draw order is the feet Y, which gives correct
+/// top-down overlap for free. Constructing an actor creates its entity as a child of the room being loaded or played
+/// (<see cref="PlayScene.RoomGroup"/>), so the room's actors are its children and leave with it.
 /// </summary>
-public abstract class Actor(PlayScene world) : Entity, IStateHashed
+public abstract class Actor : IStateHashed, IDestroyedCallback
 {
-    public PlayScene World { get; } = world;
+    /// <param name="world">The play scene.</param>
+    /// <param name="inRoom">False for an actor that belongs to no room (the hero): its entity is a root.</param>
+    protected Actor(PlayScene world, bool inRoom = true)
+    {
+        World = world;
+        Id = world.Objects.Create(inRoom ? world.RoomGroup : EntityId.None);
+        world.Objects.Attach(Id, this);
+    }
+
+    public PlayScene World { get; }
+    /// <summary>The actor's entity.</summary>
+    public EntityId Id { get; }
     protected Sprites Art => World.Art;
-    public override float Depth => Position.Y;
+
+    /// <summary>World position in pixels (the entity's transform); the hitbox and drawing are relative to it.</summary>
+    public Vector2 Position
+    {
+        get => World.Objects.Local(Id).Position2D;
+        set => World.Objects.Local(Id).Position2D = value;
+    }
+
+    /// <summary>Hitbox relative to <see cref="Position"/>.</summary>
+    public RectF Hitbox { get; set; } = new(0, 0, 16, 16);
+    /// <summary>False once destroyed; the world skips it at once and releases it when the step ends.</summary>
+    public bool Alive => World.Objects.IsAlive(Id);
+    /// <summary>Draw order: lower first (the feet Y).</summary>
+    public virtual float Depth => Position.Y;
+    /// <summary>The hitbox in world pixels.</summary>
+    public RectF Bounds => Hitbox.Offset(Position);
+    /// <summary>The centre of <see cref="Bounds"/>.</summary>
+    public Vector2 Center => Bounds.Center;
+
+    /// <summary>Destroys the actor's entity.</summary>
+    public void Destroy() => World.Objects.Destroy(Id);
+    /// <summary>Advances the actor by <paramref name="dt"/> seconds.</summary>
+    public virtual void Update(float dt) { }
+    /// <summary>Draws the actor.</summary>
+    public virtual void Draw(IRenderer r) { }
+    /// <summary>Called once when the world releases the destroyed entity (at the end of the step).</summary>
+    public virtual void Removed() { }
+    void IDestroyedCallback.OnDestroyed(EntityId entity) => Removed();
 
     /// <summary>
     /// State hash: the actor's kind, position and whether it is alive, then its own state (<see cref="HashOwnState"/>).
-    /// The position held for blending between updates (<see cref="RememberPosition"/>) is drawing state and stays out.
+    /// The transform the world keeps for blending is drawing state and stays out.
     /// </summary>
     public void HashState(StateHasher hash)
     {
@@ -50,31 +92,8 @@ public abstract class Actor(PlayScene world) : Entity, IStateHashed
     /// <summary>Adds light in dark rooms.</summary>
     public virtual void EmitLight(LightMap light) { }
 
-    private Vector2 _previousPosition;
-    private bool _hasPrevious;
-
-    /// <summary>Remembers the position at the start of an update: the start of the motion drawn between updates.</summary>
-    public void RememberPosition()
-    {
-        _previousPosition = Position;
-        _hasPrevious = true;
-    }
-
-    /// <summary>Draws at the current position until the next update, so a jump (teleport, room change) never streaks.</summary>
-    public void SnapDrawPosition() => _hasPrevious = false;
-
-    /// <summary>
-    /// Where to draw the actor <paramref name="blend"/> (0..1) of the way from the previous update to the current
-    /// one. At 1 (fixed-step runs) it is exactly <see cref="Entity.Position"/>.
-    /// </summary>
-    public Vector2 DrawPositionAt(float blend) => Blend(_hasPrevious ? _previousPosition : Position, Position, blend);
-
-    /// <summary>The position to draw this frame (<see cref="DrawPositionAt"/> at the scene's blend).</summary>
-    protected Vector2 DrawPosition => DrawPositionAt(World.DrawBlend);
-
-    /// <summary>Lerp that returns <paramref name="current"/> exactly when there is nothing to blend.</summary>
-    public static Vector2 Blend(Vector2 previous, Vector2 current, float blend)
-        => blend >= 1 || previous == current ? current : Vector2.Lerp(previous, current, blend);
+    /// <summary>The position to draw this frame: the world interpolates it (and snaps it after a teleport).</summary>
+    protected Vector2 DrawPosition => World.Objects.DrawPosition2D(Id);
 
     protected void DrawSprite(IRenderer r, Sprite sprite, Vector2 at, bool flipX = false, Color? tint = null)
         => r.Draw(sprite, new Vector2(MathF.Round(at.X), MathF.Round(at.Y)), tint, flipX);

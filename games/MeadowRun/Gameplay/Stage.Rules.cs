@@ -9,10 +9,26 @@ namespace MeadowRun.Gameplay;
 internal sealed partial class Stage
 {
     // Scratch lists for the per-step rules, reused so a step allocates nothing for them.
-    private readonly List<Actor> _touched = [];
+    private readonly List<Actor> _touched = [], _knocked = [];
     private readonly List<SeedShot> _seeds = [];
     private readonly List<Enemy> _enemies = [], _walkers = [];
     private readonly List<FireBar> _fireBars = [];
+
+    /// <summary>Fills <paramref name="into"/> with the actors whose bounds overlap <paramref name="area"/> (sharing an edge does not count), in actor order.</summary>
+    private void Overlapping(RectF area, List<Actor> into)
+    {
+        into.Clear();
+        foreach (var actor in Actors)
+            if (actor.Bounds.Intersects(area)) into.Add(actor);
+    }
+
+    private int SeedCount()
+    {
+        int count = 0;
+        foreach (var actor in Actors)
+            if (actor is SeedShot) count++;
+        return count;
+    }
 
     private void SpawnFromLevel(int checkpoint)
     {
@@ -81,8 +97,7 @@ internal sealed partial class Stage
     private void ResolveItems()
     {
         var pb = Player.Bounds;
-        _touched.Clear();
-        foreach (var actor in Actors.Overlapping(pb)) _touched.Add(actor);
+        Overlapping(pb, _touched);
         foreach (var actor in _touched)
         {
             switch (actor)
@@ -335,7 +350,8 @@ internal sealed partial class Stage
     private void KnockFromBelow(int x, int y)
     {
         var area = new RectF(x * Level.TileSize - 2, y * Level.TileSize - 4, Level.TileSize + 4, 6);
-        foreach (var actor in Actors.Overlapping(area).ToList())
+        Overlapping(area, _knocked);
+        foreach (var actor in _knocked)
         {
             switch (actor)
             {

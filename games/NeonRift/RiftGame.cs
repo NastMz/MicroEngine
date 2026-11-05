@@ -8,17 +8,23 @@ using MicroEngine.Kernel;
 
 namespace NeonRift;
 
-/// <summary>Developer launch options (environment variables), used for captures and debugging.</summary>
+/// <summary>Developer launch options (the host's developer variables), used for captures and debugging.</summary>
 public sealed record LaunchOptions(string Start = "title", int Stage = 1, int Checkpoint = 0, WeaponKind Weapon = WeaponKind.Pulse, bool God = false, bool Auto = false)
 {
-    public static LaunchOptions FromEnvironment()
+    /// <summary>
+    /// Reads RIFT_START, RIFT_STAGE, RIFT_CHECKPOINT, RIFT_WEAPON, RIFT_GOD=1 and RIFT_AUTO=1 through
+    /// <paramref name="variable"/> (the composition passes the host's <c>HostEnvironment.Variable</c>: environment
+    /// variables on desktop, a phone test's <c>--env</c> values); unset or unreadable ones keep their defaults.
+    /// </summary>
+    public static LaunchOptions From(Func<string, string?> variable)
     {
-        var start = Environment.GetEnvironmentVariable("RIFT_START") ?? "title";
-        int stage = int.TryParse(Environment.GetEnvironmentVariable("RIFT_STAGE"), out var s) ? s : 1;
-        int cp = int.TryParse(Environment.GetEnvironmentVariable("RIFT_CHECKPOINT"), out var c) ? c : 0;
-        var weapon = Enum.TryParse<WeaponKind>(Environment.GetEnvironmentVariable("RIFT_WEAPON"), true, out var w) ? w : WeaponKind.Pulse;
-        bool god = Environment.GetEnvironmentVariable("RIFT_GOD") == "1";
-        bool auto = Environment.GetEnvironmentVariable("RIFT_AUTO") == "1";
+        ArgumentNullException.ThrowIfNull(variable);
+        var start = variable("RIFT_START") ?? "title";
+        int stage = int.TryParse(variable("RIFT_STAGE"), out var s) ? s : 1;
+        int cp = int.TryParse(variable("RIFT_CHECKPOINT"), out var c) ? c : 0;
+        var weapon = Enum.TryParse<WeaponKind>(variable("RIFT_WEAPON"), true, out var w) ? w : WeaponKind.Pulse;
+        bool god = variable("RIFT_GOD") == "1";
+        bool auto = variable("RIFT_AUTO") == "1";
         return new LaunchOptions(start, stage, cp, weapon, god, auto);
     }
 }

@@ -24,8 +24,7 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
     private float _walk = 1;
     private float _revealed = 1;
     private bool _leaving;
-    private readonly StepBlend _step = new();
-    private Vector2 _pipFrom;
+    private EntityId _pip;
     private readonly NumberLabel _lives = new("×", 2), _score = new(digits: 7);
     private int _infoLevel = -1, _infoBest;
     private string _infoTitle = "", _infoScore = "";
@@ -35,8 +34,8 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
 
     /// <summary>
     /// Hashes the node Pip stands on, the node he walks to and how far, the unlock reveal (it holds input back) and
-    /// whether the scene is leaving. Leaves out the held position for blending, the step blend and the info panel's
-    /// label caches (drawing writes them).
+    /// whether the scene is leaving (Pip's entity, which frames draw him from, is in the scene's world, which the engine
+    /// hashes). Leaves out the info panel's label caches (drawing writes them).
     /// </summary>
     public override void HashState(StateHasher hash)
     {
@@ -61,12 +60,19 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
             }, delay: 0.6f);
         }
         game.Music("map");
+        // Pip walks between nodes in the scene's world, which interpolates him for frames drawn between updates.
+        _pip = Objects.Create();
+        Objects.Local(_pip).Position2D = PipPosition;
     }
 
     public override void Update(float dt)
     {
-        _step.Stepped(Game, dt);
-        _pipFrom = PipPosition;
+        Walk(dt);
+        Objects.Local(_pip).Position2D = PipPosition;
+    }
+
+    private void Walk(float dt)
+    {
         if (_leaving) return;
         if (_walk < 1)
         {
@@ -115,7 +121,7 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
     public override void Draw(IRenderer r)
     {
         r.Draw(game.Art["map"], Vector2.Zero);
-        float time = _step.Time(Game, Age);
+        float time = DrawTime.Of(this);
         // Water shimmer.
         for (int i = 0; i < 14; i++)
         {
@@ -144,7 +150,7 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
             Ui.Centered(r, Font, NodeNumbers[i], Nodes[i].X, Nodes[i].Y + 7, state == 0 ? Pal.Dusk : Pal.Cream);
         }
 
-        var pip = Motion.Between(_pipFrom, PipPosition, _step.Blend(Game));
+        var pip = Objects.DrawPosition2D(_pip);
         bool walking = _walk < 1;
         var frames = game.Art.Pip(game.Session.Form, walking ? "run" : "idle");
         float hop = walking ? MathF.Abs(MathF.Sin(_walk * MathF.PI * 4)) * 3 : 0;

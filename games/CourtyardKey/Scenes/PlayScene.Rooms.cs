@@ -4,6 +4,7 @@ using CourtyardKey.Entities;
 using CourtyardKey.Model;
 using CourtyardKey.World;
 using MicroEngine;
+using MicroEngine.Scenes;
 using MicroEngine.World;
 
 namespace CourtyardKey.Scenes;
@@ -44,10 +45,10 @@ public sealed partial class PlayScene
     public void PlaceAtCheckpoint(Checkpoint cp)
     {
         Area = cp.Area == Content.Dungeon.Id ? DungeonMap : OverworldMap;
-        LoadRoom(cp.RoomX, cp.RoomY, _actors);
+        LoadRoom(cp.RoomX, cp.RoomY);
         Hero.Position = Room.TileToWorld(cp.TileX, cp.TileY);
         Hero.Facing = cp.Facing;
-        Camera.Position = CameraFor(Room);
+        CameraPosition = CameraFor(Room);
         SnapDrawPositions();
         Mode = PlayMode.Play;
         OnRoomSettled(fromEdge: null);
@@ -57,13 +58,14 @@ public sealed partial class PlayScene
     private string MusicForRoom() =>
         Room.Def.Rule == RoomRule.Boss && !Progress.Has(BossFlag) ? "boss" : Area.Def.Music;
 
-    private void LoadRoom(int x, int y, EntityList<Actor> into)
+    private void LoadRoom(int x, int y)
     {
         Room = Area.Fresh(x, y);
+        _room = Objects.Create();
         Progress.MarkVisited(Area.Id, x, y);
         G.Achievements.SetProgress(CourtyardAchievements.Cartographer, CourtyardAchievements.VisitedDungeonRooms(Progress));
-        Spawner.Populate(this, Room, into);
-        Boss = into.OfType<Warden>().FirstOrDefault();
+        Spawner.Populate(this, Room);
+        Boss = Actors.OfType<Warden>().FirstOrDefault();
         Light.Darkness = Room.Def.Darkness;
         Light.Shade = Area.Def.IsDungeon ? Visuals.Pal.DungeonDark : Visuals.Pal.ForestDark;
     }
@@ -104,14 +106,11 @@ public sealed partial class PlayScene
     private void StartScroll(Dir dir)
     {
         var (dx, dy) = dir.ToStep();
+        // The room's actors become the leaving room's (LeavingActors): their group stays while another becomes current.
         _scrollFrom = Room;
-        (_leaving, _actors) = (_actors, _leaving);
-        _actors.Clear();
-        _pending.Clear();
-        foreach (var b in _leaving.OfType<Boomerang>()) b.Destroy();
-        _leaving.Flush();
-        LoadRoom(Room.X + dx, Room.Y + dy, _actors);
-        _actors.Flush();
+        _leaving = _room;
+        foreach (var b in LeavingActors.OfType<Boomerang>()) b.Destroy();
+        LoadRoom(Room.X + dx, Room.Y + dy);
         _scrollHeroFrom = Hero.Position;
         var nb = Room.Bounds;
         _scrollHeroTo = dir switch
@@ -122,7 +121,7 @@ public sealed partial class PlayScene
             Dir.Down => new Vector2(Hero.Position.X, nb.Top + 30),
             _ => new Vector2(Hero.Position.X, nb.Bottom - 22),
         };
-        _scrollCamFrom = Camera.Position;
+        _scrollCamFrom = CameraPosition;
         _scrollCamTo = CameraFor(Room);
         _scrollTime = 0;
         Hero.Controllable = false;
@@ -135,11 +134,12 @@ public sealed partial class PlayScene
         _scrollTime += dt;
         float t = MathF.Min(1, _scrollTime / ScrollTime);
         float e = Ease.InOutSine(t);
-        Camera.Position = Vector2.Lerp(_scrollCamFrom, _scrollCamTo, e);
+        CameraPosition = Vector2.Lerp(_scrollCamFrom, _scrollCamTo, e);
         Hero.Position = Vector2.Lerp(_scrollHeroFrom, _scrollHeroTo, t);
         Hero.Update(0);
         if (t < 1) return;
-        _leaving.Clear();
+        Objects.Destroy(_leaving);
+        _leaving = EntityId.None;
         var from = _scrollFrom;
         _scrollFrom = null;
         Hero.Controllable = true;
@@ -149,7 +149,8 @@ public sealed partial class PlayScene
 
     /// <summary>The room being scrolled away from (null when not scrolling).</summary>
     public Room? ScrollingFrom => _scrollFrom;
-    public EntityList<Actor> LeavingActors => _leaving;
+    /// <summary>The live actors of the room being scrolled away from (none when not scrolling).</summary>
+    public RoomActors<Actor> LeavingActors => new(Objects, _leaving);
 
     private System.Collections.IEnumerator ChangeArea(Checkpoint target, bool viaStairs)
     {
@@ -157,7 +158,7 @@ public sealed partial class PlayScene
         Hero.Controllable = false;
         Audio.Play(viaStairs ? "stairs" : "door_slam", 0.7f);
         yield return FadeOut(0.45f);
-        _actors.Clear();
+        Objects.Destroy(_room);
         PlaceAtCheckpoint(target);
         Hero.Controllable = false;
         Mode = PlayMode.Cutscene;
@@ -185,14 +186,14 @@ public sealed partial class PlayScene
 
     // ------------------------------------------------------------------ room rules
 
-    public IEnumerable<Door> Doors => _actors.OfType<Door>();
+    public RoomActors<Door> Doors => Actors.OfType<Door>();
 
     private void UpdateRoomRules(float dt)
     {
         if (_closeShuttersPending)
         {
             bool clear = true;
-            foreach (var a in _actors)
+            foreach (var a in Actors)
                 if (a is Door { Kind: DoorKind.Shutter } d && d.Bounds.Inflate(2).Intersects(Hero.Bounds)) { clear = false; break; }
             if (clear)
             {
@@ -209,7 +210,7 @@ public sealed partial class PlayScene
 
     private bool AnyEnemyLeftToClear()
     {
-        foreach (var a in _actors)
+        foreach (var a in Actors)
             if (a is Enemy { CountsForClear: true }) return true;
         return false;
     }
@@ -219,7 +220,7 @@ public sealed partial class PlayScene
     {
         if (!Progress.Set(SolvedFlag)) return;
         foreach (var d in Doors) if (d.Kind == DoorKind.Shutter) d.SetOpen(true);
-        Spawner.RevealHiddenChests(this, Room, _actors);
+        Spawner.RevealHiddenChests(this, Room);
         Audio.Play("secret");
         Audio.Play("shutter", 0.6f);
     }
@@ -227,7 +228,7 @@ public sealed partial class PlayScene
     /// <summary>True when the cell is a plate with a block resting on it.</summary>
     public bool PlatePressed(int x, int y)
     {
-        foreach (var a in _actors)
+        foreach (var a in Actors)
             if (a is PushBlock { Sliding: false } b && b.Cell == (x, y)) return true;
         return false;
     }
@@ -248,9 +249,9 @@ public sealed partial class PlayScene
         var tile = Room.TileAt(x, y);
         if (tile is not (Tile.Floor or Tile.Plate or Tile.Cracked or Tile.Carpet)) return false;
         var rect = Room.TileRect(x, y).Inflate(-1);
-        foreach (var a in _actors)
+        foreach (var a in Actors)
             if (a != self && a.IsSolid && a.SolidBox.Intersects(rect)) return false;
-        foreach (var e in _actors.OfType<Enemy>())
+        foreach (var e in Actors.OfType<Enemy>())
             if (e.Bounds.Intersects(rect)) return false;
         return true;
     }

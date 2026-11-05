@@ -5,7 +5,7 @@ using MeadowRun.Gameplay.Actors;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
-using MicroEngine.World;
+using MicroEngine.Scenes;
 
 namespace MeadowRun.Gameplay;
 
@@ -16,6 +16,11 @@ internal enum StageOutcome { None, Died, Cleared, Won }
 /// One attempt at a level. Pure simulation plus effect requests (sound, shake, hit-stop, particles),
 /// so the whole level can be played headlessly in tests. The play scene draws it and plays sounds.
 /// </summary>
+/// <remarks>
+/// The stage keeps its actors and Pip's and the camera's drawn positions in a world (<see cref="Objects"/>: the play
+/// scene's), which interpolates them for frames drawn between updates and holds the hit-stop on its clock. Whoever owns
+/// the world steps it around every <see cref="Update"/>: the play scene's engine does, tests do it themselves.
+/// </remarks>
 internal sealed partial class Stage : IStateHashed
 {
     public const float TimeUnitSeconds = 0.4f;
@@ -25,14 +30,18 @@ internal sealed partial class Stage : IStateHashed
     private readonly Dictionary<(int, int), float> _bumps = [];
     private readonly Dictionary<(int, int), int> _multiCoins = [];
     private readonly List<Checkpoint> _checkpoints = [];
-    private float _freeze, _phaseTime, _throwPose;
+    private readonly EntityId _pip, _camera;
+    private float _phaseTime, _throwPose;
     private int _stompChain;
     private bool _hurryPlayed;
 
     public Level Level { get; }
     public Session Session { get; }
     public Player Player { get; }
-    public EntityList<Actor> Actors { get; } = new();
+    /// <summary>The world the stage's objects live in (the play scene's <see cref="Scene.Objects"/>).</summary>
+    public IWorld Objects { get; }
+    /// <summary>The actors that are not platforms, in the order they were spawned; destroyed ones are skipped at once.</summary>
+    public Attachments<Actor> Actors => Objects.All<Actor>();
     public IReadOnlyList<PlatformActor> Platforms => _platforms;
     public Camera2D Camera { get; }
     public StagePhase Phase { get; private set; } = StagePhase.Playing;
@@ -46,7 +55,12 @@ internal sealed partial class Stage : IStateHashed
     public Grumbold? Boss { get; private set; }
     public RectF? CameraLock { get; private set; }
     public float ThrowPose => _throwPose;
-    public bool Frozen => _freeze > 0;
+    /// <summary>Whether a hit-stop holds the rules (the world's clock is frozen).</summary>
+    public bool Frozen => Objects.Clock.Frozen;
+    /// <summary>Where frames draw Pip: between his last two positions. Never read by the rules.</summary>
+    public Vector2 PipDrawPosition => Objects.DrawPosition2D(_pip);
+    /// <summary>Where frames draw the camera: between its last two positions. Never read by the rules.</summary>
+    public Vector2 CameraDrawPosition => Objects.DrawPosition2D(_camera);
     /// <summary>Score awarded by the goal pole grab, shown in the tally.</summary>
     public int FlagScore { get; private set; }
     public int TimeBonus { get; private set; }
@@ -58,10 +72,14 @@ internal sealed partial class Stage : IStateHashed
     /// <summary>Called for every enemy stomped (achievement progress).</summary>
     public Action? StompSink { get; set; }
 
-    public Stage(Level level, Session session, int checkpoint = 0)
+    public Stage(Level level, Session session, IWorld objects, int checkpoint = 0)
     {
         Level = level ?? throw new ArgumentNullException(nameof(level));
         Session = session ?? throw new ArgumentNullException(nameof(session));
+        Objects = objects ?? throw new ArgumentNullException(nameof(objects));
+        // Pip and the camera are not actors: an entity each follows them, so the world interpolates them too.
+        _pip = Objects.Create();
+        _camera = Objects.Create();
         TimeLeft = level.Def.Time;
         Camera = new Camera2D(320, 180) { Bounds = level.Bounds, MaxShake = 4 };
         Player = new Player(level.StartPosition(level.Start)) { Form = session.Form };
@@ -73,14 +91,22 @@ internal sealed partial class Stage : IStateHashed
             Player.Position = new Vector2(cp.Center.X - Player.Width / 2f, cp.Bounds.Bottom - Player.Height);
         }
         SnapCamera();
+        Follow();
+    }
+
+    /// <summary>Moves Pip's and the camera's entities to where the rules left them.</summary>
+    private void Follow()
+    {
+        Objects.Local(_pip).Position2D = Player.Position;
+        Objects.Local(_camera).Position2D = Camera.Position;
     }
 
     /// <summary>
     /// Hashes the attempt: phase and outcome, clocks and timers, stomp chain, scores of the tally, the camera (its
-    /// position wakes actors) and its lock, the tiles (bumped and broken blocks change them), the multi-coin bricks,
-    /// Pip, the platforms and the actors in list order. Leaves out what only presentation uses: particles, popups,
-    /// block bump offsets, the throw pose, ambient emission and camera shake (the camera's own generator only moves
-    /// the drawn view).
+    /// position wakes actors) and its lock, the tiles (bumped and broken blocks change them), the multi-coin bricks and
+    /// Pip. The actors, the platforms and the hit-stop belong to the world (<see cref="Objects"/>), which the scene
+    /// hashes. Leaves out what only presentation uses: particles, popups, block bump offsets, the throw pose, ambient
+    /// emission and camera shake (the camera's own generator only moves the drawn view).
     /// </summary>
     public void HashState(StateHasher hash)
     {
@@ -89,7 +115,6 @@ internal sealed partial class Stage : IStateHashed
         hash.Add(DeathCause);
         hash.Add(Clock);
         hash.Add(TimeLeft);
-        hash.Add(_freeze);
         hash.Add(_phaseTime);
         hash.Add(_stompChain);
         hash.Add(_hurryPlayed);
@@ -121,30 +146,38 @@ internal sealed partial class Stage : IStateHashed
             hash.Add(left);
         }
         hash.Add(Player);
-        hash.Add(_platforms.Count);
-        foreach (var platform in _platforms) hash.Add(platform);
-        hash.Add(Actors.Count);
-        foreach (var actor in Actors) hash.Add(actor);
     }
 
+    /// <summary>Adds an actor to the stage: platforms to <see cref="Platforms"/>, the others to <see cref="Actors"/>.</summary>
     public void Spawn(Actor actor)
     {
-        if (actor is PlatformActor p) _platforms.Add(p);
-        else Actors.Add(actor);
+        if (actor is PlatformActor p)
+        {
+            _platforms.Add(p);
+            Objects.Attach(p.Id, p);
+        }
+        else Objects.Attach(actor.Id, actor);
     }
 
     public bool IsNearView(RectF bounds, float margin) => Camera.View.Inflate(margin).Intersects(bounds);
 
+    /// <summary>
+    /// Advances the stage by one update. <paramref name="dt"/> is the engine's step: block bumps, effects and camera
+    /// shake always advance by it; the rules advance by the step of the world's clock, which is 0 during a hit-stop.
+    /// </summary>
     public void Update(float dt, PlayerInput input)
     {
         UpdateBumps(dt);
         UpdateEffects(dt);
         Camera.Update(dt);
-        if (_freeze > 0)
-        {
-            _freeze -= dt;
-            return;
-        }
+        float step = Objects.Clock.Delta;
+        if (step == 0) return;
+        Simulate(step, input);
+        Follow();
+    }
+
+    private void Simulate(float dt, PlayerInput input)
+    {
         Clock += dt;
         _phaseTime += dt;
         _throwPose = MathF.Max(0, _throwPose - dt);
@@ -179,14 +212,14 @@ internal sealed partial class Stage : IStateHashed
         if (Player.Grounded) _stompChain = 0;
         HandlePlayerEvents(fallSpeed);
 
-        if (Player.Form == PipForm.Ember && input.RunPressed && Actors.OfType<SeedShot>().Count() < MaxSeeds)
+        if (Player.Form == PipForm.Ember && input.RunPressed && SeedCount() < MaxSeeds)
         {
             Spawn(new SeedShot(this, Player.Center + new Vector2(Player.Facing * 8, -2), Player.Facing));
             _throwPose = 0.16f;
             Sfx("throw", 1, 0.7f, Player.Center);
         }
 
-        Actors.Update(dt);
+        foreach (var actor in Actors) actor.Update(dt);
         ResolveItems();
         ResolveEnemies(previousBottom);
         ResolveHazards();
@@ -335,7 +368,8 @@ internal sealed partial class Stage : IStateHashed
         Spawn(new Sunstone(this, new Vector2(arena.Center.X, arena.Top + 20), arena.Bottom - 56));
     }
 
-    public void Freeze(float seconds) => _freeze = MathF.Max(_freeze, seconds);
+    /// <summary>Hit-stop: the rules wait for at least <paramref name="seconds"/> (the longer freeze wins).</summary>
+    public void Freeze(float seconds) => Objects.Clock.Freeze(seconds);
     public void Shake(float trauma) => Camera.Shake(trauma);
 
     public void Sfx(string name, float pitch = 1, float volume = 1, Vector2? at = null)

@@ -120,7 +120,7 @@ public sealed class PlayTests
         using var h = new Harness("dungeon");
         h.Step(10);
         var play = h.Play;
-        var knight = play.Spawn(new Knight(play, play.Room.TileToWorld(10, 5)));
+        var knight = new Knight(play, play.Room.TileToWorld(10, 5));   // constructing an actor adds it to the room
         Assert.AreEqual(Dir.Down, knight.Facing);
         var front = knight.Center + new Vector2(0, 16);
         var side = knight.Center + new Vector2(16, 0);

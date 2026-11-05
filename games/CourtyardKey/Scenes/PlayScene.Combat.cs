@@ -17,7 +17,7 @@ public sealed partial class PlayScene
     {
         if (Hero.SwordBox is { } sword) ResolveSword(sword);
         var hurtbox = Hero.Hurtbox;
-        foreach (var a in _actors)
+        foreach (var a in Actors)
         {
             switch (a)
             {
@@ -37,7 +37,7 @@ public sealed partial class PlayScene
     private void ResolveSword(RectF sword)
     {
         var from = Hero.Center;
-        foreach (var a in _actors)
+        foreach (var a in Actors)
         {
             if (a is IHittable h && h.Hurtbox.Intersects(sword) && Hero.MarkStruck(a))
                 h.OnHit(new Hit(Combat.SwordDamage, from, HitKind.Sword));
@@ -71,7 +71,7 @@ public sealed partial class PlayScene
     {
         if (ActiveBoomerang is not null) return false;
         var dir = hero.InputDirection != Vector2.Zero ? hero.InputDirection : hero.Facing.ToVector();
-        Spawn(new Boomerang(this, hero.Position + new Vector2(0, -7) + hero.Facing.ToVector() * 6, dir));
+        new Boomerang(this, hero.Position + new Vector2(0, -7) + hero.Facing.ToVector() * 6, dir);
         return true;
     }
 
@@ -79,7 +79,7 @@ public sealed partial class PlayScene
     public bool BoomerangStrike(Boomerang b)
     {
         bool turn = false;
-        foreach (var a in _actors)
+        foreach (var a in Actors)
         {
             if (a is Pickup pk && pk.Bounds.Intersects(b.Bounds)) b.Carry(pk);
             else if (a is IHittable h and not Pot && h.Hurtbox.Intersects(b.Bounds) && b.TryStrike(a))
@@ -138,7 +138,7 @@ public sealed partial class PlayScene
         Audio.Play("stomp");
         ShakeCamera(0.5f);
         Burst(warden.Position, Fx.Dust, 14);
-        Spawn(new Shockwave(this, warden.Position, 110));
+        new Shockwave(this, warden.Position, 110);
     }
 
     public void OnWardenDefeated(Warden warden) => Coroutines.Start(WardenDeath(warden));
@@ -148,7 +148,7 @@ public sealed partial class PlayScene
         Audio.StopMusic(0.3f);
         Progress.Set(BossFlag);
         G.Achievements.Unlock(CourtyardAchievements.Warden);
-        foreach (var p in _actors.OfType<Projectile>()) p.Destroy();
+        foreach (var p in Actors.OfType<Projectile>()) p.Destroy();
         for (int i = 0; i < 12; i++)
         {
             var at = warden.Center + new Vector2(((float)Rng.NextDouble() - 0.5f) * 32, ((float)Rng.NextDouble() - 0.7f) * 32);
@@ -162,12 +162,12 @@ public sealed partial class PlayScene
         ShakeCamera(1f);
         _hud.Flash(Visuals.Pal.White, 0.6f);
         warden.FinishDying();
-        Spawn(new Pickup(this, warden.Position, PickupKind.HeartContainer));
+        new Pickup(this, warden.Position, PickupKind.HeartContainer);
         yield return Wait.Seconds(1.0f);
         Audio.Play("victory");
         foreach (var d in Doors) if (d.Kind == DoorKind.Shutter) d.SetOpen(true);
         Progress.Set(SolvedFlag);
-        foreach (var p in _actors.OfType<Pedestal>()) p.Reveal(instantly: false);
+        foreach (var p in Actors.OfType<Pedestal>()) p.Reveal(instantly: false);
         Audio.Play("shutter", 0.6f);
         yield return Wait.Seconds(2.5f);
         Audio.PlayMusic("dungeon", 1f);
@@ -185,7 +185,7 @@ public sealed partial class PlayScene
     public void OnHeroPushing(Hero hero, float pushTime)
     {
         var probe = hero.InteractProbe;
-        foreach (var a in _actors)
+        foreach (var a in Actors)
         {
             if (a is Door { IsOpen: false } door && door.Bounds.Intersects(probe) && pushTime > 0.12f)
             {

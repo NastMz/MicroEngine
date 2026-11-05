@@ -12,10 +12,12 @@ namespace TrailDuel.Tests;
 public sealed class StateTraceTests
 {
     /// <summary>
-    /// The scenarios of <c>web/tests/scenarios.json</c> (title, newgame, master-battle with <c>TRAIL_DEBUG=trainer</c>),
-    /// then the other scripts whose start is clear from their name: <c>lab-starter</c> (lab), <c>route-trainer</c>
-    /// (route), <c>brook-shrine</c> (brook) and <c>catch</c> (a wild battle). <c>touch.script</c> needs the touch layout of
-    /// a phone and is left out. An empty debug start means the title screen (no environment variable is read).
+    /// Every script of <c>games/TrailDuel/scripts</c> with its starting point (<c>TRAIL_DEBUG</c>): the scenarios of
+    /// <c>web/tests/scenarios.json</c> (title, newgame, master-battle with <c>trainer</c>), then <c>lab-starter</c> (lab),
+    /// <c>route-trainer</c> (route), <c>brook-shrine</c> (brook), <c>catch</c> (battle: the wild Mossback of the Hollow
+    /// Wood; at update 550 the script opens the bag, throws a Capture Orb at 620, and the creature breaks free) and
+    /// <c>touch</c> (town, as its header and the phone checks say; its touches go through the same hit testing headless).
+    /// An empty debug start means the title screen. <see cref="EveryScriptHasAStartingPoint"/> keeps the list complete.
     /// </summary>
     public static IEnumerable<object[]> Scenarios =>
     [
@@ -26,7 +28,16 @@ public sealed class StateTraceTests
         ["route-trainer", "route"],
         ["brook-shrine", "brook"],
         ["catch", "battle"],
+        ["touch", "town"],
     ];
+
+    [TestMethod]
+    public void EveryScriptHasAStartingPoint()
+    {
+        var scripts = Directory.GetFiles(Path.Combine(StateTraceRuns.RepositoryRoot(), "games/TrailDuel/scripts"), "*.script")
+            .Select(Path.GetFileNameWithoutExtension).Order().ToArray();
+        CollectionAssert.AreEqual(scripts, Scenarios.Select(s => (string)s[0]).Order().ToArray());
+    }
 
     private static TracedRun RunOnce(string script, string debugStart, out long? quit)
     {
@@ -53,6 +64,28 @@ public sealed class StateTraceTests
         StateTraceRuns.AssertDrawingChangesNothing(first, script);
         Assert.IsNotNull(quit, $"{script}: the script has no quit line.");
         Assert.AreEqual(quit.Value, first.Result.Updates, $"{script}: the run did not reach the script's quit update.");
+    }
+
+    /// <summary>
+    /// The catch script's starting point is the one it was written for: from the wild battle it opens the bag and throws
+    /// one of the six Capture Orbs at the wild creature, which breaks free.
+    /// </summary>
+    [TestMethod]
+    public void TheCatchScriptThrowsAnOrbInTheWildBattle()
+    {
+        var input = StateTraceRuns.Script("games/TrailDuel/scripts/catch.script");
+        string saves = Path.Combine(Path.GetTempPath(), "trailduel-state-trace-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var game = new TrailDuelGame(saves, "battle");
+            StateTraceRuns.Run(game, input);
+            Assert.AreEqual(5, game.State.Bag.Count("orb"), "one orb thrown");
+            Assert.AreEqual(0, game.State.Caught.Count(id => id == "mossnail"), "it broke free");
+        }
+        finally
+        {
+            if (Directory.Exists(saves)) Directory.Delete(saves, recursive: true);
+        }
     }
 
     /// <summary>

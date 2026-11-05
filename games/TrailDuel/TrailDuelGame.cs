@@ -13,23 +13,30 @@ namespace TrailDuel;
 
 /// <summary>
 /// Trail Duel: a creature-collecting, turn-based adventure from Sprout Town to the Trail Master.
-/// Set TRAIL_DEBUG (gallery, battle, route, forest, brook, hall, evolve, credits) to jump ahead for captures.
+/// TRAIL_DEBUG (gallery, battle, route, forest, brook, hall, evolve, credits...) jumps ahead for captures; the
+/// composition (<see cref="Startup.Configure"/>) reads it from the host and passes it in.
 /// </summary>
 public sealed class TrailDuelGame : Game
 {
     private readonly string? _saveDirectory;
     private readonly string? _debugStart;
 
-    public TrailDuelGame(string? saveDirectory = null, string? debugStart = null)
+    /// <param name="saveDirectory">Where saves and achievements go; the platform's default when null.</param>
+    /// <param name="debugStart">A development shortcut (<see cref="DebugStart"/>); null or empty opens the title screen.</param>
+    /// <param name="debugEvolve">The species that evolves under the <c>evolve</c> shortcut; Sprigbun when null.</param>
+    public TrailDuelGame(string? saveDirectory = null, string? debugStart = null, string? debugEvolve = null)
     {
         _saveDirectory = saveDirectory;
-        _debugStart = debugStart ?? Environment.GetEnvironmentVariable("TRAIL_DEBUG");
+        _debugStart = debugStart;
+        DebugEvolve = debugEvolve;
         Saves = new SaveStore("TrailDuel", _saveDirectory);
         // Declared before the engine is composed, so it adds the achievements module.
         UseAchievements(TrailAchievements.Catalog, Saves, Ui.UiKit.Theme);
     }
 
     public override GameSettings Settings { get; } = new("Trail Duel") { Background = Color.Hex("2b2140") };
+    /// <summary>The species that evolves under the <c>evolve</c> debug start (TRAIL_EVOLVE), or null for the default.</summary>
+    internal string? DebugEvolve { get; }
     internal SpriteAtlas Atlas { get; private set; } = null!;
     internal SaveStore Saves { get; private set; } = null!;
     /// <summary>The adventure in progress (null on the title screen before starting).</summary>
