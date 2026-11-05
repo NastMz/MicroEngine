@@ -18,7 +18,7 @@ import crypto from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { registry, tar } from '../site/scripts/demos.mjs';
-import { target, fail, PackageError, repoRoot, requiredFiles, checkBuildInfo, executable, nativeLibraries } from './targets.mjs';
+import { target, fail, PackageError, repoRoot, requiredFiles, androidNoticeFiles, checkBuildInfo, executable, nativeLibraries } from './targets.mjs';
 import { contentFiles } from './package.mjs';
 
 const sh = (command, args, options = {}) => execFileSync(command, args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, ...options });
@@ -90,8 +90,7 @@ export async function verifyPackage(file, { game: gameId, target: targetId, key,
     record.buildInfo = info;
     level('build-info', true, `${info.title} ${info.gameVersion}, engine ${info.engineVersion}, versionCode ${info.versionCode}, signed with the ${info.signing} key`);
     const entries = new Set(listZip(file));
-    const needed = ['AndroidManifest.xml', 'lib/arm64-v8a/libSDL3.so', 'lib/x86_64/libSDL3.so', ...content.map(c => `assets/Content/${c}`),
-      'assets/licenses/LICENSE.txt', 'assets/licenses/microengine-LICENSE.txt', 'assets/licenses/THIRD-PARTY-NOTICES.txt'];
+    const needed = ['AndroidManifest.xml', 'lib/arm64-v8a/libSDL3.so', 'lib/x86_64/libSDL3.so', ...content.map(c => `assets/Content/${c}`), ...androidNoticeFiles];
     const missing = needed.filter(e => !entries.has(e));
     const abis = [...new Set([...entries].filter(e => e.startsWith('lib/')).map(e => e.split('/')[1]))].sort();
     level('structure', missing.length === 0, missing.length ? `missing ${missing.slice(0, 6).join(', ')}` : `ABIs ${abis.join(', ')}; ${content.length} content files; notices`);

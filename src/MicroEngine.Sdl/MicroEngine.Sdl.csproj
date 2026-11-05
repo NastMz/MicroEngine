@@ -28,6 +28,8 @@
   <ItemGroup>
     <None Include="build/MicroEngine.Sdl.props" Pack="true" PackagePath="build/;buildTransitive/" />
     <None Include="$(MicroEngineWebSdl)" Condition="Exists('$(MicroEngineWebSdl)')" Pack="true" PackagePath="native/browser-wasm/SDL3.a" />
+    <!-- SDL's licence travels with the SDL binary it covers: the same file browser packages ship in licenses/. -->
+    <None Include="../MicroEngine.Cli/Notices/SDL-LICENSE.txt" Condition="Exists('$(MicroEngineWebSdl)')" Pack="true" PackagePath="native/browser-wasm/SDL-LICENSE.txt" Link="SDL-LICENSE.txt" Visible="false" />
   </ItemGroup>
   <Target Name="_RequireWebSdl" BeforeTargets="_GetPackageFiles" Condition="'$(MicroEngineRequireWebSdl)' == 'true' and !Exists('$(MicroEngineWebSdl)')">
     <Error Text="SDL for the web is missing ($(MicroEngineWebSdl)); run web/setup.sh before packing a release." />

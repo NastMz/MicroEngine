@@ -50,6 +50,12 @@ export const executable = (game, t) => (t.os === 'windows' ? `${game}.exe` : gam
 /** Notices every package carries (the demo is all rights reserved, the engine MIT, the rest third-party). */
 export const noticeFiles = ['LICENSE.txt', 'THIRD-PARTY-NOTICES.txt', 'licenses/microengine-LICENSE.txt', 'licenses/dotnet-LICENSE.txt', 'licenses/dotnet-THIRD-PARTY-NOTICES.txt'];
 
+/** Licences of the native engine libraries every desktop package holds (SDL 3 and raylib). */
+export const desktopEngineNotices = ['licenses/SDL-LICENSE.txt', 'licenses/raylib-LICENSE.txt'];
+
+/** Notices an APK carries in its assets: the demo's, the engine's, the third-party list and SDL's licence. */
+export const androidNoticeFiles = ['assets/licenses/LICENSE.txt', 'assets/licenses/microengine-LICENSE.txt', 'assets/licenses/THIRD-PARTY-NOTICES.txt', 'assets/licenses/SDL-LICENSE.txt'];
+
 /** Native libraries next to a desktop executable: SDL 3 (the default platform) and raylib (`--platform raylib`). */
 export function nativeLibraries(t) {
   if (t.os === 'windows') return ['SDL3.dll', 'raylib.dll'];
@@ -74,7 +80,7 @@ export function requiredFiles({ game, title, applicationId, content = [] }, t) {
     ...(t.os === 'macos' ? [`${app}Info.plist`, `${app}Resources/AppIcon.icns`] : []),
     ...(t.os === 'linux' ? ['icon.png', `${applicationId}.desktop`] : []),
     ...content.map(file => `${data}Content/${file}`),
-    ...noticeFiles, 'README.txt', 'build-info.json',
+    ...noticeFiles, ...desktopEngineNotices, 'README.txt', 'build-info.json',
   ];
 }
 

@@ -84,6 +84,11 @@ the details, newest first.
 
 Behaviour that changes:
 
+- Every package that holds SDL's binaries carries SDL's licence file: desktop packages have `licenses/SDL-LICENSE.txt`
+  and `licenses/raylib-LICENSE.txt`, Android packages `assets/licenses/SDL-LICENSE.txt` and iOS apps
+  `licenses/SDL-LICENSE.txt`, as web packages already did; the `MicroEngine.Sdl` package carries
+  `native/browser-wasm/SDL-LICENSE.txt` beside `SDL3.a`. **Migration:** none; a script that checks a package's file
+  list expects the new files.
 - A tap shorter than a frame on a touch control is down in exactly one fixed update, the first that reads it, as a
   key's or a gamepad button's is: when a slow frame catches up with several updates, the later ones see it released
   (it used to stay down in every update of its frame). A control still held stays down in every update. Nothing to

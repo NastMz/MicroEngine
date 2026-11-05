@@ -35,7 +35,7 @@ NeonRift/
   build-info.json                  game, versions, target, content key, commit, .NET version, signing
   LICENSE.txt                      the demo's notice: all rights reserved (games/LICENSE)
   THIRD-PARTY-NOTICES.txt          MicroEngine's third-party list (SDL, raylib, NVorbis, CC0 assets...)
-  licenses/                        MicroEngine's MIT licence, the .NET runtime's licence and notices
+  licenses/                        MicroEngine's MIT licence, SDL's and raylib's licences, the .NET runtime's licence and notices
   icon.png, dev.microengine.neonrift.desktop    Linux only: the icon and a desktop entry
 ```
 
@@ -43,8 +43,8 @@ The Windows executable carries the game's icon, name and version; the name, id a
 file ([Application identity](../docs/guide/app-identity.md)). On macOS the executable and both libraries are in
 `Neon Rift.app/Contents/MacOS`, the content files and `AppIcon.icns` in `Contents/Resources` (the desktop launcher
 finds the content there), and the bundle is signed ad hoc. The APK holds
-SDL for `arm64-v8a` and `x86_64`, the content files and input scripts as assets, and the same notices under
-`assets/licenses/`.
+SDL for `arm64-v8a` and `x86_64`, the content files and input scripts as assets, and its notices (SDL's licence among
+them, raylib's not: the APK holds no raylib) under `assets/licenses/`.
 
 Release assets are named `<Game>-<game version>-<target>.<zip|tar.gz|apk>`, for example
 `NeonRift-1.0.0-windows-x64.zip`. Versions come from one place each: the SDK version (`MicroEngineVersion`) in

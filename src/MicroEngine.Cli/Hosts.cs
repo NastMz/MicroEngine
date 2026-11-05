@@ -319,6 +319,21 @@ public static class Hosts
         if (!File.Exists(Path.Combine(game.TargetDir, assembly + ".dll"))) throw new CliException(message);
     }
 
+    /// <summary>
+    /// The notices a host of <paramref name="kind"/> packs as its GameNotice items (the APK's assets/licenses/, the iOS
+    /// app's licenses/): the game's licence when it has one, its third-party notices, MicroEngine's licence and, in the
+    /// phone hosts, which always carry SDL's native library, SDL's licence.
+    /// </summary>
+    public static List<(string File, string Name)> Notices(string kind, string? licence, string thirdParty)
+    {
+        var notices = new List<(string File, string Name)>();
+        if (licence is not null) notices.Add((licence, "LICENSE.txt"));
+        notices.Add((thirdParty, "THIRD-PARTY-NOTICES.txt"));
+        notices.Add((Path.Combine(Tool.Home, "Notices", "microengine-LICENSE.txt"), "microengine-LICENSE.txt"));
+        if (kind is "android" or "ios") notices.Add((EngineNotices.PathOf(EngineNotices.Sdl), EngineNotices.Sdl));
+        return notices;
+    }
+
     /// <summary>Copies a host template into the game's obj folder and writes the game's part; returns the folder.</summary>
     private static string Stage(string kind, GameProject game, Dictionary<string, string> extra, string entryExtra)
     {
@@ -347,10 +362,7 @@ public static class Hosts
             ["GameContentDir"] = game.ContentDir ?? "", ["GameScriptsDir"] = game.ScriptsDir ?? "", ["GameUsesRaylib"] = raylib ? "true" : "false",
         };
         foreach (var (k, v) in extra) props[k] = v;
-        var notices = new List<(string File, string Name)>();
-        if (game.LicenseFile is { } licence) notices.Add((licence, "LICENSE.txt"));
-        notices.Add((game.ThirdPartyNotices, "THIRD-PARTY-NOTICES.txt"));
-        notices.Add((Path.Combine(Tool.Home, "Notices", "microengine-LICENSE.txt"), "microengine-LICENSE.txt"));
+        var notices = Notices(kind, game.LicenseFile, game.ThirdPartyNotices);
         var sb = new StringBuilder("<Project>\n  <!-- Written by microengine from ").Append(Escape(Path.GetFileName(game.Path))).Append("; do not edit. -->\n  <PropertyGroup>\n");
         foreach (var (k, v) in props) sb.Append($"    <{k}>{Escape(v)}</{k}>\n");
         sb.Append("  </PropertyGroup>\n  <ItemGroup>\n");
