@@ -8,6 +8,18 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- Browsers run the SDL platform: `microengine package web` builds the page on SDL 3 compiled to WebAssembly (shipped in
+  the `MicroEngine.Sdl` package) instead of raylib; desktops keep raylib as an alternative platform. The page, its
+  input, touch controls, sound, saves and embedding are unchanged. **Migration:** a game that references
+  `MicroEngine.Desktop` needs nothing. A game that references only `MicroEngine.Raylib` and is packaged for the web adds
+  `MicroEngine.Sdl` (or uses `MicroEngine.Desktop`); a game that references only `MicroEngine.Sdl` can now be packaged
+  for the web. Scripts that passed `--raylib-wasm` to `microengine package web` drop it (`--sdl-wasm FILE` names another
+  SDL library). Code that used the browser types of `MicroEngine.Raylib` (`BrowserLauncher`, `BrowserPage`,
+  `RaylibPlatform.BrowserProfile`) uses those of `MicroEngine.Sdl` (`BrowserLauncher`, `BrowserPage`,
+  `SdlPlatform.BrowserProfile`), which have the same members. The `MicroEngine.Raylib` package no longer carries
+  `native/browser-wasm/raylib.a` (nor `MicroEngineWebRaylibFromPackage`); `MicroEngine.Sdl` carries
+  `native/browser-wasm/SDL3.a`. A web package's `licenses/` folder now holds SDL's licence.
+
 - Touch controls are an optional module: `Game.Touch` is active (drawn, read, taking the touches over it) on touch-first
   screens (phones, tablets, touch-only browsers) or once the game sets a layout of its own (overriding
   `CreateTouchLayout`, or setting `Game.Touch.Layout` in `Configure`, `Load` or a scene); otherwise it is inactive and

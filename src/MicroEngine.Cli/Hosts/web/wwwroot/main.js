@@ -140,12 +140,13 @@ fullscreenButton.hidden = !document.fullscreenEnabled;
 fullscreenButton.onclick = () => { toggleFullscreen(); canvas.focus(); };
 for (const button of [play, soundButton, fullscreenButton]) button.addEventListener('pointerdown', e => e.preventDefault());
 
-// Keyboard. These listeners are registered before raylib's (which also listen on window, in the capture phase),
-// so they see every key first. Until the game is playing, keys never reach it: the key that starts the game
+// Keyboard. These listeners are registered before SDL's (which also listen on window), so they see every key first.
+// Until the game is playing, keys never reach it: the key that starts the game
 // does not also confirm the title menu, and keys pressed while loading cannot arrive late. While playing,
 // keys the game might use do not scroll the page or open browser features (Firefox's quick find, for
 // example); browser shortcuts with Ctrl/Cmd and the function keys (F5, F11, F12) keep working. Releasing
-// keys when the window loses focus is done by raylib's GLFW layer, so no key stays held after Alt+Tab.
+// keys when the window loses focus is done by the SDL platform (SDL reports the focus loss), so no key stays held after
+// Alt+Tab.
 const browserKey = e => e.ctrlKey || e.metaKey || /^F\d+$/.test(e.key);
 window.addEventListener('keydown', e => {
   if (state !== 'playing') {
@@ -172,8 +173,8 @@ play.onclick = () => begin();
 // Touch. Fingers (and pens) on the canvas reach the game's on-screen controls (MicroEngine.Input.VirtualControls)
 // through Pointer Events, which every current mobile browser has (Chrome on Android, Safari on iOS 13+): each pointer
 // keeps its id from down to up, so two thumbs are tracked separately, and pointer capture keeps delivering a finger
-// that slides off the canvas. Positions are sent in canvas pixels, the unit raylib draws in. The mouse stays with
-// raylib. While playing the page never scrolls, zooms, selects text or opens a context menu (touch-action: none in
+// that slides off the canvas. Positions are sent in canvas pixels, the unit SDL draws in. The mouse stays with SDL
+// (SDL's own view of the fingers is ignored, so none arrives twice). While playing the page never scrolls, zooms, selects text or opens a context menu (touch-action: none in
 // host.css does most of it; Safari's pinch "gesture" events and long-press menus are stopped here).
 const touchFirst = () => matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && !matchMedia('(any-pointer: fine)').matches);
 const fingers = new Set();
@@ -260,8 +261,8 @@ function begin() {
   if (error) return fail(`${game.title} could not start.`, error);
   setState('playing');
   // SDL's canvas keeps the size its window was created with until the page's next resize event; one now makes it
-  // follow the page from the first frame (raylib reads the page's size itself).
-  if (game.backend === 'sdl') window.dispatchEvent(new Event('resize'));
+  // follow the page from the first frame.
+  window.dispatchEvent(new Event('resize'));
   sendScreen();
   updateSound();
   requestAnimationFrame(frame);
@@ -339,7 +340,7 @@ async function load() {
     storage: storageImports,
     // Touch-control haptics. Android browsers vibrate; Safari on iOS has no Vibration API, so this returns false there.
     haptics: { vibrate: ms => !!navigator.vibrate?.(ms) },
-    // The game's audio output (MicroEngine.Raylib's browser sink).
+    // The game's audio output (MicroEngine.Sdl's browser sink).
     audio: audioImports,
   });
 

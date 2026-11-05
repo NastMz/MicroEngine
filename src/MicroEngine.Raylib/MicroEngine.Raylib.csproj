@@ -1,27 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>MicroEngine.Raylib</RootNamespace>
-    <Description>MicroEngine backend built on raylib: the desktop alternative to SDL3, and the platform of browser (WebAssembly) builds.</Description>
+    <Description>MicroEngine backend built on raylib: the desktop alternative to SDL3.</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
     <PackageReference Include="Raylib-cs" Version="[8.1.0]" />
     <InternalsVisibleTo Include="MicroEngine.Raylib.Tests" />
   </ItemGroup>
-  <!-- Browser builds link raylib compiled by the same emscripten as .NET's wasm-tools workload (Raylib-cs ships one built
-       by a newer emscripten that the workload cannot link: web/README.md). web/setup.sh builds it; the package carries
-       it, and build/MicroEngine.Raylib.props tells the browser host where it is. Release packs require it
-       (-p:MicroEngineRequireWebRaylib=true). -->
-  <PropertyGroup>
-    <_WebTools>$(MICROENGINE_WEB_TOOLS)</_WebTools>
-    <_WebTools Condition="'$(_WebTools)' == ''">$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))/.microengine/web-tools</_WebTools>
-    <MicroEngineWebRaylib Condition="'$(MicroEngineWebRaylib)' == ''">$(_WebTools)/raylib-web/raylib.a</MicroEngineWebRaylib>
-  </PropertyGroup>
-  <ItemGroup>
-    <None Include="build/MicroEngine.Raylib.props" Pack="true" PackagePath="build/;buildTransitive/" />
-    <None Include="$(MicroEngineWebRaylib)" Condition="Exists('$(MicroEngineWebRaylib)')" Pack="true" PackagePath="native/browser-wasm/raylib.a" />
-  </ItemGroup>
-  <Target Name="_RequireWebRaylib" BeforeTargets="_GetPackageFiles" Condition="'$(MicroEngineRequireWebRaylib)' == 'true' and !Exists('$(MicroEngineWebRaylib)')">
-    <Error Text="raylib for the web is missing ($(MicroEngineWebRaylib)); run web/setup.sh before packing a release." />
-  </Target>
 </Project>
