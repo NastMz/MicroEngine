@@ -59,7 +59,7 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
 | ID | Specs | Task | Route | Status |
 |---|---|---|---|---|
 | T1 | S1-S3, S6, S9 | Art direction doc, tokens, type, mark and logo set (explored variants, 16 px test), family icons, favicon, OG image | delegated (context backstop) | done, branch `feat/site-redesign-t1-brand` (PR into `feat/site-redesign`) |
-| T2 | S3-S6 | Site shell (header, nav, footer) and landing narrative with the socket-board illustrations | delegated | pending |
+| T2 | S3-S6 | Site shell (header, nav, footer) and landing narrative with the socket-board illustrations | delegated | done, branch `feat/site-redesign-t2-landing` (PR into `feat/site-redesign`) |
 | T3 | S3, S5, S7 | Demo index and demo pages, player integration | delegated, parallel with T4/T5 | pending |
 | T4 | S3, S5, S7 | Starlight docs theme, code blocks, docs header; platforms, roadmap, 404 pages | delegated, parallel with T3/T5 | done, branch `feat/site-redesign-t4-docs` (PR into `feat/site-redesign`) |
 | T5 | S1, S4, S10 | Content truth: stale claims in site data and public docs against `main` | delegated, parallel with T3/T4 | done, branch `feat/site-redesign-t5-content` (PR into `feat/site-redesign`) |
@@ -253,6 +253,21 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
   SDK version and BMFont files are not read. `site/design/README.md` §7: SDL_GPU is a seated `next` module; Graphics3D
   and Box2D stay repository-only. Checks rerun: build (check-dist complete), `npm test` 54/54, snippets 104, contrast
   198/198; limitations page screenshots in both themes at 1280/768/375/320, no overflow.
+- L6 (2026-11-05): T2 shell and landing. Shell: plain paper (the 32 px grid is gone), header nav on one line at every
+  width (its own line under the lockup below 48 rem), current page marked by a short amber bar, grouped footer opening
+  with the board's 2 px ink edge, flat buttons (offset shadows removed). Landing rewritten around the engine: opening
+  (claim, who it is for, an SVG board drawing with callouts, a facts line), the stance (SDL 3, raylib, .NET 10, NVorbis as
+  credited modules), the socket board driven by `site/src/data/capabilities.ts` (kernel bar with its modules, six family
+  bays, dashed/dotted empty sockets for repository/planned, an extension point for custom platforms), the desktop
+  catalog code (excerpt now ends at the blank line after `CreateCatalog`, so the `Run` overloads no longer show),
+  developer experience (template, CLI, the HelloEngine sprite and its rendering), graphics (a Meadow Run frame strip
+  and four graphics sockets), a compact platform list, the four demos as `DemoCard`s, status (Alpha meaning, the four
+  availability levels with module counts, limits), first steps, and direction. `.sprite-code` removed from `brand.css`.
+  Architect corrections applied: SDL_GPU is a seated `next` module (from the capability list); demo wording "desktop and
+  mobile browsers, with a keyboard, a gamepad or on-screen touch controls". Checks: `npm ci`; `SITE_DEMOS=none npm run
+  build` (check-dist complete); `npm test` 56/56; snippets 104; contrast 198/198. Screenshots of / (1280/768/414/375/320) and /demos/,
+  /demos/neon-rift/, /platforms/, /roadmap/ and the 404 page (1280/375/320), light and dark: no horizontal
+  overflow, no content past the right edge, navigation on one line, no /play/ request, no script errors.
 - L7 (2026-11-05): T4 docs and product pages. `starlight.css` rewritten: every `--sl-*` colour on tokens in both themes,
   header on a 2px ink rail with the lockup and a "Docs" legend, mono sidebar group legends, current page seated (amber
   tint and edge), display-face h1/h2, tables as parts lists, pagination, search, TOC and asides from tokens; Mermaid

@@ -272,6 +272,38 @@ colour, light and dark, rasterised at real size and enlarged) and the brand kit 
   Expressive Code, not `.astro-code`, so give them the `CodeLabel` treatment there.
 - **Content:** anything not in the published SDK is an empty dashed socket with its status written out.
 
+## Landing and shell
+
+Added by the shell and landing unit; this section extends the rules above, it changes none of them.
+
+- **Background:** plain paper. The 32 px grid of the pixel workbench is gone; drawings, rules and modules carry the
+  identity. (`--color-grid` in `tokens.css` is no longer used by `site.css`.)
+- **Header:** the lockup left, the navigation right in Plex Mono. Under 48 rem the navigation takes its own line under
+  the lockup, never wraps, and spreads its five links across the width. The current page has a short amber bar under
+  its name: a module, not an underline. The skip link stays the first Tab stop.
+- **Footer:** opens with a 2 px ink line (the board's edge), on `--color-paper-2`: the lockup and the statement
+  ("A small kernel, modules you can swap, games written in C#."), the links in three groups, then the licence line with
+  the demos' "all rights reserved".
+- **Buttons:** flat and square-cornered; they press 1 px on `:active`. The old 4 px offset shadow is gone.
+- **The socket board** (`src/components/landing/SocketBoard.astro`, `BoardSlot.astro`): the mark's construction at page
+  size. The kernel is the solid ink bar at the top with its own modules in sockets cut into it; the other families hang
+  from it in paper bays separated by 2 px ink walls, open at the bottom like the mark. Each module is a tinted module in a
+  hairline socket (seated: available or next), an empty dashed socket (in the repository) or an empty dotted socket
+  (planned), always with its status written under it. It reads `src/data/capabilities.ts` and nothing else, so the board
+  changes when the capability list does. In the dark theme the board inverts with the mark (light board, dark bays).
+- **The opening drawing** (`BoardDrawing.astro`): the same construction as an SVG parts drawing, five sockets with
+  four shipping families seated and one empty dashed socket for 3D, named by three `<Callout>`s. The modules seat once
+  on load, one after another (`--ease-seat`), and not at all under reduced motion.
+- **Credited modules:** upstream technologies on the landing are mono names in a neutral module (ink-3 stroke on
+  paper-2) inside a hairline socket, with their role beside them: no family colour, because they are not MicroEngine's
+  families.
+- **`DemoCard`** (`src/components/DemoCard.astro`): the screenshot sits one gap under a 2 px rule in the game's colour,
+  then a plate with a game-coloured square and genre label, the title in the display face, the tagline and how its
+  content is made. The game's colour stays inside the card; the card is paper and rules. Hover lifts it 2 px and turns
+  its border to the game's colour. The default slot adds lines (sizes, downloads) to the plate.
+- **Code panels** on the landing are `.code-surface` figures: `<CodeLabel>` then the block, both graphite in both
+  themes. The block takes `--color-paper-2` as its background so it matches the label.
+
 ## Documentation
 
 The Starlight documentation is drawn with the same tokens, type and devices as the landing (T4). Legibility comes

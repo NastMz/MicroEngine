@@ -1,0 +1,77 @@
+---
+// The landing's opening drawing: the mark's construction drawn out as a board. The kernel bar holds five sockets; four
+// families that ship today are seated in them, each with its family icon, and the fifth socket is empty and dashed,
+// because 3D is in the repository and in no package. Numbered callouts name the parts, like a manual's parts list.
+// Built from the brand's geometry (geometry.mjs) and <Callout>; colours come from the family tokens via data-family.
+import Callout from '../brand/Callout.astro';
+import { families } from '../brand/geometry.mjs';
+
+const unit = 1.5; // family icons are drawn on the 16-unit grid; 1.5 makes them 24 px here
+const top = 108; // the kernel bar's top edge
+const bar = 22; // the kernel bar's height
+const floor = 260; // where modules rest, like the mark's baseline
+const wall = 10;
+const socket = 64;
+const gap = 6; // a module sits one gap away from its socket's walls and roof, as in the mark
+const left = 10;
+const seated = [
+  { family: 'platform', name: 'SDL 3' },
+  { family: 'graphics', name: '2D' },
+  { family: 'audio', name: 'Sound' },
+  { family: 'input', name: 'Actions' },
+] as const;
+const x = (i: number) => left + wall + i * (socket + wall); // a socket's inner left edge
+const right = x(seated.length + 1); // the outer right edge, after five sockets and the last wall
+// The board: the bar, then the walls hanging from it, open at the bottom like the mark's sockets.
+const board = [`M${left} ${top}H${right}V${floor}H${right - wall}V${top + bar}`];
+for (let i = seated.length; i >= 0; i--) {
+  const sx = x(i);
+  board.push(`H${sx}V${floor}H${sx - wall}V${top + bar}`);
+}
+const boardPath = board.join('') + 'Z';
+const moduleY = top + bar + gap;
+const moduleW = socket - 2 * gap;
+const moduleH = floor - moduleY;
+const empty = x(seated.length);
+---
+<svg class="illustration board-drawing" viewBox={`0 0 ${right + left} 300`} role="img" aria-labelledby="board-drawing-title board-drawing-desc">
+  <title id="board-drawing-title">MicroEngine drawn as a board of sockets</title>
+  <desc id="board-drawing-desc">A kernel bar with five sockets. Four hold modules that ship today: the SDL 3 platform, 2D graphics, sound and input actions. The fifth socket is empty and dashed: 3D is in the repository but not published.</desc>
+  <path class="board-fill" d={boardPath} />
+  {seated.map((m, i) => {
+    const mx = x(i) + gap;
+    const icon = families[m.family];
+    return (
+      <g class="seat" data-family={m.family} style={`--n: ${i}`}>
+        <rect class="module-fill" x={mx} y={moduleY} width={moduleW} height={moduleH} />
+        <g transform={`translate(${mx + (moduleW - 16 * unit) / 2} ${moduleY + 14}) scale(${unit})`}>
+          <path class="icon-board" d={icon.board} fill-rule="evenodd" />
+          {icon.module && <path class="icon-module" d={icon.module} />}
+        </g>
+        <text class="module-name" x={mx + moduleW / 2} y={floor - 14} text-anchor="middle">{m.name}</text>
+      </g>
+    );
+  })}
+  <rect class="socket-line empty" x={empty + gap} y={moduleY} width={moduleW} height={moduleH} />
+  <text class="module-name vacant" x={empty + gap + moduleW / 2} y={floor - 14} text-anchor="middle">3D</text>
+  <line class="floor" x1={left} y1={floor + 0.5} x2={right} y2={floor + 0.5} />
+  <Callout n={1} x={left + 26} y={top + bar / 2} lx={left + 46} ly={28} label="Kernel: the board" />
+  <Callout n={2} x={x(0) + gap + 5} y={floor - 50} lx={x(0) + gap + 25} ly={284} label="Module, seated" />
+  <Callout n={3} x={empty + socket / 2} y={moduleY + 30} lx={empty + socket / 2 - 8} ly={66} label="Empty: not published" align="end" />
+</svg>
+
+<style>
+  .board-drawing { display: block; width: 100%; height: auto; }
+  .board-fill { fill: var(--color-ink); }
+  .icon-board { fill: var(--color-ink); }
+  .icon-module { fill: var(--family-color); }
+  .module-name { font-size: 12px; font-weight: 500; fill: var(--color-ink); }
+  .module-name.vacant { fill: var(--color-ink-2); }
+  .floor { stroke: var(--color-rule); stroke-width: var(--rule-thin); }
+  /* Modules drop into their sockets once, in turn, and settle: the mark's seating motion on a whole board. */
+  .seat { transform-box: fill-box; }
+  @media (prefers-reduced-motion: no-preference) {
+    .seat { animation: seat var(--dur-mid) var(--ease-seat) both; animation-delay: calc(200ms + var(--n) * 70ms); }
+  }
+  @keyframes seat { from { transform: translateY(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
+</style>

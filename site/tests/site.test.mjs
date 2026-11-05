@@ -181,3 +181,22 @@ test('content: capability documentation links point at published pages', async (
   const published = new Set(pages.map(p => `/${p.slug}/`));
   for (const { id, docs } of capabilities) if (docs) assert.ok(published.has(docs.split('#')[0]), `${id}: ${docs}`);
 });
+
+test('landing: the platform catalog excerpt quotes CreateCatalog only, and the landing data names real capabilities', async () => {
+  const { excerpt } = await import('../src/lib/source.mjs');
+  const index = fs.readFileSync(path.join(siteRoot, 'src/pages/index.astro'), 'utf8');
+  assert.ok(index.includes('excerpt(catalogFile, /public static PlatformCatalog CreateCatalog/, /^\\s*$/)'), 'the landing quotes the catalog up to its blank line');
+  const { code } = excerpt('src/MicroEngine.Desktop/DesktopLauncher.cs', /public static PlatformCatalog CreateCatalog/, /^\s*$/);
+  assert.match(code, /\.Add\(HeadlessPlatform\.Profile\);$/);
+  assert.doesNotMatch(code, /public static int Run/);
+  const { capabilities } = await import('../src/data/capabilities.ts');
+  const { graphicsIds } = await import('../src/data/landing/content.ts');
+  for (const id of graphicsIds) assert.ok(capabilities.some(c => c.id === id), `graphicsIds: unknown capability ${id}`);
+});
+
+test('shell: no pixel grid background and no offset button shadows remain', () => {
+  const css = fs.readFileSync(path.join(siteRoot, 'src/styles/site.css'), 'utf8');
+  assert.doesNotMatch(css, /--color-grid|background-size: 32px/);
+  assert.doesNotMatch(css, /box-shadow: \d+px \d+px 0/);
+  assert.doesNotMatch(fs.readFileSync(path.join(siteRoot, 'src/styles/brand.css'), 'utf8'), /sprite-code/);
+});
