@@ -96,7 +96,7 @@ A stage's tasks are checked against the stage closure criteria in dossier §9.
 | T7 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-2` | done | [#41](https://github.com/NastMz/MicroEngine/pull/41), 3aa486e | directives 4-9 applied: dossier §6.4 (graphics contract v1 summary + link, `IAudioSink` v1, physics revisions), §9 verdicts (graphics spike, P5, P6, browser determinism), §5-§11; this register |
 | T8 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-3` | done | [#55](https://github.com/NastMz/MicroEngine/pull/55), f08a3e3 | directives 9-12 applied: stages 0-2 closed, P7 verdict; dossier §6.4 (contract states, frozen `IWorld` v1 sketch, stage 2 notes), §8 (T0 OS precision), §9 (P7 verdict, stage 3 units, progress), §10 (two risks), §11; this register |
 | T9 | S11, S16 | delegated: registrar agent, branch `docs/arch-1-register-4` | done | [#64](https://github.com/NastMz/MicroEngine/pull/64), 251f1e2 | directives 12-14 and #54-#61 applied: stage 3 closed, stages 4 and 6 started; dossier §6.3-§6.4 (implemented states), §9 (stage units, progress), §10 (risks), §11; this register |
-| T10 | S11, S13, S16 | delegated: closing registrar agent, branch `docs/arch-1-close` | PR open | the closing PR | #62-#89 registered with merge commits and evidence; stages 4, 5 and 6 checked against their criteria; dossier §12 (final report, §9.1 item 4); ADRs 0030 and 0038 amended; migration notes: upgrade checklist; release-notes draft; SDL in the notices' zlib text |
+| T10 | S11, S13, S16 | delegated: closing registrar agent, branch `docs/arch-1-close` | PR open | [#90](https://github.com/NastMz/MicroEngine/pull/90) | #62-#89 registered with merge commits and evidence; stages 4, 5 and 6 checked against their criteria; dossier §12 (final report, §9.1 item 4); ADRs 0030 and 0038 amended; migration notes: upgrade checklist; release-notes draft; SDL in the notices' zlib text |
 | G1 | S15 | delegated: another agent, branch `fix/phase-ii-deploy-freeze` | done | [#22](https://github.com/NastMz/MicroEngine/pull/22), 9a8020e | automatic public publication frozen for Phase II (`.github/phase-freeze`); validation CI keeps running |
 | S0-D1 | S11 | delegated: stage 0 defects agent, branch `fix/arch-1-stage0-defects` | done | [#24](https://github.com/NastMz/MicroEngine/pull/24), 59fae72 | `ComposedPlatform` forwards every `IPlatform` member and exactly the backend's optional interfaces; tests RED first (since deleted by 1B) |
 | S0-D2 | S11 | delegated: stage 0 CI agent, branch `fix/arch-1-stage0-ci` | done | [#27](https://github.com/NastMz/MicroEngine/pull/27), a89d031 | Windows WARP reference drift (eight entries of `sdl-windows-ci.json`) and the Debian 11 glibc check rule (`packaging/targets.mjs`, `glibcRefusal`) |
@@ -142,7 +142,7 @@ A stage's tasks are checked against the stage closure criteria in dossier §9.
 | P2 | S11, S13 | delegated: inside stage 6a (directive 13) | concluded | [#71](https://github.com/NastMz/MicroEngine/pull/71), 9973599 | palette swap (exact) and full-screen effect (±1/255) on tier 1 with shaders compiled offline by `microengine shaders`; typed error on tier 0; toolchain fixed (ADR 0042): DXC restored on first use, compiling needs Windows, MSL generated but not executed |
 | S6-1 | S13 | delegated: stage 6a agent (directive 13), chained PRs | done | [#62](https://github.com/NastMz/MicroEngine/pull/62), f94afbb; [#71](https://github.com/NastMz/MicroEngine/pull/71), 9973599; [#72](https://github.com/NastMz/MicroEngine/pull/72), 87e7de9; [#77](https://github.com/NastMz/MicroEngine/pull/77), 4350249; [#82](https://github.com/NastMz/MicroEngine/pull/82), ee57db0 | #62 tier-1 `SdlGpuDevice`, conformance on D3D12, Vulkan and lavapipe (ADR 0041); #71 shader toolchain with P2 (ADR 0042); #72 glTF mesh kind, `Camera3D`, `Renderer3D`, Slice3D, E12 on desktop (ADR 0043); #77 device chosen through composition (`--graphics sdl-gpu`), Slice3D an ordinary game, run in CI on lavapipe (ADR 0046); #82 NVIDIA driver crash analysed. Evidence map: dossier §12.4 |
 | S6-2 | S12, S13 | delegated: stage 6b agent (directive 13), chained PRs | done | [#63](https://github.com/NastMz/MicroEngine/pull/63), 9d159de; [#67](https://github.com/NastMz/MicroEngine/pull/67), 12ebdf2; [#69](https://github.com/NastMz/MicroEngine/pull/69), 7bab790; [#73](https://github.com/NastMz/MicroEngine/pull/73), 308d0f0 | #63 Box2D v3.2.0 natives for eight runtimes (`box2d.yml`, checksums, determinism comparison); #67 `Box2DPhysicsWorld2D`, capability suites, optional package never published; #69 tile grid broad phase (results identical to a full scan); #73 substitution scenarios 1 and 2, ADR 0031 amended. Shared and specific capabilities: dossier §12.5 |
-| S6-3 | S13 | delegated: closing registrar (T10) | PR open | the closing PR | final report: dossier §12 (§9.1 item 4), integrated in `main` when merged; no release |
+| S6-3 | S13 | delegated: closing registrar (T10) | PR open | [#90](https://github.com/NastMz/MicroEngine/pull/90) | final report: dossier §12 (§9.1 item 4), integrated in `main` when merged; no release |
 
 Route evidence: T1/T2 fire the mapping trigger (the audit spans the whole repository and external sources, far beyond
 the inline evidence budget); the owner explicitly asked for delegated, parallel, domain-specialised agents. Phase II:
@@ -257,7 +257,7 @@ revisions with evidence.
 
 | PR | Task | Branch | Owner | Notes |
 | --- | --- | --- | --- | --- |
-| the closing PR | T10, S6-3 | `docs/arch-1-close` | closing registrar agent | this register, dossier §12, ADR amendments, migration notes |
+| [#90](https://github.com/NastMz/MicroEngine/pull/90) | T10, S6-3 | `docs/arch-1-close` | closing registrar agent | this register, dossier §12, ADR amendments, migration notes |
 
 No other pull request is open (`gh pr list --state all`, 2026-11-05).
 
@@ -542,7 +542,7 @@ Outward publication is not authorised for agents or the architect (S15); these a
 
 ### Next steps
 
-1. Review and merge the closing PR (T10). Its CI must be green.
+1. Review and merge #90 (T10). Its CI must be green.
 2. The architect decides on ADRs 0035 and 0036 (write them, or record that the plan stands as their record).
 3. Before the next SDK release: ship SDL's licence file in the native packages and the `MicroEngine.Sdl` package;
    require it in `site/scripts/demos.mjs` when the next demo release is built on SDL; merge the release-notes draft
