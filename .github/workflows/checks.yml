@@ -263,7 +263,18 @@ jobs:
           { vulkaninfo --summary 2>&1 || true; } | grep -E 'apiVersion|deviceType|deviceName|driverName|driverInfo' | tee -a gpu-tests.log || true
           xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Desktop.Tests -c Release --no-build --filter "TestCategory=Gpu" \
             --logger trx --logger "console;verbosity=detailed" --results-directory test-results | tee -a gpu-tests.log
-          { echo '### SDL_GPU adapter (lavapipe)'; echo; echo '```'; grep -m 6 -E 'deviceName|driverName|sdl-gpu api=|depth formats:' gpu-tests.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          # The 3D slice sample on the same adapter: 45 deterministic frames, the last one captured (kept as an artifact).
+          mkdir -p gpu-captures
+          xvfb-run -a -s "-screen 0 1920x1080x24" dotnet samples/Slice3D/bin/Release/net10.0/Slice3D.dll --frames 45 --hidden \
+            --capture gpu-captures/slice3d-lavapipe.png | tee -a gpu-tests.log
+          { echo '### SDL_GPU adapter (lavapipe)'; echo; echo '```'; grep -m 4 -E 'deviceName|driverName' gpu-tests.log || true; grep -m 2 'sdl-gpu api=' gpu-tests.log || true; grep -m 1 'depth formats:' gpu-tests.log || true; grep -E '^(device|capture):' gpu-tests.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpu-captures
+          path: gpu-captures
+          retention-days: 7
+          if-no-files-found: ignore
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results "Native tests on Linux"
       - name: Scripted captures against the Linux and SDL references (${{ inputs.games }})

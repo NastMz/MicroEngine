@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The 3D path on a tier-1 graphics device: glTF 2.0 meshes as a content asset kind, Camera3D, one material compiled
+       ahead of time, and a renderer that draws a world's MeshRenderer attachments at their interpolated transforms. It
+       references the graphics contract, content and the scene world (the architecture test checks it), plus
+       StbImageSharp for glTF images. Not a package of its own yet. -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Graphics3D</RootNamespace>
+    <Description>MicroEngine 3D path: glTF meshes, a perspective camera, one material and a depth-tested renderer on tier-1 devices.</Description>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Graphics/MicroEngine.Graphics.csproj" />
+    <ProjectReference Include="../MicroEngine.Content/MicroEngine.Content.csproj" />
+    <ProjectReference Include="../MicroEngine.Scene/MicroEngine.Scene.csproj" />
+    <!-- PNG and JPEG images inside glTF files (the same pinned version as the MicroEngine package). -->
+    <PackageReference Include="StbImageSharp" Version="[2.30.15]" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The basic material, compiled ahead of time by `microengine shaders` (Shaders/ to Shaders/compiled/). -->
+    <EmbeddedResource Include="Shaders/compiled/*.shader" LogicalName="shaders/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
