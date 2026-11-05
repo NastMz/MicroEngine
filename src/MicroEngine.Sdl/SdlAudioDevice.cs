@@ -9,7 +9,9 @@ namespace MicroEngine.Sdl;
 /// SDL3 audio: the engine's mixer (<see cref="MixerAudioDevice"/>, the same voices, priorities and music on every
 /// backend) playing through SDL's default playback device. A feeder thread keeps <see cref="DefaultLatencyMilliseconds"/>
 /// of audio queued in an SDL audio stream (48 kHz stereo float), so main-thread stalls and garbage collections shorter
-/// than that are not heard. It works without a window, so a host can use it with another platform.
+/// than that are not heard. It works without a window, so a host can use it with another platform. In a browser SDL's
+/// own audio is not used: the mixer plays through the page's AudioWorklet queue, filled once per frame
+/// (<see cref="BrowserAudioSink"/>).
 /// </summary>
 public sealed class SdlAudioDevice : MixerAudioDevice
 {
@@ -17,10 +19,22 @@ public sealed class SdlAudioDevice : MixerAudioDevice
     public const double DefaultLatencyMilliseconds = 60;
     private const int Rate = 48000;
 
-    private SdlAudioDevice(SdlFeederSink sink) : base(sink) { }
+    private SdlAudioDevice(IAudioSink sink) : base(sink) { }
 
     /// <summary>Opens the default playback device, or returns a silent device (and says why) when there is none.</summary>
-    public static IAudioDevice TryCreate() => Open(null, DefaultLatencyMilliseconds);
+    public static IAudioDevice TryCreate() => OperatingSystem.IsBrowser() ? OpenBrowser() : Open(null, DefaultLatencyMilliseconds);
+
+    /// <summary>The page's AudioWorklet sink; silence (and why) when the page offers no audio.</summary>
+    [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+    private static IAudioDevice OpenBrowser()
+    {
+        try { return new SdlAudioDevice(new BrowserAudioSink(BrowserAudioSink.DefaultLatencyMilliseconds)); }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            Console.Error.WriteLine($"audio: the page offers no audio output ({e.Message}), continuing silently");
+            return new SilentAudioDevice();
+        }
+    }
 
     /// <summary>
     /// Opens the default playback device of SDL's audio driver <paramref name="driver"/>: "dummy" runs SDL's whole audio

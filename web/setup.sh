@@ -2,16 +2,27 @@
 # Prepares the pinned web toolchain (web/toolchain.env) in a private folder, without touching the system .NET:
 #   1. the .NET SDK, installed with Microsoft's dotnet-install script;
 #   2. the wasm-tools workload (which brings emscripten) into that SDK;
-#   3. raylib's sources at the pinned commit, compiled to raylib.a with that emscripten.
+#   3. raylib's sources at the pinned commit, compiled to raylib.a with that emscripten;
+#   4. SDL 3 at the commit src/MicroEngine.Sdl/native/sdl.env pins, compiled to SDL3.a with that emscripten
+#      (src/MicroEngine.Sdl/native/build.sh, into sdl-web/browser-wasm/; CI builds it in its own cached job).
 # Each step is skipped when its result is already in place, so running it again is cheap.
 #
-# Usage: web/setup.sh            (tools go to $MICROENGINE_WEB_TOOLS, default ~/.microengine/web-tools)
-# Needs: bash, curl, git; on Windows Git Bash plus PowerShell (for dotnet-install.ps1).
+# Usage: web/setup.sh [--no-sdl]   (tools go to $MICROENGINE_WEB_TOOLS, default ~/.microengine/web-tools)
+#   --no-sdl  skips step 4 (the CI job that builds SDL3.a itself)
+# Needs: bash, curl, git; for step 4 also CMake (and Ninja on Windows); on Windows Git Bash plus PowerShell
+# (for dotnet-install.ps1).
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=toolchain.env
 source "$here/toolchain.env"
 tools=${MICROENGINE_WEB_TOOLS:-$HOME/.microengine/web-tools}
+sdl=true
+for arg in "$@"; do
+  case "$arg" in
+    --no-sdl) sdl=false ;;
+    *) echo "error: unknown option $arg (web/setup.sh [--no-sdl])" >&2; exit 2 ;;
+  esac
+done
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) windows=1; exe=.exe ;; *) windows=0; exe= ;; esac
 dotnet="$tools/dotnet/dotnet$exe"
 
@@ -68,6 +79,17 @@ if [ -f "$lib" ] && [ "$(cat "$tools/raylib-web/stamp" 2>/dev/null)" = "$stamp" 
 else
   bash "$here/build-raylib-wasm.sh" "$tools/dotnet" "$src" "$tools/raylib-web"
   echo "$stamp" > "$tools/raylib-web/stamp"
+fi
+
+if [ "$sdl" = true ]; then
+  echo "== SDL for the web"
+  sdl_build="$here/../src/MicroEngine.Sdl/native/build.sh"
+  sdl_key=$(MICROENGINE_WEB_TOOLS="$tools" bash "$sdl_build" key browser-wasm)
+  if [ -f "$tools/sdl-web/browser-wasm/SDL3.a" ] && grep -qx "key: $sdl_key" "$tools/sdl-web/browser-wasm/build.txt" 2>/dev/null; then
+    echo "SDL3.a up to date ($sdl_key)"
+  else
+    MICROENGINE_WEB_TOOLS="$tools" bash "$sdl_build" browser-wasm --out "$tools/sdl-web"
+  fi
 fi
 
 echo "Toolchain ready in $tools. Build with web/build.sh."

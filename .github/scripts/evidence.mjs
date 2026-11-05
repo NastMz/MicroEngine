@@ -46,11 +46,12 @@ export const scopes = {
   // The packages read the engine, the tool, the template, the build settings, the web toolchain and the notices they
   // ship; the external project test also reads web/ (its server and browser driver) and the samples it plays
   // (sdkSamples). Games, tests, other samples and the documentation never reach a package.
-  // The browser engine suites read a development web package (the engine, raylib, the web host, the games and their
-  // scripts, the web toolchain), the suites and the desktop build they compare with; never SDL, the site, the tests,
-  // the samples, the SDK checks or the documentation. The caller adds the games played to the key (--extra).
+  // The browser engine suites read a development web package (the engine, raylib, SDL and its web build, the web
+  // host, the games and their scripts, the web toolchain), the suites and the desktop build they compare with; never
+  // the phone hosts, the site, the tests, the samples, the SDK checks or the documentation. The caller adds the games
+  // played to the key (--extra).
   web: file => !always(file) && !docs(file) && !/^(site|platforms|tests|samples|sdk)\//.test(file)
-    && !/^src\/MicroEngine\.(Sdl\/|Cli\/Hosts\/(android|ios)\/)/.test(file),
+    && !/^src\/MicroEngine\.Cli\/Hosts\/(android|ios)\//.test(file),
   // The Box2D natives and their tests (box2d.yml) read the native layer, the physics assemblies and what they build on,
   // their tests and suites, the substitution sample, the web toolchain its browser library is built with, and the
   // build settings; never the rest of the engine, the games, the site or the SDK checks.

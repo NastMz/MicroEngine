@@ -34,8 +34,9 @@ flowchart LR
   plan[Plan<br/>paths, evidence,<br/>demo keys] --> linux[.NET Linux]
   linux --> windows[.NET Windows]
   linux --> native[Native Linux]
-  plan --> build[Demo builds]
-  plan --> engine[Browser engine<br/>one job per game]
+  plan --> sdlweb[SDL for the web<br/>cached SDL3.a]
+  sdlweb --> build[Demo builds]
+  sdlweb --> engine[Browser engine<br/>one job per game<br/>and web backend]
   plan --> sdk[SDK<br/>Windows, Linux, macOS]
   build --> site[Site and browsers]
   windows --> deploy[Deploy]
@@ -54,7 +55,8 @@ flowchart LR
 2. **Checks** run what is needed and not already proven. Windows and native Linux start only after the Linux tests
    pass, so a broken change never occupies a Windows runner. **SDK** (`sdk.yml`) runs beside them when a package
    input changed: pack, check, and a game made from the packages on Windows, Linux and macOS. The **browser engine**
-   suites run beside them too, one job per game the change reaches ([Browser tests](#browser-tests)).
+   suites run beside them too, one job per game the change reaches and per web backend, after SDL for the web
+   ([SDL for the web](#sdl-for-the-web), [Browser tests](#browser-tests)).
 3. **Deploy**: a protected preview for pull requests that change the site or a demo; production for pushes to
    `main` that change the published site (documentation, site, game pages). Production always uses the latest
    demo release, and is held (the current deployment stays, with a warning) while the documentation presents an SDK
@@ -73,6 +75,8 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Engine core (`src/MicroEngine`) | yes | yes | yes | yes | the canary game | all | all games | preview |
 | raylib backend (`src/MicroEngine.Raylib`) | yes | yes | yes | yes | the canary game | all | all games | preview |
+| SDL backend (`src/MicroEngine.Sdl`) | yes | yes | yes | yes | the canary game | all | all games | preview |
+| SDL for the web (`src/MicroEngine.Sdl/native`) | — | — | — | yes | the canary game | all | all games | preview |
 | One game's code (`games/<Name>`) | that game's tests | — | that game's captures | — | that game | all | that game | preview |
 | A game's Markdown or screenshots | — | — | — | — | — | layout | — | preview, production |
 | Engine or backend tests | those tests | yes | backend tests only | — | — | — | — | — |
@@ -80,11 +84,11 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
 | Samples | compile only | — | — | — | — | — | — | — |
 | The tool, the template, SDK tests and the sample they play (`src/MicroEngine.Cli`, `templates/`, `sdk/tests/external.mjs`, `samples/AssetGallery`) | the tool's, template's and sample's tests | the tool's | — | yes | — | — | browser host only | — |
 | Documented SDK version (`sdk/version.json`, `sdk/version.mjs`, `sdk/tests/docs.mjs`) | all, with the documented samples | — | — | — | — | — | — | — |
-| Desktop capture scripts and references (`web/tests`) | — | — | yes | its browser driver only | — | — | the scenarios, the desktop runner, the suites (`run.mjs`) and the browser driver | — |
+| Desktop capture scripts and references (`web/tests`) | — | — | yes | its browser driver only | — | — | the scenarios, the desktop runner, the suites (`run.mjs`, `mobile.mjs`, `measure.mjs`) and the browser driver | — |
 | Web host or toolchain (`web/`) | — | — | — | toolchain, server | the canary game | all | all games | preview, production |
 | Site (`site/`) | — | — | — | — | — | all | — | preview, production |
 | Documentation (`docs/`, other Markdown) | — | — | — | — | — | layout | — | preview, production |
-| Daily workflows (`sdk.yml` too), their scripts, build settings | yes | yes | yes | yes | as keys say | all | all games | preview, production |
+| Daily workflows (`sdk.yml`, `box2d.yml` and `sdl-web.yml` too), their scripts, build settings | yes | yes | yes | yes | as keys say | all | all games | preview, production |
 | Manual workflows (validate, release, sdk-release, platforms, rollback) | lint only | — | — | — | — | — | — | — |
 | Mobile hosts (`platforms/`) | advisory only: run validate or platforms | — | — | — | — | — | — | — |
 | Task records, experiments (`odd/`, `experiments/`) | — | — | — | — | — | — | — | — |
@@ -102,10 +106,10 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
   Windows, and every demo build compiles them there.
 - **Browser suites** (`site/tests/browser.mjs --suites`): `layout` opens every page at three widths; `play` loads,
   plays, restarts and exits each demo; `touch` checks the touch panels. A rebuilt package is always played.
-- **Browser engine** (`web/tests/run.mjs`, [Browser tests](#browser-tests)): one job per game, on a development
-  package built in the job. It plays the games whose own folders changed when every change that needs it is a game's;
-  any other input (the engine, the raylib backend, the web host and build, the suites, an unknown path) plays all four.
-  The SDL backend and the desktop launcher are not part of the browser build and do not run it.
+- **Browser engine** (`web/tests/run.mjs`, [Browser tests](#browser-tests)): one job per game and web backend, on a
+  development package built in the job. It plays the games whose own folders changed when every change that needs it
+  is a game's; any other input (the engine, the raylib and SDL backends, SDL for the web, the web host and build, the
+  suites, an unknown path) plays all four. The desktop launcher is not part of the browser build and does not run it.
 
 ### Evidence: a check runs once per content
 
@@ -118,7 +122,7 @@ so a new folder is an input until a rule says otherwise; `.github/` is an input 
 | `native` | the same, but `web/tests/` is an input |
 | `site` | `src/`, `tests/`, `samples/`, `platforms/`, `odd/`, `experiments/`, game files other than Markdown and screenshots; the key adds the demo packages used and the browser suites |
 | `sdk` | `docs/`, `site/`, `platforms/`, `games/`, `tests/`, `samples/`, `odd/`, `experiments/`, Markdown outside `src/`, `templates/` and `sdk/` (except `THIRD-PARTY-NOTICES.md`, which the packages ship) |
-| `web` (browser engine) | `docs/`, `site/`, `platforms/`, `tests/`, `samples/`, `sdk/`, `odd/`, `experiments/`, `src/MicroEngine.Sdl`, the Android and iOS hosts, Markdown (except in a game's `Content/`); the key adds the games played |
+| `web` (browser engine) | `docs/`, `site/`, `platforms/`, `tests/`, `samples/`, `sdk/`, `odd/`, `experiments/`, the Android and iOS hosts, Markdown (except in a game's `Content/`); the key adds the games played |
 
 When a job passes it uploads the artifact `evidence-<check>-<key>` (kept 30 days); the browser engine check records
 its evidence only when the job of every game passed. Plan skips a needed check when
@@ -425,19 +429,43 @@ checks use `sdl-windows-ci.json`. A change that alters a capture on purpose re-r
 holds it (`desktop.mjs --write-reference`, or only the changed entries), the Windows runner one included: that one is
 read only by the package checks of validate and release.
 
+### SDL for the web
+
+The browser build of SDL (`SDL3.a`, a static WebAssembly library) is not in any package SDL publishes: MicroEngine
+builds it from the SDL commit `src/MicroEngine.Sdl/native/sdl.env` pins (the one the `ppy.SDL3-CS` bindings were made
+from) with the Emscripten of the .NET `wasm-tools` workload, by `src/MicroEngine.Sdl/native/build.sh`. Locally
+`web/setup.sh` runs it into its toolchain folder. In CI the reusable workflow
+[`sdl-web.yml`](../.github/workflows/sdl-web.yml) (called by `checks.yml` before every job that builds a web package,
+or started by hand) builds it once per content: its cache key is `build.sh key browser-wasm`, a hash of `sdl.env`,
+`build.sh` and the toolchain (Emscripten pack and CMake versions), so a cache hit reuses the library and only a change
+of one of them rebuilds it (about two minutes). The build fails when the archive lacks a function the engine calls;
+the job verifies `SHA256SUMS` and uploads the artifact `sdl-web-browser-wasm` (30 days), which the web jobs put where
+`web/setup.sh` would have built it, so none of them compiles SDL. The `MicroEngine.Sdl` package carries the library
+for browser builds; a release pack (`-p:MicroEngineRelease=true`) fails without it. Changing `sdl.env` or `build.sh`
+runs the browser checks, the SDK check and the browser engine suites.
+
 ### Browser tests
 
 `web/tests/run.mjs` plays development packages (`web/build.sh --dev`) in real browsers. In daily CI (the **Browser
-engine** jobs, Chrome on a virtual X server with a virtual sound server, one job per game the change reaches) and in
-validate (all four games), it runs these suites, and the job fails when any of their checks fails:
+engine** jobs, Chrome on a virtual X server with a virtual sound server, one job per game the change reaches and per
+web backend) and in validate (all four games), it runs these suites, and the job fails when any of their checks fails:
 
 | Suite | What it shows |
 | --- | --- |
-| `platform` | loading, starting by a gesture, audio running after it, about 60 updates per second, held, released and sub-frame key presses, focus loss releasing keys, saves (corrupt and full storage, with Neon Rift's and Meadow Run's), playing again without reloading |
+| `platform` | loading, starting by a gesture, audio running after it, the canvas filling the page and the game frame filling the canvas, about 60 updates per second, held, released and sub-frame key presses, focus loss releasing keys, saves (corrupt and full storage, with Neon Rift's and Meadow Run's), playing again without reloading |
 | `scripts` | the games' scripts replayed in the browser to their end; their captures are then compared byte for byte with the same scripts on the desktop build (raylib on Mesa, `desktop.mjs` with the same `--out`). The comparison is **measured, not a gate**: on the first runs most captures were identical, but some scrolling scenes drift by a few pixels between the two builds (Meadow Run's level, Neon Rift's stage 1, a few Courtyard Key frames), so differences are listed in the job summary and kept as an artifact |
 | `keyboard` | the same scripts typed through the browser's real key events reach the scene the scripted run ends in |
 | `framerate` | 60 updates per second whether the page draws every frame, every second or every fourth |
-| `audio` | the sound reaching the page's audio output has a measurable level within 15 seconds of the start (the result says when it came: title music is rendered in the background, later on a slow runner); suspended audio is explained and resumed by one click |
+| `audio` | the sound reaching the page's audio output has a measurable level within 15 seconds of the start (the result says when it came: title music is rendered in the background, later on a slow runner); suspended audio is explained and resumed by one click; a hidden page suspends its sound and resumes it when shown |
+| `repeat` | each script played twice in fresh pages writes byte-identical captures (scripted runs are deterministic in a page as on desktop) |
+| `gamepad` | an emulated standard-mapping gamepad (the Gamepad API, faked in the page): d-pad and left stick held and released, unplugging releases what it held |
+
+The SDL web backend (`--web-backend sdl`) is also checked by the gates for making it the default browser platform:
+its job adds `repeat` and `gamepad` in Chrome, runs every suite in Firefox, and plays the game on four emulated phones
+and tablets (`web/tests/mobile.mjs`: multi-touch, safe-area insets, rotation, focus loss; Chromium with mobile user
+agents, not Safari). Every job then reports, without gating, the package's download size, its load and start-up time
+and the time inside each frame (`web/tests/measure.mjs`, medians of three runs in Chrome), to compare the backends on
+the same runner. Real phones, Safari and iOS are not checked by CI.
 
 Firefox and the `autopilot` suite (Neon Rift's autopilot clearing stages 1 to 3) are run by hand:
 `node web/tests/run.mjs platform scripts autopilot --browsers chrome,firefox`. Each scenario names a game, a script
