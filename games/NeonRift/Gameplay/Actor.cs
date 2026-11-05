@@ -162,7 +162,7 @@ public abstract class Enemy : Actor
         if (Armored)
         {
             Stage.Sound("clank", 0.5f);
-            Stage.Spark(at);
+            Stage.Deflect(at);
             return true;
         }
         Health -= damage;

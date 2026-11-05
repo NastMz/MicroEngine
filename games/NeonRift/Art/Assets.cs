@@ -53,7 +53,6 @@ internal sealed class Assets : IDisposable
         Strip(b, content, "shot", "fx/shot.png", 15, 11, new Vector2(7, 5));
         Strip(b, content, "shot_hit", "fx/shot-hit.png", 15, 11, new Vector2(7, 5));
         Strip(b, content, "bolt", "fx/bolt.png", 48, 32, new Vector2(24, 16));
-        Strip(b, content, "pulse", "fx/pulse.png", 63, 32, new Vector2(31, 16));
         Strip(b, content, "charged", "fx/charged.png", 63, 48, new Vector2(31, 24));
         Strip(b, content, "crossed", "fx/crossed.png", 32, 32, new Vector2(16, 16));
         Strip(b, content, "waveform", "fx/waveform.png", 95, 32, new Vector2(47, 16));

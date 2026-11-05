@@ -18,7 +18,7 @@ keep the repository small. Pixels were not edited; the aiming arm poses are deri
 | `stages/grotto/*` | Warped Super Grotto Escape | https://opengameart.org/content/warped-super-grotto-escape-pack |
 | `stages/lab/back.png`, `middle.png`, `front.png`, `tank-*.png`, `support.png` | Warped Sci-fi Lab | https://opengameart.org/content/warped-sci-fi-lab |
 | `bosses/*` | Warped Vehicles | https://opengameart.org/content/warped-vehicles |
-| `fx/bolt.png`, `pulse.png`, `charged.png`, `crossed.png`, `waveform.png`, `hit1-5.png` | Warped Shooting FX | https://opengameart.org/content/warped-shooting-fx |
+| `fx/bolt.png`, `charged.png`, `crossed.png`, `waveform.png`, `hit1-5.png` | Warped Shooting FX | https://opengameart.org/content/warped-shooting-fx |
 | `enemies/skiff.png` | Warped Space Shooter | https://opengameart.org/content/warped-space-shooter |
 
 ## Music
@@ -55,4 +55,5 @@ keep the repository small. Pixels were not edited; the aiming arm poses are deri
 ## Not used
 
 The music bundled inside Warped City (by Pascal Belisle) carries an attribution-only licence and is not
-included.
+included. The hero's climbing strip (Warped City) and the pulse shot (Warped Shooting FX) have no use in the game
+and are not shipped.

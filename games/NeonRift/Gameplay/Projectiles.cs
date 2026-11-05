@@ -41,7 +41,7 @@ public sealed class PlayerShot : Actor
         if (Age > Life || !Stage.Camera.View.Inflate(24).Contains(Position)) { Destroy(); return; }
         if (!Weapon.Piercing && TileMotion.IsSolidAt(Position, Stage.Grid))
         {
-            Stage.Spark(Position);
+            Stage.Impact(Position, Weapon.Impact);
             Destroy();
             return;
         }
@@ -55,7 +55,7 @@ public sealed class PlayerShot : Actor
             if (_hit.Contains(enemy)) continue;
             if (!enemy.Hit(Weapon.Damage, Position)) continue;
             _hit.Add(enemy);
-            Stage.Spark(Position);
+            Stage.Impact(Position, Weapon.Impact);
             if (!Weapon.Piercing) { Destroy(); return; }
         }
     }
