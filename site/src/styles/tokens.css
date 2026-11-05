@@ -16,7 +16,6 @@
   --color-paper: light-dark(oklch(97.5% 0.006 85), oklch(18% 0.01 260));
   --color-paper-2: light-dark(oklch(95% 0.008 85), oklch(21.5% 0.012 260));
   --color-paper-3: light-dark(oklch(91.5% 0.01 85), oklch(26% 0.014 260));
-  --color-grid: light-dark(oklch(94.5% 0.008 85), oklch(20.5% 0.012 260));
   --color-rule: light-dark(oklch(84% 0.01 85), oklch(34% 0.014 260));
   --color-ink: light-dark(oklch(22% 0.012 260), oklch(95% 0.008 85));
   --color-ink-2: light-dark(oklch(40% 0.014 260), oklch(80% 0.012 260));
@@ -49,11 +48,6 @@
   --status-next: var(--color-accent);
   --status-repo: var(--color-ink-2);
   --status-planned: var(--color-ink-3);
-
-  /* Roadmap promise levels (kept for the current roadmap page). */
-  --color-planned: var(--status-next);
-  --color-exploring: light-dark(oklch(48% 0.11 240), oklch(80% 0.11 230));
-  --color-vision: light-dark(oklch(48% 0.13 305), oklch(78% 0.12 305));
 
   /* Subsystem families: one hue per kind of module. They mean a family and nothing else: never decoration, never a
      status, never a game. The kernel is the board itself, so it stays neutral. */
@@ -108,7 +102,6 @@
 
   /* Shape: square-cornered, hairline rules; the gap between a module and its socket is one --rule-gap. */
   --radius-sm: 2px;
-  --radius-md: 4px;
   --rule-thin: 1px;
   --rule-pixel: 2px;
   --rule-gap: 2px;
@@ -120,8 +113,6 @@
 
   /* Motion: mechanical and short. A module slides and seats with a small overshoot (--ease-seat). */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-seat: cubic-bezier(0.34, 1.4, 0.64, 1);
   --dur-fast: 120ms;
   --dur-mid: 220ms;

@@ -1,7 +1,8 @@
 ---
 // The Socket primitive: a labelled socket of one subsystem family, with a module seated in it or left empty.
 //   <Socket family="graphics" contract="IGraphicsDevice" module="SDL_Renderer" status="available" />
-//   <Socket family="graphics" contract="IGraphicsDevice" module="SDL_GPU" status="repo" empty />
+//   <Socket family="graphics" contract="IGraphicsDevice" module="SDL_GPU" status="next" />
+//   <Socket family="physics" contract="IPhysicsWorld2D" module="Box2D" status="repo" empty />
 // `empty` draws a dashed socket with no module: the way the site shows anything that is not published. A socket
 // without `module` and `empty` is an open slot ("your module"). The status, when given, is always written out.
 import FamilyIcon from './FamilyIcon.astro';
@@ -44,6 +45,9 @@ const label = families[family].label;
 <style>
   .socket { display: grid; gap: var(--space-xs); align-content: start; min-width: 0; margin: 0; list-style: none; }
   .socket p { margin: 0; }
+  /* Sockets side by side in a row share a height: the bay takes the spare space, so the status lines line up. */
+  .socket[data-status] { grid-template-rows: auto 1fr auto; align-content: stretch; }
+  .bay { display: grid; }
   .legend { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; color: var(--color-ink-2);
     font-family: var(--font-mono); font-size: var(--text-xs); line-height: var(--leading-snug); }
   .legend-family { color: var(--family-color); text-transform: uppercase; letter-spacing: var(--tracking-label); font-weight: 500; }
@@ -58,7 +62,7 @@ const label = families[family].label;
     transition: transform var(--dur-fast) var(--ease-seat); }
   .module strong { font-family: var(--font-mono); font-weight: 500; font-size: var(--text-sm); overflow-wrap: anywhere; }
   .open { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-ink-2); }
-  .note { font-size: var(--text-xs); color: var(--color-ink-2); }
+  .note { font-family: var(--font-body); font-size: var(--text-xs); color: var(--color-ink-2); }
   .socket:hover .module { transform: translateY(-2px); }
   /* Not published: the socket is drawn dashed and stays empty. */
   [data-state='empty'] .bay { border-style: dashed; border-color: var(--color-ink-3); background: transparent; }

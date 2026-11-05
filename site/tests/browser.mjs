@@ -3,7 +3,8 @@
 //   node tests/browser.mjs [--browsers chrome,firefox] [--suites layout,play,touch] [--out test-results] [--concurrency 4]
 // Browsers run at the same time; layout checks up to --concurrency pages at once in Chrome (one at a time in Firefox).
 // Suites (all by default; CI runs only `layout` when a change touches documentation alone):
-// - layout: every page at desktop, tablet and phone widths: no horizontal scroll, images with alt text, no request to a
+// - layout: every page at desktop, tablet and phone widths: no horizontal scroll, images with alt text, sideways-scrolling
+//   regions reachable from the keyboard, no request to a
 //   demo package (/play/) until Play is pressed; full-page screenshots are written to --out for review;
 // - play: each demo page on desktop: Play creates the iframe, the host's messages drive the status (ready, playing),
 //   Restart reloads, Exit removes the game; the size shown before loading is honoured;
@@ -124,7 +125,10 @@ async function layoutPage(browser, label, base, size, route) {
     check(`${where}: every diagram is drawn`, drawn && diagrams.every(d => d.svg && !d.error), JSON.stringify(diagrams));
     check(`${where}: diagrams use the documentation's colours`, diagrams.every(d => d.themed), JSON.stringify(diagrams));
   }
-  const { scroll, width, clipped, missingAlt, smallTargets, repoLinks, roadmapLink } = await page.evaluate(() => ({
+  // Expressive Code makes an overflowing code block focusable after a short, idle-time delay: let it settle first.
+  await page.waitForFunction(() => [...document.querySelectorAll('.expressive-code pre')]
+    .every(p => p.scrollWidth <= p.clientWidth + 1 || p.hasAttribute('tabindex')), { timeout: 5_000 }).catch(() => {});
+  const { scroll, width, clipped, missingAlt, smallTargets, repoLinks, roadmapLink, scrollTraps } = await page.evaluate(() => ({
     repoLinks: [...document.querySelectorAll('a[href]')].map(a => a.href).filter(h => /github\.com/i.test(h) && !/^https:\/\/github\.com\/NastMz\/MicroEngine(\/|$)/.test(h)),
     roadmapLink: !!document.querySelector('header a[href="/roadmap/"], .sidebar-content a[href="/roadmap/"], #starlight__sidebar a[href="/roadmap/"], a.docs-section[href="/roadmap/"]'),
     scroll: document.documentElement.scrollWidth,
@@ -140,6 +144,12 @@ async function layoutPage(browser, label, base, size, route) {
       return getComputedStyle(el).position !== 'fixed';
     }).slice(0, 3).map(el => `${el.tagName.toLowerCase()}.${el.className}`.slice(0, 60)),
     missingAlt: [...document.images].filter(img => !img.hasAttribute('alt')).map(img => img.src),
+    // Regions that scroll sideways (wide tables, frame strips, long commands) must be reachable from the keyboard:
+    // focusable themselves or holding something focusable, so a keyboard user can scroll them (WCAG 2.1.1).
+    scrollTraps: [...document.body.querySelectorAll('*')].filter(el => el.getClientRects().length
+      && /auto|scroll/.test(getComputedStyle(el).overflowX) && el.scrollWidth > el.clientWidth + 1 && el.tabIndex < 0
+      && !el.querySelector('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+      .slice(0, 3).map(el => `${el.tagName.toLowerCase()}.${el.className}`.slice(0, 60)),
     // Visible links and buttons in the page's own chrome and controls that are smaller than 24px on a side.
     smallTargets: [...document.querySelectorAll('header a, footer a, .button, button')]
       .filter(el => el.offsetParent && el.getClientRects().length)
@@ -149,6 +159,7 @@ async function layoutPage(browser, label, base, size, route) {
   check(`${where}: no horizontal scroll`, scroll <= width, `${scroll} > ${width}`);
   check(`${where}: no content cut off at the right edge`, clipped.length === 0, clipped.join(' | '));
   check(`${where}: every image has alt text`, missingAlt.length === 0, missingAlt.join(', '));
+  check(`${where}: sideways-scrolling regions are reachable from the keyboard`, scrollTraps.length === 0, scrollTraps.join(' | '));
   check(`${where}: GitHub links go to the MicroEngine repository only`, repoLinks.length === 0, repoLinks.slice(0, 3).join(', '));
   check(`${where}: the roadmap is reachable from the navigation`, roadmapLink);
   check(`${where}: controls at least 24px`, smallTargets.length === 0, smallTargets.join(' | '));

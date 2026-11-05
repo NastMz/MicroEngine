@@ -56,6 +56,9 @@ const bays = families.filter(f => f !== 'kernel').map(family => ({ family, modul
   /* The kernel's own modules sit in sockets cut into the bar. */
   .rail .rail-slots :global(.socket) { background: var(--color-paper); border-color: var(--color-paper); }
   .rail .rail-slots :global(.slot-status) { color: var(--color-paper-3); }
+  /* Side by side in the bar, the kernel's sockets share a height so their status lines line up. */
+  .rail .rail-slots :global(.slot) { grid-template-rows: 1fr auto; align-content: stretch; }
+  .rail .rail-slots :global(.socket) { display: grid; }
   .rail .rail-slots :global(.status-mark) { --status-color: var(--color-paper-3); }
   .bays { list-style: none; margin: 0; padding: 0 var(--rule-pixel); display: grid; gap: var(--rule-pixel);
     grid-template-columns: minmax(0, 1fr); }

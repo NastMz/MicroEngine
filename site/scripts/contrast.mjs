@@ -15,7 +15,7 @@ const surfaces = ['--color-paper', '--color-paper-2', '--color-paper-3'];
 const families = ['kernel', 'graphics', 'physics', 'audio', 'input', 'platform', 'tools'].map(f => `--family-${f}`);
 const textOnSurfaces = [
   '--color-ink', '--color-ink-2', '--color-ink-3', '--color-accent', '--color-accent-strong',
-  '--color-ok', '--color-partial', '--color-no', '--color-exploring', '--color-vision',
+  '--color-ok', '--color-partial', '--color-no',
   '--status-available', '--status-next', '--status-repo', '--status-planned',
   ...families, '--color-meadow', '--color-courtyard', '--color-trail', '--color-neon',
 ];

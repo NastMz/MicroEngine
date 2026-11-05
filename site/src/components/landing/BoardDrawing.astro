@@ -56,7 +56,7 @@ const empty = x(seated.length);
   <text class="module-name vacant" x={empty + gap + moduleW / 2} y={floor - 14} text-anchor="middle">3D</text>
   <line class="floor" x1={left} y1={floor + 0.5} x2={right} y2={floor + 0.5} />
   <Callout n={1} x={left + 26} y={top + bar / 2} lx={left + 46} ly={28} label="Kernel: the board" />
-  <Callout n={2} x={x(0) + gap + 5} y={floor - 50} lx={x(0) + gap + 25} ly={284} label="Module, seated" />
+  <Callout n={2} x={x(0) + gap + 5} y={floor - 5} lx={x(0) + gap + 25} ly={284} label="Module, seated" />
   <Callout n={3} x={empty + socket / 2} y={moduleY + 30} lx={empty + socket / 2 - 8} ly={66} label="Empty: not published" align="end" />
 </svg>
 
@@ -65,7 +65,7 @@ const empty = x(seated.length);
   .board-fill { fill: var(--color-ink); }
   .icon-board { fill: var(--color-ink); }
   .icon-module { fill: var(--family-color); }
-  .module-name { font-size: 12px; font-weight: 500; fill: var(--color-ink); }
+  .module-name { font-size: 11px; font-weight: 500; fill: var(--color-ink); }
   .module-name.vacant { fill: var(--color-ink-2); }
   .floor { stroke: var(--color-rule); stroke-width: var(--rule-thin); }
   /* Modules drop into their sockets once, in turn, and settle: the mark's seating motion on a whole board. */

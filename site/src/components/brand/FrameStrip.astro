@@ -3,7 +3,7 @@
 // produces, shown next to that code. Frames must be real captures (the engine's scripted, headless runs), never
 // mock-ups; every frame needs alt text.
 //   <FrameStrip caption="Pressing jump: frames 0, 6, 12 and 18" frames={[{ src, alt, label: 'frame 0' }, ...]} />
-// On narrow screens the strip scrolls sideways and snaps to each frame.
+// On narrow screens the strip scrolls sideways and snaps to each frame; it takes focus so the keyboard can scroll it.
 interface Frame { src: string; alt: string; label?: string; width?: number; height?: number }
 interface Props { frames: Frame[]; caption: string; pixelated?: boolean; start?: number }
 const { frames, caption, pixelated = true, start = 1 } = Astro.props;
@@ -12,7 +12,7 @@ for (const frame of frames) if (!frame.alt?.trim()) throw new Error(`FrameStrip:
 const pad = (n: number) => String(n).padStart(2, '0');
 ---
 <figure class="frame-strip">
-  <ol class:list={['frames', { pixelated }]} start={start} style={`--count: ${frames.length}`}>
+  <ol class:list={['frames', { pixelated }]} start={start} style={`--count: ${frames.length}`} tabindex="0" aria-label={caption}>
     {frames.map((frame, i) => (
       <li>
         <span class="step" aria-hidden="true">{pad(start + i)}</span>

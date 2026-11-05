@@ -77,7 +77,12 @@ body { background: var(--color-paper); color: var(--color-ink); }
 header.header { border-bottom: var(--rule-pixel) solid var(--color-ink); background: var(--color-paper); }
 site-search button[data-open-modal] {
   border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm); background: var(--color-paper-2);
-  color: var(--color-ink-2); font-family: var(--font-mono); font-size: var(--text-xs); }
+  color: var(--color-ink-2); font-family: var(--font-mono); font-size: var(--text-lg);
+  /* On phones the button is the magnifier alone: keep it a full tap target in every browser. */
+  min-inline-size: var(--tap); justify-content: center; }
+@media (min-width: 50rem) {
+  site-search button[data-open-modal] { font-size: var(--text-xs); justify-content: flex-start; }
+}
 site-search button[data-open-modal]:hover { border-color: var(--color-ink-3); color: var(--color-ink); }
 site-search button[data-open-modal] kbd { border-radius: var(--radius-sm); background: var(--color-paper); color: var(--color-ink-2); }
 starlight-theme-select select, starlight-theme-select label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); }
