@@ -6,7 +6,83 @@ it. Newest first.
 
 ## Next release
 
-Not published yet. Behaviour that changes:
+Not published yet. The next SDK version is a breaking Alpha: the engine was rebuilt as separate modules, and several
+public APIs change. The checklist below gives each breaking change and what to do about it. The entries after it give
+the details, newest first.
+
+### Upgrading a game
+
+1. **Assemblies and namespaces.** The `MicroEngine` package now carries the engine as several assemblies beside
+   `MicroEngine.dll`: `Kernel`, `Platform`, `Hosting`, `Graphics`, `Graphics2D`, `Text`, `Content`, `Input`,
+   `Input.Touch`, `Audio`, `Scene`, `Physics`, `Physics.Tiles`, `UI`, `Saves` and `Achievements` (each named
+   `MicroEngine.<name>.dll`). `MicroEngine.Sdl` also carries `MicroEngine.Graphics.SdlGpu.dll`. A type that moved
+   without a namespace change is forwarded by `MicroEngine.dll`, so source and compiled code find it as before.
+   **Migration:** keep the same package references. One namespace changes: `Synth`, `SfxParams`, `Wave`, `Song` and
+   `Instrument` are in `MicroEngine.Audio.Retro`, so add `using MicroEngine.Audio.Retro;` where you make sounds or music
+   in code. Several namespaces are new: `MicroEngine.Hosting`, `MicroEngine.Scenes`, `MicroEngine.Physics`,
+   `MicroEngine.Graphics.Devices`, `MicroEngine.Saves` and `MicroEngine.Achievements`. A file that imports both
+   `MicroEngine.Graphics` and `MicroEngine.Graphics.Devices` names the `Texture` or `IGraphicsDevice` it means.
+2. **Hosting entry point.** A game is composed once, by `public static void Configure(HostBuilder host)`, and every
+   host (desktop, browser, Android, iOS, tests) runs that composition. **Migration:** add the method
+   (`host.UseGame(() => new MainGame())`), move what `Program.cs` composed around the game into it, and start with
+   `DesktopLauncher.Run(MainGame.Configure, args)`. `DesktopLauncher.Run(game, args)` keeps working on desktop, but
+   `microengine package` needs the method for web and phone builds: without it, and without the deprecated
+   `<MicroEngineGameFactory>`, packaging fails and shows the method to add. Read developer variables with
+   `host.Environment.Variable(name)`, not `Environment.GetEnvironmentVariable`: phones pass them only there. Hosts of
+   your own replace the removed statics (`ContentFolder.DefaultRoot`, `SaveStore.DefaultStorage`) with `host.Content`
+   and `host.Storage`.
+3. **Scenes and the world.** `Entity` and `EntityList<T>` are removed, and there is no compatibility package.
+   **Migration:** keep a scene's objects in `Scene.Objects` (an `IWorld`). Create an entity, attach your own class to
+   it, walk your objects with `All<T>()` and remove them with `Destroy`. Or keep plain classes in a `List<T>` of your own.
+   The world interpolates positions between updates, so delete your own previous-position code and call `Teleport`
+   where an object jumps. Read `Objects` in `Enter` or `Update`, never first in `Draw`, which now throws. Use
+   `Scene.EngineStep` for what keeps moving through a hitstop, and `Camera2D.DrawPosition` instead of moving a camera
+   around drawing. A member of your own named `Objects` or `EngineStep` hides the engine's (warning CS0108): rename it.
+4. **Physics.** `TileMotion.Move` returns `TileMoveResult` (namespace `MicroEngine.World`); the name `MoveResult` now
+   belongs only to the physics worlds (`MicroEngine.Physics`). **Migration:** rename the type where you store or return
+   it; `var` needs no change. `TileMotion` is now a swept test, so check any level that relied on passing through thin
+   solids. The physics worlds are new and optional. A Box2D backend exists in the repository but is not part of this
+   version's packages.
+5. **Input.** Input is an event stream with device ids, players and layers, and single-player games read `Game.Input`
+   as before. **Migration:** code that treated a present `Input.Pointer` as "a mouse is here" checks `Input.Pointers`
+   for `PointerKind.Mouse`, because fingers on no control are pointers now. A system added before `engine.touch` adds
+   itself before `engine.input.events`. A game that wants F11 or Alt+Enter for itself unbinds the engine's
+   `fullscreen` action. Touch controls are an opt-in module: they show on touch-first screens, or once the game sets a
+   layout. A game that wants them on a touch laptop or a desktop browser overrides `CreateTouchLayout`. A tap shorter
+   than a frame is down in exactly one update, for keys, pad buttons and touch controls alike.
+6. **Audio.** Every backend plays through one managed mixer, and sounds start one output buffer after the update that
+   plays them (60 ms on SDL, 100 ms in browsers). **Migration:** a mixer you create yourself calls `Pump()` once per
+   frame. Sound and music files can load through `Game.Assets` (`Assets.Sound`, `Assets.Music`, `Audio.AddMusic`).
+   The `Audio.Retro` namespace change is in item 1.
+7. **Content.** `Game.Assets` reads from the composition's content source, which can be a folder, a zip archive or
+   a list. File names must match their letter case on every system. **Migration:** fix any file whose case differs
+   from the code. Read `Assets.Source` instead of `Assets.Content` when the content may not be a folder. The
+   `<None Include="Content/**" ... />` item is no longer needed.
+8. **Presentation presets.** `GameSettings.Presentation` states how the canvas reaches the window. The presets are
+   `Presentation.PixelArt` (the default) and `Presentation.HighResolution2D`. The UI view's scale now defaults to the
+   screen's pixel density. **Migration:** a pixel-art game changes nothing. A game whose interface must keep one UI unit
+   per window pixel sets `UiScale = 1`. A game that used a translucent `BlendMode.Multiply` uses an opaque colour.
+   An antialiased `ScalableFont` that must stay linear in a pixel-art game passes `FontOptions(Filter:
+   TextureFilter.Linear)`. Code written for the unreleased `GameSettings.Scaling` uses `Presentation`.
+9. **Achievements and saves.** Achievements are an optional module, declared before the engine is composed.
+   **Migration:** move `UseAchievements(...)` from `Load` to the game's constructor or `Configure(EngineBuilder)`.
+   Calling it from `Load` now throws. `SaveStore` is unchanged.
+10. **Browser platform.** Browser packages run on SDL 3, not raylib. Desktops keep raylib as the alternative
+    platform. **Migration:** a game that references `MicroEngine.Desktop` changes nothing. A game that references only
+    `MicroEngine.Raylib` and is packaged for the web adds `MicroEngine.Sdl`. Drop `--raylib-wasm` from
+    `microengine package web`. A browser host of your own uses the `BrowserLauncher`, `BrowserPage` and
+    `SdlPlatform.BrowserProfile` of `MicroEngine.Sdl`.
+11. **Custom platforms and devices.** A platform of your own implements the new platform contract
+    (`IPlatformHost`: `Clock`, `PumpEvents`, `MainSurface`, `CanBlock`, `TryGetCapability<T>`), and offers optional
+    features as capabilities. **Migration:** follow the entries on `IPlatform` below. A custom graphics device or
+    texture implements filters and region updates.
+12. **Time.** The loop owns time. Scripted and headless runs use deterministic time and open no sound device.
+    **Migration:** a check that must hear a device passes `--audio device`. Delete `UpdateRate` from headless
+    platforms and `FixedStep` from platform requests.
+
+### Changes in detail
+
+Behaviour that changes:
 
 - A tap shorter than a frame on a touch control is down in exactly one fixed update, the first that reads it, as a
   key's or a gamepad button's is: when a slow frame catches up with several updates, the later ones see it released
@@ -308,7 +384,8 @@ Not published yet. Behaviour that changes:
 - `EntityList<T>` is walked without allocating: `GetEnumerator` returns `EntityList<T>.Enumerator`, `OfType<TEntity>`
   returns `EntityList<T>.TypedEntities<TEntity>` and `Overlapping` returns `EntityList<T>.OverlappingEntities` (structs
   that are still `IEnumerable`, so LINQ works on them). **Migration:** code that stored the results as
-  `IEnumerable<...>` compiles unchanged; rebuild against the new SDK.
+  `IEnumerable<...>` compiles unchanged; rebuild against the new SDK. (Superseded in the same version: `EntityList<T>`
+  and `Entity` are removed; see the entry on `Entity` above.)
 - `SpriteAtlas.Frames` returns a shared, read-only `IReadOnlyList<Sprite>` (collected once per name) instead of a new
   `Sprite[]` per call. **Migration:** use `Count` instead of `Length`, and `IReadOnlyList<Sprite>` for fields that held
   the array.
@@ -334,7 +411,8 @@ Not published yet. Behaviour that changes:
 - The 2D drawing model (`IRenderer`, `Texture`, `IGraphicsDevice`, `PixelImage`, sprites, atlases, animation, particles,
   light, parallax and their helpers) lives in `MicroEngine.Graphics2D.dll`, carried by the `MicroEngine` package, with its
   namespace unchanged; `MicroEngine.dll` forwards every moved type. Nothing to change: source and compiled code find the
-  types as before. Fonts, the headless renderer and the reference rasterizer stay in `MicroEngine.dll` for now.
+  types as before. The headless renderer and the reference rasterizer stay in `MicroEngine.dll`; the fonts moved
+  later to `MicroEngine.Text.dll` (above).
 - The SDL and raylib platforms draw through the graphics device: `IRenderer` is a façade over the 2D batcher, and the
   canvas is premultiplied. Behaviour that changes: `BlendMode.Multiply` with a translucent colour now computes
   s·a·d + d·(1 − a) (it computed s·d + d·(1 − a), which brightened as the colour became more transparent); a

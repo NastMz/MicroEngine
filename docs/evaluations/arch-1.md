@@ -1,6 +1,7 @@
 # ARCH-1: Adversarial architecture audit and target architecture (Phase I)
 
-Status: **approved by the owner on 2026-11-02 with five amendments; Phase II under way.** The amendments are
+Status: **approved by the owner on 2026-11-02 with five amendments; Phase II reconstruction complete on `main`
+(2026-11-05), unpublished: final state and verdicts in [§12](#final-state).** The amendments are
 integrated in place, not appended: prototypes run before the decision they validate (§9), one complete graphics
 device contract validated by a tier-0/tier-1 spike (§6.4, §7, §9), the legacy `Entity` adapter is transitional and
 deleted at the end of stage 5 (§6.3, §6.5, §9), stage closure criteria and property-based validation (§8, §9), and a
@@ -8,10 +9,11 @@ definition of done for Phase II with a 3D vertical slice and a physics substitut
 P1, P3, P4, P5, P6 and P7 have concluded and the graphics contract spike has met the stage 1 freeze gate; their
 verdicts and the decisions taken on them (the architect's directives 2-12) are written in §9 (prototype verdicts) and
 applied in place in §5, §6.1-§6.5, §7, §8, §9, §9.1 and §10: the graphics device contract v1, `IAudioSink` v1 and
-`IWorld` v1 are frozen (§6.4), and the physics contract carries P6's revisions. Phase II progress on `main`
-(2026-11-03): stages 0, 1 and 2 closed; stage 3 started (3a) (§9, Phase II progress). Phase I changed nothing in `src/`, `games/`, `samples/`, `templates/`
+`IWorld` v1 are frozen (§6.4), and the physics contract carries P6's revisions. Phase II on `main`
+(2026-11-05): stages 0-6 closed with the open items listed in §12; §9's progress block stops at 2026-11-03 and §12
+carries the rest. Phase I changed nothing in `src/`, `games/`, `samples/`, `templates/`
 or the workflows. Audited code: `docs/arch-1` = `feat/asset-1` at 5706285 (the ASSET-1 work, since merged). Record and
-Phase II register: [`odd/tasks/arch-1.md`](../../odd/tasks/arch-1.md). Date: 2026-11-02; last revised 2026-11-03.
+Phase II register: [`odd/tasks/arch-1.md`](../../odd/tasks/arch-1.md). Date: 2026-11-02; last revised 2026-11-05.
 
 The question applied to every decision: *if MicroEngine were designed today, for a generalist, modular,
 multi-platform 2D/2.5D/3D engine with plug-and-play defaults, would we make this decision again?*
@@ -673,7 +675,7 @@ prototype in the stage where it must conclude, with its gate.
 | 3. World and physics | `MicroEngine.Scene` (ids, transforms, attachments, interpolation, clocks, scene results); physics common contract, `PhysicsCapabilities` and suites; `Physics.Tiles` with the fixed mover as the first backend; the **transitional** `Entity` adapter (`[Obsolete]`, in the non-packable `MicroEngine.Migration.Entities`, consumed only by the demos) | P7 concluded: `IWorld` v1 frozen (directive 11; gate met); P6 concluded: the physics contract is written with its revisions (§6.4, §9.1) | 1, 2a (presentation reads transforms) | two (architect directive 12): 3a `MicroEngine.Scene` as chained PRs (3a-1 world, 3a-2 scenes own worlds, 3a-3 `Entity` adapter; ADR 0030); 3b `MicroEngine.Physics` and `Physics.Tiles` after 3a-1 merges (ADR 0031) |
 | 4. UI and modules | UI with pointer/focus/layout/screen-unit view; saves, achievements, touch controls as modules | — | 2a, 2b, 3 | two (architect directive 14): 4a `MicroEngine.Text`, then `MicroEngine.UI` (chained); 4b `MicroEngine.Saves`, `MicroEngine.Achievements` and `Input.Touch` as opt-in modules (`Input.Touch` after 4a-1 merges) |
 | 5. Consumers | Migrate the four demos, gallery, samples, template; docs, snippets and API reference regenerated; CLI hosts on the `Configure` entry point; packages and SDK acceptance; the SDL browser launcher replaces raylib on the web (gates under P4 below); release notes as a breaking Alpha (written, not published). **Deletes the `Entity` adapter** (the architecture test fails on any reference) and **empties the exclusion list**; the stage cannot close otherwise | — | 2-4 | per demo |
-| 6. Phase II completion | The tier-1 pure SDL_GPU device, offline shader toolchain and the 3D vertical slice; the native Box2D v3 backend, its CI-built native binaries and optional package (validated on Linux, macOS, iOS and Android arm64, not published) and the physics substitution demonstration; the final report (§9.1) | P2 before the tier-1 shader toolchain is fixed (inside the 3D vertical slice) | 2a, 3 (contracts it exercises), P2, P6; Phase II completes only with stages 0-5 closed | two in parallel (architect directive 13): 6a the 3D vertical slice (tier-1 SDL_GPU device, offline shader toolchain with P2, minimal glTF, `Camera3D`, a Linux lavapipe CI job); 6b the Box2D backend with CI-built natives, the physics substitution demonstration and a broad phase for the tile backend |
+| 6. Phase II completion | The tier-1 pure SDL_GPU device, offline shader toolchain and the 3D vertical slice; the native Box2D v3 backend, its CI-built native binaries and optional package (tested in CI on Windows, Linux, macOS and in a browser; iOS and Android arm64 build only, directive 13; not published) and the physics substitution demonstration; the final report (§9.1) | P2 before the tier-1 shader toolchain is fixed (inside the 3D vertical slice) | 2a, 3 (contracts it exercises), P2, P6; Phase II completes only with stages 0-5 closed | two in parallel (architect directive 13): 6a the 3D vertical slice (tier-1 SDL_GPU device, offline shader toolchain with P2, minimal glTF, `Camera3D`, a Linux lavapipe CI job); 6b the Box2D backend with CI-built natives, the physics substitution demonstration and a broad phase for the tile backend |
 
 Prototypes (each a throwaway in `experiments/` or a draft PR, measured, recorded in the register; verdict written
 here before its gate):
@@ -904,7 +906,8 @@ directive 11):
    steps is covered by tests).
 
 <a id="phase-ii-progress"></a>**Phase II progress (2026-11-03).** Pull requests, merge commits, validation results
-and owners are in the register ([`odd/tasks/arch-1.md`](../../odd/tasks/arch-1.md)).
+and owners are in the register ([`odd/tasks/arch-1.md`](../../odd/tasks/arch-1.md)). This block records the state on
+2026-11-03; stages 4-6 and the end of Phase II are in [§12](#final-state).
 
 - Stage 0 **closed**: defects, CI and validation tooling (#24, #27, #30), the asset gallery's deterministic clock
   (#31, #35) and T0, the per-step state hash with first-divergence reporting (#42). T0's gate runs on Linux for every
@@ -1099,3 +1102,235 @@ publishing to NuGet, public releases, demo releases, production site deployments
 its visibility, and changing secrets, credentials or administrative permissions; publication and the final release are
 reserved to the owner. The persistent register of stages, decisions, contracts, pull requests, validation results,
 problems, blocks and next steps is [`odd/tasks/arch-1.md`](../../odd/tasks/arch-1.md).
+
+<a id="final-state"></a>
+## 12. Final state of Phase II (2026-11-05)
+
+This is the final report that §9.1 item 4 asks for. It describes `main` at c0ae530 (the merge of #89), with every
+ARCH-1 pull request from #22 to #89 merged and none open. The register
+([`odd/tasks/arch-1.md`](../../odd/tasks/arch-1.md)) lists every pull request with its merge commit and evidence.
+Nothing was published. `.github/phase-freeze` is still on `main`, so no SDK version, demo release or production site
+deployment came out of Phase II. Lifting the freeze is the owner's decision.
+
+### 12.1 Verdicts
+
+| §9.1 item | Verdict | Evidence |
+| --- | --- | --- |
+| 1. Stages 0-5 closed, the `Entity` adapter deleted, the exclusion list empty, the four demos, the gallery, the samples and the template migrated and green | **Met, with three items open** (§12.3): ADRs 0035 and 0036 are still reserved and unwritten; the public release-notes page does not list Phase II's changes yet (a draft is in [`arch-1/release-notes-draft.md`](arch-1/release-notes-draft.md)); the owner's device validation is pending (§12.7 d) | Stage table in §12.3; adapter deleted and refused by the architecture test (#89); the exclusion list was never needed |
+| 2. 3D vertical slice on the tier-1 SDL_GPU device, run in CI on lavapipe | **Met** | §12.4 |
+| 3. Physics substitution demonstration, common capabilities separated from implementation-specific ones | **Met** | §12.5 |
+| 4. Final report integrated in `main` without any release | **Met by this section** once its pull request merges | — |
+
+The architecture is validated for 3D in the sense of §9.1: a real slice exercises the device contract, the content
+pipeline, the world's hierarchy and interpolation, an offline-compiled material and 2D composition, on real GPUs and
+in CI on a software rasterizer. It is validated for physics substitution in the sense of the owner's adjustment 5:
+the same gameplay code runs on both backends through the common contract. The demonstration shows what both backends
+share and what only one of them offers, and full functional equivalence is not presumed.
+
+### 12.2 Assembly map
+
+[`docs/architecture.md`](../architecture.md) is accurate on `main`. Its layer diagram names every assembly with
+references taken from the project files (#88), and its module table has one row per assembly. In summary:
+
+| Packaging | Assemblies |
+| --- | --- |
+| Inside the `MicroEngine` package | `MicroEngine` (the `Game` façade, scenes, testing support), `Kernel`, `Platform`, `Hosting`, `Graphics`, `Graphics2D`, `Text`, `Content`, `Input`, `Input.Touch`, `Audio` (with `MicroEngine.Audio.Retro`), `Scene`, `Physics`, `Physics.Tiles`, `UI`, `Saves`, `Achievements` |
+| Inside the `MicroEngine.Sdl` package | `MicroEngine.Sdl` (desktop, phones and browsers), `MicroEngine.Graphics.SdlGpu` (the tier-1 `sdl-gpu` device) |
+| Other packages | `MicroEngine.Raylib` (desktop only), `MicroEngine.Desktop`, `MicroEngine.Cli` (the `microengine` tool with the web, Android and iOS hosts and `microengine shaders`) |
+| Repository only (not packed) | `MicroEngine.Graphics3D` (the 3D path) |
+| Optional package, packed only on request, never published | `MicroEngine.Physics.Box2D` |
+| Deleted | `MicroEngine.Migration.Entities` (#89). `No_project_references_the_removed_entity_adapter` fails if a project outside `experiments/` references or recreates it, or if the solution lists it |
+
+The architecture test (`tests/MicroEngine.Tests/Kernel/ArchitectureTests.cs`) checks every assembly's allowed
+references. Phase II added two edges to the §6.3 table: `Achievements -> Saves` (#68) and the `Input.Touch` row (#76).
+
+**Browser platform.** SDL 3 is the only browser platform on `main` (#80, #81; ADR 0047). SDL is built from source at
+the commit the binding uses (`ea7a2da`, SDL 3.5.0) with the .NET workload's Emscripten, cached in CI
+(`sdl-web.yml`), and `MicroEngine.Sdl` packs it. raylib is a desktop platform only. Its browser launcher, page,
+audio sink and profile are deleted, and so are `--web-backend` and `--raylib-wasm`. Demo pages still carry the trimmed
+`Raylib-cs` bindings, because the demos reference `MicroEngine.Desktop`. The browser profile offers only the
+SDL_Renderer device, because `SDL3.a` has no SDL_GPU.
+
+### 12.3 Stages
+
+Closure criteria (§9): (a) suites green in CI, (b) an integration consumer, (c) architecture test green, (d) ADRs
+merged, (e) register updated.
+
+| Stage | Pull requests | (a)-(e) |
+| --- | --- | --- |
+| 0. Repair and measure | #24, #27, #30, #31, #35, #36, #39, #42 | (a)-(c), (e) met. (d): ADR 0035 (validation by contract) is reserved and **not written**. Its decision is applied (conformance suites, property checks, T0) and recorded in §8 |
+| 1. Kernel and composition | #33, #34, #37, #43 | (a)-(c), (e) met. (d): 0026, 0027, 0037, 0038 written; ADR 0036 (assemblies by boundary, architecture test) is reserved and **not written**. The architecture test is in force |
+| 2a/2b/2c | #45, #48, #52, #54, #61; #46, #49, #51; #44, #47, #50 | met (ADRs 0028, 0029, 0032, 0033, 0034) |
+| 3. World and physics | #56, #57, #59, #60 | met (ADRs 0030, 0031) |
+| 4. UI and modules | 4a-0 #66; 4a-1 #70; 4a-2 #74, #75; 4b #65, #68, #76 | met: suites green on each pull request; consumers are the demos (achievements, saves, touch tests), the UI tests and Slice3D's UI-view label; architecture rows for Text, UI, Saves, Achievements, Input.Touch; ADR 0006 amended, ADRs 0044 and 0045 |
+| 5. Consumers | 5a #78; 5b #80, #81; 5c #83, #84, #85, #86; 5d-1 #89, 5d-2 #88, 5d-3 #87; also #79 | met, except one item of its content: the release notes. The migration notes cover every breaking change with a migration step (this pull request), but `docs/guide/release-notes.md` "Next release" still lists only changes made before Phase II's stages 2-6. Its section is drafted in [`arch-1/release-notes-draft.md`](arch-1/release-notes-draft.md) for the release pull request. ADRs 0029, 0031 amended, 0047 written, 0030 and 0038 amended by this pull request |
+| 6. Phase II completion | 6a #62, #71, #72, #77, #82; 6b #63, #67, #69, #73 | met (ADRs 0041, 0042, 0043, 0046, ADR 0031 amended); P2 concluded inside 6a (#71) |
+
+Stage 5's content, item by item: the four demos left the adapter with per-script state-trace comparisons and
+byte-identical captures (#83-#86). The gallery and samples are on `Presentation` (#78), and `PlatformerExample` has
+been without `Entity` since #59. The template uses the `Configure` entry point. The documented samples keep the
+supported `DesktopLauncher.Run(game, args)` form. Docs, snippets and the API reference were regenerated (#78, #88,
+#89). `packages.mjs`, `external.mjs` and `docs.mjs` passed (#89). The SDL browser host replaced raylib behind every
+CI-verifiable gate (#80, #81). The adapter is deleted (#89), and the exclusion list stayed empty for the whole phase.
+The T0 follow-up is done: the touch, boss, tour and catch scripts now have starting points and are traced (#83-#86),
+and the state-trace checks of Courtyard Key, Meadow Run and Trail Duel fail when a script has none. Phone `--env` pairs reach `HostEnvironment.Variables` (#89).
+
+### 12.4 3D vertical slice: where each requirement is evidenced
+
+| §9.1 item 2 requirement | Evidence |
+| --- | --- |
+| Tier-1 pure SDL_GPU device on contract v1 | #62: `SdlGpuDevice` in `MicroEngine.Graphics.SdlGpu`, no contract change; conformance 120/120 on NVIDIA (D3D12, Vulkan) and AMD; a mutation check failed 9/9. ADR 0041 |
+| Mesh loaded as an asset (minimal glTF) | #72: `GltfReader`, the `mesh` asset kind (`.gltf`, `.glb`, node transforms, textures); `MicroEngine.Graphics3D.Tests` 8/8. ADR 0043 |
+| Entity with a transform hierarchy and engine interpolation | #72: three-level hierarchy in `SceneWorld`, child drawn where the interpolated hierarchy puts it at blend 0, 0.5 and 1. #77: the hierarchy lives in `Scene.Objects`, stepped by the engine loop at 30 Hz and drawn at the frame's blend |
+| Camera with a perspective projection | #72: `Camera3D` (System.Numerics, right-handed, depth 0..1); four known world points land at their projected pixels (±1 px, edge coverage) |
+| Depth testing | #62: depth conformance for every supported depth format; #72: depth order in both draw orders, and the property fails with the depth test disabled; #77: depth on a canvas target without depth |
+| One material, shader compiled offline (P2 toolchain) | #71: `microengine shaders` (DXC to DXIL and SPIR-V, SPIRV-Cross to MSL), `CompiledShader`; P2's palette swap (exact) and full-screen effect (±1/255) on tier 1, and the typed error on tier 0. #72: `basic.vert/frag` compiled by the tool. ADR 0042 |
+| Composited with 2D on the same device | #72: opaque and half-alpha 2D over 3D (exact, ±1/255); #77: `DeviceRenderer.Flush`/`Target` put the 3D pass between canvas flushes, with a 2D HUD and a UI-view label over it |
+| Conformance and property tests | `SdlGpuDeviceConformance`, `Slice3DTests`, `TierOneGameTests` (`MicroEngine.Desktop.Tests`, categories `Native` + `Gpu`) |
+| Run in CI on lavapipe | `checks.yml`, native Linux job, "Tier-1 graphics on SDL_GPU (Vulkan, Mesa lavapipe)". On #77's run 41973605483 the adapter was `llvmpipe (LLVM 20.1.2, 256 bits)` (Mesa 25.2.8). The `Gpu` category ran 138 tests: 94 passed, and 44 were inconclusive because the Direct3D 12 class cannot start on Linux and a surface cannot be minimised there. The slice game played `slice.script` through the launcher (`platform: sdl (SDL sdl-gpu vulkan)`), and its capture is the `gpu-captures` artifact |
+| Slice3D as an ordinary game | #77: `Configure` + `DesktopLauncher.Run`, `GraphicsSettings.Device = "sdl-gpu"` (or `--graphics sdl-gpu`, `PlatformProfile.GraphicsDevices`). The tier-1 device never falls back to tier 0. ADR 0046 |
+| E12 (surface copy at present) | #72: measured on desktop only (RTX 4070 Ti SUPER, 1920×1080: +1.06 ms D3D12, +0.97 ms Vulkan, CPU wall time as an upper bound); mobile not measured (no device reachable) |
+
+Not part of the slice, by design: lighting beyond one directional light, skinning and animation, a 3D game. Limits:
+the 3D path is in the repository only; compiling shaders needs Windows (DXC); MSL is generated but never executed on
+Metal; the browser, Android and iOS hosts stay on tier 0; on-screen touch controls are not drawn on `sdl-gpu`.
+
+### 12.5 Physics substitution: shared and specific capabilities
+
+The owner asked that the demonstration separate what the kinematic tile backend and Box2D share from what is specific
+to each, without presuming full functional equivalence. On `main`:
+
+| | Tile backend (`MicroEngine.Physics.Tiles`) | Box2D backend (`MicroEngine.Physics.Box2D`, not published) | Evidence |
+| --- | --- | --- | --- |
+| **Shared: the common contract** (`IPhysicsWorld2D`, `PhysicsContract.Version = 1`) | passes `PhysicsConformance` in its own units | passes `PhysicsConformance` twice: in metres (suite `Scale` 1/32) and as a 32 px/m y-down pixel world | #60; #67 |
+| Static and kinematic boxes, collide-and-slide `Move` with contacts and ground normals | exact rest (tolerance 0) | rests about 0.01 m short, within `Skin` = 0.015 m (× units per metre); axis normals | #60, #67, ADR 0031 amendment |
+| Layers and masks, ray casts, exact overlap, sensors with buffered events, no managed callbacks during the step | yes | yes (overlap under about 0.1 mm counts as touching) | common suite |
+| `OneWayPlatforms` (declared by both) | mover filtering | pre-solve for dynamic bodies, mover filtering for kinematic ones | one-way suite on both |
+| Determinism for the same build | T0 traces | same state hash `93f3a79ebf294b23` on win-x64, linux-x64, osx-arm64, osx-x64 (Rosetta), browser-wasm in CI, and android-x64 on a local emulator | #63, #67 |
+| **Specific to the tile backend** | `TileGeometry`, `MovingSolids`; a grid broad phase with results identical to a full scan (200 boxes: 0.74-0.83 → 0.30-0.31 ms per step) | not declared | #60, #69 |
+| **Specific to Box2D** | not declared: requesting them throws `PhysicsCapabilityException` | `DynamicBodies`, `Rotation`, `Circles`, `Capsules`, `Polygons` (≤ 8 vertices), `ContinuousCollision`, `FrictionRestitution`, `MassProperties`; capability suites in `tests/Shared/Physics/SolverConformance.cs` | #67 |
+| Declared by neither | `Joints` (the contract has no joint API) | | — |
+| Limits of one implementation | — | at most 128 worlds per process; destruction queued off the finalizer thread; iOS static linking and Android arm64 unverified (build only) | #67, ADR 0031 amendment |
+
+Demonstration (#73, `samples/PhysicsSubstitution`, `SubstitutionTests`). Scenario 1 is one platformer's gameplay code,
+written against the common contract only, with `Program.cs` the only place that names a backend. It passes the same
+five tests on each backend: landing, a pillar that blocks, a one-way platform taken up, held and dropped through, coin
+and goal sensor events, and no tunnelling (a 400 px fall, a 500 px dash). Both backends reach the goal at step 653
+with the same coins. The differences outside the contract are measured and documented, not hidden: Box2D rests
+0.16 px higher at 16 px/m, the whole trajectory stays within its skin, and the test allows sensor events one step
+apart (they came in the same step in the measured run). Scenario 2 settles and tips dynamic crates on Box2D, while
+the tile backend throws `PhysicsCapabilityException` (`Missing = DynamicBodies`) before the crate exists. CI runs
+these tests on Windows, Linux and macOS and in Chrome on the wasm interpreter (`box2d.yml`; every job green on #73's
+run 41965084699).
+
+### 12.6 Implemented decisions
+
+| ADR | Decision (stage) |
+| --- | --- |
+| 0026, 0027 | kernel with modules and a phased schedule; the loop owns time (1A) |
+| 0037, 0038 | platform host contract; one composition path (1B, 1C). 0038 amended by this pull request: phone `--env` pairs are host variables, the browser host is SDL |
+| 0028, 0029 | graphics device contract v1; `Presentation` replaces `CanvasScaling` (2a). 0029 amended in stage 5a: `CanvasScaling` removed |
+| 0032 | input as device events with ids, players and layers (2b) |
+| 0033, 0034 | one mixer over PCM sinks; content handles, loaders and sources (2c) |
+| 0030 | one object model (3a). Amended by this pull request: the adapter is deleted |
+| 0031 | 2D physics contract (3b). Amended in 6b (Box2D backend, natives, 128-world limit, substitution, broad phase) and in 5a (`TileMoveResult`) |
+| 0006 (amended), 0044, 0045 | achievements and saves as modules; the UI module; touch controls as an opt-in module (4) |
+| 0041, 0042, 0043, 0046 | tier-1 device on SDL_GPU; offline shader toolchain; minimal 3D path; tier-1 device selection through composition (6a) |
+| 0047 | SDL 3 is the browser platform (5b) |
+| 0035, 0036 | **reserved, not written** (validation by contract; assemblies by boundary). Both decisions are in force through §8, the conformance suites, T0 and the architecture test |
+
+Earlier ADRs amended in Phase II (from the index): 0003 by 0026, 0027, 0028 and 0030; 0004 by 0034; 0006 in place;
+0007 by 0038 and 0047; 0008 by 0047; 0016 by 0026, 0037 and 0038; 0017 by 0028 and 0047; 0020 by 0032; 0021 by 0038;
+0023 by 0027; 0024 by 0028 and 0029; 0025 in place (stages 0 and 2c) and by 0034; 0027 by 0037. The index ([`docs/decisions/README.md`](../decisions/README.md)) lists every number once and explains the
+gaps (0035, 0036 reserved; 0039, 0040 unused).
+
+### 12.7 Known issues and follow-ups
+
+**(a) Intermittent Vulkan crash on NVIDIA (development machine only).** It is a use-after-free on a thread of NVIDIA's
+driver: `nvoglv64.dll` 32.0.16.1088 read `ffffffffffffffff` at `nvoglv64!DrvValidateVersion+0xe015` and called
+through memory that held text from the driver's shader cache path. It shows up when one process creates and destroys
+many Vulkan devices in quick succession (1 crash in 40 runs of the 138-test `Gpu` category). WinDbg (cdb) analysed the
+full dump in #82. Neither SDL, the engine nor the capture hooks loaded in the process are on the faulting stack, and
+it never happened in CI. Documented in [ADR 0046](../decisions/0046-tier1-device-selection.md) ("Consequences", with
+the counts per build) and as a limitation in [`docs/manual/rendering.md`](../manual/rendering.md) (a game keeps one
+device). Closed as an environmental driver defect. Reporting it to NVIDIA is an owner item.
+
+**(b) Trail Duel typewriter capture flake (browser, CI).** In one CI browser `repeat` run (#81, run 42022955265 on
+`1d57279`), the capture `b_596` of `master-battle.script` showed the typewriter text one step behind ("Em" against
+"Emb"). The other 80 captures of the comparison were byte-identical, the rerun passed, and the state-trace tests pass,
+so the game state did not differ. It was not reproduced in 23 local headless Chrome runs. The suspected cause is
+unproven: the capture read-back with WebGL on Linux/llvmpipe, on the `SdlRendererDevice.ReadPixelsCore` path
+(`src/MicroEngine.Sdl/Graphics/SdlRendererDevice.cs`). Suggested proof: in development builds, log the step number
+with the read-back pixels, or capture each frame twice and compare. Open, unassigned. The browser `repeat` gate keeps
+running daily, so a recurrence will show there.
+
+**(c) SDL licence notice in shipped packages.** Checked on `main`:
+- Browser packages ship `licenses/SDL-LICENSE.txt` (`src/MicroEngine.Cli/Hosts.cs`, `WebNotices`), and the tool package
+  carries it (`sdk/tests/packages.mjs` checks it).
+- `THIRD-PARTY-NOTICES.md` lists SDL 3.5 (zlib) with its copyright, and every package ships it as
+  `THIRD-PARTY-NOTICES.txt`. Its zlib licence text did not name SDL among the components it covers; this pull request
+  fixes that.
+- **Missing before the next release:**
+  1. Desktop (Windows, Linux, macOS), Android and iOS packages carry no `licenses/SDL-LICENSE.txt` (`CopyNotices` in
+     `src/MicroEngine.Cli/Packaging.cs` and the phone hosts' notices in `src/MicroEngine.Cli/Hosts.cs`). SDL's notice
+     reaches them only through `THIRD-PARTY-NOTICES.txt`.
+  2. The `MicroEngine.Sdl` NuGet package packs `native/browser-wasm/SDL3.a` (built from SDL's sources) without SDL's
+     licence file (`src/MicroEngine.Sdl/MicroEngine.Sdl.csproj`).
+  3. The site's demo notice check (`noticeFiles` in `site/scripts/demos.mjs`) does not require
+     `licenses/SDL-LICENSE.txt` yet. #81 deferred this on purpose to the first demo release built on SDL, because the
+     published demo releases were built on raylib. `packaging/targets.mjs` `noticeFiles` (native packages) has no SDL
+     entry either.
+
+  zlib requires the notice only in source distributions, so these are completeness items, not a licence breach. They
+  are code changes outside this pull request.
+
+**(d) Owner validation items, not verifiable in CI.** These are never marked as passed by an agent: real Android and
+iOS phones and tablets; Safari on macOS and iOS; real gamepads (vendor mappings, rumble); haptics on a real Android
+browser; high-density screens; long sessions (#80, #81); iOS static-library linking of the natives (Box2D `me_box2d`
+as static archives, #63, #67); Metal and MSL shaders on Apple (generated by
+`microengine shaders`, never executed, #71); E12 and audio sinks on real phones.
+
+**Other follow-ups** (register, Known problems):
+- Infrastructure: CI on `main` for #87 (run 42034089258) failed only because the upload of `TrailDuel-…tar.gz` to
+  `demo-artifacts` returned HTTP 502.
+- Meadow Run's `smoke.script` achievements persist between runs.
+- The timing flake `Loads_during_play_are_counted_and_slow_ones_reported_once`.
+- The local gamepad test `Pads_connect_are_recognised_press_and_hand_over_when_unplugged` fails on machines with a pad
+  attached. It is environmental and green in CI.
+- `IInputBackend` stays in `MicroEngine.Input` (an accepted deviation from the §6.3 sketch).
+- `DialogueBox` and `PromptText` stay in the façade.
+- `ITouchScreen` lives in `Input.Touch`.
+- The tile grid's cell size is fixed (64 units).
+- Hosting options other than the graphics device are still command-line words.
+- K-P1-1 (SDL) and K-P4-1 (.NET wasm interpreter) are worked around in the engine; reporting them upstream stays an
+  owner item.
+
+### 12.8 Risks of §10 at the end of Phase II
+
+| §10 risk | State |
+| --- | --- |
+| The transitional adapter becomes permanent | closed: deleted and refused by the architecture test (#89) |
+| Software rasterizers unproven for SDL_GPU | closed for Linux: lavapipe runs the tier-1 suites and the slice in CI (#62, #72, #77). WARP is still unreachable through SDL_GPU |
+| E12 unmeasured on mobile | measured on desktop (#72); still open on mobile |
+| Box2D natives unverified on Linux, macOS, iOS, Android arm64 | closed for Linux and macOS (self-test, tests, determinism hash in CI); iOS and Android arm64 build only (directive 13) |
+| No tile broad phase | closed (#69) |
+| Frame loop allocation margin; feeder thread unmeasured | closed: the frame loop allocates 0 B per median frame (limit < 24 B), and the feeder has a counter and a zero-garbage test (#87) |
+| Shader toolchain: Windows-only DXC, MSL unexecuted | open: compiling needs Windows; DXC is restored on first use, not redistributed (#71) |
+| SDL 3.5.0 development series | open: the binding and the browser build are pinned to `ea7a2da`; updates re-run the conformance suites |
+| Audio sinks on iOS and real devices; ETC2/ASTC; music buffer; `IWorld` measured on desktop only | open, unchanged |
+| A post-merge workflow publishes during Phase II | held: the freeze is still on; `sdk-release` stops in its preflight (for example run 42033122928: preflight passed, publish skipped) |
+
+### 12.9 Packages, demos, tool, documentation and CI
+
+- **SDK.** Documented and published version: `0.4.0-alpha.2` (`sdk/version.json`). The next version is a breaking
+  Alpha, prepared but not released. [`docs/migrations.md`](../migrations.md) "Next release" opens with an upgrade
+  checklist covering every breaking change, and the release-notes section is drafted. No `node sdk/version.mjs
+  release` was run and no version changed.
+- **Demos.** Four games on `Scene.Objects`, SDL in browsers, all rights reserved. No demo release in Phase II.
+- **Tool.** `microengine` gained `shaders` and `--graphics`. The web host is SDL only.
+- **Docs.** Public pages label the unpublished capabilities as the next SDK version, and the site build refuses
+  engineering material (`site/src/lib/repo-docs.mjs`, `site/scripts/check-dist.mjs`). The API reference is regenerated
+  and links moved types (#88).
+- **CI.** Daily checks include the browser engine suites on SDL (Chrome and Firefox), emulated phones, lavapipe for
+  tier 1, the Box2D natives on eight runtimes with a determinism comparison, and the SDL web build. `validate.yml` runs
+  nightly. CI on c0ae530 was still running when this section was written; see the pull request.

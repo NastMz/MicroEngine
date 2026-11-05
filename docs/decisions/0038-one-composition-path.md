@@ -11,6 +11,10 @@ thin caller of the shared launcher model). Builds on [ADR 0026](0026-kernel-modu
 statics, `MicroEngineGameFactory`), and the browser determinism report
 ([`experiments/arch-1/browser-determinism`](../../experiments/arch-1/browser-determinism/README.md), root cause R1).
 
+Amended 2026-11-05 (ARCH-1 stage 5, below): phone hosts pass a test's `--env` pairs to the game as
+`HostEnvironment.Variables` and no longer write them into the process environment. The browser host is SDL 3
+([ADR 0047](0047-sdl-browser-platform.md)), not raylib.
+
 ## Context
 
 A game was composed three different ways. The desktop launcher ran the developer's `Program.cs` (catalog, request
@@ -92,3 +96,20 @@ from run to run (123 of 138 identical) and from desktop (113 of 138).
   code already states; reading the built assembly's metadata needs nothing from the developer and loads nothing.
 - **A process-wide registry of defaults with `Reset` for tests.** Rejected: it keeps the interference between two games
   in one process that F6 names.
+
+## Amendment (2026-11-05, ARCH-1 stage 5): developer variables on phones; the browser host
+
+- **Phone `--env` pairs are host variables** (#89). The Consequences above said the phone hosts wrote a test's
+  developer variables (`--env NAME=VALUE`) into the process environment, because game code read them there. That
+  stopped once the four demos read their launch options in `Configure` through `host.Environment.Variable(name)`
+  (#83-#86). The Android and iOS hosts now build their `HostEnvironment` with `Variables` that look at the launch's
+  pairs first and then the process environment. They never call `SetEnvironmentVariable`. `MICROENGINE_PROBE` is read
+  through the same environment. The launch logic is in `src/MicroEngine.Cli/Hosts/mobile/MobileLaunch.cs`, which both
+  phone hosts copy and `MicroEngine.Cli.Tests` links. Its test fails if the pairs do not reach `Variables`. Game code
+  that read such a variable with `Environment.GetEnvironmentVariable` on a phone reads it through the host environment
+  (migration note, next SDK version). Desktop and browser hosts are unchanged.
+- **The browser host is SDL 3** (#80, #81; [ADR 0047](0047-sdl-browser-platform.md)). The Decision above has raylib
+  as the browser host until stage 5 and a raylib browser profile reading the page. Stage 5 moved the shared launcher
+  model's browser caller to `MicroEngine.Sdl` (`BrowserLauncher`, `BrowserPage`, `SdlPlatform.BrowserProfile`), with
+  the same members. `MicroEngine.Raylib` has no browser profile any more. The composition path this ADR describes did
+  not change.
