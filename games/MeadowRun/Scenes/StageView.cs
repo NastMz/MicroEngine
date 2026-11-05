@@ -251,7 +251,7 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         if (_biome is not (Biome.Caves or Biome.Castle)) return;
         // A flat colour grade (darkness 1, no brightening lights) plus additive halos.
         lights.Clear();
-        lights.Shade = _biome == Biome.Caves ? Color.Hex("9c94c8") : Color.Hex("e0ccd0");
+        lights.Shade = _biome == Biome.Caves ? Pal.CaveShade : Pal.CastleShade;
         // Pip carries a faint glow of his own so he never gets lost in the dark.
         var color = stage.Player.Form == PipForm.Ember ? Pal.Flame : _biome == Biome.Caves ? Pal.Teal : Pal.Amber;
         var pip = stage.PipDrawPosition;

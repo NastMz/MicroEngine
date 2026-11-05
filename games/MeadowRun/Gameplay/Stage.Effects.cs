@@ -19,12 +19,12 @@ internal sealed partial class Stage
 {
     private static readonly ParticleSpec DustSpec = new()
     {
-        StartColor = Color.Hex("fffaf0e0"), EndColor = Color.Hex("e3bf8a00"),
+        StartColor = Pal.Cream.WithAlpha((byte)0xe0), EndColor = Pal.Wheat.WithAlpha((byte)0),
         Life = (0.25f, 0.45f), Speed = (10, 34), Angle = (-MathF.PI, 0), Size = (3, 1), Drag = 0.05f, Gravity = -20, Round = true,
     };
     private static readonly ParticleSpec SparkSpec = new()
     {
-        StartColor = Color.Hex("fff3a3"), EndColor = Color.Hex("f5a52400"),
+        StartColor = Pal.Butter, EndColor = Pal.Amber.WithAlpha((byte)0),
         Life = (0.2f, 0.45f), Speed = (30, 90), Size = (2, 0.5f), Drag = 0.02f,
     };
     private static readonly ParticleSpec AmbientSpec = new()

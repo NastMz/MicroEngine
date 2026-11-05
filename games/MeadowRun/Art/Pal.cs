@@ -51,6 +51,10 @@ internal static class Pal
     public static readonly Color Rust = Color.Hex("c8461c");
     public static readonly Color Flame = Color.Hex("ff7a2e");
 
+    // Light grades: the colour a dark biome's light map multiplies the scene by (not sprite colours).
+    public static readonly Color CaveShade = Color.Hex("9c94c8");
+    public static readonly Color CastleShade = Color.Hex("e0ccd0");
+
     public static readonly Color[] GrassRamp = [Pine, Fern, Leaf, Lime];
     public static readonly Color[] SoilRamp = [Bark, Soil, Clay, Sand];
     public static readonly Color[] StoneRamp = [Night, Slate, Dusk, Haze];

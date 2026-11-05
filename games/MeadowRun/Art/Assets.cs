@@ -15,6 +15,7 @@ internal sealed class Assets : IDisposable
     private readonly Sprite[,,] _ground;
     private readonly Dictionary<(Biome, int), Sprite> _tiles = [];
     private readonly Dictionary<(PipForm, string), IReadOnlyList<Sprite>> _pip = [];
+    private readonly Sprite[] _formIcons;
 
     public Assets(IGraphicsDevice device)
     {
@@ -75,6 +76,7 @@ internal sealed class Assets : IDisposable
         b.Add("icon_coin", UiArt.CoinIcon());
         b.Add("icon_life", UiArt.LifeIcon());
         b.Add("icon_clock", UiArt.ClockIcon());
+        foreach (var form in Enum.GetValues<PipForm>()) b.Add("icon_form_" + form, UiArt.FormIcon(form));
         for (int s = 0; s < 4; s++) b.Add("node" + s, UiArt.MapNode(s), new Vector2(8, 7));
         b.Add("map", UiArt.MapBackdrop());
 
@@ -98,6 +100,7 @@ internal sealed class Assets : IDisposable
         foreach (var form in Enum.GetValues<PipForm>())
         foreach (var clip in HeroArt.ClipNames)
             _pip[(form, clip)] = _atlas.Frames($"pip_{form}_{clip}");
+        _formIcons = Array.ConvertAll(Enum.GetValues<PipForm>(), form => _atlas["icon_form_" + form]);
     }
 
     private static readonly string[] Keys = Array.ConvertAll(Enum.GetValues<Biome>(), b => b.ToString().ToLowerInvariant());
@@ -112,6 +115,8 @@ internal sealed class Assets : IDisposable
 
     public Sprite? TileSprite(Biome biome, int id) => _tiles.TryGetValue((biome, id), out var s) ? s : null;
     public IReadOnlyList<Sprite> Pip(PipForm form, string clip) => _pip[(form, clip)];
+    /// <summary>The HUD's badge for Pip's form (cached: it is drawn every frame).</summary>
+    public Sprite FormIcon(PipForm form) => _formIcons[(int)form];
 
     public void Dispose() => _atlas.Dispose();
 }

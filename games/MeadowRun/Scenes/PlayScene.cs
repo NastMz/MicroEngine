@@ -168,7 +168,7 @@ internal sealed class LevelCardScene(MeadowGame game, int levelIndex, int checkp
         var def = Levels.All[levelIndex];
         _world = $"WORLD {def.Number}";
         _name = def.Name.ToUpperInvariant();
-        _lives = "×  " + Ui.N(game.Session.Lives);
+        _lives = "×" + Ui.N(game.Session.Lives, 2);   // as the HUD writes it
         game.Music("");
     }
 

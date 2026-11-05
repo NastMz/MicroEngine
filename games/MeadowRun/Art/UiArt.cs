@@ -83,6 +83,36 @@ internal static class UiArt
         return img;
     }
 
+    /// <summary>
+    /// The HUD's badge for Pip's form, drawn at the HUD's own size: Pip's round body in the form's colours under its
+    /// crown (the sprout's two leaves, or the bloom's and the ember's flower).
+    /// </summary>
+    public static PixelImage FormIcon(PipForm form)
+    {
+        var img = new PixelImage(11, 13);
+        bool ember = form == PipForm.Ember;
+        // Pip's own skin (HeroArt), belly and cheek, so the badge reads as the Pip on screen.
+        Color[] body = ember ? [Pal.Wine, Pal.Rust, Pal.Flame, Pal.Gold] : [Pal.Fern, Pal.Leaf, Pal.Lime, Pal.Sprout];
+        Brush.Ellipse(img, 5.5f, 8.5f, 4.5f, 3.6f, body);
+        Brush.Flat(img, 6.5f, 10.2f, 2.2f, 1.3f, Color.Lerp(body[3], Pal.Butter, 0.6f));
+        if (form == PipForm.Sprout)
+        {
+            img.Line(5, 5, 5, 3, Pal.Fern);
+            Brush.Ellipse(img, 3.5f, 3.5f, 1.8f, 1, Pal.GrassRamp);
+            Brush.Ellipse(img, 7.5f, 3.2f, 1.8f, 1, Pal.GrassRamp);
+        }
+        else
+        {
+            Color[] petals = form == PipForm.Bloom ? [Pal.Wine, Pal.Berry, Pal.Coral, Pal.Blush] : [Pal.Rust, Pal.Flame, Pal.Gold, Pal.Butter];
+            img.Paint(3, 1, new Dictionary<char, Color> { ['l'] = petals[3], ['p'] = petals[2], ['d'] = petals[1], ['c'] = form == PipForm.Bloom ? Pal.Gold : Pal.Cream, ['s'] = Pal.Fern },
+                ".l.l.", "ppcpp", ".dpd.", "..s..");
+        }
+        img[6, 7] = Pal.Ink; img[6, 8] = Pal.Ink; img[8, 7] = Pal.Ink; img[8, 8] = Pal.Ink;
+        img[5, 9] = ember ? Pal.Blush : Pal.Coral;
+        Brush.SelOutline(img, Pal.Ink);
+        return img;
+    }
+
     public static PixelImage ClockIcon()
     {
         var img = new PixelImage(9, 9);
