@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Text.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 A TrueType or OpenType font (TTF, OTF with TrueType or CFF outlines) that draws text at any size. Glyphs are

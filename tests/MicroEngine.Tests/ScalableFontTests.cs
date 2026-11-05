@@ -178,4 +178,17 @@ public sealed class ScalableFontTests
         Assert.AreEqual(bitmap.MeasureWidth("Hello"), ((IFont)bitmap).MeasureWidth("Hello"));
         Assert.AreEqual(10f, ((IFont)bitmap).LineHeight);
     }
+
+    [TestMethod]
+    public void Text_registers_the_font_loader_with_content_under_the_kind_font()
+    {
+        var loaders = new MicroEngine.Content.AssetLoaderRegistry();
+        FontLoader.Register(loaders, new HeadlessGraphicsDevice());
+        CollectionAssert.AreEqual(new[] { "font" }, loaders.Kinds.ToList());
+        Assert.AreEqual("font", loaders.KindOf("fonts/Inter-Regular.ttf"));
+        Assert.AreEqual("font", loaders.KindOf("fonts/SourceSerif4-Regular.otf"));
+        var damaged = Assert.ThrowsExactly<AssetLoadException>(() => FontLoader.Open(new HeadlessGraphicsDevice(), "fonts/bad.ttf", [1, 2, 3, 4], FontOptions.Default));
+        Assert.AreEqual("fonts/bad.ttf", damaged.AssetPath);
+        Assert.AreEqual("font", damaged.Kind);
+    }
 }

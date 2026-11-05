@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Text.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 Layout and drawing helpers that work with any [IFont](MicroEngine.Graphics.IFont.md).
