@@ -16,9 +16,10 @@ downloads for each system where a checked package exists ([Downloads](docs/guide
 
 The four games cover the range of content approaches. Meadow Run is fully procedural: every sprite,
 tile, sound effect and song is generated in code at startup. Courtyard Key and Trail Duel are hybrids
-([ADR 0005](docs/decisions/0005-hybrid-content.md)): Courtyard Key keeps a procedural world, cast and
-boss and imports one crafted enemy; Trail Duel casts its creatures and trainers from hand-drawn CC0
-sprites, adds crafted battle effects, and paints its world, stages and music in code to match.
+([ADR 0005](docs/decisions/0005-hybrid-content.md)): Courtyard Key draws its cast, boss, ground and lit
+dungeon in code and imports one crafted enemy plus CC0 houses and trees, recoloured to its palette; Trail Duel
+casts its creatures and trainers from hand-drawn CC0 sprites, builds its villages from a CC BY tileset graded
+at load, and draws its facades, battle stages, interface and music in code to match.
 Neon Rift is built from CC0 sprite sheets, tilesets, WAV effects and OGG music loaded through the
 engine's file loaders ([ADR 0004](docs/decisions/0004-external-asset-files.md)). Controls are shared: arrows/WASD to move, Z/Space to confirm, X to cancel, C for the
 secondary action, Esc/P to pause, F11 for fullscreen; gamepads work too.
