@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classify } from '../src/lib/capability.mjs';
 import { gameIds } from '../scripts/demos.mjs';
+import { exercises, exercisedGames } from '../src/components/demos/exercises.mjs';
 import { checkDiagrams, checkDist, checkPublicContent, engineeringMaterial } from '../scripts/check-dist.mjs';
 import { headerRules, headersFor } from './serve-dist.mjs';
 
@@ -38,6 +39,25 @@ test('every game in the web registry has a page on the site', () => {
   const data = fs.readFileSync(path.join(siteRoot, 'src', 'data', 'games.ts'), 'utf8');
   const siteIds = [...data.matchAll(/^\s+id: '([A-Za-z0-9_]+)',$/gm)].map(m => m[1]);
   assert.deepEqual([...siteIds].sort(), [...gameIds].sort());
+});
+
+test('demo markers: every engine feature a demo is said to exercise appears in that game\'s code', () => {
+  assert.deepEqual([...exercisedGames].sort(), [...gameIds].sort());
+  const sources = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return ['bin', 'obj'].includes(entry.name) ? [] : sources(full);
+    return entry.name.endsWith('.cs') ? [fs.readFileSync(full, 'utf8')] : [];
+  });
+  for (const id of gameIds) {
+    const code = sources(path.join(siteRoot, '..', 'games', id)).join('\n');
+    for (const feature of exercises(id)) {
+      for (const pattern of [feature.evidence].flat()) assert.match(code, pattern, `${id}: "${feature.name}" has no ${pattern} in games/${id}`);
+      assert.match(feature.href, /^\/docs\/manual\/[a-z-]+\/(#[a-z-]+)?$/, `${feature.id}: links to a manual page`);
+    }
+  }
+  // A marker the code does not support is refused: Trail Duel moves on a grid without the engine's tile collision.
+  assert.ok(!exercises('TrailDuel').some(f => f.id === 'collision'));
+  assert.throws(() => exercises('NoSuchGame'), /unknown game/);
 });
 
 test('check-dist: reports a missing package file', () => {

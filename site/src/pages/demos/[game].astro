@@ -1,7 +1,12 @@
 ---
+// One demo's page: the game as proof of the engine. The header names the engine features it exercises; the player is
+// the demo's own frame and the only place that carries the game's colour; downloads, then a parts list (about,
+// controls, compatibility and facts) under rails like the platforms page; numbered screenshots; the other demos.
 import { Image } from 'astro:assets';
 import SiteLayout from '../../layouts/SiteLayout.astro';
 import DemoPlayer from '../../components/DemoPlayer.astro';
+import DemoCard from '../../components/DemoCard.astro';
+import Exercises from '../../components/demos/Exercises.astro';
 import { demoGames, type DemoGame } from '../../data/games';
 import { playManifest, megabytes } from '../../lib/play-manifest.mjs';
 import fs from 'node:fs';
@@ -28,80 +33,91 @@ const engine = Object.values(downloads)[0]?.engineVersion ?? sdkVersion;
 // Whether the browser package this build serves has on-screen touch controls (its game.json, INPUT-1).
 const gameJson = path.join(repoRoot, 'site', 'public', 'play', game.id, 'game.json');
 const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'utf8')).touch === true;
+const pad = (n: number) => String(n).padStart(2, '0');
 ---
-<SiteLayout title={game.title} description={`${game.title}, a ${game.genre.toLowerCase()} built with MicroEngine. ${game.tagline} Play it in a desktop browser or download it for your system.`} current="demos">
-  <div class="wrap demo-page" style={`--game: var(${game.colorToken})`}>
+<SiteLayout title={game.title} description={`${game.title}, a ${game.genre.toLowerCase()} built with MicroEngine. ${game.tagline} Play it in a browser or download it for your system.`} current="demos">
+  <div class="wrap demo-page">
     <nav class="crumbs" aria-label="Breadcrumb"><a href="/demos/">Demos</a> <span aria-hidden="true">/</span> <span aria-current="page">{game.title}</span></nav>
     <header class="demo-head">
-      <p class="label">{game.genre}</p>
-      <h1>{game.title}</h1>
-      <p class="lede">{game.tagline}</p>
+      <div class="title-block">
+        <p class="eyebrow">{game.genre} · built with MicroEngine</p>
+        <h1>{game.title}</h1>
+        <p class="lede">{game.tagline}</p>
+      </div>
+      <Exercises game={game.id} links label="Exercises in the engine" />
     </header>
 
     <DemoPlayer game={game} />
 
-    <section aria-labelledby="download-title" class="downloads" id="download">
-      <div class="downloads-head">
+    <section aria-labelledby="download-title" class="part downloads" id="download">
+      <div class="part-head">
         <h2 id="download-title">Download for your platform</h2>
-        <p class="muted">{game.title} {version} · MicroEngine {engine}{release && <> · release <a class="mono" href={`${repositoryUrl}/releases/tag/${release}`}>{release}</a></>}.</p>
+        <p class="meta">{game.title} {version} · MicroEngine {engine}{release && <> · release <a class="mono" href={`${repositoryUrl}/releases/tag/${release}`}>{release}</a></>}</p>
       </div>
-      {offered.length > 0
-        ? <ul class="packages" data-packages>
-            {offered.map(t => {
-              const d = downloads[t.id];
-              return (
-                <li class="package" data-os={t.os}>
-                  <div class="package-main">
-                    <a class="button" href={d.url} download>Download for {t.label}</a>
-                    <span class="mono small">{d.file} · {Math.round(d.size / 1048576)} MB</span>
-                    <span class="recommended label" hidden>Your system</span>
-                  </div>
-                  <p class="small">{t.requirements}</p>
-                  <details>
-                    <summary>Install and run</summary>
-                    <ol class="small">{installSteps(t, game.id, game.title).map(step => <li>{step}</li>)}</ol>
-                    <p class="small muted">SHA-256 <code class="hash">{d.sha256}</code></p>
-                  </details>
-                </li>
-              );
-            })}
-          </ul>
-        : <p class="notice small"><span class="status partial">Not yet</span> This build has no released native packages. Play in the browser above, or build the game from the <a href={repositoryUrl}>repository</a>.</p>}
-      <ul class="no-download small muted">
-        {offered.length > 0 && absent.map(t => <li>{t.label}: no package in this release.</li>)}
-        <li>iOS: no download. Installing on an iPhone requires Apple signing, and a Simulator build cannot run on a device (<a href="/docs/downloads/#ios">why</a>).</li>
-        <li>Direct downloads from GitHub Releases, not store listings: no Steam, Google Play or App Store account is needed. <a href="/docs/downloads/">Downloads and installation</a></li>
-      </ul>
+      <div class="part-body">
+        {offered.length > 0
+          ? <ul class="packages" data-packages>
+              {offered.map(t => {
+                const d = downloads[t.id];
+                return (
+                  <li class="package" data-os={t.os}>
+                    <div class="package-main">
+                      <a class="button" href={d.url} download>Download for {t.label}</a>
+                      <span class="recommended" hidden>Your system</span>
+                    </div>
+                    <p class="file">{d.file} · {Math.round(d.size / 1048576)} MB</p>
+                    <p class="small">{t.requirements}</p>
+                    <details>
+                      <summary>Install and run</summary>
+                      <ol class="small">{installSteps(t, game.id, game.title).map(step => <li>{step}</li>)}</ol>
+                      <p class="small muted">SHA-256 <code class="hash">{d.sha256}</code></p>
+                    </details>
+                  </li>
+                );
+              })}
+            </ul>
+          : <p class="notice"><span class="verdict partial">Not yet</span> This build has no released native packages. Play in the browser above, or build the game from the <a href={repositoryUrl}>repository</a>.</p>}
+        <ul class="no-download">
+          {offered.length > 0 && absent.map(t => <li>{t.label}: no package in this release.</li>)}
+          <li>iOS: no download. Installing on an iPhone requires Apple signing, and a Simulator build cannot run on a device (<a href="/docs/downloads/#ios">why</a>).</li>
+          <li>Direct downloads from GitHub Releases, not store listings: no Steam, Google Play or App Store account is needed. <a href="/docs/downloads/">Downloads and installation</a></li>
+        </ul>
+      </div>
     </section>
 
-    <div class="demo-body">
-      <section aria-labelledby="about-title" class="about">
-        <h2 id="about-title">About the game</h2>
+    <section aria-labelledby="about-title" class="part about">
+      <div class="part-head"><h2 id="about-title">About the game</h2></div>
+      <div class="part-body">
         {game.summary.map(p => <p>{p}</p>)}
+        <p class="content-kind"><span class="kind-name">{game.content.kind}</span> {game.content.detail}</p>
         <p class="links">{game.credits ? <a href={game.credits}>Third-party asset credits</a> : 'No third-party assets: everything is generated in code.'} · <a href="/docs/tutorial/">Build a game like this</a></p>
-      </section>
+      </div>
+    </section>
 
-      <section aria-labelledby="controls-title">
-        <h2 id="controls-title">Controls</h2>
+    <section aria-labelledby="controls-title" class="part">
+      <div class="part-head"><h2 id="controls-title">Controls</h2></div>
+      <div class="part-body">
         <div class="table-scroll">
           <table class="plain">
             <thead><tr><th scope="col">Action</th><th scope="col">Keys</th></tr></thead>
             <tbody>{game.controls.map(([action, keys]) => <tr><td>{action}</td><td class="mono">{keys}</td></tr>)}</tbody>
           </table>
         </div>
-        <p class="muted small">In the browser, <kbd>Alt</kbd>+<kbd>Enter</kbd> or the Fullscreen button toggles fullscreen. Gamepads work through the browser's Gamepad API; button layouts can vary between browsers and controllers.</p>
-      </section>
+        <p class="small muted">In the browser, <kbd>Alt</kbd>+<kbd>Enter</kbd> or the Fullscreen button toggles fullscreen. Gamepads work through the browser's Gamepad API; button layouts can vary between browsers and controllers.{touch && ' On a phone or tablet the game draws its own on-screen controls.'}</p>
+      </div>
+    </section>
 
-      <section aria-labelledby="compat-title">
-        <h2 id="compat-title">Compatibility</h2>
+    <section aria-labelledby="compat-title" class="part">
+      <div class="part-head"><h2 id="compat-title">Compatibility</h2></div>
+      <div class="part-body">
         <ul class="compat">
-          <li><span class="status ok">Verified</span> In the browser: Chrome and Firefox on desktop, with a keyboard (automated tests and manual play)</li>
-          <li><span class="status ok">Manually tested</span> Safari on a Mac and an iPhone, and Edge on the desktop</li>
-          <li><span class="status ok">Manually tested</span> Gamepads in Edge (Xbox controller) and Chrome on Android (PlayStation controller)</li>
+          <li><span class="verdict ok">Verified</span><span>In the browser: Chrome and Firefox on desktop, with a keyboard (automated tests and manual play)</span></li>
+          <li><span class="verdict ok">Manually tested</span><span>Safari on a Mac and an iPhone, and Edge on the desktop</span></li>
+          <li><span class="verdict ok">Manually tested</span><span>Gamepads in Edge (Xbox controller) and Chrome on Android (PlayStation controller)</span></li>
           {touch
-            ? <li><span class="status ok">Manually tested</span> Browsers on phones: on-screen touch controls, played in Chrome on an Android phone and Safari on an iPhone</li>
-            : <li><span class="status partial">Not tested</span> Browsers on phones (this version of the web build has no touch controls)</li>}
-          <li><span class="status ok">Manually tested</span> The Android app on a phone: on-screen touch controls and a Bluetooth gamepad</li>
+            ? <li><span class="verdict ok">Manually tested</span><span>Browsers on phones: on-screen touch controls, played in Chrome on an Android phone and Safari on an iPhone</span></li>
+            : <li><span class="verdict partial">Not tested</span><span>Browsers on phones (this version of the web build has no touch controls)</span></li>}
+          <li><span class="verdict ok">Manually tested</span><span>The Android app on a phone: on-screen touch controls and a Bluetooth gamepad</span></li>
         </ul>
         <dl class="facts">
           <div><dt>Version</dt><dd>{game.title} {version}, MicroEngine {engine}</dd></div>
@@ -111,23 +127,28 @@ const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'u
           <div><dt>Saves</dt><dd>In the browser, in this site’s storage for each game (clearing site data or a private window removes them). Native builds save in your user data folder; Android in the app’s own storage.</dd></div>
           {packaged?.key && <div><dt>Build</dt><dd class="mono">{packaged.key}{packaged.commit && ` · ${String(packaged.commit).slice(0, 7)}`}</dd></div>}
         </dl>
-      </section>
-    </div>
-
-    <section aria-labelledby="shots-title" id="screenshots" class="shots-section">
-      <h2 id="shots-title">Screenshots</h2>
-      <ul class="shots">
-        {game.shots.map(shot => (
-          <li><figure class="shot"><Image src={shot.src} alt={shot.alt} widths={[480, 960]} sizes="(min-width: 64rem) 36rem, 100vw" loading="lazy" /></figure></li>
-        ))}
-      </ul>
-      <p class="muted small">Captured from scripted playthroughs of the desktop build, at 3× scale.</p>
+      </div>
     </section>
 
-    <nav class="others" aria-labelledby="others-title">
-      <h2 id="others-title">Other demos</h2>
-      <ul>
-        {others.map(other => <li style={`--game: var(${other.colorToken})`}><a href={`/demos/${other.slug}/`}>{other.title}</a> <span class="muted">{other.genre}</span></li>)}
+    <section aria-labelledby="shots-title" id="screenshots" class="part shots-section">
+      <div class="part-head">
+        <h2 id="shots-title">Screenshots</h2>
+        <p class="meta">A playthrough in order, captured by scripted runs of the desktop build at 3× scale.</p>
+      </div>
+      <ol class="shots part-body" style={`--game: var(${game.colorToken})`}>
+        {game.shots.map((shot, i) => (
+          <li>
+            <span class="step" aria-hidden="true">{pad(i + 1)}</span>
+            <figure class="shot"><Image src={shot.src} alt={shot.alt} widths={[480, 960]} sizes="(min-width: 76rem) 28rem, (min-width: 48rem) 45vw, 100vw" loading="lazy" /></figure>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <nav class="part others" aria-labelledby="others-title">
+      <div class="part-head"><h2 id="others-title">Other demos</h2></div>
+      <ul class="part-body">
+        {others.map(other => <li><DemoCard game={other} shot={1} sizes="(min-width: 64rem) 18rem, (min-width: 48rem) 33vw, 100vw" /></li>)}
       </ul>
     </nav>
   </div>
@@ -146,40 +167,85 @@ const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'u
 </script>
 
 <style>
-  .demo-page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); padding-top: var(--space-xl); }
-  .crumbs { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-ink-2); }
+  .demo-page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); padding-block: var(--space-lg) var(--space-xl); }
+  .demo-page p { margin: 0; }
+  .demo-page a:not(.button) { color: var(--color-accent); }
+  .crumbs { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-ink-2); margin-bottom: calc(-1 * var(--space-xl)); }
   .crumbs a { display: inline-flex; align-items: center; min-height: var(--tap); }
-  .demo-head { display: grid; gap: var(--space-xs); }
-  .demo-head .label { color: var(--game); }
-  .demo-body { display: grid; gap: var(--space-2xl); grid-template-columns: minmax(0, 1fr); }
-  .demo-body section { display: grid; gap: var(--space-md); align-content: start; min-width: 0; }
-  .about p { max-width: var(--measure); color: var(--color-ink-2); }
-  .about .links { color: var(--color-ink); }
+  .demo-head { display: grid; gap: var(--space-lg); align-items: end; }
+  .title-block { display: grid; gap: var(--space-xs); }
+  .eyebrow { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--color-ink-2); }
+  .demo-head .lede { line-height: var(--leading-body); }
+  .demo-head :global(.exercises) { max-width: 30rem; }
   .small { font-size: var(--text-sm); }
-  .compat { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-xs); font-size: var(--text-sm); }
-  .compat li { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: var(--space-sm); align-items: baseline; }
-  .facts { margin: 0; display: grid; gap: var(--space-sm); font-size: var(--text-sm); }
-  .facts dt { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-ink-2); }
-  .facts dd { margin: 0; }
-  .shots-section { display: grid; gap: var(--space-md); }
-  .downloads { display: grid; gap: var(--space-md); padding: var(--space-lg); border: var(--rule-thin) solid var(--color-rule); border-left: 4px solid var(--game); background: var(--color-paper-2); min-width: 0; }
-  .downloads-head { display: grid; gap: var(--space-xs); }
-  .downloads-head p { max-width: var(--measure); font-size: var(--text-sm); }
-  .packages { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-md); grid-template-columns: minmax(0, 1fr); }
-  .package { display: grid; gap: var(--space-xs); align-content: start; padding: var(--space-md); border: var(--rule-thin) solid var(--color-rule); background: var(--color-paper); min-width: 0; }
-  .package.is-yours { border-color: var(--game); }
+  .meta { font-size: var(--text-sm); color: var(--color-ink-2); overflow-wrap: anywhere; }
+  .mono { font-family: var(--font-mono); }
+
+  /* Each part sits under a rail, its name on the left from 64rem: the parts list of the platforms page. */
+  .part { display: grid; gap: var(--space-md); padding-top: var(--space-md); border-top: var(--rule-pixel) solid var(--color-ink); min-width: 0; scroll-margin-top: var(--space-lg); }
+  .part-head { display: grid; gap: var(--space-xs); align-content: start; }
+  .part-head h2 { font-size: var(--text-xl); line-height: var(--leading-snug); }
+  .part-body { display: grid; gap: var(--space-md); align-content: start; min-width: 0; }
+  .about .part-body > p { max-width: var(--measure); color: var(--color-ink-2); }
+  .about .links { color: var(--color-ink); }
+  .content-kind { font-size: var(--text-sm); }
+  .kind-name { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink); text-transform: uppercase;
+    letter-spacing: var(--tracking-label); margin-inline-end: var(--space-2xs); }
+
+  .verdict { display: inline-flex; align-items: center; gap: var(--space-2xs); font-family: var(--font-mono); font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: var(--tracking-label); white-space: nowrap; }
+  .verdict::before { content: ''; flex: none; width: 0.625rem; height: 0.625rem; box-sizing: border-box; border: var(--rule-pixel) solid currentColor; background: currentColor; }
+  .verdict.ok { color: var(--color-ok); }
+  .verdict.partial { color: var(--color-partial); }
+  .verdict.partial::before { background: linear-gradient(to top, currentColor 50%, transparent 50%); }
+
+  /* Downloads: each package is a module in a hairline socket; the visitor's system is seated in amber. */
+  .packages { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-xs); grid-template-columns: minmax(0, 1fr); }
+  .package { display: grid; gap: var(--space-xs); align-content: start; padding: var(--space-sm) var(--space-md); min-width: 0;
+    border: var(--rule-thin) solid var(--color-rule); border-top: var(--rule-pixel) solid var(--color-ink-4); border-radius: var(--radius-sm); background: var(--color-paper); }
+  .package.is-yours { border-color: var(--color-accent-fill); background: color-mix(in oklch, var(--color-accent-fill) var(--tint), var(--color-paper)); }
   .package-main { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-sm); align-items: center; }
-  .package-main .small { overflow-wrap: anywhere; color: var(--color-ink-2); }
-  .package .recommended { color: var(--game); }
+  .recommended { display: inline-flex; align-items: center; gap: var(--space-2xs); font-family: var(--font-mono); font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--color-accent); }
+  .recommended::before { content: ''; width: 0.625rem; height: 0.625rem; background: currentColor; }
+  .recommended[hidden] { display: none; }
+  .file { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); overflow-wrap: anywhere; }
   .package summary { cursor: pointer; font-size: var(--text-sm); min-height: var(--tap); display: flex; align-items: center; }
   .package ol { margin: 0; padding-left: var(--space-lg); display: grid; gap: var(--space-2xs); }
   .hash { overflow-wrap: anywhere; font-size: var(--text-xs); }
-  .no-download { margin: 0; padding-left: var(--space-lg); display: grid; gap: var(--space-2xs); }
-  .notice { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: baseline; }
-  .shots { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-md); grid-template-columns: minmax(0, 1fr); }
-  .others ul { list-style: none; margin: var(--space-sm) 0 0; padding: 0; display: grid; gap: var(--space-2xs); }
-  .others li { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: baseline; padding-left: var(--space-md); border-left: 4px solid var(--game); }
-  .others a { display: inline-flex; align-items: center; min-height: var(--tap); font-weight: 600; }
-  @media (min-width: 48rem) { .shots, .packages { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (min-width: 64rem) { .demo-body { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); } }
+  .no-download { margin: 0; padding-left: var(--space-lg); display: grid; gap: var(--space-2xs); font-size: var(--text-sm); color: var(--color-ink-2); }
+  .notice { font-size: var(--text-sm); }
+  .notice .verdict { margin-inline-end: var(--space-xs); }
+
+  .compat { list-style: none; margin: 0; padding: 0; display: grid; font-size: var(--text-sm); }
+  .compat li { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xs); padding-block: var(--space-xs); border-bottom: var(--rule-thin) solid var(--color-rule); }
+  .facts { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
+  .facts > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xs); padding-block: var(--space-xs);
+    border-bottom: var(--rule-thin) solid var(--color-rule); min-width: 0; }
+  .facts dt { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); text-transform: uppercase; letter-spacing: var(--tracking-label); }
+  .facts dd { margin: 0; font-size: var(--text-sm); line-height: var(--leading-snug); overflow-wrap: break-word; }
+
+  /* Screenshots: numbered frames in order, as in a frame strip; the game's colour stays inside each frame. */
+  .shots { list-style: none; margin: 0; padding: 0; grid-template-columns: minmax(0, 1fr); gap: var(--space-md) var(--rule-gap); }
+  .shots li { display: grid; gap: var(--space-2xs); min-width: 0; }
+  .step { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); letter-spacing: var(--tracking-label);
+    padding-top: var(--space-2xs); border-top: var(--rule-pixel) solid var(--color-ink); }
+  .shots .shot { padding: var(--rule-gap); border-top: var(--rule-pixel) solid var(--game); }
+  .shots .shot :global(img) { display: block; height: auto; }
+
+  .others ul { list-style: none; margin: 0; padding: 0; grid-template-columns: minmax(0, 1fr); gap: var(--space-md); }
+  .others li { min-width: 0; }
+
+  @media (min-width: 40rem) {
+    .compat li { grid-template-columns: 10rem minmax(0, 1fr); gap: var(--space-md); align-items: baseline; }
+    .facts > div { grid-template-columns: 10rem minmax(0, 1fr); gap: var(--space-md); }
+  }
+  @media (min-width: 48rem) {
+    .shots, .packages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .others ul { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (min-width: 64rem) {
+    .demo-head { grid-template-columns: minmax(0, 1fr) minmax(0, 26rem); column-gap: var(--space-xl); }
+    .part { grid-template-columns: 16rem minmax(0, 1fr); column-gap: var(--space-xl); }
+  }
 </style>

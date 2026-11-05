@@ -327,3 +327,32 @@ Platforms, roadmap and 404 pages: the platforms page is one rail ("your game") w
 it, then each platform as a parts list; the roadmap is two boards, **Present** (solid ink rail: available and next SDK
 version, seated modules in their family colours) and **Future** (dashed rail: repository items as empty dashed bays in
 mono, planned items as dotted outlines grouped by track); the 404 is an empty dashed socket.
+
+## Demos and players
+
+Added by the demos unit; this section extends the rules above, it changes none of them.
+
+- **The demos are proof, not the product.** The index opens with "Proof, built with MicroEngine" and lays the four
+  `DemoCard`s under a rail, like the modules of the platforms page; each demo page names the engine first
+  ("built with MicroEngine") and lists what the game exercises before anything else.
+- **Family markers** (`src/components/demos/Exercises.astro`, data in `exercises.mjs`): each engine feature a game's
+  code calls is a small module, the family icon beside its written name in mono, on the family tint. On a demo page
+  each marker links to the manual page that explains the feature; in a card it does not (the card is one link). A
+  marker is a claim about the game's code: each carries the patterns that must appear in `games/<Id>/**/*.cs`, and
+  `npm test` fails when one stops matching. Never add a marker for something the game writes itself.
+- **Where the game colour goes:** the player's 2 px top rule, the rule over each numbered screenshot, and the
+  `DemoCard`s of the other demos. The page head, the downloads, the parts list and the breadcrumbs are brand paper and
+  ink. The visitor's own system in the downloads is marked in amber (the brand's signal), not the game's colour.
+- **The player** is one graphite object in both themes (`media-surface` on the whole player): the stage and the
+  toolbar strip seated one gap apart on a rule-coloured board. Before Play the poster stays clear and the start plate
+  sits in its bottom-left corner (legend "Web build · size", the Play button with a drawn triangle, a note); under
+  40 rem the note is dropped so the plate fits the 16:9 poster. No gradient over the screenshot.
+- **State panels** are plates over a scrim: a mono legend with a square marker, the title in the display face, the
+  message, the actions. The plate's top rule and legend carry the verdict colour: neutral (checking, missing),
+  `--color-partial` (made for a keyboard), `--color-no` (unsupported, error). The words always say it too.
+- **Focus** inside the player is the 3 px focus ring; on an amber primary button it is drawn in ink, because the
+  focus colour on graphite is too close to the amber fill. Toolbar controls are at least 36 px (44 px on coarse
+  pointers).
+- **Demo page parts** follow the platforms page: each part under a 2 px ink rail, its name in a 16 rem column from
+  64 rem; compatibility uses the square verdict markers; facts are a mono-labelled parts list. Screenshots are
+  numbered 01, 02... like a frame strip, in two columns, because they are a playthrough in order.

@@ -1,0 +1,42 @@
+---
+// The engine features a demo exercises (exercises.mjs), as family markers: each feature is a small module, the
+// family's icon and colour beside its written name. With `links`, each name links to the manual page that explains it
+// (not inside a DemoCard, whose whole surface is already one link).
+//   <Exercises game="MeadowRun" />
+//   <Exercises game="MeadowRun" links label="Exercises in the engine" />
+import FamilyIcon from '../brand/FamilyIcon.astro';
+import { exercises } from './exercises.mjs';
+
+interface Props { game: string; links?: boolean; label?: string; compact?: boolean }
+const { game, links = false, label, compact = false } = Astro.props;
+const list = exercises(game);
+---
+<div class:list={['exercises', { compact }]}>
+  {label && <p class="exercises-label">{label}</p>}
+  <ul aria-label={label ?? 'Engine features this game uses'}>
+    {list.map(feature => (
+      <li data-family={feature.family}>
+        <FamilyIcon family={feature.family} size={compact ? 12 : 14} />
+        {links ? <a href={feature.href}>{feature.name}</a> : <span>{feature.name}</span>}
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  .exercises { display: grid; gap: var(--space-xs); min-width: 0; }
+  .exercises-label { margin: 0; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2);
+    text-transform: uppercase; letter-spacing: var(--tracking-label); }
+  ul { display: flex; flex-wrap: wrap; gap: var(--space-2xs); margin: 0; padding: 0; list-style: none; }
+  /* Each feature is a module: a hairline socket tinted with its family, the icon carrying the family's colour. */
+  li { display: inline-flex; align-items: center; gap: var(--space-2xs); min-height: 1.75rem; padding: 0 var(--space-xs);
+    border: var(--rule-thin) solid color-mix(in oklch, var(--family-color) 45%, var(--color-rule));
+    border-radius: var(--radius-sm); background: color-mix(in oklch, var(--family-color) var(--tint), var(--color-paper));
+    color: var(--color-ink); font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.2; }
+  li :global(.family-icon) { color: var(--color-ink); }
+  li a { display: inline-flex; align-items: center; min-height: 1.75rem; color: var(--color-ink); text-decoration: underline;
+    text-decoration-color: var(--color-rule); text-underline-offset: 0.2em; }
+  li a:hover { color: var(--color-accent); text-decoration-color: currentColor; }
+  .compact li { min-height: 1.5rem; padding: 0 var(--space-2xs); }
+  @media (pointer: coarse) { li a { min-height: var(--tap); } li:has(a) { min-height: var(--tap); } }
+</style>
