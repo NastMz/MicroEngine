@@ -257,7 +257,7 @@ jobs:
           MICROENGINE_GPU_ADAPTER: llvmpipe
         run: |
           # Only lavapipe: point the Vulkan loader at Mesa's software ICD (its file name differs between Mesa versions).
-          icd=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          icd=$(find /usr/share/vulkan/icd.d -name 'lvp_icd*.json' | sort | head -n 1)
           echo "Vulkan ICD: $icd" | tee -a gpu-tests.log
           export VK_DRIVER_FILES="$icd" VK_ICD_FILENAMES="$icd"
           { vulkaninfo --summary 2>&1 || true; } | grep -E 'apiVersion|deviceType|deviceName|driverName|driverInfo' | tee -a gpu-tests.log || true
