@@ -32,8 +32,20 @@ internal sealed partial class Stage
         Life = (2.5f, 4f), Speed = (4, 12), Angle = (-MathF.PI * 0.8f, -MathF.PI * 0.2f), Size = (1.5f, 1f),
     };
 
+    // The variants the effects emit, built once: particles keep their spec by reference, and building one per emit
+    // allocated while Pip ran or the biome's ambience played.
+    private static readonly ParticleSpec DustRightSpec = DustSpec with { Angle = (-MathF.PI * 0.45f, 0) };
+    private static readonly ParticleSpec DustLeftSpec = DustSpec with { Angle = (-MathF.PI, -MathF.PI * 0.55f) };
+    private static readonly ParticleSpec ShockwaveLeftSpec = DustSpec with { Angle = (-MathF.PI, -MathF.PI * 0.95f), Speed = (80, 160), Life = (0.4f, 0.6f), Size = (5, 2) };
+    private static readonly ParticleSpec ShockwaveRightSpec = DustSpec with { Angle = (-MathF.PI * 0.05f, 0), Speed = (80, 160), Life = (0.4f, 0.6f), Size = (5, 2) };
+    private static readonly ParticleSpec PollenSpec = AmbientSpec with { StartColor = Pal.Butter.WithAlpha(0.7f), EndColor = Pal.Butter.WithAlpha(0f) };
+    private static readonly ParticleSpec AquaMoteSpec = AmbientSpec with { StartColor = Pal.Aqua.WithAlpha(0.8f), EndColor = Pal.Violet.WithAlpha(0f), Angle = (-MathF.PI * 0.6f, -MathF.PI * 0.4f) };
+    private static readonly ParticleSpec LilacMoteSpec = AquaMoteSpec with { StartColor = Pal.Lilac.WithAlpha(0.8f) };
+    private static readonly ParticleSpec WindSpec = AmbientSpec with { StartColor = Pal.Cream.WithAlpha(0.45f), EndColor = Pal.Cream.WithAlpha(0f), Angle = (MathF.PI - 0.05f, MathF.PI + 0.05f), Speed = (60, 90), Life = (0.8f, 1.4f), Size = (1, 1) };
+    private static readonly ParticleSpec EmberSpec = AmbientSpec with { StartColor = Pal.Flame, EndColor = Pal.Rust.WithAlpha(0f), Speed = (15, 40), Angle = (-MathF.PI * 0.6f, -MathF.PI * 0.4f), Life = (2, 3.5f) };
+
     private readonly List<Popup> _popups = [];
-    private readonly Dictionary<Color, ParticleSpec> _burstSpecs = [];
+    private readonly Dictionary<Color, ParticleSpec> _burstSpecs = [], _puffSpecs = [], _sparkleSpecs = [];
     private float _ambient;
 
     /// <summary>Soft dust, smoke and debris drawn with alpha blending.</summary>
@@ -59,10 +71,11 @@ internal sealed partial class Stage
 
     public void Dust(Vector2 feet, float direction, int count = 2)
     {
-        var spec = direction == 0 ? DustSpec : DustSpec with { Angle = direction > 0 ? (-MathF.PI * 0.45f, 0) : (-MathF.PI, -MathF.PI * 0.55f) };
+        var spec = direction == 0 ? DustSpec : direction > 0 ? DustRightSpec : DustLeftSpec;
         Particles.Emit(feet + new Vector2(0, -2), spec, count);
     }
 
+    /// <summary>Dust thrown both ways on a hard landing; its speed follows the fall, so its specs are built per landing.</summary>
     public void LandPuff(Vector2 feet, float strength)
     {
         int count = 3 + (int)(strength * 6);
@@ -71,9 +84,18 @@ internal sealed partial class Stage
     }
 
     public void Puff(Vector2 at, Color color)
-        => Particles.Emit(at, DustSpec with { StartColor = color, EndColor = color.WithAlpha((byte)0), Angle = (0, MathF.Tau), Speed = (10, 40) }, 6);
+    {
+        if (!_puffSpecs.TryGetValue(color, out var spec))
+            _puffSpecs[color] = spec = DustSpec with { StartColor = color, EndColor = color.WithAlpha((byte)0), Angle = (0, MathF.Tau), Speed = (10, 40) };
+        Particles.Emit(at, spec, 6);
+    }
 
-    public void Sparkle(Vector2 at, Color color) => Glints.Emit(at, SparkSpec with { StartColor = color }, 5);
+    public void Sparkle(Vector2 at, Color color)
+    {
+        if (!_sparkleSpecs.TryGetValue(color, out var spec))
+            _sparkleSpecs[color] = spec = SparkSpec with { StartColor = color };
+        Glints.Emit(at, spec, 5);
+    }
 
     public void Burst(Vector2 at, Color color, int count)
     {
@@ -85,8 +107,8 @@ internal sealed partial class Stage
     /// <summary>Ground shockwave from the boss slam: dust racing both ways along the floor.</summary>
     public void Shockwave(Vector2 feet)
     {
-        Particles.Emit(feet, DustSpec with { Angle = (-MathF.PI, -MathF.PI * 0.95f), Speed = (80, 160), Life = (0.4f, 0.6f), Size = (5, 2) }, 14);
-        Particles.Emit(feet, DustSpec with { Angle = (-MathF.PI * 0.05f, 0), Speed = (80, 160), Life = (0.4f, 0.6f), Size = (5, 2) }, 14);
+        Particles.Emit(feet, ShockwaveLeftSpec, 14);
+        Particles.Emit(feet, ShockwaveRightSpec, 14);
     }
 
     /// <summary>Biome atmosphere: pollen in the meadow, motes in the caves, wind in the sky, embers in the castle.</summary>
@@ -103,16 +125,16 @@ internal sealed partial class Stage
             switch (Level.Biome)
             {
                 case Biome.Meadow:
-                    Glints.Emit(at, AmbientSpec with { StartColor = Pal.Butter.WithAlpha(0.7f), EndColor = Pal.Butter.WithAlpha(0f) });
+                    Glints.Emit(at, PollenSpec);
                     break;
                 case Biome.Caves:
-                    Glints.Emit(at, AmbientSpec with { StartColor = (rx > 0.5f ? Pal.Aqua : Pal.Lilac).WithAlpha(0.8f), EndColor = Pal.Violet.WithAlpha(0f), Angle = (-MathF.PI * 0.6f, -MathF.PI * 0.4f) });
+                    Glints.Emit(at, rx > 0.5f ? AquaMoteSpec : LilacMoteSpec);
                     break;
                 case Biome.Sky:
-                    Particles.Emit(at, AmbientSpec with { StartColor = Pal.Cream.WithAlpha(0.45f), EndColor = Pal.Cream.WithAlpha(0f), Angle = (MathF.PI - 0.05f, MathF.PI + 0.05f), Speed = (60, 90), Life = (0.8f, 1.4f), Size = (1, 1) });
+                    Particles.Emit(at, WindSpec);
                     break;
                 case Biome.Castle:
-                    Glints.Emit(new Vector2(at.X, view.Bottom), AmbientSpec with { StartColor = Pal.Flame, EndColor = Pal.Rust.WithAlpha(0f), Speed = (15, 40), Angle = (-MathF.PI * 0.6f, -MathF.PI * 0.4f), Life = (2, 3.5f) });
+                    Glints.Emit(new Vector2(at.X, view.Bottom), EmberSpec);
                     break;
             }
         }

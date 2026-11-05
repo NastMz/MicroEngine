@@ -47,6 +47,9 @@ internal sealed class TitleScene(MeadowGame game) : Scene
     private readonly SelectionList _menu = new("Start", "Continue", "Controls", "Achievements", "Quit");
     private bool _controls, _leaving;
     private float _logoDrop;
+    private readonly List<(string Key, string What)> _controlRows = [];
+    private string _controlsFooter = "";
+    private int _controlsVersion = -1;
 
     /// <summary>
     /// Hashes the menu cursor and whether Continue is enabled, the controls page and whether the scene is leaving.
@@ -147,36 +150,42 @@ internal sealed class TitleScene(MeadowGame game) : Scene
         var box = new RectF(48, 30, 224, 124);
         r.Panel(box, Ui.Card);
         Ui.Centered(r, Font, "CONTROLS", 160, 37, Pal.Butter);
-        // The controls of the device being played: keys, a gamepad's buttons, or the on-screen controls.
-        var p = Game.Prompts;
+        if (_controlsVersion != Game.Prompts.Version) BuildControlRows(Game.Prompts);
+        for (int i = 0; i < _controlRows.Count; i++)
+        {
+            Ui.Text(r, Font, _controlRows[i].Key, new Vector2(60, 54 + i * 13), Pal.Gold);
+            Ui.Text(r, Font, _controlRows[i].What, new Vector2(144, 54 + i * 13));
+        }
+        Ui.Centered(r, Font, _controlsFooter, 160, 136, Pal.Haze);
+    }
+
+    /// <summary>
+    /// The controls of the device being played: keys, a gamepad's buttons, or the on-screen controls. Built again only
+    /// when the prompts change (another device or pad family), not every frame the page shows.
+    /// </summary>
+    private void BuildControlRows(ActionPrompts p)
+    {
+        _controlsVersion = p.Version;
         var device = p.Device;
-        bool touch = device == InputDevice.Touch;
         string walk = device switch
         {
             InputDevice.Keyboard => string.Join(" / ", p.All("left").Zip(p.All("right"), (l, r) => l.Text + r.Text)),
             _ => $"{p.Directions()} {p.Text("left")} {p.Text("right")}",
         };
-        var rows = new List<(string Key, string What)>
-        {
-            (walk, "Walk"),
-            (p.TextAll("jump", "  "), "Jump (hold for higher)"),
-            (p.TextAll("run", "  "), "Run  ·  throw seeds"),
-            (p.Format("{down} + {jump}"), "Drop through planks"),
-        };
+        _controlRows.Clear();
+        _controlRows.Add((walk, "Walk"));
+        _controlRows.Add((p.TextAll("jump", "  "), "Jump (hold for higher)"));
+        _controlRows.Add((p.TextAll("run", "  "), "Run  ·  throw seeds"));
+        _controlRows.Add((p.Format("{down} + {jump}"), "Drop through planks"));
         // Sliding a thumb from B onto A jumps without letting go of run.
-        if (touch) rows.Add((p.Format("{run}, roll to {jump}"), "Jump while running"));
-        rows.Add((p.TextAll("pause", "  "), "Pause"));
-        if (device == InputDevice.Keyboard) rows.Add(("F11", "Fullscreen"));
-        for (int i = 0; i < rows.Count; i++)
-        {
-            Ui.Text(r, Font, rows[i].Key, new Vector2(60, 54 + i * 13), Pal.Gold);
-            Ui.Text(r, Font, rows[i].What, new Vector2(144, 54 + i * 13));
-        }
-        Ui.Centered(r, Font, device switch
+        if (device == InputDevice.Touch) _controlRows.Add((p.Format("{run}, roll to {jump}"), "Jump while running"));
+        _controlRows.Add((p.TextAll("pause", "  "), "Pause"));
+        if (device == InputDevice.Keyboard) _controlRows.Add(("F11", "Fullscreen"));
+        _controlsFooter = device switch
         {
             InputDevice.Touch => "Keyboards and gamepads work too",
             InputDevice.Gamepad => "The keyboard works too",
             _ => "Gamepads work too",
-        }, 160, 136, Pal.Haze);
+        };
     }
 }
