@@ -47,13 +47,13 @@ void Draw(IRenderer renderer, string text, Vector2 position, Color color)
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_IFont_Measure_System_String_"></a> Measure\(string\)
 

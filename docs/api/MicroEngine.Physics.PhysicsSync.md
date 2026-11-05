@@ -32,7 +32,7 @@ public static void Teleport(IPhysicsWorld2D physics, IWorld world, BodyId body, 
 
 `physics` [IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md)
 
-`world` IWorld
+`world` [IWorld](MicroEngine.Scenes.IWorld.md)
 
 `body` [BodyId](MicroEngine.Physics.BodyId.md)
 
@@ -53,7 +53,7 @@ public static void WriteTransforms(IPhysicsWorld2D physics, IWorld world)
 
 `physics` [IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md)
 
-`world` IWorld
+`world` [IWorld](MicroEngine.Scenes.IWorld.md)
 
 #### Exceptions
 

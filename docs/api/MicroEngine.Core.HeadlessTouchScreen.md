@@ -20,7 +20,7 @@ public sealed class HeadlessTouchScreen : ITouchScreen
 
 #### Implements
 
-ITouchScreen
+[ITouchScreen](MicroEngine.Input.ITouchScreen.md)
 
 ## Constructors
 
@@ -61,7 +61,7 @@ public ITouchOverlay? Overlay { get; set; }
 
 #### Property Value
 
- ITouchOverlay?
+ [ITouchOverlay](MicroEngine.Input.ITouchOverlay.md)?
 
 ### <a id="MicroEngine_Core_HeadlessTouchScreen_PixelsPerDp"></a> PixelsPerDp
 
@@ -85,7 +85,7 @@ public RectF SafeArea { get; set; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Core_HeadlessTouchScreen_Size"></a> Size
 
@@ -203,7 +203,7 @@ public void ReadTouches(List<TouchEvent> events)
 
 #### Parameters
 
-`events` [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<TouchEvent\>
+`events` [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<[TouchEvent](MicroEngine.Input.TouchEvent.md)\>
 
 ### <a id="MicroEngine_Core_HeadlessTouchScreen_Up_System_Int64_System_Numerics_Vector2_"></a> Up\(long, Vector2\)
 

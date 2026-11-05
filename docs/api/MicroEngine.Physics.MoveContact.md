@@ -32,7 +32,7 @@ public MoveContact(ShapeId Shape, EntityId Owner, Vector2 Normal)
 
 The shape touched.
 
-`Owner` EntityId
+`Owner` [EntityId](MicroEngine.Scenes.EntityId.md)
 
 The entity owning that shape's body.
 
@@ -64,7 +64,7 @@ public EntityId Owner { get; init; }
 
 #### Property Value
 
- EntityId
+ [EntityId](MicroEngine.Scenes.EntityId.md)
 
 ### <a id="MicroEngine_Physics_MoveContact_Shape"></a> Shape
 
@@ -90,7 +90,7 @@ public void Deconstruct(out ShapeId Shape, out EntityId Owner, out Vector2 Norma
 
 `Shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
 
-`Owner` EntityId
+`Owner` [EntityId](MicroEngine.Scenes.EntityId.md)
 
 `Normal` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 

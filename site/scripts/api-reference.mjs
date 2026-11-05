@@ -24,6 +24,7 @@ const guides = {
   'MicroEngine': ['Graphics', '../manual/rendering.md'],
   'MicroEngine.Achievements': ['Achievements', '../manual/achievements.md'],
   'MicroEngine.Audio': ['Audio', '../manual/audio.md'],
+  'MicroEngine.Audio.Retro': ['Synthesized sound effects', '../manual/audio.md#synthesized-sound-effects'],
   'MicroEngine.Content': ['Assets', '../manual/assets.md#handles-loaders-and-content-sources'],
   'MicroEngine.Core': ['Game lifecycle and time', '../manual/lifecycle.md'],
   'MicroEngine.Desktop': ['Backends and platforms', '../manual/backends.md'],
@@ -76,6 +77,7 @@ const namespaceSummaries = {
   'MicroEngine': 'Basic value types: colours, rectangles, maths and easing helpers.',
   'MicroEngine.Achievements': 'Achievements as an optional engine module: the module that registers the tracker as a service of the engine and writes its progress.',
   'MicroEngine.Audio': 'Sound effects and music: the one mixer every backend plays through (voices with handles and priorities, buses, music streams, exact-frame scheduling), the sound bank and music games play through, the audio device contract, offline rendering for tests, WAV and OGG decoding, synthesis.',
+  'MicroEngine.Audio.Retro': 'Retro sound in code: sound effects described by parameters (in the spirit of sfxr), the synthesizer that renders them, instruments and waveforms, and the tiny step sequencer behind `Song`.',
   'MicroEngine.Content': 'Content: the asset store under Game.Assets (typed handles, scopes that share and release, the loader registry, the reserved import step) and content sources beyond folders (zip archives, files a host lists).',
   'MicroEngine.Core': 'The game and its loop: `Game`, settings, runners and sessions, launchers and platform composition, scripted input, saves, content files, achievements, application identity, the headless platform.',
   'MicroEngine.Desktop': 'The desktop launcher with the official desktop platforms (SDL 3, raylib, SDL software, headless).',
@@ -88,9 +90,9 @@ const namespaceSummaries = {
   'MicroEngine.Physics.Tiles': 'The tile backend of the physics contract: tile grids as static geometry, the exact swept mover, one-way platforms and moving solids that push and carry bodies.',
   'MicroEngine.Platform': 'The platform contracts: the host (clock, event pump, main surface, capabilities, whether it may block), the surface, display pacing and precise waits, storage for saves and content sources.',
   'MicroEngine.Saves': 'Saves as an optional engine module: the module that registers a save store as a service of the engine.',
-  'MicroEngine.Raylib': 'The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and the browser page it reads.',
+  'MicroEngine.Raylib': 'The raylib platform for desktops (in the published SDK, also the browser platform).',
   'MicroEngine.Scenes': 'The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks.',
-  'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android and iOS.',
+  'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android, iOS and, from the next SDK version, browsers (WebAssembly), with the browser launcher and the browser page it reads.',
   'MicroEngine.UI': 'Widgets: labels, buttons, panels, stacks, text fields, dialogue boxes, menus, typewriter text, toasts, themes, focus and the UI input layer.',
   'MicroEngine.World': 'Tile layers, collision grids, swept movement against tiles (`TileMotion`), autotiling and drawing tiles.',
 };
@@ -110,14 +112,16 @@ run('dotnet', ['build', 'src/MicroEngine.Desktop/MicroEngine.Desktop.csproj', '-
 // Without symbols DocFX cannot turn a type of another assembly into a link to its source at the current commit, which
 // would make every page change with every commit (and differ in a copy without .git).
 for (const file of fs.readdirSync(path.join(work, 'bin'))) if (file.endsWith('.pdb')) fs.rmSync(path.join(work, 'bin', file));
+// The same metadata as YAML (`mref`) names every type a page refers to by its full id, which the Markdown does not do
+// for types of other assemblies (see linkPlainTypes).
 const config = {
-  metadata: [{
+  metadata: ['markdown', 'mref'].map(outputFormat => ({
     src: [{ src: path.join(work, 'bin'), files: assemblies.map(a => `${a}.dll`) }],
-    dest: path.join(work, 'md'),
-    outputFormat: 'markdown',
+    dest: path.join(work, outputFormat === 'markdown' ? 'md' : 'yml'),
+    outputFormat,
     namespaceLayout: 'flattened',
     memberLayout: 'samePage',
-  }],
+  })),
 };
 fs.writeFileSync(path.join(work, 'docfx.json'), JSON.stringify(config, null, 2));
 run('dotnet', ['tool', 'run', 'docfx', 'metadata', path.join(work, 'docfx.json')]);
@@ -149,10 +153,93 @@ function memberAnchor(type, prefix) {
   const ids = [...pageCache.get(type).matchAll(/id="([^"]+)"/g)].map(m => m[1]);
   return ids.find(id => id === prefix) ?? ids.find(id => id.startsWith(`${prefix}_`)) ?? null;
 }
+function rawPage(type) {
+  if (!pageCache.has(type)) pageCache.set(type, fs.readFileSync(path.join(work, 'md', `${type}.md`), 'utf8'));
+  return pageCache.get(type);
+}
+
+// DocFX links a type in a signature only when it is declared in the same assembly as the page: a type of another
+// engine assembly (IRenderer and Texture on a MicroEngine.dll page, Color on a Graphics2D page) arrives as its plain
+// name. Each type has its own page here, so the plain name is linked to it, but only in the lines that hold types
+// (parameter, return, value, exception, inheritance and implementation lines), never in descriptions. Two types may
+// share a name (Texture in MicroEngine.Graphics and MicroEngine.Graphics.Devices): the YAML of the page, which names
+// every referenced type by its full id, decides, first for the member, then for the page; when it cannot, the name
+// stays plain rather than pointing to the wrong type.
+const typeNames = [...names].filter(name => !/^# <a id="[^"]*"><\/a>\s*Namespace /m.test(rawPage(name)));
+const typeSections = new Set(['Parameters', 'Returns', 'Property Value', 'Field Value', 'Event Type', 'Exceptions', 'Implements', 'Inheritance', 'Derived', 'Type Parameters', 'Extension Methods']);
+const linkPattern = /\[(?:[^\]\\]|\\.)*\]\([^)]*\)/g;
+const yamlCache = new Map();
+/** The page's YAML split into one block per id (`- uid: ...`), keyed by the Markdown anchor of that id. */
+function yamlBlocks(page) {
+  if (!yamlCache.has(page)) {
+    const file = path.join(work, 'yml', `${page}.yml`);
+    const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n') : '';
+    yamlCache.set(page, { text, blocks: new Map(text.split(/^- uid: /m).slice(1).map(b => [b.slice(0, b.indexOf('\n')).replace(/\W/g, '_'), b])) });
+  }
+  return yamlCache.get(page);
+}
+/** Whether YAML names a type (page name `Handle-1` is id `Handle`1`), optionally followed by `.member`. */
+const mentions = (yaml, type, member = '') =>
+  new RegExp(`(^|[^\\w.\`])${`${type.replace(/-(\d+)/g, '`$1')}${member && `.${member}`}`.replace(/[.`]/g, '\\$&')}([^\\w.\`]|$)`, 'm').test(yaml);
+const yamlLists = { Implements: 'implements', Inheritance: 'inheritance', Derived: 'derivedClasses', 'Inherited Members': 'inheritedMembers', 'Extension Methods': 'extensionMethods' };
+/** The part of a member's YAML that a Markdown section shows: the matching list for a type's sections, the `type:`
+ *  lines (parameters, return value, exceptions) for a member's. */
+function yamlScope(block, section) {
+  if (yamlLists[section]) return new RegExp(`^  ${yamlLists[section]}:\\n((?:  - .*\\n)+)`, 'm').exec(block)?.[1] ?? '';
+  return block.split('\n').filter(l => /^\s*(?:- )?type: /.test(l)).join('\n');
+}
+/** The page of the type a signature names as `Texture` or `InputMap.StickDirection`, or null. */
+function typePage(written, page, member, section, memberName = '') {
+  const candidates = typeNames.filter(t => { const key = t.replace(/-\d+/g, ''); return key === written || key.endsWith(`.${written}`); });
+  if (candidates.length <= 1) return candidates[0] ?? null;
+  const { text, blocks } = yamlBlocks(page);
+  for (const yaml of [yamlScope(blocks.get(member) ?? '', section), text]) {
+    const found = candidates.filter(c => mentions(yaml, c, memberName));
+    if (found.length === 1) return found[0];
+  }
+  return null;
+}
+/** Links the plain type names of a line that holds only a type expression (`IReadOnlyList<Texture>`, `RenderTarget?`). */
+function linkTypeLine(line, page, member, section) {
+  const [, prefix, rest] = /^(`[^`]+` |\s*)(.*)$/.exec(line);
+  const plain = rest.replace(linkPattern, '');
+  if (!/^[\w\s<>\\?,[\]().*←]*$/.test(plain) || /(^|[^\w.])[a-z_]/.test(plain)) return line; // a description, not a type
+  const parts = rest.split(new RegExp(`(${linkPattern.source})`));
+  return prefix + parts.map((part, i) => (i % 2 ? part : part.replace(/(?<![\w.])[A-Z]\w*(?:\.[A-Z]\w*)*(?![\w.])/g, (written) => {
+    const target = typePage(written, page, member, section);
+    return target ? `[${written}](${target}.md)` : written;
+  }))).join('');
+}
+/** `GraphicsDeviceBase.CreateTexture\(in TextureDescription\), ` becomes a link to that member, as DocFX writes it for
+ *  members of the page's own assembly. */
+function linkInheritedMember(line, page, member) {
+  const m = /^([A-Z]\w*)\.(\w+(?:<[^>]*>)?)(\\\(.*?\\\))?(,? ?)$/.exec(line);
+  const target = m && typePage(m[1], page, member, 'Inherited Members', m[2].replace(/<.*$/, ''));
+  if (!target) return line;
+  const heading = [...rawPage(target).matchAll(/^### <a id="([^"]+)"><\/a> (.*)$/gm)].find(h => h[2] === `${m[2]}${m[3] ?? ''}`);
+  const anchor = heading?.[1] ?? memberAnchor(target, `${target.replace(/[.-]/g, '_')}_${m[2].replace(/<.*$/, '')}`);
+  return `[${m[1]}.${m[2]}${m[3] ?? ''}](${target}.md${anchor ? `#${anchor}` : ''})${m[4]}`;
+}
+function linkPlainTypes(text, page) {
+  let section = null;
+  let member = '';
+  return text.split('\n').map(line => {
+    const heading = /^(#+) (.*)$/.exec(line);
+    if (heading) {
+      section = heading[1] === '####' ? heading[2] : null;
+      if (heading[1].length < 4) member = /<a id="([^"]+)">/.exec(line)?.[1] ?? '';
+      return line;
+    }
+    if (!section || !line.trim() || line.startsWith('[')) return line;
+    if (section === 'Inherited Members') return linkInheritedMember(line, page, member);
+    return typeSections.has(section) ? linkTypeLine(line, page, member, section) : line;
+  }).join('\n');
+}
 
 for (const file of generated) {
   const name = file.slice(0, -3);
   let text = fs.readFileSync(path.join(work, 'md', file), 'utf8').replace(/\r\n/g, '\n');
+  text = linkPlainTypes(text, name);
   text = text.replace(/^# <a id="[^"]*"><\/a>\s*/m, '# ');
   text = text.replace(/<xref href="([^"]+)"[^>]*><\/xref>/g, (_, href) => xref(href));
   // <example><code> blocks arrive as raw HTML; as fenced blocks they get the site's highlighting and scroll sideways on

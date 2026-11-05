@@ -28,23 +28,23 @@ public PanelStyle(Color Fill, Color Border, Color Highlight = default, Color Sha
 
 #### Parameters
 
-`Fill` Color
+`Fill` [Color](MicroEngine.Color.md)
 
 Inside colour.
 
-`Border` Color
+`Border` [Color](MicroEngine.Color.md)
 
 One-pixel outer border with cut corners.
 
-`Highlight` Color
+`Highlight` [Color](MicroEngine.Color.md)
 
 A one-pixel line along the top inside edge; transparent (the default) draws none.
 
-`Shadow` Color
+`Shadow` [Color](MicroEngine.Color.md)
 
 A drop shadow offset by 2 pixels; transparent draws none.
 
-`InnerBorder` Color
+`InnerBorder` [Color](MicroEngine.Color.md)
 
 A second outline 2 pixels inside the border; transparent draws none.
 
@@ -60,7 +60,7 @@ public Color Border { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_PanelStyle_Fill"></a> Fill
 
@@ -72,7 +72,7 @@ public Color Fill { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_PanelStyle_Highlight"></a> Highlight
 
@@ -84,7 +84,7 @@ public Color Highlight { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_PanelStyle_InnerBorder"></a> InnerBorder
 
@@ -96,7 +96,7 @@ public Color InnerBorder { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_PanelStyle_Shadow"></a> Shadow
 
@@ -108,7 +108,7 @@ public Color Shadow { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ## Methods
 
@@ -120,15 +120,15 @@ public void Deconstruct(out Color Fill, out Color Border, out Color Highlight, o
 
 #### Parameters
 
-`Fill` Color
+`Fill` [Color](MicroEngine.Color.md)
 
-`Border` Color
+`Border` [Color](MicroEngine.Color.md)
 
-`Highlight` Color
+`Highlight` [Color](MicroEngine.Color.md)
 
-`Shadow` Color
+`Shadow` [Color](MicroEngine.Color.md)
 
-`InnerBorder` Color
+`InnerBorder` [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_PanelStyle_Equals_System_Object_"></a> Equals\(object\)
 

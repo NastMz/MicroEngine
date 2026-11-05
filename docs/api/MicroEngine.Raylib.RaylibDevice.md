@@ -21,35 +21,35 @@ public sealed class RaylibDevice : GraphicsDeviceBase, IGraphicsDevice, IDisposa
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
-GraphicsDeviceBase ← 
+[GraphicsDeviceBase](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md) ← 
 [RaylibDevice](MicroEngine.Raylib.RaylibDevice.md)
 
 #### Implements
 
-IGraphicsDevice, 
+[IGraphicsDevice](MicroEngine.Graphics.Devices.IGraphicsDevice.md), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
 #### Inherited Members
 
-GraphicsDeviceBase.CreateTexture\(in TextureDescription, ReadOnlySpan<byte\>\), 
-GraphicsDeviceBase.CreateRenderTarget\(in RenderTargetDescription\), 
-GraphicsDeviceBase.GetSampler\(in SamplerDescription\), 
-GraphicsDeviceBase.CreateBuffer\(in BufferDescription\), 
-GraphicsDeviceBase.CreateShader\(in ShaderDescription\), 
-GraphicsDeviceBase.CreatePipeline\(PipelineDescription\), 
-GraphicsDeviceBase.GetBuiltInPipeline\(BuiltInPipeline, BlendState, TextureFormat, TextureFormat?\), 
-GraphicsDeviceBase.BeginCommands\(\), 
-GraphicsDeviceBase.Submit\(CommandList\), 
-GraphicsDeviceBase.ReadPixels\(RenderTarget, RectI\), 
-GraphicsDeviceBase.TryAcquireSurfaceTarget\(out RenderTarget?\), 
-GraphicsDeviceBase.Present\(\), 
-GraphicsDeviceBase.Dispose\(\), 
-GraphicsDeviceBase.TryGetResource<T\>\(Handle<GraphicsResource\>, out T?\), 
-GraphicsDeviceBase.Capabilities, 
-GraphicsDeviceBase.IsDisposed, 
-GraphicsDeviceBase.Counters, 
-GraphicsDeviceBase.PendingReleases, 
-GraphicsDeviceBase.DeviceLost, 
+[GraphicsDeviceBase.CreateTexture\(in TextureDescription, ReadOnlySpan<byte\>\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_CreateTexture_MicroEngine_Graphics_Devices_TextureDescription__System_ReadOnlySpan_System_Byte__), 
+[GraphicsDeviceBase.CreateRenderTarget\(in RenderTargetDescription\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_CreateRenderTarget_MicroEngine_Graphics_Devices_RenderTargetDescription__), 
+[GraphicsDeviceBase.GetSampler\(in SamplerDescription\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_GetSampler_MicroEngine_Graphics_Devices_SamplerDescription__), 
+[GraphicsDeviceBase.CreateBuffer\(in BufferDescription\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_CreateBuffer_MicroEngine_Graphics_Devices_BufferDescription__), 
+[GraphicsDeviceBase.CreateShader\(in ShaderDescription\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_CreateShader_MicroEngine_Graphics_Devices_ShaderDescription__), 
+[GraphicsDeviceBase.CreatePipeline\(PipelineDescription\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_CreatePipeline_MicroEngine_Graphics_Devices_PipelineDescription_), 
+[GraphicsDeviceBase.GetBuiltInPipeline\(BuiltInPipeline, BlendState, TextureFormat, TextureFormat?\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_GetBuiltInPipeline_MicroEngine_Graphics_Devices_BuiltInPipeline_MicroEngine_Graphics_Devices_BlendState_MicroEngine_Graphics_Devices_TextureFormat_System_Nullable_MicroEngine_Graphics_Devices_TextureFormat__), 
+[GraphicsDeviceBase.BeginCommands\(\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_BeginCommands), 
+[GraphicsDeviceBase.Submit\(CommandList\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_Submit_MicroEngine_Graphics_Devices_CommandList_), 
+[GraphicsDeviceBase.ReadPixels\(RenderTarget, RectI\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_ReadPixels_MicroEngine_Graphics_Devices_RenderTarget_MicroEngine_Graphics_Devices_RectI_), 
+[GraphicsDeviceBase.TryAcquireSurfaceTarget\(out RenderTarget?\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_TryAcquireSurfaceTarget_MicroEngine_Graphics_Devices_RenderTarget__), 
+[GraphicsDeviceBase.Present\(\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_Present), 
+[GraphicsDeviceBase.Dispose\(\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_Dispose), 
+[GraphicsDeviceBase.TryGetResource<T\>\(Handle<GraphicsResource\>, out T?\)](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_TryGetResource__1_MicroEngine_Kernel_Handle_MicroEngine_Graphics_Devices_GraphicsResource____0__), 
+[GraphicsDeviceBase.Capabilities](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_Capabilities), 
+[GraphicsDeviceBase.IsDisposed](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_IsDisposed), 
+[GraphicsDeviceBase.Counters](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_Counters), 
+[GraphicsDeviceBase.PendingReleases](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_PendingReleases), 
+[GraphicsDeviceBase.DeviceLost](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md#MicroEngine_Graphics_Devices_GraphicsDeviceBase_DeviceLost), 
 [object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
 [object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 
 [object.Equals\(object?\)](https://learn.microsoft.com/dotnet/api/system.object.equals\#system\-object\-equals\(system\-object\)), 
@@ -69,17 +69,17 @@ public RaylibDevice(ISurface surface, GraphicsDeviceOptions options)
 
 #### Parameters
 
-`surface` ISurface
+`surface` [ISurface](MicroEngine.Platform.ISurface.md)
 
 raylib's window surface.
 
-`options` GraphicsDeviceOptions
+`options` [GraphicsDeviceOptions](MicroEngine.Graphics.Devices.GraphicsDeviceOptions.md)
 
 The present mode (raylib's VSync is a window flag chosen when the window opens; the device records the mode).
 
 #### Exceptions
 
- GraphicsCapabilityException
+ [GraphicsCapabilityException](MicroEngine.Graphics.Devices.GraphicsCapabilityException.md)
 
 The present mode is Mailbox.
 
@@ -109,7 +109,7 @@ public override GraphicsCapabilities Capabilities { get; }
 
 #### Property Value
 
- GraphicsCapabilities
+ [GraphicsCapabilities](MicroEngine.Graphics.Devices.GraphicsCapabilities.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_PresentMode"></a> PresentMode
 
@@ -121,7 +121,7 @@ public PresentMode PresentMode { get; }
 
 #### Property Value
 
- PresentMode
+ [PresentMode](MicroEngine.Graphics.Devices.PresentMode.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_SwapOnPresent"></a> SwapOnPresent
 
@@ -149,11 +149,11 @@ protected override GpuBuffer CreateBufferCore(in BufferDescription description)
 
 #### Parameters
 
-`description` BufferDescription
+`description` [BufferDescription](MicroEngine.Graphics.Devices.BufferDescription.md)
 
 #### Returns
 
- GpuBuffer
+ [GpuBuffer](MicroEngine.Graphics.Devices.GpuBuffer.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_CreateBuiltInPipelineCore_MicroEngine_Graphics_Devices_BuiltInPipeline_MicroEngine_Graphics_Devices_BlendState_MicroEngine_Graphics_Devices_TextureFormat_System_Nullable_MicroEngine_Graphics_Devices_TextureFormat__"></a> CreateBuiltInPipelineCore\(BuiltInPipeline, BlendState, TextureFormat, TextureFormat?\)
 
@@ -165,17 +165,17 @@ protected override Pipeline CreateBuiltInPipelineCore(BuiltInPipeline kind, Blen
 
 #### Parameters
 
-`kind` BuiltInPipeline
+`kind` [BuiltInPipeline](MicroEngine.Graphics.Devices.BuiltInPipeline.md)
 
-`blend` BlendState
+`blend` [BlendState](MicroEngine.Graphics.Devices.BlendState.md)
 
-`colorFormat` TextureFormat
+`colorFormat` [TextureFormat](MicroEngine.Graphics.Devices.TextureFormat.md)
 
-`depthFormat` TextureFormat?
+`depthFormat` [TextureFormat](MicroEngine.Graphics.Devices.TextureFormat.md)?
 
 #### Returns
 
- Pipeline
+ [Pipeline](MicroEngine.Graphics.Devices.Pipeline.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_CreatePipelineCore_MicroEngine_Graphics_Devices_PipelineDescription_"></a> CreatePipelineCore\(PipelineDescription\)
 
@@ -187,11 +187,11 @@ protected override Pipeline CreatePipelineCore(PipelineDescription description)
 
 #### Parameters
 
-`description` PipelineDescription
+`description` [PipelineDescription](MicroEngine.Graphics.Devices.PipelineDescription.md)
 
 #### Returns
 
- Pipeline
+ [Pipeline](MicroEngine.Graphics.Devices.Pipeline.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_CreateRenderTargetCore_MicroEngine_Graphics_Devices_RenderTargetDescription__"></a> CreateRenderTargetCore\(in RenderTargetDescription\)
 
@@ -203,11 +203,11 @@ protected override RenderTarget CreateRenderTargetCore(in RenderTargetDescriptio
 
 #### Parameters
 
-`description` RenderTargetDescription
+`description` [RenderTargetDescription](MicroEngine.Graphics.Devices.RenderTargetDescription.md)
 
 #### Returns
 
- RenderTarget
+ [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_CreateSamplerCore_MicroEngine_Graphics_Devices_SamplerDescription__"></a> CreateSamplerCore\(in SamplerDescription\)
 
@@ -219,11 +219,11 @@ protected override Sampler CreateSamplerCore(in SamplerDescription description)
 
 #### Parameters
 
-`description` SamplerDescription
+`description` [SamplerDescription](MicroEngine.Graphics.Devices.SamplerDescription.md)
 
 #### Returns
 
- Sampler
+ [Sampler](MicroEngine.Graphics.Devices.Sampler.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_CreateShaderCore_MicroEngine_Graphics_Devices_ShaderDescription__"></a> CreateShaderCore\(in ShaderDescription\)
 
@@ -235,11 +235,11 @@ protected override Shader CreateShaderCore(in ShaderDescription description)
 
 #### Parameters
 
-`description` ShaderDescription
+`description` [ShaderDescription](MicroEngine.Graphics.Devices.ShaderDescription.md)
 
 #### Returns
 
- Shader
+ [Shader](MicroEngine.Graphics.Devices.Shader.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_CreateTextureCore_MicroEngine_Graphics_Devices_TextureDescription__System_ReadOnlySpan_System_Byte__"></a> CreateTextureCore\(in TextureDescription, ReadOnlySpan<byte\>\)
 
@@ -251,13 +251,13 @@ protected override Texture CreateTextureCore(in TextureDescription description, 
 
 #### Parameters
 
-`description` TextureDescription
+`description` [TextureDescription](MicroEngine.Graphics.Devices.TextureDescription.md)
 
 `initialData` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[byte](https://learn.microsoft.com/dotnet/api/system.byte)\>
 
 #### Returns
 
- Texture
+ [Texture](MicroEngine.Graphics.Devices.Texture.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_DisposeCore_System_Collections_Generic_IReadOnlyList_MicroEngine_Graphics_Devices_Pipeline__System_Collections_Generic_IReadOnlyList_MicroEngine_Graphics_Devices_Sampler__"></a> DisposeCore\(IReadOnlyList<Pipeline\>, IReadOnlyList<Sampler\>\)
 
@@ -269,9 +269,9 @@ protected override void DisposeCore(IReadOnlyList<Pipeline> builtIns, IReadOnlyL
 
 #### Parameters
 
-`builtIns` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<Pipeline\>
+`builtIns` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[Pipeline](MicroEngine.Graphics.Devices.Pipeline.md)\>
 
-`samplers` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<Sampler\>
+`samplers` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[Sampler](MicroEngine.Graphics.Devices.Sampler.md)\>
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_PresentCore_MicroEngine_Graphics_Devices_RenderTarget_"></a> PresentCore\(RenderTarget\)
 
@@ -283,7 +283,7 @@ protected override void PresentCore(RenderTarget surfaceTarget)
 
 #### Parameters
 
-`surfaceTarget` RenderTarget
+`surfaceTarget` [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_ReadPixelsCore_MicroEngine_Graphics_Devices_RenderTarget_MicroEngine_Graphics_Devices_RectI_"></a> ReadPixelsCore\(RenderTarget, RectI\)
 
@@ -295,13 +295,13 @@ protected override ReadbackRequest ReadPixelsCore(RenderTarget target, RectI reg
 
 #### Parameters
 
-`target` RenderTarget
+`target` [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
 
-`region` RectI
+`region` [RectI](MicroEngine.Graphics.Devices.RectI.md)
 
 #### Returns
 
- ReadbackRequest
+ [ReadbackRequest](MicroEngine.Graphics.Devices.ReadbackRequest.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_SubmitCore_MicroEngine_Graphics_Devices_CommandList_"></a> SubmitCore\(CommandList\)
 
@@ -313,7 +313,7 @@ protected override void SubmitCore(CommandList commands)
 
 #### Parameters
 
-`commands` CommandList
+`commands` [CommandList](MicroEngine.Graphics.Devices.CommandList.md)
 
 ### <a id="MicroEngine_Raylib_RaylibDevice_TryAcquireSurfaceTargetCore"></a> TryAcquireSurfaceTargetCore\(\)
 
@@ -325,6 +325,6 @@ protected override RenderTarget? TryAcquireSurfaceTargetCore()
 
 #### Returns
 
- RenderTarget?
+ [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)?
 
 </div>

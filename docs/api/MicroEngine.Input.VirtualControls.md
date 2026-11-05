@@ -24,9 +24,9 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
 
 #### Implements
 
-IActionSource, 
+[IActionSource](MicroEngine.Input.IActionSource.md), 
 [ITouchOverlay](MicroEngine.Input.ITouchOverlay.md), 
-IInputLayer
+[IInputLayer](MicroEngine.Input.IInputLayer.md)
 
 ## Constructors
 
@@ -72,7 +72,7 @@ public InputDevice Device { get; }
 
 #### Property Value
 
- InputDevice
+ [InputDevice](MicroEngine.Input.InputDevice.md)
 
 ### <a id="MicroEngine_Input_VirtualControls_FingerCount"></a> FingerCount
 
@@ -125,7 +125,7 @@ public RectF LastFrame { get; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Input_VirtualControls_Layout"></a> Layout
 
@@ -258,7 +258,7 @@ public void EndFrame(float dt, InputDevice otherDevice = InputDevice.None)
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`otherDevice` InputDevice
+`otherDevice` [InputDevice](MicroEngine.Input.InputDevice.md)
 
 ### <a id="MicroEngine_Input_VirtualControls_Frame_System_Numerics_Vector2_MicroEngine_RectF_System_Int32_System_Int32_MicroEngine_Graphics_Presentation_"></a> Frame\(Vector2, RectF, int, int, Presentation?\)
 
@@ -276,17 +276,17 @@ public RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtual
 
 `window` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`safeArea` RectF
+`safeArea` [RectF](MicroEngine.RectF.md)
 
 `virtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 `virtualHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`presentation` Presentation?
+`presentation` [Presentation](MicroEngine.Graphics.Presentation.md)?
 
 #### Returns
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Input_VirtualControls_Geometry_System_String_"></a> Geometry\(string\)
 
@@ -316,7 +316,7 @@ public bool Handle(in InputEvent e)
 
 #### Parameters
 
-`e` InputEvent
+`e` [InputEvent](MicroEngine.Input.InputEvent.md)
 
 #### Returns
 
@@ -499,7 +499,7 @@ public void Update(ITouchScreen? screen, float dt, InputDevice otherDevice = Inp
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`otherDevice` InputDevice
+`otherDevice` [InputDevice](MicroEngine.Input.InputDevice.md)
 
 ### <a id="MicroEngine_Input_VirtualControls_Value_System_String_"></a> Value\(string\)
 

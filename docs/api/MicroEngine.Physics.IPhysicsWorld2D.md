@@ -209,7 +209,7 @@ BodyId CreateBody(EntityId owner, in BodyDescription body)
 
 #### Parameters
 
-`owner` EntityId
+`owner` [EntityId](MicroEngine.Scenes.EntityId.md)
 
 `body` [BodyDescription](MicroEngine.Physics.BodyDescription.md)
 
@@ -337,7 +337,7 @@ int Overlap(in RectF area, in QueryFilter filter, Span<ShapeId> results)
 
 #### Parameters
 
-`area` RectF
+`area` [RectF](MicroEngine.RectF.md)
 
 `filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
 
@@ -361,7 +361,7 @@ EntityId OwnerOf(BodyId body)
 
 #### Returns
 
- EntityId
+ [EntityId](MicroEngine.Scenes.EntityId.md)
 
 #### Exceptions
 

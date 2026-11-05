@@ -20,10 +20,10 @@ public sealed class HeadlessInputBackend : IInputBackend, IKeyLabels, IGamepadRu
 
 #### Implements
 
-IInputBackend, 
-IKeyLabels, 
-IGamepadRumble, 
-ITextInputControl
+[IInputBackend](MicroEngine.Input.IInputBackend.md), 
+[IKeyLabels](MicroEngine.Input.IKeyLabels.md), 
+[IGamepadRumble](MicroEngine.Input.IGamepadRumble.md), 
+[ITextInputControl](MicroEngine.Input.ITextInputControl.md)
 
 ## Constructors
 
@@ -45,7 +45,7 @@ public Dictionary<Key, string> Labels { get; }
 
 #### Property Value
 
- [Dictionary](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary\-2)<Key, [string](https://learn.microsoft.com/dotnet/api/system.string)\>
+ [Dictionary](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary\-2)<[Key](MicroEngine.Input.Key.md), [string](https://learn.microsoft.com/dotnet/api/system.string)\>
 
 ### <a id="MicroEngine_Core_HeadlessInputBackend_Rumbles"></a> Rumbles
 
@@ -57,7 +57,7 @@ public List<(DeviceId Pad, float Low, float High, double Seconds)> Rumbles { get
 
 #### Property Value
 
- [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<\(DeviceId [Pad](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.deviceid,system.single,system.single,system.double\-.pad), [float](https://learn.microsoft.com/dotnet/api/system.single) [Low](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.deviceid,system.single,system.single,system.double\-.low), [float](https://learn.microsoft.com/dotnet/api/system.single) [High](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.deviceid,system.single,system.single,system.double\-.high), [double](https://learn.microsoft.com/dotnet/api/system.double) [Seconds](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.deviceid,system.single,system.single,system.double\-.seconds)\)\>
+ [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<\([DeviceId](MicroEngine.Input.DeviceId.md) [Pad](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.deviceid,system.single,system.single,system.double\-.pad), [float](https://learn.microsoft.com/dotnet/api/system.single) [Low](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.deviceid,system.single,system.single,system.double\-.low), [float](https://learn.microsoft.com/dotnet/api/system.single) [High](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.deviceid,system.single,system.single,system.double\-.high), [double](https://learn.microsoft.com/dotnet/api/system.double) [Seconds](https://learn.microsoft.com/dotnet/api/system.valuetuple\-microengine.input.deviceid,system.single,system.single,system.double\-.seconds)\)\>
 
 ### <a id="MicroEngine_Core_HeadlessInputBackend_TextInput"></a> TextInput
 
@@ -69,7 +69,7 @@ public (bool Active, RectF Caret) TextInput { get; }
 
 #### Property Value
 
- \([bool](https://learn.microsoft.com/dotnet/api/system.boolean) [Active](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.boolean,microengine.rectf\-.active), RectF [Caret](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.boolean,microengine.rectf\-.caret)\)
+ \([bool](https://learn.microsoft.com/dotnet/api/system.boolean) [Active](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.boolean,microengine.rectf\-.active), [RectF](MicroEngine.RectF.md) [Caret](https://learn.microsoft.com/dotnet/api/system.valuetuple\-system.boolean,microengine.rectf\-.caret)\)
 
 ## Methods
 
@@ -83,7 +83,7 @@ public void Drain(List<InputEvent> events)
 
 #### Parameters
 
-`events` [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<InputEvent\>
+`events` [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<[InputEvent](MicroEngine.Input.InputEvent.md)\>
 
 ### <a id="MicroEngine_Core_HeadlessInputBackend_KeyLabel_MicroEngine_Input_Key_"></a> KeyLabel\(Key\)
 
@@ -95,7 +95,7 @@ public string? KeyLabel(Key key)
 
 #### Parameters
 
-`key` Key
+`key` [Key](MicroEngine.Input.Key.md)
 
 #### Returns
 
@@ -111,7 +111,7 @@ public bool Rumble(DeviceId pad, float low, float high, double seconds)
 
 #### Parameters
 
-`pad` DeviceId
+`pad` [DeviceId](MicroEngine.Input.DeviceId.md)
 
 `low` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
@@ -133,7 +133,7 @@ public HeadlessInputBackend Send(InputEvent e)
 
 #### Parameters
 
-`e` InputEvent
+`e` [InputEvent](MicroEngine.Input.InputEvent.md)
 
 #### Returns
 
@@ -150,7 +150,7 @@ public void Start(RectF caret)
 
 #### Parameters
 
-`caret` RectF
+`caret` [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Core_HeadlessInputBackend_Stop"></a> Stop\(\)
 

@@ -27,16 +27,16 @@ public sealed class SdlPlatform : IPlatform, IPlatformHost, IDisposable, IPlatfo
 
 #### Implements
 
-IPlatform, 
-IPlatformHost, 
+[IPlatform](MicroEngine.Core.IPlatform.md), 
+[IPlatformHost](MicroEngine.Platform.IPlatformHost.md), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable), 
-IPlatformDiagnostics, 
-IDisplayControl, 
-IDisplayPacing, 
-IPreciseDelay, 
-IMonotonicClock, 
-IScreenView, 
-IViewCapture
+[IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md), 
+[IDisplayControl](MicroEngine.Core.IDisplayControl.md), 
+[IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md), 
+[IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md), 
+[IMonotonicClock](MicroEngine.Platform.IMonotonicClock.md), 
+[IScreenView](MicroEngine.Core.IScreenView.md), 
+[IViewCapture](MicroEngine.Core.IViewCapture.md)
 
 ## Remarks
 
@@ -62,7 +62,7 @@ public SdlPlatform(PlatformRequest request, string? renderer = null)
 
 #### Parameters
 
-`request` PlatformRequest
+`request` [PlatformRequest](MicroEngine.Core.PlatformRequest.md)
 
 The game's settings and window options.
 
@@ -110,7 +110,7 @@ public IAudioDevice Audio { get; }
 
 #### Property Value
 
- IAudioDevice
+ [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_CanBlock"></a> CanBlock
 
@@ -134,7 +134,7 @@ public DeviceCanvas Canvas { get; }
 
 #### Property Value
 
- DeviceCanvas
+ [DeviceCanvas](MicroEngine.Graphics.DeviceCanvas.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Clock"></a> Clock
 
@@ -146,7 +146,7 @@ public IMonotonicClock Clock { get; }
 
 #### Property Value
 
- IMonotonicClock
+ [IMonotonicClock](MicroEngine.Platform.IMonotonicClock.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_CurrentDisplay"></a> CurrentDisplay
 
@@ -171,7 +171,7 @@ public GraphicsDeviceBase Device { get; }
 
 #### Property Value
 
- GraphicsDeviceBase
+ [GraphicsDeviceBase](MicroEngine.Graphics.Devices.GraphicsDeviceBase.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Diagnostics"></a> Diagnostics
 
@@ -207,7 +207,7 @@ public IReadOnlyList<DisplayInfo> Displays { get; }
 
 #### Property Value
 
- [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<DisplayInfo\>
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[DisplayInfo](MicroEngine.Core.DisplayInfo.md)\>
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Graphics"></a> Graphics
 
@@ -219,7 +219,7 @@ public IGraphicsDevice Graphics { get; }
 
 #### Property Value
 
- IGraphicsDevice
+ [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_GraphicsDeviceName"></a> GraphicsDeviceName
 
@@ -244,7 +244,7 @@ public IInputSource Input { get; }
 
 #### Property Value
 
- IInputSource
+ [IInputSource](MicroEngine.Input.IInputSource.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Letterbox"></a> Letterbox
 
@@ -257,7 +257,7 @@ public Color Letterbox { get; set; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_MainSurface"></a> MainSurface
 
@@ -269,7 +269,7 @@ public ISurface MainSurface { get; }
 
 #### Property Value
 
- ISurface
+ [ISurface](MicroEngine.Platform.ISurface.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Now"></a> Now
 
@@ -294,7 +294,7 @@ public static PlatformProfile Profile { get; }
 
 #### Property Value
 
- PlatformProfile
+ [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_RenderDrivers"></a> RenderDrivers
 
@@ -343,7 +343,7 @@ public ITouchScreen Touch { get; }
 
 #### Property Value
 
- ITouchScreen
+ [ITouchScreen](MicroEngine.Input.ITouchScreen.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_VSync"></a> VSync
 
@@ -367,7 +367,7 @@ public WindowMode WindowMode { get; }
 
 #### Property Value
 
- WindowMode
+ [WindowMode](MicroEngine.Core.WindowMode.md)
 
 ## Methods
 
@@ -381,7 +381,7 @@ public IRenderer BeginFrame()
 
 #### Returns
 
- IRenderer
+ [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_BrowserProfile_MicroEngine_Sdl_BrowserPage_"></a> BrowserProfile\(BrowserPage\)
 
@@ -399,7 +399,7 @@ public static PlatformProfile BrowserProfile(BrowserPage page)
 
 #### Returns
 
- PlatformProfile
+ [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
 
 #### Exceptions
 
@@ -423,7 +423,7 @@ public static PlatformProfile CreateProfile(string? renderer = null)
 
 #### Returns
 
- PlatformProfile
+ [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
 
 ### <a id="MicroEngine_Sdl_SdlPlatform_Delay_System_Double_"></a> Delay\(double\)
 
@@ -482,7 +482,7 @@ public bool PumpEvents(IEngineEventSink sink)
 
 #### Parameters
 
-`sink` IEngineEventSink
+`sink` [IEngineEventSink](MicroEngine.Platform.IEngineEventSink.md)
 
 #### Returns
 
@@ -526,7 +526,7 @@ public bool SetWindowMode(WindowMode mode)
 
 #### Parameters
 
-`mode` WindowMode
+`mode` [WindowMode](MicroEngine.Core.WindowMode.md)
 
 #### Returns
 

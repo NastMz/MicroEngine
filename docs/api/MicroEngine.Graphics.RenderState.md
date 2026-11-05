@@ -28,15 +28,15 @@ public RenderState(BlendState Blend, SamplerDescription Sampler, RectI? Scissor)
 
 #### Parameters
 
-`Blend` BlendState
+`Blend` [BlendState](MicroEngine.Graphics.Devices.BlendState.md)
 
 Blend state; the built-in presets work on every device.
 
-`Sampler` SamplerDescription
+`Sampler` [SamplerDescription](MicroEngine.Graphics.Devices.SamplerDescription.md)
 
 Sampler of the draws' textures.
 
-`Scissor` RectI?
+`Scissor` [RectI](MicroEngine.Graphics.Devices.RectI.md)?
 
 Scissor in target pixels; null draws on the whole viewport.
 
@@ -52,7 +52,7 @@ public BlendState Blend { get; init; }
 
 #### Property Value
 
- BlendState
+ [BlendState](MicroEngine.Graphics.Devices.BlendState.md)
 
 ### <a id="MicroEngine_Graphics_RenderState_Default"></a> Default
 
@@ -76,7 +76,7 @@ public SamplerDescription Sampler { get; init; }
 
 #### Property Value
 
- SamplerDescription
+ [SamplerDescription](MicroEngine.Graphics.Devices.SamplerDescription.md)
 
 ### <a id="MicroEngine_Graphics_RenderState_Scissor"></a> Scissor
 
@@ -88,7 +88,7 @@ public RectI? Scissor { get; init; }
 
 #### Property Value
 
- RectI?
+ [RectI](MicroEngine.Graphics.Devices.RectI.md)?
 
 ## Methods
 
@@ -100,11 +100,11 @@ public void Deconstruct(out BlendState Blend, out SamplerDescription Sampler, ou
 
 #### Parameters
 
-`Blend` BlendState
+`Blend` [BlendState](MicroEngine.Graphics.Devices.BlendState.md)
 
-`Sampler` SamplerDescription
+`Sampler` [SamplerDescription](MicroEngine.Graphics.Devices.SamplerDescription.md)
 
-`Scissor` RectI?
+`Scissor` [RectI](MicroEngine.Graphics.Devices.RectI.md)?
 
 ### <a id="MicroEngine_Graphics_RenderState_Equals_System_Object_"></a> Equals\(object\)
 

@@ -45,7 +45,7 @@ void Resized(SurfaceResized size)
 
 #### Parameters
 
-`size` SurfaceResized
+`size` [SurfaceResized](MicroEngine.Kernel.SurfaceResized.md)
 
 ### <a id="MicroEngine_Platform_IEngineEventSink_Resumed"></a> Resumed\(\)
 

@@ -20,7 +20,7 @@ public sealed class PhysicsModule : IEngineModule
 
 #### Implements
 
-IEngineModule
+[IEngineModule](MicroEngine.Kernel.IEngineModule.md)
 
 ## Examples
 
@@ -63,6 +63,6 @@ public void Configure(EngineBuilder builder)
 
 #### Parameters
 
-`builder` EngineBuilder
+`builder` [EngineBuilder](MicroEngine.Kernel.EngineBuilder.md)
 
 </div>

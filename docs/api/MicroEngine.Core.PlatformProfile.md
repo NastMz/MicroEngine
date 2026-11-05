@@ -21,7 +21,7 @@ public sealed class PlatformProfile : IHostProfile
 
 #### Implements
 
-IHostProfile
+[IHostProfile](MicroEngine.Hosting.IHostProfile.md)
 
 ## Constructors
 

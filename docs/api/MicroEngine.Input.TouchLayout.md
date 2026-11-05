@@ -114,7 +114,7 @@ public Color PressedTint { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Input_TouchLayout_Scale"></a> Scale
 
@@ -186,7 +186,7 @@ public Color Tint { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Input_TouchLayout_Visibility"></a> Visibility
 
@@ -224,7 +224,7 @@ public static TouchLayout CreateDefault(ActionNames? names = null)
 
 #### Parameters
 
-`names` ActionNames?
+`names` [ActionNames](MicroEngine.Input.ActionNames.md)?
 
 #### Returns
 

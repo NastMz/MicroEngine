@@ -40,7 +40,7 @@ Centre of the shape (the centroid for a triangle).
 
 Radius for circles and rings, width for rectangles, the length of the first side for triangles, height for text.
 
-`Color` Color
+`Color` [Color](MicroEngine.Color.md)
 
 The colour drawn.
 
@@ -72,7 +72,7 @@ public Color Color { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Core_RecordingOverlayCanvas_Shape_Kind"></a> Kind
 
@@ -126,7 +126,7 @@ public void Deconstruct(out string Kind, out Vector2 Center, out float Size, out
 
 `Size` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`Color` Color
+`Color` [Color](MicroEngine.Color.md)
 
 `Text` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 

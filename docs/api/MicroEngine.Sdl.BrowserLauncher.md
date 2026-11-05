@@ -36,7 +36,7 @@ public static GameSession CreateSession(Action<HostBuilder> configure, BrowserPa
 
 #### Parameters
 
-`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<HostBuilder\>
+`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[HostBuilder](MicroEngine.Hosting.HostBuilder.md)\>
 
 The game's composition.
 
@@ -46,7 +46,7 @@ The page whose touches, screen, visibility and vibration the platforms read.
 
 #### Returns
 
- GameSession
+ [GameSession](MicroEngine.Core.GameSession.md)
 
 #### Exceptions
 
@@ -64,7 +64,7 @@ public static void Defaults(HostBuilder host, BrowserPage page)
 
 #### Parameters
 
-`host` HostBuilder
+`host` [HostBuilder](MicroEngine.Hosting.HostBuilder.md)
 
 `page` [BrowserPage](MicroEngine.Sdl.BrowserPage.md)
 

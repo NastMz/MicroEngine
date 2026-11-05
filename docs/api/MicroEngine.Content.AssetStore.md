@@ -41,7 +41,7 @@ public AssetStore(IContentSource source, AssetLoaderRegistry? loaders = null)
 
 #### Parameters
 
-`source` IContentSource
+`source` [IContentSource](MicroEngine.Platform.IContentSource.md)
 
 `loaders` [AssetLoaderRegistry](MicroEngine.Content.AssetLoaderRegistry.md)?
 
@@ -62,7 +62,7 @@ public AssetStore(Func<IContentSource> openSource, AssetLoaderRegistry? loaders 
 
 #### Parameters
 
-`openSource` [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<IContentSource\>
+`openSource` [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[IContentSource](MicroEngine.Platform.IContentSource.md)\>
 
 `loaders` [AssetLoaderRegistry](MicroEngine.Content.AssetLoaderRegistry.md)?
 
@@ -120,7 +120,7 @@ public ILog? Log { get; set; }
 
 #### Property Value
 
- ILog?
+ [ILog](MicroEngine.Kernel.ILog.md)?
 
 ### <a id="MicroEngine_Content_AssetStore_Root"></a> Root
 
@@ -144,7 +144,7 @@ public IContentSource Source { get; }
 
 #### Property Value
 
- IContentSource
+ [IContentSource](MicroEngine.Platform.IContentSource.md)
 
 #### Exceptions
 

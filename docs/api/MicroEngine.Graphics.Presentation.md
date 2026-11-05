@@ -222,7 +222,7 @@ public (int Width, int Height) CanvasSize(RectF area, int canvasWidth, int canva
 
 #### Parameters
 
-`area` RectF
+`area` [RectF](MicroEngine.RectF.md)
 
 `canvasWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
@@ -279,7 +279,7 @@ public RectF Fit(RectF area, int canvasWidth, int canvasHeight, bool portrait = 
 
 #### Parameters
 
-`area` RectF
+`area` [RectF](MicroEngine.RectF.md)
 
 The area available, in window pixels.
 
@@ -297,7 +297,7 @@ Whether the screen is portrait (taller than wide by more than a tenth).
 
 #### Returns
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 #### Exceptions
 
@@ -320,7 +320,7 @@ public RectF Fit(Vector2 window, RectF safeArea, int canvasWidth, int canvasHeig
 
 `window` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`safeArea` RectF
+`safeArea` [RectF](MicroEngine.RectF.md)
 
 `canvasWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
@@ -328,7 +328,7 @@ public RectF Fit(Vector2 window, RectF safeArea, int canvasWidth, int canvasHeig
 
 #### Returns
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Graphics_Presentation_GetHashCode"></a> GetHashCode\(\)
 
@@ -352,7 +352,7 @@ public static Vector2 ToCanvas(Vector2 window, RectF frame, int canvasWidth, int
 
 `window` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`frame` RectF
+`frame` [RectF](MicroEngine.RectF.md)
 
 `canvasWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 

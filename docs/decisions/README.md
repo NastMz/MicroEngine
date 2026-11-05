@@ -48,3 +48,11 @@ maintainer's archive, not in the public history.
 | [0045](0045-touch-controls-module.md) | Touch controls as an opt-in input module in `MicroEngine.Input.Touch`: active on touch-first screens or once the game sets a layout, free otherwise | Accepted |
 | [0046](0046-tier1-device-selection.md) | The tier-1 device chosen through the normal composition path (`GraphicsSettings.Device`, `--graphics`, `PlatformProfile.GraphicsDevices`); `DeviceRenderer.Flush`/`Target` for 3D from a scene | Accepted |
 | [0047](0047-sdl-browser-platform.md) | SDL 3 is the browser platform, built from source with the workload's Emscripten and cached in CI; raylib leaves the web (amends 0007, 0008, 0017) | Accepted |
+
+Each number is used once. The numbers missing from the table:
+
+- **0035 and 0036** are reserved for two decisions of the [ARCH-1 plan](../evaluations/arch-1.md) (section 7: validation
+  by contract; assemblies by boundary with an architecture test). Each is written in the stage that records it; until
+  then the plan holds the decision. ADR 0037 was numbered after this reserved range.
+- **0039 and 0040** are not used: no record was merged under them, and the numbers stay empty rather than renumbering
+  the records after them.

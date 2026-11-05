@@ -20,7 +20,7 @@ public sealed class HeadlessGraphicsDevice : IGraphicsDevice
 
 #### Implements
 
-IGraphicsDevice
+[IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
 
 ## Constructors
 
@@ -44,7 +44,7 @@ public TextureFilter DefaultFilter { get; set; }
 
 #### Property Value
 
- TextureFilter
+ [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 ### <a id="MicroEngine_Core_HeadlessGraphicsDevice_KeepsPixels"></a> KeepsPixels
 
@@ -119,11 +119,11 @@ public Texture CreateTexture(PixelImage image)
 
 #### Parameters
 
-`image` PixelImage
+`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
 #### Returns
 
- Texture
+ [Texture](MicroEngine.Graphics.Texture.md)
 
 ### <a id="MicroEngine_Core_HeadlessGraphicsDevice_CreateTexture_MicroEngine_Graphics_PixelImage_MicroEngine_Graphics_TextureFilter_"></a> CreateTexture\(PixelImage, TextureFilter\)
 
@@ -135,12 +135,12 @@ public Texture CreateTexture(PixelImage image, TextureFilter filter)
 
 #### Parameters
 
-`image` PixelImage
+`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
-`filter` TextureFilter
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 #### Returns
 
- Texture
+ [Texture](MicroEngine.Graphics.Texture.md)
 
 </div>

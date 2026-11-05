@@ -78,7 +78,7 @@ public void Start(RectF caret = default)
 
 #### Parameters
 
-`caret` RectF
+`caret` [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Input_TextInput_Stop"></a> Stop\(\)
 

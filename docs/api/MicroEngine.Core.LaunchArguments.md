@@ -334,7 +334,7 @@ public TimeMode? Time { get; init; }
 
 #### Property Value
 
- TimeMode?
+ [TimeMode](MicroEngine.Kernel.TimeMode.md)?
 
 ### <a id="MicroEngine_Core_LaunchArguments_VSync"></a> VSync
 
@@ -450,7 +450,7 @@ public static LaunchArguments From(LaunchRequest request, int clockSeed)
 
 #### Parameters
 
-`request` LaunchRequest
+`request` [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md)
 
 `clockSeed` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 

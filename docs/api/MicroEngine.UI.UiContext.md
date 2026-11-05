@@ -28,7 +28,7 @@ public UiContext(IFont Font, UiTheme Theme, float Unit, float Time)
 
 #### Parameters
 
-`Font` IFont
+`Font` [IFont](MicroEngine.Graphics.IFont.md)
 
 The font of every widget's text.
 
@@ -57,7 +57,7 @@ public IFont Font { get; init; }
 
 #### Property Value
 
- IFont
+ [IFont](MicroEngine.Graphics.IFont.md)
 
 ### <a id="MicroEngine_UI_UiContext_Theme"></a> Theme
 
@@ -106,7 +106,7 @@ public void Deconstruct(out IFont Font, out UiTheme Theme, out float Unit, out f
 
 #### Parameters
 
-`Font` IFont
+`Font` [IFont](MicroEngine.Graphics.IFont.md)
 
 `Theme` [UiTheme](MicroEngine.UI.UiTheme.md)
 

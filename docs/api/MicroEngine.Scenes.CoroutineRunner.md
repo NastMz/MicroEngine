@@ -21,7 +21,7 @@ public sealed class CoroutineRunner : IStateHashed
 
 #### Implements
 
-IStateHashed
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 ## Constructors
 
@@ -59,7 +59,7 @@ public void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 ### <a id="MicroEngine_Scenes_CoroutineRunner_Start_System_Collections_IEnumerator_"></a> Start\(IEnumerator\)
 

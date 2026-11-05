@@ -57,7 +57,7 @@ public void Add(IPhysicsWorld2D physics, SceneWorld? world = null)
 
 `physics` [IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md)
 
-`world` SceneWorld?
+`world` [SceneWorld](MicroEngine.Scenes.SceneWorld.md)?
 
 #### Exceptions
 
@@ -91,6 +91,6 @@ public void Run(FrameContext frame)
 
 #### Parameters
 
-`frame` FrameContext
+`frame` [FrameContext](MicroEngine.Kernel.FrameContext.md)
 
 </div>

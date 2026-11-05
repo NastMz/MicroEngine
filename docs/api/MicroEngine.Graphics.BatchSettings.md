@@ -28,7 +28,7 @@ public BatchSettings(RenderTarget Target, Matrix3x2? View = null, BlendState? Bl
 
 #### Parameters
 
-`Target` RenderTarget
+`Target` [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
 
 Where the batch renders: an offscreen target or the surface target acquired this frame.
 
@@ -36,11 +36,11 @@ Where the batch renders: an offscreen target or the surface target acquired this
 
 Applied after every draw's transform (a camera's <code>WorldToView</code>); null is the identity.
 
-`Blend` BlendState?
+`Blend` [BlendState](MicroEngine.Graphics.Devices.BlendState.md)?
 
 The batch's blend state; null is [AlphaPremultiplied](MicroEngine.Graphics.Devices.BlendState.md#MicroEngine_Graphics_Devices_BlendState_AlphaPremultiplied) (premultiplied colours).
 
-`Sampler` SamplerDescription?
+`Sampler` [SamplerDescription](MicroEngine.Graphics.Devices.SamplerDescription.md)?
 
 The batch's sampler; null is [PointClamp](MicroEngine.Graphics.Devices.SamplerDescription.md#MicroEngine_Graphics_Devices_SamplerDescription_PointClamp).
 
@@ -48,15 +48,15 @@ The batch's sampler; null is [PointClamp](MicroEngine.Graphics.Devices.SamplerDe
 
 The order draws reach the device.
 
-`Scissor` RectI?
+`Scissor` [RectI](MicroEngine.Graphics.Devices.RectI.md)?
 
 The batch's scissor in target pixels; null draws on the whole target.
 
-`Clear` ColorF?
+`Clear` [ColorF](MicroEngine.ColorF.md)?
 
 A premultiplied colour the target is cleared to first; null keeps its contents.
 
-`Viewport` RectI?
+`Viewport` [RectI](MicroEngine.Graphics.Devices.RectI.md)?
 
 The viewport in target pixels; null is the whole target.
 
@@ -72,7 +72,7 @@ public BlendState? Blend { get; init; }
 
 #### Property Value
 
- BlendState?
+ [BlendState](MicroEngine.Graphics.Devices.BlendState.md)?
 
 ### <a id="MicroEngine_Graphics_BatchSettings_Clear"></a> Clear
 
@@ -84,7 +84,7 @@ public ColorF? Clear { get; init; }
 
 #### Property Value
 
- ColorF?
+ [ColorF](MicroEngine.ColorF.md)?
 
 ### <a id="MicroEngine_Graphics_BatchSettings_Sampler"></a> Sampler
 
@@ -96,7 +96,7 @@ public SamplerDescription? Sampler { get; init; }
 
 #### Property Value
 
- SamplerDescription?
+ [SamplerDescription](MicroEngine.Graphics.Devices.SamplerDescription.md)?
 
 ### <a id="MicroEngine_Graphics_BatchSettings_Scissor"></a> Scissor
 
@@ -108,7 +108,7 @@ public RectI? Scissor { get; init; }
 
 #### Property Value
 
- RectI?
+ [RectI](MicroEngine.Graphics.Devices.RectI.md)?
 
 ### <a id="MicroEngine_Graphics_BatchSettings_Sort"></a> Sort
 
@@ -132,7 +132,7 @@ public RenderTarget Target { get; init; }
 
 #### Property Value
 
- RenderTarget
+ [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
 
 ### <a id="MicroEngine_Graphics_BatchSettings_View"></a> View
 
@@ -156,7 +156,7 @@ public RectI? Viewport { get; init; }
 
 #### Property Value
 
- RectI?
+ [RectI](MicroEngine.Graphics.Devices.RectI.md)?
 
 ## Methods
 
@@ -168,21 +168,21 @@ public void Deconstruct(out RenderTarget Target, out Matrix3x2? View, out BlendS
 
 #### Parameters
 
-`Target` RenderTarget
+`Target` [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
 
 `View` [Matrix3x2](https://learn.microsoft.com/dotnet/api/system.numerics.matrix3x2)?
 
-`Blend` BlendState?
+`Blend` [BlendState](MicroEngine.Graphics.Devices.BlendState.md)?
 
-`Sampler` SamplerDescription?
+`Sampler` [SamplerDescription](MicroEngine.Graphics.Devices.SamplerDescription.md)?
 
 `Sort` [SortMode](MicroEngine.Graphics.SortMode.md)
 
-`Scissor` RectI?
+`Scissor` [RectI](MicroEngine.Graphics.Devices.RectI.md)?
 
-`Clear` ColorF?
+`Clear` [ColorF](MicroEngine.ColorF.md)?
 
-`Viewport` RectI?
+`Viewport` [RectI](MicroEngine.Graphics.Devices.RectI.md)?
 
 ### <a id="MicroEngine_Graphics_BatchSettings_Equals_System_Object_"></a> Equals\(object\)
 

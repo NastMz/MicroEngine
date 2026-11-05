@@ -112,7 +112,7 @@ public UiTheme Theme { get; set; }
 
 #### Property Value
 
- UiTheme
+ [UiTheme](MicroEngine.UI.UiTheme.md)
 
 ### <a id="MicroEngine_UI_DialogueBox_VisibleLines"></a> VisibleLines
 
@@ -140,11 +140,11 @@ public void Draw(IRenderer r, IFont font, RectF area)
 
 #### Parameters
 
-`r` IRenderer
+`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`font` IFont
+`font` [IFont](MicroEngine.Graphics.IFont.md)
 
-`area` RectF
+`area` [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_UI_DialogueBox_Show_System_String_System_String___"></a> Show\(string?, params string\[\]\)
 
@@ -174,7 +174,7 @@ public bool Update(float dt, InputMap input, string? confirm = null)
 
 `dt` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`input` InputMap
+`input` [InputMap](MicroEngine.Input.InputMap.md)
 
 `confirm` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 

@@ -19,7 +19,7 @@ public sealed class SdlRendererBackendFactory : IGraphicsBackendFactory
 
 #### Implements
 
-IGraphicsBackendFactory
+[IGraphicsBackendFactory](MicroEngine.Graphics.Devices.IGraphicsBackendFactory.md)
 
 ## Constructors
 
@@ -55,13 +55,13 @@ public IGraphicsDevice Create(ISurface? surface, GraphicsDeviceOptions options)
 
 #### Parameters
 
-`surface` ISurface?
+`surface` [ISurface](MicroEngine.Platform.ISurface.md)?
 
-`options` GraphicsDeviceOptions
+`options` [GraphicsDeviceOptions](MicroEngine.Graphics.Devices.GraphicsDeviceOptions.md)
 
 #### Returns
 
- IGraphicsDevice
+ [IGraphicsDevice](MicroEngine.Graphics.Devices.IGraphicsDevice.md)
 
 ### <a id="MicroEngine_Sdl_SdlRendererBackendFactory_UnsupportedReason_MicroEngine_Platform_ISurface_"></a> UnsupportedReason\(ISurface?\)
 
@@ -73,7 +73,7 @@ public string? UnsupportedReason(ISurface? surface)
 
 #### Parameters
 
-`surface` ISurface?
+`surface` [ISurface](MicroEngine.Platform.ISurface.md)?
 
 #### Returns
 

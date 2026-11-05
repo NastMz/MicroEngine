@@ -77,7 +77,7 @@ public Handle<GraphicsResource> Handle { get; }
 
 #### Property Value
 
- Handle<[GraphicsResource](MicroEngine.Graphics.Devices.GraphicsResource.md)\>
+ [Handle](MicroEngine.Kernel.Handle-1.md)<[GraphicsResource](MicroEngine.Graphics.Devices.GraphicsResource.md)\>
 
 ### <a id="MicroEngine_Graphics_Devices_GraphicsResource_IsDisposed"></a> IsDisposed
 

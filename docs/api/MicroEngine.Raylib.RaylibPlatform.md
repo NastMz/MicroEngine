@@ -23,15 +23,15 @@ public sealed class RaylibPlatform : IPlatform, IPlatformHost, IDisposable, IDis
 
 #### Implements
 
-IPlatform, 
-IPlatformHost, 
+[IPlatform](MicroEngine.Core.IPlatform.md), 
+[IPlatformHost](MicroEngine.Platform.IPlatformHost.md), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable), 
-IDisplayControl, 
-IDisplayPacing, 
-IPreciseDelay, 
-IMonotonicClock, 
-IScreenView, 
-IViewCapture
+[IDisplayControl](MicroEngine.Core.IDisplayControl.md), 
+[IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md), 
+[IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md), 
+[IMonotonicClock](MicroEngine.Platform.IMonotonicClock.md), 
+[IScreenView](MicroEngine.Core.IScreenView.md), 
+[IViewCapture](MicroEngine.Core.IViewCapture.md)
 
 ## Constructors
 
@@ -45,7 +45,7 @@ public RaylibPlatform(GameSettings settings, DesktopOptions options)
 
 #### Parameters
 
-`settings` GameSettings
+`settings` [GameSettings](MicroEngine.Core.GameSettings.md)
 
 `options` [DesktopOptions](MicroEngine.Raylib.DesktopOptions.md)
 
@@ -60,7 +60,7 @@ public RaylibPlatform(PlatformRequest request)
 
 #### Parameters
 
-`request` PlatformRequest
+`request` [PlatformRequest](MicroEngine.Core.PlatformRequest.md)
 
 ## Properties
 
@@ -74,7 +74,7 @@ public IAudioDevice Audio { get; }
 
 #### Property Value
 
- IAudioDevice
+ [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_CanBlock"></a> CanBlock
 
@@ -98,7 +98,7 @@ public DeviceCanvas Canvas { get; }
 
 #### Property Value
 
- DeviceCanvas
+ [DeviceCanvas](MicroEngine.Graphics.DeviceCanvas.md)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Clock"></a> Clock
 
@@ -110,7 +110,7 @@ public IMonotonicClock Clock { get; }
 
 #### Property Value
 
- IMonotonicClock
+ [IMonotonicClock](MicroEngine.Platform.IMonotonicClock.md)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_CurrentDisplay"></a> CurrentDisplay
 
@@ -158,7 +158,7 @@ public IReadOnlyList<DisplayInfo> Displays { get; }
 
 #### Property Value
 
- [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<DisplayInfo\>
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[DisplayInfo](MicroEngine.Core.DisplayInfo.md)\>
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Graphics"></a> Graphics
 
@@ -170,7 +170,7 @@ public IGraphicsDevice Graphics { get; }
 
 #### Property Value
 
- IGraphicsDevice
+ [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Input"></a> Input
 
@@ -183,7 +183,7 @@ public IInputSource Input { get; }
 
 #### Property Value
 
- IInputSource
+ [IInputSource](MicroEngine.Input.IInputSource.md)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Letterbox"></a> Letterbox
 
@@ -196,7 +196,7 @@ public Color Letterbox { get; set; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_MainSurface"></a> MainSurface
 
@@ -208,7 +208,7 @@ public ISurface MainSurface { get; }
 
 #### Property Value
 
- ISurface
+ [ISurface](MicroEngine.Platform.ISurface.md)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Now"></a> Now
 
@@ -233,7 +233,7 @@ public static PlatformProfile Profile { get; }
 
 #### Property Value
 
- PlatformProfile
+ [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Suspended"></a> Suspended
 
@@ -257,7 +257,7 @@ public ITouchScreen Touch { get; }
 
 #### Property Value
 
- ITouchScreen
+ [ITouchScreen](MicroEngine.Input.ITouchScreen.md)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_VSync"></a> VSync
 
@@ -281,7 +281,7 @@ public WindowMode WindowMode { get; }
 
 #### Property Value
 
- WindowMode
+ [WindowMode](MicroEngine.Core.WindowMode.md)
 
 ## Methods
 
@@ -295,7 +295,7 @@ public IRenderer BeginFrame()
 
 #### Returns
 
- IRenderer
+ [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 ### <a id="MicroEngine_Raylib_RaylibPlatform_Delay_System_Double_"></a> Delay\(double\)
 
@@ -353,7 +353,7 @@ public bool PumpEvents(IEngineEventSink sink)
 
 #### Parameters
 
-`sink` IEngineEventSink
+`sink` [IEngineEventSink](MicroEngine.Platform.IEngineEventSink.md)
 
 #### Returns
 
@@ -397,7 +397,7 @@ public bool SetWindowMode(WindowMode mode)
 
 #### Parameters
 
-`mode` WindowMode
+`mode` [WindowMode](MicroEngine.Core.WindowMode.md)
 
 #### Returns
 

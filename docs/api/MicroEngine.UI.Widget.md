@@ -48,7 +48,7 @@ public RectF Bounds { get; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_UI_Widget_Children"></a> Children
 
@@ -236,7 +236,7 @@ public void Arrange(RectF bounds, UiContext context)
 
 #### Parameters
 
-`bounds` RectF
+`bounds` [RectF](MicroEngine.RectF.md)
 
 `context` [UiContext](MicroEngine.UI.UiContext.md)
 
@@ -250,7 +250,7 @@ protected virtual void ArrangeContent(RectF bounds, UiContext context)
 
 #### Parameters
 
-`bounds` RectF
+`bounds` [RectF](MicroEngine.RectF.md)
 
 `context` [UiContext](MicroEngine.UI.UiContext.md)
 
@@ -264,7 +264,7 @@ public void Draw(IRenderer renderer, UiContext context)
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `context` [UiContext](MicroEngine.UI.UiContext.md)
 
@@ -278,7 +278,7 @@ protected abstract void DrawContent(IRenderer renderer, UiContext context)
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `context` [UiContext](MicroEngine.UI.UiContext.md)
 
@@ -292,7 +292,7 @@ protected virtual void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 ### <a id="MicroEngine_UI_Widget_Measure_MicroEngine_UI_UiContext_"></a> Measure\(UiContext\)
 

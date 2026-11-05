@@ -21,7 +21,7 @@ public sealed class ListedContentSource : IContentSource
 
 #### Implements
 
-IContentSource
+[IContentSource](MicroEngine.Platform.IContentSource.md)
 
 #### Extension Methods
 

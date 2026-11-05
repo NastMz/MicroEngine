@@ -81,7 +81,7 @@ public Sprite? Icon { get; init; }
 
 #### Property Value
 
- Sprite?
+ [Sprite](MicroEngine.Graphics.Sprite.md)?
 
 ### <a id="MicroEngine_UI_Toast_Title"></a> Title
 

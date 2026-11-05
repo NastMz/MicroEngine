@@ -21,7 +21,7 @@ public sealed class AchievementsScene : Scene, IStateHashed
 
 #### Implements
 
-IStateHashed
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 #### Inherited Members
 
@@ -68,9 +68,9 @@ public AchievementsScene(AchievementTracker tracker, UiTheme theme)
 
 #### Parameters
 
-`tracker` AchievementTracker
+`tracker` [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
 
-`theme` UiTheme
+`theme` [UiTheme](MicroEngine.UI.UiTheme.md)
 
 ## Properties
 
@@ -97,7 +97,7 @@ public Color Dim { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_UI_AchievementsScene_IsOverlay"></a> IsOverlay
 
@@ -171,7 +171,7 @@ public override void Draw(IRenderer r)
 
 #### Parameters
 
-`r` IRenderer
+`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 ### <a id="MicroEngine_UI_AchievementsScene_Update_System_Single_"></a> Update\(float\)
 

@@ -26,7 +26,7 @@ void Start(RectF caret)
 
 #### Parameters
 
-`caret` RectF
+`caret` [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Input_ITextInputControl_Stop"></a> Stop\(\)
 

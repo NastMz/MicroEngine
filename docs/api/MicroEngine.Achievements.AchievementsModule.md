@@ -24,7 +24,7 @@ public sealed class AchievementsModule : IEngineModule
 
 #### Implements
 
-IEngineModule
+[IEngineModule](MicroEngine.Kernel.IEngineModule.md)
 
 ## Examples
 
@@ -106,7 +106,7 @@ public void Configure(EngineBuilder builder)
 
 #### Parameters
 
-`builder` EngineBuilder
+`builder` [EngineBuilder](MicroEngine.Kernel.EngineBuilder.md)
 
 ### <a id="MicroEngine_Achievements_AchievementsModule_Step_System_Single_"></a> Step\(float\)
 

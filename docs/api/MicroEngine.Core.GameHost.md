@@ -56,7 +56,7 @@ public HostBuilder Builder { get; }
 
 #### Property Value
 
- HostBuilder
+ [HostBuilder](MicroEngine.Hosting.HostBuilder.md)
 
 ### <a id="MicroEngine_Core_GameHost_Platforms"></a> Platforms
 
@@ -80,7 +80,7 @@ public LaunchRequest Request { get; }
 
 #### Property Value
 
- LaunchRequest
+ [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md)
 
 ## Methods
 
@@ -117,13 +117,13 @@ public static GameHost Create(HostEnvironment environment, LaunchRequest request
 
 #### Parameters
 
-`environment` HostEnvironment
+`environment` [HostEnvironment](MicroEngine.Hosting.HostEnvironment.md)
 
-`request` LaunchRequest
+`request` [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md)
 
-`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<HostBuilder\>
+`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[HostBuilder](MicroEngine.Hosting.HostBuilder.md)\>
 
-`defaults` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<HostBuilder\>?
+`defaults` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[HostBuilder](MicroEngine.Hosting.HostBuilder.md)\>?
 
 #### Returns
 
@@ -249,7 +249,7 @@ public static GameSession CreateSession(Func<LaunchRequest, GameHost> compose)
 
 #### Parameters
 
-`compose` [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<LaunchRequest, [GameHost](MicroEngine.Core.GameHost.md)\>
+`compose` [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[LaunchRequest](MicroEngine.Hosting.LaunchRequest.md), [GameHost](MicroEngine.Core.GameHost.md)\>
 
 #### Returns
 

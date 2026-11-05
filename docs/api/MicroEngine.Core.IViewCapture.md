@@ -43,7 +43,7 @@ PixelImage CaptureScreen()
 
 #### Returns
 
- PixelImage
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
 ### <a id="MicroEngine_Core_IViewCapture_CaptureUi"></a> CaptureUi\(\)
 
@@ -55,7 +55,7 @@ PixelImage? CaptureUi()
 
 #### Returns
 
- PixelImage?
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)?
 
 ### <a id="MicroEngine_Core_IViewCapture_CaptureWorld"></a> CaptureWorld\(\)
 
@@ -67,7 +67,7 @@ PixelImage CaptureWorld()
 
 #### Returns
 
- PixelImage
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
 ### <a id="MicroEngine_Core_IViewCapture_SaveWorldScreenshot_System_String_"></a> SaveWorldScreenshot\(string\)
 

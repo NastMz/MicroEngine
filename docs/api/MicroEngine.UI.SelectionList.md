@@ -87,11 +87,11 @@ public void Draw(IRenderer r, IFont font, Vector2 position, UiTheme theme, float
 
 #### Parameters
 
-`r` IRenderer
+`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 The renderer.
 
-`font` IFont
+`font` [IFont](MicroEngine.Graphics.IFont.md)
 
 The font.
 
@@ -171,7 +171,7 @@ public int? Update(InputMap input, string? up = null, string? down = null, strin
 
 #### Parameters
 
-`input` InputMap
+`input` [InputMap](MicroEngine.Input.InputMap.md)
 
 `up` [string](https://learn.microsoft.com/dotnet/api/system.string)?
 

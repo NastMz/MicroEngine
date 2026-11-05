@@ -19,7 +19,7 @@ public sealed class CompositeInput : IInputSource
 
 #### Implements
 
-IInputSource
+[IInputSource](MicroEngine.Input.IInputSource.md)
 
 ## Constructors
 
@@ -33,7 +33,7 @@ public CompositeInput(IReadOnlyList<IInputSource> sources)
 
 #### Parameters
 
-`sources` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<IInputSource\>
+`sources` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[IInputSource](MicroEngine.Input.IInputSource.md)\>
 
 ## Properties
 
@@ -71,7 +71,7 @@ public GamepadStyle PadStyle { get; }
 
 #### Property Value
 
- GamepadStyle
+ [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
 
 ### <a id="MicroEngine_Core_CompositeInput_Pointer"></a> Pointer
 
@@ -83,7 +83,7 @@ public PointerState Pointer { get; }
 
 #### Property Value
 
- PointerState
+ [PointerState](MicroEngine.Input.PointerState.md)
 
 ### <a id="MicroEngine_Core_CompositeInput_Sources"></a> Sources
 
@@ -95,7 +95,7 @@ public IReadOnlyList<IInputSource> Sources { get; }
 
 #### Property Value
 
- [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<IInputSource\>
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[IInputSource](MicroEngine.Input.IInputSource.md)\>
 
 ## Methods
 
@@ -109,7 +109,7 @@ public float GetPadAxis(PadAxis axis)
 
 #### Parameters
 
-`axis` PadAxis
+`axis` [PadAxis](MicroEngine.Input.PadAxis.md)
 
 #### Returns
 
@@ -125,7 +125,7 @@ public bool IsKeyDown(Key key)
 
 #### Parameters
 
-`key` Key
+`key` [Key](MicroEngine.Input.Key.md)
 
 #### Returns
 
@@ -141,7 +141,7 @@ public bool IsPadDown(PadButton button)
 
 #### Parameters
 
-`button` PadButton
+`button` [PadButton](MicroEngine.Input.PadButton.md)
 
 #### Returns
 

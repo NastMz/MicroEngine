@@ -34,7 +34,7 @@ public Renderer2D(IGraphicsDevice device)
 
 #### Parameters
 
-`device` IGraphicsDevice
+`device` [IGraphicsDevice](MicroEngine.Graphics.Devices.IGraphicsDevice.md)
 
 ## Properties
 
@@ -48,7 +48,7 @@ public IGraphicsDevice Device { get; }
 
 #### Property Value
 
- IGraphicsDevice
+ [IGraphicsDevice](MicroEngine.Graphics.Devices.IGraphicsDevice.md)
 
 ### <a id="MicroEngine_Graphics_Renderer2D_State"></a> State
 
@@ -84,7 +84,7 @@ public RenderTarget? Target { get; }
 
 #### Property Value
 
- RenderTarget?
+ [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)?
 
 ### <a id="MicroEngine_Graphics_Renderer2D_White"></a> White
 
@@ -96,7 +96,7 @@ public Texture White { get; }
 
 #### Property Value
 
- Texture
+ [Texture](MicroEngine.Graphics.Devices.Texture.md)
 
 ## Methods
 
@@ -120,7 +120,7 @@ public void Clear(ColorF color)
 
 #### Parameters
 
-`color` ColorF
+`color` [ColorF](MicroEngine.ColorF.md)
 
 ### <a id="MicroEngine_Graphics_Renderer2D_Dispose"></a> Dispose\(\)
 
@@ -138,13 +138,13 @@ public void Draw(Texture texture, RectF source, in Matrix3x2 world, ColorF tint,
 
 #### Parameters
 
-`texture` Texture
+`texture` [Texture](MicroEngine.Graphics.Devices.Texture.md)
 
-`source` RectF
+`source` [RectF](MicroEngine.RectF.md)
 
 `world` [Matrix3x2](https://learn.microsoft.com/dotnet/api/system.numerics.matrix3x2)
 
-`tint` ColorF
+`tint` [ColorF](MicroEngine.ColorF.md)
 
 `depth` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
@@ -160,9 +160,9 @@ public void DrawGeometry(Texture? texture, ReadOnlySpan<Vertex2D> vertices, Read
 
 #### Parameters
 
-`texture` Texture?
+`texture` [Texture](MicroEngine.Graphics.Devices.Texture.md)?
 
-`vertices` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<Vertex2D\>
+`vertices` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[Vertex2D](MicroEngine.Graphics.Devices.Vertex2D.md)\>
 
 `indices` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[ushort](https://learn.microsoft.com/dotnet/api/system.uint16)\>
 

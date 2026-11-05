@@ -15,7 +15,7 @@ public sealed class DeviceTexture : Texture, IDisposable
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
-Texture ← 
+[Texture](MicroEngine.Graphics.Texture.md) ← 
 [DeviceTexture](MicroEngine.Graphics.DeviceTexture.md)
 
 #### Implements
@@ -24,17 +24,17 @@ Texture ←
 
 #### Inherited Members
 
-Texture.CheckDrawable<TTexture\>\(Texture, IGraphicsDevice\), 
-Texture.Update\(int, int, int, int, ReadOnlySpan<Color\>\), 
-Texture.Update\(PixelImage, int, int\), 
-Texture.Dispose\(\), 
-Texture.Width, 
-Texture.Height, 
-Texture.IsDisposed, 
-Texture.Device, 
-Texture.Bounds, 
-Texture.SizeInBytes, 
-Texture.Filter, 
+[Texture.CheckDrawable<TTexture\>\(Texture, IGraphicsDevice\)](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_CheckDrawable__1_MicroEngine_Graphics_Texture_MicroEngine_Graphics_IGraphicsDevice_), 
+[Texture.Update\(int, int, int, int, ReadOnlySpan<Color\>\)](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Update_System_Int32_System_Int32_System_Int32_System_Int32_System_ReadOnlySpan_MicroEngine_Color__), 
+[Texture.Update\(PixelImage, int, int\)](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Update_MicroEngine_Graphics_PixelImage_System_Int32_System_Int32_), 
+[Texture.Dispose\(\)](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Dispose), 
+[Texture.Width](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Width), 
+[Texture.Height](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Height), 
+[Texture.IsDisposed](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_IsDisposed), 
+[Texture.Device](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Device), 
+[Texture.Bounds](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Bounds), 
+[Texture.SizeInBytes](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_SizeInBytes), 
+[Texture.Filter](MicroEngine.Graphics.Texture.md#MicroEngine_Graphics_Texture_Filter), 
 [object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
 [object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 
 [object.Equals\(object?\)](https://learn.microsoft.com/dotnet/api/system.object.equals\#system\-object\-equals\(system\-object\)), 
@@ -54,7 +54,7 @@ public Texture Native { get; }
 
 #### Property Value
 
- Texture
+ [Texture](MicroEngine.Graphics.Devices.Texture.md)
 
 ### <a id="MicroEngine_Graphics_DeviceTexture_Sampler"></a> Sampler
 
@@ -66,7 +66,7 @@ public SamplerDescription Sampler { get; }
 
 #### Property Value
 
- SamplerDescription
+ [SamplerDescription](MicroEngine.Graphics.Devices.SamplerDescription.md)
 
 ## Methods
 
@@ -80,7 +80,7 @@ protected override void ApplyFilter(TextureFilter filter)
 
 #### Parameters
 
-`filter` TextureFilter
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 ### <a id="MicroEngine_Graphics_DeviceTexture_Release"></a> Release\(\)
 
@@ -108,6 +108,6 @@ protected override void Upload(int x, int y, int width, int height, ReadOnlySpan
 
 `height` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`pixels` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<Color\>
+`pixels` [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[Color](MicroEngine.Color.md)\>
 
 </div>

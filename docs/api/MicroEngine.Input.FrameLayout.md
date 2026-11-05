@@ -38,17 +38,17 @@ public static RectF Fit(Vector2 window, RectF safeArea, int virtualWidth, int vi
 
 `window` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`safeArea` RectF
+`safeArea` [RectF](MicroEngine.RectF.md)
 
 `virtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 `virtualHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`presentation` Presentation?
+`presentation` [Presentation](MicroEngine.Graphics.Presentation.md)?
 
 #### Returns
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 #### Exceptions
 
@@ -68,7 +68,7 @@ public static Vector2 ToCanvas(Vector2 window, RectF frame, int virtualWidth, in
 
 `window` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`frame` RectF
+`frame` [RectF](MicroEngine.RectF.md)
 
 `virtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 

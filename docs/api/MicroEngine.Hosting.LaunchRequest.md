@@ -140,7 +140,7 @@ public TimeMode? EffectiveTime { get; }
 
 #### Property Value
 
- TimeMode?
+ [TimeMode](MicroEngine.Kernel.TimeMode.md)?
 
 ### <a id="MicroEngine_Hosting_LaunchRequest_FrameRateLimit"></a> FrameRateLimit
 
@@ -417,7 +417,7 @@ public TimeMode? Time { get; init; }
 
 #### Property Value
 
- TimeMode?
+ [TimeMode](MicroEngine.Kernel.TimeMode.md)?
 
 ### <a id="MicroEngine_Hosting_LaunchRequest_VSync"></a> VSync
 

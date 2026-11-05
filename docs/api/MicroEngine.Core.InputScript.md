@@ -77,7 +77,7 @@ public static DeviceId ScriptKeyboard { get; }
 
 #### Property Value
 
- DeviceId
+ [DeviceId](MicroEngine.Input.DeviceId.md)
 
 ### <a id="MicroEngine_Core_InputScript_ScriptMouse"></a> ScriptMouse
 
@@ -89,7 +89,7 @@ public static DeviceId ScriptMouse { get; }
 
 #### Property Value
 
- DeviceId
+ [DeviceId](MicroEngine.Input.DeviceId.md)
 
 ## Methods
 
@@ -107,7 +107,7 @@ public InputScript AddPad(long at, int number, GamepadStyle style = GamepadStyle
 
 `number` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`style` GamepadStyle
+`style` [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
 
 #### Returns
 
@@ -125,7 +125,7 @@ public void Apply(long update, InputMap input)
 
 `update` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-`input` InputMap
+`input` [InputMap](MicroEngine.Input.InputMap.md)
 
 ### <a id="MicroEngine_Core_InputScript_ApplyDevices_System_Int64_MicroEngine_Input_InputSystem_"></a> ApplyDevices\(long, InputSystem\)
 
@@ -139,7 +139,7 @@ public void ApplyDevices(long update, InputSystem input)
 
 `update` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-`input` InputSystem
+`input` [InputSystem](MicroEngine.Input.InputSystem.md)
 
 ### <a id="MicroEngine_Core_InputScript_ApplyPrompts_System_Int64_MicroEngine_Input_ActionPrompts_"></a> ApplyPrompts\(long, ActionPrompts\)
 
@@ -167,7 +167,7 @@ public void ApplyTouches(long update, VirtualControls controls)
 
 `update` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-`controls` VirtualControls
+`controls` [VirtualControls](MicroEngine.Input.VirtualControls.md)
 
 ### <a id="MicroEngine_Core_InputScript_Axis_System_Int64_System_Int32_MicroEngine_Input_PadAxis_System_Single_"></a> Axis\(long, int, PadAxis, float\)
 
@@ -183,7 +183,7 @@ public InputScript Axis(long at, int number, PadAxis axis, float value)
 
 `number` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`axis` PadAxis
+`axis` [PadAxis](MicroEngine.Input.PadAxis.md)
 
 `value` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
@@ -205,7 +205,7 @@ public InputScript Button(long at, int number, PadButton button, bool down)
 
 `number` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`button` PadButton
+`button` [PadButton](MicroEngine.Input.PadButton.md)
 
 `down` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
@@ -279,7 +279,7 @@ public InputScript Key(long at, Key key, bool down)
 
 `at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-`key` Key
+`key` [Key](MicroEngine.Input.Key.md)
 
 `down` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
@@ -411,7 +411,7 @@ public static DeviceId ScriptPad(int number)
 
 #### Returns
 
- DeviceId
+ [DeviceId](MicroEngine.Input.DeviceId.md)
 
 ### <a id="MicroEngine_Core_InputScript_Send_System_Int64_MicroEngine_Input_InputEvent_"></a> Send\(long, InputEvent\)
 
@@ -425,7 +425,7 @@ public InputScript Send(long at, InputEvent e)
 
 `at` [long](https://learn.microsoft.com/dotnet/api/system.int64)
 
-`e` InputEvent
+`e` [InputEvent](MicroEngine.Input.InputEvent.md)
 
 #### Returns
 

@@ -95,7 +95,7 @@ public SaveStore(IStorage storage)
 
 #### Parameters
 
-`storage` IStorage
+`storage` [IStorage](MicroEngine.Platform.IStorage.md)
 
 #### Exceptions
 
@@ -157,7 +157,7 @@ public static IStorage DefaultStorage(string gameId)
 
 #### Returns
 
- IStorage
+ [IStorage](MicroEngine.Platform.IStorage.md)
 
 #### Exceptions
 

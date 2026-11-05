@@ -40,16 +40,16 @@ RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight,
 
 `window` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`safeArea` RectF
+`safeArea` [RectF](MicroEngine.RectF.md)
 
 `virtualWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
 `virtualHeight` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-`presentation` Presentation?
+`presentation` [Presentation](MicroEngine.Graphics.Presentation.md)?
 
 #### Returns
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 </div>

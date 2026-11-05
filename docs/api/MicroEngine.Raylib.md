@@ -2,7 +2,7 @@
 
 <div data-pagefind-weight="0.3">
 
-The raylib platform: desktops and browsers (WebAssembly), with the browser launcher and the browser page it reads.
+The raylib platform for desktops (in the published SDK, also the browser platform).
 
 Guide: [Backends and platforms](../manual/backends.md)  
 

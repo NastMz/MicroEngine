@@ -158,8 +158,11 @@ written storage of sites not visited for seven days. There is no cloud copy.
 | `script=<name>` | Plays `scripts/<name>` as `--script` does on desktop (seed 1, captures kept in memory) |
 | `autostart=1` | Starts without waiting for a click (audio then stays suspended) |
 
-`window.microengine` exposes the state, `stats()` ("updates frames"), `audio()`, `trace()` (scene and input
-actions per frame, development packages only) and `captures()`. Release packages ignore the URL.
+`window.microengine` exposes the state, `stats()` ("updates frames"), `audio()`, `trace()` and `captures()`.
+`trace()` (development packages only) holds one entry per recent frame: the current scene, the input actions that
+were down in any of the frame's fixed updates (recorded after each update's input, so a press shorter than a frame
+still shows when its frame catches up with several updates), the touch controls' state and the scene's
+`Describe()`. Release packages ignore the URL.
 
 ## Tests
 

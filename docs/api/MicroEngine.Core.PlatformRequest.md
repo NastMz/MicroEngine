@@ -55,7 +55,7 @@ public Func<IAudioDevice>? Audio { get; init; }
 
 #### Property Value
 
- [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<IAudioDevice\>?
+ [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[IAudioDevice](MicroEngine.Audio.IAudioDevice.md)\>?
 
 ### <a id="MicroEngine_Core_PlatformRequest_AudioOutput"></a> AudioOutput
 
@@ -94,7 +94,7 @@ public IReadOnlyList<IInputSource> ExtraInput { get; init; }
 
 #### Property Value
 
- [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<IInputSource\>
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[IInputSource](MicroEngine.Input.IInputSource.md)\>
 
 ### <a id="MicroEngine_Core_PlatformRequest_Hidden"></a> Hidden
 
@@ -217,11 +217,11 @@ public IInputSource CombineInput(IInputSource own)
 
 #### Parameters
 
-`own` IInputSource
+`own` [IInputSource](MicroEngine.Input.IInputSource.md)
 
 #### Returns
 
- IInputSource
+ [IInputSource](MicroEngine.Input.IInputSource.md)
 
 ### <a id="MicroEngine_Core_PlatformRequest_CreateAudio_System_Func_MicroEngine_Audio_IAudioDevice__"></a> CreateAudio\(Func<IAudioDevice\>\)
 
@@ -235,11 +235,11 @@ public IAudioDevice CreateAudio(Func<IAudioDevice> openOwn)
 
 #### Parameters
 
-`openOwn` [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<IAudioDevice\>
+`openOwn` [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[IAudioDevice](MicroEngine.Audio.IAudioDevice.md)\>
 
 #### Returns
 
- IAudioDevice
+ [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
 ### <a id="MicroEngine_Core_PlatformRequest_Deconstruct_MicroEngine_Core_GameSettings__"></a> Deconstruct\(out GameSettings\)
 
