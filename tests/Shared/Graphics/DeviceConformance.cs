@@ -689,6 +689,70 @@ public abstract class DeviceConformance
         Assert.Contains(undeclared[0].ToString(), e.Requirement!);
     }
 
+    // ---------------------------------------------------------------- 2D effects with shaders compiled offline
+
+    [TestMethod]
+    public void Effects_PaletteSwap_RecoloursAnIndexedImageWithoutTouchingIt()
+    {
+        // A 4 x 1 indexed image (indices 0..3 in red) through a 256-colour palette, stretched to 16 x 4: each index
+        // covers a 4 x 4 block in its palette colour, exactly. Replacing the palette's first four colours recolours the
+        // image; the image itself is not updated.
+        if (!RequireCompiledShaders("palette.frag")) return;
+        using var vertex = ShaderFiles.Compiled("pixel.vert").Create(Device);
+        using var fragment = ShaderFiles.Compiled("palette.frag").Create(Device);
+        using var pipeline = Device.CreatePipeline(new PipelineDescription(vertex, fragment, VertexLayout.Vertex2D, BlendState.Opaque,
+            DepthState.None, new RasterState(), TextureFormat.Rgba8Unorm, null));
+        var indexed = Device.CreateTexture(new TextureDescription(4, 1), Texels.Bytes(0x000000FF, 0x010000FF, 0x020000FF, 0x030000FF));
+        var colors = new uint[256];
+        Array.Fill(colors, 0x000000FFu);
+        uint[] first = [0xFF0000FF, 0x00FF00FF, 0x0000FFFF, 0xFFFFFFFF], second = [0x204060FF, 0xFFFF00FF, 0x00FFFFFF, 0x808080FF];
+        first.CopyTo(colors, 0);
+        var palette = Device.CreateTexture(new TextureDescription(256, 1), Texels.Bytes(colors));
+        var target = Target(16, 4);
+        foreach (var expected in new[] { first, second })
+        {
+            if (ReferenceEquals(expected, second))
+            {
+                var swap = Device.BeginCommands();
+                swap.UpdateTexture(palette, new RectI(0, 0, 4, 1), Texels.Bytes(second));
+                Device.Submit(swap);
+            }
+            DrawEffect(target, pipeline, [indexed, palette], fragmentUniforms: null);
+            var image = Read(target);
+            for (var y = 0; y < 4; y++)
+                for (var x = 0; x < 16; x++)
+                    Assert.AreEqual(expected[x / 4], image[x, y], $"pixel ({x},{y}) shows palette entry {x / 4}");
+        }
+    }
+
+    [TestMethod]
+    public void Effects_FullScreen_DesaturatesTheSceneByAFragmentUniform()
+    {
+        // The scene (red and blue halves, drawn by the built-in pipeline) is rendered to one target and drawn over a
+        // second one through a full-screen effect: amount 0 copies it exactly; amount 1 gives its Rec. 601 luma (red
+        // 0.299 x 255 = 76.2, blue 0.114 x 255 = 29.1), within ±1/255 (named source: 8-bit quantization of the result).
+        if (!RequireCompiledShaders("grayscale.frag")) return;
+        using var vertex = ShaderFiles.Compiled("pixel.vert").Create(Device);
+        using var fragment = ShaderFiles.Compiled("grayscale.frag").Create(Device);
+        using var pipeline = Device.CreatePipeline(new PipelineDescription(vertex, fragment, VertexLayout.Vertex2D, BlendState.Opaque,
+            DepthState.None, new RasterState(), TextureFormat.Rgba8Unorm, null));
+        var white = Device.CreateTexture(new TextureDescription(1, 1), Texels.Bytes(0xFFFFFFFF));
+        var scene = Target(16, 8);
+        Painter.Paint(scene, [new Quad(white, new RectF(0, 0, 1, 1), Matrix3x2.CreateScale(8, 8), new ColorF(1, 0, 0, 1)),
+            new Quad(white, new RectF(0, 0, 1, 1), Matrix3x2.CreateScale(8, 8) * Matrix3x2.CreateTranslation(8, 0), new ColorF(0, 0, 1, 1))], clear: Opaque(0, 0, 0));
+        var output = Target(16, 8);
+        DrawEffect(output, pipeline, [scene.Color!], fragmentUniforms: new Vector4(0, 0, 0, 0));
+        var copy = Read(output);
+        Assert.AreEqual(0xFF0000FFu, copy[3, 3], "amount 0: the scene unchanged");
+        Assert.AreEqual(0x0000FFFFu, copy[12, 3]);
+        DrawEffect(output, pipeline, [scene.Color!], fragmentUniforms: new Vector4(1, 0, 0, 0));
+        var gray = Read(output);
+        foreach (var (x, luma) in new[] { (3, 0.299f * 255), (12, 0.114f * 255) })
+            for (var ch = 0; ch < 3; ch++)
+                Assert.IsTrue(Math.Abs(gray.Channel(x, 4, ch) - luma) <= 1, $"x={x} channel {ch}: expected {luma:F1}, got {gray.Channel(x, 4, ch)}");
+        Assert.AreEqual(255, gray.Channel(3, 4, 3), "alpha kept");
+    }
+
     [TestMethod]
     public void Uniforms_HaveNothingToBindOnTheBuiltInPipeline()
     {
@@ -893,6 +957,39 @@ public abstract class DeviceConformance
         var e = Assert.ThrowsExactly<GraphicsCapabilityException>(() => Device.CreateShader(ShaderFiles.Load("mesh.vert", ShaderFormat.SpirV)));
         Assert.AreEqual(GraphicsFeatures.Shaders, e.Missing);
         return false;
+    }
+
+    /// <summary>
+    /// True on a device with custom shaders; otherwise asserts that creating the compiled shader <paramref name="name"/>
+    /// fails with the typed error naming <see cref="GraphicsFeatures.Shaders"/> and returns false.
+    /// </summary>
+    private bool RequireCompiledShaders(string name)
+    {
+        if (Caps.Has(GraphicsFeatures.Shaders)) return true;
+        var e = Assert.ThrowsExactly<GraphicsCapabilityException>(() => ShaderFiles.Compiled(name).Create(Device));
+        Assert.AreEqual(GraphicsFeatures.Shaders, e.Missing);
+        Assert.AreEqual(Caps.Backend, e.Device);
+        return false;
+    }
+
+    /// <summary>One pass over the whole target: a white Vertex2D quad with texture coordinates 0..1, the textures in slots 0.., the projection as vertex uniform 0.</summary>
+    private void DrawEffect(RenderTarget target, Pipeline pipeline, Texture[] textures, Vector4? fragmentUniforms)
+    {
+        using var vertices = Device.CreateBuffer(new BufferDescription(4 * Vertex2D.SizeInBytes, BufferUsage.Vertex));
+        using var indices = Device.CreateBuffer(new BufferDescription(12, BufferUsage.Index));
+        var list = Device.BeginCommands();
+        list.UpdateBuffer<Vertex2D>(vertices, 0, QuadVertices(0, 0, target.Width, target.Height, ColorF.White));
+        list.UpdateBuffer<ushort>(indices, 0, [0, 1, 2, 0, 2, 3]);
+        list.BeginPass(new PassDescription(new ColorAttachment(target, LoadOp.Clear, Clear: Opaque(0, 0, 0))));
+        list.SetPipeline(pipeline);
+        for (var slot = 0; slot < textures.Length; slot++) list.SetTexture(slot, textures[slot], Device.GetSampler(SamplerDescription.PointClamp));
+        list.SetVertices(vertices);
+        list.SetIndices(indices);
+        list.SetUniforms(ShaderStage.Vertex, 0, Matrix4x4.CreateOrthographicOffCenter(0, target.Width, target.Height, 0, 0, 1));
+        if (fragmentUniforms is { } u) list.SetUniforms(ShaderStage.Fragment, 0, u);
+        list.DrawIndexed(6);
+        list.EndPass();
+        Device.Submit(list);
     }
 
     /// <summary>One pass: clear colour to black (and depth to <paramref name="clearDepth"/> when not null), one non-indexed draw of <paramref name="mesh"/>.</summary>

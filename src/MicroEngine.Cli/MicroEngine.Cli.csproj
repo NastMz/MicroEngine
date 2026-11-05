@@ -30,4 +30,13 @@
     <!-- PNG reading and writing for icons. -->
     <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- `microengine shaders`: SPIRV-Cross (C API and its native library for every desktop system, through Silk.NET)
+         turns SPIR-V into MSL and reflects resource counts; it ships with the tool. -->
+    <PackageReference Include="Silk.NET.SPIRV.Cross" Version="[2.22.0]" />
+    <!-- DXC (HLSL to DXIL and SPIR-V) is Microsoft's, under its own licence terms, with Windows binaries only: the tool
+         does not ship it but finds it in the NuGet packages folder and restores this exact version there on first use
+         (Shaders.cs). Referenced here without assets only so that repository builds and tests have it in the cache. -->
+    <PackageReference Include="Microsoft.Direct3D.DXC" Version="[1.8.2505.32]" ExcludeAssets="all" PrivateAssets="all" />
+  </ItemGroup>
 </Project>

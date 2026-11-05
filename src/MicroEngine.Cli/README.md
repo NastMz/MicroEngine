@@ -10,6 +10,7 @@ cd MyGame
 microengine run
 microengine package windows      # linux, macos, android, ios, ios-simulator, web
 microengine doctor               # what this machine can build
+microengine shaders              # compile Shaders/*.hlsl ahead of time (Windows)
 ```
 
 It drives the .NET SDK and each system's own tools (Android SDK, Xcode, codesign); signing keys come from environment

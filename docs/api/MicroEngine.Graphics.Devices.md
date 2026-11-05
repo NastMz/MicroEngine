@@ -26,6 +26,14 @@ Rules: commands execute in recording order (an update affects only draws recorde
 viewport and scissor are pass-scoped (each pass starts with none bound, the whole target as viewport and no scissor);
 uniform data persist for the rest of the list once set.
 
+ [CompiledShader](MicroEngine.Graphics.Devices.CompiledShader.md)
+
+A shader compiled ahead of time from one HLSL source into every format a tier-1 device may accept (DXIL for
+Direct3D 12, SPIR-V for Vulkan, MSL for Metal), with the resource counts reflection found. It is what
+<code>microengine shaders</code> writes (one <code>.shader</code> file per HLSL file) and what a game ships: nothing compiles at
+run time. [DescriptionFor](MicroEngine.Graphics.Devices.CompiledShader.md#MicroEngine_Graphics_Devices_CompiledShader_DescriptionFor_MicroEngine_Graphics_Devices_GraphicsCapabilities_) picks the format a device should be given; a device without custom shaders
+gets the typed [GraphicsCapabilityException](MicroEngine.Graphics.Devices.GraphicsCapabilityException.md), as for any undeclared capability.
+
  [CompletedReadback](MicroEngine.Graphics.Devices.CompletedReadback.md)
 
 A readback whose pixels were copied when it was requested (devices that execute at submit).
@@ -183,6 +191,10 @@ Immutable sampler state, a value: [GetSampler](MicroEngine.Graphics.Devices.IGra
 Sampling is never texture state. <code class="paramref">Min</code> different from <code class="paramref">Mag</code> requires
 [SeparateFilters](MicroEngine.Graphics.Devices.GraphicsFeatures.md). <code class="paramref">Mip</code> applies only to textures with more than one
 mip level and is otherwise ignored (so [LinearClamp](MicroEngine.Graphics.Devices.SamplerDescription.md#MicroEngine_Graphics_Devices_SamplerDescription_LinearClamp) works on every tier).
+
+ [ShaderCode](MicroEngine.Graphics.Devices.ShaderCode.md)
+
+Bytecode (or MSL source) of one shader in one format, with its entry point.
 
  [ShaderDescription](MicroEngine.Graphics.Devices.ShaderDescription.md)
 
