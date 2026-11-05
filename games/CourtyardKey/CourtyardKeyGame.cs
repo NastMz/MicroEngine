@@ -61,7 +61,9 @@ public sealed class CourtyardKeyGame : Game
 
     protected override void Load()
     {
-        Art = Sprites.Build(Graphics, new MicroEngine.Core.ContentFolder());
+        // The one content file (the heart-trap's sheet) is read through Assets, so it comes from whatever content source
+        // the host composed: a folder on desktop, the packaged assets on phones, the fetched files in browsers.
+        Art = Sprites.Build(Graphics, Assets.Image);
         SoundBank.Register(Audio);
         MusicBank.Register(Audio);
         // Banners stay at the top, over the HUD's edge rather than the play field (the bottom of a room is where the
@@ -76,6 +78,7 @@ public sealed class CourtyardKeyGame : Game
         else Scenes.Push(new TitleScene(this));
     }
 
+    /// <summary>Releases the atlas: the game built it from code, so no asset scope owns it.</summary>
     protected override void Unload() => Art?.Dispose();
 
     /// <summary>

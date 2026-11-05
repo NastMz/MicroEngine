@@ -1,4 +1,3 @@
-using MicroEngine.Core;
 using MicroEngine.Graphics;
 
 namespace CourtyardKey.Visuals;
@@ -10,14 +9,16 @@ public sealed class Sprites : IDisposable
 
     private Sprites(SpriteAtlas atlas) => _atlas = atlas;
 
-    public static Sprites Build(IGraphicsDevice device, ContentFolder content)
+    /// <param name="device">The graphics device the atlas is uploaded to.</param>
+    /// <param name="image">Reads a content image by path (the game passes <c>Assets.Image</c>).</param>
+    public static Sprites Build(IGraphicsDevice device, Func<string, PixelImage> image)
     {
         var b = new SpriteAtlasBuilder();
         TileArt.AddAll(b);
         CharacterArt.AddHero(b);
         CharacterArt.AddVillagers(b);
         CreatureArt.AddAll(b);
-        MonsterArt.AddAll(b, content);
+        MonsterArt.AddAll(b, image);
         PropArt.AddAll(b);
         ItemArt.AddAll(b);
         TitleArt.AddAll(b);
