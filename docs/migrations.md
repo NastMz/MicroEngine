@@ -8,6 +8,18 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- Achievements are an optional engine module: a game declares them before the engine is composed, and a game that
+  never declares them has no achievement service, no `engine.achievements` frame system and no achievement file.
+  **Migration:** move the `UseAchievements(catalog, store, theme)` call out of `Load` into the game's constructor or
+  into `public override void Configure(EngineBuilder builder)` (a store created in `Load` moves with it); code that
+  needs the running game (`AchievementToasts.Top`, `Achievements.Unlocked += ...` playing a sound) stays in `Load`.
+  Calling `UseAchievements` from `Load` or later now throws an `InvalidOperationException` that says so. A declared
+  game's tracker and store are services (`Services.Get<AchievementTracker>()`, `Services.Get<SaveStore>()`);
+  compositions without the `Game` façade add `AchievementsModule` (namespace `MicroEngine.Achievements`) and
+  `SavesModule` (namespace `MicroEngine.Saves`) themselves.
+- `SaveStore`, `ISaveStorage` and `FileSaveStorage` moved to the new `MicroEngine.Saves.dll` (carried by the
+  `MicroEngine` package) with their namespace unchanged; nothing to change.
+
 - A frame has a world view and a UI view: `Scene.DrawUi(IRenderer ui)` draws the interface at the window's resolution
   over the world (UI units: window pixels / `Presentation.UiScale`), `Scene.UiContains` says where it takes the pointer,
   `Scene.WorldCamera` is pushed around `Draw`, and `Game.Views` maps positions and the pointer between window pixels,

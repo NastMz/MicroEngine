@@ -44,18 +44,34 @@ The tracker rejects empty ids, goals below 1 and duplicate ids at construction.
 
 ## Turning it on
 
-Call `UseAchievements(catalog, store, theme?)` from `Load`. It creates the tracker over the `"achievements"` slot of
-the store and the banner queue styled with the theme.
+Call `UseAchievements(catalog, store, theme?)` before the engine is composed: from the game's constructor (every SDK
+version) or from its `Configure(EngineBuilder)` override (next SDK version, which adds `Configure`). It creates the tracker over the `"achievements"` slot of the store and the
+banner queue styled with the theme. What only exists once the game runs (sounds, the banners' position) stays in
+`Load`:
 
 ```csharp
-UseAchievements(RiftAchievements.Catalog, Store, Ui.Theme);
-AchievementToasts!.Top = 22;   // below the HUD gradient
-Achievements.Unlocked += _ => Sfx("powerup", 0.8f);
+public override void Configure(EngineBuilder builder) => UseAchievements(RiftAchievements.Catalog, Store, Ui.Theme);
+
+protected override void Load()
+{
+    // ...
+    AchievementToasts!.Top = 22;   // below the HUD gradient
+    Achievements.Unlocked += _ => Sfx("powerup", 0.8f);
+    // ...
+}
 ```
 
 Source: [`games/NeonRift/RiftGame.cs`](../../games/NeonRift/RiftGame.cs)
 
+The published SDK also accepts the call from `Load`. Next SDK version: achievements are an optional engine module.
+Declared before composition, the engine adds the module: the tracker and the store become services
+(`Services.Get<AchievementTracker>()`, `Services.Get<SaveStore>()`), and the `engine.achievements` frame system writes
+progress. A game that never calls `UseAchievements` has no achievement service, no frame system and no achievement
+file, and calling it from `Load` or later throws an `InvalidOperationException` that names the fix.
+
 `Game.Achievements` throws until `UseAchievements` has been called; `Game.HasAchievements` tells whether it was.
+A composition of your own (without the `Game` façade) adds the same module itself:
+`builder.Add(new AchievementsModule(tracker))` (namespace `MicroEngine.Achievements`, next SDK version).
 
 ## Reporting progress
 
@@ -87,7 +103,7 @@ achievement that is already unlocked are ignored. Read state with `Get(id)` (an 
 | Rule | Detail |
 | --- | --- |
 | Unlocks are written at once | `Raise` calls `Flush` on every unlock |
-| Progress is written about once a second | The game loop calls `Flush` every second of simulated time and on shutdown |
+| Progress is written about once a second | The `engine.achievements` frame system calls `Flush` every second of simulated time; the game also flushes on suspension and on shutdown |
 | `Unlocked` fires once | Never for achievements loaded as already unlocked |
 | Missing or corrupt data starts fresh | The store sets corrupt data aside ([Persistence](persistence.md#failure-handling)) |
 | An unreadable save is never overwritten | `Flush` returns `false` and keeps progress in memory for that session |

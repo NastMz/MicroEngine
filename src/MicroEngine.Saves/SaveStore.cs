@@ -6,7 +6,7 @@ namespace MicroEngine.Core;
 /// Small JSON persistence for settings and progress. Without a directory or a storage of its own, a store keeps its slots
 /// in the platform's default medium (<see cref="DefaultStorage(string)"/>): files under the user's data folder
 /// (<see cref="DefaultDirectory"/>), and the page's localStorage in browsers. A composition can hand a game another medium
-/// (<see cref="Hosting.HostBuilder.Storage"/>); tests pass a temporary directory.
+/// (<c>HostBuilder.Storage</c>); tests pass a temporary directory.
 /// Corrupt or missing data yields null instead of crashing the game; corrupt data is set aside
 /// ("&lt;slot&gt;.corrupt.json" for files) so the next save cannot destroy it. A slot that exists but could not be
 /// read (locked file, blocked browser storage) is never written by this store, because the game is then
@@ -50,7 +50,7 @@ public sealed class SaveStore
     /// The platform's default save medium for a game: the page's localStorage in browsers
     /// (<see cref="Platform.BrowserStorage"/>, keys <c>microengine/&lt;gameId&gt;/&lt;slot&gt;</c>), files in
     /// <see cref="DefaultDirectory"/> everywhere else. A rule of the platform, not a setting: a host that wants another
-    /// medium composes it (<see cref="Hosting.HostBuilder.Storage"/>) and the game passes it to
+    /// medium composes it (<c>HostBuilder.Storage</c>) and the game passes it to
     /// <see cref="SaveStore(Platform.IStorage)"/>.
     /// </summary>
     /// <exception cref="ArgumentException"><paramref name="gameId"/> is null, empty or white space.</exception>

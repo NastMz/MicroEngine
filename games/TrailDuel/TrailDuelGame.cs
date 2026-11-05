@@ -24,6 +24,9 @@ public sealed class TrailDuelGame : Game
     {
         _saveDirectory = saveDirectory;
         _debugStart = debugStart ?? Environment.GetEnvironmentVariable("TRAIL_DEBUG");
+        Saves = new SaveStore("TrailDuel", _saveDirectory);
+        // Declared before the engine is composed, so it adds the achievements module.
+        UseAchievements(TrailAchievements.Catalog, Saves, Ui.UiKit.Theme);
     }
 
     public override GameSettings Settings { get; } = new("Trail Duel") { Background = Color.Hex("2b2140") };
@@ -63,13 +66,11 @@ public sealed class TrailDuelGame : Game
 
     protected override void Load()
     {
-        Saves = new SaveStore("TrailDuel", _saveDirectory);
         var content = new ContentFolder();
         Atlas = AtlasFactory.Build(Graphics, content);
         SoundBank.Register(Audio);
         MusicBank.Register(Audio, content);
         Audio.MusicVolume = 0.6f;
-        UseAchievements(TrailAchievements.Catalog, Saves, Ui.UiKit.Theme);
         Achievements.Unlocked += _ => Audio.Play("sparkle", 0.8f);
         if (_debugStart is { Length: > 0 } debug && DebugStart.Create(this, debug) is { } scene) Scenes.Push(scene);
         else Scenes.Push(new TitleScene(this));

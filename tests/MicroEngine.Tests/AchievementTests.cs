@@ -23,14 +23,72 @@ public sealed class AchievementTests
 
     private SaveStore Store(string game = "game") => new(game, Path.Combine(_dir, game));
 
-    private sealed class TestGame(SaveStore store, Achievement[] catalog) : Game
+    /// <summary>Declares its achievements when it is created, before the engine is composed.</summary>
+    private sealed class TestGame : Game
+    {
+        public TestGame(SaveStore store, Achievement[] catalog) => UseAchievements(catalog, store);
+        public override GameSettings Settings { get; } = new("achievements");
+        protected override void Load() => Scenes.Push(new Idle());
+    }
+
+    /// <summary>Declares its achievements from <see cref="Game.Configure"/>, the other place before composition.</summary>
+    private sealed class ConfiguredGame(SaveStore store) : Game
     {
         public override GameSettings Settings { get; } = new("achievements");
-        protected override void Load()
+        public override void Configure(MicroEngine.Kernel.EngineBuilder builder) => UseAchievements(Catalog, store);
+        protected override void Load() => Scenes.Push(new Idle());
+    }
+
+    /// <summary>Asks for achievements only once the engine runs, which is too late to compose them.</summary>
+    private sealed class LateGame(SaveStore store) : Game
+    {
+        public override GameSettings Settings { get; } = new("achievements");
+        protected override void Load() => UseAchievements(Catalog, store);
+    }
+
+    private sealed class PlainGame : Game
+    {
+        public override GameSettings Settings { get; } = new("plain");
+        protected override void Load() => Scenes.Push(new Idle());
+    }
+
+    [TestMethod]
+    public void A_game_that_declares_achievements_gets_the_module_its_store_and_its_flush_system()
+    {
+        foreach (var game in new Game[] { new TestGame(Store(), Catalog), new ConfiguredGame(Store()) })
         {
-            UseAchievements(catalog, store);
-            Scenes.Push(new Idle());
+            game.InitializeForTest(new HeadlessPlatform());
+            Assert.AreSame(game.Achievements, game.Services.Get<AchievementTracker>(), game.GetType().Name);
+            Assert.IsTrue(game.Services.Contains<SaveStore>(), "the store achievements persist in is a service too");
+            CollectionAssert.AreEqual(new[] { "engine.audio", "engine.achievements", "engine.input.end", "engine.assets.playing" },
+                game.Schedule.Order(MicroEngine.Kernel.FramePhase.PostFixed).ToArray(), "the system keeps its place in the step");
+            Assert.IsNotNull(game.AchievementToasts);
         }
+    }
+
+    [TestMethod]
+    public void A_game_without_achievements_pays_nothing_for_them()
+    {
+        var game = new PlainGame();
+        game.InitializeForTest(new HeadlessPlatform());
+        Assert.IsFalse(game.HasAchievements);
+        Assert.IsNull(game.AchievementToasts);
+        Assert.IsFalse(game.Services.Contains<AchievementTracker>());
+        Assert.IsFalse(game.Services.Contains<SaveStore>());
+        Assert.IsFalse(game.Schedule.Contains("engine.achievements"), "no flush system");
+        Assert.ThrowsExactly<InvalidOperationException>(() => game.Achievements);
+    }
+
+    [TestMethod]
+    public void Achievements_asked_for_once_the_engine_runs_are_refused_with_the_fix()
+    {
+        var store = Store();
+        var game = new LateGame(store);
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() => game.InitializeForTest(new HeadlessPlatform()));
+        StringAssert.Contains(error.Message, "constructor");
+        StringAssert.Contains(error.Message, "Configure");
+        Assert.IsFalse(game.HasAchievements);
+        Assert.IsFalse(store.Exists(AchievementTracker.SaveSlot), "nothing was written");
     }
 
     private sealed class Idle : Scene
