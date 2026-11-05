@@ -21,7 +21,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 repo=$(cd "$here/../../.." && pwd)
 # box2d.env may be checked out with CRLF line ends on Windows.
 # shellcheck source=box2d.env
-source <(tr -d '\r' < "$here/box2d.env")
+eval "$(tr -d '\r' < "$here/box2d.env")" # not `source <(...)`: macOS's bash 3.2 reads nothing from it
 
 die() { echo "error: $*" >&2; exit 1; }
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) win=1 ;; *) win=0 ;; esac
