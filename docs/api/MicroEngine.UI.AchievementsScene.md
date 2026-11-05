@@ -47,6 +47,7 @@ IStateHashed
 [Scene.Objects](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Objects), 
 [Scene.TouchActions](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_TouchActions), 
 [Scene.WorldCamera](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_WorldCamera), 
+[Scene.Widgets](MicroEngine.Scenes.Scene.md\#MicroEngine\_Scenes\_Scene\_Widgets), 
 [object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
 [object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 
 [object.Equals\(object?\)](https://learn.microsoft.com/dotnet/api/system.object.equals\#system\-object\-equals\(system\-object\)), 
@@ -67,9 +68,9 @@ public AchievementsScene(AchievementTracker tracker, UiTheme theme)
 
 #### Parameters
 
-`tracker` [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
+`tracker` AchievementTracker
 
-`theme` [UiTheme](MicroEngine.UI.UiTheme.md)
+`theme` UiTheme
 
 ## Properties
 

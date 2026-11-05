@@ -40,7 +40,8 @@ public sealed class ArchitectureTests
         [Box2D] = [Physics, Scene, Kernel],
         [UI] = [Graphics2D, Text, Input, Graphics, Content, Kernel, Platform],
         [Saves] = [Kernel, Platform],
-        [Achievements] = [Kernel, Platform, UI, Graphics2D, Text, Input, Graphics, Content],
+        // Progress persists through the save store (ADR 0006).
+        [Achievements] = [Kernel, Platform, Saves, UI, Graphics2D, Text, Input, Graphics, Content],
         [Hosting] = [Kernel, Platform],
         [Testing] = [.. Abstractions, .. Modules, Core],
         // Transitional, deleted at the end of stage 5: the legacy Draw(IRenderer) needs the IRenderer facade, still in the core.
@@ -234,6 +235,22 @@ public sealed class ArchitectureTests
     }
 
     [TestMethod]
+    public void The_compiled_achievements_reference_only_the_kernel_the_platform_saves_and_2D_graphics()
+    {
+        var achievements = typeof(AchievementTracker).Assembly;
+        Assert.AreEqual(Achievements, achievements.GetName().Name);
+        foreach (var type in new[] { typeof(Achievement), typeof(AchievementStatus), typeof(AchievementSaveData), typeof(AchievementRecord), typeof(MicroEngine.Achievements.AchievementsModule) })
+            Assert.AreEqual(Achievements, type.Assembly.GetName().Name, type.Name);
+        var engine = achievements.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
+        Assert.IsTrue(engine.All(Allowed[Achievements].Contains), string.Join(", ", engine));
+        CollectionAssert.Contains(engine, Saves, "achievements persist through the save store");
+        CollectionAssert.DoesNotContain(engine, Core);
+        // Code compiled against an earlier MicroEngine.dll still finds the achievement types there.
+        CollectionAssert.IsSubsetOf(new[] { typeof(Achievement), typeof(AchievementStatus), typeof(AchievementSaveData), typeof(AchievementRecord), typeof(AchievementTracker) },
+            typeof(Game).Assembly.GetForwardedTypes());
+    }
+
+    [TestMethod]
     public void The_compiled_graphics_contract_references_only_the_kernel_and_the_platform_contracts()
     {
         var graphics = typeof(MicroEngine.Graphics.Devices.IGraphicsDevice).Assembly;
@@ -272,6 +289,24 @@ public sealed class ArchitectureTests
         Assert.IsFalse(typeof(Game).Assembly.GetReferencedAssemblies().Any(a => a.Name == "FontStashSharp"), "the core no longer rasterizes fonts");
         // Code compiled against an earlier MicroEngine.dll still finds the font types there.
         CollectionAssert.IsSubsetOf(fonts.Append(typeof(MicroEngine.Graphics.BitmapFont)).ToArray(), typeof(Game).Assembly.GetForwardedTypes());
+    }
+
+    [TestMethod]
+    public void The_compiled_UI_references_only_the_2D_layer_text_input_the_graphics_contract_content_the_kernel_and_the_platform()
+    {
+        var ui = typeof(MicroEngine.UI.UiRoot).Assembly;
+        Assert.AreEqual(UI, ui.GetName().Name);
+        var moved = new[] { typeof(MicroEngine.UI.Typewriter), typeof(MicroEngine.UI.SelectionList), typeof(MicroEngine.UI.UiTheme) };
+        var widgets = new[] { typeof(MicroEngine.UI.Widget), typeof(MicroEngine.UI.Button), typeof(MicroEngine.UI.Label), typeof(MicroEngine.UI.Panel),
+            typeof(MicroEngine.UI.Stack), typeof(MicroEngine.UI.TextField), typeof(MicroEngine.UI.Toasts), typeof(MicroEngine.UI.UiActions) };
+        foreach (var type in moved.Concat(widgets)) Assert.AreEqual(UI, type.Assembly.GetName().Name, $"{type.Name} is the UI's");
+        var engine = ui.GetReferencedAssemblies().Select(a => a.Name!).Where(n => n.StartsWith("MicroEngine", StringComparison.Ordinal)).ToList();
+        Assert.IsTrue(engine.All(Allowed[UI].Contains), string.Join(", ", engine));
+        CollectionAssert.Contains(engine, Input, "widgets read actions and take events as an input layer");
+        CollectionAssert.Contains(engine, Text, "widgets draw text");
+        // Code compiled against an earlier MicroEngine.dll still finds the moved widgets there.
+        CollectionAssert.IsSubsetOf(moved, typeof(Game).Assembly.GetForwardedTypes());
+        CollectionAssert.Contains(typeof(Game).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList(), UI, "the façade hosts the widgets in scenes");
     }
 
     [TestMethod]

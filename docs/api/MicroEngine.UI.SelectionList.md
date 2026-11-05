@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.UI](MicroEngine.UI.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.UI.dll  
 Guide: [UI widgets](../manual/ui.md)  
 
 A vertical list of options navigated with up/down and chosen with confirm.
@@ -105,7 +105,7 @@ Colours.
 
 `time` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-Seconds, for the cursor's bobbing (for example [Age](MicroEngine.Scenes.Scene.md#MicroEngine_Scenes_Scene_Age)).
+Seconds, for the cursor's bobbing (for example the scene's <code>Age</code>).
 
 `lineHeight` [float](https://learn.microsoft.com/dotnet/api/system.single)?
 

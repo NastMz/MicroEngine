@@ -14,7 +14,7 @@ namespace MicroEngine.Core;
 /// Its run preset (<see cref="Preset"/>) is deterministic time: a stated default of this testing composition that a
 /// run or a game overrides. Nothing the platform does depends on the time mode.
 /// </summary>
-public sealed class HeadlessPlatform : IPlatform, IScreenView
+public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
 {
     private readonly int _width, _height;
     private HeadlessRenderer _renderer;
@@ -45,6 +45,7 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView
         _capabilities.Add<ITextInputControl>(Devices);
         _capabilities.Add(_preset);
         _capabilities.Add<IScreenView>(this);
+        _capabilities.Add<IViewCapture>(this);
         if (request?.Audio is not null) _suppliedAudio = request.CreateAudio(() => SilentAudio);
         _input = request?.CombineInput(Keys) ?? Keys;
     }
@@ -129,11 +130,17 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView
     /// <summary>The renderer, typed so tests can read its counters.</summary>
     public HeadlessRenderer Renderer => _renderer;
     /// <summary>
-    /// The UI view's counting renderer of the current frame (<see cref="IScreenView"/>): the surface's size in pixels, one UI
-    /// unit per pixel; it records draw calls but draws nothing and is not part of captures.
+    /// The UI view's renderer of the current frame (<see cref="IScreenView"/>): the surface's size in pixels, one UI unit per
+    /// pixel. It counts draw calls; with <see cref="Rasterize"/> on it also draws them, and a frame that drew a UI is
+    /// captured with it composited over the world (<see cref="IViewCapture"/>).
     /// </summary>
-    public HeadlessRenderer UiRenderer => _ui ??= new HeadlessRenderer(_surfaceSize.Width, _surfaceSize.Height);
+    public HeadlessRenderer UiRenderer => _ui ??= NewUiRenderer();
     private HeadlessRenderer? _ui;
+    private bool _frameHasUi;
+
+    private HeadlessRenderer NewUiRenderer() => Rasterize
+        ? new HeadlessRenderer(_surfaceSize.Width, _surfaceSize.Height, _graphics)
+        : new HeadlessRenderer(_surfaceSize.Width, _surfaceSize.Height);
 
     (int Width, int Height) IScreenView.ScreenPixels => _surfaceSize;
     (int Width, int Height) IScreenView.CanvasSize => (_width, _height);
@@ -147,13 +154,15 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView
     float IScreenView.UiScale => 1f;
     IRenderer IScreenView.BeginUi()
     {
-        if (_ui is null || _ui.Width != _surfaceSize.Width || _ui.Height != _surfaceSize.Height) _ui = new HeadlessRenderer(_surfaceSize.Width, _surfaceSize.Height);
+        if (_ui is null || _ui.Width != _surfaceSize.Width || _ui.Height != _surfaceSize.Height) _ui = NewUiRenderer();
         _ui.Reset();
+        _ui.Raster?.Clear(Color.Transparent);
+        _frameHasUi = true;
         return _ui;
     }
     /// <summary>Paths of the screenshots requested, in order; a file is written only when <see cref="Rasterize"/> is on.</summary>
     public List<string> Screenshots { get; } = [];
-    /// <summary>Ignored: there is no window around the frame.</summary>
+    /// <summary>The colour around the world in a capture of a frame that drew a UI (<see cref="IViewCapture.CaptureScreen"/>); there is no window to paint.</summary>
     public Color Letterbox { get; set; }
 
     /// <summary>A headless platform with the virtual size of <paramref name="settings"/>.</summary>
@@ -227,18 +236,52 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView
     public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class => _capabilities.TryGet(out capability);
 
     /// <inheritdoc/>
-    public IRenderer BeginFrame() { _renderer.Reset(); return _renderer; }
+    public IRenderer BeginFrame()
+    {
+        _frameHasUi = false;
+        _renderer.Reset();
+        return _renderer;
+    }
     /// <inheritdoc/>
     public void EndFrame() { }
     /// <summary>
-    /// Records <paramref name="path"/> in <see cref="Screenshots"/>; with <see cref="Rasterize"/> on, also writes the
-    /// rasterized frame there as an opaque PNG at scale 1.
+    /// Records <paramref name="path"/> in <see cref="Screenshots"/>; with <see cref="Rasterize"/> on, also writes what the
+    /// player would see there as an opaque PNG at scale 1 (<see cref="IViewCapture.CaptureScreen"/>): the canvas, or, for
+    /// a frame that drew a UI, the surface with the UI over the world.
     /// </summary>
     public void SaveScreenshot(string path)
     {
         Screenshots.Add(path);
-        if (_renderer.Frame is { } frame) File.WriteAllBytes(path, PngEncoder.Encode(frame.ToRgba(), frame.Width, frame.Height));
+        if (_renderer.Rasterizes) Write(path, ((IViewCapture)this).CaptureScreen());
     }
+
+    private static void Write(string path, PixelImage image) => File.WriteAllBytes(path, PngEncoder.Encode(image.ToRgba(), image.Width, image.Height));
+
+    bool IViewCapture.FrameHasUi => _frameHasUi;
+
+    /// <exception cref="InvalidOperationException">The platform does not rasterize (<see cref="Rasterize"/>).</exception>
+    PixelImage IViewCapture.CaptureWorld() => _renderer.Frame ?? throw new InvalidOperationException("Captures need a rasterizing platform (Rasterize = true).");
+
+    PixelImage? IViewCapture.CaptureUi()
+    {
+        if (!_frameHasUi || _ui?.Raster is not { } raster) return null;
+        // As stored: premultiplied, transparent where nothing was drawn.
+        var image = new PixelImage(raster.Width, raster.Height);
+        for (int y = 0; y < raster.Height; y++)
+            for (int x = 0; x < raster.Width; x++) image[x, y] = raster[x, y];
+        return image;
+    }
+
+    PixelImage IViewCapture.CaptureScreen()
+    {
+        var capture = (IViewCapture)this;
+        var world = capture.CaptureWorld();
+        if (capture.CaptureUi() is not { } ui) return world;
+        var view = (IScreenView)this;
+        return ScreenCapture.Compose(world, ui, view.ScreenPixels, view.WorldFrame, Letterbox, Presentation.Upscale);
+    }
+
+    void IViewCapture.SaveWorldScreenshot(string path) => Write(path, ((IViewCapture)this).CaptureWorld());
     /// <summary>Counts the request in <see cref="FullscreenToggles"/>: there is no window to switch.</summary>
     public void ToggleFullscreen() => FullscreenToggles++;
     /// <summary>How many times the game asked to switch between a window and full screen (there is no window to switch).</summary>
@@ -511,6 +554,8 @@ public sealed class HeadlessRenderer : IRenderer
     public int CameraDepth => _cameraDepth;
     /// <summary>Whether this renderer rasterizes (it was created with a graphics device).</summary>
     public bool Rasterizes => _raster is not null;
+    /// <summary>The rasterizer this renderer draws on, or null when it only counts.</summary>
+    internal ReferenceRasterizer? Raster => _raster;
 
     /// <summary>
     /// This frame's draws as text, one line per call, in screen pixels after the camera offset (a backend-neutral form

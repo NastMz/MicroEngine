@@ -25,7 +25,7 @@ namespace MicroEngine.Sdl;
 /// <see cref="IDisplayControl"/>, <see cref="IPlatformDiagnostics"/>, <see cref="IDisplayPacing"/>,
 /// <see cref="IPreciseDelay"/> and <see cref="ITouchScreen"/>.
 /// </summary>
-public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView
+public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture
 {
     private readonly GameSettings _settings;
     private readonly int _captureScale;
@@ -209,6 +209,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _capabilities.Add<IPlatformDiagnostics>(this);
         _capabilities.Add<IDisplayPacing>(this);
         _capabilities.Add<IScreenView>(this);
+        _capabilities.Add<IViewCapture>(this);
         _capabilities.Add<IPreciseDelay>(this);
         _capabilities.Add<ITouchScreen>(_touch);
         _capabilities.Add<IInputBackend>(_input);
@@ -586,6 +587,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         var area = _touch.SafeArea is { Width: > 0, Height: > 0 } safe ? safe : new RectF(0, 0, width, height);
         var (cw, ch) = _settings.EffectivePresentation.CanvasSize(area, _settings.VirtualWidth, _settings.VirtualHeight);
         _canvas.EnsureSize(cw, ch);
+        _frameHasUi = false;
         return _canvas.BeginFrame();
     }
 
@@ -605,8 +607,11 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     IRenderer IScreenView.BeginUi()
     {
         var (width, height) = WindowPixels();
+        _frameHasUi = true;
         return _canvas.BeginUi(width, height, _settings.EffectivePresentation.UiScale);
     }
+
+    private bool _frameHasUi;
 
     /// <inheritdoc/>
     public Color Letterbox { get; set; }
@@ -643,7 +648,30 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     }
 
     /// <inheritdoc/>
-    public void SaveScreenshot(string path) => _canvas.SaveCapture(path, _captureScale);
+    /// <summary>
+    /// Writes what the player saw as a PNG: the canvas at the capture scale, or, for a frame that drew a UI, the window with
+    /// the UI view over the world (<see cref="IViewCapture.CaptureScreen"/>) at the window's size.
+    /// </summary>
+    public void SaveScreenshot(string path)
+    {
+        if (!_frameHasUi) _canvas.SaveCapture(path, _captureScale);
+        else
+        {
+            var screen = ((IViewCapture)this).CaptureScreen();
+            File.WriteAllBytes(path, PngEncoder.Encode(screen.ToRgba(), screen.Width, screen.Height));
+        }
+    }
+
+    bool IViewCapture.FrameHasUi => _frameHasUi;
+    PixelImage IViewCapture.CaptureWorld() => _canvas.Capture();
+    PixelImage? IViewCapture.CaptureUi() => _frameHasUi ? _canvas.CaptureUi() : null;
+    PixelImage IViewCapture.CaptureScreen()
+    {
+        var world = _canvas.Capture();
+        if (!_frameHasUi || _canvas.CaptureUi() is not { } ui) return world;
+        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.EffectivePresentation.Upscale);
+    }
+    void IViewCapture.SaveWorldScreenshot(string path) => _canvas.SaveCapture(path, _captureScale);
 
     /// <summary>Switches between the window and borderless full screen (exclusive full screen goes back to the window).</summary>
     public void ToggleFullscreen() => SetWindowMode(WindowMode == WindowMode.Windowed ? WindowMode.Fullscreen : WindowMode.Windowed);

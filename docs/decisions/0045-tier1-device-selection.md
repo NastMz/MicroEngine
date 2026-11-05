@@ -1,4 +1,4 @@
-# ADR 0044: Choosing the tier-1 device through the normal composition path
+# ADR 0045: Choosing the tier-1 device through the normal composition path
 
 ## Status
 

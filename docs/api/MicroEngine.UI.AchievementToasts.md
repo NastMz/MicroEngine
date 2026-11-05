@@ -6,9 +6,9 @@ Namespace: [MicroEngine.UI](MicroEngine.UI.md)
 Assembly: MicroEngine.dll  
 Guide: [Achievements](../manual/achievements.md)  
 
-Queued "achievement unlocked" banners that slide in at the top of the screen, one at a time.
-Purely visual: they never read input, so play continues underneath. [Game](MicroEngine.Core.Game.md) owns one
-when achievements are enabled and draws it above every scene.
+Queued "achievement unlocked" banners that slide in at the top of the screen, one at a time: the UI's
+[Toasts](MicroEngine.UI.Toasts.md) showing achievements. Purely visual: they never read input, so play continues underneath.
+[Game](MicroEngine.Core.Game.md) owns one when achievements are enabled and draws it above every scene.
 
 ```csharp
 public sealed class AchievementToasts
@@ -22,6 +22,8 @@ public sealed class AchievementToasts
 ## Constructors
 
 ### <a id="MicroEngine_UI_AchievementToasts__ctor"></a> AchievementToasts\(\)
+
+Creates the banners; each one that leaves the screen makes the next achievement current.
 
 ```csharp
 public AchievementToasts()
@@ -55,6 +57,18 @@ public const float SlideTime = 0.25
 
 ## Properties
 
+### <a id="MicroEngine_UI_AchievementToasts_Banners"></a> Banners
+
+The banners themselves, a [Toasts](MicroEngine.UI.Toasts.md) of the UI.
+
+```csharp
+public Toasts Banners { get; }
+```
+
+#### Property Value
+
+ Toasts
+
 ### <a id="MicroEngine_UI_AchievementToasts_Bottom"></a> Bottom
 
 Distance from the bottom edge when fully shown, for games whose HUD sits at the top; null (the default) shows banners at the top.
@@ -77,11 +91,11 @@ public Achievement? Current { get; }
 
 #### Property Value
 
- [Achievement](MicroEngine.Core.Achievement.md)?
+ Achievement?
 
 ### <a id="MicroEngine_UI_AchievementToasts_Heading"></a> Heading
 
-The first line of every banner ("ACHIEVEMENT UNLOCKED" by default).
+The first line of every banner queued from now on ("ACHIEVEMENT UNLOCKED" by default).
 
 ```csharp
 public string Heading { get; set; }
@@ -113,7 +127,7 @@ public UiTheme Theme { get; set; }
 
 #### Property Value
 
- [UiTheme](MicroEngine.UI.UiTheme.md)
+ UiTheme
 
 ### <a id="MicroEngine_UI_AchievementToasts_Top"></a> Top
 
@@ -153,7 +167,7 @@ public void Show(Achievement achievement)
 
 #### Parameters
 
-`achievement` [Achievement](MicroEngine.Core.Achievement.md)
+`achievement` Achievement
 
 ### <a id="MicroEngine_UI_AchievementToasts_Update_System_Single_"></a> Update\(float\)
 

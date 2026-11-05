@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.UI](MicroEngine.UI.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.UI.dll  
 Guide: [UI widgets](../manual/ui.md)  
 
 Reveals text character by character. Confirm skips to the end; a second confirm advances.

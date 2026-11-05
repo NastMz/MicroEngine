@@ -112,7 +112,7 @@ public UiTheme Theme { get; set; }
 
 #### Property Value
 
- [UiTheme](MicroEngine.UI.UiTheme.md)
+ UiTheme
 
 ### <a id="MicroEngine_UI_DialogueBox_VisibleLines"></a> VisibleLines
 

@@ -71,6 +71,34 @@ public abstract class Game : IEngineModule, IStateHashed
     /// </summary>
     public GameViews Views => _views ??= new GameViews(this);
     private GameViews? _views;
+
+    private SceneUiLayer? _uiLayer;
+
+    /// <summary>
+    /// A scene's widgets (<see cref="Scene.Widgets"/>): actions from <see cref="Input"/> under its names, typing through the
+    /// text channel, the game's font, the pointer mapped into UI units by <see cref="Views"/>. The first one adds the
+    /// layer that gives the top scene's widgets their input, above every other layer.
+    /// </summary>
+    internal UI.UiRoot CreateUi()
+    {
+        if (_uiLayer is null)
+        {
+            _uiLayer = new SceneUiLayer(this);
+            InputSystem.Layers.Add(_uiLayer, InputLayerOrder.UI);
+        }
+        return new UI.UiRoot(Input, InputSystem.Text)
+        {
+            Font = Font,
+            PointerToUi = Views.CanvasToUi,
+            UiToCanvas = Views.UiToCanvas,
+        };
+    }
+
+    /// <summary>The UI input layer: what reaches it goes to the widgets of the scene on top, when it has any.</summary>
+    private sealed class SceneUiLayer(Game game) : IInputLayer
+    {
+        public bool Handle(in InputEvent e) => game.Scenes.Current?.UiOrNull is { } ui && ui.Handle(e);
+    }
     /// <summary>
     /// The game's content files: textures, atlases and fonts loaded from <c>Content/</c>, shared and released by the
     /// engine (<see cref="AssetCache"/>). Created before <see cref="Load"/>; everything it loaded is disposed after
@@ -405,8 +433,50 @@ public abstract class Game : IEngineModule, IStateHashed
         Scenes.Draw(renderer);
         AchievementToasts?.Draw(renderer, Font);
         // The UI view: at the window's resolution where the platform offers it, else in the canvas over the world.
-        var ui = TryGetCapability(out IScreenView? screen) ? screen.BeginUi() : renderer;
-        Scenes.DrawUi(ui, separate: !ReferenceEquals(ui, renderer));
+        // The UI view starts at the first thing drawn in it, so a frame whose scenes draw no interface has none (and is
+        // captured as the canvas alone, IViewCapture).
+        if (!TryGetCapability(out IScreenView? screen))
+        {
+            Scenes.DrawUi(renderer);
+            return;
+        }
+        var ui = _uiView.Begin(screen);
+        Scenes.DrawUi(ui);
+        if (ui.Started) Scenes.DrawTransitionUi(ui);
+    }
+
+    private readonly UiViewRenderer _uiView = new();
+
+    /// <summary>A renderer for the UI view that begins it (<see cref="IScreenView.BeginUi"/>) at its first draw call.</summary>
+    private sealed class UiViewRenderer : IRenderer
+    {
+        private IScreenView _screen = null!;
+        private IRenderer? _ui;
+
+        public bool Started => _ui is not null;
+
+        public UiViewRenderer Begin(IScreenView screen)
+        {
+            (_screen, _ui) = (screen, null);
+            return this;
+        }
+
+        private IRenderer Ui => _ui ??= _screen.BeginUi();
+
+        // The size in UI units without beginning the view, as the view's renderer computes it.
+        public int Width => _ui?.Width ?? (int)MathF.Floor(_screen.ScreenPixels.Width / _screen.UiScale + 1e-4f);
+        public int Height => _ui?.Height ?? (int)MathF.Floor(_screen.ScreenPixels.Height / _screen.UiScale + 1e-4f);
+        public void Clear(Color color) => Ui.Clear(color);
+        public void Draw(Texture texture, RectF source, System.Numerics.Vector2 position, Color tint, in DrawOptions options = default) => Ui.Draw(texture, source, position, tint, options);
+        public void DrawStretched(Texture texture, RectF source, RectF destination, Color tint) => Ui.DrawStretched(texture, source, destination, tint);
+        public void FillRect(RectF rect, Color color) => Ui.FillRect(rect, color);
+        public void FillCircle(System.Numerics.Vector2 center, float radius, Color color) => Ui.FillCircle(center, radius, color);
+        public void FillTriangle(System.Numerics.Vector2 a, System.Numerics.Vector2 b, System.Numerics.Vector2 c, Color color) => Ui.FillTriangle(a, b, c, color);
+        public void DrawLine(System.Numerics.Vector2 from, System.Numerics.Vector2 to, float thickness, Color color) => Ui.DrawLine(from, to, thickness, color);
+        public void PushCamera(Camera2D camera) => Ui.PushCamera(camera);
+        public void PopCamera() => Ui.PopCamera();
+        public void SetBlendMode(BlendMode mode) => Ui.SetBlendMode(mode);
+        public void SetClip(RectF? screenRect) => Ui.SetClip(screenRect);
     }
 
     private bool _pausedMusicForSuspension;

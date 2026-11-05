@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Achievements.dll  
 Guide: [Game lifecycle and time](../manual/lifecycle.md)  
 
 What is written to the save slot. Entries are keyed by achievement id.
