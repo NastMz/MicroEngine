@@ -26,7 +26,8 @@
 //              layer, the Box2D backend, the physics contract and what it builds on, their tests, the web toolchain
 //   web        the browser engine suites (web/tests/run.mjs) on development packages in Chrome: loading, real key
 //              events, frame rate, audio level, the scripts replayed (frames compared with the desktop build and
-//              reported); for the engine, the raylib backend, the
+//              reported), and for the SDL web backend also Firefox, repeated scripts, an emulated gamepad and emulated
+//              phones (mobile.mjs); for the engine, the raylib and SDL backends, SDL for the web (SDL3.a), the
 //              web build, a game's code or the suites themselves. Output `web_games`: the changed games when every
 //              such change is a game's own, otherwise all
 //
@@ -45,7 +46,7 @@ const nothing = () => ({ dotnet: false, windows: false, native: false, browser: 
 // First matching rule wins. `checks` lists what the path needs; 'all' means everything.
 const build = /^(Directory\.Build\.(props|targets)|global\.json|NuGet\.config|MicroEngine\.slnx|\.editorconfig|\.gitattributes)$/;
 export const rules = [
-  { pattern: /^\.github\/(workflows\/(ci|checks|deploy-site|sdk|box2d)\.yml|scripts\/)/, checks: 'all', why: 'daily CI itself' },
+  { pattern: /^\.github\/(workflows\/(ci|checks|deploy-site|sdk|box2d|sdl-web)\.yml|scripts\/)/, checks: 'all', why: 'daily CI itself' },
   { pattern: build, checks: 'all', why: 'build settings' },
   { pattern: /^\.github\/workflows\/platforms\.yml$/, checks: ['workflows', 'mobile'], why: 'platform workflow' },
   { pattern: /^\.github\/workflows\//, checks: ['workflows'], why: 'manual workflow' },
@@ -61,7 +62,10 @@ export const rules = [
   { pattern: /^sdk\/(version\.|tests\/(docs|version)\.)/, checks: ['dotnet'], why: 'documented SDK version and samples check' },
   { pattern: /^sdk\//, checks: ['sdk'], why: 'SDK checks' },
   { pattern: /^src\/MicroEngine\.Raylib\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile', 'web'], why: 'raylib backend (desktop and browser)' },
-  { pattern: /^src\/MicroEngine\.(Sdl|Desktop)\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile'], why: 'SDL backend and desktop platforms' },
+  // SDL3.a, the browser build of SDL (sdl-web.yml); MicroEngine.Sdl's package carries it.
+  { pattern: /^src\/MicroEngine\.Sdl\/native\//, checks: ['full', 'sdk', 'web'], why: 'SDL for the web (SDL3.a)' },
+  { pattern: /^src\/MicroEngine\.Sdl\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile', 'web'], why: 'SDL backend (desktop, phones and browser)' },
+  { pattern: /^src\/MicroEngine\.Desktop\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile'], why: 'desktop platforms' },
   // The Box2D backend is an optional package of its own (not in the SDK): its natives and its tests, not the games.
   { pattern: /^src\/MicroEngine\.Physics\.Box2D\/native\//, checks: ['box2d'], why: 'Box2D natives (box2d.yml)' },
   { pattern: /^src\/MicroEngine\.Physics\.Box2D\//, checks: ['dotnet', 'windows', 'box2d'], why: 'Box2D physics backend' },
@@ -81,7 +85,7 @@ export const rules = [
   { pattern: /^(tests|samples)\//, checks: ['dotnet'], why: 'game tests and samples' },
   { pattern: /^web\/(toolchain\.env|setup\.sh|build-raylib-wasm\.sh)$/, checks: ['full', 'sdk', 'web', 'box2d'], why: 'web toolchain (MicroEngine.Raylib carries the web raylib; the Box2D browser library)' },
   { pattern: /^web\/tests\/package(-lock)?\.json$/, checks: ['native', 'sdk', 'web'], why: 'browser driver (desktop captures, browser suites, the SDK test plays its web package)' },
-  { pattern: /^web\/tests\/run\.mjs$/, checks: ['web'], why: 'browser engine suites' },
+  { pattern: /^web\/tests\/(run|mobile|measure)\.mjs$/, checks: ['web'], why: 'browser engine suites' },
   // The scenarios and the desktop runner serve both: the browser suites compare their frames with the desktop's.
   { pattern: /^web\/tests\/(scenarios\.json|desktop\.mjs)$/, checks: ['native', 'web'], why: 'scripted scenarios (desktop and browser)' },
   { pattern: /^web\/tests\//, checks: ['native'], why: 'desktop capture scripts' },

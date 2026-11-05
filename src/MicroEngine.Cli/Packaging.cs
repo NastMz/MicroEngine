@@ -37,8 +37,33 @@ public sealed record PackageRequest(GameProject Game, PackageTarget Target, stri
     public bool DebugKey { get; init; }
     public bool Dev { get; init; }
     public string? RaylibWasm { get; init; }
+    /// <summary>The SDL3.a a web package links (--sdl-wasm); null for the MicroEngine.Sdl package's or web/setup.sh's.</summary>
+    public string? SdlWasm { get; init; }
+    /// <summary>The platform a web package runs on (--web-backend): <see cref="WebBackends.Sdl"/> or <see cref="WebBackends.Raylib"/>.</summary>
+    public string WebBackend { get; init; } = WebBackends.Default;
     /// <summary>File name of the package: &lt;Game&gt;-&lt;version&gt;-&lt;target&gt;.&lt;ext&gt;.</summary>
     public string FileName => $"{Game.Id}-{Game.Version}-{Target.Id}.{Target.Archive}";
+}
+
+/// <summary>The platforms a web package can run on (<c>microengine package web --web-backend</c>).</summary>
+public static class WebBackends
+{
+    /// <summary>SDL 3 compiled to WebAssembly (MicroEngine.Sdl).</summary>
+    public const string Sdl = "sdl";
+    /// <summary>raylib compiled to WebAssembly (MicroEngine.Raylib).</summary>
+    public const string Raylib = "raylib";
+    /// <summary>The platform a web package runs on when none is named.</summary>
+    public const string Default = Raylib;
+
+    /// <summary>The backend named <paramref name="name"/> (ignoring case), or the default for null.</summary>
+    /// <exception cref="CliException">An unknown name.</exception>
+    public static string Parse(string? name) => name?.ToLowerInvariant() switch
+    {
+        null => Default,
+        Sdl => Sdl,
+        Raylib => Raylib,
+        _ => throw new CliException($"unknown web backend '{name}'. Web backends: {Sdl}, {Raylib}.", 2),
+    };
 }
 
 /// <summary>Builds desktop packages (docs/guide/packaging.md): a self-contained single-file executable with its native

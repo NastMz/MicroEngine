@@ -64,3 +64,7 @@ same page in desktop and mobile browsers, with touch controls.
 It needs the `wasm-tools` workload (`dotnet workload install wasm-tools`). raylib for the browser comes inside the
 `MicroEngine.Raylib` package, built with the same emscripten as that workload. A game that references only
 `MicroEngine.Sdl` cannot be packaged for the web; reference `MicroEngine.Desktop` (or `MicroEngine.Raylib`).
+
+Next SDK version (not published yet): `--web-backend sdl` runs the page on SDL 3 compiled to WebAssembly instead of
+raylib, with the same page, input, touch controls and sound. SDL for the browser comes inside the `MicroEngine.Sdl`
+package, so a game that references only `MicroEngine.Sdl` can then be packaged for the web too.

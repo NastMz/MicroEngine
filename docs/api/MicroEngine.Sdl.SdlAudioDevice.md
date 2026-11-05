@@ -9,7 +9,9 @@ Guide: [Backends and platforms](../manual/backends.md)
 SDL3 audio: the engine's mixer ([MixerAudioDevice](MicroEngine.Audio.MixerAudioDevice.md), the same voices, priorities and music on every
 backend) playing through SDL's default playback device. A feeder thread keeps [DefaultLatencyMilliseconds](MicroEngine.Sdl.SdlAudioDevice.md#MicroEngine_Sdl_SdlAudioDevice_DefaultLatencyMilliseconds)
 of audio queued in an SDL audio stream (48 kHz stereo float), so main-thread stalls and garbage collections shorter
-than that are not heard. It works without a window, so a host can use it with another platform.
+than that are not heard. It works without a window, so a host can use it with another platform. In a browser SDL's
+own audio is not used: the mixer plays through the page's AudioWorklet queue, filled once per frame
+([BrowserAudioSink](MicroEngine.Sdl.md)).
 
 ```csharp
 public sealed class SdlAudioDevice : MixerAudioDevice, IAudioDevice, IDisposable

@@ -61,6 +61,8 @@ Builds a file a player installs, into `dist/` next to the project (or `--out`), 
 | `--debug-key` | `android`: sign with this machine's debug key, for testing on your own devices only |
 | `--version-code N` | `android`, `ios`: the build number stores compare (default: minutes from 2026-01-01 to the commit, or to now outside Git, so later builds install over earlier ones) |
 | `--dev` | `web`: a development build that also ships input scripts and accepts URL parameters |
+| `--web-backend B` | `web`: the platform the page runs on, `raylib` (default) or `sdl` (next SDK version, not published yet) |
+| `--sdl-wasm FILE` | `web`, with `--web-backend sdl`: the SDL library to link (default: the one inside the `MicroEngine.Sdl` package; next SDK version) |
 | `--raylib-wasm FILE` | `web`: the raylib library to link (default: the one inside the `MicroEngine.Raylib` package) |
 | `--key LABEL` | a label recorded in `build-info.json`, for your own release tooling (default `local`) |
 

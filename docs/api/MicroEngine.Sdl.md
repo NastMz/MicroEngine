@@ -8,12 +8,33 @@ Guide: [Backends and platforms](../manual/backends.md)
 
 ### Classes
 
+ [BrowserLauncher](MicroEngine.Sdl.BrowserLauncher.md)
+
+Entry point for browser builds (SDL 3 compiled to WebAssembly): the shared launcher model ([GameHost](MicroEngine.Core.GameHost.md))
+for a page. A page cannot block its only thread in a game loop, so this returns a [GameSession](MicroEngine.Core.GameSession.md): the page
+starts it with a [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md) (a script in development packages), ticks it once per
+<code>requestAnimationFrame</code> and may start it again after the game ends. Every run composes the game with the same
+<code>Configure</code> entry point its desktop <code>Program.cs</code> uses, so what the game configures there (platforms, request
+changes, engine services) reaches the browser too; a scripted run is in deterministic time with seed 1, exactly as on
+desktop and phones. Saves go to localStorage by default ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)).
+
+ [BrowserPage](MicroEngine.Sdl.BrowserPage.md)
+
+One browser page's way into the SDL platform it hosts. SDL reads the keyboard, the mouse and gamepads from the page
+itself; what it cannot know comes from here: the page listens to Pointer Events on the canvas and forwards touch and
+pen pointers, in canvas pixels, with the page's safe-area insets (CSS <code>env(safe-area-inset-*)</code>) and density,
+its visibility and how it vibrates. The browser host (src/MicroEngine.Cli/Hosts/web) owns one and calls these from
+its JavaScript exports; every platform it builds ([BrowserProfile](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_BrowserProfile_MicroEngine_Sdl_BrowserPage_)) reads this page and no
+other, so nothing is shared through the process.
+
  [SdlAudioDevice](MicroEngine.Sdl.SdlAudioDevice.md)
 
 SDL3 audio: the engine's mixer ([MixerAudioDevice](MicroEngine.Audio.MixerAudioDevice.md), the same voices, priorities and music on every
 backend) playing through SDL's default playback device. A feeder thread keeps [DefaultLatencyMilliseconds](MicroEngine.Sdl.SdlAudioDevice.md#MicroEngine_Sdl_SdlAudioDevice_DefaultLatencyMilliseconds)
 of audio queued in an SDL audio stream (48 kHz stereo float), so main-thread stalls and garbage collections shorter
-than that are not heard. It works without a window, so a host can use it with another platform.
+than that are not heard. It works without a window, so a host can use it with another platform. In a browser SDL's
+own audio is not used: the mixer plays through the page's AudioWorklet queue, filled once per frame
+([BrowserAudioSink](MicroEngine.Sdl.md)).
 
  [SdlPlatform](MicroEngine.Sdl.SdlPlatform.md)
 
@@ -25,7 +46,7 @@ Fingers go to the game's on-screen controls through [ITouchScreen](MicroEngine.I
 also reports the window's safe area and density; a system that sends the app to the background suspends it
 ([Suspending](MicroEngine.Platform.IEngineEventSink.md#MicroEngine_Platform_IEngineEventSink_Suspending)). Its capabilities ([TryGetCapability``1](MicroEngine.Sdl.SdlPlatform.md#MicroEngine_Sdl_SdlPlatform_TryGetCapability__1___0__)):
 [IDisplayControl](MicroEngine.Core.IDisplayControl.md), [IPlatformDiagnostics](MicroEngine.Core.IPlatformDiagnostics.md), [IDisplayPacing](MicroEngine.Platform.IDisplayPacing.md),
-[IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md) and [ITouchScreen](MicroEngine.Input.ITouchScreen.md).
+[ITouchScreen](MicroEngine.Input.ITouchScreen.md) and, outside browsers, [IPreciseDelay](MicroEngine.Platform.IPreciseDelay.md).
 
  [SdlRendererBackendFactory](MicroEngine.Sdl.SdlRendererBackendFactory.md)
 

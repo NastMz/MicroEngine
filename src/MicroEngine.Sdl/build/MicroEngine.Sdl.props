@@ -1,0 +1,6 @@
+<Project>
+  <!-- SDL for browser builds, compiled by the wasm-tools workload's own emscripten (see MicroEngine.Sdl.csproj). -->
+  <PropertyGroup>
+    <MicroEngineWebSdlFromPackage Condition="Exists('$(MSBuildThisFileDirectory)../native/browser-wasm/SDL3.a')">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../native/browser-wasm/SDL3.a'))</MicroEngineWebSdlFromPackage>
+  </PropertyGroup>
+</Project>

@@ -15,7 +15,7 @@ public sealed partial class GameProject
         "AssemblyName", "ApplicationTitle", "ApplicationId", "Version", "Description", "MicroEngineIcon", "MicroEngineOrientation",
         "MicroEngineGameFactory", "MicroEngineContentDir", "MicroEngineScriptsDir", "MicroEngineLicenseFile", "MicroEngineThirdPartyNotices",
         "MicroEngineVersion", "MicroEngineAppTargets", "MicroEngineAndroidMinApi", "OutputType", "TargetFramework", "TargetDir",
-        "BundledNETCoreAppPackageVersion", "MicroEngineWebRaylibFromPackage", "NetCoreRoot",
+        "BundledNETCoreAppPackageVersion", "MicroEngineWebRaylibFromPackage", "MicroEngineWebSdlFromPackage", "NetCoreRoot",
         "MicroEngineSplash", "MicroEngineSplashColor", "MicroEngineSplashImage", "MicroEngineSplashBranding", "MicroEngineIconBackground",
     ];
 
@@ -42,6 +42,8 @@ public sealed partial class GameProject
     public string NetCoreRoot => this["NetCoreRoot"];
     public string AndroidMinApi => this["MicroEngineAndroidMinApi"].Length > 0 ? this["MicroEngineAndroidMinApi"] : "24";
     public string? WebRaylibFromPackage => Optional("MicroEngineWebRaylibFromPackage");
+    /// <summary>The SDL3.a the MicroEngine.Sdl package carries for browser builds, when the game references the package.</summary>
+    public string? WebSdlFromPackage => Optional("MicroEngineWebSdlFromPackage");
     /// <summary>Whether the game opens on its start screen (MicroEngineSplash, true unless "false").</summary>
     public bool Splash => !this["MicroEngineSplash"].Equals("false", StringComparison.OrdinalIgnoreCase);
     /// <summary>Whether the start screen says "Made with MicroEngine" (MicroEngineSplashBranding).</summary>

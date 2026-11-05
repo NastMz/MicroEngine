@@ -33,8 +33,9 @@ test('the raylib backend also recommends the mobile hosts, which never run autom
 });
 
 test('the SDL backend and the desktop launcher check the desktops natively and recommend the mobile hosts', () => {
-  for (const file of ['src/MicroEngine.Sdl/SdlPlatform.cs', 'src/MicroEngine.Desktop/DesktopLauncher.cs'])
-    assert.deepEqual(plan([file]), { ...none, dotnet: true, windows: true, native: true, sdk: true, macos: true, mobile: true });
+  assert.deepEqual(plan(['src/MicroEngine.Desktop/DesktopLauncher.cs']), { ...none, dotnet: true, windows: true, native: true, sdk: true, macos: true, mobile: true });
+  assert.deepEqual(plan(['src/MicroEngine.Sdl/SdlPlatform.cs']), { ...none, dotnet: true, windows: true, native: true, sdk: true, macos: true, mobile: true, web: true },
+    'SDL is also a browser backend');
   assert.deepEqual(plan(['tests/MicroEngine.Desktop.Tests/PlatformEquivalenceTests.cs']), { ...none, dotnet: true, windows: true, native: true, macos: true });
 });
 
@@ -65,7 +66,11 @@ test('the browser engine suites run when their scripts, the scenarios or the bro
   assert.deepEqual(plan(['web/build.sh']), { ...none, browser: 'full', web: true });
   assert.deepEqual(plan(['web/serve.mjs']), { ...none, browser: 'full', sdk: true, web: true });
   assert.deepEqual(plan(['src/MicroEngine.Cli/Hosts/web/wwwroot/main.js']), { ...none, browser: 'full', sdk: true, web: true });
-  assert.equal(plan(['src/MicroEngine.Sdl/SdlPlatform.cs']).web, false, 'SDL is not in the browser build');
+  assert.equal(plan(['src/MicroEngine.Sdl/SdlPlatform.cs']).web, true, 'SDL runs in the browser build');
+  assert.deepEqual(plan(['web/tests/mobile.mjs']), { ...none, web: true }, 'the browser engine job plays emulated phones');
+  assert.deepEqual(plan(['web/tests/measure.mjs']), { ...none, web: true });
+  assert.deepEqual(plan(['src/MicroEngine.Sdl/native/build.sh']), { ...none, browser: 'full', sdk: true, web: true }, 'SDL for the web (SDL3.a)');
+  assert.deepEqual(plan(['src/MicroEngine.Sdl/native/sdl.env']), { ...none, browser: 'full', sdk: true, web: true });
   assert.equal(plan(['site/src/components/Player.astro']).web, false, 'the site plays the demos itself');
   assert.equal(plan(['tests/MeadowRun.Tests/A.cs']).web, false);
 });
@@ -129,6 +134,7 @@ test('the Box2D natives, the Box2D backend and the physics it implements run the
   assert.deepEqual(plan(['tests/MicroEngine.Physics.Box2D.Tests/Box2DTests.cs']), { ...none, dotnet: true, windows: true, macos: true, box2d: true });
   assert.deepEqual(plan(['tests/Shared/Physics/PhysicsConformance.cs']), { ...none, dotnet: true, windows: true, macos: true, box2d: true });
   assert.deepEqual(plan(['.github/workflows/box2d.yml']), everything, 'daily CI runs box2d.yml');
+  assert.deepEqual(plan(['.github/workflows/sdl-web.yml']), everything, 'daily CI runs sdl-web.yml');
   assert.deepEqual(plan(['samples/PhysicsSubstitution/Platformer.cs']), { ...none, dotnet: true, box2d: true }, 'the substitution scenarios run its code');
   assert.equal(plan(['src/MicroEngine/Core/GameLoop.cs']).box2d, false, 'the rest of the engine is not physics');
   assert.equal(plan(['games/MeadowRun/MeadowRunGame.cs']).box2d, false);

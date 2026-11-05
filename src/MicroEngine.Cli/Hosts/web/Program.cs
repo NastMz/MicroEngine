@@ -3,7 +3,11 @@ using System.Runtime.Versioning;
 using MicroEngine.Core;
 using MicroEngine.Hosting;
 using MicroEngine.Kernel;
-using MicroEngine.Raylib;
+#if MICROENGINE_WEB_SDL
+using MicroEngine.Sdl; // BrowserLauncher and BrowserPage of the SDL platform (Host.csproj, WebBackend=sdl)
+#else
+using MicroEngine.Raylib; // BrowserLauncher and BrowserPage of the raylib platform (WebBackend=raylib)
+#endif
 
 [assembly: SupportedOSPlatform("browser")]
 
@@ -66,7 +70,7 @@ public static partial class WebHost
 
     /// <summary>
     /// A touch or pen pointer on the canvas (Pointer Events): phase 0 down, 1 move, 2 up, 3 cancel; position in canvas
-    /// pixels. It reaches the game's on-screen controls through the raylib platform's touch screen.
+    /// pixels. It reaches the game's on-screen controls through the platform's touch screen.
     /// </summary>
     [JSExport]
     public static void Pointer(double id, int phase, double x, double y) => Page.Pointer((long)id, phase, (float)x, (float)y);

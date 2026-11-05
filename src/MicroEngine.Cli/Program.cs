@@ -67,6 +67,8 @@ namespace MicroEngine.Cli
                   --debug-key        android: sign with this machine's debug key (test builds only)
                   --version-code N   android, ios: the build number stores compare (default: minutes since 2026-01-01 at the commit)
                   --dev              web: a development build that accepts input scripts and URL parameters
+                  --web-backend B    web: the platform the page runs on, raylib (default) or sdl
+                  --sdl-wasm F       web: the SDL3.a to link (default: the one in the MicroEngine.Sdl package)
                   --raylib-wasm F    web: the raylib.a to link (default: the one in the MicroEngine.Raylib package)
                   --key LABEL        a label recorded in build-info.json (MicroEngine's release pipeline uses content keys)
 
@@ -238,6 +240,8 @@ namespace MicroEngine.Cli
                 DebugKey = o.Has("debug-key"),
                 Dev = o.Has("dev"),
                 RaylibWasm = o.Get("raylib-wasm") is { } r ? Path.GetFullPath(r) : null,
+                SdlWasm = o.Get("sdl-wasm") is { } s ? Path.GetFullPath(s) : null,
+                WebBackend = WebBackends.Parse(o.Get("web-backend")),
             };
             string? code = o.Get("version-code");
             o.RejectUnknown("package");

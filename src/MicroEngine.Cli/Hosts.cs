@@ -7,7 +7,7 @@ using MicroEngine.Graphics;
 namespace MicroEngine.Cli;
 
 /// <summary>
-/// Packages that need a host program around the game: the browser page (raylib in WebAssembly), the Android activity
+/// Packages that need a host program around the game: the browser page (SDL 3 or raylib in WebAssembly), the Android activity
 /// and the iOS app (SDL 3). The tool copies a host template (Hosts/&lt;kind&gt;) into the game's
 /// <c>obj/microengine/&lt;kind&gt;</c> folder and writes what is particular to the game: Game.props (identity and paths),
 /// GameEntry.cs (a call to the game's <c>Configure</c> entry point, <see cref="EntryPoint"/>), the icon and names. The host references the game project,
@@ -18,19 +18,32 @@ public static class Hosts
     public static async Task<string> Web(PackageRequest request)
     {
         var game = request.Game;
-        RequireBackend(game, "MicroEngine.Raylib", "Web packages run on raylib: reference MicroEngine.Raylib (or MicroEngine.Desktop, which includes it).");
-        string raylib = request.RaylibWasm ?? game.WebRaylibFromPackage
-            ?? Path.Combine(Environment.GetEnvironmentVariable("MICROENGINE_WEB_TOOLS") is { Length: > 0 } w ? w : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".microengine", "web-tools"), "raylib-web", "raylib.a");
-        if (!File.Exists(raylib))
-            throw new CliException($"raylib for the web is missing ({raylib}). It comes with the MicroEngine.Raylib package; with project references to a MicroEngine checkout run its web/setup.sh, or pass --raylib-wasm <path>.");
+        string backend = request.WebBackend;
+        var native = new Dictionary<string, string>();
+        if (backend == WebBackends.Sdl)
+        {
+            RequireBackend(game, "MicroEngine.Sdl", "Web packages run on SDL 3: reference MicroEngine.Sdl (or MicroEngine.Desktop, which includes it).");
+            string sdl = request.SdlWasm ?? game.WebSdlFromPackage ?? Path.Combine(WebTools, "sdl-web", "browser-wasm", "SDL3.a");
+            if (!File.Exists(sdl))
+                throw new CliException($"SDL for the web is missing ({sdl}). It comes with the MicroEngine.Sdl package; with project references to a MicroEngine checkout run its web/setup.sh, or pass --sdl-wasm <path>.");
+            native["SdlWasmLib"] = sdl;
+        }
+        else
+        {
+            RequireBackend(game, "MicroEngine.Raylib", "Web packages on raylib need MicroEngine.Raylib (or MicroEngine.Desktop, which includes it).");
+            string raylib = request.RaylibWasm ?? game.WebRaylibFromPackage ?? Path.Combine(WebTools, "raylib-web", "raylib.a");
+            if (!File.Exists(raylib))
+                throw new CliException($"raylib for the web is missing ({raylib}). It comes with the MicroEngine.Raylib package; with project references to a MicroEngine checkout run its web/setup.sh, or pass --raylib-wasm <path>.");
+            native["RaylibWasmLib"] = raylib;
+        }
         string? icon = game.CheckIcon();
-        string host = Stage("web", game, new()
+        string host = Stage("web", game, new(native)
         {
             ["WebDevHooks"] = request.Dev ? "true" : "false",
-            ["RaylibWasmLib"] = raylib,
+            ["WebBackend"] = backend,
         }, $"    public const bool DevHooks = {(request.Dev ? "true" : "false")};");
         string root = Path.Combine(host, "wwwroot");
-        File.WriteAllText(Path.Combine(root, "game.json"), JsonSerializer.Serialize(new { id = game.Id, title = game.Title, dev = request.Dev, touch = true }) + "\n");
+        File.WriteAllText(Path.Combine(root, "game.json"), JsonSerializer.Serialize(new { id = game.Id, title = game.Title, dev = request.Dev, touch = true, backend }) + "\n");
         var content = game.ContentDir is { } dir ? Packaging.Walk(dir).Where(f => !f.EndsWith(".cs", StringComparison.Ordinal)).ToList() : [];
         File.WriteAllText(Path.Combine(root, "content.txt"), string.Concat(content.Select(f => f + Environment.NewLine)));
         File.Copy(icon ?? Icons.Default, Path.Combine(root, "icon.png"), overwrite: true);
@@ -68,7 +81,7 @@ public static class Hosts
             string top = Path.Combine(stage, game.Id);
             CopyTree(Path.Combine(publish, "wwwroot"), top);
             var info = Packaging.BuildInfo(request, "none");
-            WebNotices(top, game);
+            WebNotices(top, game, backend);
             File.WriteAllText(Path.Combine(top, "build-info.json"), JsonSerializer.Serialize(info, new JsonSerializerOptions { WriteIndented = true }) + "\n");
             Directory.CreateDirectory(request.Out);
             // The folder to upload to any static web server, and the same files as one archive.
@@ -83,7 +96,11 @@ public static class Hosts
         finally { Directory.Delete(stage, recursive: true); }
     }
 
-    private static void WebNotices(string top, GameProject game)
+    /// <summary>The private web toolchain folder of web/setup.sh (MICROENGINE_WEB_TOOLS, default ~/.microengine/web-tools).</summary>
+    private static string WebTools => Environment.GetEnvironmentVariable("MICROENGINE_WEB_TOOLS") is { Length: > 0 } w
+        ? w : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".microengine", "web-tools");
+
+    private static void WebNotices(string top, GameProject game, string backend)
     {
         string dotnetRoot = game.NetCoreRoot;
         string runtime = Path.Combine(dotnetRoot, "packs", "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", game.DotnetVersion);
@@ -95,7 +112,11 @@ public static class Hosts
         if (game.LicenseFile is { } licence) File.Copy(licence, Path.Combine(top, "LICENSE.txt"), overwrite: true);
         File.Copy(game.ThirdPartyNotices, Path.Combine(top, "THIRD-PARTY-NOTICES.txt"), overwrite: true);
         File.Copy(Path.Combine(Tool.Home, "Notices", "microengine-LICENSE.txt"), Path.Combine(top, "licenses", "microengine-LICENSE.txt"), overwrite: true);
-        File.Copy(Path.Combine(Tool.Home, "Notices", "raylib-LICENSE.txt"), Path.Combine(top, "licenses", "raylib-LICENSE.txt"), overwrite: true);
+        // The platform's library, and raylib's binding wherever it is in the package (a game that references
+        // MicroEngine.Desktop carries Raylib-cs in an SDL page too, trimmed but present).
+        var engines = new List<string> { backend == WebBackends.Sdl ? "SDL-LICENSE.txt" : "raylib-LICENSE.txt" };
+        if (backend == WebBackends.Sdl && Directory.GetFiles(Path.Combine(top, "_framework"), "Raylib-cs.*").Length > 0) engines.Add("raylib-LICENSE.txt");
+        foreach (string engine in engines) File.Copy(Path.Combine(Tool.Home, "Notices", engine), Path.Combine(top, "licenses", engine), overwrite: true);
         foreach (var (from, to) in new[] { (Path.Combine(runtime, "LICENSE.TXT"), "dotnet-LICENSE.txt"), (Path.Combine(runtime, "THIRD-PARTY-NOTICES.TXT"), "dotnet-THIRD-PARTY-NOTICES.txt"), (emscripten, "emscripten-LICENSE.txt") })
         {
             if (from is null || !File.Exists(from)) throw new CliException($"a licence file of the browser toolchain is missing ({from ?? "emscripten's LICENSE"}); is the wasm-tools workload installed in {dotnetRoot}?");
