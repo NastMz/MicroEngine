@@ -236,13 +236,14 @@ rules', so drawing never moves the camera the game simulates. `DrawPosition` sta
 ```csharp
 public void Draw(IRenderer r, Stage stage, float time, float blend)
 {
-    stage.Camera.DrawPosition = stage.CameraDrawPosition;   // interpolated; the rules keep Camera.Position
+    stage.Camera.DrawPosition = stage.CameraDrawPosition;
+    // ...
     var cam = stage.Camera;
-    DrawBackdrop(r, stage, time);   // parallax from cam.DrawnPosition
+    DrawBackdrop(r, stage, time);
     r.PushCamera(cam);
     DrawTiles(r, stage, time, background: true);
     // ...
-    stage.Particles.Draw(r);
+    stage.Particles.Draw(r, blend);
     r.PopCamera();
 
     DrawLighting(r, stage, time);
@@ -251,6 +252,9 @@ public void Draw(IRenderer r, Stage stage, float time, float blend)
 ```
 
 Source: [`games/MeadowRun/Scenes/StageView.cs`](../../games/MeadowRun/Scenes/StageView.cs)
+
+The first line sets the camera's interpolated position for this frame; the rules keep `Camera.Position`, and the
+parallax drawn by `DrawBackdrop` reads `cam.DrawnPosition`.
 
 ## Parallax backgrounds
 
@@ -312,10 +316,24 @@ a 4-neighbour mask for picking edge sprites. `TileRenderer.Draw(r, layer, tileSi
 the visible cells and asks the game which sprite each id uses; id 0 is skipped.
 
 ```csharp
-TileRenderer.Draw(r, layer, Tiles.Size, cam, (_, x, y) => Tiles.For(art, theme, layer, x, y));
+TileRenderer.Draw(r, layer, Tiles.Size, cam, TileLookup(stage));
+// ...
+private Func<int, int, int, Sprite?> TileLookup(Stage stage)
+{
+    if (_tileStage != stage || _tileFor is null)
+    {
+        string theme = stage.Def.Theme;
+        var layer = stage.Def.Layer;
+        _tileFor = (_, x, y) => Tiles.For(art, theme, layer, x, y);
+        _tileStage = stage;
+    }
+    return _tileFor;
+}
 ```
 
 Source: [`games/NeonRift/Scenes/StageView.cs`](../../games/NeonRift/Scenes/StageView.cs)
+
+The lookup is built once per stage, so drawing the map creates no new delegate each frame.
 
 Collision over the same layers (`TileGrid`, `TileMotion`) is described in [Tile maps and collision](world.md).
 

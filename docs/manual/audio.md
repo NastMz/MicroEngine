@@ -133,16 +133,6 @@ SDL queue (lower plays sounds sooner; higher survives longer pauses, such as lon
 
 ## Sound and music files
 
-```csharp
-public static void Register(AudioMixer audio, ContentFolder content)
-{
-    foreach (var name in Effects) audio.AddSoundFile(name, content.PathOf($"sfx/{name}.wav"));
-    foreach (var (name, file, loop) in Tracks) audio.AddMusicFile(name, content.PathOf(file), loop);
-}
-```
-
-Source: [`games/NeonRift/Art/Sounds.cs`](../../games/NeonRift/Art/Sounds.cs)
-
 | Format | Support |
 | --- | --- |
 | WAV | PCM 8, 16 or 24-bit, mono or stereo, decoded in managed code (`AudioClip.FromWav`); other WAV encodings throw `NotSupportedException` |
@@ -156,6 +146,18 @@ archive too), shared and released by scopes like any asset:
 Audio.AddSound("jump", Assets.Sound("sfx/jump.wav"));
 Audio.AddMusic("city", Assets.Music("music/city.ogg"));
 ```
+
+Neon Rift registers every effect and track that way:
+
+```csharp
+public static void Register(AudioMixer audio, AssetCache assets)
+{
+    foreach (var name in Effects) audio.AddSound(name, assets.Sound($"sfx/{name}.wav"));
+    foreach (var (name, file, loop) in Tracks) audio.AddMusic(name, assets.Music(file), loop);
+}
+```
+
+Source: [`games/NeonRift/Art/Sounds.cs`](../../games/NeonRift/Art/Sounds.cs)
 
 Where content files live and how they are located is covered in [Assets](assets.md).
 

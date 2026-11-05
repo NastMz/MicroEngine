@@ -9,7 +9,7 @@ package, and are loaded, shared and released through `Game.Assets`. Both approac
 | Approach | Example | What ships |
 | --- | --- | --- |
 | Fully procedural | Meadow Run | Code only: `PixelImage` art, `Synth` sounds, `Song` music |
-| Hybrid | Courtyard Key, Trail Duel | Mostly code, plus a few CC0 sprites or jingles repainted or blended in |
+| Hybrid | Courtyard Key, Trail Duel | Code plus CC0 or CC BY 4.0 tilesets, sprites and jingles, cut out, recoloured or colour-graded at load |
 | File-based | Neon Rift | CC0 sprite sheets, tilesets, WAV effects and OGG music |
 | File-based HD | The Asset Gallery sample | A 1280×720 canvas, PNG and JPEG images, tool atlases, TTF/OTF fonts |
 
@@ -283,7 +283,8 @@ and hands any other extension to the device to stream: `.ogg` everywhere, `.mp3`
 ## Credits convention
 
 Every game that ships files lists them in a `CREDITS.md`: which files come from which pack, author, source URL,
-licence, the date the licence was checked, and any changes made (joined strips, downmixed tracks). Fonts usually come
+licence, the date the licence was checked, and any changes made (joined strips, downmixed tracks, recolouring at
+load). CC BY art asks for exactly that attribution: title, author, source, licence and changes. Fonts usually come
 under the SIL Open Font License, which asks for its text to travel with the font: keep the licence file next to the
 font in `Content/`. Examples: [Neon Rift](../../games/NeonRift/CREDITS.md),
 [Courtyard Key](../../games/CourtyardKey/CREDITS.md), [Trail Duel](../../games/TrailDuel/CREDITS.md),
