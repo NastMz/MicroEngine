@@ -87,7 +87,10 @@ validation every backend inherits (`GraphicsDeviceBase`) and the CPU reference d
 ([The graphics device](manual/rendering.md#the-graphics-device)).
 The tier-1 device is `MicroEngine.Graphics.SdlGpu` (in the repository, not in a package yet), which references only the
 graphics and platform contracts and SDL3: the contract on pure SDL_GPU with custom shaders compiled ahead of time and
-depth, checked by the same conformance suite as every other device.
+depth, checked by the same conformance suite as every other device. The 3D path over it is `MicroEngine.Graphics3D`
+(also in the repository only), which references the graphics contract, content and the scene world: glTF meshes as a
+content asset kind, `Camera3D`, one material compiled ahead of time and a renderer that draws a world's mesh attachments
+at their interpolated transforms ([The 3D path](manual/rendering.md#the-3d-path)).
 The 2D layer is `MicroEngine.Graphics2D`, also carried by the `MicroEngine` package, which references the graphics
 contract only: the batcher (`Renderer2D`) and `Camera2D`, and the 2D drawing model games use (`IRenderer`, textures,
 `PixelImage`, sprites and atlases, animation, particles, light, parallax), moved out of `MicroEngine.dll` with its

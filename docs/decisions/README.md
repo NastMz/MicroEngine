@@ -43,3 +43,4 @@ maintainer's archive, not in the public history.
 | [0038](0038-one-composition-path.md) | One composition path for desktop, browser, phones and tests: `MicroEngine.Hosting`, a `Configure` entry point, no statics (amends 0007, 0016, 0021) | Accepted |
 | [0041](0041-tier1-device-on-sdl-gpu.md) | The tier-1 graphics device on pure SDL_GPU, checked by the conformance suite on Direct3D 12, Vulkan and, in CI, Mesa lavapipe (implements 0028) | Accepted |
 | [0042](0042-offline-shader-toolchain.md) | Shaders compiled ahead of time by `microengine shaders` into `.shader` files (`CompiledShader`); DXC restored on first use, not redistributed; compiling needs Windows | Accepted |
+| [0043](0043-minimal-3d-path.md) | A minimal 3D path on the tier-1 device: glTF meshes as an asset kind (own reader), `Camera3D`, one material, `Renderer3D` drawing a world's interpolated hierarchy, 2D over 3D | Accepted |
