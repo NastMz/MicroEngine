@@ -50,6 +50,22 @@ public string? Backend { get; init; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)?
 
+### <a id="MicroEngine_Core_GraphicsSettings_Device"></a> Device
+
+The graphics device to draw with, on platforms that offer more than one ([GraphicsDevices](MicroEngine.Core.PlatformProfile.md#MicroEngine_Core_PlatformProfile_GraphicsDevices)):
+SDL offers "sdl-renderer" (its default, tier 0) and "sdl-gpu" (tier 1: custom shaders, depth, the 3D path). Null
+(the default) keeps the platform's default device. A platform that does not offer the named device refuses to start
+with [PlatformConfigurationException](MicroEngine.Core.PlatformConfigurationException.md), and one that offers it but cannot open it here says why; the
+game never runs on another device silently. The launcher's <code>--graphics</code> overrides it. Read at start only.
+
+```csharp
+public string? Device { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
 ### <a id="MicroEngine_Core_GraphicsSettings_Display"></a> Display
 
 The display to open on (an index of [Displays](MicroEngine.Core.GameScreen.md#MicroEngine_Core_GameScreen_Displays)); null lets the system choose. An index the system does not have is ignored.

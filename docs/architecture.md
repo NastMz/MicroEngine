@@ -95,7 +95,7 @@ owned by their device with generational handles and deferred release, samplers a
 `Textured` pipeline, command lists with passes, fenced readback of render targets and the window's target), the core
 validation every backend inherits (`GraphicsDeviceBase`) and the CPU reference device that executes the written rules
 ([The graphics device](manual/rendering.md#the-graphics-device)).
-The tier-1 device is `MicroEngine.Graphics.SdlGpu` (in the repository, not in a package yet), which references only the
+The tier-1 device is `MicroEngine.Graphics.SdlGpu` (next SDK version: carried by the `MicroEngine.Sdl` package, which offers it as the `sdl-gpu` graphics device next to SDL_Renderer), which references only the
 graphics and platform contracts and SDL3: the contract on pure SDL_GPU with custom shaders compiled ahead of time and
 depth, checked by the same conformance suite as every other device. The 3D path over it is `MicroEngine.Graphics3D`
 (also in the repository only), which references the graphics contract, content and the scene world: glTF meshes as a

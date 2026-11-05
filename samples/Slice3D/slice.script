@@ -1,0 +1,3 @@
+# Scripted run of the 3D slice: deterministic time (one 30 Hz step per frame), a capture, quit
+45 capture slice3d.png
+46 quit

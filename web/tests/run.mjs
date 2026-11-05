@@ -4,7 +4,7 @@
 //
 // Suites (default: platform scripts):
 //   platform  per game: loading, start by gesture, audio under a blocking autoplay policy, 60 updates/s, held,
-//             released and very short key presses, focus loss, browser keys, saves across reload, corrupt and
+//             released and very short key presses (also read by a frame that catches up with several updates), focus loss, browser keys, saves across reload, corrupt and
 //             blocked storage, end and restart without reloading (the storage checks use Neon Rift's and Meadow
 //             Run's saves and run only when --games includes them)
 //   scripts   replays the games' own input scripts (scenarios.json) and stores their captures in --out, to
@@ -202,6 +202,21 @@ async function platform(browser, label, game) {
   const frames = await since(page, before);
   check(`${name}: a press shorter than a frame is seen`, frames.some(e => actionsIn(e).includes('right')),
     `${waited}; ${frames.length} frames traced${frames.length ? `, last: ${frames.at(-1)}` : ''}`);
+
+  // The same press read by a slow frame (a loaded runner): the page stalls 50 ms right after the key comes up, so the
+  // next frame catches up with several fixed updates. The press is down in the first of them only, and the trace must
+  // still show it (it lists the actions down in any update of the frame, not only after its last one).
+  const beforeSlow = await mark(page), countersSlow = await stats(page);
+  await page.evaluate(() => addEventListener('keyup', () => {
+    const until = performance.now() + 50;
+    while (performance.now() < until);
+  }, { once: true, capture: true }));
+  await page.keyboard.press('ArrowRight');
+  const waitedSlow = await progress(page, countersSlow);
+  const slowFrames = await since(page, beforeSlow);
+  check(`${name}: a press shorter than a frame is seen when its frame catches up with several updates`,
+    slowFrames.some(e => actionsIn(e).includes('right')),
+    `${waitedSlow}; ${slowFrames.length} frames traced${slowFrames.length ? `, first: ${slowFrames[0]}` : ''}`);
 
   await page.keyboard.down('ArrowUp');
   await sleep(300);

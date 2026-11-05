@@ -46,3 +46,4 @@ maintainer's archive, not in the public history.
 | [0043](0043-minimal-3d-path.md) | A minimal 3D path on the tier-1 device: glTF meshes as an asset kind (own reader), `Camera3D`, one material, `Renderer3D` drawing a world's interpolated hierarchy, 2D over 3D | Accepted |
 | [0044](0044-ui-module.md) | A UI module of widgets driven as the highest input layer, renamable widget actions, captures that show what the player sees | Accepted |
 | [0045](0045-touch-controls-module.md) | Touch controls as an opt-in input module in `MicroEngine.Input.Touch`: active on touch-first screens or once the game sets a layout, free otherwise | Accepted |
+| [0046](0046-tier1-device-selection.md) | The tier-1 device chosen through the normal composition path (`GraphicsSettings.Device`, `--graphics`, `PlatformProfile.GraphicsDevices`); `DeviceRenderer.Flush`/`Target` for 3D from a scene | Accepted |
