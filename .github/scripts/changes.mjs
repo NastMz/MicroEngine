@@ -21,6 +21,9 @@
 //              uses free public runners (repository variable PUBLIC_RUNNERS=true); otherwise advisory
 //   mobile     advisory only: printed as a recommendation to run platforms.yml or validate.yml; daily CI never
 //              starts an Android emulator or an iOS simulator
+//   box2d      the Box2D natives (box2d.yml): Box2D and the me_box2d layer built for every runtime identifier, self-tested
+//              where the runner can execute them, checksums and the cross-runtime determinism hash; for the native
+//              layer, the Box2D backend, the physics contract and what it builds on, their tests, the web toolchain
 //   web        the browser engine suites (web/tests/run.mjs) on development packages in Chrome: loading, real key
 //              events, frame rate, audio level, the scripts replayed (frames compared with the desktop build and
 //              reported); for the engine, the raylib backend, the
@@ -36,13 +39,13 @@ import { fileURLToPath } from 'node:url';
 import { readGraph, affectedScope, scopeText } from './projects.mjs';
 
 const levels = ['none', 'layout', 'full'];
-export const everything = Object.freeze({ dotnet: true, windows: true, native: true, browser: 'full', workflows: true, sdk: true, macos: true, mobile: true, web: true });
-const nothing = () => ({ dotnet: false, windows: false, native: false, browser: 'none', workflows: false, sdk: false, macos: false, mobile: false, web: false });
+export const everything = Object.freeze({ dotnet: true, windows: true, native: true, browser: 'full', workflows: true, sdk: true, macos: true, mobile: true, web: true, box2d: true });
+const nothing = () => ({ dotnet: false, windows: false, native: false, browser: 'none', workflows: false, sdk: false, macos: false, mobile: false, web: false, box2d: false });
 
 // First matching rule wins. `checks` lists what the path needs; 'all' means everything.
 const build = /^(Directory\.Build\.(props|targets)|global\.json|NuGet\.config|MicroEngine\.slnx|\.editorconfig|\.gitattributes)$/;
 export const rules = [
-  { pattern: /^\.github\/(workflows\/(ci|checks|deploy-site|sdk)\.yml|scripts\/)/, checks: 'all', why: 'daily CI itself' },
+  { pattern: /^\.github\/(workflows\/(ci|checks|deploy-site|sdk|box2d)\.yml|scripts\/)/, checks: 'all', why: 'daily CI itself' },
   { pattern: build, checks: 'all', why: 'build settings' },
   { pattern: /^\.github\/workflows\/platforms\.yml$/, checks: ['workflows', 'mobile'], why: 'platform workflow' },
   { pattern: /^\.github\/workflows\//, checks: ['workflows'], why: 'manual workflow' },
@@ -59,17 +62,22 @@ export const rules = [
   { pattern: /^sdk\//, checks: ['sdk'], why: 'SDK checks' },
   { pattern: /^src\/MicroEngine\.Raylib\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile', 'web'], why: 'raylib backend (desktop and browser)' },
   { pattern: /^src\/MicroEngine\.(Sdl|Desktop)\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'mobile'], why: 'SDL backend and desktop platforms' },
+  // The Box2D backend is an optional package of its own (not in the SDK): its natives and its tests, not the games.
+  { pattern: /^src\/MicroEngine\.Physics\.Box2D\/native\//, checks: ['box2d'], why: 'Box2D natives (box2d.yml)' },
+  { pattern: /^src\/MicroEngine\.Physics\.Box2D\//, checks: ['dotnet', 'windows', 'box2d'], why: 'Box2D physics backend' },
+  { pattern: /^src\/MicroEngine\.(Kernel|Scene|Physics|Physics\.Tiles)\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'web', 'box2d'], why: 'engine (physics and what it builds on)' },
   { pattern: /^src\//, checks: ['dotnet', 'windows', 'native', 'sdk', 'macos', 'web'], why: 'engine' },
   { pattern: /^games\/LICENSE$/, checks: ['layout'], why: 'demo games licence (packaged: demo keys rebuild)' },
   { pattern: /^games\/.*\.md$/i, checks: ['layout'], why: 'published game page' },
   { pattern: /^games\/[^/]+\/screenshots\//, checks: ['layout'], why: 'screenshots on the site' },
   { pattern: /^games\//, checks: ['dotnet', 'native', 'web'], why: 'game' },
   { pattern: /^tests\/MicroEngine\.(Raylib|Desktop)\.Tests\//, checks: ['dotnet', 'windows', 'native', 'macos'], why: 'backend tests' },
+  { pattern: /^tests\/(MicroEngine\.Physics\.Box2D\.Tests|Shared\/Physics)\//, checks: ['dotnet', 'windows', 'macos', 'box2d'], why: 'physics backend tests and suites' },
   { pattern: /^tests\/MicroEngine\.Tests\//, checks: ['dotnet', 'windows', 'macos'], why: 'engine tests' },
   // sdk/tests/external.mjs copies the asset gallery and plays its tour from the packages (evidence.mjs: sdkSamples).
   { pattern: /^samples\/AssetGallery\//, checks: ['dotnet', 'sdk'], why: 'asset gallery (played by the SDK external project test)' },
   { pattern: /^(tests|samples)\//, checks: ['dotnet'], why: 'game tests and samples' },
-  { pattern: /^web\/(toolchain\.env|setup\.sh|build-raylib-wasm\.sh)$/, checks: ['full', 'sdk', 'web'], why: 'web toolchain (MicroEngine.Raylib carries the web raylib)' },
+  { pattern: /^web\/(toolchain\.env|setup\.sh|build-raylib-wasm\.sh)$/, checks: ['full', 'sdk', 'web', 'box2d'], why: 'web toolchain (MicroEngine.Raylib carries the web raylib; the Box2D browser library)' },
   { pattern: /^web\/tests\/package(-lock)?\.json$/, checks: ['native', 'sdk', 'web'], why: 'browser driver (desktop captures, browser suites, the SDK test plays its web package)' },
   { pattern: /^web\/tests\/run\.mjs$/, checks: ['web'], why: 'browser engine suites' },
   // The scenarios and the desktop runner serve both: the browser suites compare their frames with the desktop's.
