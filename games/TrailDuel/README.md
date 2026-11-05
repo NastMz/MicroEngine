@@ -125,7 +125,7 @@ healing, items and captures.
 | Folder | Contents |
 | --- | --- |
 | `Rules/` | Pure game rules, no rendering: types, moves, species, creatures, formulas (damage, crits, accuracy, capture, escape, XP), progression, the turn-based `Battle` engine emitting `BattleEvent`s, trainer AI, items/bag, `GameState` (save data). |
-| `World/` | Map data (`Maps`), map runtime (collision, ledges, warps, trainer sight), grid `Actor`. |
+| `World/` | Map data (`Maps`), map runtime (collision, ledges, warps, trainer sight), grid `Actor` (drawn through the scene's objects, which draw it between updates). |
 | `Scenes/` | Title, overworld (core / scripts / drawing), battle (flow / presentation / drawing / fx), party, summary, bag, shop, start menu, evolution, credits, debug starts. |
 | `Visuals/` | Palette, creature and trainer sheet loaders, tile/building/ground/UI art, battle stages, effect sheets (`FxArt`), atlas factory. |
 | `Sound/` | Synthesized sound effects and the music/jingle file list. |
@@ -150,7 +150,8 @@ games/TrailDuel/bin/Release/net10.0/TrailDuel.exe --script games/TrailDuel/scrip
 `TRAIL_DEBUG` jumps ahead for captures: `gallery`, `zoom`, `cast`, `orbs`, `lab`, `town`, `route`, `route-mid`, `route-top`, `defeat`, `forest`, `brook`, `hall`,
 `battle`, `battle-meadow`, `battle-indoor`, `fx`, `learn`, `trainer`, `party`, `summary`, `bag`, `shop`, `evolve`, `credits`
 (e.g. `TRAIL_DEBUG=trainer` with `scripts/master-battle.script`; `TRAIL_EVOLVE=<species id>` picks who
-evolves under `evolve`). Saves live in
+evolves under `evolve`). The game reads these variables from its host: the environment on desktop, the page's
+address in a browser (`?TRAIL_DEBUG=town`) and the launch's `env` option on a phone. Saves live in
 `%LocalAppData%/MicroEngine/TrailDuel/adventure.json` (achievements in `achievements.json` beside it);
 `TRAIL_SAVE_DIR` points both at another folder, e.g. for capture runs.
 

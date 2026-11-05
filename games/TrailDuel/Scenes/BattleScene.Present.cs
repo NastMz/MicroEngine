@@ -31,8 +31,8 @@ internal sealed partial class BattleScene
         public float TintAlpha;
         public bool Blink;
         public float SinkDepth;
-        /// <summary><see cref="Offset"/> kept from the previous update, to draw lunges and knockbacks between updates.</summary>
-        public Interpolated DrawnOffset;
+        /// <summary>Its <see cref="Offset"/> in the scene's objects, to draw lunges and knockbacks between steps.</summary>
+        public EntityId Entity;
     }
 
     private Display _enemy = null!, _player = null!;
@@ -43,9 +43,8 @@ internal sealed partial class BattleScene
     private bool _orbVisible;
     private Vector2 _orbPos;
     private float _orbAngle;
-    // Sliding things kept from the previous update, to draw them between updates (Game.FrameBlend).
-    private Interpolated _drawnEnemyPlatform, _drawnPlayerPlatform, _drawnEnemyTrainer, _drawnPlayerTrainer, _drawnOrb;
-    private bool _orbWasVisible;
+    // Sliding things in the scene's objects, so the world draws them between steps.
+    private EntityId _enemyPlatform, _playerPlatform, _enemyTrainer, _playerTrainer, _orb;
     private bool _orbOpen;
     private string _orbSprite = "orb";
     private LevelUp? _levelPanel;
@@ -184,7 +183,7 @@ internal sealed partial class BattleScene
         var target = BaseOf(s.Side) + new Vector2(0, s.Side == Side.Player ? -30 : -18);
         var start = s.Side == Side.Player ? new Vector2(-10, 110) : new Vector2(330, 30);
         _orbSprite = "orb";
-        _orbVisible = true;
+        ShowOrb();
         Audio.Play("throw", 0.7f);
         yield return Tween(0.35f, t =>
         {
@@ -442,7 +441,7 @@ internal sealed partial class BattleScene
     private IEnumerator OrbThrow(OrbThrowEvent o)
     {
         _orbSprite = o.Orb.Id == "superorb" ? "orbsuper" : "orb";
-        _orbVisible = true;
+        ShowOrb();
         _orbOpen = false;
         var start = new Vector2(40, 120);
         var top = EnemyBase + new Vector2(0, -34);
