@@ -603,13 +603,10 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     {
         var (sw, sh) = WindowPixels();
         var window = new Vector2(sw, sh);
-        var presentation = _settings.EffectivePresentation;
-        return _touch.Overlay?.Frame(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, OverlayScaling(presentation))
+        var presentation = _settings.Presentation;
+        return _touch.Overlay?.Frame(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, presentation)
             ?? presentation.Fit(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
     }
-
-    /// <summary>How the on-screen controls lay the frame out around themselves: whole factors unless the presentation is fractional.</summary>
-    internal static CanvasScaling OverlayScaling(Presentation presentation) => presentation.Rounding == ScaleRounding.Fractional ? CanvasScaling.Smooth : CanvasScaling.Pixel;
 
     /// <summary>A window position in SDL's window coordinates as virtual canvas pixels.</summary>
     internal Vector2 ToCanvas(float x, float y) =>
@@ -647,7 +644,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         // An expanding presentation grows the canvas with the window.
         var (width, height) = WindowPixels();
         var area = _touch.SafeArea is { Width: > 0, Height: > 0 } safe ? safe : new RectF(0, 0, width, height);
-        var (cw, ch) = _settings.EffectivePresentation.CanvasSize(area, _settings.VirtualWidth, _settings.VirtualHeight);
+        var (cw, ch) = _settings.Presentation.CanvasSize(area, _settings.VirtualWidth, _settings.VirtualHeight);
         _canvas.EnsureSize(cw, ch);
         _frameHasUi = false;
         return _canvas.BeginFrame();
@@ -665,12 +662,12 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     (int Width, int Height) IScreenView.ScreenPixels => WindowPixels();
     (int Width, int Height) IScreenView.CanvasSize => (_canvas.Target.Width, _canvas.Target.Height);
     RectF IScreenView.WorldFrame => FrameRect();
-    float IScreenView.UiScale => _settings.EffectivePresentation.UiScaleFor(_surface.PixelDensity);
+    float IScreenView.UiScale => _settings.Presentation.UiScaleFor(_surface.PixelDensity);
     IRenderer IScreenView.BeginUi()
     {
         var (width, height) = WindowPixels();
         _frameHasUi = true;
-        return _canvas.BeginUi(width, height, _settings.EffectivePresentation.UiScaleFor(_surface.PixelDensity));
+        return _canvas.BeginUi(width, height, _settings.Presentation.UiScaleFor(_surface.PixelDensity));
     }
 
     private bool _frameHasUi;
@@ -683,7 +680,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     {
         _canvas.EndFrame();
         // The canvas into the window as the presentation says; nothing to present while minimised.
-        if (_canvas.Compose(_settings.EffectivePresentation, FrameRect(), Letterbox))
+        if (_canvas.Compose(_settings.Presentation, FrameRect(), Letterbox))
         {
             // The on-screen controls, over the letterboxed frame in window pixels (never in captures).
             if (_touch.Canvas is { } overlayCanvas) _touch.Overlay?.Draw(overlayCanvas);
@@ -731,7 +728,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     {
         var world = _canvas.Capture();
         if (!_frameHasUi || _canvas.CaptureUi() is not { } ui) return world;
-        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.EffectivePresentation.Upscale);
+        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.Presentation.Upscale);
     }
     void IViewCapture.SaveWorldScreenshot(string path) => _canvas.SaveCapture(path, _captureScale);
 

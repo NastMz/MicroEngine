@@ -497,7 +497,7 @@ public virtual void Configure(EngineBuilder builder)
 ### <a id="MicroEngine_Core_Game_CreateCamera"></a> CreateCamera\(\)
 
 A camera the size of the canvas whose defaults follow the game's presentation
-([EffectivePresentation](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_EffectivePresentation)): snapped to whole pixels for pixel art, smooth for
+([Presentation](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Presentation)): snapped to whole pixels for pixel art, smooth for
 high-resolution 2D.
 
 ```csharp

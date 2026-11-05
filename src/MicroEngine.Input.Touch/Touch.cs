@@ -48,10 +48,10 @@ public interface ITouchOverlay
 
     /// <summary>
     /// Where the backend should draw the game frame in this window, so the overlay does not cover it. The default is
-    /// the plain letterbox rule (<see cref="FrameLayout.Fit"/>); <see cref="VirtualControls"/> fits the frame around
-    /// its controls.
+    /// the plain letterbox rule of the game's presentation (<see cref="FrameLayout.Fit"/>); <see cref="VirtualControls"/>
+    /// fits the frame around its controls. Null <paramref name="presentation"/> is <see cref="Presentation.PixelArt"/>.
     /// </summary>
-    RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, CanvasScaling scaling = CanvasScaling.Pixel) => FrameLayout.Fit(window, safeArea, virtualWidth, virtualHeight, scaling);
+    RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, Presentation? presentation = null) => FrameLayout.Fit(window, safeArea, virtualWidth, virtualHeight, presentation);
 }
 
 /// <summary>Primitive drawing in screen pixels, implemented by each backend for <see cref="ITouchOverlay"/>.</summary>
@@ -80,23 +80,18 @@ public interface IOverlayCanvas
 public static class FrameLayout
 {
     /// <summary>
-    /// The largest integer scale of the canvas that fits inside the safe area, centred in it, so pixels stay square and
-    /// even. When the largest integer scale would fill less than 80 % of what fits (a 480×270 game on a 412-pixel-high
-    /// phone browser is 1× of a possible 1.5×), the frame scales fractionally instead: on small screens size matters
-    /// more than even pixels. With <see cref="CanvasScaling.Smooth"/> the frame always takes the largest size that fits.
-    /// On a portrait screen the frame sits at the top of the safe area, so on-screen controls get the space below.
+    /// Where the frame goes in the safe area (the whole window when the safe area is empty), by the presentation's rule
+    /// (<see cref="Presentation.Fit(Vector2, RectF, int, int)"/>). With <see cref="Presentation.PixelArt"/> (the default,
+    /// also used when <paramref name="presentation"/> is null) it is the largest integer scale of the canvas that fits,
+    /// centred, so pixels stay square and even; when that would fill less than 80 % of what fits (a 480×270 game on a
+    /// 412-pixel-high phone browser is 1× of a possible 1.5×), the frame scales fractionally instead: on small screens
+    /// size matters more than even pixels. With <see cref="Presentation.HighResolution2D"/> the frame always takes the
+    /// largest size that fits. On a portrait screen the frame sits at the top of the safe area, so on-screen controls get
+    /// the space below.
     /// </summary>
-    public static RectF Fit(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, CanvasScaling scaling = CanvasScaling.Pixel)
-    {
-        if (safeArea.Width <= 0 || safeArea.Height <= 0) safeArea = new RectF(0, 0, window.X, window.Y);
-        float scale = MathF.Min(safeArea.Width / virtualWidth, safeArea.Height / virtualHeight);
-        if (scaling == CanvasScaling.Pixel && scale >= 1 && MathF.Floor(scale) >= scale * 0.8f) scale = MathF.Floor(scale);
-        float w = virtualWidth * scale, h = virtualHeight * scale;
-        float x = MathF.Floor(safeArea.X + (safeArea.Width - w) / 2);
-        bool portrait = window.Y > window.X * 1.1f;
-        float y = portrait ? safeArea.Y : MathF.Floor(safeArea.Y + (safeArea.Height - h) / 2);
-        return new RectF(x, y, w, h);
-    }
+    /// <exception cref="ArgumentOutOfRangeException">The canvas size is not positive.</exception>
+    public static RectF Fit(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, Presentation? presentation = null) =>
+        (presentation ?? Presentation.PixelArt).Fit(window, safeArea, virtualWidth, virtualHeight);
 
     /// <summary>A window position in virtual canvas pixels for the frame <paramref name="frame"/>.</summary>
     public static Vector2 ToCanvas(Vector2 window, RectF frame, int virtualWidth, int virtualHeight) =>

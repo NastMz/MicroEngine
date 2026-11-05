@@ -7,17 +7,20 @@ using MicroEngine.Input;
 namespace MicroEngine.Tests;
 
 /// <summary>
-/// The game's presentation (<see cref="GameSettings.Presentation"/>) replaces the single <see cref="CanvasScaling"/>
-/// switch that decided five things at once: each choice is now a field, and <c>Scaling</c> only picks a preset.
+/// The game's presentation (<see cref="GameSettings.Presentation"/>) is the one way to say how the canvas reaches the
+/// window, one choice per field; it replaced the old <c>Scaling</c> switch (pixel or smooth), whose two values are the
+/// presets <see cref="Presentation.PixelArt"/> and <see cref="Presentation.HighResolution2D"/>, with the same results.
 /// </summary>
 [TestClass]
 public sealed class PresentationSettingsTests
 {
     [TestMethod]
-    public void Without_A_Presentation_Scaling_Picks_The_Preset()
+    public void Pixel_Art_Is_The_Default_Presentation()
     {
-        Assert.AreSame(Presentation.PixelArt, new GameSettings("pixel").EffectivePresentation);
-        Assert.AreSame(Presentation.HighResolution2D, new GameSettings("hd", 1280, 720) { Scaling = CanvasScaling.Smooth }.EffectivePresentation);
+        var settings = new GameSettings("pixel");
+        Assert.AreSame(Presentation.PixelArt, settings.Presentation);
+        Assert.AreEqual(TextureFilter.Nearest, settings.DefaultTextureFilter, "nearest textures, as the old pixel switch");
+        Assert.AreEqual(TextureFilter.Linear, new GameSettings("hd", 1280, 720) { Presentation = Presentation.HighResolution2D }.DefaultTextureFilter, "linear, as the old smooth switch");
     }
 
     private sealed class SettingsGame(GameSettings settings) : Game
@@ -32,18 +35,10 @@ public sealed class PresentationSettingsTests
         var pixel = new SettingsGame(new GameSettings("pixel")).CreateCamera();
         Assert.IsTrue(pixel.PixelSnap);
         Assert.AreEqual((320f, 180f), (pixel.ViewWidth, pixel.ViewHeight));
-        var hd = new SettingsGame(new GameSettings("hd", 1280, 720) { Scaling = CanvasScaling.Smooth }).CreateCamera();
+        var hd = new SettingsGame(new GameSettings("hd", 1280, 720) { Presentation = Presentation.HighResolution2D }).CreateCamera();
         Assert.IsFalse(hd.PixelSnap);
         var chosen = new SettingsGame(new GameSettings("hd", 1280, 720) { Presentation = Presentation.HighResolution2D with { CameraPixelSnap = true } }).CreateCamera();
         Assert.IsTrue(chosen.PixelSnap, "the presentation's field, not the preset's name, decides");
-    }
-
-    [TestMethod]
-    public void A_Presentation_Wins_Over_Scaling()
-    {
-        var settings = new GameSettings("hd", 1280, 720) { Scaling = CanvasScaling.Smooth, Presentation = Presentation.PixelArt };
-        Assert.AreSame(Presentation.PixelArt, settings.EffectivePresentation);
-        Assert.AreEqual(TextureFilter.Nearest, settings.DefaultTextureFilter);
     }
 
     [TestMethod]
@@ -52,7 +47,7 @@ public sealed class PresentationSettingsTests
         // Whole-factor scaling with smooth textures: the old switch could not say it.
         var settings = new GameSettings("pixel") { Presentation = Presentation.PixelArt with { DefaultSampler = SamplerDescription.LinearClamp } };
         Assert.AreEqual(TextureFilter.Linear, settings.DefaultTextureFilter);
-        Assert.AreEqual(ScaleRounding.IntegerUnlessWasteful, settings.EffectivePresentation.Rounding, "the rounding is untouched");
+        Assert.AreEqual(ScaleRounding.IntegerUnlessWasteful, settings.Presentation.Rounding, "the rounding is untouched");
         Assert.AreEqual(TextureFilter.Nearest, (settings with { TextureFilter = TextureFilter.Nearest }).DefaultTextureFilter, "an explicit TextureFilter still wins");
     }
 
@@ -60,7 +55,7 @@ public sealed class PresentationSettingsTests
     public void The_Capture_Scale_Comes_From_The_Presentation()
     {
         Assert.AreEqual(3, new PlatformRequest(new GameSettings("pixel")).CaptureScale, "pixel art, as before");
-        Assert.AreEqual(1, new PlatformRequest(new GameSettings("hd", 1280, 720) { Scaling = CanvasScaling.Smooth }).CaptureScale, "smooth, as before");
+        Assert.AreEqual(1, new PlatformRequest(new GameSettings("hd", 1280, 720) { Presentation = Presentation.HighResolution2D }).CaptureScale, "high resolution, as the old smooth switch");
         var pixelArtAtOne = new GameSettings("pixel") { Presentation = Presentation.PixelArt with { CaptureScale = 1 } };
         Assert.AreEqual(1, new PlatformRequest(pixelArtAtOne).CaptureScale, "independent of the rounding");
         Assert.AreEqual(2, new PlatformRequest(pixelArtAtOne) { CaptureScale = 2 }.CaptureScale, "a request still chooses its own");
@@ -77,17 +72,86 @@ public sealed class PresentationSettingsTests
         Assert.AreEqual(655, h);
     }
 
-    [TestMethod]
-    public void The_Frame_In_A_Window_Follows_The_Rounding_And_The_Safe_Area()
+    /// <summary>
+    /// The letterbox rule of the removed <c>CanvasScaling</c> switch (<c>FrameLayout.Fit</c> before the presentation
+    /// replaced it), kept here as the reference the presets must reproduce: pixel prefers whole factors unless they fill
+    /// less than 80 % of what fits; smooth takes the largest size; portrait screens put the frame at the top.
+    /// </summary>
+    private static RectF OldFit(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, bool pixel)
     {
-        var window = new Vector2(1366, 768);
-        var none = new RectF(0, 0, 0, 0); // no safe area reported: the whole window
-        Assert.AreEqual(FrameLayout.Fit(window, none, 320, 180), Presentation.PixelArt.Fit(window, none, 320, 180), "the pixel-art preset keeps the shared rule");
-        Assert.AreEqual(FrameLayout.Fit(window, none, 1280, 720, CanvasScaling.Smooth), Presentation.HighResolution2D.Fit(window, none, 1280, 720), "and so does the smooth one");
+        if (safeArea.Width <= 0 || safeArea.Height <= 0) safeArea = new RectF(0, 0, window.X, window.Y);
+        float scale = MathF.Min(safeArea.Width / virtualWidth, safeArea.Height / virtualHeight);
+        if (pixel && scale >= 1 && MathF.Floor(scale) >= scale * 0.8f) scale = MathF.Floor(scale);
+        float w = virtualWidth * scale, h = virtualHeight * scale;
+        float x = MathF.Floor(safeArea.X + (safeArea.Width - w) / 2);
+        bool portrait = window.Y > window.X * 1.1f;
+        float y = portrait ? safeArea.Y : MathF.Floor(safeArea.Y + (safeArea.Height - h) / 2);
+        return new RectF(x, y, w, h);
+    }
+
+    private static readonly Vector2[] Windows =
+    [
+        new(1366, 768), new(1920, 1080), new(732, 412), new(915, 412), new(1080, 1920), new(1080, 2400), new(2400, 1080),
+        new(800, 600), new(320, 180), new(200, 150), new(1000, 560), new(1280, 800), new(390, 844),
+    ];
+
+    private static readonly (int Width, int Height)[] Canvases = [(320, 180), (480, 270), (256, 224), (1280, 720), (1920, 1080)];
+
+    private static IEnumerable<RectF> SafeAreas(Vector2 window) =>
+    [
+        new RectF(0, 0, 0, 0), // none reported: the whole window
+        new RectF(0, 0, window.X, window.Y),
+        new RectF(window.X * 0.05f, 24, window.X * 0.9f, window.Y - 48), // a notch and a home indicator
+    ];
+
+    [TestMethod]
+    public void The_Presets_Place_The_Frame_Exactly_As_The_Old_Switch_Did()
+    {
+        int compared = 0;
+        foreach (var window in Windows)
+            foreach (var safe in SafeAreas(window))
+                foreach (var (w, h) in Canvases)
+                {
+                    string where = $"{w}x{h} in {window} safe {safe}";
+                    var pixel = OldFit(window, safe, w, h, pixel: true);
+                    var smooth = OldFit(window, safe, w, h, pixel: false);
+                    Assert.AreEqual(pixel, Presentation.PixelArt.Fit(window, safe, w, h), $"pixel art: {where}");
+                    Assert.AreEqual(pixel, FrameLayout.Fit(window, safe, w, h, Presentation.PixelArt), $"FrameLayout, pixel art: {where}");
+                    Assert.AreEqual(pixel, FrameLayout.Fit(window, safe, w, h), $"FrameLayout's default is pixel art: {where}");
+                    Assert.AreEqual(smooth, Presentation.HighResolution2D.Fit(window, safe, w, h), $"high resolution: {where}");
+                    Assert.AreEqual(smooth, FrameLayout.Fit(window, safe, w, h, Presentation.HighResolution2D), $"FrameLayout, high resolution: {where}");
+                    compared++;
+                }
+        Assert.AreEqual(Windows.Length * 3 * Canvases.Length, compared);
+    }
+
+    [TestMethod]
+    public void On_Screen_Controls_Without_Shown_Controls_Leave_The_Frame_Where_The_Old_Switch_Put_It()
+    {
+        var controls = new VirtualControls(TouchLayout.CreateDefault());
+        foreach (var window in Windows)
+            foreach (var safe in SafeAreas(window))
+            {
+                Assert.AreEqual(OldFit(window, safe, 320, 180, pixel: true), controls.Frame(window, safe, 320, 180, Presentation.PixelArt), $"pixel art in {window}");
+                Assert.AreEqual(OldFit(window, safe, 320, 180, pixel: true), ((ITouchOverlay)controls).Frame(window, safe, 320, 180), $"default in {window}");
+                Assert.AreEqual(OldFit(window, safe, 1280, 720, pixel: false), controls.Frame(window, safe, 1280, 720, Presentation.HighResolution2D), $"high resolution in {window}");
+            }
+    }
+
+    [TestMethod]
+    public void The_Overlay_Frame_Follows_Every_Field_Of_The_Presentation()
+    {
+        // The on-screen controls and the plain letterbox now agree for any presentation, not only the two presets.
+        var window = new Vector2(732, 362);
+        var none = new RectF(0, 0, 0, 0);
+        var integer = Presentation.PixelArt with { Rounding = ScaleRounding.Integer };
+        Assert.AreEqual(new RectF(46, 1, 640, 360), integer.Fit(window, none, 320, 180), "never fractional when a whole factor fits");
+        Assert.AreEqual(integer.Fit(window, none, 320, 180), FrameLayout.Fit(window, none, 320, 180, integer));
+        var stretch = Presentation.HighResolution2D with { Aspect = AspectMode.Stretch };
+        Assert.AreEqual(new RectF(0, 0, 732, 362), FrameLayout.Fit(window, none, 320, 180, stretch));
         var portrait = new Vector2(1080, 1920);
         var safe = new RectF(0, 80, 1080, 1800);
-        Assert.AreEqual(FrameLayout.Fit(portrait, safe, 320, 180), Presentation.PixelArt.Fit(portrait, safe, 320, 180), "portrait screens put the frame at the top of the safe area");
-        var integer = Presentation.PixelArt with { Rounding = ScaleRounding.Integer };
-        Assert.AreEqual(new RectF(46, 1, 640, 360), integer.Fit(new Vector2(732, 362), none, 320, 180), "never fractional when a whole factor fits");
+        Assert.AreEqual(Presentation.PixelArt.Fit(portrait, safe, 320, 180), FrameLayout.Fit(portrait, safe, 320, 180), "portrait screens put the frame at the top of the safe area");
+        Assert.AreEqual(80f, FrameLayout.Fit(portrait, safe, 320, 180).Y);
     }
 }

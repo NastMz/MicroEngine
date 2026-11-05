@@ -37,7 +37,7 @@ Build output (`bin/`, `obj/`) and generated packages (`dist/`) are not committed
 | `Input/` | `MicroEngine.Input` | `Key`, `PadButton`, `IInputSource`, `InputMap` |
 | `Graphics/` | `MicroEngine.Graphics` | `PixelImage`, `Art`, sprites and atlases, `Animator`, `Camera2D`, `ParallaxLayer`, particles, `LightMap`, `BitmapFont`, `IRenderer` |
 | `World/` | `MicroEngine.World` | `TileLayer`, `TileGrid`, `TileMotion`, `Autotile`, `Entity`, `EntityList<T>` (the last two removed in the next SDK version) |
-| `Audio/` | `MicroEngine.Audio` | `AudioClip`, `IAudioDevice`, `AudioMixer`, `Synth`, `Song` |
+| `Audio/` | `MicroEngine.Audio` | `AudioClip`, `IAudioDevice`, `AudioMixer`, `Synth`, `Song` (next SDK version: `Synth` and `Song` in `MicroEngine.Audio.Retro`) |
 | `UI/` | `MicroEngine.UI` | `DialogueBox`, `SelectionList`, `Typewriter`, `UiTheme`, achievement banners and list |
 | `Math/` | `MicroEngine` | `Color`, `RectF`, `MathX`, `Ease` |
 

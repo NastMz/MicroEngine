@@ -6,6 +6,10 @@ Sound effects and music: the one mixer every backend plays through (voices with 
 
 Guide: [Audio](../manual/audio.md)  
 
+### Namespaces
+
+ [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md)
+
 ### Classes
 
  [AudioAssetLoaders](MicroEngine.Audio.AudioAssetLoaders.md)
@@ -49,10 +53,6 @@ durations, silences, amplitudes); the launcher's <code>--audio-capture FILE</cod
 The bytes of a music file loaded from content (the "music" asset kind) and its format ("wav", "ogg", "mp3"): music is
 decoded while it plays rather than all at once.
 
- [Instrument](MicroEngine.Audio.Instrument.md)
-
-A tracker-style voice: waveform plus an ADSR envelope (seconds, sustain level 0..1).
-
  [MixerAudioDevice](MicroEngine.Audio.MixerAudioDevice.md)
 
 An [IAudioDevice](MicroEngine.Audio.IAudioDevice.md) over the engine's one mixer ([AudioEngine](MicroEngine.Audio.AudioEngine.md)) and a PCM sink: every backend
@@ -70,29 +70,13 @@ The test sink: renders into memory with no device and no clock. Each [Pump](Micr
 simulation step of frames (the step's share of the rate, so 44100 Hz at 60 steps alternates 735-frame steps exactly),
 in blocks of at most the block size, so the output depends only on what the game played, never on time.
 
- [SfxParams](MicroEngine.Audio.SfxParams.md)
-
-Parameters for a retro sound effect (in the spirit of sfxr). Every game sound in the
-samples is described with one of these, so audio is original, tweakable and license-free.
-
  [SilentAudioDevice](MicroEngine.Audio.SilentAudioDevice.md)
 
 Silent device used headlessly and as a fallback when no audio hardware is present.
 
- [Song](MicroEngine.Audio.Song.md)
-
-A tiny step sequencer. Patterns are whitespace-separated tokens, one per step:
-a note ("C4", "F#3", "Bb5"), "-" to hold the previous note, "." to rest, "|" is ignored (bar lines).
-Drum tracks use "k" (kick), "s" (snare), "h" (hat), "o" (open hat) and "." for rests.
-Shorter tracks loop to the song length, so a four-step drum loop can drive a long melody.
-
  [SoundHandle](MicroEngine.Audio.SoundHandle.md)
 
 An opaque handle to a loaded sound effect.
-
- [Synth](MicroEngine.Audio.Synth.md)
-
-Deterministic waveform synthesis for sound effects and music voices.
 
 ### Structs
 
@@ -117,13 +101,5 @@ Backend audio device. Implementations must tolerate missing hardware by becoming
 
 Streamed audio (music decoded while it plays). The engine reads it only in [Pump](MicroEngine.Audio.AudioEngine.md#MicroEngine_Audio_AudioEngine_Pump), on the main
 thread outside the simulation step, ahead of the sink.
-
-### Enums
-
- [Wave](MicroEngine.Audio.Wave.md)
-
-Oscillator waveforms for [SfxParams](MicroEngine.Audio.SfxParams.md) and [Instrument](MicroEngine.Audio.Instrument.md): <code>Square</code>, <code>Triangle</code>, <code>Saw</code>,
-<code>Sine</code>, <code>Noise</code> (a random value held for each cycle, so its frequency sets the colour of the noise), and the
-thinner pulse waves <code>Pulse25</code> and <code>Pulse12</code> (25% and 12.5% duty cycle).
 
 </div>

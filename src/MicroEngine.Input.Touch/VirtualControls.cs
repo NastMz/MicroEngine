@@ -368,11 +368,11 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
     /// controls that would cover the largest frame, the frame moves to the top of the safe area, or just below a control
     /// anchored at the top (horizontally centred), and takes the largest size at which no control of the layout overlaps it, never below
     /// <see cref="MinimumFrameFraction"/>; a whole-number scale is kept when it is within 90 % of that size, so pixels
-    /// stay even when it costs little (pixel scaling only). Controls hidden by context still count, so a dialogue does not resize the game.
+    /// stay even when it costs little (unless the presentation's rounding is fractional, as in <see cref="Presentation.HighResolution2D"/>; null <paramref name="presentation"/> is <see cref="Presentation.PixelArt"/>). Controls hidden by context still count, so a dialogue does not resize the game.
     /// </summary>
-    public RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, CanvasScaling scaling = CanvasScaling.Pixel)
+    public RectF Frame(Vector2 window, RectF safeArea, int virtualWidth, int virtualHeight, Presentation? presentation = null)
     {
-        var full = FrameLayout.Fit(window, safeArea, virtualWidth, virtualHeight, scaling);
+        var full = FrameLayout.Fit(window, safeArea, virtualWidth, virtualHeight, presentation);
         LastFrame = full;
         if (!Shown || !KeepFrameClear || !_laidOut || virtualWidth <= 0 || virtualHeight <= 0) return full;
         var safe = safeArea.Width > 0 && safeArea.Height > 0 ? safeArea : new RectF(0, 0, window.X, window.Y);
@@ -410,7 +410,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
         float minimum = fullScale * MinimumFrameFraction, chosen = Math.Max(lo, minimum);
         // A whole-number scale keeps pixels even; take it when it costs little and stays above the minimum.
         float whole = MathF.Floor(chosen);
-        if (scaling == CanvasScaling.Pixel && whole >= 1 && whole >= chosen * 0.9f && whole >= minimum) chosen = whole;
+        if ((presentation ?? Presentation.PixelArt).Rounding != ScaleRounding.Fractional && whole >= 1 && whole >= chosen * 0.9f && whole >= minimum) chosen = whole;
         return LastFrame = Fits(chosen) ?? Place(chosen, safe.Y);
     }
 

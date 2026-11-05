@@ -2,7 +2,7 @@
 
 <div data-pagefind-weight="0.3">
 
-Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
+Namespace: [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md)  
 Assembly: MicroEngine.Audio.dll  
 Guide: [Audio](../manual/audio.md)  
 
@@ -18,11 +18,11 @@ public sealed class Song
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
-[Song](MicroEngine.Audio.Song.md)
+[Song](MicroEngine.Audio.Retro.Song.md)
 
 ## Constructors
 
-### <a id="MicroEngine_Audio_Song__ctor_System_Single_System_Int32_"></a> Song\(float, int\)
+### <a id="MicroEngine_Audio_Retro_Song__ctor_System_Single_System_Int32_"></a> Song\(float, int\)
 
 Creates an empty song.
 
@@ -48,7 +48,7 @@ Pattern steps per beat; must be positive.
 
 ## Properties
 
-### <a id="MicroEngine_Audio_Song_Bpm"></a> Bpm
+### <a id="MicroEngine_Audio_Retro_Song_Bpm"></a> Bpm
 
 Tempo in beats per minute.
 
@@ -60,7 +60,7 @@ public float Bpm { get; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Song_DrumVolume"></a> DrumVolume
+### <a id="MicroEngine_Audio_Retro_Song_DrumVolume"></a> DrumVolume
 
 Volume of the drum tracks (default 0.5).
 
@@ -72,7 +72,7 @@ public float DrumVolume { get; set; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Song_Echo"></a> Echo
+### <a id="MicroEngine_Audio_Retro_Song_Echo"></a> Echo
 
 Feedback echo mix (0 disables). Adds space to otherwise dry chip voices.
 
@@ -84,7 +84,7 @@ public float Echo { get; set; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Song_EchoDelayBeats"></a> EchoDelayBeats
+### <a id="MicroEngine_Audio_Retro_Song_EchoDelayBeats"></a> EchoDelayBeats
 
 Delay of the echo in beats (default 0.75).
 
@@ -96,7 +96,7 @@ public float EchoDelayBeats { get; set; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Song_LengthInSteps"></a> LengthInSteps
+### <a id="MicroEngine_Audio_Retro_Song_LengthInSteps"></a> LengthInSteps
 
 Number of steps in the longest track; the rendered song is this long.
 
@@ -108,7 +108,7 @@ public int LengthInSteps { get; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-### <a id="MicroEngine_Audio_Song_StepSeconds"></a> StepSeconds
+### <a id="MicroEngine_Audio_Retro_Song_StepSeconds"></a> StepSeconds
 
 Length of one step in seconds.
 
@@ -120,7 +120,7 @@ public float StepSeconds { get; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Song_StepsPerBeat"></a> StepsPerBeat
+### <a id="MicroEngine_Audio_Retro_Song_StepsPerBeat"></a> StepsPerBeat
 
 Pattern steps per beat (4 by default: each step is a sixteenth note in 4/4).
 
@@ -134,7 +134,7 @@ public int StepsPerBeat { get; }
 
 ## Methods
 
-### <a id="MicroEngine_Audio_Song_Drums_System_String___"></a> Drums\(params string\[\]\)
+### <a id="MicroEngine_Audio_Retro_Song_Drums_System_String___"></a> Drums\(params string\[\]\)
 
 Adds a drum track of "k", "s", "h", "o" and "." tokens; the patterns are joined in order.
 
@@ -148,11 +148,11 @@ public Song Drums(params string[] patterns)
 
 #### Returns
 
- [Song](MicroEngine.Audio.Song.md)
+ [Song](MicroEngine.Audio.Retro.Song.md)
 
 This song, for chaining.
 
-### <a id="MicroEngine_Audio_Song_Render_System_Int32_"></a> Render\(int\)
+### <a id="MicroEngine_Audio_Retro_Song_Render_System_Int32_"></a> Render\(int\)
 
 Renders the whole song to stereo PCM, sized to loop seamlessly (echo tails wrap around).
 
@@ -178,7 +178,7 @@ The song has no steps.
 
 A track has an invalid note or a drum track an unknown drum.
 
-### <a id="MicroEngine_Audio_Song_Track_MicroEngine_Audio_Instrument_System_String___"></a> Track\(Instrument, params string\[\]\)
+### <a id="MicroEngine_Audio_Retro_Song_Track_MicroEngine_Audio_Retro_Instrument_System_String___"></a> Track\(Instrument, params string\[\]\)
 
 Adds a melodic track. The patterns are joined in order into one sequence of steps.
 
@@ -188,7 +188,7 @@ public Song Track(Instrument instrument, params string[] patterns)
 
 #### Parameters
 
-`instrument` [Instrument](MicroEngine.Audio.Instrument.md)
+`instrument` [Instrument](MicroEngine.Audio.Retro.Instrument.md)
 
 The voice that plays the notes.
 
@@ -198,7 +198,7 @@ Note patterns (see the class remarks for the token format).
 
 #### Returns
 
- [Song](MicroEngine.Audio.Song.md)
+ [Song](MicroEngine.Audio.Retro.Song.md)
 
 This song, for chaining.
 

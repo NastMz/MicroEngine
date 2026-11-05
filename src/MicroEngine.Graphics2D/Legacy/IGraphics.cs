@@ -8,13 +8,6 @@ namespace MicroEngine.Graphics;
 /// </summary>
 public enum TextureFilter { Nearest, Linear }
 
-/// <summary>
-/// How the virtual canvas reaches the window (the game settings' <c>Scaling</c>; obsolete: the game's <c>Presentation</c> replaces it). <c>Pixel</c> prefers whole
-/// factors (fractional only when whole ones would waste a fifth of the screen) and samples nearest, so pixels stay square
-/// and even; <c>Smooth</c> fills the largest area of the canvas's shape and samples linearly, for high-resolution art.
-/// </summary>
-public enum CanvasScaling { Pixel, Smooth }
-
 /// <summary>A GPU (or headless) texture owned by the active graphics device.</summary>
 public abstract class Texture : IDisposable
 {

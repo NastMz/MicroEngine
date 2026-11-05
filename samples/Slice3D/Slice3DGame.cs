@@ -21,7 +21,7 @@ public sealed class Slice3DGame : Game
     /// <inheritdoc/>
     public override GameSettings Settings { get; } = new("MicroEngine 3D slice", 960, 540, 1)
     {
-        Scaling = CanvasScaling.Smooth,
+        Presentation = Presentation.HighResolution2D,
         UpdateRate = 30,
         Background = new Color(24, 28, 40),
         // The 3D path needs custom shaders and depth: SDL's tier-1 device. Where SDL_GPU cannot start, the launcher

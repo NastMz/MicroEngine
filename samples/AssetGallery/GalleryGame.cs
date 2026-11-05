@@ -20,7 +20,7 @@ public sealed class GalleryGame : Game
     /// <inheritdoc/>
     public override GameSettings Settings { get; } = new("Asset Gallery", 1280, 720, 1)
     {
-        Scaling = CanvasScaling.Smooth,
+        Presentation = Presentation.HighResolution2D,
         Background = Color.Hex("1d2433"),
         Letterbox = Color.Hex("141925"),
     };

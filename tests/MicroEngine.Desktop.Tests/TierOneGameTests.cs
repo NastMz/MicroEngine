@@ -27,7 +27,7 @@ public sealed class TierOneGameTests
         public override GameSettings Settings { get; } = new("tier-1 test", W, H, 2)
         {
             Background = new MicroEngine.Color(0, 0, 0),
-            Scaling = CanvasScaling.Smooth,
+            Presentation = Presentation.HighResolution2D,
         };
         public CubeScene Scene { get; } = new();
         protected override void Load() => Scenes.Push(Scene);

@@ -39,7 +39,7 @@ public sealed class ViewCaptureTests
     private static (HeadlessPlatform Platform, string Directory) Run(bool ui, float density = 1)
     {
         var game = new CaptureGame(new CaptureScene(ui));
-        var platform = new HeadlessPlatform(320, 180) { Rasterize = true, PixelDensity = density, Presentation = game.Settings.EffectivePresentation };
+        var platform = new HeadlessPlatform(320, 180) { Rasterize = true, PixelDensity = density, Presentation = game.Settings.Presentation };
         platform.Resize(640, 360);
         platform.PumpEvents(new IgnoredEvents());
         game.InitializeForTest(platform);

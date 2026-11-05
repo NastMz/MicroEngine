@@ -207,7 +207,7 @@ public sealed class ArchitectureTests
         Assert.IsTrue(tileRefs.All(Allowed[PhysicsTiles].Contains), string.Join(", ", tileRefs));
         CollectionAssert.Contains(tileRefs, Physics);
         Assert.AreEqual(typeof(MicroEngine.World.TileGrid), typeof(Game).Assembly.GetType("MicroEngine.World.TileGrid"), "code compiled against an earlier MicroEngine.dll still finds it");
-        Assert.AreEqual(typeof(MicroEngine.World.MoveResult), typeof(Game).Assembly.GetType("MicroEngine.World.MoveResult"));
+        Assert.AreEqual(PhysicsTiles, typeof(MicroEngine.World.TileMoveResult).Assembly.GetName().Name);
         Assert.AreEqual(Core, typeof(MicroEngine.World.TileRenderer).Assembly.GetName().Name, "drawing tiles needs the renderer, which stays in the core");
     }
 
