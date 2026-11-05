@@ -23,7 +23,7 @@ public sealed class SceneWorld : IWorld, IStateHashed
 #### Implements
 
 [IWorld](MicroEngine.Scenes.IWorld.md), 
-IStateHashed
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 ## Remarks
 
@@ -306,7 +306,7 @@ public void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 ### <a id="MicroEngine_Scenes_SceneWorld_IsAlive_MicroEngine_Scenes_EntityId_"></a> IsAlive\(EntityId\)
 

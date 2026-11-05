@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md)  
 Assembly: MicroEngine.Audio.dll  
-Guide: [Audio](../manual/audio.md)  
+Guide: [Synthesized sound effects](../manual/audio.md#synthesized-sound-effects)  
 
 Oscillator waveforms for [SfxParams](MicroEngine.Audio.Retro.SfxParams.md) and [Instrument](MicroEngine.Audio.Retro.Instrument.md): <code>Square</code>, <code>Triangle</code>, <code>Saw</code>,
 <code>Sine</code>, <code>Noise</code> (a random value held for each cycle, so its frequency sets the colour of the noise), and the

@@ -7,9 +7,8 @@ Assembly: MicroEngine.Raylib.dll
 Guide: [Backends and platforms](../manual/backends.md)  
 
 Touches for the raylib platform. raylib's own touch state is a per-frame list of points indexed by position (no
-cancel, no reliable identity across frames), so it is not used: in a browser the page forwards Pointer Events
-([BrowserPage](MicroEngine.Raylib.BrowserPage.md)), with their pointer ids, the page's safe-area insets and its density. A desktop raylib
-window reports no touches; its controls still lay out for scripted touches.
+cancel, no reliable identity across frames), so it is not used: a raylib window reports no touches; its controls
+still lay out for scripted touches.
 
 ```csharp
 public sealed class RaylibTouchScreen : ITouchScreen
@@ -22,7 +21,7 @@ public sealed class RaylibTouchScreen : ITouchScreen
 
 #### Implements
 
-ITouchScreen
+[ITouchScreen](MicroEngine.Input.ITouchScreen.md)
 
 ## Constructors
 
@@ -58,7 +57,7 @@ public ITouchOverlay? Overlay { get; set; }
 
 #### Property Value
 
- ITouchOverlay?
+ [ITouchOverlay](MicroEngine.Input.ITouchOverlay.md)?
 
 ### <a id="MicroEngine_Raylib_RaylibTouchScreen_PixelsPerDp"></a> PixelsPerDp
 
@@ -82,7 +81,7 @@ public RectF SafeArea { get; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Raylib_RaylibTouchScreen_Size"></a> Size
 
@@ -120,7 +119,7 @@ public void ReadTouches(List<TouchEvent> events)
 
 #### Parameters
 
-`events` [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<TouchEvent\>
+`events` [List](https://learn.microsoft.com/dotnet/api/system.collections.generic.list\-1)<[TouchEvent](MicroEngine.Input.TouchEvent.md)\>
 
 ### <a id="MicroEngine_Raylib_RaylibTouchScreen_Vibrate_System_Single_System_Int32_"></a> Vibrate\(float, int\)
 

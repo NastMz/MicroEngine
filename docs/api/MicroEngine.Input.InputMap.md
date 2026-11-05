@@ -24,7 +24,7 @@ public sealed class InputMap : IStateHashed
 
 #### Implements
 
-IStateHashed
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 ## Examples
 
@@ -570,7 +570,7 @@ public void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 ### <a id="MicroEngine_Input_InputMap_ImportBindings_MicroEngine_Input_InputBindingSet_"></a> ImportBindings\(InputBindingSet\)
 
@@ -620,7 +620,7 @@ public bool LoadBindings(IStorage storage, string slot = "input-bindings")
 
 #### Parameters
 
-`storage` IStorage
+`storage` [IStorage](MicroEngine.Platform.IStorage.md)
 
 `slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
@@ -706,7 +706,7 @@ public void SaveBindings(IStorage storage, string slot = "input-bindings")
 
 #### Parameters
 
-`storage` IStorage
+`storage` [IStorage](MicroEngine.Platform.IStorage.md)
 
 `slot` [string](https://learn.microsoft.com/dotnet/api/system.string)
 

@@ -42,11 +42,11 @@ The first shape.
 
 The second shape.
 
-`OwnerA` EntityId
+`OwnerA` [EntityId](MicroEngine.Scenes.EntityId.md)
 
 The entity owning <code class="paramref">A</code>'s body.
 
-`OwnerB` EntityId
+`OwnerB` [EntityId](MicroEngine.Scenes.EntityId.md)
 
 The entity owning <code class="paramref">B</code>'s body.
 
@@ -114,7 +114,7 @@ public EntityId OwnerA { get; init; }
 
 #### Property Value
 
- EntityId
+ [EntityId](MicroEngine.Scenes.EntityId.md)
 
 ### <a id="MicroEngine_Physics_ContactEvent_OwnerB"></a> OwnerB
 
@@ -126,7 +126,7 @@ public EntityId OwnerB { get; init; }
 
 #### Property Value
 
- EntityId
+ [EntityId](MicroEngine.Scenes.EntityId.md)
 
 ## Methods
 
@@ -144,9 +144,9 @@ public void Deconstruct(out ContactEventKind Kind, out ShapeId A, out ShapeId B,
 
 `B` [ShapeId](MicroEngine.Physics.ShapeId.md)
 
-`OwnerA` EntityId
+`OwnerA` [EntityId](MicroEngine.Scenes.EntityId.md)
 
-`OwnerB` EntityId
+`OwnerB` [EntityId](MicroEngine.Scenes.EntityId.md)
 
 `Normal` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 

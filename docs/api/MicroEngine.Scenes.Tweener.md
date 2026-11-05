@@ -19,7 +19,7 @@ public sealed class Tweener : IStateHashed
 
 #### Implements
 
-IStateHashed
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 ## Constructors
 
@@ -83,7 +83,7 @@ public void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 ### <a id="MicroEngine_Scenes_Tweener_Update_System_Single_"></a> Update\(float\)
 

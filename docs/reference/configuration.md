@@ -126,7 +126,7 @@ partial trimming and reflection-based JSON for `SaveStore`.
 
 ## Default input actions
 
-From `InputMap.CreateDefault()` in [`src/MicroEngine/Input/Input.cs`](../../src/MicroEngine/Input/Input.cs):
+From `InputMap.CreateDefault()` in [`src/MicroEngine.Input/InputMap.cs`](../../src/MicroEngine.Input/InputMap.cs):
 
 | Action | Keys | Pad |
 | --- | --- | --- |

@@ -26,7 +26,7 @@ public abstract class Scene : IStateHashed
 
 #### Implements
 
-IStateHashed
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 ## Examples
 
@@ -87,7 +87,7 @@ public AudioMixer Audio { get; }
 
 #### Property Value
 
- AudioMixer
+ [AudioMixer](MicroEngine.Audio.AudioMixer.md)
 
 ### <a id="MicroEngine_Scenes_Scene_BlocksUpdateBelow"></a> BlocksUpdateBelow
 
@@ -145,7 +145,7 @@ public BitmapFont Font { get; }
 
 #### Property Value
 
- BitmapFont
+ [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
 ### <a id="MicroEngine_Scenes_Scene_Game"></a> Game
 
@@ -169,7 +169,7 @@ public InputMap Input { get; }
 
 #### Property Value
 
- InputMap
+ [InputMap](MicroEngine.Input.InputMap.md)
 
 ### <a id="MicroEngine_Scenes_Scene_IsOverlay"></a> IsOverlay
 
@@ -199,7 +199,7 @@ public IWorld Objects { get; }
 
 #### Property Value
 
- IWorld
+ [IWorld](MicroEngine.Scenes.IWorld.md)
 
 #### Remarks
 
@@ -256,7 +256,7 @@ public UiRoot Widgets { get; }
 
 #### Property Value
 
- UiRoot
+ [UiRoot](MicroEngine.UI.UiRoot.md)
 
 #### Exceptions
 
@@ -275,7 +275,7 @@ public Camera2D? WorldCamera { get; set; }
 
 #### Property Value
 
- Camera2D?
+ [Camera2D](MicroEngine.Graphics.Camera2D.md)?
 
 ## Methods
 
@@ -303,7 +303,7 @@ public abstract void Draw(IRenderer renderer)
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 The renderer of the current frame.
 
@@ -320,7 +320,7 @@ public virtual void DrawUi(IRenderer ui)
 
 #### Parameters
 
-`ui` IRenderer
+`ui` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 The UI view's renderer: <code>ui.Width</code> and <code>ui.Height</code> are its size in UI units.
 
@@ -355,7 +355,7 @@ public virtual void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 The hasher of the step; a section started here lasts until the engine starts the next one.
 

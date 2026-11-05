@@ -20,31 +20,31 @@ public sealed class SdlAudioDevice : MixerAudioDevice, IAudioDevice, IDisposable
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
-MixerAudioDevice ← 
+[MixerAudioDevice](MicroEngine.Audio.MixerAudioDevice.md) ← 
 [SdlAudioDevice](MicroEngine.Sdl.SdlAudioDevice.md)
 
 #### Implements
 
-IAudioDevice, 
+[IAudioDevice](MicroEngine.Audio.IAudioDevice.md), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
 #### Inherited Members
 
-MixerAudioDevice.LoadSound\(string, AudioClip\), 
-MixerAudioDevice.LoadMusic\(string, AudioClip, bool\), 
-MixerAudioDevice.LoadMusicStream\(string, byte\[\], string, bool\), 
-MixerAudioDevice.Play\(SoundHandle, float, float, float\), 
-MixerAudioDevice.PlayMusic\(MusicHandle, float\), 
-MixerAudioDevice.StopMusic\(\), 
-MixerAudioDevice.SetMusicVolume\(float\), 
-MixerAudioDevice.PauseMusic\(bool\), 
-MixerAudioDevice.Update\(\), 
-MixerAudioDevice.Pump\(\), 
-MixerAudioDevice.Dispose\(\), 
-MixerAudioDevice.Engine, 
-MixerAudioDevice.IsAvailable, 
-MixerAudioDevice.MusicFormats, 
-MixerAudioDevice.CurrentMusic, 
+[MixerAudioDevice.LoadSound\(string, AudioClip\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_LoadSound_System_String_MicroEngine_Audio_AudioClip_), 
+[MixerAudioDevice.LoadMusic\(string, AudioClip, bool\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_LoadMusic_System_String_MicroEngine_Audio_AudioClip_System_Boolean_), 
+[MixerAudioDevice.LoadMusicStream\(string, byte\[\], string, bool\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_LoadMusicStream_System_String_System_Byte___System_String_System_Boolean_), 
+[MixerAudioDevice.Play\(SoundHandle, float, float, float\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_Play_MicroEngine_Audio_SoundHandle_System_Single_System_Single_System_Single_), 
+[MixerAudioDevice.PlayMusic\(MusicHandle, float\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_PlayMusic_MicroEngine_Audio_MusicHandle_System_Single_), 
+[MixerAudioDevice.StopMusic\(\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_StopMusic), 
+[MixerAudioDevice.SetMusicVolume\(float\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_SetMusicVolume_System_Single_), 
+[MixerAudioDevice.PauseMusic\(bool\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_PauseMusic_System_Boolean_), 
+[MixerAudioDevice.Update\(\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_Update), 
+[MixerAudioDevice.Pump\(\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_Pump), 
+[MixerAudioDevice.Dispose\(\)](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_Dispose), 
+[MixerAudioDevice.Engine](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_Engine), 
+[MixerAudioDevice.IsAvailable](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_IsAvailable), 
+[MixerAudioDevice.MusicFormats](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_MusicFormats), 
+[MixerAudioDevice.CurrentMusic](MicroEngine.Audio.MixerAudioDevice.md#MicroEngine_Audio_MixerAudioDevice_CurrentMusic), 
 [object.GetType\(\)](https://learn.microsoft.com/dotnet/api/system.object.gettype), 
 [object.ToString\(\)](https://learn.microsoft.com/dotnet/api/system.object.tostring), 
 [object.Equals\(object?\)](https://learn.microsoft.com/dotnet/api/system.object.equals\#system\-object\-equals\(system\-object\)), 
@@ -78,7 +78,7 @@ public static IAudioDevice TryCreate()
 
 #### Returns
 
- IAudioDevice
+ [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
 ### <a id="MicroEngine_Sdl_SdlAudioDevice_TryCreate_System_String_"></a> TryCreate\(string\)
 
@@ -97,7 +97,7 @@ public static IAudioDevice TryCreate(string driver)
 
 #### Returns
 
- IAudioDevice
+ [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
 ### <a id="MicroEngine_Sdl_SdlAudioDevice_TryCreate_System_String_System_Double_"></a> TryCreate\(string?, double\)
 
@@ -116,7 +116,7 @@ public static IAudioDevice TryCreate(string? driver, double latencyMilliseconds)
 
 #### Returns
 
- IAudioDevice
+ [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
 #### Exceptions
 

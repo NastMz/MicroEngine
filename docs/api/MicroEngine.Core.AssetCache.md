@@ -71,7 +71,7 @@ public AssetCache(IGraphicsDevice device, string? root = null)
 
 #### Parameters
 
-`device` IGraphicsDevice
+`device` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
 
 Creates the textures.
 
@@ -108,7 +108,7 @@ public ContentFolder Content { get; }
 
 #### Exceptions
 
- AssetLoadException
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The folder does not exist.
 
@@ -164,7 +164,7 @@ public AssetLoaderRegistry Loaders { get; }
 
 #### Property Value
 
- AssetLoaderRegistry
+ [AssetLoaderRegistry](MicroEngine.Content.AssetLoaderRegistry.md)
 
 ### <a id="MicroEngine_Core_AssetCache_Name"></a> Name
 
@@ -201,7 +201,7 @@ public AssetScope Scope { get; }
 
 #### Property Value
 
- AssetScope
+ [AssetScope](MicroEngine.Content.AssetScope.md)
 
 ### <a id="MicroEngine_Core_AssetCache_SlowLoadMilliseconds"></a> SlowLoadMilliseconds
 
@@ -226,11 +226,11 @@ public IContentSource Source { get; }
 
 #### Property Value
 
- IContentSource
+ [IContentSource](MicroEngine.Platform.IContentSource.md)
 
 #### Exceptions
 
- AssetLoadException
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The content folder does not exist.
 
@@ -256,7 +256,7 @@ public AssetStore Store { get; }
 
 #### Property Value
 
- AssetStore
+ [AssetStore](MicroEngine.Content.AssetStore.md)
 
 ## Methods
 
@@ -275,21 +275,21 @@ public SpriteAtlas Atlas(string path, AtlasOptions? options = null, TextureFilte
 
 The atlas file.
 
-`options` AtlasOptions?
+`options` [AtlasOptions](MicroEngine.Graphics.AtlasOptions.md)?
 
 Default pivot and naming; null for [Default](MicroEngine.Graphics.AtlasOptions.md#MicroEngine_Graphics_AtlasOptions_Default).
 
-`filter` TextureFilter?
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
 
 The texture's filter; null for the game's default.
 
 #### Returns
 
- SpriteAtlas
+ [SpriteAtlas](MicroEngine.Graphics.SpriteAtlas.md)
 
 #### Exceptions
 
- AssetLoadException
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The file or its image is missing or invalid.
 
@@ -312,17 +312,17 @@ A folder of the content.
 
 The anchor of every sprite as a fraction of its size; (0, 0), the top-left, by default.
 
-`filter` TextureFilter?
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
 
 The texture's filter; null for the game's default.
 
 #### Returns
 
- SpriteAtlas
+ [SpriteAtlas](MicroEngine.Graphics.SpriteAtlas.md)
 
 #### Exceptions
 
- AssetLoadException
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The folder is missing or holds no image, or an image cannot be read.
 
@@ -344,7 +344,7 @@ public byte[] Bytes(string path)
 
 #### Exceptions
 
- AssetLoadException
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The file is missing or wrongly cased.
 
@@ -387,15 +387,15 @@ public ScalableFont Font(string path, FontOptions? options = null)
 
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`options` FontOptions?
+`options` [FontOptions](MicroEngine.Graphics.FontOptions.md)?
 
 #### Returns
 
- ScalableFont
+ [ScalableFont](MicroEngine.Graphics.ScalableFont.md)
 
 #### Exceptions
 
- AssetLoadException
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The file is missing, wrongly cased or not a font the engine reads.
 
@@ -414,11 +414,11 @@ public PixelImage Image(string path)
 
 #### Returns
 
- PixelImage
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
 #### Exceptions
 
- AssetLoadException
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The file is missing, wrongly cased or not an image the engine reads.
 
@@ -453,11 +453,11 @@ public EncodedAudio Music(string path)
 
 #### Returns
 
- EncodedAudio
+ [EncodedAudio](MicroEngine.Audio.EncodedAudio.md)
 
 #### Exceptions
 
- AssetLoadException
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The file is missing or wrongly cased.
 
@@ -496,11 +496,11 @@ public AudioClip Sound(string path)
 
 #### Returns
 
- AudioClip
+ [AudioClip](MicroEngine.Audio.AudioClip.md)
 
 #### Exceptions
 
- AssetLoadException
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The file is missing, wrongly cased or not an 8, 16 or 24-bit PCM WAV.
 
@@ -522,7 +522,7 @@ public string Text(string path)
 
 #### Exceptions
 
- AssetLoadException
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The file is missing or wrongly cased.
 
@@ -538,15 +538,15 @@ public Texture Texture(string path, TextureFilter? filter = null)
 
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`filter` TextureFilter?
+`filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
 
 #### Returns
 
- Texture
+ [Texture](MicroEngine.Graphics.Texture.md)
 
 #### Exceptions
 
- AssetLoadException
+ [AssetLoadException](MicroEngine.Core.AssetLoadException.md)
 
 The file is missing, wrongly cased or not an image the engine reads.
 

@@ -180,7 +180,7 @@ public string NameOf(UiAction action, ActionNames names)
 
 `action` [UiAction](MicroEngine.UI.UiAction.md)
 
-`names` ActionNames
+`names` [ActionNames](MicroEngine.Input.ActionNames.md)
 
 #### Returns
 

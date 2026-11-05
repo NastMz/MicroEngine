@@ -64,7 +64,7 @@ RectF WorldFrame { get; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ## Methods
 
@@ -78,6 +78,6 @@ IRenderer BeginUi()
 
 #### Returns
 
- IRenderer
+ [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 </div>

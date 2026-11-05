@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md)  
 Assembly: MicroEngine.Audio.dll  
-Guide: [Audio](../manual/audio.md)  
+Guide: [Synthesized sound effects](../manual/audio.md#synthesized-sound-effects)  
 
 Parameters for a retro sound effect (in the spirit of sfxr). Every game sound in the
 samples is described with one of these, so audio is original, tweakable and license-free.

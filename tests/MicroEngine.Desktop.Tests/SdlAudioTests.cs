@@ -65,4 +65,45 @@ public sealed class SdlAudioTests
         }
         finally { (device as IDisposable)?.Dispose(); }
     }
+
+    [TestMethod]
+    public void The_feeder_thread_renders_and_queues_without_garbage()
+    {
+        var device = SdlAudioDevice.TryCreate("dummy");
+        Native.Require(device is SdlAudioDevice, "SDL's dummy audio driver is unavailable here");
+        var sdl = (SdlAudioDevice)device;
+        try
+        {
+            var tone = new float[44100 * 2];
+            for (int i = 0; i < tone.Length; i++) tone[i] = 0.3f * MathF.Sin(i * 0.05f);
+            sdl.PlayMusic(sdl.LoadMusic("tone", new AudioClip(tone, 44100, 2)));
+            var shot = sdl.LoadSound("shot", new AudioClip(tone.AsSpan(0, 8820).ToArray()));
+            for (int i = 0; i < 8; i++) sdl.Play(shot, pitch: 1 + i * 0.1f, pan: i % 3 * 0.5f);
+            sdl.Update();
+
+            // The feeder's whole loop (render, queue in SDL's stream, sleep) is counted on its thread by the mixer. A
+            // background collection can count up to one allocation quantum against that thread once (AllocationAssert),
+            // so one window of renders in five must count nothing.
+            WaitForRenders(sdl.Engine, 40);
+            var bytes = new long[5];
+            for (int window = 0; window < bytes.Length; window++)
+            {
+                var before = sdl.Engine.RenderAllocations;
+                WaitForRenders(sdl.Engine, before.Renders + 30);
+                bytes[window] = sdl.Engine.RenderAllocations.Bytes - before.Bytes;
+            }
+            Assert.AreEqual(0, bytes.Min(), $"the feeder allocated in every window of 30 renders (bytes per window: {string.Join(", ", bytes)})");
+        }
+        finally { sdl.Dispose(); }
+
+        static void WaitForRenders(AudioEngine engine, long renders)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (engine.RenderAllocations.Renders < renders)
+            {
+                if (DateTime.UtcNow > deadline) Assert.Fail($"the feeder rendered {engine.RenderAllocations.Renders} blocks of {renders} in 30 s");
+                Thread.Sleep(5);
+            }
+        }
+    }
 }

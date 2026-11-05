@@ -119,7 +119,7 @@ public Color Shade { get; set; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ## Methods
 
@@ -141,7 +141,7 @@ public void Add(Vector2 worldPosition, float radius, float brightness, Color? gl
 
 `brightness` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`glow` Color?
+`glow` [Color](MicroEngine.Color.md)?
 
 `glowRadius` [float](https://learn.microsoft.com/dotnet/api/system.single)?
 
@@ -207,7 +207,7 @@ public void Draw(IRenderer r, Vector2 cameraTopLeft, RectF screenArea)
 
 `cameraTopLeft` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`screenArea` RectF
+`screenArea` [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_Graphics_LightMap_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_Camera2D_"></a> Draw\(IRenderer, Camera2D\)
 

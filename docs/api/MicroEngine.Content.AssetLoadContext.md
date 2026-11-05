@@ -65,7 +65,7 @@ public IContentSource Source { get; }
 
 #### Property Value
 
- IContentSource
+ [IContentSource](MicroEngine.Platform.IContentSource.md)
 
 ## Methods
 

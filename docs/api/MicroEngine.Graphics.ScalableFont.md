@@ -64,7 +64,7 @@ public TextureFilter Filter { get; set; }
 
 #### Property Value
 
- TextureFilter
+ [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 ### <a id="MicroEngine_Graphics_ScalableFont_GlyphsRasterized"></a> GlyphsRasterized
 
@@ -194,7 +194,7 @@ public void Draw(IRenderer renderer, string text, Vector2 position, float size, 
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
@@ -202,7 +202,7 @@ public void Draw(IRenderer renderer, string text, Vector2 position, float size, 
 
 `size` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_ScalableFont_FromBytes_MicroEngine_Graphics_IGraphicsDevice_System_Byte___MicroEngine_Graphics_FontOptions_System_String_"></a> FromBytes\(IGraphicsDevice, byte\[\], FontOptions?, string?\)
 
@@ -214,7 +214,7 @@ public static ScalableFont FromBytes(IGraphicsDevice device, byte[] data, FontOp
 
 #### Parameters
 
-`device` IGraphicsDevice
+`device` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
 
 Creates the glyph pages.
 
@@ -266,7 +266,7 @@ public static ScalableFont Load(IGraphicsDevice device, string path, FontOptions
 
 #### Parameters
 
-`device` IGraphicsDevice
+`device` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
 
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
 

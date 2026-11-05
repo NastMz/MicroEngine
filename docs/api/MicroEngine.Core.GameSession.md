@@ -59,7 +59,7 @@ public GameSession(Func<LaunchRequest, GameHost> compose)
 
 #### Parameters
 
-`compose` [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<LaunchRequest, [GameHost](MicroEngine.Core.GameHost.md)\>
+`compose` [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[LaunchRequest](MicroEngine.Hosting.LaunchRequest.md), [GameHost](MicroEngine.Core.GameHost.md)\>
 
 #### Exceptions
 
@@ -178,7 +178,7 @@ public bool Start(LaunchRequest request, Func<RunOptions, RunOptions>? change = 
 
 #### Parameters
 
-`request` LaunchRequest
+`request` [LaunchRequest](MicroEngine.Hosting.LaunchRequest.md)
 
 The launch.
 

@@ -322,4 +322,110 @@ public sealed class AudioEngineTests
         }
         Assert.AreEqual(Run(), Run());
     }
+
+    /// <summary>
+    /// A sink with a thread of its own, as the SDL feeder: each <see cref="Render"/> call has that thread render
+    /// <c>count</c> blocks in a loop, allocating between blocks when asked to, and returns when it is done.
+    /// </summary>
+    private sealed class ThreadSink(bool allocate) : IAudioSink
+    {
+        private readonly float[] _buffer = new float[512];
+        private Thread? _thread;
+        private int _pending;
+        private volatile bool _stop;
+        public object? Kept;
+        public AudioFormat Format => Stereo;
+        public AudioSinkSchedule Schedule => AudioSinkSchedule.SinkThread;
+        public int LatencyFrames => 0;
+
+        public void Start(AudioRender render)
+        {
+            _thread = new Thread(() =>
+            {
+                while (!_stop)
+                {
+                    int count = Volatile.Read(ref _pending);
+                    if (count == 0) { Thread.Yield(); continue; }
+                    for (int i = 0; i < count; i++)
+                    {
+                        render(_buffer);
+                        if (allocate) Kept = new byte[100];
+                    }
+                    Volatile.Write(ref _pending, 0);
+                }
+            }) { IsBackground = true };
+            _thread.Start();
+        }
+
+        public void Render(int count)
+        {
+            Volatile.Write(ref _pending, count);
+            while (Volatile.Read(ref _pending) != 0) Thread.Yield();
+        }
+
+        public void Pump() { }
+
+        public void Dispose()
+        {
+            _stop = true;
+            _thread?.Join();
+        }
+    }
+
+    /// <summary>The bytes the rendering thread allocated in each of five rounds of <paramref name="round"/>, after one warm-up round.</summary>
+    private static long[] CountedRounds(AudioEngine engine, Action round)
+    {
+        round();
+        var bytes = new long[5];
+        for (int i = 0; i < bytes.Length; i++)
+        {
+            long before = engine.RenderAllocations.Bytes;
+            round();
+            bytes[i] = engine.RenderAllocations.Bytes - before;
+        }
+        return bytes;
+    }
+
+    [TestMethod]
+    public void The_render_counter_counts_what_a_sink_thread_allocates_between_renders()
+    {
+        var sink = new ThreadSink(allocate: true);
+        using var engine = new AudioEngine(sink, new AudioEngineSettings { UpdateRate = Steps });
+        sink.Render(100);
+        Assert.AreEqual(100, engine.RenderAllocations.Renders);
+        var bytes = CountedRounds(engine, () => sink.Render(50));
+        Assert.AreEqual(100 + 6 * 50, engine.RenderAllocations.Renders, "every render is counted");
+        // A byte[100] is 124 bytes on a 64-bit runtime; the 50 of a round are counted when the next render starts.
+        Assert.IsTrue(bytes.All(b => b >= 49 * 120), $"the sink loop's garbage is counted (bytes per round: {string.Join(", ", bytes)})");
+    }
+
+    [TestMethod]
+    public void A_sink_thread_that_renders_without_garbage_counts_no_bytes()
+    {
+        var sink = new ThreadSink(allocate: false);
+        using var engine = new AudioEngine(sink, new AudioEngineSettings { UpdateRate = Steps });
+        for (int i = 0; i < 16; i++) engine.Play(Constant(0.01f, Rate, Rate / 2), new PlayParameters { Pitch = 1.1f, Loop = true });
+        engine.Advance();
+        // A background collection can count up to one allocation quantum against a thread once (see AllocationAssert).
+        var bytes = CountedRounds(engine, () => sink.Render(100));
+        Assert.AreEqual(0, bytes.Min(), $"bytes per round: {string.Join(", ", bytes)}");
+    }
+
+    [TestMethod]
+    public void A_host_pumped_sink_counts_only_its_renders()
+    {
+        var (engine, sink) = Open();
+        object? kept = null;
+        var bytes = CountedRounds(engine, () =>
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                Step(engine);
+                kept = new byte[100]; // the host's frame, between renders on the same thread
+            }
+        });
+        GC.KeepAlive(kept);
+        Assert.AreEqual(0, bytes.Min(), $"the host's own garbage is not the mixer's (bytes per round: {string.Join(", ", bytes)})");
+        Assert.AreEqual(60, engine.RenderAllocations.Renders, "one block of 800 frames per step");
+    }
 }

@@ -33,23 +33,23 @@ public UiTheme(PanelStyle Panel, Color Text, Color TextShadow, Color Accent, Col
 
 #### Parameters
 
-`Panel` PanelStyle
+`Panel` [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
 
 Colours of panels and boxes.
 
-`Text` Color
+`Text` [Color](MicroEngine.Color.md)
 
 Normal text.
 
-`TextShadow` Color
+`TextShadow` [Color](MicroEngine.Color.md)
 
 The 1px shadow under text.
 
-`Accent` Color
+`Accent` [Color](MicroEngine.Color.md)
 
 Highlights: the selected option, name tags, headings.
 
-`Muted` Color
+`Muted` [Color](MicroEngine.Color.md)
 
 Secondary or disabled text.
 
@@ -79,7 +79,7 @@ public Color Accent { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_UI_UiTheme_Muted"></a> Muted
 
@@ -91,7 +91,7 @@ public Color Muted { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_UI_UiTheme_Panel"></a> Panel
 
@@ -103,7 +103,7 @@ public PanelStyle Panel { get; init; }
 
 #### Property Value
 
- PanelStyle
+ [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
 
 ### <a id="MicroEngine_UI_UiTheme_Text"></a> Text
 
@@ -115,7 +115,7 @@ public Color Text { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_UI_UiTheme_TextShadow"></a> TextShadow
 
@@ -127,7 +127,7 @@ public Color TextShadow { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ## Methods
 
@@ -149,15 +149,15 @@ public void Deconstruct(out PanelStyle Panel, out Color Text, out Color TextShad
 
 #### Parameters
 
-`Panel` PanelStyle
+`Panel` [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
 
-`Text` Color
+`Text` [Color](MicroEngine.Color.md)
 
-`TextShadow` Color
+`TextShadow` [Color](MicroEngine.Color.md)
 
-`Accent` Color
+`Accent` [Color](MicroEngine.Color.md)
 
-`Muted` Color
+`Muted` [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_UI_UiTheme_Equals_System_Object_"></a> Equals\(object?\)
 

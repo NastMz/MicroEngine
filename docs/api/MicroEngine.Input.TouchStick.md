@@ -92,7 +92,7 @@ public StickDirections Directions { get; init; }
 
 #### Property Value
 
- StickDirections
+ [StickDirections](MicroEngine.Input.StickDirections.md)
 
 ### <a id="MicroEngine_Input_TouchStick_Down"></a> Down
 
@@ -178,7 +178,7 @@ public RectF Zone { get; init; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ## Methods
 

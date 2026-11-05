@@ -79,7 +79,7 @@ public ReferenceGraphicsDevice(ISurface? surface = null, GraphicsDeviceOptions? 
 
 #### Parameters
 
-`surface` ISurface?
+`surface` [ISurface](MicroEngine.Platform.ISurface.md)?
 
 `options` [GraphicsDeviceOptions](MicroEngine.Graphics.Devices.GraphicsDeviceOptions.md)?
 

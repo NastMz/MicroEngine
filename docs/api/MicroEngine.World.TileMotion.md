@@ -38,11 +38,11 @@ public static bool IsOnGround(RectF box, ICollisionGrid grid, IReadOnlyList<Rect
 
 #### Parameters
 
-`box` RectF
+`box` [RectF](MicroEngine.RectF.md)
 
 `grid` [ICollisionGrid](MicroEngine.World.ICollisionGrid.md)
 
-`solids` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<RectF\>?
+`solids` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[RectF](MicroEngine.RectF.md)\>?
 
 `ignoreOneWay` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
@@ -78,7 +78,7 @@ public static TileMoveResult Move(RectF box, Vector2 delta, ICollisionGrid grid,
 
 #### Parameters
 
-`box` RectF
+`box` [RectF](MicroEngine.RectF.md)
 
 The body's hitbox in world pixels.
 
@@ -90,7 +90,7 @@ Movement in pixels for this step (velocity × dt).
 
 The tiles to collide with.
 
-`solids` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<RectF\>?
+`solids` [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[RectF](MicroEngine.RectF.md)\>?
 
 Extra solid rectangles. One the box already overlaps before moving does not block it, so a body is never trapped
 inside it, except a rectangle that rose into a box moving down: when its top edge is inside the box's lower half,
@@ -122,7 +122,7 @@ public static TileFlags TouchedFlags(RectF box, ICollisionGrid grid)
 
 #### Parameters
 
-`box` RectF
+`box` [RectF](MicroEngine.RectF.md)
 
 `grid` [ICollisionGrid](MicroEngine.World.ICollisionGrid.md)
 

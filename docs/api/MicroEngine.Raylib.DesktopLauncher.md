@@ -31,7 +31,7 @@ public static PlatformCatalog CreateCatalog()
 
 #### Returns
 
- PlatformCatalog
+ [PlatformCatalog](MicroEngine.Core.PlatformCatalog.md)
 
 ### <a id="MicroEngine_Raylib_DesktopLauncher_Run_System_Action_MicroEngine_Hosting_HostBuilder__System_String___"></a> Run\(Action<HostBuilder\>, string\[\]\)
 
@@ -43,7 +43,7 @@ public static int Run(Action<HostBuilder> configure, string[] args)
 
 #### Parameters
 
-`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<HostBuilder\>
+`configure` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[HostBuilder](MicroEngine.Hosting.HostBuilder.md)\>
 
 `args` [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
 
@@ -61,7 +61,7 @@ public static int Run(Game game, string[] args)
 
 #### Parameters
 
-`game` Game
+`game` [Game](MicroEngine.Core.Game.md)
 
 `args` [string](https://learn.microsoft.com/dotnet/api/system.string)\[\]
 

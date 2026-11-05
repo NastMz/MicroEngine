@@ -1,7 +1,9 @@
 # MicroEngine.Sdl
 
 The SDL 3 platform of [MicroEngine](https://github.com/NastMz/MicroEngine): window, 2D renderer, keyboard, gamepads,
-touch and audio on Windows, Linux, macOS, Android and iOS. Native SDL 3 comes from the `ppy.SDL3-CS` package.
+touch and audio on Windows, Linux, macOS, Android, iOS and in browsers. Native SDL 3 comes from the `ppy.SDL3-CS`
+package; for browsers this package carries SDL 3 compiled to WebAssembly with the emscripten of .NET's `wasm-tools`
+workload, which `microengine package web` links (`BrowserLauncher`, `BrowserPage`, `SdlPlatform.BrowserProfile`).
 
 Reference it alone to ship SDL only (no raylib), with your own platform catalog:
 

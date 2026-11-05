@@ -11,7 +11,7 @@ pinned toolchain and are covered by [web/README.md](../../web/README.md).
 | --- | --- | --- |
 | .NET SDK | 10 (`global.json` asks for 10.0.100 or a later feature band) | The only requirement for desktop builds and tests |
 | Git | any recent | To clone the repository |
-| OS | Windows, Linux or macOS | Windows 11 is where the engine is developed and played by hand; Linux x64 and macOS (Apple silicon) build and pass the tests on CI ([Platforms](platforms.md#desktop-validation)) |
+| OS | Windows, Linux or macOS | Windows 11 is where the engine is developed and played by hand; Linux x64 and macOS (Apple silicon) build and pass the tests on CI ([Platforms](platforms.md#desktop-windows-linux-macos)) |
 | Node.js | 18 or later | Only for serving and testing browser packages |
 
 The native libraries come with NuGet packages: SDL 3 with `ppy.SDL3-CS` (`src/MicroEngine.Sdl`) and raylib with

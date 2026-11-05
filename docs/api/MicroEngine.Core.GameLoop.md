@@ -67,7 +67,7 @@ public GameLoop(Game game, IPlatform platform, RunOptions? options, Action<Engin
 
 `options` [RunOptions](MicroEngine.Core.RunOptions.md)?
 
-`compose` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<EngineBuilder\>?
+`compose` [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[EngineBuilder](MicroEngine.Kernel.EngineBuilder.md)\>?
 
 #### Exceptions
 

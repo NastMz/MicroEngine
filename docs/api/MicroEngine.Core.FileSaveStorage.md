@@ -20,7 +20,7 @@ public sealed class FileSaveStorage : ISaveStorage, IStorage
 #### Implements
 
 [ISaveStorage](MicroEngine.Core.ISaveStorage.md), 
-IStorage
+[IStorage](MicroEngine.Platform.IStorage.md)
 
 ## Constructors
 

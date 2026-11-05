@@ -47,7 +47,7 @@ public MixerAudioDevice(IAudioSink sink, AudioEngineSettings? settings = null)
 
 #### Parameters
 
-`sink` IAudioSink
+`sink` [IAudioSink](MicroEngine.Platform.IAudioSink.md)
 
 `settings` [AudioEngineSettings](MicroEngine.Audio.AudioEngineSettings.md)?
 

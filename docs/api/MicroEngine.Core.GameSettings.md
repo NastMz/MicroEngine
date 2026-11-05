@@ -64,7 +64,7 @@ public Color Background { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Core_GameSettings_DefaultTextureFilter"></a> DefaultTextureFilter
 
@@ -77,7 +77,7 @@ public TextureFilter DefaultTextureFilter { get; }
 
 #### Property Value
 
- TextureFilter
+ [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
 
 ### <a id="MicroEngine_Core_GameSettings_Graphics"></a> Graphics
 
@@ -101,7 +101,7 @@ public Color Letterbox { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Core_GameSettings_Presentation"></a> Presentation
 
@@ -117,7 +117,7 @@ public Presentation Presentation { get; init; }
 
 #### Property Value
 
- Presentation
+ [Presentation](MicroEngine.Graphics.Presentation.md)
 
 #### Exceptions
 
@@ -151,7 +151,7 @@ public TextureFilter? TextureFilter { get; init; }
 
 #### Property Value
 
- TextureFilter?
+ [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
 
 ### <a id="MicroEngine_Core_GameSettings_Title"></a> Title
 

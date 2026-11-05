@@ -57,7 +57,7 @@ public TimeMode? TimeMode { get; init; }
 
 #### Property Value
 
- TimeMode?
+ [TimeMode](MicroEngine.Kernel.TimeMode.md)?
 
 ## Methods
 

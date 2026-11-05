@@ -17,9 +17,11 @@ starts it (the experimental platforms also monthly).
 | SDK release | [`sdk-release.yml`](../.github/workflows/sdk-release.yml) | after ci passes on `main` (ends at once unless `main` documents an unpublished version), or by hand to resume | the SDK on nuget.org after the `nuget` environment's approval, then the site |
 | Rollback | [`rollback.yml`](../.github/workflows/rollback.yml) | manually | an earlier production deployment |
 
-The jobs themselves live in three reusable workflows: [`checks.yml`](../.github/workflows/checks.yml) (.NET, native
-Linux, demo builds, site and browsers, browser engine suites), [`sdk.yml`](../.github/workflows/sdk.yml) (the SDK packages from outside the
-repository) and [`deploy-site.yml`](../.github/workflows/deploy-site.yml) (Vercel). How the three publications relate
+The jobs themselves live in five reusable workflows: [`checks.yml`](../.github/workflows/checks.yml) (.NET, native
+Linux, demo builds, site and browsers, browser engine suites), [`sdl-web.yml`](../.github/workflows/sdl-web.yml) (SDL
+for the web, called by `checks.yml`, [SDL for the web](#sdl-for-the-web)), [`sdk.yml`](../.github/workflows/sdk.yml)
+(the SDK packages from outside the repository), [`box2d.yml`](../.github/workflows/box2d.yml) (the Box2D natives,
+[Box2D natives](#box2d-natives)) and [`deploy-site.yml`](../.github/workflows/deploy-site.yml) (Vercel). How the three publications relate
 and how to run each: [Releasing](releasing.md); decision: [ADR 0022](decisions/0022-release-coordination.md).
 
 **While [`.github/phase-freeze`](../.github/phase-freeze) exists, nothing in this table publishes**, except Rollback:
@@ -36,8 +38,9 @@ flowchart LR
   linux --> native[Native Linux]
   plan --> sdlweb[SDL for the web<br/>cached SDL3.a]
   sdlweb --> build[Demo builds]
-  sdlweb --> engine[Browser engine<br/>one job per game<br/>and web backend]
+  sdlweb --> engine[Browser engine<br/>one job per game]
   plan --> sdk[SDK<br/>Windows, Linux, macOS]
+  plan --> box2d[Box2D natives<br/>every runtime]
   build --> site[Site and browsers]
   windows --> deploy[Deploy]
   native --> deploy
@@ -45,6 +48,7 @@ flowchart LR
   engine --> deploy
   deploy --> result[CI result]
   sdk --> result
+  box2d --> result
 ```
 
 1. **Plan** runs the planner and release tool tests, checks that every documentation reference names the documented
@@ -55,8 +59,10 @@ flowchart LR
 2. **Checks** run what is needed and not already proven. Windows and native Linux start only after the Linux tests
    pass, so a broken change never occupies a Windows runner. **SDK** (`sdk.yml`) runs beside them when a package
    input changed: pack, check, and a game made from the packages on Windows, Linux and macOS. The **browser engine**
-   suites run beside them too, one job per game the change reaches and per web backend, after SDL for the web
-   ([SDL for the web](#sdl-for-the-web), [Browser tests](#browser-tests)).
+   suites run beside them too, one job per game the change reaches, after SDL for the web
+   ([SDL for the web](#sdl-for-the-web), [Browser tests](#browser-tests)). **Box2D**
+   (`box2d.yml`) runs beside them when the native layer, the physics or what it builds on changed
+   ([Box2D natives](#box2d-natives)).
 3. **Deploy**: a protected preview for pull requests that change the site or a demo; production for pushes to
    `main` that change the published site (documentation, site, game pages). Production always uses the latest
    demo release, and is held (the current deployment stays, with a warning) while the documentation presents an SDK
@@ -74,7 +80,7 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
 | Change | .NET Linux | .NET Windows | Native Linux | SDK | Demo builds | Browser suites | Browser engine | Deploy |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Engine core (`src/MicroEngine`) | yes | yes | yes | yes | the canary game | all | all games | preview |
-| raylib backend (`src/MicroEngine.Raylib`) | yes | yes | yes | yes | the canary game | all | all games | preview |
+| raylib backend (`src/MicroEngine.Raylib`, desktop only) | yes | yes | yes | yes | the canary game | all | all games | preview |
 | SDL backend (`src/MicroEngine.Sdl`) | yes | yes | yes | yes | the canary game | all | all games | preview |
 | SDL for the web (`src/MicroEngine.Sdl/native`) | — | — | — | yes | the canary game | all | all games | preview |
 | One game's code (`games/<Name>`) | that game's tests | — | that game's captures | — | that game | all | that game | preview |
@@ -106,10 +112,15 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
   Windows, and every demo build compiles them there.
 - **Browser suites** (`site/tests/browser.mjs --suites`): `layout` opens every page at three widths; `play` loads,
   plays, restarts and exits each demo; `touch` checks the touch panels. A rebuilt package is always played.
-- **Browser engine** (`web/tests/run.mjs`, [Browser tests](#browser-tests)): one job per game and web backend, on a
-  development package built in the job. It plays the games whose own folders changed when every change that needs it
+- **Browser engine** (`web/tests/run.mjs`, [Browser tests](#browser-tests)): one job per game, on a development
+  package built in the job. It plays the games whose own folders changed when every change that needs it
   is a game's; any other input (the engine, the raylib and SDL backends, SDL for the web, the web host and build, the
   suites, an unknown path) plays all four. The desktop launcher is not part of the browser build and does not run it.
+- **Box2D** (`box2d.yml`, [Box2D natives](#box2d-natives)) is not a column: it runs for the native layer and the
+  Box2D backend (`src/MicroEngine.Physics.Box2D`), the physics contract and what it builds on (`MicroEngine.Kernel`,
+  `Scene`, `Physics`, `Physics.Tiles`), their tests and shared suites (`tests/MicroEngine.Physics.Box2D.Tests`,
+  `tests/Shared/Physics`), the substitution sample (`samples/PhysicsSubstitution`), the web toolchain its browser
+  library is linked with, daily CI itself and a path no rule knows.
 
 ### Evidence: a check runs once per content
 
@@ -122,6 +133,7 @@ so a new folder is an input until a rule says otherwise; `.github/` is an input 
 | `native` | the same, but `web/tests/` is an input |
 | `site` | `src/`, `tests/`, `samples/`, `platforms/`, `odd/`, `experiments/`, game files other than Markdown and screenshots; the key adds the demo packages used and the browser suites |
 | `sdk` | `docs/`, `site/`, `platforms/`, `games/`, `tests/`, `samples/`, `odd/`, `experiments/`, Markdown outside `src/`, `templates/` and `sdk/` (except `THIRD-PARTY-NOTICES.md`, which the packages ship) |
+| `box2d` | everything outside the native layer, `MicroEngine.Physics*`, `Kernel` and `Scene` in `src/`; tests other than the Box2D tests and `tests/Shared`; samples other than `samples/PhysicsSubstitution`; `games/`, `site/`, `platforms/`, `templates/`, `sdk/`, `benchmarks/`, documentation |
 | `web` (browser engine) | `docs/`, `site/`, `platforms/`, `tests/`, `samples/`, `sdk/`, `odd/`, `experiments/`, the Android and iOS hosts, Markdown (except in a game's `Content/`); the key adds the games played |
 
 When a job passes it uploads the artifact `evidence-<check>-<key>` (kept 30 days); the browser engine check records
@@ -222,7 +234,7 @@ cannot start.
 
 | Workflow | When | What |
 | --- | --- | --- |
-| `sdk.yml` | called by daily CI when a package input changed (the `sdk` check, with evidence, required through **CI result**), by validate, by `sdk-release.yml`, or by hand | packs every SDK package (with the web raylib), checks them (`sdk/tests/packages.mjs`), then on Windows, Linux and macOS installs the tool and template from that feed into a folder outside the repository and creates, builds, runs and packages a game (`sdk/tests/external.mjs`) |
+| `sdk.yml` | called by daily CI when a package input changed (the `sdk` check, with evidence, required through **CI result**), by validate, by `sdk-release.yml`, or by hand | packs every SDK package (with SDL for the web), checks them (`sdk/tests/packages.mjs`), then on Windows, Linux and macOS installs the tool and template from that feed into a folder outside the repository and creates, builds, runs and packages a game (`sdk/tests/external.mjs`) |
 | `sdk-release.yml` | after every ci run that passed for a push to `main`; by hand to resume | preflight (`sdk/version.mjs release-plan`) reads nuget.org and the GitHub release `sdk-v<version>`: nothing to do unless `main` documents a version nuget.org lacks; otherwise checks with `sdk.yml`, drafts, waits for the `nuget` environment's approval, pushes exactly the draft's packages with a one-hour Trusted Publishing key (GitHub OIDC), publishes the release, waits for nuget.org and builds a game and the documented samples from it, then deploys the site |
 
 ```mermaid
@@ -444,30 +456,52 @@ the job verifies `SHA256SUMS` and uploads the artifact `sdl-web-browser-wasm` (3
 for browser builds; a release pack (`-p:MicroEngineRelease=true`) fails without it. Changing `sdl.env` or `build.sh`
 runs the browser checks, the SDK check and the browser engine suites.
 
+### Box2D natives
+
+The Box2D physics backend (`MicroEngine.Physics.Box2D`, ADR 0031) calls native Box2D through the engine's own C layer
+(`me_box2d`). [`box2d.yml`](../.github/workflows/box2d.yml) builds that library for every runtime identifier from the
+Box2D commit `src/MicroEngine.Physics.Box2D/native/box2d.env` pins, with
+[`native/build.sh`](../src/MicroEngine.Physics.Box2D/native/build.sh), the script developers run locally the same way.
+Daily CI calls it when the planner's `box2d` check is needed ([What runs for a change](#what-runs-for-a-change)); it
+can also be started by hand (Actions → box2d). Full validation does not run it. Nothing in it publishes: the package
+stays a workflow artifact and the artifacts expire.
+
+| Job | What it shows |
+| --- | --- |
+| `natives` (one per runtime: `win-x64`, `linux-x64` on the oldest supported Ubuntu runner, `android-arm64`, `android-x64`, `browser-wasm`, `osx-arm64`, `osx-x64`, `ios-arm64`) | the library builds; it is cached by `build.sh key` (inputs and toolchain); its `SHA256SUMS` verify; `me_box2d_selftest` passes wherever the runner can run the result (desktop runners natively, `browser-wasm` under Node; Android and iOS build only); artifact `box2d-<rid>`, 30 days |
+| `tests` (Windows, Linux, macOS) | the backend's tests (`tests/MicroEngine.Physics.Box2D.Tests`) pass with that runtime's library; `MICROENGINE_BOX2D_REQUIRED=1` makes a missing library fail instead of skipping |
+| `browser` | the same test classes pass in headless Chrome on the .NET browser runtime (interpreter), Box2D linked statically, so every function of the native layer goes through the interpreter's P/Invoke path |
+| `package` | the optional `MicroEngine.Physics.Box2D` package packs with every runtime built and holds the files it must hold; artifact `box2d-package`, 7 days |
+| `compare` (**Box2D determinism**) | one table of every runtime's library checksum and self-test result; every runtime that ran the self-test printed the same state hash, or the job fails; it also fails unless the jobs above passed, and records the evidence of the check |
+
+The macOS and iOS runtimes build only when macOS runners are on (daily CI passes the repository variable
+`MACOS_RUNNERS`; a manual run always builds them); otherwise they are reported as not built.
+
 ### Browser tests
 
-`web/tests/run.mjs` plays development packages (`web/build.sh --dev`) in real browsers. In daily CI (the **Browser
-engine** jobs, Chrome on a virtual X server with a virtual sound server, one job per game the change reaches and per
-web backend) and in validate (all four games), it runs these suites, and the job fails when any of their checks fails:
+`web/tests/run.mjs` plays development packages (`web/build.sh --dev`, SDL 3 in WebAssembly) in real browsers. In daily
+CI (the **Browser engine** jobs, Chrome and Firefox on a virtual X server with a virtual sound server, one job per game
+the change reaches) and in validate (all four games), it runs these suites, and the job fails when any of their checks
+fails:
 
 | Suite | What it shows |
 | --- | --- |
 | `platform` | loading, starting by a gesture, audio running after it, the canvas filling the page and the game frame filling the canvas, about 60 updates per second, held, released and sub-frame key presses, focus loss releasing keys, saves (corrupt and full storage, with Neon Rift's and Meadow Run's), playing again without reloading |
-| `scripts` | the games' scripts replayed in the browser to their end; their captures are then compared byte for byte with the same scripts on the desktop build (raylib on Mesa, `desktop.mjs` with the same `--out`). The comparison is **measured, not a gate**: on the first runs most captures were identical, but some scrolling scenes drift by a few pixels between the two builds (Meadow Run's level, Neon Rift's stage 1, a few Courtyard Key frames), so differences are listed in the job summary and kept as an artifact |
+| `scripts` | the games' scripts replayed in the browser to their end; their captures are then compared byte for byte with the same scripts on the SDL desktop build (OpenGL on Mesa, `desktop.mjs --backend sdl` with the same `--out`). The comparison is **measured, not a gate**: on the first runs most captures were identical, but some scrolling scenes drift by a few pixels between the two builds (Meadow Run's level, Neon Rift's stage 1, a few Courtyard Key frames), so differences are listed in the job summary and kept as an artifact |
 | `keyboard` | the same scripts typed through the browser's real key events reach the scene the scripted run ends in |
 | `framerate` | 60 updates per second whether the page draws every frame, every second or every fourth |
 | `audio` | the sound reaching the page's audio output has a measurable level within 15 seconds of the start (the result says when it came: title music is rendered in the background, later on a slow runner); suspended audio is explained and resumed by one click; a hidden page suspends its sound and resumes it when shown |
 | `repeat` | each script played twice in fresh pages writes byte-identical captures (scripted runs are deterministic in a page as on desktop) |
 | `gamepad` | an emulated standard-mapping gamepad (the Gamepad API, faked in the page): d-pad and left stick held and released, unplugging releases what it held |
 
-The SDL web backend (`--web-backend sdl`) is also checked by the gates for making it the default browser platform:
-its job adds `repeat` and `gamepad` in Chrome, runs every suite in Firefox, and plays the game on four emulated phones
-and tablets (`web/tests/mobile.mjs`: multi-touch, safe-area insets, rotation, focus loss; Chromium with mobile user
-agents, not Safari). Every job then reports, without gating, the package's download size, its load and start-up time
-and the time inside each frame (`web/tests/measure.mjs`, medians of three runs in Chrome), to compare the backends on
-the same runner. Real phones, Safari and iOS are not checked by CI.
+Every suite runs in Chrome and in Firefox; each job then plays the game on four emulated phones and tablets
+(`web/tests/mobile.mjs`: multi-touch, safe-area insets, rotation, focus loss; Chromium with mobile user agents, not
+Safari), which also fails the job, and reports without gating the package's download size, its load and start-up time
+and the time inside each frame (`web/tests/measure.mjs`, medians of three runs in Chrome). These are the checks that
+made SDL the browser platform in place of raylib (they ran on both until then). Real phones, Safari and iOS are not
+checked by CI.
 
-Firefox and the `autopilot` suite (Neon Rift's autopilot clearing stages 1 to 3) are run by hand:
+The `autopilot` suite (Neon Rift's autopilot clearing stages 1 to 3) is run by hand:
 `node web/tests/run.mjs platform scripts autopilot --browsers chrome,firefox`. Each scenario names a game, a script
 and its environment; from the browser test scenarios:
 

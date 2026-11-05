@@ -38,7 +38,7 @@ public FontOptions(bool Antialiasing = true, TextureFilter? Filter = null, int P
 Smooth glyph edges (true, the default: HD text). False gives hard edges, for pixel fonts distributed as TTF and drawn at
 their design size or whole multiples of it.
 
-`Filter` TextureFilter?
+`Filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
 
 How glyph pages are sampled when text is scaled or rotated; null follows the game's default
 ([DefaultFilter](MicroEngine.Graphics.IGraphicsDevice.md#MicroEngine_Graphics_IGraphicsDevice_DefaultFilter), from its presentation's default sampler), whether the text is
@@ -97,7 +97,7 @@ public TextureFilter? Filter { get; init; }
 
 #### Property Value
 
- TextureFilter?
+ [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
 
 ### <a id="MicroEngine_Graphics_FontOptions_Kerning"></a> Kerning
 
@@ -171,7 +171,7 @@ public void Deconstruct(out bool Antialiasing, out TextureFilter? Filter, out in
 
 `Antialiasing` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-`Filter` TextureFilter?
+`Filter` [TextureFilter](MicroEngine.Graphics.TextureFilter.md)?
 
 `PageSize` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 

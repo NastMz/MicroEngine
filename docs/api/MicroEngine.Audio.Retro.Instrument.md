@@ -4,7 +4,7 @@
 
 Namespace: [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md)  
 Assembly: MicroEngine.Audio.dll  
-Guide: [Audio](../manual/audio.md)  
+Guide: [Synthesized sound effects](../manual/audio.md#synthesized-sound-effects)  
 
 A tracker-style voice: waveform plus an ADSR envelope (seconds, sustain level 0..1).
 

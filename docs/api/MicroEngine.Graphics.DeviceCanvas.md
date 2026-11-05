@@ -35,7 +35,7 @@ public DeviceCanvas(IGraphicsDevice device, int width, int height)
 
 #### Parameters
 
-`device` IGraphicsDevice
+`device` [IGraphicsDevice](MicroEngine.Graphics.Devices.IGraphicsDevice.md)
 
 `width` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
@@ -53,7 +53,7 @@ public IGraphicsDevice Device { get; }
 
 #### Property Value
 
- IGraphicsDevice
+ [IGraphicsDevice](MicroEngine.Graphics.Devices.IGraphicsDevice.md)
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_Graphics"></a> Graphics
 
@@ -89,7 +89,7 @@ public RenderTarget Target { get; }
 
 #### Property Value
 
- RenderTarget
+ [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_UiRenderer"></a> UiRenderer
 
@@ -113,7 +113,7 @@ public RenderTarget? UiTarget { get; }
 
 #### Property Value
 
- RenderTarget?
+ [RenderTarget](MicroEngine.Graphics.Devices.RenderTarget.md)?
 
 ## Methods
 
@@ -127,7 +127,7 @@ public IRenderer BeginFrame()
 
 #### Returns
 
- IRenderer
+ [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_BeginUi_System_Int32_System_Int32_System_Single_"></a> BeginUi\(int, int, float\)
 
@@ -149,7 +149,7 @@ public IRenderer BeginUi(int pixelWidth, int pixelHeight, float scale)
 
 #### Returns
 
- IRenderer
+ [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 #### Exceptions
 
@@ -167,7 +167,7 @@ public PixelImage Capture()
 
 #### Returns
 
- PixelImage
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_CaptureUi"></a> CaptureUi\(\)
 
@@ -179,7 +179,7 @@ public PixelImage? CaptureUi()
 
 #### Returns
 
- PixelImage?
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)?
 
 ### <a id="MicroEngine_Graphics_DeviceCanvas_Compose_MicroEngine_Graphics_Presentation_MicroEngine_RectF_MicroEngine_Color_"></a> Compose\(Presentation, RectF, Color\)
 
@@ -194,11 +194,11 @@ public bool Compose(Presentation presentation, RectF frame, Color letterbox)
 
 #### Parameters
 
-`presentation` Presentation
+`presentation` [Presentation](MicroEngine.Graphics.Presentation.md)
 
-`frame` RectF
+`frame` [RectF](MicroEngine.RectF.md)
 
-`letterbox` Color
+`letterbox` [Color](MicroEngine.Color.md)
 
 #### Returns
 

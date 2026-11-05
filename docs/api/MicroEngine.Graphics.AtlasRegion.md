@@ -32,7 +32,7 @@ public AtlasRegion(string Name, RectF Source, Vector2 Origin, float? Duration)
 
 The frame's name, without a file extension ("hero_run_0" for "hero_run_0.png", "slime 0" for Aseprite's "slime 0.aseprite").
 
-`Source` RectF
+`Source` [RectF](MicroEngine.RectF.md)
 
 The rectangle in the atlas image, in pixels.
 
@@ -94,7 +94,7 @@ public RectF Source { get; init; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ## Methods
 
@@ -108,7 +108,7 @@ public void Deconstruct(out string Name, out RectF Source, out Vector2 Origin, o
 
 `Name` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`Source` RectF
+`Source` [RectF](MicroEngine.RectF.md)
 
 `Origin` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 

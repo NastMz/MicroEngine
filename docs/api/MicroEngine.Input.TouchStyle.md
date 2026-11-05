@@ -69,7 +69,7 @@ public Color? Fill { get; init; }
 
 #### Property Value
 
- Color?
+ [Color](MicroEngine.Color.md)?
 
 ### <a id="MicroEngine_Input_TouchStyle_Halo"></a> Halo
 
@@ -94,7 +94,7 @@ public PixelImage? Image { get; init; }
 
 #### Property Value
 
- PixelImage?
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)?
 
 ### <a id="MicroEngine_Input_TouchStyle_KnobImage"></a> KnobImage
 
@@ -106,7 +106,7 @@ public PixelImage? KnobImage { get; init; }
 
 #### Property Value
 
- PixelImage?
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)?
 
 ### <a id="MicroEngine_Input_TouchStyle_KnobSize"></a> KnobSize
 
@@ -130,7 +130,7 @@ public Color? Label { get; init; }
 
 #### Property Value
 
- Color?
+ [Color](MicroEngine.Color.md)?
 
 ### <a id="MicroEngine_Input_TouchStyle_Opacity"></a> Opacity
 
@@ -154,7 +154,7 @@ public Color? Outline { get; init; }
 
 #### Property Value
 
- Color?
+ [Color](MicroEngine.Color.md)?
 
 ### <a id="MicroEngine_Input_TouchStyle_OutlineWidth"></a> OutlineWidth
 
@@ -178,7 +178,7 @@ public Color? PressedFill { get; init; }
 
 #### Property Value
 
- Color?
+ [Color](MicroEngine.Color.md)?
 
 ### <a id="MicroEngine_Input_TouchStyle_PressedImage"></a> PressedImage
 
@@ -190,7 +190,7 @@ public PixelImage? PressedImage { get; init; }
 
 #### Property Value
 
- PixelImage?
+ [PixelImage](MicroEngine.Graphics.PixelImage.md)?
 
 ### <a id="MicroEngine_Input_TouchStyle_PressedOutline"></a> PressedOutline
 
@@ -202,7 +202,7 @@ public Color? PressedOutline { get; init; }
 
 #### Property Value
 
- Color?
+ [Color](MicroEngine.Color.md)?
 
 ### <a id="MicroEngine_Input_TouchStyle_PressedScale"></a> PressedScale
 

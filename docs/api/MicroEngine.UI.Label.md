@@ -70,7 +70,7 @@ public Color? Color { get; set; }
 
 #### Property Value
 
- Color?
+ [Color](MicroEngine.Color.md)?
 
 ### <a id="MicroEngine_UI_Label_Shadow"></a> Shadow
 
@@ -108,7 +108,7 @@ protected override void DrawContent(IRenderer renderer, UiContext context)
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `context` [UiContext](MicroEngine.UI.UiContext.md)
 

@@ -22,7 +22,7 @@ public sealed class InputSystem : IStateHashed
 
 #### Implements
 
-IStateHashed
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 ## Remarks
 
@@ -194,7 +194,7 @@ public void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 ### <a id="MicroEngine_Input_InputSystem_ListenForPress_System_Action_MicroEngine_Input_InputEvent__"></a> ListenForPress\(Action<InputEvent\>\)
 

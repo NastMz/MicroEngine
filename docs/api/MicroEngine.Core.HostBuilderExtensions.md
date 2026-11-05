@@ -32,13 +32,13 @@ public static HostBuilder ConfigureRequest(this HostBuilder host, Func<PlatformR
 
 #### Parameters
 
-`host` HostBuilder
+`host` [HostBuilder](MicroEngine.Hosting.HostBuilder.md)
 
 `change` [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[PlatformRequest](MicroEngine.Core.PlatformRequest.md), [PlatformRequest](MicroEngine.Core.PlatformRequest.md)\>
 
 #### Returns
 
- HostBuilder
+ [HostBuilder](MicroEngine.Hosting.HostBuilder.md)
 
 The builder, for chaining.
 
@@ -53,7 +53,7 @@ public static PlatformCatalog Platforms(this HostBuilder host)
 
 #### Parameters
 
-`host` HostBuilder
+`host` [HostBuilder](MicroEngine.Hosting.HostBuilder.md)
 
 #### Returns
 
@@ -70,13 +70,13 @@ public static SaveStore SaveStore(this HostBuilder host, string gameId)
 
 #### Parameters
 
-`host` HostBuilder
+`host` [HostBuilder](MicroEngine.Hosting.HostBuilder.md)
 
 `gameId` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 #### Returns
 
- SaveStore
+ [SaveStore](MicroEngine.Core.SaveStore.md)
 
 ### <a id="MicroEngine_Core_HostBuilderExtensions_UseGame_MicroEngine_Hosting_HostBuilder_System_Func_MicroEngine_Core_Game__"></a> UseGame\(HostBuilder, Func<Game\>\)
 
@@ -88,13 +88,13 @@ public static HostBuilder UseGame(this HostBuilder host, Func<Game> create)
 
 #### Parameters
 
-`host` HostBuilder
+`host` [HostBuilder](MicroEngine.Hosting.HostBuilder.md)
 
 `create` [Func](https://learn.microsoft.com/dotnet/api/system.func\-1)<[Game](MicroEngine.Core.Game.md)\>
 
 #### Returns
 
- HostBuilder
+ [HostBuilder](MicroEngine.Hosting.HostBuilder.md)
 
 The builder, for chaining.
 
@@ -108,13 +108,13 @@ public static HostBuilder UsePlatforms(this HostBuilder host, PlatformCatalog ca
 
 #### Parameters
 
-`host` HostBuilder
+`host` [HostBuilder](MicroEngine.Hosting.HostBuilder.md)
 
 `catalog` [PlatformCatalog](MicroEngine.Core.PlatformCatalog.md)
 
 #### Returns
 
- HostBuilder
+ [HostBuilder](MicroEngine.Hosting.HostBuilder.md)
 
 The builder, for chaining.
 

@@ -21,7 +21,7 @@ public sealed class ZipContentSource : IContentSource, IDisposable
 
 #### Implements
 
-IContentSource, 
+[IContentSource](MicroEngine.Platform.IContentSource.md), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
 #### Extension Methods

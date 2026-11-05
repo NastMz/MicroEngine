@@ -299,7 +299,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/web-tools
-          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh') }}
+          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'src/MicroEngine.Sdl/native/sdl.env', 'src/MicroEngine.Sdl/native/build.sh') }}
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}

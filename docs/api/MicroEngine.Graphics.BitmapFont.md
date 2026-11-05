@@ -103,7 +103,7 @@ public static BitmapFont CreateDefault(IGraphicsDevice? device)
 
 #### Parameters
 
-`device` IGraphicsDevice?
+`device` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)?
 
 #### Returns
 
@@ -127,7 +127,7 @@ public void Draw(IRenderer renderer, string text, Vector2 position, Color color,
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 The renderer.
 
@@ -139,7 +139,7 @@ The text; '\n' starts a new line.
 
 Top-left of the first line, in virtual (or camera world) pixels.
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 Text colour.
 
@@ -163,17 +163,17 @@ public void DrawCentered(IRenderer renderer, string text, Vector2 center, Color 
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 `center` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 `scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`shadow` Color?
+`shadow` [Color](MicroEngine.Color.md)?
 
 ### <a id="MicroEngine_Graphics_BitmapFont_DrawOutlined_MicroEngine_Graphics_IRenderer_System_String_System_Numerics_Vector2_MicroEngine_Color_MicroEngine_Color_System_Single_"></a> DrawOutlined\(IRenderer, string, Vector2, Color, Color, float\)
 
@@ -185,15 +185,15 @@ public void DrawOutlined(IRenderer renderer, string text, Vector2 position, Colo
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
-`outline` Color
+`outline` [Color](MicroEngine.Color.md)
 
 `scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
@@ -207,15 +207,15 @@ public void DrawShadowed(IRenderer renderer, string text, Vector2 position, Colo
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
-`shadow` Color
+`shadow` [Color](MicroEngine.Color.md)
 
 `scale` [float](https://learn.microsoft.com/dotnet/api/system.single)
 

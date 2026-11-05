@@ -183,7 +183,7 @@ assembles a platform ([Backends](../manual/backends.md#choosing-a-platform)).
 
 ### Device interfaces
 
-[`src/MicroEngine/Graphics/IGraphics.cs`](../../src/MicroEngine/Graphics/IGraphics.cs):
+[`src/MicroEngine.Graphics2D/Legacy/IGraphics.cs`](../../src/MicroEngine.Graphics2D/Legacy/IGraphics.cs):
 
 ```csharp
 public interface IRenderer
@@ -209,7 +209,7 @@ public interface IGraphicsDevice
 }
 ```
 
-[`src/MicroEngine/Audio/Audio.cs`](../../src/MicroEngine/Audio/Audio.cs):
+[`src/MicroEngine.Audio/Audio.cs`](../../src/MicroEngine.Audio/Audio.cs):
 
 ```csharp
 public interface IAudioDevice
@@ -228,7 +228,7 @@ public interface IAudioDevice
 }
 ```
 
-[`src/MicroEngine/Input/Input.cs`](../../src/MicroEngine/Input/Input.cs):
+[`src/MicroEngine.Input/Devices.cs`](../../src/MicroEngine.Input/Devices.cs):
 
 ```csharp
 public interface IInputSource
@@ -278,11 +278,17 @@ public interface IOverlayCanvas
 Coordinates are drawable pixels. `FrameLayout.Fit(window, safeArea, width, height)` is the letterbox rule every
 backend uses.
 
+Next SDK version (not published yet: arrives with the next SDK version): these interfaces keep their namespaces and
+move to their own assemblies, carried by the `MicroEngine` package: `IRenderer` and `IGraphicsDevice` to
+`MicroEngine.Graphics2D.dll`, `IAudioDevice` to `MicroEngine.Audio.dll`, `IInputSource` and `InputMap` to
+`MicroEngine.Input.dll`. `IGraphicsDevice` adds `DefaultFilter` and `CreateTexture(image, filter)` (the one-argument
+form uses `DefaultFilter`), and `IInputSource` adds `PadStyle` and `Pointers`.
+
 Games rarely touch these directly: they use `AudioMixer`, `InputMap` and the renderer passed to `Draw`.
 
 ## InputMap
 
-[`src/MicroEngine/Input/Input.cs`](../../src/MicroEngine/Input/Input.cs).
+[`src/MicroEngine.Input/InputMap.cs`](../../src/MicroEngine.Input/InputMap.cs).
 
 ```csharp
 public sealed class InputMap
@@ -405,9 +411,9 @@ public sealed class AchievementTracker
 | Type | Signature | Source |
 | --- | --- | --- |
 | `DesktopLauncher` | `public static int Run(Game game, string[] args)` | [`DesktopLauncher.cs`](../../src/MicroEngine.Raylib/DesktopLauncher.cs) |
-| `BrowserLauncher` | `public static GameSession CreateSession(Func<Game> createGame)` | [`BrowserLauncher.cs`](../../src/MicroEngine.Raylib/BrowserLauncher.cs) |
+| `BrowserLauncher` (`MicroEngine.Raylib`; removed in the next SDK version) | `public static GameSession CreateSession(Func<Game> createGame)` | — |
 | `DesktopLauncher` (next SDK version) | `public static int Run(Action<HostBuilder> configure, string[] args)`: the game's `Configure` entry point | [`DesktopLauncher.cs`](../../src/MicroEngine.Desktop/DesktopLauncher.cs) |
-| `BrowserLauncher` (next SDK version) | `public static GameSession CreateSession(Action<HostBuilder> configure, BrowserPage page)` | [`BrowserLauncher.cs`](../../src/MicroEngine.Raylib/BrowserLauncher.cs) |
+| `BrowserLauncher` (next SDK version, `MicroEngine.Sdl`) | `public static GameSession CreateSession(Action<HostBuilder> configure, BrowserPage page)` | [`BrowserLauncher.cs`](../../src/MicroEngine.Sdl/BrowserLauncher.cs) |
 | `GameHost` (next SDK version) | `public static GameHost Create(HostEnvironment environment, LaunchRequest request, Action<HostBuilder> configure, Action<HostBuilder>? defaults = null)`; `CreateGame`, `CreateRunOptions`, `CreateRequest`, `CreatePlatform`, `Run`, `Play`, `CreateSession` | [`GameHost.cs`](../../src/MicroEngine/Core/GameHost.cs) |
 | `GameRunner` | `public static RunResult Run(Game game, IPlatform platform, RunOptions? options = null)` | [`GameRunner.cs`](../../src/MicroEngine/Core/GameRunner.cs) |
 | `GameSession` | `GameSession(Func<Game> createGame, Func<Game, IPlatform> createPlatform)`; `Start`, `Tick`, `Stop`, `Result` (next SDK version: also `GameSession(Func<LaunchRequest, GameHost> compose)` with `Start(LaunchRequest)`) | [`GameSession.cs`](../../src/MicroEngine/Core/GameSession.cs) |

@@ -36,7 +36,7 @@ public ActionPrompt(string Action, InputDevice Device, PromptKind Kind, string T
 
 The action shown.
 
-`Device` InputDevice
+`Device` [InputDevice](MicroEngine.Input.InputDevice.md)
 
 The device it is shown for.
 
@@ -72,7 +72,7 @@ public PadButton Button { get; init; }
 
 #### Property Value
 
- PadButton
+ [PadButton](MicroEngine.Input.PadButton.md)
 
 ### <a id="MicroEngine_Input_ActionPrompt_Control"></a> Control
 
@@ -96,7 +96,7 @@ public InputDevice Device { get; init; }
 
 #### Property Value
 
- InputDevice
+ [InputDevice](MicroEngine.Input.InputDevice.md)
 
 ### <a id="MicroEngine_Input_ActionPrompt_Key"></a> Key
 
@@ -108,7 +108,7 @@ public Key Key { get; init; }
 
 #### Property Value
 
- Key
+ [Key](MicroEngine.Input.Key.md)
 
 ### <a id="MicroEngine_Input_ActionPrompt_Kind"></a> Kind
 
@@ -132,7 +132,7 @@ public GamepadStyle PadStyle { get; init; }
 
 #### Property Value
 
- GamepadStyle
+ [GamepadStyle](MicroEngine.Input.GamepadStyle.md)
 
 ### <a id="MicroEngine_Input_ActionPrompt_Text"></a> Text
 
@@ -158,7 +158,7 @@ public void Deconstruct(out string Action, out InputDevice Device, out PromptKin
 
 `Action` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`Device` InputDevice
+`Device` [InputDevice](MicroEngine.Input.InputDevice.md)
 
 `Kind` [PromptKind](MicroEngine.Input.PromptKind.md)
 

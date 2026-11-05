@@ -16,7 +16,7 @@ public interface IPlatform : IPlatformHost, IDisposable
 
 #### Implements
 
-IPlatformHost, 
+[IPlatformHost](MicroEngine.Platform.IPlatformHost.md), 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
 ## Remarks
@@ -38,7 +38,7 @@ IAudioDevice Audio { get; }
 
 #### Property Value
 
- IAudioDevice
+ [IAudioDevice](MicroEngine.Audio.IAudioDevice.md)
 
 ### <a id="MicroEngine_Core_IPlatform_Graphics"></a> Graphics
 
@@ -50,7 +50,7 @@ IGraphicsDevice Graphics { get; }
 
 #### Property Value
 
- IGraphicsDevice
+ [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
 
 ### <a id="MicroEngine_Core_IPlatform_Input"></a> Input
 
@@ -62,7 +62,7 @@ IInputSource Input { get; }
 
 #### Property Value
 
- IInputSource
+ [IInputSource](MicroEngine.Input.IInputSource.md)
 
 ### <a id="MicroEngine_Core_IPlatform_Letterbox"></a> Letterbox
 
@@ -75,7 +75,7 @@ Color Letterbox { get; set; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ## Methods
 
@@ -89,7 +89,7 @@ IRenderer BeginFrame()
 
 #### Returns
 
- IRenderer
+ [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 ### <a id="MicroEngine_Core_IPlatform_EndFrame"></a> EndFrame\(\)
 

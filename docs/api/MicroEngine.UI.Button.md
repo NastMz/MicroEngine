@@ -111,7 +111,7 @@ protected override void DrawContent(IRenderer renderer, UiContext context)
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `context` [UiContext](MicroEngine.UI.UiContext.md)
 

@@ -41,7 +41,7 @@ The sprite.
 
 Where the sprite's origin goes, in virtual (or camera world) pixels.
 
-`tint` Color?
+`tint` [Color](MicroEngine.Color.md)?
 
 Colour multiplier; null for white (unchanged).
 
@@ -65,7 +65,7 @@ public static void Draw(this IRenderer r, Texture texture, Vector2 position, Col
 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`tint` Color?
+`tint` [Color](MicroEngine.Color.md)?
 
 ### <a id="MicroEngine_Graphics_RendererExtensions_DrawPivoted_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_Sprite_System_Numerics_Vector2_System_Single_System_Nullable_System_Numerics_Vector2__System_Nullable_MicroEngine_Color__System_Boolean_"></a> DrawPivoted\(IRenderer, Sprite, Vector2, float, Vector2?, Color?, bool\)
 
@@ -88,7 +88,7 @@ public static void DrawPivoted(this IRenderer r, Sprite sprite, Vector2 pivot, f
 
 `scale` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)?
 
-`tint` Color?
+`tint` [Color](MicroEngine.Color.md)?
 
 `flipX` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
@@ -104,9 +104,9 @@ public static void DrawRect(this IRenderer r, RectF rect, Color color, float thi
 
 `r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`rect` RectF
+`rect` [RectF](MicroEngine.RectF.md)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 `thickness` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
@@ -128,7 +128,7 @@ public static void FillEllipse(this IRenderer r, Vector2 center, float radiusX, 
 
 `radiusY` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-`color` Color
+`color` [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_RendererExtensions_FillGradient_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_Color_MicroEngine_Color_System_Int32_"></a> FillGradient\(IRenderer, RectF, Color, Color, int\)
 
@@ -142,11 +142,11 @@ public static void FillGradient(this IRenderer r, RectF rect, Color top, Color b
 
 `r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`rect` RectF
+`rect` [RectF](MicroEngine.RectF.md)
 
-`top` Color
+`top` [Color](MicroEngine.Color.md)
 
-`bottom` Color
+`bottom` [Color](MicroEngine.Color.md)
 
 `bands` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
@@ -162,7 +162,7 @@ public static void Panel(this IRenderer r, RectF rect, PanelStyle style)
 
 `r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
-`rect` RectF
+`rect` [RectF](MicroEngine.RectF.md)
 
 `style` [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
 

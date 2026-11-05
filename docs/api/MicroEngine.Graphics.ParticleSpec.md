@@ -65,7 +65,7 @@ public Color EndColor { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ### <a id="MicroEngine_Graphics_ParticleSpec_Gravity"></a> Gravity
 
@@ -149,7 +149,7 @@ public Color StartColor { get; init; }
 
 #### Property Value
 
- Color
+ [Color](MicroEngine.Color.md)
 
 ## Methods
 

@@ -106,7 +106,7 @@ public PanelStyle? Style { get; set; }
 
 #### Property Value
 
- PanelStyle?
+ [PanelStyle](MicroEngine.Graphics.PanelStyle.md)?
 
 ## Methods
 
@@ -120,7 +120,7 @@ protected override void ArrangeContent(RectF bounds, UiContext context)
 
 #### Parameters
 
-`bounds` RectF
+`bounds` [RectF](MicroEngine.RectF.md)
 
 `context` [UiContext](MicroEngine.UI.UiContext.md)
 
@@ -134,7 +134,7 @@ protected override void DrawContent(IRenderer renderer, UiContext context)
 
 #### Parameters
 
-`renderer` IRenderer
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
 
 `context` [UiContext](MicroEngine.UI.UiContext.md)
 

@@ -23,8 +23,8 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
 
 #### Implements
 
-IPhysicsWorld2D, 
-IStateHashed
+[IPhysicsWorld2D](MicroEngine.Physics.IPhysicsWorld2D.md), 
+[IStateHashed](MicroEngine.Kernel.IStateHashed.md)
 
 ## Remarks
 
@@ -78,7 +78,7 @@ public const PhysicsCapabilities Declared = TileGeometry | OneWayPlatforms | Mov
 
 #### Field Value
 
- PhysicsCapabilities
+ [PhysicsCapabilities](MicroEngine.Physics.PhysicsCapabilities.md)
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_DefaultCellSize"></a> DefaultCellSize
 
@@ -116,7 +116,7 @@ public ReadOnlySpan<BodyId> Bodies { get; }
 
 #### Property Value
 
- [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<BodyId\>
+ [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[BodyId](MicroEngine.Physics.BodyId.md)\>
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_Capabilities"></a> Capabilities
 
@@ -128,7 +128,7 @@ public PhysicsCapabilities Capabilities { get; }
 
 #### Property Value
 
- PhysicsCapabilities
+ [PhysicsCapabilities](MicroEngine.Physics.PhysicsCapabilities.md)
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_ContactEvents"></a> ContactEvents
 
@@ -140,7 +140,7 @@ public ReadOnlySpan<ContactEvent> ContactEvents { get; }
 
 #### Property Value
 
- [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<ContactEvent\>
+ [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[ContactEvent](MicroEngine.Physics.ContactEvent.md)\>
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_SensorEvents"></a> SensorEvents
 
@@ -152,7 +152,7 @@ public ReadOnlySpan<SensorEvent> SensorEvents { get; }
 
 #### Property Value
 
- [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<SensorEvent\>
+ [ReadOnlySpan](https://learn.microsoft.com/dotnet/api/system.readonlyspan\-1)<[SensorEvent](MicroEngine.Physics.SensorEvent.md)\>
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_Skin"></a> Skin
 
@@ -200,13 +200,13 @@ public ShapeId AddShape(BodyId body, in ShapeDescription shape)
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
-`shape` ShapeDescription
+`shape` [ShapeDescription](MicroEngine.Physics.ShapeDescription.md)
 
 #### Returns
 
- ShapeId
+ [ShapeId](MicroEngine.Physics.ShapeId.md)
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_AddTiles_MicroEngine_Physics_BodyId_MicroEngine_World_ICollisionGrid_System_UInt64_System_UInt64_"></a> AddTiles\(BodyId, ICollisionGrid, ulong, ulong\)
 
@@ -220,7 +220,7 @@ public ShapeId AddTiles(BodyId body, ICollisionGrid grid, ulong category = 1, ul
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
 A static body.
 
@@ -238,7 +238,7 @@ The layers it collides with.
 
 #### Returns
 
- ShapeId
+ [ShapeId](MicroEngine.Physics.ShapeId.md)
 
 #### Exceptions
 
@@ -256,11 +256,11 @@ public BodyId BodyOf(ShapeId shape)
 
 #### Parameters
 
-`shape` ShapeId
+`shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
 
 #### Returns
 
- BodyId
+ [BodyId](MicroEngine.Physics.BodyId.md)
 
 #### Exceptions
 
@@ -276,13 +276,13 @@ public BodyId CreateBody(EntityId owner, in BodyDescription body)
 
 #### Parameters
 
-`owner` EntityId
+`owner` [EntityId](MicroEngine.Scenes.EntityId.md)
 
-`body` BodyDescription
+`body` [BodyDescription](MicroEngine.Physics.BodyDescription.md)
 
 #### Returns
 
- BodyId
+ [BodyId](MicroEngine.Physics.BodyId.md)
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_DestroyBody_MicroEngine_Physics_BodyId_"></a> DestroyBody\(BodyId\)
 
@@ -294,7 +294,7 @@ public void DestroyBody(BodyId body)
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
 
@@ -306,7 +306,7 @@ public void HashState(StateHasher hash)
 
 #### Parameters
 
-`hash` StateHasher
+`hash` [StateHasher](MicroEngine.Kernel.StateHasher.md)
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_IsAlive_MicroEngine_Physics_BodyId_"></a> IsAlive\(BodyId\)
 
@@ -318,7 +318,7 @@ public bool IsAlive(BodyId body)
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
 #### Returns
 
@@ -334,7 +334,7 @@ public bool IsAlive(ShapeId shape)
 
 #### Parameters
 
-`shape` ShapeId
+`shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
 
 #### Returns
 
@@ -350,11 +350,11 @@ public BodyKind KindOf(BodyId body)
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
 #### Returns
 
- BodyKind
+ [BodyKind](MicroEngine.Physics.BodyKind.md)
 
 #### Exceptions
 
@@ -370,15 +370,15 @@ public MoveResult Move(BodyId body, Vector2 delta, in QueryFilter filter = defau
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
 `delta` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`filter` QueryFilter
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
 
 #### Returns
 
- MoveResult
+ [MoveResult](MicroEngine.Physics.MoveResult.md)
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_Overlap_MicroEngine_RectF__MicroEngine_Physics_QueryFilter__System_Span_MicroEngine_Physics_ShapeId__"></a> Overlap\(in RectF, in QueryFilter, Span<ShapeId\>\)
 
@@ -388,11 +388,11 @@ public int Overlap(in RectF area, in QueryFilter filter, Span<ShapeId> results)
 
 #### Parameters
 
-`area` RectF
+`area` [RectF](MicroEngine.RectF.md)
 
-`filter` QueryFilter
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
 
-`results` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<ShapeId\>
+`results` [Span](https://learn.microsoft.com/dotnet/api/system.span\-1)<[ShapeId](MicroEngine.Physics.ShapeId.md)\>
 
 #### Returns
 
@@ -408,11 +408,11 @@ public EntityId OwnerOf(BodyId body)
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
 #### Returns
 
- EntityId
+ [EntityId](MicroEngine.Scenes.EntityId.md)
 
 #### Exceptions
 
@@ -430,7 +430,7 @@ public Vector2 PositionOf(BodyId body)
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
 #### Returns
 
@@ -454,9 +454,9 @@ public bool RayCast(Vector2 from, Vector2 to, in QueryFilter filter, out RayHit 
 
 `to` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
-`filter` QueryFilter
+`filter` [QueryFilter](MicroEngine.Physics.QueryFilter.md)
 
-`hit` RayHit
+`hit` [RayHit](MicroEngine.Physics.RayHit.md)
 
 #### Returns
 
@@ -472,7 +472,7 @@ public void RemoveShape(ShapeId shape)
 
 #### Parameters
 
-`shape` ShapeId
+`shape` [ShapeId](MicroEngine.Physics.ShapeId.md)
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_RotationOf_MicroEngine_Physics_BodyId_"></a> RotationOf\(BodyId\)
 
@@ -484,7 +484,7 @@ public float RotationOf(BodyId body)
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
 #### Returns
 
@@ -500,7 +500,7 @@ public void SetPosition(BodyId body, Vector2 position)
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
 `position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
@@ -524,13 +524,13 @@ public void SetVelocity(BodyId body, Vector2 velocity)
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
 `velocity` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
 
 #### Exceptions
 
- PhysicsCapabilityException
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
 
 Always.
 
@@ -563,7 +563,7 @@ public Vector2 VelocityOf(BodyId body)
 
 #### Parameters
 
-`body` BodyId
+`body` [BodyId](MicroEngine.Physics.BodyId.md)
 
 #### Returns
 
@@ -571,7 +571,7 @@ public Vector2 VelocityOf(BodyId body)
 
 #### Exceptions
 
- PhysicsCapabilityException
+ [PhysicsCapabilityException](MicroEngine.Physics.PhysicsCapabilityException.md)
 
 Always.
 

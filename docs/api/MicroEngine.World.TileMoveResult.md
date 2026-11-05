@@ -30,7 +30,7 @@ public TileMoveResult(RectF Bounds, bool HitLeft, bool HitRight, bool HitCeiling
 
 #### Parameters
 
-`Bounds` RectF
+`Bounds` [RectF](MicroEngine.RectF.md)
 
 The box after the move.
 
@@ -66,7 +66,7 @@ public RectF Bounds { get; init; }
 
 #### Property Value
 
- RectF
+ [RectF](MicroEngine.RectF.md)
 
 ### <a id="MicroEngine_World_TileMoveResult_HitCeiling"></a> HitCeiling
 
@@ -162,7 +162,7 @@ public void Deconstruct(out RectF Bounds, out bool HitLeft, out bool HitRight, o
 
 #### Parameters
 
-`Bounds` RectF
+`Bounds` [RectF](MicroEngine.RectF.md)
 
 `HitLeft` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 

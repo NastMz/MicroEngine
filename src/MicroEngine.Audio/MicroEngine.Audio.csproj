@@ -23,5 +23,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="MicroEngine.Tests" />
     <InternalsVisibleTo Include="MicroEngine" />
+    <!-- The audio thread allocation counter (AudioEngine.RenderAllocations), read by the SDL feeder test. -->
+    <InternalsVisibleTo Include="MicroEngine.Desktop.Tests" />
   </ItemGroup>
 </Project>
