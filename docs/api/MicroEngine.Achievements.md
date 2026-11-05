@@ -14,7 +14,7 @@ Achievements as an engine module: registers [Tracker](MicroEngine.Achievements.A
 service and schedules [SystemName](MicroEngine.Achievements.AchievementsModule.md#MicroEngine_Achievements_AchievementsModule_SystemName) in [PostFixed](MicroEngine.Kernel.FramePhase.md), which writes pending progress
 about once a second of simulated time ([FlushInterval](MicroEngine.Achievements.AchievementsModule.md#MicroEngine_Achievements_AchievementsModule_FlushInterval); unlocks are written at once by the tracker) and
 raises [Stepped](MicroEngine.Achievements.AchievementsModule.md#MicroEngine_Achievements_AchievementsModule_Stepped) every step; progress is written too when the platform suspends the game. A composition
-that never adds the module has no tracker, no system and no achievement file. [Game](MicroEngine.Core.Game.md) adds it when the game
+that never adds the module has no tracker, no system and no achievement file. The <code>Game</code> façade adds it when the game
 declares achievements (<code>UseAchievements</code> before the engine is composed).
 
 </div>

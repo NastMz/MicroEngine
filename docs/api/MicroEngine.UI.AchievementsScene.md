@@ -68,7 +68,7 @@ public AchievementsScene(AchievementTracker tracker, UiTheme theme)
 
 #### Parameters
 
-`tracker` [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
+`tracker` AchievementTracker
 
 `theme` UiTheme
 

@@ -42,4 +42,5 @@ maintainer's archive, not in the public history.
 | [0037](0037-platform-host-contract.md) | A platform host contract with capabilities, explicit options and no time coupling (amends 0016, 0027) | Accepted |
 | [0038](0038-one-composition-path.md) | One composition path for desktop, browser, phones and tests: `MicroEngine.Hosting`, a `Configure` entry point, no statics (amends 0007, 0016, 0021) | Accepted |
 | [0041](0041-tier1-device-on-sdl-gpu.md) | The tier-1 graphics device on pure SDL_GPU, checked by the conformance suite on Direct3D 12, Vulkan and, in CI, Mesa lavapipe (implements 0028) | Accepted |
+| [0042](0042-offline-shader-toolchain.md) | Shaders compiled ahead of time by `microengine shaders` into `.shader` files (`CompiledShader`); DXC restored on first use, not redistributed; compiling needs Windows | Accepted |
 | [0044](0044-ui-module.md) | A UI module of widgets driven as the highest input layer, renamable widget actions, captures that show what the player sees | Accepted |

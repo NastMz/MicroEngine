@@ -22,6 +22,9 @@ Not published yet. Behaviour that changes:
 - The fonts (`IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`) moved to the new
   `MicroEngine.Text.dll` (carried by the `MicroEngine` package) with their `MicroEngine.Graphics` namespace unchanged,
   and `Game.Assets.Font` loads through it; nothing to change.
+- `Achievement`, `AchievementStatus`, `AchievementTracker`, `AchievementSaveData` and `AchievementRecord` moved to the
+  new `MicroEngine.Achievements.dll` (carried by the `MicroEngine` package) with their namespace unchanged; nothing to
+  change.
 - `Typewriter`, `SelectionList` and `UiTheme` moved to the new `MicroEngine.UI.dll` (carried by the `MicroEngine`
   package) with their `MicroEngine.UI` namespace unchanged; nothing to change. The new widget tree (`Scene.Widgets`,
   `UiRoot`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts`) is opt-in: a scene that never reads `Widgets`
