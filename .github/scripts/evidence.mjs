@@ -51,6 +51,14 @@ export const scopes = {
   // the samples, the SDK checks or the documentation. The caller adds the games played to the key (--extra).
   web: file => !always(file) && !docs(file) && !/^(site|platforms|tests|samples|sdk)\//.test(file)
     && !/^src\/MicroEngine\.(Sdl\/|Cli\/Hosts\/(android|ios)\/)/.test(file),
+  // The Box2D natives and their tests (box2d.yml) read the native layer, the physics assemblies and what they build on,
+  // their tests and suites, the substitution sample, the web toolchain its browser library is built with, and the
+  // build settings; never the rest of the engine, the games, the site or the SDK checks.
+  box2d: file => !always(file) && !docs(file) && !/^(games|site|platforms|templates|sdk|benchmarks)\//.test(file)
+    && (!/^src\//.test(file) || /^src\/MicroEngine\.(Physics|Kernel|Scene)[./]/.test(file))
+    && (!/^tests\//.test(file) || /^tests\/(MicroEngine\.Physics\.Box2D\.Tests|Shared)\//.test(file))
+    && (!/^samples\//.test(file) || /^samples\/PhysicsSubstitution\//.test(file))
+    && (!/^web\//.test(file) || /^web\/(toolchain\.env|setup\.sh|build-raylib-wasm\.sh|serve\.mjs)$/.test(file)),
   sdk: file => sdkSamples.test(file) || (!always(file) && !/^(docs|site|platforms|games|tests|samples)\//.test(file)
     && (!/\.md$/i.test(file) || /^(src|templates|sdk)\//.test(file) || file === 'THIRD-PARTY-NOTICES.md')),
 };
