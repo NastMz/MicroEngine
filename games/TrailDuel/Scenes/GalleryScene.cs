@@ -17,7 +17,7 @@ internal sealed class GalleryScene(TrailDuelGame game, bool cast = false, bool z
 
     public override void Draw(IRenderer r)
     {
-        r.FillGradient(new RectF(0, 0, 320, 180), Color.Hex("cfe8f0"), Color.Hex("f6ecd2"));
+        r.FillGradient(TrailDuelGame.Canvas, Color.Hex("cfe8f0"), Color.Hex("f6ecd2"));
         if (cast) { DrawCast(r); return; }
         if (zoom) { DrawZoom(r); return; }
         if (orbs) { DrawOrbs(r); return; }
@@ -29,7 +29,7 @@ internal sealed class GalleryScene(TrailDuelGame game, bool cast = false, bool z
             r.Draw(game.Atlas["front:" + s.Id], pos);
             i++;
         }
-        for (int j = 0; j < 7; j++) r.Draw(game.Atlas["back:" + SpeciesDex.All[j].Id], new Vector2(24 + j * 45, 180));
+        for (int j = 0; j < 7; j++) r.Draw(game.Atlas["back:" + SpeciesDex.All[j].Id], new Vector2(24 + j * 45, TrailDuelGame.CanvasHeight));
     }
 
     private float _age;

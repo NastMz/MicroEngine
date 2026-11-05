@@ -68,6 +68,26 @@ public sealed class FrameGarbageTests
     }
 
     [TestMethod]
+    public void DrawingTheShrinesHealGlowMakesNoGarbage()
+    {
+        using var h = new Harness("town");
+        var world = Assert.IsInstanceOfType<OverworldScene>(h.Game.Scenes.Current);
+        h.Step(30);
+        world.HealGlow = 0.5f;
+        AssertNoGarbage(world, "the heal glow");
+    }
+
+    [TestMethod]
+    public void DrawingTheControlsPageMakesNoGarbage()
+    {
+        using var h = new Harness();
+        h.Game.Scenes.Push(new ControlsScene());
+        h.Step(5);
+        var controls = Assert.IsInstanceOfType<ControlsScene>(h.Game.Scenes.Current);
+        AssertNoGarbage(controls, "the controls page");
+    }
+
+    [TestMethod]
     public void KeptNumbersReadExactlyAsPlainFormatting()
     {
         Assert.AreEqual("Lv12", NumberTexts.Level(12));

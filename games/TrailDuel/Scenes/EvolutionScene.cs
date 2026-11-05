@@ -91,7 +91,7 @@ internal sealed class EvolutionScene(TrailDuelGame game, Creature creature, Acti
 
     public override void Draw(IRenderer r)
     {
-        r.FillGradient(new RectF(0, 0, 320, 180), Color.Hex("2b2140"), Color.Lerp(Color.Hex("5a3a7a"), Color.Hex("f2a6c2"), _glow * 0.6f), 16);
+        r.FillGradient(TrailDuelGame.Canvas, Color.Hex("2b2140"), Color.Lerp(Color.Hex("5a3a7a"), Color.Hex("f2a6c2"), _glow * 0.6f), 16);
         for (int i = 0; i < 16; i++)
         {
             float a = i / 16f * MathF.Tau + Age * 0.3f;
@@ -104,6 +104,6 @@ internal sealed class EvolutionScene(TrailDuelGame game, Creature creature, Acti
         r.Draw(game.Sprite(prefix + _shownSpecies), new Vector2(160, 106 + bob));
         _sparkles.Draw(r);
         _text.Draw(r);
-        if (_flash > 0) r.FillRect(new RectF(0, 0, 320, 180), Pal.White.WithAlpha(_flash));
+        if (_flash > 0) r.FillRect(TrailDuelGame.Canvas, Pal.White.WithAlpha(_flash));
     }
 }

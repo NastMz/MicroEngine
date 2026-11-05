@@ -117,7 +117,7 @@ internal static class UiArt
 
     private static PixelImage Satchel()
     {
-        var c = new CreatureCanvas(64);
+        var c = new PropCanvas(64);
         var leather = Material.Of("5e3424", "8a5236", "b47448", "d89a62");
         var flap = Material.Of("7a3a2a", "a8543a", "cc7a4c", "e8a26a");
         var brass = Material.Of("8a5a20", "c88a30", "f2c25c", "fff0a8");

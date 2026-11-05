@@ -1,6 +1,5 @@
 using System.Numerics;
 using MicroEngine;
-using MicroEngine.Core;
 using MicroEngine.Graphics;
 using TrailDuel.Rules;
 using TrailDuel.World;
@@ -10,15 +9,18 @@ namespace TrailDuel.Visuals;
 /// <summary>Builds the single sprite atlas holding every image in the game.</summary>
 internal static class AtlasFactory
 {
-    public static SpriteAtlas Build(IGraphicsDevice device, ContentFolder content)
+    /// <param name="device">Creates the atlas texture.</param>
+    /// <param name="image">Reads a content image by path (<c>Game.Assets.Image</c>), decoded fresh so it can be recoloured.</param>
+    public static GameArt Build(IGraphicsDevice device, Func<string, PixelImage> image)
     {
         var b = new SpriteAtlasBuilder();
+        var heights = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var s in SpeciesDex.All)
         {
-            var front = CreatureArt.Front(content, s.Id);
+            var front = CreatureArt.Front(image, s.Id);
             var back = CreatureArt.Back(front);
             var feet = CreatureArt.Feet(front);
-            CreatureArt.Heights[s.Id] = front.OpaqueBounds()?.Height ?? CreatureArt.Size;
+            heights[s.Id] = front.OpaqueBounds()?.Height ?? CreatureArt.Size;
             var backFeet = new Vector2(front.Width - feet.X, feet.Y);
             b.Add("front:" + s.Id, front, feet);
             b.Add("back:" + s.Id, back, backFeet);
@@ -28,14 +30,15 @@ internal static class AtlasFactory
             b.Add("back2:" + s.Id, Breathe(back), backFeet);
             var shadow = ContactShadow(front);
             b.Add("cshadow:" + s.Id, shadow, new Vector2(shadow.Width / 2f, shadow.Height / 2f));
-            b.Add("mini:" + s.Id, Mini(front), new Vector2(12, 12));
-            b.Add("mini2:" + s.Id, Hop(Mini(front)), new Vector2(12, 12));
+            var mini = Mini(front);
+            b.Add("mini:" + s.Id, mini, new Vector2(12, 12));
+            b.Add("mini2:" + s.Id, Hop(mini), new Vector2(12, 12));
         }
         TileArt.AddAll(b);
-        CharacterArt.AddAll(b, content);
+        CharacterArt.AddAll(b, image);
         UiArt.AddAll(b);
         BattleStageArt.AddAll(b);
-        FxArt.AddAll(b, content);
+        FxArt.AddAll(b, image);
         foreach (var map in Maps.Every)
         {
             b.Add($"ground:{map.Id}", GroundArt.Build(map));
@@ -45,7 +48,7 @@ internal static class AtlasFactory
                 b.Add($"bld:{map.Id}:{i}", BuildingArt.Build(bd.Style, bd.W, bd.H, bd.DoorX));
             }
         }
-        return b.Build(device);
+        return new GameArt(b.Build(device), heights);
     }
 
     /// <summary>

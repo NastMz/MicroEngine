@@ -25,7 +25,7 @@ public sealed class CreatureArtTests
     public void BouldoxWearsPebblitsBrownsInsteadOfItsBlueGreenPlates()
     {
         var original = Colours(Content.Image("creatures/bouldox.png"));
-        var shown = Colours(CreatureArt.Front(Content, "bouldox"));
+        var shown = Colours(CreatureArt.Front(Content.Image, "bouldox"));
         Assert.IsTrue(original.Contains(Color.Hex("345d68")) && original.Contains(Color.Hex("acf2ff")), "The source keeps its own colours.");
         Assert.IsFalse(shown.Contains(Color.Hex("345d68")), "The blue-green plates are gone.");
         Assert.IsFalse(shown.Contains(Color.Hex("8b979d")), "The cool grey hide is gone.");
@@ -37,7 +37,7 @@ public sealed class CreatureArtTests
     [TestMethod]
     public void FizzbitWearsVoltigersCharcoalAndYellow()
     {
-        var shown = Colours(CreatureArt.Front(Content, "fizzbit"));
+        var shown = Colours(CreatureArt.Front(Content.Image, "fizzbit"));
         Assert.IsFalse(shown.Contains(Color.Hex("8038a8")), "No purple quills remain.");
         Assert.IsFalse(shown.Contains(Color.Hex("4ed877")), "No green tips remain.");
         Assert.IsTrue(shown.Contains(Color.Hex("fed800")) && shown.Contains(Color.Hex("504b4d")), "Voltiger's yellow and charcoal are used.");
@@ -47,7 +47,7 @@ public sealed class CreatureArtTests
     public void OtherSpeciesAreShownAsDrawn()
     {
         var original = Content.Image("creatures/pebblit.png");
-        var shown = CreatureArt.Front(Content, "pebblit");
+        var shown = CreatureArt.Front(Content.Image, "pebblit");
         CollectionAssert.AreEquivalent(Colours(original).ToList(), Colours(shown).ToList());
     }
 }

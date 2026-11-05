@@ -14,8 +14,8 @@ namespace TrailDuel.Scenes;
 internal sealed class TitleScene(TrailDuelGame game) : Scene
 {
     private CachedText _pressText;
-    private readonly List<string> _options = [];
-    private int _index;
+    /// <summary>The title menu, built on entering (Continue only with a save).</summary>
+    private SelectionList _list = null!;
     private bool _menu;
     private bool _confirmOverwrite;
     private ChoiceMenu? _confirm;
@@ -23,12 +23,8 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
     public override void Enter()
     {
         Audio.PlayMusic("title", 0.3f);
-        _options.Clear();
-        if (game.HasSave) _options.Add("CONTINUE");
-        _options.Add("NEW GAME");
-        _options.Add("CONTROLS");
-        _options.Add("ACHIEVEMENTS");
-        _options.Add("QUIT");
+        string[] options = ["NEW GAME", "CONTROLS", "ACHIEVEMENTS", "QUIT"];
+        _list = UiKit.List(Audio, game.HasSave ? ["CONTINUE", .. options] : options);
     }
 
     public override void Resume() => Audio.PlayMusic("title");
@@ -37,9 +33,9 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
     public override void HashState(StateHasher hash)
     {
         hash.Add(_menu);
-        hash.Add(_options.Count);
-        foreach (var option in _options) hash.Add(option);
-        hash.Add(_index);
+        hash.Add(_list.Options.Count);
+        foreach (var option in _list.Options) hash.Add(option);
+        hash.Add(_list.Index);
         hash.Add(_confirmOverwrite);
         hash.Add(_confirm);
     }
@@ -62,12 +58,11 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
             }
             return;
         }
-        int dir = (Input.Pressed("down") ? 1 : 0) - (Input.Pressed("up") ? 1 : 0);
-        if (dir != 0) { _index = (_index + dir + _options.Count) % _options.Count; Audio.Play("move", 0.6f); }
+        int? chosen = _list.Update(Input);
         if (Input.Pressed("cancel")) { _menu = false; Audio.Play("cancel", 0.6f); return; }
-        if (!Input.Pressed("confirm")) return;
+        if (chosen is not { } index) return;
         Audio.Play("confirm");
-        switch (_options[_index])
+        switch (_list.Options[index])
         {
             case "CONTINUE": game.ContinueGame(); break;
             case "NEW GAME":
@@ -93,7 +88,7 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
         r.FillCircle(new Vector2(262, 34), 13, Color.Hex("fff6d0").WithAlpha(0.9f));
         for (int i = 0; i < 4; i++)
             r.Draw(game.Sprite(i % 2 == 0 ? "cloud" : "cloud2"), new Vector2(MathF.Round((i * 110 + Age * (5 + i * 2)) % 440 - 60), 14 + i * 13 % 40), Pal.White.WithAlpha(0.9f));
-        for (int x = 4; x < 320; x += 11) r.Draw(game.Sprite("t:tallover"), new Vector2(x, 162 + (x * 7) % 9));
+        for (int x = 4; x < TrailDuelGame.CanvasWidth; x += 11) r.Draw(game.Sprite("t:tallover"), new Vector2(x, 162 + (x * 7) % 9));
 
         // Starters on the hill, each bobbing on its own beat.
         string[] starters = SpeciesDex.Starters;
@@ -118,13 +113,14 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
         }
         else
         {
-            var box = new RectF(112, 66, 96, _options.Count * 12 + 10);
+            var options = _list.Options;
+            var box = new RectF(112, 66, 96, options.Count * 12 + 10);
             UiKit.Box(r, box);
-            for (int i = 0; i < _options.Count; i++)
+            for (int i = 0; i < options.Count; i++)
             {
                 float y = box.Y + 6 + i * 12;
-                UiKit.Text(r, Font, _options[i], box.X + 18, y);
-                if (i == _index) UiKit.Cursor(r, Font, box.X + 7, y, Age);
+                UiKit.Text(r, Font, options[i], box.X + 18, y);
+                if (i == _list.Index) UiKit.Cursor(r, Font, box.X + 7, y, Age);
             }
             if (_confirmOverwrite)
             {

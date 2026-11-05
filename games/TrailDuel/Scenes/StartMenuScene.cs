@@ -4,6 +4,7 @@ using MicroEngine.Graphics;
 using MicroEngine.Input;
 using MicroEngine.Kernel;
 using MicroEngine.Scenes;
+using MicroEngine.UI;
 using TrailDuel.Rules;
 using TrailDuel.Ui;
 using TrailDuel.Visuals;
@@ -15,22 +16,22 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
 {
     private CachedText _timeText;
     private static readonly string[] Options = ["CREATURES", "BAG", "TRAIL LOG", "SAVE", "CONTROLS", "CLOSE"];
-    private int _index;
+    private SelectionList _list = null!;
     private string? _message;
     private float _messageTime, _open;
 
     public override bool IsOverlay => true;
+
+    public override void Enter() => _list = UiKit.List(Audio, Options);
 
     public override void Update(float dt)
     {
         _open = MathF.Min(1, _open + dt * 8);
         _messageTime -= dt;
         if (Input.Pressed("cancel") || Input.Pressed("pause")) { Audio.Play("cancel", 0.7f); Game.Scenes.Pop(); return; }
-        int dir = (Input.Pressed("down") ? 1 : 0) - (Input.Pressed("up") ? 1 : 0);
-        if (dir != 0) { _index = (_index + dir + Options.Length) % Options.Length; Audio.Play("move", 0.6f); }
-        if (!Input.Pressed("confirm")) return;
+        if (_list.Update(Input) is not { } chosen) return;
         Audio.Play("confirm", 0.7f);
-        switch (_index)
+        switch (chosen)
         {
             case 0:
                 if (game.State.Party.Count == 0) { Say("You don't have any creatures yet."); Audio.Play("deny"); break; }
@@ -53,21 +54,21 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
     /// <summary>State hash: the cursor and the message with its timer. Left out: the opening slide and the play-time text cache.</summary>
     public override void HashState(StateHasher hash)
     {
-        hash.Add(_index);
+        hash.Add(_list.Index);
         hash.Add(_message);
         hash.Add(_messageTime);
     }
 
     public override void Draw(IRenderer r)
     {
-        r.FillRect(new RectF(0, 0, 320, 180), Pal.Ink.WithAlpha(0.25f * _open));
+        r.FillRect(TrailDuelGame.Canvas, Pal.Ink.WithAlpha(0.25f * _open));
         var box = new RectF(MathF.Round(222 + (1 - _open) * 110), 6, 92, Options.Length * 14 + 12);
         UiKit.Box(r, box);
         for (int i = 0; i < Options.Length; i++)
         {
             float y = box.Y + 8 + i * 14;
             UiKit.Text(r, Font, Options[i], box.X + 16, y);
-            if (i == _index) UiKit.Cursor(r, Font, box.X + 6, y, Age);
+            if (i == _list.Index) UiKit.Cursor(r, Font, box.X + 6, y, Age);
         }
         var s = game.State;
         var info = new RectF(6, 6, 124, 46);
@@ -106,38 +107,48 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
 /// <summary>Key bindings reference.</summary>
 internal sealed class ControlsScene : Scene
 {
+    // The rows and the description column, laid out again only when the prompts change (another device).
+    private readonly List<(string Key, string What)> _rows = [];
+    private int _rowsVersion;
+    private float _whatOffset;
+
     public override void Update(float dt)
     {
         if (Input.Pressed("cancel") || Input.Pressed("confirm") || Input.Pressed("pause")) { Audio.Play("cancel", 0.7f); Game.Scenes.Pop(); }
     }
 
+    /// <summary>The controls of the device being played: keys, a gamepad's buttons, or the on-screen controls.</summary>
+    private void LayOutRows()
+    {
+        var p = Game.Prompts;
+        if (_rows.Count > 0 && _rowsVersion == p.Version) return;
+        _rowsVersion = p.Version;
+        _rows.Clear();
+        _rows.Add((p.Directions(separator: " / "), "Walk, move cursor"));
+        _rows.Add((p.TextAll("confirm"), "Confirm, talk, read"));
+        _rows.Add((p.TextAll("cancel"), "Back. Hold to run"));
+        _rows.Add((p.TextAll("pause"), "Open the menu"));
+        if (p.Device == InputDevice.Keyboard) _rows.Add(("F11", "Toggle fullscreen"));
+        _rows.Add(("Tap a direction", "Turn in place"));
+        _rows.Add((p.TextAll("action"), "Move details in battle"));
+        if (p.Device == InputDevice.Touch) _rows.Add(("Keyboard, gamepad", "Work too"));
+        // The description column starts after the widest key text, so long key lists never run into it.
+        _whatOffset = Math.Max(106, _rows.Max(row => Font.MeasureWidth(row.Key)) + 12);
+    }
+
     public override void Draw(IRenderer r)
     {
-        r.FillGradient(new RectF(0, 0, 320, 180), Color.Hex("b8a6d8"), Color.Hex("ece4f6"), 10);
+        r.FillGradient(TrailDuelGame.Canvas, Color.Hex("b8a6d8"), Color.Hex("ece4f6"), 10);
         var box = new RectF(30, 18, 260, 144);
         UiKit.Box(r, box);
         UiKit.Text(r, Font, "CONTROLS", box.X + 12, box.Y + 10, Pal.Coral);
-        // The controls of the device being played: keys, a gamepad's buttons, or the on-screen controls.
-        var p = Game.Prompts;
-        var device = p.Device;
-        var rows = new List<(string Key, string What)>
-        {
-            (p.Directions(separator: " / "), "Walk, move cursor"),
-            (p.TextAll("confirm"), "Confirm, talk, read"),
-            (p.TextAll("cancel"), "Back. Hold to run"),
-            (p.TextAll("pause"), "Open the menu"),
-        };
-        if (device == InputDevice.Keyboard) rows.Add(("F11", "Toggle fullscreen"));
-        rows.Add(("Tap a direction", "Turn in place"));
-        rows.Add((p.TextAll("action"), "Move details in battle"));
-        if (device == InputDevice.Touch) rows.Add(("Keyboard, gamepad", "Work too"));
-        // The description column starts after the widest key text, so long key lists never run into it.
-        float what = box.X + 14 + Math.Max(106, rows.Max(row => Font.MeasureWidth(row.Key)) + 12);
-        for (int i = 0; i < rows.Count; i++)
+        LayOutRows();
+        float what = box.X + 14 + _whatOffset;
+        for (int i = 0; i < _rows.Count; i++)
         {
             float y = box.Y + 28 + i * 16;
-            UiKit.Text(r, Font, rows[i].Key, box.X + 14, y);
-            UiKit.Text(r, Font, rows[i].What, what, y, UiKit.Muted);
+            UiKit.Text(r, Font, _rows[i].Key, box.X + 14, y);
+            UiKit.Text(r, Font, _rows[i].What, what, y, UiKit.Muted);
         }
     }
 }
@@ -150,26 +161,27 @@ internal sealed class TrailLogScene(TrailDuelGame game) : Scene
 
     /// <summary>The dex number as three digits, built once per number.</summary>
     private static string DexNumber(int n) => (uint)n < (uint)DexNumbers.Length ? DexNumbers[n] ??= $"{n:000}" : $"{n:000}";
-    private int _index;
+    /// <summary>One row per species; confirm picks nothing here, the list only browses.</summary>
+    private SelectionList _list = null!;
+
+    public override void Enter() => _list = UiKit.List(Audio, [.. SpeciesDex.All.Select(s => s.Id)]);
 
     /// <summary>State hash: the cursor. Left out: the seen/caught text cache.</summary>
-    public override void HashState(StateHasher hash) => hash.Add(_index);
+    public override void HashState(StateHasher hash) => hash.Add(_list.Index);
 
     public override void Update(float dt)
     {
         if (Input.Pressed("cancel") || Input.Pressed("pause")) { Audio.Play("cancel", 0.7f); Game.Scenes.Pop(); return; }
-        int n = SpeciesDex.All.Count;
-        int dir = (Input.Pressed("down") ? 1 : 0) - (Input.Pressed("up") ? 1 : 0);
-        if (dir != 0) { _index = (_index + dir + n) % n; Audio.Play("move", 0.6f); }
+        _list.Update(Input);
     }
 
     public override void Draw(IRenderer r)
     {
         var s = game.State;
-        r.FillGradient(new RectF(0, 0, 320, 180), Color.Hex("e88a6a"), Color.Hex("f8dcc0"), 10);
+        r.FillGradient(TrailDuelGame.Canvas, Color.Hex("e88a6a"), Color.Hex("f8dcc0"), 10);
         var list = new RectF(176, 6, 138, 168);
         UiKit.Box(r, list);
-        int start = Math.Clamp(_index - 5, 0, Math.Max(0, SpeciesDex.All.Count - 11));
+        int start = Math.Clamp(_list.Index - 5, 0, Math.Max(0, SpeciesDex.All.Count - 11));
         for (int i = start; i < Math.Min(SpeciesDex.All.Count, start + 11); i++)
         {
             var sp = SpeciesDex.All[i];
@@ -178,9 +190,9 @@ internal sealed class TrailLogScene(TrailDuelGame game) : Scene
             UiKit.Text(r, Font, DexNumber(i + 1), list.X + 16, y, UiKit.Muted);
             UiKit.Text(r, Font, seen ? sp.Name : "-----", list.X + 40, y);
             if (caught) r.Draw(game.Sprite("orbsmall"), new Vector2(list.Right - 12, y + 3));
-            if (i == _index) UiKit.Cursor(r, Font, list.X + 5, y, Age);
+            if (i == _list.Index) UiKit.Cursor(r, Font, list.X + 5, y, Age);
         }
-        var sel = SpeciesDex.All[_index];
+        var sel = SpeciesDex.All[_list.Index];
         var card = new RectF(6, 6, 166, 120);
         UiKit.Box(r, card);
         bool known = s.Seen.Contains(sel.Id);

@@ -127,9 +127,9 @@ healing, items and captures.
 | `Rules/` | Pure game rules, no rendering: types, moves, species, creatures, formulas (damage, crits, accuracy, capture, escape, XP), progression, the turn-based `Battle` engine emitting `BattleEvent`s, trainer AI, items/bag, `GameState` (save data). |
 | `World/` | Map data (`Maps`), map runtime (collision, ledges, warps, trainer sight), grid `Actor` (drawn through the scene's objects, which draw it between updates). |
 | `Scenes/` | Title, overworld (core / scripts / drawing), battle (flow / presentation / drawing / fx), party, summary, bag, shop, start menu, evolution, credits, debug starts. |
-| `Visuals/` | Palette, creature and trainer sheet loaders, tile/building/ground/UI art, battle stages, effect sheets (`FxArt`), atlas factory. |
+| `Visuals/` | Palette, creature and trainer sheet loaders (read through `Game.Assets`), tile/building/ground/UI art, the prop rasterizer (`PropCanvas`), battle stages, effect sheets (`FxArt`), atlas factory. |
 | `Sound/` | Synthesized sound effects and the music/jingle file list. |
-| `Ui/` | Shared boxes, bars, badges, the text panel and choice menus. |
+| `Ui/` | Shared boxes, bars, badges, the text panel and choice menus; lists move with the engine's `SelectionList`. |
 
 The battle scene never decides anything: it replays the events the rules produce, which keeps the
 rules fully testable without a window.
@@ -157,7 +157,8 @@ address in a browser (`?TRAIL_DEBUG=town`) and the launch's `env` option on a ph
 
 Tests cover the type chart, damage (STAB, effectiveness, crits, burn, stages), seeded accuracy and
 crit rates, XP/level-ups/move learning/evolution, capture bounds, statuses, party/faint/switch rules,
-trainer AI, save/load, shop, map integrity, ledges and trainer sight, difficulty simulations, and
+trainer AI, save/load (old saves without a format version included), shop, map integrity, ledges
+and trainer sight, difficulty simulations, presentation timing at another update rate, and
 headless playthroughs (new game to starter, rival duel and a wild victory; the forest rival ambush;
 the hall, Master and credits).
 

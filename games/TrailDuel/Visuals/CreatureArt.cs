@@ -17,9 +17,11 @@ internal static class CreatureArt
     public const int Size = 64;
 
     /// <summary>The opponent-side sprite: the original drawing, facing left, recoloured where an evolution line asks for it.</summary>
-    public static PixelImage Front(ContentFolder content, string speciesId)
+    /// <param name="image">Reads a content image by path (<c>Game.Assets.Image</c>).</param>
+    /// <param name="speciesId">The species.</param>
+    public static PixelImage Front(Func<string, PixelImage> image, string speciesId)
     {
-        var img = content.Image($"creatures/{speciesId}.png");
+        var img = image($"creatures/{speciesId}.png");
         return speciesId switch
         {
             "bouldox" => img.Map((_, _, c) => PebblitHide(c)),
@@ -71,19 +73,15 @@ internal static class CreatureArt
     /// <summary>Hue (0..6), saturation (0..1) and perceived luminance (0..255) of a colour.</summary>
     private static (float Hue, float Sat, float Lum) Hsl(Color c)
     {
-        float r = c.R / 255f, g = c.G / 255f, b = c.B / 255f;
-        float max = MathF.Max(r, MathF.Max(g, b)), min = MathF.Min(r, MathF.Min(g, b)), d = max - min;
+        var (h, max, min) = Pal.Hue(c);
+        float d = max - min;
         float lum = (c.R * 3 + c.G * 6 + c.B) / 10f;
         if (d <= 0 || max <= 0) return (0, 0, lum);
-        float h = max == r ? (g - b) / d : max == g ? (b - r) / d + 2 : (r - g) / d + 4;
-        return (h < 0 ? h + 6 : h, d / max, lum);
+        return (h, d / max, lum);
     }
 
     /// <summary>The player-side sprite: the original mirrored to face right.</summary>
     public static PixelImage Back(PixelImage front) => front.FlipX();
-
-    /// <summary>Drawn height of each species' sprite in pixels, filled when the atlas is built (effects aim at the middle).</summary>
-    public static Dictionary<string, int> Heights { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Where a sprite stands: the middle of its feet (bottom of its opaque bounds).</summary>
     public static Vector2 Feet(PixelImage img)

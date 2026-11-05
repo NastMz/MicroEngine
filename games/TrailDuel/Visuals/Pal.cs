@@ -10,12 +10,24 @@ internal static class Pal
 {
     public static Color H(string hex) => Color.Hex(hex);
 
+    /// <summary>
+    /// The hue of <paramref name="c"/> (0..6: red at 0, green at 2, blue at 4; 0 for a grey) with its largest and
+    /// smallest channel (0..1), for the recolourings that pick colours by hue.
+    /// </summary>
+    public static (float Hue, float Max, float Min) Hue(Color c)
+    {
+        float r = c.R / 255f, g = c.G / 255f, b = c.B / 255f;
+        float max = MathF.Max(r, MathF.Max(g, b)), min = MathF.Min(r, MathF.Min(g, b)), d = max - min;
+        if (d <= 0 || max <= 0) return (0, max, min);
+        float h = max == r ? (g - b) / d : max == g ? (b - r) / d + 2 : (r - g) / d + 4;
+        return (h < 0 ? h + 6 : h, max, min);
+    }
+
     // Ink and UI
     public static readonly Color Ink = H("2b2140");
     public static readonly Color InkSoft = H("4a3d63");
     public static readonly Color Cream = H("fbf5e6");
     public static readonly Color CreamShade = H("e9dcc2");
-    public static readonly Color Paper = H("f4ead2");
     public static readonly Color Coral = H("e8735a");
     public static readonly Color CoralDark = H("b8503f");
     public static readonly Color Gold = H("f2c25c");

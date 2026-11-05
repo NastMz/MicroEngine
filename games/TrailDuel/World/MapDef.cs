@@ -83,6 +83,9 @@ public enum Backdrop { Meadow, Forest, Hall, Indoor }
 /// <summary>A map: text rows plus everything placed on them.</summary>
 public sealed class MapDef
 {
+    /// <summary>Side of a map tile in pixels: one grid step, and the size of every overworld tile sprite.</summary>
+    public const int TileSize = 16;
+
     public required string Id { get; init; }
     public required string Name { get; init; }
     public required string[] Rows { get; init; }

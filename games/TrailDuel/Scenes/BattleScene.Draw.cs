@@ -110,7 +110,7 @@ internal sealed partial class BattleScene
             r.Draw(_game.Sprite(PlayerPortraitKey), playerPlat + Drawn(_playerTrainer));
 
         DrawCreature(r, _enemy, EnemyKeys, enemyPlat, clipBottom: enemyPlat.Y + 2);
-        DrawCreature(r, _player, PlayerKeys, playerPlat, clipBottom: 180);
+        DrawCreature(r, _player, PlayerKeys, playerPlat, clipBottom: TrailDuelGame.CanvasHeight);
 
         if (_orbVisible)
         {
@@ -126,7 +126,7 @@ internal sealed partial class BattleScene
 
         DrawBottom(r);
         if (_levelPanel is { } lp) DrawLevelPanel(r, lp);
-        if (_flash > 0) r.FillRect(new RectF(0, 0, 320, 180), Pal.White.WithAlpha(_flash * 0.8f));
+        if (_flash > 0) r.FillRect(TrailDuelGame.Canvas, Pal.White.WithAlpha(_flash * 0.8f));
     }
 
     private static CharacterLook LookFor(TrainerDef def)
@@ -206,8 +206,8 @@ internal sealed partial class BattleScene
 
     private void DrawBottom(IRenderer r)
     {
-        r.FillRect(new RectF(0, 130, 320, 50), Pal.Ink);
-        r.FillRect(new RectF(0, 130, 320, 1), Pal.Coral);
+        r.FillRect(new RectF(0, 130, TrailDuelGame.CanvasWidth, 50), Pal.Ink);
+        r.FillRect(new RectF(0, 130, TrailDuelGame.CanvasWidth, 1), Pal.Coral);
         if (_mode == Mode.Moves) { DrawMoveMenu(r); return; }
         if (_mode == Mode.Actions)
         {
@@ -226,12 +226,12 @@ internal sealed partial class BattleScene
         _text.Area = new RectF(4, 134, 312, 42);
         if (!_text.Active) UiKit.Box(r, _text.Area);
         _text.Draw(r);
-        _choice?.Draw(r, new Vector2(316, 132));
+        _choice.Draw(r, new Vector2(316, 132));
         // Choosing a move to forget: the card follows the highlighted option ("Keep all" shows the new move).
-        if (_choice is not null && _forgetOptions is { } options)
+        if (_choice.Menu is { } menu && _forgetOptions is { } options)
         {
-            var (move, pp) = options[Math.Clamp(_choice.Index, 0, options.Length - 1)];
-            float left = _choice.Bounds(new Vector2(316, 132)).X;
+            var (move, pp) = options[Math.Clamp(menu.Index, 0, options.Length - 1)];
+            float left = menu.Bounds(new Vector2(316, 132)).X;
             DrawMoveCard(r, move, pp, 4, left - 8);
         }
     }

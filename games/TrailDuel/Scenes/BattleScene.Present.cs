@@ -58,7 +58,7 @@ internal sealed partial class BattleScene
     /// <summary>The middle of the creature on that side, from its drawn height.</summary>
     private Vector2 CenterOf(Side side)
     {
-        float h = CreatureArt.Heights.GetValueOrDefault(Of(side).Creature.SpeciesId, 44);
+        float h = _game.Art.CreatureHeight(Of(side).Creature.SpeciesId);
         return BaseOf(side) + new Vector2(0, (side == Side.Enemy ? -2 : 0) - h * 0.5f);
     }
 
@@ -74,7 +74,7 @@ internal sealed partial class BattleScene
     private IEnumerator Tween(float seconds, Action<float> apply, Func<float, float>? ease = null)
     {
         ease ??= Ease.OutQuad;
-        for (float t = 0; t < seconds; t += 1f / 60f)
+        for (float t = 0; t < seconds; t += EngineStep)
         {
             apply(ease(Math.Clamp(t / seconds, 0, 1)));
             yield return null;
@@ -341,7 +341,7 @@ internal sealed partial class BattleScene
         float speed = MathF.Max(18, disp.MaxHp * 1.1f);
         while (MathF.Abs(disp.Hp - target) > 0.01f)
         {
-            disp.Hp = MathX.Approach(disp.Hp, target, speed / 60f);
+            disp.Hp = MathX.Approach(disp.Hp, target, speed * EngineStep);
             yield return null;
         }
     }
@@ -410,7 +410,7 @@ internal sealed partial class BattleScene
         while (!_text.PageComplete) yield return null;
         int yes = -1;
         _forgetOptions = [(move, null)];
-        yield return Choose(["YES", "NO"], i => yes = i);
+        yield return _choice.Choose(["YES", "NO"], i => yes = i);
         _forgetOptions = null;
         _text.WaitForConfirmOnLast = true;
         _text.Close();
@@ -421,7 +421,7 @@ internal sealed partial class BattleScene
             _text.FinishTyping();
             int slot = -1;
             _forgetOptions = [.. c.Moves.Select(m => (m.Data, (int?)m.Pp)), (move, null)];
-            yield return Choose([.. c.Moves.Select(m => m.Data.Name), "Keep all"], i => slot = i);
+            yield return _choice.Choose([.. c.Moves.Select(m => m.Data.Name), "Keep all"], i => slot = i);
             _forgetOptions = null;
             _text.WaitForConfirmOnLast = true;
             _text.Close();

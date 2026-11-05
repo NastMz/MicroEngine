@@ -7,8 +7,8 @@ namespace TrailDuel.Visuals;
 
 /// <summary>
 /// Hand-animated battle effects from the Ninja Adventure pack (CC0, see CREDITS.md), sliced from
-/// <c>Content/fx</c> into atlas frames "fx:{name}0", "fx:{name}1", ... The creatures stay procedural;
-/// these give every element its own crafted impact.
+/// <c>Content/fx</c> into atlas frames "fx:{name}0", "fx:{name}1", ... They give every element its own
+/// crafted impact.
 /// </summary>
 internal static class FxArt
 {
@@ -33,10 +33,10 @@ internal static class FxArt
         ("aura", 25, 24, 0.8f),
     ];
 
-    public static void AddAll(SpriteAtlasBuilder b, ContentFolder content)
+    public static void AddAll(SpriteAtlasBuilder b, Func<string, PixelImage> image)
     {
         foreach (var (name, w, h, oy) in Sheets)
-            b.AddGrid("fx:" + name, content.Image($"fx/{name}.png"), w, h, origin: new Vector2(w / 2f, h * oy));
+            b.AddGrid("fx:" + name, image($"fx/{name}.png"), w, h, origin: new Vector2(w / 2f, h * oy));
     }
 
     /// <summary>The impact a move of this element leaves on its target; strong moves get the bigger version.</summary>
