@@ -1,7 +1,6 @@
-/* Self-hosted fonts (no third-party requests). Pixelify Sans is the display face, used only for short headings
-   and the wordmark; IBM Plex Sans carries body text and IBM Plex Mono code and labels. */
-@import '@fontsource/pixelify-sans/latin-500.css';
-@import '@fontsource/pixelify-sans/latin-700.css';
+/* Self-hosted fonts (no third-party requests), Latin subset, only the weights the site uses. Bricolage Grotesque is
+   the display face (headings, the wordmark); IBM Plex Sans carries body text and IBM Plex Mono code and labels. */
+@import '@fontsource/bricolage-grotesque/latin-600.css';
 @import '@fontsource/ibm-plex-sans/latin-400.css';
 @import '@fontsource/ibm-plex-sans/latin-600.css';
 @import '@fontsource/ibm-plex-mono/latin-400.css';

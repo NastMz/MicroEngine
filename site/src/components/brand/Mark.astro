@@ -1,0 +1,40 @@
+---
+// The MicroEngine mark, inline so it takes the theme's tokens: the board in ink, the module in amber.
+//   <Mark />                      decorative (next to the written name), 28 px
+//   <Mark title="MicroEngine" />  standalone: announced as an image with that name
+//   <Mark mono />                 one colour (currentColor)
+//   <Mark crop />                 viewBox cropped to the drawing, for lockups that align it to cap height
+//   <Mark seat />                 the module slides into its socket once on load (skipped under reduced motion)
+import { grid, mark } from './geometry.mjs';
+
+interface Props { size?: number | string; title?: string; mono?: boolean; crop?: boolean; seat?: boolean; class?: string }
+const { size = 28, title, mono = false, crop = false, seat = false, class: className } = Astro.props;
+const box = crop ? `${mark.crop.x} ${mark.crop.y} ${mark.crop.width} ${mark.crop.height}` : `0 0 ${grid} ${grid}`;
+const height = typeof size === 'number' ? (crop ? (size * mark.crop.height) / mark.crop.width : size) : undefined;
+---
+<svg
+  class:list={['mark', { mono, seat }, className]}
+  viewBox={box}
+  width={typeof size === 'number' ? size : undefined}
+  height={height}
+  style={typeof size === 'string' ? `width: ${size}; height: auto;` : undefined}
+  role={title ? 'img' : undefined}
+  aria-label={title}
+  aria-hidden={title ? undefined : 'true'}
+  focusable="false"
+>
+  {title && <title>{title}</title>}
+  <path class="board" d={mark.board} />
+  <path class="module" d={mark.module} />
+</svg>
+
+<style>
+  .mark { display: inline-block; flex: none; overflow: visible; }
+  .board { fill: var(--color-mark-board); }
+  .module { fill: var(--color-mark-module); }
+  .mono .board, .mono .module { fill: currentColor; }
+  /* The module drops into its socket and settles: the brand's one signature motion. */
+  .seat .module { animation: seat var(--dur-mid) var(--ease-seat) 160ms both; }
+  @keyframes seat { from { transform: translateY(-6px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .seat .module { animation: none; } }
+</style>

@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classify } from '../src/lib/capability.mjs';
 import { gameIds } from '../scripts/demos.mjs';
+import { exercises, exercisedGames } from '../src/components/demos/exercises.mjs';
 import { checkDiagrams, checkDist, checkPublicContent, engineeringMaterial } from '../scripts/check-dist.mjs';
 import { headerRules, headersFor } from './serve-dist.mjs';
 
@@ -38,6 +39,25 @@ test('every game in the web registry has a page on the site', () => {
   const data = fs.readFileSync(path.join(siteRoot, 'src', 'data', 'games.ts'), 'utf8');
   const siteIds = [...data.matchAll(/^\s+id: '([A-Za-z0-9_]+)',$/gm)].map(m => m[1]);
   assert.deepEqual([...siteIds].sort(), [...gameIds].sort());
+});
+
+test('demo markers: every engine feature a demo is said to exercise appears in that game\'s code', () => {
+  assert.deepEqual([...exercisedGames].sort(), [...gameIds].sort());
+  const sources = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return ['bin', 'obj'].includes(entry.name) ? [] : sources(full);
+    return entry.name.endsWith('.cs') ? [fs.readFileSync(full, 'utf8')] : [];
+  });
+  for (const id of gameIds) {
+    const code = sources(path.join(siteRoot, '..', 'games', id)).join('\n');
+    for (const feature of exercises(id)) {
+      for (const pattern of [feature.evidence].flat()) assert.match(code, pattern, `${id}: "${feature.name}" has no ${pattern} in games/${id}`);
+      assert.match(feature.href, /^\/docs\/manual\/[a-z-]+\/(#[a-z-]+)?$/, `${feature.id}: links to a manual page`);
+    }
+  }
+  // A marker the code does not support is refused: Trail Duel moves on a grid without the engine's tile collision.
+  assert.ok(!exercises('TrailDuel').some(f => f.id === 'collision'));
+  assert.throws(() => exercises('NoSuchGame'), /unknown game/);
 });
 
 test('check-dist: reports a missing package file', () => {
@@ -107,4 +127,96 @@ test('public pages never show the engineering record', () => {
   assert.ok(found.includes('decision record ADR 0016'));
   assert.ok(found.some(f => f.startsWith('link to docs/decisions/')));
   assert.ok(found.includes('an evidence or validation-history section'));
+});
+
+test('brand: the favicon and logo files are drawn from the brand geometry', async () => {
+  const { mark, faviconSvg, fixed } = await import('../src/components/brand/geometry.mjs');
+  const favicon = faviconSvg();
+  assert.ok(favicon.includes(mark.board) && favicon.includes(mark.module));
+  assert.match(favicon, /prefers-color-scheme:dark/);
+  for (const colour of [fixed.light.board, fixed.light.module, fixed.dark.board, fixed.dark.module]) assert.ok(favicon.includes(colour));
+  const { files } = await import('../design/tools/build-assets.mjs');
+  for (const [name, svg] of Object.entries(files())) {
+    const committed = fs.readFileSync(path.join(siteRoot, 'src/assets/brand', name), 'utf8').replace(/\r\n/g, '\n');
+    assert.equal(committed, svg + '\n', `${name} is stale: run node design/tools/build-assets.mjs`);
+  }
+});
+
+test('brand: the fixed colours of the favicon and Open Graph image equal their tokens', async () => {
+  const { fixed } = await import('../src/components/brand/geometry.mjs');
+  const { readTokens, resolve, parseOklch, toLinearSrgb } = await import('../scripts/contrast.mjs');
+  const tokens = readTokens(fs.readFileSync(path.join(siteRoot, 'src/styles/tokens.css'), 'utf8'));
+  const hex = (name, theme) => '#' + toLinearSrgb(parseOklch(resolve(tokens, tokens[name], theme)))
+    .map(x => Math.min(1, Math.max(0, x)))
+    .map(x => Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055)).toString(16).padStart(2, '0'))
+    .join('');
+  const names = { board: '--color-ink', module: '--color-mark-module', paper: '--color-paper', paper2: '--color-paper-2',
+    rule: '--color-rule', ink2: '--color-ink-2', ink3: '--color-ink-3' };
+  for (const theme of ['light', 'dark']) {
+    for (const [key, value] of Object.entries(fixed[theme])) assert.equal(value, hex(names[key], theme), `${theme}.${key}`);
+  }
+});
+
+test('brand: headings use the display face from the tokens, and no pixel face is loaded', () => {
+  const styles = path.join(siteRoot, 'src/styles');
+  for (const file of fs.readdirSync(styles)) assert.doesNotMatch(fs.readFileSync(path.join(styles, file), 'utf8'), /Pixelify/i, file);
+  assert.match(fs.readFileSync(path.join(styles, 'tokens.css'), 'utf8'), /--font-display: 'Bricolage Grotesque'/);
+  assert.match(fs.readFileSync(path.join(styles, 'fonts.css'), 'utf8'), /@fontsource\/bricolage-grotesque\/latin-600\.css/);
+});
+
+test('content: every capability and roadmap item has an availability and a subsystem family', async () => {
+  const { capabilities, families, availabilityLabels } = await import('../src/data/capabilities.ts');
+  const { roadmap, stages } = await import('../src/data/roadmap.ts');
+  const { platforms } = await import('../src/data/platforms.ts');
+  const statuses = Object.keys(availabilityLabels);
+  assert.deepEqual(statuses, ['available', 'next', 'repository', 'planned']);
+  assert.deepEqual(stages.map(s => s.status), statuses);
+  for (const item of [...capabilities, ...roadmap, ...platforms]) {
+    const name = item.name ?? item.text;
+    assert.ok(statuses.includes(item.status), `${name}: status ${item.status}`);
+    assert.ok(families.includes(item.family), `${name}: family ${item.family}`);
+  }
+  for (const status of statuses) assert.ok(roadmap.some(i => i.status === status), `the roadmap has ${status} items`);
+  assert.equal(new Set(capabilities.map(c => c.id)).size, capabilities.length, 'capability ids are unique');
+});
+
+test('content: the site names the published SDK version and never presents 3D or Box2D as available', async () => {
+  const { publishedSdk, capabilities } = await import('../src/data/capabilities.ts');
+  const { roadmap, completed } = await import('../src/data/roadmap.ts');
+  const published = JSON.parse(fs.readFileSync(path.join(siteRoot, '..', 'sdk', 'version.json'), 'utf8')).documented;
+  assert.equal(publishedSdk, published);
+  const data = ['roadmap.ts', 'platforms.ts', 'capabilities.ts', 'distribution.ts']
+    .map(f => fs.readFileSync(path.join(siteRoot, 'src', 'data', f), 'utf8')).join('\n');
+  assert.doesNotMatch(data, /\d+\.\d+\.\d+-alpha\.\d+/, 'versions are read, never written into the data');
+  assert.ok(completed.some(t => t.includes(`SDK ${published} on nuget.org`)));
+  const shipping = [...capabilities.filter(c => c.status === 'available' || c.status === 'next').map(c => `${c.name} ${c.summary}`),
+    ...roadmap.filter(i => i.status === 'available' || i.status === 'next').map(i => i.text)];
+  for (const text of shipping) assert.doesNotMatch(text, /\b3D\b|Box2D|glTF|visual editor/i, text);
+  for (const id of ['3d-path', 'box2d']) assert.equal(capabilities.find(c => c.id === id)?.status, 'repository', id);
+});
+
+test('content: capability documentation links point at published pages', async () => {
+  const { capabilities } = await import('../src/data/capabilities.ts');
+  const { pages } = await import('../src/lib/repo-docs.mjs');
+  const published = new Set(pages.map(p => `/${p.slug}/`));
+  for (const { id, docs } of capabilities) if (docs) assert.ok(published.has(docs.split('#')[0]), `${id}: ${docs}`);
+});
+
+test('landing: the platform catalog excerpt quotes CreateCatalog only, and the landing data names real capabilities', async () => {
+  const { excerpt } = await import('../src/lib/source.mjs');
+  const index = fs.readFileSync(path.join(siteRoot, 'src/pages/index.astro'), 'utf8');
+  assert.ok(index.includes('excerpt(catalogFile, /public static PlatformCatalog CreateCatalog/, /^\\s*$/)'), 'the landing quotes the catalog up to its blank line');
+  const { code } = excerpt('src/MicroEngine.Desktop/DesktopLauncher.cs', /public static PlatformCatalog CreateCatalog/, /^\s*$/);
+  assert.match(code, /\.Add\(HeadlessPlatform\.Profile\);$/);
+  assert.doesNotMatch(code, /public static int Run/);
+  const { capabilities } = await import('../src/data/capabilities.ts');
+  const { graphicsIds } = await import('../src/data/landing/content.ts');
+  for (const id of graphicsIds) assert.ok(capabilities.some(c => c.id === id), `graphicsIds: unknown capability ${id}`);
+});
+
+test('shell: no pixel grid background and no offset button shadows remain', () => {
+  const css = fs.readFileSync(path.join(siteRoot, 'src/styles/site.css'), 'utf8');
+  assert.doesNotMatch(css, /--color-grid|background-size: 32px/);
+  assert.doesNotMatch(css, /box-shadow: \d+px \d+px 0/);
+  assert.doesNotMatch(fs.readFileSync(path.join(siteRoot, 'src/styles/brand.css'), 'utf8'), /sprite-code/);
 });

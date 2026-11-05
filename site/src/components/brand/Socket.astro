@@ -1,0 +1,73 @@
+---
+// The Socket primitive: a labelled socket of one subsystem family, with a module seated in it or left empty.
+//   <Socket family="graphics" contract="IGraphicsDevice" module="SDL_Renderer" status="available" />
+//   <Socket family="graphics" contract="IGraphicsDevice" module="SDL_GPU" status="next" />
+//   <Socket family="physics" contract="IPhysicsWorld2D" module="Box2D" status="repo" empty />
+// `empty` draws a dashed socket with no module: the way the site shows anything that is not published. A socket
+// without `module` and `empty` is an open slot ("your module"). The status, when given, is always written out.
+import FamilyIcon from './FamilyIcon.astro';
+import { families } from './geometry.mjs';
+
+type Status = 'available' | 'next' | 'repo' | 'planned';
+interface Props {
+  family: keyof typeof families;
+  contract?: string;
+  module?: string;
+  note?: string;
+  status?: Status;
+  empty?: boolean;
+  as?: 'div' | 'li';
+}
+const { family, contract, module, note, status, empty = false, as: Tag = 'div' } = Astro.props;
+if (!families[family]) throw new Error(`Socket: unknown family "${family}"`);
+const statusText: Record<Status, string> = {
+  available: 'Available',
+  next: 'Next SDK version',
+  repo: 'In the repository, not published',
+  planned: 'Planned',
+};
+const label = families[family].label;
+---
+<Tag class="socket" data-family={family} data-state={empty ? 'empty' : 'seated'} data-status={status}>
+  <p class="legend">
+    <FamilyIcon family={family} size={14} />
+    <span class="legend-family">{label}</span>
+    {contract && <code class="legend-contract">{contract}</code>}
+  </p>
+  <div class="bay">
+    {empty
+      ? <p class="vacant">{module ?? 'Empty socket'}{note && <span class="note">{note}</span>}</p>
+      : <p class="module">{module ? <strong>{module}</strong> : <span class="open">Your module</span>}{note && <span class="note">{note}</span>}</p>}
+  </div>
+  {status && <p class="status-line"><span class="status-mark" aria-hidden="true"></span>{statusText[status]}</p>}
+</Tag>
+
+<style>
+  .socket { display: grid; gap: var(--space-xs); align-content: start; min-width: 0; margin: 0; list-style: none; }
+  .socket p { margin: 0; }
+  /* Sockets side by side in a row share a height: the bay takes the spare space, so the status lines line up. */
+  .socket[data-status] { grid-template-rows: auto 1fr auto; align-content: stretch; }
+  .bay { display: grid; }
+  .legend { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; color: var(--color-ink-2);
+    font-family: var(--font-mono); font-size: var(--text-xs); line-height: var(--leading-snug); }
+  .legend-family { color: var(--family-color); text-transform: uppercase; letter-spacing: var(--tracking-label); font-weight: 500; }
+  .legend-contract { font-size: inherit; color: var(--color-ink-2); background: none; padding: 0; }
+  /* The socket: a hairline bay; the module sits inside with a visible gap all round, like the mark. */
+  .bay { padding: var(--rule-gap); border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm);
+    background: var(--color-paper); }
+  .module, .vacant { display: grid; gap: var(--space-2xs); min-height: var(--tap); align-content: center;
+    padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); }
+  .module { background: color-mix(in oklch, var(--family-color) var(--tint), var(--color-paper));
+    border: var(--rule-thin) solid var(--family-color); color: var(--color-ink);
+    transition: transform var(--dur-fast) var(--ease-seat); }
+  .module strong { font-family: var(--font-mono); font-weight: 500; font-size: var(--text-sm); overflow-wrap: anywhere; }
+  .open { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-ink-2); }
+  .note { font-family: var(--font-body); font-size: var(--text-xs); color: var(--color-ink-2); }
+  .socket:hover .module { transform: translateY(-2px); }
+  /* Not published: the socket is drawn dashed and stays empty. */
+  [data-state='empty'] .bay { border-style: dashed; border-color: var(--color-ink-3); background: transparent; }
+  .vacant { color: var(--color-ink-2); font-family: var(--font-mono); font-size: var(--text-sm); }
+  .status-line { display: flex; align-items: center; gap: var(--space-xs); color: var(--status-color);
+    font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: var(--tracking-label); }
+  @media (prefers-reduced-motion: reduce) { .module { transition: none; } .socket:hover .module { transform: none; } }
+</style>

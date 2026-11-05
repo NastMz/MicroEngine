@@ -4,6 +4,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import mermaid from 'astro-mermaid';
 import { sidebar } from './src/lib/repo-docs.mjs';
+import { fixed } from './src/components/brand/geometry.mjs';
 
 // The canonical URL feeds the sitemap, canonical links and Open Graph tags. Vercel exposes the production domain
 // at build time; SITE_URL overrides it (for a custom domain), and local builds fall back to the preview server.
@@ -34,21 +35,29 @@ export default defineConfig({
     }),
     starlight({
       title: 'MicroEngine',
-      description: 'A compact, code-first 2D game engine for C#/.NET, with four complete pixel-art games that also run in desktop browsers.',
-      logo: { src: './src/assets/mark.svg', alt: '' },
-      customCss: ['./src/styles/fonts.css', './src/styles/tokens.css', './src/styles/starlight.css'],
+      description: 'A compact, code-first 2D game engine for C#/.NET, with four complete pixel-art games that also run in desktop and mobile browsers.',
+      // The header renders DocsSiteTitle (the lockup); these files stand in wherever Starlight draws its own logo.
+      logo: { light: './src/assets/brand/mark-light.svg', dark: './src/assets/brand/mark-dark.svg', alt: '' },
+      customCss: ['./src/styles/fonts.css', './src/styles/tokens.css', './src/styles/brand.css', './src/styles/starlight.css'],
       sidebar: sidebar(),
       disable404Route: true,
       pagination: true,
       // Long guides (tutorial, manual, how-to) should not lose to the many short API type pages that share their words.
       pagefind: { ranking: { pageLength: 0.1 } },
       head: [
-        { tag: 'meta', attrs: { name: 'theme-color', content: '#15171c' } },
+        { tag: 'meta', attrs: { name: 'theme-color', content: fixed.light.paper, media: '(prefers-color-scheme: light)' } },
+        { tag: 'meta', attrs: { name: 'theme-color', content: fixed.dark.paper, media: '(prefers-color-scheme: dark)' } },
         { tag: 'meta', attrs: { property: 'og:image', content: new URL('/og.png', site).href } },
         { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
         { tag: 'link', attrs: { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' } },
       ],
-      components: { SiteTitle: './src/components/DocsSiteTitle.astro' },
+      // Code blocks: Expressive Code, configured in ec.config.mjs (the brand's label strip on graphite).
+      components: {
+        SiteTitle: './src/components/DocsSiteTitle.astro',
+        // The family legend and socket card above a page, and the status tags in its body (src/components/docs/).
+        PageTitle: './src/components/docs/PageTitle.astro',
+        MarkdownContent: './src/components/docs/MarkdownContent.astro',
+      },
     }),
   ],
 });

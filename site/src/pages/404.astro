@@ -1,20 +1,42 @@
 ---
+// Page not found, in the Socket language: an empty dashed socket where a page should seat.
 import SiteLayout from '../layouts/SiteLayout.astro';
-import PixelSprite from '../components/PixelSprite.astro';
 ---
 <SiteLayout title="Page not found" description="This page does not exist." noindex>
   <div class="wrap lost">
-    <PixelSprite file="samples/HelloEngine/Program.cs" scale={12} label="A lone star sprite" />
-    <h1>Off the map.</h1>
-    <p class="lede">There is no page at this address. It may have moved when the documentation was reorganised.</p>
-    <div class="actions">
-      <a class="button" href="/">Back to the start</a>
-      <a class="button secondary" href="/docs/">Documentation</a>
-      <a class="button secondary" href="/demos/">Demos</a>
+    <div class="socket" aria-hidden="true">
+      <span class="bay"><span class="code">404</span></span>
+      <span class="socket-label">Empty socket</span>
+    </div>
+    <div class="copy">
+      <h1>Nothing seated here.</h1>
+      <p class="lede">There is no page at this address. It may have moved when the documentation was reorganised.</p>
+      <ul class="routes">
+        <li><a class="route primary" href="/">Back to the start</a></li>
+        <li><a class="route" href="/docs/">Documentation</a></li>
+        <li><a class="route" href="/demos/">Demos</a></li>
+      </ul>
     </div>
   </div>
 </SiteLayout>
 
 <style>
-  .lost { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); justify-items: start; padding-top: var(--space-4xl); }
+  .lost { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); align-items: center; padding-top: var(--space-4xl); }
+  .socket { display: grid; gap: var(--space-xs); justify-items: start; color: var(--color-ink-3); }
+  .socket-label { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--color-ink-2); }
+  .bay { display: grid; place-items: center; width: min(100%, 16rem); aspect-ratio: 4 / 3; border: var(--rule-pixel) dashed var(--color-ink-3);
+    border-radius: var(--radius-sm); }
+  .code { font-family: var(--font-mono); font-size: var(--text-2xl); color: var(--color-ink-3); letter-spacing: var(--tracking-label); }
+  .copy { display: grid; gap: var(--space-md); }
+  .copy p { margin: 0; }
+  h1 { margin: 0; font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--text-display);
+    letter-spacing: var(--tracking-display); line-height: var(--leading-tight); color: var(--color-ink); }
+  .lede { font-size: var(--text-lg); line-height: var(--leading-body); color: var(--color-ink-2); max-width: 40rem; }
+  .routes { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin: var(--space-xs) 0 0; padding: 0; list-style: none; }
+  .route { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--space-md); border: var(--rule-thin) solid var(--color-rule);
+    border-radius: var(--radius-sm); color: var(--color-ink); text-decoration: none; font-weight: 600; }
+  .route:hover { border-color: var(--color-ink-2); background: var(--color-paper-2); }
+  .route.primary { border-color: var(--color-accent-fill); background: var(--color-accent-fill); color: var(--color-accent-ink); }
+  .route.primary:hover { border-color: var(--color-accent-fill-hover); background: var(--color-accent-fill-hover); }
+  @media (min-width: 48rem) { .lost { grid-template-columns: 16rem minmax(0, 1fr); gap: var(--space-3xl); } }
 </style>

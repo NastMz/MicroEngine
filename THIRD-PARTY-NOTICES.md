@@ -91,7 +91,7 @@ Credit is not required and is given in each game's asset credits. Meadow Run use
 
 | Component | Licence | Copyright |
 | --- | --- | --- |
-| Pixelify Sans font | SIL Open Font License 1.1 | Copyright 2021 The Pixelify Sans Project Authors |
+| Bricolage Grotesque font (display face and the outlined wordmark in the logo and Open Graph image) | SIL Open Font License 1.1 | Copyright 2022 The Bricolage Grotesque Project Authors |
 | IBM Plex Sans and IBM Plex Mono fonts | SIL Open Font License 1.1 | Copyright 2017, 2019 IBM Corp. |
 | Astro | MIT | Copyright (c) 2021 Fred K. Schott |
 | Starlight | MIT | Copyright (c) 2023 Astro contributors |

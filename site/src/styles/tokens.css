@@ -1,43 +1,80 @@
-/* Hallmark · macrostructure: Workbench · tone: technical, playful-precise · anchor hue: amber 85
- * theme: custom (vibe: "pixel workbench at night, cartridge amber")
- * paper oklch(19% 0.012 265) · accent oklch(84% 0.16 85) · Pixelify Sans + IBM Plex Sans + IBM Plex Mono
- * axes: dark / pixel-display / warm
+/* Hallmark · pre-emit critique: P5 H4 E4 S5 R5 V4
+ * theme: custom "Socket" (site/design/README.md) · tone: technical, precise, warm
+ * paper: warm paper (light) / graphite (dark) · signal: amber 82 · Bricolage Grotesque + IBM Plex Sans + IBM Plex Mono
  *
- * Design tokens shared by the landing, the demo pages and the documentation theme (starlight.css). Every colour
- * and font in the site's CSS references one of these names. */
+ * Design tokens for every page of the site: landing, demo pages and documentation (starlight.css maps Starlight's
+ * variables onto these). Every colour and font in the site's CSS references one of these names; nothing else holds a
+ * literal colour. Each colour is written once as light-dark(light, dark): the theme is chosen by `color-scheme`,
+ * which follows the reader's system unless the page sets data-theme="light" or "dark" (Starlight's switch does).
+ * scripts/contrast.mjs reads this file and fails if a text/background pair falls under WCAG AA in either theme. */
+:root { color-scheme: light dark; }
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-theme='dark'] { color-scheme: dark; }
+
 :root {
-  --color-paper: oklch(19% 0.012 265);
-  --color-paper-2: oklch(22.5% 0.014 265);
-  --color-paper-3: oklch(27% 0.016 265);
-  --color-grid: oklch(23.5% 0.014 265);
-  --color-rule: oklch(35% 0.016 265);
-  --color-ink: oklch(94% 0.012 95);
-  --color-ink-2: oklch(80% 0.014 265);
-  --color-ink-3: oklch(70% 0.014 265);
-  --color-accent: oklch(84% 0.16 85);
-  --color-accent-strong: oklch(90% 0.15 92);
+  /* Neutral base: warm paper in light, graphite in dark. Hue 85 (paper) and 260 (graphite) only; chroma stays low. */
+  --color-paper: light-dark(oklch(97.5% 0.006 85), oklch(18% 0.01 260));
+  --color-paper-2: light-dark(oklch(95% 0.008 85), oklch(21.5% 0.012 260));
+  --color-paper-3: light-dark(oklch(91.5% 0.01 85), oklch(26% 0.014 260));
+  --color-rule: light-dark(oklch(84% 0.01 85), oklch(34% 0.014 260));
+  --color-ink: light-dark(oklch(22% 0.012 260), oklch(95% 0.008 85));
+  --color-ink-2: light-dark(oklch(40% 0.014 260), oklch(80% 0.012 260));
+  --color-ink-3: light-dark(oklch(48% 0.014 260), oklch(72% 0.012 260));
+  /* Not for text: disabled controls, strong rules, diagram strokes. */
+  --color-ink-4: light-dark(oklch(66% 0.012 260), oklch(50% 0.016 260));
+
+  /* Signal: amber, the colour of the seated module in the mark. Text-safe tone, a fill tone and the ink on that fill. */
+  --color-accent: light-dark(oklch(50% 0.1 70), oklch(84% 0.15 82));
+  --color-accent-low: light-dark(oklch(92% 0.05 85), oklch(30% 0.06 85));
+  --color-accent-strong: light-dark(oklch(40% 0.09 65), oklch(90% 0.12 90));
+  --color-accent-fill: light-dark(oklch(80% 0.15 78), oklch(84% 0.15 82));
+  --color-accent-fill-hover: light-dark(oklch(74% 0.15 74), oklch(89% 0.13 88));
   --color-accent-ink: oklch(21% 0.03 85);
-  --color-focus: oklch(90% 0.17 95);
-  --color-ok: oklch(82% 0.14 150);
-  --color-partial: oklch(84% 0.12 70);
-  --color-no: oklch(74% 0.14 25);
-  --color-scrim: oklch(12% 0.01 265 / 0.86);
+  --color-focus: light-dark(oklch(48% 0.13 260), oklch(90% 0.15 95));
+  --color-scrim: light-dark(oklch(22% 0.012 260 / 0.7), oklch(12% 0.01 260 / 0.86));
 
-  /* Roadmap promise levels. */
-  --color-planned: var(--color-accent);
-  --color-exploring: oklch(80% 0.11 230);
-  --color-vision: oklch(76% 0.12 305);
+  /* The mark: board in ink, module in amber. The favicon keeps fixed copies of these (src/assets/favicon.svg). */
+  --color-mark-board: var(--color-ink);
+  --color-mark-module: light-dark(oklch(72% 0.15 72), oklch(84% 0.15 82));
 
-  /* One identity colour per demo, taken from each game's palette. */
-  --color-meadow: oklch(83% 0.15 135);
-  --color-courtyard: oklch(80% 0.11 185);
-  --color-trail: oklch(80% 0.11 250);
-  --color-neon: oklch(76% 0.17 335);
+  /* Capability verdicts (demo players, platform tables). */
+  --color-ok: light-dark(oklch(47% 0.12 150), oklch(82% 0.14 150));
+  --color-partial: light-dark(oklch(50% 0.11 60), oklch(84% 0.12 70));
+  --color-no: light-dark(oklch(50% 0.17 25), oklch(76% 0.14 25));
 
-  --font-display: 'Pixelify Sans', 'IBM Plex Mono', ui-monospace, monospace;
+  /* Status of a capability. Only what ships carries colour; the future is drawn in neutral ink, and the drawing
+     (solid module, dashed socket, dotted outline) says the same thing without colour. */
+  --status-available: var(--color-ok);
+  --status-next: var(--color-accent);
+  --status-repo: var(--color-ink-2);
+  --status-planned: var(--color-ink-3);
+
+  /* Subsystem families: one hue per kind of module. They mean a family and nothing else: never decoration, never a
+     status, never a game. The kernel is the board itself, so it stays neutral. */
+  --family-kernel: var(--color-ink-2);
+  --family-graphics: light-dark(oklch(48% 0.15 295), oklch(78% 0.12 295));
+  --family-physics: light-dark(oklch(50% 0.13 45), oklch(79% 0.12 50));
+  --family-audio: light-dark(oklch(49% 0.15 355), oklch(78% 0.12 355));
+  --family-input: light-dark(oklch(48% 0.12 245), oklch(79% 0.11 245));
+  --family-platform: light-dark(oklch(48% 0.08 195), oklch(80% 0.1 195));
+  --family-tools: light-dark(oklch(47% 0.1 125), oklch(82% 0.13 125));
+  /* A socket's tint: its family colour mixed into the paper. Text on a tint keeps the family colour or ink. */
+  --tint: 12%;
+
+  /* One identity colour per demo, taken from each game's palette. Used only inside that demo's own frame. */
+  --color-meadow: light-dark(oklch(47% 0.12 135), oklch(83% 0.15 135));
+  --color-courtyard: light-dark(oklch(47% 0.08 185), oklch(80% 0.11 185));
+  --color-trail: light-dark(oklch(48% 0.11 250), oklch(80% 0.1 250));
+  --color-neon: light-dark(oklch(50% 0.18 335), oklch(76% 0.17 335));
+
+  /* Type: Bricolage Grotesque for display and the wordmark, IBM Plex Sans for reading, IBM Plex Mono for code and
+     panel labels. */
+  --font-display: 'Bricolage Grotesque', 'IBM Plex Sans', system-ui, sans-serif;
   --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --weight-display: 600;
 
+  /* Type scale: a 1.25 ratio from 1.0625rem, fluid at the top. */
   --text-xs: 0.8125rem;
   --text-sm: 0.9375rem;
   --text-md: 1.0625rem;
@@ -46,7 +83,13 @@
   --text-2xl: clamp(1.75rem, 1.2rem + 2.2vw, 2.5rem);
   --text-display: clamp(2.5rem, 1.4rem + 4.8vw, 4.75rem);
   --text-hero: clamp(2rem, 1.2rem + 3.4vw, 4rem);
+  --leading-tight: 1.05;
+  --leading-snug: 1.25;
+  --leading-body: 1.6;
+  --tracking-display: -0.02em;
+  --tracking-label: 0.06em;
 
+  /* Spacing: a 4px base. */
   --space-2xs: 0.25rem;
   --space-xs: 0.5rem;
   --space-sm: 0.75rem;
@@ -57,18 +100,20 @@
   --space-3xl: 4.5rem;
   --space-4xl: 6.5rem;
 
+  /* Shape: square-cornered, hairline rules; the gap between a module and its socket is one --rule-gap. */
   --radius-sm: 2px;
-  --radius-md: 4px;
   --rule-thin: 1px;
   --rule-pixel: 2px;
+  --rule-gap: 2px;
+  --dash: 4px;
   --measure: 66ch;
   --page-max: 76rem;
   --gutter: clamp(1rem, 0.6rem + 2vw, 2.5rem);
   --tap: 44px;
 
+  /* Motion: mechanical and short. A module slides and seats with a small overshoot (--ease-seat). */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-seat: cubic-bezier(0.34, 1.4, 0.64, 1);
   --dur-fast: 120ms;
   --dur-mid: 220ms;
 }

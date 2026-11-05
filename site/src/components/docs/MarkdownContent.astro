@@ -1,0 +1,12 @@
+---
+// Starlight MarkdownContent override: the page body as Starlight renders it, with the documentation's written
+// statuses ("Next SDK version", "In the repository only, not in a package yet") drawn as status tags
+// (./status-phrases.mjs), and tables and diagrams made keyboard-scrollable (./scroll-regions.mjs). The Markdown
+// itself is untouched.
+import Default from '@astrojs/starlight/components/MarkdownContent.astro';
+import { markStatusPhrases } from './status-phrases.mjs';
+import { focusableScrollRegions } from './scroll-regions.mjs';
+
+const html = Astro.slots.has('default') ? focusableScrollRegions(markStatusPhrases(await Astro.slots.render('default'))) : '';
+---
+<Default><Fragment set:html={html} /></Default>

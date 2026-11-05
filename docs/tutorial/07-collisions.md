@@ -8,7 +8,8 @@ Games need two kinds of collision, and MicroEngine handles them differently:
   `RectF.Intersects` and decides what happens.
 
 There is no physics engine (no forces, masses or rigid bodies): movement is code you write, which keeps it exact and
-easy to tune. This step uses both kinds.
+easy to tune. This step uses both kinds. (Next SDK version: [physics worlds](../manual/world.md#physics-worlds) add
+bodies, sensors and ray casts over the same tile collision, still without forces; Gem Garden does not need them.)
 
 ## Hedges stop the gardener
 

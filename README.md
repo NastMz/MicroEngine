@@ -30,12 +30,18 @@ secondary action, Esc/P to pause, F11 for fullscreen; gamepads work too.
 - Procedural pixel art (`PixelImage`, palettes, noise, dithering), sprite atlases, animation, particles,
   camera with dead zone/bounds/shake, parallax layers, built-in proportional pixel font
 - Managed PNG and WAV loading, grid sprite-sheet slicing, streamed OGG music (MP3 on raylib), a content folder
-- Tile layers, swept tile collision with one-way platforms, autotiling, plain entities
+- Tile layers, swept tile collision with one-way platforms, autotiling
 - Retro sound synthesizer and step-sequencer music, mixer with music fades
 - Dialogue boxes, menus, JSON saves, headless platform for deterministic tests
 - Achievements: per-game catalogs, immediate and progressive goals, saved progress, unlock banners and a
   list screen (every game ships five)
 - SDL 3 platform for Windows, Linux, macOS, Android and iOS, and raylib for browsers, behind a small `IPlatform` boundary with named, replaceable platform profiles
+
+Merged on `main` for the next SDK version, not published yet ([migration notes](docs/migrations.md)): the engine as
+separate modules, a scene world of entities with transform hierarchies, physics worlds with a tile backend, HD
+canvases, TrueType and OpenType fonts, one audio mixer on every platform, SDL 3 as the browser platform (raylib stays a
+desktop alternative) and an opt-in SDL_GPU graphics device on desktops. In the repository only, in no published
+package: a minimal 3D path (`samples/Slice3D`) and an optional Box2D physics backend (`samples/PhysicsSubstitution`).
 
 ## Documentation
 

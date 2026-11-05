@@ -3,8 +3,10 @@
 // with the same tokens and fonts.
 import '../styles/fonts.css';
 import '../styles/tokens.css';
+import '../styles/brand.css';
 import '../styles/site.css';
-import mark from '../assets/mark.svg?url';
+import Lockup from '../components/brand/Lockup.astro';
+import { fixed } from '../components/brand/geometry.mjs';
 
 interface Props { title: string; description: string; image?: string; noindex?: boolean; current?: 'home' | 'demos' | 'platforms' | 'roadmap' }
 const { title, description, image = '/og.png', noindex = false, current } = Astro.props;
@@ -16,6 +18,25 @@ const nav = [
   { href: '/platforms/', label: 'Platforms', key: 'platforms' },
   { href: '/roadmap/', label: 'Roadmap', key: 'roadmap' },
   { href: 'https://github.com/NastMz/MicroEngine', label: 'GitHub', key: 'github' },
+];
+const footer = [
+  { title: 'Product', links: [
+    { href: '/demos/', label: 'Play the demos' },
+    { href: '/platforms/', label: 'Platforms' },
+    { href: '/roadmap/', label: 'Roadmap' },
+    { href: '/docs/status/', label: 'What it offers' },
+  ] },
+  { title: 'Documentation', links: [
+    { href: '/docs/', label: 'Documentation' },
+    { href: '/docs/getting-started/', label: 'Install the SDK' },
+    { href: '/docs/manual/lifecycle/', label: 'Engine manual' },
+    { href: '/docs/sdk/', label: 'Versions' },
+  ] },
+  { title: 'Licences and source', links: [
+    { href: '/docs/licensing/', label: 'Licensing' },
+    { href: '/docs/third-party-notices/', label: 'Third-party notices' },
+    { href: 'https://github.com/NastMz/MicroEngine', label: 'Source on GitHub' },
+  ] },
 ];
 ---
 <!doctype html>
@@ -29,7 +50,16 @@ const nav = [
   {noindex && <meta name="robots" content="noindex" />}
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="sitemap" href="/sitemap-index.xml" />
-  <meta name="theme-color" content="#15171c" />
+  <meta name="theme-color" content={fixed.light.paper} media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content={fixed.dark.paper} media="(prefers-color-scheme: dark)" />
+  {/* Both themes follow the system; a choice made with the documentation's theme switch (stored by Starlight)
+      applies here too. Inline in the head, so the page never paints in the wrong theme first. */}
+  <script is:inline>
+    try {
+      const stored = localStorage.getItem('starlight-theme');
+      if (stored === 'light' || stored === 'dark') document.documentElement.dataset.theme = stored;
+    } catch {}
+  </script>
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="MicroEngine" />
   <meta property="og:title" content={fullTitle} />
@@ -44,10 +74,9 @@ const nav = [
   <header class="site-header">
     <div class="wrap header-row">
       <a href="/" class="wordmark" aria-label="MicroEngine home">
-        <img src={mark} alt="" width="28" height="28" />
-        <span>MicroEngine</span>
+        <Lockup />
       </a>
-      <nav aria-label="Main">
+      <nav class="site-nav" aria-label="Main">
         <ul>
           {nav.map(item => (
             <li><a href={item.href} aria-current={current === item.key ? 'page' : undefined}>{item.label}</a></li>
@@ -61,18 +90,17 @@ const nav = [
   </main>
   <footer class="site-footer">
     <div class="wrap footer-grid">
-      <p class="footer-statement">Small engine. Finished games. Pixel art written in C#.</p>
-      <nav aria-label="Footer">
-        <ul>
-          <li><a href="/demos/">Play the demos</a></li>
-          <li><a href="/docs/">Documentation</a></li>
-          <li><a href="/docs/manual/lifecycle/">Engine manual</a></li>
-          <li><a href="/roadmap/">Roadmap</a></li>
-          <li><a href="/docs/status/">What it offers</a></li>
-          <li><a href="/docs/licensing/">Licensing</a></li>
-          <li><a href="/docs/third-party-notices/">Third-party notices</a></li>
-          <li><a href="https://github.com/NastMz/MicroEngine">Source on GitHub</a></li>
-        </ul>
+      <div class="footer-brand">
+        <a href="/" class="footer-lockup" aria-label="MicroEngine home"><Lockup /></a>
+        <p class="footer-statement">A small kernel, modules you can swap, games written in C#.</p>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        {footer.map(group => (
+          <div>
+            <p class="footer-head">{group.title}</p>
+            <ul>{group.links.map(link => <li><a href={link.href}>{link.label}</a></li>)}</ul>
+          </div>
+        ))}
       </nav>
       <p class="footer-meta">MicroEngine is open source under the MIT License. The four demo games are not: they are all rights reserved. Third-party components and their licences, including the CC0 art and music of the demos and this site’s fonts, are listed in the third-party notices.</p>
     </div>

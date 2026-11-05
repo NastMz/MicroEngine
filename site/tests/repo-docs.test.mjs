@@ -173,3 +173,38 @@ test('check-dist: a link to a page or an anchor that the site does not have fail
     'docs/a/index.html links to /docs/missing/, which is not a page of the site',
   ]);
 });
+
+test('docs families: every mapped page is published, socket cards name families that exist, API pages follow their namespace', async () => {
+  const { pageFamilies, socketCards, familyOf } = await import('../src/components/docs/families.mjs');
+  const { families } = await import('../src/components/brand/geometry.mjs');
+  const slugs = new Set(pages.map(p => p.slug));
+  for (const [slug, family] of Object.entries(pageFamilies)) {
+    assert.ok(slugs.has(slug), `${slug} is not a published page`);
+    assert.ok(families[family], `${slug}: unknown family ${family}`);
+  }
+  for (const slug of Object.keys(socketCards)) assert.ok(familyOf(slug), `${slug} has a socket card but no family`);
+  assert.equal(familyOf('docs/api/microengine.audio.audioclip'), 'audio');
+  assert.equal(familyOf('docs/api/microengine.ui'), undefined);
+  assert.equal(familyOf('docs'), undefined);
+});
+
+test('docs status phrases: written statuses become status tags, outside code and headings only', async () => {
+  const { markStatusPhrases } = await import('../src/components/docs/status-phrases.mjs');
+  const tag = (status, text) => `<span class="status-tag" data-status="${status}"><span class="status-mark" aria-hidden="true"></span>${text}</span>`;
+  assert.equal(markStatusPhrases('<p>Next SDK version (not published yet: arrives with the next SDK version): x</p>'),
+    `<p>${tag('next', 'Next SDK version')} (not published yet: arrives with the next SDK version): x</p>`);
+  assert.equal(markStatusPhrases('<p>In the repository only, not in a package yet (x).</p>'),
+    `<p>${tag('repo', 'In the repository only, not in a package yet')} (x).</p>`);
+  assert.equal(markStatusPhrases('<p><strong>Not in a published SDK yet</strong>: y</p>'),
+    `<p><strong>${tag('next', 'Not in a published SDK yet')}</strong>: y</p>`);
+  const untouched = '<h2 id="a">Next SDK version: x</h2><pre><code>next SDK version: y</code></pre><p>arrives with the next SDK version.</p>';
+  assert.equal(markStatusPhrases(untouched), untouched);
+});
+
+test('docs scroll regions: tables and diagrams take focus so a keyboard can scroll them; code and set values stay', async () => {
+  const { focusableScrollRegions } = await import('../src/components/docs/scroll-regions.mjs');
+  assert.equal(focusableScrollRegions('<table><tr><td>a</td></tr></table>'), '<table tabindex="0"><tr><td>a</td></tr></table>');
+  assert.equal(focusableScrollRegions('<pre class="mermaid">flowchart TB</pre>'), '<pre class="mermaid" tabindex="0">flowchart TB</pre>');
+  const untouched = '<table tabindex="-1"></table><pre data-language="csharp"><code>x</code></pre><tbody></tbody><p>&lt;table&gt;</p>';
+  assert.equal(focusableScrollRegions(untouched), untouched);
+});

@@ -1,0 +1,26 @@
+---
+// One module of the socket board in its socket: its name (linked to its manual page), its contract, the upstream
+// technology it is built on, and its status written out. Seated when a package carries it (now or in the next SDK
+// version); an empty socket otherwise, dashed for "in the repository" and dotted for "planned". Styles live in
+// SocketBoard.astro, which is the only user.
+import { availabilityLabels, type Capability } from '../../data/capabilities.ts';
+
+interface Props { module: Capability }
+const { module: m } = Astro.props;
+const state = m.status === 'repository' || m.status === 'planned' ? 'empty' : 'seated';
+const status = m.status === 'repository' ? 'repo' : m.status;
+---
+<li class="slot" data-state={state} data-status={status}>
+  <span class="socket">
+    <span class="module">
+      {m.docs ? <a class="module-name" href={m.docs}>{m.name}</a> : <span class="module-name">{m.name}</span>}
+      {(m.contract || m.builtOn) && (
+        <span class="module-note">
+          {m.contract && <code>{m.contract}</code>}
+          {m.builtOn && <span>on {m.builtOn.join(', ')}</span>}
+        </span>
+      )}
+    </span>
+  </span>
+  <span class="slot-status"><span class="status-mark" aria-hidden="true"></span>{availabilityLabels[m.status].label}</span>
+</li>
