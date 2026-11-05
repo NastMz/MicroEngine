@@ -169,7 +169,7 @@ public sealed class RulesTests
         var stage = Stage("..........................", "..S.......................", "##########################", "##########################");
         stage.Player.Form = PipForm.Ember;
         Run(stage, 5, default);
-        for (int i = 0; i < 6; i++) { stage.Update(Dt, Input(run: true, runPressed: true)); stage.Update(Dt, default); }
+        for (int i = 0; i < 6; i++) { Step(stage, Input(run: true, runPressed: true)); Step(stage, default); }
         Assert.AreEqual(2, stage.Actors.OfType<SeedShot>().Count());
     }
 
@@ -185,7 +185,7 @@ public sealed class RulesTests
             float best = stage.Player.Feet.Y;
             for (int i = 0; i < 150; i++)
             {
-                stage.Update(Dt, Input(jumpHeld: held));
+                Step(stage, Input(jumpHeld: held));
                 best = MathF.Min(best, stage.Player.Feet.Y);
             }
             return stage.Level.PixelHeight - 32 - best;

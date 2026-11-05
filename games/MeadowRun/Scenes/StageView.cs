@@ -12,7 +12,9 @@ namespace MeadowRun.Scenes;
 /// <summary>
 /// Draws a <see cref="Stage"/>: parallax backdrop, tiles with autotiling and bump offsets,
 /// actors in layers, Pip with squash and stretch, particles, a biome light pass and popups.
-/// Holds only presentation state (squash, blink), never gameplay state.
+/// Holds only presentation state (squash, blink), never gameplay state. Things that move are drawn where the stage's
+/// world interpolates them (<see cref="Actor.DrawPosition"/>, <see cref="Stage.PipDrawPosition"/>,
+/// <see cref="Stage.CameraDrawPosition"/>), so frames drawn between updates are smooth.
 /// </summary>
 internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
 {
@@ -22,7 +24,6 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
     private IReadOnlyList<BackdropLayer> _layers = [];
     private string[] _decos = [];
     private Biome _biome;
-    private readonly StageMotion _motion = new();
     private readonly List<Actor> _actors = [];
     // Sprite names looked up per tile every frame, built once instead of concatenated each time.
     private static readonly string[] QuestionNames = Names("question", 5), LavaTopNames = Names("lava_top", 4), LavaBodyNames = Names("lava_body", 2);
@@ -50,15 +51,16 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         _runFrame += dt * (6 + speed * 0.075f);
     }
 
-    /// <summary>Call just before every stage update, so frames drawn until the next one can place things between.</summary>
-    public void Remember(Stage stage) => _motion.Remember(stage);
-
-    /// <summary>Draws the stage <paramref name="blend"/> of the way from the previous update to the current one (1: the current state).</summary>
-    public void Draw(IRenderer r, Stage stage, float time, float blend = 1)
+    /// <summary>
+    /// Draws the stage at its world's blend (<paramref name="blend"/>: the particles' too). The camera is Camera2D state
+    /// the rules read, so it is moved to its drawn position for the frame and put back afterwards.
+    /// </summary>
+    public void Draw(IRenderer r, Stage stage, float time, float blend)
     {
-        _motion.Place(stage, blend);
+        var camera = stage.Camera.Position;
+        stage.Camera.Position = stage.CameraDrawPosition;
         try { DrawStage(r, stage, time, blend); }
-        finally { _motion.Restore(stage); }
+        finally { stage.Camera.Position = camera; }
     }
 
     private void DrawStage(IRenderer r, Stage stage, float time, float blend)
@@ -219,7 +221,8 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
             float stretch = Math.Clamp(MathF.Abs(p.Velocity.Y) / 1800f, 0, 0.12f);
             scale *= new Vector2(1 - stretch, 1 + stretch);
         }
-        var feet = new Vector2(MathF.Round(p.Feet.X), MathF.Round(p.Feet.Y));
+        var drawn = stage.PipDrawPosition;
+        var feet = new Vector2(MathF.Round(drawn.X + Player.Width / 2f), MathF.Round(drawn.Y + Player.Height));
         bool flip = p.Facing < 0;
         if (clip == "skid") flip = !flip;
         r.Draw(sprite.Texture, sprite.Source, feet - sprite.Origin * scale, Color.White, new DrawOptions(FlipX: flip, Scale: scale));
@@ -258,13 +261,14 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         lights.Shade = _biome == Biome.Caves ? Color.Hex("9c94c8") : Color.Hex("e0ccd0");
         // Pip carries a faint glow of his own so he never gets lost in the dark.
         var color = stage.Player.Form == PipForm.Ember ? Pal.Flame : _biome == Biome.Caves ? Pal.Teal : Pal.Amber;
-        lights.Add(stage.Player.Center, GlowRadius, 0, color.WithAlpha(0.35f));
+        var pip = stage.PipDrawPosition;
+        lights.Add(new RectF(pip.X, pip.Y, Player.Width, Player.Height).Center, GlowRadius, 0, color.WithAlpha(0.35f));
         foreach (var a in _actors)
         {
             if (a is LightProp or Checkpoint { Lit: true } or SeedShot or FireBar or Sunstone && stage.Camera.IsVisible(a.Bounds, 40))
             {
                 var c = a is LightProp && _biome == Biome.Caves ? (a.Position.X % 32 < 16 ? Pal.Violet : Pal.Teal) : Pal.Amber;
-                lights.Add(a is FireBar bar ? bar.Pivot : a.Center, GlowRadius, 0, c.WithAlpha(0.3f + MathX.Wave(time + a.Position.X * 0.01f, 1.1f, 0.06f)));
+                lights.Add(a is FireBar bar ? bar.Pivot : a.DrawCenter, GlowRadius, 0, c.WithAlpha(0.3f + MathX.Wave(time + a.Position.X * 0.01f, 1.1f, 0.06f)));
             }
         }
         lights.Draw(r, stage.Camera);
