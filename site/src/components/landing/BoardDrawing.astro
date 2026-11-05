@@ -17,7 +17,7 @@ const left = 10;
 const seated = [
   { family: 'platform', name: 'SDL 3' },
   { family: 'graphics', name: '2D' },
-  { family: 'audio', name: 'Mixer' },
+  { family: 'audio', name: 'Sound' },
   { family: 'input', name: 'Actions' },
 ] as const;
 const x = (i: number) => left + wall + i * (socket + wall); // a socket's inner left edge
@@ -36,7 +36,7 @@ const empty = x(seated.length);
 ---
 <svg class="illustration board-drawing" viewBox={`0 0 ${right + left} 300`} role="img" aria-labelledby="board-drawing-title board-drawing-desc">
   <title id="board-drawing-title">MicroEngine drawn as a board of sockets</title>
-  <desc id="board-drawing-desc">A kernel bar with five sockets. Four hold modules that ship today: the SDL 3 platform, 2D graphics, the audio mixer and input actions. The fifth socket is empty and dashed: 3D is in the repository but not published.</desc>
+  <desc id="board-drawing-desc">A kernel bar with five sockets. Four hold modules that ship today: the SDL 3 platform, 2D graphics, sound and input actions. The fifth socket is empty and dashed: 3D is in the repository but not published.</desc>
   <path class="board-fill" d={boardPath} />
   {seated.map((m, i) => {
     const mx = x(i) + gap;

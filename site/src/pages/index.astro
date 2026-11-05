@@ -22,7 +22,8 @@ import FrameStrip from '../components/brand/FrameStrip.astro';
 import Socket from '../components/brand/Socket.astro';
 import { demoGames } from '../data/games';
 import { distribution, sdk } from '../data/distribution';
-import { facts, graphics, ledger, statusWords, upstream } from '../data/landing/content';
+import { facts, graphicsIds, upstream } from '../data/landing/content.ts';
+import { availabilityLabels, byStatus, capabilities, socketStatus, type Availability } from '../data/capabilities.ts';
 import { excerpt } from '../lib/source.mjs';
 
 const sample = 'samples/HelloEngine/Program.cs';
@@ -32,6 +33,11 @@ const catalogFile = 'src/MicroEngine.Desktop/DesktopLauncher.cs';
 const catalog = excerpt(catalogFile, /public static PlatformCatalog CreateCatalog/, /^\s*$/);
 
 // Meadow Run draws every pixel in code: four of its own captures, in the order a player meets them.
+// What MicroEngine draws, by status, and where the whole project stands: both read from the capability list.
+const graphics = graphicsIds.map(id => capabilities.find(c => c.id === id)!);
+const statuses: Availability[] = ['available', 'next', 'repository', 'planned'];
+const ledger = statuses.map(status => ({ status, items: byStatus(status) }));
+
 const meadow = demoGames.find(g => g.id === 'MeadowRun')!;
 const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
   const image = await getImage({ src: shot.src, width: 640, format: 'png' });
@@ -92,9 +98,9 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
     </div>
     <SocketBoard labelledby="modules-title" />
     <dl class="status-key">
-      {(['available', 'next', 'repo'] as const).map(status => (
-        <div data-status={status}><dt><span class="status-mark" aria-hidden="true"></span>{statusWords[status]}</dt>
-          <dd>{status === 'available' ? 'in the SDK on nuget.org' : status === 'next' ? 'merged, arrives with the next SDK version' : 'drawn as an empty dashed socket: no package carries it'}</dd></div>
+      {statuses.map(status => (
+        <div data-status={socketStatus[status]}><dt><span class="status-mark" aria-hidden="true"></span>{availabilityLabels[status].label}</dt>
+          <dd>{status === 'available' ? 'seated: in the SDK on nuget.org' : status === 'next' ? 'seated: arrives with the next SDK version' : status === 'repository' ? 'an empty dashed socket: in no package' : 'an empty dotted socket: not built'}</dd></div>
       ))}
     </dl>
     <div class="split catalog">
@@ -129,7 +135,7 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
         </div>
         <div class="sprite-out">
           <PixelSprite file={sample} scale={12} label="The star sprite, drawn from the map in the code beside it" />
-          <p class="label">The sprite that code draws, read from the same file</p>
+          <p class="label">= the sprite it draws</p>
         </div>
       </figure>
     </div>
@@ -144,7 +150,8 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
     <FrameStrip frames={frames} caption="Meadow Run, a demo whose art and music are all generated in code: the title screen, the world map, Sunny Meadow and Crystal Caves." />
     <ul class="graphics-sockets">
       {graphics.map(item => (
-        <Socket as="li" family="graphics" contract={item.contract} module={item.module} note={item.note} status={item.status} empty={item.empty} />
+        <Socket as="li" family="graphics" contract={item.contract} module={item.name} note={item.summary} status={socketStatus[item.status]}
+          empty={item.status === 'repository' || item.status === 'planned'} />
       ))}
     </ul>
     <p class="more"><a href="/docs/manual/rendering/">Graphics in the manual</a> · <a href="/docs/manual/text/">Text</a></p>
@@ -166,7 +173,7 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
     <div class="section-head">
       <p class="label">Proof</p>
       <h2 id="demos-title">Four finished games built with it</h2>
-      <p>The demos are how MicroEngine checks itself: complete games with a title screen, an ending, saves and achievements, from fully procedural to built from asset files. Each one runs in the browser on its page.</p>
+      <p>The demos are how MicroEngine checks itself: complete games with a title screen, an ending, saves and achievements, from fully procedural to built from asset files. Each one runs on its page in desktop and mobile browsers, with a keyboard, a gamepad or on-screen touch controls.</p>
     </div>
     <ul class="demo-grid">
       {demoGames.map((game, i) => <li><DemoCard game={game} loading={i < 2 ? 'eager' : 'lazy'} /></li>)}
@@ -182,9 +189,10 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
     </div>
     <div class="ledger">
       {ledger.map(column => (
-        <section data-status={column.status} aria-labelledby={`ledger-${column.status}`}>
-          <h3 id={`ledger-${column.status}`}><span class="status-mark" aria-hidden="true"></span>{column.title}</h3>
-          <ul>{column.items.map(item => <li>{item}</li>)}</ul>
+        <section data-status={socketStatus[column.status]} aria-labelledby={`ledger-${column.status}`}>
+          <h3 id={`ledger-${column.status}`}><span class="status-mark" aria-hidden="true"></span>{availabilityLabels[column.status].label}</h3>
+          <p class="ledger-meaning">{availabilityLabels[column.status].meaning}</p>
+          <p class="ledger-count"><a href="#modules">{column.items.length} {column.items.length === 1 ? 'module' : 'modules'} on the board</a></p>
         </section>
       ))}
     </div>
@@ -284,8 +292,10 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
   .ledger h3 { display: flex; align-items: center; gap: var(--space-xs); font-family: var(--font-mono); font-weight: 500; font-size: var(--text-xs);
     text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--status-color); }
   .ledger [data-status='repo'] { border-top-style: dashed; }
-  .ledger ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-xs); }
-  .ledger li { font-size: var(--text-sm); color: var(--color-ink-2); }
+  .ledger [data-status='planned'] { border-top-style: dotted; }
+  .ledger-meaning { font-size: var(--text-sm); color: var(--color-ink-2); }
+  .ledger-count { font-family: var(--font-mono); font-size: var(--text-xs); }
+  .ledger a { color: var(--color-ink); }
   .limits { margin: var(--space-xl) 0 0; padding: 0; list-style: none; display: grid; gap: var(--space-xs); }
   .limits li { color: var(--color-ink-2); max-width: var(--measure); }
   .limits strong { color: var(--color-ink); font-weight: 600; }
@@ -304,12 +314,11 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
   }
   @media (min-width: 48rem) {
     .demo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .ledger { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .graphics-sockets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ledger, .graphics-sockets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (min-width: 64rem) {
     .opening { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); padding-top: var(--space-3xl); }
-    .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .facts, .ledger, .graphics-sockets { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .split { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); }
     .sprite-figure { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
     .sprite-out { flex-direction: column; max-width: 9rem; text-align: center; }

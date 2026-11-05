@@ -11,7 +11,7 @@ const rows = platforms.map(row => {
   return { ...row, command, product: colon >= 0 ? row.build.slice(colon + 2) : row.build };
 });
 ---
-<ul class="platform-list">
+<div class="platforms-box"><ul class="platform-list">
   {rows.map(row => (
     <li>
       <a class="platform-name" href={`/platforms/#${row.id}`}>{row.name}</a>
@@ -20,9 +20,10 @@ const rows = platforms.map(row => {
       <span class="platform-product">{row.product}</span>
     </li>
   ))}
-</ul>
+</ul></div>
 
 <style>
+  .platforms-box { container-type: inline-size; min-width: 0; }
   .platform-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr);
     border-top: var(--rule-thin) solid var(--color-rule); }
   .platform-list li { display: grid; gap: var(--space-2xs) var(--space-md); align-items: baseline; min-width: 0;
@@ -33,9 +34,12 @@ const rows = platforms.map(row => {
   .platform-support { justify-self: end; }
   .platform-command { grid-column: 1 / -1; font-size: var(--text-xs); color: var(--color-ink); overflow-wrap: anywhere; }
   .platform-product { grid-column: 1 / -1; font-size: var(--text-sm); color: var(--color-ink-2); }
-  @media (min-width: 64rem) {
-    .platform-list li { grid-template-columns: minmax(0, 10rem) minmax(0, 7rem) minmax(0, 17rem) minmax(0, 1fr); }
-    .platform-support { justify-self: start; }
-    .platform-command, .platform-product { grid-column: auto; }
+  /* Two lines per platform wherever it sits: name and support, then the command and what it produces. */
+  @container (min-width: 36rem) {
+    .platform-list li { grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) auto; }
+    .platform-name { grid-row: 1 / span 2; }
+    .platform-support { grid-column: 3; grid-row: 1; }
+    .platform-command { grid-column: 2; grid-row: 1; }
+    .platform-product { grid-column: 2 / -1; grid-row: 2; }
   }
 </style>

@@ -1,41 +1,42 @@
 ---
-// The socket board: MicroEngine's modularity drawn as the mark is built. The kernel is a solid bar; the families hang
-// from it in bays separated by walls, open at the bottom; every implementation is a module seated in its bay, or an
-// empty dashed socket when no package carries it. Each one's status is written out (site/design/README.md, section 7).
-// Data: src/data/landing/board.ts.
+// The socket board: MicroEngine's modularity drawn as the mark is built. The kernel is the solid bar at the top, with
+// its own modules seated in it; the other families hang from it in bays separated by walls, open at the bottom. Every
+// module is seated in its bay when a package carries it (now or in the next SDK version), or drawn as an empty socket
+// (dashed: in the repository; dotted: planned). Each status is written out (site/design/README.md, section 7).
+// Data: src/data/capabilities.ts, the site's single list of what the engine can do.
 import FamilyIcon from '../brand/FamilyIcon.astro';
-import { families } from '../brand/geometry.mjs';
-import { bays, kernel, statusWords } from '../../data/landing/board';
+import BoardSlot from './BoardSlot.astro';
+import { byFamily, familyLabels, families } from '../../data/capabilities.ts';
+import { openSockets } from '../../data/landing/content.ts';
 
 interface Props { labelledby: string }
 const { labelledby } = Astro.props;
+const bays = families.filter(f => f !== 'kernel').map(family => ({ family, modules: byFamily(family) }));
 ---
 <div class="socket-board" role="group" aria-labelledby={labelledby}>
-  <p class="rail">
-    <span class="rail-name">{kernel.name}</span>
-    <span class="rail-note">{kernel.note}</span>
-  </p>
+  <div class="rail" data-family="kernel">
+    <p class="rail-head">
+      <FamilyIcon family="kernel" size={16} />
+      <span class="rail-name">{familyLabels.kernel}</span>
+      <span class="rail-note">the board every module seats in</span>
+    </p>
+    <ul class="slots rail-slots">
+      {byFamily('kernel').map(m => <BoardSlot module={m} />)}
+    </ul>
+  </div>
   <ul class="bays">
-    {bays.map(bay => (
-      <li class="bay" data-family={bay.family}>
+    {bays.map(({ family, modules }) => (
+      <li class="bay" data-family={family}>
         <p class="bay-head">
-          <FamilyIcon family={bay.family} size={16} />
-          <a class="bay-name" href={bay.href}>{families[bay.family].label}</a>
-          {bay.contract && <code>{bay.contract}</code>}
+          <FamilyIcon family={family} size={16} />
+          <span class="bay-name">{familyLabels[family]}</span>
         </p>
         <ul class="slots">
-          {bay.slots.map(slot => (
-            <li class="slot" data-state={slot.status === 'repo' ? 'empty' : slot.status === 'open' ? 'open' : 'seated'} data-status={slot.status === 'open' ? undefined : slot.status}>
-              <span class="socket">
-                <span class="module">
-                  <span class="module-name">{slot.name}</span>
-                  <span class="module-note">{slot.note}</span>
-                </span>
-              </span>
-              <span class="slot-status">
-                {slot.status !== 'open' && <span class="status-mark" aria-hidden="true"></span>}
-                {statusWords[slot.status]}
-              </span>
+          {modules.map(m => <BoardSlot module={m} />)}
+          {openSockets.filter(open => open.family === family).map(open => (
+            <li class="slot" data-state="open">
+              <span class="socket"><span class="module"><span class="module-name">{open.name}</span><span class="module-note">{open.note}</span></span></span>
+              <span class="slot-status">Extension point</span>
             </li>
           ))}
         </ul>
@@ -47,41 +48,54 @@ const { labelledby } = Astro.props;
 <style>
   /* The board is ink; the bays are paper cut out of it, so the walls between them are the board showing through. */
   .socket-board { display: grid; min-width: 0; background: var(--color-ink); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
-  .rail { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2xs) var(--space-sm); margin: 0;
-    padding: var(--space-sm) var(--space-md); color: var(--color-paper); font-family: var(--font-mono); font-size: var(--text-xs);
-    letter-spacing: var(--tracking-label); text-transform: uppercase; }
-  .rail-name { font-weight: 500; }
-  .rail-note { color: var(--color-paper-3); text-transform: none; letter-spacing: 0; }
+  .rail { display: grid; gap: var(--space-sm); padding: var(--space-sm) var(--space-md) var(--space-md); color: var(--color-paper); }
+  .rail-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) var(--space-xs); margin: 0;
+    font-family: var(--font-mono); font-size: var(--text-xs); }
+  .rail-name { font-weight: 500; text-transform: uppercase; letter-spacing: var(--tracking-label); }
+  .rail-note { color: var(--color-paper-3); }
+  /* The kernel's own modules sit in sockets cut into the bar. */
+  .rail .rail-slots :global(.socket) { background: var(--color-paper); border-color: var(--color-paper); }
+  .rail .rail-slots :global(.slot-status) { color: var(--color-paper-3); }
+  .rail .rail-slots :global(.status-mark) { --status-color: var(--color-paper-3); }
   .bays { list-style: none; margin: 0; padding: 0 var(--rule-pixel); display: grid; gap: var(--rule-pixel);
     grid-template-columns: minmax(0, 1fr); }
   .bay { display: grid; align-content: start; gap: var(--space-sm); padding: var(--space-md) var(--space-md) var(--space-lg);
     background: var(--color-paper); min-width: 0; }
-  .bay-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs); margin: 0; color: var(--color-ink-2);
-    font-family: var(--font-mono); font-size: var(--text-xs); }
-  .bay-name { color: var(--family-color); font-weight: 500; text-transform: uppercase; letter-spacing: var(--tracking-label);
-    text-decoration: none; display: inline-flex; align-items: center; min-height: var(--space-lg); }
-  .bay-name:hover { text-decoration: underline; color: var(--family-color); }
-  .bay-head code { font-size: inherit; color: var(--color-ink-2); }
+  .bay-head { display: flex; align-items: center; gap: var(--space-xs); margin: 0; font-family: var(--font-mono); font-size: var(--text-xs); }
+  .bay-name { color: var(--family-color); font-weight: 500; text-transform: uppercase; letter-spacing: var(--tracking-label); }
   .slots { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-sm); }
-  .slot { display: grid; gap: var(--space-2xs); min-width: 0; }
+  .rail-slots { grid-template-columns: minmax(0, 1fr); gap: var(--space-xs) var(--space-md); }
+  .slots :global(.slot) { display: grid; gap: var(--space-2xs); align-content: start; min-width: 0; }
   /* A socket: a hairline bay with the module seated one gap inside it, as in the mark. */
-  .socket { display: block; padding: var(--rule-gap); border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm); }
-  .module { display: grid; gap: 2px; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm);
+  .slots :global(.socket) { display: block; padding: var(--rule-gap); border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm); }
+  .slots :global(.module) { display: grid; gap: 2px; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm);
     background: color-mix(in oklch, var(--family-color) var(--tint), var(--color-paper)); border: var(--rule-thin) solid var(--family-color);
     transition: transform var(--dur-fast) var(--ease-seat); }
-  .module-name { font-family: var(--font-mono); font-weight: 500; font-size: var(--text-sm); color: var(--color-ink); overflow-wrap: anywhere; }
-  .module-note { font-size: var(--text-xs); color: var(--color-ink-2); line-height: var(--leading-snug); }
-  .slot[data-state='seated']:hover .module { transform: translateY(-2px); }
-  /* Not published: the socket is dashed and empty; the name is written inside, in neutral ink. */
-  .slot[data-state='empty'] .socket { border-style: dashed; border-color: var(--color-ink-3); }
-  .slot[data-state='empty'] .module { background: transparent; border-color: transparent; }
-  .slot[data-state='empty'] .module-name { color: var(--color-ink-2); }
+  .slots :global(.module-name) { font-family: var(--font-mono); font-weight: 500; font-size: var(--text-sm); color: var(--color-ink);
+    overflow-wrap: anywhere; text-decoration: none; }
+  .slots :global(a.module-name:hover) { text-decoration: underline; }
+  .slots :global(.module-note) { display: flex; flex-wrap: wrap; gap: 0 var(--space-xs); font-size: var(--text-xs); color: var(--color-ink-2); line-height: var(--leading-snug); }
+  .slots :global(.module-note code) { font-size: inherit; color: var(--color-ink-2); overflow-wrap: anywhere; }
+  .slots :global(.slot[data-state='seated']:hover .module) { transform: translateY(-2px); }
+  /* Not in any package: the socket is empty, dashed (in the repository) or dotted (planned); the name is in neutral ink. */
+  .slots :global(.slot[data-state='empty'] .socket) { border-style: dashed; border-color: var(--color-ink-3); }
+  .slots :global(.slot[data-status='planned'] .socket) { border-style: dotted; }
+  .slots :global(.slot[data-state='empty'] .module) { background: transparent; border-color: transparent; }
+  .slots :global(.slot[data-state='empty'] .module-name) { color: var(--color-ink-2); }
   /* An extension point: an open socket waiting for a module of your own. */
-  .slot[data-state='open'] .module { background: transparent; border: var(--rule-thin) dashed var(--family-color); }
-  .slot[data-state='open'] .module-name { color: var(--color-ink-2); }
-  .slot-status { display: flex; align-items: center; gap: var(--space-xs); color: var(--status-color, var(--color-ink-3));
+  .slots :global(.slot[data-state='open'] .module) { background: transparent; border: var(--rule-thin) dashed var(--family-color); }
+  .slots :global(.slot[data-state='open'] .module-name) { color: var(--color-ink-2); }
+  .slots :global(.slot-status) { display: flex; align-items: center; gap: var(--space-xs); color: var(--status-color, var(--color-ink-3));
     font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-label); text-transform: uppercase; }
-  @media (prefers-reduced-motion: reduce) { .module { transition: none; } .slot[data-state='seated']:hover .module { transform: none; } }
-  @media (min-width: 40rem) { .bays { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (min-width: 64rem) { .bays { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (prefers-reduced-motion: reduce) {
+    .slots :global(.module) { transition: none; }
+    .slots :global(.slot[data-state='seated']:hover .module) { transform: none; }
+  }
+  @media (min-width: 40rem) {
+    .bays, .rail-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 64rem) {
+    .bays { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .rail-slots { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
 </style>
