@@ -170,6 +170,18 @@ async function platform(browser, label, game) {
   const audio = await page.evaluate(() => window.microengine.audio());
   check(`${name}: audio runs after the starting click`, audio.length > 0 && audio.every(s => s === 'running'), audio.join(','));
 
+  // The canvas fills the page and the game frame fills the canvas as far as its aspect allows, centred (the page is
+  // 960×600, the games 16:9: a frame the full width, letterboxed above and below).
+  const layout = await page.evaluate(() => {
+    const c = document.getElementById('canvas'), r = c.getBoundingClientRect();
+    const [, x, y, w, h] = (window.microengine.controls().split('\n').find(l => l.startsWith('frame ')) ?? 'frame 0 0 0 0').split(' ').map(Number);
+    return { page: [innerWidth, innerHeight], css: [Math.round(r.width), Math.round(r.height)], pixels: [c.width, c.height], frame: [x, y, w, h] };
+  });
+  const [cw, ch] = layout.pixels, [fx, fy, fw, fh] = layout.frame;
+  check(`${name}: the canvas fills the page and the game frame fills the canvas`,
+    layout.css[0] === layout.page[0] && layout.css[1] === layout.page[1] && (fw >= cw * 0.9 || fh >= ch * 0.9)
+      && Math.abs(fx + fw / 2 - cw / 2) <= 2 && Math.abs(fy + fh / 2 - ch / 2) <= 2, JSON.stringify(layout));
+
   const u0 = await updates(page), t0 = Date.now();
   await sleep(3000);
   const rate = (await updates(page) - u0) / ((Date.now() - t0) / 1000);
@@ -369,6 +381,12 @@ async function repeat(browser, label) {
 const keyFor = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', confirm: 'Enter', cancel: 'Backspace',
   action: 'KeyC', pause: 'Escape', jump: 'KeyZ', run: 'KeyX', fire: 'KeyX', lock: 'KeyC' };
 
+/**
+ * The key to type through the browser's driver. WebDriver BiDi (Firefox) types puppeteer's 'Enter' as U+E007, the
+ * keypad's Enter (code NumpadEnter); the main Enter key, which the games bind, is U+E006 there.
+ */
+const typed = (browserName, key) => browserName === 'firefox' && key === 'Enter' ? '\uE006' : key;
+
 /** Script edges as { update, key, down } plus capture and quit updates (the InputScript format). */
 function parseScript(text) {
   const edges = [], captures = [];
@@ -412,7 +430,8 @@ async function keyboard(browser, label) {
       const now = await updates(page);
       while (e < edges.length && edges[e].update <= now) {
         lag = Math.max(lag, now - edges[e].update);
-        await (edges[e].down ? page.keyboard.down(edges[e].key) : page.keyboard.up(edges[e].key));
+        const key = typed(label, edges[e].key);
+        await (edges[e].down ? page.keyboard.down(key) : page.keyboard.up(key));
         e++;
       }
       while (c < captures.length && captures[c].update <= now) await page.screenshot({ path: path.join(dir, captures[c++].name) });
@@ -495,8 +514,12 @@ async function audio(browser, label) {
   await sleep(800);
   const hiddenAudio = await page.evaluate(() => window.microengine.audio());
   await visibility(false);
-  await sleep(800);
-  const shownAudio = await page.evaluate(() => window.microengine.audio());
+  // Resuming takes a while on a loaded runner (Firefox under Xvfb took over 800 ms): wait up to 5 s for it.
+  let shownAudio = [];
+  for (const end = Date.now() + 5000; Date.now() < end; await sleep(200)) {
+    shownAudio = await page.evaluate(() => window.microengine.audio());
+    if (shownAudio.length > 0 && shownAudio.every(a => a === 'running')) break;
+  }
   check(`${label} audio: a hidden page suspends its sound and resumes it when shown`,
     hiddenAudio.length > 0 && hiddenAudio.every(a => a === 'suspended') && shownAudio.every(a => a === 'running'),
     `${hiddenAudio.join(',')} -> ${shownAudio.join(',')}`);

@@ -157,7 +157,10 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
             throw new InvalidOperationException($"SDL could not start its video subsystem: {SDL_GetError()}");
         Mark("video", ref started);
         int scale = request.Scale ?? _settings.Scale;
-        var flags = SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY;
+        var flags = SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
+        // A page's canvas keeps one pixel per CSS pixel, as the page's touches and insets are measured (and as raylib's
+        // was): with SDL's high pixel density the backing store and the canvas's CSS size stop following the page.
+        if (!_browser) flags |= SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY;
         // A window placed on a chosen display or opened full screen is shown once it is there, so it never appears
         // first where the system would have put it.
         bool placed = !mobile && (graphics.Display is not null || graphics.WindowMode != WindowMode.Windowed);

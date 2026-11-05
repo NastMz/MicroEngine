@@ -57,6 +57,19 @@ public sealed class SdlBrowserPageTests
     }
 
     [TestMethod]
+    public void The_page_s_screen_is_the_window_while_the_game_draws_into_its_canvas()
+    {
+        var screen = ((IScreenView)_platform!).ScreenPixels;
+        _page.Screen(4, 0, 4, 0, 1, touchFirst: false);
+        _platform.BeginFrame(); // the game's canvas (160×90) is the render target until the frame ends
+        Assert.AreEqual(new Vector2(screen.Width, screen.Height), _platform.Touch.Size, "Measured on the window, not on the bound canvas.");
+        Assert.AreEqual(new RectF(4, 0, screen.Width - 8, screen.Height), _platform.Touch.SafeArea);
+        var frame = ((IScreenView)_platform).WorldFrame;
+        Assert.IsTrue(frame.Width > 160 && frame.Width <= screen.Width - 8, $"The frame is laid out on the window ({frame}).");
+        _platform.EndFrame();
+    }
+
+    [TestMethod]
     public void A_new_run_on_the_same_page_starts_without_the_last_run_s_touches()
     {
         _page.Pointer(3, 0, 10, 10);

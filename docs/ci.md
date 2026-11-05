@@ -441,7 +441,7 @@ web backend) and in validate (all four games), it runs these suites, and the job
 
 | Suite | What it shows |
 | --- | --- |
-| `platform` | loading, starting by a gesture, audio running after it, about 60 updates per second, held, released and sub-frame key presses, focus loss releasing keys, saves (corrupt and full storage, with Neon Rift's and Meadow Run's), playing again without reloading |
+| `platform` | loading, starting by a gesture, audio running after it, the canvas filling the page and the game frame filling the canvas, about 60 updates per second, held, released and sub-frame key presses, focus loss releasing keys, saves (corrupt and full storage, with Neon Rift's and Meadow Run's), playing again without reloading |
 | `scripts` | the games' scripts replayed in the browser to their end; their captures are then compared byte for byte with the same scripts on the desktop build (raylib on Mesa, `desktop.mjs` with the same `--out`). The comparison is **measured, not a gate**: on the first runs most captures were identical, but some scrolling scenes drift by a few pixels between the two builds (Meadow Run's level, Neon Rift's stage 1, a few Courtyard Key frames), so differences are listed in the job summary and kept as an artifact |
 | `keyboard` | the same scripts typed through the browser's real key events reach the scene the scripted run ends in |
 | `framerate` | 60 updates per second whether the page draws every frame, every second or every fourth |
