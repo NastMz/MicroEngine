@@ -165,7 +165,7 @@ public sealed class Spitter : Enemy
             var dir = ToHero;
             if (dir.LengthSquared() < 1 || dir.Length() > 170) { _cycle = 0; return; }
             dir = Vector2.Normalize(dir);
-            World.Spawn(new Projectile(World, Center + dir * 6, dir * 92, "seed", damage: 1));
+            new Projectile(World, Center + dir * 6, dir * 92, "seed", damage: 1);
             World.Audio.Play("spit", 0.6f, 1f, 0.1f);
         }
         if (_cycle >= Idle + Swell + Fire) _cycle = 0;

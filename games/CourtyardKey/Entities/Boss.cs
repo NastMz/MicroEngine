@@ -128,7 +128,7 @@ public sealed class Warden : Enemy
                     for (int i = 0; i < count; i++)
                     {
                         var dir = MathX.FromAngle(offset + i * MathF.Tau / count);
-                        World.Spawn(new Projectile(World, Center + dir * 12, dir * 80, "orb", damage: 1));
+                        new Projectile(World, Center + dir * 12, dir * 80, "orb", damage: 1);
                     }
                     World.Audio.Play("spit", 0.9f, 0.6f);
                     Enter(WardenState.Stalk);
