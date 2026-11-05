@@ -2,8 +2,8 @@
 
 MicroEngine is a small, code-first 2D framework for C#/.NET 10, for pixel-art and HD games. It is
 deliberately compact: a kernel that knows no domain, one backend-independent core library on top of it, two platform
-backends (SDL 3 for Windows, Linux, macOS,
-Android and iOS; raylib for browsers and as a desktop alternative), and games that are ordinary .NET programs. This
+backends (SDL 3 for Windows, Linux, macOS, Android and iOS, and, next SDK version, browsers; raylib for browsers and as
+a desktop alternative), and games that are ordinary .NET programs. This
 document explains how the pieces fit and why.
 
 ## Layers
@@ -11,66 +11,76 @@ document explains how the pieces fit and why.
 ```mermaid
 flowchart TB
   accTitle: Layers
-  accDescr: Games and samples start through the hosts, which compose them through hosting and offer the SDL and raylib backends; both implement the platform contract, which builds on the kernel.
-  games["<b> games/* </b> <br/> Game rules, content, art and music <br/> (MeadowRun, CourtyardKey, TrailDuel, NeonRift)"]
-  samples["<b> samples/* </b> <br/> Minimal examples (HelloEngine)"]
-  hosts["<b> src/MicroEngine.Desktop, src/MicroEngine.Cli/Hosts </b> <br/> Hosts: choose a platform profile, run the game"]
-  sdl["<b> src/MicroEngine.Sdl </b> <br/> SDL 3: window, 2D renderer, input, touch, audio, lifecycle"]
-  raylib["<b> src/MicroEngine.Raylib </b> <br/> raylib: window, renderer, audio, input; WebAssembly"]
-  core["<b> src/MicroEngine </b> <br/> Core: loop, scenes, input, graphics model, world, audio synthesis, UI, platform contract"]
-  platform["<b> src/MicroEngine.Platform </b> <br/> Platform contracts: host, surface, capabilities, storage, content sources"]
-  graphics["<b> src/MicroEngine.Graphics </b> <br/> Graphics device contract: capabilities, resources, command lists, the reference device"]
-  input["<b> src/MicroEngine.Input </b> <br/> Input: device events, players, layers, text, actions and saved bindings"]
-  touch["<b> src/MicroEngine.Input.Touch </b> <br/> Touch controls: the touch screen contract, on-screen controls and their look"]
-  hosting["<b> src/MicroEngine.Hosting </b> <br/> Hosting: launch requests and their rules, platform selection, the composition a game configures once"]
-  content["<b> src/MicroEngine.Content </b> <br/> Content: asset store, typed handles, scopes, loader registry, zip and listed sources"]
-  audio["<b> src/MicroEngine.Audio </b> <br/> Audio: the one mixer over PCM sinks, sound bank and music, synthesis"]
-  scene["<b> src/MicroEngine.Scene </b> <br/> Scene world: entity ids, transforms, attachments, interpolation, world clocks"]
-  physics["<b> src/MicroEngine.Physics, src/MicroEngine.Physics.Tiles </b> <br/> Physics: the 2D contract and capabilities; tile grids and the swept tile backend"]
-  saves["<b> src/MicroEngine.Saves </b> <br/> Saves: JSON save slots over the platform storage, the optional saves module"]
-  text["<b> src/MicroEngine.Text </b> <br/> Text: the built-in pixel font, scalable TTF/OTF fonts, measurement and wrapping, the font loader"]
-  achievements["<b> src/MicroEngine.Achievements </b> <br/> Achievements: catalog, tracker, the optional achievements module"]
-  ui["<b> src/MicroEngine.UI </b> <br/> UI: widgets, layout in UI units, focus and navigation, themes, the UI input layer"]
-  kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
+  accDescr: Games and samples start through the hosts, which choose the SDL or raylib backend and compose the game through hosting. The core builds on the engine modules; the modules build on the graphics, input, content and platform contracts; everything builds on the kernel. The tier-1 graphics device, the 3D path and the Box2D physics backend are optional assemblies beside them.
+  games["Games and samples"]
+  hosts["Desktop launcher,<br/>tool hosts"]
+  sdl["Sdl<br/>(desktops, phones, browsers)"]
+  raylib["Raylib<br/>(desktops, browsers)"]
+  sdlgpu["Graphics.SdlGpu<br/>(tier-1 device)"]
+  core["MicroEngine (core)"]
+  hosting["Hosting"]
+  ui["UI"]
+  achievements["Achievements"]
+  saves["Saves"]
+  touch["Input.Touch"]
+  text["Text"]
+  g2d["Graphics2D"]
+  audio["Audio<br/>(and Audio.Retro)"]
+  tiles["Physics.Tiles"]
+  box2d["Physics.Box2D<br/>(optional package)"]
+  physics["Physics"]
+  g3d["Graphics3D<br/>(repository only)"]
+  scene["Scene"]
+  graphics["Graphics"]
+  input["Input"]
+  content["Content"]
+  platform["Platform"]
+  kernel["Kernel"]
   games -- started by --> hosts
-  samples -- started by --> hosts
+  games -- use --> core
   hosts -- choose --> sdl
   hosts -- choose --> raylib
-  hosts -- compose through --> hosting
-  sdl -- implements --> core
-  raylib -- implements --> core
-  sdl -- implements --> platform
-  raylib -- implements --> platform
-  games -- use --> core
-  core -- builds on --> platform
-  core -- builds on --> kernel
-  platform -- builds on --> kernel
-  core -- builds on --> scene
-  scene -- builds on --> kernel
-  core -- builds on --> physics
-  physics -- builds on --> scene
-  graphics -- builds on --> platform
-  graphics -- builds on --> kernel
-  core -- builds on --> hosting
-  hosting -- builds on --> platform
-  core -- builds on --> input
-  input -- builds on --> platform
-  core -- builds on --> touch
-  touch -- builds on --> input
-  core -- builds on --> content
-  content -- builds on --> platform
-  core -- builds on --> audio
-  audio -- builds on --> content
-  core -- builds on --> saves
-  saves -- builds on --> platform
-  core -- builds on --> text
-  text -- builds on --> content
-  core -- builds on --> achievements
-  achievements -- builds on --> saves
-  core -- builds on --> ui
-  ui -- builds on --> text
-  ui -- builds on --> input
+  sdl -- carries --> sdlgpu
+  sdl --> core
+  raylib --> core
+  core --> hosting
+  core --> ui
+  core --> achievements
+  core --> touch
+  core --> audio
+  core --> tiles
+  ui --> text
+  ui --> input
+  achievements --> saves
+  achievements --> g2d
+  touch --> g2d
+  touch --> input
+  text --> g2d
+  text --> content
+  audio --> content
+  tiles --> physics
+  box2d --> physics
+  physics --> scene
+  g3d --> scene
+  g3d --> content
+  g3d --> graphics
+  g2d --> graphics
+  sdlgpu --> graphics
+  graphics --> platform
+  input --> platform
+  content --> platform
+  saves --> platform
+  hosting --> platform
+  platform --> kernel
+  scene --> kernel
 ```
+
+Each box is an assembly, named without its `MicroEngine.` prefix; the table under [Core modules](#core-modules) says what each holds. Arrows read "references". The diagram leaves out arrows that follow from others: every assembly references the
+kernel, those that touch the host also the platform contracts, and the core references every engine module. The
+`MicroEngine` package carries the kernel, the contracts, hosting, the engine modules and the core; the `MicroEngine.Sdl`
+package carries the tier-1 device. The 3D path (`MicroEngine.Graphics3D`) and the Box2D backend
+(`MicroEngine.Physics.Box2D`) are not in the SDK packages: the 3D path is in the repository only, and the Box2D backend
+is an optional package of its own, not published yet.
 
 Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
 `MicroEngine.Kernel`, shipped inside the `MicroEngine` package. It references no other engine assembly; modules
@@ -185,7 +195,7 @@ four device interfaces:
 
 | Interface | Responsibility | Implementations |
 | --- | --- | --- |
-| `IRenderer` | Immediate-mode drawing into the virtual canvas | `SdlRenderer`, `RaylibRenderer`, `HeadlessRenderer` |
+| `IRenderer` | Immediate-mode drawing into the virtual canvas | `DeviceRenderer` over each backend's graphics device (SDL_Renderer, SDL_GPU, raylib), `HeadlessRenderer` |
 | `IGraphicsDevice` | Turning `PixelImage`s into textures with a filter (nearest, linear); textures take region updates | SDL, raylib, headless |
 | `IAudioDevice` | Loading/playing PCM sounds and looping music | SDL, raylib, `SilentAudioDevice` |
 | `IInputBackend` | Device events: keys, text, pointers, wheel, gamepads, devices connecting (a capability) | `HeadlessInputBackend` |
@@ -197,7 +207,9 @@ Hosts choose a platform through a `PlatformCatalog` of named `PlatformProfile`s 
 renderer and graphics device stay together because they share a graphics context ([Backends](manual/backends.md)).
 SDL is the default on desktops and phones. The raylib backend also runs in a browser (raylib compiled to
 WebAssembly): `BrowserLauncher` returns a `GameSession` that the page starts, ticks from `requestAnimationFrame` and
-restarts, and keeps saves in `localStorage`. Next SDK version: every host composes the game with its `Configure` entry
+restarts, and keeps saves in `localStorage`. Next SDK version (not published yet): SDL 3 also runs in a browser
+(compiled to WebAssembly, with its own `BrowserLauncher` and `BrowserPage` in `MicroEngine.Sdl`), chosen with
+`microengine package web --web-backend sdl`; raylib stays the default web backend. Every host composes the game with its `Configure` entry
 point through the same launcher model (`GameHost`), so a page's scripted run is deterministic like a desktop one.
 `microengine package web` builds any game into a static site
 ([The browser host](examples/embedding.md)).
@@ -234,27 +246,36 @@ scripted playthrough tests and reproducible screenshots possible.
 
 ## Core modules
 
-| Namespace | Contents |
-| --- | --- |
-| `MicroEngine` | `Color`, `RectF`, `MathX` (approach, damp, waves), `Ease`; next SDK version: `ColorF` (linear, premultiplied helpers), all in the kernel assembly |
-| `MicroEngine.Kernel` (next SDK version) | `EngineBuilder`, `Engine`, `IEngineModule`, `ServiceRegistry`, `CapabilityRegistry`, `FrameSchedule`, `FramePhase`, `FrameContext`, `TimeSettings`, `FrameClock`, `IEngineLifecycle`, `ILog`, `Handle<T>`, `HandlePool<T>` |
-| `MicroEngine.Platform` (next SDK version) | `IPlatformHost`, `IMonotonicClock`, `IEngineEventSink`, `ISurface`, `HostSurface`, `IDisplayPacing`, `IPreciseDelay`, `IStorage`, `IContentSource`, `FolderContentSource` |
-| `MicroEngine.Graphics` in `MicroEngine.Graphics2D.dll` (next SDK version) | `IRenderer2D`, `Renderer2D` (the batcher the `IRenderer` façade draws through), `BatchSettings`, `RenderState`, `SortMode`, `Camera2D`, and the 2D model moved from `MicroEngine.dll`: `IRenderer`, `Texture`, `IGraphicsDevice`, `TextureFilter`, `BlendMode`, `DrawOptions`, `PixelImage`, `Art`, `Sprite`, `SpriteAtlas`, `SpriteAtlasBuilder`, `AtlasData`, `Animator`, `ParticleSystem`, `LightMap`, `ParallaxLayer`, `RendererExtensions` |
-| `MicroEngine.Graphics.Devices` (next SDK version) | `IGraphicsDevice`, `GraphicsDeviceBase`, `GraphicsCapabilities`, `GraphicsCapabilityException`, `Texture`, `RenderTarget`, `Sampler`, `GpuBuffer`, `Pipeline`, `CommandList`, `ReadbackRequest`, `Vertex2D`, `GraphicsCounters`, `ReferenceGraphicsDevice` |
-| `MicroEngine.Core` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `InputScript`, `HeadlessPlatform`, `SaveStore` (over `ISaveStorage`), `ContentFolder`, `AssetCache` (`Game.Assets`), `Achievement`, `AchievementTracker` |
-| `MicroEngine.Scenes` in `MicroEngine.Scene.dll` (next SDK version) | `IWorld`, `SceneWorld`, `EntityId`, `Transform`, `Attachments<T>`, `EntityChildren`, `IDestroyedCallback`, `WorldClock` |
-| `MicroEngine.Scenes` | `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener` |
-| `MicroEngine.Input` | In the `MicroEngine.Input` assembly (kernel and platform contracts only): device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem` over them, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources, with saved bindings. In the core assembly: `ActionPrompts`; in the published SDK also `VirtualControls`, `TouchLayout` (per-game on-screen d-pads, joysticks and buttons, an input layer), `ITouchScreen` and `FrameLayout`, which move to `MicroEngine.Input.Touch.dll` in the next SDK version |
-| `MicroEngine.Graphics` | `PixelImage` (CPU art, image decoding, crop/rotate), `Art` (noise, dither, ramps), `SpriteAtlasBuilder` (incl. grid sheets), `AtlasData` (packing tools' files), `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `IFont` (`BitmapFont`, `ScalableFont`), `TextureFilter`, `IRenderer`; next SDK version: all but the fonts in `MicroEngine.Graphics2D.dll` |
-| `MicroEngine.Graphics` in `MicroEngine.Text.dll` (next SDK version) | `IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions` |
-| `MicroEngine.UI` in `MicroEngine.UI.dll` (next SDK version) | `UiRoot`, `UiActions`, `UiContext`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts`, `Toast`, `Typewriter`, `SelectionList`, `UiTheme`; `DialogueBox`, `PromptText` and the achievement views stay in `MicroEngine.dll` |
-| `MicroEngine.World` | `TileLayer`, `TileGrid`, `TileMotion` (swept AABB with one-way tiles), `Autotile`, `TileRenderer`; `Entity` and `EntityList<T>` in the published SDK only (removed in the next SDK version); next SDK version: the tile types and `TileMotion` are in `MicroEngine.Physics.Tiles.dll`, and `TileMotion.Move` returns a `TileMoveResult` (it was `MoveResult`, the physics contract's name) |
-| `MicroEngine.Physics` in `MicroEngine.Physics.dll` (next SDK version) | `IPhysicsWorld2D`, `PhysicsCapabilities`, `PhysicsCapabilityException`, `BodyId`, `ShapeId`, `BodyDescription`, `ShapeDescription`, `QueryFilter`, `MoveResult`, `RayHit`, `SensorEvent`, `ContactEvent`, `PhysicsModule`, `PhysicsSystem`, `PhysicsSync` |
-| `MicroEngine.Physics.Tiles` (next SDK version) | `TilePhysicsWorld2D`: tile grids as static geometry, the swept mover, one-way platforms, moving solids |
-| `MicroEngine.Saves` (next SDK version) | `SavesModule`; `SaveStore`, `ISaveStorage` and `FileSaveStorage` live in `MicroEngine.Saves.dll` with the `MicroEngine.Core` namespace |
-| `MicroEngine.Achievements` (next SDK version) | `AchievementsModule` (the tracker as a service, the `engine.achievements` system); `Achievement`, `AchievementStatus`, `AchievementTracker`, `AchievementSaveData` and `AchievementRecord` live in `MicroEngine.Achievements.dll` with the `MicroEngine.Core` namespace |
-| `MicroEngine.Audio` | `Synth` (retro SFX), `Song` (step sequencer), `AudioClip` (incl. WAV decoding), `AudioMixer` (incl. sound/music files); next SDK version: `Synth`, `SfxParams`, `Wave`, `Song` and `Instrument` are in `MicroEngine.Audio.Retro` |
-| `MicroEngine.UI` | `Typewriter`, `DialogueBox`, `SelectionList`, `UiTheme`, `AchievementToasts`, `AchievementsScene`; next SDK version: the widget tree and `Typewriter`, `SelectionList`, `UiTheme` in `MicroEngine.UI.dll` (row above) |
+One row per assembly, in the order of the layers above. Namespaces in parentheses are those of moved types, which kept
+the namespace they had in `MicroEngine.dll`. The split into these assemblies arrives with the next SDK version (not
+published yet); in the published SDK, the engine types that existed then are in `MicroEngine.dll`.
+
+| Assembly | Namespaces | Contents |
+| --- | --- | --- |
+| `MicroEngine.Kernel` | `MicroEngine.Kernel`, `MicroEngine` | `EngineBuilder`, `Engine`, `IEngineModule`, `ServiceRegistry`, `CapabilityRegistry`, `FrameSchedule`, `FramePhase`, `FrameContext`, `TimeSettings`, `FrameClock`, `IEngineLifecycle`, `ILog`, `Handle<T>`, `HandlePool<T>`, `SeededRandom`, the per-step state hash (`StateHasher`, `IStateHashed`, `StateTrace`); `Color`, `ColorF`, `RectF`, `MathX`, `Ease` |
+| `MicroEngine.Platform` | `MicroEngine.Platform` | `IPlatformHost`, `IMonotonicClock`, `IEngineEventSink`, `ISurface`, `HostSurface`, `IDisplayPacing`, `IPreciseDelay`, `IStorage`, `IContentSource`, `FolderContentSource`, `IAudioSink` |
+| `MicroEngine.Graphics` | `MicroEngine.Graphics.Devices` | `IGraphicsDevice`, `GraphicsDeviceBase`, `GraphicsCapabilities`, `GraphicsCapabilityException`, `Texture`, `RenderTarget`, `Sampler`, `GpuBuffer`, `Pipeline`, `CommandList`, `ReadbackRequest`, `Vertex2D`, `GraphicsCounters`, `ReferenceGraphicsDevice` |
+| `MicroEngine.Input` | `MicroEngine.Input` | Device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem`, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, with saved bindings |
+| `MicroEngine.Content` | `MicroEngine.Content` | `AssetStore` (`Game.Assets`), `Asset<T>`, `AssetScope`, `AssetLoaderRegistry`, `IAssetLoader<T>`, `IAssetImporter`, `ZipContentSource`, `ListedContentSource` |
+| `MicroEngine.Hosting` | `MicroEngine.Hosting` | `HostBuilder` (the composition a game's `Configure` entry point fills), `LaunchRequest`, `ProfileSelection`, `HostEnvironment` |
+| `MicroEngine.Scene` | (`MicroEngine.Scenes`) | `IWorld`, `SceneWorld`, `EntityId`, `Transform`, `Attachments<T>`, `EntityChildren`, `IDestroyedCallback`, `WorldClock` |
+| `MicroEngine.Physics` | `MicroEngine.Physics` | `IPhysicsWorld2D`, `PhysicsCapabilities`, `PhysicsCapabilityException`, `BodyId`, `ShapeId`, `BodyDescription`, `ShapeDescription`, `QueryFilter`, `MoveResult`, `RayHit`, `SensorEvent`, `ContactEvent`, `PhysicsModule`, `PhysicsSystem`, `PhysicsSync` |
+| `MicroEngine.Physics.Tiles` | `MicroEngine.Physics.Tiles`, (`MicroEngine.World`) | `TilePhysicsWorld2D` (tile grids as static geometry, the swept mover, one-way platforms, moving solids); `TileLayer`, `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion` (whose `Move` returns a `TileMoveResult`; it was `MoveResult`, the physics contract's name) |
+| `MicroEngine.Graphics2D` | (`MicroEngine.Graphics`) | `IRenderer2D`, `Renderer2D` (the batcher the `IRenderer` façade draws through), `BatchSettings`, `RenderState`, `SortMode`, `Camera2D`, and the 2D drawing model: `IRenderer`, `Texture`, `IGraphicsDevice`, `TextureFilter`, `BlendMode`, `DrawOptions`, `PixelImage`, `Art`, `Sprite`, `SpriteAtlas`, `SpriteAtlasBuilder`, `AtlasData`, `Animator`, `ParticleSystem`, `LightMap`, `ParallaxLayer`, `RendererExtensions` |
+| `MicroEngine.Text` | (`MicroEngine.Graphics`) | `IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`, the font loader |
+| `MicroEngine.Input.Touch` | (`MicroEngine.Input`) | `ITouchScreen`, `TouchEvent`, `ITouchOverlay`, `IOverlayCanvas`, `FrameLayout`, `TouchLayout`, `TouchDPad`, `TouchStick`, `TouchButton`, `VirtualControls`, `TouchStyle`, `ITouchSkin` |
+| `MicroEngine.Audio` | `MicroEngine.Audio`, `MicroEngine.Audio.Retro` | `AudioEngine` (voices, buses, music streams, exact-frame scheduling), `AudioMixer`, `IAudioDevice`, `MixerAudioDevice`, `AudioClip` (incl. WAV and OGG decoding), `OfflineAudioSink`, `SilentAudioDevice`; in `MicroEngine.Audio.Retro`: `Synth`, `SfxParams`, `Wave` (retro sound effects), `Song`, `Instrument` (step sequencer) |
+| `MicroEngine.Saves` | `MicroEngine.Saves`, (`MicroEngine.Core`) | `SavesModule`; `SaveStore`, `ISaveStorage`, `FileSaveStorage` |
+| `MicroEngine.Achievements` | `MicroEngine.Achievements`, (`MicroEngine.Core`) | `AchievementsModule` (the tracker as a service, the `engine.achievements` system); `Achievement`, `AchievementStatus`, `AchievementTracker`, `AchievementSaveData`, `AchievementRecord` |
+| `MicroEngine.UI` | `MicroEngine.UI` | `UiRoot`, `UiActions`, `UiContext`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts`, `Toast`, `Typewriter`, `SelectionList`, `UiTheme` |
+| `MicroEngine` (core) | `MicroEngine.Core`, `MicroEngine.Scenes`, `MicroEngine.Graphics`, `MicroEngine.UI`, `MicroEngine.World` | `Game`, `GameSettings`, `GameRunner`, `GameLoop`, `GameSession`, `GameHost`, `GameLauncher`, `PlatformCatalog`, `PlatformProfile`, `ContentFolder`, `AssetCache`; `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener`; `DeviceCanvas`; `DialogueBox`, `PromptText` and the achievement views (`AchievementToasts`, `AchievementsScene`); `TileRenderer`; forwards for every moved type |
+| `MicroEngine` (core): testing support | `MicroEngine.Core` | `HeadlessPlatform` (no window, no sound, deterministic time), `InputScript` (scripted input for playthroughs), captures; with the kernel's state hash (`StateHasher`, `StateTrace`), the reference device (`ReferenceGraphicsDevice`) and offline audio (`OfflineAudioSink`) ([Testing your game](examples/testing.md)) |
+| `MicroEngine.Graphics.SdlGpu` | `MicroEngine.Graphics.SdlGpu` | `SdlGpuDevice`: the tier-1 device (custom shaders compiled ahead of time, depth) on SDL_GPU, carried by the `MicroEngine.Sdl` package as the `sdl-gpu` graphics device |
+| `MicroEngine.Graphics3D` | `MicroEngine.Graphics3D` | `MeshAssets` (glTF meshes as an asset kind, `GltfReader`), `MeshData`, `GpuMesh`, `Camera3D`, `Renderer3D`, `MeshRenderer`; in the repository only |
+| `MicroEngine.Physics.Box2D` | `MicroEngine.Physics.Box2D` | `Box2DPhysicsWorld2D`, `Box2DWorldOptions`: native Box2D 3.2 behind the engine's flat C layer, with the native library of each platform; an optional package of its own, not published yet |
+| `MicroEngine.Sdl` | `MicroEngine.Sdl` | `SdlPlatform`, `SdlRendererDevice`, `SdlAudioDevice`; for browsers `BrowserLauncher` and `BrowserPage` (SDL 3 compiled to WebAssembly, chosen with `--web-backend sdl`) |
+| `MicroEngine.Raylib` | `MicroEngine.Raylib` | `RaylibPlatform`, `RaylibDevice`, the raylib audio device; for browsers `BrowserLauncher` and `BrowserPage` (the default web backend) |
+| `MicroEngine.Desktop` | `MicroEngine.Desktop` | `DesktopLauncher` with the official desktop platforms (SDL 3, raylib, SDL software, headless) |
 
 ## Key design decisions
 
