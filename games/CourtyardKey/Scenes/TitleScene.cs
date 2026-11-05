@@ -190,7 +190,7 @@ public sealed class EndingScene : Scene
         "Design, code, pixel art and music",
         "authored in code with MicroEngine",
         "",
-        "Every sprite drawn procedurally",
+        "CC0 art: ArMM1998, Pixel-boy",
         "Every sound synthesized live",
         "",
         "Thank you for playing!",

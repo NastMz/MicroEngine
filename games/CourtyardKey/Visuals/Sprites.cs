@@ -2,7 +2,7 @@ using MicroEngine.Graphics;
 
 namespace CourtyardKey.Visuals;
 
-/// <summary>The game's single sprite atlas, built once at load from the procedural art modules and the monster sheets.</summary>
+/// <summary>The game's single sprite atlas, built once at load from the procedural art modules and the pack sheets.</summary>
 public sealed class Sprites : IDisposable
 {
     private readonly SpriteAtlas _atlas;
@@ -14,7 +14,10 @@ public sealed class Sprites : IDisposable
     public static Sprites Build(IGraphicsDevice device, Func<string, PixelImage> image)
     {
         var b = new SpriteAtlasBuilder();
+        GroundArt.AddAll(b);
+        DungeonArt.AddAll(b);
         TileArt.AddAll(b);
+        PackArt.AddAll(b, image);
         CharacterArt.AddHero(b);
         CharacterArt.AddVillagers(b);
         CreatureArt.AddAll(b);
