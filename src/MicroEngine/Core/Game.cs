@@ -370,7 +370,12 @@ public abstract class Game : IEngineModule, IStateHashed
             });
             schedule.Add(FramePhase.FixedUpdate, "engine.scenes", step => game.Scenes.Update((float)step.FixedDelta));
             schedule.Add(FramePhase.PostFixed, "engine.audio", step => game.Audio.Update((float)step.FixedDelta));
-            schedule.Add(FramePhase.PostFixed, "engine.input.end", _ => game.InputSystem.EndUpdate());
+            schedule.Add(FramePhase.PostFixed, "engine.input.end", _ =>
+            {
+                game.InputSystem.EndUpdate();
+                // A touch tap shorter than a frame is down in one update only, as a key tap is.
+                if (game._touchWired) game.Touch.EndUpdate();
+            });
             // From the first update on, a load can show as a hitch: the cache reports slow ones.
             schedule.Add(FramePhase.PostFixed, "engine.assets.playing", _ => game.Assets.Playing = true);
             schedule.Add(FramePhase.Render, "engine.render", _ => game.Render(platform.BeginFrame()));

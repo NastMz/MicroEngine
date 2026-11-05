@@ -452,6 +452,18 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
     public float Value(string action) => _values.TryGetValue(action, out var v) ? v : IsDown(action) ? 1 : 0;
 
     /// <summary>
+    /// Ends a fixed update: the taps it read stop counting, so a tap shorter than a frame is down in exactly one update,
+    /// the first that reads it, as a key's or a gamepad button's is, also when a slow frame catches up with several
+    /// updates. The engine's loop calls it after every update; code that samples the controls itself calls it after each
+    /// of its updates (without it, read taps expire at the next <see cref="BeginFrame"/>).
+    /// </summary>
+    public void EndUpdate()
+    {
+        foreach (var a in _sampled) _taps.Remove(a);
+        _sampled.Clear();
+    }
+
+    /// <summary>
     /// A scripted touch, as an input script's <c>touch</c> command: finger <paramref name="finger"/> goes down (or moves)
     /// on control <paramref name="target"/>, displaced by <paramref name="offset"/> radii from its centre, at the next
     /// update. The touch goes through the same hit testing as a real finger.
