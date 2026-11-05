@@ -85,6 +85,7 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
             _leaving = true;
             game.Session.Weapon = _stage.Player.Weapon.Kind;
             RecordClear();
+            game.SaveHighScore();
             Scene next = stageIndex + 1 < Stages.Count ? new StageCardScene(game, stageIndex + 1) : new EndingScene(game);
             Game.Scenes.Replace(next, Transition.Fade(1.0f));
         }
@@ -127,7 +128,11 @@ internal sealed class PauseScene(RiftGame game) : Scene
         {
             game.Sfx("menu-select", 0.7f);
             if (choice == 0) Close();
-            else Game.Scenes.Reset(new TitleScene(game), Transition.Fade(0.6f));
+            else
+            {
+                game.SaveHighScore();
+                Game.Scenes.Reset(new TitleScene(game), Transition.Fade(0.6f));
+            }
         }
     }
 

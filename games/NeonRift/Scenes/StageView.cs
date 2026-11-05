@@ -142,7 +142,7 @@ internal sealed class StageView(Assets art, BitmapFont font)
         Capsule.DrawPod(r, art, new Vector2(112, 11), weapon.Letter, stage.Time);
         Ui.Label(r, font, weapon.Label, new Vector2(126, 6), Ui.Cyan);
         Ui.Centered(r, font, _score.Get(session.Score), r.Width / 2f, 6, Ui.Text);
-        Ui.Label(r, font, _high.Get(Math.Max(session.HighScore, 30000)), new Vector2(r.Width - 92, 6), Ui.Muted);
+        Ui.Label(r, font, _high.Get(session.HighScore), new Vector2(r.Width - 92, 6), Ui.Muted);
 
         if (stage.Player.Barrier > 0)
         {

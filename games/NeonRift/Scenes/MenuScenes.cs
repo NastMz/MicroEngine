@@ -114,7 +114,7 @@ internal sealed class TitleScene(RiftGame game) : Scene
         else
         {
             Ui.Menu(r, Font, _menu, r.Width / 2f, 150, Age);
-            Ui.Centered(r, Font, _high.Get(Math.Max(game.Session.HighScore, 30000)), r.Width / 2f, 220, Ui.Muted);
+            Ui.Centered(r, Font, _high.Get(game.Session.HighScore), r.Width / 2f, 220, Ui.Muted);
         }
         Ui.Centered(r, Font, "ART & AUDIO: ANSIMUZ, JUHANI JUNKALA (CC0)  -  ENGINE: MICROENGINE", r.Width / 2f, 256, Ui.Muted);
         Ui.Scanlines(r);
@@ -182,6 +182,7 @@ internal sealed class GameOverScene(RiftGame game, int stageIndex, int checkpoin
         if (game.Session.Continues <= 0) _menu.Index = 1;
         _menu.Moved += () => game.Sfx("menu-move", 0.6f);
         game.Music("");
+        game.SaveHighScore();
     }
 
     public override void Update(float dt)

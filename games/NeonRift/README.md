@@ -79,7 +79,7 @@ variables on desktop), read in the game's `Configure`:
 | `RIFT_WEAPON` | `Pulse`, `Spread`, `Lance` or `Rapid` |
 | `RIFT_GOD=1` | Shots and contact do not kill (pits and lava still do) |
 | `RIFT_AUTO=1` | The test autopilot plays |
-| `RIFT_SAVE_DIR` | Separate folder for achievements (capture runs) |
+| `RIFT_SAVE_DIR` | Separate folder for achievements and the high score (capture runs) |
 
 Full-stage capture tour used for the screenshots:
 

@@ -30,6 +30,9 @@ public sealed record LaunchOptions(string Start = "title", int Stage = 1, int Ch
     }
 }
 
+/// <summary>What the game keeps between launches beside the achievements: the best score ever reached.</summary>
+public sealed record RiftRecord(int HighScore);
+
 /// <summary>
 /// Neon Rift: a run &amp; gun about Vela, a courier who storms Halcyon's rooftops, the drowned grotto
 /// beneath them and the lab where the Leviathan dreadnought is built.
@@ -48,6 +51,9 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
     protected override string? ContentRoot => contentRoot;
     /// <summary>Where achievements persist (a private folder in tests).</summary>
     public SaveStore Store { get; } = new("NeonRift", saveDirectory);
+    /// <summary>The <see cref="Store"/> slot of the high score (the achievements have their own).</summary>
+    public const string RecordSlot = "record";
+    private int _savedHighScore;
 
     protected override InputMap CreateInput() => InputMap.CreateDefault()
         .Bind("jump", [Key.Z, Key.Space, Key.J], [PadButton.A])
@@ -82,7 +88,8 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
         Sounds.Register(Audio, Assets);
         AchievementToasts!.Top = 22;   // below the HUD gradient
         Achievements.Unlocked += _ => Sfx("powerup", 0.8f);
-        Session = new Session { Weapon = _launch.Weapon };
+        _savedHighScore = Math.Max(0, Store.Load<RiftRecord>(RecordSlot)?.HighScore ?? 0);
+        Session = new Session(_savedHighScore) { Weapon = _launch.Weapon };
         int stage = Math.Clamp(_launch.Stage, 1, Content.Stages.Count) - 1;
         Scenes.Push(_launch.Start switch
         {
@@ -94,7 +101,24 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
         });
     }
 
-    public void NewGame() => Session = new Session();
+    /// <summary>Starts a run from zero; the high score carries over (saved first, in case the last run never ended).</summary>
+    public void NewGame()
+    {
+        SaveHighScore();
+        Session = new Session(Session.HighScore);
+    }
+
+    /// <summary>
+    /// Saves the session's high score when it beats the saved one. Called where a run ends or reaches a milestone: a
+    /// cleared stage, game over, quitting to the title, a new run and closing the game.
+    /// </summary>
+    public void SaveHighScore()
+    {
+        if (Session.HighScore > _savedHighScore && Store.Save(RecordSlot, new RiftRecord(Session.HighScore)))
+            _savedHighScore = Session.HighScore;
+    }
+
+    protected override void Unload() => SaveHighScore();
 
     /// <summary>
     /// Adds the run's session (lives, continues, score, weapon, deaths). The launch options are fixed for the run and

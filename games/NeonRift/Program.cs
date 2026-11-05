@@ -13,7 +13,7 @@ namespace NeonRift
         /// <summary>
         /// Developer shortcuts come from the host's developer variables (RIFT_START, RIFT_STAGE, RIFT_CHECKPOINT,
         /// RIFT_WEAPON, RIFT_GOD=1 for invulnerable capture runs, RIFT_AUTO=1 to let the autopilot play, RIFT_SAVE_DIR
-        /// for a separate achievements folder): environment variables on desktop, a phone test's <c>--env</c> values,
+        /// for a separate folder of achievements and high score): environment variables on desktop, a phone test's <c>--env</c> values,
         /// because the desktop launcher rejects unknown arguments.
         /// </summary>
         public static void Configure(HostBuilder host)
