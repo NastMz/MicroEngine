@@ -34,18 +34,18 @@ internal static class AtlasFactory
             b.Add("mini:" + s.Id, mini, new Vector2(12, 12));
             b.Add("mini2:" + s.Id, Hop(mini), new Vector2(12, 12));
         }
-        TileArt.AddAll(b);
+        var village = new Village(image);
+        TileArt.AddAll(b, village);
         CharacterArt.AddAll(b, image);
         UiArt.AddAll(b);
         BattleStageArt.AddAll(b);
         FxArt.AddAll(b, image);
         foreach (var map in Maps.Every)
         {
-            b.Add($"ground:{map.Id}", GroundArt.Build(map));
+            b.Add($"ground:{map.Id}", map.Indoor ? GroundArt.Build(map) : Village.Grade(GroundArt.Build(map)));
             for (int i = 0; i < map.Buildings.Count; i++)
             {
-                var bd = map.Buildings[i];
-                b.Add($"bld:{map.Id}:{i}", BuildingArt.Build(bd.Style, bd.W, bd.H, bd.DoorX));
+                b.Add($"bld:{map.Id}:{i}", Village.Grade(BuildingArt.Build(village, map.Buildings[i])));
             }
         }
         return new GameArt(b.Build(device), heights);

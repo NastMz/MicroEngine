@@ -133,7 +133,7 @@ internal static partial class TileArt
             img.FillRect(1, y + 6, 14, 1, w[2]);
         }
         img.FillRect(0, 0, 16, 1, w[3]);
-        return img.Outline(Pal.Ink);
+        return img.Outline(VillagePal.Outline);
     }
 
     private static PixelImage BedTop()
@@ -145,7 +145,7 @@ internal static partial class TileArt
         img.FillRect(3, 10, 10, 1, Pal.CreamShade);
         img.FillRect(2, 12, 12, 4, Color.Hex("5b82c8"));
         img.FillRect(2, 12, 12, 1, Color.Hex("86aee2"));
-        return img.Outline(Pal.Ink);
+        return img.Outline(VillagePal.Outline);
     }
 
     private static PixelImage BedBottom()
@@ -157,7 +157,7 @@ internal static partial class TileArt
         for (int x = 3; x < 13; x += 4) img.FillRect(x, y, 2, 2, Color.Hex("86aee2"));
         img.FillRect(1, 12, 14, 3, Pal.Wood[1]);
         img.FillRect(1, 12, 14, 1, Pal.Wood[3]);
-        return img.Outline(Pal.Ink);
+        return img.Outline(VillagePal.Outline);
     }
 
     /// <summary>Tables join horizontally: bit 1 = table continues left, bit 2 = right.</summary>
@@ -174,7 +174,7 @@ internal static partial class TileArt
         if (!right) img.FillRect(12, 12, 2, 4, w[1]);
         if (!left) img[x0, 3] = Color.Transparent;
         if (!right) img[x1, 3] = Color.Transparent;
-        return img.Outline(Pal.Ink);
+        return img.Outline(VillagePal.Outline);
     }
 
     private static PixelImage Plant()
@@ -215,7 +215,7 @@ internal static partial class TileArt
         img.FillRect(2, 14, 12, 6, Pal.Wood[2]);
         img.FillRect(2, 14, 12, 1, Pal.Wood[3]);
         img[5, 1] = Pal.Ink; img[4, 0] = Pal.Ink; img[10, 1] = Pal.Ink; img[11, 0] = Pal.Ink;
-        return img.Outline(Pal.Ink);
+        return img.Outline(VillagePal.Outline);
     }
 
     private static PixelImage Kitchen()
@@ -227,7 +227,7 @@ internal static partial class TileArt
         img.FillRect(3, 12, 10, 3, Color.Hex("c8d2e0"));
         img.FillRect(3, 2, 4, 4, Pal.Coral);
         img.FillRect(9, 3, 4, 3, Color.Hex("5b82c8"));
-        return img.Outline(Pal.Ink);
+        return img.Outline(VillagePal.Outline);
     }
 
     private static PixelImage Altar()
@@ -268,7 +268,7 @@ internal static partial class TileArt
             }
             img.FillRect(1, y + 6, 14, 1, Pal.Wood[2]);
         }
-        return img.Outline(Pal.Ink);
+        return img.Outline(VillagePal.Outline);
     }
 
     private static PixelImage Machine()
@@ -282,7 +282,7 @@ internal static partial class TileArt
         img.FillRect(7, 15, 2, 2, Pal.Gold);
         img.FillRect(11, 15, 2, 2, Color.Hex("6ae0a0"));
         img.FillRect(3, 19, 10, 2, Color.Hex("6a7688"));
-        return img.Outline(Pal.Ink);
+        return img.Outline(VillagePal.Outline);
     }
 
     private static PixelImage Statue()

@@ -1,8 +1,10 @@
 # Trail Duel asset credits
 
-Trail Duel is a hybrid game. Its world (tiles, buildings, ground detail), battle stages, interface,
-music and sound effects are generated in code at startup. The creatures and trainers come from the
-Openmon collection, and the battle effects and jingles from Ninja Adventure; both are listed below.
+Trail Duel is a hybrid game. The overworld's houses, trees, flowers, rocks, signs, paths and ponds come from
+Serene Village revamped; the creatures and trainers from the Openmon collection; the battle effects and jingles
+from Ninja Adventure; all three are listed below. The rest (tall grass, ledges, the lab, shrine, shop and hall
+facades built from Serene Village pieces, interiors, battle stages, interface, music and sound effects) is
+generated in code at startup.
 
 ## Openmon collection — Screen Smith and commissioned artists
 
@@ -71,3 +73,22 @@ time (`Visuals/FxArt.cs`); jingles are registered in `Sound/MusicBank.cs`.
 | `jingles/catch.wav` | `Audio/Jingles/Success3.wav` |
 | `jingles/heal.wav` | `Audio/Jingles/Success4.wav` |
 | `jingles/item.wav` | `Audio/Jingles/Secret1.wav` |
+
+## Serene Village revamped — LimeZu
+
+- Title: Serene Village - revamped - RPG Tileset [16x16], by LimeZu
+- Source: https://limezu.itch.io/serenevillagerevamped (download `Serene_Village_revamped_v1.9.zip`)
+- Licence: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (Creative Commons Attribution 4.0
+  International), stated on the pack page; the download itself carries no licence file. Checked 2026-11-05.
+
+The two files are unedited copies of the pack's; the game changes them only at load, in memory
+(`Visuals/Village.cs`, `TileArt.cs`, `TreeArt.cs`, `BuildingArt.cs`): pieces are cut along their outlines, the
+small tree is recoloured to the other trees' palettes, one house's roof is turned to plum, the wave loop is softened, path and pond tiles are assembled
+from the pack's edge strips and corners, and the lab, shrine, shop and hall facades are built by stretching and
+recolouring the pack's flat-roofed house and adding an emblem. Every outdoor piece is then colour-graded to darker,
+less saturated tones.
+
+| File | Original in the pack |
+| --- | --- |
+| `serene-village/serene-village-16x16.png` | `SERENE_VILLAGE_REVAMPED/Serene_Village_16x16.png` |
+| `serene-village/water-waves-16x16.png` | `SERENE_VILLAGE_REVAMPED/Animated stuff/water_waves_16x16.png` |

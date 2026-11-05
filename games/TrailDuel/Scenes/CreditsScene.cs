@@ -20,7 +20,8 @@ internal sealed class CreditsScene(TrailDuelGame game, Action onDone) : Scene
         "Keeper Rhea", "Picnicker Mira", "Scout Bram", "Hiker Doran", "Birdkeeper Sola", "Apprentice Lio", "", "",
         "CREATURES", "", "Emberpup  Blazehound", "Puddlepip  Tidefang", "Sprigfawn  Grovestag", "Breezel  Puffmop  Pebblit",
         "Fizzbit  Mossback  Gustwing", "Voltiger  Bouldox", "", "",
-        "CREATURE & TRAINER ART", "", "Openmon collection", "by Screen Smith and artists (CC0)", "", "BATTLE EFFECTS & JINGLES", "", "Ninja Adventure", "by Pixel-boy and AAA (CC0)", "", "WORLD, MUSIC & SOUND", "", "Generated in code at load time", "", "",
+        "CREATURE & TRAINER ART", "", "Openmon collection", "by Screen Smith and artists (CC0)", "", "BATTLE EFFECTS & JINGLES", "", "Ninja Adventure", "by Pixel-boy and AAA (CC0)", "", "VILLAGE ART", "", "Serene Village revamped", "by LimeZu (CC BY 4.0)", "",
+        "MUSIC, SOUND & THE REST", "", "Generated in code at load time", "", "",
         "Thank you for walking the trail!", "", "", "", "THE END",
     ];
 
