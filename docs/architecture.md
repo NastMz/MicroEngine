@@ -126,6 +126,10 @@ does not declare, and `PhysicsModule`, which steps worlds in the `Physics` phase
 `MicroEngine.Physics.Tiles` is its tile backend, `TilePhysicsWorld2D`, and now holds the tile types (`TileLayer`,
 `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion`) with their `MicroEngine.World` namespace;
 `TileRenderer` stays in the core because it draws ([Physics worlds](manual/world.md#physics-worlds)).
+`MicroEngine.Physics.Box2D` (physics contract, scene world and kernel only; optional and not published yet, outside the
+SDK packages) is the second backend, `Box2DPhysicsWorld2D`: native Box2D 3.2 behind a flat C layer of the engine's own,
+across which only integers, floats and pointers pass and no game code runs, with the native library for each platform in
+its package ([The Box2D backend](manual/world.md#the-box2d-backend)).
 
 Next SDK version (not published yet: arrives with the next SDK version): saves and achievements are optional engine
 modules. `MicroEngine.Saves` (kernel and platform contracts only, shipped inside the `MicroEngine` package) holds

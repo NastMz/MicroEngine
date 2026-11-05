@@ -68,7 +68,8 @@ ME_API int me_box2d_version( void );
 ME_API float me_move_skin( void );
 
 // A world with gravity (m/s²), stepped with subSteps sub-steps per me_world_step; enableSleep lets resting dynamic
-// bodies sleep (it changes no result, only the work done).
+// bodies sleep (it changes no result, only the work done). NULL when Box2D already holds its maximum of 128 worlds.
+// Box2D keeps its worlds in one process-wide table: create and destroy worlds from one thread at a time.
 ME_API MeWorld* me_world_create( float gravityX, float gravityY, int subSteps, int enableSleep );
 ME_API void me_world_destroy( MeWorld* world );
 // Advances the world by timeStep seconds (0 is allowed: events are recomputed, nothing moves). The events of the

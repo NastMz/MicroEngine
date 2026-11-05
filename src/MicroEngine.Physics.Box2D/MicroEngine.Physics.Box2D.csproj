@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Box2D v3 backend of IPhysicsWorld2D (Box2DPhysicsWorld2D) over the native me_box2d layer in native/, which
+       native/build.sh builds for each runtime identifier into artifacts/box2d/<rid>/ (CI: .github/workflows/box2d.yml).
+       It references only the physics contract, the scene world and the kernel (the architecture test checks it).
+
+       An optional package of its own, outside the SDK and NOT published: it packs only when asked
+       (-p:MicroEngineBox2DPackage=true), from MicroEngine.Physics.Box2D.nuspec: runtimes/<rid>/native/ for every runtime
+       built and, for browser builds, the two static archives the buildTransitive targets add as NativeFileReference.
+         -p:MicroEngineBox2DNatives=<dir>          where the per-runtime folders are (default: artifacts/box2d)
+         -p:MicroEngineBox2DRequireNatives=true    fail the pack when a runtime of NativeRuntime is missing
+       Builds inside the repository copy the native library of the build machine's runtime (or of RuntimeIdentifier)
+       next to the assembly, so tests and samples load it directly. -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Physics.Box2D</RootNamespace>
+    <Description>MicroEngine Box2D v3 physics backend: dynamic bodies, rotation, round and polygon shapes, continuous collision and one-way platforms behind the engine's 2D physics contract. Optional; not part of the SDK packages.</Description>
+    <IsPackable Condition="'$(MicroEngineBox2DPackage)' != 'true'">false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <MicroEngineBox2DNatives Condition="'$(MicroEngineBox2DNatives)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)../../artifacts/box2d'))</MicroEngineBox2DNatives>
+    <MicroEngineBox2DNatives>$([MSBuild]::EnsureTrailingSlash('$(MicroEngineBox2DNatives)'))</MicroEngineBox2DNatives>
+    <_Box2DHostRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</_Box2DHostRid>
+    <_Box2DHostRid Condition="'$(_Box2DHostRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</_Box2DHostRid>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MicroEngineBox2DPackage)' == 'true'">
+    <!-- Written at pack time from MicroEngine.Physics.Box2D.nuspec (_Box2DNuspec below). -->
+    <NuspecFile>$(BaseIntermediateOutputPath)MicroEngine.Physics.Box2D.nuspec</NuspecFile>
+    <IncludeSymbols>false</IncludeSymbols>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Physics/MicroEngine.Physics.csproj" />
+    <ProjectReference Include="../MicroEngine.Scene/MicroEngine.Scene.csproj" />
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Physics.Box2D.Tests" />
+  </ItemGroup>
+
+  <!-- The runtimes the package must carry (MicroEngineBox2DRequireNatives) and each one's main native asset. -->
+  <ItemGroup>
+    <NativeRuntime Include="win-x64" Primary="me_box2d.dll" />
+    <NativeRuntime Include="linux-x64" Primary="libme_box2d.so" />
+    <NativeRuntime Include="osx-arm64" Primary="libme_box2d.dylib" />
+    <NativeRuntime Include="osx-x64" Primary="libme_box2d.dylib" />
+    <NativeRuntime Include="android-arm64" Primary="libme_box2d.so" />
+    <NativeRuntime Include="android-x64" Primary="libme_box2d.so" />
+    <NativeRuntime Include="ios-arm64" Primary="libme_box2d.a" />
+    <NativeRuntime Include="browser-wasm" Primary="me_box2d.a" />
+  </ItemGroup>
+  <!-- The build machine's own runtime, next to the assembly (and so next to every project that references this one). -->
+  <ItemGroup>
+    <None Include="$(MicroEngineBox2DNatives)$(_Box2DHostRid)/*.dll;$(MicroEngineBox2DNatives)$(_Box2DHostRid)/*.so;$(MicroEngineBox2DNatives)$(_Box2DHostRid)/*.dylib"
+          CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" Visible="false" Pack="false" />
+  </ItemGroup>
+
+  <!-- The package's nuspec: the template with one <file> per native library that was built (a runtime not built is
+       left out unless MicroEngineBox2DRequireNatives), written into obj/ for the pack. -->
+  <Target Name="_Box2DNuspec" BeforeTargets="_CalculateInputsOutputsForPack;GenerateNuspec" Condition="'$(MicroEngineBox2DPackage)' == 'true'">
+    <ItemGroup>
+      <_Box2DMissing Include="@(NativeRuntime)" Condition="'$(MicroEngineBox2DRequireNatives)' == 'true' and !Exists('$(MicroEngineBox2DNatives)%(Identity)/%(Primary)')" />
+      <_Box2DNativeFile Include="$(MicroEngineBox2DNatives)**/*.dll;$(MicroEngineBox2DNatives)**/*.so;$(MicroEngineBox2DNatives)**/*.dylib;$(MicroEngineBox2DNatives)**/*.a" />
+      <_Box2DNativeFile Update="@(_Box2DNativeFile)" Runtime="$([System.String]::Copy('%(RecursiveDir)').TrimEnd('/\'))" />
+    </ItemGroup>
+    <Error Condition="'@(_Box2DMissing)' != ''" Text="Box2D natives missing for @(_Box2DMissing) under $(MicroEngineBox2DNatives) (native/build.sh, or the box2d-&lt;rid&gt; artifacts of the box2d workflow)." />
+    <PropertyGroup>
+      <_Box2DFiles>@(_Box2DNativeFile->'&lt;file src=&quot;%(FullPath)&quot; target=&quot;runtimes/%(Runtime)/native&quot; /&gt;', ' ')</_Box2DFiles>
+      <_Box2DNuspecText>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/MicroEngine.Physics.Box2D.nuspec').Replace('&lt;!-- natives --&gt;', '$(_Box2DFiles)'))</_Box2DNuspecText>
+      <NuspecProperties>version=$(PackageVersion);commit=$(SourceRevisionId);out=$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutputPath)'));project=$([MSBuild]::EnsureTrailingSlash('$(MSBuildProjectDirectory)'))</NuspecProperties>
+    </PropertyGroup>
+    <MakeDir Directories="$(BaseIntermediateOutputPath)" />
+    <WriteLinesToFile File="$(NuspecFile)" Lines="$(_Box2DNuspecText)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+</Project>

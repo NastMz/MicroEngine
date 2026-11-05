@@ -149,6 +149,12 @@ ME_API MeWorld* me_world_create( float gravityX, float gravityY, int subSteps, i
 	def.gravity = ( b2Vec2 ){ gravityX, gravityY };
 	def.enableSleep = enableSleep != 0;
 	w->id = b2CreateWorld( &def );
+	if ( B2_IS_NULL( w->id ) )
+	{
+		// Box2D keeps at most B2_MAX_WORLDS (128) worlds at a time.
+		free( w );
+		return NULL;
+	}
 	w->subSteps = subSteps < 1 ? 1 : subSteps;
 	b2World_SetPreSolveCallback( w->id, pre_solve, pre_continuous, w );
 	return w;
@@ -286,6 +292,14 @@ ME_API int me_shape_create( MeWorld* w, int body, int kind, const float* g, int 
 			if ( !( radius > 0.0f ) )
 				return -1;
 			b2Capsule capsule = { { g[0], g[1] }, { g[2], g[3] }, radius };
+			if ( b2Distance( capsule.center1, capsule.center2 ) < ME_SLOP )
+			{
+				// Box2D makes a circle of a capsule this short: record it as one, so it is read back as one.
+				b2Circle circle = { b2Lerp( capsule.center1, capsule.center2, 0.5f ), radius };
+				id = b2CreateCircleShape( b->id, &def, &circle );
+				kind = ME_CIRCLE;
+				break;
+			}
 			id = b2CreateCapsuleShape( b->id, &def, &capsule );
 			break;
 		}
