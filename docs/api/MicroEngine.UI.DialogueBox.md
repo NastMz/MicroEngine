@@ -142,7 +142,7 @@ public void Draw(IRenderer r, IFont font, RectF area)
 
 `r` IRenderer
 
-`font` [IFont](MicroEngine.Graphics.IFont.md)
+`font` IFont
 
 `area` RectF
 

@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Text.dll  
 Guide: [Text](../manual/text.md)  
 
 A proportional pixel font. The built-in face ("Micro 5x7") is authored in code so every game
@@ -33,7 +33,7 @@ public sealed class BitmapFont : IFont, IDisposable
 
 ## Remarks
 
-Every game has the built-in face in [Font](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Font). It is an [IFont](MicroEngine.Graphics.IFont.md) (at scale 1), like a
+Every game has the built-in face in <code>Game.Font</code>. It is an [IFont](MicroEngine.Graphics.IFont.md) (at scale 1), like a
 [ScalableFont](MicroEngine.Graphics.ScalableFont.md) at a size, so widgets and layout code take either. Text is drawn in white glyphs multiplied by the
 colour given, so any colour works. Characters without a glyph are drawn as '?'; '\n' starts a new line.
 
@@ -111,7 +111,7 @@ public static BitmapFont CreateDefault(IGraphicsDevice? device)
 
 ### <a id="MicroEngine_Graphics_BitmapFont_Dispose"></a> Dispose\(\)
 
-Releases the font's texture. The engine disposes [Font](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Font) itself.
+Releases the font's texture. The engine disposes <code>Game.Font</code> itself.
 
 ```csharp
 public void Dispose()
