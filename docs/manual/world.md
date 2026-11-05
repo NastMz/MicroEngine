@@ -283,8 +283,10 @@ What differs from the tile backend, within what the core allows:
   earlier or later than the tile backend would report the touch.
 - Angles go through Box2D's own sine and cosine: an angle reads back within about 0.002 radians of the one set.
 - Identical results on every platform for the same build; never identical to the tile backend or another Box2D version.
-- A world owns native memory: dispose it. Box2D keeps at most 128 worlds at a time, created and disposed from one thread
-  at a time.
+- A world owns native memory: dispose it. Box2D keeps at most 128 worlds alive in a process, created and disposed from
+  one thread at a time. A world you forget to dispose is released later, on the thread that next creates or disposes a
+  world, after the garbage collector finds it; when all 128 are in use, creating another first collects and retries,
+  then throws `InvalidOperationException`.
 
 To step worlds with the game, add the physics module and register each world with the scene world whose entities own
 its bodies:
