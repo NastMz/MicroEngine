@@ -129,7 +129,7 @@ public static class Maps
         [
             new(3, 3, 5, 4, BuildingStyle.House, 2),
             new(14, 2, 7, 5, BuildingStyle.Lab, 3),
-            new(4, 11, 5, 4, BuildingStyle.HouseBlue, 2),
+            new(4, 12, 5, 3, BuildingStyle.HouseBlue, 2),
         ],
         Warps =
         [
@@ -292,8 +292,8 @@ public static class Maps
             new(8, 1, 9, 5, BuildingStyle.Hall, 4),
             new(2, 10, 6, 4, BuildingStyle.Shrine, 2),
             new(18, 10, 5, 4, BuildingStyle.Shop, 2),
-            new(2, 2, 4, 4, BuildingStyle.HouseBlue, 2, Locked: true),
-            new(19, 2, 5, 4, BuildingStyle.House, 2, Locked: true),
+            new(2, 2, 4, 4, BuildingStyle.House, 1, Locked: true),
+            new(19, 3, 5, 3, BuildingStyle.HouseGreen, 2, Locked: true),
         ],
         Warps =
         [

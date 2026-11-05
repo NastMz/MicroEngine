@@ -41,23 +41,24 @@ internal static class GroundArt
     /// <summary>Large patches of shadier and sunnier grass from world-space noise, as translucent tone over the tile texture.</summary>
     private static void Patches(PixelImage img, MapDef map)
     {
-        var dark = Pal.Grass[0];
-        var sun = Pal.Grass[3];
+        var dark = VillagePal.GrassDeep;
+        var sun = VillagePal.Leaf[4];
         int seed = map.Id.Length * 7 + map.Id[0];
         for (int y = 0; y < img.Height; y++)
         for (int x = 0; x < img.Width; x++)
         {
             if (!IsGrass(map, x / 16, y / 16)) continue;
             float n = Art.ValueNoise(x, y, 30, seed) * 0.8f + Art.ValueNoise(x, y, 8, seed + 1) * 0.2f;
-            if (n > 0.7f) img[x, y] = dark.WithAlpha(0.12f);
-            else if (n < 0.24f) img[x, y] = sun.WithAlpha(0.1f);
+            if (n > 0.7f) img[x, y] = dark.WithAlpha(0.14f);
+            else if (n < 0.24f) img[x, y] = sun.WithAlpha(0.08f);
         }
     }
 
     /// <summary>Clover sprigs, pebbles and tiny flowers scattered at sub-tile offsets.</summary>
     private static void Specks(PixelImage img, MapDef map)
     {
-        var g = Pal.Grass;
+        // The pack's greens: rim, deep blades and the bright leaf of its bushes.
+        Color[] g = [VillagePal.GrassDeep, VillagePal.GrassRim, VillagePal.GrassB, VillagePal.Leaf[3]];
         for (int ty = 0; ty < map.Height; ty++)
         for (int tx = 0; tx < map.Width; tx++)
         {
@@ -71,7 +72,7 @@ internal static class GroundArt
             }
             else if (roll < 0.28f)
             {
-                img[x, y] = Pal.Stone[2]; img[x + 1, y] = Pal.Stone[1]; img[x, y + 1] = Pal.Stone[0]; img[x - 1, y] = Pal.Stone[3];
+                img[x, y] = VillagePal.Stone[2]; img[x + 1, y] = VillagePal.Stone[1]; img[x, y + 1] = VillagePal.OutlineSoft; img[x - 1, y] = VillagePal.Stone[3];
             }
             else if (roll < 0.36f)
             {
@@ -89,7 +90,7 @@ internal static class GroundArt
     /// <summary>Short blades spilling out of tall-grass patches onto the plain grass beside them, so patches have no ruler edges.</summary>
     private static void TallGrassFringe(PixelImage img, MapDef map)
     {
-        var c = Pal.TallGrass;
+        Color[] c = [VillagePal.Outline, VillagePal.Leaf[2], Color.Hex("62b04e"), VillagePal.Leaf[3]];
         (int Dx, int Dy)[] sides = [(0, -1), (1, 0), (0, 1), (-1, 0)];
         for (int ty = 0; ty < map.Height; ty++)
         for (int tx = 0; tx < map.Width; tx++)
@@ -142,8 +143,15 @@ internal static class GroundArt
             float px = tx * 16, py = ty * 16;
             switch (map.KindAt(tx, ty))
             {
-                case TileKind.Tree: Ellipse(px + 10, py + 14, 8.5f, 3.6f); break;
-                case TileKind.Pine: Ellipse(px + 10, py + 14.5f, 6.5f, 2.8f); break;
+                case TileKind.Tree or TileKind.Pine:
+                    // The floor of a wood lies in the crowns' shade.
+                    if (TreeLayout.InWood(map, tx, ty)) Rect(tx * 16, ty * 16, 16, 16);
+                    if (TreeLayout.At(map, tx, ty) is { } tree)
+                    {
+                        if (tree.Low) Ellipse(px + 9, py + 16, 7, 2.4f);
+                        else Ellipse(px + 9 + tree.Shift * 8, py + 15, 9, 3);
+                    }
+                    break;
                 case TileKind.Rock: Ellipse(px + 10, py + 14, 6.5f, 2.6f); break;
                 case TileKind.Bush: Ellipse(px + 10, py + 14, 6.5f, 2.6f); break;
                 case TileKind.Fence: Rect(tx * 16 + 2, ty * 16 + 13, 16, 2); break;
@@ -169,7 +177,8 @@ internal static class GroundArt
         foreach (var s in map.Signs) Ellipse(s.X * 16 + 10, s.Y * 16 + 14.5f, 5, 2);
         foreach (var b in map.Buildings)
         {
-            int x0 = b.X * 16, right = (b.X + b.W) * 16, top = b.Y * 16, bottom = (b.Y + b.H) * 16;
+            var (left, artTop, artRight) = BuildingArt.Bounds(b);
+            int x0 = b.X * 16 + left, right = b.X * 16 + artRight, top = b.Y * 16 + artTop, bottom = (b.Y + b.H) * 16;
             // Cast shadow off the right wall: a band that starts below the eave and slants down.
             for (int y = top + 2; y < bottom + 3; y++)
             {
@@ -178,7 +187,7 @@ internal static class GroundArt
                     if (x >= 0 && x < w && y >= 0 && y < h) mask[y * w + x] = true;
             }
             // Contact shadow along the base, shifted right.
-            Rect(x0 + 4, bottom + 1, right - x0, 3);
+            Rect(x0 + 4, bottom, right - x0 - 2, 3);
         }
     }
 }

@@ -95,11 +95,17 @@ three-quarter poses of a handheld creature RPG, lit from the top-left everywhere
   in the Master's hall is the same capped orb in gold. Overworld characters are 18x26 trainers with
   three-frame walks in four directions; in battle they are doubled with Scale2x and their outline is
   thinned back to one pixel.
-- **The world is procedural**, painted to match those sprites: natural grass with outlined tufts,
-  flat dirt paths with a clean rim, two-row encounter grass, ledges with an earth face and shadow,
-  ponds with ripple bands, a dark waterline and a sand shore, ink-outlined trees in several shapes,
-  and buildings whose roofs and walls use flat ramp steps. Each map bakes one ground layer
-  (`Visuals/GroundArt`) with clover, pebbles, tall-grass fringes and a single union shadow mask.
+- **The world is LimeZu's Serene Village** (CC BY 4.0, `Content/serene-village`; see [CREDITS](CREDITS.md)), a
+  16 px village pack whose slate outlines and soft greens sit well with those trainers. Homes are the pack's houses
+  (red, green and blue roofs, gabled or flat), fitted inside their tile footprint with the door on the door tile, so a
+  roof never hides someone walking behind it. Trees are the pack's whole trees, cut along their silhouette: woods are
+  tall trees overlapping in staggered rows, and where someone can walk just above a tree its crown leans away or the
+  pack's small tree stands instead, so no crown covers a walker. Grass, dirt paths with the pack's grass edges, ponds
+  with its shore and wave loop, flowers, rocks, bushes and signs come from the pack too.
+- **Code draws what the pack lacks, in the pack's colours and outline**: two-row encounter grass, ledges with the
+  pack's earth face, and the lab, shrine, shop and hall, whose facades are built from the pack's flat-roofed house
+  (stretched, recoloured, with a porch roof and an emblem). Each map bakes one ground layer (`Visuals/GroundArt`)
+  with clover, pebbles, tall-grass fringes, the woods' shade and a single union shadow mask.
 - In battle, creatures breathe on the spot, stand on contact shadows, glow in their element's colour
   while charging, crouch before lunging, and flash and recoil when hit. `TRAIL_DEBUG=zoom` and
   `TRAIL_DEBUG=cast` show every creature and every character walk frame for review.
@@ -127,7 +133,7 @@ healing, items and captures.
 | `Rules/` | Pure game rules, no rendering: types, moves, species, creatures, formulas (damage, crits, accuracy, capture, escape, XP), progression, the turn-based `Battle` engine emitting `BattleEvent`s, trainer AI, items/bag, `GameState` (save data). |
 | `World/` | Map data (`Maps`), map runtime (collision, ledges, warps, trainer sight), grid `Actor` (drawn through the scene's objects, which draw it between updates). |
 | `Scenes/` | Title, overworld (core / scripts / drawing), battle (flow / presentation / drawing / fx), party, summary, bag, shop, start menu, evolution, credits, debug starts. |
-| `Visuals/` | Palette, creature and trainer sheet loaders (read through `Game.Assets`), tile/building/ground/UI art, the prop rasterizer (`PropCanvas`), battle stages, effect sheets (`FxArt`), atlas factory. |
+| `Visuals/` | Palette, creature, trainer and village sheet loaders (read through `Game.Assets`), tile/tree/building/ground/UI art, the prop rasterizer (`PropCanvas`), battle stages, effect sheets (`FxArt`), atlas factory. |
 | `Sound/` | Synthesized sound effects and the music/jingle file list. |
 | `Ui/` | Shared boxes, bars, badges, the text panel and choice menus; lists move with the engine's `SelectionList`. |
 
@@ -165,4 +171,5 @@ the hall, Master and credits).
 ## License
 
 This game is a MicroEngine demo, **not** covered by the engine's MIT License: all rights reserved
-([games/LICENSE](../LICENSE)). Read and build it to learn MicroEngine; do not redistribute or sell it. The image and audio files under `Content/` are third-party CC0 works listed in [CREDITS.md](CREDITS.md); they keep their own licence.
+([games/LICENSE](../LICENSE)). Read and build it to learn MicroEngine; do not redistribute or sell it. The image and audio files under `Content/` are third-party works listed in [CREDITS.md](CREDITS.md) (CC0, and CC BY 4.0
+for the Serene Village sheets); they keep their own licence.

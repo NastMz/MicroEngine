@@ -16,17 +16,18 @@ internal sealed partial class OverworldScene
     private readonly List<Actor> _rowActors = [];
 
     // Tile keys built once: formatting them per tile per frame was most of the overworld's garbage.
-    private static readonly string[] FlowerKeys = SpriteKeys.Numbered("t:flowers", 2), TallKeys = SpriteKeys.Numbered("t:tall", 2),
+    private static readonly string[] FlowerKeys = SpriteKeys.Numbered("t:flowers", TileArt.FlowerKinds * TileArt.FlowerFrames), TallKeys = SpriteKeys.Numbered("t:tall", 2),
         PathKeys = SpriteKeys.Numbered("t:path", 16), LedgeKeys = SpriteKeys.Numbered("t:ledge", 4), CarpetKeys = SpriteKeys.Numbered("t:carpet", 16),
         FloorKeys = SpriteKeys.Numbered("t:floor", 2), GrassKeys = SpriteKeys.Numbered("t:grass", 4), WaterInKeys = SpriteKeys.Numbered("t:waterin", 4),
-        TreeKeys = SpriteKeys.Numbered("t:tree", TileArt.TreeVariants), PineKeys = SpriteKeys.Numbered("t:pine", TileArt.PineVariants),
         FenceKeys = SpriteKeys.Numbered("t:fence", 4), TableKeys = SpriteKeys.Numbered("t:table", 4), CounterKeys = SpriteKeys.Numbered("t:counter", 16),
         RustleKeys = SpriteKeys.Numbered("t:rustle", 3);
-    private const int WaterFrames = 3;
+    private const int WaterFrames = TileArt.WaterFrames;
     private static readonly string[] WaterKeys = WaterKeyTable();
     private MapDef? _mapKeysFor;
     private string _groundKey = "";
     private string[] _buildingKeys = [];
+    /// <summary>The tree drawn on each tile of the current map (null where there is none), chosen once per map.</summary>
+    private string?[] _treeKeys = [];
 
     private static string[] WaterKeyTable()
     {
@@ -47,6 +48,10 @@ internal sealed partial class OverworldScene
         _groundKey = "ground:" + _map.Def.Id;
         _buildingKeys = new string[_map.Def.Buildings.Count];
         for (int i = 0; i < _buildingKeys.Length; i++) _buildingKeys[i] = $"bld:{_map.Def.Id}:{i}";
+        _treeKeys = new string?[_map.Width * _map.Height];
+        for (int y = 0; y < _map.Height; y++)
+        for (int x = 0; x < _map.Width; x++)
+            _treeKeys[y * _map.Width + x] = TreeLayout.At(_map.Def, x, y)?.Key;
     }
 
     /// <summary>The camera position drawn this frame, between the start and the end of the scene's latest step.</summary>
@@ -80,7 +85,7 @@ internal sealed partial class OverworldScene
             for (int i = 0; i < _map.Def.Buildings.Count; i++)
             {
                 var b = _map.Def.Buildings[i];
-                if (b.Y + b.H - 1 == y) r.Draw(_game.Sprite(_buildingKeys[i]), new Vector2(b.X * Tile, b.Y * Tile - BuildingArt.RoofOverhang));
+                if (b.Y + b.H - 1 == y) r.Draw(_game.Sprite(_buildingKeys[i]), new Vector2(b.X * Tile, b.Y * Tile));
             }
             _rowActors.Clear();
             foreach (var npc in _map.Npcs) if (npc.Visible && npc.DrawRow == y) _rowActors.Add(npc);
@@ -111,10 +116,11 @@ internal sealed partial class OverworldScene
         var pos = new Vector2(x * Tile, y * Tile);
         string? key = kind switch
         {
-            TileKind.Flowers => SpriteKeys.Pick(FlowerKeys, "t:flowers", (int)(Age * 1.6f + x * 0.37f + y * 0.21f) % 2),
+            TileKind.Flowers => SpriteKeys.Pick(FlowerKeys, "t:flowers",
+                (int)(Art.Hash(x, y, 33) * TileArt.FlowerKinds) * TileArt.FlowerFrames + (int)(Age * 1.6f + x * 0.37f + y * 0.21f) % TileArt.FlowerFrames),
             TileKind.TallGrass => SpriteKeys.Pick(TallKeys, "t:tall", (int)(Age * 0.9f + (x + y) * 0.5f) % 2),
             TileKind.Path => SpriteKeys.Pick(PathKeys, "t:path", AutotileMask(x, y)),
-            TileKind.Water => WaterKey(AutotileMask(x, y), (int)(Age * 2.2f) % 3),
+            TileKind.Water => WaterKey(AutotileMask(x, y), (int)(Age * 5f) % WaterFrames),
             TileKind.Ledge => SpriteKeys.Pick(LedgeKeys, "t:ledge", (_map.KindAt(x - 1, y) == TileKind.Ledge ? 1 : 0) | (_map.KindAt(x + 1, y) == TileKind.Ledge ? 2 : 0)),
             TileKind.Wall => _map.KindAt(x, y + 1) == TileKind.Wall ? "t:walltop" : (x % 4 == 2 && !_map.Def.Id.Equals("hall") ? "t:wallwin" : "t:wall"),
             TileKind.Mat => "t:mat",
@@ -191,8 +197,7 @@ internal sealed partial class OverworldScene
         var pos = new Vector2(x * Tile, y * Tile);
         string? key = kind switch
         {
-            TileKind.Tree => SpriteKeys.Pick(TreeKeys, "t:tree", (int)(Art.Hash(x, y, 61) * TileArt.TreeVariants)),
-            TileKind.Pine => SpriteKeys.Pick(PineKeys, "t:pine", (int)(Art.Hash(x, y, 62) * TileArt.PineVariants)),
+            TileKind.Tree or TileKind.Pine => _treeKeys[y * _map.Width + x],
             TileKind.Rock => "t:rock",
             TileKind.Bush => "t:bush",
             TileKind.Fence => SpriteKeys.Pick(FenceKeys, "t:fence", (_map.KindAt(x - 1, y) == TileKind.Fence ? 1 : 0) | (_map.KindAt(x + 1, y) == TileKind.Fence ? 2 : 0)),
