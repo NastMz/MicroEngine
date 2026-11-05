@@ -10,12 +10,12 @@ Decisions: [ADR 0007](../docs/decisions/0007-browser-host.md) and [ADR 0008](../
 | Path | Purpose |
 | --- | --- |
 | `toolchain.env` | Pinned versions: .NET SDK, workload set (and so emscripten), raylib commit |
-| `setup.sh` | Installs that toolchain in a private folder and rebuilds raylib with its emscripten |
+| `setup.sh` | Installs that toolchain in a private folder, rebuilds raylib with its emscripten and builds SDL 3 for the web (`../src/MicroEngine.Sdl/native/build.sh`; `--no-sdl` skips it) |
 | `build.sh` | Builds one or all games into `dist/web/<Game>/` |
 | `serve.mjs` | Local static server (Brotli, correct MIME types) |
 | [`../src/MicroEngine.Cli/Hosts/web`](../src/MicroEngine.Cli/Hosts/web) | The host template: `Host.csproj` (browser build settings, the game, rebuilt raylib), `Program.cs` (page bridge) and `wwwroot/` (page, styles, page glue) |
 | `build-raylib-wasm.sh` | Compiles raylib for the web (called by `setup.sh`) |
-| `tests/` | Browser checks in Chrome and Firefox (`run.mjs`), touch checks on emulated phones and tablets (`mobile.mjs`) and the desktop comparison (`desktop.mjs`) |
+| `tests/` | Browser checks in Chrome and Firefox (`run.mjs`), touch checks on emulated phones and tablets (`mobile.mjs`), the desktop comparison (`desktop.mjs`) and size, start-up and frame time of packages (`measure.mjs`) |
 
 The host is not in `MicroEngine.slnx`: it needs a toolchain the normal build does not, and `microengine` generates its project per game.
 
@@ -51,6 +51,7 @@ with the workload's own emscripten links cleanly. To move to another .NET SDK, c
 web/build.sh                     # all games, into dist/web/<Game>/
 web/build.sh NeonRift            # one game
 web/build.sh --dev --out dist/web-dev   # development packages (scripts, URL parameters)
+web/build.sh --backend sdl MeadowRun    # on SDL 3 instead of raylib (or MICROENGINE_WEB_BACKEND=sdl)
 ```
 
 An unknown game, or a toolchain that is missing or not the pinned one, stops with a message. The build prints
@@ -166,7 +167,9 @@ web/build.sh --dev --out dist/web-dev
 cd web/tests && npm ci && cd ../..
 node web/tests/run.mjs                       # platform and scripts suites, Chrome and Firefox
 node web/tests/run.mjs keyboard framerate autopilot
+node web/tests/run.mjs repeat gamepad       # scripts twice (identical captures), an emulated gamepad
 node web/tests/mobile.mjs                    # touch on emulated Android, iPhone, portrait phone and tablet
+node web/tests/measure.mjs --games MeadowRun # download, load, start-up and frame time (to compare backends)
 dotnet build MicroEngine.slnx -c Release && node web/tests/desktop.mjs   # compare script captures with desktop
 ```
 

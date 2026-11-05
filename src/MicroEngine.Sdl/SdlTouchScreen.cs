@@ -9,26 +9,32 @@ namespace MicroEngine.Sdl;
 /// SDL's touch input as an <see cref="ITouchScreen"/>: finger events in render pixels, the window's safe area
 /// (<c>SDL_GetWindowSafeArea</c>: notches, rounded corners, system bars), its display scale as the density, and the
 /// device vibrator on Android (SDL's haptic API). Fingers still down when the window loses focus or the app is
-/// suspended are cancelled.
+/// suspended are cancelled. In a browser the page is the source instead (<see cref="BrowserPage"/>): its Pointer Events,
+/// its safe-area insets and density, whether touch is its main input and navigator.vibrate; SDL's own finger events are
+/// then ignored, so no touch arrives twice.
 /// </summary>
 internal sealed unsafe class SdlTouchScreen : ITouchScreen, IDisposable
 {
     private readonly SDL_Window* _window;
     private readonly SDL_Renderer* _sdl;
     private readonly List<TouchEvent> _pending = [];
+    private readonly List<TouchEvent> _fed = [];
     private readonly Dictionary<long, Vector2> _down = [];
+    private readonly PageFeed? _page;
+    private readonly bool _touchFirst;
     private SDL_Haptic* _haptic;
     private bool _hapticTried;
 
-    public SdlTouchScreen(SDL_Window* window, SDL_Renderer* sdl, bool touchFirst)
+    public SdlTouchScreen(SDL_Window* window, SDL_Renderer* sdl, bool touchFirst, PageFeed? page = null)
     {
         _window = window;
         _sdl = sdl;
-        TouchFirst = touchFirst;
+        _touchFirst = touchFirst;
+        _page = page;
         Canvas = new SdlOverlayCanvas(sdl);
     }
 
-    public bool TouchFirst { get; }
+    public bool TouchFirst => _page?.TouchFirst ?? _touchFirst;
     public ITouchOverlay? Overlay { get; set; }
     internal SdlOverlayCanvas Canvas { get; }
 
@@ -46,8 +52,14 @@ internal sealed unsafe class SdlTouchScreen : ITouchScreen, IDisposable
     {
         get
         {
-            SDL_Rect r;
             var size = Size;
+            if (_page is not null)
+            {
+                var (l, t, right, b) = _page.Insets;
+                var area = new RectF(l, t, size.X - l - right, size.Y - t - b);
+                return area.Width > 0 && area.Height > 0 ? area : new RectF(0, 0, size.X, size.Y);
+            }
+            SDL_Rect r;
             if (!SDL_GetWindowSafeArea(_window, &r) || r.w <= 0 || r.h <= 0) return new RectF(0, 0, size.X, size.Y);
             // The safe area is in window coordinates; the renderer draws in pixels.
             int ww, wh;
@@ -62,7 +74,8 @@ internal sealed unsafe class SdlTouchScreen : ITouchScreen, IDisposable
         get
         {
             // Display scale is the content scale times the pixel density: pixels per 1/96-ish inch on desktops, the
-            // system's density on phones (Android reports dpi / 160).
+            // system's density on phones (Android reports dpi / 160). A page knows its canvas pixels per CSS pixel.
+            if (_page is { PixelsPerDp: > 0 } page) return page.PixelsPerDp;
             float scale = SDL_GetWindowDisplayScale(_window);
             return scale > 0 ? scale : 1;
         }
@@ -70,12 +83,17 @@ internal sealed unsafe class SdlTouchScreen : ITouchScreen, IDisposable
 
     public void Finger(SDL_TouchFingerEvent e, TouchPhase phase)
     {
-        var at = new Vector2(e.x, e.y) * Size;
-        long id = (long)(ulong)e.fingerID;
-        if (phase == TouchPhase.Began) _down[id] = at;
-        else if (phase is TouchPhase.Ended or TouchPhase.Canceled) _down.Remove(id);
-        else if (_down.ContainsKey(id)) _down[id] = at;
-        _pending.Add(new TouchEvent(id, phase, at));
+        // A page forwards its own Pointer Events; SDL's view of the same fingers would deliver each touch twice.
+        if (_page is not null) return;
+        Add(new TouchEvent((long)(ulong)e.fingerID, phase, new Vector2(e.x, e.y) * Size));
+    }
+
+    private void Add(TouchEvent e)
+    {
+        if (e.Phase == TouchPhase.Began) _down[e.Finger] = e.Position;
+        else if (e.Phase is TouchPhase.Ended or TouchPhase.Canceled) _down.Remove(e.Finger);
+        else if (_down.ContainsKey(e.Finger)) _down[e.Finger] = e.Position;
+        _pending.Add(e);
     }
 
     /// <summary>Cancels every finger that is down (focus lost, suspension).</summary>
@@ -87,14 +105,21 @@ internal sealed unsafe class SdlTouchScreen : ITouchScreen, IDisposable
 
     public void ReadTouches(List<TouchEvent> events)
     {
+        if (_page is not null)
+        {
+            _page.Drain(_fed);
+            foreach (var e in _fed) Add(e);
+            _fed.Clear();
+        }
         events.AddRange(_pending);
         _pending.Clear();
     }
 
-    public bool CanVibrate => Haptic() != null;
+    public bool CanVibrate => _page is not null ? _page.Vibrator is not null && _page.TouchFirst : Haptic() != null;
 
     public bool Vibrate(float strength, int milliseconds)
     {
+        if (_page is not null) return CanVibrate && _page.Vibrator!(Math.Max(1, milliseconds));
         var haptic = Haptic();
         return haptic != null && SDL_PlayHapticRumble(haptic, Math.Clamp(strength, 0, 1), (uint)Math.Max(1, milliseconds));
     }

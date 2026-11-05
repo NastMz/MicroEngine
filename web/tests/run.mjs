@@ -18,6 +18,8 @@
 //   keyboard  replays the same scripts through the browser's keyboard (real key events at the scripted update
 //             numbers) and checks that the game reaches the scene the scripted run ends in; page screenshots
 //             at the script's capture points go to --out for review
+//   gamepad   per game: an emulated standard-mapping gamepad (Gamepad API): d-pad and left stick held and released,
+//             unplugging releases what it held
 //
 // Needs development packages (web/build.sh --dev --out dist/web-dev) of the games selected. Browsers are found in
 // their default install folders or through CHROME_PATH and FIREFOX_PATH. Exits 1 when any check failed. Daily CI
@@ -526,6 +528,68 @@ async function framerate(browser, label) {
   }
 }
 
+/**
+ * A gamepad the browser reports through the Gamepad API (standard mapping), emulated in the page: navigator.getGamepads
+ * returns it and a gamepadconnected event announces it, as when a player presses a button on a real pad. Per game: the
+ * d-pad and the left stick move (the engine's default bindings), a release is seen, and unplugging releases what was
+ * held. Real pads (vendor mappings, rumble) are not emulated.
+ */
+async function gamepad(browser, label) {
+  for (const game of games) {
+    const name = `${label} ${game}`;
+    const { page, context, errors } = await open(browser, game);
+    await page.click('#play');
+    await waitFor(page, s => s === 'playing');
+    await sleep(1000);
+    await page.evaluate(() => {
+      const pad = {
+        id: 'Emulated Pad (STANDARD GAMEPAD Vendor: 045e Product: 028e)', index: 0, connected: true, mapping: 'standard',
+        timestamp: performance.now(), axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),
+      };
+      window.__pad = pad;
+      window.__pads = [pad, null, null, null];
+      Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => window.__pads });
+      window.__padSet = (button, down) => {
+        pad.buttons[button] = { pressed: down, touched: down, value: down ? 1 : 0 };
+        pad.timestamp = performance.now();
+      };
+      window.__padAxis = (axis, value) => { pad.axes[axis] = value; pad.timestamp = performance.now(); };
+      window.__padEvent = type => {
+        const event = new Event(type);
+        Object.defineProperty(event, 'gamepad', { value: pad });
+        window.dispatchEvent(event);
+      };
+      window.__padEvent('gamepadconnected');
+    });
+    await sleep(300);
+    // A real stick at rest reports a little noise, which SDL takes as each axis's resting value; an axis that never
+    // moved before would have its first movement taken as that value instead.
+    await page.evaluate(() => [0.004, -0.003, 0.002, -0.001].forEach((v, i) => window.__padAxis(i, v)));
+    await sleep(300);
+    const holds = async (action, set, clear) => {
+      await page.evaluate(set);
+      await sleep(400);
+      const held = actionsIn(await probe(page)).includes(action);
+      await page.evaluate(clear);
+      await sleep(400);
+      return { held, released: !actionsIn(await probe(page)).includes(action) };
+    };
+    const dpad = await holds('right', () => window.__padSet(15, true), () => window.__padSet(15, false));
+    check(`${name}: a gamepad's d-pad is held and released`, dpad.held && dpad.released, JSON.stringify(dpad));
+    const stick = await holds('left', () => window.__padAxis(0, -1), () => window.__padAxis(0, 0));
+    check(`${name}: a gamepad's left stick moves`, stick.held && stick.released, JSON.stringify(stick));
+    await page.evaluate(() => window.__padSet(14, true));
+    await sleep(400);
+    const before = actionsIn(await probe(page)).includes('left');
+    await page.evaluate(() => { window.__pad.connected = false; window.__pads = [null, null, null, null]; window.__padEvent('gamepaddisconnected'); });
+    await sleep(400);
+    const after = actionsIn(await probe(page)).includes('left');
+    check(`${name}: unplugging a gamepad releases what it held`, before && !after, `before ${before}, after ${after}`);
+    check(`${name}: no page errors with a gamepad`, errors.length === 0, errors.join(' | ').slice(0, 300));
+    await context.close();
+  }
+}
+
 async function autopilot(browser, label) {
   for (const stage of [1, 2, 3]) {
     // As in the desktop test (Autopilot_clears_the_stage), shots do not kill the autopilot; pits and lava still do.
@@ -567,6 +631,7 @@ try {
       if (suites.includes('audio')) await audio(browser, label).catch(e => check(`${label} audio`, false, e.message));
       if (suites.includes('framerate')) await framerate(browser, label).catch(e => check(`${label} framerate`, false, e.message));
       if (suites.includes('keyboard')) await keyboard(browser, label).catch(e => check(`${label} keyboard`, false, e.message));
+      if (suites.includes('gamepad')) await gamepad(browser, label).catch(e => check(`${label} gamepad`, false, e.message));
       if (suites.includes('autopilot')) await autopilot(browser, label).catch(e => check(`${label} autopilot`, false, e.message));
     } finally {
       await browser.close();

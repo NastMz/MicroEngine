@@ -259,6 +259,9 @@ function begin() {
   catch (e) { error = e; }
   if (error) return fail(`${game.title} could not start.`, error);
   setState('playing');
+  // SDL's canvas keeps the size its window was created with until the page's next resize event; one now makes it
+  // follow the page from the first frame (raylib reads the page's size itself).
+  if (game.backend === 'sdl') window.dispatchEvent(new Event('resize'));
   sendScreen();
   updateSound();
   requestAnimationFrame(frame);

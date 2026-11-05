@@ -21,8 +21,17 @@ namespace MicroEngine.Sdl;
 /// also reports the window's safe area and density; a system that sends the app to the background suspends it
 /// (<see cref="IEngineEventSink.Suspending"/>). Its capabilities (<see cref="TryGetCapability{T}"/>):
 /// <see cref="IDisplayControl"/>, <see cref="IPlatformDiagnostics"/>, <see cref="IDisplayPacing"/>,
-/// <see cref="IPreciseDelay"/> and <see cref="ITouchScreen"/>.
+/// <see cref="ITouchScreen"/> and, outside browsers, <see cref="IPreciseDelay"/>.
 /// </summary>
+/// <remarks>
+/// In a browser (SDL compiled to WebAssembly, <see cref="BrowserProfile"/>) the platform is page-driven
+/// (<see cref="CanBlock"/> is false): the page calls one frame per animation frame, so nothing waits (no VSync, no
+/// delay, no wait while suspended); the window is the page's canvas, sized from the canvas after start; a hidden page
+/// suspends the game; touches, safe-area insets, density and vibration come from the page (<see cref="BrowserPage"/>);
+/// sound plays through the page's AudioWorklet (<see cref="SdlAudioDevice"/>); full screen and the window's place
+/// belong to the page. A few SDL calls go through declarations of the engine's own there (<c>SdlWeb</c>), because .NET's
+/// WebAssembly interpreter mispasses SDL3-CS's 64-bit enum parameters.
+/// </remarks>
 public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDisplayControl, IDisplayPacing, IPreciseDelay, IMonotonicClock, IScreenView, IViewCapture
 {
     private readonly GameSettings _settings;
@@ -40,6 +49,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     private readonly ulong _start;
     private readonly bool _paced; // a visible real-time window: the only kind VSync applies to
     private readonly bool _mobile;
+    private readonly bool _browser;
+    private readonly BrowserPage? _page;
     private bool _vsync;
     private bool _suspended, _focused, _disposed;
     // Written by the lifecycle watch on the thread the system uses to send the event.
@@ -47,8 +58,26 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     private int _wentToBackground; // 1 after a trip to the background the loop has not seen; exchanged atomically
     private GCHandle _self;
 
-    /// <summary>The SDL3 platform as a catalog entry. SDL3 is packaged for Windows, Linux, macOS, Android and iOS, not for browsers.</summary>
+    /// <summary>
+    /// The SDL3 platform as a catalog entry for Windows, Linux, macOS, Android and iOS. A browser page uses
+    /// <see cref="BrowserProfile"/>, which knows its page.
+    /// </summary>
     public static PlatformProfile Profile { get; } = CreateProfile();
+
+    /// <summary>
+    /// The SDL3 platform of a browser page, named <c>sdl</c>: the WebGL canvas, page input and Web Audio sound, with the
+    /// touches, screen facts, visibility and vibration of <paramref name="page"/>. The browser host offers this
+    /// profile; a game's composition may offer others.
+    /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="page"/> is null.</exception>
+    public static PlatformProfile BrowserProfile(BrowserPage page)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        return new("sdl", "SDL 3 in a browser page: WebGL canvas, page input and Web Audio sound", request => new SdlPlatform(request, null, page))
+        {
+            CheckSupport = () => OperatingSystem.IsBrowser() ? null : "a browser page profile runs only in a browser",
+        };
+    }
 
     /// <summary>
     /// The SDL3 platform with a fixed render driver ("direct3d11", "direct3d12", "metal", "opengl", "opengles2",
@@ -62,7 +91,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
             : $"SDL 3 with its {renderer} renderer",
         request => new SdlPlatform(request, renderer))
     {
-        CheckSupport = () => OperatingSystem.IsBrowser() ? "SDL3 is not packaged for browsers; use raylib" : null,
+        CheckSupport = () => OperatingSystem.IsBrowser() ? "in a browser the page's own profile runs SDL (SdlPlatform.BrowserProfile)" : null,
     };
 
     /// <summary>The render drivers this SDL build offers on this system, in SDL's order of preference.</summary>
@@ -84,9 +113,19 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// </summary>
     /// <param name="request">The game's settings and window options.</param>
     /// <param name="renderer">An SDL render driver name (see <see cref="RenderDrivers"/>), or null to let SDL choose.</param>
-    public SdlPlatform(PlatformRequest request, string? renderer = null)
+    public SdlPlatform(PlatformRequest request, string? renderer = null) : this(request, renderer, null) { }
+
+    /// <summary>
+    /// The platform of <paramref name="page"/> outside a browser: what the page feeds (touches, screen facts,
+    /// visibility, vibration) behaves as in a browser, on a desktop window. For tests of the page path.
+    /// </summary>
+    internal static SdlPlatform ForPage(PlatformRequest request, BrowserPage page) => new(request, null, page ?? throw new ArgumentNullException(nameof(page)));
+
+    private SdlPlatform(PlatformRequest request, string? renderer, BrowserPage? page)
     {
         ArgumentNullException.ThrowIfNull(request);
+        _browser = OperatingSystem.IsBrowser();
+        _page = page;
         _settings = request.Settings;
         Letterbox = _settings.Letterbox;
         _captureScale = Math.Max(1, request.CaptureScale);
@@ -125,7 +164,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         if (request.Hidden || placed) flags |= SDL_WindowFlags.SDL_WINDOW_HIDDEN;
         if (mobile) flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
         var (windowWidth, windowHeight) = mobile ? (_settings.VirtualWidth * scale, _settings.VirtualHeight * scale) : InitialWindowSize(scale);
-        _window = SDL_CreateWindow(_settings.Title, windowWidth, windowHeight, flags);
+        _window = _browser ? SdlWeb.CreateWindow(_settings.Title, windowWidth, windowHeight, flags) : SDL_CreateWindow(_settings.Title, windowWidth, windowHeight, flags);
         if (_window == null) throw Fail("SDL could not open a window");
         if (placed)
         {
@@ -133,7 +172,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
             if (graphics.WindowMode != WindowMode.Windowed) SetWindowMode(graphics.WindowMode);
             if (!request.Hidden) SDL_ShowWindow(_window);
         }
-        if (!mobile && request.Identity?.Icon is { } icon) SetWindowIcon(icon);
+        if (!mobile && !_browser && request.Identity?.Icon is { } icon) SetWindowIcon(icon);
         Mark("window", ref started);
         // SDL can choose a GPU only for its Metal and GPU renderers; elsewhere the system decides (GpuPreference).
         if (graphics.Gpu != GpuPreference.Automatic)
@@ -143,8 +182,9 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
             SDL_SetHint(SDL_HINT_RENDER_METAL_PREFER_LOW_POWER_DEVICE, lowPower);
         }
         _surface = new HostSurface((nint)_window, PixelSize, () => SDL_GetWindowPixelDensity(_window) is > 0 and var d ? d : 1,
-            () => (SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) != 0);
-        _paced = !request.Hidden && request.WaitForDisplay;
+            () => (WindowFlags() & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) != 0);
+        // A page paces its own frames (requestAnimationFrame): SDL's VSync needs a main loop SDL owns, which it never has there.
+        _paced = !request.Hidden && request.WaitForDisplay && !_browser;
         // The graphics device on SDL's renderer: the game's preferred APIs first (SDL tries a comma-separated list in
         // order), then the profile's driver or SDL's own choice.
         var present = _paced && graphics.VSync ? PresentMode.VSync : PresentMode.Immediate;
@@ -169,14 +209,18 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _device = device;
         _sdl = device.Renderer;
         Mark("renderer", ref started);
-        var (minWidth, minHeight) = WindowSizing.Minimum(_settings);
-        SDL_SetWindowMinimumSize(_window, minWidth, minHeight);
+        // A page may be smaller than the virtual canvas (a small iframe); the canvas then scales down instead of being cropped.
+        if (!_browser)
+        {
+            var (minWidth, minHeight) = WindowSizing.Minimum(_settings);
+            SDL_SetWindowMinimumSize(_window, minWidth, minHeight);
+        }
         _vsync = _paced && graphics.VSync && SDL_SetRenderVSync(_sdl, 1);
         if (_paced && !graphics.VSync) SDL_SetRenderVSync(_sdl, 0);
         // The game draws into a canvas render target through the 2D batcher; EndFrame composes it into the window.
         _canvas = new DeviceCanvas(_device, _settings.VirtualWidth, _settings.VirtualHeight);
         _canvas.Graphics.DefaultFilter = _settings.DefaultTextureFilter;
-        _touch = new SdlTouchScreen(_window, _sdl, mobile);
+        _touch = new SdlTouchScreen(_window, _sdl, mobile, page?.Feed);
         _input = new SdlInput(this);
         _combinedInput = request.CombineInput(_input);
         Mark("frame", ref started);
@@ -185,20 +229,24 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         // A host that shows a start screen asks for the gamepad subsystem to start after it (StartGamepads); without one,
         // a window that showed the game's first frame and then froze would be worse than one that appears a moment later.
         if (!request.StartGamepadsAfterFirstFrame) StartGamepads();
-        _focused = (SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) != 0;
+        _focused = (WindowFlags() & SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) != 0;
         _capabilities.Add<IDisplayControl>(this);
         _capabilities.Add<IPlatformDiagnostics>(this);
         _capabilities.Add<IDisplayPacing>(this);
         _capabilities.Add<IScreenView>(this);
         _capabilities.Add<IViewCapture>(this);
-        _capabilities.Add<IPreciseDelay>(this);
+        if (CanBlock) _capabilities.Add<IPreciseDelay>(this);
         _capabilities.Add<ITouchScreen>(_touch);
         _capabilities.Add<IInputBackend>(_input);
         _capabilities.Add<IKeyLabels>(_input);
         _capabilities.Add<IGamepadRumble>(_input);
         _capabilities.Add<ITextInputControl>(_input);
-        _self = GCHandle.Alloc(this);
-        SDL_AddEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
+        // Phones announce backgrounding from their own thread; a page announces it through visibilitychange (BrowserPage.Hidden).
+        if (!_browser)
+        {
+            _self = GCHandle.Alloc(this);
+            SDL_AddEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
+        }
         _start = SDL_GetTicksNS();
         RendererName = SDL_GetRendererName(_sdl) ?? "unknown";
     }
@@ -257,8 +305,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <summary>The window: an <c>SDL_Window*</c> as <see cref="ISurface.NativeWindow"/>, its size in pixels and density.</summary>
     public ISurface MainSurface => _surface;
     ISurface? IPlatformHost.MainSurface => _surface;
-    /// <summary>True: SDL's native hosts own their thread.</summary>
-    public bool CanBlock => true;
+    /// <summary>True on SDL's native hosts, which own their thread; false in a browser, whose page drives the frames.</summary>
+    public bool CanBlock => !_browser;
     /// <inheritdoc/>
     public bool TryGetCapability<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T? capability) where T : class => _capabilities.TryGet(out capability);
 
@@ -277,8 +325,11 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
             return mode == null ? 0 : mode->refresh_rate;
         }
     }
-    /// <summary>Whether the system took the app away (a phone app in the background); no frame runs meanwhile.</summary>
+    /// <summary>Whether the system took the app away (a phone app in the background, a hidden page); no frame runs meanwhile.</summary>
     public bool Suspended => _suspended;
+
+    /// <summary>The window's flags (through the engine's own declaration in a browser: <c>SdlWeb</c>).</summary>
+    private SDL_WindowFlags WindowFlags() => _browser ? SdlWeb.GetWindowFlags(_window) : SDL_GetWindowFlags(_window);
     /// <summary>The touch screen (also the <see cref="ITouchScreen"/> capability).</summary>
     public ITouchScreen Touch => _touch;
 
@@ -391,12 +442,18 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// Processes SDL's pending events and delivers the engine's: a trip to the background (latched by the lifecycle
     /// watch, so one that ended before this pump is still delivered as <c>Suspending</c> then <c>Resumed</c>), one quit
     /// request however many close and quit events arrived together, focus changes and size changes of the window.
-    /// While suspended it waits 50 ms instead of spinning.
+    /// While suspended it waits 50 ms instead of spinning, except in a browser, whose page stops calling while hidden.
     /// </summary>
     public bool PumpEvents(IEngineEventSink sink)
     {
         ArgumentNullException.ThrowIfNull(sink);
         _input.BeginFrame();
+        // A hidden page is the browser's trip to the background (the page releases its own fingers).
+        if (_page is not null && _page.Hidden != _background)
+        {
+            _background = _page.Hidden;
+            if (_background) Interlocked.Exchange(ref _wentToBackground, 1);
+        }
         if (Interlocked.Exchange(ref _wentToBackground, 0) == 1 && !_suspended)
         {
             // Fingers and keys held when the app left are never released by the system.
@@ -454,7 +511,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         // A size change SDL reported without its own event (or with one that came before the size settled).
         _surface.Pump(sink);
         // A suspended app draws nothing (a phone may have taken its surface away); wait instead of spinning.
-        if (_suspended) SDL_Delay(50);
+        if (_suspended && !_browser) SDL_Delay(50);
         return !_suspended;
     }
 
@@ -603,9 +660,10 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <summary>Switches between the window and borderless full screen (exclusive full screen goes back to the window).</summary>
     public void ToggleFullscreen() => SetWindowMode(WindowMode == WindowMode.Windowed ? WindowMode.Fullscreen : WindowMode.Windowed);
 
-    /// <summary>Waits with SDL's precise delay (a high-resolution timer, then a short spin).</summary>
+    /// <summary>Waits with SDL's precise delay (a high-resolution timer, then a short spin); never offered in a browser, whose page cannot be blocked.</summary>
     public void Delay(double seconds)
     {
+        if (_browser) throw new InvalidOperationException("A browser page cannot be blocked: the page paces the frames.");
         if (seconds > 0) SDL_DelayPrecise((ulong)(seconds * 1e9));
     }
 
@@ -667,14 +725,15 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     {
         get
         {
-            if ((SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) == 0) return WindowMode.Windowed;
+            if ((WindowFlags() & SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) == 0) return WindowMode.Windowed;
             return SDL_GetWindowFullscreenMode(_window) == null ? WindowMode.Fullscreen : WindowMode.ExclusiveFullscreen;
         }
     }
 
-    /// <summary>Changes the window's mode; phones keep theirs (always full screen).</summary>
+    /// <summary>Changes the window's mode; phones keep theirs (always full screen), and a page owns its full screen (the Fullscreen API needs a gesture).</summary>
     public bool SetWindowMode(WindowMode mode)
     {
+        if (_browser) return false;
         if (_mobile) return mode != WindowMode.Windowed;
         if (mode == WindowMode.Windowed) return SDL_SetWindowFullscreen(_window, false);
         // Exclusive: the display's desktop mode (its native resolution and refresh rate); null: borderless.
@@ -685,7 +744,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <summary>Moves the window to the centre of display <paramref name="index"/>; a full-screen window follows to that display.</summary>
     public bool MoveToDisplay(int index)
     {
-        if (_mobile) return false;
+        if (_mobile || _browser) return false;
         int count;
         var ids = SDL_GetDisplays(&count);
         if (ids == null) return false;
@@ -717,6 +776,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _canvas?.Dispose();
         _input?.Dispose();
         _touch?.Dispose();
+        _page?.Feed.Clear(); // a new run on the same page starts with no touches of this one
         _device?.Dispose(); // destroys SDL's renderer
         if (_window != null) SDL_DestroyWindow(_window);
         if (_gamepadsStarted) SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_GAMEPAD);

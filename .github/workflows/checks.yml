@@ -302,10 +302,20 @@ jobs:
           retention-days: 30
           overwrite: true
 
+  # SDL for the web (SDL3.a), cached by its sources and toolchain (.github/workflows/sdl-web.yml): the web jobs below
+  # put it where web/setup.sh would build it, so none of them compiles SDL.
+  sdl-web:
+    name: SDL for the web
+    if: inputs.build != '[]' || inputs.web-games != '[]'
+    uses: ./.github/workflows/sdl-web.yml
+    with:
+      ref: ${{ inputs.ref }}
+
   # Web packages are built on Windows with the pinned toolchain and stored in the integration store under their
   # content key (site/scripts/demos.mjs). A key is built once; building never publishes a demo.
   build-demos:
     name: Build ${{ matrix.game }} (WebAssembly)
+    needs: sdl-web
     if: inputs.build != '[]'
     runs-on: windows-latest
     permissions:
@@ -334,6 +344,10 @@ jobs:
           cache: npm
           cache-dependency-path: site/package-lock.json
       - run: npm ci --prefix site
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdl-web-browser-wasm
+          path: ${{ runner.temp }}/web-tools/sdl-web/browser-wasm
       - run: web/setup.sh
       - run: web/build.sh "${{ matrix.game }}"
       - name: Store the package
@@ -467,26 +481,32 @@ jobs:
             dist/linux-distros
           retention-days: 7
 
-  # The browser build's engine for real (web/tests/run.mjs), one job per game: a development package played in Chrome
-  # on a virtual X server with a virtual sound server. Loading, starting by a gesture, 60 updates per second whatever
-  # the page's frame rate, real key events (held, released, shorter than a frame, focus loss, the scripts replayed
-  # through the keyboard), saves, the sound level reaching the output, the games' scripts replayed to their end: any
-  # failure fails the job. Then the same scripts on the desktop build (raylib under Mesa), whose captures are compared
-  # byte for byte with the browser's and reported.
+  # The browser build's engine for real (web/tests/run.mjs), one job per game and web backend: a development package
+  # played in Chrome on a virtual X server with a virtual sound server. Loading, starting by a gesture, 60 updates per
+  # second whatever the page's frame rate, real key events (held, released, shorter than a frame, focus loss, the
+  # scripts replayed through the keyboard), saves, the sound level reaching the output, the games' scripts replayed to
+  # their end: any failure fails the job. The SDL backend (microengine package web --web-backend sdl) is also played in
+  # Firefox, its scripts twice (byte-identical captures), with an emulated gamepad and on emulated phones and tablets
+  # (web/tests/mobile.mjs: multi-touch, safe-area insets): the gates for making it the default (docs/ci.md). Then the
+  # same scripts on the desktop build (raylib under Mesa), whose captures are compared byte for byte with the browser's
+  # and reported, and the package's size, start-up and frame time (web/tests/measure.mjs), reported.
   browser-engine:
-    name: Browser engine ${{ matrix.game }} (Chrome)
+    name: Browser engine ${{ matrix.game }} (${{ matrix.backend }})
+    needs: sdl-web
     if: inputs.web-games != '[]'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
         game: ${{ fromJSON(inputs.web-games) }}
+        backend: [raylib, sdl]
     defaults:
       run:
         shell: bash # with pipefail, so `| tee` keeps a failure
     env:
       GAME: ${{ matrix.game }}
+      MICROENGINE_WEB_BACKEND: ${{ matrix.backend }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -519,8 +539,12 @@ jobs:
           pulseaudio --start --exit-idle-time=-1
           pactl load-module module-null-sink sink_name=microengine
           pactl set-default-sink microengine
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdl-web-browser-wasm
+          path: ${{ runner.temp }}/web-tools/sdl-web/browser-wasm
       - run: bash web/setup.sh
-      - name: Development package
+      - name: Development package (${{ matrix.backend }})
         run: bash web/build.sh --dev --out dist/web-dev "$GAME"
       - run: npm ci --prefix web/tests
       - name: Desktop build (the frames to compare with)
@@ -531,13 +555,38 @@ jobs:
           # A headed Chrome refuses WebGL on Mesa's software GPU unless told otherwise; with this it draws with
           # llvmpipe, the renderer of the desktop build it is compared with.
           CHROME_FLAGS: --ignore-gpu-blocklist
+          BACKEND: ${{ matrix.backend }}
         run: |
-          { echo "### Browser engine: $GAME"; echo; } >> "$GITHUB_STEP_SUMMARY"
+          { echo "### Browser engine: $GAME ($BACKEND)"; echo; } >> "$GITHUB_STEP_SUMMARY"
           status=0
-          xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/run.mjs platform scripts keyboard framerate audio \
+          suites=(platform scripts keyboard framerate audio)
+          [ "$BACKEND" = sdl ] && suites+=(repeat gamepad)
+          xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/run.mjs "${suites[@]}" \
             --browsers chrome --games "$GAME" --headed --out web-tests | tee web-tests.log || status=$?
           grep -E '^(==|FAIL|[0-9]+ passed)' web-tests.log | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY" || true
           exit "$status"
+      - name: Firefox suites (SDL)
+        if: ${{ !cancelled() && matrix.backend == 'sdl' }}
+        run: |
+          status=0
+          firefox --version
+          xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/run.mjs platform scripts repeat keyboard framerate audio gamepad \
+            --browsers firefox --games "$GAME" --headed --out web-tests | tee web-tests-firefox.log || status=$?
+          grep -E '^(==|FAIL|[0-9]+ passed)' web-tests-firefox.log | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY" || true
+          exit "$status"
+      - name: Emulated phones and tablets (SDL)
+        if: ${{ !cancelled() && matrix.backend == 'sdl' }}
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        # Headless, as the monthly mobile job runs it (platforms.yml); the script writes its table to the summary.
+        run: node web/tests/mobile.mjs --games "$GAME" --out web-tests/mobile | tee web-mobile.log
+      - name: Size, start-up and frame time (measured, not a gate)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          CHROME_FLAGS: --ignore-gpu-blocklist
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/measure.mjs --games "$GAME" --headed --out web-tests | tee -a "$GITHUB_STEP_SUMMARY"
       # Measured, not yet a gate: the browser and desktop builds of the same script do not produce the same frames in
       # every scene (the simulation drifts by a few pixels in some scrolling scenes), so a difference is reported in
       # the summary and kept as an artifact without failing the job.
@@ -546,13 +595,14 @@ jobs:
         if: ${{ !cancelled() }}
         continue-on-error: true
         run: xvfb-run -a -s "-screen 0 1920x1080x24" node web/tests/desktop.mjs --out web-tests --games "$GAME" | tee -a "$GITHUB_STEP_SUMMARY"
-      - if: failure() || steps.frames.outcome == 'failure'
+      - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: browser-engine-${{ matrix.game }}
+          name: browser-engine-${{ matrix.game }}-${{ matrix.backend }}
           path: |
             web-tests
-            web-tests.log
+            web-tests*.log
+            web-mobile.log
           retention-days: 7
 
   # One evidence for the browser engine suites, recorded only when every game's job passed.

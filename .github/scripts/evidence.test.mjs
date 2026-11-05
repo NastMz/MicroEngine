@@ -66,10 +66,11 @@ test('inputs: the Box2D check reads its natives, the physics it implements, its 
 test('inputs: the browser engine suites read what a development web package and the suites read', () => {
   for (const file of ['src/Engine.cs', 'src/MicroEngine.Raylib/A.cs', 'src/MicroEngine.Cli/Hosts/web/wwwroot/main.js', 'games/Alpha/Game.cs',
     'games/Alpha/Content/notes.md', 'games/Alpha/scripts/smoke.script', 'web/build.sh', 'web/tests/run.mjs', 'web/tests/reference/linux-x64.json',
-    'Directory.Build.props', '.github/workflows/checks.yml', 'newfolder/tool.cs'])
+    'Directory.Build.props', '.github/workflows/checks.yml', 'newfolder/tool.cs', 'src/MicroEngine.Sdl/SdlPlatform.cs',
+    'src/MicroEngine.Sdl/native/build.sh', 'web/tests/mobile.mjs', '.github/workflows/sdl-web.yml'])
     assert.equal(isInput('web', file), true, file);
   for (const file of ['docs/guide.md', 'games/Alpha/README.md', 'site/src/page.astro', 'platforms/android/A.cs', 'tests/Alpha.Tests/A.cs',
-    'samples/Hello/Program.cs', 'sdk/tests/external.mjs', 'src/MicroEngine.Sdl/SdlPlatform.cs', 'odd/tasks/x.md'])
+    'samples/Hello/Program.cs', 'sdk/tests/external.mjs', 'src/MicroEngine.Cli/Hosts/android/MainActivity.cs', 'odd/tasks/x.md'])
     assert.equal(isInput('web', file), false, file);
 });
 
@@ -122,7 +123,8 @@ test('inputs agree with the planner: a file whose rule needs a check is an input
   const files = ['src/MicroEngine/Core/A.cs', 'src/MicroEngine.Cli/Commands/A.cs', 'templates/Game/Program.cs', 'sdk/version.json',
     'sdk/version.mjs', 'sdk/tests/docs.mjs', 'sdk/tests/external.mjs', 'games/Alpha/Game.cs', 'tests/Alpha.Tests/A.cs',
     'samples/Hello/Program.cs', 'web/toolchain.env', 'web/tests/package.json', 'web/tests/desktop.mjs', 'THIRD-PARTY-NOTICES.md', 'LICENSE',
-    'web/tests/run.mjs', 'web/tests/scenarios.json', 'web/build.sh', 'web/serve.mjs', 'src/MicroEngine.Raylib/A.cs', 'src/MicroEngine.Cli/Hosts/web/main.js'];
+    'web/tests/run.mjs', 'web/tests/scenarios.json', 'web/build.sh', 'web/serve.mjs', 'src/MicroEngine.Raylib/A.cs', 'src/MicroEngine.Cli/Hosts/web/main.js',
+    'src/MicroEngine.Sdl/SdlPlatform.cs', 'src/MicroEngine.Sdl/native/build.sh', 'web/tests/mobile.mjs', 'web/tests/measure.mjs'];
   for (const file of files) {
     const checks = planChecks([file]);
     for (const check of ['dotnet', 'windows', 'native', 'sdk', 'web']) {
