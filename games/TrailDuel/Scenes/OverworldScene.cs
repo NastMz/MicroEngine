@@ -23,7 +23,8 @@ internal sealed partial class OverworldScene : Scene
     private readonly TrailDuelGame _game;
     private readonly bool _intro;
     private readonly Camera2D _camera = new(320, 180) { FollowSharpness = 0 };
-    private Interpolated _drawnCamera;
+    /// <summary>The camera's position in the scene's objects, so the world draws it between steps like the actors.</summary>
+    private EntityId _cameraEntity;
     private readonly ParticleSystem _dust = new(128, 17);
     private readonly List<(int X, int Y, float Time)> _rustles = [];
     private readonly SeededRandom _rng;
@@ -62,9 +63,9 @@ internal sealed partial class OverworldScene : Scene
     /// <summary>
     /// State hash, in three sections so a divergence names the part: <c>overworld</c> (map, cutscene count, walk and
     /// bump timers, the wander clock, the pending ledge landing, the scene's generator, the text box and the open
-    /// choice), <c>overworld.player</c> and <c>overworld.npcs</c> (count then each actor). Left out: the camera and the
-    /// positions held for drawing between updates, dust and grass rustles, the area banner, fades, flashes, the heal
-    /// glow, the "!" bubble and the starter preview (presentation that cutscene coroutines drive; the coroutines
+    /// choice), <c>overworld.player</c> and <c>overworld.npcs</c> (count then each actor). Left out: the camera (its
+    /// position, like the actors', is in the scene's objects, which the engine hashes), dust and grass rustles, the area
+    /// banner, fades, flashes, the heal glow, the "!" bubble and the starter preview (presentation that cutscene coroutines drive; the coroutines
     /// themselves are hashed by the engine), and the tile caches drawing fills.
     /// </summary>
     public override void HashState(StateHasher hash)
@@ -90,6 +91,7 @@ internal sealed partial class OverworldScene : Scene
     public override void Enter()
     {
         _text = new TextPanel(Font, Audio);
+        _cameraEntity = Objects.Create();
         LoadMap(State.MapId, State.X, State.Y, State.Facing);
         if (_intro) RunScript(IntroScript());
     }
@@ -103,8 +105,10 @@ internal sealed partial class OverworldScene : Scene
     {
         var def = Maps.Get(id);
         bool newArea = _map is null || _map.Def.Name != def.Name;
-        _map = new MapRuntime(def, State);
-        _player = new Actor(CharacterLook.Player, x, y, facing);
+        _map?.Unload();
+        _player?.Destroy();
+        _map = new MapRuntime(def, State, Objects);
+        _player = new Actor(CharacterLook.Player, x, y, facing, Objects);
         State.MapId = id;
         State.X = x;
         State.Y = y;
@@ -120,20 +124,11 @@ internal sealed partial class OverworldScene : Scene
     private void SnapCamera()
     {
         _camera.CenterOn(_player.PixelPosition + new Vector2(8, 8));
-        _drawnCamera.Snap();
+        Objects.Local(_cameraEntity).Position2D = _camera.Position;
+        Objects.Teleport(_cameraEntity);
     }
 
     public override void Update(float dt)
-    {
-        Advance(dt);
-        // Where everything ended this update, to draw it between updates (Game.FrameBlend).
-        long update = Game.UpdateCount;
-        _drawnCamera.Record(_camera.Position, update);
-        _player.RecordDrawn(update);
-        foreach (var npc in _map.Npcs) npc.RecordDrawn(update);
-    }
-
-    private void Advance(float dt)
     {
         State.PlaySeconds += dt;
         _bannerTime += dt;
@@ -151,6 +146,7 @@ internal sealed partial class OverworldScene : Scene
         State.Facing = _player.Facing;
         _camera.Follow(_player.PixelPosition + new Vector2(8, 8), dt);
         _camera.Update(dt);
+        Objects.Local(_cameraEntity).Position2D = _camera.Position;
         if (arrived) OnStepEnd();
         if (Busy || _player.Moving) return;
 

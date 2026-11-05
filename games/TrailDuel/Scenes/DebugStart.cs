@@ -129,8 +129,8 @@ internal static class DebugStart
 
     private static Scene Evolving(TrailDuelGame game)
     {
-        // TRAIL_EVOLVE picks the species that evolves (default: Sprigfawn).
-        var species = SpeciesDex.Get(Environment.GetEnvironmentVariable("TRAIL_EVOLVE") ?? "sprigbun");
+        // TRAIL_EVOLVE picks the species that evolves (default: Sprigbun).
+        var species = SpeciesDex.Get(game.DebugEvolve ?? "sprigbun");
         var c = Creature.Create(species.Id, species.EvolveLevel);
         game.State.Party.Insert(0, c);
         return new EvolutionScene(game, c, () => { });

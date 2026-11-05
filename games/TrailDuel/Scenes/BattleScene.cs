@@ -61,8 +61,8 @@ internal sealed partial class BattleScene : Scene
     /// moves offered to forget, the low-HP beep timer, whether it ended, the text box, the open choice and what each
     /// side shows: creature, level, displayed HP and XP, status and visibility, which lag behind the rules while
     /// animating). Left out: particles, sprite effects, shakes, flashes, slides, lunges, tints, the orb's flight
-    /// (presentation the flow coroutine drives; the coroutine is hashed by the engine), the positions held for drawing
-    /// between updates and the label caches drawing fills.
+    /// (presentation the flow coroutine drives; the coroutine is hashed by the engine, and the slid positions are in the
+    /// scene's objects, which the engine hashes too) and the label caches drawing fills.
     /// </summary>
     public override void HashState(StateHasher hash)
     {
@@ -103,6 +103,7 @@ internal sealed partial class BattleScene : Scene
         Audio.PlayMusic(_setup.Music, 0f);
         _enemy = new Display { Creature = _battle.Enemy, Hp = _battle.Enemy.Hp, Visible = _setup.Trainer is null };
         _player = new Display { Creature = _battle.Player, Hp = _battle.Player.Hp, Xp = _battle.Player.XpFraction };
+        CreateObjects();
         Coroutines.Start(Flow());
     }
 
@@ -175,7 +176,7 @@ internal sealed partial class BattleScene : Scene
     public override void Update(float dt)
     {
         Advance(dt);
-        RecordDrawn(Game.UpdateCount);
+        Place();
     }
 
     private void Advance(float dt)
