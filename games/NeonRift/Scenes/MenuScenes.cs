@@ -14,11 +14,11 @@ internal sealed class TitleScene(RiftGame game) : Scene
 {
     private readonly SelectionList _menu = new("START", "CONTROLS", "ACHIEVEMENTS", "QUIT");
     private bool _controls, _leaving;
-    private DrawBlend _blend;
+    private EntityId _skyline;
     private StageView? _view;
     private readonly NumberText _high = new(static (high, _) => "HI " + Ui.N(high, 7));
 
-    /// <summary>Adds the menu cursor and whether the controls panel is open or the scene is leaving; the backdrop view, the drawing blend and the high-score text are drawing only.</summary>
+    /// <summary>Adds the menu cursor and whether the controls panel is open or the scene is leaving; the backdrop view and the high-score text are drawing only (the engine hashes the skyline's entity with the scene).</summary>
     public override void HashState(StateHasher hash)
     {
         hash.Add(_menu.Index);
@@ -29,12 +29,14 @@ internal sealed class TitleScene(RiftGame game) : Scene
     public override void Enter()
     {
         _menu.Moved += () => game.Sfx("menu-move", 0.6f);
+        // The skyline drifts 40 pixels a second: an entity, so the world draws its scroll between updates.
+        _skyline = Objects.Create();
         game.Music("title");
     }
 
     public override void Update(float dt)
     {
-        _blend.Mark(Game);
+        Objects.Local(_skyline).Position2D = new Vector2(Age * 40, 0);
         if (_leaving) return;
         if (_controls)
         {
@@ -64,7 +66,7 @@ internal sealed class TitleScene(RiftGame game) : Scene
     public override void Draw(IRenderer r)
     {
         _view ??= new StageView(game.Art, Font);
-        _view.DrawBackdrop(r, "city", new Vector2(_blend.Age(this) * 40, 0), Age, false);
+        _view.DrawBackdrop(r, "city", Objects.DrawPosition2D(_skyline), Age, false);
         r.FillGradient(new RectF(0, 150, r.Width, 120), Ui.Ink.WithAlpha(0f), Ui.Ink.WithAlpha(0.9f), 8);
         r.Draw(game.Art.Frames("hero_idle")[(int)(Age * 6) % 4], new Vector2(70, 250));
         r.Draw(game.Art.Frames("trooper_idle")[(int)(Age * 5) % 3], new Vector2(410, 250));
@@ -235,18 +237,24 @@ internal sealed class EndingScene(RiftGame game) : Scene
     ];
 
     private bool _leaving;
-    private DrawBlend _blend;
+    private EntityId _roll;
     private StageView? _view;
     private readonly NumberText _final = new(static (score, deaths) => $"FINAL SCORE {Ui.N(score, 7)}   DEATHS {deaths}");
 
-    /// <summary>Adds whether the scene is leaving (the credits roll with the scene's age); the backdrop view, the drawing blend and the text cache are drawing only.</summary>
+    /// <summary>Adds whether the scene is leaving (the credits roll with the scene's age); the backdrop view and the text cache are drawing only (the engine hashes the roll's entity with the scene).</summary>
     public override void HashState(StateHasher hash) => hash.Add(_leaving);
 
-    public override void Enter() => game.Music("ending");
+    public override void Enter()
+    {
+        // The roll's X is the scene's age in seconds: an entity, so the world draws the scrolling credits, backdrop and
+        // runner at the drawn instant between updates.
+        _roll = Objects.Create();
+        game.Music("ending");
+    }
 
     public override void Update(float dt)
     {
-        _blend.Mark(Game);
+        Objects.Local(_roll).Position2D = new Vector2(Age, 0);
         if (_leaving || Age < 4 || !(Input.Pressed("confirm") || Input.Pressed("pause"))) return;
         _leaving = true;
         Game.Scenes.Reset(new TitleScene(game), Transition.Fade(1f));
@@ -255,7 +263,7 @@ internal sealed class EndingScene(RiftGame game) : Scene
     public override void Draw(IRenderer r)
     {
         _view ??= new StageView(game.Art, Font);
-        float age = _blend.Age(this);
+        float age = Objects.DrawPosition2D(_roll).X;
         _view.DrawBackdrop(r, "city", new Vector2(age * 20, 0), Age, false);
         r.FillRect(new RectF(0, 0, r.Width, r.Height), Ui.Ink.WithAlpha(0.45f));
         float y = r.Height - age * 22;

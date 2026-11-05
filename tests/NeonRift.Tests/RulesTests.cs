@@ -223,7 +223,7 @@ public sealed class RulesTests
     {
         foreach (var def in Stages.All)
         {
-            var stage = new Stage(def, new Session());
+            var stage = Stage(def);
             Assert.IsTrue(stage.GroundBelow(stage.Player.Position.X, 0).HasValue, def.Name);
             Assert.AreEqual(def.PixelWidth - StageBuilder.ArenaColumns * 16, def.ArenaX, 0.01f);
             Assert.IsGreaterThanOrEqualTo(3, def.Checkpoints.Count(), $"{def.Name} checkpoints");

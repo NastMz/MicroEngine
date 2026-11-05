@@ -3,6 +3,7 @@ using NeonRift.Art;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Kernel;
+using MicroEngine.Scenes;
 
 namespace NeonRift.Gameplay;
 
@@ -47,6 +48,7 @@ public sealed class Player : Actor
     public bool God { get; set; }
     public bool Vulnerable => State == PlayerState.Alive && Invulnerable <= 0 && Barrier <= 0 && !God;
     public float StateTime => _stateTime;
+    private protected override void AttachTo(IWorld world, EntityId id) => world.Attach<Player>(id, this);
 
     /// <summary>The body that enemy shots and contact test against; it shrinks when kneeling or tucked.</summary>
     public RectF Hurtbox => (Crouching ? new RectF(-9, -28, 18, 28) : Somersault ? new RectF(-8, -36, 16, 22) : new RectF(-6, -40, 12, 38)).Offset(Position);
@@ -148,13 +150,13 @@ public sealed class Player : Actor
         _aim = Vector2.Normalize(new Vector2(ax, ay));
 
         _cooldown -= dt;
-        if (input.Fire && _cooldown <= 0 && Stage.PlayerShots.Count < Weapon.MaxOnScreen)
+        if (input.Fire && _cooldown <= 0 && Actor.Count(Stage.PlayerShots) < Weapon.MaxOnScreen)
         {
             _cooldown = Weapon.Cooldown;
             _lastShot = 0;
             var muzzle = Muzzle();
             foreach (var dir in Weapon.Directions(_aim, Stage.Random))
-                Stage.PlayerShots.Add(new PlayerShot(Weapon, muzzle, dir * Weapon.Speed) { Stage = Stage });
+                Stage.Spawn(new PlayerShot(Weapon, muzzle, dir * Weapon.Speed));
             Stage.Sound(Weapon.Sound, Weapon.Kind == WeaponKind.Rapid ? 0.35f : 0.5f);
             Stage.Flash(muzzle);
         }
@@ -231,7 +233,7 @@ public sealed class Player : Actor
     public void Respawn(float x, WeaponKind weapon)
     {
         Position = new Vector2(x, Stage.Camera.View.Top + 40);
-        Snap();
+        Teleport();
         Velocity = Vector2.Zero;
         State = PlayerState.Alive;
         _stateTime = 0;
