@@ -2,6 +2,7 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using MicroEngine.Core;
 using MicroEngine.Hosting;
+using MicroEngine.Kernel;
 using MicroEngine.Raylib;
 
 [assembly: SupportedOSPlatform("browser")]
@@ -18,7 +19,23 @@ Console.WriteLine($"{GameEntry.Title}: ready");
 public static partial class WebHost
 {
     private static readonly BrowserPage Page = new();
-    private static readonly GameSession Session = BrowserLauncher.CreateSession(GameEntry.Configure, Page);
+    // Development packages: the actions down in any fixed update since the last Probe. A frame that catches up with
+    // several updates has a press shorter than a frame down in its first update only, so the state after the frame's
+    // last update would not show it.
+    private static readonly HashSet<string> DownSinceProbe = new(StringComparer.Ordinal);
+    private static readonly GameSession Session = BrowserLauncher.CreateSession(host =>
+    {
+        GameEntry.Configure(host);
+        if (GameEntry.DevHooks) host.ConfigureEngine(engine => engine.Schedule.Add(FramePhase.PreFixed, "web.probe", _ => RecordDown(), after: "engine.input"));
+    }, Page);
+
+    private static void RecordDown()
+    {
+        if (Session.Game is not { } game) return;
+        var input = game.Input;
+        foreach (var action in input.Actions) if (input.Down(action)) DownSinceProbe.Add(action);
+        foreach (var action in game.Touch.Actions) if (input.Down(action)) DownSinceProbe.Add(action);
+    }
 
     /// <summary>
     /// Starts a new run; returns "" on success, otherwise the error. In development packages a non-empty
@@ -68,15 +85,17 @@ public static partial class WebHost
     public static string Stats() => $"{Session.Game?.UpdateCount ?? 0} {Session.Frames}";
 
     /// <summary>
-    /// Development diagnostics: the current scene's type, the input actions that are down, and the touch controls'
-    /// state ("touch=shown:2" = drawn, two fingers down).
+    /// Development diagnostics: the current scene's type, the input actions that were down in any fixed update since the
+    /// last call or are down now (a press shorter than a frame shows even when its frame ran several updates), and the
+    /// touch controls' state ("touch=shown:2" = drawn, two fingers down). The page calls it once per frame.
     /// </summary>
     [JSExport]
     public static string Probe()
     {
         if (!GameEntry.DevHooks || !Session.IsRunning || Session.Game is not { } game) return "";
         var input = game.Input;
-        var actions = input.Actions.Concat(game.Touch.Actions).Distinct().Where(input.Down);
+        var actions = input.Actions.Concat(game.Touch.Actions).Distinct().Where(a => input.Down(a) || DownSinceProbe.Contains(a)).ToList();
+        DownSinceProbe.Clear();
         return $"{game.Scenes.Current?.GetType().Name} {string.Join(',', actions)} touch={(game.Touch.Shown ? "shown" : "hidden")}:{game.Touch.FingerCount} {game.Scenes.Current?.Describe()}";
     }
 
