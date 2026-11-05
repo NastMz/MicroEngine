@@ -3,14 +3,14 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.Touch.dll  
 Guide: [Input](../manual/input.md)  
 
 A screen that may be touched, a capability a backend offers ([TryGetCapability``1](MicroEngine.Platform.IPlatformHost.md#MicroEngine_Platform_IPlatformHost_TryGetCapability__1___0__)): its drawable size, the
 area free of notches, rounded corners and system bars, its density, the touches since the last frame, and a layer
 drawn over the game for on-screen controls. Coordinates are drawable pixels with the origin at the top left.
 SDL reports phones and touch screens, the browser host reports Pointer Events, the headless platform lets tests
-touch it ([HeadlessTouchScreen](MicroEngine.Core.HeadlessTouchScreen.md)).
+touch it (<code>HeadlessTouchScreen</code>).
 
 ```csharp
 public interface ITouchScreen

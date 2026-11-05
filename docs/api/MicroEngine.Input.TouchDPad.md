@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.Touch.dll  
 Guide: [Input](../manual/input.md)  
 
 A d-pad: discrete directions with no analog value, for games where a precise press matters more than a smooth one

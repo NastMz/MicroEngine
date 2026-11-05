@@ -195,6 +195,8 @@ public sealed class PlatformHostTests
         var platform = HeadlessPlatform.For(Settings);
         Assert.IsTrue(platform.TryGetCapability<ITouchScreen>(out var touch));
         Assert.AreSame(platform.TouchScreen, touch);
+        // Touch-first, so the game's controls are active and drawn over it.
+        platform.TouchScreen.TouchFirst = true;
         var game = new RecordingGame();
         var loop = Started(game, platform);
         Assert.IsTrue(game.TryGetCapability<ITouchScreen>(out var seen));

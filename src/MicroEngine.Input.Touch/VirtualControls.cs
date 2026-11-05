@@ -242,7 +242,10 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
         Build();
     }
 
-    /// <summary>The layout in use. Setting it (a scene with other controls) releases every finger.</summary>
+    /// <summary>
+    /// The layout in use. Setting it (a scene with other controls) releases every finger and activates the controls
+    /// (<see cref="IsActive"/>).
+    /// </summary>
     public TouchLayout Layout
     {
         get => _layout;
@@ -252,8 +255,20 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
             CancelAll();
             _layout = value;
             Build();
+            Activate();
         }
     }
+
+    /// <summary>
+    /// Whether the controls take part in the game: the game drawing them over the frame, reading them as an action source
+    /// and giving them the touches over them. A game's controls start inactive and cost nothing; they become active when
+    /// the game sets a <see cref="Layout"/> or the platform's touch screen is touch-first (<see cref="ITouchScreen.TouchFirst"/>),
+    /// and stay active. Controls created and driven directly (<see cref="Update"/>) work whatever this says.
+    /// </summary>
+    public bool IsActive { get; private set; }
+
+    /// <summary>Activates the controls (<see cref="IsActive"/>); the game wires them in at its next frame. Does nothing when they already are.</summary>
+    public void Activate() => IsActive = true;
 
     /// <summary>Always <see cref="InputDevice.Touch"/>.</summary>
     public InputDevice Device => InputDevice.Touch;

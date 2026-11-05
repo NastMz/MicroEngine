@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.Touch.dll  
 Guide: [Input](../manual/input.md)  
 
 Something drawn over the game on the touch screen, such as [VirtualControls](MicroEngine.Input.VirtualControls.md).

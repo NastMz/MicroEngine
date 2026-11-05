@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Input](MicroEngine.Input.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Input.Touch.dll  
 Guide: [Input](../manual/input.md)  
 
 Where the virtual canvas goes in a window: the shared letterbox rule of every backend.

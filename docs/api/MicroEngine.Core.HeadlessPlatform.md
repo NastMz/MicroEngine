@@ -298,7 +298,7 @@ public ITouchScreen Touch { get; }
 
 #### Property Value
 
- [ITouchScreen](MicroEngine.Input.ITouchScreen.md)
+ ITouchScreen
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_TouchScreen"></a> TouchScreen
 
