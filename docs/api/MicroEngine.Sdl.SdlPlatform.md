@@ -399,7 +399,7 @@ public static PlatformProfile BrowserProfile(BrowserPage page)
 
 #### Returns
 
- PlatformProfile
+ [PlatformProfile](MicroEngine.Core.PlatformProfile.md)
 
 #### Exceptions
 
