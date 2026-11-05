@@ -164,11 +164,16 @@ test('scope: the project graph narrows the .NET tests and native captures to wha
   assert.deepEqual(scope(['games/NeonRift/Stages/Stage1.cs']), { tests: ['tests/NeonRift.Tests/NeonRift.Tests.csproj'], games: ['NeonRift'] });
   assert.deepEqual(scope(['games/NeonRift/Stages/Stage1.cs', 'docs/guide/platforms.md']),
     { tests: ['tests/NeonRift.Tests/NeonRift.Tests.csproj'], games: ['NeonRift'] }, 'documentation does not widen the scope');
-  assert.deepEqual(scope(['src/MicroEngine.Graphics/Devices/Device.cs']), { tests: 'all', games: 'all' }, 'the graphics contract reaches every test');
   const everyTest = Object.keys(graph.projects).filter(isTestProject).sort();
+  // The Box2D backend's tests depend on the physics contract, the scene world and the kernel only.
+  const box2dTests = 'tests/MicroEngine.Physics.Box2D.Tests/MicroEngine.Physics.Box2D.Tests.csproj';
+  assert.deepEqual(scope(['src/MicroEngine.Graphics/Devices/Device.cs']), { tests: everyTest.filter(p => p !== box2dTests), games: 'all' },
+    'the graphics contract reaches every test but the Box2D backend\'s');
   assert.deepEqual(scope(['src/MicroEngine/Core/GameRunner.cs']),
-    { tests: everyTest.filter(p => p !== 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj'), games: 'all' },
-    'the core reaches every test but the graphics contract\'s own');
+    { tests: everyTest.filter(p => p !== 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj' && p !== box2dTests), games: 'all' },
+    'the core reaches every test but the graphics contract\'s own and the Box2D backend\'s');
+  assert.deepEqual(scope(['src/MicroEngine.Physics/IPhysicsWorld2D.cs']), { tests: everyTest.filter(p => p !== 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj'), games: 'all' },
+    'the physics contract reaches every test but the graphics contract tests');
   assert.deepEqual(scope(['web/tests/scenarios.json']), { tests: 'all', games: 'all' }, 'a file outside every project');
   assert.deepEqual(scope(['Directory.Build.props']), { tests: 'all', games: 'all' });
   assert.deepEqual(scope(['newfolder/thing.txt']), { tests: 'all', games: 'all' }, 'unknown paths stay conservative');
