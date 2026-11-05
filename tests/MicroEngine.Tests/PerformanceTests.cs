@@ -233,8 +233,9 @@ public class PerformanceTests
     public void The_loop_allocates_next_to_nothing_per_frame()
     {
         // Input sampling, touch controls and the loop itself run every frame; garbage there becomes collections on
-        // phones and in browsers. 2.6 KB per frame before PERF-1, about 100 bytes after, 240 bytes in
-        // November 2026.
+        // phones and in browsers. 2.6 KB per frame before PERF-1, about 100 bytes after, 240 bytes in early
+        // November 2026 (the counting renderer's command text, boxed enumerators of the players, a copy of the asset
+        // scopes: FrameGarbageTests checks each), nothing since.
         var profiler = new FrameProfiler();
         var result = GameRunner.Run(new QuietGame(), new HeadlessPlatform(), new RunOptions
         {
@@ -249,7 +250,8 @@ public class PerformanceTests
         var frames = profiler.Samples.Skip(100).Select(f => f.Allocated).Order().ToList();
         Assert.AreEqual(200, frames.Count);
         long median = frames[frames.Count / 2];
-        Assert.IsTrue(median < 256, $"{median} bytes in the median frame (mean {profiler.Summarize(warmup: 100).AllocatedPerFrame:0}, most {frames[^1]})");
+        // Measured: 0 bytes. The limit is below the smallest object (24 bytes on a 64-bit runtime): no object at all.
+        Assert.IsTrue(median < 24, $"{median} bytes in the median frame (mean {profiler.Summarize(warmup: 100).AllocatedPerFrame:0}, most {frames[^1]})");
     }
 
     [TestMethod]

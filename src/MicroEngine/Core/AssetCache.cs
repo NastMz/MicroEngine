@@ -73,6 +73,9 @@ public sealed class AssetCache : IDisposable
     private readonly AssetCache? _parent;
     private readonly AssetScope _scope;
     private readonly List<AssetCache> _children = [];
+    // The children as they were when a frame update or a drain started (scopes may be created or disposed while it runs);
+    // reused so the frame update makes no garbage. Null while a visit uses it.
+    private AssetCache[]? _visit = [];
     private readonly Queue<Pending> _uploads = new();
     private bool _disposed;
 
@@ -351,13 +354,38 @@ public sealed class AssetCache : IDisposable
             Finish(pending);
             first = false;
         }
-        foreach (var child in _children.ToList()) child.Update();
+        VisitChildren(null);
     }
 
     internal void Drain(AssetBatch batch)
     {
         while (_uploads.Count > 0 && batch.Remaining > 0) Finish(_uploads.Dequeue());
-        foreach (var child in _children.ToList()) child.Drain(batch);
+        VisitChildren(batch);
+    }
+
+    /// <summary>Updates (<paramref name="drain"/> null) or drains every child that existed when the visit started, in order.</summary>
+    private void VisitChildren(AssetBatch? drain)
+    {
+        int count = _children.Count;
+        if (count == 0) return;
+        // A visit that starts inside another visit of this scope (null: the outer one holds the array) uses a copy of its own.
+        var reused = _visit;
+        _visit = null;
+        var visit = reused is not null && reused.Length >= count ? reused : new AssetCache[count];
+        _children.CopyTo(visit);
+        try
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (drain is null) visit[i].Update();
+                else visit[i].Drain(drain);
+            }
+        }
+        finally
+        {
+            Array.Clear(visit, 0, count);
+            if (reused is not null) _visit = visit;
+        }
     }
 
     private void Finish(Pending pending)

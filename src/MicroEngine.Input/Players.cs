@@ -81,6 +81,9 @@ public sealed class Players : IStateHashed
     /// <summary>The players in order.</summary>
     public IReadOnlyList<PlayerInput> All => _players;
 
+    /// <summary>The players in order, as the list itself: the input system walks it every update without boxing an enumerator.</summary>
+    internal List<PlayerInput> InOrder => _players;
+
     /// <summary>
     /// Raised when a device nobody hears presses something (a key, a gamepad button, a touch): the moment to let that
     /// device join (<see cref="Join"/>). Raised during the frame's input routing.
