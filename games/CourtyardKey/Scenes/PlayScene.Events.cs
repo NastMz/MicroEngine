@@ -15,7 +15,7 @@ public sealed partial class PlayScene
     public bool TryInteract(Hero hero)
     {
         var probe = hero.InteractProbe;
-        foreach (var a in _actors)
+        foreach (var a in Actors)
             if (a is IInteractable { CanInteract: true } i && a.Bounds.Inflate(2).Intersects(probe))
             {
                 i.Interact(hero);
@@ -154,8 +154,7 @@ public sealed partial class PlayScene
     public void Continue()
     {
         Progress.Deaths++;
-        _actors.Clear();
-        _pending.Clear();
+        Objects.Destroy(_room);
         Particles.Clear();
         Glows.Clear();
         Hero.Revive(Hero.Health.Max);

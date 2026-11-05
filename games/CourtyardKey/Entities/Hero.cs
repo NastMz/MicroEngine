@@ -26,7 +26,7 @@ public sealed class Hero : Actor
     private Vector2 _knock;
     private readonly HashSet<object> _struck = [];
 
-    public Hero(PlayScene world, Health health) : base(world)
+    public Hero(PlayScene world, Health health) : base(world, inRoom: false)
     {
         Health = health;
         Hitbox = new RectF(-5, -8, 10, 8);
