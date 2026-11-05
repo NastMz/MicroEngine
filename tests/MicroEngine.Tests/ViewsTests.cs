@@ -224,7 +224,7 @@ public sealed class ViewsTests
     {
         var scene = new HookScene();
         var game = new ViewsGame(scene);
-        var platform = new HeadlessPlatform(320, 180) { PixelDensity = 2, Presentation = game.Settings.EffectivePresentation };
+        var platform = new HeadlessPlatform(320, 180) { PixelDensity = 2, Presentation = game.Settings.Presentation };
         platform.Resize(640, 360);
         platform.PumpEvents(new IgnoredEvents());
         game.InitializeForTest(platform);

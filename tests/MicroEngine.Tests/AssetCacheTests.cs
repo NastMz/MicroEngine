@@ -294,7 +294,7 @@ public sealed class AssetCacheTests
 
     private sealed class GalleryGame : Game
     {
-        public override GameSettings Settings { get; } = new("gallery", 1280, 720) { Scaling = CanvasScaling.Smooth };
+        public override GameSettings Settings { get; } = new("gallery", 1280, 720) { Presentation = Presentation.HighResolution2D };
         protected override string? ContentRoot => Gallery;
         public SpriteAtlas? Players;
         protected override void Load()

@@ -79,7 +79,7 @@ public abstract class Actor(PlayScene world) : Entity, IStateHashed
     protected void DrawSprite(IRenderer r, Sprite sprite, Vector2 at, bool flipX = false, Color? tint = null)
         => r.Draw(sprite, new Vector2(MathF.Round(at.X), MathF.Round(at.Y)), tint, flipX);
 
-    protected MoveResult Move(Vector2 delta, bool flying = false, bool throughActors = false) => World.MoveActor(this, delta, flying, throughActors);
+    protected TileMoveResult Move(Vector2 delta, bool flying = false, bool throughActors = false) => World.MoveActor(this, delta, flying, throughActors);
 }
 
 /// <summary>Something the hero can talk to, read or open by pressing confirm while facing it.</summary>

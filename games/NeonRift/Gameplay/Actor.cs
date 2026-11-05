@@ -164,7 +164,7 @@ public struct Body
 {
     public RectF Box;
     public bool Grounded;
-    public MoveResult Last;
+    public TileMoveResult Last;
 
     public void Move(ref Vector2 position, ref Vector2 velocity, float dt, ICollisionGrid grid, float gravity = 980, float maxFall = 420, bool dropThrough = false)
     {

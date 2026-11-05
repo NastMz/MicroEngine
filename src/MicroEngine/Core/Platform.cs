@@ -18,21 +18,21 @@ namespace MicroEngine.Core;
 /// </param>
 public sealed record GameSettings(string Title, int VirtualWidth = 320, int VirtualHeight = 180, int Scale = 4)
 {
-    /// <summary>
-    /// A shorthand for the two presentation presets when <see cref="Presentation"/> is null:
-    /// <see cref="CanvasScaling.Pixel"/> (the default) is <see cref="Graphics.Presentation.PixelArt"/>,
-    /// <see cref="CanvasScaling.Smooth"/> is <see cref="Graphics.Presentation.HighResolution2D"/>.
-    /// </summary>
-    public CanvasScaling Scaling { get; init; } = CanvasScaling.Pixel;
+    private readonly Presentation _presentation = MicroEngine.Graphics.Presentation.PixelArt;
+
     /// <summary>
     /// How the canvas reaches the window, one choice per field (scale rounding, aspect, the canvas's upscale sampler, the
-    /// textures' default sampler, the capture scale, whole-factor windows). Null (the default) uses the preset
-    /// <see cref="Scaling"/> names; a game that sets it starts from a preset and changes what it needs:
-    /// <c>Presentation = Presentation.PixelArt with { Upscale = SamplerDescription.LinearClamp }</c>.
+    /// textures' default sampler, the capture scale, whole-factor windows, camera snapping, the UI scale).
+    /// <see cref="Graphics.Presentation.PixelArt"/> by default; a high-resolution game sets
+    /// <see cref="Graphics.Presentation.HighResolution2D"/>, and a game that needs another combination starts from a preset
+    /// and changes what it needs: <c>Presentation = Presentation.PixelArt with { Upscale = SamplerDescription.LinearClamp }</c>.
     /// </summary>
-    public Presentation? Presentation { get; init; }
-    /// <summary>The presentation in effect: <see cref="Presentation"/>, or the preset <see cref="Scaling"/> names.</summary>
-    public Presentation EffectivePresentation => Presentation ?? (Scaling == CanvasScaling.Smooth ? MicroEngine.Graphics.Presentation.HighResolution2D : MicroEngine.Graphics.Presentation.PixelArt);
+    /// <exception cref="ArgumentNullException">The value is null.</exception>
+    public Presentation Presentation
+    {
+        get => _presentation;
+        init => _presentation = value ?? throw new ArgumentNullException(nameof(value), "A game always has a presentation: Presentation.PixelArt is the default.");
+    }
     /// <summary>
     /// The filter of textures created without one (images, atlases). Null (the default) follows the presentation's
     /// default sampler (<see cref="Graphics.Presentation.DefaultSampler"/>): nearest for pixel art, linear for
@@ -45,7 +45,7 @@ public sealed record GameSettings(string Title, int VirtualWidth = 320, int Virt
     /// presentation's default sampler.
     /// </summary>
     public TextureFilter DefaultTextureFilter => TextureFilter
-        ?? (EffectivePresentation.DefaultSampler.Mag == MicroEngine.Graphics.Devices.Filter.Linear ? MicroEngine.Graphics.TextureFilter.Linear : MicroEngine.Graphics.TextureFilter.Nearest);
+        ?? (Presentation.DefaultSampler.Mag == MicroEngine.Graphics.Devices.Filter.Linear ? MicroEngine.Graphics.TextureFilter.Linear : MicroEngine.Graphics.TextureFilter.Nearest);
     /// <summary>Fixed simulation rate in updates per second.</summary>
     public int UpdateRate { get; init; } = 60;
     /// <summary>Colour the canvas is cleared to before the scenes draw each frame (black by default).</summary>

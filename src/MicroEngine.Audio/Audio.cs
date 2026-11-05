@@ -1,3 +1,5 @@
+using MicroEngine.Audio.Retro;
+
 namespace MicroEngine.Audio;
 
 /// <summary>Uncompressed audio: interleaved float samples in -1..1.</summary>
@@ -191,7 +193,7 @@ public sealed class SilentAudioDevice : IAudioDevice
 /// </remarks>
 /// <example>
 /// <code>
-/// // In Game.Load:
+/// // In Game.Load (Synth, SfxParams and Wave are in MicroEngine.Audio.Retro):
 /// Audio.AddSound("jump", Synth.Render(new SfxParams { Wave = Wave.Square, Frequency = 520, EndFrequency = 880 }));
 /// Audio.AddMusicFile("theme", "Content/theme.ogg");
 /// Audio.PlayMusic("theme");

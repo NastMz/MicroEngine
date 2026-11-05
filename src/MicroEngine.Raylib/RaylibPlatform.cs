@@ -260,7 +260,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         // An expanding presentation grows the canvas with the window.
         var size = _touch.Size;
         var area = _touch.SafeArea is { Width: > 0, Height: > 0 } safe ? safe : new RectF(0, 0, size.X, size.Y);
-        var (cw, ch) = _settings.EffectivePresentation.CanvasSize(area, _settings.VirtualWidth, _settings.VirtualHeight);
+        var (cw, ch) = _settings.Presentation.CanvasSize(area, _settings.VirtualWidth, _settings.VirtualHeight);
         if (_canvas.EnsureSize(cw, ch)) (_input.CanvasWidth, _input.CanvasHeight) = (cw, ch);
         _frameHasUi = false;
         return _canvas.BeginFrame();
@@ -269,12 +269,12 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     (int Width, int Height) IScreenView.ScreenPixels => (Math.Max(1, (int)_touch.Size.X), Math.Max(1, (int)_touch.Size.Y));
     (int Width, int Height) IScreenView.CanvasSize => (_canvas.Target.Width, _canvas.Target.Height);
     RectF IScreenView.WorldFrame => FrameRect();
-    float IScreenView.UiScale => _settings.EffectivePresentation.UiScaleFor(_surface.PixelDensity);
+    float IScreenView.UiScale => _settings.Presentation.UiScaleFor(_surface.PixelDensity);
     IRenderer IScreenView.BeginUi()
     {
         var (width, height) = ((IScreenView)this).ScreenPixels;
         _frameHasUi = true;
-        return _canvas.BeginUi(width, height, _settings.EffectivePresentation.UiScaleFor(_surface.PixelDensity));
+        return _canvas.BeginUi(width, height, _settings.Presentation.UiScaleFor(_surface.PixelDensity));
     }
 
     private bool _frameHasUi;
@@ -287,7 +287,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
         _canvas.EndFrame();
         Rl.BeginDrawing();
         // The canvas into the window as the presentation says (copied opaque: its alpha never darkens it).
-        if (_canvas.Compose(_settings.EffectivePresentation, FrameRect(), Letterbox))
+        if (_canvas.Compose(_settings.Presentation, FrameRect(), Letterbox))
         {
             // The on-screen controls, over the letterboxed frame in render pixels (never in captures).
             _touch.DrawOverlay();
@@ -298,9 +298,8 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
 
     private RectF FrameRect()
     {
-        var presentation = _settings.EffectivePresentation;
-        var overlayScaling = presentation.Rounding == ScaleRounding.Fractional ? CanvasScaling.Smooth : CanvasScaling.Pixel;
-        return _touch.Overlay?.Frame(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, overlayScaling)
+        var presentation = _settings.Presentation;
+        return _touch.Overlay?.Frame(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, presentation)
             ?? presentation.Fit(_touch.Size, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight);
     }
 
@@ -326,7 +325,7 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     {
         var world = _canvas.Capture();
         if (!_frameHasUi || _canvas.CaptureUi() is not { } ui) return world;
-        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.EffectivePresentation.Upscale);
+        return ScreenCapture.Compose(world, ui, ((IScreenView)this).ScreenPixels, FrameRect(), Letterbox, _settings.Presentation.Upscale);
     }
     void IViewCapture.SaveWorldScreenshot(string path) => _canvas.SaveCapture(path, _captureScale);
 
