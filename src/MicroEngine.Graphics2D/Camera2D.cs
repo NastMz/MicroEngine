@@ -98,7 +98,7 @@ public sealed class Camera2D
     /// <summary>Creates a camera at the world origin whose defaults (<see cref="PixelSnap"/>) come from <paramref name="presentation"/>.</summary>
     /// <param name="viewWidth">Width of the view in pixels.</param>
     /// <param name="viewHeight">Height of the view in pixels.</param>
-    /// <param name="presentation">The game's presentation (<c>GameSettings.EffectivePresentation</c>; <c>Game.CreateCamera</c> passes it).</param>
+    /// <param name="presentation">The game's presentation (<c>GameSettings.Presentation</c>; <c>Game.CreateCamera</c> passes it).</param>
     /// <exception cref="ArgumentNullException"><paramref name="presentation"/> is null.</exception>
     public Camera2D(float viewWidth, float viewHeight, Presentation presentation)
     {

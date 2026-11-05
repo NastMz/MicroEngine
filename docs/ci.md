@@ -482,9 +482,15 @@ and its environment; from the browser test scenarios:
 - The site build fails when a quoted code block differs from its sample (`site/src/lib/repo-docs.mjs`) or a page links
   to a page or anchor the site does not have (`site/scripts/check-dist.mjs`).
 - The Linux .NET job checks that `docs/api` matches the XML comments (`site/scripts/api-reference.mjs --check`) when an
-  engine project is tested, and builds the documented samples outside the repository at the documented SDK version
-  (`sdk/tests/docs.mjs`: from nuget.org, or from this commit's packages before that version is published) when
-  `tests/Samples.Tests` is selected.
+  engine project is tested, and builds the documented samples outside the repository (`sdk/tests/docs.mjs`) when
+  `tests/Samples.Tests` is selected. Since ARCH-1 stage 5 (2026-11-05) the required build is against the SDK built from
+  source: this commit's packages, packed into the copy's folder and mapped as the only source of every `MicroEngine`
+  package, at the version this commit packs. When the documented version is on nuget.org the copies are also built
+  from nuget.org at that version; that build is required again from the next SDK release on, but while the documented
+  SDK version is still the last one published before stage 5 (`reportOnlyVersion` in the script) it is an informative
+  report (`REPORT` lines that do not fail the job): stage 5 changed public APIs the samples use (the synthesizer's
+  namespace, the tile mover's result type), so a breaking rename cannot build against the version published before it.
+  The public pages label those APIs as the next SDK version.
 - Plan checks that every active documentation reference names the documented SDK version (`sdk/version.mjs check`,
   [Releasing, Versions](releasing.md#versions)).
 - The CI planner (`.github/scripts/projects.mjs`) reads the `ProjectReference` items a `Directory.Build.targets` adds,

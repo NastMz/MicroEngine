@@ -20,17 +20,17 @@ factors would waste a fifth of a small screen.
 ### HD canvases and smooth scaling
 
 Next SDK version (not published yet: arrives with the next SDK version). Pixel-perfect scaling is the default, not a
-rule: `GameSettings.Scaling` chooses how the canvas reaches the window.
+rule: `GameSettings.Presentation` chooses how the canvas reaches the window, starting from one of two presets.
 
-| `Scaling` | The frame | Sampling | For |
+| `Presentation` | The frame | Sampling | For |
 | --- | --- | --- | --- |
-| `CanvasScaling.Pixel` (default) | whole factors when they fill enough of the window | nearest | pixel art: square, even pixels |
-| `CanvasScaling.Smooth` | the largest size of the canvas's shape that fits | linear | HD art, photos, vector-style art, scalable text |
+| `Presentation.PixelArt` (default) | whole factors when they fill enough of the window | nearest | pixel art: square, even pixels |
+| `Presentation.HighResolution2D` | the largest size of the canvas's shape that fits | linear | HD art, photos, vector-style art, scalable text |
 
 ```csharp
 public override GameSettings Settings { get; } = new("My HD Game", 1280, 720, 1)
 {
-    Scaling = CanvasScaling.Smooth,          // textures default to linear sampling too
+    Presentation = Presentation.HighResolution2D,   // textures default to linear sampling too
 };
 ```
 
@@ -41,11 +41,11 @@ smooth canvas are written at its size; pixel-art captures stay three times large
 
 ### Presentation: one choice per field
 
-Not published yet: arrives with the next SDK version. `Scaling` decided five things at once (how the scale is rounded,
-how the canvas is sampled on its way to the window, the textures' default filter, the initial window size and the
-capture scale). `GameSettings.Presentation` states each one, and `Scaling` now only names a preset:
+Not published yet: arrives with the next SDK version. A presentation states each choice separately (how the scale is
+rounded, how the canvas is sampled on its way to the window, the textures' default filter, the initial window size, the
+capture scale, camera snapping), and the two presets are just values of those fields:
 
-| `Presentation` field | `Presentation.PixelArt` (`Scaling = Pixel`) | `Presentation.HighResolution2D` (`Scaling = Smooth`) |
+| `Presentation` field | `Presentation.PixelArt` | `Presentation.HighResolution2D` |
 | --- | --- | --- |
 | `Rounding`: how the scale to the window is rounded | `IntegerUnlessWasteful`: whole factors unless they fill less than `WastefulThreshold` (80 %) of what fits | `Fractional`: the largest size that fits |
 | `Aspect`: the window's other shape | `Keep` (letterbox) | `Keep` |
@@ -74,14 +74,14 @@ public override GameSettings Settings { get; } = new("My Game", 480, 270, 3)
 window, pixels no longer square) and, next SDK version, `Expand`: the scale and square pixels stay, and the canvas grows
 along the window's free side so a wider (or taller) window shows more of the world instead of letterbox
 (`Presentation.CanvasSize`; the configured size is the minimum, and `IRenderer.Width`/`Height` report the canvas's current
-size). When `Presentation` is set it wins over `Scaling`; `TextureFilter`, when set, still
-wins over `DefaultSampler`. `SamplerDescription` lives in `MicroEngine.Graphics.Devices`.
+size). `TextureFilter`, when set, still wins over `DefaultSampler`. The on-screen touch controls place the frame by the
+same presentation (`FrameLayout.Fit` and `VirtualControls.Frame` take it), so touches land where the canvas is drawn. `SamplerDescription` lives in `MicroEngine.Graphics.Devices`.
 
 ### Filtering: nearest or linear
 
 Next SDK version (not published yet: arrives with the next SDK version). Every texture has a `TextureFilter`:
 `Nearest` keeps hard pixel edges, `Linear` blends neighbouring pixels when a texture is drawn scaled, rotated or between
-pixels. The game's default (`GameSettings.TextureFilter`, or nearest for `Pixel` scaling and linear for `Smooth`) applies
+pixels. The game's default (`GameSettings.TextureFilter`, or nearest for `Presentation.PixelArt` and linear for `Presentation.HighResolution2D`) applies
 to every texture and atlas created without a filter of its own; each one can choose:
 
 ```csharp
@@ -475,3 +475,6 @@ a 3D renderer:
 - No mipmaps or compressed GPU texture formats; textures are 32-bit RGBA.
 - No sprite batching control beyond packing art into atlases; draw order is call order.
 - Tile maps come from code (ASCII rows); there is no map editor or Tiled importer.
+- On Windows with NVIDIA's driver 32.0.16.1088, a process that creates and destroys many `sdl-gpu` devices on Vulkan in
+  quick succession can, rarely, be ended by a fault inside the driver's own background thread. A game keeps one device
+  for its whole run and is not affected; tools that open devices repeatedly can use Direct3D 12 on such machines.

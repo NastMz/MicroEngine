@@ -228,12 +228,6 @@ What happens when the window's shape differs from the canvas's ([Aspect](MicroEn
 How drawn pixels combine with the canvas (see [SetBlendMode](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_)): <code>Alpha</code> (normal
 transparency, the default), <code>Additive</code> (adds light: glows, sparks, fire) and <code>Multiply</code> (darkens: shadows, tints).
 
- [CanvasScaling](MicroEngine.Graphics.CanvasScaling.md)
-
-How the virtual canvas reaches the window (the game settings' <code>Scaling</code>; obsolete: the game's <code>Presentation</code> replaces it). <code>Pixel</code> prefers whole
-factors (fractional only when whole ones would waste a fifth of the screen) and samples nearest, so pixels stay square
-and even; <code>Smooth</code> fills the largest area of the canvas's shape and samples linearly, for high-resolution art.
-
  [ScaleRounding](MicroEngine.Graphics.ScaleRounding.md)
 
 How the canvas's scale to the window is rounded ([Rounding](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_Rounding)).

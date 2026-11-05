@@ -1,4 +1,4 @@
-namespace MicroEngine.Audio;
+namespace MicroEngine.Audio.Retro;
 
 /// <summary>A tracker-style voice: waveform plus an ADSR envelope (seconds, sustain level 0..1).</summary>
 public sealed record Instrument(

@@ -59,9 +59,12 @@ private readonly TileGrid _grid = new(
 
 ## Moving through the grid
 
-`TileMotion.Move(box, delta, grid, solids = null, ignoreOneWay = false)` returns where the box ends up and what it hit:
+`TileMotion.Move(box, delta, grid, solids = null, ignoreOneWay = false)` returns where the box ends up and what it hit.
+Next SDK version (not published yet: arrives with the next SDK version): the result type is `TileMoveResult`, so it no
+longer shares its name with the `MoveResult` of a physics world; `TileMotion` stays a stateless convenience over the
+same swept test as the tile backend below.
 
-| `MoveResult` member | Meaning |
+| `TileMoveResult` member (`MoveResult` in the published SDK) | Meaning |
 | --- | --- |
 | `Bounds`, `Position` | the box after the move |
 | `HitLeft`, `HitRight`, `HitWall` | stopped horizontally |

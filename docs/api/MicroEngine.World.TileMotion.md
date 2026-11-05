@@ -22,8 +22,9 @@ public static class TileMotion
 
 ## Remarks
 
-A stateless helper over one grid. A world of bodies, sensors, queries and moving solids that push and carry bodies
-is [TilePhysicsWorld2D](MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md), built on the same swept test.
+A stateless convenience over one grid, for a game that moves its own boxes. A world of bodies, sensors, queries and
+moving solids that push and carry bodies is the tile backend of the physics contract,
+[TilePhysicsWorld2D](MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md), built on the same swept test.
 
 ## Methods
 
@@ -72,7 +73,7 @@ public static bool IsSolidAt(Vector2 point, ICollisionGrid grid)
 Moves <code class="paramref">box</code> by <code class="paramref">delta</code>, stopping flush against solid tiles, one-way tiles (from above) and <code class="paramref">solids</code>.
 
 ```csharp
-public static MoveResult Move(RectF box, Vector2 delta, ICollisionGrid grid, IReadOnlyList<RectF>? solids = null, bool ignoreOneWay = false)
+public static TileMoveResult Move(RectF box, Vector2 delta, ICollisionGrid grid, IReadOnlyList<RectF>? solids = null, bool ignoreOneWay = false)
 ```
 
 #### Parameters
@@ -101,7 +102,7 @@ Passes through one-way tiles (dropping down through a platform).
 
 #### Returns
 
- [MoveResult](MicroEngine.World.MoveResult.md)
+ [TileMoveResult](MicroEngine.World.TileMoveResult.md)
 
 The new box and what it hit. On a hit, movement along that axis stops for the rest of this step.
 

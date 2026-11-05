@@ -23,7 +23,7 @@ for (int i = 0; i < args.Length; i++)
         case "--runs": runs = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
     }
 content ??= FindGallery();
-var settings = new GameSettings("AssetBench", 1280, 720, 1) { Scaling = CanvasScaling.Smooth };
+var settings = new GameSettings("AssetBench", 1280, 720, 1) { Presentation = Presentation.HighResolution2D };
 IPlatform platform;
 string device;
 try

@@ -10,7 +10,7 @@ public sealed class Graphics2DForwardingTests
     public static IEnumerable<object[]> MovedTypes =>
     [
         ["MicroEngine.Graphics.IRenderer"], ["MicroEngine.Graphics.DrawOptions"], ["MicroEngine.Graphics.BlendMode"],
-        ["MicroEngine.Graphics.TextureFilter"], ["MicroEngine.Graphics.CanvasScaling"], ["MicroEngine.Graphics.Texture"],
+        ["MicroEngine.Graphics.TextureFilter"], ["MicroEngine.Graphics.Texture"],
         ["MicroEngine.Graphics.IGraphicsDevice"], ["MicroEngine.Graphics.PixelImage"], ["MicroEngine.Graphics.PngEncoder"],
         ["MicroEngine.Graphics.Art"], ["MicroEngine.Graphics.Sprite"], ["MicroEngine.Graphics.SpriteAtlas"],
         ["MicroEngine.Graphics.SpriteAtlasBuilder"], ["MicroEngine.Graphics.AtlasOptions"], ["MicroEngine.Graphics.AtlasData"],

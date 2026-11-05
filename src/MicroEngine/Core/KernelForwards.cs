@@ -16,7 +16,6 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(MicroEngine.Graphics.DrawOptions))]
 [assembly: TypeForwardedTo(typeof(MicroEngine.Graphics.BlendMode))]
 [assembly: TypeForwardedTo(typeof(MicroEngine.Graphics.TextureFilter))]
-[assembly: TypeForwardedTo(typeof(MicroEngine.Graphics.CanvasScaling))]
 [assembly: TypeForwardedTo(typeof(MicroEngine.Graphics.Texture))]
 [assembly: TypeForwardedTo(typeof(MicroEngine.Graphics.IGraphicsDevice))]
 [assembly: TypeForwardedTo(typeof(MicroEngine.Graphics.PixelImage))]

@@ -166,7 +166,7 @@ a `PlatformRequest`; every option is explicit, and none depends on how the loop 
 | `StartGamepadsAfterFirstFrame` | false | Starts gamepads only after the first presented frame, so a slow gamepad start never delays the window. The launcher sets it for real-time runs whose game shows a start screen |
 | `AudioOutput` | `Automatic` | `Automatic` and `Device` open a sound device, `Silent` opens none. The launcher's `--audio auto` asks for `Silent` in deterministic runs |
 | `Mute` | false | No sound device |
-| `CaptureScale` | 3 for pixel art, 1 for smooth scaling | Size factor of screenshots |
+| `CaptureScale` | 3 (next SDK version: the presentation's `CaptureScale`, 3 for pixel art and 1 for high-resolution 2D) | Size factor of screenshots |
 | `Audio` | null | An audio device the platform uses instead of its own (where its profile allows it) |
 | `ExtraInput` | none | Input sources read together with the platform's (where its profile allows it) |
 | `Identity` | null | The game's application identity (title, id, icon, orientation) |

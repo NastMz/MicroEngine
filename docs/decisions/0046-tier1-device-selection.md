@@ -51,10 +51,25 @@ that cannot start (Metal asked for on Windows/Linux) stops with the reason and n
 - Games keep tier 0 by default; tier 1 is an explicit request with a clear failure.
 - An intermittent crash of the test host on the development machine (Windows 11, NVIDIA RTX 4070 Ti SUPER, SDL_GPU
   tests): 2 in 10 full runs and 1 in 4 Vulkan-only runs on the pre-merge 6a-1 build; 0 in 12 (main after 6a-1) and 0 in
-  10 (6a-2) Vulkan-only runs; 1 in 40 full `Gpu`-category runs on this change. The full dump of the last one shows the
-  test thread inside `SDL_CreateWindow` (a conformance test opening its hidden window), and the process carries
-  third-party capture hooks injected by other software on that machine (OBS `graphics-hook64.dll`, Overwolf
-  `ow-graphics-hook64.dll`) next to NVIDIA's drivers; the dump has no exception record and no native debugger was
-  available, so the faulting frame is not identified and the cause is not proven. It has never occurred in CI (lavapipe,
-  no hooks). It is an open, monitored risk: the tier-1 conformance runs on lavapipe in CI whenever the device changes.
+  10 (6a-2) Vulkan-only runs; 1 in 40 full `Gpu`-category runs on 6a-4. **Explained: a defect in NVIDIA's driver, an
+  environmental incompatibility, not in SDL or the engine.** The full dump of the last crash, read with Microsoft's
+  native debugger (cdb, Microsoft symbol server; SDL3 ships without a pdb), shows:
+  - The fault is an access violation (`c0000005`, read of `ffffffffffffffff`) on a thread whose entry point is in
+    `nvoglv64.dll` 32.0.16.1088 (NVIDIA's OpenGL/Vulkan driver, which exports `vk_icdNegotiateLoaderICDInterfaceVersion`).
+    Its whole stack is `RtlUserThreadStart` > `BaseThreadInitThunk` > `nvoglv64!DrvValidateVersion+0xe015`: no SDL,
+    engine, OBS or Overwolf frame.
+  - The faulting instruction is `call qword ptr [rbx+10h]`: the driver calls through an object whose memory has already
+    been freed and reused. It now holds a UTF-16 path into NVIDIA's own shader cache
+    (`...\AppData\Local/NVIDIA/GLCache/.../*.bin`), so the call target is text. The driver thread used one of its own
+    objects after freeing it.
+  - At that moment the test thread was opening the next test's hidden window (`SDL_CreateWindow` > `NtUserGetDC`), after
+    the previous test had disposed its device. `SdlGpuDevice` disposes in the order SDL requires
+    (`SDL_WaitForGPUIdle`, release resources, release the window, `SDL_DestroyGPUDevice`), so a driver thread outliving
+    its device is the driver's race, which appears only when one process creates and destroys many Vulkan devices in
+    quick succession (the conformance suite does so per test; a game keeps one).
+  - The OBS and Overwolf capture hooks are loaded in the process but are on no stack of the fault, so they are not the
+    cause.
+
+  Nothing in SDL or the engine changes. CI keeps running the tier-1 conformance on lavapipe whenever the device changes;
+  the manual states the limit.
 - The browser, Android and iOS hosts keep tier 0 (no SDL_GPU path there in Phase II).

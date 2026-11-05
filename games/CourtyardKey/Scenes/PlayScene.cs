@@ -188,7 +188,7 @@ public sealed partial class PlayScene : Scene
     // ------------------------------------------------------------------ movement services for actors
 
     /// <summary>Moves an actor through the room's tiles and every other solid actor.</summary>
-    public MoveResult MoveActor(Actor actor, Vector2 delta, bool flying, bool throughActors = false)
+    public TileMoveResult MoveActor(Actor actor, Vector2 delta, bool flying, bool throughActors = false)
     {
         _solids.Clear();
         if (!throughActors)

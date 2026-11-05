@@ -56,7 +56,7 @@ public sealed record PlatformRequest(GameSettings Settings)
     /// (<see cref="Graphics.Presentation.CaptureScale"/>: 3 for pixel art, so its pixels are visible, 1 for
     /// high-resolution canvases).
     /// </summary>
-    public int CaptureScale { get; init; } = Settings.EffectivePresentation.CaptureScale;
+    public int CaptureScale { get; init; } = Settings.Presentation.CaptureScale;
     /// <summary>Creates the audio device used instead of the backend's; the platform owns and disposes it.</summary>
     public Func<IAudioDevice>? Audio { get; init; }
     /// <summary>Input sources read together with the backend's (an on-screen pad, a network peer, a test).</summary>

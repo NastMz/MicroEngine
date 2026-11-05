@@ -1,21 +1,42 @@
 #!/usr/bin/env node
-// The documentation's code against the published SDK: every sample the site quotes (the Gem Garden tutorial's four
-// checkpoints, the focused examples, Hello Engine) is copied to a folder outside this repository and built with nothing
-// but nuget.org, at the package version its project file names, then played headlessly with its input script.
+// Importing it runs nothing: the rule below (publishedBuildRequired) is tested in sdk/tests/version.test.mjs.
+// The documentation's code against the SDK packages: every sample the site quotes (the Gem Garden tutorial's four
+// checkpoints, the focused examples, Hello Engine) is copied to a folder outside this repository and built with
+// nothing but packages, then played headlessly with its input script.
 //
 //   node sdk/tests/docs.mjs [--keep]
 //
+// Two builds of each copy:
+//
+// - Required: against the SDK built from source. This commit's packages are packed into the copy's folder, the copy
+//   references them at the version this commit packs, and NuGet takes every MicroEngine package from that folder only
+//   (package source mapping) and everything else from nuget.org. It proves what a reader copies works with the
+//   packages the next release will publish, including changes to public APIs that the published SDK does not have yet.
+// - The published SDK: when the documented version (sdk/version.json) is on nuget.org, the same copies are built at
+//   that version from nuget.org alone. It is required, except while the documented version is `reportOnlyVersion`:
+//   the samples already use APIs that version does not have (incompatible changes made after it was published), so
+//   its results are printed as a report and do not fail the check. The next SDK release documents a newer version and
+//   the published build is required again.
+//
 // Inside the repository the same projects build against the engine's source (samples/Directory.Build.targets), and
-// tests/Samples.Tests checks their behaviour; this script proves what a reader copies works with the packages they
-// install. The version is the documented one (sdk/version.json, sdk/version.mjs check keeps the pages in step). Before
-// it is published (a release pull request, or main between merging a release and publishing it) the samples are
-// built against the packages this commit packs, with nuget.org for everything else: what the release will publish.
+// tests/Samples.Tests checks their behaviour. The documented version must be on nuget.org or be the version this commit
+// packs (a release pull request, or main between merging a release and publishing it).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { documentedVersion, preparedVersion, publicState, isPublic } from '../version.mjs';
+
+// The last SDK version published before stage 5's breaking renames (the synthesizer's namespace, the tile mover's
+// result type), which the samples already use. It is the anchor of the report-only rule, not a documentation version
+// reference: never rewrite it when releasing. While sdk/version.json documents this version, the published-SDK build
+// is a report; once sdk/version.json documents another version (the next release), that build is required again,
+// automatically, with no change here.
+export const reportOnlyVersion = '0.4.0-alpha.2';
+
+/** Whether the build of the samples from nuget.org at the `documented` version fails the check (false: a report only). */
+export const publishedBuildRequired = documented => documented !== reportOnlyVersion;
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const samples = [
@@ -27,60 +48,118 @@ const samples = [
   ['samples/HelloEngine', 'HelloEngine.csproj', 'hello.script'],
 ];
 
-let failed = 0;
-const check = (name, ok, detail = '') => {
-  console.log(`${ok ? 'PASS' : 'FAIL'} ${name}${detail ? `: ${detail}` : ''}`);
-  if (!ok) failed++;
-  return ok;
-};
 const tail = text => text.trim().split('\n').slice(-4).join(' | ');
 
-// The version the documentation presents (sdk/version.json), which each sample must reference.
-const published = documentedVersion(repo);
-const onNuget = isPublic(await publicState(published));
-if (!onNuget && published !== preparedVersion(repo)) {
-  check(`the documented version ${published} is on nuget.org or is the version this commit packs (${preparedVersion(repo)})`, false);
-  process.exit(1);
-}
-
-const work = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'microengine-docs-'));
-if (work.startsWith(repo)) throw new Error('the copies must live outside the repository');
-let localFeed = '';
-if (!onNuget) {
-  // Not published yet: the packages of this commit, packed into the copy's folder (never a shared package cache).
-  const feed = path.join(work, 'feed');
-  const r = spawnSync('dotnet', ['pack', path.join(repo, 'MicroEngine.slnx'), '-c', 'Release', '-o', feed, '-v', 'q', '-nologo'], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
-  if (!check(`${published} is not on nuget.org yet: packs this commit's packages`, r.status === 0, r.status === 0 ? feed : tail(`${r.stdout}${r.stderr}`))) process.exit(1);
-  localFeed = `<add key="this commit" value="${feed}" />`;
-}
-console.log(`samples copied to ${work}, packages from ${onNuget ? 'nuget.org only' : "this commit's packages and nuget.org"}`);
-fs.writeFileSync(path.join(work, 'NuGet.config'), `<?xml version="1.0" encoding="utf-8"?>
-<configuration><packageSources><clear />${localFeed}<add key="nuget.org" value="https://api.nuget.org/v3/index.json" /></packageSources></configuration>
-`);
-// Saves the samples write go to the copy's folder on Linux and macOS (XDG_DATA_HOME, HOME); Windows keeps its own
-// local application data folder, where the samples' small save files (GemGarden, MicroEngineExamples) land.
-const env = { ...process.env, NUGET_PACKAGES: path.join(work, 'nuget'), DOTNET_CLI_HOME: path.join(work, 'home'), XDG_DATA_HOME: path.join(work, 'data'), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' };
-const run = (args, cwd) => {
-  const r = spawnSync('dotnet', args, { cwd, env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
-  return { code: r.status, out: `${r.stdout ?? ''}${r.stderr ?? ''}` };
-};
-
-try {
-  for (const [folder, project, script] of samples) {
-    const name = folder.replace('samples/', '');
-    const target = path.join(work, name.replaceAll('/', '-'));
-    fs.cpSync(path.join(repo, folder), target, { recursive: true, filter: src => !/[\\/](bin|obj|dist)$/.test(src) });
-    const csproj = fs.readFileSync(path.join(target, project), 'utf8');
-    const version = csproj.match(/<PackageReference Include="MicroEngine\.Desktop" Version="([^"]+)"/)?.[1];
-    if (!check(`${name}: references MicroEngine.Desktop ${published}`, version === published && !/ProjectReference/.test(csproj), version ?? 'no package reference')) continue;
-    let r = run(['build', project, '-c', 'Release', '-v', 'q', '-nologo'], target);
-    if (!check(`${name}: builds against ${onNuget ? 'nuget.org' : 'the packages to publish'}`, r.code === 0, r.code === 0 ? '' : tail(r.out))) continue;
-    r = run(['run', '--project', project, '-c', 'Release', '--no-build', '--', '--headless', '--script', path.join(target, script)], target);
-    check(`${name}: plays its input script headlessly`, r.code === 0 && /done: \d+ updates/.test(r.out), tail(r.out));
+async function main() {
+  let failed = 0;
+  let reported = 0;
+  // A check that fails the run, or (required = false) one whose failure is only reported.
+  const check = (name, ok, detail = '', required = true) => {
+    const label = ok ? 'PASS' : required ? 'FAIL' : 'REPORT';
+    console.log(`${label} ${name}${detail ? `: ${detail}` : ''}`);
+    if (!ok) { if (required) failed++; else reported++; }
+    return ok;
+  };
+  // The version the documentation presents (sdk/version.json), which each sample must reference, and the version this
+  // commit packs.
+  const documented = documentedVersion(repo);
+  const prepared = preparedVersion(repo);
+  const onNuget = isPublic(await publicState(documented));
+  if (!onNuget && documented !== prepared) {
+    check(`the documented version ${documented} is on nuget.org or is the version this commit packs (${prepared})`, false);
+    process.exit(1);
   }
-} finally {
-  if (process.argv.includes('--keep')) console.log(`kept ${work}`);
-  else fs.rmSync(work, { recursive: true, force: true });
+
+  const work = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'microengine-docs-'));
+  if (work.startsWith(repo)) throw new Error('the copies must live outside the repository');
+  const nugetOrg = '<add key="nuget.org" value="https://api.nuget.org/v3/index.json" />';
+
+  // Each build gets its own folder, NuGet configuration and package cache, so the source-built packages and the published
+  // ones (which may share a version number) never meet.
+  function environment(folder) {
+    // Saves the samples write go to the copy's folder on Linux and macOS (XDG_DATA_HOME, HOME); Windows keeps its own
+    // local application data folder, where the samples' small save files (GemGarden, MicroEngineExamples) land.
+    return { ...process.env, NUGET_PACKAGES: path.join(folder, 'nuget'), DOTNET_CLI_HOME: path.join(folder, 'home'), XDG_DATA_HOME: path.join(folder, 'data'), DOTNET_NOLOGO: '1', DOTNET_CLI_TELEMETRY_OPTOUT: '1' };
+  }
+  const run = (args, cwd, env) => {
+    const r = spawnSync('dotnet', args, { cwd, env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+    return { code: r.status, out: `${r.stdout ?? ''}${r.stderr ?? ''}` };
+  };
+
+  // Copies every sample into `folder`, points its MicroEngine.Desktop reference at `version`, builds it and plays its
+  // script. `what` names the build in each line; `required` = false only reports failures.
+  function buildAll({ folder, nugetConfig, version, what, required }) {
+    fs.mkdirSync(folder, { recursive: true });
+    fs.writeFileSync(path.join(folder, 'NuGet.config'), nugetConfig);
+    const env = environment(folder);
+    for (const [sample, project, script] of samples) {
+      const name = sample.replace('samples/', '');
+      const target = path.join(folder, name.replaceAll('/', '-'));
+      fs.cpSync(path.join(repo, sample), target, { recursive: true, filter: src => !/[\\/](bin|obj|dist)$/.test(src) });
+      const file = path.join(target, project);
+      const csproj = fs.readFileSync(file, 'utf8');
+      const referenced = csproj.match(/<PackageReference Include="MicroEngine\.Desktop" Version="([^"]+)"/)?.[1];
+      // The repository's samples reference the documented version (what a reader installs).
+      if (!check(`${name}: references MicroEngine.Desktop ${documented}`, referenced === documented && !/ProjectReference/.test(csproj), referenced ?? 'no package reference')) continue;
+      if (version !== referenced) fs.writeFileSync(file, csproj.replace(`<PackageReference Include="MicroEngine.Desktop" Version="${referenced}"`, `<PackageReference Include="MicroEngine.Desktop" Version="${version}"`));
+      let r = run(['build', project, '-c', 'Release', '-v', 'q', '-nologo'], target, env);
+      if (!check(`${name}: builds against ${what}`, r.code === 0, r.code === 0 ? '' : tail(r.out), required)) continue;
+      r = run(['run', '--project', project, '-c', 'Release', '--no-build', '--', '--headless', '--script', path.join(target, script)], target, env);
+      check(`${name}: plays its input script headlessly (${what})`, r.code === 0 && /done: \d+ updates/.test(r.out), tail(r.out), required);
+    }
+  }
+
+  function buildBoth() {
+    // 1. The SDK built from source: this commit's packages, packed into the copy's folder (never a shared package cache).
+    const source = path.join(work, 'source');
+    const feed = path.join(source, 'feed');
+    const pack = spawnSync('dotnet', ['pack', path.join(repo, 'MicroEngine.slnx'), '-c', 'Release', '-o', feed, '-v', 'q', '-nologo'], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+    if (!check(`packs this commit's packages (${prepared})`, pack.status === 0, pack.status === 0 ? feed : tail(`${pack.stdout}${pack.stderr}`))) return;
+    console.log(`samples copied to ${work}`);
+    buildAll({
+      folder: source,
+      version: prepared,
+      what: `the SDK built from source (${prepared})`,
+      required: true,
+      nugetConfig: `<?xml version="1.0" encoding="utf-8"?>
+  <configuration>
+    <packageSources><clear /><add key="this commit" value="${feed}" />${nugetOrg}</packageSources>
+    <packageSourceMapping>
+      <packageSource key="this commit"><package pattern="MicroEngine" /><package pattern="MicroEngine.*" /></packageSource>
+      <packageSource key="nuget.org"><package pattern="*" /></packageSource>
+    </packageSourceMapping>
+  </configuration>
+  `,
+    });
+
+    // 2. The published SDK, when the documented version is on nuget.org.
+    if (onNuget) {
+      const reportOnly = !publishedBuildRequired(documented);
+      if (reportOnly) console.log(`the published SDK ${documented} predates APIs the samples use: its build below is a report and does not fail this check`);
+      buildAll({
+        folder: path.join(work, 'published'),
+        version: documented,
+        what: `nuget.org (${documented})`,
+        required: !reportOnly,
+        nugetConfig: `<?xml version="1.0" encoding="utf-8"?>
+  <configuration><packageSources><clear />${nugetOrg}</packageSources></configuration>
+  `,
+      });
+    } else {
+      console.log(`${documented} is not on nuget.org yet: the SDK built from source is the version to publish`);
+    }
+  }
+
+  try {
+    buildBoth();
+  } finally {
+    if (process.argv.includes('--keep')) console.log(`kept ${work}`);
+    else fs.rmSync(work, { recursive: true, force: true });
+  }
+  if (reported) console.log(`${reported} published-SDK check(s) reported, not required (documented version ${reportOnlyVersion})`);
+  console.log(failed ? `${failed} check(s) failed` : 'all required checks passed');
+  process.exit(failed ? 1 : 0);
 }
-console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
-process.exit(failed ? 1 : 0);
+
+// Run as a script (node sdk/tests/docs.mjs), not when a test imports the rule above.
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) await main();
