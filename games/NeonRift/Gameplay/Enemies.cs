@@ -108,6 +108,7 @@ public sealed class TrooperGate(float x, int count) : Enemy
 /// <summary>Stationary rifleman: tracks the player in eight directions and fires two-round bursts.</summary>
 public sealed class Gunner : Enemy
 {
+    private static readonly Color Visor = Color.Hex("ff3860");
     private float _timer = 1.6f;
     private int _burst;
     private int _facing = -1;
@@ -158,7 +159,7 @@ public sealed class Gunner : Enemy
         var sprite = art.Frames("trooper_idle")[(int)(Age * 5) % 3];
         DrawFlashing(r, sprite, Vector2.Round(DrawPosition), _facing > 0, Flash);
         // A red visor stripe marks riflemen apart from runners.
-        r.FillRect(new RectF(MathF.Round(DrawPosition.X) + (_facing < 0 ? -9 : 4), MathF.Round(DrawPosition.Y) - 54, 5, 1), Color.Hex("ff3860"));
+        r.FillRect(new RectF(MathF.Round(DrawPosition.X) + (_facing < 0 ? -9 : 4), MathF.Round(DrawPosition.Y) - 54, 5, 1), Visor);
     }
 }
 

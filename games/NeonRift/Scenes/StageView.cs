@@ -10,6 +10,9 @@ namespace NeonRift.Scenes;
 /// <summary>Draws a <see cref="Stage"/>: parallax backdrop, props, tiles, actors, foreground and HUD.</summary>
 internal sealed class StageView(Assets art, BitmapFont font)
 {
+    private static readonly Color LavaGlow = Color.Hex("ff6a1a"), LavaSurface = Color.Hex("ffb03a"), EmptyCell = Color.Hex("2a2440"),
+        BarrierBar = Color.Hex("9a7aff"), WarningBand = Color.Hex("ff1040"), WarningEdge = Color.Hex("ff3860"),
+        WarningText = Color.Hex("ffb0c0"), BossBarBack = Color.Hex("3a1030");
     private readonly NumberText _score = new(static (score, _) => Ui.N(score, 7));
     private readonly NumberText _high = new(static (high, _) => "HI " + Ui.N(high, 7));
     private readonly Dictionary<string, ParallaxLayer[]> _parallax = new(StringComparer.Ordinal);
@@ -112,8 +115,8 @@ internal sealed class StageView(Assets art, BitmapFont font)
         {
             if (layer[x, y] != TileId.Lava || layer[x, y - 1] == TileId.Lava) continue;
             float pulse = 0.25f + 0.12f * MathF.Sin(stage.Time * 3 + x * 0.7f);
-            r.FillRect(new RectF(x * Tiles.Size, y * Tiles.Size - 10, Tiles.Size, 10), Color.Hex("ff6a1a").WithAlpha(pulse * 0.5f));
-            r.FillRect(new RectF(x * Tiles.Size, y * Tiles.Size - 4, Tiles.Size, 4), Color.Hex("ffb03a").WithAlpha(pulse));
+            r.FillRect(new RectF(x * Tiles.Size, y * Tiles.Size - 10, Tiles.Size, 10), LavaGlow.WithAlpha(pulse * 0.5f));
+            r.FillRect(new RectF(x * Tiles.Size, y * Tiles.Size - 4, Tiles.Size, 4), LavaSurface.WithAlpha(pulse));
         }
         r.SetBlendMode(BlendMode.Alpha);
     }
@@ -136,7 +139,7 @@ internal sealed class StageView(Assets art, BitmapFont font)
         {
             var cell = new RectF(7 + i * 12, 17, 10, 4);
             r.FillRect(cell.Inflate(1), Ui.Ink);
-            r.FillRect(cell, i < stage.Player.Health && stage.Player.State == PlayerState.Alive ? Ui.Cyan : Color.Hex("2a2440"));
+            r.FillRect(cell, i < stage.Player.Health && stage.Player.State == PlayerState.Alive ? Ui.Cyan : EmptyCell);
         }
         var weapon = stage.Player.Weapon;
         Capsule.DrawPod(r, art, new Vector2(112, 11), weapon.Letter, stage.Time);
@@ -148,16 +151,16 @@ internal sealed class StageView(Assets art, BitmapFont font)
         {
             float w = 60 * stage.Player.Barrier / Player.BarrierTime;
             r.FillRect(new RectF(110, 22, 60, 3), Ui.Ink.WithAlpha(0.7f));
-            r.FillRect(new RectF(110, 22, w, 3), Color.Hex("9a7aff"));
+            r.FillRect(new RectF(110, 22, w, 3), BarrierBar);
         }
 
         if (stage.Phase == StagePhase.Warning)
         {
             bool on = (int)(stage.PhaseTime * 4) % 2 == 0;
-            r.FillRect(new RectF(0, 110, r.Width, 40), Color.Hex("ff1040").WithAlpha(on ? 0.35f : 0.18f));
-            r.FillRect(new RectF(0, 110, r.Width, 2), Color.Hex("ff3860"));
-            r.FillRect(new RectF(0, 148, r.Width, 2), Color.Hex("ff3860"));
-            Ui.Centered(r, font, "WARNING", r.Width / 2f, 116, on ? Color.White : Color.Hex("ffb0c0"), 2);
+            r.FillRect(new RectF(0, 110, r.Width, 40), WarningBand.WithAlpha(on ? 0.35f : 0.18f));
+            r.FillRect(new RectF(0, 110, r.Width, 2), WarningEdge);
+            r.FillRect(new RectF(0, 148, r.Width, 2), WarningEdge);
+            Ui.Centered(r, font, "WARNING", r.Width / 2f, 116, on ? Color.White : WarningText, 2);
             Ui.Centered(r, font, "HOSTILE CRAFT APPROACHING", r.Width / 2f, 136, Ui.Gold);
         }
         if (stage.Boss is { } boss && stage.Phase == StagePhase.Boss)
@@ -165,7 +168,7 @@ internal sealed class StageView(Assets art, BitmapFont font)
             var bar = new RectF(r.Width / 2f - 110, r.Height - 16, 220, 6);
             Ui.Centered(r, font, boss.Title, r.Width / 2f, r.Height - 27, Ui.Gold);
             r.FillRect(bar.Inflate(1), Ui.Ink);
-            r.FillRect(bar, Color.Hex("3a1030"));
+            r.FillRect(bar, BossBarBack);
             r.FillRect(bar with { Width = bar.Width * (boss.Entering ? Math.Min(1, boss.Age / 2f) : boss.HealthFraction) }, Ui.Magenta);
             r.FillRect(bar with { Height = 2 }, Color.White.WithAlpha(0.25f));
         }

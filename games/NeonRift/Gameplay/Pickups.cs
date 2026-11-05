@@ -13,6 +13,8 @@ namespace NeonRift.Gameplay;
 /// </summary>
 public sealed class Capsule : Actor
 {
+    private static readonly Color ScatterGlow = Color.Hex("ff5a7a"), LanceGlow = Color.Hex("5af0ff"), RapidGlow = Color.Hex("ffd84a"),
+        BarrierGlow = Color.Hex("9a7aff"), PulseGlow = Color.Hex("7aff9a"), PodRim = Color.Hex("10101c"), PodCore = Color.Hex("1a1830");
     public const float Lifetime = 12f;
     private Body _body = new() { Box = new RectF(-6, -6, 12, 12) };
     public char Letter { get; }
@@ -73,14 +75,14 @@ public sealed class Capsule : Actor
     /// <summary>A glowing energy cell with the weapon letter, shared with the carrier that holds it.</summary>
     internal static void DrawPod(IRenderer r, Assets art, Vector2 at, char letter, float time)
     {
-        var glow = letter switch { 'S' => Color.Hex("ff5a7a"), 'L' => Color.Hex("5af0ff"), 'R' => Color.Hex("ffd84a"), 'B' => Color.Hex("9a7aff"), _ => Color.Hex("7aff9a") };
+        var glow = letter switch { 'S' => ScatterGlow, 'L' => LanceGlow, 'R' => RapidGlow, 'B' => BarrierGlow, _ => PulseGlow };
         float pulse = 0.5f + 0.5f * MathF.Sin(time * 6);
         r.SetBlendMode(BlendMode.Additive);
         r.FillCircle(at, 10 + pulse * 2, glow.WithAlpha(0.18f));
         r.SetBlendMode(BlendMode.Alpha);
-        r.FillCircle(at, 8.5f, Color.Hex("10101c"));
+        r.FillCircle(at, 8.5f, PodRim);
         r.FillCircle(at, 7.5f, glow);
-        r.FillCircle(at, 6f, Color.Hex("1a1830"));
+        r.FillCircle(at, 6f, PodCore);
         if (art.Font is { } font)
         {
             var text = letter.ToString();

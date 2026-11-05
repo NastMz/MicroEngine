@@ -11,7 +11,8 @@ namespace NeonRift.Gameplay;
 /// <summary>A player bullet. Piercing shots keep flying and remember whom they already hit.</summary>
 public sealed class PlayerShot : Actor
 {
-    private readonly HashSet<Enemy> _hit = [];
+    // Only piercing shots outlive their first hit, so only they keep the set.
+    private readonly HashSet<Enemy>? _hit;
     public WeaponSpec Weapon { get; }
     public float Life { get; set; } = 1.4f;
     private protected override void AttachTo(IWorld world, EntityId id) => world.Attach<PlayerShot>(id, this);
@@ -19,6 +20,7 @@ public sealed class PlayerShot : Actor
     public PlayerShot(WeaponSpec weapon, Vector2 at, Vector2 velocity)
     {
         Weapon = weapon;
+        if (weapon.Piercing) _hit = [];
         Position = at;
         Velocity = velocity;
         float size = weapon.Kind switch { WeaponKind.Lance => 10, WeaponKind.Spread => 6, _ => 5 };
@@ -31,7 +33,7 @@ public sealed class PlayerShot : Actor
         base.HashState(hash);
         hash.Add((int)Weapon.Kind);
         hash.Add(Life);
-        hash.Add(_hit.Count);
+        hash.Add(_hit?.Count ?? 0);
     }
 
     public override void Update(float dt)
@@ -52,9 +54,9 @@ public sealed class PlayerShot : Actor
         foreach (var e in Stage.Enemies) if (e.Bounds.Intersects(reach)) targets.Add(e);
         foreach (var enemy in targets)
         {
-            if (_hit.Contains(enemy)) continue;
+            if (_hit?.Contains(enemy) == true) continue;
             if (!enemy.Hit(Weapon.Damage, Position)) continue;
-            _hit.Add(enemy);
+            _hit?.Add(enemy);
             Stage.Impact(Position, Weapon.Impact);
             if (!Weapon.Piercing) { Destroy(); return; }
         }
@@ -81,6 +83,7 @@ public sealed class PlayerShot : Actor
 /// <summary>An enemy projectile: a glowing orb, or a heavier shell when <see cref="Heavy"/> is set.</summary>
 public sealed class EnemyShot : Actor
 {
+    private static readonly Color HeavyTint = Color.Hex("ff9a5a"), LightTint = Color.Hex("ff6a8a");
     public bool Heavy { get; init; }
     public float Gravity { get; init; }
     private protected override void AttachTo(IWorld world, EntityId id) => world.Attach<EnemyShot>(id, this);
@@ -121,7 +124,7 @@ public sealed class EnemyShot : Actor
         var frames = art.Frames("enemy_bullet");
         var frame = frames[(int)(Age * 12) % frames.Count];
         r.SetBlendMode(BlendMode.Additive);
-        r.DrawPivoted(frame, Vector2.Round(DrawPosition), 0, new Vector2(Heavy ? 1.4f : 0.85f), Heavy ? Color.Hex("ff9a5a") : Color.Hex("ff6a8a"));
+        r.DrawPivoted(frame, Vector2.Round(DrawPosition), 0, new Vector2(Heavy ? 1.4f : 0.85f), Heavy ? HeavyTint : LightTint);
         r.SetBlendMode(BlendMode.Alpha);
     }
 }

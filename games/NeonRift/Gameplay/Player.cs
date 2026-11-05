@@ -24,6 +24,7 @@ public enum PlayerState { Alive, Dying, Waiting }
 /// </summary>
 public sealed class Player : Actor
 {
+    private static readonly Color BarrierRing = Color.Hex("7af0ff");
     public const float RunSpeed = 118, Gravity = 1000, JumpSpeed = 400, MaxFall = 430;
     public const float RespawnInvulnerability = 3f, HitInvulnerability = 1.2f, BarrierTime = 10f;
     public const int MaxHealth = 3;
@@ -254,7 +255,7 @@ public sealed class Player : Actor
         {
             r.SetBlendMode(BlendMode.Additive);
             var ring = art.Frames("charged")[(int)(Age * 14) % 6];
-            r.DrawPivoted(ring, feet + new Vector2(0, -24), Age * 2, new Vector2(0.8f, 1.1f), Color.Hex("7af0ff").WithAlpha(0.7f));
+            r.DrawPivoted(ring, feet + new Vector2(0, -24), Age * 2, new Vector2(0.8f, 1.1f), BarrierRing.WithAlpha(0.7f));
             r.SetBlendMode(BlendMode.Alpha);
         }
         if (State == PlayerState.Dying)
