@@ -113,12 +113,12 @@ internal sealed partial class OverworldScene
         {
             TileKind.Flowers => SpriteKeys.Pick(FlowerKeys, "t:flowers", (int)(Age * 1.6f + x * 0.37f + y * 0.21f) % 2),
             TileKind.TallGrass => SpriteKeys.Pick(TallKeys, "t:tall", (int)(Age * 0.9f + (x + y) * 0.5f) % 2),
-            TileKind.Path => SpriteKeys.Pick(PathKeys, "t:path", Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Path || id == DoorMarker, outsideMatches: true)),
-            TileKind.Water => WaterKey(Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Water, true), (int)(Age * 2.2f) % 3),
+            TileKind.Path => SpriteKeys.Pick(PathKeys, "t:path", AutotileMask(x, y)),
+            TileKind.Water => WaterKey(AutotileMask(x, y), (int)(Age * 2.2f) % 3),
             TileKind.Ledge => SpriteKeys.Pick(LedgeKeys, "t:ledge", (_map.KindAt(x - 1, y) == TileKind.Ledge ? 1 : 0) | (_map.KindAt(x + 1, y) == TileKind.Ledge ? 2 : 0)),
             TileKind.Wall => _map.KindAt(x, y + 1) == TileKind.Wall ? "t:walltop" : (x % 4 == 2 && !_map.Def.Id.Equals("hall") ? "t:wallwin" : "t:wall"),
             TileKind.Mat => "t:mat",
-            TileKind.Carpet => SpriteKeys.Pick(CarpetKeys, "t:carpet", Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Carpet || id == (int)TileKind.Mat, outsideMatches: false)),
+            TileKind.Carpet => SpriteKeys.Pick(CarpetKeys, "t:carpet", AutotileMask(x, y)),
             TileKind.Rug => "t:rug",
             TileKind.Void => null,
             _ => _map.Def.Id is "hall" or "shrine" ? "t:stone" : _map.Def.Indoor ? SpriteKeys.Pick(FloorKeys, "t:floor", (x + y) % 2) : SpriteKeys.Pick(GrassKeys, "t:grass", (int)(Art.Hash(x, y, 31) * 4)),
@@ -138,6 +138,7 @@ internal sealed partial class OverworldScene
 
     private const int DoorMarker = 255;
     private TileLayer? _layer;
+    private int[] _masks = [];
     private MapDef? _layerFor;
 
     /// <summary>The map as a tile-id layer (TileKind values) for autotiling; building doors count as path.</summary>
@@ -152,8 +153,36 @@ internal sealed partial class OverworldScene
                 layer[x, y] = (int)_map.KindAt(x, y);
             foreach (var b in _map.Def.Buildings) layer[b.X + b.DoorX, b.Y + b.H - 1] = DoorMarker;
             _layerFor = _map.Def;
-            return _layer = layer;
+            _layer = layer;
+            _masks = AutotileMasks(layer);
+            return layer;
         }
+    }
+
+    /// <summary>
+    /// The autotile mask of the tile at (<paramref name="x"/>, <paramref name="y"/>): which neighbours join its path,
+    /// water, carpet or counter. Maps never change while shown, so the masks are worked out once per map.
+    /// </summary>
+    private int AutotileMask(int x, int y)
+    {
+        _ = Layer; // rebuilds the layer and its masks when the map changed
+        return _masks[y * _map.Width + x];
+    }
+
+    private int[] AutotileMasks(TileLayer layer)
+    {
+        var masks = new int[_map.Width * _map.Height];
+        for (int y = 0; y < _map.Height; y++)
+        for (int x = 0; x < _map.Width; x++)
+            masks[y * _map.Width + x] = _map.KindAt(x, y) switch
+            {
+                TileKind.Path => Autotile.Mask4(layer, x, y, id => id == (int)TileKind.Path || id == DoorMarker, outsideMatches: true),
+                TileKind.Water => Autotile.Mask4(layer, x, y, id => id == (int)TileKind.Water, outsideMatches: true),
+                TileKind.Carpet => Autotile.Mask4(layer, x, y, id => id == (int)TileKind.Carpet || id == (int)TileKind.Mat, outsideMatches: false),
+                TileKind.Counter => Autotile.Mask4(layer, x, y, id => id == (int)TileKind.Counter, outsideMatches: false),
+                _ => 0,
+            };
+        return masks;
     }
 
     private void DrawObject(IRenderer r, int x, int y)
@@ -171,7 +200,7 @@ internal sealed partial class OverworldScene
             TileKind.Bed => _map.KindAt(x, y - 1) == TileKind.Bed ? "t:bedbottom" : "t:bedtop",
             TileKind.Table or TileKind.Pedestal => SpriteKeys.Pick(TableKeys, "t:table", (IsTable(x - 1, y) ? 1 : 0) | (IsTable(x + 1, y) ? 2 : 0)),
             TileKind.Plant => "t:plant",
-            TileKind.Counter => SpriteKeys.Pick(CounterKeys, "t:counter", Autotile.Mask4(Layer, x, y, id => id == (int)TileKind.Counter, outsideMatches: false)),
+            TileKind.Counter => SpriteKeys.Pick(CounterKeys, "t:counter", AutotileMask(x, y)),
             TileKind.Tv => "t:tv",
             TileKind.Kitchen => "t:kitchen",
             TileKind.Altar => "t:altar",
