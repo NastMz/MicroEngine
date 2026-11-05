@@ -80,7 +80,7 @@ Height of the view in pixels.
 
 `presentation` Presentation
 
-The game's presentation (<code>GameSettings.EffectivePresentation</code>; <code>Game.CreateCamera</code> passes it).
+The game's presentation (<code>GameSettings.Presentation</code>; <code>Game.CreateCamera</code> passes it).
 
 #### Exceptions
 

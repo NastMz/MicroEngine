@@ -209,8 +209,8 @@ public sealed class StateTraceTests
         public string? Heard { get; set; }
         protected override void Load()
         {
-            var tune = new MicroEngine.Audio.Song(140).Track(MicroEngine.Audio.Instrument.Lead, "C4 E4 G4 C5 . G4 E4 - D4 F4 A4 D5 . A4 F4 -")
-                .Track(MicroEngine.Audio.Instrument.Bass, "C2 - . C2 G2 - . G2").Drums("k . s . k k s h");
+            var tune = new MicroEngine.Audio.Retro.Song(140).Track(MicroEngine.Audio.Retro.Instrument.Lead, "C4 E4 G4 C5 . G4 E4 - D4 F4 A4 D5 . A4 F4 -")
+                .Track(MicroEngine.Audio.Retro.Instrument.Bass, "C2 - . C2 G2 - . G2").Drums("k . s . k k s h");
             Audio.AddMusic("first", tune);
             Audio.AddMusic("second", tune);
             Scenes.Push(new Rooms());

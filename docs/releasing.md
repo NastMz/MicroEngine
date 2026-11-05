@@ -68,8 +68,9 @@ Daily CI runs the SDK check (`sdk.yml`) whenever a package input changes, and **
    package, plays the web package in Chrome, and checks the failures a developer meets (invalid id, missing or invalid
    icon, missing signing key, a target the system cannot build, a missing workload).
 3. **The documented samples** (`sdk/tests/docs.mjs`, in the .NET Linux job): each sample the site quotes is copied
-   outside the repository and built at the documented version: from nuget.org once it is public, from the packages
-   this commit packs before that (a release pull request).
+   outside the repository and built against the packages this commit packs (the SDK built from source), and, once the
+   documented version is public, also from nuget.org at that version. The nuget.org build is only reported while the
+   documented version predates breaking changes the samples already use ([CI, documentation checks](ci.md#documentation-checks)).
 
 The four demos are packaged by the same tool; their packages are also verified level by level and played scenario by
 scenario on each system ([packaging/](../packaging/README.md)).

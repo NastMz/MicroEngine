@@ -3,14 +3,17 @@ using MicroEngine.Physics.Tiles;
 
 namespace MicroEngine.World;
 
-/// <summary>What happened during a <see cref="TileMotion.Move"/>.</summary>
+/// <summary>
+/// What happened during a <see cref="TileMotion.Move"/>. A body of the physics contract reports its move in
+/// <see cref="MicroEngine.Physics.MoveResult"/> instead.
+/// </summary>
 /// <param name="Bounds">The box after the move.</param>
 /// <param name="HitLeft">Movement to the left was stopped.</param>
 /// <param name="HitRight">Movement to the right was stopped.</param>
 /// <param name="HitCeiling">Upward movement was stopped.</param>
 /// <param name="HitFloor">Downward movement was stopped (the body landed).</param>
 /// <param name="Touched">Flags of every tile the box overlaps at the end (hazards, water...).</param>
-public readonly record struct MoveResult(RectF Bounds, bool HitLeft, bool HitRight, bool HitCeiling, bool HitFloor, TileFlags Touched)
+public readonly record struct TileMoveResult(RectF Bounds, bool HitLeft, bool HitRight, bool HitCeiling, bool HitFloor, TileFlags Touched)
 {
     /// <summary>Whether horizontal movement was stopped on either side.</summary>
     public bool HitWall => HitLeft || HitRight;
@@ -25,8 +28,9 @@ public readonly record struct MoveResult(RectF Bounds, bool HitLeft, bool HitRig
 /// bodies falling onto their top edge.
 /// </summary>
 /// <remarks>
-/// A stateless helper over one grid. A world of bodies, sensors, queries and moving solids that push and carry bodies
-/// is <see cref="MicroEngine.Physics.Tiles.TilePhysicsWorld2D"/>, built on the same swept test.
+/// A stateless convenience over one grid, for a game that moves its own boxes. A world of bodies, sensors, queries and
+/// moving solids that push and carry bodies is the tile backend of the physics contract,
+/// <see cref="MicroEngine.Physics.Tiles.TilePhysicsWorld2D"/>, built on the same swept test.
 /// </remarks>
 public static class TileMotion
 {
@@ -42,7 +46,7 @@ public static class TileMotion
     /// <param name="ignoreOneWay">Passes through one-way tiles (dropping down through a platform).</param>
     /// <returns>The new box and what it hit. On a hit, movement along that axis stops for the rest of this step.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="delta"/> is not finite.</exception>
-    public static MoveResult Move(RectF box, Vector2 delta, ICollisionGrid grid, IReadOnlyList<RectF>? solids = null, bool ignoreOneWay = false)
+    public static TileMoveResult Move(RectF box, Vector2 delta, ICollisionGrid grid, IReadOnlyList<RectF>? solids = null, bool ignoreOneWay = false)
     {
         ArgumentNullException.ThrowIfNull(grid);
         if (!float.IsFinite(delta.X) || !float.IsFinite(delta.Y)) throw new ArgumentOutOfRangeException(nameof(delta));
@@ -80,7 +84,7 @@ public static class TileMotion
                 else if (dy < 0) ceiling = true;
                 break;
             }
-            return new MoveResult(box, left, right, ceiling, floor, TouchedFlags(box, grid));
+            return new TileMoveResult(box, left, right, ceiling, floor, TouchedFlags(box, grid));
         }
         finally
         {

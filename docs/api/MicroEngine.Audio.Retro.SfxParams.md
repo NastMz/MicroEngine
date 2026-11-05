@@ -2,7 +2,7 @@
 
 <div data-pagefind-weight="0.3">
 
-Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
+Namespace: [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md)  
 Assembly: MicroEngine.Audio.dll  
 Guide: [Audio](../manual/audio.md)  
 
@@ -16,7 +16,7 @@ public sealed record SfxParams : IEquatable<SfxParams>
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
-[SfxParams](MicroEngine.Audio.SfxParams.md)
+[SfxParams](MicroEngine.Audio.Retro.SfxParams.md)
 
 #### Implements
 
@@ -24,7 +24,7 @@ public sealed record SfxParams : IEquatable<SfxParams>
 
 ## Constructors
 
-### <a id="MicroEngine_Audio_SfxParams__ctor"></a> SfxParams\(\)
+### <a id="MicroEngine_Audio_Retro_SfxParams__ctor"></a> SfxParams\(\)
 
 ```csharp
 public SfxParams()
@@ -32,9 +32,9 @@ public SfxParams()
 
 ## Properties
 
-### <a id="MicroEngine_Audio_SfxParams_Arpeggio"></a> Arpeggio
+### <a id="MicroEngine_Audio_Retro_SfxParams_Arpeggio"></a> Arpeggio
 
-Optional arpeggio: frequency multipliers stepped every [ArpeggioStep](MicroEngine.Audio.SfxParams.md#MicroEngine_Audio_SfxParams_ArpeggioStep) seconds.
+Optional arpeggio: frequency multipliers stepped every [ArpeggioStep](MicroEngine.Audio.Retro.SfxParams.md#MicroEngine_Audio_Retro_SfxParams_ArpeggioStep) seconds.
 
 ```csharp
 public float[]? Arpeggio { get; init; }
@@ -44,9 +44,9 @@ public float[]? Arpeggio { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)\[\]?
 
-### <a id="MicroEngine_Audio_SfxParams_ArpeggioStep"></a> ArpeggioStep
+### <a id="MicroEngine_Audio_Retro_SfxParams_ArpeggioStep"></a> ArpeggioStep
 
-Seconds each [Arpeggio](MicroEngine.Audio.SfxParams.md#MicroEngine_Audio_SfxParams_Arpeggio) multiplier lasts (default 0.05).
+Seconds each [Arpeggio](MicroEngine.Audio.Retro.SfxParams.md#MicroEngine_Audio_Retro_SfxParams_Arpeggio) multiplier lasts (default 0.05).
 
 ```csharp
 public float ArpeggioStep { get; init; }
@@ -56,7 +56,7 @@ public float ArpeggioStep { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_SfxParams_Attack"></a> Attack
+### <a id="MicroEngine_Audio_Retro_SfxParams_Attack"></a> Attack
 
 Seconds to rise from silence to full volume.
 
@@ -68,7 +68,7 @@ public float Attack { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_SfxParams_Crush"></a> Crush
+### <a id="MicroEngine_Audio_Retro_SfxParams_Crush"></a> Crush
 
 Bit-crush to N levels (0 disables) for crunchy hits.
 
@@ -80,7 +80,7 @@ public int Crush { get; init; }
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-### <a id="MicroEngine_Audio_SfxParams_Decay"></a> Decay
+### <a id="MicroEngine_Audio_Retro_SfxParams_Decay"></a> Decay
 
 Seconds to fade to silence after the sustain. The sound lasts <code>Attack + Sustain + Decay</code> seconds.
 
@@ -92,7 +92,7 @@ public float Decay { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_SfxParams_EndFrequency"></a> EndFrequency
+### <a id="MicroEngine_Audio_Retro_SfxParams_EndFrequency"></a> EndFrequency
 
 Frequency at the end of the sound (exponential slide). Null keeps it constant.
 
@@ -104,7 +104,7 @@ public float? EndFrequency { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)?
 
-### <a id="MicroEngine_Audio_SfxParams_Frequency"></a> Frequency
+### <a id="MicroEngine_Audio_Retro_SfxParams_Frequency"></a> Frequency
 
 Start frequency in Hz.
 
@@ -116,7 +116,7 @@ public float Frequency { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_SfxParams_LowPass"></a> LowPass
+### <a id="MicroEngine_Audio_Retro_SfxParams_LowPass"></a> LowPass
 
 Simple one-pole low-pass in Hz (0 disables). Softens harsh square/noise sounds.
 
@@ -128,7 +128,7 @@ public float LowPass { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_SfxParams_Sustain"></a> Sustain
+### <a id="MicroEngine_Audio_Retro_SfxParams_Sustain"></a> Sustain
 
 Seconds held at full volume after the attack.
 
@@ -140,7 +140,7 @@ public float Sustain { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_SfxParams_VibratoDepth"></a> VibratoDepth
+### <a id="MicroEngine_Audio_Retro_SfxParams_VibratoDepth"></a> VibratoDepth
 
 Vibrato depth as a fraction of the frequency (0 disables; 0.02 is a light wobble).
 
@@ -152,7 +152,7 @@ public float VibratoDepth { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_SfxParams_VibratoRate"></a> VibratoRate
+### <a id="MicroEngine_Audio_Retro_SfxParams_VibratoRate"></a> VibratoRate
 
 Vibrato speed in Hz (default 8).
 
@@ -164,7 +164,7 @@ public float VibratoRate { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_SfxParams_Volume"></a> Volume
+### <a id="MicroEngine_Audio_Retro_SfxParams_Volume"></a> Volume
 
 Peak amplitude, 0..1 (default 0.5).
 
@@ -176,7 +176,7 @@ public float Volume { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_SfxParams_Wave"></a> Wave
+### <a id="MicroEngine_Audio_Retro_SfxParams_Wave"></a> Wave
 
 The oscillator waveform (square by default).
 
@@ -186,11 +186,11 @@ public Wave Wave { get; init; }
 
 #### Property Value
 
- [Wave](MicroEngine.Audio.Wave.md)
+ [Wave](MicroEngine.Audio.Retro.Wave.md)
 
 ## Methods
 
-### <a id="MicroEngine_Audio_SfxParams__Clone__"></a> <Clone\>$\(\)
+### <a id="MicroEngine_Audio_Retro_SfxParams__Clone__"></a> <Clone\>$\(\)
 
 ```csharp
 public SfxParams <Clone>$()
@@ -198,9 +198,9 @@ public SfxParams <Clone>$()
 
 #### Returns
 
- [SfxParams](MicroEngine.Audio.SfxParams.md)
+ [SfxParams](MicroEngine.Audio.Retro.SfxParams.md)
 
-### <a id="MicroEngine_Audio_SfxParams_Equals_System_Object_"></a> Equals\(object?\)
+### <a id="MicroEngine_Audio_Retro_SfxParams_Equals_System_Object_"></a> Equals\(object?\)
 
 ```csharp
 public override bool Equals(object? obj)
@@ -214,7 +214,7 @@ public override bool Equals(object? obj)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Audio_SfxParams_Equals_MicroEngine_Audio_SfxParams_"></a> Equals\(SfxParams?\)
+### <a id="MicroEngine_Audio_Retro_SfxParams_Equals_MicroEngine_Audio_Retro_SfxParams_"></a> Equals\(SfxParams?\)
 
 ```csharp
 public bool Equals(SfxParams? other)
@@ -222,13 +222,13 @@ public bool Equals(SfxParams? other)
 
 #### Parameters
 
-`other` [SfxParams](MicroEngine.Audio.SfxParams.md)?
+`other` [SfxParams](MicroEngine.Audio.Retro.SfxParams.md)?
 
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Audio_SfxParams_GetHashCode"></a> GetHashCode\(\)
+### <a id="MicroEngine_Audio_Retro_SfxParams_GetHashCode"></a> GetHashCode\(\)
 
 ```csharp
 public override int GetHashCode()
@@ -238,7 +238,7 @@ public override int GetHashCode()
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-### <a id="MicroEngine_Audio_SfxParams_ToString"></a> ToString\(\)
+### <a id="MicroEngine_Audio_Retro_SfxParams_ToString"></a> ToString\(\)
 
 ```csharp
 public override string ToString()
@@ -250,7 +250,7 @@ public override string ToString()
 
 ## Operators
 
-### <a id="MicroEngine_Audio_SfxParams_op_Equality_MicroEngine_Audio_SfxParams_MicroEngine_Audio_SfxParams_"></a> operator ==\(SfxParams?, SfxParams?\)
+### <a id="MicroEngine_Audio_Retro_SfxParams_op_Equality_MicroEngine_Audio_Retro_SfxParams_MicroEngine_Audio_Retro_SfxParams_"></a> operator ==\(SfxParams?, SfxParams?\)
 
 ```csharp
 public static bool operator ==(SfxParams? left, SfxParams? right)
@@ -258,15 +258,15 @@ public static bool operator ==(SfxParams? left, SfxParams? right)
 
 #### Parameters
 
-`left` [SfxParams](MicroEngine.Audio.SfxParams.md)?
+`left` [SfxParams](MicroEngine.Audio.Retro.SfxParams.md)?
 
-`right` [SfxParams](MicroEngine.Audio.SfxParams.md)?
+`right` [SfxParams](MicroEngine.Audio.Retro.SfxParams.md)?
 
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Audio_SfxParams_op_Inequality_MicroEngine_Audio_SfxParams_MicroEngine_Audio_SfxParams_"></a> operator \!=\(SfxParams?, SfxParams?\)
+### <a id="MicroEngine_Audio_Retro_SfxParams_op_Inequality_MicroEngine_Audio_Retro_SfxParams_MicroEngine_Audio_Retro_SfxParams_"></a> operator \!=\(SfxParams?, SfxParams?\)
 
 ```csharp
 public static bool operator !=(SfxParams? left, SfxParams? right)
@@ -274,9 +274,9 @@ public static bool operator !=(SfxParams? left, SfxParams? right)
 
 #### Parameters
 
-`left` [SfxParams](MicroEngine.Audio.SfxParams.md)?
+`left` [SfxParams](MicroEngine.Audio.Retro.SfxParams.md)?
 
-`right` [SfxParams](MicroEngine.Audio.SfxParams.md)?
+`right` [SfxParams](MicroEngine.Audio.Retro.SfxParams.md)?
 
 #### Returns
 

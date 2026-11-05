@@ -14,14 +14,14 @@ public sealed class TextureFilteringTests
     public void The_default_texture_filter_follows_the_canvas_scaling_unless_the_game_chooses_one()
     {
         Assert.AreEqual(TextureFilter.Nearest, new GameSettings("pixel").DefaultTextureFilter);
-        Assert.AreEqual(TextureFilter.Linear, new GameSettings("hd", 1280, 720) { Scaling = CanvasScaling.Smooth }.DefaultTextureFilter);
-        Assert.AreEqual(TextureFilter.Nearest, new GameSettings("hd", 1280, 720) { Scaling = CanvasScaling.Smooth, TextureFilter = TextureFilter.Nearest }.DefaultTextureFilter);
+        Assert.AreEqual(TextureFilter.Linear, new GameSettings("hd", 1280, 720) { Presentation = Presentation.HighResolution2D }.DefaultTextureFilter);
+        Assert.AreEqual(TextureFilter.Nearest, new GameSettings("hd", 1280, 720) { Presentation = Presentation.HighResolution2D, TextureFilter = TextureFilter.Nearest }.DefaultTextureFilter);
         Assert.AreEqual(TextureFilter.Linear, new GameSettings("pixel") { TextureFilter = TextureFilter.Linear }.DefaultTextureFilter);
     }
 
     private sealed class HdGame : Game
     {
-        public override GameSettings Settings { get; } = new("hd", 1280, 720) { Scaling = CanvasScaling.Smooth };
+        public override GameSettings Settings { get; } = new("hd", 1280, 720) { Presentation = Presentation.HighResolution2D };
         public Texture? Image;
         protected override void Load() { Image = Graphics.CreateTexture(new PixelImage(4, 4)); Scenes.Push(new Empty()); }
         private sealed class Empty : Scene { public override void Update(float dt) { } public override void Draw(IRenderer r) { } }
@@ -76,11 +76,11 @@ public sealed class TextureFilteringTests
         var safe = new RectF(0, 0, 1366, 768);
         // 320×180 on 1366×768: 4.27 fits; 4 is within 80 %, so pixel scaling takes it.
         Assert.AreEqual(new Vector2(1280, 720), FrameLayout.Fit(window, safe, 320, 180).Size);
-        var smooth = FrameLayout.Fit(window, safe, 320, 180, CanvasScaling.Smooth);
+        var smooth = FrameLayout.Fit(window, safe, 320, 180, Presentation.HighResolution2D);
         Assert.AreEqual(1365.33f, smooth.Width, 0.01f);
         Assert.AreEqual(768, smooth.Height, 0.01f);
         // An HD canvas shrinks into a smaller window in both modes.
-        var hd = FrameLayout.Fit(window, safe, 1920, 1080, CanvasScaling.Smooth);
+        var hd = FrameLayout.Fit(window, safe, 1920, 1080, Presentation.HighResolution2D);
         Assert.AreEqual(1365.33f, hd.Width, 0.01f);
         Assert.AreEqual(768, hd.Height, 0.01f);
     }
@@ -91,7 +91,7 @@ public sealed class TextureFilteringTests
         var controls = new VirtualControls(TouchLayout.CreateDefault());
         var window = new Vector2(1366, 768);
         var safe = new RectF(0, 0, 1366, 768);
-        Assert.AreEqual(FrameLayout.Fit(window, safe, 320, 180, CanvasScaling.Smooth), controls.Frame(window, safe, 320, 180, CanvasScaling.Smooth));
+        Assert.AreEqual(FrameLayout.Fit(window, safe, 320, 180, Presentation.HighResolution2D), controls.Frame(window, safe, 320, 180, Presentation.HighResolution2D));
         Assert.AreEqual(FrameLayout.Fit(window, safe, 320, 180), controls.Frame(window, safe, 320, 180));
     }
 
@@ -103,7 +103,7 @@ public sealed class TextureFilteringTests
         // 4× would be 1280×720 on a 1366×728 usable area: the largest whole factor inside 90 % is 3.
         Assert.AreEqual((960, 540), WindowSizing.Initial(pixel, 4, 1366, 728));
         Assert.AreEqual((1280, 720), WindowSizing.Initial(pixel, 4, 0, 0), "an unknown display keeps the request");
-        var hd = new GameSettings("hd", 1920, 1080, 1) { Scaling = CanvasScaling.Smooth };
+        var hd = new GameSettings("hd", 1920, 1080, 1) { Presentation = Presentation.HighResolution2D };
         Assert.AreEqual((1920, 1080), WindowSizing.Initial(hd, 1, 3840, 2100));
         var (w, h) = WindowSizing.Initial(hd, 1, 1366, 728);
         Assert.AreEqual(1164, w);

@@ -58,7 +58,7 @@ internal abstract class Actor : Entity, IStateHashed
     public abstract void Render(IRenderer r, Assets a, float time);
 
     /// <summary>Moves through tiles with gravity; returns the collision result.</summary>
-    protected MoveResult MoveBody(float dt, float gravity = 900f, float terminal = 260f)
+    protected TileMoveResult MoveBody(float dt, float gravity = 900f, float terminal = 260f)
     {
         Velocity.Y = MathF.Min(Velocity.Y + gravity * dt, terminal);
         var result = TileMotion.Move(Bounds, Velocity * dt, Stage.Level.Grid);

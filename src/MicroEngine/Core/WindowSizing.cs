@@ -27,7 +27,7 @@ public static class WindowSizing
         float maxW = usableWidth * MaximumDisplayShare, maxH = usableHeight * MaximumDisplayShare;
         if (vw * scale <= maxW && vh * scale <= maxH) return (vw * scale, vh * scale);
         float fit = MathF.Min(maxW / vw, maxH / vh);
-        if (settings.EffectivePresentation.WholeFactorWindows && fit >= 1) return (vw * (int)fit, vh * (int)fit);
+        if (settings.Presentation.WholeFactorWindows && fit >= 1) return (vw * (int)fit, vh * (int)fit);
         return (Math.Max(1, (int)(vw * fit)), Math.Max(1, (int)(vh * fit)));
     }
 

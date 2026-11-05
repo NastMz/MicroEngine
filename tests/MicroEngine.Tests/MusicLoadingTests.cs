@@ -1,4 +1,5 @@
 using MicroEngine.Audio;
+using MicroEngine.Audio.Retro;
 
 namespace MicroEngine.Tests;
 

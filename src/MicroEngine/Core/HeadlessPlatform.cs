@@ -192,11 +192,11 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
     public Color Letterbox { get; set; }
 
     /// <summary>A headless platform with the virtual size of <paramref name="settings"/>.</summary>
-    public static HeadlessPlatform For(GameSettings settings) => new(settings.VirtualWidth, settings.VirtualHeight) { Presentation = settings.EffectivePresentation };
+    public static HeadlessPlatform For(GameSettings settings) => new(settings.VirtualWidth, settings.VirtualHeight) { Presentation = settings.Presentation };
 
     /// <summary>A headless platform with the virtual size of <paramref name="settings"/>, rasterizing when <paramref name="rasterize"/> is true (see <see cref="Rasterize"/>).</summary>
     public static HeadlessPlatform For(GameSettings settings, bool rasterize) =>
-        new(settings.VirtualWidth, settings.VirtualHeight) { Rasterize = rasterize, Presentation = settings.EffectivePresentation };
+        new(settings.VirtualWidth, settings.VirtualHeight) { Rasterize = rasterize, Presentation = settings.Presentation };
 
     /// <summary>
     /// A headless platform for <paramref name="request"/>: the virtual size of its settings, the audio device it supplies
@@ -205,7 +205,7 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
     public static HeadlessPlatform For(PlatformRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return new(request.Settings.VirtualWidth, request.Settings.VirtualHeight, request) { Presentation = request.Settings.EffectivePresentation };
+        return new(request.Settings.VirtualWidth, request.Settings.VirtualHeight, request) { Presentation = request.Settings.Presentation };
     }
 
     /// <summary>The headless platform as a catalog entry (<c>--platform headless</c>, <c>--headless</c>).</summary>

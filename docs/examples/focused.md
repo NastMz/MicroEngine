@@ -217,7 +217,9 @@ Manual: [Input, touch controls](../manual/input.md#touch-controls).
 ## Sound and music
 
 A synthesized sound, a WAV file, music that starts and stops with a fade, the music volume and stereo pan. Source:
-[`SoundExample.cs`](../../samples/Examples/Examples/SoundExample.cs).
+[`SoundExample.cs`](../../samples/Examples/Examples/SoundExample.cs). Next SDK version (not published yet: arrives with the
+next SDK version): `Synth`, `SfxParams`, `Wave`, `Song` and `Instrument` are in `MicroEngine.Audio.Retro`; in the
+published SDK they are in `MicroEngine.Audio`.
 
 <!-- code: samples/Examples/Examples/SoundExample.cs#register -->
 ```csharp

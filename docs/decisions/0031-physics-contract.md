@@ -70,7 +70,9 @@ broad-phase, queries see sensors, and per-pair policies run inside the step.
 
 ## Consequences
 
-- A game that uses both `MicroEngine.World` and `MicroEngine.Physics` sees two `MoveResult` types and qualifies one.
+- A game that uses both `MicroEngine.World` and `MicroEngine.Physics` saw two `MoveResult` types; amended 2026-11-05
+  (ARCH-1 stage 5a): the tile mover's result is renamed `TileMoveResult`, and `TileMotion` stays a documented stateless
+  convenience over the tile backend's swept test.
 - Body owners must be root entities: body poses are world positions.
 - `MovingSolids` is a capability the Box2D backend may implement in its layer or leave undeclared; the substitution
   demonstration (stage 6) uses only the common contract.

@@ -24,7 +24,8 @@ private void LoadSounds(ContentFolder content)
 }
 ```
 
-(`using MicroEngine.Audio;` at the top.)
+(`using MicroEngine.Audio;` at the top; next SDK version (not published yet: arrives with the next SDK version):
+also `using MicroEngine.Audio.Retro;`, the namespace of `Synth`, `SfxParams`, `Wave`, `Song` and `Instrument`.)
 
 `Audio` is the game's **mixer**, a bank of named sounds and music. Each sound is registered once, by name, and played
 later by that name from anywhere (`Audio.Play("pickup")`). Registering decodes or synthesizes the sound, which takes a

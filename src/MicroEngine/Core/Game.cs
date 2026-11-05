@@ -154,10 +154,10 @@ public abstract class Game : IEngineModule, IStateHashed
     public int Height => Settings.VirtualHeight;
     /// <summary>
     /// A camera the size of the canvas whose defaults follow the game's presentation
-    /// (<see cref="GameSettings.EffectivePresentation"/>): snapped to whole pixels for pixel art, smooth for
+    /// (<see cref="GameSettings.Presentation"/>): snapped to whole pixels for pixel art, smooth for
     /// high-resolution 2D.
     /// </summary>
-    public Camera2D CreateCamera() => new(Width, Height, Settings.EffectivePresentation);
+    public Camera2D CreateCamera() => new(Width, Height, Settings.Presentation);
     private AchievementTracker? _achievements;
     /// <summary>The game's achievements; available after <see cref="UseAchievements"/>.</summary>
     public AchievementTracker Achievements => _achievements ?? throw new InvalidOperationException("Achievements are off: call UseAchievements from the game's constructor or Configure.");
@@ -473,8 +473,8 @@ public abstract class Game : IEngineModule, IStateHashed
         screen.ReadTouches(_touches);
         if (_touchWired) Touch.TakeScripted(_touches);
         if (_touches.Count == 0) return;
-        var frame = screen.Overlay?.Frame(screen.Size, screen.SafeArea, Settings.VirtualWidth, Settings.VirtualHeight, Settings.Scaling)
-            ?? FrameLayout.Fit(screen.Size, screen.SafeArea, Settings.VirtualWidth, Settings.VirtualHeight, Settings.Scaling);
+        var frame = screen.Overlay?.Frame(screen.Size, screen.SafeArea, Settings.VirtualWidth, Settings.VirtualHeight, Settings.Presentation)
+            ?? FrameLayout.Fit(screen.Size, screen.SafeArea, Settings.VirtualWidth, Settings.VirtualHeight, Settings.Presentation);
         foreach (var t in _touches)
         {
             var canvas = FrameLayout.ToCanvas(t.Position, frame, Settings.VirtualWidth, Settings.VirtualHeight);

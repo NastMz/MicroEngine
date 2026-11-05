@@ -51,7 +51,7 @@ Not published yet: merged on `main` after 0.4.0-alpha.2, in the next SDK version
 - [Scalable fonts](../manual/text.md#scalable-fonts-ttf-and-otf): TTF and OTF fonts at any size (`ScalableFont`,
   `SizedFont`, `FontOptions`), with kerning, fallback faces and `Prepare`; `IFont` for both font kinds, taken by
   `DialogueBox` and `SelectionList`.
-- [HD canvases](../manual/rendering.md#hd-canvases-and-smooth-scaling): `GameSettings.Scaling` (`CanvasScaling.Smooth`
+- [HD canvases](../manual/rendering.md#hd-canvases-and-smooth-scaling): `GameSettings.Presentation` (`Presentation.HighResolution2D`
   fills the window with linear sampling), per-texture `TextureFilter` with a game default (`GameSettings.TextureFilter`),
   `Texture.Update` for regions, windows sized to fit the display.
 

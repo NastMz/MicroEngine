@@ -2,7 +2,7 @@
 
 <div data-pagefind-weight="0.3">
 
-Namespace: [MicroEngine.Audio](MicroEngine.Audio.md)  
+Namespace: [MicroEngine.Audio.Retro](MicroEngine.Audio.Retro.md)  
 Assembly: MicroEngine.Audio.dll  
 Guide: [Audio](../manual/audio.md)  
 
@@ -15,7 +15,7 @@ public sealed record Instrument : IEquatable<Instrument>
 #### Inheritance
 
 [object](https://learn.microsoft.com/dotnet/api/system.object) ← 
-[Instrument](MicroEngine.Audio.Instrument.md)
+[Instrument](MicroEngine.Audio.Retro.Instrument.md)
 
 #### Implements
 
@@ -23,7 +23,7 @@ public sealed record Instrument : IEquatable<Instrument>
 
 ## Constructors
 
-### <a id="MicroEngine_Audio_Instrument__ctor_MicroEngine_Audio_Wave_System_Single_System_Single_System_Single_System_Single_System_Single_System_Single_System_Single_System_Single_System_Single_"></a> Instrument\(Wave, float, float, float, float, float, float, float, float, float\)
+### <a id="MicroEngine_Audio_Retro_Instrument__ctor_MicroEngine_Audio_Retro_Wave_System_Single_System_Single_System_Single_System_Single_System_Single_System_Single_System_Single_System_Single_System_Single_"></a> Instrument\(Wave, float, float, float, float, float, float, float, float, float\)
 
 A tracker-style voice: waveform plus an ADSR envelope (seconds, sustain level 0..1).
 
@@ -33,7 +33,7 @@ public Instrument(Wave Wave, float Volume = 0.3, float Attack = 0.005, float Dec
 
 #### Parameters
 
-`Wave` [Wave](MicroEngine.Audio.Wave.md)
+`Wave` [Wave](MicroEngine.Audio.Retro.Wave.md)
 
 `Volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
@@ -55,7 +55,7 @@ public Instrument(Wave Wave, float Volume = 0.3, float Attack = 0.005, float Dec
 
 ## Fields
 
-### <a id="MicroEngine_Audio_Instrument_Bass"></a> Bass
+### <a id="MicroEngine_Audio_Retro_Instrument_Bass"></a> Bass
 
 A round triangle wave, for bass lines.
 
@@ -65,9 +65,9 @@ public static readonly Instrument Bass
 
 #### Field Value
 
- [Instrument](MicroEngine.Audio.Instrument.md)
+ [Instrument](MicroEngine.Audio.Retro.Instrument.md)
 
-### <a id="MicroEngine_Audio_Instrument_Bell"></a> Bell
+### <a id="MicroEngine_Audio_Retro_Instrument_Bell"></a> Bell
 
 A sine with a long decay, for chimes.
 
@@ -77,9 +77,9 @@ public static readonly Instrument Bell
 
 #### Field Value
 
- [Instrument](MicroEngine.Audio.Instrument.md)
+ [Instrument](MicroEngine.Audio.Retro.Instrument.md)
 
-### <a id="MicroEngine_Audio_Instrument_Lead"></a> Lead
+### <a id="MicroEngine_Audio_Retro_Instrument_Lead"></a> Lead
 
 A bright 25% pulse with light vibrato, for melodies.
 
@@ -89,9 +89,9 @@ public static readonly Instrument Lead
 
 #### Field Value
 
- [Instrument](MicroEngine.Audio.Instrument.md)
+ [Instrument](MicroEngine.Audio.Retro.Instrument.md)
 
-### <a id="MicroEngine_Audio_Instrument_Pad"></a> Pad
+### <a id="MicroEngine_Audio_Retro_Instrument_Pad"></a> Pad
 
 A soft, filtered saw with slow attack and release, for chords.
 
@@ -101,9 +101,9 @@ public static readonly Instrument Pad
 
 #### Field Value
 
- [Instrument](MicroEngine.Audio.Instrument.md)
+ [Instrument](MicroEngine.Audio.Retro.Instrument.md)
 
-### <a id="MicroEngine_Audio_Instrument_Pluck"></a> Pluck
+### <a id="MicroEngine_Audio_Retro_Instrument_Pluck"></a> Pluck
 
 A short, filtered square, for arpeggios and accompaniment.
 
@@ -113,11 +113,11 @@ public static readonly Instrument Pluck
 
 #### Field Value
 
- [Instrument](MicroEngine.Audio.Instrument.md)
+ [Instrument](MicroEngine.Audio.Retro.Instrument.md)
 
 ## Properties
 
-### <a id="MicroEngine_Audio_Instrument_Attack"></a> Attack
+### <a id="MicroEngine_Audio_Retro_Instrument_Attack"></a> Attack
 
 ```csharp
 public float Attack { get; init; }
@@ -127,7 +127,7 @@ public float Attack { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Instrument_Decay"></a> Decay
+### <a id="MicroEngine_Audio_Retro_Instrument_Decay"></a> Decay
 
 ```csharp
 public float Decay { get; init; }
@@ -137,7 +137,7 @@ public float Decay { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Instrument_LowPass"></a> LowPass
+### <a id="MicroEngine_Audio_Retro_Instrument_LowPass"></a> LowPass
 
 ```csharp
 public float LowPass { get; init; }
@@ -147,7 +147,7 @@ public float LowPass { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Instrument_Pan"></a> Pan
+### <a id="MicroEngine_Audio_Retro_Instrument_Pan"></a> Pan
 
 ```csharp
 public float Pan { get; init; }
@@ -157,7 +157,7 @@ public float Pan { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Instrument_Release"></a> Release
+### <a id="MicroEngine_Audio_Retro_Instrument_Release"></a> Release
 
 ```csharp
 public float Release { get; init; }
@@ -167,7 +167,7 @@ public float Release { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Instrument_SustainLevel"></a> SustainLevel
+### <a id="MicroEngine_Audio_Retro_Instrument_SustainLevel"></a> SustainLevel
 
 ```csharp
 public float SustainLevel { get; init; }
@@ -177,7 +177,7 @@ public float SustainLevel { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Instrument_VibratoDepth"></a> VibratoDepth
+### <a id="MicroEngine_Audio_Retro_Instrument_VibratoDepth"></a> VibratoDepth
 
 ```csharp
 public float VibratoDepth { get; init; }
@@ -187,7 +187,7 @@ public float VibratoDepth { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Instrument_VibratoRate"></a> VibratoRate
+### <a id="MicroEngine_Audio_Retro_Instrument_VibratoRate"></a> VibratoRate
 
 ```csharp
 public float VibratoRate { get; init; }
@@ -197,7 +197,7 @@ public float VibratoRate { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Instrument_Volume"></a> Volume
+### <a id="MicroEngine_Audio_Retro_Instrument_Volume"></a> Volume
 
 ```csharp
 public float Volume { get; init; }
@@ -207,7 +207,7 @@ public float Volume { get; init; }
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Instrument_Wave"></a> Wave
+### <a id="MicroEngine_Audio_Retro_Instrument_Wave"></a> Wave
 
 ```csharp
 public Wave Wave { get; init; }
@@ -215,11 +215,11 @@ public Wave Wave { get; init; }
 
 #### Property Value
 
- [Wave](MicroEngine.Audio.Wave.md)
+ [Wave](MicroEngine.Audio.Retro.Wave.md)
 
 ## Methods
 
-### <a id="MicroEngine_Audio_Instrument__Clone__"></a> <Clone\>$\(\)
+### <a id="MicroEngine_Audio_Retro_Instrument__Clone__"></a> <Clone\>$\(\)
 
 ```csharp
 public Instrument <Clone>$()
@@ -227,9 +227,9 @@ public Instrument <Clone>$()
 
 #### Returns
 
- [Instrument](MicroEngine.Audio.Instrument.md)
+ [Instrument](MicroEngine.Audio.Retro.Instrument.md)
 
-### <a id="MicroEngine_Audio_Instrument_Deconstruct_MicroEngine_Audio_Wave__System_Single__System_Single__System_Single__System_Single__System_Single__System_Single__System_Single__System_Single__System_Single__"></a> Deconstruct\(out Wave, out float, out float, out float, out float, out float, out float, out float, out float, out float\)
+### <a id="MicroEngine_Audio_Retro_Instrument_Deconstruct_MicroEngine_Audio_Retro_Wave__System_Single__System_Single__System_Single__System_Single__System_Single__System_Single__System_Single__System_Single__System_Single__"></a> Deconstruct\(out Wave, out float, out float, out float, out float, out float, out float, out float, out float, out float\)
 
 ```csharp
 public void Deconstruct(out Wave Wave, out float Volume, out float Attack, out float Decay, out float SustainLevel, out float Release, out float Pan, out float VibratoDepth, out float VibratoRate, out float LowPass)
@@ -237,7 +237,7 @@ public void Deconstruct(out Wave Wave, out float Volume, out float Attack, out f
 
 #### Parameters
 
-`Wave` [Wave](MicroEngine.Audio.Wave.md)
+`Wave` [Wave](MicroEngine.Audio.Retro.Wave.md)
 
 `Volume` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
@@ -257,7 +257,7 @@ public void Deconstruct(out Wave Wave, out float Volume, out float Attack, out f
 
 `LowPass` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-### <a id="MicroEngine_Audio_Instrument_Equals_System_Object_"></a> Equals\(object?\)
+### <a id="MicroEngine_Audio_Retro_Instrument_Equals_System_Object_"></a> Equals\(object?\)
 
 ```csharp
 public override bool Equals(object? obj)
@@ -271,7 +271,7 @@ public override bool Equals(object? obj)
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Audio_Instrument_Equals_MicroEngine_Audio_Instrument_"></a> Equals\(Instrument?\)
+### <a id="MicroEngine_Audio_Retro_Instrument_Equals_MicroEngine_Audio_Retro_Instrument_"></a> Equals\(Instrument?\)
 
 ```csharp
 public bool Equals(Instrument? other)
@@ -279,13 +279,13 @@ public bool Equals(Instrument? other)
 
 #### Parameters
 
-`other` [Instrument](MicroEngine.Audio.Instrument.md)?
+`other` [Instrument](MicroEngine.Audio.Retro.Instrument.md)?
 
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Audio_Instrument_GetHashCode"></a> GetHashCode\(\)
+### <a id="MicroEngine_Audio_Retro_Instrument_GetHashCode"></a> GetHashCode\(\)
 
 ```csharp
 public override int GetHashCode()
@@ -295,7 +295,7 @@ public override int GetHashCode()
 
  [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-### <a id="MicroEngine_Audio_Instrument_ToString"></a> ToString\(\)
+### <a id="MicroEngine_Audio_Retro_Instrument_ToString"></a> ToString\(\)
 
 ```csharp
 public override string ToString()
@@ -307,7 +307,7 @@ public override string ToString()
 
 ## Operators
 
-### <a id="MicroEngine_Audio_Instrument_op_Equality_MicroEngine_Audio_Instrument_MicroEngine_Audio_Instrument_"></a> operator ==\(Instrument?, Instrument?\)
+### <a id="MicroEngine_Audio_Retro_Instrument_op_Equality_MicroEngine_Audio_Retro_Instrument_MicroEngine_Audio_Retro_Instrument_"></a> operator ==\(Instrument?, Instrument?\)
 
 ```csharp
 public static bool operator ==(Instrument? left, Instrument? right)
@@ -315,15 +315,15 @@ public static bool operator ==(Instrument? left, Instrument? right)
 
 #### Parameters
 
-`left` [Instrument](MicroEngine.Audio.Instrument.md)?
+`left` [Instrument](MicroEngine.Audio.Retro.Instrument.md)?
 
-`right` [Instrument](MicroEngine.Audio.Instrument.md)?
+`right` [Instrument](MicroEngine.Audio.Retro.Instrument.md)?
 
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_Audio_Instrument_op_Inequality_MicroEngine_Audio_Instrument_MicroEngine_Audio_Instrument_"></a> operator \!=\(Instrument?, Instrument?\)
+### <a id="MicroEngine_Audio_Retro_Instrument_op_Inequality_MicroEngine_Audio_Retro_Instrument_MicroEngine_Audio_Retro_Instrument_"></a> operator \!=\(Instrument?, Instrument?\)
 
 ```csharp
 public static bool operator !=(Instrument? left, Instrument? right)
@@ -331,9 +331,9 @@ public static bool operator !=(Instrument? left, Instrument? right)
 
 #### Parameters
 
-`left` [Instrument](MicroEngine.Audio.Instrument.md)?
+`left` [Instrument](MicroEngine.Audio.Retro.Instrument.md)?
 
-`right` [Instrument](MicroEngine.Audio.Instrument.md)?
+`right` [Instrument](MicroEngine.Audio.Retro.Instrument.md)?
 
 #### Returns
 

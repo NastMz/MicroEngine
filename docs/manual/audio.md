@@ -18,6 +18,10 @@ every device is the engine's one mixer playing through the platform's output
 | `AudioMixer` | Named sound bank, music with fades, volumes |
 | `IAudioDevice` | The platform's device. Next SDK version: every backend device is the engine's own mixer (`MixerAudioDevice`, `AudioEngine`) playing through the backend's PCM sink (an SDL audio stream on the SDL platform, the default on desktops and phones; a raylib audio stream on raylib desktops; an AudioWorklet in browsers); `SilentAudioDevice` headless or without hardware |
 
+Next SDK version (not published yet: arrives with the next SDK version): the synthesizer (`Synth`, `SfxParams`, `Wave`,
+`Song`, `Instrument`) is in the `MicroEngine.Audio.Retro` namespace, so a file that makes sounds in code adds
+`using MicroEngine.Audio.Retro;`; in the published SDK it is in `MicroEngine.Audio` with the rest.
+
 Source: [`src/MicroEngine.Audio/`](../../src/MicroEngine.Audio/)
 
 ## Synthesized sound effects

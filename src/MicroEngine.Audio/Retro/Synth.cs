@@ -1,4 +1,4 @@
-namespace MicroEngine.Audio;
+namespace MicroEngine.Audio.Retro;
 
 /// <summary>
 /// Oscillator waveforms for <see cref="SfxParams"/> and <see cref="Instrument"/>: <c>Square</c>, <c>Triangle</c>, <c>Saw</c>,
