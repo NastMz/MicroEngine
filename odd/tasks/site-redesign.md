@@ -62,7 +62,7 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
 | T2 | S3-S6 | Site shell (header, nav, footer) and landing narrative with the socket-board illustrations | delegated | pending |
 | T3 | S3, S5, S7 | Demo index and demo pages, player integration | delegated, parallel with T4/T5 | pending |
 | T4 | S3, S5, S7 | Starlight docs theme, code blocks, docs header; platforms, roadmap, 404 pages | delegated, parallel with T3/T5 | pending |
-| T5 | S1, S4, S10 | Content truth: stale claims in site data and public docs against `main` | delegated, parallel with T3/T4 | pending |
+| T5 | S1, S4, S10 | Content truth: stale claims in site data and public docs against `main` | delegated, parallel with T3/T4 | done, branch `feat/site-redesign-t5-content` (PR into `feat/site-redesign`) |
 | T6 | S7-S9 | Browser, visual, responsive and accessibility checks; creative rationale; PR to `main` | delegated + architect review | pending |
 
 ## Log
@@ -232,3 +232,24 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
   `node scripts/snippets.mjs` 104 blocks; contrast 198/198. Screenshots of /, /demos/neon-rift/ and a docs page,
   light and dark, 1280 and 375: no horizontal overflow; two light-theme defects found and fixed (hero code figure and
   player panel title inheriting light ink).
+- L5 (2026-11-05): T5 content truth. New `site/src/data/capabilities.ts`: 25 modules with `status` (`available` |
+  `next` | `repository` | `planned`), `family` (kernel, graphics, physics, audio, input, platform, tools), contract,
+  credited upstream technologies and a docs link; `publishedSdk` is read from `sdk/version.json`. `roadmap.ts` keeps
+  `completed`, `next`, `vision` and `statusLabels`, and adds `stages` and `roadmap` (every item with status and family;
+  planned items carry `horizon` and `track`); the SDK version is no longer written in the data (it said alpha.1).
+  `platforms.ts` rows gain `status`, `family` and `runtimeNext` (browser: SDL 3 in the next SDK version). Verified
+  against `src/` packaging: `MicroEngine.Graphics.SdlGpu` is bundled into the `MicroEngine.Sdl` package
+  (`MicroEngine.Sdl.csproj`), so the SDL_GPU device is `next` (desktop, opt-in), not repository-only as the unit rules
+  assumed; `MicroEngine.Graphics3D` is packed nowhere and Box2D only on request: both `repository`. Docs corrected:
+  guide `status`, `introduction`, `sdk` (next version's package contents), `getting-microengine`; `howto`; tutorial
+  README, 07 and 13; root README. Not in T5's surfaces: `docs/reference/limitations.md` still says "2D only; no 3D,
+  physics engine" and that TrueType fonts are not supported. Tests: three content tests in `site/tests/site.test.mjs`.
+  Checks: `npm ci`; `SITE_DEMOS=none npm run build` (check-dist complete); `npm test` 54/54; snippets 104 blocks;
+  contrast 198/198; screenshots of /roadmap/, /platforms/ and four docs pages, light and dark, at 1280/768/375/320:
+  no horizontal overflow, no script errors.
+- L6 (2026-11-05): T5 extended at the architect's request (SDL_GPU finding confirmed). `docs/reference/limitations.md`:
+  "2D only; no 3D, physics engine" split into 3D (repository-only minimal path), physics (tile collision today,
+  physics worlds next, Box2D repository-only) and networking/scripting rows; fonts row says TTF/OTF arrive with the next
+  SDK version and BMFont files are not read. `site/design/README.md` §7: SDL_GPU is a seated `next` module; Graphics3D
+  and Box2D stay repository-only. Checks rerun: build (check-dist complete), `npm test` 54/54, snippets 104, contrast
+  198/198; limitations page screenshots in both themes at 1280/768/375/320, no overflow.

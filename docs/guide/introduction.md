@@ -3,7 +3,7 @@
 MicroEngine is a game engine that orchestrates subsystems and integrates existing technologies to offer one coherent
 way of making 2D games in C# and .NET 10. It does not reinvent graphics APIs, multimedia libraries or the runtime:
 SDL 3 draws, plays sound and reads input on Windows, Linux, macOS, Android and iOS, raylib does the same in browsers
-(compiled to WebAssembly), and .NET runs the code. MicroEngine's own work is choosing those technologies, coordinating
+(compiled to WebAssembly; with the next SDK version SDL 3 runs there too), and .NET runs the code. MicroEngine's own work is choosing those technologies, coordinating
 them behind one contract (`IPlatform`) and giving games a consistent model on top: the fixed-step loop, scenes,
 input actions, procedural art and audio tools, saves and achievements.
 
@@ -63,13 +63,21 @@ Each game has five achievements and saves its progress, and is packaged for desk
 - A retro sound synthesizer, step-sequencer music and a mixer that fades between tracks.
 - Dialogue boxes, selection menus, JSON saves, achievements with banners and a list screen.
 - Platforms: SDL 3 (Windows, Linux, macOS, Android, iOS), raylib (browsers, desktop alternative), a headless
-  platform for deterministic tests; named profiles, replaceable audio and input.
+  platform for deterministic tests; named profiles, replaceable audio and input. Next SDK version: SDL 3 in browsers
+  too, and raylib on desktops only.
+
+Next SDK version (not published yet: arrives with the next SDK version): the engine as separate modules, a scene world
+of entities with transform hierarchies, physics worlds behind one contract with a tile backend, HD canvases with smooth
+scaling, TrueType and OpenType fonts, one audio mixer on every platform, and an opt-in programmable graphics device on
+desktops ([migration notes](../migrations.md)). Two more parts live in the engine's repository and in no published
+package: a minimal [3D path](../manual/rendering.md#the-3d-path) and a
+[Box2D physics backend](../manual/world.md#the-box2d-backend).
 - The `microengine` tool: a project template, and packages for players on every platform, with the game's own
   name and icon ([Packaging](packaging.md)).
 
 ## Planned work
 
-The [roadmap](/roadmap/) lists what is planned, without dates. A visual editor and 3D appear there only as a
+The [roadmap](/roadmap/) lists what is planned, without dates. A visual editor and a 3D renderer appear there only as a
 long-term vision; they are neither available nor committed.
 
 ## Where to go next
