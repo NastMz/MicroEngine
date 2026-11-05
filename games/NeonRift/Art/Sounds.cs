@@ -24,9 +24,10 @@ internal static class Sounds
         ("ending", "music/ending.wav", true),
     ];
 
-    public static void Register(AudioMixer audio, ContentFolder content)
+    /// <summary>Loads the files through the game's assets (held for the game's lifetime) and registers them by name.</summary>
+    public static void Register(AudioMixer audio, AssetCache assets)
     {
-        foreach (var name in Effects) audio.AddSoundFile(name, content.PathOf($"sfx/{name}.wav"));
-        foreach (var (name, file, loop) in Tracks) audio.AddMusicFile(name, content.PathOf(file), loop);
+        foreach (var name in Effects) audio.AddSound(name, assets.Sound($"sfx/{name}.wav"));
+        foreach (var (name, file, loop) in Tracks) audio.AddMusic(name, assets.Music(file), loop);
     }
 }

@@ -2,6 +2,7 @@ using NeonRift.Art;
 using NeonRift.Gameplay;
 using NeonRift.Scenes;
 using MicroEngine;
+using MicroEngine.Content;
 using MicroEngine.Core;
 using MicroEngine.Input;
 using MicroEngine.Kernel;
@@ -43,6 +44,8 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
     /// <summary>Sound names requested but not registered (should stay empty; checked by tests).</summary>
     public HashSet<string> MissingSounds { get; } = [];
     public LaunchOptions Launch => _launch;
+    /// <summary>A content folder of the game's own (tests); null reads the composition's content.</summary>
+    protected override string? ContentRoot => contentRoot;
     /// <summary>Where achievements persist (a private folder in tests).</summary>
     public SaveStore Store { get; } = new("NeonRift", saveDirectory);
 
@@ -74,9 +77,9 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
 
     protected override void Load()
     {
-        var content = new ContentFolder(contentRoot);
-        Art = new Assets(Graphics, content) { Font = Font };
-        Sounds.Register(Audio, content);
+        // The art bundle is an asset of the game's store, so Game.Assets disposes its atlas and backdrops with the game.
+        Art = Assets.Scope.Acquire(new AssetKey(NeonRift.Art.Assets.Kind, "art"), _ => new Assets(Graphics, Assets) { Font = Font });
+        Sounds.Register(Audio, Assets);
         AchievementToasts!.Top = 22;   // below the HUD gradient
         Achievements.Unlocked += _ => Sfx("powerup", 0.8f);
         Session = new Session { Weapon = _launch.Weapon };
@@ -111,6 +114,4 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
         else if (Audio.HasMusic(name)) Audio.PlayMusic(name, 0.6f);
         else MissingSounds.Add(name);
     }
-
-    protected override void Unload() => Art.Dispose();
 }
