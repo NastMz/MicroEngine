@@ -75,3 +75,46 @@ broad-phase, queries see sensors, and per-pair policies run inside the step.
 - `MovingSolids` is a capability the Box2D backend may implement in its layer or leave undeclared; the substitution
   demonstration (stage 6) uses only the common contract.
 - The common suite is written in pixel-art units with a `Scale` override; the Box2D backend runs it scaled to metres.
+
+## Amendment (2026-11-04): the Box2D backend, its natives and the substitution demonstration
+
+Stage 6b (architect directive 13 §6b) implemented the second backend under this contract; the contract itself did not
+change (`PhysicsContract.Version` stays 1).
+
+- **Backend.** `MicroEngine.Physics.Box2D` (`Box2DPhysicsWorld2D`; references Physics, Scene and Kernel only) runs
+  Box2D v3.2.0, pinned by tag and commit in `src/MicroEngine.Physics.Box2D/native/box2d.env`, behind the engine's flat C
+  layer `me_box2d` (API version 1): only `int`, `float`, `uint64_t` and pointers cross it, every Box2D callback
+  (queries, the one-way pre-solve) is C, and no managed code runs inside Box2D. It declares `DynamicBodies`, `Rotation`,
+  `Circles`, `Capsules`, `Polygons` (up to 8 vertices), `ContinuousCollision`, `FrictionRestitution`, `MassProperties`
+  and `OneWayPlatforms`; not `TileGeometry`, `MovingSolids` or `Joints` (the contract has no joint API).
+- **Units.** Box2D works in metres, y up; `Box2DWorldOptions.UnitsPerMeter` and `YDown` convert per world, so a pixel
+  game passes pixels. Box2D's process-wide `b2SetLengthUnitsPerMeter` was rejected: it would change every world.
+- **Skin and movers.** The box `Move` is axis-separated shape casts that back off one slop: a box rests about 0.01 m
+  short of a surface, `Skin` is 0.015 m (× units per metre), contacts carry axis normals. A capsule uses Box2D's mover
+  and may sink up to one slop into a floor; the capsule suite checks |gap| ≤ skin. Angles round-trip within about
+  0.002 rad (Box2D's deterministic trigonometry).
+- **Known limit: 128 worlds.** Box2D keeps at most 128 worlds in one table shared by the whole process, and the table
+  is not thread-safe. Worlds must be created and disposed from one thread at a time. The finalizer never calls Box2D (it
+  would run on the finalizer thread): it queues the native world, which the next creation or disposal destroys on the
+  game's thread. When the table is full, creation collects once, destroys the queued worlds and retries, then throws
+  `InvalidOperationException`.
+- **Natives and packaging.** `native/build.sh` builds every runtime (win-x64, linux-x64 on Ubuntu 22.04, osx-arm64,
+  osx-x64, ios-arm64 as static archives, android-arm64/x64 with NDK 27.3, browser-wasm with the Emscripten of the .NET
+  wasm workload) with FMA contraction off and reproducible output. `.github/workflows/box2d.yml` builds them cached by
+  inputs and toolchain, verifies checksums, runs the layer's self-test where the runner can, and fails if the runtimes
+  disagree on the determinism hash (they agreed on Windows, Linux, macOS arm64, macOS x64 under Rosetta and wasm;
+  Android x86_64 agreed on a local emulator). It also runs the backend's tests on Windows, Linux and macOS and in Chrome
+  on the wasm interpreter. The optional package carries `runtimes/<rid>/native` plus `buildTransitive` targets adding
+  the browser archives as `NativeFileReference`, depends on `MicroEngine`, packs only on request from a nuspec filled at
+  pack time, and is not published. iOS and Android arm64 are build-only (no device in CI); how the iOS host links the
+  static archives is unverified.
+- **Substitution demonstration** (dossier §9.1 item 3). `samples/PhysicsSubstitution` runs one platformer's gameplay
+  code, written against the common contract only, on both backends chosen where the world is made. Its tests
+  (`SubstitutionTests`) check on each backend: landing, the pillar blocking, one-way platforms, coin and goal sensor
+  events, and no tunnelling for a 400-pixel fall and a 500-pixel dash. Measured differences, outside the contract:
+  Box2D rests 0.16 px higher at 16 px/m (its 0.01 m gap; the whole trajectory stays within its skin), and sensor events
+  came in the same step on both in the sample run (the test allows one step). Scenario 2 (dynamic crates) runs on Box2D
+  and throws `PhysicsCapabilityException` (`DynamicBodies`) on the tile backend before the crate exists.
+- **Tile backend broad phase.** `TilePhysicsWorld2D` files its box shapes in a 64-unit grid; candidates are taken in
+  creation-slot order so every result is the full scan's (PhysicsBench: 200 bodies from about 0.75 ms to 0.30 ms a
+  step, 800 bodies from 10 ms to under 2 ms).

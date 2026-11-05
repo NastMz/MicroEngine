@@ -35,7 +35,7 @@ public static void Draw(IRenderer r, BitmapFont font, ActionPrompts prompts, str
 
 The renderer.
 
-`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
+`font` BitmapFont
 
 The font of the text and of the glyph labels.
 
@@ -75,7 +75,7 @@ public static void DrawCentered(IRenderer r, BitmapFont font, ActionPrompts prom
 
 `r` IRenderer
 
-`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
+`font` BitmapFont
 
 `prompts` [ActionPrompts](MicroEngine.Input.ActionPrompts.md)
 
@@ -105,7 +105,7 @@ public static void DrawGlyph(IRenderer r, BitmapFont font, ActionPrompt prompt, 
 
 `r` IRenderer
 
-`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
+`font` BitmapFont
 
 `prompt` [ActionPrompt](MicroEngine.Input.ActionPrompt.md)
 
@@ -123,7 +123,7 @@ public static int GlyphWidth(BitmapFont font, ActionPrompt prompt)
 
 #### Parameters
 
-`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
+`font` BitmapFont
 
 `prompt` [ActionPrompt](MicroEngine.Input.ActionPrompt.md)
 
@@ -141,7 +141,7 @@ public static int Measure(BitmapFont font, ActionPrompts prompts, string templat
 
 #### Parameters
 
-`font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
+`font` BitmapFont
 
 `prompts` [ActionPrompts](MicroEngine.Input.ActionPrompts.md)
 

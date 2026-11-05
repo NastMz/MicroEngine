@@ -6,8 +6,13 @@
 #             build and the self-test output it made; SHA256SUMS verified; me_box2d_selftest run wherever the runner can
 #             execute the result (desktop runners natively, browser-wasm under Node), build only for Android and iOS;
 #             each runtime is uploaded as artifact box2d-<rid> (30 days)
+#   tests     the backend's tests on Windows, Linux and macOS with that runtime's library (a missing library fails)
+#   browser   the same test classes in headless Chrome on the .NET browser runtime (interpreter), Box2D linked statically
+#   package   the optional MicroEngine.Physics.Box2D package packed with every runtime built and its contents checked;
+#             kept as the workflow artifact box2d-package (7 days), never pushed anywhere
 #   compare   one table of every runtime's library checksums and self-test results, and the determinism promise: every
-#             runtime that ran the self-test printed the same state hash, or the job fails
+#             runtime that ran the self-test printed the same state hash, or the job fails; it also fails unless the
+#             jobs above passed, and records the evidence of the check
 # macOS and iOS runtimes build only when `apple` is on (ci.yml passes the repository's runner switches); otherwise they
 # are reported as not built. Nothing here publishes anything: the artifacts expire and no package is pushed.
 name: box2d
@@ -119,9 +124,157 @@ jobs:
           path: artifacts/box2d/${{ matrix.rid }}
           retention-days: 30
 
+  # The backend's tests (tests/MicroEngine.Physics.Box2D.Tests) on each desktop system, with that runtime's native
+  # library from the natives job; MICROENGINE_BOX2D_REQUIRED makes a missing library fail instead of skipping.
+  tests:
+    name: Box2D tests (${{ matrix.rid }})
+    needs: natives
+    if: ${{ !cancelled() }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: win-x64, os: windows-latest }
+          - { rid: linux-x64, os: ubuntu-latest }
+          - { rid: osx-arm64, os: macos-latest, apple: true }
+    runs-on: ${{ matrix.os }}
+    env:
+      MICROENGINE_BOX2D_REQUIRED: '1'
+      DOTNET_NOLOGO: '1'
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      SKIP: ${{ matrix.apple && github.event_name != 'workflow_dispatch' && !inputs.apple }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Not run on this run
+        if: env.SKIP == 'true'
+        run: echo "macOS runners are switched off for this run." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@v4
+        if: env.SKIP != 'true'
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/download-artifact@v4
+        if: env.SKIP != 'true'
+        with:
+          name: box2d-${{ matrix.rid }}
+          path: artifacts/box2d/${{ matrix.rid }}
+      - uses: actions/setup-dotnet@v4
+        if: env.SKIP != 'true'
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        if: env.SKIP != 'true'
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', 'global.json', 'NuGet.config') }}
+      - name: Tests
+        if: env.SKIP != 'true'
+        run: dotnet test tests/MicroEngine.Physics.Box2D.Tests -c Release --logger trx --results-directory test-results
+      - if: always() && env.SKIP != 'true'
+        run: node .github/scripts/test-summary.mjs test-results "Box2D tests on ${{ matrix.rid }}"
+
+  # The same test classes in Chrome on the .NET browser runtime as games ship it (interpreter), Box2D linked statically:
+  # every function of the native layer is called through the interpreter's P/Invoke path.
+  browser:
+    name: Box2D tests (browser-wasm, Chrome)
+    needs: natives
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: box2d-browser-wasm
+          path: artifacts/box2d/browser-wasm
+      - name: Web toolchain location
+        run: echo "MICROENGINE_WEB_TOOLS=${{ runner.temp }}/web-tools" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/web-tools
+          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh') }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+          cache: npm
+          cache-dependency-path: web/tests/package-lock.json
+      - run: bash web/setup.sh
+      - run: npm ci --prefix web/tests
+      - name: Tests in Chrome
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          status=0
+          node tests/MicroEngine.Physics.Box2D.Tests/Browser/run.mjs --out "$RUNNER_TEMP/box2d-browser" | tee browser.log || status=$?
+          { echo "### Box2D tests in Chrome"; echo; echo '```'; head -2 browser.log; grep -E '^(FAIL|SKIP|error|page:)' browser.log || true; tail -1 browser.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+  # The optional package (not published: it stays a workflow artifact) with every runtime that was built, and what it
+  # must contain.
+  package:
+    name: Box2D package
+    needs: natives
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_NOLOGO: '1'
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: box2d-*
+          path: natives
+      - name: Natives in place
+        run: |
+          mkdir -p artifacts/box2d
+          for dir in natives/box2d-*; do cp -r "$dir" "artifacts/box2d/${dir#natives/box2d-}"; done
+          ls artifacts/box2d/*
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Pack
+        env:
+          ALL: ${{ github.event_name == 'workflow_dispatch' || inputs.apple }}
+        run: |
+          dotnet pack src/MicroEngine.Physics.Box2D -c Release -o box2d-package -p:MicroEngineBox2DPackage=true \
+            -p:MicroEngineRelease=true -p:MicroEngineBox2DRequireNatives="$ALL"
+      - name: Contents
+        env:
+          ALL: ${{ github.event_name == 'workflow_dispatch' || inputs.apple }}
+        run: |
+          pkg=$(find box2d-package -name 'MicroEngine.Physics.Box2D.*.nupkg' ! -name '*.snupkg' | head -1)
+          unzip -l "$pkg" | awk 'NR > 3 && $4 != "" { print $4 }' | sort > contents.txt
+          want="lib/net10.0/MicroEngine.Physics.Box2D.dll buildTransitive/MicroEngine.Physics.Box2D.targets LICENSE-box2d.txt README.md
+            runtimes/win-x64/native/me_box2d.dll runtimes/linux-x64/native/libme_box2d.so
+            runtimes/android-arm64/native/libme_box2d.so runtimes/android-x64/native/libme_box2d.so
+            runtimes/browser-wasm/native/me_box2d.a runtimes/browser-wasm/native/box2d.a"
+          [ "$ALL" = true ] && want="$want runtimes/osx-arm64/native/libme_box2d.dylib runtimes/osx-x64/native/libme_box2d.dylib
+            runtimes/ios-arm64/native/libme_box2d.a runtimes/ios-arm64/native/libbox2d.a"
+          missing=0
+          for f in $want; do grep -qx "$f" contents.txt || { echo "::error::The package lacks $f."; missing=1; }; done
+          unzip -p "$pkg" '*.nuspec' | grep -q '<dependency id="MicroEngine" ' || { echo "::error::The package must depend on MicroEngine."; missing=1; }
+          { echo "### Box2D package (not published)"; echo; echo '```'; cat contents.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$missing"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: box2d-package
+          path: box2d-package
+          retention-days: 7
+
   compare:
     name: Box2D determinism
-    needs: natives
+    needs: [natives, tests, browser, package]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     defaults:
@@ -135,6 +288,9 @@ jobs:
       - name: Every runtime and the determinism promise
         env:
           NATIVES: ${{ needs.natives.result }}
+          TESTS: ${{ needs.tests.result }}
+          BROWSER: ${{ needs.browser.result }}
+          PACKAGE: ${{ needs.package.result }}
         run: |
           {
             echo "### Box2D natives"; echo
@@ -155,6 +311,9 @@ jobs:
           if [ "$distinct" -ne 1 ]; then echo "::error::The runtimes disagree on the state hash: the same Box2D build is not deterministic across them."; exit 1; fi
           echo "Determinism: ${#hashes[@]} runtimes ran the self-test, one state hash (${hashes[0]})." >> "$GITHUB_STEP_SUMMARY"
           [ "$NATIVES" = success ] || { echo "::error::A native build failed ($NATIVES)."; exit 1; }
+          [ "$TESTS" = success ] || { echo "::error::The desktop tests did not pass ($TESTS)."; exit 1; }
+          [ "$BROWSER" = success ] || { echo "::error::The browser tests did not pass ($BROWSER)."; exit 1; }
+          [ "$PACKAGE" = success ] || { echo "::error::The package check did not pass ($PACKAGE)."; exit 1; }
       - uses: actions/checkout@v4
         if: inputs.evidence
         with:

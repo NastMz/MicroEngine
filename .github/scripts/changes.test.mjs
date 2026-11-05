@@ -129,6 +129,7 @@ test('the Box2D natives, the Box2D backend and the physics it implements run the
   assert.deepEqual(plan(['tests/MicroEngine.Physics.Box2D.Tests/Box2DTests.cs']), { ...none, dotnet: true, windows: true, macos: true, box2d: true });
   assert.deepEqual(plan(['tests/Shared/Physics/PhysicsConformance.cs']), { ...none, dotnet: true, windows: true, macos: true, box2d: true });
   assert.deepEqual(plan(['.github/workflows/box2d.yml']), everything, 'daily CI runs box2d.yml');
+  assert.deepEqual(plan(['samples/PhysicsSubstitution/Platformer.cs']), { ...none, dotnet: true, box2d: true }, 'the substitution scenarios run its code');
   assert.equal(plan(['src/MicroEngine/Core/GameLoop.cs']).box2d, false, 'the rest of the engine is not physics');
   assert.equal(plan(['games/MeadowRun/MeadowRunGame.cs']).box2d, false);
   assert.deepEqual(planScope(['src/MicroEngine.Physics.Box2D/native/me_box2d.c'], readGraph()), { tests: [], games: [] }, 'the natives never widen the .NET tests');
@@ -164,12 +165,19 @@ test('scope: the project graph narrows the .NET tests and native captures to wha
   assert.deepEqual(scope(['games/NeonRift/Stages/Stage1.cs']), { tests: ['tests/NeonRift.Tests/NeonRift.Tests.csproj'], games: ['NeonRift'] });
   assert.deepEqual(scope(['games/NeonRift/Stages/Stage1.cs', 'docs/guide/platforms.md']),
     { tests: ['tests/NeonRift.Tests/NeonRift.Tests.csproj'], games: ['NeonRift'] }, 'documentation does not widen the scope');
-  assert.deepEqual(scope(['src/MicroEngine.Graphics/Devices/Device.cs']), { tests: 'all', games: 'all' }, 'the graphics contract reaches every test');
   const everyTest = Object.keys(graph.projects).filter(isTestProject).sort();
-  const belowTheCore = ['tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj', 'tests/MicroEngine.Graphics3D.Tests/MicroEngine.Graphics3D.Tests.csproj'];
+  // The Box2D backend's tests depend on the physics contract, the scene world and the kernel only; the 3D path's on the
+  // graphics contract, content and the scene world.
+  const box2dTests = 'tests/MicroEngine.Physics.Box2D.Tests/MicroEngine.Physics.Box2D.Tests.csproj';
+  const graphicsTests = 'tests/MicroEngine.Graphics.Tests/MicroEngine.Graphics.Tests.csproj';
+  const graphics3dTests = 'tests/MicroEngine.Graphics3D.Tests/MicroEngine.Graphics3D.Tests.csproj';
+  assert.deepEqual(scope(['src/MicroEngine.Graphics/Devices/Device.cs']), { tests: everyTest.filter(p => p !== box2dTests), games: 'all' },
+    'the graphics contract reaches every test but the Box2D backend\'s');
   assert.deepEqual(scope(['src/MicroEngine/Core/GameRunner.cs']),
-    { tests: everyTest.filter(p => !belowTheCore.includes(p)), games: 'all' },
-    'the core reaches every test but those of the graphics contract and of the 3D path, which do not reference it');
+    { tests: everyTest.filter(p => ![graphicsTests, graphics3dTests, box2dTests].includes(p)), games: 'all' },
+    'the core reaches every test but those of the graphics contract, the 3D path and the Box2D backend, which do not reference it');
+  assert.deepEqual(scope(['src/MicroEngine.Physics/IPhysicsWorld2D.cs']), { tests: everyTest.filter(p => ![graphicsTests, graphics3dTests].includes(p)), games: 'all' },
+    'the physics contract reaches every test but the graphics contract\'s and the 3D path\'s');
   assert.deepEqual(scope(['web/tests/scenarios.json']), { tests: 'all', games: 'all' }, 'a file outside every project');
   assert.deepEqual(scope(['Directory.Build.props']), { tests: 'all', games: 'all' });
   assert.deepEqual(scope(['newfolder/thing.txt']), { tests: 'all', games: 'all' }, 'unknown paths stay conservative');

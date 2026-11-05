@@ -17,7 +17,7 @@ keep all rights reserved (`games/LICENSE`). Both notices also ship in every brow
 | ppy.SDL3-CS 2026.1002.1 | C# bindings for SDL 3 and its native builds | MIT | Copyright (c) 2024 ppy Pty Ltd |
 | NVorbis 0.10.5 | OGG Vorbis music decoding in the engine's mixer, on every platform (a dependency of the `MicroEngine` package, used by `MicroEngine.Audio`) | MIT | Copyright (c) 2020 Andrew Ward |
 | StbImageSharp 2.30.15 | JPEG, BMP, TGA, GIF, PSD and 16-bit or interlaced PNG decoding (a dependency of the `MicroEngine` package, used by `MicroEngine.Graphics2D`) | public domain (Unlicense) or MIT | StbSharp team (Roman Shapiro), a port of stb_image by Sean Barrett |
-| FontStashSharp 1.3.10, FontStashSharp.Base 1.1.9, FontStashSharp.Rasterizers.StbTrueTypeSharp 1.1.9 | TTF and OTF fonts: glyph rasterization and caching | zlib | FontStashSharp team (Roman Shapiro), based on fontstash by Mikko Mononen |
+| FontStashSharp 1.3.10, FontStashSharp.Base 1.1.9, FontStashSharp.Rasterizers.StbTrueTypeSharp 1.1.9 | TTF and OTF fonts: glyph rasterization and caching (a dependency of the `MicroEngine` package, used by `MicroEngine.Text`) | zlib | FontStashSharp team (Roman Shapiro), based on fontstash by Mikko Mononen |
 | StbTrueTypeSharp 1.26.12 | TrueType and OpenType glyph rasterization (for FontStashSharp) | public domain (Unlicense) or MIT | StbSharp team (Roman Shapiro), a port of stb_truetype by Sean Barrett |
 | Cyotek.Drawing.BitmapFont 2.0.4 | AngelCode BMFont reading (a dependency of FontStashSharp) | MIT | Copyright (c) 2012-2022 Cyotek Ltd |
 
@@ -52,6 +52,15 @@ shaders, never the compilers.
 | --- | --- | --- | --- |
 | Silk.NET.SPIRV.Cross 2.22.0, Silk.NET.SPIRV 2.22.0, Silk.NET.Core 2.22.0 | C# bindings for SPIRV-Cross | MIT | Copyright (c) 2021- .NET Foundation and Contributors |
 | SPIRV-Cross (native, Silk.NET.SPIRV.Cross.Native 2.22.0) | SPIR-V to MSL translation and resource reflection | Apache License 2.0 | Copyright 2015-2021 Arm Limited and contributors |
+
+## Optional Box2D physics backend (not published yet)
+
+Games that add the optional `MicroEngine.Physics.Box2D` backend (not part of the SDK packages, and not published yet)
+also ship Box2D, compiled into that backend's native library. Its licence file is shipped inside the package.
+
+| Component | Use | Licence | Copyright |
+| --- | --- | --- | --- |
+| Box2D 3.2.0 | 2D rigid-body physics: dynamic bodies, collision, queries and the character mover | MIT | Copyright (c) 2022 Erin Catto |
 
 ## Browser builds of the demos
 

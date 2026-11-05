@@ -39,10 +39,16 @@ with [TouchedFlags](MicroEngine.World.TileMotion.md#MicroEngine_World_TileMotion
 move starts do not block it.</p>
 <p>Deterministic: the same calls give the same results on every target (managed code with no threads). The world
 takes part in the per-step state hash ([IStateHashed](MicroEngine.Kernel.IStateHashed.md)).</p>
+<p>A broad phase keeps moves, queries and sensors from looking at every shape: box shapes are filed in a grid of
+[DefaultCellSize](MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md#MicroEngine_Physics_Tiles_TilePhysicsWorld2D_DefaultCellSize)-unit cells, and each operation looks only at the shapes in the cells it reaches (tile
+grids are always looked at). It changes the work, never a result: candidates are taken in creation-slot order, the
+order of a full scan.</p>
 
 ## Constructors
 
 ### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D__ctor"></a> TilePhysicsWorld2D\(\)
+
+Creates an empty world.
 
 ```csharp
 public TilePhysicsWorld2D()
@@ -73,6 +79,18 @@ public const PhysicsCapabilities Declared = TileGeometry | OneWayPlatforms | Mov
 #### Field Value
 
  PhysicsCapabilities
+
+### <a id="MicroEngine_Physics_Tiles_TilePhysicsWorld2D_DefaultCellSize"></a> DefaultCellSize
+
+The side of the broad phase's cells, in world units (four 16-pixel tiles).
+
+```csharp
+public const float DefaultCellSize = 64
+```
+
+#### Field Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ## Properties
 

@@ -91,7 +91,7 @@ public void Draw(IRenderer r, IFont font, Vector2 position, UiTheme theme, float
 
 The renderer.
 
-`font` [IFont](MicroEngine.Graphics.IFont.md)
+`font` IFont
 
 The font.
 

@@ -27,6 +27,7 @@ flowchart TB
   scene["<b> src/MicroEngine.Scene </b> <br/> Scene world: entity ids, transforms, attachments, interpolation, world clocks"]
   physics["<b> src/MicroEngine.Physics, src/MicroEngine.Physics.Tiles </b> <br/> Physics: the 2D contract and capabilities; tile grids and the swept tile backend"]
   saves["<b> src/MicroEngine.Saves </b> <br/> Saves: JSON save slots over the platform storage, the optional saves module"]
+  text["<b> src/MicroEngine.Text </b> <br/> Text: the built-in pixel font, scalable TTF/OTF fonts, measurement and wrapping, the font loader"]
   kernel["<b> src/MicroEngine.Kernel </b> <br/> Kernel: builder, services, frame schedule, time, events, log, capabilities, handles, math and colour"]
   games -- started by --> hosts
   samples -- started by --> hosts
@@ -57,6 +58,8 @@ flowchart TB
   audio -- builds on --> content
   core -- builds on --> saves
   saves -- builds on --> platform
+  core -- builds on --> text
+  text -- builds on --> content
 ```
 
 Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
@@ -91,6 +94,13 @@ contract only: the batcher (`Renderer2D`) and `Camera2D`, and the 2D drawing mod
 namespace unchanged (`MicroEngine.dll` forwards each type). The SDL and raylib platforms draw every frame into a canvas
 render target through it, with `IRenderer` as its façade, and compose the canvas into the window as the game's
 `Presentation` says ([The 2D batcher and the camera](manual/rendering.md#the-2d-batcher-and-the-camera)).
+
+Next SDK version (not published yet: arrives with the next SDK version): text is `MicroEngine.Text`, another assembly
+of the `MicroEngine` package, which references only the 2D layer, the graphics contract, content, the kernel and the
+platform contracts. It holds the fonts with their `MicroEngine.Graphics` namespace (`IFont` and `FontExtensions`,
+`BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`; `MicroEngine.dll` forwards each type), FontStashSharp, which
+rasterizes scalable fonts, and the font loader the asset store registers under the kind "font"
+([Text](manual/text.md)).
 
 Next SDK version (not published yet: arrives with the next SDK version): hosting is another assembly of the
 `MicroEngine` package, `MicroEngine.Hosting`, which references only the kernel and the platform contracts. It holds the
@@ -132,6 +142,10 @@ does not declare, and `PhysicsModule`, which steps worlds in the `Physics` phase
 `MicroEngine.Physics.Tiles` is its tile backend, `TilePhysicsWorld2D`, and now holds the tile types (`TileLayer`,
 `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion`) with their `MicroEngine.World` namespace;
 `TileRenderer` stays in the core because it draws ([Physics worlds](manual/world.md#physics-worlds)).
+`MicroEngine.Physics.Box2D` (physics contract, scene world and kernel only; optional and not published yet, outside the
+SDK packages) is the second backend, `Box2DPhysicsWorld2D`: native Box2D 3.2 behind a flat C layer of the engine's own,
+across which only integers, floats and pointers pass and no game code runs, with the native library for each platform in
+its package ([The Box2D backend](manual/world.md#the-box2d-backend)).
 
 Next SDK version (not published yet: arrives with the next SDK version): saves and achievements are optional engine
 modules. `MicroEngine.Saves` (kernel and platform contracts only, shipped inside the `MicroEngine` package) holds
@@ -207,6 +221,7 @@ scripted playthrough tests and reproducible screenshots possible.
 | `MicroEngine.Scenes` | `Scene`, `SceneManager` (stack, overlays), `Transition` (fade, iris, diamonds, wipe), `CoroutineRunner`, `Tweener` |
 | `MicroEngine.Input` | In the `MicroEngine.Input` assembly (kernel and platform contracts only): device ids and events (`InputEvent`, `IInputBackend`), the state derived from them (`InputDevices`), players and pairing (`Players`), input layers (`InputLayers`), the text channel, `InputSystem` over them, and `InputMap`: named actions, digital and analog, bound to keys, pad buttons, sticks and triggers, plus action sources, with saved bindings. In the core assembly (they draw): `VirtualControls` and `TouchLayout` (per-game on-screen d-pads, joysticks and buttons, an input layer), `ActionPrompts`, `ITouchScreen`, `FrameLayout` |
 | `MicroEngine.Graphics` | `PixelImage` (CPU art, image decoding, crop/rotate), `Art` (noise, dither, ramps), `SpriteAtlasBuilder` (incl. grid sheets), `AtlasData` (packing tools' files), `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `IFont` (`BitmapFont`, `ScalableFont`), `TextureFilter`, `IRenderer`; next SDK version: all but the fonts in `MicroEngine.Graphics2D.dll` |
+| `MicroEngine.Graphics` in `MicroEngine.Text.dll` (next SDK version) | `IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions` |
 | `MicroEngine.World` | `TileLayer`, `TileGrid`, `TileMotion` (swept AABB with one-way tiles), `Autotile`, `TileRenderer`; `Entity` and `EntityList<T>` in the published SDK only (removed in the next SDK version); next SDK version: the tile types and `TileMotion` are in `MicroEngine.Physics.Tiles.dll` |
 | `MicroEngine.Physics` in `MicroEngine.Physics.dll` (next SDK version) | `IPhysicsWorld2D`, `PhysicsCapabilities`, `PhysicsCapabilityException`, `BodyId`, `ShapeId`, `BodyDescription`, `ShapeDescription`, `QueryFilter`, `MoveResult`, `RayHit`, `SensorEvent`, `ContactEvent`, `PhysicsModule`, `PhysicsSystem`, `PhysicsSync` |
 | `MicroEngine.Physics.Tiles` (next SDK version) | `TilePhysicsWorld2D`: tile grids as static geometry, the swept mover, one-way platforms, moving solids |
