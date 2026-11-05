@@ -37,7 +37,8 @@ public static class Spawner
             switch (place.Marker)
             {
                 case Marker.Tree:
-                    int variant = room.Def.Ambience == Ambience.Fireflies || (x * 7 + y * 3 + room.X) % 3 == 0 ? 1 : 0;
+                    // Whisperwood Hollow's trees are all deep; elsewhere deep, plain and sunlit ones mix.
+                    int variant = room.Def.Ambience == Ambience.Fireflies ? 1 : ((x * 7 + y * 3 + room.X) % 3) switch { 0 => 1, 1 => 0, _ => 2 };
                     new Prop(world, room.TileToWorld(x, y + 2), world.Art[$"tree{variant}"], -6);
                     break;
                 case Marker.House:
