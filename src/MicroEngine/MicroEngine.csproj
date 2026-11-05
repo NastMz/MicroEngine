@@ -11,7 +11,7 @@
        device), the 2D layer over it (batcher, camera), input (device events, players, layers, actions), hosting (the launcher model and the
        composition a game configures), content (the asset store, handles, loaders and content sources) and audio (the
        mixer over PCM sinks) are assemblies of their own but not packages: this package carries MicroEngine.Kernel.dll,
-       MicroEngine.Platform.dll, MicroEngine.Graphics.dll, MicroEngine.Graphics2D.dll, MicroEngine.Input.dll, MicroEngine.Hosting.dll, MicroEngine.Content.dll and
+       MicroEngine.Platform.dll, MicroEngine.Graphics.dll, MicroEngine.Graphics2D.dll, MicroEngine.Input.dll, the touch controls MicroEngine.Input.Touch.dll, MicroEngine.Hosting.dll, MicroEngine.Content.dll and
        MicroEngine.Audio.dll, the scene world (ids, transforms, attachments) MicroEngine.Scene.dll, and physics (the 2D
        contract MicroEngine.Physics.dll and the tile backend with the tile types MicroEngine.Physics.Tiles.dll) saves (MicroEngine.Saves.dll) text (fonts, MicroEngine.Text.dll) and achievements (MicroEngine.Achievements.dll), with their documentation and symbols, and depends on no package of theirs. The references
        are private (so packing adds no dependency on them); inside the repository, projects that reference this one
@@ -23,6 +23,7 @@
     <ProjectReference Include="../MicroEngine.Graphics/MicroEngine.Graphics.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Input/MicroEngine.Input.csproj" PrivateAssets="all" />
+    <ProjectReference Include="../MicroEngine.Input.Touch/MicroEngine.Input.Touch.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Hosting/MicroEngine.Hosting.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Content/MicroEngine.Content.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Audio/MicroEngine.Audio.csproj" PrivateAssets="all" />
@@ -32,7 +33,7 @@
     <ProjectReference Include="../MicroEngine.Saves/MicroEngine.Saves.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Text/MicroEngine.Text.csproj" PrivateAssets="all" />
     <ProjectReference Include="../MicroEngine.Achievements/MicroEngine.Achievements.csproj" PrivateAssets="all" />
-    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Graphics/MicroEngine.Graphics.csproj;../MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj;../MicroEngine.Input/MicroEngine.Input.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj;../MicroEngine.Content/MicroEngine.Content.csproj;../MicroEngine.Audio/MicroEngine.Audio.csproj;../MicroEngine.Scene/MicroEngine.Scene.csproj;../MicroEngine.Physics/MicroEngine.Physics.csproj;../MicroEngine.Physics.Tiles/MicroEngine.Physics.Tiles.csproj;../MicroEngine.Saves/MicroEngine.Saves.csproj;../MicroEngine.Text/MicroEngine.Text.csproj;../MicroEngine.Achievements/MicroEngine.Achievements.csproj" />
+    <_MicroEngineBundledProject Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj;../MicroEngine.Platform/MicroEngine.Platform.csproj;../MicroEngine.Graphics/MicroEngine.Graphics.csproj;../MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj;../MicroEngine.Input/MicroEngine.Input.csproj;../MicroEngine.Input.Touch/MicroEngine.Input.Touch.csproj;../MicroEngine.Hosting/MicroEngine.Hosting.csproj;../MicroEngine.Content/MicroEngine.Content.csproj;../MicroEngine.Audio/MicroEngine.Audio.csproj;../MicroEngine.Scene/MicroEngine.Scene.csproj;../MicroEngine.Physics/MicroEngine.Physics.csproj;../MicroEngine.Physics.Tiles/MicroEngine.Physics.Tiles.csproj;../MicroEngine.Saves/MicroEngine.Saves.csproj;../MicroEngine.Text/MicroEngine.Text.csproj;../MicroEngine.Achievements/MicroEngine.Achievements.csproj" />
   </ItemGroup>
   <Target Name="_MicroEngineBundledOutput">
     <MSBuild Projects="@(_MicroEngineBundledProject)" Targets="GetTargetPath" Properties="BuildProjectReferences=false">

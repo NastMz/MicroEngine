@@ -234,7 +234,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
     private bool _touchedSinceOtherDevice, _touchFirst, _laidOut, _began;
     private ITouchScreen? _screen;
 
-    /// <summary>Creates the controls for <paramref name="layout"/> (null: <see cref="TouchLayout.CreateDefault"/>). Games use the instance in <see cref="Core.Game.Touch"/>.</summary>
+    /// <summary>Creates the controls for <paramref name="layout"/> (null: <see cref="TouchLayout.CreateDefault"/>). Games use the instance in <c>Game.Touch</c>.</summary>
     /// <exception cref="ArgumentException">Two controls share an id.</exception>
     public VirtualControls(TouchLayout? layout = null)
     {
@@ -298,7 +298,7 @@ public sealed class VirtualControls : IActionSource, ITouchOverlay, IInputLayer
     public bool IsVisible(string id) => Find(id).Visible;
 
     /// <summary>
-    /// The actions the current context needs (the top scene's <see cref="Scenes.Scene.TouchActions"/>, set by the game
+    /// The actions the current context needs (the top scene's <c>Scene.TouchActions</c>, set by the game
     /// every frame): only controls that press at least one of them are shown and touchable; null shows them all. A
     /// dialogue that only advances with "confirm" hides the d-pad over its text, keeps the button that confirms, and
     /// the hidden controls release their fingers. The game frame does not change size with the context.

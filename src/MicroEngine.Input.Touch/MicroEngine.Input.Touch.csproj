@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Touch controls, an optional input module: the touch screen capability and its events (ITouchScreen, TouchEvent),
+       the overlay contracts backends draw (ITouchOverlay, IOverlayCanvas), the letterbox rule (FrameLayout), the
+       on-screen controls (TouchLayout and its controls, VirtualControls) and their look (TouchStyle, ITouchSkin,
+       DefaultTouchSkin). The types keep their MicroEngine.Input namespace; MicroEngine.dll forwards them. It references
+       input, 2D graphics, the kernel and the platform contracts (the architecture test checks it). It is not a package
+       of its own: the MicroEngine package carries MicroEngine.Input.Touch.dll (src/MicroEngine/MicroEngine.csproj). -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Input.Touch</RootNamespace>
+    <Description>MicroEngine touch controls: the touch screen capability, on-screen d-pads, sticks and buttons that press actions, and their look. Shipped inside the MicroEngine package.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine.Input/MicroEngine.Input.csproj" />
+    <ProjectReference Include="../MicroEngine.Graphics2D/MicroEngine.Graphics2D.csproj" />
+    <ProjectReference Include="../MicroEngine.Kernel/MicroEngine.Kernel.csproj" />
+    <ProjectReference Include="../MicroEngine.Platform/MicroEngine.Platform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+</Project>
