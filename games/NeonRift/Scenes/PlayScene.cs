@@ -129,11 +129,7 @@ internal sealed class PauseScene(RiftGame game) : Scene
         {
             game.Sfx("menu-select", 0.7f);
             if (choice == 0) Close();
-            else
-            {
-                game.SaveHighScore();
-                Game.Scenes.Reset(new TitleScene(game), Transition.Fade(0.6f));
-            }
+            else Game.Scenes.Reset(new TitleScene(game), Transition.Fade(0.6f));
         }
     }
 

@@ -51,6 +51,26 @@ public sealed class HighScoreTests
     }
 
     [TestMethod]
+    public void Quitting_a_run_from_the_pause_menu_saves_the_high_score()
+    {
+        string dir = TempDir();
+        var game = new RiftGame(new LaunchOptions("stage", 1), saveDirectory: dir);
+        var platform = HeadlessPlatform.For(game.Settings);
+        game.InitializeForTest(platform);
+        void Tap(MicroEngine.Input.Key key) { platform.Keys.Set(key, true); game.StepForTest(); platform.Keys.Set(key, false); game.StepForTest(); }
+        for (int i = 0; i < 30; i++) game.StepForTest();
+        game.Session.AddScore(4321);
+        Tap(MicroEngine.Input.Key.Escape);
+        Assert.IsInstanceOfType<PauseScene>(game.Scenes.Current);
+        Tap(MicroEngine.Input.Key.Down);
+        Tap(MicroEngine.Input.Key.Enter);
+        for (int i = 0; i < 60 && game.Scenes.Current is not TitleScene; i++) game.StepForTest();
+        Assert.IsInstanceOfType<TitleScene>(game.Scenes.Current);
+
+        Assert.AreEqual(4321, Launch(dir).Session.HighScore);
+    }
+
+    [TestMethod]
     public void Clearing_a_stage_saves_the_high_score()
     {
         string dir = TempDir();

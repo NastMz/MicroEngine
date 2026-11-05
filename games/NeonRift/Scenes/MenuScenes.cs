@@ -37,6 +37,8 @@ internal sealed class TitleScene(RiftGame game) : Scene
         // The skyline drifts 40 pixels a second: an entity, so the world draws its scroll between updates.
         _skyline = Objects.Create();
         game.Music("title");
+        // Back from a run (quit from the pause menu, game over, the ending): keep its high score.
+        game.SaveHighScore();
     }
 
     public override void Update(float dt)

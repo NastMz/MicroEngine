@@ -110,7 +110,7 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
 
     /// <summary>
     /// Saves the session's high score when it beats the saved one. Called where a run ends or reaches a milestone: a
-    /// cleared stage, game over, quitting to the title, a new run and closing the game.
+    /// cleared stage, game over, the title screen (after quitting a run), a new run and closing the game.
     /// </summary>
     public void SaveHighScore()
     {
