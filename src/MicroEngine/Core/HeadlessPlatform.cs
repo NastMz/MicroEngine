@@ -625,14 +625,23 @@ public sealed class HeadlessRenderer : IRenderer
     private void Record(string command)
     {
         DrawCalls++;
-        if (_raster is not null) _commands.Add(command);
+        _commands.Add(command);
+    }
+
+    /// <summary>Counts a draw and returns true when this renderer only counts, so no command text is formatted.</summary>
+    private bool Counted()
+    {
+        if (_raster is not null) return false;
+        DrawCalls++;
+        return true;
     }
 
     /// <inheritdoc/>
     public void Clear(Color color)
     {
+        if (Counted()) return;
         Record($"clear {C(color)}");
-        _raster?.Clear(color);
+        _raster!.Clear(color);
     }
 
     /// <summary>Counts the call (and rasterizes it); throws <see cref="ObjectDisposedException"/> for a disposed texture and, when rasterizing, <see cref="ArgumentException"/> for another device's texture.</summary>
@@ -674,30 +683,34 @@ public sealed class HeadlessRenderer : IRenderer
     /// <inheritdoc/>
     public void FillRect(RectF rect, Color color)
     {
+        if (Counted()) return;
         var r = new RectF(rect.X + _offset.X, rect.Y + _offset.Y, rect.Width, rect.Height);
         Record($"rect {R(r)} {C(color)}");
-        _raster?.FillRect(r, color);
+        _raster!.FillRect(r, color);
     }
 
     /// <inheritdoc/>
     public void FillCircle(Vector2 center, float radius, Color color)
     {
+        if (Counted()) return;
         Record($"circle {P(center + _offset)} r {N(radius)} {C(color)}");
-        _raster?.FillCircle(center + _offset, radius, color);
+        _raster!.FillCircle(center + _offset, radius, color);
     }
 
     /// <inheritdoc/>
     public void FillTriangle(Vector2 a, Vector2 b, Vector2 c, Color color)
     {
+        if (Counted()) return;
         Record($"triangle {P(a + _offset)} {P(b + _offset)} {P(c + _offset)} {C(color)}");
-        _raster?.FillTriangle(a + _offset, b + _offset, c + _offset, color);
+        _raster!.FillTriangle(a + _offset, b + _offset, c + _offset, color);
     }
 
     /// <inheritdoc/>
     public void DrawLine(Vector2 from, Vector2 to, float thickness, Color color)
     {
+        if (Counted()) return;
         Record($"line {P(from + _offset)} {P(to + _offset)} w {N(thickness)} {C(color)}");
-        _raster?.DrawLine(from + _offset, to + _offset, thickness, color);
+        _raster!.DrawLine(from + _offset, to + _offset, thickness, color);
     }
 
     /// <inheritdoc/>

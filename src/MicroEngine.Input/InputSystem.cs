@@ -216,7 +216,7 @@ public sealed class InputSystem : IStateHashed
         _events.AddRange(_pending);
         _pending.Clear();
         Text.BeginUpdate();
-        foreach (var player in Players.All) player.Map.Sample(ViewOf(player));
+        foreach (var player in Players.InOrder) player.Map.Sample(ViewOf(player));
     }
 
     /// <summary>
@@ -236,7 +236,7 @@ public sealed class InputSystem : IStateHashed
     /// </summary>
     public void EndUpdate()
     {
-        foreach (var player in Players.All) player.Map.EndUpdate();
+        foreach (var player in Players.InOrder) player.Map.EndUpdate();
         Devices.EndSample();
         _events.Clear();
         Text.EndUpdate();
