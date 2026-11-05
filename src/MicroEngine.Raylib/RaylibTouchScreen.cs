@@ -7,9 +7,8 @@ namespace MicroEngine.Raylib;
 
 /// <summary>
 /// Touches for the raylib platform. raylib's own touch state is a per-frame list of points indexed by position (no
-/// cancel, no reliable identity across frames), so it is not used: in a browser the page forwards Pointer Events
-/// (<see cref="BrowserPage"/>), with their pointer ids, the page's safe-area insets and its density. A desktop raylib
-/// window reports no touches; its controls still lay out for scripted touches.
+/// cancel, no reliable identity across frames), so it is not used: a raylib window reports no touches; its controls
+/// still lay out for scripted touches.
 /// </summary>
 public sealed class RaylibTouchScreen : ITouchScreen
 {

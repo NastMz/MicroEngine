@@ -88,10 +88,10 @@ jobs:
         if: env.SKIP != 'true' && matrix.rid == 'browser-wasm'
         with:
           path: ${{ runner.temp }}/web-tools
-          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh') }}
+          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh') }}
       - name: Web toolchain
         if: env.SKIP != 'true' && matrix.rid == 'browser-wasm'
-        run: bash web/setup.sh
+        run: bash web/setup.sh --no-sdl
       - name: Cache key
         id: key
         if: env.SKIP != 'true'
@@ -197,13 +197,13 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/web-tools
-          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh') }}
+          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh') }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22.23.4
           cache: npm
           cache-dependency-path: web/tests/package-lock.json
-      - run: bash web/setup.sh
+      - run: bash web/setup.sh --no-sdl
       - run: npm ci --prefix web/tests
       - name: Tests in Chrome
         env:

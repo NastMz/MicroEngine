@@ -7,9 +7,8 @@ namespace MicroEngine.Raylib;
 
 /// <summary>
 /// raylib audio: the engine's mixer (<see cref="MixerAudioDevice"/>, the same voices, priorities and music on every
-/// backend) playing through a sink. On desktops the sink is a raylib audio stream topped up by a feeder thread; in
-/// browsers it is the page's AudioWorklet queue, filled once per frame (<see cref="BrowserAudioSink"/>), and raylib's own
-/// audio is not used. raylib also decodes MP3 music here (to memory, when it is loaded).
+/// backend) playing through a raylib audio stream topped up by a feeder thread. raylib also decodes MP3 music here (to
+/// memory, when it is loaded).
 /// </summary>
 internal sealed class RaylibAudioDevice : MixerAudioDevice
 {
@@ -19,7 +18,6 @@ internal sealed class RaylibAudioDevice : MixerAudioDevice
     {
         try
         {
-            if (OperatingSystem.IsBrowser()) return OpenBrowser();
             Rl.InitAudioDevice();
             if (Rl.IsAudioDeviceReady()) return new RaylibAudioDevice(new RaylibFeederSink());
             Console.Error.WriteLine("audio: no device available, continuing silently");
@@ -29,18 +27,6 @@ internal sealed class RaylibAudioDevice : MixerAudioDevice
             Console.Error.WriteLine($"audio: {e.Message}");
         }
         return new SilentAudioDevice();
-    }
-
-    /// <summary>The page's AudioWorklet sink; silence (and why) when the page offers no audio.</summary>
-    [System.Runtime.Versioning.SupportedOSPlatform("browser")]
-    private static IAudioDevice OpenBrowser()
-    {
-        try { return new RaylibAudioDevice(new BrowserAudioSink(BrowserAudioSink.DefaultLatencyMilliseconds)); }
-        catch (Exception e) when (e is not OutOfMemoryException)
-        {
-            Console.Error.WriteLine($"audio: the page offers no audio output ({e.Message}), continuing silently");
-            return new SilentAudioDevice();
-        }
     }
 
     /// <summary>MP3 through raylib's decoder, whole, into memory; streamed to the mixer from there.</summary>

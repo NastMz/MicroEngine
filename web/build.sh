@@ -3,11 +3,10 @@
 # `microengine package web` (src/MicroEngine.Cli, docs/guide/packaging.md), as any game made with the SDK, with the
 # pinned toolchain of web/setup.sh.
 #
-# Usage: web/build.sh [--dev] [--out DIR] [--backend sdl|raylib] [Game ...]
+# Usage: web/build.sh [--dev] [--out DIR] [Game ...]
 #   Game       demo ids (games/<Id>/<Id>.csproj: MeadowRun, CourtyardKey, TrailDuel, NeonRift); none means all of them
 #   --dev      development package: ships the game's input scripts and honours URL parameters (web/README.md)
 #   --out      where packages go (default dist/web); each game ends up in DIR/<Game>/
-#   --backend  the platform the page runs on (default: $MICROENGINE_WEB_BACKEND, else the tool's default)
 # Needs the toolchain from web/setup.sh (same MICROENGINE_WEB_TOOLS folder).
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
@@ -19,13 +18,12 @@ case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) windows=1; exe=.exe ;; *) windows=0;
 native() { if [ "$windows" = 1 ]; then cygpath -w "$1"; else echo "$1"; fi; }
 die() { echo "error: $*" >&2; exit 1; }
 
-dev=false; out="$root/dist/web"; games=(); backend=${MICROENGINE_WEB_BACKEND:-}
+dev=false; out="$root/dist/web"; games=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --dev) dev=true ;;
     --out) out=${2:?--out needs a directory}; shift ;;
-    --backend) backend=${2:?--backend needs sdl or raylib}; shift ;;
-    -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
     -*) die "unknown option $1 (see web/build.sh --help)" ;;
     *) games+=("$1") ;;
   esac
@@ -37,15 +35,12 @@ for g in "${games[@]}"; do
   printf '%s\n' "${known[@]}" | grep -qx "$g" || die "unknown game '$g'. Known games: ${known[*]} (games/<Id>/<Id>.csproj)."
 done
 
-case "$backend" in ''|sdl|raylib) ;; *) die "unknown backend '$backend' (sdl or raylib)." ;; esac
 dotnet="$tools/dotnet/dotnet$exe"
-lib="$tools/raylib-web/raylib.a"
 sdl="$tools/sdl-web/browser-wasm/SDL3.a"
 [ -x "$dotnet" ] || die "no .NET SDK in $tools/dotnet. Run web/setup.sh first."
 "$dotnet" --list-sdks | grep -q "^$DOTNET_SDK_VERSION " || die "the SDK in $tools/dotnet is not $DOTNET_SDK_VERSION. Run web/setup.sh."
 ls -d "$tools"/dotnet/packs/Microsoft.NET.Runtime.Emscripten."$EMSCRIPTEN_VERSION".Sdk.* >/dev/null 2>&1 \
   || die "the wasm-tools workload (emscripten $EMSCRIPTEN_VERSION) is not installed in $tools/dotnet. Run web/setup.sh."
-[ -f "$lib" ] || die "raylib for the web is missing ($lib). Run web/setup.sh."
 [ -f "$sdl" ] || die "SDL for the web is missing ($sdl). Run web/setup.sh."
 export DOTNET_ROOT="$tools/dotnet" DOTNET_MULTILEVEL_LOOKUP=0 DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 # Packages are published: keep build-machine paths out of them. Native code the workload compiles embeds source
@@ -69,7 +64,7 @@ sizes() {
 tool="$root/src/MicroEngine.Cli/bin/Release/net10.0/MicroEngine.Cli.dll"
 export MICROENGINE_DOTNET="$dotnet"
 dev_flag=(); [ "$dev" = true ] && dev_flag=(--dev)
-backend_flag=(); [ -n "$backend" ] && backend_flag=(--web-backend "$backend")
+
 staging="$here/obj/packages"
 mkdir -p "$out"
 for g in "${games[@]}"; do
@@ -78,7 +73,7 @@ for g in "${games[@]}"; do
   # The package carries its licences: the game's own notice (games/LICENSE: the demos are not MIT), MicroEngine's
   # MIT licence and third-party list, and the licence files of the .NET runtime, Emscripten and the platform inside it.
   "$dotnet" "$(native "$tool")" package web --project "$(native "$root/games/$g/$g.csproj")" --out "$(native "$staging")" \
-    --raylib-wasm "$(native "$lib")" --sdl-wasm "$(native "$sdl")" "${backend_flag[@]}" "${dev_flag[@]}"
+    --sdl-wasm "$(native "$sdl")" "${dev_flag[@]}"
   # Empty the folder rather than deleting it, so a local server serving it keeps working.
   mkdir -p "$out/$g"
   find "${out:?}/$g" -mindepth 1 -delete

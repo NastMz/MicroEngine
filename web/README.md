@@ -1,20 +1,21 @@
 # Browser builds
 
-All four games run in a browser from the same game assemblies as their desktop builds: raylib is compiled to
-WebAssembly and linked into the .NET WebAssembly runtime, and one shared host turns any game into a static
+All four games run in a browser from the same game assemblies as their desktop builds: SDL 3 is compiled to
+WebAssembly and linked into the .NET WebAssembly runtime (the same platform as on desktops and phones), and one shared host turns any game into a static
 package. The host is part of the SDK: `microengine package web` builds it for any game
 ([Packaging](../docs/guide/packaging.md#web)), and this folder builds the four demos with it, using a pinned private
 toolchain. What was verified, in which browsers, and what is still open: [the WEB-1 evaluation](../docs/evaluations/web-support.md).
-Decisions: [ADR 0007](../docs/decisions/0007-browser-host.md) and [ADR 0008](../docs/decisions/0008-web-packages.md).
+Decisions: [ADR 0007](../docs/decisions/0007-browser-host.md), [ADR 0008](../docs/decisions/0008-web-packages.md) and
+[ADR 0047](../docs/decisions/0047-sdl-browser-platform.md) (SDL replaced raylib in browsers).
 
 | Path | Purpose |
 | --- | --- |
-| `toolchain.env` | Pinned versions: .NET SDK, workload set (and so emscripten), raylib commit |
-| `setup.sh` | Installs that toolchain in a private folder, rebuilds raylib with its emscripten and builds SDL 3 for the web (`../src/MicroEngine.Sdl/native/build.sh`; `--no-sdl` skips it) |
+| `toolchain.env` | Pinned versions: .NET SDK, workload set (and so emscripten) |
+| `setup.sh` | Installs that toolchain in a private folder and builds SDL 3 for the web with its emscripten (`../src/MicroEngine.Sdl/native/build.sh`; `--no-sdl` skips it) |
 | `build.sh` | Builds one or all games into `dist/web/<Game>/` |
 | `serve.mjs` | Local static server (Brotli, correct MIME types) |
-| [`../src/MicroEngine.Cli/Hosts/web`](../src/MicroEngine.Cli/Hosts/web) | The host template: `Host.csproj` (browser build settings, the game, rebuilt raylib), `Program.cs` (page bridge) and `wwwroot/` (page, styles, page glue) |
-| `build-raylib-wasm.sh` | Compiles raylib for the web (called by `setup.sh`) |
+| [`../src/MicroEngine.Cli/Hosts/web`](../src/MicroEngine.Cli/Hosts/web) | The host template: `Host.csproj` (browser build settings, the game, SDL3.a), `Program.cs` (page bridge) and `wwwroot/` (page, styles, page glue) |
+| [`../src/MicroEngine.Sdl/native`](../src/MicroEngine.Sdl/native) | `build.sh` compiles SDL for the web from the commit `sdl.env` pins (called by `setup.sh`; CI: `sdl-web.yml`) |
 | `tests/` | Browser checks in Chrome and Firefox (`run.mjs`), touch checks on emulated phones and tablets (`mobile.mjs`), the desktop comparison (`desktop.mjs`) and size, start-up and frame time of packages (`measure.mjs`) |
 
 The host is not in `MicroEngine.slnx`: it needs a toolchain the normal build does not, and `microengine` generates its project per game.
@@ -25,8 +26,8 @@ The host is not in `MicroEngine.slnx`: it needs a toolchain the normal build doe
 - About 2.5 GB of disk for the private toolchain (default `~/.microengine/web-tools`, or `$MICROENGINE_WEB_TOOLS`).
 - Node.js 18 or later to serve packages locally and to run the browser tests.
 
-`setup.sh` and `build.sh` were run on Windows 11 (Git Bash) and on Linux x64 (INPUT-1, which fixed
-`build-raylib-wasm.sh` ending silently where no Python pack exists). The macOS branch is written but was not run.
+`setup.sh` and `build.sh` were run on Windows 11 (Git Bash) and on Linux x64. The macOS branch is written but was
+not run. Building SDL needs CMake (and Ninja on Windows: Visual Studio's copy is found, or set `NINJA`).
 
 ## Set up the toolchain (once)
 
@@ -35,15 +36,16 @@ web/setup.sh
 ```
 
 It installs .NET SDK 10.0.403 with Microsoft's install script into the private folder (the system .NET is not
-touched), installs the `wasm-tools` workload set 10.0.403 into it (emscripten 3.1.56), clones raylib 6.0 at the
-pinned commit and compiles it with that emscripten. Each step is skipped when its result is already there; a
+touched), installs the `wasm-tools` workload set 10.0.403 into it (emscripten 3.1.56), fetches SDL 3.5.0 at the
+pinned commit and compiles it with that emscripten (about two minutes). Each step is skipped when its result is already there; a
 missing tool, an SDK that did not install or a workload without the expected emscripten stops with a message
 saying what to do. From scratch it took under two minutes on a fast connection.
 
-**Why raylib is rebuilt.** Raylib-cs 8.1.0 ships a browser `raylib.a` compiled by a newer emscripten than .NET's;
-linking it fails in `wasm-opt` with "Unknown option '--enable-bulk-memory-opt'". The same raylib version built
-with the workload's own emscripten links cleanly. To move to another .NET SDK, change `toolchain.env` as a set
-(SDK, workload set, runtime pack, emscripten) and run `setup.sh` again; it rebuilds raylib when the stamp changes.
+**Why SDL is built here.** `ppy.SDL3-CS` has no browser build, and a library must be compiled by the workload's own
+emscripten (one built by a newer emscripten fails in `wasm-opt`). `build.sh` compiles the SDL commit the bindings were
+made from, single-threaded like the .NET browser runtime, and checks that the archive defines what the engine calls.
+To move to another .NET SDK, change `toolchain.env` as a set (SDK, workload set, runtime pack, emscripten) and run
+`setup.sh` again; it rebuilds SDL when its key (inputs and toolchain) changes.
 
 ## Build
 
@@ -51,7 +53,6 @@ with the workload's own emscripten links cleanly. To move to another .NET SDK, c
 web/build.sh                     # all games, into dist/web/<Game>/
 web/build.sh NeonRift            # one game
 web/build.sh --dev --out dist/web-dev   # development packages (scripts, URL parameters)
-web/build.sh --backend sdl MeadowRun    # on SDL 3 instead of raylib (or MICROENGINE_WEB_BACKEND=sdl)
 ```
 
 An unknown game, or a toolchain that is missing or not the pinned one, stops with a message. The build prints
@@ -76,9 +77,9 @@ Opening `index.html` from disk does not work (browsers block the runtime's reque
 | --- | --- |
 | `index.html`, `host.css`, `main.js` | The page: loading screen, start, end and error screens, fullscreen and sound buttons |
 | `game.json` | `{ "id", "title", "dev" }` for the page and for whoever embeds the package |
-| `_framework/` | .NET runtime, raylib and the game assemblies (with `.br` and `.gz` copies) |
+| `_framework/` | .NET runtime, SDL and the game assemblies (with `.br` and `.gz` copies) |
 | `content.txt`, `Content/` | The game's asset files and their list (absent for fully procedural games) |
-| `THIRD-PARTY-NOTICES.txt`, `licenses/` | MicroEngine's third-party notices and the complete licence files of the .NET runtime, Emscripten and raylib |
+| `THIRD-PARTY-NOTICES.txt`, `licenses/` | MicroEngine's third-party notices and the complete licence files of the .NET runtime, Emscripten and SDL (and raylib, whose binding a game referencing `MicroEngine.Desktop` carries) |
 
 Release packages are compiled with `-p:MicroEngineWebPackage=true`: the engine and game assemblies get no debug
 information and build into their own `obj/web/` and `bin/web/` folders (desktop builds keep theirs), and native code
@@ -88,7 +89,7 @@ your user profile (`MICROENGINE_WEB_TOOLS`).
 
 ### Embedding (for the landing page)
 
-Embed a package with an iframe; raylib sizes the canvas to the iframe's window and letterboxes the game inside
+Embed a package with an iframe; SDL sizes the canvas to the iframe's window and letterboxes the game inside
 it, scaling by whole numbers when there is room and down (never cropped) when the iframe is smaller:
 
 ```html
@@ -107,22 +108,22 @@ The page posts its state to the parent: `{ source: 'microengine', game, state, d
   `game.json`, the page title and the favicon (`MicroEngineIcon`).
 - `Program.cs` (`WebHost`) is the page's bridge: `Start`, `Frame` (one frame per `requestAnimationFrame`),
   `Outcome`, `Stop` and diagnostics. It drives a `GameSession` from `BrowserLauncher.CreateSession`, which picks
-  `localStorage` saves before any game is built and creates a fresh raylib platform per run.
+  `localStorage` saves before any game is built and creates a fresh SDL platform per run.
 - `main.js` loads the runtime and the content (copied into the virtual file system at `/Content`, so
-  `ContentFolder` works as on desktop), then waits for a click or key. Starting inside that gesture lets raylib's
-  audio play under every browser's autoplay policy; the key that starts the game, and any key pressed while
+  `ContentFolder` works as on desktop), then waits for a click or key. Starting inside that gesture lets the page's
+  audio (an AudioWorklet the game fills each frame) play under every browser's autoplay policy; the key that starts the game, and any key pressed while
   loading, never reaches the game. When the game quits, the canvas is hidden and an end screen offers "Play
   again", which starts a new run without reloading. Errors while loading or playing show a message and the
   exception text.
 - Input while playing: keys that would scroll the page or open browser features (arrows, Space, Tab, `/`, `'`)
   are kept from the browser; Ctrl/Cmd shortcuts and function keys stay with it (F5 reloads, F11 is the browser's
   fullscreen, which also works because the canvas fills the page). Alt+Enter and the Fullscreen button use the
-  Fullscreen API. raylib releases held keys when the window loses focus. Very short presses (within one frame)
+  Fullscreen API. The platform releases held keys when the window loses focus. Very short presses (within one frame)
   are kept until the game has read them.
 - Touch ([Input: touch controls](../docs/manual/input.md#touch-controls), ADR 0020): `main.js` forwards touch and pen
   Pointer Events on the canvas (with pointer capture and coalesced moves) to `WebHost.Pointer`, which hands them to the
-  raylib platform's touch screen and so to the game's on-screen controls, drawn by raylib over the frame. The mouse stays
-  with raylib. `index.html` asks for `viewport-fit=cover`; the page reads the CSS `env(safe-area-inset-*)` insets, the
+  SDL platform's touch screen and so to the game's on-screen controls, drawn by SDL over the frame (SDL's own view of
+  the fingers is ignored). The mouse, the keyboard and gamepads (the Gamepad API) are SDL's. `index.html` asks for `viewport-fit=cover`; the page reads the CSS `env(safe-area-inset-*)` insets, the
   canvas density and whether touch is the main input (`pointer: coarse`) and sends them with `WebHost.Screen` on start,
   resize, rotation and browser-bar changes. While playing the page blocks scrolling, pinch and double-tap zoom, text
   selection, the long-press callout and context menu (`touch-action: none` and event handlers); losing focus, rotating
@@ -169,7 +170,7 @@ node web/tests/run.mjs                       # platform and scripts suites, Chro
 node web/tests/run.mjs keyboard framerate autopilot
 node web/tests/run.mjs repeat gamepad       # scripts twice (identical captures), an emulated gamepad
 node web/tests/mobile.mjs                    # touch on emulated Android, iPhone, portrait phone and tablet
-node web/tests/measure.mjs --games MeadowRun # download, load, start-up and frame time (to compare backends)
+node web/tests/measure.mjs --games MeadowRun # download, load, start-up and frame time
 dotnet build MicroEngine.slnx -c Release && node web/tests/desktop.mjs   # compare script captures with desktop
 ```
 

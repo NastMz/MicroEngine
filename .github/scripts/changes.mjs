@@ -83,7 +83,7 @@ export const rules = [
   // sdk/tests/external.mjs copies the asset gallery and plays its tour from the packages (evidence.mjs: sdkSamples).
   { pattern: /^samples\/AssetGallery\//, checks: ['dotnet', 'sdk'], why: 'asset gallery (played by the SDK external project test)' },
   { pattern: /^(tests|samples)\//, checks: ['dotnet'], why: 'game tests and samples' },
-  { pattern: /^web\/(toolchain\.env|setup\.sh|build-raylib-wasm\.sh)$/, checks: ['full', 'sdk', 'web', 'box2d'], why: 'web toolchain (MicroEngine.Raylib carries the web raylib; the Box2D browser library)' },
+  { pattern: /^web\/(toolchain\.env|setup\.sh)$/, checks: ['full', 'sdk', 'web', 'box2d'], why: 'web toolchain (MicroEngine.Sdl carries SDL for the web; the Box2D browser library)' },
   { pattern: /^web\/tests\/package(-lock)?\.json$/, checks: ['native', 'sdk', 'web'], why: 'browser driver (desktop captures, browser suites, the SDK test plays its web package)' },
   { pattern: /^web\/tests\/(run|mobile|measure)\.mjs$/, checks: ['web'], why: 'browser engine suites' },
   // The scenarios and the desktop runner serve both: the browser suites compare their frames with the desktop's.

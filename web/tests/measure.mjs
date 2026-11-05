@@ -6,7 +6,7 @@
 // in fresh Chrome profiles: page load to the ready screen, the click that starts the game (WebHost.Start runs inside it,
 // so it is the platform's and the game's start-up), and S seconds of play with the time spent inside each animation
 // frame callback (the whole game frame) and the updates and frames counted. Medians over the runs. The backend is the
-// package's own (game.json). Measured, never a gate: a shared CI runner draws with a software GPU (llvmpipe) and
+// package's own (game.json, recorded by packages that could run on another platform; SDL otherwise). Measured, never a gate: a shared CI runner draws with a software GPU (llvmpipe) and
 // localhost hides the network, so numbers compare backends, not what a player sees.
 // Writes a Markdown table to stdout and <out>/measure-<Game>.json.
 import fs from 'node:fs';
@@ -113,7 +113,7 @@ try {
   fs.mkdirSync(out, { recursive: true });
   for (const game of games) {
     const dir = path.join(packages, game);
-    const backend = JSON.parse(fs.readFileSync(path.join(dir, 'game.json'), 'utf8')).backend ?? 'raylib';
+    const backend = JSON.parse(fs.readFileSync(path.join(dir, 'game.json'), 'utf8')).backend ?? 'sdl';
     const sizes = size(dir);
     const results = [];
     try {

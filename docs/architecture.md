@@ -195,7 +195,8 @@ four device interfaces:
 Hosts choose a platform through a `PlatformCatalog` of named `PlatformProfile`s (`sdl`, `raylib`, `sdl-software`,
 `headless`, or one of the developer's own) and may supply an audio device or extra input sources of their own; window,
 renderer and graphics device stay together because they share a graphics context ([Backends](manual/backends.md)).
-SDL is the default on desktops and phones. The raylib backend also runs in a browser (raylib compiled to
+SDL is the default on desktops and phones, and, in the next SDK version, the platform of browsers too (SDL compiled to
+WebAssembly by `src/MicroEngine.Sdl/native/build.sh`). Until then the raylib backend also runs in a browser (raylib compiled to
 WebAssembly): `BrowserLauncher` returns a `GameSession` that the page starts, ticks from `requestAnimationFrame` and
 restarts, and keeps saves in `localStorage`. Next SDK version: every host composes the game with its `Configure` entry
 point through the same launcher model (`GameHost`), so a page's scripted run is deterministic like a desktop one.

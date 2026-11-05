@@ -83,7 +83,7 @@ fetch "$src"
 rm -rf "$build" "$dest"
 mkdir -p "$dest"
 
-# The emscripten environment of web/build-raylib-wasm.sh: the packs of the .NET wasm-tools workload, its frozen cache.
+# The emscripten of the .NET wasm-tools workload (its packs), with its frozen cache.
 SDK=$(emsdk_pack Sdk); PY=$(emsdk_pack Python); NODE=$(emsdk_pack Node); CACHE=$(emsdk_pack Cache)
 [ -n "$NODE" ] && [ -n "$CACHE" ] || die "incomplete emscripten packs under $tools/dotnet/packs: run web/setup.sh."
 if [ $win = 1 ]; then EXE=.exe; else EXE=; fi

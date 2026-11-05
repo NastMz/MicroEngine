@@ -163,7 +163,7 @@ case "$rid" in
     # LD_LIBRARY_PATH=. (docs/manual/physics-box2d.md); this script does not start one.
     test=0 ;;
   browser-wasm)
-    # The emscripten environment of web/build-raylib-wasm.sh: the packs of the .NET wasm-tools workload.
+    # The emscripten environment of src/MicroEngine.Sdl/native/build.sh: the packs of the .NET wasm-tools workload.
     SDK=$(emsdk_pack Sdk); PY=$(emsdk_pack Python); NODE=$(emsdk_pack Node); CACHE=$(emsdk_pack Cache)
     if [ $win = 1 ]; then EXE=.exe; else EXE=; fi
     export DOTNET_EMSCRIPTEN_LLVM_ROOT="$SDK/bin" DOTNET_EMSCRIPTEN_BINARYEN_ROOT="$SDK" DOTNET_EMSCRIPTEN_NODE_JS="$NODE/bin/node$EXE"

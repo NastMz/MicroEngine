@@ -67,7 +67,7 @@ export const releaseTag = 'demo-artifacts';
 // Inputs shared by every game's web package. Paths are Git pathspecs relative to the repository root.
 // The browser host and the tool that builds it (`microengine package web`) live in src/MicroEngine.Cli.
 const sharedInputs = [
-  'src', 'web/build.sh', 'web/build-raylib-wasm.sh', 'web/setup.sh', 'web/toolchain.env', 'Directory.Build.props', 'global.json',
+  'src', 'web/build.sh', 'web/setup.sh', 'web/toolchain.env', 'Directory.Build.props', 'global.json',
   'NuGet.config', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'games/LICENSE', 'games/Directory.Build.targets',
 ];
 // Files inside those paths that never reach a release package.
