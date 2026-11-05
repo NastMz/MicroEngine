@@ -1,4 +1,5 @@
-# Generic tour: run right with hops, capturing as it goes.
+# Generic tour: run right with hops, capturing as it goes. Any level works; the state-trace check plays it on
+# Crystal Caves (MEADOW_START=level MEADOW_LEVEL=2).
 5 capture t0.png
 20 hold right 1400
 60 down jump

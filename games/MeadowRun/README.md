@@ -153,6 +153,8 @@ The tests cover:
 - A boss fight to victory, and a full headless run: title, new game, map, level 1, tally, map,
   with progress persisted to disk and no missing sounds.
 - Drawing between updates (actors, Pip and the camera blended, jumps drawn at once) and the hit-stop.
+- Determinism: every script in `scripts/` runs twice from the starting point its header declares and must record
+  the same state at every step, whether or not frames are drawn.
 ## License
 
 This game is a MicroEngine demo, **not** covered by the engine's MIT License: all rights reserved
