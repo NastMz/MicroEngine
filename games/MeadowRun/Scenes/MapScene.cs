@@ -28,6 +28,8 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
     private readonly NumberLabel _lives = new("×", 2), _score = new(digits: 7);
     private int _infoLevel = -1, _infoBest;
     private string _infoTitle = "", _infoScore = "";
+    private string? _hint;
+    private int _hintVersion;
     private int Unlocked => game.Save.Unlocked;
 
     public int Node => _node;
@@ -192,7 +194,13 @@ internal sealed class MapScene(MeadowGame game, int justUnlocked, int startNode)
         Ui.Text(r, Font, best, new Vector2(304 - Font.MeasureWidth(best), 151), game.Save.BestScores[i] > 0 ? Pal.Cream : Pal.Dusk);
         if ((int)(Age * 2) % 2 == 0 && _walk >= 1 && _revealed >= 1)
         {
-            string hint = Game.Prompts.Format("{confirm}: play   {cancel}: title");
+            // Formatted again only when the prompts change (another device or pad family).
+            if (_hint is null || _hintVersion != Game.Prompts.Version)
+            {
+                _hintVersion = Game.Prompts.Version;
+                _hint = Game.Prompts.Format("{confirm}: play   {cancel}: title");
+            }
+            string hint = _hint;
             Ui.Text(r, Font, hint, new Vector2(304 - Font.MeasureWidth(hint), 162), Pal.Gold);
         }
     }

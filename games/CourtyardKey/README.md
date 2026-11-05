@@ -1,9 +1,10 @@
 # Courtyard Key
 
 A top-down action-adventure in the spirit of classic screen-by-screen 2D adventures, built on
-MicroEngine. All characters, names and music are original. It is a hybrid: the world, hero, villagers,
-the slime, bat and knight, the Moss Warden, items and all audio are generated in code; the seed-spitting
-heart-trap is a hand-drawn CC0 monster repainted in the game's palette (see [CREDITS](CREDITS.md)).
+MicroEngine. All characters, names and music are original. It is a hybrid: the ground, the dungeon, the hero,
+villagers, the slime, bat and knight, the Moss Warden, items and all audio are generated in code; the village houses,
+the trees and the seed-spitting heart-trap are hand-drawn CC0 pieces repainted in the game's palette when it loads
+(see [CREDITS](CREDITS.md)).
 
 > The bells beneath the old ruins rang again last night. Elder Oswin hands Wren his old sword:
 > cross the vale, descend into the Sunken Courtyard, and take the Courtyard Key back from the
@@ -62,11 +63,19 @@ Cartographer (visit all nine chambers of the Sunken Courtyard) and Warden Felled
 
 ## Art and audio direction
 
-- A deliberate master palette (`Visuals/Pal.cs`): warm, lush greens for the vale; cool violet stone
-  for the dungeon; a teal-and-crimson hero; gold for everything precious. Dark ink outlines,
-  top-left lighting, dithered ramps.
-- Tiles are procedural: 16-mask autotiles for paths, water shorelines, carpets and channels,
-  animated water, waterfalls, swaying flowers and tall grass, bevelled dungeon walls with door arches.
+- A deliberate master palette (`Visuals/Pal.cs`): one hue-shifted family of world ramps (turf, earth, boulder,
+  foliage, timber, lichen) for the vale, where shadows lean blue-violet and highlights warm yellow; an eight-step
+  cool violet stone ramp for the dungeon; a teal-and-crimson hero; gold for everything precious. Light comes from
+  the upper left everywhere, every cast shadow is the same cool dark, and outlines are coloured by the material they
+  border instead of flat black.
+- Layered ground: a macro-textured grass (tufts, clover, pebbles, wildflowers) and irregular dungeon flagstones
+  repeat only every 8x8 tiles, and paths, the river, ruin paving, flowers, tall grass, rocks, bushes, fences,
+  cracks, plates, statues and braziers are transparent overlays on them, so the 16 px grid does not show. Paths,
+  the river and the paving share one ragged grassy edge; cliffs are lit rock clumps; dungeon walls are ashlar faces
+  under a lit cap that throw their shadow onto the floor beside them.
+- The village houses and the trees come from ArMM1998's Zelda-like pack (`Content/vale`): `Visuals/PackArt.cs` cuts
+  them along their own outlines, repaints them in the world ramps (a terracotta roof for the elder's house, slate for
+  Marla's shop), shortens the house roofs to fit their footprint under the room's top edge and hangs the shop sign.
 - Characters are hand-authored char maps (hero walk cycles in four facings, item-get pose, six
   villagers rounded by a light pass toward the top-left light); slimes are sculpted from lit blobs, the
   bat and knight are char maps.
@@ -92,11 +101,11 @@ Cartographer (visit all nine chambers of the Sunken Courtyard) and Warden Felled
 | `CourtyardKeyGame.cs` | Game settings, input bindings, content loading, debug checkpoints (`DebugStart`) |
 | `Model/` | Rules with no rendering: `Health`, `Combat` (damage, knockback, shield cone), `Progress` and `SaveSlots`, `Dir` |
 | `Content/` | Tile ids, map legend, the overworld and dungeon room maps, NPC dialogue, chest contents |
-| `World/` | Runtime `Room`, `RoomGrid` collision (edges look into the neighbour room), `AreaMap`, `RoomRenderer`, `Lighting`, particle recipes (`Fx`) |
+| `World/` | Runtime `Room`, `RoomGrid` collision (edges look into the neighbour room), `AreaMap`, `RoomRenderer` (ground layer, tile overlays, wall shadows), `Lighting`, particle recipes (`Fx`) |
 | `Entities/` | `Hero`, `Enemy` base and `Enemies` (slime, bat, spitter, knight, projectile), `Boss` (Warden, shockwave), `Objects` (pickups, boomerang, pots, chests, signs, NPCs, push blocks, doors, crystal, pedestal) |
 | `Scenes/` | `PlayScene` (partial: core, rooms/transitions/rules, combat, events, drawing), `Spawner`, title/ending, dialogue, pause/map, shop, game over |
 | `UI/` | HUD (hearts, gems, keys, items, boss bar, toasts, banners) and the shared panel style |
-| `Visuals/` | Palette, procedural art modules, the heart-trap sheet loader (`MonsterArt`) and the single sprite atlas |
+| `Visuals/` | Palette, procedural art modules (`GroundArt` and `DungeonArt` for the layered ground, `TileArt`, props, characters, creatures, items), the pack loaders (`PackArt` for houses and trees, `MonsterArt` for the heart-trap) and the single sprite atlas |
 | `Audio/` | `SoundBank` (SFX and jingles) and `MusicBank` (songs) |
 
 ## Run, test, capture

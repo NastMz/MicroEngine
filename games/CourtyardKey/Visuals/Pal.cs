@@ -24,13 +24,27 @@ public static class Pal
     public static readonly Color[] Wood = [Color.Hex("3a2018"), Color.Hex("5f3522"), Color.Hex("8a532f"), Color.Hex("b87d45")];
     public static readonly Color[] Roof = [Color.Hex("5a1a28"), Color.Hex("8f2a35"), Color.Hex("c44a43"), Color.Hex("e47a5c")];
     public static readonly Color[] RoofBlue = [Color.Hex("1d2a52"), Color.Hex("2e4a7d"), Color.Hex("4a72a8"), Color.Hex("7aa6cf")];
-    public static readonly Color[] Plaster = [Color.Hex("8f7a68"), Color.Hex("c2ab8e"), Color.Hex("e6d6b8")];
 
     // Dungeon stone: cool violet so it never reads as the overworld
     public static readonly Color[] Stone = [Color.Hex("1c1a2a"), Color.Hex("2e2b42"), Color.Hex("45405e"), Color.Hex("625b80"), Color.Hex("8b84a8"), Color.Hex("b7b0cf")];
     public static readonly Color[] Moss = [Color.Hex("24402f"), Color.Hex("3b6340"), Color.Hex("5f8a4b")];
     public static readonly Color[] DeepWater = [Color.Hex("0f2230"), Color.Hex("163a4a"), Color.Hex("1f5a66"), Color.Hex("3f8c8c"), Color.Hex("8fd0c0")];
     public static readonly Color[] Carpet = [Color.Hex("4a1424"), Color.Hex("7a1f33"), Color.Hex("a53245")];
+
+    // World ramps: one hue-shifted family for the ground, the scenery and the pack buildings, so they read as one
+    // world. Shadows lean blue-violet, highlights lean warm yellow; light comes from the upper left.
+    public static readonly Color[] Turf = [Color.Hex("16302e"), Color.Hex("1f4a38"), Color.Hex("2c6a3e"), Color.Hex("3f8a42"), Color.Hex("5fa84a"), Color.Hex("8cc657"), Color.Hex("c4e27a")];
+    public static readonly Color[] Earth = [Color.Hex("3e2630"), Color.Hex("6a4232"), Color.Hex("94643e"), Color.Hex("b8864e"), Color.Hex("d6aa6a"), Color.Hex("ecd09a")];
+    public static readonly Color[] Boulder = [Color.Hex("221f30"), Color.Hex("38344a"), Color.Hex("524c66"), Color.Hex("716a84"), Color.Hex("958ea6"), Color.Hex("c2bccc"), Color.Hex("e8e2ea")];
+    public static readonly Color[] Foliage = [Color.Hex("0f2a2a"), Color.Hex("17402e"), Color.Hex("235e36"), Color.Hex("34803e"), Color.Hex("54a046"), Color.Hex("8cc85a")];
+    public static readonly Color[] Timber = [Color.Hex("2a1620"), Color.Hex("4e2a26"), Color.Hex("7a4430"), Color.Hex("a46a40"), Color.Hex("cc9a5e")];
+    public static readonly Color[] Lichen = [Color.Hex("1e3a30"), Color.Hex("2f5a3a"), Color.Hex("4f8448"), Color.Hex("86b860")];
+    /// <summary>The dungeon's eight-step stone ramp (cool violet, warmer toward the light).</summary>
+    public static readonly Color[] Flagstone = [Color.Hex("110f1e"), Color.Hex("1d192e"), Color.Hex("2b2540"), Color.Hex("3b3354"), Color.Hex("4f4669"), Color.Hex("685d80"), Color.Hex("887b9a"), Color.Hex("b3a4bc")];
+    /// <summary>Every cast shadow outdoors (actors, trees, houses, rocks) is this one cool dark.</summary>
+    public static readonly Color CastShadow = Color.Hex("0c1e26");
+    /// <summary>Shadows indoors, under dungeon walls.</summary>
+    public static readonly Color DeepShadow = Color.Hex("08061a");
 
     // Characters
     public static readonly Color[] Skin = [Color.Hex("8a4b3a"), Color.Hex("c97b56"), Color.Hex("f2b38a")];

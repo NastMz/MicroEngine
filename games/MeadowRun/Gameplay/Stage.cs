@@ -64,6 +64,11 @@ internal sealed partial class Stage : IStateHashed
     /// <summary>Score awarded by the goal pole grab, shown in the tally.</summary>
     public int FlagScore { get; private set; }
     public int TimeBonus { get; private set; }
+    /// <summary>
+    /// Coins picked up in this attempt: what a clear records as the level's coins. The session's own counter cannot tell
+    /// it, because every hundredth coin of the run turns into a life and the counter starts again.
+    /// </summary>
+    public int CoinsCollected { get; private set; }
 
     /// <summary>Sound requests: name, volume, pitch, pan.</summary>
     public Action<string, float, float, float>? SoundSink { get; set; }
@@ -102,7 +107,7 @@ internal sealed partial class Stage : IStateHashed
     }
 
     /// <summary>
-    /// Hashes the attempt: phase and outcome, clocks and timers, stomp chain, scores of the tally, the camera (its
+    /// Hashes the attempt: phase and outcome, clocks and timers, stomp chain, scores of the tally, coins picked up, the camera (its
     /// position wakes actors) and its lock, the tiles (bumped and broken blocks change them), the multi-coin bricks and
     /// Pip. The actors, the platforms and the hit-stop belong to the world (<see cref="Objects"/>), which the scene
     /// hashes. Leaves out what only presentation uses: particles, popups, block bump offsets, the throw pose, ambient
@@ -122,6 +127,7 @@ internal sealed partial class Stage : IStateHashed
         hash.Add(CheckpointReached);
         hash.Add(FlagScore);
         hash.Add(TimeBonus);
+        hash.Add(CoinsCollected);
         hash.Add(_look);
         hash.Add(Camera.Position);
         hash.Add(CameraLock.HasValue);
@@ -157,6 +163,13 @@ internal sealed partial class Stage : IStateHashed
             Objects.Attach(p.Id, p);
         }
         else Objects.Attach(actor.Id, actor);
+    }
+
+    /// <summary>Gives the session a coin and counts it for this attempt.</summary>
+    private void CollectCoin()
+    {
+        CoinsCollected++;
+        Session.AddCoin();
     }
 
     public bool IsNearView(RectF bounds, float margin) => Camera.View.Inflate(margin).Intersects(bounds);

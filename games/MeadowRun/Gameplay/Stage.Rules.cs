@@ -104,7 +104,7 @@ internal sealed partial class Stage
             {
                 case Coin coin:
                     coin.Destroy();
-                    Session.AddCoin();
+                    CollectCoin();
                     Sfx("coin", 1, 0.55f, coin.Center);
                     Sparkle(coin.Center, Pal.Gold);
                     break;
@@ -301,7 +301,7 @@ internal sealed partial class Stage
             case Tile.CoinBlock:
                 Level.SetTile(x, y, Tile.UsedBlock);
                 Spawn(new PopCoin(this, top + new Vector2(8, -6)));
-                Session.AddCoin();
+                CollectCoin();
                 Sfx("coin", 1, 0.55f, top);
                 break;
             case Tile.MultiCoinBrick:
@@ -309,7 +309,7 @@ internal sealed partial class Stage
                 int left = _multiCoins.TryGetValue((x, y), out var n) ? n : 8;
                 _multiCoins[(x, y)] = --left;
                 Spawn(new PopCoin(this, top + new Vector2(8, -6)));
-                Session.AddCoin();
+                CollectCoin();
                 Sfx("coin", 1 + (8 - left) * 0.02f, 0.55f, top);
                 if (left <= 0) Level.SetTile(x, y, Tile.UsedBlock);
                 break;
@@ -359,7 +359,7 @@ internal sealed partial class Stage
                 case Coin coin:
                     coin.Destroy();
                     Spawn(new PopCoin(this, coin.Center));
-                    Session.AddCoin();
+                    CollectCoin();
                     break;
                 case PowerItem item: item.Pop(); break;
             }
