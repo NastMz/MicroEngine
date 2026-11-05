@@ -83,6 +83,20 @@ public string Description { get; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_Core_PlatformProfile_GraphicsDevices"></a> GraphicsDevices
+
+The graphics devices a request may name in [Device](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Device) (compared case-insensitively),
+the platform's default first; empty (the default) when the platform has only its own device, which a request then
+selects by leaving [Device](MicroEngine.Core.GraphicsSettings.md#MicroEngine_Core_GraphicsSettings_Device) null.
+
+```csharp
+public IReadOnlyList<string> GraphicsDevices { get; init; }
+```
+
+#### Property Value
+
+ [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[string](https://learn.microsoft.com/dotnet/api/system.string)\>
+
 ### <a id="MicroEngine_Core_PlatformProfile_Name"></a> Name
 
 The name hosts select the profile by (compared case-insensitively).

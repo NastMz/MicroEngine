@@ -20,6 +20,14 @@ Not published yet. Behaviour that changes:
   `native/browser-wasm/raylib.a` (nor `MicroEngineWebRaylibFromPackage`); `MicroEngine.Sdl` carries
   `native/browser-wasm/SDL3.a`. A web package's `licenses/` folder now holds SDL's licence.
 
+- The SDL platform can draw with a second graphics device: `GraphicsSettings.Device = "sdl-gpu"` (or `--graphics
+  sdl-gpu`) selects SDL_GPU (tier 1: custom shaders, depth, the 3D path) instead of SDL's renderer. Nothing changes for
+  a game that does not ask for it. `SdlPlatform.Device` is now a `GraphicsDeviceBase` (it was `SdlRendererDevice`):
+  cast it when you need the SDL_Renderer device (`(SdlRendererDevice)platform.Device`), which it is unless the game
+  asked for `sdl-gpu`. Other platforms refuse a request naming a device they do not offer
+  (`PlatformProfile.GraphicsDevices`).
+- `DeviceRenderer` (the renderer the device-backed platforms give a scene) has `Target` and `Flush()`, to put device work
+  such as a 3D pass between the 2D drawn before and after it. Code that does not call them is unchanged.
 - Touch controls are an optional module: `Game.Touch` is active (drawn, read, taking the touches over it) on touch-first
   screens (phones, tablets, touch-only browsers) or once the game sets a layout of its own (overriding
   `CreateTouchLayout`, or setting `Game.Touch.Layout` in `Configure`, `Load` or a scene); otherwise it is inactive and

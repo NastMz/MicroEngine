@@ -6,7 +6,7 @@ package. The host is part of the SDK: `microengine package web` builds it for an
 ([Packaging](../docs/guide/packaging.md#web)), and this folder builds the four demos with it, using a pinned private
 toolchain. What was verified, in which browsers, and what is still open: [the WEB-1 evaluation](../docs/evaluations/web-support.md).
 Decisions: [ADR 0007](../docs/decisions/0007-browser-host.md), [ADR 0008](../docs/decisions/0008-web-packages.md) and
-[ADR 0046](../docs/decisions/0046-sdl-browser-platform.md) (SDL replaced raylib in browsers).
+[ADR 0047](../docs/decisions/0047-sdl-browser-platform.md) (SDL replaced raylib in browsers).
 
 | Path | Purpose |
 | --- | --- |

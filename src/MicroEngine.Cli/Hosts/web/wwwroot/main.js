@@ -293,7 +293,8 @@ function ended() {
 window.addEventListener('pagehide', () => { if (state === 'playing') { setState('ended'); exports.WebHost.Stop(); } });
 
 // Diagnostics for tests and validation (read-only). Development packages also keep, for recent frames, the
-// current scene and the input actions that were down ("TitleScene confirm,left").
+// current scene and the input actions that were down in any of the frame's updates ("TitleScene confirm,left"): a
+// frame that catches up with several updates still shows a press that was down in one of them only.
 const trace = [];
 let traced = 0;
 function record(probe) {

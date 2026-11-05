@@ -153,6 +153,18 @@ public GpuPreference? Gpu { get; init; }
 
  [GpuPreference](MicroEngine.Core.GpuPreference.md)?
 
+### <a id="MicroEngine_Core_LaunchArguments_Graphics"></a> Graphics
+
+<code>--graphics</code>: the graphics device to draw with, or null to keep the game's choice.
+
+```csharp
+public string? Graphics { get; init; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)?
+
 ### <a id="MicroEngine_Core_LaunchArguments_Headless"></a> Headless
 
 <code>--headless</code>: run without a window.

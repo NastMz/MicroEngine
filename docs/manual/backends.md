@@ -265,6 +265,16 @@ settings, and returns it from `Settings` at the next start (for example
 The launcher's `--renderer`, `--vsync`, `--fps-limit`, `--gpu`, `--window` and `--display` replace one option for one
 run ([Configuration](../reference/configuration.md)).
 
+Next SDK version (not published yet): `GraphicsSettings.Device` (the launcher's `--graphics`) chooses the graphics
+device on platforms that offer more than one. The SDL platform offers `sdl-renderer`, its default (SDL's 2D renderer,
+tier 0), and `sdl-gpu` (SDL_GPU on Direct3D 12, Vulkan or Metal, tier 1: custom shaders, depth and
+[the 3D path](rendering.md#the-3d-path)); a profile lists what it offers in `PlatformProfile.GraphicsDevices`. A game
+that needs tier 1 sets `Graphics = new GraphicsSettings { Device = "sdl-gpu" }` in its `GameSettings`. A platform that
+does not offer the named device refuses to start (the launcher then tries the next one and says why), and `sdl-gpu`
+where SDL_GPU cannot start stops with the reason: a game never runs on another device than the one it asked for. On
+`sdl-gpu`, VSync is chosen when the window opens (`SetVSync` cannot change it) and on-screen touch controls are not
+drawn.
+
 ## Replacing a part
 
 A profile says which parts a host may supply itself. The official profiles allow the **audio device** and **extra

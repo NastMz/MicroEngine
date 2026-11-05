@@ -263,11 +263,11 @@ jobs:
           { vulkaninfo --summary 2>&1 || true; } | grep -E 'apiVersion|deviceType|deviceName|driverName|driverInfo' | tee -a gpu-tests.log || true
           xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Desktop.Tests -c Release --no-build --filter "TestCategory=Gpu" \
             --logger trx --logger "console;verbosity=detailed" --results-directory test-results | tee -a gpu-tests.log
-          # The 3D slice sample on the same adapter: 45 deterministic frames, the last one captured (kept as an artifact).
-          mkdir -p gpu-captures
-          xvfb-run -a -s "-screen 0 1920x1080x24" dotnet samples/Slice3D/bin/Release/net10.0/Slice3D.dll --frames 45 --hidden \
-            --capture gpu-captures/slice3d-lavapipe.png | tee -a gpu-tests.log
-          { echo '### SDL_GPU adapter (lavapipe)'; echo; echo '```'; grep -m 4 -E 'deviceName|driverName' gpu-tests.log || true; grep -m 2 'sdl-gpu api=' gpu-tests.log || true; grep -m 1 'depth formats:' gpu-tests.log || true; grep -E '^(device|capture):' gpu-tests.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          # The 3D slice game on the same adapter, through the desktop launcher with its sdl-gpu device: a scripted,
+          # deterministic run whose capture is kept as an artifact.
+          (cd samples/Slice3D/bin/Release/net10.0 && xvfb-run -a -s "-screen 0 1920x1080x24" dotnet Slice3D.dll --script slice.script \
+            --hidden --report --captures "$GITHUB_WORKSPACE/gpu-captures") | tee -a gpu-tests.log
+          { echo '### SDL_GPU adapter (lavapipe)'; echo; echo '```'; grep -m 4 -E 'deviceName|driverName' gpu-tests.log || true; grep -m 2 'sdl-gpu api=' gpu-tests.log || true; grep -m 1 'depth formats:' gpu-tests.log || true; grep -E '^(platform|capture):' gpu-tests.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - if: always()
         uses: actions/upload-artifact@v4
         with:

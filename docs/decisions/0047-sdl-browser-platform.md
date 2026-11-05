@@ -1,4 +1,4 @@
-# 0046 — SDL 3 is the browser platform; raylib leaves the web
+# 0047 — SDL 3 is the browser platform; raylib leaves the web
 
 Status: Accepted (2026-11-05). Amends [0007](0007-browser-host.md) and [0008](0008-web-packages.md); amends the browser
 half of [0017](0017-sdl3-native-platform.md) ("raylib for browsers").
@@ -40,6 +40,8 @@ uses.
   `SDL_CreateWindow` and `SDL_GetWindowFlags` through declarations with a plain `ulong` (`SdlWeb`), and registers no
   event watch (its only function-pointer call; a page announces backgrounding through `visibilitychange`). Elsewhere it
   calls SDL3-CS directly. Known issue K-P4-1, not reported upstream.
+- **Pages draw with SDL_Renderer only.** SDL for the web is built without SDL_GPU, so the browser profile offers only
+  the renderer device (`PlatformProfile.GraphicsDevices`); the tier-1 device (0046) stays desktop and phones.
 - **The bindings are trimmed in browser builds.** The web host marks SDL3-CS (and raylib's binding and backend, which a
   game referencing `MicroEngine.Desktop` carries) trimmable, so only the SDL functions the engine calls reach the native
   link.
@@ -66,5 +68,6 @@ uses.
 - Not verified by CI and left to the owner: real phones and tablets, Safari on macOS and iOS (only Chromium with iOS
   user agents is emulated), real gamepads (vendor mappings, rumble), haptics on a real Android browser, high-density
   screens and long sessions.
-- `site/scripts/demos.mjs` still requires `licenses/raylib-LICENSE.txt` in a demo package; packages keep it while
-  they carry raylib's binding (the demos reference `MicroEngine.Desktop`).
+- Web packages keep `licenses/raylib-LICENSE.txt` (beside SDL's) while they carry raylib's binding: the demos reference
+  `MicroEngine.Desktop`, so `Raylib-cs` and `MicroEngine.Raylib` are in the page, trimmed but present, and the site's
+  demo checks require that notice. A game that references only `MicroEngine.Sdl` gets SDL's alone.

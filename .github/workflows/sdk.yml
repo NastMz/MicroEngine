@@ -47,18 +47,19 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
-      # raylib for browser builds, compiled by the pinned web toolchain; MicroEngine.Raylib carries it.
+      # SDL for browser builds (SDL3.a), compiled by the pinned web toolchain; MicroEngine.Sdl carries it and a release
+      # pack (MicroEngineRelease) requires it. The key holds SDL's build inputs, so a cache hit already has it built.
       - name: Toolchain folder
         run: echo "MICROENGINE_WEB_TOOLS=${{ runner.temp }}/web-tools" >> "$GITHUB_ENV"
       - uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/web-tools
-          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh') }}
+          key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'src/MicroEngine.Sdl/native/sdl.env', 'src/MicroEngine.Sdl/native/build.sh') }}
       - run: bash web/setup.sh
       - name: Pack
         id: pack
         run: |
-          dotnet pack MicroEngine.slnx -c Release -o sdk-feed -p:MicroEngineRequireWebRaylib=true -p:MicroEngineRelease=true
+          dotnet pack MicroEngine.slnx -c Release -o sdk-feed -p:MicroEngineRelease=true
           version=$(sed -n 's:.*<MicroEngineVersion>\(.*\)</MicroEngineVersion>.*:\1:p' Directory.Build.props)
           echo "version=$version" >> "$GITHUB_OUTPUT"
           node sdk/tests/packages.mjs sdk-feed | tee -a "$GITHUB_STEP_SUMMARY"

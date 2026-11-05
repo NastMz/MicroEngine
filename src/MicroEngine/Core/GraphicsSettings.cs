@@ -48,6 +48,14 @@ public sealed record GraphicsSettings
     /// system lacks are skipped. Read at start only.
     /// </summary>
     public IReadOnlyList<string> Renderers { get; init; } = [];
+    /// <summary>
+    /// The graphics device to draw with, on platforms that offer more than one (<see cref="PlatformProfile.GraphicsDevices"/>):
+    /// SDL offers "sdl-renderer" (its default, tier 0) and "sdl-gpu" (tier 1: custom shaders, depth, the 3D path). Null
+    /// (the default) keeps the platform's default device. A platform that does not offer the named device refuses to start
+    /// with <see cref="PlatformConfigurationException"/>, and one that offers it but cannot open it here says why; the
+    /// game never runs on another device silently. The launcher's <c>--graphics</c> overrides it. Read at start only.
+    /// </summary>
+    public string? Device { get; init; }
     /// <summary>Whether frames wait for the display's refresh (true by default): no tearing, and frames paced to the display.</summary>
     public bool VSync { get; init; } = true;
     /// <summary>

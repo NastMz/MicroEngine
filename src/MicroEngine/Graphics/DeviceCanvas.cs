@@ -136,6 +136,26 @@ public sealed class DeviceRenderer : IRenderer
     /// <summary>The batcher's counts for the last frame (sprites, draw calls, flushes): exact and the same on every device.</summary>
     public Renderer2DStatistics Statistics => _batcher.Statistics;
 
+    /// <summary>
+    /// The render target this renderer draws into (the canvas, or the UI view's target). Valid only during the frame, between
+    /// <see cref="Begin"/> and <see cref="End"/>: the canvas can be replaced between frames (an expanding presentation
+    /// resizes it), so keep the renderer, not the target. Work submitted to the device into this target between two
+    /// <see cref="Flush"/> calls (a 3D pass) lands between the 2D drawn before and after it.
+    /// </summary>
+    public Dev.RenderTarget Target => _target;
+
+    /// <summary>
+    /// Submits to the device everything this renderer recorded since the frame began or since the last flush (the frame's
+    /// <see cref="Clear"/> included, so a clear always lands before the first flush's other work) and keeps the frame
+    /// open: state, camera and clip stay as they are, and draws recorded after the flush are submitted after anything
+    /// submitted to the device in between. Use it to put device work (a 3D pass into <see cref="Target"/>) between 2D
+    /// draws. Outside a frame it does nothing.
+    /// </summary>
+    public void Flush()
+    {
+        if (_drawing) _batcher.Flush();
+    }
+
     /// <summary>Starts a frame: the canvas keeps its pixels, blending is <see cref="BlendMode.Alpha"/>, no clip, no camera.</summary>
     public void Begin()
     {
