@@ -17,45 +17,63 @@ const download = packaged ? `about ${megabytes(packaged.transfer)}` : '';
 const gameJson = path.join(repoRoot, 'site', 'public', 'play', game.id, 'game.json');
 const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'utf8')).touch === true;
 ---
-<section class="player" data-player data-game={game.id} data-title={game.title} data-src={`/play/${game.id}/`}
+<section class="player media-surface" data-player data-game={game.id} data-title={game.title} data-src={`/play/${game.id}/`}
   data-state={packaged ? 'checking' : 'missing'} data-touch={touch ? 'true' : 'false'} aria-label={`${game.title} player`} style={`--game: var(${game.colorToken})`}>
   <div class="stage" data-stage>
     <Image class="poster" src={game.shots[0].src} alt="" widths={[640, 960, 1440]} sizes="(min-width: 76rem) 72rem, 100vw" loading="eager" />
     <div class="panel" data-panel="checking">
-      <p>Checking this browser…</p>
-      <noscript><p>The demos need JavaScript and WebAssembly. Screenshots and controls are below.</p></noscript>
+      <div class="plate">
+        <p class="legend">Browser check</p>
+        <p>Checking this browser…</p>
+        <noscript><p>The demos need JavaScript and WebAssembly. Screenshots and controls are below.</p></noscript>
+      </div>
     </div>
     <div class="panel" data-panel="desktop">
-      <button type="button" class="button" data-action="load">Play {game.title}</button>
-      <p class="panel-note">Loads the game in this page: {download}. {touch ? 'Keyboard, gamepad or touch.' : 'Keyboard required.'}</p>
+      <div class="plate start">
+        <p class="legend">Web build{download && ` · ${download}`}</p>
+        <button type="button" class="button play" data-action="load"><span class="play-glyph" aria-hidden="true"></span>Play {game.title}</button>
+        <p class="panel-note">Loads the game in this page: {download}. {touch ? 'Keyboard, gamepad or touch.' : 'Keyboard required.'}</p>
+      </div>
     </div>
     <div class="panel" data-panel="unvalidated">
-      <h2 class="panel-title">Made for a keyboard</h2>
-      <p data-reason="touch">This device does not seem to have a keyboard and mouse. This version of the demo has no touch controls and was not tested on phones or tablets.</p>
-      <p data-reason="small-screen">This window is smaller than the demos were tested at.</p>
-      <div class="actions">
-        <a class="button" href="#screenshots">See screenshots</a>
-        <a class="button secondary" href="/docs/">Read the documentation</a>
+      <div class="plate" data-tone="partial">
+        <p class="legend">Not tested on this device</p>
+        <h2 class="panel-title">Made for a keyboard</h2>
+        <p data-reason="touch">This device does not seem to have a keyboard and mouse. This version of the demo has no touch controls and was not tested on phones or tablets.</p>
+        <p data-reason="small-screen">This window is smaller than the demos were tested at.</p>
+        <div class="actions">
+          <a class="button" href="#screenshots">See screenshots</a>
+          <a class="button secondary" href="/docs/">Read the documentation</a>
+        </div>
+        <p class="panel-note">Have a keyboard connected? <button type="button" class="link-button" data-action="load">Try anyway</button> ({download}; the games are made for a keyboard, a gamepad or their on-screen controls).</p>
       </div>
-      <p class="panel-note">Have a keyboard connected? <button type="button" class="link-button" data-action="load">Try anyway</button> ({download}; the games are made for a keyboard, a gamepad or their on-screen controls).</p>
     </div>
     <div class="panel" data-panel="unsupported">
-      <h2 class="panel-title">This browser cannot run the demos</h2>
-      <p>The games need WebAssembly and WebGL, which this browser does not offer. They were verified in Chrome and Firefox on desktop.</p>
-      <div class="actions"><a class="button" href="#screenshots">See screenshots</a></div>
+      <div class="plate" data-tone="no">
+        <p class="legend">Not supported</p>
+        <h2 class="panel-title">This browser cannot run the demos</h2>
+        <p>The games need WebAssembly and WebGL, which this browser does not offer. They were verified in Chrome and Firefox on desktop.</p>
+        <div class="actions"><a class="button" href="#screenshots">See screenshots</a></div>
+      </div>
     </div>
     <div class="panel" data-panel="failed">
-      <h2 class="panel-title">The game stopped</h2>
-      <p data-error-text>Something went wrong while loading or running the game.</p>
-      <pre class="error-detail" data-error-detail hidden></pre>
-      <div class="actions">
-        <button type="button" class="button" data-action="restart">Reload the game</button>
-        <button type="button" class="button secondary" data-action="exit">Close</button>
+      <div class="plate" data-tone="no">
+        <p class="legend">Error</p>
+        <h2 class="panel-title">The game stopped</h2>
+        <p data-error-text>Something went wrong while loading or running the game.</p>
+        <pre class="error-detail" data-error-detail hidden></pre>
+        <div class="actions">
+          <button type="button" class="button" data-action="restart">Reload the game</button>
+          <button type="button" class="button secondary" data-action="exit">Close</button>
+        </div>
       </div>
     </div>
     <div class="panel" data-panel="missing">
-      <h2 class="panel-title">Not included in this build</h2>
-      <p>This copy of the site was built without the web packages. Screenshots and controls are below.</p>
+      <div class="plate">
+        <p class="legend">No web package</p>
+        <h2 class="panel-title">Not included in this build</h2>
+        <p>This copy of the site was built without the web packages. Screenshots and controls are below.</p>
+      </div>
     </div>
   </div>
   <div class="toolbar">
@@ -172,36 +190,70 @@ const touch = fs.existsSync(gameJson) && JSON.parse(fs.readFileSync(gameJson, 'u
 </script>
 
 <style>
-  .player { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-sm); }
-  .stage { position: relative; aspect-ratio: 16 / 9; background: var(--color-paper); border: var(--rule-pixel) solid var(--color-rule);
-    border-top: 4px solid var(--game); overflow: hidden; }
-  .stage:fullscreen { border: 0; aspect-ratio: auto; width: 100vw; height: 100vh; background: black; }
+  /* The player is the demo's own frame, the only place on the page that carries the game's colour: a 2px rule on top,
+     as on a DemoCard. Stage and toolbar are one graphite object in both themes (brand.css sets color-scheme: dark on
+     [data-stage] and .media-surface on the whole player), seated one gap apart on a rule-coloured board. */
+  .player { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--rule-gap); padding: var(--rule-gap);
+    border-top: var(--rule-pixel) solid var(--game); background: var(--color-rule); border-radius: var(--radius-sm); }
+  .stage { position: relative; aspect-ratio: 16 / 9; background: var(--color-paper); overflow: hidden; }
+  .stage:fullscreen { aspect-ratio: auto; width: 100vw; height: 100vh; }
   .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
-  .panel { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
-    gap: var(--space-md); padding: var(--space-lg); text-align: center; background: var(--color-scrim); overflow-y: auto; }
+  .panel { position: absolute; inset: 0; display: none; padding: var(--space-md); background: var(--color-scrim); overflow-y: auto; }
   .player[data-state='checking'] [data-panel='checking'],
   .player[data-state='desktop'] [data-panel='desktop'],
   .player[data-state='unvalidated'] [data-panel='unvalidated'],
   .player[data-state='unsupported'] [data-panel='unsupported'],
   .player[data-state='failed'] [data-panel='failed'],
   .player[data-state='missing'] [data-panel='missing'] { display: flex; }
-  .player[data-state='desktop'] [data-panel='desktop'] { background: linear-gradient(transparent 40%, var(--color-scrim)); justify-content: flex-end; }
-  .panel p { max-width: 36rem; color: var(--color-ink); }
-  .panel-title { font-family: var(--font-display); font-weight: 500; font-size: var(--text-xl); }
-  .panel-note { font-size: var(--text-sm); color: var(--color-ink-2) !important; }
-  .panel .actions { justify-content: center; }
-  .link-button { display: inline; min-height: var(--tap); padding: 0 var(--space-2xs); border: 0; background: none; color: var(--color-accent);
-    font: inherit; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; }
+  /* Before Play the poster stays clear: the start plate is seated in the bottom-left corner, with no scrim. */
+  .player[data-state='desktop'] [data-panel='desktop'] { align-items: flex-end; background: none; }
+
+  /* Each state is a plate, like the label on a module: a mono legend that names the verdict, then the message. The
+     rule on top repeats the verdict in its colour. */
+  .plate { --tone: var(--color-ink-3); display: grid; justify-items: start; align-content: start; gap: var(--space-sm);
+    width: min(100%, 36rem); margin: auto; padding: var(--space-md) var(--space-lg) var(--space-lg);
+    background: var(--color-paper-2); border: var(--rule-thin) solid var(--color-rule);
+    border-top: var(--rule-pixel) solid var(--tone); border-radius: var(--radius-sm); }
+  .plate[data-tone='partial'] { --tone: var(--color-partial); }
+  .plate[data-tone='no'] { --tone: var(--color-no); }
+  .plate.start { --tone: var(--color-accent); width: auto; max-width: min(100%, 30rem); margin: 0;
+    padding: var(--space-sm) var(--space-md) var(--space-md); }
+  .plate p { margin: 0; max-width: 36rem; color: var(--color-ink); }
+  .plate .legend { display: inline-flex; align-items: center; gap: var(--space-xs); font-family: var(--font-mono); font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--tone); }
+  .legend::before { content: ''; flex: none; width: 0.625rem; height: 0.625rem; box-sizing: border-box; border: var(--rule-pixel) solid currentColor; }
+  .plate[data-tone] .legend::before, .start .legend::before { background: currentColor; }
+  .plate:not([data-tone]):not(.start) .legend { color: var(--color-ink-2); }
+  .panel-title { margin: 0; font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--text-xl);
+    line-height: var(--leading-snug); letter-spacing: var(--tracking-display); color: var(--color-ink); }
+  .plate .panel-note { font-size: var(--text-sm); color: var(--color-ink-2); }
+  .button.play { font-size: var(--text-lg); padding-inline: var(--space-lg) var(--space-xl); }
+  /* The play glyph is a triangle drawn with borders in the button's own ink. */
+  .play-glyph { width: 0; height: 0; border-block: 0.4em solid transparent; border-inline-start: 0.62em solid currentColor; }
+  .link-button { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--space-2xs); border: 0; background: none;
+    color: var(--color-accent); font: inherit; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; vertical-align: baseline; }
   .link-button:hover { color: var(--color-accent-strong); }
-  .error-detail { max-width: 100%; max-height: 8rem; overflow: auto; margin: 0; padding: var(--space-xs); text-align: left;
-    font-size: var(--text-xs); color: var(--color-no); background: var(--color-paper); white-space: pre-wrap; }
-  .stage :global(.game-frame) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: black; }
-  .toolbar { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; justify-content: space-between; min-height: var(--tap); }
-  .toolbar .player-status { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-ink-2); }
+  .error-detail { width: 100%; max-height: 8rem; overflow: auto; margin: 0; padding: var(--space-xs); text-align: left;
+    font-size: var(--text-xs); color: var(--color-no); background: var(--color-paper); border: var(--rule-thin) solid var(--color-rule); white-space: pre-wrap; }
+  .error-detail[hidden] { display: none; }
+  .stage :global(.game-frame) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--color-paper); }
+
+  /* The toolbar is the strip under the stage: the status in mono, the controls on the right. */
+  .toolbar { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-sm); align-items: center; justify-content: space-between;
+    min-height: var(--tap); padding: var(--space-2xs) var(--space-sm); background: var(--color-paper-2); }
+  .toolbar .player-status { margin: 0; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-2); }
   .toolbar-actions { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+  .player :focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+  /* On graphite the focus colour is close to the amber fill: a primary button's ring is drawn in ink instead. */
+  .player .button:not(.secondary):focus-visible { outline-color: var(--color-ink); }
   @media (max-width: 40rem) {
     /* On a narrow screen the message panels need more room than a 16:9 box gives them. */
-    .player:not([data-state='desktop']):not([data-state='loading']):not([data-state='ready']):not([data-state='starting']):not([data-state='playing']):not([data-state='ended']) .stage { aspect-ratio: auto; min-height: 22rem; }
-    .panel { justify-content: center; }
+    .player:not([data-state='desktop']):not([data-state='loading']):not([data-state='ready']):not([data-state='starting']):not([data-state='playing']):not([data-state='ended']) .stage { aspect-ratio: auto; min-height: 26rem; }
+    .panel { padding: var(--space-sm); }
+    .plate { padding: var(--space-sm) var(--space-md) var(--space-md); }
+    /* The start plate must fit the 16:9 poster: the legend already gives the size, so the note waits for wider screens. */
+    .plate.start { max-width: 100%; gap: var(--space-xs); padding: var(--space-xs) var(--space-sm) var(--space-sm); }
+    .plate.start .panel-note { display: none; }
+    .button.play { font-size: var(--text-md); }
   }
 </style>

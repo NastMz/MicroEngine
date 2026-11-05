@@ -60,7 +60,7 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
 |---|---|---|---|---|
 | T1 | S1-S3, S6, S9 | Art direction doc, tokens, type, mark and logo set (explored variants, 16 px test), family icons, favicon, OG image | delegated (context backstop) | done, branch `feat/site-redesign-t1-brand` (PR into `feat/site-redesign`) |
 | T2 | S3-S6 | Site shell (header, nav, footer) and landing narrative with the socket-board illustrations | delegated | done, branch `feat/site-redesign-t2-landing` (PR into `feat/site-redesign`) |
-| T3 | S3, S5, S7 | Demo index and demo pages, player integration | delegated, parallel with T4/T5 | pending |
+| T3 | S3, S5, S7 | Demo index and demo pages, player integration | delegated, parallel with T4/T5 | done, branch `feat/site-redesign-t3-demos` (PR into `feat/site-redesign`) |
 | T4 | S3, S5, S7 | Starlight docs theme, code blocks, docs header; platforms, roadmap, 404 pages | delegated, parallel with T3/T5 | done, branch `feat/site-redesign-t4-docs` (PR into `feat/site-redesign`) |
 | T5 | S1, S4, S10 | Content truth: stale claims in site data and public docs against `main` | delegated, parallel with T3/T4 | done, branch `feat/site-redesign-t5-content` (PR into `feat/site-redesign`) |
 | T6 | S7-S9 | Browser, visual, responsive and accessibility checks; creative rationale; PR to `main` | delegated + architect review | pending |
@@ -283,3 +283,19 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
   complete); `npm test` 56/56; snippets 104; contrast 198/198; `node tests/browser.mjs --browsers chrome --suites
   layout` all checks passed (diagrams themed). Screenshots of every changed page, light and dark, at 1280/768/375 and
   320 for platforms and roadmap: no horizontal overflow.
+- L8 (2026-11-05): T3 demos and players. `/demos/` presents the games as proof ("Proof, built with MicroEngine"): T2's
+  `DemoCard` under a rail, each with family markers of the engine features its code calls
+  (`src/components/demos/exercises.mjs` + `Exercises.astro`: saves and achievements, tile maps, particles, tile
+  collision, synthesized sound, sound files, input actions, touch controls). Each marker carries the C# patterns that
+  must appear in `games/<Id>`; a new `npm test` case fails when one stops matching (RED observed by adding tile
+  collision to Trail Duel, which moves on a grid). Lede fixed: keyboard, gamepad or touch; tested in Chrome and Firefox
+  on desktop and on emulated phones and tablets; the Starlight description says "desktop and mobile browsers". Demo
+  pages: header with the markers linked to the manual; the player is the game-coloured frame (with the numbered
+  screenshots and the other demos' cards); downloads as modules with the visitor's system in amber; parts under rails
+  like the platforms page. Player: one graphite object in both themes, start plate over a clear poster (no gradient),
+  state panels as verdict plates, ink focus ring on amber buttons; behaviour unchanged (same script, selectors,
+  states, origin checks). Checks: `SITE_DEMOS=none npm run build` (check-dist complete), `npm test` 59/59, snippets
+  104, contrast 198/198. Browser suites (layout, play, touch; Chrome and Firefox) on a build with the v0.4.0 release
+  packages, mirrored from the public release into a local folder store without a token, download URLs set to the
+  public release addresses: 985 ok, 9 failed, all `firefox phone /docs/*: controls at least 24px — SearchCtrlK` (the
+  docs search button, not touched by T3); every demo, play and touch check passed.

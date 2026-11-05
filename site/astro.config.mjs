@@ -35,7 +35,7 @@ export default defineConfig({
     }),
     starlight({
       title: 'MicroEngine',
-      description: 'A compact, code-first 2D game engine for C#/.NET, with four complete pixel-art games that also run in desktop browsers.',
+      description: 'A compact, code-first 2D game engine for C#/.NET, with four complete pixel-art games that also run in desktop and mobile browsers.',
       // The header renders DocsSiteTitle (the lockup); these files stand in wherever Starlight draws its own logo.
       logo: { light: './src/assets/brand/mark-light.svg', dark: './src/assets/brand/mark-dark.svg', alt: '' },
       customCss: ['./src/styles/fonts.css', './src/styles/tokens.css', './src/styles/brand.css', './src/styles/starlight.css'],
