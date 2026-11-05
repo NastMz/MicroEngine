@@ -79,7 +79,9 @@ public sealed class TierOneGameTests
         public override void DrawUi(IRenderer ui)
         {
             ui.FillRect(new RectF(4, 4, 10, 10), new MicroEngine.Color(255, 255, 0));
-            var view = (DeviceRenderer)ui;
+            // The engine hands the scene a view of the UI renderer; the platform's canvas holds the renderer itself.
+            Assert.IsTrue(Game.TryGetCapability<IScreenView>(out var screen));
+            var view = ((Sdl.SdlPlatform)screen).Canvas.UiRenderer!;
             view.Flush();
             UiSize = (view.Target.Width, view.Target.Height);
             Ui = ReadBack(view.Target);
