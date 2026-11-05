@@ -242,16 +242,22 @@ internal sealed partial class OverworldScene
 
     private bool AnyDirectionHeld() => Input.Down("up") || Input.Down("down") || Input.Down("left") || Input.Down("right");
 
+    /// <summary>The shrine's altar columns, where the heal glow rises.</summary>
+    private static readonly int[] AltarColumns = [3, 7];
+    // Effect colours parsed once instead of every frame.
+    private static readonly Color HealGlowColor = Color.Hex("f8a0c0").WithAlpha(0.35f), CanopyShade = Color.Hex("b4ccb4"),
+        LightShaft = Color.Hex("fff4c0").WithAlpha(0.012f);
+
     private void DrawHealGlow(IRenderer r)
     {
         // Light rises from the altars while the jingle plays.
         float t = _healGlow;
         r.SetBlendMode(BlendMode.Additive);
-        foreach (int ax in new[] { 3, 7 })
+        foreach (int ax in AltarColumns)
         {
             var c = new Vector2(ax * Tile + 8, 2 * Tile - 2);
             float pulse = 0.5f + 0.5f * MathF.Sin(t * 9);
-            r.FillCircle(c, 6 + pulse * 4, Color.Hex("f8a0c0").WithAlpha(0.35f));
+            r.FillCircle(c, 6 + pulse * 4, HealGlowColor);
             for (int i = 0; i < 4; i++)
             {
                 float rise = (t * 30 + i * 9) % 30;
@@ -267,13 +273,13 @@ internal sealed partial class OverworldScene
         {
             // Canopy shade and slow-drifting shafts of light give the wood its own mood.
             r.SetBlendMode(BlendMode.Multiply);
-            r.FillRect(TrailDuelGame.Canvas, Color.Hex("b4ccb4"));
+            r.FillRect(TrailDuelGame.Canvas, CanopyShade);
             r.SetBlendMode(BlendMode.Additive);
             for (int i = 0; i < 3; i++)
             {
                 float x = (i * 130 + Age * 4) % 420 - 80;
                 for (int s = 0; s < 12; s++)
-                    r.FillTriangle(new Vector2(x + s * 2, 0), new Vector2(x + s * 2 + 30, 0), new Vector2(x + s * 2 + 70, TrailDuelGame.CanvasHeight), Color.Hex("fff4c0").WithAlpha(0.012f));
+                    r.FillTriangle(new Vector2(x + s * 2, 0), new Vector2(x + s * 2 + 30, 0), new Vector2(x + s * 2 + 70, TrailDuelGame.CanvasHeight), LightShaft);
             }
             r.SetBlendMode(BlendMode.Alpha);
         }

@@ -62,7 +62,12 @@ internal static class UiKit
     public static void Cursor(IRenderer r, BitmapFont font, float x, float y, float time)
         => font.Draw(r, "▶", new Vector2(MathF.Round(x + MathX.Wave(time, 2.5f, 1f)), MathF.Round(y)), Accent);
 
-    public static Color HpColor(float fraction) => fraction > 0.5f ? Color.Hex("58c060") : fraction > 0.2f ? Color.Hex("f2c038") : Color.Hex("e8504a");
+    // Bar and badge colours parsed once: they are drawn many times a frame.
+    private static readonly Color HpHigh = Color.Hex("58c060"), HpMid = Color.Hex("f2c038"), HpLow = Color.Hex("e8504a"),
+        BarTrack = Color.Hex("5a5068"), XpFill = Color.Hex("58b0f0"),
+        Burn = Color.Hex("e8603a"), Poison = Color.Hex("a85ac8"), Sleep = Color.Hex("8a8aa8");
+
+    public static Color HpColor(float fraction) => fraction > 0.5f ? HpHigh : fraction > 0.2f ? HpMid : HpLow;
 
     /// <summary>A segmented HP bar with an "HP" label plate.</summary>
     public static void HpBar(IRenderer r, BitmapFont font, float x, float y, float width, float fraction)
@@ -71,7 +76,7 @@ internal static class UiKit
         r.FillRect(new RectF(x, y, 15, 7), Border);
         font.Draw(r, "HP", new Vector2(x + 2, y), Pal.Gold);
         r.FillRect(new RectF(x + 14, y, width + 2, 7), Border);
-        r.FillRect(new RectF(x + 15, y + 1, width, 5), Color.Hex("5a5068"));
+        r.FillRect(new RectF(x + 15, y + 1, width, 5), BarTrack);
         float fill = MathF.Round(width * fraction);
         if (fraction > 0) fill = MathF.Max(1, fill);
         var c = HpColor(fraction);
@@ -83,8 +88,8 @@ internal static class UiKit
     public static void XpBar(IRenderer r, float x, float y, float width, float fraction)
     {
         r.FillRect(new RectF(x, y, width + 2, 4), Border);
-        r.FillRect(new RectF(x + 1, y + 1, width, 2), Color.Hex("5a5068"));
-        r.FillRect(new RectF(x + 1, y + 1, MathF.Round(width * Math.Clamp(fraction, 0, 1)), 2), Color.Hex("58b0f0"));
+        r.FillRect(new RectF(x + 1, y + 1, width, 2), BarTrack);
+        r.FillRect(new RectF(x + 1, y + 1, MathF.Round(width * Math.Clamp(fraction, 0, 1)), 2), XpFill);
     }
 
     /// <summary>A small coloured type tag, e.g. FLAME.</summary>
@@ -105,9 +110,9 @@ internal static class UiKit
         if (status == StatusCondition.None) return;
         var (label, color) = status switch
         {
-            StatusCondition.Burn => ("BRN", Color.Hex("e8603a")),
-            StatusCondition.Poison => ("PSN", Color.Hex("a85ac8")),
-            _ => ("SLP", Color.Hex("8a8aa8")),
+            StatusCondition.Burn => ("BRN", Burn),
+            StatusCondition.Poison => ("PSN", Poison),
+            _ => ("SLP", Sleep),
         };
         r.FillRect(new RectF(x, y, 19, 9), color.Shade(0.6f));
         r.FillRect(new RectF(x + 1, y + 1, 17, 7), color);

@@ -252,6 +252,9 @@ internal sealed partial class OverworldScene
 
     private float _healGlow = -1;
 
+    /// <summary>Seconds into the shrine's heal glow, or -1 when it is not showing (tests set it to draw the glow).</summary>
+    internal float HealGlow { get => _healGlow; set => _healGlow = value; }
+
     private IEnumerator ClerkTalk(NpcDef def)
     {
         yield return Say("Welcome to the Trail Shop! Take a look.", def.Speaker);

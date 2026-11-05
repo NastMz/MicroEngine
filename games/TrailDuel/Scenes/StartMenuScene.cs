@@ -107,9 +107,33 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
 /// <summary>Key bindings reference.</summary>
 internal sealed class ControlsScene : Scene
 {
+    // The rows and the description column, laid out again only when the prompts change (another device).
+    private readonly List<(string Key, string What)> _rows = [];
+    private int _rowsVersion;
+    private float _whatOffset;
+
     public override void Update(float dt)
     {
         if (Input.Pressed("cancel") || Input.Pressed("confirm") || Input.Pressed("pause")) { Audio.Play("cancel", 0.7f); Game.Scenes.Pop(); }
+    }
+
+    /// <summary>The controls of the device being played: keys, a gamepad's buttons, or the on-screen controls.</summary>
+    private void LayOutRows()
+    {
+        var p = Game.Prompts;
+        if (_rows.Count > 0 && _rowsVersion == p.Version) return;
+        _rowsVersion = p.Version;
+        _rows.Clear();
+        _rows.Add((p.Directions(separator: " / "), "Walk, move cursor"));
+        _rows.Add((p.TextAll("confirm"), "Confirm, talk, read"));
+        _rows.Add((p.TextAll("cancel"), "Back. Hold to run"));
+        _rows.Add((p.TextAll("pause"), "Open the menu"));
+        if (p.Device == InputDevice.Keyboard) _rows.Add(("F11", "Toggle fullscreen"));
+        _rows.Add(("Tap a direction", "Turn in place"));
+        _rows.Add((p.TextAll("action"), "Move details in battle"));
+        if (p.Device == InputDevice.Touch) _rows.Add(("Keyboard, gamepad", "Work too"));
+        // The description column starts after the widest key text, so long key lists never run into it.
+        _whatOffset = Math.Max(106, _rows.Max(row => Font.MeasureWidth(row.Key)) + 12);
     }
 
     public override void Draw(IRenderer r)
@@ -118,27 +142,13 @@ internal sealed class ControlsScene : Scene
         var box = new RectF(30, 18, 260, 144);
         UiKit.Box(r, box);
         UiKit.Text(r, Font, "CONTROLS", box.X + 12, box.Y + 10, Pal.Coral);
-        // The controls of the device being played: keys, a gamepad's buttons, or the on-screen controls.
-        var p = Game.Prompts;
-        var device = p.Device;
-        var rows = new List<(string Key, string What)>
-        {
-            (p.Directions(separator: " / "), "Walk, move cursor"),
-            (p.TextAll("confirm"), "Confirm, talk, read"),
-            (p.TextAll("cancel"), "Back. Hold to run"),
-            (p.TextAll("pause"), "Open the menu"),
-        };
-        if (device == InputDevice.Keyboard) rows.Add(("F11", "Toggle fullscreen"));
-        rows.Add(("Tap a direction", "Turn in place"));
-        rows.Add((p.TextAll("action"), "Move details in battle"));
-        if (device == InputDevice.Touch) rows.Add(("Keyboard, gamepad", "Work too"));
-        // The description column starts after the widest key text, so long key lists never run into it.
-        float what = box.X + 14 + Math.Max(106, rows.Max(row => Font.MeasureWidth(row.Key)) + 12);
-        for (int i = 0; i < rows.Count; i++)
+        LayOutRows();
+        float what = box.X + 14 + _whatOffset;
+        for (int i = 0; i < _rows.Count; i++)
         {
             float y = box.Y + 28 + i * 16;
-            UiKit.Text(r, Font, rows[i].Key, box.X + 14, y);
-            UiKit.Text(r, Font, rows[i].What, what, y, UiKit.Muted);
+            UiKit.Text(r, Font, _rows[i].Key, box.X + 14, y);
+            UiKit.Text(r, Font, _rows[i].What, what, y, UiKit.Muted);
         }
     }
 }
