@@ -24,6 +24,10 @@ namespace MicroEngine.Physics.Tiles;
 /// move starts do not block it.</para>
 /// <para>Deterministic: the same calls give the same results on every target (managed code with no threads). The world
 /// takes part in the per-step state hash (<see cref="IStateHashed"/>).</para>
+/// <para>A broad phase keeps moves, queries and sensors from looking at every shape: box shapes are filed in a grid of
+/// <see cref="DefaultCellSize"/>-unit cells, and each operation looks only at the shapes in the cells it reaches (tile
+/// grids are always looked at). It changes the work, never a result: candidates are taken in creation-slot order, the
+/// order of a full scan.</para>
 /// </remarks>
 public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
 {
@@ -32,6 +36,12 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
 
     /// <summary>The distance within which a surface counts as touching a box at the end of a move (the ground probe).</summary>
     public const float ContactDistance = 0.01f;
+
+    /// <summary>The side of the broad phase's cells, in world units (four 16-pixel tiles).</summary>
+    public const float DefaultCellSize = 64;
+
+    /// <summary>How far beyond what a move sweeps the broad phase looks: more than every reach of the mover (the ground probe, the sweep's rounding allowance, the one-way slack).</summary>
+    private const float BroadPhaseMargin = 0.1f;
 
     private const string Name = "tiles";
 
@@ -82,6 +92,21 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
     private readonly List<BoxObstacle> _boxes = [];
     private readonly List<int> _touching = [];
     private readonly List<MoveContact> _contacts = [];
+    private readonly ShapeGrid _broad;
+    private readonly bool _fullScan;
+    private readonly List<int> _gridSlots = []; // live tile-grid shapes, ascending slot order
+    private readonly List<int> _candidates = [];
+
+    /// <summary>Creates an empty world.</summary>
+    public TilePhysicsWorld2D() : this(DefaultCellSize, fullScan: false) { }
+
+    /// <summary>A world whose broad phase has cells of <paramref name="cellSize"/> units, or none (every operation scans every shape).</summary>
+    internal TilePhysicsWorld2D(float cellSize, bool fullScan)
+    {
+        if (!(cellSize > 0 && float.IsFinite(cellSize))) throw new ArgumentOutOfRangeException(nameof(cellSize), cellSize, "The cell size must be positive and finite.");
+        _broad = new ShapeGrid(cellSize);
+        _fullScan = fullScan;
+    }
 
     /// <inheritdoc/>
     public string Backend => Name;
@@ -163,7 +188,9 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
     public void SetPosition(BodyId body, Vector2 position)
     {
         if (!float.IsFinite(position.X) || !float.IsFinite(position.Y)) throw new ArgumentOutOfRangeException(nameof(position), position, "The position must be finite.");
-        Resolve(body).Position = position;
+        var b = Resolve(body);
+        b.Position = position;
+        Refile(b);
     }
 
     /// <summary>Always throws: this backend has no dynamic bodies.</summary>
@@ -219,6 +246,12 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         s.Description = description;
         s.Grid = grid;
         b.Shapes.Add(slot);
+        if (grid is not null)
+        {
+            int at = _gridSlots.BinarySearch(slot);
+            _gridSlots.Insert(at < 0 ? ~at : at, slot);
+        }
+        else _broad.Update(slot, BoxOf(b.Position, description));
         return new ShapeId((uint)slot, s.Generation);
     }
 
@@ -233,10 +266,46 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
     private void KillShape(int slot)
     {
         var s = _shapeSlots[slot];
+        if (s.Grid is not null) _gridSlots.Remove(slot);
+        else _broad.Remove(slot);
         s.Alive = false;
         s.Grid = null;
         _freeShapes.Push(slot);
     }
+
+    /// <summary>Refiles the box shapes of a body that moved.</summary>
+    private void Refile(Body b)
+    {
+        foreach (int s in b.Shapes)
+        {
+            var shape = _shapeSlots[s];
+            if (shape.Grid is null) _broad.Update(s, BoxOf(b.Position, shape.Description));
+        }
+    }
+
+    /// <summary>
+    /// The shape slots an operation over <paramref name="area"/> may concern, in ascending slot order: every slot for a
+    /// full scan, else the tile grids and the box shapes filed in the cells the area reaches. Valid until the next call.
+    /// </summary>
+    private List<int> Candidates(in RectF area)
+    {
+        _candidates.Clear();
+        if (_fullScan)
+        {
+            for (int i = 0; i < _shapeSlots.Count; i++) _candidates.Add(i);
+            return _candidates;
+        }
+        var boxes = _broad.Query(area);
+        int g = 0, k = 0;
+        while (g < _gridSlots.Count || k < boxes.Count)
+        {
+            if (k == boxes.Count || (g < _gridSlots.Count && _gridSlots[g] < boxes[k])) _candidates.Add(_gridSlots[g++]);
+            else _candidates.Add(boxes[k++]);
+        }
+        return _candidates;
+    }
+
+    private static RectF Grow(RectF r, float by) => new(r.X - by, r.Y - by, r.Width + 2 * by, r.Height + 2 * by);
 
     /// <inheritdoc/>
     public bool IsAlive(ShapeId shape) =>
@@ -290,7 +359,9 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
     private MoveResult Slide(int bodySlot, Body b, int mover, Vector2 delta, in QueryFilter filter, int exclude)
     {
         var description = _shapeSlots[mover].Description;
-        Gather(bodySlot, filter, exclude);
+        var start = BoxOf(b.Position, description);
+        var reach = TileSweep.Union(TileSweep.Union(start, start.Offset(delta.X, 0)), start.Offset(delta.X, delta.Y));
+        Gather(bodySlot, filter, exclude, Grow(reach, BroadPhaseMargin));
         var grids = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_grids);
         var boxes = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_boxes);
         bool passOneWay = filter.PassOneWay;
@@ -323,6 +394,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
 
         var moved = position - b.Position;
         b.Position = position;
+        Refile(b);
         return new MoveResult(position, moved, Up, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_contacts));
     }
 
@@ -341,12 +413,12 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         _contacts.Add(new MoveContact(id, _bodySlots[_shapeSlots[shapeSlot].Body].Owner, normal));
     }
 
-    /// <summary>The non-sensor shapes of other bodies <paramref name="filter"/> accepts, as obstacles.</summary>
-    private void Gather(int bodySlot, in QueryFilter filter, int exclude)
+    /// <summary>The non-sensor shapes of other bodies <paramref name="filter"/> accepts that may reach <paramref name="area"/>, as obstacles.</summary>
+    private void Gather(int bodySlot, in QueryFilter filter, int exclude, in RectF area)
     {
         _grids.Clear();
         _boxes.Clear();
-        for (int i = 0; i < _shapeSlots.Count; i++)
+        foreach (int i in Candidates(area))
         {
             var s = _shapeSlots[i];
             if (!s.Alive || s.Body == bodySlot || s.Body == exclude || s.Description.IsSensor) continue;
@@ -377,6 +449,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
                     (riders ??= []).Add(other);
             }
             b.Position += horizontal ? new Vector2(d, 0) : new Vector2(0, d);
+            Refile(b);
             var after = BoxOf(b.Position, description);
             var swept = TileSweep.Union(before, after);
             for (int i = 0; i < _liveCount; i++)
@@ -433,7 +506,8 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
         hit = default;
         bool found = false;
         var dir = to - from;
-        for (int i = 0; i < _shapeSlots.Count; i++)
+        var span = new RectF(MathF.Min(from.X, to.X), MathF.Min(from.Y, to.Y), MathF.Abs(dir.X), MathF.Abs(dir.Y));
+        foreach (int i in Candidates(Grow(span, BroadPhaseMargin)))
         {
             var s = _shapeSlots[i];
             if (!s.Alive || (s.Description.IsSensor && !filter.IncludeSensors)) continue;
@@ -453,7 +527,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
     public int Overlap(in RectF area, in QueryFilter filter, Span<ShapeId> results)
     {
         int count = 0;
-        for (int i = 0; i < _shapeSlots.Count; i++)
+        foreach (int i in Candidates(Grow(area, BroadPhaseMargin)))
         {
             var s = _shapeSlots[i];
             if (!s.Alive || (s.Description.IsSensor && !filter.IncludeSensors)) continue;
@@ -497,7 +571,7 @@ public sealed class TilePhysicsWorld2D : IPhysicsWorld2D, IStateHashed
             if (!sensor.Alive || !sensor.Description.IsSensor) continue;
             var sensorBody = _bodySlots[sensor.Body];
             var sensorBox = BoxOf(sensorBody.Position, sensor.Description);
-            for (int vi = 0; vi < _shapeSlots.Count; vi++)
+            foreach (int vi in Candidates(Grow(sensorBox, BroadPhaseMargin)))
             {
                 var visitor = _shapeSlots[vi];
                 if (!visitor.Alive || visitor.Description.IsSensor || !visitor.Description.SensorEvents || visitor.Grid is not null || visitor.Body == sensor.Body) continue;

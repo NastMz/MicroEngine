@@ -190,7 +190,8 @@ calling `spriteFor(id, x, y)` for each non-empty cell; return `null` to skip one
 
 `TileMotion.Move` checks only the cells the box sweeps at each sub-step: a handful of lookups per moving object.
 `TileRenderer` touches only visible cells, so a large map costs what the screen shows. Both are fine for hundreds of
-moving objects per step.
+moving objects per step. A `TilePhysicsWorld2D` files its box shapes in a grid of 64-unit cells, so a move, a query or
+a sensor looks only at the shapes near it; the results are the same as looking at every shape.
 
 ## Limits
 
