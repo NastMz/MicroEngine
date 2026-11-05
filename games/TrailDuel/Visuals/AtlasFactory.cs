@@ -42,10 +42,10 @@ internal static class AtlasFactory
         FxArt.AddAll(b, image);
         foreach (var map in Maps.Every)
         {
-            b.Add($"ground:{map.Id}", GroundArt.Build(map));
+            b.Add($"ground:{map.Id}", map.Indoor ? GroundArt.Build(map) : Village.Grade(GroundArt.Build(map)));
             for (int i = 0; i < map.Buildings.Count; i++)
             {
-                b.Add($"bld:{map.Id}:{i}", BuildingArt.Build(village, map.Buildings[i]));
+                b.Add($"bld:{map.Id}:{i}", Village.Grade(BuildingArt.Build(village, map.Buildings[i])));
             }
         }
         return new GameArt(b.Build(device), heights);

@@ -20,24 +20,24 @@ internal static partial class TileArt
 
     public static void AddAll(SpriteAtlasBuilder b, Village v)
     {
-        for (int i = 0; i < 4; i++) b.Add($"t:grass{i}", Grass(v, i));
+        for (int i = 0; i < 4; i++) Add(b, $"t:grass{i}", Grass(v, i));
         for (int k = 0; k < FlowerKinds; k++)
-        for (int f = 0; f < FlowerFrames; f++) b.Add($"t:flowers{k * FlowerFrames + f}", Flowers(v, k, f));
-        for (int f = 0; f < 2; f++) b.Add($"t:tall{f}", TallGrass(f, overlay: false));
-        b.Add("t:tallover", TallGrass(0, overlay: true));
-        for (int f = 0; f < 3; f++) b.Add($"t:rustle{f}", Rustle(f));
-        for (int m = 0; m < 16; m++) b.Add($"t:path{m}", PathTile(v, m));
+        for (int f = 0; f < FlowerFrames; f++) Add(b, $"t:flowers{k * FlowerFrames + f}", Flowers(v, k, f));
+        for (int f = 0; f < 2; f++) Add(b, $"t:tall{f}", TallGrass(f, overlay: false));
+        Add(b, "t:tallover", TallGrass(0, overlay: true));
+        for (int f = 0; f < 3; f++) Add(b, $"t:rustle{f}", Rustle(f));
+        for (int m = 0; m < 16; m++) Add(b, $"t:path{m}", PathTile(v, m));
         var profiles = new ShoreProfiles(v);
         for (int m = 0; m < 16; m++)
-        for (int f = 0; f < WaterFrames; f++) b.Add($"t:water{m}_{f}", WaterTile(v, m, f));
-        for (int c = 0; c < 4; c++) b.Add($"t:waterin{c}", WaterInnerCorner(profiles, c));
+        for (int f = 0; f < WaterFrames; f++) Add(b, $"t:water{m}_{f}", WaterTile(v, m, f));
+        for (int c = 0; c < 4; c++) Add(b, $"t:waterin{c}", WaterInnerCorner(profiles, c));
         TreeArt.AddAll(b, v);
-        for (int m = 0; m < 4; m++) b.Add($"t:fence{m}", Fence(m));
-        for (int m = 0; m < 4; m++) b.Add($"t:ledge{m}", Ledge(v, m));
+        for (int m = 0; m < 4; m++) Add(b, $"t:fence{m}", Fence(m));
+        for (int m = 0; m < 4; m++) Add(b, $"t:ledge{m}", Ledge(v, m));
         // A grey boulder, the round bush and the plain signpost of the pack, each cut along its outline.
-        b.Add("t:rock", OnTile(v.Piece(18, 242, 13, 12, 6, 6), 1));
-        b.Add("t:bush", OnTile(v.Piece(113, 194, 14, 14, 7, 7), 0));
-        b.Add("t:sign", OnTile(v.Piece(129, 209, 14, 15, 7, 4), 0));
+        Add(b, "t:rock", OnTile(v.Piece(18, 242, 13, 12, 6, 6), 1));
+        Add(b, "t:bush", OnTile(v.Piece(113, 194, 14, 14, 7, 7), 0));
+        Add(b, "t:sign", OnTile(v.Piece(129, 209, 14, 15, 7, 4), 0));
         b.Add("t:shadow", Shadow());
         // Interiors
         for (int i = 0; i < 2; i++) b.Add($"t:floor{i}", Floor(i));
@@ -62,6 +62,9 @@ internal static partial class TileArt
         b.Add("t:statue", Statue(), new Vector2(0, 12));
         b.Add("t:rug", Rug());
     }
+
+    /// <summary>Adds an outdoor sprite in the overworld's grade (<see cref="Village.Grade(PixelImage)"/>).</summary>
+    private static void Add(SpriteAtlasBuilder b, string key, PixelImage img) => b.Add(key, Village.Grade(img));
 
     private static PixelImage New() => new(T, T);
 

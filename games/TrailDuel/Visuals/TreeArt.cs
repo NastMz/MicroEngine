@@ -30,8 +30,8 @@ internal static class TreeArt
             for (int f = 0; f < 2; f++)
             {
                 int variant = c * 2 + f;
-                var t = f == 0 ? tall[c] : tall[c].FlipX();
-                var l = f == 0 ? lowC : lowC.FlipX();
+                var t = Village.Grade(f == 0 ? tall[c] : tall[c].FlipX());
+                var l = Village.Grade(f == 0 ? lowC : lowC.FlipX());
                 // The trunk's foot (row 35 of the piece) stands on the tile's bottom row.
                 b.Add(TreeLayout.TallKey(variant, 0), t, new Vector2(8, TallRise));
                 b.Add(TreeLayout.TallKey(variant, -1), t, new Vector2(16, TallRise));

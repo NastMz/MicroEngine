@@ -87,6 +87,26 @@ internal sealed class Village
         return map;
     }
 
+    /// <summary>
+    /// The overworld's colour grade, applied once at load to every outdoor sprite: the pack's bright pastel tones are
+    /// pulled toward the deeper, warmer tones of the game's own art (a little less saturation, and brights darkened
+    /// more than darks, so outlines keep their weight). Costs nothing per frame.
+    /// </summary>
+    public static Color Grade(Color c)
+    {
+        if (c.A == 0) return c;
+        float r = c.R / 255f, g = c.G / 255f, b = c.B / 255f;
+        float lum = r * 0.3f + g * 0.59f + b * 0.11f;
+        float k = 0.94f - 0.14f * lum;
+        r = (r + (lum - r) * 0.14f) * k * 1.01f;
+        g = (g + (lum - g) * 0.14f) * k;
+        b = (b + (lum - b) * 0.14f) * k * 0.96f;
+        static byte B(float v) => (byte)Math.Clamp(MathF.Round(v * 255), 0, 255);
+        return new Color(B(r), B(g), B(b), c.A);
+    }
+
+    public static PixelImage Grade(PixelImage img) => img.Clone().Map((_, _, c) => Grade(c));
+
     public static PixelImage Recolour(PixelImage img, IReadOnlyDictionary<Color, Color> map)
         => img.Clone().Map((_, _, c) => c.A > 0 && map.TryGetValue(c, out var to) ? to : c);
 

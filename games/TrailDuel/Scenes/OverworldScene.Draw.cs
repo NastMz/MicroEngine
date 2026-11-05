@@ -250,7 +250,7 @@ internal sealed partial class OverworldScene
     /// <summary>The shrine's altar columns, where the heal glow rises.</summary>
     private static readonly int[] AltarColumns = [3, 7];
     // Effect colours parsed once instead of every frame.
-    private static readonly Color HealGlowColor = Color.Hex("f8a0c0").WithAlpha(0.35f), CanopyShade = Color.Hex("b4ccb4"),
+    private static readonly Color HealGlowColor = Color.Hex("f8a0c0").WithAlpha(0.35f), CanopyShade = Color.Hex("cfebd6"),
         LightShaft = Color.Hex("fff4c0").WithAlpha(0.012f);
 
     private void DrawHealGlow(IRenderer r)

@@ -83,9 +83,10 @@ time (`Visuals/FxArt.cs`); jingles are registered in `Sound/MusicBank.cs`.
 
 The two files are unedited copies of the pack's; the game changes them only at load, in memory
 (`Visuals/Village.cs`, `TileArt.cs`, `TreeArt.cs`, `BuildingArt.cs`): pieces are cut along their outlines, the
-small tree is recoloured to the other trees' palettes, the wave loop is softened, path and pond tiles are assembled
+small tree is recoloured to the other trees' palettes, one house's roof is turned to plum, the wave loop is softened, path and pond tiles are assembled
 from the pack's edge strips and corners, and the lab, shrine, shop and hall facades are built by stretching and
-recolouring the pack's flat-roofed house and adding a porch roof and an emblem.
+recolouring the pack's flat-roofed house and adding an emblem. Every outdoor piece is then colour-graded to darker,
+less saturated tones.
 
 | File | Original in the pack |
 | --- | --- |

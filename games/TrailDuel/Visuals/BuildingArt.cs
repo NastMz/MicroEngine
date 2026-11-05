@@ -4,14 +4,17 @@ using TrailDuel.World;
 
 namespace TrailDuel.Visuals;
 
-public enum BuildingStyle { House, HouseBlue, Lab, Shrine, Shop, Hall, HouseGreen }
+/// <summary>
+/// A building's drawing: homes by roof colour (red, blue, green, plum), and the lab, shrine, shop and hall.
+/// </summary>
+public enum BuildingStyle { House, HouseBlue, Lab, Shrine, Shop, Hall, HouseGreen, HousePlum }
 
 /// <summary>
 /// Buildings fitted to their tile footprint, never reaching above it, so a roof never hides someone walking behind.
-/// Homes are the pack's houses (red, green or blue roofs; a gabled or flat-roofed shape by footprint), placed so their
-/// door stands on the footprint's door tile. The lab, shrine, shop and hall have no drawing in the pack: their facades
-/// are assembled from the pack's flat-roofed house (its roof, plank walls, foundation, door bay, windows and steps),
-/// stretched to the footprint, recoloured, and given a porch roof and an emblem in code.
+/// Homes are the pack's gabled house (wide or small by footprint) with a roof colour per house, placed so the door
+/// stands on the footprint's door tile. The lab, shrine, shop and hall have no drawing in the pack: their facades are
+/// assembled from the pack's flat-roofed house (its roof, plank walls, foundation, gabled door bay, windows and steps),
+/// stretched to the footprint, recoloured per building, and given an emblem in code.
 /// </summary>
 internal static class BuildingArt
 {
@@ -24,15 +27,29 @@ internal static class BuildingArt
     // The green and blue houses sit 128 and 256 rows below the red ones on the sheet.
     private static readonly PackHouse WideGabled = new(166, 336, 69, 59, 34, 51);
     private static readonly PackHouse SmallGabled = new(99, 336, 56, 59, 21, 53);
-    private static readonly PackHouse WideFlat = new(7, 405, 67, 54, 33, 46);
 
-    private static (PackHouse Shape, int Colour)? HouseFor(BuildingStyle style, int w) => style switch
+    private static bool IsHome(BuildingStyle style)
+        => style is BuildingStyle.House or BuildingStyle.HouseBlue or BuildingStyle.HouseGreen or BuildingStyle.HousePlum;
+
+    private static (PackHouse Shape, BuildingStyle Roof)? HouseFor(BuildingStyle style, int w)
+        => IsHome(style) ? (w >= 5 ? WideGabled : SmallGabled, style) : null;
+
+    /// <summary>The pack's red house in its roof colour: the pack's own blue and green, or the red turned to plum.</summary>
+    private static PixelImage HouseIn(Village v, PackHouse shape, BuildingStyle roof)
     {
-        BuildingStyle.House => (w >= 5 ? WideGabled : SmallGabled, 0),
-        BuildingStyle.HouseGreen => (w >= 5 ? WideFlat : SmallGabled, 1),
-        BuildingStyle.HouseBlue => (w >= 5 ? WideFlat : SmallGabled, 2),
-        _ => null,
-    };
+        var red = v.Cut(shape.X, shape.Y, shape.W, shape.H);
+        return roof switch
+        {
+            BuildingStyle.HouseGreen => Village.Recolour(red, Village.Recolouring(red, v.Cut(shape.X, shape.Y + 128, shape.W, shape.H))),
+            BuildingStyle.HouseBlue => Village.Recolour(red, Village.Recolouring(red, v.Cut(shape.X, shape.Y + 256, shape.W, shape.H))),
+            BuildingStyle.HousePlum => red.Map((_, _, c) => GableReds.Contains(c) ? Village.WithHue(c, 4.8f, 0.42f) : c),
+            _ => red,
+        };
+    }
+
+    /// <summary>The red roof colours of the gabled houses.</summary>
+    private static readonly HashSet<Color> GableReds =
+        [.. new[] { "e63f38", "d93232", "fc5c46", "a82b2d", "9e2b2d", "ba2d2f" }.Select(Color.Hex)];
 
     /// <summary>
     /// Where the drawing sits in the footprint, in pixels from its top-left: left and top edge of the building and
@@ -61,7 +78,7 @@ internal static class BuildingArt
         if (HouseFor(def.Style, def.W) is { } house)
         {
             var (ox, oy) = Offset(house.Shape, def);
-            img.Blit(v.Cut(house.Shape.X, house.Shape.Y + house.Colour * 128, house.Shape.W, house.Shape.H), ox, oy);
+            img.Blit(HouseIn(v, house.Shape, house.Roof), ox, oy);
             return img;
         }
         return Facade(v, def, img);
@@ -106,8 +123,28 @@ internal static class BuildingArt
             }
         }
 
-        // The door bay (door, frame, foundation and steps) with a porch roof over it.
+        // The house's gabled door bay, kept whole and running the full height of the wall: its small pitched roof sits at
+        // the foot of the main roof (only the pixels that differ from the plain roof stripes), its wall stretches with
+        // the main wall, and the door, foundation and steps stand at the bottom.
         int bx = def.DoorX * 16 + 8 - BayDoorCenter, bottom = h - 1;
+        for (int y = 0; y < roofEnd; y++)
+        {
+            int sr = rows[y];
+            if (sr < 10) continue;
+            for (int sx = 0; sx < BayW; sx++)
+            {
+                var c = src[BayX + sx, sr];
+                if (c.A == 0 || sr < RoofRows - 1 && c == src[BayX + sx, 9]) continue;
+                img[bx + sx, y] = roof.TryGetValue(c, out var rc) ? rc : wall(c);
+            }
+        }
+        int bayTop = bottom - (Foundation - WallTop - 2);
+        for (int y = roofEnd; y < bayTop; y++)
+        for (int sx = 0; sx < BayW; sx++)
+        {
+            var c = src[BayX + sx, y == roofEnd ? WallTop : WallTop + 1];
+            if (c.A > 0) img[bx + sx, y] = wall(c);
+        }
         for (int sr = WallTop + 2; sr <= StepsEnd; sr++)
         for (int sx = 0; sx < BayW; sx++)
         {
@@ -115,8 +152,6 @@ internal static class BuildingArt
             if (c.A == 0) continue;
             img[bx + sx, bottom - (Foundation - sr)] = sr <= Foundation && !IsDoor(c) ? wall(c) : c;
         }
-        int porch = bottom - (Foundation - WallTop - 2) - 4;
-        Porch(img, def.Style, roof, bx - 1, porch, BayW + 2);
 
         // Windows on each tile column clear of the bay, a second row on two-storey facades.
         int windowTop = bottom - (Foundation - PlankCycle);
@@ -124,13 +159,18 @@ internal static class BuildingArt
             for (int tx = 0; tx < def.W; tx++)
             {
                 int wx = tx * 16 + 4;
-                if (floor == 0 && wx + 8 > bx - 2 && wx < bx + BayW + 2) continue;
+                if (wx + 8 > bx - 2 && wx < bx + BayW + 2) continue;
                 if (wx < Cap || wx + 8 > w - Cap) continue;
                 for (int j = 0; j < 7; j++)
                 for (int i = 0; i < 8; i++)
                     img[wx + i, windowTop - floor * 12 + j] = wall(src[9 + i, PlankCycle + j]);
             }
-        Emblem(img, def.Style, w, roofEnd);
+        // Shade under the eave: the wall's top rows (below the roof's edge) darken toward the roof.
+        for (int y = roofEnd + 1; y < roofEnd + 4; y++)
+        for (int x = Cap; x < w - Cap; x++)
+            if (img[x, y].A > 0) img[x, y] = img[x, y].Shade(0.8f + (y - roofEnd) * 0.05f);
+        // The emblem hangs on the roof straight above the door bay's gable.
+        Emblem(img, def.Style, bx + BayDoorCenter, (roofEnd - (RoofRows - 10)) / 2 + 1);
         return img;
     }
 
@@ -177,27 +217,8 @@ internal static class BuildingArt
         return new Color(l, l, l, c.A);
     }
 
-    /// <summary>A short porch roof over the door bay: striped awning on the shop, the building's roof colour elsewhere.</summary>
-    private static void Porch(PixelImage img, BuildingStyle style, Dictionary<Color, Color> roof, int x, int y, int w)
+    private static void Emblem(PixelImage img, BuildingStyle style, int cx, int cy)
     {
-        Color dark = roof[Color.Hex("ba2d2f")], mid = roof[Color.Hex("d93232")], light = roof[Color.Hex("fc5c46")];
-        for (int i = 0; i < w; i++)
-        {
-            bool stripe = i / 3 % 2 == 0;
-            var top = style == BuildingStyle.Shop ? (stripe ? Pal.Coral : Pal.Cream) : light;
-            var low = style == BuildingStyle.Shop ? (stripe ? Pal.CoralDark : Pal.CreamShade) : (i % 6 < 2 ? dark : mid);
-            img[x + i, y] = VillagePal.Outline;
-            img[x + i, y + 1] = top;
-            img[x + i, y + 2] = low;
-            img[x + i, y + 3] = i % 3 == 2 && style == BuildingStyle.Shop ? low : VillagePal.Outline;
-        }
-        img[x - 1, y + 1] = VillagePal.Outline; img[x - 1, y + 2] = VillagePal.Outline;
-        img[x + w, y + 1] = VillagePal.Outline; img[x + w, y + 2] = VillagePal.Outline;
-    }
-
-    private static void Emblem(PixelImage img, BuildingStyle style, int pw, int roofEnd)
-    {
-        int cx = pw / 2, cy = roofEnd / 2 + 2;
         var ink = VillagePal.Outline;
         switch (style)
         {

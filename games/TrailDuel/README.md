@@ -96,16 +96,19 @@ three-quarter poses of a handheld creature RPG, lit from the top-left everywhere
   three-frame walks in four directions; in battle they are doubled with Scale2x and their outline is
   thinned back to one pixel.
 - **The world is LimeZu's Serene Village** (CC BY 4.0, `Content/serene-village`; see [CREDITS](CREDITS.md)), a
-  16 px village pack whose slate outlines and soft greens sit well with those trainers. Homes are the pack's houses
-  (red, green and blue roofs, gabled or flat), fitted inside their tile footprint with the door on the door tile, so a
-  roof never hides someone walking behind it. Trees are the pack's whole trees, cut along their silhouette: woods are
+  16 px village pack whose slate outlines and soft greens sit well with those trainers. Its pastel tones are graded
+  once at load toward the deeper colours of the game's own art. Homes are the pack's gabled house, each with its own
+  roof colour (red, blue, green, plum), fitted inside its tile footprint with the door on the door tile, so a roof
+  never hides someone walking behind it. Trees are the pack's whole trees, cut along their silhouette: woods are
   tall trees overlapping in staggered rows, and where someone can walk just above a tree its crown leans away or the
   pack's small tree stands instead, so no crown covers a walker. Grass, dirt paths with the pack's grass edges, ponds
   with its shore and wave loop, flowers, rocks, bushes and signs come from the pack too.
 - **Code draws what the pack lacks, in the pack's colours and outline**: two-row encounter grass, ledges with the
   pack's earth face, and the lab, shrine, shop and hall, whose facades are built from the pack's flat-roofed house
-  (stretched, recoloured, with a porch roof and an emblem). Each map bakes one ground layer (`Visuals/GroundArt`)
-  with clover, pebbles, tall-grass fringes, the woods' shade and a single union shadow mask.
+  (stretched, with its gabled door bay, a colour of their own and an emblem). Each map bakes one ground layer
+  (`Visuals/GroundArt`) with clover, pebbles, tall-grass fringes and the shadows: light comes from the upper left, so
+  buildings, trees, signs, fences and rocks cast shadows to the bottom-right, and in towns and on the route the
+  crowns shade the ground beneath them, in two levels that never stack darker.
 - In battle, creatures breathe on the spot, stand on contact shadows, glow in their element's colour
   while charging, crouch before lunging, and flash and recoil when hit. `TRAIL_DEBUG=zoom` and
   `TRAIL_DEBUG=cast` show every creature and every character walk frame for review.
