@@ -5,9 +5,43 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
+    <!-- The tier-1 graphics device (sdl-gpu), selectable with GraphicsSettings.Device or the graphics launch option. Not a package of its
+         own: this package carries MicroEngine.Graphics.SdlGpu.dll with its documentation and symbols, as MicroEngine
+         carries its assemblies (the reference is private, so packing adds no dependency on it). -->
+    <ProjectReference Include="../MicroEngine.Graphics.SdlGpu/MicroEngine.Graphics.SdlGpu.csproj" PrivateAssets="all" />
     <!-- SDL3 bindings and native SDL3 3.5.0 for every desktop and mobile runtime (osu!'s maintained package, MIT). -->
     <PackageReference Include="ppy.SDL3-CS" Version="[2026.1002.1]" />
     <!-- OGG Vorbis decoding in managed code, so music streams on every platform without another native library. -->
     <PackageReference Include="NVorbis" Version="[0.10.5]" />
   </ItemGroup>
+  <ItemGroup>
+    <_SdlBundledProject Include="../MicroEngine.Graphics.SdlGpu/MicroEngine.Graphics.SdlGpu.csproj" />
+  </ItemGroup>
+  <Target Name="_SdlBundledOutput">
+    <MSBuild Projects="@(_SdlBundledProject)" Targets="GetTargetPath" Properties="BuildProjectReferences=false">
+      <Output TaskParameter="TargetOutputs" ItemName="_SdlBundledAssembly" />
+    </MSBuild>
+  </Target>
+  <Target Name="_SdlExportBundled" AfterTargets="GetTargetPathWithTargetPlatformMoniker" DependsOnTargets="_SdlBundledOutput">
+    <ItemGroup>
+      <TargetPathWithTargetPlatformMoniker Include="@(_SdlBundledAssembly)" />
+    </ItemGroup>
+  </Target>
+  <PropertyGroup>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);_SdlBundle</TargetsForTfmSpecificBuildOutput>
+    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);_SdlBundleSymbols</TargetsForTfmSpecificDebugSymbolsInPackage>
+  </PropertyGroup>
+  <Target Name="_SdlBundle" DependsOnTargets="_SdlBundledOutput">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(_SdlBundledAssembly);@(_SdlBundledAssembly->'%(RootDir)%(Directory)%(Filename).xml')" />
+    </ItemGroup>
+  </Target>
+  <Target Name="_SdlBundleSymbols" DependsOnTargets="_SdlBundledOutput">
+    <ItemGroup>
+      <TfmSpecificDebugSymbolsFile Include="@(_SdlBundledAssembly->'%(RootDir)%(Directory)%(Filename).pdb')">
+        <TargetPath>%(Filename).pdb</TargetPath>
+        <TargetFramework>$(TargetFramework)</TargetFramework>
+      </TfmSpecificDebugSymbolsFile>
+    </ItemGroup>
+  </Target>
 </Project>

@@ -5,6 +5,8 @@ using MicroEngine.Core;
 using MicroEngine.Graphics;
 using GraphicsDeviceOptions = MicroEngine.Graphics.Devices.GraphicsDeviceOptions;
 using PresentMode = MicroEngine.Graphics.Devices.PresentMode;
+using Dev = MicroEngine.Graphics.Devices;
+using GpuBackend = MicroEngine.Graphics.SdlGpu;
 using MicroEngine.Input;
 using MicroEngine.Platform;
 using SDL;
@@ -28,8 +30,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     private readonly GameSettings _settings;
     private readonly int _captureScale;
     private readonly SDL_Window* _window;
-    private readonly SDL_Renderer* _sdl;
-    private readonly SdlRendererDevice _device;
+    private readonly SDL_Renderer* _sdl; // null on the sdl-gpu device: SDL_GPU owns the window's swapchain
+    private readonly Dev.GraphicsDeviceBase _device;
     private readonly DeviceCanvas _canvas;
     private readonly SdlInput _input;
     private readonly IInputSource _combinedInput;
@@ -50,6 +52,16 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <summary>The SDL3 platform as a catalog entry. SDL3 is packaged for Windows, Linux, macOS, Android and iOS, not for browsers.</summary>
     public static PlatformProfile Profile { get; } = CreateProfile();
 
+    /// <summary>The default graphics device (<see cref="GraphicsSettings.Device"/>): SDL's 2D renderer behind the device contract, tier 0.</summary>
+    public const string RendererDevice = SdlRendererDevice.BackendName;
+
+    /// <summary>
+    /// The tier-1 graphics device (<see cref="GraphicsSettings.Device"/>, <c>--graphics sdl-gpu</c>): SDL_GPU (Direct3D 12,
+    /// Vulkan, Metal) with custom shaders and depth, which the 3D path needs. A system without an SDL_GPU driver refuses
+    /// it when the platform starts, saying why. On-screen touch controls are not drawn on it.
+    /// </summary>
+    public const string GpuDevice = GpuBackend.SdlGpuDevice.BackendName;
+
     /// <summary>
     /// The SDL3 platform with a fixed render driver ("direct3d11", "direct3d12", "metal", "opengl", "opengles2",
     /// "vulkan", "gpu", "software"), named <c>sdl-&lt;driver&gt;</c>; null lets SDL choose (the <c>sdl</c> profile).
@@ -63,6 +75,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         request => new SdlPlatform(request, renderer))
     {
         CheckSupport = () => OperatingSystem.IsBrowser() ? "SDL3 is not packaged for browsers; use raylib" : null,
+        // A fixed render driver is SDL_Renderer's: only the default profile can draw with SDL_GPU.
+        GraphicsDevices = renderer is null ? [RendererDevice, GpuDevice] : [RendererDevice],
     };
 
     /// <summary>The render drivers this SDL build offers on this system, in SDL's order of preference.</summary>
@@ -148,31 +162,36 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         // The graphics device on SDL's renderer: the game's preferred APIs first (SDL tries a comma-separated list in
         // order), then the profile's driver or SDL's own choice.
         var present = _paced && graphics.VSync ? PresentMode.VSync : PresentMode.Immediate;
-        SdlRendererDevice? device = null;
-        if (renderer is null && graphics.Renderers.Count > 0)
-        {
-            try { device = new SdlRendererDevice(_surface, new GraphicsDeviceOptions(present, string.Join(',', graphics.Renderers))); }
-            catch (InvalidOperationException e)
-            {
-                Console.Error.WriteLine($"platform: none of the preferred renderers ({string.Join(", ", graphics.Renderers)}) could start here ({e.Message}); SDL chooses (drivers here: {string.Join(", ", RenderDrivers)})");
-            }
-        }
-        try { device ??= new SdlRendererDevice(_surface, new GraphicsDeviceOptions(present, renderer)); }
-        catch (InvalidOperationException e)
+        bool gpu = string.Equals(graphics.Device ?? RendererDevice, GpuDevice, StringComparison.OrdinalIgnoreCase);
+        if (!gpu && !string.Equals(graphics.Device ?? RendererDevice, RendererDevice, StringComparison.OrdinalIgnoreCase))
         {
             SDL_DestroyWindow(_window);
             SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
-            throw new InvalidOperationException(renderer is null
-                ? $"SDL could not create a renderer: {e.Message}"
-                : $"SDL could not create its '{renderer}' renderer (drivers here: {string.Join(", ", RenderDrivers)}): {e.Message}", e);
+            throw new PlatformConfigurationException($"SDL has no graphics device '{graphics.Device}'; it offers: {RendererDevice}, {GpuDevice}.");
         }
-        _device = device;
-        _sdl = device.Renderer;
+        if (gpu)
+        {
+            // The tier-1 device: SDL_GPU on the window (no SDL_Renderer). The first preferred renderer that names an
+            // SDL_GPU API is asked for; the device reports the API SDL chose.
+            _device = CreateGpuDevice(present, graphics);
+            _sdl = null;
+            RendererName = $"{GpuDevice} {_device.Capabilities.ApiName}";
+            _vsync = _paced && graphics.VSync;
+        }
+        else
+        {
+            _device = CreateRendererDevice(present, graphics, renderer);
+            _sdl = ((SdlRendererDevice)_device).Renderer;
+            RendererName = SDL_GetRendererName(_sdl) ?? "unknown";
+        }
         Mark("renderer", ref started);
         var (minWidth, minHeight) = WindowSizing.Minimum(_settings);
         SDL_SetWindowMinimumSize(_window, minWidth, minHeight);
-        _vsync = _paced && graphics.VSync && SDL_SetRenderVSync(_sdl, 1);
-        if (_paced && !graphics.VSync) SDL_SetRenderVSync(_sdl, 0);
+        if (_sdl != null)
+        {
+            _vsync = _paced && graphics.VSync && SDL_SetRenderVSync(_sdl, 1);
+            if (_paced && !graphics.VSync) SDL_SetRenderVSync(_sdl, 0);
+        }
         // The game draws into a canvas render target through the 2D batcher; EndFrame composes it into the window.
         _canvas = new DeviceCanvas(_device, _settings.VirtualWidth, _settings.VirtualHeight);
         _canvas.Graphics.DefaultFilter = _settings.DefaultTextureFilter;
@@ -199,13 +218,60 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _self = GCHandle.Alloc(this);
         SDL_AddEventWatch(&WatchLifecycle, GCHandle.ToIntPtr(_self));
         _start = SDL_GetTicksNS();
-        RendererName = SDL_GetRendererName(_sdl) ?? "unknown";
     }
 
-    /// <summary>The graphics API SDL chose ("direct3d11", "metal", "opengl", "software"...), for logs and tests.</summary>
+    /// <summary>The tier-1 device on the window, or a clear error naming why SDL_GPU cannot start here.</summary>
+    private Dev.GraphicsDeviceBase CreateGpuDevice(PresentMode present, GraphicsSettings graphics)
+    {
+        var factory = new GpuBackend.SdlGpuBackendFactory();
+        string? why = factory.UnsupportedReason(_surface);
+        Dev.IGraphicsDevice? created = null;
+        if (why is null)
+        {
+            string? api = graphics.Renderers.FirstOrDefault(r => r is "direct3d12" or "vulkan" or "metal");
+            try { created = factory.Create(_surface, new GraphicsDeviceOptions(present, api, PreferLowPower: graphics.Gpu == GpuPreference.PowerSaving)); }
+            catch (Exception e) when (e is InvalidOperationException or NotSupportedException) { why = e.Message; }
+        }
+        if (created is Dev.GraphicsDeviceBase device) return device;
+        created?.Dispose();
+        SDL_DestroyWindow(_window);
+        SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
+        throw new InvalidOperationException($"SDL's graphics device '{GpuDevice}' cannot start here: {why}. Run with --graphics {RendererDevice} (tier 0, no 3D) or on a system with Direct3D 12, Vulkan or Metal.");
+    }
+
+    /// <summary>The tier-0 device on SDL_Renderer: the game's preferred APIs first, then the profile's driver or SDL's choice.</summary>
+    private SdlRendererDevice CreateRendererDevice(PresentMode present, GraphicsSettings graphics, string? renderer)
+    {
+        SdlRendererDevice? device = null;
+        if (renderer is null && graphics.Renderers.Count > 0)
+        {
+            try { device = new SdlRendererDevice(_surface, new GraphicsDeviceOptions(present, string.Join(',', graphics.Renderers))); }
+            catch (InvalidOperationException e)
+            {
+                Console.Error.WriteLine($"platform: none of the preferred renderers ({string.Join(", ", graphics.Renderers)}) could start here ({e.Message}); SDL chooses (drivers here: {string.Join(", ", RenderDrivers)})");
+            }
+        }
+        try { device ??= new SdlRendererDevice(_surface, new GraphicsDeviceOptions(present, renderer)); }
+        catch (InvalidOperationException e)
+        {
+            SDL_DestroyWindow(_window);
+            SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);
+            throw new InvalidOperationException(renderer is null
+                ? $"SDL could not create a renderer: {e.Message}"
+                : $"SDL could not create its '{renderer}' renderer (drivers here: {string.Join(", ", RenderDrivers)}): {e.Message}", e);
+        }
+        return device;
+    }
+
+    /// <summary>
+    /// The graphics API in use, for logs and tests: SDL_Renderer's driver ("direct3d11", "metal", "opengl", "software"...),
+    /// or "sdl-gpu" and the SDL_GPU API ("sdl-gpu vulkan") on the tier-1 device.
+    /// </summary>
     public string RendererName { get; }
-    /// <summary>"SDL renderer" followed by the name of the render driver in use.</summary>
-    public override string ToString() => $"SDL renderer {RendererName}";
+    /// <summary>The graphics device the platform draws with: <see cref="RendererDevice"/> or <see cref="GpuDevice"/>.</summary>
+    public string GraphicsDeviceName => _sdl == null ? GpuDevice : RendererDevice;
+    /// <summary>"SDL renderer" followed by the name of the render driver in use, or "SDL sdl-gpu" and the API.</summary>
+    public override string ToString() => _sdl == null ? $"SDL {RendererName}" : $"SDL renderer {RendererName}";
 
     /// <inheritdoc/>
     public IReadOnlyDictionary<string, string> Diagnostics
@@ -219,7 +285,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
                 ["videoDriver"] = SDL_GetCurrentVideoDriver() ?? "unknown",
             };
             int vsync;
-            if (SDL_GetRenderVSync(_sdl, &vsync)) facts["vsync"] = vsync.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (_sdl == null) facts["vsync"] = _vsync ? "1" : "0";
+            else if (SDL_GetRenderVSync(_sdl, &vsync)) facts["vsync"] = vsync.ToString(System.Globalization.CultureInfo.InvariantCulture);
             if (CurrentDisplay is >= 0 and var current && Displays is var displays && current < displays.Count)
             {
                 var d = displays[current];
@@ -228,8 +295,9 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
                 facts["displays"] = displays.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
             }
             facts["windowMode"] = WindowMode.ToString();
-            int w, h;
-            if (SDL_GetCurrentRenderOutputSize(_sdl, &w, &h)) facts["output"] = $"{w}x{h}";
+            var (w, h) = WindowPixels();
+            facts["output"] = $"{w}x{h}";
+            facts["graphicsDevice"] = GraphicsDeviceName;
             if (Adapter() is { } adapter) facts["adapter"] = adapter;
             foreach (var (step, ms) in _startSteps)
                 facts[$"start.{step}"] = ms.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " ms";
@@ -238,8 +306,11 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     }
     /// <inheritdoc/>
     public IGraphicsDevice Graphics => _canvas.Graphics;
-    /// <summary>The graphics device the platform draws with (SDL's renderer behind the device contract).</summary>
-    public SdlRendererDevice Device => _device;
+    /// <summary>
+    /// The graphics device the platform draws with: SDL's renderer behind the device contract (<see cref="SdlRendererDevice"/>),
+    /// or SDL_GPU (<c>SdlGpuDevice</c>) when <see cref="GraphicsSettings.Device"/> is <see cref="GpuDevice"/>.
+    /// </summary>
+    public Dev.GraphicsDeviceBase Device => _device;
     /// <summary>The canvas the game draws into, with the 2D batcher's counts for the last frame.</summary>
     public DeviceCanvas Canvas => _canvas;
     /// <inheritdoc/>
@@ -309,6 +380,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <summary>The GPU the renderer draws with, when its graphics API can name it (Direct3D 11, SDL's GPU renderer); null otherwise.</summary>
     private string? Adapter()
     {
+        if (_sdl == null) return _device.Capabilities.Adapter is { } named ? $"{named} ({_device.Capabilities.ApiName})" : null;
         nint gpu = SDL_GetPointerProperty(SDL_GetRendererProperties(_sdl), SDL_PROP_RENDERER_GPU_DEVICE_POINTER, 0);
         if (gpu != 0)
         {
@@ -466,8 +538,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     /// <summary>Where the frame is drawn in the window, in render pixels (the shared letterbox rule).</summary>
     internal RectF FrameRect()
     {
-        int sw, sh;
-        SDL_GetRenderOutputSize(_sdl, &sw, &sh); // the window's size, whatever target is bound
+        var (sw, sh) = WindowPixels();
         var window = new Vector2(sw, sh);
         var presentation = _settings.EffectivePresentation;
         return _touch.Overlay?.Frame(window, _touch.SafeArea, _settings.VirtualWidth, _settings.VirtualHeight, OverlayScaling(presentation))
@@ -520,8 +591,10 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
 
     private (int Width, int Height) WindowPixels()
     {
+        // The window's size in pixels, whatever target is bound (SDL_GPU has no renderer to ask).
         int w, h;
-        SDL_GetRenderOutputSize(_sdl, &w, &h);
+        if (_sdl != null) SDL_GetRenderOutputSize(_sdl, &w, &h);
+        else SDL_GetWindowSizeInPixels(_window, &w, &h);
         return (Math.Max(1, w), Math.Max(1, h));
     }
 
@@ -546,7 +619,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         if (_canvas.Compose(_settings.EffectivePresentation, FrameRect(), Letterbox))
         {
             // The on-screen controls, over the letterboxed frame in window pixels (never in captures).
-            _touch.Overlay?.Draw(_touch.Canvas);
+            if (_touch.Canvas is { } overlayCanvas) _touch.Overlay?.Draw(overlayCanvas);
             _device.Present();
         }
         if (!_gamepadsStarted) StartGamepads();
@@ -630,7 +703,8 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
     public bool SetVSync(bool on)
     {
         if (!_paced) return !on;
-        if (SDL_SetRenderVSync(_sdl, on ? 1 : 0)) _vsync = on;
+        // SDL_GPU's present mode is set once, when the device is created: the tier-1 device keeps it.
+        if (_sdl != null && SDL_SetRenderVSync(_sdl, on ? 1 : 0)) _vsync = on;
         return _vsync == on;
     }
 

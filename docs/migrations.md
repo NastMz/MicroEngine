@@ -8,6 +8,14 @@ it. Newest first.
 
 Not published yet. Behaviour that changes:
 
+- The SDL platform can draw with a second graphics device: `GraphicsSettings.Device = "sdl-gpu"` (or `--graphics
+  sdl-gpu`) selects SDL_GPU (tier 1: custom shaders, depth, the 3D path) instead of SDL's renderer. Nothing changes for
+  a game that does not ask for it. `SdlPlatform.Device` is now a `GraphicsDeviceBase` (it was `SdlRendererDevice`):
+  cast it when you need the SDL_Renderer device (`(SdlRendererDevice)platform.Device`), which it is unless the game
+  asked for `sdl-gpu`. Other platforms refuse a request naming a device they do not offer
+  (`PlatformProfile.GraphicsDevices`).
+- `DeviceRenderer` (the renderer the device-backed platforms give a scene) has `Target` and `Flush()`, to put device work
+  such as a 3D pass between the 2D drawn before and after it. Code that does not call them is unchanged.
 - Achievements are an optional engine module: a game declares them before the engine is composed, and a game that
   never declares them has no achievement service, no `engine.achievements` frame system and no achievement file.
   **Migration:** move the `UseAchievements(catalog, store, theme)` call out of `Load` into the game's constructor or

@@ -25,19 +25,21 @@ internal sealed unsafe class SdlTouchScreen : ITouchScreen, IDisposable
         _window = window;
         _sdl = sdl;
         TouchFirst = touchFirst;
-        Canvas = new SdlOverlayCanvas(sdl);
+        // On-screen controls are drawn with SDL_Renderer; the sdl-gpu device has none, so there they are not drawn.
+        Canvas = sdl == null ? null : new SdlOverlayCanvas(sdl);
     }
 
     public bool TouchFirst { get; }
     public ITouchOverlay? Overlay { get; set; }
-    internal SdlOverlayCanvas Canvas { get; }
+    internal SdlOverlayCanvas? Canvas { get; }
 
     public Vector2 Size
     {
         get
         {
             int w, h;
-            SDL_GetCurrentRenderOutputSize(_sdl, &w, &h);
+            if (_sdl != null) SDL_GetCurrentRenderOutputSize(_sdl, &w, &h);
+            else SDL_GetWindowSizeInPixels(_window, &w, &h);
             return new Vector2(w, h);
         }
     }
@@ -120,7 +122,7 @@ internal sealed unsafe class SdlTouchScreen : ITouchScreen, IDisposable
     {
         if (_haptic != null) SDL_CloseHaptic(_haptic);
         _haptic = null;
-        Canvas.Dispose();
+        Canvas?.Dispose();
     }
 }
 

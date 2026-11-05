@@ -48,7 +48,8 @@ public sealed class ArchitectureTests
         // Transitional until the modules leave it: the defaults, presets and Game façade over every module.
         [Core] = [.. Abstractions, .. Modules],
         // Backends implement the abstractions; until those leave MicroEngine, they reach them through it.
-        [Sdl] = [.. Abstractions, Core],
+        // The SDL backend also offers the tier-1 device (sdl-gpu) next to SDL_Renderer.
+        [Sdl] = [.. Abstractions, Core, "MicroEngine.Graphics.SdlGpu"],
         [Raylib] = [.. Abstractions, Core],
         ["MicroEngine.Backend.Sdl"] = [.. Abstractions],
         ["MicroEngine.Backend.Raylib"] = [.. Abstractions],
