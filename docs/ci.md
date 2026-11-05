@@ -17,9 +17,11 @@ starts it (the experimental platforms also monthly).
 | SDK release | [`sdk-release.yml`](../.github/workflows/sdk-release.yml) | after ci passes on `main` (ends at once unless `main` documents an unpublished version), or by hand to resume | the SDK on nuget.org after the `nuget` environment's approval, then the site |
 | Rollback | [`rollback.yml`](../.github/workflows/rollback.yml) | manually | an earlier production deployment |
 
-The jobs themselves live in three reusable workflows: [`checks.yml`](../.github/workflows/checks.yml) (.NET, native
-Linux, demo builds, site and browsers, browser engine suites), [`sdk.yml`](../.github/workflows/sdk.yml) (the SDK packages from outside the
-repository) and [`deploy-site.yml`](../.github/workflows/deploy-site.yml) (Vercel). How the three publications relate
+The jobs themselves live in five reusable workflows: [`checks.yml`](../.github/workflows/checks.yml) (.NET, native
+Linux, demo builds, site and browsers, browser engine suites), [`sdl-web.yml`](../.github/workflows/sdl-web.yml) (SDL
+for the web, called by `checks.yml`, [SDL for the web](#sdl-for-the-web)), [`sdk.yml`](../.github/workflows/sdk.yml)
+(the SDK packages from outside the repository), [`box2d.yml`](../.github/workflows/box2d.yml) (the Box2D natives,
+[Box2D natives](#box2d-natives)) and [`deploy-site.yml`](../.github/workflows/deploy-site.yml) (Vercel). How the three publications relate
 and how to run each: [Releasing](releasing.md); decision: [ADR 0022](decisions/0022-release-coordination.md).
 
 **While [`.github/phase-freeze`](../.github/phase-freeze) exists, nothing in this table publishes**, except Rollback:
@@ -38,6 +40,7 @@ flowchart LR
   sdlweb --> build[Demo builds]
   sdlweb --> engine[Browser engine<br/>one job per game<br/>and web backend]
   plan --> sdk[SDK<br/>Windows, Linux, macOS]
+  plan --> box2d[Box2D natives<br/>every runtime]
   build --> site[Site and browsers]
   windows --> deploy[Deploy]
   native --> deploy
@@ -45,6 +48,7 @@ flowchart LR
   engine --> deploy
   deploy --> result[CI result]
   sdk --> result
+  box2d --> result
 ```
 
 1. **Plan** runs the planner and release tool tests, checks that every documentation reference names the documented
@@ -56,7 +60,9 @@ flowchart LR
    pass, so a broken change never occupies a Windows runner. **SDK** (`sdk.yml`) runs beside them when a package
    input changed: pack, check, and a game made from the packages on Windows, Linux and macOS. The **browser engine**
    suites run beside them too, one job per game the change reaches and per web backend, after SDL for the web
-   ([SDL for the web](#sdl-for-the-web), [Browser tests](#browser-tests)).
+   ([SDL for the web](#sdl-for-the-web), [Browser tests](#browser-tests)). **Box2D**
+   (`box2d.yml`) runs beside them when the native layer, the physics or what it builds on changed
+   ([Box2D natives](#box2d-natives)).
 3. **Deploy**: a protected preview for pull requests that change the site or a demo; production for pushes to
    `main` that change the published site (documentation, site, game pages). Production always uses the latest
    demo release, and is held (the current deployment stays, with a warning) while the documentation presents an SDK
@@ -110,6 +116,11 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
   development package built in the job. It plays the games whose own folders changed when every change that needs it
   is a game's; any other input (the engine, the raylib and SDL backends, SDL for the web, the web host and build, the
   suites, an unknown path) plays all four. The desktop launcher is not part of the browser build and does not run it.
+- **Box2D** (`box2d.yml`, [Box2D natives](#box2d-natives)) is not a column: it runs for the native layer and the
+  Box2D backend (`src/MicroEngine.Physics.Box2D`), the physics contract and what it builds on (`MicroEngine.Kernel`,
+  `Scene`, `Physics`, `Physics.Tiles`), their tests and shared suites (`tests/MicroEngine.Physics.Box2D.Tests`,
+  `tests/Shared/Physics`), the substitution sample (`samples/PhysicsSubstitution`), the web toolchain its browser
+  library is linked with, daily CI itself and a path no rule knows.
 
 ### Evidence: a check runs once per content
 
@@ -122,6 +133,7 @@ so a new folder is an input until a rule says otherwise; `.github/` is an input 
 | `native` | the same, but `web/tests/` is an input |
 | `site` | `src/`, `tests/`, `samples/`, `platforms/`, `odd/`, `experiments/`, game files other than Markdown and screenshots; the key adds the demo packages used and the browser suites |
 | `sdk` | `docs/`, `site/`, `platforms/`, `games/`, `tests/`, `samples/`, `odd/`, `experiments/`, Markdown outside `src/`, `templates/` and `sdk/` (except `THIRD-PARTY-NOTICES.md`, which the packages ship) |
+| `box2d` | everything outside the native layer, `MicroEngine.Physics*`, `Kernel` and `Scene` in `src/`; tests other than the Box2D tests and `tests/Shared`; samples other than `samples/PhysicsSubstitution`; `games/`, `site/`, `platforms/`, `templates/`, `sdk/`, `benchmarks/`, documentation |
 | `web` (browser engine) | `docs/`, `site/`, `platforms/`, `tests/`, `samples/`, `sdk/`, `odd/`, `experiments/`, the Android and iOS hosts, Markdown (except in a game's `Content/`); the key adds the games played |
 
 When a job passes it uploads the artifact `evidence-<check>-<key>` (kept 30 days); the browser engine check records
@@ -443,6 +455,27 @@ the job verifies `SHA256SUMS` and uploads the artifact `sdl-web-browser-wasm` (3
 `web/setup.sh` would have built it, so none of them compiles SDL. The `MicroEngine.Sdl` package carries the library
 for browser builds; a release pack (`-p:MicroEngineRelease=true`) fails without it. Changing `sdl.env` or `build.sh`
 runs the browser checks, the SDK check and the browser engine suites.
+
+### Box2D natives
+
+The Box2D physics backend (`MicroEngine.Physics.Box2D`, ADR 0031) calls native Box2D through the engine's own C layer
+(`me_box2d`). [`box2d.yml`](../.github/workflows/box2d.yml) builds that library for every runtime identifier from the
+Box2D commit `src/MicroEngine.Physics.Box2D/native/box2d.env` pins, with
+[`native/build.sh`](../src/MicroEngine.Physics.Box2D/native/build.sh), the script developers run locally the same way.
+Daily CI calls it when the planner's `box2d` check is needed ([What runs for a change](#what-runs-for-a-change)); it
+can also be started by hand (Actions → box2d). Full validation does not run it. Nothing in it publishes: the package
+stays a workflow artifact and the artifacts expire.
+
+| Job | What it shows |
+| --- | --- |
+| `natives` (one per runtime: `win-x64`, `linux-x64` on the oldest supported Ubuntu runner, `android-arm64`, `android-x64`, `browser-wasm`, `osx-arm64`, `osx-x64`, `ios-arm64`) | the library builds; it is cached by `build.sh key` (inputs and toolchain); its `SHA256SUMS` verify; `me_box2d_selftest` passes wherever the runner can run the result (desktop runners natively, `browser-wasm` under Node; Android and iOS build only); artifact `box2d-<rid>`, 30 days |
+| `tests` (Windows, Linux, macOS) | the backend's tests (`tests/MicroEngine.Physics.Box2D.Tests`) pass with that runtime's library; `MICROENGINE_BOX2D_REQUIRED=1` makes a missing library fail instead of skipping |
+| `browser` | the same test classes pass in headless Chrome on the .NET browser runtime (interpreter), Box2D linked statically, so every function of the native layer goes through the interpreter's P/Invoke path |
+| `package` | the optional `MicroEngine.Physics.Box2D` package packs with every runtime built and holds the files it must hold; artifact `box2d-package`, 7 days |
+| `compare` (**Box2D determinism**) | one table of every runtime's library checksum and self-test result; every runtime that ran the self-test printed the same state hash, or the job fails; it also fails unless the jobs above passed, and records the evidence of the check |
+
+The macOS and iOS runtimes build only when macOS runners are on (daily CI passes the repository variable
+`MACOS_RUNNERS`; a manual run always builds them); otherwise they are reported as not built.
 
 ### Browser tests
 
