@@ -1,0 +1,36 @@
+---
+// Starlight PageTitle override. Above the title: a legend naming where the page sits (its sidebar group) and, for a
+// page about one subsystem, that family's icon and colour. Below the title, some manual pages get their socket card.
+// The page Markdown is shared with the repository and has no frontmatter, so both come from ./families.mjs, keyed by
+// the page slug.
+import Default from '@astrojs/starlight/components/PageTitle.astro';
+import FamilyIcon from '../brand/FamilyIcon.astro';
+import { families } from '../brand/geometry.mjs';
+import SocketCard from './SocketCard.astro';
+import { familyOf, socketCards } from './families.mjs';
+import { groups, pages } from '../../lib/repo-docs.mjs';
+
+const slug = Astro.locals.starlightRoute.id;
+const page = pages.find(p => p.slug === slug);
+const group = groups.find(g => g.id === page?.group)?.label;
+const family = familyOf(slug) as keyof typeof families | undefined;
+const card = socketCards[slug as keyof typeof socketCards];
+---
+{(group || family) && (
+  <p class="page-legend" data-family={family} data-group={page?.group}>
+    {family && <FamilyIcon family={family} size={14} />}
+    {family && <span class="page-legend-family">{families[family].label}</span>}
+    {family && group && <span class="page-legend-sep" aria-hidden="true">/</span>}
+    {group && <span class="page-legend-group">{group}</span>}
+  </p>
+)}
+<Default />
+{card && family && <SocketCard family={family} {...card} />}
+
+<style>
+  .page-legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) var(--space-xs); margin: 0;
+    font-family: var(--font-mono); font-size: var(--text-xs); line-height: var(--leading-snug);
+    text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--color-ink-2); }
+  .page-legend-family { color: var(--family-color); font-weight: 500; }
+  .page-legend-sep { color: var(--color-ink-3); }
+</style>

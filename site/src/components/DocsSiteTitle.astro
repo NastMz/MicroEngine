@@ -1,18 +1,28 @@
 ---
-// Documentation header title: the MicroEngine lockup, linking back to the landing page (not the docs root).
+// Documentation header title: the MicroEngine lockup, linking back to the landing page (not the docs root), then the
+// site sections the documentation sits beside. The "Docs" legend says where the reader is, like the label on a module.
 import Lockup from './brand/Lockup.astro';
 ---
-<a href="/" class="docs-title" aria-label="MicroEngine home">
-  <Lockup />
-</a>
-<a href="/demos/" class="docs-section">Demos</a>
-<a href="/roadmap/" class="docs-section">Roadmap</a>
+<span class="docs-site-title">
+  <a href="/" class="docs-title" aria-label="MicroEngine home">
+    <Lockup />
+  </a>
+  <span class="docs-legend" aria-hidden="true">Docs</span>
+  <a href="/demos/" class="docs-section">Demos</a>
+  <a href="/roadmap/" class="docs-section">Roadmap</a>
+</span>
 
 <style>
-  .docs-title { display: inline-flex; align-items: center; text-decoration: none; color: var(--sl-color-white);
-    font-size: var(--text-lg); min-height: var(--tap); white-space: nowrap; }
-  .docs-section { margin-inline-start: var(--space-sm); color: var(--sl-color-gray-3); text-decoration: none;
-    font-family: var(--font-mono); font-size: var(--text-sm); white-space: nowrap; }
-  .docs-section:hover, .docs-title:hover { color: var(--sl-color-accent); }
-  @media (max-width: 30rem) { .docs-section { display: none; } }
+  .docs-site-title { display: flex; align-items: center; gap: var(--space-md); min-width: 0; }
+  .docs-title { display: inline-flex; align-items: center; min-height: var(--tap); text-decoration: none;
+    color: var(--color-ink); font-size: var(--text-lg); white-space: nowrap; }
+  .docs-legend { padding: 0 var(--space-2xs); border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm);
+    color: var(--color-ink-2); font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5;
+    text-transform: uppercase; letter-spacing: var(--tracking-label); white-space: nowrap; }
+  .docs-section { display: inline-flex; align-items: center; min-height: var(--tap); color: var(--color-ink-2);
+    text-decoration: none; font-family: var(--font-mono); font-size: var(--text-sm); white-space: nowrap; }
+  .docs-section:hover { color: var(--color-ink); text-decoration: underline; text-decoration-color: var(--color-accent-fill);
+    text-decoration-thickness: var(--rule-pixel); text-underline-offset: 0.35em; }
+  .docs-title:hover { color: var(--color-ink); }
+  @media (max-width: 30rem) { .docs-section, .docs-legend { display: none; } }
 </style>
