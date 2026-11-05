@@ -14,7 +14,7 @@ Its run preset ([Preset](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_H
 run or a game overrides. Nothing the platform does depends on the time mode.
 
 ```csharp
-public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable, IScreenView
+public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable, IScreenView, IViewCapture
 ```
 
 #### Inheritance
@@ -27,7 +27,8 @@ public sealed class HeadlessPlatform : IPlatform, IPlatformHost, IDisposable, IS
 [IPlatform](MicroEngine.Core.IPlatform.md), 
 IPlatformHost, 
 [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable), 
-[IScreenView](MicroEngine.Core.IScreenView.md)
+[IScreenView](MicroEngine.Core.IScreenView.md), 
+[IViewCapture](MicroEngine.Core.IViewCapture.md)
 
 ## Constructors
 
@@ -161,7 +162,7 @@ public HeadlessInput Keys { get; }
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_Letterbox"></a> Letterbox
 
-Ignored: there is no window around the frame.
+The colour around the world in a capture of a frame that drew a UI ([CaptureScreen](MicroEngine.Core.IViewCapture.md#MicroEngine_Core_IViewCapture_CaptureScreen)); there is no window to paint.
 
 ```csharp
 public Color Letterbox { get; set; }
@@ -314,8 +315,9 @@ public HeadlessTouchScreen TouchScreen { get; }
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_UiRenderer"></a> UiRenderer
 
-The UI view's counting renderer of the current frame ([IScreenView](MicroEngine.Core.IScreenView.md)): the surface's size in pixels, one UI
-unit per pixel; it records draw calls but draws nothing and is not part of captures.
+The UI view's renderer of the current frame ([IScreenView](MicroEngine.Core.IScreenView.md)): the surface's size in pixels, one UI unit per
+pixel. It counts draw calls; with [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize) on it also draws them, and a frame that drew a UI is
+captured with it composited over the world ([IViewCapture](MicroEngine.Core.IViewCapture.md)).
 
 ```csharp
 public HeadlessRenderer UiRenderer { get; }
@@ -466,8 +468,9 @@ public void Resume()
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_SaveScreenshot_System_String_"></a> SaveScreenshot\(string\)
 
-Records <code class="paramref">path</code> in [Screenshots](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Screenshots); with [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize) on, also writes the
-rasterized frame there as an opaque PNG at scale 1.
+Records <code class="paramref">path</code> in [Screenshots](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Screenshots); with [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize) on, also writes what the
+player would see there as an opaque PNG at scale 1 ([CaptureScreen](MicroEngine.Core.IViewCapture.md#MicroEngine_Core_IViewCapture_CaptureScreen)): the canvas, or, for
+a frame that drew a UI, the surface with the UI over the world.
 
 ```csharp
 public void SaveScreenshot(string path)

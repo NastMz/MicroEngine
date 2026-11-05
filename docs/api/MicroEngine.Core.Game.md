@@ -653,7 +653,7 @@ protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, S
 
 `store` SaveStore
 
-`theme` [UiTheme](MicroEngine.UI.UiTheme.md)?
+`theme` UiTheme?
 
 #### Returns
 

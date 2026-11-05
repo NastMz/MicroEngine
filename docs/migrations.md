@@ -22,6 +22,17 @@ Not published yet. Behaviour that changes:
 - The fonts (`IFont`, `FontExtensions`, `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`) moved to the new
   `MicroEngine.Text.dll` (carried by the `MicroEngine` package) with their `MicroEngine.Graphics` namespace unchanged,
   and `Game.Assets.Font` loads through it; nothing to change.
+- `Typewriter`, `SelectionList` and `UiTheme` moved to the new `MicroEngine.UI.dll` (carried by the `MicroEngine`
+  package) with their `MicroEngine.UI` namespace unchanged; nothing to change. The new widget tree (`Scene.Widgets`,
+  `UiRoot`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts`) is opt-in: a scene that never reads `Widgets`
+  behaves as before. A game type called `Widgets` inside a scene now needs its namespace there.
+- `AchievementToasts` shows its banners through the UI's `Toasts` (`AchievementToasts.Banners`); a banner's heading is
+  `Heading` as it was when the achievement was unlocked.
+- A run's capture of a frame whose scenes drew an interface in the UI view (`DrawUi`, `Widgets`) is the window as the
+  player saw it (world scaled into its frame, letterbox, UI over both) at the window's size; frames without one are
+  captured as before. **Migration:** a test that needs the world alone reads it from the platform's `IViewCapture`
+  capability (`CaptureWorld`, `SaveWorldScreenshot`). A playing transition is drawn over the UI view only in frames
+  that drew an interface there; the canvas shows it over the world as before.
 
 - A frame has a world view and a UI view: `Scene.DrawUi(IRenderer ui)` draws the interface at the window's resolution
   over the world (UI units: window pixels / `Presentation.UiScale`), `Scene.UiContains` says where it takes the pointer,

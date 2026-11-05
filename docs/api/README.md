@@ -28,7 +28,7 @@ with the [tutorial](../tutorial/README.md).
 | [MicroEngine.Saves](MicroEngine.Saves.md) | Saves as an optional engine module: the module that registers a save store as a service of the engine. | [Persistence](../manual/persistence.md) |
 | [MicroEngine.Scenes](MicroEngine.Scenes.md) | The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks. | [Scenes](../manual/scenes.md) |
 | [MicroEngine.Sdl](MicroEngine.Sdl.md) | The SDL 3 platform: Windows, Linux, macOS, Android and iOS. | [Backends and platforms](../manual/backends.md) |
-| [MicroEngine.UI](MicroEngine.UI.md) | Pixel-art widgets: dialogue boxes, menus, typewriter text, themes, achievement banners and list. | [UI widgets](../manual/ui.md) |
+| [MicroEngine.UI](MicroEngine.UI.md) | Widgets: labels, buttons, panels, stacks, text fields, dialogue boxes, menus, typewriter text, toasts, themes, focus and the UI input layer. | [UI widgets](../manual/ui.md) |
 | [MicroEngine.World](MicroEngine.World.md) | Tile layers, collision grids, swept movement against tiles (`TileMotion`), autotiling and drawing tiles. | [Tile maps and collision](../manual/world.md) |
 | [MicroEngine](MicroEngine.md) | Basic value types: colours, rectangles, maths and easing helpers. | [Graphics](../manual/rendering.md) |
 

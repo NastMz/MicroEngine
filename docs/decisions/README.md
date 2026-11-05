@@ -41,3 +41,4 @@ maintainer's archive, not in the public history.
 | [0034](0034-content-handles-loaders-sources.md) | Content handles with generations, a loader registry, a reserved import step and content sources beyond folders (amends 0004, 0025) | Accepted |
 | [0037](0037-platform-host-contract.md) | A platform host contract with capabilities, explicit options and no time coupling (amends 0016, 0027) | Accepted |
 | [0038](0038-one-composition-path.md) | One composition path for desktop, browser, phones and tests: `MicroEngine.Hosting`, a `Configure` entry point, no statics (amends 0007, 0016, 0021) | Accepted |
+| [0044](0044-ui-module.md) | A UI module of widgets driven as the highest input layer, renamable widget actions, captures that show what the player sees | Accepted |

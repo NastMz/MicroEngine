@@ -173,7 +173,7 @@ public static PromptGlyphStyle From(UiTheme theme)
 
 #### Parameters
 
-`theme` [UiTheme](MicroEngine.UI.UiTheme.md)
+`theme` UiTheme
 
 #### Returns
 
