@@ -190,7 +190,8 @@ calling `spriteFor(id, x, y)` for each non-empty cell; return `null` to skip one
 
 `TileMotion.Move` checks only the cells the box sweeps at each sub-step: a handful of lookups per moving object.
 `TileRenderer` touches only visible cells, so a large map costs what the screen shows. Both are fine for hundreds of
-moving objects per step.
+moving objects per step. A `TilePhysicsWorld2D` files its box shapes in a grid of 64-unit cells, so a move, a query or
+a sensor looks only at the shapes near it; the results are the same as looking at every shape.
 
 ## Limits
 
@@ -242,15 +243,51 @@ The core every backend offers:
 
 What a backend may declare (`physics.Capabilities`):
 
-| Capability | Meaning | Tile backend |
-| --- | --- | --- |
-| `TileGeometry` | `AddTiles(body, grid)`: solid cells block, one-way cells are platforms, changing a tile changes collisions at once | yes |
-| `OneWayPlatforms` | `ShapeDescription.OneWay`: stops only bodies coming down onto its top; `QueryFilter.PassOneWay` drops through | yes |
-| `MovingSolids` | `BodyDescription.PushesBodies`: a kinematic body that moves the whole way, pushes kinematic bodies out of its way and carries those standing on it | yes |
-| `DynamicBodies`, `Rotation`, `Joints`, `Circles`, `Capsules`, `Polygons`, `ContinuousCollision`, `FrictionRestitution`, `MassProperties` | bodies moved by a solver, and the shapes and properties they need; `ContactEvents` reports their contacts | no: refused with `PhysicsCapabilityException` |
+| Capability | Meaning | Tile backend | Box2D backend |
+| --- | --- | --- | --- |
+| `TileGeometry` | `AddTiles(body, grid)`: solid cells block, one-way cells are platforms, changing a tile changes collisions at once | yes | no: build the level from boxes |
+| `OneWayPlatforms` | `ShapeDescription.OneWay`: stops only bodies coming down onto its top; `QueryFilter.PassOneWay` drops through | yes | yes, for moved and dynamic bodies |
+| `MovingSolids` | `BodyDescription.PushesBodies`: a kinematic body that moves the whole way, pushes kinematic bodies out of its way and carries those standing on it | yes | no |
+| `DynamicBodies` | `BodyKind.Dynamic`: bodies moved by the solver (gravity, `SetVelocity`, contacts); `ContactEvents` reports when they begin and stop touching | no | yes |
+| `Rotation` | `BodyDescription.Rotation`, and bodies the solver turns (`RotationOf`) | no | yes |
+| `Circles`, `Capsules`, `Polygons` | `ShapeDescription.Circle`, `Capsule` (also as the shape `Move` moves) and `Polygon` (convex) | no | yes (polygons of up to 8 vertices) |
+| `ContinuousCollision` | `BodyDescription.Bullet`: a fast dynamic body never passes through what it hits | no | yes |
+| `FrictionRestitution`, `MassProperties` | `ShapeDescription.Friction`, `Restitution`, `Density` | no | yes |
+| `Joints` | bodies joined together | no | no |
+
+Undeclared capabilities are refused with `PhysicsCapabilityException`.
 
 The tile backend rests boxes exactly on surfaces (`Skin` is 0), uses the engine's Y-down space (`Up` is (0, -1)) and
 gives identical results on every platform. A backend with dynamic bodies may leave a small gap, at most its `Skin`.
+
+### The Box2D backend
+
+Optional, and not published yet: `Box2DPhysicsWorld2D` (namespace `MicroEngine.Physics.Box2D`) is a package of its own,
+not one of the SDK packages. It runs Box2D 3.2 natively on Windows, Linux, macOS, Android, iOS and in browsers, behind
+the same `IPhysicsWorld2D`, so code that uses only the core works on either backend:
+
+```csharp
+// The engine's pixel space: 32 pixels a metre, y down. Box2D itself works in metres.
+using var physics = new Box2DPhysicsWorld2D(new Box2DWorldOptions { UnitsPerMeter = 32, YDown = true });
+var crate = physics.CreateBody(crateEntity, BodyDescription.Dynamic(new Vector2(160, 40)) with { Rotation = 0.3f });
+physics.AddShape(crate, ShapeDescription.Box(new Vector2(16, 16)) with { Density = 2 });
+physics.Step(1 / 60f);
+foreach (var contact in physics.ContactEvents) { /* the crate began or stopped touching something */ }
+```
+
+What differs from the tile backend, within what the core allows:
+
+- `Move` stops a box a little short of the surface in its way: it rests up to `Skin` away (1.5 cm in metres, about half
+  a pixel at 32 pixels a metre), never inside. A capsule moved by `Move` may sink into the floor by up to the same amount.
+- `ContactEvents` only has pairs with a dynamic body: a kinematic character's contacts are in its `MoveResult`.
+- Events of the same step can come in another order than on the tile backend, and a contact can begin one step
+  earlier or later than the tile backend would report the touch.
+- Angles go through Box2D's own sine and cosine: an angle reads back within about 0.002 radians of the one set.
+- Identical results on every platform for the same build; never identical to the tile backend or another Box2D version.
+- A world owns native memory: dispose it. Box2D keeps at most 128 worlds alive in a process, created and disposed from
+  one thread at a time. A world you forget to dispose is released later, on the thread that next creates or disposes a
+  world, after the garbage collector finds it; when all 128 are in use, creating another first collects and retries,
+  then throws `InvalidOperationException`.
 
 To step worlds with the game, add the physics module and register each world with the scene world whose entities own
 its bodies:
@@ -275,4 +312,5 @@ at once.
 - API: [`TileMotion`](../api/MicroEngine.World.TileMotion.md), [`TileGrid`](../api/MicroEngine.World.TileGrid.md),
   [`IWorld`](../api/MicroEngine.Scenes.IWorld.md),
   [`IPhysicsWorld2D`](../api/MicroEngine.Physics.IPhysicsWorld2D.md),
-  [`TilePhysicsWorld2D`](../api/MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md)
+  [`TilePhysicsWorld2D`](../api/MicroEngine.Physics.Tiles.TilePhysicsWorld2D.md); `Box2DPhysicsWorld2D` is not in the API
+  reference until its package is published

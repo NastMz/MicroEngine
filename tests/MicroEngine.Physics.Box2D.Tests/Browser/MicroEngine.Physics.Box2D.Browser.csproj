@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!-- The Box2D backend's tests in a browser: the same test classes as the test project around this folder (its sources
+       and the shared physics suites, compiled in), run by a small reflection runner (Program.cs) on the .NET browser
+       runtime as MicroEngine ships it (Mono interpreter), with Box2D linked as the static archives of
+       artifacts/box2d/browser-wasm. Not in MicroEngine.slnx, nor a test project of its own for CI's project graph (it sits
+       one folder down): it needs the web toolchain (web/setup.sh). run.mjs builds
+       it with that toolchain and runs it in headless Chrome. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <!-- The tests' own name, so the assembly sees the backend's internals (InternalsVisibleTo) as the desktop tests do. -->
+    <AssemblyName>MicroEngine.Physics.Box2D.Tests</AssemblyName>
+    <RootNamespace>MicroEngine.Physics.Box2D.Tests</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- The runner finds the tests by reflection. -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <WasmBuildNative>true</WasmBuildNative>
+    <IsPackable>false</IsPackable>
+    <DebugType>none</DebugType>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <MicroEngineBox2DNatives Condition="'$(MicroEngineBox2DNatives)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)../../../artifacts/box2d'))</MicroEngineBox2DNatives>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MSTest.TestFramework" Version="4.4.1" />
+    <ProjectReference Include="../../../src/MicroEngine.Physics.Box2D/MicroEngine.Physics.Box2D.csproj" />
+    <Compile Include="../*.cs" LinkBase="Tests" />
+    <Compile Include="../../Shared/Physics/*.cs" Exclude="../../Shared/Physics/TileGeometryConformance.cs" LinkBase="Shared/Physics" />
+  </ItemGroup>
+  <!-- What the package's buildTransitive targets add for a browser build, from the repository's natives. -->
+  <ItemGroup>
+    <NativeFileReference Include="$(MicroEngineBox2DNatives)browser-wasm/me_box2d.a" />
+    <NativeFileReference Include="$(MicroEngineBox2DNatives)browser-wasm/box2d.a" />
+  </ItemGroup>
+  <Target Name="_RequireBrowserBox2D" BeforeTargets="Build" Condition="!Exists('$(MicroEngineBox2DNatives)browser-wasm/me_box2d.a')">
+    <Error Text="Box2D for the browser is missing under $(MicroEngineBox2DNatives)browser-wasm: run src/MicroEngine.Physics.Box2D/native/build.sh browser-wasm." />
+  </Target>
+</Project>

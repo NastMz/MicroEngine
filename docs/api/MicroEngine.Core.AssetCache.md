@@ -387,11 +387,11 @@ public ScalableFont Font(string path, FontOptions? options = null)
 
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-`options` [FontOptions](MicroEngine.Graphics.FontOptions.md)?
+`options` FontOptions?
 
 #### Returns
 
- [ScalableFont](MicroEngine.Graphics.ScalableFont.md)
+ ScalableFont
 
 #### Exceptions
 
