@@ -74,6 +74,8 @@ export const rules = [
   { pattern: /^tests\/MicroEngine\.(Raylib|Desktop)\.Tests\//, checks: ['dotnet', 'windows', 'native', 'macos'], why: 'backend tests' },
   { pattern: /^tests\/(MicroEngine\.Physics\.Box2D\.Tests|Shared\/Physics)\//, checks: ['dotnet', 'windows', 'macos', 'box2d'], why: 'physics backend tests and suites' },
   { pattern: /^tests\/MicroEngine\.Tests\//, checks: ['dotnet', 'windows', 'macos'], why: 'engine tests' },
+  // The physics substitution sample: its gameplay code is what the Box2D check's scenario tests run on both backends.
+  { pattern: /^samples\/PhysicsSubstitution\//, checks: ['dotnet', 'box2d'], why: 'physics substitution sample (Box2D scenario tests)' },
   // sdk/tests/external.mjs copies the asset gallery and plays its tour from the packages (evidence.mjs: sdkSamples).
   { pattern: /^samples\/AssetGallery\//, checks: ['dotnet', 'sdk'], why: 'asset gallery (played by the SDK external project test)' },
   { pattern: /^(tests|samples)\//, checks: ['dotnet'], why: 'game tests and samples' },

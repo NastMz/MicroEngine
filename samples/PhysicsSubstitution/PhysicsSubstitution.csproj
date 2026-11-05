@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The physics substitution sample: the same platformer gameplay code (Platformer.cs) on the tile backend and on the
+       Box2D backend, chosen where the world is made (Program.cs), plus a scenario only Box2D can run (Crates.cs).
+       Console only: it prints what each backend did. The Box2D backend is an optional package that is not published, so
+       this sample references its project and runs inside this repository only; Box2D's native library must be built
+       for this machine (src/MicroEngine.Physics.Box2D/native/build.sh). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>PhysicsSubstitution</RootNamespace>
+    <ApplicationTitle>Physics substitution</ApplicationTitle>
+    <ApplicationId>com.example.physics_substitution</ApplicationId>
+    <Version>1.0.0</Version>
+    <Description>One platformer's gameplay code on two physics backends.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.2" />
+    <ProjectReference Include="../../src/MicroEngine.Physics.Box2D/MicroEngine.Physics.Box2D.csproj" />
+  </ItemGroup>
+</Project>
