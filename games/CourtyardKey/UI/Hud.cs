@@ -10,6 +10,11 @@ namespace CourtyardKey.UI;
 /// The top bar (hearts, gems, keys, equipped items) plus transient messages: toasts, the
 /// area banner, the room-name tag and full-screen flashes.
 /// </summary>
+/// <remarks>
+/// The messages keep their own timers instead of <c>MicroEngine.UI.Toasts</c>: those are two-line panels that slide in
+/// for 3.4 s, while the HUD's are a framed line low on the screen, a large centred banner and a tag under the bar, each
+/// with its own length and fade. Only the room tag defers to the engine's achievement banners, which use its place.
+/// </remarks>
 public sealed class Hud(PlayScene world)
 {
     private string? _toast, _banner;
@@ -17,13 +22,12 @@ public sealed class Hud(PlayScene world)
     private Color _flash;
     private int _shownGems;
     private float _gemTick;
-    private static readonly Color BarTop = Color.Hex("2a2244");
+    private static readonly Color BarTop = Color.Hex("2a2244"), SlotHighlight = Color.Hex("3a3058");
     private readonly NumberText _gemsText = new(n => $"{n:000}");
     private readonly NumberText _keysText = new(n => $"×{n}");
     private CachedPrompt? _confirmKey, _actionKey;
 
     public string? LastRoomName { get; private set; }
-    public string? CurrentToast => _toastTime > 0 ? _toast : null;
 
     public void Toast(string text) { _toast = text; _toastTime = 2.4f; }
     public void Banner(string text) { _banner = text; _bannerTime = 2.6f; }
@@ -130,7 +134,7 @@ public sealed class Hud(PlayScene world)
         var rect = new RectF(at.X, at.Y, 22, 15);
         r.FillRect(rect, Pal.Ink);
         r.DrawRect(rect, Pal.Gold[1]);
-        r.FillRect(new RectF(rect.X + 1, rect.Y + 1, rect.Width - 2, 1), Color.Hex("3a3058"));
+        r.FillRect(new RectF(rect.X + 1, rect.Y + 1, rect.Width - 2, 1), SlotHighlight);
         if (item is not null)
         {
             float scale = item.Height > 12 ? 0.8f : 1f;

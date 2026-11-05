@@ -27,7 +27,6 @@ public sealed class Sprites : IDisposable
 
     public Sprite this[string name] => _atlas[name];
     public bool Contains(string name) => _atlas.Contains(name);
-    public int Count => _atlas.Names.Count;
 
     /// <summary>The "nameN" frame sequence (the atlas collects each once).</summary>
     public IReadOnlyList<Sprite> Frames(string name) => _atlas.Frames(name);

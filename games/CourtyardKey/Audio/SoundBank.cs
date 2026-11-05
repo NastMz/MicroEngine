@@ -3,17 +3,9 @@ using MicroEngine.Audio.Retro;
 
 namespace CourtyardKey.Audio;
 
-/// <summary>Every sound effect, synthesized at load. Names are the keys the game plays by.</summary>
+/// <summary>Every sound effect, synthesized at load. The names it registers are the keys the game plays by.</summary>
 public static class SoundBank
 {
-    public static readonly string[] Names =
-    [
-        "sword", "hit", "shield", "enemy_die", "hurt", "heart", "gem", "key", "chest", "unlock", "shutter",
-        "push", "switch", "boomerang", "blip", "menu_move", "menu_ok", "menu_back", "cut", "pot", "spit",
-        "hop", "flap", "roar", "stomp", "charge", "boss_hurt", "boss_die", "stairs", "low_health", "pause",
-        "splash", "death", "deflect", "fanfare", "fanfare_big", "secret", "save", "gameover", "victory", "door_slam",
-    ];
-
     public static void Register(AudioMixer audio)
     {
         static AudioClip R(SfxParams p) => Synth.Render(p);
