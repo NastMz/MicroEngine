@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Graphics2D.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 A pooled particle system for dust, sparks, confetti, smoke and the like.
@@ -89,7 +89,7 @@ The renderer.
 
 `blend` [float](https://learn.microsoft.com/dotnet/api/system.single)
 
-How far between the last two updates to draw them ([FrameBlend](MicroEngine.Core.Game.md#MicroEngine_Core_Game_FrameBlend), or 1 for
+How far between the last two updates to draw them (the game's <code>FrameBlend</code>, or 1 for
             the last update, the default): with the game's blend they move evenly on displays of any rate.
 
 ### <a id="MicroEngine_Graphics_ParticleSystem_Emit_System_Numerics_Vector2_MicroEngine_Graphics_ParticleSpec_System_Int32_System_Numerics_Vector2_"></a> Emit\(Vector2, ParticleSpec, int, Vector2\)

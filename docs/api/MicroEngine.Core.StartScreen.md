@@ -48,9 +48,9 @@ public static void Draw(IRenderer r, IGraphicsDevice graphics, AppIdentity ident
 
 #### Parameters
 
-`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`r` IRenderer
 
-`graphics` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+`graphics` IGraphicsDevice
 
 `identity` [AppIdentity](MicroEngine.Core.AppIdentity.md)
 
@@ -65,7 +65,7 @@ public static (int Width, int Height) ImageSize(PixelImage image, int canvasWidt
 
 #### Parameters
 
-`image` [PixelImage](MicroEngine.Graphics.PixelImage.md)
+`image` PixelImage
 
 `canvasWidth` [int](https://learn.microsoft.com/dotnet/api/system.int32)
 

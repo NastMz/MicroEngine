@@ -91,7 +91,7 @@ jobs:
           key: web-tools-${{ runner.os }}-${{ hashFiles('web/toolchain.env', 'web/setup.sh', 'web/build-raylib-wasm.sh') }}
       - name: Web toolchain
         if: env.SKIP != 'true' && matrix.rid == 'browser-wasm'
-        run: web/setup.sh
+        run: bash web/setup.sh
       - name: Cache key
         id: key
         if: env.SKIP != 'true'

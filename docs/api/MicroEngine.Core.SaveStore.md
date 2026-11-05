@@ -3,13 +3,13 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Saves.dll  
 Guide: [Saving data](../manual/persistence.md)  
 
 Small JSON persistence for settings and progress. Without a directory or a storage of its own, a store keeps its slots
 in the platform's default medium ([DefaultStorage](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultStorage_System_String_)): files under the user's data folder
 ([DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_)), and the page's localStorage in browsers. A composition can hand a game another medium
-([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)); tests pass a temporary directory.
+(<code>HostBuilder.Storage</code>); tests pass a temporary directory.
 Corrupt or missing data yields null instead of crashing the game; corrupt data is set aside
 ("&lt;slot&gt;.corrupt.json" for files) so the next save cannot destroy it. A slot that exists but could not be
 read (locked file, blocked browser storage) is never written by this store, because the game is then
@@ -144,7 +144,7 @@ public static string DefaultDirectory(string gameId)
 The platform's default save medium for a game: the page's localStorage in browsers
 ([BrowserStorage](MicroEngine.Platform.BrowserStorage.md), keys <code>microengine/&lt;gameId&gt;/&lt;slot&gt;</code>), files in
 [DefaultDirectory](MicroEngine.Core.SaveStore.md#MicroEngine_Core_SaveStore_DefaultDirectory_System_String_) everywhere else. A rule of the platform, not a setting: a host that wants another
-medium composes it ([Storage](MicroEngine.Hosting.HostBuilder.md#MicroEngine_Hosting_HostBuilder_Storage)) and the game passes it to
+medium composes it (<code>HostBuilder.Storage</code>) and the game passes it to
 [#ctor](MicroEngine.Core.SaveStore.md).
 
 ```csharp

@@ -103,7 +103,7 @@ public sealed class ParticleSystem
 
     /// <summary>Draws every live particle. With <see cref="Additive"/>, the blend mode is set to additive and back to <see cref="BlendMode.Alpha"/> afterwards.</summary>
     /// <param name="renderer">The renderer.</param>
-    /// <param name="blend">How far between the last two updates to draw them (<see cref="Core.Game.FrameBlend"/>, or 1 for
+    /// <param name="blend">How far between the last two updates to draw them (the game's <c>FrameBlend</c>, or 1 for
     /// the last update, the default): with the game's blend they move evenly on displays of any rate.</param>
     public void Draw(IRenderer renderer, float blend = 1)
     {

@@ -12,6 +12,7 @@
     <Project Path="src/MicroEngine.Physics/MicroEngine.Physics.csproj" />
     <Project Path="src/MicroEngine.Physics.Tiles/MicroEngine.Physics.Tiles.csproj" />
     <Project Path="src/MicroEngine.Physics.Box2D/MicroEngine.Physics.Box2D.csproj" />
+    <Project Path="src/MicroEngine.Saves/MicroEngine.Saves.csproj" />
     <Project Path="src/MicroEngine/MicroEngine.csproj" />
     <Project Path="src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
     <Project Path="src/MicroEngine.Sdl/MicroEngine.Sdl.csproj" />

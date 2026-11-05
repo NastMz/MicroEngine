@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Core](MicroEngine.Core.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Saves.dll  
 Guide: [Saving data](../manual/persistence.md)  
 
 One JSON file per slot in a directory (desktop and tests).

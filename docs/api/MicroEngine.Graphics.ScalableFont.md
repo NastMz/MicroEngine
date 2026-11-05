@@ -64,7 +64,7 @@ public TextureFilter Filter { get; set; }
 
 #### Property Value
 
- [TextureFilter](MicroEngine.Graphics.TextureFilter.md)
+ TextureFilter
 
 ### <a id="MicroEngine_Graphics_ScalableFont_GlyphsRasterized"></a> GlyphsRasterized
 
@@ -194,7 +194,7 @@ public void Draw(IRenderer renderer, string text, Vector2 position, float size, 
 
 #### Parameters
 
-`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`renderer` IRenderer
 
 `text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
@@ -214,7 +214,7 @@ public static ScalableFont FromBytes(IGraphicsDevice device, byte[] data, FontOp
 
 #### Parameters
 
-`device` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+`device` IGraphicsDevice
 
 Creates the glyph pages.
 
@@ -266,7 +266,7 @@ public static ScalableFont Load(IGraphicsDevice device, string path, FontOptions
 
 #### Parameters
 
-`device` [IGraphicsDevice](MicroEngine.Graphics.IGraphicsDevice.md)
+`device` IGraphicsDevice
 
 `path` [string](https://learn.microsoft.com/dotnet/api/system.string)
 

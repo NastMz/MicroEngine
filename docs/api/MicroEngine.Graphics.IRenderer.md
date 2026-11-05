@@ -3,7 +3,7 @@
 <div data-pagefind-weight="0.3">
 
 Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)  
-Assembly: MicroEngine.dll  
+Assembly: MicroEngine.Graphics2D.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
 Immediate-mode 2D drawing in virtual pixels. Coordinates go through the camera
@@ -66,7 +66,7 @@ int Width { get; }
 
 Replaces every pixel of the canvas with <code class="paramref">color</code>, alpha included, whatever the clip
 ([SetClip](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetClip_System_Nullable_MicroEngine_RectF__)) and blend mode, and replaces what was drawn before it in the frame. The clip still applies
-to the draws after it. The game clears to [Background](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Background) before the scenes draw.
+to the draws after it. The game clears to its settings' <code>Background</code> colour before the scenes draw.
 
 ```csharp
 void Clear(Color color)
@@ -235,7 +235,7 @@ void PushCamera(Camera2D camera)
 
 #### Parameters
 
-`camera` Camera2D
+`camera` [Camera2D](MicroEngine.Graphics.Camera2D.md)
 
 ### <a id="MicroEngine_Graphics_IRenderer_SetBlendMode_MicroEngine_Graphics_BlendMode_"></a> SetBlendMode\(BlendMode\)
 

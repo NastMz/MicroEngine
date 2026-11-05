@@ -19,6 +19,7 @@ refused writes return `false`.
 | `SaveStore.DefaultStorage` | Static factory chosen by a launcher before any game is built. Next SDK version: a method, `DefaultStorage(gameId)`, that returns the platform's default medium (below); a host composes another one instead (`host.Storage`) |
 | `SaveStore.DefaultDirectory(gameId)` | The user's save folder for a game on this system (see below) |
 | `host.SaveStore(gameId)` | Next SDK version: a store on the composition's medium (`host.Storage`), else the platform's default ([One composition for every platform](backends.md#one-composition-for-every-platform)) |
+| `new SavesModule(store)` | Next SDK version: saves as an optional engine module (namespace `MicroEngine.Saves`): `builder.Add(new SavesModule(store))` registers the store as the engine's `SaveStore` service. It runs no frame system and writes nothing by itself. A game that declares achievements gets it with their store; a game that uses neither has no store service and writes no file |
 
 Courtyard Key keeps its adventure in one slot:
 
@@ -51,7 +52,7 @@ public SaveStore(string gameId, string? directory = null)
 }
 ```
 
-Source: [`src/MicroEngine/Core/SaveStore.cs`](../../src/MicroEngine/Core/SaveStore.cs)
+Source: [`src/MicroEngine.Saves/SaveStore.cs`](../../src/MicroEngine.Saves/SaveStore.cs)
 
 | Platform | Storage | Location |
 | --- | --- | --- |
@@ -96,7 +97,7 @@ public interface ISaveStorage
 }
 ```
 
-Source: [`src/MicroEngine/Core/SaveStore.cs`](../../src/MicroEngine/Core/SaveStore.cs)
+Source: [`src/MicroEngine.Saves/SaveStore.cs`](../../src/MicroEngine.Saves/SaveStore.cs)
 
 Implementations report failures as `IOException` or `UnauthorizedAccessException`; the browser storage converts
 JavaScript storage errors (quota, privacy mode) into `IOException`. A new medium (a cloud service, a console save

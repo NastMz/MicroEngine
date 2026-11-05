@@ -22,17 +22,7 @@ public sealed class DeviceRenderer : IRenderer
 
 #### Implements
 
-[IRenderer](MicroEngine.Graphics.IRenderer.md)
-
-#### Extension Methods
-
-[RendererExtensions.Draw\(IRenderer, Sprite, Vector2, Color?, bool\)](MicroEngine.Graphics.RendererExtensions.md\#MicroEngine\_Graphics\_RendererExtensions\_Draw\_MicroEngine\_Graphics\_IRenderer\_MicroEngine\_Graphics\_Sprite\_System\_Numerics\_Vector2\_System\_Nullable\_MicroEngine\_Color\_\_System\_Boolean\_), 
-[RendererExtensions.Draw\(IRenderer, Texture, Vector2, Color?\)](MicroEngine.Graphics.RendererExtensions.md\#MicroEngine\_Graphics\_RendererExtensions\_Draw\_MicroEngine\_Graphics\_IRenderer\_MicroEngine\_Graphics\_Texture\_System\_Numerics\_Vector2\_System\_Nullable\_MicroEngine\_Color\_\_), 
-[RendererExtensions.DrawPivoted\(IRenderer, Sprite, Vector2, float, Vector2?, Color?, bool\)](MicroEngine.Graphics.RendererExtensions.md\#MicroEngine\_Graphics\_RendererExtensions\_DrawPivoted\_MicroEngine\_Graphics\_IRenderer\_MicroEngine\_Graphics\_Sprite\_System\_Numerics\_Vector2\_System\_Single\_System\_Nullable\_System\_Numerics\_Vector2\_\_System\_Nullable\_MicroEngine\_Color\_\_System\_Boolean\_), 
-[RendererExtensions.DrawRect\(IRenderer, RectF, Color, float\)](MicroEngine.Graphics.RendererExtensions.md\#MicroEngine\_Graphics\_RendererExtensions\_DrawRect\_MicroEngine\_Graphics\_IRenderer\_MicroEngine\_RectF\_MicroEngine\_Color\_System\_Single\_), 
-[RendererExtensions.FillEllipse\(IRenderer, Vector2, float, float, Color\)](MicroEngine.Graphics.RendererExtensions.md\#MicroEngine\_Graphics\_RendererExtensions\_FillEllipse\_MicroEngine\_Graphics\_IRenderer\_System\_Numerics\_Vector2\_System\_Single\_System\_Single\_MicroEngine\_Color\_), 
-[RendererExtensions.FillGradient\(IRenderer, RectF, Color, Color, int\)](MicroEngine.Graphics.RendererExtensions.md\#MicroEngine\_Graphics\_RendererExtensions\_FillGradient\_MicroEngine\_Graphics\_IRenderer\_MicroEngine\_RectF\_MicroEngine\_Color\_MicroEngine\_Color\_System\_Int32\_), 
-[RendererExtensions.Panel\(IRenderer, RectF, PanelStyle\)](MicroEngine.Graphics.RendererExtensions.md\#MicroEngine\_Graphics\_RendererExtensions\_Panel\_MicroEngine\_Graphics\_IRenderer\_MicroEngine\_RectF\_MicroEngine\_Graphics\_PanelStyle\_)
+IRenderer
 
 ## Constructors
 
@@ -129,7 +119,7 @@ public void Begin()
 
 Replaces every pixel of the canvas with <code class="paramref">color</code>, alpha included, whatever the clip
 ([SetClip](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetClip_System_Nullable_MicroEngine_RectF__)) and blend mode, and replaces what was drawn before it in the frame. The clip still applies
-to the draws after it. The game clears to [Background](MicroEngine.Core.GameSettings.md#MicroEngine_Core_GameSettings_Background) before the scenes draw.
+to the draws after it. The game clears to its settings' <code>Background</code> colour before the scenes draw.
 
 ```csharp
 public void Clear(Color color)
@@ -147,7 +137,7 @@ public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in
 
 #### Parameters
 
-`texture` [Texture](MicroEngine.Graphics.Texture.md)
+`texture` Texture
 
 `source` RectF
 
@@ -155,7 +145,7 @@ public void Draw(Texture texture, RectF source, Vector2 position, Color tint, in
 
 `tint` Color
 
-`options` [DrawOptions](MicroEngine.Graphics.DrawOptions.md)
+`options` DrawOptions
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_DrawLine_System_Numerics_Vector2_System_Numerics_Vector2_System_Single_MicroEngine_Color_"></a> DrawLine\(Vector2, Vector2, float, Color\)
 
@@ -185,7 +175,7 @@ public void DrawStretched(Texture texture, RectF source, RectF destination, Colo
 
 #### Parameters
 
-`texture` [Texture](MicroEngine.Graphics.Texture.md)
+`texture` Texture
 
 `source` RectF
 
@@ -305,7 +295,7 @@ public void SetBlendMode(BlendMode mode)
 
 #### Parameters
 
-`mode` [BlendMode](MicroEngine.Graphics.BlendMode.md)
+`mode` BlendMode
 
 ### <a id="MicroEngine_Graphics_DeviceRenderer_SetClip_System_Nullable_MicroEngine_RectF__"></a> SetClip\(RectF?\)
 

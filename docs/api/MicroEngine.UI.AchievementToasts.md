@@ -139,7 +139,7 @@ public void Draw(IRenderer r, BitmapFont font)
 
 #### Parameters
 
-`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+`r` IRenderer
 
 `font` [BitmapFont](MicroEngine.Graphics.BitmapFont.md)
 
