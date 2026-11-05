@@ -33,6 +33,22 @@ public sealed class Camera2D
 
     /// <summary>The world point at the top-left of the view, in pixels. Setting it directly does not apply <see cref="Bounds"/>; call <see cref="Clamp"/> for that.</summary>
     public Vector2 Position { get; set; }
+    /// <summary>
+    /// Where the view is drawn when that is not <see cref="Position"/>, or null (the default) to draw at
+    /// <see cref="Position"/>. Set it before drawing to show the camera somewhere the rules do not keep it, for example
+    /// its position interpolated between the last two updates (a scene world's <c>DrawPosition2D</c> of an entity that
+    /// follows the camera): the rules keep reading and moving <see cref="Position"/>, and drawing never changes it. It
+    /// stays until it is set again or set to null.
+    /// </summary>
+    /// <remarks>
+    /// Drawing reads it through <see cref="DrawnPosition"/>: <see cref="RenderOffset"/>, <see cref="WorldToView"/>,
+    /// <see cref="ViewToWorld"/>, <see cref="WorldToScreen"/>, <see cref="ScreenToWorld"/>, <see cref="VisibleBounds"/> and
+    /// <see cref="IsVisible"/>. <see cref="View"/>, <see cref="Center"/>, <see cref="Follow"/>, <see cref="CenterOn"/> and
+    /// <see cref="Clamp"/> are the rules' and use <see cref="Position"/>.
+    /// </remarks>
+    public Vector2? DrawPosition { get; set; }
+    /// <summary>The position the view is drawn at: <see cref="DrawPosition"/> when it is set, else <see cref="Position"/>.</summary>
+    public Vector2 DrawnPosition => DrawPosition ?? Position;
     /// <summary>Width of the view in pixels, usually the virtual canvas width.</summary>
     public float ViewWidth { get; }
     /// <summary>Height of the view in pixels, usually the virtual canvas height.</summary>
@@ -45,7 +61,7 @@ public sealed class Camera2D
     public Vector2 DeadZone { get; set; } = Vector2.Zero;
     /// <summary>Maximum shake offset in pixels at full trauma.</summary>
     public float MaxShake { get; set; } = 6f;
-    /// <summary>Shake offset applied on top of <see cref="Position"/> when rendering.</summary>
+    /// <summary>Shake offset applied on top of <see cref="DrawnPosition"/> when rendering.</summary>
     public Vector2 ShakeOffset { get; private set; }
     /// <summary>
     /// Rounds the camera's translation to whole canvas pixels for crisp pixel art. Its default is the presentation's
@@ -68,7 +84,8 @@ public sealed class Camera2D
     public float Rotation { get; set; }
 
     /// <summary>
-    /// World coordinates to canvas pixels: the view's centre (with shake) moves to the canvas centre, then the world is
+    /// World coordinates to canvas pixels: the drawn view's centre (at <see cref="DrawnPosition"/>, with shake) moves to
+    /// the canvas centre, then the world is
     /// rotated by <see cref="Rotation"/> and scaled by <see cref="Zoom"/> around it; with <see cref="PixelSnap"/> the
     /// final translation is rounded. With no zoom or rotation it is the translation by <see cref="RenderOffset"/>.
     /// </summary>
@@ -78,7 +95,7 @@ public sealed class Camera2D
         {
             if (Zoom == 1f && Rotation == 0f) return Matrix3x2.CreateTranslation(RenderOffset);
             var half = new Vector2(ViewWidth, ViewHeight) / 2f;
-            var m = Matrix3x2.CreateTranslation(-(Center + ShakeOffset)) * Matrix3x2.CreateRotation(Rotation) * Matrix3x2.CreateScale(Zoom) * Matrix3x2.CreateTranslation(half);
+            var m = Matrix3x2.CreateTranslation(-(DrawnCenter + ShakeOffset)) * Matrix3x2.CreateRotation(Rotation) * Matrix3x2.CreateScale(Zoom) * Matrix3x2.CreateTranslation(half);
             if (PixelSnap) m.Translation = new Vector2(MathF.Round(m.Translation.X), MathF.Round(m.Translation.Y));
             return m;
         }
@@ -111,13 +128,14 @@ public sealed class Camera2D
     public RectF View => new(Position.X, Position.Y, ViewWidth, ViewHeight);
     /// <summary>The world point at the centre of the view.</summary>
     public Vector2 Center => Position + new Vector2(ViewWidth, ViewHeight) / 2f;
+    private Vector2 DrawnCenter => DrawnPosition + new Vector2(ViewWidth, ViewHeight) / 2f;
 
-    /// <summary>The translation the renderer should apply (negative position plus shake), snapped if requested.</summary>
+    /// <summary>The translation the renderer should apply (negative <see cref="DrawnPosition"/> plus shake), snapped if requested.</summary>
     public Vector2 RenderOffset
     {
         get
         {
-            var p = -(Position + ShakeOffset);
+            var p = -(DrawnPosition + ShakeOffset);
             return PixelSnap ? new Vector2(MathF.Round(p.X), MathF.Round(p.Y)) : p;
         }
     }
@@ -174,16 +192,18 @@ public sealed class Camera2D
     public bool IsVisible(RectF world, float margin = 0) => VisibleBounds.Inflate(margin + MaxShake).Intersects(world);
 
     /// <summary>
-    /// The world rectangle that covers what the canvas shows, without shake: <see cref="View"/> with no zoom or rotation,
-    /// otherwise the bounding box of the canvas's corners in the world.
+    /// The world rectangle that covers what the canvas shows, without shake: the view at <see cref="DrawnPosition"/>
+    /// (<see cref="View"/> while no <see cref="DrawPosition"/> is set) with no zoom or rotation, otherwise the bounding box
+    /// of the canvas's corners in the world.
     /// </summary>
     public RectF VisibleBounds
     {
         get
         {
-            if (Zoom == 1f && Rotation == 0f) return View;
+            var drawn = DrawnPosition;
+            if (Zoom == 1f && Rotation == 0f) return new RectF(drawn.X, drawn.Y, ViewWidth, ViewHeight);
             var half = new Vector2(ViewWidth, ViewHeight) / 2f;
-            var toWorld = Matrix3x2.CreateTranslation(-half) * Matrix3x2.CreateScale(1f / Zoom) * Matrix3x2.CreateRotation(-Rotation) * Matrix3x2.CreateTranslation(Center);
+            var toWorld = Matrix3x2.CreateTranslation(-half) * Matrix3x2.CreateScale(1f / Zoom) * Matrix3x2.CreateRotation(-Rotation) * Matrix3x2.CreateTranslation(DrawnCenter);
             Span<Vector2> corners = [Vector2.Transform(Vector2.Zero, toWorld), Vector2.Transform(new Vector2(ViewWidth, 0), toWorld),
                 Vector2.Transform(new Vector2(ViewWidth, ViewHeight), toWorld), Vector2.Transform(new Vector2(0, ViewHeight), toWorld)];
             float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;

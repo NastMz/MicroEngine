@@ -52,19 +52,12 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
     }
 
     /// <summary>
-    /// Draws the stage at its world's blend (<paramref name="blend"/>: the particles' too). The camera is Camera2D state
-    /// the rules read, so it is moved to its drawn position for the frame and put back afterwards.
+    /// Draws the stage at its world's blend (<paramref name="blend"/>: the particles' too). The camera is drawn at its
+    /// interpolated position (<see cref="MicroEngine.Graphics.Camera2D.DrawPosition"/>); the rules keep its position.
     /// </summary>
     public void Draw(IRenderer r, Stage stage, float time, float blend)
     {
-        var camera = stage.Camera.Position;
-        stage.Camera.Position = stage.CameraDrawPosition;
-        try { DrawStage(r, stage, time, blend); }
-        finally { stage.Camera.Position = camera; }
-    }
-
-    private void DrawStage(IRenderer r, Stage stage, float time, float blend)
-    {
+        stage.Camera.DrawPosition = stage.CameraDrawPosition;
         // One pass over the actors per frame; the layers and the light pass reuse it.
         _actors.Clear();
         foreach (var a in stage.Actors) _actors.Add(a);
@@ -108,10 +101,10 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
         {
             var layer = _layers[i];
             var s = art[layer.Sprite];
-            float scroll = cam.Position.X * layer.FactorX + time * layer.Drift;
+            float scroll = cam.DrawnPosition.X * layer.FactorX + time * layer.Drift;
             float x = -(scroll % s.Width);
             if (x > 0) x -= s.Width;
-            float y = MathF.Round(layer.Bottom - s.Height + (maxY - cam.Position.Y) * layer.FactorY);
+            float y = MathF.Round(layer.Bottom - s.Height + (maxY - cam.DrawnPosition.Y) * layer.FactorY);
             if (layer.Additive) r.SetBlendMode(BlendMode.Additive);
             for (float px = MathF.Round(x); px < 320; px += s.Width) r.Draw(s, new Vector2(px, y));
             if (layer.Additive) r.SetBlendMode(BlendMode.Alpha);
@@ -121,7 +114,7 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
     private void DrawTiles(IRenderer r, Stage stage, float time, bool background)
     {
         var level = stage.Level;
-        var view = stage.Camera.View;
+        var view = stage.Camera.VisibleBounds;
         int x0 = Math.Max(0, (int)(view.X / 16) - 1), x1 = Math.Min(level.Width - 1, (int)(view.Right / 16) + 1);
         int y0 = Math.Max(0, (int)(view.Y / 16) - 1), y1 = Math.Min(level.Height - 1, (int)(view.Bottom / 16) + 1);
         var tiles = level.Tiles;
@@ -169,7 +162,7 @@ internal sealed class StageView(Assets art, BitmapFont font, LightMap lights)
 
     private void DrawDecorations(IRenderer r, Stage stage)
     {
-        var view = stage.Camera.View.Inflate(16);
+        var view = stage.Camera.VisibleBounds.Inflate(16);
         var tiles = stage.Level.Tiles;
         var decorations = stage.Level.Decorations;
         for (int i = 0; i < decorations.Count; i++)
