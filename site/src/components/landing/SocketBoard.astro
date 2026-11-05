@@ -1,0 +1,87 @@
+---
+// The socket board: MicroEngine's modularity drawn as the mark is built. The kernel is a solid bar; the families hang
+// from it in bays separated by walls, open at the bottom; every implementation is a module seated in its bay, or an
+// empty dashed socket when no package carries it. Each one's status is written out (site/design/README.md, section 7).
+// Data: src/data/landing/board.ts.
+import FamilyIcon from '../brand/FamilyIcon.astro';
+import { families } from '../brand/geometry.mjs';
+import { bays, kernel, statusWords } from '../../data/landing/board';
+
+interface Props { labelledby: string }
+const { labelledby } = Astro.props;
+---
+<div class="socket-board" role="group" aria-labelledby={labelledby}>
+  <p class="rail">
+    <span class="rail-name">{kernel.name}</span>
+    <span class="rail-note">{kernel.note}</span>
+  </p>
+  <ul class="bays">
+    {bays.map(bay => (
+      <li class="bay" data-family={bay.family}>
+        <p class="bay-head">
+          <FamilyIcon family={bay.family} size={16} />
+          <a class="bay-name" href={bay.href}>{families[bay.family].label}</a>
+          {bay.contract && <code>{bay.contract}</code>}
+        </p>
+        <ul class="slots">
+          {bay.slots.map(slot => (
+            <li class="slot" data-state={slot.status === 'repo' ? 'empty' : slot.status === 'open' ? 'open' : 'seated'} data-status={slot.status === 'open' ? undefined : slot.status}>
+              <span class="socket">
+                <span class="module">
+                  <span class="module-name">{slot.name}</span>
+                  <span class="module-note">{slot.note}</span>
+                </span>
+              </span>
+              <span class="slot-status">
+                {slot.status !== 'open' && <span class="status-mark" aria-hidden="true"></span>}
+                {statusWords[slot.status]}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  /* The board is ink; the bays are paper cut out of it, so the walls between them are the board showing through. */
+  .socket-board { display: grid; min-width: 0; background: var(--color-ink); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+  .rail { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2xs) var(--space-sm); margin: 0;
+    padding: var(--space-sm) var(--space-md); color: var(--color-paper); font-family: var(--font-mono); font-size: var(--text-xs);
+    letter-spacing: var(--tracking-label); text-transform: uppercase; }
+  .rail-name { font-weight: 500; }
+  .rail-note { color: var(--color-paper-3); text-transform: none; letter-spacing: 0; }
+  .bays { list-style: none; margin: 0; padding: 0 var(--rule-pixel); display: grid; gap: var(--rule-pixel);
+    grid-template-columns: minmax(0, 1fr); }
+  .bay { display: grid; align-content: start; gap: var(--space-sm); padding: var(--space-md) var(--space-md) var(--space-lg);
+    background: var(--color-paper); min-width: 0; }
+  .bay-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs); margin: 0; color: var(--color-ink-2);
+    font-family: var(--font-mono); font-size: var(--text-xs); }
+  .bay-name { color: var(--family-color); font-weight: 500; text-transform: uppercase; letter-spacing: var(--tracking-label);
+    text-decoration: none; display: inline-flex; align-items: center; min-height: var(--space-lg); }
+  .bay-name:hover { text-decoration: underline; color: var(--family-color); }
+  .bay-head code { font-size: inherit; color: var(--color-ink-2); }
+  .slots { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-sm); }
+  .slot { display: grid; gap: var(--space-2xs); min-width: 0; }
+  /* A socket: a hairline bay with the module seated one gap inside it, as in the mark. */
+  .socket { display: block; padding: var(--rule-gap); border: var(--rule-thin) solid var(--color-rule); border-radius: var(--radius-sm); }
+  .module { display: grid; gap: 2px; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm);
+    background: color-mix(in oklch, var(--family-color) var(--tint), var(--color-paper)); border: var(--rule-thin) solid var(--family-color);
+    transition: transform var(--dur-fast) var(--ease-seat); }
+  .module-name { font-family: var(--font-mono); font-weight: 500; font-size: var(--text-sm); color: var(--color-ink); overflow-wrap: anywhere; }
+  .module-note { font-size: var(--text-xs); color: var(--color-ink-2); line-height: var(--leading-snug); }
+  .slot[data-state='seated']:hover .module { transform: translateY(-2px); }
+  /* Not published: the socket is dashed and empty; the name is written inside, in neutral ink. */
+  .slot[data-state='empty'] .socket { border-style: dashed; border-color: var(--color-ink-3); }
+  .slot[data-state='empty'] .module { background: transparent; border-color: transparent; }
+  .slot[data-state='empty'] .module-name { color: var(--color-ink-2); }
+  /* An extension point: an open socket waiting for a module of your own. */
+  .slot[data-state='open'] .module { background: transparent; border: var(--rule-thin) dashed var(--family-color); }
+  .slot[data-state='open'] .module-name { color: var(--color-ink-2); }
+  .slot-status { display: flex; align-items: center; gap: var(--space-xs); color: var(--status-color, var(--color-ink-3));
+    font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+  @media (prefers-reduced-motion: reduce) { .module { transition: none; } .slot[data-state='seated']:hover .module { transform: none; } }
+  @media (min-width: 40rem) { .bays { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 64rem) { .bays { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>
