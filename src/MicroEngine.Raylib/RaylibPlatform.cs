@@ -269,12 +269,12 @@ public sealed class RaylibPlatform : IPlatform, IDisplayControl, IDisplayPacing,
     (int Width, int Height) IScreenView.ScreenPixels => (Math.Max(1, (int)_touch.Size.X), Math.Max(1, (int)_touch.Size.Y));
     (int Width, int Height) IScreenView.CanvasSize => (_canvas.Target.Width, _canvas.Target.Height);
     RectF IScreenView.WorldFrame => FrameRect();
-    float IScreenView.UiScale => _settings.EffectivePresentation.UiScale;
+    float IScreenView.UiScale => _settings.EffectivePresentation.UiScaleFor(_surface.PixelDensity);
     IRenderer IScreenView.BeginUi()
     {
         var (width, height) = ((IScreenView)this).ScreenPixels;
         _frameHasUi = true;
-        return _canvas.BeginUi(width, height, _settings.EffectivePresentation.UiScale);
+        return _canvas.BeginUi(width, height, _settings.EffectivePresentation.UiScaleFor(_surface.PixelDensity));
     }
 
     private bool _frameHasUi;

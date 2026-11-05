@@ -65,5 +65,8 @@ the canvas alone, so a capture of a frame with an interface did not show what th
   margins with the text; the UI scale stays the presentation's.
 - A capture of a frame with an interface has the window's size, not the canvas's times the capture scale, and its world
   is resampled into the window as the player saw it.
-- Not decided here: the default UI scale (the presentation's value, 1, until it follows the surface's pixel density),
-  a dialogue box that takes prompts from the UI assembly, scrolling containers, rich text and right-to-left text.
+- **The UI scale follows the screen.** `Presentation.UiScale` is null by default and then resolves to the surface's
+  pixel density (`UiScaleFor`), which the SDL and raylib platforms read from their window and the headless platform
+  states as 1 (settable for tests); a value overrides it. The interface keeps its physical size on high-density screens.
+- Not decided here: a dialogue box that takes prompts from the UI assembly, scrolling containers, rich text and
+  right-to-left text.

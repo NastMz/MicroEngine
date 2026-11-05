@@ -126,11 +126,20 @@ public sealed class PresentationTests
     }
 
     [TestMethod]
-    public void UiScale_DefaultsToOne_AndRefusesNonPositiveValues()
+    public void UiScale_IsUnsetByDefault_SoTheSurfacesPixelDensityDecides_AndRefusesNonPositiveValues()
     {
-        Assert.AreEqual(1f, Presentation.PixelArt.UiScale);
-        Assert.AreEqual(1f, Presentation.HighResolution2D.UiScale);
-        Assert.AreEqual(2f, (Presentation.PixelArt with { UiScale = 2 }).UiScale);
+        Assert.IsNull(Presentation.PixelArt.UiScale);
+        Assert.IsNull(Presentation.HighResolution2D.UiScale);
+        Assert.AreEqual(1f, Presentation.PixelArt.UiScaleFor(1), "density 1: one UI unit per window pixel");
+        Assert.AreEqual(2f, Presentation.PixelArt.UiScaleFor(2), "density 2: the UI keeps its physical size on a high-density screen");
+        Assert.AreEqual(1f, Presentation.PixelArt.UiScaleFor(0), "a surface that reports no density counts as 1");
+        Assert.AreEqual(1f, Presentation.PixelArt.UiScaleFor(float.NaN));
+        var explicitScale = Presentation.PixelArt with { UiScale = 1.5f };
+        Assert.AreEqual(1.5f, explicitScale.UiScale);
+        Assert.AreEqual(1.5f, explicitScale.UiScaleFor(1), "an explicit value overrides the density");
+        Assert.AreEqual(1.5f, explicitScale.UiScaleFor(2));
+        Assert.IsNull((explicitScale with { UiScale = null }).UiScale, "null goes back to the density");
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => _ = Presentation.PixelArt with { UiScale = 0 });
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => _ = Presentation.PixelArt with { UiScale = float.PositiveInfinity });
     }
 }

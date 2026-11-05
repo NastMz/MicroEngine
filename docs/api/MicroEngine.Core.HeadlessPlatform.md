@@ -184,6 +184,26 @@ public ISurface MainSurface { get; }
 
  ISurface
 
+### <a id="MicroEngine_Core_HeadlessPlatform_PixelDensity"></a> PixelDensity
+
+Pixels per logical unit of the surface ([PixelDensity](MicroEngine.Platform.ISurface.md#MicroEngine_Platform_ISurface_PixelDensity)): 1 by default, as a headless run has no
+screen. Set it when creating the platform to stand for a high-density screen: with the presentation's
+[UiScale](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_UiScale) unset, the UI scale follows it.
+
+```csharp
+public float PixelDensity { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Exceptions
+
+ [ArgumentOutOfRangeException](https://learn.microsoft.com/dotnet/api/system.argumentoutofrangeexception)
+
+The value is not a positive finite number.
+
 ### <a id="MicroEngine_Core_HeadlessPlatform_Presentation"></a> Presentation
 
 How the canvas is placed in the surface for the UI view's mapping ([WorldFrame](MicroEngine.Core.IScreenView.md#MicroEngine_Core_IScreenView_WorldFrame)): the
@@ -315,9 +335,10 @@ public HeadlessTouchScreen TouchScreen { get; }
 
 ### <a id="MicroEngine_Core_HeadlessPlatform_UiRenderer"></a> UiRenderer
 
-The UI view's renderer of the current frame ([IScreenView](MicroEngine.Core.IScreenView.md)): the surface's size in pixels, one UI unit per
-pixel. It counts draw calls; with [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize) on it also draws them, and a frame that drew a UI is
-captured with it composited over the world ([IViewCapture](MicroEngine.Core.IViewCapture.md)).
+The UI view's renderer of the current frame ([IScreenView](MicroEngine.Core.IScreenView.md)): the surface's size in UI units (pixels
+divided by the UI scale, [UiScaleFor](MicroEngine.Graphics.Presentation.md#MicroEngine_Graphics_Presentation_UiScaleFor_System_Single_) of [PixelDensity](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_PixelDensity)). It counts
+draw calls; with [Rasterize](MicroEngine.Core.HeadlessPlatform.md#MicroEngine_Core_HeadlessPlatform_Rasterize) on it also draws them, and a frame that drew a UI is captured with it
+composited over the world ([IViewCapture](MicroEngine.Core.IViewCapture.md)), each UI unit repeated over the window pixels it covers.
 
 ```csharp
 public HeadlessRenderer UiRenderer { get; }

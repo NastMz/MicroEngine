@@ -316,8 +316,15 @@ Collision over the same layers (`TileGrid`, `TileMotion`) is described in [Tile 
 Not published yet: arrives with the next SDK version. A frame has two views. The **world view** is the canvas: drawn at
 the canvas's resolution (`Scene.Draw`), with the scene's camera, and scaled into the window as the presentation says. The
 **UI view** is drawn at the window's resolution over it (`Scene.DrawUi`), in UI units (window pixels divided by
-`Presentation.UiScale`, 1 by default), so interface text and shapes stay sharp however small the canvas is: a 320 × 180
+the UI scale), so interface text and shapes stay sharp however small the canvas is: a 320 × 180
 pixel-art world in a 1280 × 720 window gets its interface drawn on 1280 × 720 pixels.
+
+The UI scale is `Presentation.UiScale`. Left unset (null, the default), it is the surface's pixel density: 1 on an
+ordinary screen, 2 on a screen with twice the pixels per logical unit (a high-density laptop or phone), so the interface
+keeps its physical size there; the headless platform's density is 1 (`HeadlessPlatform.PixelDensity` stands for another
+screen in tests). A value overrides it: `UiScale = 1` draws one UI unit per window pixel on every screen, `UiScale = 2`
+makes the interface twice as large. `Presentation.UiScaleFor(density)` gives the scale a surface gets, and
+`Game.Views.UiScale` the one in use.
 
 ```csharp
 public sealed class PlayScene : Scene

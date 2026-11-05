@@ -37,7 +37,7 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
         _surfaceSize = (width, height);
         _renderer = new HeadlessRenderer(width, height);
         TouchScreen = new HeadlessTouchScreen(new Vector2(width * 4, height * 4));
-        _surface = new HostSurface(0, () => _surfaceSize, () => 1f, () => false);
+        _surface = new HostSurface(0, () => _surfaceSize, () => _density, () => false);
         _capabilities.Add<ITouchScreen>(TouchScreen);
         _capabilities.Add<IInputBackend>(Devices);
         _capabilities.Add<IKeyLabels>(Devices);
@@ -130,17 +130,42 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
     /// <summary>The renderer, typed so tests can read its counters.</summary>
     public HeadlessRenderer Renderer => _renderer;
     /// <summary>
-    /// The UI view's renderer of the current frame (<see cref="IScreenView"/>): the surface's size in pixels, one UI unit per
-    /// pixel. It counts draw calls; with <see cref="Rasterize"/> on it also draws them, and a frame that drew a UI is
-    /// captured with it composited over the world (<see cref="IViewCapture"/>).
+    /// The UI view's renderer of the current frame (<see cref="IScreenView"/>): the surface's size in UI units (pixels
+    /// divided by the UI scale, <see cref="Graphics.Presentation.UiScaleFor"/> of <see cref="PixelDensity"/>). It counts
+    /// draw calls; with <see cref="Rasterize"/> on it also draws them, and a frame that drew a UI is captured with it
+    /// composited over the world (<see cref="IViewCapture"/>), each UI unit repeated over the window pixels it covers.
     /// </summary>
     public HeadlessRenderer UiRenderer => _ui ??= NewUiRenderer();
     private HeadlessRenderer? _ui;
     private bool _frameHasUi;
 
-    private HeadlessRenderer NewUiRenderer() => Rasterize
-        ? new HeadlessRenderer(_surfaceSize.Width, _surfaceSize.Height, _graphics)
-        : new HeadlessRenderer(_surfaceSize.Width, _surfaceSize.Height);
+    private (int Width, int Height) UiUnits
+    {
+        get
+        {
+            float scale = ((IScreenView)this).UiScale;
+            return (Math.Max(1, (int)MathF.Floor(_surfaceSize.Width / scale + 1e-4f)), Math.Max(1, (int)MathF.Floor(_surfaceSize.Height / scale + 1e-4f)));
+        }
+    }
+
+    private HeadlessRenderer NewUiRenderer()
+    {
+        var (w, h) = UiUnits;
+        return Rasterize ? new HeadlessRenderer(w, h, _graphics) : new HeadlessRenderer(w, h);
+    }
+
+    /// <summary>
+    /// Pixels per logical unit of the surface (<see cref="ISurface.PixelDensity"/>): 1 by default, as a headless run has no
+    /// screen. Set it when creating the platform to stand for a high-density screen: with the presentation's
+    /// <see cref="Graphics.Presentation.UiScale"/> unset, the UI scale follows it.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a positive finite number.</exception>
+    public float PixelDensity
+    {
+        get => _density;
+        init => _density = float.IsFinite(value) && value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), "The pixel density must be a positive number.");
+    }
+    private float _density = 1f;
 
     (int Width, int Height) IScreenView.ScreenPixels => _surfaceSize;
     (int Width, int Height) IScreenView.CanvasSize => (_width, _height);
@@ -151,10 +176,11 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
     /// game's presentation when the platform was made for its settings, else <see cref="Graphics.Presentation.PixelArt"/>.
     /// </summary>
     public Presentation Presentation { get; init; } = Presentation.PixelArt;
-    float IScreenView.UiScale => 1f;
+    float IScreenView.UiScale => Presentation.UiScaleFor(_density);
     IRenderer IScreenView.BeginUi()
     {
-        if (_ui is null || _ui.Width != _surfaceSize.Width || _ui.Height != _surfaceSize.Height) _ui = NewUiRenderer();
+        var (w, h) = UiUnits;
+        if (_ui is null || _ui.Width != w || _ui.Height != h) _ui = NewUiRenderer();
         _ui.Reset();
         _ui.Raster?.Clear(Color.Transparent);
         _frameHasUi = true;
@@ -265,10 +291,17 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
     PixelImage? IViewCapture.CaptureUi()
     {
         if (!_frameHasUi || _ui?.Raster is not { } raster) return null;
-        // As stored: premultiplied, transparent where nothing was drawn.
-        var image = new PixelImage(raster.Width, raster.Height);
-        for (int y = 0; y < raster.Height; y++)
-            for (int x = 0; x < raster.Width; x++) image[x, y] = raster[x, y];
+        // As stored (premultiplied, transparent where nothing was drawn), at the window's pixels: each UI unit covers the
+        // window pixels its scale gives it.
+        var (w, h) = _surfaceSize;
+        var image = new PixelImage(Math.Max(1, w), Math.Max(1, h));
+        float scale = ((IScreenView)this).UiScale;
+        for (int y = 0; y < image.Height; y++)
+            for (int x = 0; x < image.Width; x++)
+            {
+                int ux = (int)(x / scale), uy = (int)(y / scale);
+                if (ux < raster.Width && uy < raster.Height) image[x, y] = raster[ux, uy];
+            }
         return image;
     }
 
