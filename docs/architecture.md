@@ -290,13 +290,17 @@ In short:
   authored as code (`PixelImage`, char maps, palettes, noise) and sounds synthesized, so a game can ship
   no binary assets. Games that use existing packs load PNG and WAV in managed code and stream OGG (or MP3 on raylib)
   through the audio device; Neon Rift does this with CC0 assets listed in its `CREDITS.md`.
-  Games can also mix both per element: Courtyard Key and Trail Duel load a few crafted
-  pieces and keep the rest procedural, repainting imported sprites with their own palette at load.
+  Games can also mix both per element: Courtyard Key loads its village houses, trees and one enemy from a CC0
+  pack and keeps its ground, dungeon, characters and audio procedural; Trail Duel loads its village from a CC BY 4.0
+  tileset, its creatures, trainers, battle effects and jingles from CC0 packs, and draws the rest in code. Both
+  harmonise imported art at load (cutting along outlines, recolouring, colour-grading) so it shares one palette.
 - **Scenes on a stack, not a global state machine.** Pause menus, dialogue and inventories are overlay
   scenes that freeze (or not) the scene below; transitions swap scenes at their midpoint.
 - **Plain entities, not an ECS.** A game of this kind has at most a few hundred objects. Small classes with
-  `Update`/`Draw` and an `EntityList<T>` with deferred add/remove are easier to read and debug than
-  component plumbing at this scale. Games that outgrow it can add their own systems on top.
+  `Update`/`Draw`, kept in the scene's world (`Scene.Objects`, an `IWorld`: each entity has an id, a transform, an
+  optional parent and your own classes as attachments, walked in a stable order) or simply in a `List<T>`, are easier
+  to read and debug than component plumbing at this scale. (Next SDK version; the published SDK keeps objects in an
+  `EntityList<T>` with deferred add and remove.) Games that outgrow it can add their own systems on top.
 - **Actions, never keys.** Games query `"jump"` or `"confirm"` (and `Value`/`Vector` for analog strength); keys,
   gamepads, touch controls and custom sources all press the same actions, and scripts and tests force the same
   actions or touch the same controls, so automated runs exercise exactly the code players do.

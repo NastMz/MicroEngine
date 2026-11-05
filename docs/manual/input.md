@@ -161,11 +161,15 @@ Text that names a control ("press Z to jump") is wrong for a player holding a ga
 action instead and let `Game.Prompts` (an `ActionPrompts`) say which control presses it on the device being played:
 
 ```csharp
-// Dialogue, tutorials and hints: {action} becomes the player's own control.
-Font.DrawCentered(r, Game.Prompts.Format("THE END  ·  press {confirm}"), new Vector2(160, 166), Pal.White, 1, Pal.Ink);
+// Formatted again only when the prompts change (another device or pad family).
+if (_hint is null || _hintVersion != Game.Prompts.Version)
+{
+    _hintVersion = Game.Prompts.Version;
+    _hint = Game.Prompts.Format("{confirm}: play   {cancel}: title");
+}
 ```
 
-Source: [`games/CourtyardKey/Scenes/TitleScene.cs`](../../games/CourtyardKey/Scenes/TitleScene.cs)
+Source: [`games/MeadowRun/Scenes/MapScene.cs`](../../games/MeadowRun/Scenes/MapScene.cs)
 
 | Device | `{confirm}` with the default bindings | Where it comes from |
 | --- | --- | --- |
@@ -198,14 +202,19 @@ Help screens build their rows from the same calls, so one screen fits every devi
 
 ```csharp
 var prompts = Game.Prompts;
-bool touch = prompts.Device == InputDevice.Touch;
-(string Key, string What)[] rows =
-[
-    (prompts.Directions(separator: " / "), touch ? "Move; push less, go slow" : "Move"),
-    (prompts.TextAll("confirm"), "Sword, talk, read, open"),
-    (prompts.TextAll("action"), "Throw the boomerang"),
-    (prompts.TextAll("pause"), "Pause, map and inventory"),
-];
+// Built again only when the prompts may have changed (another device or pad family).
+if (_controlRows is null || prompts.Version != _controlRowsVersion)
+{
+    bool touch = prompts.Device == InputDevice.Touch;
+    _controlRows =
+    [
+        (prompts.Directions(separator: " / "), touch ? "Move; push less, go slow" : "Move"),
+        (prompts.TextAll("confirm"), "Sword, talk, read, open"),
+        (prompts.TextAll("action"), "Throw the boomerang"),
+        (prompts.TextAll("pause"), "Pause, map and inventory"),
+    ];
+    _controlRowsVersion = prompts.Version;
+}
 ```
 
 Source: [`games/CourtyardKey/Scenes/TitleScene.cs`](../../games/CourtyardKey/Scenes/TitleScene.cs)
@@ -347,7 +356,11 @@ protected override TouchLayout CreateTouchLayout() => TouchLayout.Of(
     new TouchDPad { Offset = new(104, 100), Diagonals = false },
     new TouchButton("jump", "jump", "A") { Anchor = TouchAnchor.BottomRight, Offset = new(70, 92), Radius = 40, Also = ["confirm"] },
     new TouchButton("run", "run", "B") { Anchor = TouchAnchor.BottomRight, Offset = new(164, 62), Radius = 34, Also = ["cancel"] },
-    new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(30, 30), Radius = 20 }) with { SlideBetweenButtons = true };
+    new TouchButton("pause", "pause", "II") { Anchor = TouchAnchor.TopRight, Offset = new(30, 30), Radius = 20 }) with
+{
+    SlideBetweenButtons = true,
+    // ... the game's own colours (see Look: styles, skins and images)
+};
 ```
 
 Source: [`games/MeadowRun/MeadowGame.cs`](../../games/MeadowRun/MeadowGame.cs)

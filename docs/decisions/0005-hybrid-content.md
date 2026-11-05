@@ -3,6 +3,16 @@
 Status: Accepted (2026-10-30). Amends [0004](0004-external-asset-files.md), which kept the three original
 games fully code-first.
 
+Update (2026-11, DEMO-REFRESH): the decision below stands; the state it records has moved on. Courtyard Key now
+also loads its village houses and trees from ArMM1998's "Zelda-like tilesets and sprites" (CC0), cut along their
+outlines and recoloured at load, beside the heart-trap; its ground, dungeon, characters, other enemies, boss and
+audio stay procedural. Trail Duel's overworld (houses, trees, flowers, signs, paths, ponds) now comes from LimeZu's
+"Serene Village revamped", licensed CC BY 4.0, colour-graded at load with drawn shadows; the lab, shrine, shop and
+hall facades are built in code from that pack's pieces; its Openmon creatures and trainers, battle effects and
+jingles are unchanged. Third-party art under CC BY 4.0 is therefore accepted alongside CC0, provided the game's
+`CREDITS.md` gives the attribution the licence requires (title, author, source, licence). Both games load files
+through `Game.Assets` rather than `ContentFolder`. Record: [`odd/tasks/demo-refresh.md`](../../odd/tasks/demo-refresh.md).
+
 ## Context
 
 The owner asked for each game to become "the best possible version of itself", with an intended

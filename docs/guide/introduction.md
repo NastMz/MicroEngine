@@ -33,8 +33,8 @@ downloaded on the [demos page](/demos/).
 | Game | Genre | Content approach | What it exercises |
 | --- | --- | --- | --- |
 | [Meadow Run](/demos/meadow-run/) | Side-scrolling platformer | Fully procedural: every sprite, tile, sound and song is generated in code | Tile collision with one-way platforms, player feel, power-up forms, lighting, world map, boss |
-| [Courtyard Key](/demos/courtyard-key/) | Top-down action adventure | Hybrid: procedural world and cast plus one imported CC0 enemy | Screen-by-screen rooms, combat, items, push blocks, dialogue, dungeon, boss |
-| [Trail Duel](/demos/trail-duel/) | Creature-collecting, turn-based RPG | Hybrid: CC0 creature and trainer sprites, procedural world and music | Menus, turn-based battles, capture, evolution, trainers, shop, large save state |
+| [Courtyard Key](/demos/courtyard-key/) | Top-down action adventure | Hybrid: procedural ground, dungeon and cast plus CC0 houses, trees and one enemy, recoloured at load | Screen-by-screen rooms, combat, items, push blocks, dialogue, dungeon, boss |
+| [Trail Duel](/demos/trail-duel/) | Creature-collecting, turn-based RPG | Hybrid: a CC BY 4.0 village tileset, CC0 creature and trainer sprites, procedural battle stages and music | Menus, turn-based battles, capture, evolution, trainers, shop, large save state |
 | [Neon Rift](/demos/neon-rift/) | Run & gun | External CC0 sprite sheets, tilesets, WAV effects and OGG music | File loading, streamed music, parallax, eight-way aiming, weapons, three stages |
 
 Each game has five achievements and saves its progress, and is packaged for desktops, Android and the browser.
