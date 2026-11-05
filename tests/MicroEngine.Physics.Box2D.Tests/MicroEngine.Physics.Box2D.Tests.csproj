@@ -14,6 +14,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine.Physics.Box2D/MicroEngine.Physics.Box2D.csproj" />
+    <!-- The substitution scenarios run the sample's gameplay code on both backends. -->
+    <ProjectReference Include="../../src/MicroEngine.Physics.Tiles/MicroEngine.Physics.Tiles.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- The physics conformance suites every 2D backend runs (common contract and capability suites). The tile
@@ -21,6 +23,7 @@
     <Compile Include="../Shared/Physics/*.cs" Exclude="../Shared/Physics/TileGeometryConformance.cs" LinkBase="Shared/Physics" />
     <!-- Browser/ is the browser runner of these same tests, a project of its own (web toolchain only). -->
     <Compile Remove="Browser/**" />
+    <Compile Include="../../samples/PhysicsSubstitution/Platformer.cs;../../samples/PhysicsSubstitution/Crates.cs" LinkBase="Substitution" />
     <None Remove="Browser/**" />
     <Content Remove="Browser/**" />
   </ItemGroup>

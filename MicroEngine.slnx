@@ -18,6 +18,7 @@
     <Project Path="src/MicroEngine/MicroEngine.csproj" />
     <Project Path="src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
     <Project Path="src/MicroEngine.Sdl/MicroEngine.Sdl.csproj" />
+    <Project Path="src/MicroEngine.Graphics.SdlGpu/MicroEngine.Graphics.SdlGpu.csproj" />
     <Project Path="src/MicroEngine.Cli/MicroEngine.Cli.csproj" />
     <Project Path="src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
     <Project Path="src/MicroEngine.Migration.Entities/MicroEngine.Migration.Entities.csproj" />
@@ -38,6 +39,7 @@
     <Project Path="samples/HelloEngine/HelloEngine.csproj" />
     <Project Path="samples/Examples/Examples.csproj" />
     <Project Path="samples/AssetGallery/AssetGallery.csproj" />
+    <Project Path="samples/PhysicsSubstitution/PhysicsSubstitution.csproj" />
   </Folder>
   <Folder Name="/samples/GemGarden/part1-scenes/">
     <Project Path="samples/GemGarden/part1-scenes/GemGarden.csproj" />

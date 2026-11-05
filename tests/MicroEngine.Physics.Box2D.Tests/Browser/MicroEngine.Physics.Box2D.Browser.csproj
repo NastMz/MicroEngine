@@ -23,6 +23,8 @@
   <ItemGroup>
     <PackageReference Include="MSTest.TestFramework" Version="4.4.1" />
     <ProjectReference Include="../../../src/MicroEngine.Physics.Box2D/MicroEngine.Physics.Box2D.csproj" />
+    <ProjectReference Include="../../../src/MicroEngine.Physics.Tiles/MicroEngine.Physics.Tiles.csproj" />
+    <Compile Include="../../../samples/PhysicsSubstitution/Platformer.cs;../../../samples/PhysicsSubstitution/Crates.cs" LinkBase="Substitution" />
     <Compile Include="../*.cs" LinkBase="Tests" />
     <Compile Include="../../Shared/Physics/*.cs" Exclude="../../Shared/Physics/TileGeometryConformance.cs" LinkBase="Shared/Physics" />
   </ItemGroup>

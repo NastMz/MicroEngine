@@ -190,7 +190,8 @@ calling `spriteFor(id, x, y)` for each non-empty cell; return `null` to skip one
 
 `TileMotion.Move` checks only the cells the box sweeps at each sub-step: a handful of lookups per moving object.
 `TileRenderer` touches only visible cells, so a large map costs what the screen shows. Both are fine for hundreds of
-moving objects per step.
+moving objects per step. A `TilePhysicsWorld2D` files its box shapes in a grid of 64-unit cells, so a move, a query or
+a sensor looks only at the shapes near it; the results are the same as looking at every shape.
 
 ## Limits
 
@@ -283,6 +284,10 @@ What differs from the tile backend, within what the core allows:
   earlier or later than the tile backend would report the touch.
 - Angles go through Box2D's own sine and cosine: an angle reads back within about 0.002 radians of the one set.
 - Identical results on every platform for the same build; never identical to the tile backend or another Box2D version.
+
+The same platformer, written against the core only, runs on both backends; on Box2D (16 pixels a metre) it rests about
+0.16 pixels higher, and its sensors fire in the same step. Code that creates a dynamic body on the tile backend gets
+`PhysicsCapabilityException` before anything changes, so a game can check `physics.Capabilities` first or catch it.
 - A world owns native memory: dispose it. Box2D keeps at most 128 worlds alive in a process, created and disposed from
   one thread at a time. A world you forget to dispose is released later, on the thread that next creates or disposes a
   world, after the garbage collector finds it; when all 128 are in use, creating another first collects and retries,

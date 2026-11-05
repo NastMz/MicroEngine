@@ -129,6 +129,7 @@ test('the Box2D natives, the Box2D backend and the physics it implements run the
   assert.deepEqual(plan(['tests/MicroEngine.Physics.Box2D.Tests/Box2DTests.cs']), { ...none, dotnet: true, windows: true, macos: true, box2d: true });
   assert.deepEqual(plan(['tests/Shared/Physics/PhysicsConformance.cs']), { ...none, dotnet: true, windows: true, macos: true, box2d: true });
   assert.deepEqual(plan(['.github/workflows/box2d.yml']), everything, 'daily CI runs box2d.yml');
+  assert.deepEqual(plan(['samples/PhysicsSubstitution/Platformer.cs']), { ...none, dotnet: true, box2d: true }, 'the substitution scenarios run its code');
   assert.equal(plan(['src/MicroEngine/Core/GameLoop.cs']).box2d, false, 'the rest of the engine is not physics');
   assert.equal(plan(['games/MeadowRun/MeadowRunGame.cs']).box2d, false);
   assert.deepEqual(planScope(['src/MicroEngine.Physics.Box2D/native/me_box2d.c'], readGraph()), { tests: [], games: [] }, 'the natives never widen the .NET tests');
