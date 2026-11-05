@@ -247,3 +247,9 @@ value). Research and the site map are summarised in `site/design/README.md` (T1)
   Checks: `npm ci`; `SITE_DEMOS=none npm run build` (check-dist complete); `npm test` 54/54; snippets 104 blocks;
   contrast 198/198; screenshots of /roadmap/, /platforms/ and four docs pages, light and dark, at 1280/768/375/320:
   no horizontal overflow, no script errors.
+- L6 (2026-11-05): T5 extended at the architect's request (SDL_GPU finding confirmed). `docs/reference/limitations.md`:
+  "2D only; no 3D, physics engine" split into 3D (repository-only minimal path), physics (tile collision today,
+  physics worlds next, Box2D repository-only) and networking/scripting rows; fonts row says TTF/OTF arrive with the next
+  SDK version and BMFont files are not read. `site/design/README.md` §7: SDL_GPU is a seated `next` module; Graphics3D
+  and Box2D stay repository-only. Checks rerun: build (check-dist complete), `npm test` 54/54, snippets 104, contrast
+  198/198; limitations page screenshots in both themes at 1280/768/375/320, no overflow.

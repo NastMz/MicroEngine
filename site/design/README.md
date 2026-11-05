@@ -208,7 +208,9 @@ always written.
 | In the repository, not published (experimental) | **Empty dashed socket**, module named inside in mono; dashed marker | `--status-repo` (neutral) | "In the repository, not published" |
 | Planned | Empty dashed socket; dotted marker | `--status-planned` (neutral) | "Planned" |
 
-`<Socket empty status="repo" module="SDL_GPU" />` is how an unpublished backend appears. 3D, SDL_GPU, Box2D physics
+`<Socket empty status="repo" module="Box2D" />` is how an unpublished backend appears. The SDL_GPU device ships in the
+next SDK version (inside the `MicroEngine.Sdl` package, desktops, opt-in), so it is a seated module with the next
+status: `<Socket family="graphics" module="SDL_GPU" status="next" />`. The 3D path (Graphics3D), Box2D physics
 and any other unpublished system is never drawn as a seated module until it ships in the SDK. The Open Graph image
 shows four seated families that ship today and one empty dashed socket, unlabelled.
 

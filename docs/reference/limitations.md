@@ -27,10 +27,12 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 
 | Limitation | More |
 | --- | --- |
-| 2D only; no 3D, physics engine, networking or scripting language | [Architecture](../architecture.md) |
+| 2D only in the published SDK. A minimal 3D path (glTF meshes, a perspective camera, depth) is in the engine's repository only, in no package; there is no 3D renderer | [The 3D path](../manual/rendering.md#the-3d-path) |
+| No rigid-body physics engine: the published SDK moves boxes through tile maps (`TileMotion`). Next SDK version: physics worlds with the engine's tile backend (kinematic bodies, sensors, layers, ray casts; no forces or rotation). A Box2D backend with dynamic bodies is in the engine's repository; it is optional and not published | [Physics worlds](../manual/world.md#physics-worlds) |
+| No networking or scripting language | [Architecture](../architecture.md) |
 | No visual editor, level editor or asset tool: content is code, or files loaded through `ContentFolder` | [Assets](../manual/assets.md) |
 | No ECS: plain entities, sized for a few hundred objects per scene | [Architecture](../architecture.md) |
-| Text uses the built-in pixel font (`Game.Font`); loading other fonts (TrueType or bitmap sheets) is not supported yet | [Text](../manual/text.md) |
+| Text uses the built-in pixel font (`Game.Font`). Next SDK version: TrueType and OpenType fonts at any size (`Assets.Font`). Bitmap font files (AngelCode BMFont) are not read | [Text](../manual/text.md) |
 | Below 12 drawn frames per second the game slows down instead of skipping updates (at most five steps per frame) | [Architecture](../architecture.md#the-frame) |
 
 ## Input
