@@ -17,6 +17,7 @@
     <Project Path="src/MicroEngine/MicroEngine.csproj" />
     <Project Path="src/MicroEngine.Raylib/MicroEngine.Raylib.csproj" />
     <Project Path="src/MicroEngine.Sdl/MicroEngine.Sdl.csproj" />
+    <Project Path="src/MicroEngine.Graphics.SdlGpu/MicroEngine.Graphics.SdlGpu.csproj" />
     <Project Path="src/MicroEngine.Cli/MicroEngine.Cli.csproj" />
     <Project Path="src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
     <Project Path="src/MicroEngine.Migration.Entities/MicroEngine.Migration.Entities.csproj" />

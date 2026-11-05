@@ -41,3 +41,4 @@ maintainer's archive, not in the public history.
 | [0034](0034-content-handles-loaders-sources.md) | Content handles with generations, a loader registry, a reserved import step and content sources beyond folders (amends 0004, 0025) | Accepted |
 | [0037](0037-platform-host-contract.md) | A platform host contract with capabilities, explicit options and no time coupling (amends 0016, 0027) | Accepted |
 | [0038](0038-one-composition-path.md) | One composition path for desktop, browser, phones and tests: `MicroEngine.Hosting`, a `Configure` entry point, no statics (amends 0007, 0016, 0021) | Accepted |
+| [0041](0041-tier1-device-on-sdl-gpu.md) | The tier-1 graphics device on pure SDL_GPU, checked by the conformance suite on Direct3D 12, Vulkan and, in CI, Mesa lavapipe (implements 0028) | Accepted |

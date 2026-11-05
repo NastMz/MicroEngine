@@ -403,6 +403,15 @@ public interface IGraphicsDevice : IDisposable
   bindings and uploaded bytes exactly, the same on every device, so tests can hold a scene to a draw-call budget.
 - **The reference device.** `ReferenceGraphicsDevice` implements the contract on the CPU, rule by rule; it needs no
   window and draws identically on every machine.
+- **The programmable device.** In the repository only, not in a package yet: `SdlGpuDevice`
+  (`MicroEngine.Graphics.SdlGpu`, factory name `sdl-gpu`) implements the contract on SDL_GPU (Direct3D 12, Vulkan,
+  Metal) at tier 1: custom shaders compiled ahead of time, depth attachments, instancing and every blend state, as well
+  as everything tier 0 offers. `Capabilities.ApiName` and `Capabilities.Adapter` say which API and adapter SDL chose,
+  software Vulkan included; check them after creation rather than assuming the requested API. Depth formats are
+  declared per adapter (some have no 24-bit depth): pick one that `Capabilities.Supports(format,
+  TextureUsage.DepthStencil)` accepts. Matrices follow System.Numerics (right-handed `CreateLookAt` and
+  `CreatePerspectiveFieldOfView`, uploaded as they are, `mul(M, v)` in HLSL), front faces are counter-clockwise and
+  depth runs from 0 (near) to 1 (far).
 
 A backend derives from `GraphicsDeviceBase`, which validates every call before the backend sees it, so errors and the
 moment they are raised are identical on every device; the backend implements only the members whose names end in

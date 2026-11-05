@@ -234,7 +234,8 @@ jobs:
       - name: Virtual display and sound server
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1 libglx-mesa0 libgl1-mesa-dri libxtst6 pulseaudio pulseaudio-utils
+          # libvulkan1 + mesa-vulkan-drivers: Mesa's software Vulkan (lavapipe) for the tier-1 SDL_GPU device.
+          sudo apt-get install -y --no-install-recommends xvfb xauth libgl1 libglx-mesa0 libgl1-mesa-dri libxtst6 pulseaudio pulseaudio-utils libvulkan1 mesa-vulkan-drivers vulkan-tools
           export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-$RUNNER_TEMP/xdg}"
           mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
           echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
@@ -247,7 +248,22 @@ jobs:
       - name: Keyboard and audio (native tests)
         run: |
           xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Raylib.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
-          xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Desktop.Tests -c Release --no-build --filter "TestCategory=Native" --logger trx --results-directory test-results
+          xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Desktop.Tests -c Release --no-build --filter "TestCategory=Native&TestCategory!=Gpu" --logger trx --results-directory test-results
+      # The tier-1 device (SDL_GPU) on Vulkan with only Mesa's software rasterizer installed: the device conformance
+      # suite and the 3D tests. MICROENGINE_GPU_ADAPTER makes every device creation fail unless SDL_GPU reports the
+      # lavapipe adapter ("llvmpipe ..."); the adapter and driver lines go to the job summary as the record of what ran.
+      - name: Tier-1 graphics on SDL_GPU (Vulkan, Mesa lavapipe)
+        env:
+          MICROENGINE_GPU_ADAPTER: llvmpipe
+        run: |
+          # Only lavapipe: point the Vulkan loader at Mesa's software ICD (its file name differs between Mesa versions).
+          icd=$(find /usr/share/vulkan/icd.d -name 'lvp_icd*.json' | sort | head -n 1)
+          echo "Vulkan ICD: $icd" | tee -a gpu-tests.log
+          export VK_DRIVER_FILES="$icd" VK_ICD_FILENAMES="$icd"
+          { vulkaninfo --summary 2>&1 || true; } | grep -E 'apiVersion|deviceType|deviceName|driverName|driverInfo' | tee -a gpu-tests.log || true
+          xvfb-run -a -s "-screen 0 1920x1080x24" dotnet test tests/MicroEngine.Desktop.Tests -c Release --no-build --filter "TestCategory=Gpu" \
+            --logger trx --logger "console;verbosity=detailed" --results-directory test-results | tee -a gpu-tests.log
+          { echo '### SDL_GPU adapter (lavapipe)'; echo; echo '```'; grep -m 6 -E 'deviceName|driverName|sdl-gpu api=|depth formats:' gpu-tests.log || true; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results "Native tests on Linux"
       - name: Scripted captures against the Linux and SDL references (${{ inputs.games }})
