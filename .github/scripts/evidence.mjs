@@ -38,6 +38,8 @@ const sdkSamples = /^samples\/AssetGallery\//;
 export const scopes = {
   dotnet: file => !dotnetSkips(file),
   windows: file => !dotnetSkips(file),
+  // The informative macOS run of the same headless tests (checks.yml, dotnet-macos): its own key, the same inputs.
+  macos: file => !dotnetSkips(file),
   native: file => !dotnetSkips(file) || /^web\/tests\//.test(file),
   // The site reads its own sources, the repository's Markdown, the games' screenshots and the web host files; game
   // code reaches it only as packages, which the caller adds to the key (--site-extra).
