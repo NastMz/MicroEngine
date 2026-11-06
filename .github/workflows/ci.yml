@@ -139,7 +139,7 @@ jobs:
           run() { [ "$1" = true ] && [ -z "$(get "reused_$2")" ] && echo true || echo false; }
           # macOS is informative and free only on a public repository's standard runners: never a gate, but its passes
           # are evidence like any other check's, so a merge does not repeat the tests its pull request passed.
-          macos=false; [ "$MACOS" = true ] && [ "$PUBLIC_RUNNERS" = true ] && [ "$MACOS_RUNNERS" != off ] && macos=true
+          wants_macos=false; [ "$MACOS" = true ] && [ "$PUBLIC_RUNNERS" = true ] && [ "$MACOS_RUNNERS" != off ] && wants_macos=true
           # Production for a push that changes the published site, unless .github/phase-freeze exists (publication
           # freeze, docs/ci.md); a preview for a pull request that changes the site (freeze.mjs deployTarget).
           deploy=$(node .github/scripts/freeze.mjs deploy --event "$EVENT" --fork "$FORK" --browser "$BROWSER" 2>> "$GITHUB_STEP_SUMMARY")
@@ -149,7 +149,7 @@ jobs:
             echo "native=$(run "$NATIVE" native)"
             echo "sdk=$(run "$SDK" sdk)"
             echo "box2d=$(run "$BOX2D" box2d)"
-            echo "macos=$(run "$macos" macos)"
+            echo "macos=$(run "$wants_macos" macos)"
             echo "site=$(run "$site" site)"
             echo "suites=$suites"
             echo "web-games=$([ "$(run "$WEB" web)" = true ] && node -e "console.log(JSON.stringify(process.argv[1].split(',').filter(Boolean)))" "$WEB_GAMES" || echo '[]')"
@@ -157,7 +157,7 @@ jobs:
             echo "keys={\"dotnet\":\"$(get key_dotnet)\",\"windows\":\"$(get key_windows)\",\"macos\":\"$(get key_macos)\",\"native\":\"$(get key_native)\",\"site\":\"$(get key_site)\",\"sdk\":\"$(get key_sdk)\",\"web\":\"$(get key_web)\",\"box2d\":\"$(get key_box2d)\"}"
             echo "reused={\"dotnet\":\"$(get reused_dotnet)\",\"windows\":\"$(get reused_windows)\",\"macos\":\"$(get reused_macos)\",\"native\":\"$(get reused_native)\",\"site\":\"$(get reused_site)\",\"sdk\":\"$(get reused_sdk)\",\"web\":\"$(get reused_web)\",\"box2d\":\"$(get reused_box2d)\"}"
             # macos: wanted (informative); the CI result never gates on it.
-            echo "needed={\"dotnet\":$DOTNET,\"windows\":$WINDOWS,\"macos\":$macos,\"native\":$NATIVE,\"site\":$site,\"sdk\":$SDK,\"web\":$WEB,\"box2d\":$BOX2D}"
+            echo "needed={\"dotnet\":$DOTNET,\"windows\":$WINDOWS,\"macos\":$wants_macos,\"native\":$NATIVE,\"site\":$site,\"sdk\":$SDK,\"web\":$WEB,\"box2d\":$BOX2D}"
           } >> "$GITHUB_OUTPUT"
           echo "Deployment: $deploy" >> "$GITHUB_STEP_SUMMARY"
 
