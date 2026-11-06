@@ -2,11 +2,13 @@
 // Web demo artifacts for the site, addressed by content (docs/deployment.md, "Demo packages are addressed by content").
 //
 // Every game in the registry (games/<Id>/<Id>.csproj) has a key: a hash of the Git blobs of everything its web package is
-// built from (engine, web host and toolchain files, the game's folder, its registry entry, the third-party
-// notices). The same inputs give the same key, so a package is built once and reused until one of its inputs
-// changes; documentation and site edits never change a key.
+// built from (webInputs: the projects of its graph, the packaging tool and its browser host, the build settings above
+// them, the pinned toolchain, its registry entry, the notices). The same inputs give the same key, so a package is
+// built once and reused until one of its inputs changes; documentation, site edits, another game and projects outside
+// its graph never change it.
 //
-//   plan     lists each game's key and whether the store already holds its artifact (--github-output for CI)
+//   plan     lists each game's key and whether the store already holds its artifact (--github-output for CI);
+//              --policy all (releases) builds every missing key, none (daily CI, validation) builds nothing
 //              node site/scripts/demos.mjs plan
 //   publish  packs built packages (web/build.sh output) and adds them to the store, unless already there
 //              node site/scripts/demos.mjs publish MeadowRun [NeonRift ...] [--from dist/web]
@@ -28,17 +30,17 @@
 // played them (publish-native), copied into a release under player-facing names (release-create --targets) and
 // listed in /play/demos.json as the site's downloads.
 //
-// Two kinds of artifact: integration packages (the store below, filled by daily CI and validation, keyed by
-// content) and approved packages (releases `v<version>`, copies made by the release workflow). Production serves
-// the latest published release only, so merging code never publishes a demo.
+// Two kinds of artifact: integration packages (the store below, keyed by content: web packages built by the release
+// workflow, native ones by validation and releases) and approved packages (releases `v<version>`, copies made by the
+// release workflow). Production serves the latest published release only, so merging code never publishes a demo.
 //
 // Stores (DEMOS_STORE): "github" (default in GitHub Actions): assets of the prerelease `demo-artifacts` in this
 // repository, read and written with GITHUB_TOKEN; "dir:<path>": a local folder (tests, offline work).
 // Each artifact is <Game>-<key>.tar.gz plus <Game>-<key>.json, written in that order: the manifest marks a
-// complete artifact. Artifacts are never replaced.
-// DEMOS_OVERLAY=<dir>: a folder of artifacts read before the store and never written through it. A fork pull request
-// has a read-only token, so it stores the packages it built in a folder (DEMOS_STORE=dir:<dir>), passes them to the
-// site job as a workflow artifact and reads them back through the overlay; the shared store is never touched.
+// complete artifact, which is never replaced (an archive without one is an interrupted upload and is). Storing a
+// package removes the earlier ones of its game (and target), so the store holds current versions, not a history.
+// DEMOS_OVERLAY=<dir>: a folder of artifacts read before the store and never written through it: packages built
+// locally (DEMOS_STORE=dir:<dir>) tried against the shared store's, which is never touched.
 //
 // Packages are stored without their .br/.gz copies: Vercel compresses JavaScript, JSON and WebAssembly itself.
 import fs from 'node:fs';
@@ -51,6 +53,9 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as tar from 'tar';
 import { targets as nativeTargets, target as nativeTarget, downloadName } from '../../packaging/targets.mjs';
+import { buildGraph, inheritedReferences } from '../../.github/scripts/projects.mjs';
+
+const posix = path.posix;
 
 // tar for packaging/package.mjs, which has no node_modules of its own.
 export { nativeTargets, tar };
@@ -66,15 +71,16 @@ const compressible = new Set(['.wasm', '.js', '.mjs', '.json', '.txt', '.css', '
 const skipped = file => /\.(br|gz)$/.test(file);
 export const releaseTag = 'demo-artifacts';
 
-// Inputs shared by every game's web package. Paths are Git pathspecs relative to the repository root.
-// The browser host and the tool that builds it (`microengine package web`) live in src/MicroEngine.Cli.
-const sharedInputs = [
-  'src', 'web/build.sh', 'web/setup.sh', 'web/toolchain.env', 'Directory.Build.props', 'global.json',
-  'NuGet.config', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'games/LICENSE', 'games/Directory.Build.targets',
-];
-// Files inside those paths that never reach a release package.
+// What a web package is built from besides its projects (webInputs): the build scripts and the pinned toolchain
+// (web/build.sh, web/setup.sh, web/toolchain.env), the SDK and package sources, and the notices every package ships.
+const webTools = ['web/build.sh', 'web/setup.sh', 'web/toolchain.env', 'global.json', 'NuGet.config', 'LICENSE', 'games/LICENSE', 'THIRD-PARTY-NOTICES.md'];
+// The tool that builds every web package (`microengine package web`), with the browser host it copies (Hosts/web).
+const webTool = 'src/MicroEngine.Cli/MicroEngine.Cli.csproj';
+// Files inside those inputs that never reach a release package: documentation, screenshots, the input scripts only
+// development packages ship, and the hosts of the other platforms.
 const notAnInput = file => (/\.md$/i.test(file) && file !== 'THIRD-PARTY-NOTICES.md') || /(^|\/)(screenshots|scripts)\//.test(file)
   || /^src\/MicroEngine\.Cli\/Hosts\/(android|ios|mobile)\//.test(file);
+const msbuildFile = file => /\.(csproj|props|targets)$/.test(file);
 
 class DemoError extends Error {}
 const fail = message => { throw new DemoError(message); };
@@ -115,31 +121,95 @@ function git(args, root) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 }
 
+/** Every file in the index with its blob id: [{ blob, file }]. */
+function indexEntries(root) {
+  return git(['ls-files', '-s', '-z'], root).split('\0').filter(Boolean)
+    .map(line => { const [meta, file] = line.split('\t'); return { blob: meta.split(' ')[1], file }; });
+}
+
+/** The staged text of the given index entries, read in one `git cat-file --batch`: Map(file → text). */
+function stagedTexts(root, entries) {
+  if (!entries.length) return new Map();
+  const out = execFileSync('git', ['cat-file', '--batch'], { cwd: root, input: entries.map(e => e.blob).join('\n') + '\n', maxBuffer: 64 * 1024 * 1024 });
+  const texts = new Map();
+  let at = 0;
+  for (const { file } of entries) {
+    const end = out.indexOf(10, at);
+    const size = Number(out.toString('latin1', at, end).split(' ')[2]);
+    texts.set(file, out.toString('utf8', end + 1, end + 1 + size));
+    at = end + 1 + size + 1;
+  }
+  return texts;
+}
+
+/**
+ * The files a game's release web package is built from, found the way MSBuild finds them: its project and every
+ * project it references, directly or not (ProjectReference, including the ones a Directory.Build.targets adds; the
+ * graph of .github/scripts/projects.mjs), the tool that packages it (`microengine package web`) and its own graph, the
+ * Directory.Build.props and .targets above each of those projects, every file an MSBuild file there names by a
+ * relative path (an Import, a linked notice), and the pinned tools (webTools). Every file in a project's folder counts:
+ * the SDK globs them. What no project of the graph reaches (another game, the 3D and Box2D projects, native packaging,
+ * the phone hosts, tests, samples, the site) is not an input. Read from the index, like the key.
+ */
+export function webInputs(project, { root = repoRoot, index = indexEntries(root) } = {}) {
+  const tracked = new Set(index.map(e => e.file));
+  const texts = stagedTexts(root, index.filter(e => msbuildFile(e.file)));
+  const targets = [...texts].filter(([file]) => /(^|\/)Directory\.Build\.targets$/.test(file));
+  const { projects } = buildGraph(Object.fromEntries([...texts].filter(([file]) => file.endsWith('.csproj'))
+    .map(([file, text]) => [file, text + inheritedReferences(file, targets)])));
+  const dirs = new Set(), files = new Set(webTools.filter(file => tracked.has(file)));
+  const seen = new Set();
+  const visit = p => {
+    if (seen.has(p) || !projects[p]) return;
+    seen.add(p);
+    dirs.add(projects[p].dir);
+    projects[p].references.forEach(visit);
+  };
+  for (const p of [project, webTool]) if (!projects[p]) fail(`${p} is not a tracked project (git ls-files).`);
+  [project, webTool].forEach(visit);
+  // Directory.Build.props and .targets in every folder above a project, up to the repository root.
+  for (const dir of [...dirs]) {
+    for (let d = dir; ; d = posix.dirname(d)) {
+      for (const name of ['Directory.Build.props', 'Directory.Build.targets']) if (tracked.has(d === '.' ? name : `${d}/${name}`)) files.add(d === '.' ? name : `${d}/${name}`);
+      if (d === '.' || d === '') break;
+    }
+  }
+  const inDirs = file => [...dirs].some(dir => file.startsWith(`${dir}/`));
+  // Paths MSBuild files name (Import Project, Include, Update): a file or folder they reach is an input too. Values
+  // built from other properties ($(GameProject), @(...), %(...)) are resolved only at build time and are skipped.
+  const queue = [...texts.keys()].filter(file => inDirs(file) || files.has(file));
+  for (const scanned = new Set(); queue.length;) {
+    const file = queue.shift();
+    if (scanned.has(file)) continue;
+    scanned.add(file);
+    for (const [, value] of (texts.get(file) ?? '').matchAll(/\b(?:Project|Include|Update)="([^"]+)"/g)) {
+      for (let item of value.split(';')) {
+        item = item.trim().replace(/^\$\(MSBuildThisFileDirectory\)[/\\]?/, '').replace(/\\/g, '/');
+        if (!item || /[$@%]\(/.test(item)) continue;
+        const found = posix.normalize(posix.join(posix.dirname(file), item.split(/[*?]/)[0])).replace(/\/$/, '');
+        if (!found || found === '.' || found.startsWith('..')) continue;
+        if (tracked.has(found)) { files.add(found); if (msbuildFile(found)) queue.push(found); }
+        else if ([...tracked].some(t => t.startsWith(`${found}/`)) && !inDirs(`${found}/`)) dirs.add(found);
+      }
+    }
+  }
+  return index.filter(({ file }) => (files.has(file) || inDirs(file)) && !notAnInput(file))
+    .sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
+}
+
 /**
  * The key of one game's web package: SHA-256 (first 16 hex digits) over its registry entry and the Git blob ids of
- * its input files in the index. Blob ids do not depend on line-ending conversion, so Windows and Linux checkouts
- * agree. Uncommitted changes count only once staged.
+ * its input files in the index (webInputs). Blob ids do not depend on line-ending conversion, so Windows and Linux
+ * checkouts agree. Uncommitted changes count only once staged. The version line changes whenever the way packages are
+ * built changes without an input file changing (2: built on Linux, keyed by the project graph), so no package built
+ * the earlier way is ever reused.
  */
 export function demoKey(id, { root = repoRoot } = {}) {
   const game = registry(root).find(g => g.id === id) ?? fail(`unknown game "${id}" (games/<Id>/<Id>.csproj).`);
-  const listing = git(['ls-files', '-s', '-z', '--', ...sharedInputs, game.dir], root)
-    .split('\0').filter(Boolean)
-    .map(line => { const [meta, file] = line.split('\t'); return { blob: meta.split(' ')[1], file }; })
-    .filter(({ file }) => !notAnInput(file))
-    .sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
+  const listing = webInputs(game.project, { root });
   if (!listing.some(({ file }) => file.startsWith(`${game.dir}/`))) fail(`${id}: no files tracked in ${game.dir}.`);
-  const lines = listing.map(({ blob, file }) => `${blob} ${file}`);
-  const text = ['microengine-demo-key 1', `game ${id}`, `entry ${game.entry}`, ...lines].join('\n');
-  // The two halves of the key: what every game shares (engine, web host, toolchain) and what is the game's own (its
-  // folder and registry entry). Daily CI uses them to tell an engine-wide change from a change to one game.
-  const own = line => line.slice(41).startsWith(`${game.dir}/`);
-  return {
-    id,
-    key: sha256(text).slice(0, 16),
-    shared: sha256(['shared', ...lines.filter(line => !own(line))].join('\n')).slice(0, 16),
-    own: sha256(['own', game.entry, ...lines.filter(own)].join('\n')).slice(0, 16),
-    inputs: listing.map(({ file }) => file),
-  };
+  const text = ['microengine-demo-key 2', `game ${id}`, `entry ${game.entry}`, ...listing.map(({ blob, file }) => `${blob} ${file}`)].join('\n');
+  return { id, key: sha256(text).slice(0, 16), inputs: listing.map(({ file }) => file) };
 }
 
 // Native packages (packaging/README.md): one per game and target of packaging/targets.json, keyed like web packages
@@ -479,21 +549,19 @@ export async function releaseRecord(release) {
 
 /**
  * Each registry game with its key, whether its artifact is stored, what the latest release holds for it, and
- * whether this run should build it. Policies: "all" builds every missing package (validation, releases); "ci"
- * builds a missing package only when the game's own inputs differ from its released package, plus the canary game
- * when the shared inputs (engine, web host, toolchain) differ: one build proves an engine-wide change still compiles
- * to WebAssembly, and the other games are built by the next validation or release. Without a release, "ci" builds
- * every missing package.
+ * whether this run should build it. Policies: "all" builds every package whose key is not stored (releases: a stored
+ * key is reused, a changed or missing one rebuilt); "none" builds nothing (daily CI and validation, which play
+ * development packages and only need to know which package the site would use).
  */
-export async function plan(store, { root = repoRoot, policy = 'all', canary } = {}) {
+export async function plan(store, { root = repoRoot, policy = 'all' } = {}) {
+  if (!['all', 'none'].includes(policy)) fail(`--policy must be all or none, not "${policy}".`);
   const released = (await releaseRecord(store?.releases ? await store.releases.latest() : null))?.games;
   const games = [];
   for (const game of registry(root)) {
-    const { key, shared, own } = demoKey(game.id, { root });
+    const { key } = demoKey(game.id, { root });
     const stored = store ? await store.has(`${artifactName(game.id, key)}.json`) : false;
     const was = released?.[game.id] ?? null;
-    const build = !stored && (policy === 'all' || !was || was.own !== own || (game.id === canary && was.shared !== shared));
-    games.push({ id: game.id, key, shared, own, stored, released: was, build });
+    games.push({ id: game.id, key, stored, released: was, build: !stored && policy === 'all' });
   }
   return games;
 }
@@ -540,10 +608,21 @@ export async function publishNative(store, { file, verification, root = repoRoot
     sha256: record.sha256, size: data.length, buildInfo: record.buildInfo,
     verification: { checkedOn: record.checkedOn, levels: Object.fromEntries(Object.entries(record.levels).map(([k, v]) => [k, v.detail])), ...(record.certificate && { certificate: record.certificate }), ...(record.glibc && { glibc: record.glibc }), ...(record.gatekeeper && { gatekeeper: record.gatekeeper }) },
   };
-  await store.write(manifest.archive, data);
-  const stored = await store.write(`${name}.json`, Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`));
+  const stored = await storePackage(store, name, manifest.archive, data, manifest);
   const superseded = stored ? await supersede(store, name) : [];
   return { game: record.game, target: t.id, key, stored, sha256: manifest.sha256, superseded };
+}
+
+/**
+ * Writes a package's archive, then its manifest (which marks it complete). An archive already stored without a
+ * manifest is what an interrupted upload left, possibly of another build: it is replaced, never described by the new
+ * manifest. Returns false when the manifest was already there (another run stored this key meanwhile).
+ */
+async function storePackage(store, name, archiveName, data, manifest) {
+  if (await store.has(`${name}.json`)) return false;
+  if (await store.has(archiveName)) await store.remove(archiveName);
+  if (!(await store.write(archiveName, data))) fail(`${archiveName} reappeared in ${store.describe} while it was being stored; store it again.`);
+  return store.write(`${name}.json`, Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`));
 }
 
 // A stored artifact's name: its series (`<Game>` for a web package, `<Game>-<target>` for a native one), its key, and
@@ -621,8 +700,7 @@ export async function publish(ids, store, { from = path.join(repoRoot, 'dist', '
       toolchain: Object.fromEntries(fs.readFileSync(path.join(root, 'web', 'toolchain.env'), 'utf8').split('\n')
         .map(line => line.replace(/#.*/, '').trim()).filter(line => line.includes('=')).map(line => line.split('='))),
     };
-    await store.write(`${name}.tar.gz`, data);
-    const stored = await store.write(`${name}.json`, Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`));
+    const stored = await storePackage(store, name, `${name}.tar.gz`, data, manifest);
     await fsp.rm(path.dirname(archive), { recursive: true, force: true });
     // The store keeps one version per game: the package just stored replaces the earlier ones.
     const superseded = stored ? await supersede(store, name) : [];
@@ -774,7 +852,7 @@ export async function createRelease(store, tag, { root = repoRoot, commit = gitC
       (downloads[game.id] ??= {})[t.id] = { file, key, sha256: manifest.sha256, size: manifest.size, gameVersion, engineVersion, built, dotnet, signing, checkedOn: manifest.verification.checkedOn, checks: Object.keys(manifest.verification.levels) };
       files.push([file, data]);
     }
-    const { key, shared, own } = demoKey(game.id, { root });
+    const { key } = demoKey(game.id, { root });
     const name = artifactName(game.id, key);
     if (!(await store.has(`${name}.json`))) fail(`${game.id}: no package for key ${key} in ${store.describe}; build it first.`);
     const manifestData = await store.read(`${name}.json`);
@@ -782,7 +860,7 @@ export async function createRelease(store, tag, { root = repoRoot, commit = gitC
     if (manifest.game !== game.id || manifest.key !== key) fail(`${name}.json describes ${manifest.game} ${manifest.key}.`);
     const archive = await store.read(manifest.archive);
     if (sha256(archive) !== manifest.sha256) fail(`${manifest.archive}: SHA-256 is ${sha256(archive)}, its manifest says ${manifest.sha256}.`);
-    games[game.id] = { title: game.title, key, shared, own, archive: manifest.archive, sha256: manifest.sha256, built: manifest.commit, toolchain: manifest.toolchain };
+    games[game.id] = { title: game.title, key, archive: manifest.archive, sha256: manifest.sha256, built: manifest.commit, toolchain: manifest.toolchain };
     files.push([manifest.archive, archive], [`${name}.json`, manifestData]);
   }
   const record = { schema: 1, tag, commit, created: new Date().toISOString(), games, ...(targets.length && { downloads }) };
@@ -860,12 +938,11 @@ async function main(argv) {
   const store = openStore();
   if (command === 'plan') {
     const policy = option('policy') ?? 'all';
-    if (!['all', 'ci'].includes(policy)) fail(`--policy must be all or ci, not "${policy}".`);
-    const games = await plan(store, { policy, canary: option('canary') });
+    const games = await plan(store, { policy });
     const latest = store?.releases ? await store.releases.latest() : null;
     console.log(`| Game | Key | Integration store | Latest release (${latest?.tag ?? 'none'}) | This run |\n| --- | --- | --- | --- | --- |`);
     for (const g of games) {
-      const why = g.build ? 'builds it' : g.stored ? 'reuses it' : `uses the released package (${policy} policy)`;
+      const why = g.build ? 'builds it' : g.stored ? 'reuses it' : g.released ? 'uses the released package (a release builds it)' : 'none (a release builds it)';
       console.log(`| ${g.id} | \`${g.key}\` | ${g.stored ? 'stored' : 'missing'} | ${g.released ? (g.released.key === g.key ? 'same key' : `\`${g.released.key}\``) : '—'} | ${why} |`);
     }
     if (rest.includes('--github-output')) {
@@ -937,7 +1014,7 @@ async function main(argv) {
     console.log(`${key}\n${inputs.length} input files:\n${inputs.join('\n')}`);
   } else {
     console.log(['usage: node site/scripts/demos.mjs <command>',
-      '  plan [--policy all|ci] [--canary <Game>] [--native all|<ids>] [--github-output]   keys, stored packages, what to build',
+      '  plan [--policy all|none] [--native all|<ids>] [--github-output]   keys, stored packages, what to build',
       '  publish <Game...> [--from DIR]                               add built packages to the integration store',
       '  publish-native --file F --verification V                     add a checked native package (packaging/verify.mjs --record)',
       '  fetch                                                        packages for the site build (DEMOS_SOURCE)',

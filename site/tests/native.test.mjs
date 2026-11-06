@@ -24,6 +24,7 @@ const sha256 = data => crypto.createHash('sha256').update(data).digest('hex');
 function fixtureRepo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'native-repo-'));
   write(root, 'web/toolchain.env', 'DOTNET_SDK_VERSION=10.0.403\n');
+  write(root, 'src/MicroEngine.Cli/MicroEngine.Cli.csproj', '<Project />');
   write(root, 'src/MicroEngine.Cli/Hosts/web/Program.cs', 'class Host {}');
   write(root, 'src/Engine.cs', 'class Engine {}');
   write(root, 'packaging/package.mjs', '// packager');
