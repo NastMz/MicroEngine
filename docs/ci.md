@@ -18,7 +18,7 @@ starts it (the experimental platforms also monthly).
 | Rollback | [`rollback.yml`](../.github/workflows/rollback.yml) | manually | an earlier production deployment |
 
 The jobs themselves live in five reusable workflows: [`checks.yml`](../.github/workflows/checks.yml) (.NET, native
-Linux, demo builds, site and browsers, browser engine suites), [`sdl-web.yml`](../.github/workflows/sdl-web.yml) (SDL
+Linux, release package builds, site and browsers, browser engine suites), [`sdl-web.yml`](../.github/workflows/sdl-web.yml) (SDL
 for the web, called by `checks.yml`, [SDL for the web](#sdl-for-the-web)), [`sdk.yml`](../.github/workflows/sdk.yml)
 (the SDK packages from outside the repository), [`box2d.yml`](../.github/workflows/box2d.yml) (the Box2D natives,
 [Box2D natives](#box2d-natives)) and [`deploy-site.yml`](../.github/workflows/deploy-site.yml) (Vercel). How the three publications relate
@@ -35,13 +35,13 @@ flowchart LR
   accDescr: Plan decides the checks, the checks run, the site deploys if needed, and CI result gates everything.
   plan[Plan<br/>paths, evidence,<br/>demo keys] --> linux[.NET Linux]
   linux --> windows[.NET Windows]
+  linux --> macos[.NET macOS<br/>informative]
   linux --> native[Native Linux]
   plan --> sdlweb[SDL for the web<br/>cached SDL3.a]
-  sdlweb --> build[Demo builds]
   sdlweb --> engine[Browser engine<br/>one job per game]
   plan --> sdk[SDK<br/>Windows, Linux, macOS]
   plan --> box2d[Box2D natives<br/>every runtime]
-  build --> site[Site and browsers]
+  plan --> site[Site and browsers]
   windows --> deploy[Deploy]
   native --> deploy
   site --> deploy
@@ -54,8 +54,9 @@ flowchart LR
 1. **Plan** runs the planner and release tool tests, checks that every documentation reference names the documented
    SDK version ([`sdk/version.mjs check`](../sdk/version.mjs)), maps the changed paths to checks
    ([`changes.mjs`](../.github/scripts/changes.mjs)), looks up evidence that a needed check already passed for the same
-   inputs ([`evidence.mjs`](../.github/scripts/evidence.mjs)), lints the workflows when they changed, and decides the
-   demo builds ([`demos.mjs plan --policy ci`](../site/scripts/demos.mjs)).
+   inputs ([`evidence.mjs`](../.github/scripts/evidence.mjs)), lints the workflows when they changed, and lists each
+   game's demo key and the package the site would use ([`demos.mjs plan --policy none`](../site/scripts/demos.mjs)):
+   daily CI never builds a release web package ([Demo packages](#demo-packages)).
 2. **Checks** run what is needed and not already proven. Windows and native Linux start only after the Linux tests
    pass, so a broken change never occupies a Windows runner. **SDK** (`sdk.yml`) runs beside them when a package
    input changed: pack, check, and a game made from the packages on Windows, Linux and macOS. The **browser engine**
@@ -63,7 +64,7 @@ flowchart LR
    ([SDL for the web](#sdl-for-the-web), [Browser tests](#browser-tests)). **Box2D**
    (`box2d.yml`) runs beside them when the native layer, the physics or what it builds on changed
    ([Box2D natives](#box2d-natives)).
-3. **Deploy**: a protected preview for pull requests that change the site or a demo; production for pushes to
+3. **Deploy**: a protected preview for pull requests that change the site; production for pushes to
    `main` that change the published site (documentation, site, game pages). Production always uses the latest
    demo release, and is held (the current deployment stays, with a warning) while the documentation presents an SDK
    version nuget.org does not serve yet or SDK changes are pending
@@ -78,28 +79,31 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
 
 ### What runs for a change
 
-| Change | .NET Linux | .NET Windows | Native Linux | SDK | Demo builds | Browser suites | Browser engine | Deploy |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Engine core (`src/MicroEngine`) | yes | yes | yes | yes | the canary game | all | all games | preview |
-| raylib backend (`src/MicroEngine.Raylib`, desktop only) | yes | yes | yes | yes | the canary game | all | all games | preview |
-| SDL backend (`src/MicroEngine.Sdl`) | yes | yes | yes | yes | the canary game | all | all games | preview |
-| SDL for the web (`src/MicroEngine.Sdl/native`) | — | — | — | yes | the canary game | all | all games | preview |
-| One game's code (`games/<Name>`) | that game's tests | — | that game's captures | — | that game | all | that game | preview |
-| A game's Markdown or screenshots | — | — | — | — | — | layout | — | preview, production |
-| Engine or backend tests | those tests | yes | backend tests only | — | — | — | — | — |
-| One game's tests | those tests | — | — | — | — | — | — | — |
-| Samples | compile only | — | — | — | — | — | — | — |
-| The tool, the template, SDK tests and the sample they play (`src/MicroEngine.Cli`, `templates/`, `sdk/tests/external.mjs`, `samples/AssetGallery`) | the tool's, template's and sample's tests | the tool's | — | yes | — | — | browser host only | — |
-| Documented SDK version (`sdk/version.json`, `sdk/version.mjs`, `sdk/tests/docs.mjs`) | all, with the documented samples | — | — | — | — | — | — | — |
-| Desktop capture scripts and references (`web/tests`) | — | — | yes | its browser driver only | — | — | the scenarios, the desktop runner, the suites (`run.mjs`, `mobile.mjs`, `measure.mjs`) and the browser driver | — |
-| Web host or toolchain (`web/`) | — | — | — | toolchain, server | the canary game | all | all games | preview, production |
-| Site (`site/`) | — | — | — | — | — | all | — | preview, production |
-| Documentation (`docs/`, other Markdown) | — | — | — | — | — | layout | — | preview, production |
-| Daily workflows (`sdk.yml`, `box2d.yml` and `sdl-web.yml` too), their scripts, build settings | yes | yes | yes | yes | as keys say | all | all games | preview, production |
-| Manual workflows (validate, release, sdk-release, platforms, rollback) | lint only | — | — | — | — | — | — | — |
-| Mobile hosts (`platforms/`) | advisory only: run validate or platforms | — | — | — | — | — | — | — |
-| Task records, experiments (`odd/`, `experiments/`) | — | — | — | — | — | — | — | — |
-| A path no rule knows | everything | everything | everything | yes | as keys say | all | all games | preview, production |
+| Change | .NET Linux | .NET Windows | Native Linux | SDK | Browser suites | Browser engine | Deploy |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Engine core (`src/MicroEngine`) | yes | yes | yes | yes | — | all games | — |
+| raylib backend (`src/MicroEngine.Raylib`, desktop only) | yes | yes | yes | yes | — | all games | — |
+| SDL backend (`src/MicroEngine.Sdl`) | yes | yes | yes | yes | — | all games | — |
+| SDL for the web (`src/MicroEngine.Sdl/native`) | — | — | — | yes | all | all games | preview |
+| One game's code (`games/<Name>`) | that game's tests | — | that game's captures | — | — | that game | — |
+| A game's Markdown or screenshots | — | — | — | — | layout | — | preview, production |
+| Engine or backend tests | those tests | yes | backend tests only | — | — | — | — |
+| One game's tests | those tests | — | — | — | — | — | — |
+| Samples | compile only | — | — | — | — | — | — |
+| The tool, the template, SDK tests and the sample they play (`src/MicroEngine.Cli`, `templates/`, `sdk/tests/external.mjs`, `samples/AssetGallery`) | the tool's, template's and sample's tests | the tool's | — | yes | — | browser host only | — |
+| Documented SDK version (`sdk/version.json`, `sdk/version.mjs`, `sdk/tests/docs.mjs`) | all, with the documented samples | — | — | — | — | — | — |
+| Desktop capture scripts and references (`web/tests`) | — | — | yes | its browser driver only | — | the scenarios, the desktop runner, the suites (`run.mjs`, `mobile.mjs`, `measure.mjs`) and the browser driver | — |
+| Web host or toolchain (`web/`) | — | — | — | toolchain, server | all | all games | preview, production |
+| Site (`site/`) | — | — | — | — | all | — | preview, production |
+| Documentation (`docs/`, other Markdown) | — | — | — | — | layout | — | preview, production |
+| Daily workflows (`sdk.yml`, `box2d.yml` and `sdl-web.yml` too), their scripts, build settings | yes | yes | yes | yes | all | all games | preview, production |
+| Manual workflows (validate, release, sdk-release, platforms, rollback) | lint only | — | — | — | — | — | — |
+| Mobile hosts (`platforms/`) | advisory only: run validate or platforms | — | — | — | — | — | — |
+| Task records, experiments (`odd/`, `experiments/`) | — | — | — | — | — | — | — |
+| A path no rule knows | everything | everything | everything | yes | all | all games | preview, production |
+
+No change builds a release web package here: the browser engine column is where a game's code is compiled to
+WebAssembly and played ([Demo packages](#demo-packages)).
 
 - **Scope** comes from the project graph ([`projects.mjs`](../.github/scripts/projects.mjs), ADR 0014): the .NET jobs
   run the test projects that reference the changed project, directly or not, and native Linux compares the captures
@@ -107,16 +111,20 @@ Pull requests are cancelled when a newer commit arrives; pushes to `main` are no
   tests but not the core tests. A file outside every project (build settings, `web/tests`, a new folder) runs
   everything. The Plan summary prints the scope; evidence keys include it.
 - **Advisory** means the Plan summary recommends running macOS, Android or iOS. Daily CI never starts an emulator or
-  a simulator; it starts a macOS runner only on public runners (below).
+  a simulator; it starts a macOS runner only on public runners (below), for the same changes as the advisory, and
+  never twice for the same inputs ([Evidence](#evidence-a-check-runs-once-per-content)).
 - **Windows** runs for the engine, the backend, their tests and build settings. A game is managed code the Linux
   tests already ran; Windows-only behaviour lives in the engine. Every full validation runs the games' tests on
-  Windows, and every demo build compiles them there.
+  Windows.
 - **Browser suites** (`site/tests/browser.mjs --suites`): `layout` opens every page at three widths; `play` loads,
-  plays, restarts and exits each demo; `touch` checks the touch panels. A rebuilt package is always played.
+  plays, restarts and exits each demo; `touch` checks the touch panels. They run on the packages the site uses
+  (each game's current one when stored, else the released one); a release runs all three on exactly the packages it
+  publishes.
 - **Browser engine** (`web/tests/run.mjs`, [Browser tests](#browser-tests)): one job per game, on a development
   package built in the job. It plays the games whose own folders changed when every change that needs it
   is a game's; any other input (the engine, the raylib and SDL backends, SDL for the web, the web host and build, the
-  suites, an unknown path) plays all four. The desktop launcher is not part of the browser build and does not run it.
+  suites, an unknown path) plays all four. A change to the desktop launcher alone (`src/MicroEngine.Desktop`) does
+  not run it, although its assembly ships in the web packages (so it changes their keys).
 - **Box2D** (`box2d.yml`, [Box2D natives](#box2d-natives)) is not a column: it runs for the native layer and the
   Box2D backend (`src/MicroEngine.Physics.Box2D`), the physics contract and what it builds on (`MicroEngine.Kernel`,
   `Scene`, `Physics`, `Physics.Tiles`), their tests and shared suites (`tests/MicroEngine.Physics.Box2D.Tests`,
@@ -130,7 +138,7 @@ so a new folder is an input until a rule says otherwise; `.github/` is an input 
 
 | Check | Not an input |
 | --- | --- |
-| `dotnet`, `windows` | `docs/`, `site/`, `web/`, `platforms/`, `odd/`, `experiments/`, Markdown (except in a game's `Content/`) |
+| `dotnet`, `windows`, `macos` | `docs/`, `site/`, `web/`, `platforms/`, `odd/`, `experiments/`, Markdown (except in a game's `Content/`) |
 | `native` | the same, but `web/tests/` is an input |
 | `site` | `src/`, `tests/`, `samples/`, `platforms/`, `odd/`, `experiments/`, game files other than Markdown and screenshots; the key adds the demo packages used and the browser suites |
 | `sdk` | `docs/`, `site/`, `platforms/`, `games/`, `tests/`, `samples/`, `odd/`, `experiments/`, Markdown outside `src/`, `templates/` and `sdk/` (except `THIRD-PARTY-NOTICES.md`, which the packages ship) |
@@ -138,48 +146,57 @@ so a new folder is an input until a rule says otherwise; `.github/` is an input 
 | `web` (browser engine) | `docs/`, `site/`, `platforms/`, `tests/`, `samples/`, `sdk/`, `odd/`, `experiments/`, the Android and iOS hosts, Markdown (except in a game's `Content/`); the key adds the games played |
 
 When a job passes it uploads the artifact `evidence-<check>-<key>` (kept 30 days); the browser engine check records
-its evidence only when the job of every game passed. Plan skips a needed check when
-such an artifact exists, is unexpired, and was produced by a commit with an identical `.github` folder. Examples:
+its evidence only when the job of every game passed. The evidence step is the job's last: a failed step skips it, so
+a failure never becomes evidence. Plan skips a needed check when
+such an artifact exists, is unexpired, and was produced by a commit with an identical `.github` folder. Each check's
+key starts with its name, and the .NET checks add the test projects they ran, so evidence of one platform or of a
+narrower run is never taken for another. Examples:
 
 - A pull request that passed its engine tests and then gets a documentation fix runs only the site.
-- Merging an up-to-date pull request into `main` re-runs nothing it already passed; if `main` moved and the merge
-  changes an input, the keys differ and the checks run.
+- Merging an up-to-date pull request into `main` re-runs nothing it already passed, macOS included; if `main` moved
+  and the merge changes an input, the keys differ and the checks run.
 - Any failure to look evidence up (API error, unknown commit) runs the check.
 
-### Demo builds in daily CI
+The informative macOS tests (`macos`) use the same mechanism: same inputs as the .NET tests, their own key, recorded
+only when they passed. They still never gate: a macOS failure is reported in its job and in **CI result**'s summary,
+records no evidence, and runs again on the next push that needs it.
+
+### Demo packages
 
 Packages are keyed by content ([publishing the site](deployment.md#demo-packages-are-addressed-by-content)). Daily
-CI builds a missing package only when it brings new evidence:
+CI and full validation never build a release web package; nothing reads one before a release. What they check
+instead, for every game a change reaches, is the game compiled to WebAssembly as a development package (the same
+`web/build.sh`, toolchain and `microengine package web`; `--dev` only adds the input scripts and URL parameters the
+suites drive) and played in Chrome, Firefox and emulated phones by the browser engine suites. An engine-wide change
+plays all four games there.
 
-- a change to one game's own inputs (its folder or registry entry) builds that game;
-- a change to the shared inputs (engine, web host, toolchain) builds one **canary** game (`NeonRift`, or the
-  repository variable `DEMO_CANARY`), which proves the engine still compiles to WebAssembly;
-- before the first release, every missing package is built.
-
-The other games are built by the next full validation or release. The site in a pull request uses each game's
-current package when it is stored, otherwise the released one, and its build record (`/play/demos.json`) says
-which.
+Release web packages are built by the release workflow, on Linux, for each game whose key is not in the store: a
+stored key is reused, a changed or missing one rebuilt, and the new package replaces the game's earlier one. The
+release then plays exactly those packages before publishing ([Releases](#releases)). The site in a pull request or a
+validation uses each game's current package when it is stored, otherwise the released one, and its build record
+(`/play/demos.json`) says which.
 
 ## Full validation
 
 Actions → **validate** → Run workflow: a ref, and boxes for each part. Every selected check runs, whatever changed
-and whatever evidence exists; nothing is deployed or released. Demo packages (web and native downloads) that pass
-their checks are stored in the integration store (prerelease `demo-artifacts`), as daily CI stores them; a stored
-package replaces the earlier versions of its game (and target). The nightly run first sweeps that store down to the
+and whatever evidence exists; nothing is deployed or released. Native downloads that pass their checks are stored
+in the integration store (prerelease `demo-artifacts`); a stored package replaces the earlier versions of its game
+and target. Release web packages are not built here ([Demo packages](#demo-packages)): to check them without
+publishing anything, run the release workflow with **dry run**. The nightly run first sweeps the store down to the
 newest and current package of each, since a GitHub release holds at most 1000 assets
 ([publishing the site](deployment.md)).
 
 **Nightly:** validate also runs every night at 03:17 UTC on `main` with every supported box (.NET, native Linux, web,
 SDK, native packages) and no experimental platform, so a drifted reference, runner image or toolchain shows within a
-day instead of at the next release. Packages are keyed by content: a night after a change to their inputs builds and
-checks them; a night with no such change finds them stored and does not rebuild them. A red nightly run is fixed like
-any failed check, by a pull request.
+day instead of at the next release. Native packages are keyed by content: a night after a change to their inputs
+builds and checks them; a night with no such change finds them stored and does not rebuild them. A red nightly run is
+fixed like any failed check, by a pull request.
 
 | Box | Jobs | Support |
 | --- | --- | --- |
 | .NET | .NET tests on Linux and Windows | supported |
 | Native Linux | SDL and raylib under Xvfb: native tests, scripted captures against each backend's Linux reference | supported |
-| Web | every missing demo package built; site; all browser suites in Chrome and Firefox; the browser engine suites of all four games in Chrome | supported |
+| Web | site; all browser suites in Chrome and Firefox; the browser engine suites on development packages of all four games | supported |
 | SDK | `sdk.yml`: the packages packed, checked and used from outside the repository on Windows, Linux and macOS | supported |
 | Packages | every missing native download built, checked as the file a player downloads (Linux packages also on other distributions) and stored | supported |
 | macOS | .NET tests, OpenGL probe, captures when a window can be opened | experimental |
@@ -270,7 +287,7 @@ Two kinds of artifact, never mixed up:
 | | Integration packages | Approved packages |
 | --- | --- | --- |
 | Where | prerelease `demo-artifacts` | release `v<version>` |
-| Written by | daily CI, validation, the release build | the release workflow only |
+| Written by | the release build (web and native), validation (native) | the release workflow only |
 | Used by | CI site checks and previews | production |
 | Identified by | content key | version, then key and SHA-256 |
 
@@ -286,7 +303,7 @@ Actions → **release** → Run workflow:
 | Step | What it does | If it fails |
 | --- | --- | --- |
 | Preflight | version new; ref on `main` with a passed `ci` run; current `main` has a passed `ci` run (its site is deployed) and documents an SDK version nuget.org serves; chooses the downloadable targets (Android only with the signing key); lists missing packages | nothing happened |
-| Build | builds only the missing packages, into the integration store: web packages, and native packages each built, played on its own system and only then stored | nothing public changed |
+| Build | builds only the packages whose key is not stored (a stored key is reused), into the integration store, each replacing its game's (and target's) earlier one: web packages on Linux, and native packages each built, played on its own system and only then stored | nothing public changed |
 | Draft | copies every package after checking its archive against its manifest's SHA-256, native ones under player-facing names; writes `release.json`; refuses if any game lacks a package for an offered target | the partial draft is deleted |
 | Verify | builds current `main`'s site with the draft's packages, checks every file against the release, downloads and hashes every native package again, runs unit tests, `check-dist` and every browser suite | the draft is discarded |
 | Publish | `vercel build` with the draft's packages, every file checked again, staged production deployment, `vercel promote`, then the draft is published as latest | before the promote: nothing public changed; if publishing fails after it, production is rolled back |
@@ -299,7 +316,7 @@ verified, it stops before deploying: run it again.
 
 Until a demo release exists, production deployments from `main` are skipped with a warning and the current
 production deployment stays. After this workflow reaches `main` and its `ci` run passes: run release with version
-`0.1.0` and ref `main`. The four packages of `main` are already stored, so nothing is built.
+`0.1.0` and ref `main`. It builds the four web packages (and the native downloads validation has not stored yet).
 
 ### Rolling back
 
@@ -354,9 +371,8 @@ What changes when the repository is public (decision: ADR 0014; publication step
 
 - **Runners.** Standard GitHub-hosted runners are free for public repositories; larger runners are not. Set the
   repository variable `PUBLIC_RUNNERS=true` and daily CI also runs the headless .NET tests on macOS when the engine
-  or backend changes: informative, `continue-on-error`, never evidence. Android and iOS stay in `platforms.yml`.
-  The same variable switches the demo plan from one canary game to every game whose key changed (`--policy all`):
-  an engine change builds and plays all four packages, still once per key, and the next release copies them all.
+  or backend changes: informative, `continue-on-error`, never a gate; a pass is evidence (check `macos`), so a merge
+  does not repeat it. Android and iOS stay in `platforms.yml`.
 - **macOS runners switched off.** When GitHub has no macOS runner to give (jobs queued until they are cancelled, as
   during its macOS fleet migration on 2026-11-02), set the repository variable `MACOS_RUNNERS=off`: daily CI skips
   the informative macOS tests, the SDK check runs its external project on Windows and Linux only, and the macOS and
@@ -364,8 +380,8 @@ What changes when the repository is public (decision: ADR 0014; publication step
   macOS and iOS packages (releases) still need a macOS runner and are not skipped.
 - **Fork pull requests are untrusted code.** They run under `pull_request` with a read-only token and no secrets;
   no workflow uses `pull_request_target`, and no self-hosted runner exists. Their runs are never accepted as evidence
-  and record none; their demo packages stay in the run (workflow artifacts read through `DEMOS_OVERLAY`), never in
-  the shared store; they get no preview deployment.
+  and record none; they never write to the demo store (daily CI builds no release package); they get no preview
+  deployment.
 - **Settings to apply at publication:** Actions → General → "Require approval for all external contributors";
   workflow permissions read-only (already); a ruleset on `main` requiring pull requests and the **CI result**
   check, no force pushes or deletions; private vulnerability reporting and secret scanning with push protection on;

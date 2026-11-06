@@ -4,9 +4,11 @@
 #   Preflight  refused while .github/phase-freeze exists on the ref or on main (publication freeze); the version is new; the ref is on main and its ci run passed; current main's ci run passed (its site is
 #              what gets deployed) and documents an SDK version nuget.org serves; every package missing for the ref's
 #              keys is listed
-#   Build      only those packages, into the integration store (checks.yml): web packages, and the native packages of
-#              each downloadable target (packaging/README.md), each built and played on its own system before it is
-#              stored. Android is offered only when the release signing key is configured (ANDROID_KEYSTORE_* secrets)
+#   Build      only those packages, into the integration store (checks.yml), each replacing its game's (and target's)
+#              earlier one: web packages, built on Linux (the only workflow that builds them; a game whose key is
+#              stored is reused, not rebuilt), and the native packages of each downloadable target
+#              (packaging/README.md), each built and played on its own system before it is stored. Android is
+#              offered only when the release signing key is configured (ANDROID_KEYSTORE_* secrets)
 #   Draft      draft release v<version>: each package copied from the store after its archive matched its manifest's
 #              SHA-256, the native ones under player-facing names (NeonRift-1.0.0-windows-x64.zip), plus release.json
 #              (keys, hashes, commit, downloads). A draft is not public and not "latest"

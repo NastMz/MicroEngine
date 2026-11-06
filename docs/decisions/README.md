@@ -49,6 +49,7 @@ maintainer's archive, not in the public history.
 | [0046](0046-tier1-device-selection.md) | The tier-1 device chosen through the normal composition path (`GraphicsSettings.Device`, `--graphics`, `PlatformProfile.GraphicsDevices`); `DeviceRenderer.Flush`/`Target` for 3D from a scene | Accepted |
 | [0047](0047-sdl-browser-platform.md) | SDL 3 is the browser platform, built from source with the workload's Emscripten and cached in CI; raylib leaves the web (amends 0007, 0008, 0017) | Accepted |
 | [0048](0048-docs-ship-with-the-sdk.md) | Documentation in the present tense; pending SDK changes ("Next release" in the release notes) hold production until the SDK release that ships them deploys the site (amends 0022) | Accepted |
+| [0049](0049-release-packages-only-in-releases.md) | Release web packages built only by releases, on Linux, keyed by each game's project graph; macOS tests recorded as evidence (amends 0013) | Accepted |
 
 Each number is used once. The numbers missing from the table:
 

@@ -1,9 +1,10 @@
 # Daily CI (docs/ci.md): pull requests and pushes to main run the checks a change needs, once per content.
 #   Plan       planner tests; changed paths decide the checks (.github/scripts/changes.mjs); evidence skips any check
-#              that already passed for identical inputs (.github/scripts/evidence.mjs); demo keys decide the builds
-#              (site/scripts/demos.mjs, ci policy: a changed game, or one canary game for an engine-wide change)
-#   checks     .NET on Linux, then Windows and native Linux; demo builds; the site and its browser suites; the
-#              browser engine suites (web/tests/run.mjs) on the games a change reaches
+#              that already passed for identical inputs (.github/scripts/evidence.mjs); demo keys say which package the
+#              site uses (site/scripts/demos.mjs: the stored current one, else the released one). Daily CI never builds
+#              a release web package: release.yml builds them, only for games whose inputs changed
+#   checks     .NET on Linux, then Windows and native Linux; the site and its browser suites; the browser engine
+#              suites (web/tests/run.mjs), development packages of the games a change reaches built and played
 #              (.github/workflows/checks.yml)
 #   sdk        the SDK packed, checked and used from outside the repository on Windows, Linux and macOS
 #              (.github/workflows/sdk.yml), when a package input changed; never published from here
@@ -17,7 +18,8 @@
 #   project graph  .NET tests and native captures are narrowed to the test projects and games that depend on the
 #              changed files (.github/scripts/projects.mjs); a file outside every project runs them all
 # macOS: headless tests, informative only, when the repository variable PUBLIC_RUNNERS is true (free public runners)
-#          and MACOS_RUNNERS is not "off" (the switch that skips every macOS runner while GitHub has none to give).
+#          and MACOS_RUNNERS is not "off" (the switch that skips every macOS runner while GitHub has none to give);
+#          like every check, skipped when evidence (check macos) shows they already passed for identical inputs.
 # Never here: the Android emulator, the iOS simulator (validate.yml, platforms.yml), releases (release.yml).
 name: ci
 
@@ -55,7 +57,6 @@ jobs:
       site: ${{ steps.decide.outputs.site }}
       suites: ${{ steps.decide.outputs.suites }}
       web-games: ${{ steps.decide.outputs.web-games }}
-      build: ${{ steps.demos.outputs.build }}
       keys: ${{ steps.decide.outputs.keys }}
       reused: ${{ steps.decide.outputs.reused }}
       deploy: ${{ steps.decide.outputs.deploy }}
@@ -94,15 +95,14 @@ jobs:
           bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
           ./actionlint -color
       - run: npm ci --prefix site
+      # Each game's key and the package the site would use: its current one when stored, else the released one. Nothing
+      # is built here (--policy none): the browser engine suites play development packages of the games a change
+      # reaches, and release.yml builds the release packages it publishes.
       - name: Demo packages
         id: demos
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          CANARY: ${{ vars.DEMO_CANARY || 'NeonRift' }}
-          # Public runners are free: build every game whose key changed (an engine change rebuilds and plays all four,
-          # and the release then finds every package stored). Private: one canary game for engine-wide changes.
-          POLICY: ${{ vars.PUBLIC_RUNNERS == 'true' && 'all' || 'ci' }}
-        run: node site/scripts/demos.mjs plan --policy "$POLICY" --canary "$CANARY" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
+        run: node site/scripts/demos.mjs plan --policy none --github-output | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Decide
         id: decide
         env:
@@ -122,40 +122,42 @@ jobs:
           WEB: ${{ steps.changes.outputs.web }}
           WEB_GAMES: ${{ steps.changes.outputs.web_games }}
           BROWSER: ${{ steps.changes.outputs.browser }}
-          BUILD: ${{ steps.demos.outputs.build }}
           PACKAGES: ${{ steps.demos.outputs.packages }}
         run: |
-          # Rebuilt packages are always played; documentation needs the page layouts; otherwise no browser.
-          if [ "$BROWSER" = full ] || [ "$BUILD" != '[]' ]; then suites=layout,play,touch
+          # The site and the web host need every suite; documentation needs the page layouts; otherwise no browser.
+          if [ "$BROWSER" = full ]; then suites=layout,play,touch
           elif [ "$BROWSER" = layout ]; then suites=layout
           else suites=; fi
           site=$([ -n "$suites" ] && echo true || echo false)
           # The browser engine suites' games: the changed games, or every game of the scenarios.
           [ "$WEB_GAMES" = all ] && WEB_GAMES=$(node -e "console.log([...new Set(require('./web/tests/scenarios.json').scenarios.map(s => s.game))].join(','))")
           evidence=$(mktemp)
-          GITHUB_OUTPUT="$evidence" node .github/scripts/evidence.mjs plan --checks dotnet,windows,native,site,sdk,web,box2d \
-            --extra "dotnet=tests=$TESTS" --extra "windows=tests=$TESTS" --extra "native=games=$GAMES" \
+          GITHUB_OUTPUT="$evidence" node .github/scripts/evidence.mjs plan --checks dotnet,windows,macos,native,site,sdk,web,box2d \
+            --extra "dotnet=tests=$TESTS" --extra "windows=tests=$TESTS" --extra "macos=tests=$TESTS" --extra "native=games=$GAMES" \
             --extra "web=games=$WEB_GAMES" --site-extra "suites=$suites $PACKAGES" --github-output | tee -a "$GITHUB_STEP_SUMMARY"
           get() { grep "^$1=" "$evidence" | cut -d= -f2-; }
           run() { [ "$1" = true ] && [ -z "$(get "reused_$2")" ] && echo true || echo false; }
+          # macOS is informative and free only on a public repository's standard runners: never a gate, but its passes
+          # are evidence like any other check's, so a merge does not repeat the tests its pull request passed.
+          macos=false; [ "$MACOS" = true ] && [ "$PUBLIC_RUNNERS" = true ] && [ "$MACOS_RUNNERS" != off ] && macos=true
           # Production for a push that changes the published site, unless .github/phase-freeze exists (publication
-          # freeze, docs/ci.md); a preview for a pull request that changes the site or a demo (freeze.mjs deployTarget).
-          deploy=$(node .github/scripts/freeze.mjs deploy --event "$EVENT" --fork "$FORK" --browser "$BROWSER" --build "$BUILD" 2>> "$GITHUB_STEP_SUMMARY")
+          # freeze, docs/ci.md); a preview for a pull request that changes the site (freeze.mjs deployTarget).
+          deploy=$(node .github/scripts/freeze.mjs deploy --event "$EVENT" --fork "$FORK" --browser "$BROWSER" 2>> "$GITHUB_STEP_SUMMARY")
           {
             echo "dotnet=$(run "$DOTNET" dotnet)"
             echo "windows=$(run "$WINDOWS" windows)"
             echo "native=$(run "$NATIVE" native)"
             echo "sdk=$(run "$SDK" sdk)"
             echo "box2d=$(run "$BOX2D" box2d)"
-            # Informative and free only on a public repository's standard runners; never evidence, never a gate.
-            echo "macos=$([ "$MACOS" = true ] && [ "$PUBLIC_RUNNERS" = true ] && [ "$MACOS_RUNNERS" != off ] && echo true || echo false)"
+            echo "macos=$(run "$macos" macos)"
             echo "site=$(run "$site" site)"
             echo "suites=$suites"
             echo "web-games=$([ "$(run "$WEB" web)" = true ] && node -e "console.log(JSON.stringify(process.argv[1].split(',').filter(Boolean)))" "$WEB_GAMES" || echo '[]')"
             echo "deploy=$deploy"
-            echo "keys={\"dotnet\":\"$(get key_dotnet)\",\"windows\":\"$(get key_windows)\",\"native\":\"$(get key_native)\",\"site\":\"$(get key_site)\",\"sdk\":\"$(get key_sdk)\",\"web\":\"$(get key_web)\",\"box2d\":\"$(get key_box2d)\"}"
-            echo "reused={\"dotnet\":\"$(get reused_dotnet)\",\"windows\":\"$(get reused_windows)\",\"native\":\"$(get reused_native)\",\"site\":\"$(get reused_site)\",\"sdk\":\"$(get reused_sdk)\",\"web\":\"$(get reused_web)\",\"box2d\":\"$(get reused_box2d)\"}"
-            echo "needed={\"dotnet\":$DOTNET,\"windows\":$WINDOWS,\"native\":$NATIVE,\"site\":$site,\"sdk\":$SDK,\"web\":$WEB,\"box2d\":$BOX2D}"
+            echo "keys={\"dotnet\":\"$(get key_dotnet)\",\"windows\":\"$(get key_windows)\",\"macos\":\"$(get key_macos)\",\"native\":\"$(get key_native)\",\"site\":\"$(get key_site)\",\"sdk\":\"$(get key_sdk)\",\"web\":\"$(get key_web)\",\"box2d\":\"$(get key_box2d)\"}"
+            echo "reused={\"dotnet\":\"$(get reused_dotnet)\",\"windows\":\"$(get reused_windows)\",\"macos\":\"$(get reused_macos)\",\"native\":\"$(get reused_native)\",\"site\":\"$(get reused_site)\",\"sdk\":\"$(get reused_sdk)\",\"web\":\"$(get reused_web)\",\"box2d\":\"$(get reused_box2d)\"}"
+            # macos: wanted (informative); the CI result never gates on it.
+            echo "needed={\"dotnet\":$DOTNET,\"windows\":$WINDOWS,\"macos\":$macos,\"native\":$NATIVE,\"site\":$site,\"sdk\":$SDK,\"web\":$WEB,\"box2d\":$BOX2D}"
           } >> "$GITHUB_OUTPUT"
           echo "Deployment: $deploy" >> "$GITHUB_STEP_SUMMARY"
 
@@ -164,7 +166,10 @@ jobs:
     needs: plan
     uses: ./.github/workflows/checks.yml
     permissions:
-      contents: write # storing demo packages
+      # The packaging jobs of checks.yml declare contents write (storing packages), and a caller must grant what a
+      # called job declares even when that job is skipped; daily CI never runs them (build and native-packages stay
+      # empty), so no job of this run writes to the repository.
+      contents: write
     with:
       ref: ${{ github.sha }}
       dotnet: ${{ needs.plan.outputs.dotnet == 'true' }}
@@ -173,7 +178,6 @@ jobs:
       macos: ${{ needs.plan.outputs.macos == 'true' }}
       tests: ${{ needs.plan.outputs.tests }}
       games: ${{ needs.plan.outputs.games }}
-      build: ${{ needs.plan.outputs.build }}
       site: ${{ needs.plan.outputs.site == 'true' }}
       demo-source: candidates
       suites: ${{ needs.plan.outputs.suites }}
@@ -181,7 +185,6 @@ jobs:
       # A fork's runs are never trusted as evidence (evidence.mjs ignores them), so they do not record any.
       evidence: ${{ needs.plan.outputs.fork != 'true' }}
       keys: ${{ needs.plan.outputs.keys }}
-      fork: ${{ needs.plan.outputs.fork == 'true' }}
 
   # The SDK as an outside developer gets it; a separate reusable workflow because sdk-release.yml runs it too.
   sdk:
@@ -263,8 +266,12 @@ jobs:
               echo "| $check | $is_needed | $outcome |"
             done
             echo; echo "Deployment: $WANTED ($DEPLOY). .NET tests: $TESTS; native captures: ${GAMES:-none}."
+            macos_proof=$(echo "$REUSED" | jq -r '.macos // ""')
             if [ "$MACOS" = true ]; then echo "macOS ran as an informative check (see its job); it never gates."
+            elif [ "$(echo "$NEEDED" | jq -r '.macos // false')" = true ] && [ -n "$macos_proof" ]; then
+              echo "macOS (informative) already passed for identical inputs in [run $macos_proof]($RUN_URL/$macos_proof)."
             else echo "macOS, Android and iOS are not part of this run (validate.yml, platforms.yml)."; fi
+            echo "Release web packages are never built here: release.yml builds them (docs/ci.md, \"Demo packages\")."
           } >> "$GITHUB_STEP_SUMMARY"
           [ "$PLAN" = success ] || { echo "::error::Plan $PLAN."; exit 1; }
           # Checks is skipped as a whole when the change needs none of its jobs (or evidence proved them all).

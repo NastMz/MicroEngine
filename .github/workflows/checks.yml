@@ -1,5 +1,5 @@
 # The checks every other workflow composes (docs/ci.md): ci.yml runs the ones a change needs, validate.yml all of them
-# for any ref, release.yml the demo builds and the site with the packages it is about to publish. Each job names its
+# for any ref (native downloads included), release.yml the web and native packages it is about to publish. Each job names its
 # platform, so a failure says where it happened. Jobs never deploy anything.
 #
 # Evidence: when `evidence` is on, a job that passed uploads `evidence-<check>-<key>` (.github/scripts/evidence.mjs)
@@ -39,7 +39,8 @@ on:
         type: boolean
         default: false
       build:
-        description: JSON list of games whose web package to build and store
+        description: JSON list of games whose release web package to build and store (release.yml; daily CI and
+          validation pass none)
         type: string
         default: '[]'
       site:
@@ -60,14 +61,9 @@ on:
         type: boolean
         default: false
       keys:
-        description: 'JSON object of evidence keys: {"dotnet": "...", "windows": "...", "native": "...", "site": "...", "web": "..."}'
+        description: 'JSON object of evidence keys: {"dotnet": "...", "windows": "...", "macos": "...", "native": "...", "site": "...", "web": "..."}'
         type: string
         default: '{}'
-      fork:
-        description: A pull request from a fork (read-only token, untrusted code) keeps the packages it builds out of
-          the shared store and hands them to the site job as workflow artifacts
-        type: boolean
-        default: false
       native-packages:
         description: 'JSON list of native packages to build, check and store: [{"game", "target", "runner"}] from
           `demos.mjs plan --native` (packaging/README.md). Never from a fork: storing needs contents write'
@@ -174,7 +170,9 @@ jobs:
           overwrite: true
 
   # Informative tier, only when the repository runs on free public runners (ci.yml, PUBLIC_RUNNERS): the headless tests
-  # on macOS. macOS stays experimental (ADR 0012): a failure is reported, never a gate, and no evidence is recorded.
+  # on macOS. macOS stays experimental (ADR 0012): a failure is reported, never a gate. A pass records evidence under
+  # its own check (macos), so the merge of a pull request whose macOS tests passed does not run them again; a failed
+  # step skips the evidence steps, so a failure never becomes evidence.
   dotnet-macos:
     name: .NET tests (macOS, informative)
     needs: dotnet-linux
@@ -201,6 +199,15 @@ jobs:
         run: .github/scripts/dotnet-test.sh "${{ inputs.tests }}" "TestCategory!=Native" test-results
       - if: always()
         run: node .github/scripts/test-summary.mjs test-results ".NET tests on macOS (informative)"
+      - if: inputs.evidence
+        run: node .github/scripts/evidence.mjs record macos "${{ fromJSON(inputs.keys).macos }}" evidence.json
+      - if: inputs.evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-macos-${{ fromJSON(inputs.keys).macos }}
+          path: evidence.json
+          retention-days: 30
+          overwrite: true
 
   # The desktop backends for real on Linux: SDL and raylib with OpenGL (Mesa) in a virtual X display, the keyboard through the
   # X server, audio through a virtual PulseAudio sink, and the games' scripted runs compared with each backend's Linux reference.
@@ -311,13 +318,15 @@ jobs:
     with:
       ref: ${{ inputs.ref }}
 
-  # Web packages are built on Windows with the pinned toolchain and stored in the integration store under their
-  # content key (site/scripts/demos.mjs). A key is built once; building never publishes a demo.
+  # Release web packages (release.yml only: daily CI and validation never build them). Each is built on Linux with the
+  # pinned toolchain, as the browser engine suites build their development packages, and stored in the integration
+  # store under its content key (site/scripts/demos.mjs), replacing the game's earlier package. A key is built once;
+  # building never publishes a demo: the release's verify job plays exactly these packages before anything is public.
   build-demos:
     name: Build ${{ matrix.game }} (WebAssembly)
     needs: sdl-web
     if: inputs.build != '[]'
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     strategy:
@@ -331,9 +340,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
-      # The toolchain lives outside the runner's user profile, so no profile path is compiled into a package.
+      # The toolchain lives outside the runner's home and the checkout; web/build.sh maps its path to /web-tools in
+      # what it compiles, so no build-machine path reaches a package.
       - name: Toolchain folder
-        run: echo "MICROENGINE_WEB_TOOLS=$(cygpath -u '${{ runner.temp }}')/web-tools" >> "$GITHUB_ENV"
+        run: echo "MICROENGINE_WEB_TOOLS=${{ runner.temp }}/web-tools" >> "$GITHUB_ENV"
       - uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/web-tools
@@ -348,24 +358,12 @@ jobs:
         with:
           name: sdl-web-browser-wasm
           path: ${{ runner.temp }}/web-tools/sdl-web/browser-wasm
-      - run: web/setup.sh
-      - run: web/build.sh "${{ matrix.game }}"
+      - run: bash web/setup.sh
+      - run: bash web/build.sh "${{ matrix.game }}"
       - name: Store the package
-        if: ${{ !inputs.fork }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node site/scripts/demos.mjs publish "${{ matrix.game }}" | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Keep the package for this run only (fork pull request)
-        if: inputs.fork
-        env:
-          DEMOS_STORE: dir:demo-overlay
-        run: node site/scripts/demos.mjs publish "${{ matrix.game }}" | tee -a "$GITHUB_STEP_SUMMARY"
-      - if: inputs.fork
-        uses: actions/upload-artifact@v4
-        with:
-          name: demo-package-${{ matrix.game }}
-          path: demo-overlay
-          retention-days: 3
 
   # Native packages (packaging/README.md): each one is built on its own system, checked as the file a player
   # downloads (structure, dependencies, then the game played by the package's executable against the target's SDL
@@ -641,17 +639,10 @@ jobs:
           cache-dependency-path: site/package-lock.json
       - run: npm ci
       - run: npm test
-      - if: inputs.fork && inputs.build != '[]'
-        uses: actions/download-artifact@v4
-        with:
-          pattern: demo-package-*
-          merge-multiple: true
-          path: site/demo-overlay
       - name: Build with ${{ inputs.demo-source }} demo packages
         env:
           GITHUB_TOKEN: ${{ github.token }}
           DEMOS_SOURCE: ${{ inputs.demo-source }}
-          DEMOS_OVERLAY: ${{ inputs.fork && inputs.build != '[]' && 'demo-overlay' || '' }}
         run: npm run build
       # Firefox needs a display for WebGL without a GPU: run under a virtual X server (Mesa software rendering).
       - name: Browser checks (${{ inputs.suites }})

@@ -6,7 +6,7 @@
 // lifts it by deleting the file in a pull request.
 //
 //   node .github/scripts/freeze.mjs deploy --event <push|pull_request> --fork <true|false> --browser <none|layout|full>
-//                                          --build <json array>        ci's deployment target, printed on stdout
+//                                          ci's deployment target, printed on stdout
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,25 +23,26 @@ export function freezeReason(root = repoRoot) {
 
 /**
  * What daily CI deploys (ci.yml, Plan): production for a push to main that changes the published site, unless
- * publication is frozen; a preview for a pull request from this repository that changes the site or rebuilds a demo;
- * otherwise nothing. `browser` is changes.mjs's level, `build` the demo packages to build ('[]' for none).
+ * publication is frozen; a preview for a pull request from this repository that changes the site; otherwise nothing.
+ * `browser` is changes.mjs's level. A game's code reaches the site only as a release package, which daily CI never
+ * builds (release.yml does), so it never asks for a preview on its own.
  */
-export function deployTarget({ event, fork, browser, build, frozen }) {
+export function deployTarget({ event, fork, browser, frozen }) {
   if (event === 'push') return browser !== 'none' && !frozen ? 'production' : 'none';
   if (fork) return 'none';
-  return browser !== 'none' || build !== '[]' ? 'preview' : 'none';
+  return browser !== 'none' ? 'preview' : 'none';
 }
 
 function main([command, ...args]) {
   const value = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
   if (command !== 'deploy') {
-    console.log('usage: freeze.mjs deploy --event <e> --fork <true|false> --browser <none|layout|full> --build <json>');
+    console.log('usage: freeze.mjs deploy --event <e> --fork <true|false> --browser <none|layout|full>');
     process.exitCode = command ? 2 : 0;
     return;
   }
   const reason = freezeReason();
   const event = value('--event'), browser = value('--browser') ?? 'none';
-  console.log(deployTarget({ event, fork: value('--fork') === 'true', browser, build: value('--build') ?? '[]', frozen: Boolean(reason) }));
+  console.log(deployTarget({ event, fork: value('--fork') === 'true', browser, frozen: Boolean(reason) }));
   if (reason && event === 'push' && browser !== 'none') console.error(`Production is not deployed: publication is frozen (${freezeFile}: ${reason}).`);
 }
 

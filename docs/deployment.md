@@ -13,7 +13,7 @@ How CI, full validation and releases work, and what they cost: [CI, validation a
 
 | Event | Site | Demos |
 | --- | --- | --- |
-| Pull request that changes the site or a demo | protected **preview** after its checks (none for forks) | the pull request's packages where built, else the released ones |
+| Pull request that changes the site | protected **preview** after its checks (none for forks) | each game's current package where stored, else the released one (pull requests build none) |
 | Push to `main` that changes the published site | **production**, after every needed check passed | the latest release |
 | Push to `main` that only changes code | nothing deployed | nothing published |
 | Release workflow (manual) | **production**, staged, verified file by file, then promoted | the new release, published as the latest |
@@ -34,28 +34,49 @@ rollback.
 ### Demo packages are addressed by content
 
 Each game in the registry (`games/<Id>/<Id>.csproj`) has a **key**: a hash of the Git blobs of
-everything its web package is built from (the engine and the `microengine` tool with its browser host under `src/`,
-the web toolchain files, the game's folder (its project holds its identity), `THIRD-PARTY-NOTICES.md`, `LICENSE` and `games/LICENSE`; Markdown files, screenshots and input scripts excluded).
-`node site/scripts/demos.mjs key <Game>` prints a key and its input files.
+everything its web package is built from, found from the .NET project graph (`webInputs` in
+[`demos.mjs`](../site/scripts/demos.mjs)):
 
-- A change to the engine or the web host changes every key; a change to one game changes only that game's key;
-  documentation and site changes change no key, so those pull requests reuse every stored package and build none.
+- the game's project and every project it references, directly or not (for the demos: `MicroEngine.Desktop`, which
+  brings SDL, raylib and the engine; their assemblies ship in the web package), every file in those projects' folders;
+- the `microengine` tool that packages it (`src/MicroEngine.Cli`, with its browser host) and its own graph;
+- the `Directory.Build.props` and `Directory.Build.targets` above those projects, and every file an MSBuild file there
+  names by a relative path (an `Import`, a linked notice);
+- the pinned tools and settings: `web/build.sh`, `web/setup.sh`, `web/toolchain.env`, `global.json`, `NuGet.config`,
+  and the notices every package ships (`THIRD-PARTY-NOTICES.md`, `LICENSE`, `games/LICENSE`).
+
+Markdown files, screenshots, input scripts (only development packages ship them) and the Android, iOS and phone hosts
+are excluded. `node site/scripts/demos.mjs key <Game>` prints a key and its input files.
+
+- A change to a project every game references (the engine, the SDL and raylib backends, the desktop launcher
+  project), to the tool or its browser host, to the build settings or the toolchain changes every key; a change to
+  one game changes only that game's key; a project no game references (`MicroEngine.Graphics3D`,
+  `MicroEngine.Physics.Box2D`), native packaging, the phone hosts and platforms, tests, samples, documentation and the
+  site change no key.
+- The key's first line is a version (`microengine-demo-key 2`: built on Linux, keyed by the project graph); it changes
+  whenever the way packages are built changes without an input file changing, so no package built the earlier way is
+  reused.
+- Release web packages are built only by the release workflow, on Linux, for the games whose key is not stored
+  ([Releases](ci.md#releases)); pull requests, `main` and validation build none (the browser engine suites play
+  development packages of every game a change reaches).
 - Integration packages are stored as assets of the prerelease **`demo-artifacts`** of this repository (public downloads once the repository is public), one
   archive and one manifest per game and key (`<Game>-<key>.tar.gz`, `<Game>-<key>.json`). The manifest records the
-  archive's SHA-256, every file's SHA-256, the commit that built it and the toolchain versions. Artifacts are never
-  replaced. A release copies the approved ones into release `v<version>` ([Releases](ci.md#releases)).
-- The store keeps the final version of each package, not a history: storing a game's package (or a game's native
+  archive's SHA-256, every file's SHA-256, the commit that built it and the toolchain versions. A complete artifact
+  (its manifest stored) is never replaced; an archive without a manifest is an interrupted upload and is replaced by
+  the next one. A release copies the approved ones into release `v<version>` ([Releases](ci.md#releases)), after
+  checking each archive against its manifest.
+- The store keeps the current version of each package, not a history: storing a game's package (or a game's native
   package for a target) removes the earlier ones of that game (and target). The nightly validation sweeps leftovers
   (`node site/scripts/demos.mjs prune`, `--dry-run` lists them): only the newest and `main`'s current package of each
   stay. Releases hold their own copies, so they never depend on the store. A GitHub release holds at most 1000
   assets; an upload the store refuses fails the job instead of being reported as stored.
 - `npm run build` fetches each game's package from the source `DEMOS_SOURCE` names: `keys` (the package of the
   key computed from the commit being built; the default for local work), `candidates` (that package when stored,
-  else the released one; CI checks and previews) or `release[:<tag>]` (production). It checks the archive's
+  else the released one; CI checks, validation and previews) or `release[:<tag>]` (production). It checks the archive's
   SHA-256 and then every extracted file against the manifest, and fails if anything is missing or different.
   `/play/demos.json` records where each package came from.
 - A new game needs its project (`games/<Id>/<Id>.csproj`, with its identity) and its page data in `site/src/data/games.ts`; the plan
-  picks it up and builds it; production shows it after the next release. No workflow changes (a unit test fails if
+  picks it up and the next release builds it; production shows it after that release. No workflow changes (a unit test fails if
   the two lists differ).
 - Native downloads use the same store under `<Game>-<target>-<key>` ([packaging](../packaging/README.md),
   [ADR 0018](decisions/0018-native-demo-distribution.md)). A site built from a release (`release`, `release:<tag>`,
@@ -118,9 +139,9 @@ project or a rebuild. These are the values the workflows need.
 4. Copy `orgId` and `projectId` from `site/.vercel/project.json` into the GitHub variables above. `.vercel/` is
    ignored by Git.
 
-After that, the first pull request builds any missing package (one Windows job each; the toolchain is downloaded
-once and then cached) and stores it; run the release workflow once ([First release](ci.md#first-release)), since
-production deployments from `main` are skipped until a demo release exists.
+After that, run the release workflow once ([First release](ci.md#first-release)): it builds every missing package
+(one Linux job each; the toolchain is downloaded once and then cached) and stores it, since production deployments
+from `main` are skipped until a demo release exists.
 
 ## What the build checks before anything is published
 
