@@ -44,11 +44,10 @@ internal sealed unsafe class SdlTouchScreen : ITouchScreen, IDisposable
         get
         {
             int w, h;
-            // A page's safe area is read while the game's canvas may be the render target (the frame's layout): the
-            // page's size is the window's output, whatever target is bound.
+            // The safe area is read while the game's canvas may be the render target (the frame's layout, on a page or
+            // a desktop window): the screen's size is the window's output, whatever target is bound.
             if (_sdl == null) SDL_GetWindowSizeInPixels(_window, &w, &h);
-            else if (_page is not null) SDL_GetRenderOutputSize(_sdl, &w, &h);
-            else SDL_GetCurrentRenderOutputSize(_sdl, &w, &h);
+            else SDL_GetRenderOutputSize(_sdl, &w, &h);
             return new Vector2(w, h);
         }
     }
