@@ -11,7 +11,7 @@ import { planChecks } from './changes.mjs';
 import * as version from '../../sdk/version.mjs';
 
 const script = fileURLToPath(new URL('./freeze.mjs', import.meta.url));
-const site = { browser: 'layout', build: '[]' };
+const site = { browser: 'layout' };
 
 function tree(freeze) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'freeze-'));
@@ -23,21 +23,22 @@ function tree(freeze) {
 }
 
 test('not frozen: a push to main that changes the published site deploys production, otherwise nothing', () => {
-  for (const browser of ['layout', 'full']) assert.equal(deployTarget({ event: 'push', fork: false, browser, build: '[]', frozen: false }), 'production');
-  assert.equal(deployTarget({ event: 'push', fork: false, browser: 'none', build: '["NeonRift"]', frozen: false }), 'none', 'a rebuilt demo alone is not the published site');
+  for (const browser of ['layout', 'full']) assert.equal(deployTarget({ event: 'push', fork: false, browser, frozen: false }), 'production');
+  assert.equal(deployTarget({ event: 'push', fork: false, browser: 'none', frozen: false }), 'none', 'a change outside the published site deploys nothing');
 });
 
 test('frozen: a push to main never deploys production', () => {
-  for (const browser of ['none', 'layout', 'full'])
-    for (const build of ['[]', '["NeonRift"]']) assert.equal(deployTarget({ event: 'push', fork: false, browser, build, frozen: true }), 'none');
+  for (const browser of ['none', 'layout', 'full']) assert.equal(deployTarget({ event: 'push', fork: false, browser, frozen: true }), 'none');
 });
 
-test('pull requests: a preview when the site or a demo changes, nothing from a fork, frozen or not', () => {
+test('pull requests: a preview when the site changes, nothing from a fork, frozen or not', () => {
   for (const frozen of [false, true]) {
     assert.equal(deployTarget({ event: 'pull_request', fork: false, ...site, frozen }), 'preview');
-    assert.equal(deployTarget({ event: 'pull_request', fork: false, browser: 'none', build: '["MeadowRun"]', frozen }), 'preview');
-    assert.equal(deployTarget({ event: 'pull_request', fork: false, browser: 'none', build: '[]', frozen }), 'none');
-    assert.equal(deployTarget({ event: 'pull_request', fork: true, browser: 'full', build: '["MeadowRun"]', frozen }), 'none');
+    // A game's code reaches the site only through a release package, which daily CI never builds: a preview would
+    // show the released demos, so a change that does not touch the site gets none.
+    assert.equal(deployTarget({ event: 'pull_request', fork: false, browser: 'none', build: '["MeadowRun"]', frozen }), 'none');
+    assert.equal(deployTarget({ event: 'pull_request', fork: false, browser: 'none', frozen }), 'none');
+    assert.equal(deployTarget({ event: 'pull_request', fork: true, browser: 'full', frozen }), 'none');
   }
 });
 
@@ -66,7 +67,7 @@ test('the freeze changes no check: only the site layout runs for it, so lifting 
 test('deploy command: prints the target from the freeze file next to the script and explains a withheld production', () => {
   const run = args => execFileSync(process.execPath, [script, 'deploy', ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   const frozen = Boolean(freezeReason());
-  assert.equal(run(['--event', 'push', '--fork', 'false', '--browser', 'layout', '--build', '[]']), frozen ? 'none' : 'production');
-  assert.equal(run(['--event', 'pull_request', '--fork', 'false', '--browser', 'layout', '--build', '[]']), 'preview');
-  assert.equal(run(['--event', 'pull_request', '--fork', 'true', '--browser', 'full', '--build', '[]']), 'none');
+  assert.equal(run(['--event', 'push', '--fork', 'false', '--browser', 'layout']), frozen ? 'none' : 'production');
+  assert.equal(run(['--event', 'pull_request', '--fork', 'false', '--browser', 'layout']), 'preview');
+  assert.equal(run(['--event', 'pull_request', '--fork', 'true', '--browser', 'full']), 'none');
 });

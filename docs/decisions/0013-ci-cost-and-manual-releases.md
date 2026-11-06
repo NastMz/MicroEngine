@@ -5,6 +5,8 @@
 Accepted. Amends [ADR 0010](0010-delivery-pipeline.md) (merging no longer publishes demos) and
 [ADR 0012](0012-tiered-ci-and-platform-experiments.md) (macOS leaves daily CI; the platform workflow becomes monthly
 and manual). Evidence and costs: [INFRA-1 evaluation](../evaluations/infra-1.md). Operation: [CI](../ci.md).
+Amended by [ADR 0049](0049-release-packages-only-in-releases.md): daily CI builds no demo package (no canary), releases
+build them on Linux, and the informative macOS tests are evidence.
 
 ## Context
 

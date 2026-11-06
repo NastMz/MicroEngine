@@ -8,7 +8,7 @@ import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import {
   registry, demoKey, publish, plan, fetchDemos, openStore, noticeFiles, playDir, cacheDir, createRelease, verifyRelease,
-  versionTag, nextVersion, candidatePackages, releaseRecord, prune, nativeKey, nativeTargets,
+  versionTag, nextVersion, candidatePackages, releaseRecord, prune, nativeKey, nativeTargets, sha256File,
 } from '../scripts/demos.mjs';
 
 const git = (root, ...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' });
@@ -17,14 +17,39 @@ const write = (root, file, text) => {
   fs.writeFileSync(path.join(root, file), text);
 };
 
-// A repository with the same layout as MicroEngine and two games (games/<Id>/<Id>.csproj).
+// A repository with the same layout as MicroEngine and two games (games/<Id>/<Id>.csproj): the games reference a
+// desktop project, which references the engine; the tool that builds web packages (src/MicroEngine.Cli) references the
+// engine and holds the browser and phone hosts; a 3D project no game references; build settings, a targets file
+// imported from outside every project, and the native packaging and phone platform folders.
 function fixtureRepo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'demo-repo-'));
   write(root, 'web/toolchain.env', 'DOTNET_SDK_VERSION=10.0.403   # pinned\nEMSCRIPTEN_VERSION=3.1.56\n');
-  write(root, 'src/Engine.cs', 'class Engine {}');
+  write(root, 'web/build.sh', 'build');
+  write(root, 'web/serve.mjs', 'serve');
+  write(root, 'Directory.Build.props', '<Project />');
+  write(root, 'src/Directory.Build.props', '<Project><Import Project="../Directory.Build.props" /></Project>');
+  write(root, 'src/Engine/Engine.csproj', '<Project />');
+  write(root, 'src/Engine/Engine.cs', 'class Engine {}');
+  write(root, 'src/Desktop/Desktop.csproj', '<Project><ItemGroup><ProjectReference Include="../Engine/Engine.csproj" /></ItemGroup></Project>');
+  write(root, 'src/Desktop/Window.cs', 'class Window {}');
+  write(root, 'src/Graphics3D/Graphics3D.csproj', '<Project><ItemGroup><ProjectReference Include="../Engine/Engine.csproj" /></ItemGroup></Project>');
+  write(root, 'src/Graphics3D/Mesh.cs', 'class Mesh {}');
+  write(root, 'src/MicroEngine.Cli/MicroEngine.Cli.csproj', '<Project><ItemGroup><ProjectReference Include="../Engine/Engine.csproj" /><Content Include="../../LICENSE" /></ItemGroup></Project>');
+  write(root, 'src/MicroEngine.Cli/Packaging.cs', 'class Packaging {}');
+  write(root, 'src/MicroEngine.Cli/Hosts/web/Host.csproj', '<Project><ItemGroup><ProjectReference Include="$(GameProject)" /></ItemGroup></Project>');
+  write(root, 'src/MicroEngine.Cli/Hosts/web/main.js', 'page');
+  write(root, 'src/MicroEngine.Cli/Hosts/android/GameActivity.cs', 'android');
+  write(root, 'src/MicroEngine.Cli/Hosts/ios/AppDelegate.cs', 'ios');
+  write(root, 'build/Shared.targets', '<Project />');
+  write(root, 'games/Directory.Build.targets', '<Project><Import Project="../build/Shared.targets" /></Project>');
+  write(root, 'packaging/package.mjs', 'native packages');
+  write(root, 'platforms/android/run.mjs', 'emulator');
+  write(root, 'tests/Engine.Tests/EngineTests.cs', 'tests');
+  write(root, 'LICENSE', 'MIT');
+  write(root, 'games/LICENSE', 'all rights reserved');
   write(root, 'THIRD-PARTY-NOTICES.md', '# notices');
   for (const id of ['Alpha', 'Beta']) {
-    write(root, `games/${id}/${id}.csproj`, `<Project><PropertyGroup><ApplicationTitle>${id}</ApplicationTitle><MicroEngineGameFactory>new ${id}.Game()</MicroEngineGameFactory></PropertyGroup></Project>`);
+    write(root, `games/${id}/${id}.csproj`, `<Project><PropertyGroup><ApplicationTitle>${id}</ApplicationTitle><MicroEngineGameFactory>new ${id}.Game()</MicroEngineGameFactory></PropertyGroup><ItemGroup><ProjectReference Include="../../src/Desktop/Desktop.csproj" /></ItemGroup></Project>`);
     write(root, `games/${id}/Game.cs`, `class ${id} {}`);
     write(root, `games/${id}/README.md`, `# ${id}`);
     write(root, `games/${id}/screenshots/01.png`, 'png');
@@ -89,18 +114,66 @@ test('keys: stable, per game, and only changed by what a web package is built fr
   change(root, 'games/Alpha/Alpha.csproj', fs.readFileSync(path.join(root, 'games/Alpha/Alpha.csproj'), 'utf8').replace('new Alpha.Game()', 'new Alpha.Game(1)'));
   assert.notEqual(key('Alpha'), alpha, "the game's project (its identity and factory) is an input");
   const afterEntry = key('Alpha');
-  change(root, 'src/Engine.cs', 'class Engine { int y; }');
+  change(root, 'src/Engine/Engine.cs', 'class Engine { int y; }');
   assert.notEqual(key('Alpha'), afterEntry, 'the engine is an input of every game');
   const afterEngine = key('Alpha');
   change(root, 'THIRD-PARTY-NOTICES.md', '# notices, updated');
   assert.notEqual(key('Alpha'), afterEngine, 'the notices ship in every package');
 });
 
+test('keys: a game depends on its project graph, the tool that packages it and the build settings, nothing else', () => {
+  const root = fixtureRepo();
+  const keys = () => ({ Alpha: demoKey('Alpha', { root }).key, Beta: demoKey('Beta', { root }).key });
+  let before = keys();
+  for (const [file, text] of [['src/Graphics3D/Mesh.cs', 'class Mesh { int v; }'], ['src/MicroEngine.Cli/Hosts/android/GameActivity.cs', 'android 2'],
+    ['src/MicroEngine.Cli/Hosts/ios/AppDelegate.cs', 'ios 2'], ['packaging/package.mjs', 'native packages 2'], ['platforms/android/run.mjs', 'emulator 2'],
+    ['tests/Engine.Tests/EngineTests.cs', 'tests 2'], ['web/serve.mjs', 'serve 2'], ['newfolder/tool.mjs', 'unrelated']]) {
+    change(root, file, text);
+    assert.deepEqual(keys(), before, `${file} never reaches a web package`);
+  }
+  // Every file of a project in a game's graph, of the packaging tool and of the build settings, and every pinned tool.
+  for (const [file, text] of [['src/Desktop/Window.cs', 'class Window { int w; }'], ['src/Engine/Engine.csproj', '<Project><PropertyGroup /></Project>'],
+    ['src/MicroEngine.Cli/Packaging.cs', 'class Packaging { int p; }'], ['src/MicroEngine.Cli/Hosts/web/main.js', 'page 2'],
+    ['Directory.Build.props', '<Project><PropertyGroup /></Project>'], ['src/Directory.Build.props', '<Project><Import Project="../Directory.Build.props" /><PropertyGroup /></Project>'],
+    ['games/Directory.Build.targets', '<Project><Import Project="../build/Shared.targets" /><PropertyGroup /></Project>'], ['build/Shared.targets', '<Project><PropertyGroup /></Project>'],
+    ['web/toolchain.env', 'DOTNET_SDK_VERSION=10.0.404\nEMSCRIPTEN_VERSION=3.1.56\n'], ['web/build.sh', 'build 2'], ['LICENSE', 'MIT 2'], ['games/LICENSE', 'reserved 2']]) {
+    change(root, file, text);
+    const after = keys();
+    assert.notEqual(after.Alpha, before.Alpha, `${file} changes Alpha's package`);
+    assert.notEqual(after.Beta, before.Beta, `${file} changes Beta's package`);
+    before = after;
+  }
+  // A project only one game references changes only that game's key, until the other references it too.
+  change(root, 'src/AlphaOnly/AlphaOnly.csproj', '<Project />');
+  change(root, 'src/AlphaOnly/Boss.cs', 'class Boss {}');
+  change(root, 'games/Alpha/Alpha.csproj', fs.readFileSync(path.join(root, 'games/Alpha/Alpha.csproj'), 'utf8').replace('</ItemGroup>', '<ProjectReference Include="../../src/AlphaOnly/AlphaOnly.csproj" /></ItemGroup>'));
+  before = keys();
+  change(root, 'src/AlphaOnly/Boss.cs', 'class Boss { int hp; }');
+  assert.notEqual(keys().Alpha, before.Alpha);
+  assert.equal(keys().Beta, before.Beta, 'a project Beta does not reference');
+  assert.ok(demoKey('Alpha', { root }).inputs.includes('src/AlphaOnly/Boss.cs'));
+  assert.ok(!demoKey('Beta', { root }).inputs.some(file => file.startsWith('src/AlphaOnly/') || file.startsWith('games/Alpha/')));
+});
+
 test('keys: line endings in the working copy do not matter', () => {
   const root = fixtureRepo();
   const before = demoKey('Alpha', { root }).key;
-  write(root, 'src/Engine.cs', 'class Engine {}\r\n');
-  assert.equal(demoKey('Alpha', { root }).key, before, 'only staged blobs count');
+  write(root, 'src/Engine/Engine.cs', 'class Engine {}\r\n');
+  write(root, 'src/Desktop/Desktop.csproj', '<Project>\r\n<ItemGroup><ProjectReference Include="..\\Engine\\Engine.csproj" /></ItemGroup></Project>');
+  assert.equal(demoKey('Alpha', { root }).key, before, 'only staged blobs count, the project graph included');
+});
+
+test('keys: the real demos depend on the engine and the browser host, never on the 3D or Box2D projects or the phone hosts', () => {
+  for (const id of ['MeadowRun', 'NeonRift']) {
+    const { inputs } = demoKey(id);
+    for (const file of ['src/MicroEngine.Desktop/MicroEngine.Desktop.csproj', 'src/MicroEngine.Kernel/MicroEngine.Kernel.csproj',
+      'src/MicroEngine.Sdl/native/sdl.env', 'src/MicroEngine.Cli/Hosts/web/Host.csproj', 'src/MicroEngine/build/MicroEngine.targets',
+      'Directory.Build.props', 'src/Directory.Build.props', 'games/Directory.Build.targets', 'web/toolchain.env', 'global.json', `games/${id}/${id}.csproj`])
+      assert.ok(inputs.includes(file), `${id}: ${file}`);
+    assert.ok(!inputs.some(file => /^src\/MicroEngine\.(Graphics3D|Physics\.Box2D)\//.test(file) || /^src\/MicroEngine\.Cli\/Hosts\/(android|ios|mobile)\//.test(file)
+      || /^(packaging|platforms|tests|samples|sdk|templates|site|docs)\//.test(file)), `${id}: nothing outside its web build`);
+    assert.ok(!inputs.some(file => file.startsWith('games/') && !file.startsWith(`games/${id}/`) && !/^games\/(LICENSE|Directory\.Build\.targets)$/.test(file)), `${id}: no other game`);
+  }
 });
 
 test('publish and fetch: built once, reused, and installed only after verification', async t => {
@@ -405,25 +478,50 @@ test('sources: candidates use a stored current package, else the released one; p
   await assert.rejects(fetchDemos({ DEMOS_SOURCE: 'nightly' }, { store, root }), /DEMOS_SOURCE must be/);
 });
 
-test('plan, ci policy: a game change builds that game, an engine change builds the canary only', async () => {
+test('plan: a release builds exactly the packages its keys miss; daily CI and validation (none) build nothing', async () => {
   const root = fixtureRepo();
-  const store = openStore(dirStoreEnv());
-  const builds = async options => (await plan(store, { root, ...options })).filter(g => g.build).map(g => g.id);
+  const env = dirStoreEnv();
+  const store = openStore(env);
+  const builds = async policy => (await plan(store, { root, policy })).filter(g => g.build).map(g => g.id);
+  const stored = () => fs.readdirSync(env.DEMOS_STORE.slice(4)).filter(name => name !== 'releases').sort();
 
-  assert.deepEqual(await builds({ policy: 'ci', canary: 'Beta' }), ['Alpha', 'Beta'], 'no release yet: build everything missing');
+  assert.deepEqual(await builds('all'), ['Alpha', 'Beta'], 'nothing stored yet: a release builds both');
+  assert.deepEqual(await builds('none'), [], 'daily CI never builds a release package');
   await publish(['Alpha', 'Beta'], store, { from: builtPackages(root), root });
   await createRelease(store, 'v1.0.0', { root });
   await store.releases.publish('v1.0.0');
-  assert.deepEqual(await builds({ policy: 'ci', canary: 'Beta' }), [], 'everything released and stored');
+  assert.deepEqual(await builds('all'), [], 'every key stored: each package is reused, not rebuilt');
 
+  const before = demoKey('Alpha', { root }).key;
   change(root, 'games/Alpha/Game.cs', 'class Alpha { int x; }');
-  assert.deepEqual(await builds({ policy: 'ci', canary: 'Beta' }), ['Alpha']);
-  change(root, 'src/Engine.cs', 'class Engine { int y; }');
-  assert.deepEqual(await builds({ policy: 'ci', canary: 'Beta' }), ['Alpha', 'Beta'], 'Alpha changed itself, Beta is the canary');
-  assert.deepEqual(await builds({ policy: 'ci', canary: 'Alpha' }), ['Alpha']);
-  assert.deepEqual(await builds({ policy: 'all' }), ['Alpha', 'Beta'], 'validation and releases build every missing package');
-  assert.deepEqual(candidatePackages(await plan(store, { root, policy: 'ci', canary: 'Alpha' })),
-    { Alpha: `candidate:${demoKey('Alpha', { root }).key}`, Beta: `release:${(await releaseRecord(await store.releases.latest())).games.Beta.key}` });
+  assert.deepEqual(await builds('all'), ['Alpha'], 'only the game whose inputs changed');
+  assert.deepEqual(await builds('none'), []);
+  assert.deepEqual(candidatePackages(await plan(store, { root, policy: 'none' })),
+    { Alpha: `release:${before}`, Beta: `candidate:${demoKey('Beta', { root }).key}` }, 'the site uses the released Alpha until a release rebuilds it');
+
+  const beta = stored().filter(name => name.startsWith('Beta-'));
+  await publish(['Alpha'], store, { from: builtPackages(root, ['Alpha']), root });
+  const alpha = demoKey('Alpha', { root }).key;
+  assert.deepEqual(stored(), [`Alpha-${alpha}.json`, `Alpha-${alpha}.tar.gz`, ...beta], 'the rebuilt package replaced the earlier one; Beta kept its own');
+  assert.deepEqual(await builds('all'), []);
+
+  change(root, 'src/Engine/Engine.cs', 'class Engine { int y; }');
+  assert.deepEqual(await builds('all'), ['Alpha', 'Beta'], 'a shared input rebuilds every game that depends on it');
+  await assert.rejects(plan(store, { root, policy: 'ci' }), /policy must be all or none/);
+});
+
+test('store: an archive left without its manifest is replaced, never taken for the package being stored', async () => {
+  const root = fixtureRepo();
+  const env = dirStoreEnv();
+  const store = openStore(env);
+  const dir = env.DEMOS_STORE.slice(4);
+  const name = `Alpha-${demoKey('Alpha', { root }).key}`;
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, `${name}.tar.gz`), 'an interrupted upload of another build');
+  const [result] = await publish(['Alpha'], store, { from: builtPackages(root, ['Alpha']), root });
+  assert.equal(result.stored, true);
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir, `${name}.json`), 'utf8'));
+  assert.equal(sha256File(path.join(dir, `${name}.tar.gz`)), manifest.sha256, 'the stored archive is the one its manifest describes');
 });
 
 test('next version: the minor after the newest demo release; SDK tags and pre-releases never count', () => {
@@ -439,7 +537,7 @@ test('versions: 1.2.0, v1.2.0 and pre-releases are accepted, anything else refus
   for (const bad of ['1.2', 'latest', 'v1.2.0;rm', '', undefined]) assert.throws(() => versionTag(bad), /is not a version/);
 });
 
-test('overlay: a fork pull request plays the packages it built without writing to the shared store', async t => {
+test('overlay: packages built locally are played without writing to the shared store', async t => {
   keepPlayDir(t);
   const root = fixtureRepo();
   const shared = dirStoreEnv().DEMOS_STORE;

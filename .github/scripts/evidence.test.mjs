@@ -39,7 +39,14 @@ test('inputs: each check reads its own part of the tree, conservatively', () => 
   assert.equal(isInput('site', 'games/Alpha/screenshots/01.png'), true);
   assert.equal(isInput('site', 'src/Engine.cs'), false);
   assert.equal(isInput('site', 'docs/guide.md'), true);
-  for (const check of ['dotnet', 'windows', 'native', 'site']) assert.equal(isInput(check, 'odd/tasks/x.md'), false);
+  for (const check of ['dotnet', 'windows', 'native', 'site', 'macos']) assert.equal(isInput(check, 'odd/tasks/x.md'), false);
+});
+
+test('inputs: the informative macOS tests read exactly what the .NET tests read', () => {
+  for (const file of ['src/Engine.cs', 'games/Alpha/Game.cs', 'games/Alpha/Content/notes.md', 'tests/Alpha.Tests/A.cs', 'samples/Hello/Program.cs',
+    'Directory.Build.props', '.github/workflows/checks.yml', 'newfolder/tool.cs', 'docs/guide.md', 'site/src/page.astro', 'web/tests/desktop.mjs',
+    'platforms/android/A.cs', 'src/MicroEngine.Cli/Hosts/web/wwwroot/main.js', 'odd/tasks/x.md'])
+    assert.equal(isInput('macos', file), isInput('dotnet', file), file);
 });
 
 test('inputs: the SDK check reads what the packages and the external project test read', () => {
@@ -80,6 +87,9 @@ test('keys: same content, same key; a change to an input changes it, other chang
   assert.match(dotnet, /^[0-9a-f]{20}$/);
   assert.equal(checkKey('dotnet', { root }), dotnet);
   assert.notEqual(checkKey('windows', { root }), dotnet, 'each check has its own key');
+  assert.notEqual(checkKey('macos', { root }), dotnet, 'macOS evidence is never taken for Linux evidence');
+  assert.notEqual(checkKey('macos', { root, extra: 'tests=all' }), checkKey('macos', { root, extra: 'tests=tests/Alpha.Tests/Alpha.Tests.csproj' }),
+    'evidence of a narrower macOS run is never taken for a wider one');
   assert.equal(keyAfter(root, 'dotnet', 'docs/guide.md', '# new'), dotnet, 'documentation is not a .NET input');
   assert.equal(keyAfter(root, 'dotnet', 'odd/tasks/x.md', 'more'), dotnet);
   assert.notEqual(keyAfter(root, 'dotnet', 'games/Alpha/Game.cs', 'changed'), dotnet);
@@ -127,7 +137,7 @@ test('inputs agree with the planner: a file whose rule needs a check is an input
     'src/MicroEngine.Sdl/SdlPlatform.cs', 'src/MicroEngine.Sdl/native/build.sh', 'web/tests/mobile.mjs', 'web/tests/measure.mjs'];
   for (const file of files) {
     const checks = planChecks([file]);
-    for (const check of ['dotnet', 'windows', 'native', 'sdk', 'web']) {
+    for (const check of ['dotnet', 'windows', 'native', 'sdk', 'web', 'macos']) {
       if (checks[check] === true) assert.equal(isInput(check, file), true, `${file} runs ${check}, so it must change its key`);
     }
   }
