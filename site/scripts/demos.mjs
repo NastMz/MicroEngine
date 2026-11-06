@@ -19,6 +19,8 @@
 //            every package is checked against its manifest (archive SHA-256, then every file's SHA-256).
 //            SITE_DEMOS=none builds the site without demos (documentation work); production builds refuse it.
 //   key      prints one game's key and the files it was computed from (diagnosis)
+//   prune    keeps only the newest (and current) package of each game and target; storing a package already
+//            removes the earlier ones of its game (and target), so the store holds final versions, not a history
 //   release-*  create, verify, publish, discard or show a demo release (docs/ci.md, "Releases")
 //
 // Native packages (packaging/README.md) share the store and the releases: one per game and target of
@@ -233,6 +235,9 @@ function dirStore(dir) {
       await fsp.writeFile(file, data);
       return true;
     },
+    list: async () => (fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }) : [])
+      .filter(entry => entry.isFile()).map(entry => ({ name: entry.name, created: fs.statSync(path.join(dir, entry.name)).mtime })),
+    remove: async name => fsp.rm(path.join(dir, name), { force: true }),
   };
 }
 
@@ -282,10 +287,34 @@ function githubStore({ repository, token, apiBase = 'https://api.github.com', up
       const response = await fetch(`${uploadBase}/repos/${repository}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`, {
         method: 'POST', headers: { ...headers, 'Content-Type': type }, body: data,
       });
-      if (response.status === 422) return false; // the same artifact was uploaded by a concurrent run
+      if (response.status === 422) {
+        // The same artifact uploaded by a concurrent run, or a release GitHub refuses to grow (1000 assets at most):
+        // only the first is not an error, and only the listing tells them apart.
+        await load();
+        if (assets.has(name)) return false;
+        fail(`uploading ${name} to ${releaseTag}: HTTP 422 (${(await response.text()).slice(0, 300)}). A release holds at most 1000 assets (it has ${assets.size}): remove old packages with \`node site/scripts/demos.mjs prune\`.`);
+      }
       if (!response.ok) fail(`uploading ${name} to ${releaseTag}: HTTP ${response.status}.`);
       assets.set(name, await response.json());
       return true;
+    },
+    list: async () => {
+      if (!assets) await load();
+      return [...assets.values()].map(asset => ({ name: asset.name, created: new Date(asset.created_at) }));
+    },
+    remove: async name => {
+      if (!assets) await load();
+      const asset = assets.get(name);
+      if (!asset) return;
+      // GitHub answers asset deletions with an occasional 5xx: retry those a few times.
+      let response;
+      for (let attempt = 1; ; attempt++) {
+        response = await fetch(`${apiBase}/repos/${repository}/releases/assets/${asset.id}`, { method: 'DELETE', headers });
+        if (response.status < 500 || attempt === 4) break;
+        await new Promise(resolve => setTimeout(resolve, 500 * 2 ** attempt));
+      }
+      if (!response.ok && response.status !== 404) fail(`deleting ${name} from ${releaseTag}: HTTP ${response.status}.`);
+      assets.delete(name);
     },
   };
 }
@@ -513,7 +542,52 @@ export async function publishNative(store, { file, verification, root = repoRoot
   };
   await store.write(manifest.archive, data);
   const stored = await store.write(`${name}.json`, Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`));
-  return { game: record.game, target: t.id, key, stored, sha256: manifest.sha256 };
+  const superseded = stored ? await supersede(store, name) : [];
+  return { game: record.game, target: t.id, key, stored, sha256: manifest.sha256, superseded };
+}
+
+// A stored artifact's name: its series (`<Game>` for a web package, `<Game>-<target>` for a native one), its key, and
+// the extension of the archive or manifest. Names of any other shape are not packages and are never removed.
+const artifactParts = name => {
+  const match = /^(.+)-([0-9a-f]{16})\.(json|tar\.gz|zip|apk)$/.exec(name);
+  return match && { series: match[1], stem: `${match[1]}-${match[2]}` };
+};
+
+/**
+ * Removes from the integration store every package except the newest of each series (each game's web package, each
+ * game's native package per target) and the current ones at `root`, when given. The store keeps the final version of
+ * every artifact, not its history: releases hold copies of their packages, so nothing published depends on what is
+ * removed, and a removed package that is needed again is rebuilt. GitHub keeps at most 1000 assets per release.
+ */
+export async function prune(store, { root = repoRoot, dryRun = false, now = Date.now() } = {}) {
+  if (!store?.list) fail('prune needs a store that can list its artifacts (DEMOS_STORE=github or dir:<path>).');
+  const current = new Set(root ? registry(root).flatMap(game => [
+    artifactName(game.id, demoKey(game.id, { root }).key),
+    ...nativeTargets.map(t => nativeArtifactName(game.id, t.id, nativeKey(game.id, t.id, { root }).key)),
+  ]) : []);
+  const artifacts = (await store.list()).map(a => ({ ...a, ...artifactParts(a.name) })).filter(a => a.stem);
+  // A package is complete once its manifest is stored (the archive goes first). An archive without one for more than
+  // an hour is what an interrupted upload left: never the newest version, and removed unless it is current.
+  const complete = new Set(artifacts.filter(a => a.name.endsWith('.json')).map(a => a.stem));
+  const abandoned = a => !complete.has(a.stem) && now - a.created.getTime() > 3600000;
+  const newest = new Map();
+  for (const a of artifacts.filter(a => complete.has(a.stem))) {
+    const best = newest.get(a.series);
+    if (!best || a.created > best.created || (+a.created === +best.created && a.stem > best.stem)) newest.set(a.series, a);
+  }
+  const removed = artifacts.filter(a => !current.has(a.stem)
+    && (complete.has(a.stem) ? newest.get(a.series).stem !== a.stem : abandoned(a))).map(a => a.name).sort();
+  if (!dryRun) for (const name of removed) await store.remove(name);
+  return { removed, kept: (await store.list()).length - (dryRun ? removed.length : 0) };
+}
+
+/** After `name` (a package's stem) was stored: removes every other package of its series, so only the new one stays. */
+async function supersede(store, name) {
+  if (!store.list) return [];
+  const { series } = artifactParts(`${name}.json`);
+  const older = (await store.list()).filter(a => { const p = artifactParts(a.name); return p && p.series === series && p.stem !== name; });
+  for (const a of older) await store.remove(a.name);
+  return older.map(a => a.name);
 }
 
 /** The package each game gets in a "candidates" build: its current key when stored or being built, else the release's. */
@@ -550,7 +624,9 @@ export async function publish(ids, store, { from = path.join(repoRoot, 'dist', '
     await store.write(`${name}.tar.gz`, data);
     const stored = await store.write(`${name}.json`, Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`));
     await fsp.rm(path.dirname(archive), { recursive: true, force: true });
-    results.push({ id, key, stored, sha256: manifest.sha256 });
+    // The store keeps one version per game: the package just stored replaces the earlier ones.
+    const superseded = stored ? await supersede(store, name) : [];
+    results.push({ id, key, stored, sha256: manifest.sha256, superseded });
   }
   return results;
 }
@@ -831,7 +907,7 @@ async function main(argv) {
   } else if (command === 'publish-native') {
     if (!store) fail('publish-native needs DEMOS_STORE (or GitHub Actions).');
     const r = await publishNative(store, { file: path.resolve(option('file') ?? fail('publish-native needs --file.')), verification: path.resolve(option('verification') ?? fail('publish-native needs --verification (packaging/verify.mjs --record).')) });
-    console.log(`${r.game} ${r.target} ${r.key}: ${r.stored ? `stored (sha256 ${r.sha256})` : 'already in the store'}`);
+    console.log(`${r.game} ${r.target} ${r.key}: ${r.stored ? `stored (sha256 ${r.sha256})${r.superseded.length ? `, replacing ${r.superseded.length} earlier files` : ''}` : 'already in the store'}`);
   } else if (command === 'release-publish') {
     const release = await store.releases.publish(versionTag(option('tag')));
     console.log(`Published ${release.tag}: it is now the latest release, the one production serves.`);
@@ -844,12 +920,16 @@ async function main(argv) {
     const ids = rest.filter(a => !a.startsWith('--') && a !== option('from'));
     if (!ids.length) fail('publish needs at least one game id.');
     for (const r of await publish(ids, store, { from: option('from') && path.resolve(option('from')) })) {
-      console.log(`${r.id} ${r.key}: ${r.stored ? `stored (sha256 ${r.sha256})` : 'already in the store'}`);
+      console.log(`${r.id} ${r.key}: ${r.stored ? `stored (sha256 ${r.sha256})${r.superseded.length ? `, replacing ${r.superseded.length} earlier files` : ''}` : 'already in the store'}`);
     }
   } else if (command === 'fetch') {
     const result = await fetchDemos(process.env, { store });
     if (result.skipped) console.log('demos: skipped (SITE_DEMOS=none); demo pages will say the games are not in this build.');
     else console.log(`demos: ${Object.entries(result.games).map(([id, g]) => `${id} ${g.key}`).join(', ')} from ${result.source}`);
+  } else if (command === 'prune') {
+    const dryRun = rest.includes('--dry-run');
+    const { removed, kept } = await prune(store ?? fail('prune needs DEMOS_STORE (or GitHub Actions).'), { dryRun });
+    console.log(`${dryRun ? 'Would remove' : 'Removed'} ${removed.length} artifacts from ${store.describe} (earlier versions; the newest and the current package of each game and target stay); ${kept} kept.`);
   } else if (command === 'next-version') {
     console.log(nextVersion(rest));
   } else if (command === 'key') {
@@ -862,6 +942,7 @@ async function main(argv) {
       '  publish-native --file F --verification V                     add a checked native package (packaging/verify.mjs --record)',
       '  fetch                                                        packages for the site build (DEMOS_SOURCE)',
       '  key <Game>                                                   one key and its input files',
+      '  prune [--dry-run]                                            keep only the newest (and current) package of each game and target',
       '  next-version <tag...>                                        the version after the newest v<x.y.z> among these tags',
       '  release-create --version <1.2.0> [--targets <ids>]           draft release of this commit\'s packages (and native downloads)',
       '  release-verify [--tag <v1.2.0>|latest] [--dir <play folder>] [--downloads]   check built files (and downloads) against a release',

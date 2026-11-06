@@ -164,7 +164,10 @@ which.
 
 Actions → **validate** → Run workflow: a ref, and boxes for each part. Every selected check runs, whatever changed
 and whatever evidence exists; nothing is deployed or released. Demo packages (web and native downloads) that pass
-their checks are stored in the integration store (prerelease `demo-artifacts`), as daily CI stores them.
+their checks are stored in the integration store (prerelease `demo-artifacts`), as daily CI stores them; a stored
+package replaces the earlier versions of its game (and target). The nightly run first sweeps that store down to the
+newest and current package of each, since a GitHub release holds at most 1000 assets
+([publishing the site](deployment.md)).
 
 **Nightly:** validate also runs every night at 03:17 UTC on `main` with every supported box (.NET, native Linux, web,
 SDK, native packages) and no experimental platform, so a drifted reference, runner image or toolchain shows within a

@@ -8,7 +8,7 @@ import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 import {
   registry, demoKey, publish, plan, fetchDemos, openStore, noticeFiles, playDir, cacheDir, createRelease, verifyRelease,
-  versionTag, nextVersion, candidatePackages, releaseRecord,
+  versionTag, nextVersion, candidatePackages, releaseRecord, prune, nativeKey, nativeTargets,
 } from '../scripts/demos.mjs';
 
 const git = (root, ...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' });
@@ -163,10 +163,12 @@ test('fetch: development packages are refused, production refuses a build withou
 
 // A stand-in for the GitHub API of a private repository: every call needs the token, the release is created on
 // first upload, and asset downloads redirect to "storage" on another origin, which must never receive the token.
-async function fakeGitHub(token) {
-  const seen = { storageAuth: [], created: 0 };
-  const assets = new Map();
-  let release = null;
+// `limit` stands for GitHub's cap on assets per release; `seed` lists assets already there ({ name, created_at }).
+async function fakeGitHub(token, { limit = Infinity, seed = [] } = {}) {
+  const seen = { storageAuth: [], created: 0, deleted: [] };
+  let nextId = 100;
+  const assets = new Map(seed.map(a => [a.name, { id: nextId++, data: Buffer.from(''), ...a }]));
+  let release = seed.length ? { id: 7, tag_name: 'demo-artifacts' } : null;
   const storage = http.createServer((req, res) => {
     seen.storageAuth.push(req.headers.authorization ?? null);
     const asset = assets.get(decodeURIComponent(new URL(req.url, 'http://x').pathname.slice(1)));
@@ -184,13 +186,24 @@ async function fakeGitHub(token) {
     if (req.method === 'POST' && url.pathname === '/repos/owner/repo/releases') { seen.created++; release = { id: 7, ...JSON.parse(body) }; return json(201, release); }
     if (req.method === 'GET' && url.pathname === '/repos/owner/repo/releases/7/assets') {
       const page = Number(url.searchParams.get('page'));
-      return json(200, page === 1 ? [...assets.values()].map(a => ({ name: a.name, url: `${base}/assets/${a.name}` })) : []);
+      return json(200, page === 1 ? [...assets.values()].map(a => ({ id: a.id, name: a.name, created_at: a.created_at, url: `${base}/assets/${a.name}` })) : []);
     }
     if (req.method === 'POST' && url.pathname === '/repos/owner/repo/releases/7/assets') {
       const name = url.searchParams.get('name');
       if (assets.has(name)) return json(422, { errors: [{ code: 'already_exists' }] });
-      assets.set(name, { name, data: body });
-      return json(201, { name, url: `${base}/assets/${name}` });
+      if (assets.size >= limit) return json(422, { message: 'Validation Failed', errors: [{ resource: 'ReleaseAsset', code: 'custom', message: 'too many assets' }] });
+      const asset = { id: nextId++, name, data: body, created_at: new Date().toISOString() };
+      assets.set(name, asset);
+      return json(201, { id: asset.id, name, created_at: asset.created_at, url: `${base}/assets/${name}` });
+    }
+    const removed = /^\/repos\/owner\/repo\/releases\/assets\/(\d+)$/.exec(url.pathname);
+    if (req.method === 'DELETE' && removed) {
+      const asset = [...assets.values()].find(a => a.id === Number(removed[1]));
+      if (!asset) return json(404, {});
+      assets.delete(asset.name);
+      seen.deleted.push(asset.name);
+      res.writeHead(204);
+      return res.end();
     }
     if (req.method === 'GET' && url.pathname.startsWith('/assets/') && req.headers.accept === 'application/octet-stream') {
       res.writeHead(302, { Location: `http://127.0.0.1:${storage.address().port}/${url.pathname.slice(8)}?sig=abc` });
@@ -199,7 +212,7 @@ async function fakeGitHub(token) {
     json(404, {});
   });
   await new Promise(resolve => api.listen(0, '127.0.0.1', resolve));
-  return { seen, apiBase: `http://127.0.0.1:${api.address().port}`, close: () => { api.close(); storage.close(); } };
+  return { seen, assets, apiBase: `http://127.0.0.1:${api.address().port}`, close: () => { api.close(); storage.close(); } };
 }
 
 test('GitHub store: artifacts go to the demo-artifacts prerelease; the token never leaves the API', async t => {
@@ -221,6 +234,93 @@ test('GitHub store: artifacts go to the demo-artifacts prerelease; the token nev
   const record = await fetchDemos({}, { store: openStore(env), root });
   assert.equal(record.games.Beta.key, demoKey('Beta', { root }).key);
   assert.ok(github.seen.storageAuth.length > 0 && github.seen.storageAuth.every(a => a === null), 'the storage host received no Authorization header');
+});
+
+test('GitHub store: an upload refused because the release is full fails, it is never reported as stored', async t => {
+  const root = fixtureRepo();
+  const from = builtPackages(root);
+  const token = 'test-token-value';
+  const github = await fakeGitHub(token, { limit: 2 });
+  t.after(() => github.close());
+  const env = { DEMOS_STORE: 'github', DEMOS_REPOSITORY: 'owner/repo', GITHUB_TOKEN: token, GITHUB_API_URL: github.apiBase };
+  await publish(['Alpha'], openStore(env), { from, root });
+  await assert.rejects(publish(['Beta'], openStore(env), { from, root }),
+    error => /Beta-[0-9a-f]{16}\.tar\.gz/.test(error.message) && /HTTP 422/.test(error.message) && /1000 assets/.test(error.message) && /prune/.test(error.message));
+  assert.deepEqual((await plan(openStore(env), { root })).map(g => g.stored), [true, false]);
+});
+
+// Native package names of a fixture game for every target, at the current keys.
+const nativeNames = (root, id) => nativeTargets.map(t => `${id}-${t.id}-${nativeKey(id, t.id, { root }).key}`);
+
+test('store: a newly stored package replaces the earlier versions of its game, never another game\'s', async () => {
+  const root = fixtureRepo();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'store-'));
+  const store = openStore({ DEMOS_STORE: `dir:${dir}` });
+  const from = builtPackages(root);
+  await publish(['Alpha', 'Beta'], store, { from, root });
+  const before = { Alpha: demoKey('Alpha', { root }).key, Beta: demoKey('Beta', { root }).key };
+  fs.writeFileSync(path.join(dir, 'Alpha-linux-x64-1111111111111111.zip'), 'x'); // a native package: another series
+
+  change(root, 'games/Alpha/Game.cs', 'class Alpha { int changed; }');
+  const [result] = await publish(['Alpha'], store, { from, root });
+  assert.equal(result.stored, true);
+  assert.deepEqual(result.superseded.sort(), [`Alpha-${before.Alpha}.json`, `Alpha-${before.Alpha}.tar.gz`]);
+  assert.deepEqual(fs.readdirSync(dir).sort(), [`Alpha-${result.key}.json`, `Alpha-${result.key}.tar.gz`,
+    'Alpha-linux-x64-1111111111111111.zip', `Beta-${before.Beta}.json`, `Beta-${before.Beta}.tar.gz`].sort());
+
+  // Storing the same content again stores and removes nothing.
+  const [again] = await publish(['Alpha'], store, { from, root });
+  assert.equal(again.stored, false);
+  assert.equal(fs.readdirSync(dir).length, 5);
+});
+
+test('prune: keeps only the newest and the current package of each game and target; a dry run removes nothing', async () => {
+  const root = fixtureRepo();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'store-'));
+  const store = openStore({ DEMOS_STORE: `dir:${dir}` });
+  await publish(['Alpha', 'Beta'], store, { from: builtPackages(root), root });
+  const current = fs.readdirSync(dir);
+  const native = nativeNames(root, 'Alpha')[0];
+  const at = (name, days) => { const time = new Date(Date.now() - days * 86400000); fs.writeFileSync(path.join(dir, name), 'x'); fs.utimesSync(path.join(dir, name), time, time); };
+  for (const name of current) { const time = new Date(Date.now() - 5 * 86400000); fs.utimesSync(path.join(dir, name), time, time); }
+  at('Alpha-0000000000000000.json', 9); at('Alpha-0000000000000000.tar.gz', 9); // older than the current Alpha
+  at('Beta-aaaaaaaaaaaaaaaa.json', 1); // newer than the current Beta: both stay
+  at(`${native}.json`, 8); at(`${native}.zip`, 8); // the current native package, older than its rival: it stays
+  const rival = native.replace(/[0-9a-f]{16}$/, '2222222222222222');
+  at(`${rival}.json`, 3); at(`${rival}.zip`, 3);
+  at('Beta-linux-x64-1111111111111111.json', 7); at('Beta-linux-x64-1111111111111111.tar.gz', 7);
+  at('Beta-linux-x64-3333333333333333.json', 2); // only the newest stays
+  at('Beta-windows-x64-4444444444444444.zip', 1); // an archive without its manifest: abandoned, even as the newest
+  at('Beta-windows-x64-5555555555555555.zip', 0); // ...unless its upload may still be running (younger than an hour)
+  at('notes.txt', 30); // not a package: never touched
+
+  const expected = ['Alpha-0000000000000000.json', 'Alpha-0000000000000000.tar.gz', 'Beta-linux-x64-1111111111111111.json',
+    'Beta-linux-x64-1111111111111111.tar.gz', 'Beta-windows-x64-4444444444444444.zip'];
+  const files = fs.readdirSync(dir).length;
+  assert.deepEqual((await prune(store, { root, dryRun: true })).removed, expected);
+  assert.equal(fs.readdirSync(dir).length, files, 'a dry run removes nothing');
+  const result = await prune(store, { root });
+  assert.deepEqual(result.removed, expected);
+  assert.equal(result.kept, files - expected.length);
+  assert.deepEqual((await plan(store, { root })).map(g => g.stored), [true, true], 'the current packages stay stored');
+});
+
+test('prune: the GitHub store deletes the assets through the API and frees room for new packages', async t => {
+  const root = fixtureRepo();
+  const from = builtPackages(root);
+  const token = 'test-token-value';
+  const old = new Date(Date.now() - 10 * 86400000).toISOString();
+  const recent = new Date(Date.now() - 86400000).toISOString();
+  const github = await fakeGitHub(token, { limit: 2, seed: [{ name: 'Alpha-0000000000000000.json', created_at: old }, { name: 'Alpha-1111111111111111.json', created_at: recent }] });
+  t.after(() => github.close());
+  const env = { DEMOS_STORE: 'github', DEMOS_REPOSITORY: 'owner/repo', GITHUB_TOKEN: token, GITHUB_API_URL: github.apiBase };
+  await assert.rejects(publish(['Alpha'], openStore(env), { from, root }), /1000 assets/);
+  const result = await prune(openStore(env), { root });
+  assert.deepEqual(result.removed, ['Alpha-0000000000000000.json']);
+  assert.deepEqual(github.seen.deleted, result.removed);
+  github.assets.delete('Alpha-1111111111111111.json'); // room for both files of the new package
+  await publish(['Alpha'], openStore(env), { from, root });
+  assert.deepEqual((await plan(openStore(env), { root })).map(g => g.stored), [true, false]);
 });
 
 // Releases (docs/ci.md, "Releases"): what production serves, separate from the integration store daily CI fills.
