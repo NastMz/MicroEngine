@@ -18,7 +18,7 @@ Delivery: `single-pr`. Runners: `node --test .github/scripts/*.test.mjs`, `npm t
 | --- | --- | --- | --- | --- |
 | T1 macOS evidence (`evidence.mjs`, ci.yml, checks.yml) | S1 | inline | done | evidence tests 9/9 (2 new) |
 | T2 No release packages in ci.yml and validate.yml; freeze.mjs without `--build` | S2 | inline | done | freeze RED (1 failing) then GREEN 7/7 |
-| T3 Release web packages built on Linux (checks.yml `build-demos`) | S3 | inline | done | Docker ubuntu:24.04 build of MeadowRun (L4) |
+| T3 Release web packages built on Linux (checks.yml `build-demos`) | S3 | inline | partial | Linux toolchain set up in Docker; package build interrupted (L4); pending a release or validation run |
 | T4 Demo keys from the project graph (`demos.mjs` `webInputs`) | S4 | inline | done | 3 new key tests RED then GREEN; real keys drop Graphics3D and Physics.Box2D (L3) |
 | T5 Store: an orphan archive is replaced, never reused | S5 | inline | done | orphan test RED (SHA mismatch) then GREEN |
 | T6 Docs (ci.md, deployment.md, ADR 0049) and PR | S6 | inline | done | planner 96/96, site 67/67, actionlint 1.7.7 clean |
@@ -31,6 +31,11 @@ Delivery: `single-pr`. Runners: `node --test .github/scripts/*.test.mjs`, `npm t
 - L3 Keys on the real repository: inputs per demo 295→272 (MeadowRun), 306→283, 355→332, 362→339; the 23 files dropped
   are `MicroEngine.Graphics3D` and `MicroEngine.Physics.Box2D`. `plan --policy none|all` against the real store
   (read-only): every v2 key missing, so the next release rebuilds the four packages on Linux.
+- L4 Local Linux check (Docker `ubuntu:24.04`, repository copy): `web/setup.sh` succeeded on Linux (the .NET workload,
+  Emscripten `3.1.56` linux-x64 and SDL `3.5.0` built from source as `SDL3.a`, 1 min 54 s); `web/build.sh MeadowRun`
+  started and was cut off by a Docker Desktop engine crash (`error waiting for container: unexpected EOF`, exit 125), not a
+  build error. The package itself (file list against release v0.4.0's 46-file MeadowRun manifest) is not verified here;
+  the first release, or `validate.yml` with web packages, builds all four on `ubuntu-latest`.
 - L5 Measured on the last 60 ci runs (2026-11-05..06, partly during the full-store defect fixed by #128): 218 Windows
   WebAssembly release builds (avg 3.7 min, 817 runner-minutes; 146 on pull requests, 72 on pushes to main), sdl-web
   56 jobs; macOS informative tests 14 jobs (avg 2.3 min), 6 of them on pushes to main. Outside every game's graph: `MicroEngine.Graphics3D`, `MicroEngine.Physics.Box2D`, `packaging/`, `platforms/`, `sdk/`, `tests/`, `samples/`, `templates/`, `benchmarks/`, the Android, iOS and phone hosts. `--dev` only flips a constant and ships input scripts (`Hosts.cs`), so development packages exercise the same toolchain as release ones.
