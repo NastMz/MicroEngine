@@ -44,9 +44,9 @@ The tracker rejects empty ids, goals below 1 and duplicate ids at construction.
 
 ## Turning it on
 
-Call `UseAchievements(catalog, store, theme?)` before the engine is composed: from the game's constructor (every SDK
-version) or from its `Configure(EngineBuilder)` override (next SDK version, which adds `Configure`). It creates the tracker over the `"achievements"` slot of the store and the
-banner queue styled with the theme. What only exists once the game runs (sounds, the banners' position) stays in
+Call `UseAchievements(catalog, store, theme?)` before the engine is composed: from the game's constructor or from its
+`Configure(EngineBuilder)` override. It creates the tracker over the `"achievements"` slot of the store and the banner
+queue styled with the theme. What only exists once the game runs (sounds, the banners' position) stays in
 `Load`:
 
 ```csharp
@@ -63,15 +63,14 @@ protected override void Load()
 
 Source: [`games/NeonRift/RiftGame.cs`](../../games/NeonRift/RiftGame.cs)
 
-The published SDK also accepts the call from `Load`. Next SDK version: achievements are an optional engine module.
-Declared before composition, the engine adds the module: the tracker and the store become services
+Achievements are an optional engine module. Declared before composition, the engine adds the module: the tracker and the store become services
 (`Services.Get<AchievementTracker>()`, `Services.Get<SaveStore>()`), and the `engine.achievements` frame system writes
 progress. A game that never calls `UseAchievements` has no achievement service, no frame system and no achievement
 file, and calling it from `Load` or later throws an `InvalidOperationException` that names the fix.
 
 `Game.Achievements` throws until `UseAchievements` has been called; `Game.HasAchievements` tells whether it was.
 A composition of your own (without the `Game` façade) adds the same module itself:
-`builder.Add(new AchievementsModule(tracker))` (namespace `MicroEngine.Achievements`, next SDK version).
+`builder.Add(new AchievementsModule(tracker))` (namespace `MicroEngine.Achievements`).
 
 ## Reporting progress
 
@@ -131,8 +130,8 @@ An achievement's optional `Icon` sprite is drawn in the banner and in the list.
 
 `AchievementsScene(tracker, theme)` is an overlay that dims the scene below and lists every achievement: unlocked
 ones highlighted, locked ones dimmed, progressive ones with `progress/goal` and a bar. Up and down move the
-cursor and scroll; any action in `CloseActions` (default `cancel`, `pause`, `confirm`; next SDK version: the map's own names for them,
-see [Default actions](input.md#default-actions)) closes it. Init properties:
+cursor and scroll; any action in `CloseActions` (default: the input map's own names for `cancel`, `pause` and `confirm`, see
+[Default actions](input.md#default-actions)) closes it. Init properties:
 `Title`, `CloseActions`, `Dim`, `LockedLabel`, `UnlockedLabel`; events `Moved` and `Closed` for sounds.
 
 ```csharp

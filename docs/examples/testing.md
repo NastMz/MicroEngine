@@ -274,7 +274,7 @@ The variables of each game are listed in [Configuration](../reference/configurat
 
 ## Level 4: simulation determinism (state traces)
 
-Next SDK version (not published yet: arrives with the next SDK version). A deterministic run (headless, or any run with
+A deterministic run (headless, or any run with
 one fixed step per frame) must simulate the same game on every run: the same script and seed give the same state after
 every update. A **state trace** checks it at every step instead of only in the captures: the loop hashes the simulation
 state after each fixed step and records one 64-bit hash per update, and two traces are compared step by step.
@@ -287,7 +287,7 @@ state after each fixed step and records one 64-bit hash per update, and two trac
 | --- | --- |
 | `engine.time` | `UpdateCount` and `Time` |
 | `engine.random` | `Game.Random`: its seed, how many values it drew and a running hash of them |
-| `engine.input` | The actions down, pressed, latched and forced, their values, the last device, the gamepad and the pointer; next SDK version: the wheel, the pointers and consumed actions once a game has any, then the other players' actions and the device pairings when there are any |
+| `engine.input` | The actions down, pressed, latched and forced, their values, the last device, the gamepad and the pointer, the wheel, the pointers and consumed actions once a game has any, then the other players' actions and the device pairings when there are any |
 | `engine.audio` | The music playing (`CurrentMusic`), whether it is paused, and the volumes |
 | `engine.assets` | How many assets are loaded |
 | `engine.achievements` | Each achievement's progress and whether it is unlocked (only with `UseAchievements`) |
@@ -364,8 +364,7 @@ public void TwoRunsOfTheTourRecordTheSameTrace()
 A trace is also text, one line per update (`update`, the hash, then `section=hash` pairs, separated by tabs):
 `trace.ToText()` or `trace.Write(writer)` saves it and `StateTrace.Parse(text)` reads it back, so traces recorded by
 different runs or machines can be compared. Override `StateTrace.Record` to send each step elsewhere as it comes.
-Next SDK version (not published yet: arrives with the next SDK version): a desktop game records one from its command
-line, `--state-trace FILE` (with section hashes), for example
+A desktop game records one from its command line, `--state-trace FILE` (with section hashes), for example
 `microengine run -- --headless --script tour.script --state-trace a.txt`; the file is written when the run ends.
 
 Traces are exact. Two runs of the same build on the same machine must match; a divergence is a bug: an unseeded
@@ -382,7 +381,7 @@ compare `ComputeStateHash()` before and after a frame is drawn, for example from
 
 - Test observable behaviour through public types and actions, not private state.
 - Use a temporary save directory in every test that builds a game.
-- Run each script twice with a state trace and compare the traces (next SDK version): a difference names the first
+- Run each script twice with a state trace and compare the traces: a difference names the first
   update and section that is not deterministic.
 - For visual or feel changes, run a script with captures and look at the PNGs; a passing test is not proof that
   something looks right.

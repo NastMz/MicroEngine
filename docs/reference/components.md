@@ -9,12 +9,12 @@ the backend, a game, or the browser host.
 | Project | Kind | Responsibility | References |
 | --- | --- | --- | --- |
 | `src/MicroEngine` | Library | Backend-independent core: loop, scenes, input, graphics model, world, audio synthesis, UI, saves, achievements, headless platform | Nothing outside the .NET base library |
-| `src/MicroEngine.Sdl` | Library | SDL 3 backend (`SdlPlatform`, `SdlAudioDevice`): the default on Windows, Linux, macOS, Android and iOS | `MicroEngine`, NuGet `ppy.SDL3-CS`, `NVorbis` |
-| `src/MicroEngine.Raylib` | Library | raylib backend (`RaylibPlatform`, `RaylibAudioDevice`), a raylib-only `DesktopLauncher`, `BrowserLauncher`, `BrowserSaveStorage` | `MicroEngine`, NuGet `Raylib-cs` 8.1.0 |
+| `src/MicroEngine.Sdl` | Library | SDL 3 backend (`SdlPlatform`, `SdlAudioDevice`): the default on Windows, Linux, macOS, Android and iOS, and the browser platform (`BrowserLauncher`, `BrowserPage`) | `MicroEngine`, NuGet `ppy.SDL3-CS`, `NVorbis` |
+| `src/MicroEngine.Raylib` | Library | raylib backend (`RaylibPlatform`, `RaylibAudioDevice`), the alternative desktop platform, and a raylib-only `DesktopLauncher` | `MicroEngine`, NuGet `Raylib-cs` 8.1.0 |
 | `src/MicroEngine.Desktop` | Library | `DesktopLauncher` with the official desktop catalog (`sdl`, `raylib`, `sdl-software`, `headless`) | `MicroEngine.Sdl`, `MicroEngine.Raylib` |
-| `src/MicroEngine.Hosting` | Library (inside the `MicroEngine` package; next SDK version) | The launcher model every host shares: `LaunchRequest` and its rules, `ProfileSelection`, `HostEnvironment`, `HostBuilder` (the composition a game configures with its `Configure` entry point) | `MicroEngine.Kernel`, `MicroEngine.Platform` |
-| `src/MicroEngine.Audio` | Library (inside the `MicroEngine` package; next SDK version) | The one mixer every backend plays through (`AudioEngine`, `VoiceHandle`, `PlayParameters`, `AudioBus`, `IAudioStream`, `MixerAudioDevice`, `OfflineAudioSink`), the device contract and game façade (`IAudioDevice`, `AudioMixer`, `CaptureAudioDevice`, `SilentAudioDevice`), clips and music files (`AudioClip`, `EncodedAudio`), synthesis (`Synth`, `Song`, in the `MicroEngine.Audio.Retro` namespace) | `MicroEngine.Kernel`, `MicroEngine.Platform`, `MicroEngine.Content`, NuGet `NVorbis` |
-| `src/MicroEngine.Content` | Library (inside the `MicroEngine` package; next SDK version) | The asset store under `Game.Assets`: `AssetStore`, `AssetScope`, typed handles `Asset<T>`, the loader registry (`IAssetLoader<T>`, `AssetLoaderRegistry`), the reserved `IAssetImporter`, `AssetLoadException`, and content sources beyond folders (`ZipContentSource`, `ListedContentSource`, `ContentSources.Open`) | `MicroEngine.Kernel`, `MicroEngine.Platform` |
+| `src/MicroEngine.Hosting` | Library (inside the `MicroEngine` package) | The launcher model every host shares: `LaunchRequest` and its rules, `ProfileSelection`, `HostEnvironment`, `HostBuilder` (the composition a game configures with its `Configure` entry point) | `MicroEngine.Kernel`, `MicroEngine.Platform` |
+| `src/MicroEngine.Audio` | Library (inside the `MicroEngine` package) | The one mixer every backend plays through (`AudioEngine`, `VoiceHandle`, `PlayParameters`, `AudioBus`, `IAudioStream`, `MixerAudioDevice`, `OfflineAudioSink`), the device contract and game façade (`IAudioDevice`, `AudioMixer`, `CaptureAudioDevice`, `SilentAudioDevice`), clips and music files (`AudioClip`, `EncodedAudio`), synthesis (`Synth`, `Song`, in the `MicroEngine.Audio.Retro` namespace) | `MicroEngine.Kernel`, `MicroEngine.Platform`, `MicroEngine.Content`, NuGet `NVorbis` |
+| `src/MicroEngine.Content` | Library (inside the `MicroEngine` package) | The asset store under `Game.Assets`: `AssetStore`, `AssetScope`, typed handles `Asset<T>`, the loader registry (`IAssetLoader<T>`, `AssetLoaderRegistry`), the reserved `IAssetImporter`, `AssetLoadException`, and content sources beyond folders (`ZipContentSource`, `ListedContentSource`, `ContentSources.Open`) | `MicroEngine.Kernel`, `MicroEngine.Platform` |
 | `tests/MicroEngine.Cli.Tests` | MSTest | The tool's own logic: finding a game's `Configure` entry point in its built assembly | `MicroEngine.Cli`, `CourtyardKey` |
 | `games/MeadowRun`, `games/CourtyardKey`, `games/TrailDuel`, `games/NeonRift` | Executable | One complete game each: rules, scenes, art, audio, content | `MicroEngine.Desktop` |
 | `samples/HelloEngine` | Executable | Minimal example game | `MicroEngine.Desktop` |
@@ -36,9 +36,9 @@ The core references no backend library. Games reference only `MicroEngine.Deskto
 | `MicroEngine.Scenes` | `Scenes/` | The scene stack, transitions, per-scene coroutines and tweens | `Scene`, `SceneManager`, `Transition`, `CoroutineRunner`, `Tweener` |
 | `MicroEngine.Input` | `Input/` | Device state, named actions (digital and analog), touch controls | `Key`, `PadButton`, `PadAxis`, `IInputSource`, `IActionSource`, `InputMap`, `ITouchScreen`, `TouchLayout`, `TouchDPad`, `TouchStick`, `TouchButton`, `VirtualControls`, `FrameLayout` |
 | `MicroEngine.Graphics` | `Graphics/` | CPU images, procedural art, PNG decoding, sprites, animation, camera, parallax, particles, lighting, font, drawing interfaces | `PixelImage`, `Art`, `SpriteAtlasBuilder`, `SpriteAtlas`, `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `BitmapFont`, `IRenderer`, `IGraphicsDevice`, `Texture` |
-| `MicroEngine.World` | `World/` | Tile maps, swept collision, autotiling, entities | `TileLayer`, `TileGrid`, `TileMotion`, `Autotile`, `TileRenderer`, `Entity`, `EntityList<T>` (`Entity` and `EntityList<T>` removed in the next SDK version: a scene keeps its objects in `Scene.Objects`, an `IWorld`; [The scene world](../manual/scenes.md#the-scene-world)) |
-| `MicroEngine.Audio` | `Audio/` | PCM clips and WAV decoding, the device interface, mixing, synthesis, sequenced music | `AudioClip`, `IAudioDevice`, `SilentAudioDevice`, `AudioMixer`, `Synth`, `Song` (next SDK version: `Synth` and `Song` in `MicroEngine.Audio.Retro`) |
-| `MicroEngine.UI` | `UI/` | Text boxes, menus, themes, achievement banners and list; next SDK version: a widget tree with focus, pointer and text input (`MicroEngine.UI.dll`) | `Typewriter`, `DialogueBox`, `SelectionList`, `UiTheme`, `AchievementToasts`, `AchievementsScene`; next SDK version: `UiRoot`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts` |
+| `MicroEngine.World` | `World/` | Tile maps, swept collision, autotiling | `TileLayer`, `TileGrid`, `TileMotion`, `Autotile`, `TileRenderer` (a scene keeps its objects in `Scene.Objects`, an `IWorld`; [The scene world](../manual/scenes.md#the-scene-world)) |
+| `MicroEngine.Audio` | `Audio/` | PCM clips and WAV decoding, the device interface, mixing, synthesis, sequenced music | `AudioClip`, `IAudioDevice`, `SilentAudioDevice`, `AudioMixer`, `Synth`, `Song` (`Synth` and `Song` in `MicroEngine.Audio.Retro`) |
+| `MicroEngine.UI` | `UI/` | Text boxes, menus, themes, achievement banners and list; a widget tree with focus, pointer and text input (`MicroEngine.UI.dll`) | `Typewriter`, `DialogueBox`, `SelectionList`, `UiTheme`, `AchievementToasts`, `AchievementsScene`, `UiRoot`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts` |
 
 The manual covers each area: [lifecycle](../manual/lifecycle.md), [scenes](../manual/scenes.md),
 [rendering](../manual/rendering.md), [input](../manual/input.md), [audio](../manual/audio.md),
@@ -49,15 +49,15 @@ The manual covers each area: [lifecycle](../manual/lifecycle.md), [scenes](../ma
 
 | Type | Responsibility |
 | --- | --- |
-| `RaylibPlatform` | `IPlatform` over raylib: window, scaled and letterboxed canvas, renderer, texture creation, keyboard, gamepad and mouse, touches from the browser page (`BrowserTouch`), captures, F11 and Alt+Enter fullscreen on desktop (next SDK version: the engine's `fullscreen` action switches; the backend only delivers the keys). In a browser it leaves fullscreen and minimum size to the page |
+| `RaylibPlatform` | `IPlatform` over raylib: window, scaled and letterboxed canvas, renderer, texture creation, keyboard, gamepad and mouse, captures; the engine's `fullscreen` action (F11, Alt+Enter) switches full screen, and the backend only delivers the keys. Desktops only |
 | `RaylibAudioDevice` | `IAudioDevice` over raylib audio, including streamed OGG and MP3 music |
 | `SdlPlatform` | `IPlatform` over SDL 3: window (full screen on phones), SDL renderer into a virtual-size texture, keyboard, mouse, gamepad, touch screen (safe area, density, Android vibration), lifecycle events, captures; `CreateProfile(renderer)` fixes a render driver |
 | `SdlAudioDevice` | `IAudioDevice` over SDL audio streams; WAV and OGG (NVorbis) music; usable with another platform |
 | `GameLauncher` (core) | Parses launcher flags, builds `RunOptions` and a `PlatformRequest`, resolves a profile from a `PlatformCatalog`, calls `GameRunner.Run`, returns an exit code |
 | `DesktopLauncher` | `GameLauncher` with the official desktop catalog (in `MicroEngine.Desktop`) or with raylib only (in `MicroEngine.Raylib`) |
-| `BrowserLauncher` | Sets `SaveStore.DefaultStorage` to `BrowserSaveStorage` and returns a `GameSession` that creates a `RaylibPlatform` per run (next SDK version: composes every run with the game's `Configure` and the shared launch rules, on the raylib platform of one `BrowserPage`) |
-| `GameHost` (core, next SDK version) | The one launch path: composes a host (its defaults, then the game's `Configure`), decides `RunOptions` and the `PlatformRequest` from a `LaunchRequest`, chooses and starts the platform, applies the composition to the engine; `GameLauncher`, `BrowserLauncher`, the phone hosts and tests call it |
-| `BrowserSaveStorage` | `ISaveStorage` over `localStorage`, keys `microengine/<Game>/<slot>` (next SDK version: `MicroEngine.Platform.BrowserStorage`, the default medium in browsers) |
+| `BrowserLauncher` (in `MicroEngine.Sdl`) | Returns a `GameSession` that composes every run with the game's `Configure` and the shared launch rules, on the SDL platform of one `BrowserPage` |
+| `GameHost` (core) | The one launch path: composes a host (its defaults, then the game's `Configure`), decides `RunOptions` and the `PlatformRequest` from a `LaunchRequest`, chooses and starts the platform, applies the composition to the engine; `GameLauncher`, `BrowserLauncher`, the phone hosts and tests call it |
+| `BrowserStorage` (`MicroEngine.Platform`) | `IStorage` over `localStorage`, keys `microengine/<gameId>/<slot>`: the default save medium in browsers |
 
 ## What calls what
 
@@ -110,15 +110,14 @@ flowchart TB
   accTitle: Browser call flow
   accDescr: main.js calls WebHost, which uses a GameSession from BrowserLauncher.CreateSession; the session starts, ticks and ends the game loop.
   main["main.js"] --> host["WebHost.Start/Frame/Outcome/Stop <br/> (Hosts/web/Program.cs, [JSExport])"]
-  host --> session["GameSession from <br/> BrowserLauncher.CreateSession(GameEntry.Create)"]
-  session --> start["Start"] --> create["new game + <br/> new RaylibPlatform"] --> loopStart["GameLoop.Start"]
+  host --> session["GameSession from <br/> BrowserLauncher.CreateSession(GameEntry.Configure, page)"]
+  session --> start["Start"] --> create["new game + <br/> new SdlPlatform"] --> loopStart["GameLoop.Start"]
   session --> tick["Tick"] --> loopTick["GameLoop.Tick <br/> (one per <br/> requestAnimationFrame)"]
   session --> stop["end"] --> finish["GameLoop.Finish"] --> disposed["platform disposed"]
 ```
 
-`GameEntry` is generated at build time from the game's entry in the browser build configuration, so the browser
-builds the game with the same constructor expression as its desktop `Program.cs`. Next SDK version (not published yet:
-arrives with the next SDK version): `GameEntry.Configure` calls the game's own `Configure` entry point, which
+`GameEntry` is generated at build time from the game's entry in the browser build configuration: `GameEntry.Configure`
+calls the game's own `Configure` entry point, which
 `microengine` finds in the built game; `BrowserLauncher.CreateSession(GameEntry.Configure, page)` composes each run
 with it through `GameHost`, and `Start` takes a `LaunchRequest` (the script, when there is one), decided by the same
 rules as a desktop `--script` run.
@@ -139,6 +138,7 @@ flowchart TB
 | --- | --- |
 | A rule specific to one genre or game | `games/<Name>` |
 | Something genre-neutral, or needed by two games | `src/MicroEngine` (with tests in `tests/MicroEngine.Tests`) |
-| Anything that touches raylib or the browser | `src/MicroEngine.Raylib` or `web/` |
+| Anything that touches raylib | `src/MicroEngine.Raylib` |
+| Anything that touches the browser | `src/MicroEngine.Sdl` or `web/` |
 | A new windowing or audio library | A new `IPlatform` implementation; no game changes |
 | A significant architectural change | Also a recorded design decision |

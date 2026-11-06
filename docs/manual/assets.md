@@ -31,11 +31,10 @@ MyGame/
     sfx/jump.wav
 ```
 
-Next SDK version (not published yet: arrives with the next SDK version): every file under `Content/` is copied next to
-the executable and into every package (Windows, Linux, macOS, Android, iOS, browsers) without an item in the project
-file. C# files there compile as code instead. A project that still lists the folder itself
-(`<None Include="Content/**" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />`, which the published SDK
-needs) gets each file once; the item can go once the game uses the next SDK. `<MicroEngineContentDir>` moves the folder,
+Every file under `Content/` is copied next to the executable and into every package (Windows, Linux, macOS, Android,
+iOS, browsers) without an item in the project file. C# files there compile as code instead. A project that still lists
+the folder itself (`<None Include="Content/**" CopyToOutputDirectory="PreserveNewest" LinkBase="Content" />`) gets each
+file once, so the item can go. `<MicroEngineContentDir>` moves the folder,
 `<MicroEngineContentItems>false</MicroEngineContentItems>` turns the copying off.
 
 Names must match their letter case exactly: Linux, Android and browsers do not find `Hero.png` for `hero.png`, so the
@@ -47,7 +46,7 @@ same way on every platform and in headless tests. Decoding a game-sized image ta
 
 ## `Game.Assets`
 
-Next SDK version (not published yet: arrives with the next SDK version). `Game.Assets` (and `Assets` in a scene) is the
+`Game.Assets` (and `Assets` in a scene) is the
 game's asset cache: the same request returns the same object, so a texture used by ten scenes is decoded and uploaded
 once.
 
@@ -70,10 +69,10 @@ protected override void Load()
 | `Atlas(path, options?, filter?)` | a `SpriteAtlas` from a packing tool's file and the image it names |
 | `AtlasFromFolder(folder, pivot?, filter?)` | every image of a folder packed into one atlas, named by file name |
 | `Font(path, options?)` | a `ScalableFont` ([Text](text.md#scalable-fonts-ttf-and-otf)) |
-| `Sound(path)`, `Music(path)` | next SDK version: a PCM WAV decoded into an `AudioClip`; a music file (OGG, WAV, MP3 on raylib) as `EncodedAudio`, decoded while it plays. Play them with `Audio.AddSound(name, clip)` and `Audio.AddMusic(name, music)` |
+| `Sound(path)`, `Music(path)` | a PCM WAV decoded into an `AudioClip`; a music file (OGG, WAV, MP3 on raylib) as `EncodedAudio`, decoded while it plays. Play them with `Audio.AddSound(name, clip)` and `Audio.AddMusic(name, music)` |
 | `Bytes(path)`, `Text(path)` | the file's content (not cached) |
 | `IsLoaded(path)`, `Unload(path)` | whether a file is loaded; releases this cache's hold on it |
-| `Loaded`, `Statistics` | what is loaded, texture memory (`TextureBytes`), audio memory (`AudioBytes`, next SDK version), load times, loads during play |
+| `Loaded`, `Statistics` | what is loaded, texture memory (`TextureBytes`), audio memory (`AudioBytes`), load times, loads during play |
 | `CreateScope(name?)` | a child cache that releases what it holds when disposed |
 | `Preload(paths...)` | loads files in the background, returning an `AssetBatch` |
 
@@ -81,8 +80,8 @@ Paths are relative to `Content/` with `/` separators. Everything `Game.Assets` l
 do not dispose those objects yourself. Looking up an asset that is already loaded allocates nothing, so it can be done
 while drawing.
 
-Sounds and music keep their own registry: `Audio.AddSoundFile` and `Audio.AddMusicFile` ([Audio](audio.md#sound-and-music-files)).
-In the next SDK version, sound and music files are also asset kinds of `Game.Assets` (see
+Sounds and music also keep their own registry: `Audio.AddSoundFile` and `Audio.AddMusicFile`
+([Audio](audio.md#sound-and-music-files)). Sound and music files are asset kinds of `Game.Assets` as well (see
 [handles, loaders and sources](#handles-loaders-and-content-sources)).
 
 ### Levels and scenes: scopes
@@ -143,10 +142,9 @@ the same numbers in the profile's environment (`assets.loaded`, `assets.textureM
 
 ## Images
 
-Next SDK version (not published yet: arrives with the next SDK version): `PixelImage.Decode(bytes)` and
-`PixelImage.Load(path)` read PNG (every colour type and bit depth, interlaced or not), JPEG (baseline and progressive),
-BMP, TGA, GIF (the first frame) and PSD (the composited image), recognised by content, not by name. The published SDK
-reads non-interlaced 8-bit PNGs only. Loaded images are ordinary `PixelImage`s, so they can be cropped, recoloured,
+`PixelImage.Decode(bytes)` and `PixelImage.Load(path)` read PNG (every colour type and bit depth, interlaced or not),
+JPEG (baseline and progressive), BMP, TGA, GIF (the first frame) and PSD (the composited image), recognised by content,
+not by name. Loaded images are ordinary `PixelImage`s, so they can be cropped, recoloured,
 rotated or silhouetted before packing.
 
 How textures are sampled (nearest for pixel art, linear for HD art) is described in
@@ -154,8 +152,7 @@ How textures are sampled (nearest for pixel art, linear for HD art) is described
 
 ## Atlases from packing tools
 
-Next SDK version (not published yet: arrives with the next SDK version). `Assets.Atlas` and
-`SpriteAtlas.Load(device, path)` read:
+`Assets.Atlas` and `SpriteAtlas.Load(device, path)` read:
 
 | Format | Made by | Read from it |
 | --- | --- | --- |
@@ -216,7 +213,7 @@ Source: [`games/CourtyardKey/Visuals/MonsterArt.cs`](../../games/CourtyardKey/Vi
 
 ## Handles, loaders and content sources
 
-Next SDK version (merged, not published yet). `Game.Assets` is built on an asset store (`MicroEngine.Content`, inside
+`Game.Assets` is built on an asset store (`MicroEngine.Content`, inside
 the `MicroEngine` package) that games can also use directly.
 
 **Typed handles.** `Assets.Scope.Load<T>(kind, path)` returns an `Asset<T>`, a small value that names the asset
@@ -264,11 +261,11 @@ public static void Configure(HostBuilder host)
 
 | Member | Behaviour |
 | --- | --- |
-| `new ContentFolder(root?)` | Default root is `<exe dir>/Content` (or `ContentFolder.DefaultRoot`, which phone hosts set; next SDK version: `DefaultRoot` is read-only and hosts compose their folder, `host.Content`); a missing folder throws with the full path |
-| `PathOf("sfx/shot.wav")` | Full path from a `/`-separated relative path; throws if missing, outside the root or (next SDK version) spelled with another letter case |
+| `new ContentFolder(root?)` | Default root is `ContentFolder.DefaultRoot` (`<exe dir>/Content`, read-only; hosts of your own compose their folder with `host.Content`); a missing folder throws with the full path |
+| `PathOf("sfx/shot.wav")` | Full path from a `/`-separated relative path; throws if missing, outside the root or spelled with another letter case |
 | `Image(relative)` | Loads an image as a `PixelImage` |
 | `ReadBytes(relative)`, `Exists(relative)` | Raw access |
-| `Files(folder)` | The files of a folder (next SDK version) |
+| `Files(folder)` | The files of a folder |
 
 Games accept an optional root so tests can point at another folder (`new RiftGame(..., contentRoot: ...)`); a game
 using `Game.Assets` overrides `ContentRoot`. In a browser the page copies the package's files into the runtime's

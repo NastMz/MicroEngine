@@ -11,11 +11,11 @@ MicroEngine's tests.
 | --- | --- | --- |
 | press actions from something that is not a key (accessibility switch, network player, replay, AI helper) | `IActionSource` | `Input.AddSource(source)` |
 | read another device library at the device level | `IInputSource` | `PlatformRequest.ExtraInput` ([Backends](backends.md#replacing-a-part)) |
-| keep saves somewhere else (memory, a cloud service, a console API) | `ISaveStorage` | `new SaveStore(storage)` or `SaveStore.DefaultStorage` (next SDK version: `host.Storage` in the game's `Configure`) |
+| keep saves somewhere else (memory, a cloud service, a console API) | `ISaveStorage` | `new SaveStore(storage)`, or `host.Storage` in the game's `Configure` |
 | a scene transition of your own | subclass `Transition` | `Scenes.Push/Replace(scene, transition)` |
 | another audio device (for example SDL's audio under raylib) | `IAudioDevice` | `PlatformRequest.Audio` ([Backends](backends.md#replacing-a-part)) |
 | change or wrap a platform, or add a new one | `IPlatform` | a `PlatformProfile` in the launcher's `PlatformCatalog` |
-| game objects with deferred spawning and removal | subclass `Entity` (published SDK; next SDK version: `Scene.Objects`, an `IWorld`) | `EntityList<T>` ([Tile maps and collision](world.md#entities); [The scene world](scenes.md#the-scene-world)) |
+| game objects with deferred spawning and removal | your own classes attached to entities | `Scene.Objects`, an `IWorld` ([The scene world](scenes.md#the-scene-world)) |
 | your own on-screen controls | records of `TouchLayout` | `Game.CreateTouchLayout` ([Input](input.md#touch-controls)) |
 
 The window, the renderer and the graphics device share one graphics context, so they are replaced together, as a
@@ -84,11 +84,10 @@ public sealed class MemorySaveStorage : ISaveStorage
 `SaveStore` keeps its guarantees on top of any storage: it serializes, sets aside data it cannot parse
 (`SetAside`), never overwrites a slot it could not read, and turns refused writes into `false`. A storage only reports
 failures as `IOException` or `UnauthorizedAccessException`. Use it for one store with `new SaveStore(storage)`, or for
-every store a game creates by setting `SaveStore.DefaultStorage = gameId => new MyStorage(gameId)` before the game is
-constructed (the browser launcher does exactly that with its `localStorage` storage). Next SDK version (not published
-yet: arrives with the next SDK version): there is no process-wide setting; the game's `Configure` entry point sets
-`host.Storage = gameId => new MyStorage(gameId)` and the game creates its stores with `host.SaveStore(gameId)`
-([One composition for every platform](backends.md#one-composition-for-every-platform)).
+every store of a composition: the game's `Configure` entry point sets `host.Storage = gameId => new MyStorage(gameId)`
+and the game creates its stores with `host.SaveStore(gameId)`
+([One composition for every platform](backends.md#one-composition-for-every-platform)). There is no process-wide
+setting.
 
 ## A transition
 
@@ -162,13 +161,12 @@ started SDL renderer direct3d11 (with sound)
 - A `PlatformProfile` has a name (for `--platform` and `MICROENGINE_PLATFORM`), a description (for
   `--list-platforms`), a factory from `PlatformRequest` to `IPlatform`, `CheckSupport` (null when it can run here,
   otherwise the reason) and `Replaceable` (the parts a host may supply: audio, extra input).
-- The `PlatformRequest` carries the game's settings and identity, window scale, hidden and fixed-step modes, mute and
-  the replaced parts; a factory passes it on. Next SDK version (not published yet: arrives with the next SDK version):
-  the fixed-step mode is gone; the request's explicit options are `WaitForDisplay` and `StartGamepadsAfterFirstFrame`
-  ([Platform request options](../reference/configuration.md#platform-request-options)).
-- A class that wraps a platform implements every member of `IPlatform` and forwards it. Next SDK version: that
-  includes the host contract `IPlatform` extends and its capability query (`TryGetCapability<T>`), so the wrapped
-  platform's optional features stay available; a profile like the one above, which returns the original platform,
+- The `PlatformRequest` carries the game's settings and identity, window scale, hidden mode, mute, the replaced parts
+  and explicit options such as `WaitForDisplay` and `StartGamepadsAfterFirstFrame`
+  ([Platform request options](../reference/configuration.md#platform-request-options)); a factory passes it on.
+- A class that wraps a platform implements every member of `IPlatform` and forwards it, including the host contract
+  `IPlatform` extends and its capability query (`TryGetCapability<T>`), so the wrapped platform's optional features stay
+  available; a profile like the one above, which returns the original platform,
   needs none of it.
 - The catalog's first profile that can run is the default. `DesktopLauncher.CreateCatalog()` holds `sdl`, `raylib`,
   `sdl-software` and `headless`; a game that ships SDL only builds its own with `new PlatformCatalog()`.
@@ -180,9 +178,9 @@ started SDL renderer direct3d11 (with sound)
 - **Rendering features beyond `IRenderer`** (shaders, render targets) cannot be added from a game: the renderer contract
   has no hook for them.
 - **The game loop** (fixed step, order of a frame) is the engine's; a host that drives frames itself uses
-  `GameSession` ([Game lifecycle and time](lifecycle.md#loop-runner-and-session)). Next SDK version (not published yet:
-  arrives with the next SDK version): a game adds its own systems to the frame's phases, replaces built-in services and
-  edits the time policy from `Game.Configure` ([Modules and the frame schedule](lifecycle.md#modules-and-the-frame-schedule)).
+  `GameSession` ([Game lifecycle and time](lifecycle.md#loop-runner-and-session)). Within it, a game adds its own systems
+  to the frame's phases, replaces built-in services and edits the time policy from `Game.Configure`
+  ([Modules and the frame schedule](lifecycle.md#modules-and-the-frame-schedule)).
 
 ## Related
 

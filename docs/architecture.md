@@ -2,8 +2,8 @@
 
 MicroEngine is a small, code-first 2D framework for C#/.NET 10, for pixel-art and HD games. It is
 deliberately compact: a kernel that knows no domain, one backend-independent core library on top of it, two platform
-backends (SDL 3 for Windows, Linux, macOS, Android, iOS and, from the next SDK version, browsers; raylib as a desktop
-alternative, and for browsers in the published SDK), and games that are ordinary .NET programs. This
+backends (SDL 3 for Windows, Linux, macOS, Android, iOS and browsers; raylib as a desktop
+alternative), and games that are ordinary .NET programs. This
 document explains how the pieces fit and why.
 
 ## Layers
@@ -79,10 +79,9 @@ Each box is an assembly, named without its `MicroEngine.` prefix; the table unde
 kernel, those that touch the host also the platform contracts, and the core references every engine module. The
 `MicroEngine` package carries the kernel, the contracts, hosting, the engine modules and the core; the `MicroEngine.Sdl`
 package carries the tier-1 device. The 3D path (`MicroEngine.Graphics3D`) and the Box2D backend
-(`MicroEngine.Physics.Box2D`) are not in the SDK packages: the 3D path is in the repository only, and the Box2D backend
-is an optional package of its own, not published yet.
+(`MicroEngine.Physics.Box2D`) are not in the SDK packages: both are in the repository only.
 
-Next SDK version (not published yet: arrives with the next SDK version): the kernel is its own assembly,
+The kernel is its own assembly,
 `MicroEngine.Kernel`, shipped inside the `MicroEngine` package. It references no other engine assembly; modules
 register services, frame systems and capabilities on an `EngineBuilder`, and `Game` is one of them. The platform
 contracts are a second assembly, `MicroEngine.Platform`, also shipped inside the `MicroEngine` package, which references
@@ -98,14 +97,14 @@ The touch controls are `MicroEngine.Input.Touch` (input, 2D graphics, kernel and
 contract and the on-screen controls, an optional module that is active on touch-first screens or once the game sets a
 layout, and costs nothing otherwise ([Touch controls](manual/input.md#touch-controls)).
 
-Next SDK version (not published yet: arrives with the next SDK version): the graphics device contract is an assembly
+The graphics device contract is an assembly
 of the `MicroEngine` package too, `MicroEngine.Graphics`, which references only the kernel and the platform contracts.
 It holds one device contract for every backend (capabilities with a typed error for anything undeclared, resources
 owned by their device with generational handles and deferred release, samplers as values, buffers, the built-in
 `Textured` pipeline, command lists with passes, fenced readback of render targets and the window's target), the core
 validation every backend inherits (`GraphicsDeviceBase`) and the CPU reference device that executes the written rules
 ([The graphics device](manual/rendering.md#the-graphics-device)).
-The tier-1 device is `MicroEngine.Graphics.SdlGpu` (next SDK version: carried by the `MicroEngine.Sdl` package, which offers it as the `sdl-gpu` graphics device next to SDL_Renderer), which references only the
+The tier-1 device is `MicroEngine.Graphics.SdlGpu` (carried by the `MicroEngine.Sdl` package, which offers it as the `sdl-gpu` graphics device next to SDL_Renderer), which references only the
 graphics and platform contracts and SDL3: the contract on pure SDL_GPU with custom shaders compiled ahead of time and
 depth, checked by the same conformance suite as every other device. The 3D path over it is `MicroEngine.Graphics3D`
 (also in the repository only), which references the graphics contract, content and the scene world: glTF meshes as a
@@ -118,14 +117,14 @@ namespace unchanged (`MicroEngine.dll` forwards each type). The SDL and raylib p
 render target through it, with `IRenderer` as its façade, and compose the canvas into the window as the game's
 `Presentation` says ([The 2D batcher and the camera](manual/rendering.md#the-2d-batcher-and-the-camera)).
 
-Next SDK version (not published yet: arrives with the next SDK version): text is `MicroEngine.Text`, another assembly
+Text is `MicroEngine.Text`, another assembly
 of the `MicroEngine` package, which references only the 2D layer, the graphics contract, content, the kernel and the
 platform contracts. It holds the fonts with their `MicroEngine.Graphics` namespace (`IFont` and `FontExtensions`,
 `BitmapFont`, `ScalableFont`, `SizedFont`, `FontOptions`; `MicroEngine.dll` forwards each type), FontStashSharp, which
 rasterizes scalable fonts, and the font loader the asset store registers under the kind "font"
 ([Text](manual/text.md)).
 
-Next SDK version (not published yet: arrives with the next SDK version): the UI is `MicroEngine.UI`, another assembly
+The UI is `MicroEngine.UI`, another assembly
 of the `MicroEngine` package, which references only the 2D layer, text, input, the graphics contract, content, the
 kernel and the platform contracts. It holds the widgets that need nothing else (`Typewriter`, `SelectionList` and
 `UiTheme`, which `MicroEngine.dll` forwards, and the widget tree: `Widget`, `Label`, `Button`, `Panel`, `Stack`,
@@ -135,7 +134,7 @@ it handles from gameplay. Scenes stay in the core, which hosts one root per scen
 widgets that read core types: `DialogueBox` and `PromptText` (action prompts) and the achievement views
 ([UI widgets](manual/ui.md)).
 
-Next SDK version (not published yet: arrives with the next SDK version): hosting is another assembly of the
+Hosting is another assembly of the
 `MicroEngine` package, `MicroEngine.Hosting`, which references only the kernel and the platform contracts. It holds the
 launcher model every host shares: what a launch asks for (`LaunchRequest`, from a command line, a page or a phone) and
 its rules (a script means deterministic time and seed 1 on every host), how a host chooses a platform, the host's
@@ -144,7 +143,7 @@ environment, and the composition a game configures once (`HostBuilder`): a `Conf
 are parts of that composition, never process-wide settings
 ([One composition for every platform](manual/backends.md#one-composition-for-every-platform)).
 
-Next SDK version (not published yet: arrives with the next SDK version): content is a fourth assembly of the
+Content is another assembly of the
 `MicroEngine` package, `MicroEngine.Content`, which references only the kernel and the platform contracts. It holds
 the asset store under `Game.Assets`: typed handles (`Asset<T>`) whose generation goes stale once every scope released
 the asset, scopes that share one object and dispose it with its last holder, a loader registry with one loader per
@@ -152,7 +151,7 @@ kind of asset (images, atlases and fonts register theirs from the core for now; 
 build-time import step (`IAssetImporter`), and content sources beyond folders: zip archives and files a host lists
 and opens itself ([Handles, loaders and content sources](manual/assets.md#handles-loaders-and-content-sources)).
 
-Next SDK version (not published yet: arrives with the next SDK version): audio is a fifth assembly of the `MicroEngine`
+Audio is another assembly of the `MicroEngine`
 package, `MicroEngine.Audio`, which references the kernel, the platform contracts and content. It holds the one mixer
 every backend plays through (`AudioEngine`: voices with handles and priorities, one voice policy, buses, music streams
 decoded ahead outside the simulation step, sounds started at exact output frames), the audio device contract and the
@@ -160,14 +159,14 @@ decoded ahead outside the simulation step, sounds started at exact output frames
 PCM output a backend implements: an SDL audio stream fed by a thread, a raylib audio stream, a browser AudioWorklet
 ([One mixer on every platform](manual/audio.md#one-mixer-on-every-platform)).
 
-Next SDK version (not published yet: arrives with the next SDK version): the scene world is a sixth assembly of the
+The scene world is another assembly of the
 `MicroEngine` package, `MicroEngine.Scene`, which references only the kernel. Its types are in the `MicroEngine.Scenes`
 namespace, beside the scene stack: `IWorld` and its implementation `SceneWorld` (entities with generational `EntityId`s,
 a `Transform` hierarchy stored in 3D with 2D helpers, typed attachments walked in attach order, interpolation for
 drawing with teleports, per-world step tracking, and a `WorldClock` with time scale and freezes), and the world's part of
 the per-step state hash.
 
-Next SDK version (not published yet: arrives with the next SDK version): physics is two more assemblies of the
+Physics is two more assemblies of the
 `MicroEngine` package. `MicroEngine.Physics` (scene world and kernel only) is the 2D contract, `IPhysicsWorld2D`: bodies
 owned by entities, box shapes with collision layers, collide-and-slide moves that return their contacts, exact ray and
 overlap queries, sensors with buffered events, declared `PhysicsCapabilities` with a typed error for anything a backend
@@ -175,12 +174,12 @@ does not declare, and `PhysicsModule`, which steps worlds in the `Physics` phase
 `MicroEngine.Physics.Tiles` is its tile backend, `TilePhysicsWorld2D`, and now holds the tile types (`TileLayer`,
 `TileGrid`, `TileFlags`, `ICollisionGrid`, `Autotile`, `TileMotion`) with their `MicroEngine.World` namespace;
 `TileRenderer` stays in the core because it draws ([Physics worlds](manual/world.md#physics-worlds)).
-`MicroEngine.Physics.Box2D` (physics contract, scene world and kernel only; optional and not published yet, outside the
+`MicroEngine.Physics.Box2D` (physics contract, scene world and kernel only; in the repository only, outside the
 SDK packages) is the second backend, `Box2DPhysicsWorld2D`: native Box2D 3.2 behind a flat C layer of the engine's own,
 across which only integers, floats and pointers pass and no game code runs, with the native library for each platform in
 its package ([The Box2D backend](manual/world.md#the-box2d-backend)).
 
-Next SDK version (not published yet: arrives with the next SDK version): saves and achievements are optional engine
+Saves and achievements are optional engine
 modules. `MicroEngine.Saves` (kernel and platform contracts only, shipped inside the `MicroEngine` package) holds
 `SaveStore`, `ISaveStorage` and `FileSaveStorage` with their `MicroEngine.Core` namespace, and `SavesModule`, which
 registers a store as the engine's `SaveStore` service. `MicroEngine.Achievements` (kernel, platform contracts, saves and 2D
@@ -200,16 +199,15 @@ four device interfaces:
 | `IAudioDevice` | Loading/playing PCM sounds and looping music | SDL, raylib, `SilentAudioDevice` |
 | `IInputBackend` | Device events: keys, text, pointers, wheel, gamepads, devices connecting (a capability) | `HeadlessInputBackend` |
 | `IInputSource` | Raw key, gamepad and mouse state, polled; read as one device | SDL, raylib, `HeadlessInput` |
-| `ITouchScreen` (optional, `IPlatform.Touch`; next SDK version: a capability) | Touches, safe area, density, vibration and an overlay drawn over the frame | SDL (phones; browsers from the page, next SDK version), raylib (from the browser page in the published SDK; a desktop window reports none), `HeadlessTouchScreen` |
+| `ITouchScreen` (optional, a capability) | Touches, safe area, density, vibration and an overlay drawn over the frame | SDL (phones; browsers from the page), `HeadlessTouchScreen`; a raylib desktop window reports none |
 
 Hosts choose a platform through a `PlatformCatalog` of named `PlatformProfile`s (`sdl`, `raylib`, `sdl-software`,
 `headless`, or one of the developer's own) and may supply an audio device or extra input sources of their own; window,
 renderer and graphics device stay together because they share a graphics context ([Backends](manual/backends.md)).
-SDL is the default on desktops and phones, and, in the next SDK version, the platform of browsers too (SDL compiled to
+SDL is the default on desktops and phones, and the platform of browsers too (SDL compiled to
 WebAssembly by `src/MicroEngine.Sdl/native/build.sh`, with its `BrowserLauncher` and `BrowserPage` in
-`MicroEngine.Sdl`); raylib then runs on desktops only. Until then the raylib backend also runs in a browser (raylib
-compiled to WebAssembly): `BrowserLauncher` returns a `GameSession` that the page starts, ticks from
-`requestAnimationFrame` and restarts, and keeps saves in `localStorage`. Next SDK version: every host composes the game with its `Configure` entry
+`MicroEngine.Sdl`); raylib runs on desktops only. `BrowserLauncher` returns a `GameSession` that the page starts, ticks
+from `requestAnimationFrame` and restarts; saves go to `localStorage` (`BrowserStorage`). Every host composes the game with its `Configure` entry
 point through the same launcher model (`GameHost`), so a page's scripted run is deterministic like a desktop one.
 `microengine package web` builds any game into a static site
 ([The browser host](examples/embedding.md)).
@@ -217,7 +215,7 @@ point through the same launcher model (`GameHost`), so a page's scripted run is 
 ## The frame
 
 `GameLoop` runs one frame per `Tick()`; `GameRunner.Run(game, platform, options)` ticks it until the game
-ends. Next SDK version (not published yet: arrives with the next SDK version): the loop owns time; the platform only
+ends. The loop owns time; the platform only
 supplies a monotonic clock,
 and the engine's `FrameClock` turns each frame's time into fixed steps following `TimeSettings` (fixed rate, at most
 `MaxStepsPerFrame` steps, frames of at most `MaxFrameDelta`, real or deterministic time). A frame runs the engine's
@@ -247,8 +245,7 @@ scripted playthrough tests and reproducible screenshots possible.
 ## Core modules
 
 One row per assembly, in the order of the layers above. Namespaces in parentheses are those of moved types, which kept
-the namespace they had in `MicroEngine.dll`. The split into these assemblies arrives with the next SDK version (not
-published yet); in the published SDK, the engine types that existed then are in `MicroEngine.dll`.
+the namespace they had in `MicroEngine.dll`.
 
 | Assembly | Namespaces | Contents |
 | --- | --- | --- |
@@ -272,9 +269,9 @@ published yet); in the published SDK, the engine types that existed then are in 
 | `MicroEngine` (core): testing support | `MicroEngine.Core` | `HeadlessPlatform` (no window, no sound, deterministic time), `InputScript` (scripted input for playthroughs), captures; with the kernel's state hash (`StateHasher`, `StateTrace`), the reference device (`ReferenceGraphicsDevice`) and offline audio (`OfflineAudioSink`) ([Testing your game](examples/testing.md)) |
 | `MicroEngine.Graphics.SdlGpu` | `MicroEngine.Graphics.SdlGpu` | `SdlGpuDevice`: the tier-1 device (custom shaders compiled ahead of time, depth) on SDL_GPU, carried by the `MicroEngine.Sdl` package as the `sdl-gpu` graphics device |
 | `MicroEngine.Graphics3D` | `MicroEngine.Graphics3D` | `MeshAssets` (glTF meshes as an asset kind, `GltfReader`), `MeshData`, `GpuMesh`, `Camera3D`, `Renderer3D`, `MeshRenderer`; in the repository only |
-| `MicroEngine.Physics.Box2D` | `MicroEngine.Physics.Box2D` | `Box2DPhysicsWorld2D`, `Box2DWorldOptions`: native Box2D 3.2 behind the engine's flat C layer, with the native library of each platform; an optional package of its own, not published yet |
+| `MicroEngine.Physics.Box2D` | `MicroEngine.Physics.Box2D` | `Box2DPhysicsWorld2D`, `Box2DWorldOptions`: native Box2D 3.2 behind the engine's flat C layer, with the native library of each platform; in the repository only, not part of the SDK packages |
 | `MicroEngine.Sdl` | `MicroEngine.Sdl` | `SdlPlatform`, `SdlRendererDevice`, `SdlAudioDevice`; for browsers `BrowserLauncher` and `BrowserPage` (SDL 3 compiled to WebAssembly, the platform of every browser build) |
-| `MicroEngine.Raylib` | `MicroEngine.Raylib` | `RaylibPlatform`, `RaylibDevice`, the raylib audio device: the second desktop platform (in the published SDK, also the browser platform, with its own `BrowserLauncher`) |
+| `MicroEngine.Raylib` | `MicroEngine.Raylib` | `RaylibPlatform`, `RaylibDevice`, the raylib audio device: the second desktop platform |
 | `MicroEngine.Desktop` | `MicroEngine.Desktop` | `DesktopLauncher` with the official desktop platforms (SDL 3, raylib, SDL software, headless) |
 
 ## Key design decisions
@@ -299,8 +296,7 @@ In short:
 - **Plain entities, not an ECS.** A game of this kind has at most a few hundred objects. Small classes with
   `Update`/`Draw`, kept in the scene's world (`Scene.Objects`, an `IWorld`: each entity has an id, a transform, an
   optional parent and your own classes as attachments, walked in a stable order) or simply in a `List<T>`, are easier
-  to read and debug than component plumbing at this scale. (Next SDK version; the published SDK keeps objects in an
-  `EntityList<T>` with deferred add and remove.) Games that outgrow it can add their own systems on top.
+  to read and debug than component plumbing at this scale. Games that outgrow it can add their own systems on top.
 - **Actions, never keys.** Games query `"jump"` or `"confirm"` (and `Value`/`Vector` for analog strength); keys,
   gamepads, touch controls and custom sources all press the same actions, and scripts and tests force the same
   actions or touch the same controls, so automated runs exercise exactly the code players do.
@@ -318,7 +314,7 @@ In short:
 ## Testing a game
 
 - `HeadlessPlatform` runs a game without a window or sound; runs on it default to deterministic time (one step per
-  frame), so tests are reproducible. Next SDK version: that default is the headless platform's stated preset
+  frame), so tests are reproducible. That default is the headless platform's stated preset
   (`RunPreset.Testing`), which a run or a game overrides; nothing the platform does depends on it.
 - Any game accepts `--script file --hidden --captures dir` to replay input and save 3× PNG captures, for visual
   review and screenshots ([Testing](examples/testing.md)).

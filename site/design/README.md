@@ -24,7 +24,7 @@ how the engine is built, so the identity can grow with the engine without changi
 |---|---|
 | Modularity | Every subsystem is a socket with a contract; swapping an implementation is literally reseating a module |
 | Building on existing technology | Upstream libraries appear as credited modules seated in the board, never hidden and never the hero |
-| Honesty about status | Only shipping modules are seated and coloured; the next SDK version is labelled; repository-only work (3D, Box2D) is an empty dashed socket |
+| Honesty about status | Only shipping modules are seated and coloured; repository-only work (3D, Box2D) is an empty dashed socket |
 | Pixel-art origins, kept but not defining | The demos keep their pixel art inside their own frames; the mark keeps a 16-unit grid; the chrome has no pixel face or grid |
 | Growth toward HD, 2.5D and 3D | A new capability is a new module in an existing socket. The 3D socket is already drawn, empty and dashed: the direction is visible, nothing is promised |
 
@@ -59,7 +59,7 @@ This folder is design material for people working on the site. The site does not
 | A code panel | `<CodeLabel file=… lang=… />` before the block; the block is a `.code-surface` |
 | What code produces | `<FrameStrip frames=… caption=… />` with real captures |
 | Anything that scrolls sideways | It must take focus (`tabindex="0"` and a label) so a keyboard can scroll it; docs tables and diagrams get it in `docs/scroll-regions.mjs`; `npm run test:browser` fails otherwise |
-| A status on its own | `<span data-status="next"><span class="status-mark"></span>Next SDK version</span>` |
+| A status on its own | `<span data-status="repo"><span class="status-mark"></span>In the repository, not published</span>` |
 
 Checks: `node scripts/contrast.mjs` (WCAG AA for every token pair, both themes) and `npm test` (it also fails when the
 logo files or the favicon colours drift from their sources).
@@ -179,7 +179,7 @@ highlighting theme, and a game's picture is its own light.
 | Neutral | `--color-paper`, `-paper-2`, `-paper-3`, `--color-rule`, `--color-ink`, `-ink-2`, `-ink-3`, `-ink-4` | 95% of every page. `ink-4` is never text |
 | Signal | `--color-accent` (text), `--color-accent-fill` (buttons, the mark's module), `--color-accent-ink`, `--color-focus` | MicroEngine's own voice: links, the primary action, the module in the mark |
 | Families | `--family-kernel`, `-graphics`, `-physics`, `-audio`, `-input`, `-platform`, `-tools` | Mean a kind of module, nothing else. Never decoration, never a status |
-| Status | `--status-available`, `-next`, `-repo`, `-planned` | See section 7 |
+| Status | `--status-available`, `-repo`, `-planned` | See section 7 |
 | Verdicts | `--color-ok`, `-partial`, `-no` | Compatibility answers (player, platform tables) |
 | Games | `--color-meadow`, `-courtyard`, `-trail`, `-neon` | Kept from each game's palette; only inside that demo's own frame |
 
@@ -243,13 +243,13 @@ always written.
 | Status | Drawing | Colour | Words |
 |---|---|---|---|
 | Available (in the published SDK) | Solid module seated in a solid socket; solid square marker | `--status-available` | "Available" |
-| Next SDK version (merged, not published yet) | Module seated; half-filled square marker | `--status-next` (amber) | "Next SDK version" |
 | In the repository, not published (experimental) | **Empty dashed socket**, module named inside in mono; dashed marker | `--status-repo` (neutral) | "In the repository, not published" |
 | Planned | Empty dotted socket; dotted marker | `--status-planned` (neutral) | "Planned" |
 
-`<Socket empty status="repo" module="Box2D" />` is how an unpublished backend appears. The SDL_GPU device ships in the
-next SDK version (inside the `MicroEngine.Sdl` package, desktops, opt-in), so it is a seated module with the next
-status: `<Socket family="graphics" module="SDL_GPU" status="next" />`. The 3D path (Graphics3D), Box2D physics
+`<Socket empty status="repo" module="Box2D" />` is how an unpublished backend appears. The SDL_GPU device ships in
+the `MicroEngine.Sdl` package (desktops, opt-in), so it is a seated module with the available status:
+`<Socket family="graphics" module="SDL_GPU" status="available" />`. There is no status between available and in the
+repository: the site describes the SDK that contains it as published. The 3D path (Graphics3D), Box2D physics
 and any other unpublished system is never drawn as a seated module until it ships in the SDK. The Open Graph image
 shows four seated families that ship today and one empty dashed socket, unlabelled.
 
@@ -327,7 +327,7 @@ Added by the shell and landing unit; this section extends the rules above, it ch
 - **The socket board** (`src/components/landing/SocketBoard.astro`, `BoardSlot.astro`): the mark's construction at page
   size. The kernel is the solid ink bar at the top with its own modules in sockets cut into it; the other families hang
   from it in paper bays separated by 2 px ink walls, open at the bottom like the mark. Each module is a tinted module in a
-  hairline socket (seated: available or next), an empty dashed socket (in the repository) or an empty dotted socket
+  hairline socket (seated: available), an empty dashed socket (in the repository) or an empty dotted socket
   (planned), always with its status written under it. It reads `src/data/capabilities.ts` and nothing else, so the board
   changes when the capability list does. In the dark theme the board inverts with the mark (light board, dark bays).
 - **The opening drawing** (`BoardDrawing.astro`): the same construction as an SVG parts drawing, five sockets with
@@ -354,7 +354,7 @@ first: body text in ink at `--text-md` with `--leading-body`, a 46 rem column, s
 | Header | `src/components/DocsSiteTitle.astro` | The lockup, a "Docs" legend, then Demos and Roadmap |
 | Family legend | `src/components/docs/PageTitle.astro` | Above each title: the page's family icon and name, then its sidebar group. The family comes from `src/components/docs/families.mjs`, keyed by slug (the Markdown has no frontmatter); API pages take the family of their namespace. Pages about no single module stay neutral |
 | Socket card | `src/components/docs/SocketCard.astro` | Under the title of the Graphics, Audio, Input, Tile maps and collision, and Backends pages: the contract as the socket, the modules that seat in it, each with its status written. Not published: an empty dashed bay |
-| Written statuses | `src/components/docs/status-phrases.mjs`, via the `MarkdownContent` override | "Next SDK version:", "Not in a published SDK yet" and "In the repository, not published" in the text get the status marker and colour. Only where the phrase is a label (followed by a colon or a parenthesis); never inside code or headings |
+| Written statuses | `src/components/docs/status-phrases.mjs`, via the `MarkdownContent` override | "In the repository, not published" (and "in the repository only, not in a package") in the text gets the status marker and colour; never inside code or headings |
 | Code | `ec.config.mjs` + `starlight.css` | Expressive Code with one dark theme (`github-dark-dimmed`) in both site themes, on `--color-paper-2` under `color-scheme: dark`. The strip above is the `CodeLabel` idea: a 2px ink rail, the file name on the left, the language on the right (added by a small plugin). Shell blocks get the same strip, no terminal window. Syntax colours are lifted to 5.5:1 (`minSyntaxHighlightingColorContrast`), comments included |
 | API reference | `starlight.css` only | Generated pages keep the same treatment; member headings with an anchor set in mono |
 
@@ -363,8 +363,8 @@ module; persistence as **platform**, because where saves live is the host's stor
 as **tools**; UI widgets and achievements stay neutral.
 
 Platforms, roadmap and 404 pages: the platforms page is one rail ("your game") with six platform modules seated under
-it, then each platform as a parts list; the roadmap is two boards, **Present** (solid ink rail: available and next SDK
-version, seated modules in their family colours) and **Future** (dashed rail: repository items as empty dashed bays in
+it, then each platform as a parts list; the roadmap is two boards, **Present** (solid ink rail: available, seated
+modules in their family colours) and **Future** (dashed rail: repository items as empty dashed bays in
 mono, planned items as dotted outlines grouped by track); the 404 is an empty dashed socket.
 
 ## Demos and players

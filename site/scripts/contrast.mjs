@@ -16,7 +16,7 @@ const families = ['kernel', 'graphics', 'physics', 'audio', 'input', 'platform',
 const textOnSurfaces = [
   '--color-ink', '--color-ink-2', '--color-ink-3', '--color-accent', '--color-accent-strong',
   '--color-ok', '--color-partial', '--color-no',
-  '--status-available', '--status-next', '--status-repo', '--status-planned',
+  '--status-available', '--status-repo', '--status-planned',
   ...families, '--color-meadow', '--color-courtyard', '--color-trail', '--color-neon',
 ];
 

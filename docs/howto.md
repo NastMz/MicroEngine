@@ -216,9 +216,7 @@ public override void Update(float dt)
 ```
 
 Music: WAV or OGG files on every platform, MP3 only on raylib, or songs made in code with `Song`. [Audio](manual/audio.md).
-Next SDK version (not published yet: arrives with the next SDK version): `Synth`, `SfxParams`, `Wave`, `Song` and
-`Instrument` are in `MicroEngine.Audio.Retro` (`using MicroEngine.Audio.Retro;`); in the published SDK they are in
-`MicroEngine.Audio`.
+`Synth`, `SfxParams`, `Wave`, `Song` and `Instrument` are in `MicroEngine.Audio.Retro` (`using MicroEngine.Audio.Retro;`).
 
 ## ...draw text?
 
@@ -244,8 +242,7 @@ for (int i = 0; i < lines.Count; i++)
     Font.Draw(r, lines[i], new Vector2(box.X + 6, box.Y + 6 + i * (Font.LineHeight + 1)), Color.White);
 ```
 
-It covers ASCII and a few symbols. Next SDK version (not published yet: arrives with the next SDK version): load a TTF or
-OTF font from `Content/` and draw it at any size:
+It covers ASCII and a few symbols. For more, load a TTF or OTF font from `Content/` and draw it at any size:
 
 ```csharp
 var font = Assets.Font("fonts/Inter-Regular.ttf");     // in Load
@@ -256,8 +253,7 @@ font.Draw(r, "Score 1200", new Vector2(24, 24), 32, Color.White);
 
 ## ...make an HD game?
 
-Next SDK version (not published yet: arrives with the next SDK version). Choose an HD canvas and the high-resolution presentation, put
-images, atlases and fonts under `Content/`, and load them through `Assets`:
+Choose an HD canvas and the high-resolution presentation, put images, atlases and fonts under `Content/`, and load them through `Assets`:
 
 ```csharp
 public sealed class MainGame : Game
@@ -397,4 +393,4 @@ return DesktopLauncher.Run(new ExamplesGame(), args, catalog);
 | How do I test my game automatically? | Headless runs and input scripts ([Testing your game](examples/testing.md)) |
 | How do I publish on the web? | `microengine package web`, then upload the folder ([Publishing on the web](examples/embedding.md)) |
 | How do I add achievements? | `UseAchievements` with a catalog ([Achievements](manual/achievements.md)) |
-| Is there an editor, physics or an ECS? | No editor and no ECS: MicroEngine is code-first. Physics: tile collision today; physics worlds with a tile backend in the next SDK version, and a Box2D backend in the repository, not published ([What it offers today](guide/status.md)) |
+| Is there an editor, physics or an ECS? | No editor and no ECS: MicroEngine is code-first. Physics: tile collision and physics worlds with a tile backend, and a Box2D backend in the repository, not published ([What it offers today](guide/status.md)) |

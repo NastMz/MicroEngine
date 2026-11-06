@@ -2,7 +2,7 @@
 
 <div data-pagefind-weight="0.3">
 
-The SDL 3 platform: Windows, Linux, macOS, Android, iOS and, from the next SDK version, browsers (WebAssembly), with the browser launcher and the browser page it reads.
+The SDL 3 platform: Windows, Linux, macOS, Android, iOS and browsers (WebAssembly), with the browser launcher and the browser page it reads.
 
 Guide: [Backends and platforms](../manual/backends.md)  
 

@@ -6,8 +6,7 @@ it. Newest first.
 
 ## Next release
 
-Not published yet. The next SDK version is a breaking Alpha: the engine was rebuilt as separate modules, and several
-public APIs change. The checklist below gives each breaking change and what to do about it. The entries after it give
+This version is a breaking Alpha: the engine was rebuilt as separate modules, and several public APIs change. The checklist below gives each breaking change and what to do about it. The entries after it give
 the details, newest first.
 
 ### Upgrading a game

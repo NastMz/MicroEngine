@@ -16,11 +16,10 @@ microengine package web        # dist/StarCourier-1.2.0-web/ and .zip
 A self-contained .NET single-file executable: players need no .NET. Next to it: SDL 3 (the default platform) and
 raylib (`--platform raylib`), the `Content` folder, `README.txt` (how to run it), `build-info.json`, the game's
 `LICENSE.txt` when it has one, `THIRD-PARTY-NOTICES.txt` and `licenses/` (MicroEngine's MIT licence, the .NET
-runtime's licence and notices). Everything is in one folder named after the game. Builds use invariant globalization,
-so no ICU library is needed on the player's system, and carry no debug information or build-machine path.
-
-Next SDK version (not published yet): `licenses/` also holds SDL's and raylib's licence files, and Android and iOS
-packages carry SDL's licence file with their other notices (`assets/licenses/` in an APK, `licenses/` in the app).
+runtime's licence and notices, and SDL's and raylib's licence files). Everything is in one folder named after the
+game. Builds use invariant globalization, so no ICU library is needed on the player's system, and carry no debug
+information or build-machine path. Android and iOS packages carry SDL's licence file with their other notices
+(`assets/licenses/` in an APK, `licenses/` in the app).
 
 | | Windows | Linux | macOS |
 | --- | --- | --- | --- |
@@ -60,15 +59,10 @@ The app icon is made from `MicroEngineIcon` (enlarged to 1024 pixels without blu
 
 A static site: `index.html` titled with the game's name, its icon as favicon, the WebAssembly runtime, the game and
 its `Content` files, `build-info.json` and the licence files of everything inside (the .NET runtime, Emscripten,
-raylib). Upload the folder to any static host (GitHub Pages, Netlify, an S3 bucket, nginx); files are also
-pre-compressed (`.br`, `.gz`) for servers that serve them. The game runs on raylib compiled to WebAssembly, in the
+SDL). Upload the folder to any static host (GitHub Pages, Netlify, an S3 bucket, nginx); files are also
+pre-compressed (`.br`, `.gz`) for servers that serve them. The game runs on SDL 3 compiled to WebAssembly, in the
 same page in desktop and mobile browsers, with touch controls.
 
-It needs the `wasm-tools` workload (`dotnet workload install wasm-tools`). raylib for the browser comes inside the
-`MicroEngine.Raylib` package, built with the same emscripten as that workload. A game that references only
-`MicroEngine.Sdl` cannot be packaged for the web; reference `MicroEngine.Desktop` (or `MicroEngine.Raylib`).
-
-Next SDK version (not published yet): the page runs on SDL 3 compiled to WebAssembly instead of raylib, with the same page, input, touch
-controls and sound. SDL for the browser comes inside the `MicroEngine.Sdl` package (built with the same emscripten as
-the workload), so any game that references `MicroEngine.Sdl` or `MicroEngine.Desktop` can be packaged for the web, and
-`--raylib-wasm` is gone (`--sdl-wasm FILE` names another SDL library). The package's licences then include SDL's.
+It needs the `wasm-tools` workload (`dotnet workload install wasm-tools`). SDL for the browser comes inside the
+`MicroEngine.Sdl` package, built with the same emscripten as that workload, so any game that references
+`MicroEngine.Sdl` or `MicroEngine.Desktop` can be packaged for the web (`--sdl-wasm FILE` names another SDL library).

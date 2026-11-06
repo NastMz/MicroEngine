@@ -8,7 +8,7 @@ import type { Family } from '../capabilities.ts';
 export const facts: { term: string; value: string }[] = [
   { term: 'Language', value: 'C# on .NET 10' },
   { term: 'Runs on', value: 'Windows, Linux, macOS, Android, iOS, browsers' },
-  { term: 'Draws', value: '2D: pixel art today, HD 2D next' },
+  { term: 'Draws', value: '2D: pixel art and HD' },
   { term: 'Licence', value: 'MIT, no royalties' },
 ];
 

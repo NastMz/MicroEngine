@@ -144,14 +144,9 @@ For every release, **one pull request and one approval**:
 Nothing else is done by hand. To not publish: reject the deployment (step 4); the draft stays and nothing is public.
 A manual run of the same commit asks for approval of that draft again; the next merge with a new commit re-drafts. To abandon the version, revert the release pull request.
 
-**The next SDK version is a breaking Alpha.** It is the first release of the rebuilt, modular engine.
-Its migration notes are complete: "Next release" in [migration notes](migrations.md) opens with an upgrade checklist
-of every breaking change. Its release-notes section is not complete yet. In step 1, merge the draft in
-[`evaluations/arch-1/release-notes-draft.md`](evaluations/arch-1/release-notes-draft.md) into the "Next release" section
-of [release notes](guide/release-notes.md). Two more things belong in the same cycle (the list is in
-[ARCH-1 §12.7 (c)](evaluations/arch-1.md#final-state)): ship SDL's licence file in the native packages and in the
-`MicroEngine.Sdl` package, and require it in the site's demo notice check. The required build of the documented
-samples against nuget.org comes back on its own once that version is public (`sdk/tests/docs.mjs`).
+One item of [ARCH-1 §12.7 (c)](evaluations/arch-1.md#final-state) is left for the demos, not the SDK: the site's demo
+notice check (`noticeFiles` in `site/scripts/demos.mjs`) requires `licenses/SDL-LICENSE.txt` from the first demo
+release built on SDL in browsers.
 
 ## Recovering
 

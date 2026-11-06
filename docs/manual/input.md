@@ -31,15 +31,14 @@ flowchart LR
 | `cancel` | `X`, Backspace, `K` | `B` |
 | `action` | `C`, `L` | `X` |
 | `pause` | Escape, `P` | Start |
-| `fullscreen` (next SDK version) | F11, Alt+Enter | none |
+| `fullscreen` | F11, Alt+Enter | none |
 
 Source: `InputMap.CreateDefault` in [`src/MicroEngine.Input/InputMap.cs`](../../src/MicroEngine.Input/InputMap.cs)
 
 ### Full screen
 
-Next SDK version (not published yet: arrives with the next SDK version). Switching between a window and full screen is
-the engine's own action, `fullscreen` (`ActionNames.Fullscreen`), bound to F11 and Alt+Enter (`KeyChord`: Enter with
-either Alt key held); no gamepad button has that meaning by convention, so none is bound. The engine switches when the
+Switching between a window and full screen is the engine's own action, `fullscreen` (`ActionNames.Fullscreen`),
+bound to F11 and Alt+Enter (`KeyChord`: Enter with either Alt key held); no gamepad button has that meaning by convention, so none is bound. The engine switches when the
 action is pressed (`Game.Screen.ToggleFullscreen()`, where the platform can change its window: not in browsers, whose
 page has its own button and Alt+Enter, nor on phones). The keys reach the game like any other key, so a game can bind
 F11 to something of its own. A map built from scratch (`new InputMap()`) gets the default toggle; to change it:
@@ -59,7 +58,7 @@ the modifier was let go, is the key's again.
 Keys are positions, named as on a US keyboard: `Key.A` is the key left of `S` whatever the player's layout prints on it,
 so WASD stays in place on AZERTY or Dvorak.
 
-Next SDK version (not published yet: arrives with the next SDK version): the engine's own parts (menus, dialogs, the
+The engine's own parts (menus, dialogs, the
 achievements screen, the default touch layout, prompts) read these actions by the names in `InputMap.Names`, an
 `ActionNames` record. A game that calls its actions differently renames them once and every engine part follows:
 
@@ -89,19 +88,16 @@ Source: [`games/NeonRift/RiftGame.cs`](../../games/NeonRift/RiftGame.cs)
 | `Unbind(action)` | Removes every binding of the action, to bind it again (a rebinding screen) |
 | `GetBindings(action)` | What the action is bound to (`ActionBindings`), to show it |
 
-The `Key` enum covers letters, digits, arrows, Space, Enter, Escape, Backspace, Tab, Shift, left Control and
-F1-F5, F11, F12. `PadButton` uses Xbox names (`A`, `B`, `X`, `Y`, `Start`, `Back`, shoulders, d-pad, stick clicks).
-`PadAxis` has both sticks and both triggers. Rebinding is code; there is no rebinding screen in the engine.
-
-Next SDK version (not published yet: arrives with the next SDK version): `Key` covers a full-size keyboard (F1-F24,
-punctuation by position such as `Minus`, `Comma` and `Grave`, the ISO key `NonUsBackslash`, both Alt, Control and Super
-keys, Caps Lock, Insert, Delete, Home, End, Page Up/Down, Print Screen, Scroll Lock, Pause, Num Lock and the whole
-keypad), and `PadButton` adds `Guide`, `Misc1`, four back paddles and the touchpad click. The numbers of the earlier
-members do not change.
+The `Key` enum covers a full-size keyboard: letters, digits, arrows, Space, Enter, Escape, Backspace, Tab, F1-F24,
+punctuation by position such as `Minus`, `Comma` and `Grave`, the ISO key `NonUsBackslash`, both Shift, Alt, Control and
+Super keys, Caps Lock, Insert, Delete, Home, End, Page Up/Down, Print Screen, Scroll Lock, Pause, Num Lock and the whole
+keypad. `PadButton` uses Xbox names (`A`, `B`, `X`, `Y`, `Start`, `Back`, shoulders, d-pad, stick clicks) and has
+`Guide`, `Misc1`, four back paddles and the touchpad click. `PadAxis` has both sticks and both triggers. The engine has
+no rebinding screen, but gives a game the parts to build one ([Saving bindings](#saving-bindings)).
 
 ### Saving bindings
 
-Next SDK version (not published yet: arrives with the next SDK version). A rebinding screen listens for the next press
+A rebinding screen listens for the next press
 and binds it; the press that chose the key never reaches gameplay. Bindings are saved by name (`"Q"`, `"RightTrigger+"`),
 so they stay valid when the engine adds keys:
 
@@ -135,9 +131,9 @@ Input.LoadBindings(storage);
 | `Vector(left, right, up, down)` | A 2D direction at most 1 long: keys give unit vectors with normalised diagonals, sticks their deflection |
 | `LastDevice` | `Keyboard`, `Gamepad`, `Touch` or `Other`: what pressed an action last |
 | `PadConnected` | Whether a gamepad is connected |
-| `Pointer` | The mouse over the virtual canvas: position in canvas pixels and buttons; next SDK version: also a finger no on-screen control took, and the wheel's turn since the previous step (`Wheel`) |
-| `Pointers` | Next SDK version: every pointer (the mouse, each finger or pen no on-screen control took), with its id and position in canvas pixels |
-| `Consume(action)` | Next SDK version: takes the action for the reader that acted on it, see [Input layers](#input-layers) |
+| `Pointer` | The mouse over the virtual canvas, or a finger no on-screen control took: position in canvas pixels, buttons, and the wheel's turn since the previous step (`Wheel`) |
+| `Pointers` | Every pointer (the mouse, each finger or pen no on-screen control took), with its id and position in canvas pixels |
+| `Consume(action)` | Takes the action for the reader that acted on it, see [Input layers](#input-layers) |
 | `Actions` | Every bound action name |
 
 Digital code keeps working everywhere: a stick or touch joystick also presses the direction actions past its
@@ -153,9 +149,6 @@ var velocity = dir * Speed;
 Source: [`games/CourtyardKey/Entities/Hero.cs`](../../games/CourtyardKey/Entities/Hero.cs)
 
 ## Showing controls to the player
-
-> **Not in a published SDK yet.** Action prompts arrive with the next SDK release
-> ([release notes](../guide/release-notes.md#next-release)); the published SDK does not have them.
 
 Text that names a control ("press Z to jump") is wrong for a player holding a gamepad or touching a phone. Name the
 action instead and let `Game.Prompts` (an `ActionPrompts`) say which control presses it on the device being played:
@@ -179,10 +172,9 @@ Source: [`games/MeadowRun/Scenes/MapScene.cs`](../../games/MeadowRun/Scenes/MapS
 | Nintendo pad | `B` (A/B and X/Y swapped, `+`, `ZR`...) | the same position, named as printed |
 | Touch | `A` | the label of the touch button that presses the action (or `↑`, `←`... on a d-pad or joystick) |
 
-Next SDK version (not published yet: arrives with the next SDK version): keys are named as the player's keyboard
-layout prints them where the platform knows the layout (SDL): with the default bindings an AZERTY player reads `ZQSD`
-where a US player reads `WASD`, and a game that binds `Key.A` shows `Q` on that keyboard. `Prompts.KeyText(key)` gives
-the label; `ActionPrompts.KeyName(key)` is the US name, used where the layout is unknown (raylib).
+Keys are named as the player's keyboard layout prints them where the platform knows the layout (SDL): with the
+default bindings an AZERTY player reads `ZQSD` where a US player reads `WASD`, and a game that binds `Key.A` shows `Q`
+on that keyboard. `Prompts.KeyText(key)` gives the label; `ActionPrompts.KeyName(key)` is the US name, used where the layout is unknown (raylib).
 
 The device is the one that last pressed an action (`InputMap.LastDevice`); before any press it is touch on a
 touch-first screen or while the on-screen controls are shown, otherwise the keyboard (a pad left plugged in takes over
@@ -221,13 +213,12 @@ Source: [`games/CourtyardKey/Scenes/TitleScene.cs`](../../games/CourtyardKey/Sce
 
 `DialogueBox.Prompts` resolves `{action}` in dialogue pages ([UI widgets](ui.md#dialoguebox)) and `PromptText` draws
 prompts as glyphs: key caps, coloured face buttons, touch rings ([UI widgets](ui.md#prompt-glyphs)). The SDL backend
-names the pad family from `SDL_GetGamepadType`, the browser host from the pad's name; other sources report Xbox
+names the pad family from `SDL_GetGamepadType`, raylib from the pad's name; other sources report Xbox
 (`IInputSource.PadStyle`).
 
 ## Devices, players and layers
 
-Next SDK version (not published yet: arrives with the next SDK version). Under the actions, input is a stream of
-device events: every device has an id (`DeviceId`) and reports what happens on it, in order (keys, text, pointers with
+Under the actions, input is a stream of device events: every device has an id (`DeviceId`) and reports what happens on it, in order (keys, text, pointers with
 touches as pointers, the wheel, gamepad buttons and axes, devices connecting and disconnecting). The events pass
 through *input layers*, from the highest down; what no layer takes becomes the state the players' actions are sampled
 from. `Game.InputSystem` holds it all.
@@ -307,15 +298,15 @@ keys.
 
 Which backends deliver what:
 
-| | SDL (desktop, phones) | raylib (desktop, browsers) | Headless |
+| | SDL (desktop, phones, browsers) | raylib (desktop) | Headless |
 | --- | --- | --- | --- |
 | Keys | every key of a full-size keyboard, by position | the same keys, through GLFW's key codes | sent by tests (`HeadlessPlatform.Devices.Send`) |
 | Key labels of the layout (`IKeyLabels`) | yes (`SDL_GetKeyFromScancode`) | no: keys keep their US names | set by tests (`Devices.Labels`) |
 | Text and composition | text and input-method composition, the candidate list placed at the caret, the on-screen keyboard on phones | typed characters, no input methods | sent by tests |
 | Mouse and wheel | yes | yes | sent by tests |
 | Gamepads | every pad, each with its own id, hot-plugged, its type (button names) and the player number it shows | pads 0 to 3, family from the pad's name | sent by tests |
-| Rumble (`IGamepadRumble`) | where the pad has motors | in browsers, through raylib's vibration call (not checked on hardware); none on desktop | recorded (`Devices.Rumbles`) |
-| Touches | fingers through the touch screen, as pointers | the browser page's Pointer Events, as pointers | `HeadlessPlatform.TouchScreen` |
+| Rumble (`IGamepadRumble`) | where the pad has motors | none | recorded (`Devices.Rumbles`) |
+| Touches | fingers through the touch screen (in browsers, the page's Pointer Events), as pointers | none: a raylib window reports no touches | `HeadlessPlatform.TouchScreen` |
 
 raylib polls its devices once per frame, so a pad button pressed and released between two frames is not seen there;
 keys are (raylib queues their presses). Polled sources (`IInputSource`: a host's `PlatformRequest.ExtraInput`, a
@@ -335,14 +326,11 @@ sideways. `InputMap.ApplyDeadZone` and `InputMap.Directions` are public for code
 
 ## Touch controls
 
-Every game has on-screen controls (`Game.Touch`, a `VirtualControls`). They are drawn and read wherever the platform
-has a touch screen: SDL on Android, iOS and touch-screen desktops, and the browser page (phones, tablets, touch
-laptops). A game picks its controls by overriding `CreateTouchLayout`; the default is a d-pad and A/B/C/pause for the
-default actions.
-
-Next SDK version: touch controls are an optional module, in their own assembly (`MicroEngine.Input.Touch`, carried by
-the `MicroEngine` package, namespace `MicroEngine.Input` unchanged). They are active, drawn and read when the screen is
-touch-first (phones, tablets, touch-only browsers: `ITouchScreen.TouchFirst`), with the default layout unless the game
+On-screen controls (`Game.Touch`, a `VirtualControls`) are an optional module, in their own assembly
+(`MicroEngine.Input.Touch`, carried by the `MicroEngine` package, namespace `MicroEngine.Input`). A game picks its
+controls by overriding `CreateTouchLayout`; the default is a d-pad and A/B/C/pause for the default actions. They are
+active, drawn and read when the screen is touch-first (phones, tablets, touch-only browsers: `ITouchScreen.TouchFirst`),
+with the default layout unless the game
 has its own, or when the game sets a layout of its own on any platform with a touch screen: by overriding
 `CreateTouchLayout` (without calling the base method), by setting `Game.Touch.Layout` in `Configure`, or by setting it
 later, in `Load` or a scene. Otherwise `Game.Touch` exists but is inactive (`IsActive` is false): no frame system, no
@@ -400,7 +388,7 @@ needs intensity. The four demos show both:
 | `Haptics` | true | A short vibration on each press and d-pad direction change, where the device can vibrate |
 | `Visibility` | `Auto` | `Auto`: shown on touch-first screens and after any touch, hidden while a keyboard or gamepad plays, back on the next touch. `Always`, `Never` |
 | `Tint`, `PressedTint` | white, light blue | Outline and label colour; fill of a pressed control |
-| `ButtonStyle`, `DPadStyle`, `StickStyle`, `Skin` | the default look | How each kind of control looks ([Look](#look-styles-skins-and-images)); not in a published SDK yet |
+| `ButtonStyle`, `DPadStyle`, `StickStyle`, `Skin` | the default look | How each kind of control looks ([Look](#look-styles-skins-and-images)) |
 
 At run time: `Touch.SetVisible(id, bool)` hides a control (hidden controls release their finger and ignore touches),
 `Touch.Layout = ...` switches layouts (fingers are released), `Touch.IsPressed(id)`, `Touch.ValueOf(id)` and
@@ -447,10 +435,9 @@ controls fit in the letterbox bars. Smaller controls (`Radius`, `TouchLayout.Sca
 - **Buttons tolerate small slides** (`SlideTolerance`) and release beyond them; nothing stays pressed after a finger
   leaves.
 - **Quick taps are never lost.** A tap that starts and ends within one frame is kept until a simulation step has read
-  it, as keys are. Next SDK version: it is kept however many frames run before that step (taps expire by steps, not
-  by drawn frames), and it is down in exactly one step, the first that reads it, also when a slow frame catches up
-  with several steps (it used to stay down in every step of its frame).
-- **Fingers that land on no control go to the game.** Next SDK version: they reach gameplay as pointers
+  it, as keys are, however many frames run before that step (taps expire by steps, not by drawn frames), and it is
+  down in exactly one step, the first that reads it, also when a slow frame catches up with several steps.
+- **Fingers that land on no control go to the game.** They reach gameplay as pointers
   (`Input.Pointers`, `Input.Pointer`, `InputSystem.Events`) in canvas pixels; a finger that started on a control is
   never also a pointer.
 - **Cancellation.** A cancelled touch, a rotation or resize (the layout moves), focus loss and suspension release every
@@ -469,8 +456,6 @@ gives a short tick; iOS gives no vibration (SDL drives only controllers there, a
 nothing depends on it.
 
 ### Look: styles, skins and images
-
-> **Not in a published SDK yet**: styles, skins and images arrive with the next SDK release.
 
 The look of the controls is separate from how they work: a style or skin changes the drawing only, never where a
 control is, how large its touch area is, or which actions it presses. Each game can match its own art:
@@ -516,7 +501,7 @@ the shape, so a rounded square's corners are slightly outside it.
 
 ### Safe areas, density and orientation
 
-`IPlatform.Touch` (`ITouchScreen`; next SDK version: the platform's `ITouchScreen` capability, `Game.TryGetCapability<ITouchScreen>`) reports the drawable size, the **safe area** (the part no notch, rounded corner,
+The platform's `ITouchScreen` capability (`Game.TryGetCapability<ITouchScreen>`) reports the drawable size, the **safe area** (the part no notch, rounded corner,
 system bar or home indicator covers), pixels per dp and whether touch is the main input. Controls are anchored to the
 safe area. The game frame is also fitted inside the safe area (`FrameLayout.Fit`), and on a portrait screen it sits at
 the top so the controls get the space below. Rotating re-lays the controls out.
@@ -524,7 +509,7 @@ the top so the controls get the space below. Rotating re-lays the controls out.
 | Platform | Touches | Safe area | Density | Vibration |
 | --- | --- | --- | --- | --- |
 | SDL (Android, iOS, touch desktops) | Finger events, cancelled on focus loss and suspension | `SDL_GetWindowSafeArea` | `SDL_GetWindowDisplayScale` | Android: device vibrator through SDL's haptic API (`VIBRATE` permission); iOS, desktop: none |
-| Browser page (raylib) | Pointer Events (touch and pen) with pointer capture and coalesced moves; the mouse stays with raylib | CSS `env(safe-area-inset-*)` with `viewport-fit=cover` | canvas pixels per CSS pixel | `navigator.vibrate` (Android browsers) |
+| Browser page (SDL) | Pointer Events (touch and pen) with pointer capture and coalesced moves; the mouse stays with SDL | CSS `env(safe-area-inset-*)` with `viewport-fit=cover` | canvas pixels per CSS pixel | `navigator.vibrate` (Android browsers) |
 | Headless | `HeadlessTouchScreen.Down/Move/Up/Cancel` | settable | settable | counted |
 
 The browser page also keeps the game from scrolling, zooming (pinch and double tap), selecting text, opening a
@@ -565,7 +550,7 @@ also be added as an `IInputSource` through `PlatformRequest.ExtraInput` ([Backen
 Both backends add one more guarantee: a key pressed and released between two frames is reported as down until a
 simulation step has read it (see `RaylibInput.CollectTaps` in
 [`RaylibPlatform.cs`](../../src/MicroEngine.Raylib/RaylibPlatform.cs) and `SdlInput` in
-[`SdlInput.cs`](../../src/MicroEngine.Sdl/SdlInput.cs)); touch taps are kept the same way. Next SDK version: a press
+[`SdlInput.cs`](../../src/MicroEngine.Sdl/SdlInput.cs)); touch taps are kept the same way. A press
 shorter than a frame (a key, a gamepad button or a touch control) is down in exactly one step, the first that reads it,
 and released in the next, even when the frame catches up with several steps; a press still held stays down in every
 step. The engine's loop calls `VirtualControls.EndUpdate()` after each step for the touch controls; code that samples
@@ -601,19 +586,19 @@ Source: format documented on `InputScript` in [`src/MicroEngine/Core/GameRunner.
 | `N tap F control` | Finger F taps the control and lifts 2 updates later |
 | `N lift F` | Finger F lifts |
 | `N capture file.png` | Save the frame after update N into the capture directory |
-| `N prompts device [style]` | From update N, prompts name the controls of `keyboard`, `gamepad` (optionally `xbox`, `playstation`, `nintendo`) or `touch`; `auto` follows the player again (not in a published SDK yet) |
-| `N key K down` / `N key K up` | Next SDK version: the script's keyboard presses or releases key `K` (a `Key` name: `Space`, `A`, `Keypad5`) |
-| `N keytap K` | Next SDK version: key `K` goes down and up within one frame |
-| `N pad P add [style]` / `N pad P remove` | Next SDK version: the script's gamepad `P` (1 and up) connects (`xbox`, `playstation`, `nintendo`) or disconnects |
-| `N pad P B down` / `N pad P B up` | Next SDK version: button `B` (a `PadButton` name) of pad `P`; a pad not added yet connects as an Xbox pad |
-| `N pad P A value` | Next SDK version: axis `A` (a `PadAxis` name: `LeftX`, `RightTrigger`) of pad `P` moves to `value` |
-| `N mouse X,Y [down\|up]` | Next SDK version: the script's mouse moves to a point in canvas pixels, and its primary button goes down or up |
-| `N wheel D` | Next SDK version: the wheel turns `D` notches (positive away from the player) |
-| `N text T` | Next SDK version: the rest of the line is typed as text (read while text input is on; `#` starts a comment) |
+| `N prompts device [style]` | From update N, prompts name the controls of `keyboard`, `gamepad` (optionally `xbox`, `playstation`, `nintendo`) or `touch`; `auto` follows the player again |
+| `N key K down` / `N key K up` | The script's keyboard presses or releases key `K` (a `Key` name: `Space`, `A`, `Keypad5`) |
+| `N keytap K` | Key `K` goes down and up within one frame |
+| `N pad P add [style]` / `N pad P remove` | The script's gamepad `P` (1 and up) connects (`xbox`, `playstation`, `nintendo`) or disconnects |
+| `N pad P B down` / `N pad P B up` | Button `B` (a `PadButton` name) of pad `P`; a pad not added yet connects as an Xbox pad |
+| `N pad P A value` | Axis `A` (a `PadAxis` name: `LeftX`, `RightTrigger`) of pad `P` moves to `value` |
+| `N mouse X,Y [down\|up]` | The script's mouse moves to a point in canvas pixels, and its primary button goes down or up |
+| `N wheel D` | The wheel turns `D` notches (positive away from the player) |
+| `N text T` | The rest of the line is typed as text (read while text input is on; `#` starts a comment) |
 | `N quit` | End the run at update N |
 
 `@+N` instead of an absolute number means N updates after the previous command. A malformed line throws a
-`FormatException` naming the line. Next SDK version: the device commands send events from the script's own keyboard,
+`FormatException` naming the line. The device commands send events from the script's own keyboard,
 mouse and pads (`InputScript.ScriptKeyboard`, `ScriptMouse`, `ScriptPad(n)`) through the input layers, exactly as a
 backend's events, so a scripted run exercises the real input path, players and pairing included (a game can pair
 `ScriptPad(1)` with player 2). Scripts force actions through `InputMap.SetForced`, which tests can also call
@@ -625,9 +610,9 @@ On the desktop, a game started through `DesktopLauncher` plays a script when it 
 `--script FILE`; `--hidden`, `--mute` and `--captures DIR` run it without a visible window or sound and choose
 where captures go ([Backends](backends.md#choosing-a-platform)).
 
-On desktop a script implies a fixed step (one update per frame) and seed 1 unless `--seed` is given, so the run and its captures are reproducible.
-Next SDK version (not published yet: arrives with the next SDK version): the fixed step is the loop's deterministic
-time mode; `--time realtime` plays a script in real time instead, and a hidden window alone no longer implies either.
+A script runs in the loop's deterministic time (one update per frame) with seed 1 unless `--seed` is given, so the run
+and its captures are reproducible; `--time realtime` plays a script in real time instead, and a hidden window alone
+implies neither.
 
 ## Testing with touches
 
@@ -652,14 +637,12 @@ sound) move to the bottom centre, between the thumbs. Details: [Embedding](../ex
 
 ## Limitations
 
-- Published SDK: one gamepad at a time (the first connected; the next one takes over when it is unplugged) and no
-  rumble. Next SDK version: every pad is a device of its own; raylib reads pads 0 to 3 and has rumble only in
-  browsers.
+- raylib reads pads 0 to 3 and has no rumble; SDL reads every pad, each a device of its own.
 - The mouse is readable (`Input.Pointer`) but cannot be bound to actions; no game uses it.
-- No rebinding screen and no layout editor in the engine: bindings and touch layouts are code (next SDK version:
-  `ListenForPress`, `BindFrom` and `SaveBindings` are the parts of one).
+- No rebinding screen and no layout editor in the engine: bindings and touch layouts are code (`ListenForPress`,
+  `BindFrom` and `SaveBindings` are the parts of a rebinding screen).
 - iOS gives no haptic feedback (see Feedback). Android vibration needs the `VIBRATE` permission (the demo host has it).
-- Touch controls are drawn in screen pixels with simple shapes and the backend's own font (SDL's 8×8 debug font,
-  raylib's default font); there are no images or custom fonts on controls.
+- Touch control labels use the backend's own font (SDL's 8×8 debug font, raylib's default font); there are no custom
+  fonts on controls.
 - In browsers, gamepads come through the Gamepad API, whose support and button layout vary by browser and
   controller.

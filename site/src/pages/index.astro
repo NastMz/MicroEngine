@@ -35,7 +35,7 @@ const catalog = excerpt(catalogFile, /public static PlatformCatalog CreateCatalo
 // Meadow Run draws every pixel in code: four of its own captures, in the order a player meets them.
 // What MicroEngine draws, by status, and where the whole project stands: both read from the capability list.
 const graphics = graphicsIds.map(id => capabilities.find(c => c.id === id)!);
-const statuses: Availability[] = ['available', 'next', 'repository', 'planned'];
+const statuses: Availability[] = ['available', 'repository', 'planned'];
 const ledger = statuses.map(status => ({ status, items: byStatus(status) }));
 
 const meadow = demoGames.find(g => g.id === 'MeadowRun')!;
@@ -100,7 +100,7 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
     <dl class="status-key">
       {statuses.map(status => (
         <div data-status={socketStatus[status]}><dt><span class="status-mark" aria-hidden="true"></span>{availabilityLabels[status].label}</dt>
-          <dd>{status === 'available' ? 'seated: in the SDK on nuget.org' : status === 'next' ? 'seated: arrives with the next SDK version' : status === 'repository' ? 'an empty dashed socket: in no package' : 'an empty dotted socket: not built'}</dd></div>
+          <dd>{status === 'available' ? 'seated: in the SDK on nuget.org' : status === 'repository' ? 'an empty dashed socket: in no package' : 'an empty dotted socket: not built'}</dd></div>
       ))}
     </dl>
     <div class="split catalog">
@@ -144,8 +144,8 @@ const frames = await Promise.all(meadow.shots.slice(0, 4).map(async shot => {
   <section class="section wrap" id="graphics" aria-labelledby="graphics-title">
     <div class="section-head">
       <p class="label">Graphics</p>
-      <h2 id="graphics-title">Pixel art today, HD 2D next</h2>
-      <p>MicroEngine started with pixel-art games and draws them well: crisp scaling, sprites from code or files, tile maps, particles and light. The next SDK version adds a presentation for high-resolution 2D art and TrueType fonts. 3D exists only in the repository, and the site will not call it available until it ships.</p>
+      <h2 id="graphics-title">Pixel art and HD 2D</h2>
+      <p>MicroEngine started with pixel-art games and draws them well: crisp scaling, sprites from code or files, tile maps, particles and light. A presentation for high-resolution 2D art and TrueType fonts sits beside them. 3D exists only in the repository, and the site will not call it available until it ships.</p>
     </div>
     <FrameStrip frames={frames} caption="Meadow Run, a demo whose art and music are all generated in code: the title screen, the world map, Sunny Meadow and Crystal Caves." />
     <ul class="graphics-sockets">

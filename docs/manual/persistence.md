@@ -10,16 +10,16 @@ refused writes return `false`.
 
 | Member | Behaviour |
 | --- | --- |
-| `new SaveStore(gameId, directory = null)` | Files under `directory`, or the launcher's default storage, or `DefaultDirectory(gameId)` |
+| `new SaveStore(gameId, directory = null)` | Files under `directory`, or the platform's default medium (`DefaultStorage(gameId)`) |
 | `new SaveStore(ISaveStorage storage)` | Any storage implementation |
 | `Save<T>(slot, data)` | Serialises `data` to indented JSON and writes the slot whole; `false` if refused |
 | `Load<T>(slot)` | The object, or `null` when missing, corrupt or unreadable |
 | `Exists(slot)`, `Delete(slot)` | Slot management |
 | `Directory` | The folder (file storage) or a description of the medium |
-| `SaveStore.DefaultStorage` | Static factory chosen by a launcher before any game is built. Next SDK version: a method, `DefaultStorage(gameId)`, that returns the platform's default medium (below); a host composes another one instead (`host.Storage`) |
+| `SaveStore.DefaultStorage(gameId)` | The platform's default medium (below); a host composes another one instead (`host.Storage`) |
 | `SaveStore.DefaultDirectory(gameId)` | The user's save folder for a game on this system (see below) |
-| `host.SaveStore(gameId)` | Next SDK version: a store on the composition's medium (`host.Storage`), else the platform's default ([One composition for every platform](backends.md#one-composition-for-every-platform)) |
-| `new SavesModule(store)` | Next SDK version: saves as an optional engine module (namespace `MicroEngine.Saves`): `builder.Add(new SavesModule(store))` registers the store as the engine's `SaveStore` service. It runs no frame system and writes nothing by itself. A game that declares achievements gets it with their store; a game that uses neither has no store service and writes no file |
+| `host.SaveStore(gameId)` | A store on the composition's medium (`host.Storage`), else the platform's default ([One composition for every platform](backends.md#one-composition-for-every-platform)) |
+| `new SavesModule(store)` | Saves as an optional engine module (namespace `MicroEngine.Saves`): `builder.Add(new SavesModule(store))` registers the store as the engine's `SaveStore` service. It runs no frame system and writes nothing by itself. A game that declares achievements gets it with their store; a game that uses neither has no store service and writes no file |
 
 Courtyard Key keeps its adventure in one slot:
 
@@ -46,9 +46,7 @@ Pass a `directory` in tests so they never touch the player's real saves.
 public SaveStore(string gameId, string? directory = null)
 {
     ArgumentException.ThrowIfNullOrWhiteSpace(gameId);
-    _storage = directory is null && DefaultStorage is { } create
-        ? create(gameId)
-        : new FileSaveStorage(directory ?? DefaultDirectory(gameId));
+    _storage = directory is null ? DefaultStorage(gameId) : new FileSaveStorage(directory);
 }
 ```
 
@@ -59,24 +57,21 @@ Source: [`src/MicroEngine.Saves/SaveStore.cs`](../../src/MicroEngine.Saves/SaveS
 | Windows (default) | `FileSaveStorage` | `%LOCALAPPDATA%\MicroEngine\<gameId>\<slot>.json` |
 | Linux and other Unix systems (default) | `FileSaveStorage` | `$XDG_DATA_HOME/MicroEngine/<gameId>/<slot>.json`, or `~/.local/share/...` when `XDG_DATA_HOME` is unset or not an absolute path |
 | macOS (default) | `FileSaveStorage` | `~/Library/Application Support/MicroEngine/<gameId>/<slot>.json` |
+| Android | `FileSaveStorage` | the app's private files folder, `files/MicroEngine/<gameId>/<slot>.json` |
+| iOS | `FileSaveStorage` | `Library/Application Support/MicroEngine/<gameId>/<slot>.json` |
 | Explicit directory (tests, dev tools) | `FileSaveStorage` | `<directory>/<slot>.json` |
-| Browser | `BrowserSaveStorage` | `localStorage` key `microengine/<gameId>/<slot>` |
+| Browser | `BrowserStorage` (`MicroEngine.Platform`) | `localStorage` key `microengine/<gameId>/<slot>` |
 
-`SaveStore.DefaultDirectory(gameId)` returns that folder. It is always an absolute path, also on a new account
+`SaveStore.DefaultDirectory(gameId)` returns that folder outside browsers. It is always an absolute path, also on a new account
 where the data folder does not exist yet: the first save creates it, so saves never land in the working directory.
 Only a system with no home folder at all falls back to the temporary folder.
 
 `FileSaveStorage` writes a temporary file and moves it over the slot, so a crash never leaves a half-written save.
-`BrowserLauncher.CreateSession` sets `SaveStore.DefaultStorage` to `BrowserSaveStorage` before any game is built, so
-games construct their store exactly as on desktop. An explicit
-`directory` always means files.
+An explicit `directory` always means files.
 
-Next SDK version (not published yet: arrives with the next SDK version): nothing is set for the process. A store
-created without a directory takes the platform's default medium, `SaveStore.DefaultStorage(gameId)`: the page's
-`localStorage` in browsers (`MicroEngine.Platform.BrowserStorage`, the same keys), files in `DefaultDirectory(gameId)`
-elsewhere. The phone folders are part of that rule: the app's private files folder on Android
-(`files/MicroEngine/<gameId>`) and `Library/Application Support/MicroEngine/<gameId>` on iOS, where phone apps kept saves
-before. Games still construct their store exactly as on desktop; a host that wants another medium composes it
+Nothing is set for the process. A store created without a directory takes the platform's default medium,
+`SaveStore.DefaultStorage(gameId)`: the page's `localStorage` in browsers, files in `DefaultDirectory(gameId)`
+elsewhere, so games construct their store the same way on every platform. A host that wants another medium composes it
 (`host.Storage`) and the game creates its store with `host.SaveStore(gameId)`.
 
 ## `ISaveStorage`
@@ -101,8 +96,8 @@ Source: [`src/MicroEngine.Saves/SaveStore.cs`](../../src/MicroEngine.Saves/SaveS
 
 Implementations report failures as `IOException` or `UnauthorizedAccessException`; the browser storage converts
 JavaScript storage errors (quota, privacy mode) into `IOException`. A new medium (a cloud service, a console save
-API) would implement this interface and be installed through `SaveStore.DefaultStorage` or the
-`SaveStore(ISaveStorage)` constructor (next SDK version: through the composition's `host.Storage` or the constructor).
+API) would implement this interface and be installed through the composition's `host.Storage` or the
+`SaveStore(ISaveStorage)` constructor.
 No such implementation exists today.
 
 ## Failure handling

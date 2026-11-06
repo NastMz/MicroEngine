@@ -13,19 +13,14 @@ microengine package web
 ```
 
 The first command installs .NET's WebAssembly build tools, once per machine. `package web` writes
-`dist/<Game>-<version>-web/` and a ZIP of the same files. Every game that references `MicroEngine.Desktop` or
-`MicroEngine.Raylib` can be packaged: in browsers the game runs on the raylib platform, compiled to WebAssembly, with no
-code change. A game that references only `MicroEngine.Sdl` cannot, because SDL is not built for browsers.
-
-Next SDK version (not published yet): the game runs on the SDL platform compiled to WebAssembly (SDL for the browser comes inside the
-`MicroEngine.Sdl` package), so every game that references `MicroEngine.Sdl` or `MicroEngine.Desktop` can be packaged,
-again with no code change. The page is the same: start by a gesture, keyboard, mouse, gamepads, touch controls,
-safe-area insets, fullscreen, the sound button, saves and the messages to the parent page are unchanged.
+`dist/<Game>-<version>-web/` and a ZIP of the same files. In browsers the game runs on the SDL platform compiled to
+WebAssembly (SDL for the browser comes inside the `MicroEngine.Sdl` package), so every game that references
+`MicroEngine.Sdl` or `MicroEngine.Desktop` can be packaged, with no code change.
 
 `microengine package web --dev` builds a development package that also ships the game's input scripts
 (`MicroEngineScriptsDir`) and reads developer options from the URL (see [the iframe](#the-iframe)); never publish one.
 
-Next SDK version (not published yet: arrives with the next SDK version): the package runs the game's `Configure`
+The package runs the game's `Configure`
 entry point, the same composition its desktop `Program.cs` hands to `DesktopLauncher.Run`, so platforms, request
 changes and engine services the game composes there reach the browser too
 ([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)). `microengine` finds
@@ -42,7 +37,7 @@ A package for one game contains:
 | --- | --- |
 | `index.html`, `host.css`, `main.js` | The page: loading, start, end and error screens, fullscreen and sound buttons |
 | `game.json` | `{ "id", "title", "dev" }`, read by the page and available to whoever embeds it |
-| `_framework/` | .NET runtime, raylib (next SDK version: SDL 3) and the game assemblies, with `.br` and `.gz` copies |
+| `_framework/` | .NET runtime, SDL 3 and the game assemblies, with `.br` and `.gz` copies |
 | `content.txt`, `Content/` | The game's asset files and their list (absent for fully procedural games) |
 
 Upload the folder to any static host (GitHub Pages, Netlify, itch.io as an HTML game, an S3 bucket, nginx). The server

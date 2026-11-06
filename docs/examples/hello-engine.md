@@ -48,9 +48,7 @@ using MicroEngine.Scenes;
 return DesktopLauncher.Run(new HelloGame(), args);
 ```
 
-Next SDK version (not published yet: arrives with the next SDK version): the synthesizer (`Synth`, `SfxParams`,
-`Wave`, `Song`, `Instrument`) is in the `MicroEngine.Audio.Retro` namespace. With the published SDK it is in
-`MicroEngine.Audio`: leave out the `using MicroEngine.Audio.Retro;` line.
+The synthesizer (`Synth`, `SfxParams`, `Wave`, `Song`, `Instrument`) is in the `MicroEngine.Audio.Retro` namespace.
 
 The program is a top-level statement. `DesktopLauncher.Run` parses the launcher flags (`--script`, `--hidden`,
 `--captures`, ...), creates a window on the default platform (SDL) sized from the game's settings, runs the loop and returns a process

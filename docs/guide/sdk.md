@@ -17,32 +17,17 @@ Alpha means two things:
 
 | Package | Contains | Depends on |
 | --- | --- | --- |
-| `MicroEngine` | the core (loop, scenes, input actions, graphics model, world, audio synthesis, UI, saves, achievements, headless platform) and the [identity](app-identity.md) build targets | .NET only |
-| `MicroEngine.Sdl` | the SDL 3 platform (desktop and phones) | `MicroEngine`, `ppy.SDL3-CS`, `NVorbis` |
-| `MicroEngine.Raylib` | the raylib platform (desktop; browsers through WebAssembly), with raylib built for .NET's `wasm-tools`; desktop only from the next SDK version | `MicroEngine`, `Raylib-cs` |
+| `MicroEngine` | the engine as separate modules: `MicroEngine.dll` (the `Game` class, scenes and testing support) beside the kernel, platform contract, hosting, graphics (the device contract and 2D), text, content, input, touch controls, audio, the scene world, physics with its tile backend, UI, saves and achievements, each its own assembly; the headless platform and the [identity](app-identity.md) build targets | .NET only |
+| `MicroEngine.Sdl` | the SDL 3 platform for desktops, phones and browsers (SDL 3 compiled to WebAssembly comes inside it), and the opt-in SDL_GPU graphics device for desktops ([the graphics device](../manual/rendering.md#the-graphics-device)) | `MicroEngine`, `ppy.SDL3-CS`, `NVorbis` |
+| `MicroEngine.Raylib` | the raylib platform (desktops only) | `MicroEngine`, `Raylib-cs` |
 | `MicroEngine.Desktop` | `DesktopLauncher` and the official desktop catalog (`sdl`, `raylib`, `sdl-software`, `headless`) | `MicroEngine.Sdl`, `MicroEngine.Raylib` |
-| `MicroEngine.Cli` | the [`microengine` tool](cli.md) and the browser, Android and iOS hosts it builds with | — |
+| `MicroEngine.Cli` | the [`microengine` tool](cli.md), with [`microengine shaders`](cli.md#shaders), and the browser, Android and iOS hosts it builds with | — |
 | `MicroEngine.Templates` | `dotnet new microengine-game` | — |
 
 A game installs only what it uses: one that ships SDL only references `MicroEngine.Sdl` and gets no raylib file.
 Packages carry symbols (`.snupkg`, with Source Link to the commit), XML documentation, a README and the MIT
 licence. The demo games are not in any package: they stay in the repository under their own terms
 ([Licensing](licensing.md)).
-
-### In the next SDK version
-
-Not published yet: arrives with the next SDK version. The same six packages, with different contents:
-
-- `MicroEngine` carries the engine as separate modules: `MicroEngine.dll` (the `Game` class, scenes and testing
-  support) beside the kernel, platform contract, hosting, graphics (the device contract and 2D), text, content, input,
-  touch controls, audio, the scene world, physics with its tile backend, UI, saves and achievements, each its own
-  assembly. A type that moved keeps its name and is forwarded, so games keep the same package references
-  ([migration notes](../migrations.md)).
-- `MicroEngine.Sdl` is the platform for desktops, phones **and browsers** (SDL 3 compiled to WebAssembly comes inside
-  it), and carries the opt-in SDL_GPU graphics device for desktops
-  ([the graphics device](../manual/rendering.md#the-graphics-device)).
-- `MicroEngine.Raylib` is a desktop platform only.
-- `MicroEngine.Cli` adds [`microengine shaders`](cli.md#shaders).
 
 Two parts of the engine stay out of every published package: the 3D path
 ([The 3D path](../manual/rendering.md#the-3d-path)) is in the repository only, and the Box2D physics backend
@@ -64,5 +49,5 @@ Two parts of the engine stay out of every published package: the 3D path
 ## Published version and development
 
 The documentation describes the published SDK, **0.4.0-alpha.2**, and every code sample on this site is built against
-the packages on nuget.org. Work merged into the engine's repository after a release reaches the documentation's
-examples only when it is published; until then a page that mentions it says it is not in a published version yet.
+the packages on nuget.org. The documentation and the SDK are published together, so a page never describes an engine
+the packages do not have.

@@ -20,7 +20,7 @@ const verdict = (row: (typeof platforms)[number]) => (row.support === 'supported
     <header class="page-head">
       <p class="eyebrow"><FamilyIcon family="platform" size={14} /><span>Platform hosts</span></p>
       <h1>One game project, six hosts.</h1>
-      <p class="lede">The game's code is the same everywhere: it talks to one platform contract, and a host seats underneath. SDL 3 is the platform on desktops and phones; in browsers the published SDK runs raylib compiled to WebAssembly, and the next SDK version runs SDL 3 there too. <code>microengine package</code> builds what players install.</p>
+      <p class="lede">The game's code is the same everywhere: it talks to one platform contract, and a host seats underneath. SDL 3 is the platform on desktops, phones and browsers, where it runs compiled to WebAssembly. <code>microengine package</code> builds what players install.</p>
     </header>
 
     <figure class="board" aria-labelledby="board-caption">
@@ -48,9 +48,6 @@ const verdict = (row: (typeof platforms)[number]) => (row.support === 'supported
           </div>
           <dl class="facts">
             {rows(row).map(([name, value]) => <div><dt>{name}</dt><dd>{value}</dd></div>)}
-            {row.runtimeNext && (
-              <div data-status="next"><dt><span class="status-mark" aria-hidden="true"></span>Next SDK version</dt><dd>{row.runtimeNext}</dd></div>
-            )}
           </dl>
           <p class="demos">
             {target
@@ -110,7 +107,6 @@ const verdict = (row: (typeof platforms)[number]) => (row.support === 'supported
   .facts dt { display: inline-flex; align-items: center; gap: var(--space-2xs); font-family: var(--font-mono); font-size: var(--text-xs);
     color: var(--color-ink-2); text-transform: uppercase; letter-spacing: var(--tracking-label); }
   .facts dd { margin: 0; font-size: var(--text-sm); line-height: var(--leading-snug); overflow-wrap: break-word; }
-  .facts [data-status='next'] dt { color: var(--status-next); }
   .demos, .foot { font-size: var(--text-sm); color: var(--color-ink-2); }
 
   @media (min-width: 40rem) {

@@ -32,20 +32,19 @@ Neon Rift, for example, draws at 480x270.
 
 Parsed by `GameLauncher.Run`, which `DesktopLauncher.Run` calls
 ([`src/MicroEngine/Core/GameLauncher.cs`](../../src/MicroEngine/Core/GameLauncher.cs)). A game that
-starts through `DesktopLauncher` accepts them on its command line. Next SDK version (not published yet: arrives with the
-next SDK version): the flags are parsed into a `LaunchRequest` (namespace `MicroEngine.Hosting`), the launch model
+starts through `DesktopLauncher` accepts them on its command line. The flags are parsed into a `LaunchRequest` (namespace `MicroEngine.Hosting`), the launch model
 every host shares: a browser development package's `script=` and a phone app's script follow the same rules as
 `--script` (deterministic time, seed 1, no sound device unless asked for), and a script that cannot be parsed exits
 with code 2.
 
 | Flag | Effect |
 | --- | --- |
-| `--script FILE` | Plays scripted input ([format](../examples/testing.md#level-3-input-scripts-and-captures)); implies a fixed step and seed 1 unless `--seed` is given (next SDK version: deterministic time unless `--time realtime`) |
+| `--script FILE` | Plays scripted input ([format](../examples/testing.md#level-3-input-scripts-and-captures)); implies deterministic time unless `--time realtime`, and seed 1 unless `--seed` is given |
 | `--captures DIR` | Directory for script `capture` commands (default `captures`) |
-| `--platform NAME` | Runs on that platform of the catalog (`sdl`, `raylib`, `sdl-software`, `headless`); default: `MICROENGINE_PLATFORM`, else the first that can run here (next SDK version: else every platform that can run here except `headless`, in order, until one starts, printing why each one failed) |
+| `--platform NAME` | Runs on that platform of the catalog (`sdl`, `raylib`, `sdl-software`, `headless`); default: `MICROENGINE_PLATFORM`, else every platform that can run here except `headless`, in order, until one starts, printing why each one failed |
 | `--list-platforms` | Prints the catalog, with the reason a platform cannot run here, and exits |
-| `--hidden` | Renders in a hidden window with a fixed step; captures still work (next SDK version: a hidden window implies nothing about time or sound: it runs in real time and may open a sound device unless the run passes `--time deterministic`, `--script`, `--audio silent` or `--mute`) |
-| `--time realtime\|deterministic` | Next SDK version: how the loop advances time. `realtime` follows the wall clock; `deterministic` runs exactly one fixed step per frame. Default: deterministic with `--script`, else the game's choice, else the platform's stated preset (headless: deterministic), else real time. A deterministic run also asks the platform not to wait for the display and, with `--audio auto`, for no sound device ([Time](../manual/lifecycle.md#time)) |
+| `--hidden` | Renders in a hidden window; captures still work. A hidden window implies nothing about time or sound: it runs in real time and may open a sound device unless the run passes `--time deterministic`, `--script`, `--audio silent` or `--mute` |
+| `--time realtime\|deterministic` | How the loop advances time. `realtime` follows the wall clock; `deterministic` runs exactly one fixed step per frame. Default: deterministic with `--script`, else the game's choice, else the platform's stated preset (headless: deterministic), else real time. A deterministic run also asks the platform not to wait for the display and, with `--audio auto`, for no sound device ([Time](../manual/lifecycle.md#time)) |
 | `--headless` | Runs on `HeadlessPlatform`, without a window; no capture files are written; the same as `--platform headless` |
 | `--frames N` | Stops after N updates |
 | `--seed N` | Seed for `Game.Random` (otherwise random, or 1 under a script) |
@@ -53,20 +52,20 @@ with code 2.
 | `--mute` | Sets sound-effect and music volume to zero |
 | `--report` | Before the game starts, prints `platform: <name>` (with SDL's renderer, for example `sdl (SDL renderer metal)`) and `audio: available` or `unavailable`; used by the package checks |
 
-Next SDK version (not published yet: arrives with the next SDK version):
+Sound, measurement and graphics flags:
 
 | Flag | Effect |
 | --- | --- |
-| `--audio auto\|device\|silent` | Where sound may go. `auto` (default): a sound device for visible real-time runs only, none for `--hidden`, `--script` or `--headless` runs, so tests are never heard (next SDK version: a device for every real-time run, hidden ones included, none for deterministic-time runs: `--script`, `--time deterministic`, `--headless`); `device`: always (checks that must prove a device opens); `silent`: never |
+| `--audio auto\|device\|silent` | Where sound may go. `auto` (default): a device for every real-time run, hidden ones included, none for deterministic-time runs (`--script`, `--time deterministic`, `--headless`), so tests are never heard; `device`: always (checks that must prove a device opens); `silent`: never |
 | `--audio-capture FILE` | Plays nothing aloud and writes what would have been heard as a WAV (stereo, 44.1 kHz), mixed step by step from game time: the same run gives the same file |
 | `--profile FILE` | Measures every frame (time between frames, events, update, drawing, presenting, steps, allocations, collections) and the start phases; prints a summary and writes JSON, or CSV when FILE ends in `.csv`. The first 60 frames are left out of the summary |
 | `--state-trace FILE` | Hashes the simulation state after every fixed step and writes one line per step (update, hash, then each section's hash) when the run ends; two runs of the same build, script and seed write the same file ([State traces](../examples/testing.md#recording-and-comparing-traces)) |
 | `--pacing display\|measured` | `display` (default): when VSync paces the frames, frame time is counted in whole refresh periods, which removes the stutter of irregular wake-ups; `measured`: frame time as measured |
 | `--gpu auto\|high-performance\|power-saving` | The GPU to ask for on a machine with two. SDL passes it to its Metal and GPU renderers only; Direct3D 11 and OpenGL use the GPU the system assigns to the application (on Windows: Settings, Display, Graphics) |
 | `--renderer NAME[,NAME...]` | Graphics APIs to try first, in order (SDL: `direct3d11`, `direct3d12`, `vulkan`, `opengl`, `metal`, `gpu`...); when none can start, SDL chooses and the reason is printed |
-| `--graphics NAME` | Next SDK version (not published yet). The graphics device to draw with, on platforms that offer several: SDL's `sdl-renderer` (its default) or `sdl-gpu` (custom shaders, depth and the 3D path; Direct3D 12, Vulkan or Metal). Replaces `GraphicsSettings.Device` for one run. A platform that does not offer the device refuses to start and names the ones it has; `sdl-gpu` where SDL_GPU cannot start stops with the reason, never falling back to another device. With `sdl-gpu`, `--renderer direct3d12`, `vulkan` or `metal` chooses its API |
+| `--graphics NAME` | The graphics device to draw with, on platforms that offer several: SDL's `sdl-renderer` (its default) or `sdl-gpu` (custom shaders, depth and the 3D path; Direct3D 12, Vulkan or Metal). Replaces `GraphicsSettings.Device` for one run. A platform that does not offer the device refuses to start and names the ones it has; `sdl-gpu` where SDL_GPU cannot start stops with the reason, never falling back to another device. With `sdl-gpu`, `--renderer direct3d12`, `vulkan` or `metal` chooses its API |
 | `--vsync on\|off` | Whether frames wait for the display's refresh. Off: frames run as fast as they can, or at `--fps-limit` |
-| `--fps-limit N` | Draws at most N frames per second, with or without VSync; `0` removes a limit the game sets. Scripted and hidden runs are never limited (next SDK version: deterministic-time runs are never limited) |
+| `--fps-limit N` | Draws at most N frames per second, with or without VSync; `0` removes a limit the game sets. Deterministic-time runs are never limited |
 | `--window windowed\|fullscreen\|exclusive` | Window mode: a window, borderless full screen on its display, or exclusive full screen at the display's own mode |
 | `--display N` | Opens on display N, counted from 0 (the order the system lists them in) |
 
@@ -115,9 +114,7 @@ package. What a package exposes to the page that serves or embeds it:
 | URL parameters | Ignored by release packages. Development packages (`--dev`) read `UPPER_CASE=value` environment variables, `script=<name>` and `autostart=1` from the URL |
 | iframe `allow="fullscreen; autoplay"` | Enables the package's Fullscreen button and Alt+Enter inside an iframe ([Embedding](../examples/embedding.md#the-iframe)) |
 
-The browser host builds the game with the project's `MicroEngineGameFactory` expression, which should match its
-desktop `Program.cs` ([Name, id, version and icon](../guide/app-identity.md)). Next SDK version (not published yet:
-arrives with the next SDK version): the browser, Android and iOS hosts call the game's `Configure` entry point, the same
+The browser, Android and iOS hosts call the game's `Configure` entry point, the same
 method its desktop `Program.cs` passes to `DesktopLauncher.Run`, so they run exactly what the desktop build runs
 ([One composition for every platform](../manual/backends.md#one-composition-for-every-platform));
 `MicroEngineGameFactory` is deprecated and used only by a game without one. A scripted run in a development package
@@ -143,19 +140,19 @@ From `InputMap.CreateDefault()` in [`src/MicroEngine.Input/InputMap.cs`](../../s
 | Input bindings | Override `Game.CreateInput()` and call `Bind` | Meadow Run adds `jump` and `run` ([patterns](../examples/patterns.md#actions-never-keys)) |
 | Scenes and overlays | Subclass `Scene`; override `IsOverlay`, `BlocksUpdateBelow`, `Enter`, `Exit`, `Resume` | Pause menus in every game |
 | Transitions | Subclass `Transition(float duration)` and implement `Draw` | Built-ins: `Fade`, `Iris`, `Diamonds`, `Wipe` |
-| Entities | Subclass `Entity`; override `Update`, `Draw`, `Depth`, `Removed` (removed in the next SDK version: keep a scene's objects in `Scene.Objects`, an `IWorld`; [The scene world](../manual/scenes.md#the-scene-world)) | Courtyard Key's `Actor` |
+| Scene objects | Keep them in `Scene.Objects`, an `IWorld`: create an entity and attach your own class to it ([The scene world](../manual/scenes.md#the-scene-world)) | Courtyard Key's `Actor` |
 | UI style | Pass a `UiTheme` to `UseAchievements`, `AchievementsScene` and widgets | Each game's theme |
 | Achievements | `Achievement.Icon`; `AchievementToasts.Top` and `Heading`; `AchievementsScene` `Title`, `CloseActions`, `Moved`, `Closed` | Neon Rift closes its list with `fire` too |
 | Lighting | `new LightMap(device, glowImage)` with your own glow image | Meadow Run's banded halos |
-| Content location | `new ContentFolder(root)` (default `<exe dir>/Content`); next SDK version: `host.Content` in the composition, for every host | Tests can point at another folder |
-| Save medium | Implement `ISaveStorage`; pass it to `SaveStore`, or set `SaveStore.DefaultStorage` before games are built (next SDK version: `host.Storage` in the composition and `host.SaveStore(gameId)`) | `BrowserSaveStorage` (next SDK version: `BrowserStorage`) |
+| Content location | `host.Content` in the composition, for every host (default: the `Content` folder next to the program) | Tests can point at another folder |
+| Save medium | Implement `IStorage` (namespace `MicroEngine.Platform`); pass it to `SaveStore`, or set `host.Storage` in the composition and use `host.SaveStore(gameId)` | `BrowserStorage`, `FileSaveStorage` |
 | Save location | `new SaveStore(gameId, directory)` | Every game's `*_SAVE_DIR` variable |
-| Backend | Implement `IPlatform` and its device interfaces, offered as a `PlatformProfile` (next SDK version: `IPlatform` extends the host contract, `IPlatformHost`, and optional features are capabilities) | `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform` ([backends](../manual/backends.md)) |
-| Host loop | Drive `GameLoop` or `GameSession` yourself, one `Tick` per frame (next SDK version: `GameHost` gives a host of your own the shared launch rules and the game's composition) | The browser host |
+| Backend | Implement `IPlatform` and its device interfaces, offered as a `PlatformProfile`; `IPlatform` extends the host contract, `IPlatformHost`, and optional features are capabilities | `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform` ([backends](../manual/backends.md)) |
+| Host loop | Drive `GameLoop` or `GameSession` yourself, one `Tick` per frame; `GameHost` gives a host of your own the shared launch rules and the game's composition | The browser host |
 
 ### Platform request options
 
-Next SDK version (not published yet: arrives with the next SDK version). A host asks a platform for what it needs with
+A host asks a platform for what it needs with
 a `PlatformRequest`; every option is explicit, and none depends on how the loop advances time:
 
 | Option | Default | Effect |
@@ -166,7 +163,7 @@ a `PlatformRequest`; every option is explicit, and none depends on how the loop 
 | `StartGamepadsAfterFirstFrame` | false | Starts gamepads only after the first presented frame, so a slow gamepad start never delays the window. The launcher sets it for real-time runs whose game shows a start screen |
 | `AudioOutput` | `Automatic` | `Automatic` and `Device` open a sound device, `Silent` opens none. The launcher's `--audio auto` asks for `Silent` in deterministic runs |
 | `Mute` | false | No sound device |
-| `CaptureScale` | 3 (next SDK version: the presentation's `CaptureScale`, 3 for pixel art and 1 for high-resolution 2D) | Size factor of screenshots |
+| `CaptureScale` | The presentation's `CaptureScale` (3 for pixel art, 1 for high-resolution 2D) | Size factor of screenshots |
 | `Audio` | null | An audio device the platform uses instead of its own (where its profile allows it) |
 | `ExtraInput` | none | Input sources read together with the platform's (where its profile allows it) |
 | `Identity` | null | The game's application identity (title, id, icon, orientation) |

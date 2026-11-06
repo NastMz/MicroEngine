@@ -9,6 +9,6 @@ undeclared request throws `PhysicsCapabilityException`.
 using var physics = new Box2DPhysicsWorld2D(new Box2DWorldOptions { UnitsPerMeter = 32, YDown = true });
 ```
 
-Optional and not published yet: it is not one of the SDK packages. The package carries the native library for
+Optional and in the repository only: it is not one of the SDK packages. The package carries the native library for
 win-x64, linux-x64, osx-arm64, osx-x64, android-arm64, android-x64 and ios-arm64 (`runtimes/<rid>/native`) and the
 static libraries browser builds link (`buildTransitive` adds them). Box2D is MIT-licensed (`LICENSE-box2d.txt`).

@@ -61,8 +61,7 @@ Builds a file a player installs, into `dist/` next to the project (or `--out`), 
 | `--debug-key` | `android`: sign with this machine's debug key, for testing on your own devices only |
 | `--version-code N` | `android`, `ios`: the build number stores compare (default: minutes from 2026-01-01 to the commit, or to now outside Git, so later builds install over earlier ones) |
 | `--dev` | `web`: a development build that also ships input scripts and accepts URL parameters |
-| `--raylib-wasm FILE` | `web`: the raylib library to link (default: the one inside the `MicroEngine.Raylib` package); removed in the next SDK version, whose web packages run on SDL |
-| `--sdl-wasm FILE` | `web`, next SDK version (not published yet): the SDL library to link (default: the one inside the `MicroEngine.Sdl` package) |
+| `--sdl-wasm FILE` | `web`: the SDL library to link (default: the one inside the `MicroEngine.Sdl` package) |
 | `--key LABEL` | a label recorded in `build-info.json`, for your own release tooling (default `local`) |
 
 `MICROENGINE_DOTNET` names another `dotnet` to build with (for example a private SDK with the `wasm-tools`
@@ -77,7 +76,7 @@ It changes nothing.
 
 ## shaders
 
-Not published yet: arrives with the next SDK version. `microengine shaders` compiles custom shaders ahead of time, for
+`microengine shaders` compiles custom shaders ahead of time, for
 devices that declare custom shaders (the programmable SDL_GPU device; see
 [the graphics device](../manual/rendering.md#the-graphics-device)). Each `name.vert.hlsl` or `name.frag.hlsl` in the
 game's `Shaders` folder (or `--source`) becomes `name.vert.shader` in `Content/shaders` (or `--out`), holding DXIL for
