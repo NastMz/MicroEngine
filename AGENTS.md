@@ -55,7 +55,11 @@ sufficient without previous chats or agent memory.
   `samples/Examples`, `samples/HelloEngine`), which reference the published packages and build against the source in the
   repository; a fenced block after `<!-- code: path#region -->` must equal that file region (the site build checks it;
   `node site/scripts/snippets.mjs --write` refreshes them). `docs/api` is generated from the XML comments by
-  `node site/scripts/api-reference.mjs`; never edit it by hand. A capability merged but not yet published is labelled
-  as such on any page that mentions it.
+  `node site/scripts/api-reference.mjs`; never edit it by hand.
+- Documentation is written in the present tense, as if the SDK that contains it were published: never "not published
+  yet", "next SDK" or "coming in". A pull request that changes the SDK lists the change under `## Next release` in
+  `docs/guide/release-notes.md` (and breaking changes under `## Next release` in `docs/migrations.md`); while that
+  section has content, production keeps its deployment, and the SDK release that ships it deploys the site
+  ([documentation and releases](docs/releasing.md#documentation-and-releases)).
 - Technical artifacts in English. Conventional Commits, no AI attribution lines.
 - Branch names: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`. No force-push, PR or release without the owner asking.

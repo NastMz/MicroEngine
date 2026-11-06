@@ -6,11 +6,15 @@
 //   documented  sdk/version.json: the version the documentation, the samples and the install commands present
 //   public      what nuget.org serves (immutable once pushed); the production site deploys only when the documented
 //               version is public, so between merging a release and publishing it production keeps its deployment
+//   pending     the release notes' "## Next release" section has content: SDK changes merged since the documented
+//               version. The documentation describes them as published, so production keeps its deployment until
+//               the release that ships them (docs/releasing.md, "Documentation and releases")
 //
-//   node sdk/version.mjs status [--public] [--json]   the three versions; --public asks nuget.org
+//   node sdk/version.mjs status [--public] [--json]   the three versions and pending; --public asks nuget.org
 //   node sdk/version.mjs check                        every active reference names the documented version
-//   node sdk/version.mjs release <version>            prepares a release: prepared = documented = <version>, and every
-//                                                     active reference rewritten (never a release or migration note)
+//   node sdk/version.mjs release <version>            prepares a release: prepared = documented = <version>, every
+//                                                     "## Next release" section renamed to the version, and every
+//                                                     active reference rewritten (never an older release or migration note)
 //   node sdk/version.mjs wait-public <version> [--timeout <seconds>]   until nuget.org serves all six packages
 //   node sdk/version.mjs packages                     the package ids, in push order
 //   node sdk/version.mjs release-plan --sha <commit> [--event <event>]   what sdk-release.yml has left to do
@@ -96,6 +100,30 @@ export function releasedVersions(root = repoRoot) {
   return [...read(root, 'docs/guide/release-notes.md').matchAll(new RegExp(`^## (${semver})\\s*$`, 'gm'))].map(m => m[1]);
 }
 
+/** The notes that hold a "## Next release" section: what merged on main since the documented version, written as published. */
+export const notesFiles = ['docs/guide/release-notes.md', 'docs/migrations.md'];
+const nextHeading = /^## Next release[ \t]*\r?$/m;
+
+/** The body of a file's "## Next release" section (up to the next `## ` heading), or null when it has none. */
+function nextSection(text) {
+  const heading = text.match(nextHeading);
+  if (!heading) return null;
+  const start = heading.index + heading[0].length;
+  const end = text.slice(start).search(/^## /m);
+  return text.slice(start, end < 0 ? text.length : start + end);
+}
+
+/**
+ * Whether main holds SDK changes nuget.org does not serve yet: the release notes' "## Next release" section has
+ * content. The documentation already describes them as published, so production waits for the release that ships them.
+ */
+export function pendingChanges(root = repoRoot) {
+  return Boolean(nextSection(read(root, 'docs/guide/release-notes.md'))?.trim());
+}
+
+/** The anchor a site heading gets for a version: 0.5.0-alpha.1 -> 050-alpha1. */
+export const versionAnchor = version => version.toLowerCase().replace(/[^0-9a-z-]/g, '');
+
 /** Character ranges of the paragraphs marked as history in a Markdown text: the marker alone on its line, above them. */
 function historyRanges(text) {
   const ranges = [];
@@ -127,6 +155,13 @@ export function check(root = repoRoot) {
   const problems = [];
   const documented = documentedVersion(root), prepared = preparedVersion(root), released = releasedVersions(root);
   if (!released.includes(documented)) problems.push(`docs/guide/release-notes.md has no "## ${documented}" section for the documented version.`);
+  for (const file of notesFiles) {
+    if (!fs.existsSync(path.join(root, file))) continue;
+    const next = nextSection(read(root, file));
+    if (next !== null && !next.trim()) problems.push(`${file}: the "## Next release" section is empty; remove the heading until something is written under it.`);
+  }
+  const nextMigration = fs.existsSync(path.join(root, 'docs/migrations.md')) && nextSection(read(root, 'docs/migrations.md'))?.trim();
+  if (nextMigration && !pendingChanges(root)) problems.push('docs/migrations.md has a "## Next release" section but docs/guide/release-notes.md has none: list the change in the release notes too.');
   const known = [...new Set([...released, documented, prepared])];
   for (const file of activeFiles(root)) {
     const text = read(root, file);
@@ -149,11 +184,28 @@ export function check(root = repoRoot) {
   return problems;
 }
 
-/** Sets prepared and documented to `version` and rewrites every active reference; returns the files it changed. */
+/**
+ * Sets prepared and documented to `version`, turns each "## Next release" section into "## <version>" (and links to
+ * it into links to the version), and rewrites every active reference; returns the files it changed. Refuses a new
+ * version with nothing under "## Next release" in the release notes: a release always ships something. Running it
+ * again for the version just prepared changes nothing.
+ */
 export function release(version, root = repoRoot) {
   if (!isVersion(version ?? '')) fail(`"${version}" is not a version (0.4.0-alpha.3, 1.0.0).`);
+  const pending = pendingChanges(root), known = releasedVersions(root).includes(version);
+  if (pending && known) fail(`docs/guide/release-notes.md already has a "## ${version}" section; choose a new version for "## Next release".`);
+  if (!pending && !known) fail(`Nothing to release: docs/guide/release-notes.md has no "## Next release" section with content. Every change that ships in the SDK is listed there.`);
   const changed = [];
   const write = (file, text) => { if (text !== read(root, file)) { fs.writeFileSync(path.join(root, file), text); changed.push(file); } };
+  if (pending) {
+    const anchor = versionAnchor(version);
+    const relink = text => text.replace(/((?:release-notes|migrations)\.md|\()#next-release\b/g, `$1#${anchor}`);
+    for (const file of notesFiles) {
+      if (!fs.existsSync(path.join(root, file))) continue;
+      write(file, relink(read(root, file)).replace(nextHeading, `## ${version}`));
+    }
+    for (const file of activeFiles(root).filter(f => f.endsWith('.md') && !notesFiles.includes(f))) write(file, relink(read(root, file)));
+  }
   write('Directory.Build.props', read(root, 'Directory.Build.props').replace(/<MicroEngineVersion>[^<]+<\/MicroEngineVersion>/, `<MicroEngineVersion>${version}</MicroEngineVersion>`));
   const json = JSON.parse(read(root, 'sdk/version.json'));
   write('sdk/version.json', `${JSON.stringify({ ...json, documented: version }, null, 2)}\n`);
@@ -168,7 +220,7 @@ export function release(version, root = repoRoot) {
     }
     write(file, out + text.slice(at));
   }
-  return changed;
+  return [...new Set(changed)];
 }
 
 /** Which packages nuget.org serves at `version`: { [id]: boolean }. Throws when nuget.org cannot be asked. */
@@ -261,7 +313,7 @@ async function githubRelease(tag, env = process.env) {
 async function main([command, ...args]) {
   const value = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
   if (command === 'status') {
-    const status = { prepared: preparedVersion(), documented: documentedVersion() };
+    const status = { prepared: preparedVersion(), documented: documentedVersion(), pending: pendingChanges() };
     if (args.includes('--public')) {
       const state = await publicState(status.documented);
       status.documentedPublic = isPublic(state);

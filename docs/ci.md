@@ -66,7 +66,8 @@ flowchart LR
 3. **Deploy**: a protected preview for pull requests that change the site or a demo; production for pushes to
    `main` that change the published site (documentation, site, game pages). Production always uses the latest
    demo release, and is held (the current deployment stays, with a warning) while the documentation presents an SDK
-   version nuget.org does not serve yet ([Releasing](releasing.md#versions)), and never while publication is frozen
+   version nuget.org does not serve yet or SDK changes are pending
+   ([Releasing](releasing.md#documentation-and-releases)), and never while publication is frozen
    ([Publication freeze](#publication-freeze)). The decision is `deployTarget` in
    [`freeze.mjs`](../.github/scripts/freeze.mjs).
 4. **CI result** is the gate: it fails if anything needed failed, was cancelled or did not run, or if a wanted
@@ -340,7 +341,7 @@ checks its page layouts, nothing else.
 
 **Lifting it** is the owner's decision: a pull request that deletes `.github/phase-freeze`. When it merges, `main`'s
 ci deploys production with the site `main` accumulated meanwhile (held, as always, while the documentation presents an
-SDK version nuget.org does not serve), and sdk-release runs again: if `main` documents a version nuget.org lacks, it
+SDK version nuget.org does not serve or SDK changes are pending), and sdk-release runs again: if `main` documents a version nuget.org lacks, it
 checks, drafts and waits for the `nuget` environment's approval ([Releasing](releasing.md#publication-freeze)). Demo
 releases are again possible by hand.
 
@@ -404,6 +405,8 @@ Every CI result and validate report includes the cost of its own run. Re-run att
 | Release stopped: "main moved" | a merge landed during the release | run it again |
 | Production deployment skipped: "The documentation presents SDK …, which nuget.org does not serve" | a release pull request was merged and is waiting for approval | approve sdk-release, or revert the release pull request ([Releasing](releasing.md)) |
 | Release refused: "main documents SDK …" | the same window | let sdk-release finish first |
+| Production deployment skipped: "main holds SDK changes that are not released yet" | the release notes list changes under "Next release" | release the SDK, or revert the pending change ([Releasing](releasing.md#documentation-and-releases)) |
+| Release refused: "main holds SDK changes that are not released yet" | the same state | release the SDK first |
 | sdk-release: "Nothing to release" | the normal outcome of every merge that is not an SDK release | nothing |
 | sdk-release refused, or stopped after publishing | a state its preflight cannot repair, or a failed verification | [Releasing, Recovering](releasing.md#recovering) |
 | `release-verify` fails | a deployed file differs from the release | nothing was published; inspect the build |
