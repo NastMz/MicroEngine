@@ -1,6 +1,6 @@
 # API reference
 
-The public types of the MicroEngine SDK 0.4.0-alpha.2, one page per namespace and per type: signatures, parameters, default
+The public types of the MicroEngine SDK 0.5.0-alpha.1, one page per namespace and per type: signatures, parameters, default
 values and the descriptions written in the engine's source. It covers the four engine packages (`MicroEngine`,
 `MicroEngine.Sdl`, `MicroEngine.Raylib`, `MicroEngine.Desktop`); the `microengine` tool is documented in
 [The microengine tool](../guide/cli.md).
@@ -28,7 +28,7 @@ with the [tutorial](../tutorial/README.md).
 | [MicroEngine.Raylib](MicroEngine.Raylib.md) | The raylib platform for desktops (in the published SDK, also the browser platform). | [Backends and platforms](../manual/backends.md) |
 | [MicroEngine.Saves](MicroEngine.Saves.md) | Saves as an optional engine module: the module that registers a save store as a service of the engine. | [Persistence](../manual/persistence.md) |
 | [MicroEngine.Scenes](MicroEngine.Scenes.md) | The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks. | [Scenes](../manual/scenes.md) |
-| [MicroEngine.Sdl](MicroEngine.Sdl.md) | The SDL 3 platform: Windows, Linux, macOS, Android, iOS and, from the next SDK version, browsers (WebAssembly), with the browser launcher and the browser page it reads. | [Backends and platforms](../manual/backends.md) |
+| [MicroEngine.Sdl](MicroEngine.Sdl.md) | The SDL 3 platform: Windows, Linux, macOS, Android, iOS and browsers (WebAssembly), with the browser launcher and the browser page it reads. | [Backends and platforms](../manual/backends.md) |
 | [MicroEngine.UI](MicroEngine.UI.md) | Widgets: labels, buttons, panels, stacks, text fields, dialogue boxes, menus, typewriter text, toasts, themes, focus and the UI input layer. | [UI widgets](../manual/ui.md) |
 | [MicroEngine.World](MicroEngine.World.md) | Tile layers, collision grids, swept movement against tiles (`TileMotion`), autotiling and drawing tiles. | [Tile maps and collision](../manual/world.md) |
 | [MicroEngine](MicroEngine.md) | Basic value types: colours, rectangles, maths and easing helpers. | [Graphics](../manual/rendering.md) |

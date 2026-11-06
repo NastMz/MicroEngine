@@ -1,11 +1,11 @@
 // The public roadmap. There are no dates on purpose. Every item has an availability (how far it is from a developer's
 // hands, the same scale as capabilities.ts) and the subsystem family it belongs to:
 //   available   in the published SDK on nuget.org
-//   next        merged into the engine, arriving with the next SDK version
 //   repository  in the engine's repository only, in no published package (experimental)
 //   planned     not built; `horizon` says how firm: intended next work, research with an open outcome, or a
 //               long-term direction that is not a commitment
-// `stages` and `roadmap` are the whole picture. `completed`, `next` and `vision` are the older views of the same data.
+// `stages` and `roadmap` are the whole picture. `completed`, `next` (the planned tracks) and `vision` are the older
+// views of the same data.
 import { publishedSdk, type Availability, type Family } from './capabilities.ts';
 
 export type { Availability, Family } from './capabilities.ts';
@@ -30,17 +30,12 @@ export interface RoadmapItem {
   track?: string;
 }
 
-/** The four stages in reading order, each with its heading and what it promises. */
+/** The three stages in reading order, each with its heading and what it promises. */
 export const stages: { status: Availability; title: string; summary: string }[] = [
   {
     status: 'available',
     title: 'Available today',
     summary: `In the published SDK, ${publishedSdk}, and in the four demos.`,
-  },
-  {
-    status: 'next',
-    title: 'Next SDK version',
-    summary: 'Built and merged into the engine, not published yet. It arrives with the next SDK version, a breaking Alpha whose migration notes say what changes.',
   },
   {
     status: 'repository',
@@ -62,7 +57,7 @@ const available: RoadmapItem[] = [
   { text: 'Swept tile collision with one-way platforms', family: 'physics', status: 'available' },
   { text: 'Saves (persistence) and achievements', family: 'kernel', status: 'available' },
   { text: 'SDL 3 platform on Windows, Linux, macOS, Android and iOS', family: 'platform', status: 'available' },
-  { text: 'raylib in WebAssembly for browsers, and as a desktop alternative', family: 'platform', status: 'available' },
+  { text: 'raylib as an alternative platform on desktops', family: 'platform', status: 'available' },
   { text: 'Named platform profiles and replaceable subsystems behind IPlatform', family: 'platform', status: 'available' },
   { text: 'On-screen touch controls and suspend/resume on phones', family: 'input', status: 'available' },
   { text: 'Analog input and per-game touch controls (d-pad, joystick, buttons) on phones and in mobile browsers', family: 'input', status: 'available' },
@@ -70,20 +65,17 @@ const available: RoadmapItem[] = [
   { text: `SDK ${publishedSdk} on nuget.org: engine packages, the microengine tool and a dotnet new template`, family: 'tools', status: 'available' },
   { text: 'Per-game name, id, version and icon on every platform', family: 'tools', status: 'available' },
   { text: 'This site and its documentation', family: 'tools', status: 'available' },
-];
-
-const nextVersion: RoadmapItem[] = [
-  { text: 'The engine as separate modules, composed once for every host (desktop, browser, phones, tests)', family: 'kernel', status: 'next' },
-  { text: 'A scene world: entities with ids, transform hierarchies and attachments', family: 'kernel', status: 'next' },
-  { text: 'Drawing between fixed steps at interpolated positions, for smooth motion at any display rate', family: 'kernel', status: 'next' },
-  { text: 'HD canvases with smooth scaling and texture filtering', family: 'graphics', status: 'next' },
-  { text: 'TrueType and OpenType fonts at any size', family: 'graphics', status: 'next' },
-  { text: 'A graphics device contract, and an opt-in SDL_GPU device on desktops with shaders compiled ahead of time', family: 'graphics', status: 'next' },
-  { text: 'Physics worlds behind one contract, with the engine’s tile backend', family: 'physics', status: 'next' },
-  { text: 'One audio mixer on every platform', family: 'audio', status: 'next' },
-  { text: 'Input as device events with players and layers, rebinding and text input', family: 'input', status: 'next' },
-  { text: 'SDL 3 in browsers (WebAssembly), replacing raylib there; raylib stays a desktop alternative', family: 'platform', status: 'next' },
-  { text: 'The microengine shaders command (compiling needs Windows)', family: 'tools', status: 'next' },
+  { text: 'The engine as separate modules, composed once for every host (desktop, browser, phones, tests)', family: 'kernel', status: 'available' },
+  { text: 'A scene world: entities with ids, transform hierarchies and attachments', family: 'kernel', status: 'available' },
+  { text: 'Drawing between fixed steps at interpolated positions, for smooth motion at any display rate', family: 'kernel', status: 'available' },
+  { text: 'HD canvases with smooth scaling and texture filtering', family: 'graphics', status: 'available' },
+  { text: 'TrueType and OpenType fonts at any size', family: 'graphics', status: 'available' },
+  { text: 'A graphics device contract, and an opt-in SDL_GPU device on desktops with shaders compiled ahead of time', family: 'graphics', status: 'available' },
+  { text: 'Physics worlds behind one contract, with the engine’s tile backend', family: 'physics', status: 'available' },
+  { text: 'One audio mixer on every platform', family: 'audio', status: 'available' },
+  { text: 'Input as device events with players and layers, rebinding and text input', family: 'input', status: 'available' },
+  { text: 'SDL 3 in browsers (WebAssembly), with the same page, input and touch controls', family: 'platform', status: 'available' },
+  { text: 'The microengine shaders command (compiling needs Windows)', family: 'tools', status: 'available' },
 ];
 
 const repository: RoadmapItem[] = [
@@ -111,14 +103,14 @@ export const next: RoadmapTrack[] = [
     title: 'Engine robustness',
     status: 'planned',
     family: 'kernel',
-    summary: 'How games behave under real-world conditions. Drawing between fixed steps arrives with the next SDK version.',
+    summary: 'How games behave under real-world conditions. Drawing between fixed steps at interpolated positions is available.',
     items: ['Web audio and behaviour in background tabs'],
   },
   {
     title: 'Mobile experience',
     status: 'exploring',
     family: 'input',
-    summary: 'Each game has its own touch controls with safe areas and feedback; what remains is polish. Text input arrives with the next SDK version.',
+    summary: 'Each game has its own touch controls with safe areas and feedback; what remains is polish. Text input is available.',
     items: ['Hide controls during dialogues', 'Haptics on iOS', 'A player setting for control size and opacity'],
   },
 ];
@@ -144,7 +136,7 @@ const planned: RoadmapItem[] = [...next, ...vision].flatMap(track =>
   track.items.map(text => ({ text, family: track.family, status: 'planned' as const, horizon: track.status as Exclude<RoadmapStatus, 'done'>, track: track.title })));
 
 /** Every roadmap item, in stage order. */
-export const roadmap: RoadmapItem[] = [...available, ...nextVersion, ...repository, ...planned];
+export const roadmap: RoadmapItem[] = [...available, ...repository, ...planned];
 
 /** The available items as plain text (the older "Available today" list). */
 export const completed: string[] = available.map(item => item.text);

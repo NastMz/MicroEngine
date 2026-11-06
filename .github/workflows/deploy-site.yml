@@ -1,7 +1,8 @@
 # Builds and deploys the site (docs/ci.md, "Deploying the site"). Called by ci.yml (previews, and production when
 # main changes the published site), release.yml (production with a new demo release) and sdk-release.yml
 # (production once a documented SDK version is on nuget.org). Production deploys only when the SDK version the
-# documentation presents is public (sdk/version.mjs); otherwise it keeps its deployment. One job does everything,
+# documentation presents is public and main holds no unreleased SDK changes (sdk/version.mjs, documented and
+# pending); otherwise it keeps its deployment. One job does everything,
 # so it holds the production lock from the build to the switch:
 #   1. `vercel build` (npm ci and npm run build) with DEMOS_SOURCE; production accepts only released packages
 #   2. for release packages: every file in the output checked against the release's SHA-256 values
@@ -100,6 +101,12 @@ jobs:
             # Before the first demo release, production keeps its current deployment: nothing to publish with.
             echo "::warning::No demo release is published yet, so production was left unchanged. Publish the first one with the release workflow (docs/ci.md, \"First release\")."
             echo "ok=false" >> "$GITHUB_OUTPUT"
+          elif [ "$TARGET" = production ] && node ../sdk/version.mjs status --json | jq -e .pending > /dev/null; then
+            # The release notes list SDK changes under "## Next release": the documentation already describes them as
+            # published, so production keeps its deployment until the SDK release that ships them deploys main.
+            echo "::warning::main holds SDK changes that are not released yet (docs/guide/release-notes.md, \"Next release\"), so production was left unchanged. The SDK release that ships them deploys the site (docs/releasing.md, \"Documentation and releases\")."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            [ -z "$RELEASE" ] || { echo "::error::A demo release cannot be published while main holds unreleased SDK changes."; exit 1; }
           elif [ "$TARGET" = production ] && ! node ../sdk/version.mjs status --public --json | jq -e .documentedPublic > /dev/null; then
             # Between merging an SDK release and nuget.org serving it, the documentation presents a version nobody can
             # install yet: production keeps its deployment, and sdk-release.yml deploys main once the packages are public.

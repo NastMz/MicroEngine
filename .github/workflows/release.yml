@@ -103,6 +103,7 @@ jobs:
           git worktree add -q --detach "$RUNNER_TEMP/main" "$main"
           sdk=$(node "$RUNNER_TEMP/main/sdk/version.mjs" status --public --json) || error "nuget.org could not be asked about the documented SDK version; run the release again."
           [ "$(jq -r .documentedPublic <<< "$sdk")" = true ] || error "main documents SDK $(jq -r .documented <<< "$sdk"), which nuget.org does not serve yet: let sdk-release publish it first (docs/releasing.md)."
+          [ "$(jq -r .pending <<< "$sdk")" = false ] || error "main holds SDK changes that are not released yet (release notes, \"Next release\"), which its site already documents: release the SDK first (docs/releasing.md)."
           state=$(gh release view "$tag" --json isDraft --jq .isDraft 2> /dev/null || echo none)
           [ "$state" != false ] || error "$tag is already published; choose a new version."
           { echo "sha=$sha"; echo "main=$main"; echo "tag=$tag"; } >> "$GITHUB_OUTPUT"

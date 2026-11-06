@@ -4,10 +4,9 @@ What changes between SDK versions and how to update a game. MicroEngine is in Al
 a version may change public APIs incompatibly, and when it does, the change is listed here with the version that makes
 it. Newest first.
 
-## Next release
+## 0.5.0-alpha.1
 
-Not published yet. The next SDK version is a breaking Alpha: the engine was rebuilt as separate modules, and several
-public APIs change. The checklist below gives each breaking change and what to do about it. The entries after it give
+This version is a breaking Alpha: the engine was rebuilt as separate modules, and several public APIs change. The checklist below gives each breaking change and what to do about it. The entries after it give
 the details, newest first.
 
 ### Upgrading a game

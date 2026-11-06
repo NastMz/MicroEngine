@@ -13,7 +13,6 @@ icon, the name desktops group windows by, phone orientation). Nothing else holds
   <Description>Deliver parcels across a pixel-art galaxy.</Description>
   <MicroEngineIcon>icon.png</MicroEngineIcon>                 <!-- square PNG: 256, 512 or 1024 pixels -->
   <MicroEngineOrientation>landscape</MicroEngineOrientation>  <!-- landscape, portrait or any (phones) -->
-  <MicroEngineGameFactory>new StarCourier.MainGame()</MicroEngineGameFactory>
 </PropertyGroup>
 ```
 
@@ -25,7 +24,7 @@ icon, the name desktops group windows by, phone orientation). Nothing else holds
 | `Description` | empty | README.txt, the Linux desktop entry |
 | `MicroEngineIcon` | none (system default) | Windows executable and window, Linux window and desktop entry, macOS `AppIcon.icns`, Android launcher, iOS app icon, browser favicon |
 | `MicroEngineOrientation` | `landscape` | Android activity, iOS supported orientations, SDL on phones |
-| `MicroEngineGameFactory` | `new <RootNamespace>.MainGame()` (next SDK version: none) | the C# expression that creates the game in hosts that build it themselves (browser, Android, iOS). Next SDK version (not published yet): deprecated; those hosts call the game's `Configure` entry point, the method its `Program.cs` passes to `DesktopLauncher.Run` ([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)), and use this expression only for a game without one |
+| `MicroEngineGameFactory` | none | deprecated: the C# expression that creates the game in hosts that build it themselves (browser, Android, iOS). Those hosts call the game's `Configure` entry point, the method its `Program.cs` passes to `DesktopLauncher.Run` ([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)), and use this expression only for a game without one |
 | `MicroEngineLicenseFile` | `LICENSE`, `LICENSE.txt` or `LICENSE.md` next to the project | shipped as `LICENSE.txt` |
 | `MicroEngineThirdPartyNotices` | MicroEngine's own list | shipped as `THIRD-PARTY-NOTICES.txt`; list your own assets' licences here |
 | `MicroEngineScriptsDir` | none | input scripts packaged in phone and development web builds, for automated play tests |
@@ -35,8 +34,6 @@ icon, the name desktops group windows by, phone orientation). Nothing else holds
 | `MicroEngineSplashImage` | the icon | a PNG shown in the middle of the start screen (any shape) |
 | `MicroEngineSplashBranding` | `false` | `true` adds "Made with MicroEngine" below the image |
 | `MicroEngineIconBackground` | the colour along the icon's edge | the background layer of Android's adaptive icon, `#RRGGBB` |
-
-The five properties above are not in a published SDK yet; they arrive with the next release.
 
 ## Rules the build checks
 
@@ -66,12 +63,9 @@ the desktop entry, the macOS `AppIcon.icns`, the iOS asset catalog's 1024-pixel 
 manifest icon, and Android launcher icons at every density. On Android 8 and later the launcher masks icons to its own
 shape (circle, squircle...); the package carries an adaptive icon whose foreground is your icon over the part every mask
 shows and whose background is `MicroEngineIconBackground`, so the launcher shows your art instead of shrinking it onto
-a white plate. Art that reaches the corners loses them to round masks: keep what matters away from the corners. (The
-adaptive icon is not in a published SDK yet; the published SDK packages a square icon at one density.)
+a white plate. Art that reaches the corners loses them to round masks: keep what matters away from the corners.
 
 ## Start screen
-
-> **Not in a published SDK yet**: the start screen arrives with the next SDK release.
 
 A game opens on its start screen: its image (`MicroEngineSplashImage`, by default the icon) in the middle of its
 colour (`MicroEngineSplashColor`), with "Made with MicroEngine" below only when `MicroEngineSplashBranding` is `true`.

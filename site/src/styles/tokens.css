@@ -45,7 +45,6 @@
   /* Status of a capability. Only what ships carries colour; the future is drawn in neutral ink, and the drawing
      (solid module, dashed socket, dotted outline) says the same thing without colour. */
   --status-available: var(--color-ok);
-  --status-next: var(--color-accent);
   --status-repo: var(--color-ink-2);
   --status-planned: var(--color-ink-3);
 

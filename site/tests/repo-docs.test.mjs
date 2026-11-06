@@ -191,13 +191,12 @@ test('docs families: every mapped page is published, socket cards name families 
 test('docs status phrases: written statuses become status tags, outside code and headings only', async () => {
   const { markStatusPhrases } = await import('../src/components/docs/status-phrases.mjs');
   const tag = (status, text) => `<span class="status-tag" data-status="${status}"><span class="status-mark" aria-hidden="true"></span>${text}</span>`;
-  assert.equal(markStatusPhrases('<p>Next SDK version (not published yet: arrives with the next SDK version): x</p>'),
-    `<p>${tag('next', 'Next SDK version')} (not published yet: arrives with the next SDK version): x</p>`);
   assert.equal(markStatusPhrases('<p>In the repository only, not in a package yet (x).</p>'),
     `<p>${tag('repo', 'In the repository only, not in a package yet')} (x).</p>`);
-  assert.equal(markStatusPhrases('<p><strong>Not in a published SDK yet</strong>: y</p>'),
-    `<p><strong>${tag('next', 'Not in a published SDK yet')}</strong>: y</p>`);
-  const untouched = '<h2 id="a">Next SDK version: x</h2><pre><code>next SDK version: y</code></pre><p>arrives with the next SDK version.</p>';
+  assert.equal(markStatusPhrases('<p><strong>In the repository, not published</strong>: y</p>'),
+    `<p><strong>${tag('repo', 'In the repository, not published')}</strong>: y</p>`);
+  // There is no "next SDK version" status: the site describes the SDK that contains it as published.
+  const untouched = '<h2 id="a">In the repository, not published: x</h2><pre><code>in the repository, not published: y</code></pre><p>Next SDK version: z</p>';
   assert.equal(markStatusPhrases(untouched), untouched);
 });
 

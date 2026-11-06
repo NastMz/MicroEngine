@@ -3,16 +3,16 @@
 // status is the claim: keep it true to the published SDK (sdk/version.json) and the engine's own documentation.
 //
 //   available   in the published SDK, on nuget.org
-//   next        merged into the engine, arriving with the next SDK version (docs label it "Next SDK version")
 //   repository  in the engine's repository only: not in any published package, experimental
 //   planned     not built: intended work or a long-term direction
 //
-// Sources: docs/guide/sdk.md (packages), docs/migrations.md "Next release" (what the next version changes),
-// docs/architecture.md and the manual pages each entry links to. A project that is not packed (IsPackable false and
-// bundled into no package) is `repository`, never `next`.
+// Sources: docs/guide/sdk.md (packages), docs/migrations.md (what each SDK version changes), docs/architecture.md
+// and the manual pages each entry links to. A project that is not packed (IsPackable false and bundled into no
+// package) is `repository`, never `available`. The site describes the SDK that contains it as published, so there is
+// no state between `available` and `repository`.
 import published from '../../../sdk/version.json' with { type: 'json' };
 
-export type Availability = 'available' | 'next' | 'repository' | 'planned';
+export type Availability = 'available' | 'repository' | 'planned';
 export type Family = 'kernel' | 'graphics' | 'physics' | 'audio' | 'input' | 'platform' | 'tools';
 
 /** The SDK version on nuget.org, which every `available` entry is in. */
@@ -20,15 +20,13 @@ export const publishedSdk: string = published.documented;
 
 export const availabilityLabels: Record<Availability, { label: string; meaning: string }> = {
   available: { label: 'Available', meaning: `In the published SDK (${publishedSdk}), installed from nuget.org.` },
-  next: { label: 'Next SDK version', meaning: 'Built into the engine, not published yet: arrives with the next SDK version.' },
   repository: { label: 'In the repository, not published', meaning: 'Source in the engine’s repository, in no published package. Experimental; it may change before it ships, if it ships.' },
   planned: { label: 'Planned', meaning: 'Not built. Intended work or a long-term direction, with no date and no promise.' },
 };
 
 /** The `status` the brand's `<Socket>` component takes for each availability (it shortens `repository` to `repo`). */
-export const socketStatus: Record<Availability, 'available' | 'next' | 'repo' | 'planned'> = {
+export const socketStatus: Record<Availability, 'available' | 'repo' | 'planned'> = {
   available: 'available',
-  next: 'next',
   repository: 'repo',
   planned: 'planned',
 };
@@ -76,12 +74,12 @@ export const capabilities: Capability[] = [
     docs: '/docs/manual/persistence/',
   },
   {
-    id: 'modules', family: 'kernel', status: 'next', name: 'Engine modules', contract: 'HostBuilder',
+    id: 'modules', family: 'kernel', status: 'available', name: 'Engine modules', contract: 'HostBuilder',
     summary: 'The engine split into modules with one composition that every host (desktop, browser, phones, tests) runs.',
     docs: '/docs/architecture/',
   },
   {
-    id: 'scene-world', family: 'kernel', status: 'next', name: 'Scene world', contract: 'IWorld',
+    id: 'scene-world', family: 'kernel', status: 'available', name: 'Scene world', contract: 'IWorld',
     summary: 'Entities with ids, transform hierarchies and attachments, drawn between fixed steps at interpolated positions.',
     docs: '/docs/manual/scenes/#the-scene-world',
   },
@@ -93,23 +91,23 @@ export const capabilities: Capability[] = [
     docs: '/docs/manual/rendering/',
   },
   {
-    id: 'hd-presentation', family: 'graphics', status: 'next', name: 'HD presentation', contract: 'Presentation',
+    id: 'hd-presentation', family: 'graphics', status: 'available', name: 'HD presentation', contract: 'Presentation',
     summary: 'HD canvases with smooth scaling and texture filtering beside the pixel-art default.',
     docs: '/docs/manual/rendering/#hd-canvases-and-smooth-scaling',
   },
   {
-    id: 'ttf-fonts', family: 'graphics', status: 'next', name: 'TrueType and OpenType fonts', contract: 'ScalableFont',
+    id: 'ttf-fonts', family: 'graphics', status: 'available', name: 'TrueType and OpenType fonts', contract: 'ScalableFont',
     summary: 'TTF and OTF fonts loaded from content and drawn at any size.',
     docs: '/docs/manual/text/#scalable-fonts-ttf-and-otf',
   },
   {
-    id: 'graphics-device', family: 'graphics', status: 'next', name: 'Graphics device contract', contract: 'IGraphicsDevice',
+    id: 'graphics-device', family: 'graphics', status: 'available', name: 'Graphics device contract', contract: 'IGraphicsDevice',
     summary: 'One device contract under the 2D API, for engine modules, tools and backend authors; each device declares what it supports.',
     builtOn: ['SDL 3'],
     docs: '/docs/manual/rendering/#the-graphics-device',
   },
   {
-    id: 'sdl-gpu', family: 'graphics', status: 'next', name: 'SDL_GPU device', contract: 'IGraphicsDevice',
+    id: 'sdl-gpu', family: 'graphics', status: 'available', name: 'SDL_GPU device', contract: 'IGraphicsDevice',
     summary: 'An opt-in programmable device on desktops (Direct3D 12, Vulkan, Metal): custom shaders compiled ahead of time and depth. Browsers and phones keep SDL’s 2D renderer.',
     builtOn: ['SDL 3'],
     docs: '/docs/manual/rendering/#the-graphics-device',
@@ -128,7 +126,7 @@ export const capabilities: Capability[] = [
     docs: '/docs/manual/world/',
   },
   {
-    id: 'physics-worlds', family: 'physics', status: 'next', name: 'Physics worlds', contract: 'IPhysicsWorld2D',
+    id: 'physics-worlds', family: 'physics', status: 'available', name: 'Physics worlds', contract: 'IPhysicsWorld2D',
     summary: 'A common physics contract with the engine’s tile backend: kinematic bodies, collision layers, ray casts, sensors and moving solids.',
     docs: '/docs/manual/world/#physics-worlds',
   },
@@ -147,7 +145,7 @@ export const capabilities: Capability[] = [
     docs: '/docs/manual/audio/',
   },
   {
-    id: 'mixer', family: 'audio', status: 'next', name: 'One mixer on every platform',
+    id: 'mixer', family: 'audio', status: 'available', name: 'One mixer on every platform',
     summary: 'Every platform plays through the engine’s own mixer over a PCM sink, so sound behaves the same everywhere.',
     docs: '/docs/manual/audio/#one-mixer-on-every-platform',
   },
@@ -159,7 +157,7 @@ export const capabilities: Capability[] = [
     docs: '/docs/manual/input/',
   },
   {
-    id: 'input-events', family: 'input', status: 'next', name: 'Devices, players and layers',
+    id: 'input-events', family: 'input', status: 'available', name: 'Devices, players and layers',
     summary: 'Input as a stream of device events with ids, players and layers, rebinding and text input.',
     docs: '/docs/manual/input/',
   },
@@ -173,12 +171,12 @@ export const capabilities: Capability[] = [
   },
   {
     id: 'raylib', family: 'platform', status: 'available', name: 'raylib platform', contract: 'IPlatform',
-    summary: 'The browser platform of the published SDK (WebAssembly) and an alternative on desktops. From the next SDK version it is a desktop alternative only.',
+    summary: 'An alternative platform on desktops. Browsers run SDL 3.',
     builtOn: ['raylib'],
     docs: '/docs/manual/backends/',
   },
   {
-    id: 'sdl-browser', family: 'platform', status: 'next', name: 'SDL 3 in browsers', contract: 'IPlatform',
+    id: 'sdl-browser', family: 'platform', status: 'available', name: 'SDL 3 in browsers', contract: 'IPlatform',
     summary: 'Browser packages run on SDL 3 compiled to WebAssembly, with the same page, input and touch controls.',
     builtOn: ['SDL 3', 'WebAssembly'],
     docs: '/docs/platforms/',
@@ -202,7 +200,7 @@ export const capabilities: Capability[] = [
     docs: '/docs/examples/testing/',
   },
   {
-    id: 'shaders', family: 'tools', status: 'next', name: 'Shader compiler', contract: 'microengine shaders',
+    id: 'shaders', family: 'tools', status: 'available', name: 'Shader compiler', contract: 'microengine shaders',
     summary: 'Compiles HLSL shaders ahead of time for the SDL_GPU device. Compiling needs Windows.',
     docs: '/docs/cli/#shaders',
   },

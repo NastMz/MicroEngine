@@ -1,6 +1,6 @@
 ---
 // The roadmap drawn as sockets (site/design/README.md, "Present and future"). Present and future are two separate
-// boards: what ships today and what the next SDK version brings are modules seated in their sockets; what lives only
+// boards: what ships today is a module seated in its socket; what lives only
 // in the repository is an empty dashed socket with its name inside; planned work is a dotted outline. The data, every
 // item with its family and status, is src/data/roadmap.ts.
 import SiteLayout from '../layouts/SiteLayout.astro';
@@ -12,16 +12,16 @@ const stage = (status: Availability) => stages.find(s => s.status === status)!;
 const items = (status: Availability) => roadmap.filter(item => item.status === status);
 const tracks = [...next, ...vision].map(track => ({ ...track, items: roadmap.filter(item => item.status === 'planned' && item.track === track.title) }))
   .filter(track => track.items.length);
-const seated = (status: Availability) => status === 'available' || status === 'next';
-const present: Availability[] = ['available', 'next'];
+const seated = (status: Availability) => status === 'available';
+const present: Availability[] = ['available'];
 const legend = (Object.keys(availabilityLabels) as Availability[]).map(status => ({ status, ...availabilityLabels[status] }));
 ---
-<SiteLayout title="Roadmap" description="What MicroEngine does today, what the next SDK version brings, what exists only in the repository, and where it may go next. No dates." current="roadmap">
+<SiteLayout title="Roadmap" description="What MicroEngine does today, what exists only in the repository, and where it may go next. No dates." current="roadmap">
   <div class="wrap roadmap">
     <header class="roadmap-head">
       <p class="eyebrow">Roadmap</p>
       <h1>Present and future, kept apart.</h1>
-      <p class="lede">What you can install today, what the next SDK version brings, what exists only in the repository and what is planned. There are no dates: items move when they are ready, and planned items may change or be dropped.</p>
+      <p class="lede">What you can install today, what exists only in the repository and what is planned. There are no dates: items move when they are ready, and planned items may change or be dropped.</p>
       <ul class="legend" aria-label="How to read the roadmap">
         {legend.map(entry => (
           <li data-status={socketStatus[entry.status]}>
@@ -33,7 +33,7 @@ const legend = (Object.keys(availabilityLabels) as Availability[]).map(status =>
     </header>
 
     <section class="era" data-era="present" aria-labelledby="present-title">
-      <p class="era-rail"><span id="present-title">Present</span><span class="era-note">In the engine: published, or merged and arriving with the next SDK version</span></p>
+      <p class="era-rail"><span id="present-title">Present</span><span class="era-note">In the engine: published</span></p>
       {present.map(status => (
         <section class="stage" data-status={socketStatus[status]} aria-labelledby={`stage-${status}`}>
           <div class="stage-head">

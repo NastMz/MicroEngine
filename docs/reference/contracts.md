@@ -47,9 +47,9 @@ public abstract class Game
 | `Unload` | Called once before the platform is disposed |
 | `CreateInput` | Override to change or add action bindings |
 | `CreateTouchLayout` | Override to choose the on-screen controls ([Touch controls](../manual/input.md#touch-controls)) |
-| `Touch` | The on-screen controls at run time: shown, pressed, geometry, `SetVisible`, `Layout`. Next SDK version: available from `Configure`; active on touch-first screens or once the game sets a layout, inactive and free otherwise (`IsActive`) |
+| `Touch` | The on-screen controls at run time: shown, pressed, geometry, `SetVisible`, `Layout`. Available from `Configure`; active on touch-first screens or once the game sets a layout, inactive and free otherwise (`IsActive`) |
 | `Random` | Deterministic per run; seeded by the launcher (seed 1 under a script) |
-| `UseAchievements` | Declares the achievements. Next SDK version: called from the constructor or `Configure` (before the engine is composed), it adds the achievements module; from `Load` or later it throws `InvalidOperationException` |
+| `UseAchievements` | Declares the achievements. Called from the constructor or `Configure` (before the engine is composed), it adds the achievements module; from `Load` or later it throws `InvalidOperationException` |
 | `Achievements` | Throws until `UseAchievements` was called |
 | `InitializeForTest` / `StepForTest` | Run `Load`, then advance one fixed update after sampling input, without a loop |
 
@@ -114,31 +114,20 @@ the built-in transitions. See [Scenes](../manual/scenes.md).
 [`src/MicroEngine/Core/Platform.cs`](../../src/MicroEngine/Core/Platform.cs). Everything a backend provides.
 
 ```csharp
-public interface IPlatform : IDisposable
+public interface IPlatform : IPlatformHost
 {
     IGraphicsDevice Graphics { get; }
     IAudioDevice Audio { get; }
     IInputSource Input { get; }
-    bool CloseRequested { get; }
-    double Now { get; }
-    bool RealTime { get; }
-    bool Suspended => false;
-    ITouchScreen? Touch => null;
-    void PollEvents();
     IRenderer BeginFrame();
     void EndFrame();
     void SaveScreenshot(string path);
     void ToggleFullscreen();
+    Color Letterbox { get; set; }
 }
 ```
 
-`RealTime` is true when time follows the wall clock (desktop, browser) and false when the loop advances one step
-per frame (headless). `Suspended` is true while the system has taken the app away (a phone app in the background);
-the loop then pauses. `Touch` is the touch screen, if any: touches, safe area, density, vibration and the overlay
-layer. Implementations: `SdlPlatform`, `RaylibPlatform`, `HeadlessPlatform`.
-
-Next SDK version (not published yet: arrives with the next SDK version): `IPlatform` extends the host contract of
-`MicroEngine.Platform`, and the members above that are not drawing, devices or screenshots move into it:
+`IPlatform` extends the host contract of `MicroEngine.Platform`:
 
 ```csharp
 public interface IPlatformHost : IDisposable
@@ -161,9 +150,11 @@ public interface ISurface
 }
 ```
 
-`RealTime`, `Suspended`, `Touch`, `DisplayRate`, `Wait`, `CloseRequested` and `PollEvents` leave `IPlatform`: the time
-mode is the loop's only, suspension and quit requests are events of the pump, and optional features are capabilities
-(`IDisplayControl`, `IPlatformDiagnostics`, `ITouchScreen`, `IDisplayPacing`, `IPreciseDelay`). The rules every host
+The time mode belongs to the loop only; suspension and quit requests are events of the pump; optional features are
+capabilities (`IDisplayControl`, `IPlatformDiagnostics`, `ITouchScreen` with its touches, safe area, density, vibration
+and overlay layer, `IDisplayPacing`, `IPreciseDelay`), found with `TryGetCapability<T>`, never by casting a platform.
+`Letterbox` is the colour of the window around the frame. Implementations: `SdlPlatform`, `RaylibPlatform`,
+`HeadlessPlatform`. The rules every host
 follows are in [The platform host](../manual/backends.md#the-platform-host). The same assembly holds
 `IStorage` (save slots; `ISaveStorage` extends it) and `IContentSource` with `FolderContentSource`.
 
@@ -176,7 +167,7 @@ assembles a platform ([Backends](../manual/backends.md#choosing-a-platform)).
 | --- | --- |
 | `PlatformProfile(name, description, create)` | A named way to build an `IPlatform`; `CheckSupport` says why it cannot run here; `Replaceable` lists the `PlatformParts` a host may supply |
 | `PlatformCatalog` | Profiles in order of preference; `Default` is the first that can run, `Resolve(name)` finds one or throws |
-| `PlatformRequest(settings)` | Window options (`Scale`, `Hidden`, `FixedStep`, `Mute`, `CaptureScale`), an optional `Audio` factory and `ExtraInput` sources; `OpensOwnAudio` tells a backend whether to open its device. Next SDK version: `FixedStep` is replaced by `WaitForDisplay` and `StartGamepadsAfterFirstFrame`, and a backend builds its devices with `CreateAudio` and `CombineInput` ([options](configuration.md#platform-request-options)) |
+| `PlatformRequest(settings)` | Window options (`Scale`, `Hidden`, `WaitForDisplay`, `StartGamepadsAfterFirstFrame`, `AudioOutput`, `Mute`, `CaptureScale`), an optional `Audio` factory and `ExtraInput` sources; `OpensOwnAudio` tells a backend whether to open its device, and a backend builds its devices with `CreateAudio` and `CombineInput` ([options](configuration.md#platform-request-options)) |
 | `PlatformConfigurationException` | An unknown or unavailable profile, or a replacement the profile does not allow |
 | `CompositeInput` | Several input sources read as one |
 | `GameLauncher.Run(game, args, catalog, configure)` | The desktop command line over any catalog |
@@ -205,7 +196,9 @@ public interface IRenderer
 
 public interface IGraphicsDevice
 {
-    Texture CreateTexture(PixelImage image);
+    TextureFilter DefaultFilter { get; set; }
+    Texture CreateTexture(PixelImage image, TextureFilter filter);
+    Texture CreateTexture(PixelImage image) => CreateTexture(image, DefaultFilter);
 }
 ```
 
@@ -238,7 +231,9 @@ public interface IInputSource
     System.Numerics.Vector2 LeftStick { get; }
     float GetPadAxis(PadAxis axis) => /* left stick only */;
     bool PadConnected => false;
+    GamepadStyle PadStyle => GamepadStyle.Xbox;
     PointerState Pointer => default;
+    IReadOnlyList<PointerInfo> Pointers => Array.Empty<PointerInfo>();
 }
 ```
 
@@ -278,11 +273,9 @@ public interface IOverlayCanvas
 Coordinates are drawable pixels. `FrameLayout.Fit(window, safeArea, width, height)` is the letterbox rule every
 backend uses.
 
-Next SDK version (not published yet: arrives with the next SDK version): these interfaces keep their namespaces and
-move to their own assemblies, carried by the `MicroEngine` package: `IRenderer` and `IGraphicsDevice` to
-`MicroEngine.Graphics2D.dll`, `IAudioDevice` to `MicroEngine.Audio.dll`, `IInputSource` and `InputMap` to
-`MicroEngine.Input.dll`. `IGraphicsDevice` adds `DefaultFilter` and `CreateTexture(image, filter)` (the one-argument
-form uses `DefaultFilter`), and `IInputSource` adds `PadStyle` and `Pointers`.
+These interfaces live in their own assemblies, carried by the `MicroEngine` package: `IRenderer` and `IGraphicsDevice`
+in `MicroEngine.Graphics2D.dll`, `IAudioDevice` in `MicroEngine.Audio.dll`, `IInputSource` and `InputMap` in
+`MicroEngine.Input.dll`.
 
 Games rarely touch these directly: they use `AudioMixer`, `InputMap` and the renderer passed to `Draw`.
 
@@ -365,16 +358,16 @@ public interface ISaveStorage
 | Missing or corrupt slot | `Load` returns null; corrupt data is set aside (`<slot>.corrupt.json` for files) |
 | Unreadable slot (I/O or access error) | `Load` returns null and that store never writes the slot |
 | Refused write | `Save` returns false; the game keeps running |
-| Where | Files under `DefaultDirectory(gameId)` by default (local application data on Windows and macOS, the XDG data folder on Linux); `localStorage` in the browser via `DefaultStorage` (next SDK version: `DefaultStorage(gameId)` is a method returning the platform's default medium, `BrowserStorage` in browsers; Android and iOS folders are part of `DefaultDirectory`) |
+| Where | Files under `DefaultDirectory(gameId)` by default (local application data on Windows and macOS, the XDG data folder on Linux); Android and iOS folders are part of `DefaultDirectory`; `DefaultStorage(gameId)` returns the platform's default medium, `BrowserStorage` (`localStorage`) in browsers |
 
-Implementations: `FileSaveStorage` (core; next SDK version: `MicroEngine.Saves.dll`, carried by the `MicroEngine` package, namespace unchanged), `BrowserSaveStorage` (`MicroEngine.Raylib`; next SDK version: `BrowserStorage` in `MicroEngine.Platform`). See
+Implementations: `FileSaveStorage` (`MicroEngine.Saves.dll`, carried by the `MicroEngine` package), `BrowserStorage` (`MicroEngine.Platform`). See
 [Persistence](../manual/persistence.md).
 
-`SavesModule` (next SDK version, namespace `MicroEngine.Saves`): `new SavesModule(store)` registers `store` as the engine's `SaveStore` service; it schedules no frame system.
+`SavesModule` (namespace `MicroEngine.Saves`): `new SavesModule(store)` registers `store` as the engine's `SaveStore` service; it schedules no frame system.
 
 ## Achievement and AchievementTracker
 
-[`src/MicroEngine.Achievements/Achievements.cs`](../../src/MicroEngine.Achievements/Achievements.cs) (next SDK version: in `MicroEngine.Achievements.dll`, carried by the `MicroEngine` package, namespace unchanged).
+[`src/MicroEngine.Achievements/Achievements.cs`](../../src/MicroEngine.Achievements/Achievements.cs) (in `MicroEngine.Achievements.dll`, carried by the `MicroEngine` package).
 
 ```csharp
 public sealed record Achievement(string Id, string Name, string Description, int Goal = 1)
@@ -410,13 +403,11 @@ public sealed class AchievementTracker
 
 | Type | Signature | Source |
 | --- | --- | --- |
-| `DesktopLauncher` | `public static int Run(Game game, string[] args)` | [`DesktopLauncher.cs`](../../src/MicroEngine.Raylib/DesktopLauncher.cs) |
-| `BrowserLauncher` (`MicroEngine.Raylib`; removed in the next SDK version) | `public static GameSession CreateSession(Func<Game> createGame)` | — |
-| `DesktopLauncher` (next SDK version) | `public static int Run(Action<HostBuilder> configure, string[] args)`: the game's `Configure` entry point | [`DesktopLauncher.cs`](../../src/MicroEngine.Desktop/DesktopLauncher.cs) |
-| `BrowserLauncher` (next SDK version, `MicroEngine.Sdl`) | `public static GameSession CreateSession(Action<HostBuilder> configure, BrowserPage page)` | [`BrowserLauncher.cs`](../../src/MicroEngine.Sdl/BrowserLauncher.cs) |
-| `GameHost` (next SDK version) | `public static GameHost Create(HostEnvironment environment, LaunchRequest request, Action<HostBuilder> configure, Action<HostBuilder>? defaults = null)`; `CreateGame`, `CreateRunOptions`, `CreateRequest`, `CreatePlatform`, `Run`, `Play`, `CreateSession` | [`GameHost.cs`](../../src/MicroEngine/Core/GameHost.cs) |
+| `DesktopLauncher` | `public static int Run(Action<HostBuilder> configure, string[] args)`: the game's `Configure` entry point; `Run(Game game, string[] args)` also works on desktop | [`DesktopLauncher.cs`](../../src/MicroEngine.Desktop/DesktopLauncher.cs) |
+| `BrowserLauncher` (`MicroEngine.Sdl`) | `public static GameSession CreateSession(Action<HostBuilder> configure, BrowserPage page)` | [`BrowserLauncher.cs`](../../src/MicroEngine.Sdl/BrowserLauncher.cs) |
+| `GameHost` | `public static GameHost Create(HostEnvironment environment, LaunchRequest request, Action<HostBuilder> configure, Action<HostBuilder>? defaults = null)`; `CreateGame`, `CreateRunOptions`, `CreateRequest`, `CreatePlatform`, `Run`, `Play`, `CreateSession` | [`GameHost.cs`](../../src/MicroEngine/Core/GameHost.cs) |
 | `GameRunner` | `public static RunResult Run(Game game, IPlatform platform, RunOptions? options = null)` | [`GameRunner.cs`](../../src/MicroEngine/Core/GameRunner.cs) |
-| `GameSession` | `GameSession(Func<Game> createGame, Func<Game, IPlatform> createPlatform)`; `Start`, `Tick`, `Stop`, `Result` (next SDK version: also `GameSession(Func<LaunchRequest, GameHost> compose)` with `Start(LaunchRequest)`) | [`GameSession.cs`](../../src/MicroEngine/Core/GameSession.cs) |
+| `GameSession` | `GameSession(Func<Game> createGame, Func<Game, IPlatform> createPlatform)`; `Start`, `Tick`, `Stop`, `Result`; also `GameSession(Func<LaunchRequest, GameHost> compose)` with `Start(LaunchRequest)` | [`GameSession.cs`](../../src/MicroEngine/Core/GameSession.cs) |
 | `RunResult` | `record RunResult(long Updates, long Frames, IReadOnlyList<string> Captures, Exception? Error)` | [`GameRunner.cs`](../../src/MicroEngine/Core/GameRunner.cs) |
 
 See [Lifecycle](../manual/lifecycle.md) and [Backends](../manual/backends.md).

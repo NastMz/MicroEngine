@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { check, release, findReferences, activeFiles, documentedVersion, preparedVersion, publicState, isPublic, waitPublic, packageIds, releasePlan } from '../version.mjs';
+import { check, release, pendingChanges, findReferences, activeFiles, documentedVersion, preparedVersion, publicState, isPublic, waitPublic, packageIds, releasePlan } from '../version.mjs';
 import { reportOnlyVersion, publishedBuildRequired } from './docs.mjs';
 
 function fixture(files = {}) {
@@ -75,31 +75,69 @@ test('check: a marker quoted in prose is not a marker', () => {
 });
 
 test('check: the documented version needs a release-notes section', () => {
-  const root = fixture();
-  release('0.4.0-alpha.3', root);
-  assert.deepEqual(check(root), ['docs/guide/release-notes.md has no "## 0.4.0-alpha.3" section for the documented version.']);
+  const root = fixture({ 'sdk/version.json': '{ "documented": "0.4.0-alpha.3" }', 'Directory.Build.props': '<MicroEngineVersion>0.4.0-alpha.3</MicroEngineVersion>' });
+  assert.ok(check(root).includes('docs/guide/release-notes.md has no "## 0.4.0-alpha.3" section for the documented version.'));
 });
 
-test('release: rewrites prepared, documented and every active reference, and leaves history alone', () => {
-  const root = fixture();
-  const before = Object.fromEntries(['docs/guide/release-notes.md', 'docs/migrations.md', 'docs/decisions/0001.md', 'site/src/roadmap.ts'].map(f => [f, read(root, f)]));
-  const changed = release('0.4.0-alpha.3', root);
-  assert.deepEqual(changed.sort(), ['Directory.Build.props', 'docs/guide/getting-microengine.md', 'docs/guide/status.md', 'docs/manual/audio.md', 'samples/Hello/Hello.csproj', 'sdk/version.json']);
-  assert.equal(preparedVersion(root), '0.4.0-alpha.3');
-  assert.equal(documentedVersion(root), '0.4.0-alpha.3');
-  assert.match(read(root, 'docs/guide/getting-microengine.md'), /\*\*0\.4\.0-alpha\.3\*\*[\s\S]*Templates::0\.4\.0-alpha\.3[\s\S]*--version 0\.4\.0-alpha\.3[\s\S]*prints `0\.4\.0-alpha\.3`/);
+// Release notes and migration notes with SDK changes merged since 0.4.0-alpha.2, written as published.
+const notes = '# Release notes\n\n## Next release\n\n- Fonts ([migrating](../migrations.md#next-release)).\n\n## 0.4.0-alpha.2\n\nFixes. Packages at 0.4.0-alpha.2.\n\n## 0.4.0-alpha.1\n\nFirst. `Version="0.4.0-alpha.1"`\n';
+const migrations = '# Migration notes\n\n## Next release\n\n`Font` is `IFont`.\n\n## 0.4.0-alpha.1\n\n<PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.1" />\n';
+const pendingTree = files => fixture({ 'docs/guide/release-notes.md': notes, 'docs/migrations.md': migrations, ...files });
+
+test('pending changes: a "## Next release" section with content in the release notes', () => {
+  assert.equal(pendingChanges(fixture()), false);
+  assert.equal(pendingChanges(pendingTree()), true);
+  assert.deepEqual(check(pendingTree()), [], 'pending changes are a consistent state');
+});
+
+test('check: an empty "## Next release" heading fails, and so do migration notes without release notes', () => {
+  const empty = pendingTree({ 'docs/guide/release-notes.md': notes.replace('- Fonts ([migrating](../migrations.md#next-release)).\n\n', '') });
+  assert.equal(pendingChanges(empty), false);
+  assert.deepEqual(check(empty), [
+    'docs/guide/release-notes.md: the "## Next release" section is empty; remove the heading until something is written under it.',
+    'docs/migrations.md has a "## Next release" section but docs/guide/release-notes.md has none: list the change in the release notes too.',
+  ]);
+});
+
+test('release: renames each "## Next release" to the version, relinks it, and rewrites every active reference; history stays', () => {
+  const root = pendingTree({ 'docs/manual/text.md': 'See [the release notes](../guide/release-notes.md#next-release) and [migrating](../migrations.md#next-release).\n' });
+  const before = Object.fromEntries(['docs/decisions/0001.md', 'site/src/roadmap.ts'].map(f => [f, read(root, f)]));
+  const changed = release('0.5.0-alpha.1', root);
+  assert.deepEqual(changed.sort(), ['Directory.Build.props', 'docs/guide/getting-microengine.md', 'docs/guide/release-notes.md', 'docs/guide/status.md',
+    'docs/manual/audio.md', 'docs/manual/text.md', 'docs/migrations.md', 'samples/Hello/Hello.csproj', 'sdk/version.json']);
+  assert.equal(preparedVersion(root), '0.5.0-alpha.1');
+  assert.equal(documentedVersion(root), '0.5.0-alpha.1');
+  assert.equal(read(root, 'docs/guide/release-notes.md'), notes.replace('## Next release', '## 0.5.0-alpha.1').replace('#next-release', '#050-alpha1'));
+  assert.equal(read(root, 'docs/migrations.md'), migrations.replace('## Next release', '## 0.5.0-alpha.1'));
+  assert.equal(read(root, 'docs/manual/text.md'), 'See [the release notes](../guide/release-notes.md#050-alpha1) and [migrating](../migrations.md#050-alpha1).\n');
+  assert.match(read(root, 'docs/guide/getting-microengine.md'), /\*\*0\.5\.0-alpha\.1\*\*[\s\S]*Templates::0\.5\.0-alpha\.1[\s\S]*--version 0\.5\.0-alpha\.1[\s\S]*prints `0\.5\.0-alpha\.1`/);
   const audio = read(root, 'docs/manual/audio.md');
   assert.match(audio, /In 0\.4\.0-alpha\.1 it rises; it starts at full volume from\n0\.4\.0-alpha\.2\. One track\./, 'the history paragraph is untouched');
-  assert.match(audio, /The current version is \*\*0\.4\.0-alpha\.3\*\* here too/, 'the paragraph after it is active again');
+  assert.match(audio, /The current version is \*\*0\.5\.0-alpha\.1\*\* here too/, 'the paragraph after it is active again');
   for (const [file, text] of Object.entries(before)) assert.equal(read(root, file), text, `${file} unchanged`);
-  // With the section written, the tree is consistent again, and a second run changes nothing.
-  fs.writeFileSync(path.join(root, 'docs/guide/release-notes.md'), `# Release notes\n\n## 0.4.0-alpha.3\n\nMore.\n\n${before['docs/guide/release-notes.md'].slice('# Release notes\n\n'.length)}`);
+  assert.equal(pendingChanges(root), false);
   assert.deepEqual(check(root), []);
-  assert.deepEqual(release('0.4.0-alpha.3', root), []);
+  assert.deepEqual(release('0.5.0-alpha.1', root), [], 'a second run changes nothing');
+});
+
+test('release: migration notes are optional; only the release notes must say what ships', () => {
+  const root = pendingTree({ 'docs/migrations.md': '# Migration notes\n\n## 0.4.0-alpha.1\n\nOld.\n' });
+  release('0.4.0-alpha.3', root);
+  assert.equal(read(root, 'docs/migrations.md'), '# Migration notes\n\n## 0.4.0-alpha.1\n\nOld.\n');
+  assert.deepEqual(check(root), []);
+});
+
+test('release: refuses a version with nothing to ship, or one already released', () => {
+  const root = fixture();
+  const before = read(root, 'Directory.Build.props');
+  assert.throws(() => release('0.4.0-alpha.3', root), /Nothing to release: docs\/guide\/release-notes\.md has no "## Next release" section with content/);
+  assert.equal(read(root, 'Directory.Build.props'), before, 'nothing written');
+  assert.throws(() => release('0.4.0-alpha.2', pendingTree()), /already has a "## 0\.4\.0-alpha\.2" section/);
+  assert.deepEqual(release('0.4.0-alpha.2', root), [], 'the documented version again is a no-op');
 });
 
 test('release: a history paragraph ends at its blank line in a CRLF checkout too', () => {
-  const root = fixture({ 'docs/manual/audio.md': 'Intro.\r\n\r\n<!-- sdk-version: history -->\r\nFrom 0.4.0-alpha.2 it starts.\r\n\r\nThe current version is **0.4.0-alpha.2** here.\r\n' });
+  const root = pendingTree({ 'docs/manual/audio.md': 'Intro.\r\n\r\n<!-- sdk-version: history -->\r\nFrom 0.4.0-alpha.2 it starts.\r\n\r\nThe current version is **0.4.0-alpha.2** here.\r\n' });
   release('0.4.0-alpha.3', root);
   assert.equal(read(root, 'docs/manual/audio.md'), 'Intro.\r\n\r\n<!-- sdk-version: history -->\r\nFrom 0.4.0-alpha.2 it starts.\r\n\r\nThe current version is **0.4.0-alpha.3** here.\r\n');
 });

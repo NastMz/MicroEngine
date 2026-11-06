@@ -18,7 +18,7 @@ the step-by-step tutorial is [Gem Garden](../tutorial/README.md).
 | `Random` | Per-run `Random`, seeded by the launcher (`RunOptions.Seed`) |
 | `Width`, `Height` | The virtual canvas size from `Settings` |
 | `Quit()` / `QuitRequested` | Asks the loop to stop after the current frame |
-| `UseAchievements(...)`, `Achievements` | Optional achievements (see [Achievements](achievements.md)); next SDK version: declared from the constructor or `Configure` |
+| `UseAchievements(...)`, `Achievements` | Optional achievements (see [Achievements](achievements.md)), declared from the constructor or `Configure` |
 
 ```csharp
 public abstract GameSettings Settings { get; }
@@ -60,7 +60,7 @@ public override GameSettings Settings { get; } = new("Neon Rift", 480, 270, 3) {
 
 Source: [`games/NeonRift/RiftGame.cs`](../../games/NeonRift/RiftGame.cs)
 
-Next SDK version (not published yet: arrives with the next SDK version): the canvas does not have to be pixel art.
+The canvas does not have to be pixel art.
 `Presentation = Presentation.HighResolution2D` scales it to fill the window with linear sampling, for HD games drawn on a 1280×720 or
 1920×1080 canvas, and `TextureFilter` sets the default sampling of textures
 ([HD canvases](rendering.md#hd-canvases-and-smooth-scaling)). A window that would not fit the display opens at the
@@ -100,7 +100,7 @@ and synthesis is too slow to repeat each update.
 | `GameLoop` | One frame per `Tick()`. Captures errors instead of throwing; `Finish()` shuts the game down once and returns a `RunResult` |
 | `GameRunner.Run(game, platform, options)` | Ticks a `GameLoop` in a blocking loop; used by desktop and headless runs |
 | `GameSession` | For hosts that drive frames themselves and outlive a run (a browser page): `Start`, `Tick`, `Stop`, `Result` |
-| `RunOptions` | `Script`, `CaptureDirectory`, `MaxUpdates`, `Seed`, `Mute`; next SDK version: `TimeMode` |
+| `RunOptions` | `Script`, `CaptureDirectory`, `MaxUpdates`, `Seed`, `Mute`, `TimeMode` |
 | `RunResult` | `Updates`, `Frames`, `Captures`, `Error` |
 
 ```csharp
@@ -121,7 +121,7 @@ it calls `Finish` and disposes the platform, so the host can show its own screen
 
 ## Modules and the frame schedule
 
-Next SDK version (not published yet: arrives with the next SDK version). The engine is composed of modules on an
+The engine is composed of modules on an
 `EngineBuilder`, and `Game` is one of them: its built-in services (`Input`, `Audio`, `Scenes`, `Assets`, `Touch`,
 `Font`...) are registered in a typed service registry and read from it, and its per-frame work runs as named systems
 in the frame's phases. Override `Configure` to add your own systems, replace a built-in service or change the time
@@ -144,11 +144,11 @@ The phases run in this order; the four fixed phases run once per fixed step, the
 | Phase | Built-in systems | Use it for |
 | --- | --- | --- |
 | `BeginFrame` | `engine.assets` (finishes background loads within the frame budget) | Bookkeeping before the frame |
-| `Input` | `engine.input.events` (routes the frame's device events and touches through the input layers; next SDK version), `engine.touch` (the on-screen controls; next SDK version: only when they are active as the engine is built, see [Touch controls](input.md#touch-controls)) | Input that follows the display rate |
-| `PreFixed` | `engine.input` (samples every player's actions from their devices; `Input` is player 1's), `engine.fullscreen` (switches full screen when the `fullscreen` action is pressed; next SDK version) | Work before each step's simulation |
+| `Input` | `engine.input.events` (routes the frame's device events and touches through the input layers), `engine.touch` (the on-screen controls; only when they are active as the engine is built, see [Touch controls](input.md#touch-controls)) | Input that follows the display rate |
+| `PreFixed` | `engine.input` (samples every player's actions from their devices; `Input` is player 1's), `engine.fullscreen` (switches full screen when the `fullscreen` action is pressed) | Work before each step's simulation |
 | `FixedUpdate` | `engine.time` (`Time`, `UpdateCount`), `engine.scenes` (`Scene.Update`) | Game rules |
 | `Physics` | — | Physics and collision |
-| `PostFixed` | `engine.audio`, `engine.achievements` (writes achievement progress; next SDK version: only in games that declare achievements), `engine.input.end` (edge detection), `engine.assets.playing` | What follows the simulated state |
+| `PostFixed` | `engine.audio`, `engine.achievements` (writes achievement progress; only in games that declare achievements), `engine.input.end` (edge detection), `engine.assets.playing` | What follows the simulated state |
 | `Update`, `LateUpdate` | — | Camera smoothing, UI animation, interpolation, at the display's rate |
 | `Extract` | — | Copying what will be drawn |
 | `Render` | `engine.render` (clear, scenes, achievement banners) | Drawing |
@@ -168,7 +168,7 @@ the platform delivers them at the start of a frame ([The platform host](backends
 
 ## Time
 
-Next SDK version (not published yet: arrives with the next SDK version). The loop owns time; a platform only supplies a
+The loop owns time; a platform only supplies a
 monotonic clock (`IPlatform.Clock`). `TimeSettings`, edited in `Configure`, holds every value:
 
 | Setting | Default | Meaning |
@@ -190,10 +190,10 @@ behaviour, and a hidden window implies nothing about time. `Game.TimeSettings` i
 
 Each `Tick` runs one frame:
 
-1. `platform.PollEvents()` (next SDK version: `platform.PumpEvents(...)`, whose events reach the game as
-   `Game.Lifecycle` events; no frame runs while the platform is suspended).
-2. Accumulate time. Real-time platforms add wall-clock time (capped at 0.25 s per frame); headless and
-   fixed-step platforms add exactly one step. Next SDK version (not published yet: arrives with the next SDK version): when the platform reports the rate
+1. `platform.PumpEvents(...)`, whose events reach the game as `Game.Lifecycle` events; no frame runs while the
+   platform is suspended.
+2. Accumulate time ([Time](#time)). In real time a frame adds the time the loop measured (at most `MaxFrameDelta`);
+   in deterministic time it adds exactly one step. When the platform reports the rate
    VSync paces it to (`IPlatform.DisplayRate`, SDL and desktop raylib windows), a frame counts as the whole number of
    refresh periods nearest to its measured time, the remainder carried to the next frame. Frames reach the loop up to
    a few milliseconds early or late around each refresh; counted as measured, that jitter made some frames run no
@@ -201,36 +201,36 @@ Each `Tick` runs one frame:
    (`--pacing measured`) keeps the measured time. With VSync off and a frame limit
    (`GraphicsSettings.FrameRateLimit`, `Game.Screen.FrameRateLimit`), the loop waits for the limit before each frame
    and counts time in its periods the same way; the limit never changes `UpdateRate`.
-3. Run fixed steps of `1 / UpdateRate` seconds, **at most five per frame**. Each step applies the input script,
-   samples devices into the `InputMap`, then `Game.Step` updates scenes, the audio mixer and achievement banners,
-   flushes achievement progress about once a second, and advances input edge detection. Next SDK version: these are
-   the systems of the fixed phases ([Modules and the frame schedule](#modules-and-the-frame-schedule)), and the limit is
-   `TimeSettings.MaxStepsPerFrame` ([Time](#time)).
+3. Run fixed steps of `1 / UpdateRate` seconds, **at most `TimeSettings.MaxStepsPerFrame` per frame** (five by
+   default). Each step runs the systems of the fixed phases
+   ([Modules and the frame schedule](#modules-and-the-frame-schedule)): they sample devices into the `InputMap`, update
+   scenes, the audio mixer and achievement banners, flush achievement progress about once a second, and advance input
+   edge detection.
 4. Render once: clear to `Settings.Background`, draw the scene stack and any transition, draw achievement banners.
 5. If the script asked for a capture at this update, save a PNG of the virtual frame.
 
 ```csharp
-while (_accumulator >= _step - 1e-9 && steps < 5)
+clock.BeginFrame(elapsed);
+engine.Run(Kernel.FramePhase.BeginFrame, frame);
+engine.Run(Kernel.FramePhase.Input, frame);
+while (clock.TryStep(out var step))   // at most MaxStepsPerFrame steps
 {
-    script?.Apply(_game.UpdateCount, _game.Input);
-    _game.Input.Sample(_platform.Input);
-    _game.Step((float)_step);
-    _accumulator -= _step;
-    steps++;
+    engine.RunFixedStep(step);
     // ...
 }
-if (steps == 5) _accumulator = Math.Min(_accumulator, _step);
+clock.EndSteps();                     // after the cap, at most one step stays pending
+_game.FrameBlend = clock.Blend;
 ```
 
 Source: [`src/MicroEngine/Core/GameRunner.cs`](../../src/MicroEngine/Core/GameRunner.cs)
 
 When the machine falls behind, the cap drops the backlog instead of spiralling, so the game slows down rather
-than freezing. Because simulation only ever advances in whole steps, scripted runs on headless or fixed-step
-platforms are deterministic.
+than freezing. Because simulation only ever advances in whole steps, runs in deterministic time (scripted and
+headless runs) give the same steps on any machine.
 
 ### Drawing between updates
 
-Next SDK version (not published yet: arrives with the next SDK version). Updates run at `UpdateRate` and frames at the display's rate. On a display whose
+Updates run at `UpdateRate` and frames at the display's rate. On a display whose
 rate is not a multiple of the update rate (75, 100, 144 Hz for 60 updates) some frames have no new update, and a game
 that draws its last update shows the same picture twice: moving things judder although every frame is on time.
 `Game.FrameBlend` is how far the frame being drawn is between the last update and the next one, from 0 to 1. Keep
@@ -245,7 +245,7 @@ its last two positions.
 
 ## Measuring a game
 
-Next SDK version (not published yet: arrives with the next SDK version). `--profile FILE` measures every frame and the start, prints a summary and writes the
+`--profile FILE` measures every frame and the start, prints a summary and writes the
 results (`FrameProfiler`):
 
 - per frame: the time since the previous frame started, polling events, the updates, drawing, presenting (with VSync,
@@ -287,8 +287,8 @@ your `Unload` runs. Errors are reported in `RunResult.Error`; `DesktopLauncher.R
 ## Suspension
 
 A phone sends an app to the background when the player switches away or takes a call; the platform then reports
-`Suspended` ([Backends](backends.md#iplatform); next SDK version: it delivers `Suspending` and `Resumed` from its event
-pump, always alternating). The loop reacts once on each change:
+`Suspended` ([Backends](backends.md#iplatform); it delivers `Suspending` and `Resumed` from its event pump, always
+alternating). The loop reacts once on each change:
 
 - **Going away**: music pauses, pending achievement progress is written, then `OnSuspended()` runs. No update and no
   frame happens while suspended.

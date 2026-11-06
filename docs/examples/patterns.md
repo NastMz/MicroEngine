@@ -76,8 +76,7 @@ does. See [Input](../manual/input.md).
 
 ## Game objects in the scene world
 
-Next SDK version (merged, not published yet; the published SDK keeps objects in an `EntityList<T>`, see
-[Entities](../manual/world.md#entities)). A scene keeps its objects in `Scene.Objects`, an `IWorld`
+A scene keeps its objects in `Scene.Objects`, an `IWorld`
 ([The scene world](../manual/scenes.md#the-scene-world)): each object is one of your own classes, attached to an
 entity that has an id and a transform. Courtyard Key's actors create their entity as a child of the room being
 played, so leaving a room destroys its actors with it. From
@@ -143,8 +142,8 @@ public static PixelImage RuinStones()
 }
 ```
 
-Games that use files load them through `ContentFolder` in the same `Load` (next SDK version: through `Game.Assets`,
-as all four demos do). See [Rendering](../manual/rendering.md) and [Assets](../manual/assets.md).
+Games that use files load them through `Game.Assets` in the same `Load`,
+as all four demos do. See [Rendering](../manual/rendering.md) and [Assets](../manual/assets.md).
 
 ## Saving progress through `SaveStore`
 
@@ -211,8 +210,8 @@ public static readonly Achievement[] Catalog =
 ];
 ```
 
-Declared before the engine is composed, with the game's store and theme: in `Configure` (next SDK version), or in the
-game's constructor with the published SDK. What needs the running game (the banners' position, the unlock sound)
+Declared before the engine is composed, with the game's store and theme: in `Configure` or in the
+game's constructor. What needs the running game (the banners' position, the unlock sound)
 stays in `Load`, from `MeadowGame.cs`:
 
 ```csharp

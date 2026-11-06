@@ -1,8 +1,7 @@
 # Text
 
 MicroEngine draws text with a built-in pixel font, `BitmapFont`, made for small virtual screens: every game has it as
-`Game.Font` (and `Font` inside a scene) without loading anything. Next SDK version (not published yet: arrives with the
-next SDK version): games can also load TrueType and OpenType fonts and draw them at any size
+`Game.Font` (and `Font` inside a scene) without loading anything. Games can also load TrueType and OpenType fonts and draw them at any size
 ([Scalable fonts](#scalable-fonts-ttf-and-otf)). This page covers drawing, measuring and wrapping text, the characters
 the built-in font has, and what text does not do.
 
@@ -56,23 +55,21 @@ use whole numbers (2, 3) to keep pixels square. `\n` starts a new line, `LineHei
 | `LineHeight`, `CapHeight`, `Spacing`, `Advance(c)` | the font's metrics |
 
 Right-aligning a score: `new Vector2(Game.Width - 6 - Font.MeasureWidth(text), 4)`. A word longer than `maxWidth` is
-broken between characters, so no line is wider than `maxWidth` (in the published SDK such a word overflows; the change is
-in the next SDK release). The [UI widgets](ui.md) (`DialogueBox`, `Typewriter`) wrap and page text for you.
+broken between characters, so no line is wider than `maxWidth`. The [UI widgets](ui.md) (`DialogueBox`, `Typewriter`) wrap and page text for you.
 
 ## Characters
 
 The font is proportional (narrow `i`, wide `m`) and covers:
 
 - printable ASCII: `A-Z`, `a-z`, `0-9`, space and ``!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~``;
-- symbols games use: `♥ ▶ ▼ ★ ♪ → ← ↑ ↓ × © ·`, and `○ □ △` for gamepad prompts (these three are not in a published
-  SDK yet).
+- symbols games use: `♥ ▶ ▼ ★ ♪ → ← ↑ ↓ × © ·`, and `○ □ △` for gamepad prompts.
 
 Any other character (accented letters, `ñ`, other alphabets, emoji) is drawn as `?`. Games written in languages that
 need other letters must replace them (`é` with `e`) or draw their own glyphs (below).
 
 ## Scalable fonts (TTF and OTF)
 
-Next SDK version (not published yet: arrives with the next SDK version). `Game.Assets.Font(path)` loads a TrueType or
+`Game.Assets.Font(path)` loads a TrueType or
 OpenType font (`.ttf`, or `.otf` with TrueType or CFF outlines) as a `ScalableFont`, which draws at any size in pixels
 per em. Put the file under `Content/` with its licence ([Assets](assets.md#credits-convention)).
 
@@ -108,12 +105,11 @@ each, added as they fill up); every later draw is one quad per glyph, like a spr
 fraction of a millisecond, so call `Prepare` while loading for the characters and sizes a scene shows, and text costs no
 font work during play. Kerning is applied and missing characters draw as `?`.
 
-`FontOptions` chooses how outlines become pixels: the default is antialiased, sampled linearly, with each glyph placed
-on whole canvas pixels so unscaled text stays sharp. `FontOptions.Pixel` gives hard edges and nearest sampling, for
-pixel fonts distributed as TTF and drawn at their design size or whole multiples of it, on a pixel-art canvas. Next SDK
-version (not published yet: arrives with the next SDK version): the default samples glyph pages with the game's default
-filter (linear for high-resolution games, nearest for pixel art), and text drawn in a scene's `DrawUi` has the window's
-resolution ([The world view and the UI view](rendering.md#the-world-view-and-the-ui-view)).
+`FontOptions` chooses how outlines become pixels: the default is antialiased, with each glyph placed on whole canvas
+pixels so unscaled text stays sharp, and samples glyph pages with the game's default filter (linear for high-resolution
+games, nearest for pixel art). `FontOptions.Pixel` gives hard edges and nearest sampling, for pixel fonts distributed as
+TTF and drawn at their design size or whole multiples of it, on a pixel-art canvas. Text drawn in a scene's `DrawUi`
+has the window's resolution ([The world view and the UI view](rendering.md#the-world-view-and-the-ui-view)).
 
 `BitmapFont` and a `ScalableFont` at a size both implement `IFont` (`LineHeight`, `Measure`, `Draw`), with `Wrap`,
 `MeasureWidth`, `DrawCentered` and `DrawShadowed` for any `IFont`. The [UI widgets](ui.md) `DialogueBox` and

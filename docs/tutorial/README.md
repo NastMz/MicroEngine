@@ -55,7 +55,7 @@ The checkpoints are MIT licensed, like the engine: copy anything you like into y
 
 MicroEngine gives you a loop, scenes, input actions, drawing, tile collision, sound, a pixel font, a few UI widgets and
 saves. It deliberately has no entity-component system, no physics engine and no visual editor: a game is plain C#
-classes (the next SDK version adds a scene world and physics worlds for tile games, which this tutorial does not need). Where Gem Garden needs something the engine does not provide (an enemy that patrols, a round timer, a
+classes (it also has a scene world and physics worlds for tile games, which this tutorial does not need). Where Gem Garden needs something the engine does not provide (an enemy that patrols, a round timer, a
 knock-back), the tutorial writes it in the game and says so.
 
 Start with [step 1](01-project.md).

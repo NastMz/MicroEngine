@@ -2,8 +2,8 @@
 
 A MicroEngine game is one .NET project that runs on Windows, Linux, macOS, Android, iOS and in web browsers. The
 game's code is the same everywhere: it talks to `IPlatform`, and a platform underneath does the work. SDL 3 is the
-platform on desktops and phones, raylib compiled to WebAssembly in browsers (with the next SDK version: SDL 3 there
-too), and a headless platform runs games in tests ([Backends and platforms](../manual/backends.md)). The [Platforms page](/platforms/) summarises them;
+platform on desktops, phones and browsers (compiled to WebAssembly there), raylib is an alternative platform on
+desktops, and a headless platform runs games in tests ([Backends and platforms](../manual/backends.md)). The [Platforms page](/platforms/) summarises them;
 [Packaging a game](packaging.md) explains how each package is built.
 
 ## At a glance
@@ -15,21 +15,20 @@ too), and a headless platform runs games in tests ([Backends and platforms](../m
 | macOS | `sdl` with Metal (default); `raylib` where OpenGL is available | `microengine package macos`, on a Mac | macOS 14+, Apple silicon |
 | Android | `sdl` with touch controls | `microengine package android` | Android 7.0+, 64-bit |
 | iOS and iPadOS (preview) | `sdl` with Metal and touch controls | `microengine package ios`, on a Mac with Xcode | iOS 15+ |
-| Web browsers | `raylib` in WebAssembly; next SDK version: `sdl` in WebAssembly | `microengine package web` | WebAssembly and WebGL (Chrome, Edge, Firefox, Safari) |
+| Web browsers | `sdl` in WebAssembly | `microengine package web` | WebAssembly and WebGL (Chrome, Edge, Firefox, Safari) |
 
 iOS is a preview: games build and run, and device builds need the developer's own Apple signing
 ([Signing](signing.md#ios)).
 
 ## Desktop: Windows, Linux, macOS
 
-`DesktopLauncher.Run(game, args)` opens a window on the first platform of its catalog that can run on the machine:
+`DesktopLauncher.Run(MainGame.Configure, args)` takes the game's `Configure` entry point and opens a window on the first platform of its catalog that can run on the machine:
 SDL 3. Players and tests can choose another with `--platform raylib`, `--platform sdl-software` (SDL's CPU renderer,
 for machines without a working GPU driver) or `MICROENGINE_PLATFORM`; `--list-platforms` lists them. The window
 scales the game's virtual canvas by the largest whole factor that fits and letterboxes it; F11 and Alt+Enter toggle
-fullscreen (next SDK version: through the engine's `fullscreen` action, which a game can rebind or turn off;
-[Full screen](../manual/input.md#full-screen)). The window and taskbar show the game's [icon](app-identity.md). Next SDK version (not published yet:
-arrives with the next SDK version): `DesktopLauncher.Run(MainGame.Configure, args)` takes the game's `Configure` entry
-point, and the browser, Android and iOS builds run that same composition with the same launch rules
+fullscreen through the engine's `fullscreen` action, which a game can rebind or turn off
+([Full screen](../manual/input.md#full-screen)). The window and taskbar show the game's [icon](app-identity.md). The
+browser, Android and iOS builds run the same composition with the same launch rules
 ([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)).
 
 - **Rendering**: SDL picks Direct3D 11, Vulkan or OpenGL on Windows, OpenGL on Linux and Metal on macOS; all draw the
@@ -61,8 +60,10 @@ for devices, signed with your Apple certificate and provisioning profile. Both n
 
 ## Web browsers
 
-`microengine package web` builds a static site: upload the folder to any web host. The game runs on raylib compiled
-to WebAssembly, in desktop and mobile browsers, with keyboard, gamepads and on-screen touch controls.
+`microengine package web` builds a static site: upload the folder to any web host. The game runs on SDL 3 compiled
+to WebAssembly, the same platform as on desktops and phones, in desktop and mobile browsers, with keyboard, gamepads
+and on-screen touch controls. raylib is a desktop platform only, so a game that references only `MicroEngine.Sdl` can
+be packaged for the web.
 
 - **Starting**: the page waits for a click, tap or key before starting, because browsers allow sound only after one;
   that first input is not passed to the game.
@@ -72,11 +73,6 @@ to WebAssembly, in desktop and mobile browsers, with keyboard, gamepads and on-s
 - **Lifecycle**: a hidden tab pauses the game and its sound.
 - **Size**: the download is the .NET runtime, the game and its content, compressed with Brotli on servers that
   support it; a small code-first game is about 2 MB.
-
-Next SDK version (not published yet): the game runs on SDL 3 compiled to WebAssembly, the same platform as on desktops and phones, with the same
-page, input, touch controls and sound; raylib remains a desktop platform only. A game that references only
-`MicroEngine.Sdl` can then be packaged for the web. Checked in Chrome and Firefox, and on emulated phones and tablets;
-real phones and Safari are not checked automatically.
 
 How the page behaves and how to embed a game in another page: [The browser host](../examples/embedding.md).
 

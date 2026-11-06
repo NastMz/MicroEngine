@@ -36,7 +36,7 @@ microengine package web
 The first command installs .NET's WebAssembly build tools once per machine (on Windows, from an administrator
 terminal if .NET was installed for all users). The package is a folder and a ZIP of the same files:
 `dist/GemGarden-1.0.0-web/`, a static site with an `index.html` titled "Gem Garden", the icon as favicon, the .NET
-runtime compiled to WebAssembly, raylib (SDL 3 from the next SDK version), the game and its `Content`.
+runtime compiled to WebAssembly, SDL 3, the game and its `Content`.
 
 - Upload the folder to any static host: GitHub Pages, Netlify, itch.io (as an HTML game), an S3 bucket, your own
   server. The server must send `.wasm` files as `application/wasm`.

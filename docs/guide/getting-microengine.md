@@ -5,7 +5,7 @@ packages on [nuget.org](https://www.nuget.org/packages/MicroEngine): the engine,
 command-line tool and a project template. This page installs them and checks that everything works; the next page,
 [Your first game](first-game.md), creates and runs a game.
 
-The current version is **0.4.0-alpha.2**, an Alpha pre-release ([Versions and compatibility](sdk.md)). Because it is a
+The current version is **0.5.0-alpha.1**, an Alpha pre-release ([Versions and compatibility](sdk.md)). Because it is a
 pre-release, NuGet commands need `--prerelease` or the exact version.
 
 Only want to play the demos? They are on the [demo pages](/demos/), in the browser and as downloads
@@ -30,12 +30,12 @@ dotnet tool install -g MicroEngine.Cli --prerelease
 microengine version
 ```
 
-`microengine version` prints `0.4.0-alpha.2`. The tool creates, runs, builds and packages games
+`microengine version` prints `0.5.0-alpha.1`. The tool creates, runs, builds and packages games
 ([The microengine tool](cli.md)).
 
 If the shell says `microengine` is not found, the folder of .NET global tools is not on your `PATH`: add
 `%USERPROFILE%\.dotnet\tools` (Windows) or `~/.dotnet/tools` (Linux, macOS) to it and open a new terminal. To install
-an exact version instead of the newest pre-release: `dotnet tool install -g MicroEngine.Cli --version 0.4.0-alpha.2`.
+an exact version instead of the newest pre-release: `dotnet tool install -g MicroEngine.Cli --version 0.5.0-alpha.1`.
 
 ## 3. The project template
 
@@ -43,7 +43,7 @@ an exact version instead of the newest pre-release: `dotnet tool install -g Micr
 there is nothing to do. To install it yourself, for example to use `dotnet new` or an IDE's "New project" dialog:
 
 ```bash
-dotnet new install MicroEngine.Templates::0.4.0-alpha.2
+dotnet new install MicroEngine.Templates::0.5.0-alpha.1
 dotnet new microengine-game -n StarCourier --app-id com.yourstudio.starcourier --title "Star Courier"
 ```
 
@@ -64,8 +64,8 @@ A game references one of these; the template references `MicroEngine.Desktop`.
 | Package | Contains |
 | --- | --- |
 | [`MicroEngine`](https://www.nuget.org/packages/MicroEngine) | the core: loop, scenes, input, graphics, tiles, audio synthesis, UI, saves, achievements, headless platform, identity build targets |
-| [`MicroEngine.Sdl`](https://www.nuget.org/packages/MicroEngine.Sdl) | the SDL 3 platform (Windows, Linux, macOS, Android, iOS) |
-| [`MicroEngine.Raylib`](https://www.nuget.org/packages/MicroEngine.Raylib) | the raylib platform (desktops and browsers; desktops only from the next SDK version) |
+| [`MicroEngine.Sdl`](https://www.nuget.org/packages/MicroEngine.Sdl) | the SDL 3 platform (Windows, Linux, macOS, Android, iOS, browsers) |
+| [`MicroEngine.Raylib`](https://www.nuget.org/packages/MicroEngine.Raylib) | the raylib platform (desktops) |
 | [`MicroEngine.Desktop`](https://www.nuget.org/packages/MicroEngine.Desktop) | `DesktopLauncher` with SDL 3, raylib, SDL's software renderer and headless |
 | [`MicroEngine.Cli`](https://www.nuget.org/packages/MicroEngine.Cli) | the `microengine` tool |
 | [`MicroEngine.Templates`](https://www.nuget.org/packages/MicroEngine.Templates) | `dotnet new microengine-game` |
@@ -80,11 +80,11 @@ Any .NET 10 console project can become a MicroEngine game:
 dotnet add package MicroEngine.Desktop --prerelease
 ```
 
-Then subclass `Game`, start it with `DesktopLauncher.Run(new MyGame(), args)` from `Program.cs`, and add the identity
-properties ([Name, id, version and icon](app-identity.md)) before packaging. A game that wants SDL only references
-`MicroEngine.Sdl` instead and passes its own platform catalog ([Backends and platforms](../manual/backends.md)); it
-can then be packaged for every target except the web, whose platform is raylib (from the next SDK version it is SDL 3,
-so a game that references only `MicroEngine.Sdl` can be packaged for the web too).
+Then subclass `Game`, give it a composition (`public static void Configure(HostBuilder host) =>
+host.UseGame(() => new MyGame());`), start it with `DesktopLauncher.Run(MyGame.Configure, args)` from `Program.cs`,
+and add the identity properties ([Name, id, version and icon](app-identity.md)) before packaging. A game that wants
+SDL only references `MicroEngine.Sdl` instead and passes its own platform catalog
+([Backends and platforms](../manual/backends.md)); it can be packaged for every target, the web included.
 
 ## Next
 

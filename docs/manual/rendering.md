@@ -19,8 +19,7 @@ factors would waste a fifth of a small screen.
 
 ### HD canvases and smooth scaling
 
-Next SDK version (not published yet: arrives with the next SDK version). Pixel-perfect scaling is the default, not a
-rule: `GameSettings.Presentation` chooses how the canvas reaches the window, starting from one of two presets.
+Pixel-perfect scaling is the default, not a rule: `GameSettings.Presentation` chooses how the canvas reaches the window, starting from one of two presets.
 
 | `Presentation` | The frame | Sampling | For |
 | --- | --- | --- | --- |
@@ -41,7 +40,7 @@ smooth canvas are written at its size; pixel-art captures stay three times large
 
 ### Presentation: one choice per field
 
-Not published yet: arrives with the next SDK version. A presentation states each choice separately (how the scale is
+A presentation states each choice separately (how the scale is
 rounded, how the canvas is sampled on its way to the window, the textures' default filter, the initial window size, the
 capture scale, camera snapping), and the two presets are just values of those fields:
 
@@ -71,7 +70,7 @@ public override GameSettings Settings { get; } = new("My Game", 480, 270, 3)
 ```
 
 `Rounding` also has `Integer` (never fractional while a whole factor fits) and `Aspect` has `Stretch` (fill the whole
-window, pixels no longer square) and, next SDK version, `Expand`: the scale and square pixels stay, and the canvas grows
+window, pixels no longer square) and `Expand`: the scale and square pixels stay, and the canvas grows
 along the window's free side so a wider (or taller) window shows more of the world instead of letterbox
 (`Presentation.CanvasSize`; the configured size is the minimum, and `IRenderer.Width`/`Height` report the canvas's current
 size). `TextureFilter`, when set, still wins over `DefaultSampler`. The on-screen touch controls place the frame by the
@@ -79,7 +78,7 @@ same presentation (`FrameLayout.Fit` and `VirtualControls.Frame` take it), so to
 
 ### Filtering: nearest or linear
 
-Next SDK version (not published yet: arrives with the next SDK version). Every texture has a `TextureFilter`:
+Every texture has a `TextureFilter`:
 `Nearest` keeps hard pixel edges, `Linear` blends neighbouring pixels when a texture is drawn scaled, rotated or between
 pixels. The game's default (`GameSettings.TextureFilter`, or nearest for `Presentation.PixelArt` and linear for `Presentation.HighResolution2D`) applies
 to every texture and atlas created without a filter of its own; each one can choose:
@@ -91,10 +90,8 @@ hero.Texture.Filter = TextureFilter.Nearest;                                    
 var page = Graphics.CreateTexture(image, TextureFilter.Linear);
 ```
 
-Glyph pages of TTF/OTF fonts take their filter from `FontOptions.Filter`; when that is null, the published SDK picks
-linear for antialiased text (`FontOptions.Antialiasing`, the default) and nearest otherwise. Next SDK version (not
-published yet: arrives with the next SDK version): when it is null they follow the game's default like every other
-texture (the presentation's `DefaultSampler`), and `FontOptions.Pixel` chooses nearest itself. `ScalableFont.Filter`
+Glyph pages of TTF/OTF fonts take their filter from `FontOptions.Filter`; when that is null, they follow the game's
+default like every other texture (the presentation's `DefaultSampler`), and `FontOptions.Pixel` chooses nearest itself. `ScalableFont.Filter`
 changes it later. The built-in pixel font is always nearest. Atlases packed at run time and sampled linearly get extruded edges, so
 neighbouring sprites never bleed into each other. Linear sampling does not replace art made for the size it is shown
 at: there are no mipmaps, so drawing a large image much smaller than its pixels shimmers; keep art within about twice
@@ -131,7 +128,7 @@ Source: [`src/MicroEngine.Graphics2D/Legacy/IGraphics.cs`](../../src/MicroEngine
 - `BlendMode` is `Alpha`, `Additive` or `Multiply`.
 - `PushCamera`/`PopCamera` must balance within a frame; both backends throw otherwise.
 
-Next SDK version (not published yet: arrives with the next SDK version): every backend draws by the same rules.
+Every backend draws by the same rules.
 
 - Pixel (x, y) is the square from (x, y) to (x + 1, y + 1). A rectangle or an unrotated sprite covers exactly the
   pixels whose centre (x + 0.5, y + 0.5) lies inside it; a centre on its left or top edge counts as inside, one on its
@@ -141,10 +138,9 @@ Next SDK version (not published yet: arrives with the next SDK version): every b
 - `Clear` replaces every pixel of the canvas whatever the clip and blend mode, and replaces what was drawn before it;
   the clip still applies to the draws after it. `SetClip` truncates its rectangle to whole pixels.
 - Blending: with source colour s (after the tint), its alpha a and canvas colour d, `Alpha` writes s·a + d·(1 − a),
-  `Additive` s·a + d, `Multiply` s·a·d + d·(1 − a). Next SDK version (not published yet: arrives with the next SDK
-  version): the canvas is premultiplied (colours stored times their alpha), so `Multiply` with a translucent colour
-  darkens in proportion to its opacity (it used to compute s·d + d·(1 − a)), a translucent `Clear` stores its colour
-  times its alpha (what the window always showed), and linear sampling of transparent edges no longer darkens them.
+  `Additive` s·a + d, `Multiply` s·a·d + d·(1 − a). The canvas is premultiplied (colours stored times their alpha), so
+  `Multiply` with a translucent colour darkens in proportion to its opacity, a translucent `Clear` stores its colour
+  times its alpha (what the window shows), and linear sampling of transparent edges does not darken them.
 - Drawing a disposed texture throws `ObjectDisposedException`, and a texture created by another graphics device
   throws `ArgumentException`, on every backend; nothing is drawn.
 - Captures are opaque (alpha 255) on every backend.
@@ -200,11 +196,11 @@ padding) when you call `Build(Graphics)`:
 | `AddGrid(name, sheet, cellWidth, cellHeight, count?, origin?)` | Slices a row-major sheet into `name0..N` |
 
 Atlases made by TexturePacker, Aseprite, ShoeBox and similar tools load with `Assets.Atlas` or `SpriteAtlas.Load`,
-with trimming, pivots and Aseprite animation tags ([Assets](assets.md#atlases-from-packing-tools), next SDK version).
+with trimming, pivots and Aseprite animation tags ([Assets](assets.md#atlases-from-packing-tools)).
 
 The resulting `SpriteAtlas` returns `Sprite`s by name (`atlas["star"]`), lists `Names`, collects animation frames
 with `Frames("walk")`, and owns the texture (`Dispose` it in `Unload`). A `Sprite` is a texture region plus its
-origin. Next SDK version (not published yet: arrives with the next SDK version): `Frames` returns a shared, read-only `IReadOnlyList<Sprite>`, collected once per name, so it can be
+origin. `Frames` returns a shared, read-only `IReadOnlyList<Sprite>`, collected once per name, so it can be
 called while drawing. Duplicate names and unknown names throw.
 
 ## Animation
@@ -226,7 +222,7 @@ frames themselves from `atlas.Frames(...)` and a timer.
 
 Draw world content between `r.PushCamera(camera)` and `r.PopCamera()`; HUD drawn outside stays in screen space.
 
-Next SDK version (not published yet: arrives with the next SDK version): a camera can be drawn somewhere its rules do
+A camera can be drawn somewhere its rules do
 not keep it. Set `DrawPosition` before drawing (for example to the camera's position interpolated between the last two
 updates, a scene world's `DrawPosition2D` of an entity that follows the camera) and drawing reads it: `RenderOffset`,
 `WorldToView`, `ViewToWorld`, `WorldToScreen`, `ScreenToWorld`, `VisibleBounds` and `IsVisible` use `DrawnPosition`
@@ -304,7 +300,7 @@ Every game gets `Game.Font`, the built-in proportional "Micro 5x7" face authored
 `DrawShadowed`, `DrawOutlined`, `DrawCentered`, `Measure`, `MeasureWidth` and greedy `Wrap(text, maxWidth)`, all
 with an optional `scale`. Unknown characters render as `?`.
 
-TrueType and OpenType fonts at any size are `ScalableFont`s, loaded with `Assets.Font` (next SDK version); both kinds
+TrueType and OpenType fonts at any size are `ScalableFont`s, loaded with `Assets.Font`; both kinds
 implement `IFont`.
 
 Characters, measuring, wrapping and limits: [Text](text.md).
@@ -339,7 +335,7 @@ Collision over the same layers (`TileGrid`, `TileMotion`) is described in [Tile 
 
 ## The world view and the UI view
 
-Not published yet: arrives with the next SDK version. A frame has two views. The **world view** is the canvas: drawn at
+A frame has two views. The **world view** is the canvas: drawn at
 the canvas's resolution (`Scene.Draw`), with the scene's camera, and scaled into the window as the presentation says. The
 **UI view** is drawn at the window's resolution over it (`Scene.DrawUi`), in UI units (window pixels divided by
 the UI scale), so interface text and shapes stay sharp however small the canvas is: a 320 × 180
@@ -381,7 +377,7 @@ rasterizes.
 
 ## The 2D batcher and the camera
 
-Not published yet: arrives with the next SDK version. `IRenderer` is a façade over the 2D batcher (`Renderer2D`, in
+`IRenderer` is a façade over the 2D batcher (`Renderer2D`, in
 `MicroEngine.Graphics2D.dll`), which runs on the [graphics device](#the-graphics-device) of the platform: a frame's
 draws reach the GPU as one indexed draw per run of consecutive draws with the same texture, blend mode and clip, so
 drawing from one atlas costs one draw call. `SdlPlatform.Canvas.Renderer.Statistics` and
@@ -400,7 +396,7 @@ pixels; its default comes from the presentation (`Presentation.CameraPixelSnap`:
 
 ## The graphics device
 
-Not published yet: arrives with the next SDK version. Under the 2D drawing API sits one graphics device contract that
+Under the 2D drawing API sits one graphics device contract that
 every backend implements, in the `MicroEngine.Graphics.Devices` namespace (`MicroEngine.Graphics.dll`, carried by the
 `MicroEngine` package). Games do not need it to draw sprites; it is for engine modules, tools and backend authors.
 
@@ -443,8 +439,7 @@ public interface IGraphicsDevice : IDisposable
   bindings and uploaded bytes exactly, the same on every device, so tests can hold a scene to a draw-call budget.
 - **The reference device.** `ReferenceGraphicsDevice` implements the contract on the CPU, rule by rule; it needs no
   window and draws identically on every machine.
-- **The programmable device.** Not published yet: arrives with the next SDK version, carried by the `MicroEngine.Sdl`
-  package. `SdlGpuDevice` (`MicroEngine.Graphics.SdlGpu`, device name `sdl-gpu`) implements the contract on SDL_GPU
+- **The programmable device.** Carried by the `MicroEngine.Sdl` package, `SdlGpuDevice` (`MicroEngine.Graphics.SdlGpu`, device name `sdl-gpu`) implements the contract on SDL_GPU
   (Direct3D 12, Vulkan, Metal) at tier 1; a game draws with it by asking the SDL platform for it
   (`GraphicsSettings.Device = "sdl-gpu"` or `--graphics sdl-gpu`; see [Backends](backends.md)). It offers custom shaders compiled ahead of time, depth attachments, instancing and every blend state, as well
   as everything tier 0 offers. `Capabilities.ApiName` and `Capabilities.Adapter` say which API and adapter SDL chose,
@@ -453,7 +448,7 @@ public interface IGraphicsDevice : IDisposable
   TextureUsage.DepthStencil)` accepts. Matrices follow System.Numerics (right-handed `CreateLookAt` and
   `CreatePerspectiveFieldOfView`, uploaded as they are, `mul(M, v)` in HLSL), front faces are counter-clockwise and
   depth runs from 0 (near) to 1 (far).
-- **Shaders compiled ahead of time.** Not published yet: arrives with the next SDK version. Custom shaders are HLSL
+- **Shaders compiled ahead of time.** Custom shaders are HLSL
   compiled by [`microengine shaders`](../guide/cli.md#shaders) into `.shader` files with code for every API.
   `CompiledShader.Parse(bytes)` reads one and `compiled.Create(device)` creates it in the format the device runs (DXIL on
   Direct3D 12, SPIR-V on Vulkan, MSL on Metal); on a device without custom shaders it throws

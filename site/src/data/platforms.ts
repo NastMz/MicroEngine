@@ -1,7 +1,7 @@
 // The supported platforms, as a game developer needs them: how a game runs there, where it is built, what
 // `microengine package` produces and what players need. Functional limits only; keep in step with
-// docs/guide/platforms.md and docs/guide/packaging.md. Rows describe the published SDK; `runtimeNext` says what the next
-// SDK version changes there, and `status` uses the availability scale of capabilities.ts.
+// docs/guide/platforms.md and docs/guide/packaging.md. Rows describe the published SDK, and `status` uses the
+// availability scale of capabilities.ts.
 import type { Availability, Family } from './capabilities.ts';
 
 export type Support = 'supported' | 'preview';
@@ -21,8 +21,6 @@ export interface PlatformRow {
   family: Extract<Family, 'platform'>;
   /** The platform profile the game runs on there, in the published SDK. */
   runtime: string;
-  /** What the next SDK version changes in `runtime`, when it changes it. */
-  runtimeNext?: string;
   /** Where `microengine package` builds it, and what it produces. */
   build: string;
   /** What a player's device needs. */
@@ -83,8 +81,7 @@ export const platforms: PlatformRow[] = [
   },
   {
     id: 'browser', name: 'Web browsers', support: 'supported', status: 'available', family: 'platform',
-    runtime: 'raylib compiled to WebAssembly',
-    runtimeNext: 'SDL 3 compiled to WebAssembly, with the same page, input and touch controls; raylib becomes a desktop alternative only',
+    runtime: 'SDL 3 compiled to WebAssembly (raylib runs on desktops only)',
     build: 'microengine package web, from any system: a static site for any web server',
     requires: 'A browser with WebAssembly and WebGL: Chrome, Edge, Firefox, Safari, on desktops and phones',
     input: 'Keyboard, gamepads, touch controls',

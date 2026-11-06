@@ -16,7 +16,6 @@ described in [Physics worlds](#physics-worlds).
 | `TileMotion` | moves a box through a grid: `Move`, `IsOnGround`, `TouchedFlags`, `IsSolidAt` |
 | `TileRenderer` | draws the visible cells of a layer, asking the game which sprite each id uses |
 | `Autotile` | `Mask4`: which of the four neighbours match, to pick edge and corner sprites |
-| `Entity`, `EntityList<T>` | optional base class and list for game objects, with safe spawning and removal (removed in the next SDK version: a scene keeps its objects in `Scene.Objects`, an `IWorld`, [The scene world](scenes.md#the-scene-world)) |
 
 ## Maps as text
 
@@ -60,11 +59,10 @@ private readonly TileGrid _grid = new(
 ## Moving through the grid
 
 `TileMotion.Move(box, delta, grid, solids = null, ignoreOneWay = false)` returns where the box ends up and what it hit.
-Next SDK version (not published yet: arrives with the next SDK version): the result type is `TileMoveResult`, so it no
-longer shares its name with the `MoveResult` of a physics world; `TileMotion` stays a stateless convenience over the
-same swept test as the tile backend below.
+The result type is `TileMoveResult`, distinct from the `MoveResult` of a physics world; `TileMotion` is a stateless
+convenience over the same swept test as the tile backend below.
 
-| `TileMoveResult` member (`MoveResult` in the published SDK) | Meaning |
+| `TileMoveResult` member | Meaning |
 | --- | --- |
 | `Bounds`, `Position` | the box after the move |
 | `HitLeft`, `HitRight`, `HitWall` | stopped horizontally |
@@ -75,15 +73,13 @@ How it works, and why it matters:
 
 - **X first, then Y.** A box moving diagonally into a wall stops on one axis and keeps sliding on the other.
 - **A swept test in sub-steps of at most half a tile.** Each sub-step stops the box flush against the first solid
-  tile or rectangle in its way, including one thinner than the step. Next SDK version (not published yet: arrives with
-  the next SDK version): a fast box no longer passes through an extra rectangle thinner than a sub-step (earlier
-  versions only tested where each sub-step ended); a move with nothing in its way ends at exactly the same position as
-  before.
+  tile or rectangle in its way, including one thinner than the step, so a fast box never passes through an extra
+  rectangle thinner than a sub-step.
 - **Solid** tiles block from every side. **One-way** tiles block only a box moving down onto their top edge from above:
   jump up through them, land on them, and pass `ignoreOneWay: true` to drop through.
 - **`solids`**: extra rectangles that block like solid tiles (moving platforms, doors, push blocks). A rectangle the
-  box already overlaps does not block it, so a box is never stuck inside one. Next SDK version (not published yet:
-  arrives with the next SDK version): one exception, a rectangle that rose into a box moving down: when its top edge is
+  box already overlaps does not block it, so a box is never stuck inside one. One exception, a rectangle that rose
+  into a box moving down: when its top edge is
   inside the box's lower half, the box is first lifted onto it (if nothing solid is there), so a platform moved up into
   a standing player carries him instead of swallowing him, and `HitFloor` and `IsOnGround` are true.
 - `IsOnGround(box, grid, solids)` is true when one more pixel down would collide: standing on a floor, a one-way
@@ -140,16 +136,13 @@ A top-down game uses the same call without gravity: see the gardener and the sli
 rectangles: `a.Intersects(b)` is true when they overlap (sharing an edge does not count). `RectF.FromCenter`,
 `Offset`, `Inflate` and `Intersection` build and adjust the rectangles.
 
-With an `EntityList` (removed in the next SDK version: a scene keeps its objects in `Scene.Objects`, an `IWorld`), `list.Overlapping(rect)` returns the living entities whose bounds overlap a rectangle. Next SDK version (not published yet: arrives with the next SDK version):
-walking an `EntityList`, `OfType<T>()` or `Overlapping` with `foreach` allocates nothing. There is no
-spatial index: checking every pair is fast for the few hundred objects a scene of a pixel-art game holds.
+There is no spatial index: checking every pair is fast for the few hundred objects a scene of a pixel-art game holds.
 A game with thousands of objects would bucket them by tile itself.
 
 ## Entities
 
-Removed in the next SDK version (not published yet): `Entity` and `EntityList<T>` leave the SDK. A scene keeps its
-objects in `Scene.Objects`, an `IWorld` with entity ids, transforms, attachments, interpolation for drawing and a
-clock ([The scene world](scenes.md#the-scene-world)), or in plain classes of its own, as the platformer example does
+A scene keeps its objects in `Scene.Objects`, an `IWorld` with entity ids, transforms, attachments, interpolation for
+drawing and a clock ([The scene world](scenes.md#the-scene-world)), or in plain classes of its own, as the platformer example does
 with its coins:
 
 <!-- code: samples/Examples/Examples/PlatformerExample.cs#coin -->
@@ -170,17 +163,7 @@ public sealed class Coin
 }
 ```
 
-In the published SDK, `Entity` is an optional base class: a `Position`, a `Hitbox` relative to it (`Bounds` in
-world pixels), virtual `Update` and `Draw`, a `Depth` for draw order, and `Destroy()`; `EntityList<T>` updates and
-draws a list of them:
-
-- Adding during an update is deferred to the end of that update, and destroyed entities leave the list then (calling
-  `Removed()`), so entities can spawn and destroy each other while the list is iterated.
-- `Draw(r, camera)` sorts by `Depth` (top-down games use the feet's Y, so lower objects draw in front) and skips
-  entities outside the camera's view.
-
-Using `Entity` was always a choice, not a requirement: the tutorial's player and slimes are plain classes. MicroEngine has no
-entity-component system.
+The tutorial's player and slimes are plain classes too. MicroEngine has no entity-component system.
 
 ## Drawing tiles
 
@@ -212,7 +195,7 @@ a sensor looks only at the shapes near it; the results are the same as looking a
 
 ## Physics worlds
 
-Next SDK version (not published yet: arrives with the next SDK version). `IPhysicsWorld2D` (namespace
+`IPhysicsWorld2D` (namespace
 `MicroEngine.Physics`) is a world of bodies owned by entities of the [scene world](scenes.md#the-scene-world). Every
 physics backend offers the same core; anything else is a capability the backend declares, and asking for one it does
 not declare throws `PhysicsCapabilityException` instead of being approximated. The engine's backend is
@@ -265,7 +248,7 @@ gives identical results on every platform. A backend with dynamic bodies may lea
 
 ### The Box2D backend
 
-Optional, and not published yet: `Box2DPhysicsWorld2D` (namespace `MicroEngine.Physics.Box2D`) is a package of its own,
+Optional, and in the repository only: `Box2DPhysicsWorld2D` (namespace `MicroEngine.Physics.Box2D`) is a package of its own,
 not one of the SDK packages. It runs Box2D 3.2 natively on Windows, Linux, macOS, Android, iOS and in browsers, behind
 the same `IPhysicsWorld2D`, so code that uses only the core works on either backend:
 

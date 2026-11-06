@@ -1,14 +1,14 @@
 ---
 // The Socket primitive: a labelled socket of one subsystem family, with a module seated in it or left empty.
 //   <Socket family="graphics" contract="IGraphicsDevice" module="SDL_Renderer" status="available" />
-//   <Socket family="graphics" contract="IGraphicsDevice" module="SDL_GPU" status="next" />
+//   <Socket family="graphics" contract="IGraphicsDevice" module="SDL_GPU" status="available" />
 //   <Socket family="physics" contract="IPhysicsWorld2D" module="Box2D" status="repo" empty />
 // `empty` draws a dashed socket with no module: the way the site shows anything that is not published. A socket
 // without `module` and `empty` is an open slot ("your module"). The status, when given, is always written out.
 import FamilyIcon from './FamilyIcon.astro';
 import { families } from './geometry.mjs';
 
-type Status = 'available' | 'next' | 'repo' | 'planned';
+type Status = 'available' | 'repo' | 'planned';
 interface Props {
   family: keyof typeof families;
   contract?: string;
@@ -22,7 +22,6 @@ const { family, contract, module, note, status, empty = false, as: Tag = 'div' }
 if (!families[family]) throw new Error(`Socket: unknown family "${family}"`);
 const statusText: Record<Status, string> = {
   available: 'Available',
-  next: 'Next SDK version',
   repo: 'In the repository, not published',
   planned: 'Planned',
 };

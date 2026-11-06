@@ -27,12 +27,12 @@ What a MicroEngine game needs, and the functional limits to plan around. For wha
 
 | Limitation | More |
 | --- | --- |
-| 2D only in the published SDK. A minimal 3D path (glTF meshes, a perspective camera, depth) is in the engine's repository only, in no package; there is no 3D renderer | [The 3D path](../manual/rendering.md#the-3d-path) |
-| No rigid-body physics engine: the published SDK moves boxes through tile maps (`TileMotion`). Next SDK version: physics worlds with the engine's tile backend (kinematic bodies, sensors, layers, ray casts; no forces or rotation). A Box2D backend with dynamic bodies is in the engine's repository; it is optional and not published | [Physics worlds](../manual/world.md#physics-worlds) |
+| 2D only in the SDK packages. A minimal 3D path (glTF meshes, a perspective camera, depth) is in the engine's repository only, in no package; there is no 3D renderer | [The 3D path](../manual/rendering.md#the-3d-path) |
+| No rigid-body physics in the SDK packages: physics worlds use the engine's tile backend (kinematic bodies, sensors, layers, ray casts; no forces or rotation). A Box2D backend with dynamic bodies is in the engine's repository only, not part of the SDK packages | [Physics worlds](../manual/world.md#physics-worlds) |
 | No networking or scripting language | [Architecture](../architecture.md) |
-| No visual editor, level editor or asset tool: content is code, or files loaded through `ContentFolder` | [Assets](../manual/assets.md) |
+| No visual editor, level editor or asset tool: content is code, or files loaded through `Game.Assets` | [Assets](../manual/assets.md) |
 | No ECS: plain entities, sized for a few hundred objects per scene | [Architecture](../architecture.md) |
-| Text uses the built-in pixel font (`Game.Font`). Next SDK version: TrueType and OpenType fonts at any size (`Assets.Font`). Bitmap font files (AngelCode BMFont) are not read | [Text](../manual/text.md) |
+| Text uses the built-in pixel font (`Game.Font`) or TrueType and OpenType fonts at any size (`Assets.Font`). Bitmap font files (AngelCode BMFont) are not read | [Text](../manual/text.md) |
 | Below 12 drawn frames per second the game slows down instead of skipping updates (at most five steps per frame) | [Architecture](../architecture.md#the-frame) |
 
 ## Input
@@ -61,7 +61,6 @@ When storage is full or blocked, the game keeps running and the page says progre
 | --- | --- |
 | Sound starts only after the player's first click, tap or key press, and stops while the tab is hidden (the game pauses with it) | [Platforms](../guide/platforms.md#web-browsers) |
 | F11 is the browser's own fullscreen; the game's fullscreen is Alt+Enter or the page's button | [The browser host](../examples/embedding.md) |
-| raylib's web audio uses `ScriptProcessorNode`, which Chrome reports as deprecated in its console | [Audio](../manual/audio.md) |
 | The download includes the .NET runtime: about 2 MB compressed for a small game, more with large music or art | [Platforms](../guide/platforms.md#web-browsers) |
 
 ## Packaging and distribution

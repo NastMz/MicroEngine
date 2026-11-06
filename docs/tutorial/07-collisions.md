@@ -8,7 +8,7 @@ Games need two kinds of collision, and MicroEngine handles them differently:
   `RectF.Intersects` and decides what happens.
 
 There is no physics engine (no forces, masses or rigid bodies): movement is code you write, which keeps it exact and
-easy to tune. This step uses both kinds. (Next SDK version: [physics worlds](../manual/world.md#physics-worlds) add
+easy to tune. This step uses both kinds. ([Physics worlds](../manual/world.md#physics-worlds) add
 bodies, sensors and ray casts over the same tile collision, still without forces; Gem Garden does not need them.)
 
 ## Hedges stop the gardener
@@ -37,8 +37,7 @@ public void Update(float dt, InputMap input, Level level)
 ```
 
 `TileMotion.Move(box, delta, grid)` moves the box by `delta`, first horizontally then vertically, in sub-steps of at
-most half a tile, so a fast object never jumps through a thin wall. It returns a `MoveResult` (a `TileMoveResult` in the
-next SDK version, not published yet): the new `Bounds`, which
+most half a tile, so a fast object never jumps through a thin wall. It returns a `TileMoveResult`: the new `Bounds`, which
 sides hit something (`HitLeft`, `HitRight`, `HitCeiling`, `HitFloor`, `HitWall`), and the flags of the tiles the box
 ends up touching (`Touched`, to detect water or hazards). Moving X and Y separately is what lets the gardener slide
 along a hedge when he walks diagonally into it.

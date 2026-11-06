@@ -92,7 +92,7 @@ const namespaceSummaries = {
   'MicroEngine.Saves': 'Saves as an optional engine module: the module that registers a save store as a service of the engine.',
   'MicroEngine.Raylib': 'The raylib platform for desktops (in the published SDK, also the browser platform).',
   'MicroEngine.Scenes': 'The scene stack (scenes, transitions, coroutines and tweens) and the scene world: entity ids, transforms with a hierarchy, typed attachments, interpolation for drawing and world clocks.',
-  'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android, iOS and, from the next SDK version, browsers (WebAssembly), with the browser launcher and the browser page it reads.',
+  'MicroEngine.Sdl': 'The SDL 3 platform: Windows, Linux, macOS, Android, iOS and browsers (WebAssembly), with the browser launcher and the browser page it reads.',
   'MicroEngine.UI': 'Widgets: labels, buttons, panels, stacks, text fields, dialogue boxes, menus, typewriter text, toasts, themes, focus and the UI input layer.',
   'MicroEngine.World': 'Tile layers, collision grids, swept movement against tiles (`TileMotion`), autotiling and drawing tiles.',
 };

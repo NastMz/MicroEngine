@@ -2,7 +2,7 @@
 
 Maintainer procedure, not public documentation: what MicroEngine publishes, when each process runs, and how to
 recover one that stopped. Users read [Versions](guide/sdk.md) and the [release notes](guide/release-notes.md).
-Decisions: [ADR 0022](decisions/0022-release-coordination.md) (this procedure), [ADR 0019](decisions/0019-sdk-packages.md),
+Decisions: [ADR 0022](decisions/0022-release-coordination.md) (this procedure), [ADR 0048](decisions/0048-docs-ship-with-the-sdk.md) (documentation and releases), [ADR 0019](decisions/0019-sdk-packages.md),
 [ADR 0021](decisions/0021-sdk-toolchain.md), [ADR 0013](decisions/0013-ci-cost-and-manual-releases.md). Checks and
 workflows: [CI](ci.md).
 
@@ -23,12 +23,31 @@ SDK release never rebuilds the demos.
 
 | Change | Merge | Then |
 | --- | --- | --- |
-| Code without publication (engine, tool, tests) | pull request, **CI result** | nothing is published |
-| Documentation or landing only | pull request, **CI result** | `main`'s ci deploys production; no package, no release |
+| Code without publication (engine internals, tool internals, tests) | pull request, **CI result** | nothing is published |
+| Documentation or landing only | pull request, **CI result** | `main`'s ci deploys production, unless SDK changes are pending (below); no package, no release |
 | A demo game | pull request, **CI result** | run **release** when players should get it; only the changed game's packages are built |
-| The engine, for SDK users and the demos | pull request, **CI result** | an SDK release pull request when it should ship; **release** for the demos when they should |
+| The SDK (anything a game made with it can see), with its documentation | pull request, **CI result**, an entry under "Next release" in the release notes | production waits for the SDK release that ships it; **release** for the demos once that SDK release is out |
 | A new SDK version | release pull request (below) | `sdk-release` runs, waits for approval, publishes, deploys the site |
-| An urgent site fix | pull request, **CI result** | production deploys on merge; nothing else runs |
+| An urgent site fix | pull request, **CI result** | production deploys on merge, unless SDK changes are pending; nothing else runs |
+
+## Documentation and releases
+
+The site documents the SDK on nuget.org, and the two are published together, so they never disagree:
+
+- **Documentation is written in the present tense**, as if the change were already published: no "not published
+  yet", "next SDK" or "coming in" labels on any page. A pull request that changes the SDK changes its documentation
+  in the same pull request and lists the change under `## Next release` in the
+  [release notes](guide/release-notes.md) (and, when it breaks something, under `## Next release` in the
+  [migration notes](migrations.md)).
+- **Pending SDK changes hold production.** While the release notes' "Next release" section has content
+  (`node sdk/version.mjs status` prints `pending: true`), every production deployment keeps the current one, with a
+  warning, and a demo release is refused. Previews still deploy. The SDK release that ships those changes deploys the
+  site once nuget.org serves them.
+- **A site-only change never needs an SDK version.** With nothing pending, it deploys on merge. With SDK changes
+  pending, it waits for their release like everything else on `main`; to publish it sooner, release the SDK (the
+  release is never empty: it ships what is pending) or revert the pending change.
+- `node sdk/version.mjs release <version>` turns each "Next release" section into `## <version>`, rewrites the links
+  to it, and refuses to prepare a version when nothing is listed under "Next release".
 
 ## Versions
 
@@ -42,8 +61,9 @@ SDK release never rebuilds the demos.
 
 Rules:
 
-- The documented version is either public or the prepared one. Production deploys only when it is public, so the
-  public site never presents a version nobody can install. `node sdk/version.mjs status --public` prints all three.
+- The documented version is either public or the prepared one. Production deploys only when it is public and
+  nothing is pending ([Documentation and releases](#documentation-and-releases)), so the public site never presents a
+  version or a feature nobody can install. `node sdk/version.mjs status --public` prints all three and `pending`.
 - Active references (install commands, package references in the samples, "the current version is") follow the
   documented version: `node sdk/version.mjs check` fails in CI when one does not. Historical text never changes: the
   release notes, the migration notes, decisions, evaluations, and a paragraph in an active page marked with
@@ -105,11 +125,12 @@ Once, before the first release (done for this repository):
 
 For every release, **one pull request and one approval**:
 
-1. On a branch: `node sdk/version.mjs release <version>`. It sets `MicroEngineVersion` and `sdk/version.json` and
-   rewrites every active reference (the install pages, the tutorial, the samples' package references). Write the
-   version's section in [release notes](guide/release-notes.md) (`## <version>`) and, when something breaks, in
-   the [migration notes](migrations.md); `node sdk/version.mjs check` passes when nothing is missing. Open the pull
-   request. Its CI packs and checks the SDK, and builds the documented samples against those packages.
+1. On a branch: `node sdk/version.mjs release <version>`. It sets `MicroEngineVersion` and `sdk/version.json`,
+   renames the "Next release" sections of the [release notes](guide/release-notes.md) and the
+   [migration notes](migrations.md) to `## <version>` (with the links to them), and rewrites every active reference
+   (the install pages, the tutorial, the samples' package references). Then `node site/scripts/api-reference.mjs`
+   (the API reference names the version). `node sdk/version.mjs check` passes when nothing is missing. Open the pull request. Its CI packs and checks the SDK, and builds the documented samples
+   against those packages.
 2. Merge it. From then until the packages are public, production keeps its deployment (the documentation of `main`
    presents a version nobody can install yet); previews still deploy.
 3. When ci passes on `main`, **sdk-release** starts on its own: it checks the commit again with `sdk.yml` (Windows,
@@ -123,14 +144,9 @@ For every release, **one pull request and one approval**:
 Nothing else is done by hand. To not publish: reject the deployment (step 4); the draft stays and nothing is public.
 A manual run of the same commit asks for approval of that draft again; the next merge with a new commit re-drafts. To abandon the version, revert the release pull request.
 
-**The next SDK version is a breaking Alpha.** It is the first release of the rebuilt, modular engine.
-Its migration notes are complete: "Next release" in [migration notes](migrations.md) opens with an upgrade checklist
-of every breaking change. Its release-notes section is not complete yet. In step 1, merge the draft in
-[`evaluations/arch-1/release-notes-draft.md`](evaluations/arch-1/release-notes-draft.md) into the "Next release" section
-of [release notes](guide/release-notes.md). Two more things belong in the same cycle (the list is in
-[ARCH-1 §12.7 (c)](evaluations/arch-1.md#final-state)): ship SDL's licence file in the native packages and in the
-`MicroEngine.Sdl` package, and require it in the site's demo notice check. The required build of the documented
-samples against nuget.org comes back on its own once that version is public (`sdk/tests/docs.mjs`).
+One item of [ARCH-1 §12.7 (c)](evaluations/arch-1.md#final-state) is left for the demos, not the SDK: the site's demo
+notice check (`noticeFiles` in `site/scripts/demos.mjs`) requires `licenses/SDL-LICENSE.txt` from the first demo
+release built on SDL in browsers.
 
 ## Recovering
 
@@ -158,13 +174,13 @@ minor after the latest release. It builds only the packages missing for that com
 `v<version>`, verifies every file, deploys production with `main`'s site and publishes the release; a failure before
 the switch discards the draft and changes nothing public. The full procedure, its checks and rollback are in
 [CI, Releases](ci.md#releases). It is refused while the documentation of `main` presents an SDK version nuget.org does
-not serve yet: let sdk-release finish first.
+not serve yet, or while SDK changes are pending: let sdk-release ship them first.
 
 ## Deploying the site
 
 Merging is deploying: a push to `main` that changes the published site deploys production after its checks, with
 the latest demo release. An urgent fix is an ordinary pull request; it runs only the checks its files need
-([CI, What runs for a change](ci.md#what-runs-for-a-change)) and no package or release. Exception: while an SDK
-release is merged but not yet approved, production is held for every deployment; approve the release, or revert its
-pull request, to let the fix through. Rollback: Actions →
+([CI, What runs for a change](ci.md#what-runs-for-a-change)) and no package or release. Exceptions: while SDK changes
+are pending, or an SDK release is merged but not yet approved, production is held for every deployment; release the
+SDK (or approve the release), or revert the pending change, to let the fix through. Rollback: Actions →
 **rollback** ([publishing the site](deployment.md)).

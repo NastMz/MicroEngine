@@ -69,26 +69,25 @@ export function familyOf(slug) {
 
 // Socket cards: the contract a manual page documents and the modules that seat in it, with their status written out.
 // Modules are named by the technology they run on (upstream technologies are drawn as credited modules, see the art
-// direction). `available` is in the published SDK, `next` is merged but not published, `repo` is in the repository
-// and in no package (drawn as an empty dashed socket). Keep these in step with docs/manual/backends.md.
+// direction). `available` is in the published SDK, `repo` is in the repository and in no package (drawn as an empty
+// dashed socket). Keep these in step with docs/manual/backends.md.
 const shipped = (...names) => names.map(([name, role]) => ({ name, role, status: 'available' }));
 
 export const socketCards = {
   'docs/manual/rendering': {
     contract: 'IGraphicsDevice',
     modules: [
-      ...shipped(['SDL 3', '2D renderer'], ['raylib', 'alternative platform'], ['Headless', 'tests']),
-      { name: 'SDL_GPU', role: 'opt-in desktop device', status: 'next' },
+      ...shipped(['SDL 3', '2D renderer'], ['SDL_GPU', 'opt-in desktop device'], ['raylib', 'alternative platform'], ['Headless', 'tests']),
     ],
   },
-  'docs/manual/audio': { contract: 'IAudioDevice', modules: shipped(['SDL 3', 'desktop and phones'], ['raylib', 'alternative platform'], ['Silent', 'tests']) },
+  'docs/manual/audio': { contract: 'IAudioDevice', modules: shipped(['SDL 3', 'desktops, phones, browsers'], ['raylib', 'alternative platform'], ['Silent', 'tests']) },
   'docs/manual/input': { contract: 'IInputSource', modules: shipped(['SDL 3', 'keys, mouse, gamepads'], ['raylib', 'keys, mouse, gamepads'], ['Headless', 'tests']) },
-  'docs/manual/backends': { contract: 'IPlatform', modules: shipped(['SDL 3', 'desktop and phones'], ['raylib', 'alternative platform'], ['Headless', 'tests']) },
+  'docs/manual/backends': { contract: 'IPlatform', modules: shipped(['SDL 3', 'desktops, phones, browsers'], ['raylib', 'alternative platform'], ['Headless', 'tests']) },
   'docs/manual/world': {
     contract: 'IPhysicsWorld2D',
     note: { text: 'Physics worlds', href: '#physics-worlds' },
     modules: [
-      { name: 'Tiles', role: 'tile collision', status: 'next' },
+      { name: 'Tiles', role: 'tile collision', status: 'available' },
       { name: 'Box2D', role: 'optional backend', status: 'repo' },
     ],
   },
@@ -96,7 +95,6 @@ export const socketCards = {
 
 export const statusText = {
   available: 'Available',
-  next: 'Next SDK version',
   repo: 'In the repository, not published',
   planned: 'Planned',
 };

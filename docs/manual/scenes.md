@@ -17,7 +17,7 @@ owns a coroutine runner and a tweener that stop when it leaves the stack.
 | `Game`, `Input`, `Audio`, `Font` | Shortcuts to the owning game's services |
 | `Coroutines`, `Tweens` | Per-scene `CoroutineRunner` and `Tweener` |
 | `Age` | Seconds this scene has been updated |
-| `DrawUi(IRenderer ui)`, `UiContains(Vector2)`, `WorldCamera` | Next SDK version: the interface drawn at the window's resolution over the world, where it takes the pointer, and the camera pushed around `Draw` ([The world view and the UI view](rendering.md#the-world-view-and-the-ui-view)) |
+| `DrawUi(IRenderer ui)`, `UiContains(Vector2)`, `WorldCamera` | The interface drawn at the window's resolution over the world, where it takes the pointer, and the camera pushed around `Draw` ([The world view and the UI view](rendering.md#the-world-view-and-the-ui-view)) |
 
 ```csharp
 public abstract class Scene
@@ -52,7 +52,7 @@ Each update a scene first advances its coroutines, then its tweens, then calls y
 | `Pop(transition?)` | Removes the top scene; the one below gets `Resume()` |
 | `Replace(scene, transition?)` | Pops the top scene and pushes another |
 | `Reset(scene, transition?)` | Pops every scene, then pushes one (back to the title) |
-| `Push(scene, onResult, transition?)` | Next SDK version: pushes a `Scene<TResult>`; when it calls `Finish(value)` it is popped and `onResult` receives the value |
+| `Push(scene, onResult, transition?)` | Pushes a `Scene<TResult>`; when it calls `Finish(value)` it is popped and `onResult` receives the value |
 | `Current`, `Count`, `Stack`, `InTransition` | Read-only state |
 
 Changes are **queued**, not applied immediately: they run before and after the scene updates of a step, so a
@@ -94,7 +94,7 @@ Override `BlocksUpdateBelow => false` for an overlay that should let the scene b
 
 ### Scenes that return a value
 
-Next SDK version (not published yet: arrives with the next SDK version). A dialogue, a shop or a yes/no question can
+A dialogue, a shop or a yes/no question can
 derive from `Scene<TResult>` and end with `Finish(value)`. Pushed with `Game.Scenes.Push(scene, onResult)`, it is
 popped (deferred, like `Pop`) and `onResult` receives the value after the scene's `Exit` and before the scene below
 receives `Resume`. Only the first `Finish` counts; a result scene removed any other way (popped, replaced, the stack
@@ -180,7 +180,7 @@ Tweens have no handle; `Tweens.Clear()` drops all of them, and popping the scene
 
 ## The scene world
 
-Next SDK version (not published yet: arrives with the next SDK version). Every scene can hold its objects in a world,
+Every scene can hold its objects in a world,
 `Objects` (an `IWorld`), created the first time the scene reads it; a scene that never reads it has none. Create it
 outside drawing, from `Enter`, `Update` or the scene's constructor: the world is simulation state, so reading `Objects`
 for the first time from `Draw` or `DrawUi` throws an `InvalidOperationException` (a scene whose drawing alone reads the

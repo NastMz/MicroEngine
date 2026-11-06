@@ -13,9 +13,8 @@ microengine run
 
 `new` creates the folder `StarCourier` with a complete project; `run` builds it and opens a window. Move the hero with
 the arrow keys, WASD, a gamepad's d-pad or left stick, or the on-screen controls of a touch screen, and collect coins.
-Close the window to quit; F11 or Alt+Enter toggles fullscreen. Next SDK version (not published yet: arrives with the
-next SDK version): that is the engine's `fullscreen` action, which your game can rebind or turn off like any other
-([Full screen](../manual/input.md#full-screen)).
+Close the window to quit; F11 or Alt+Enter toggles fullscreen: that is the engine's `fullscreen` action,
+which your game can rebind or turn off like any other ([Full screen](../manual/input.md#full-screen)).
 
 `<Name>` becomes the project and the C# namespace, `--id` the application id stores and phones identify the game by
 (reverse domain, letters, digits and underscores: see [Name, id, version and icon](app-identity.md)), `--title` the
@@ -73,13 +72,10 @@ template's files, with `MyGame` where your project's name goes.
 </Project>
 ```
 
-In your project `MICROENGINE_VERSION` is the tool's version (`0.4.0-alpha.2`). The second group is the game's
+In your project `MICROENGINE_VERSION` is the tool's version (`0.5.0-alpha.1`). The second group is the game's
 identity: every package `microengine package` builds takes its name, id, version, icon and orientation from there, and
-nowhere else. `MicroEngineGameFactory` is the C# expression that creates the game in the hosts that build it
-themselves (browser, Android, iOS); keep it in step with `Program.cs` if your game's constructor takes arguments.
-Next SDK version (not published yet: arrives with the next SDK version): the template has no `MicroEngineGameFactory`;
-the browser, Android and iOS hosts call the game's `Configure` entry point instead (below), the same one `Program.cs`
-uses, so there is nothing to keep in step.
+nowhere else. The browser, Android and iOS hosts call the game's `Configure` entry point (below), the same one
+`Program.cs` uses, so there is nothing to keep in step.
 
 ### The entry point
 
@@ -98,11 +94,8 @@ return DesktopLauncher.Run(MainGame.Configure, args);
 the game loop and returns the exit code. The game never names a platform; that is why the same game also runs in a
 browser or on a phone ([Platforms](platforms.md)).
 
-The template above is the next SDK version's (not published yet: arrives with the next SDK version): `Program.cs`
-hands the launcher `MainGame.Configure`, the game's composition, which the browser, Android and iOS hosts call too
-([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)). With the published
-SDK, `Program.cs` reads `return DesktopLauncher.Run(new MainGame(), args);` and the project declares
-`<MicroEngineGameFactory>new MyGame.MainGame()</MicroEngineGameFactory>`.
+`Program.cs` hands the launcher `MainGame.Configure`, the game's composition, which the browser, Android and iOS hosts
+call too ([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)).
 
 ### The game class
 

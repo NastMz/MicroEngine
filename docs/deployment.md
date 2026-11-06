@@ -19,10 +19,12 @@ How CI, full validation and releases work, and what they cost: [CI, validation a
 | Release workflow (manual) | **production**, staged, verified file by file, then promoted | the new release, published as the latest |
 | SDK release, once nuget.org serves the documented version | **production** of `main`'s head, if its ci passed | the latest release |
 
-**Production never presents an SDK version nobody can install.** When the documentation of `main` presents an SDK
-version nuget.org does not serve yet (between merging a release pull request and publishing it), every production
-deployment keeps the current one, with a warning, and a demo release is refused; `sdk-release.yml` deploys `main`
-once the packages are public ([Releasing](releasing.md)). Previews are not held.
+**Production never presents an SDK version or feature nobody can install.** When the documentation of `main`
+presents an SDK version nuget.org does not serve yet (between merging a release pull request and publishing it), or
+documents SDK changes that are not released yet (the release notes' "Next release" section has content), every
+production deployment keeps the current one, with a warning, and a demo release is refused; `sdk-release.yml` deploys
+`main` once the packages are public ([Releasing, Documentation and releases](releasing.md#documentation-and-releases)).
+Previews are not held.
 
 The site deployed by `ci.yml`, `release.yml` and `sdk-release.yml` is built in [`deploy-site.yml`](../.github/workflows/deploy-site.yml).
 Production refuses anything but released packages (`DEMOS_SOURCE=release`), and it is always staged with

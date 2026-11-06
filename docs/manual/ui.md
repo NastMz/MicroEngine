@@ -3,8 +3,8 @@
 The `MicroEngine.UI` namespace provides a small set of pixel-art widgets that games compose inside their own
 scenes: a `Typewriter` for revealing text, a paged `DialogueBox`, a keyboard-driven `SelectionList`, a `UiTheme`
 record that lets each game keep its own look, and the achievement banners and list screen. Widgets read input
-through actions and draw with the built-in `BitmapFont`. In the published SDK there is no layout system or retained
-widget tree; the next SDK version adds one ([Widgets in the UI view](#widgets-in-the-ui-view)).
+through actions and draw with the built-in `BitmapFont`. A scene can also hold a retained widget tree with layout,
+focus, pointer and text input ([Widgets in the UI view](#widgets-in-the-ui-view)).
 
 ## Overview
 
@@ -16,13 +16,12 @@ widget tree; the next SDK version adds one ([Widgets in the UI view](#widgets-in
 | `SelectionList` | Vertical menu navigated with up/down and chosen with confirm |
 | `AchievementToasts` | Unlock banners drawn above every scene ([Achievements](achievements.md)) |
 | `AchievementsScene` | Overlay listing a game's achievements ([Achievements](achievements.md)) |
-| `UiRoot`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts` | Next SDK version: a widget tree laid out in the UI view, with focus, pointer and text input ([Widgets in the UI view](#widgets-in-the-ui-view)) |
+| `UiRoot`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts` | A widget tree laid out in the UI view, with focus, pointer and text input ([Widgets in the UI view](#widgets-in-the-ui-view)) |
 
 Source: [`src/MicroEngine.UI`](../../src/MicroEngine.UI/), [`src/MicroEngine/UI/Widgets.cs`](../../src/MicroEngine/UI/Widgets.cs),
 [`src/MicroEngine/UI/AchievementViews.cs`](../../src/MicroEngine/UI/AchievementViews.cs)
 
-Next SDK version (not published yet: arrives with the next SDK version): `Typewriter`, `SelectionList` and `UiTheme`
-are in `MicroEngine.UI.dll`, inside the `MicroEngine` package, with the same namespace; nothing changes for a game.
+`Typewriter`, `SelectionList` and `UiTheme` are in `MicroEngine.UI.dll`, inside the `MicroEngine` package.
 
 ## `UiTheme`
 
@@ -55,8 +54,7 @@ and to `UseAchievements`.
 
 `Show(speaker, params pages)` queues pages (and opens the box if it was closed). `Update(dt, input, confirm =
 "confirm")` advances the typewriter; confirm first completes the current page, then moves to the next. It returns
-`true` while the box is active, so a scene can skip its own input handling. Next SDK version (not published yet:
-arrives with the next SDK version): `confirm` defaults to the map's own confirm action (`InputMap.Names`), so a game
+`true` while the box is active, so a scene can skip its own input handling. `confirm` defaults to the map's own confirm action (`InputMap.Names`), so a game
 that renamed it needs no argument; the same holds for `SelectionList.Update` and the achievements screen. The press a
 widget acts on (a dialogue advancing, a menu choosing, the achievements screen closing) is consumed
 (`InputMap.Consume`), so code that reads the same action after it in that update, such as the scene under an
@@ -68,7 +66,6 @@ A page that wraps to more than `Lines` lines continues on the next confirm inste
 whether more lines follow; `VisibleLines` are the lines in the box). With `Prompts` set (usually to `Game.Prompts`),
 `{action}` in a page names the player's own control, and changes if the player switches device while the page shows:
 `"Press {confirm} to swing it."` reads "Press Z" on a keyboard, "Press A" on a gamepad or on the touch button labelled A.
-Both are not in a published SDK yet: the published SDK cuts the extra lines and prints `{confirm}` as written.
 
 Courtyard Key wraps the box in an overlay scene that freezes the world:
 
@@ -143,8 +140,6 @@ helper instead of calling `SelectionList.Draw`.
 
 ## Prompt glyphs
 
-> **Not in a published SDK yet**: `PromptText` arrives with the next SDK release.
-
 `PromptText.Draw(r, font, prompts, template, position, color, shadow, style)` draws one line in which each `{action}`
 is a glyph instead of a word: a key cap on a keyboard, a round button in its colour on Xbox pads (A green, B red, X
 blue, Y yellow), the shape on PlayStation pads, a ring with the button's label on a touch screen. `Measure` and
@@ -154,7 +149,7 @@ uses `DialogueBox.Prompts`, which keeps words. See [Showing controls to the play
 
 ## Achievement views
 
-`AchievementToasts.Bottom` (not in a published SDK yet) shows the banners at the bottom of the screen instead of the
+`AchievementToasts.Bottom` shows the banners at the bottom of the screen instead of the
 top, for games whose HUD is at the top.
 
 `AchievementToasts` and `AchievementsScene` are documented with the rest of the system in
@@ -162,7 +157,7 @@ top, for games whose HUD is at the top.
 
 ## Widgets in the UI view
 
-Not published yet: arrives with the next SDK version. A scene's `Widgets` is a widget tree the engine lays out, draws,
+A scene's `Widgets` is a widget tree the engine lays out, draws,
 updates and gives input to. Set its `Content` (usually in `Enter`) and react to the widgets' events:
 
 ```csharp
@@ -226,8 +221,8 @@ the same interface. A scene that never reads `Widgets` has none and pays nothing
 
 ## Limitations
 
-- Published SDK: keyboard and gamepad navigation only; widgets do not respond to mouse or touch, and layout is manual
-  (rectangles and positions in virtual pixels). The next SDK version's widget tree responds to both and lays itself out.
+- `DialogueBox`, `SelectionList` and the achievement screen use keyboard and gamepad navigation only; the widget tree
+  responds to mouse and touch too and lays itself out.
 - `DialogueBox`, `SelectionList` and the achievement screen are not widgets of the tree: they are placed by hand.
 - Text uses the game's font; there is no rich text, right-to-left text or localisation support. A text field edits one
   line, without selection or clipboard.

@@ -69,7 +69,7 @@ samples/HelloEngine/
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MicroEngine.Desktop" Version="0.4.0-alpha.2" />
+    <PackageReference Include="MicroEngine.Desktop" Version="0.5.0-alpha.1" />
   </ItemGroup>
 </Project>
 ```
@@ -141,8 +141,5 @@ namespace TrailDuel
 `TRAIL_SAVE_DIR` keeps saves and achievements in another folder (capture runs), `TRAIL_DEBUG` jumps to a screen or
 situation and `TRAIL_EVOLVE` picks who evolves under `TRAIL_DEBUG=evolve`.
 
-This is the next SDK version's form (not published yet: arrives with the next SDK version): `Startup.Configure` is the
-game's composition, and the browser and phone hosts call the same method, so they build the same game
-([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)). With the published
-SDK, `Program.cs` passes the game itself (`DesktopLauncher.Run(new TrailDuelGame(...), args)`) and the project's
-`MicroEngineGameFactory` repeats the constructor expression ([Application identity](app-identity.md)).
+`Startup.Configure` is the game's composition, and the browser and phone hosts call the same method, so they build the
+same game ([One composition for every platform](../manual/backends.md#one-composition-for-every-platform)).
