@@ -58,8 +58,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The store keeps one version per game and target: storing a package removes the earlier ones of its series. The
+  # nightly run sweeps what a failed or interrupted job left behind (demos.mjs prune: only the newest and main's current
+  # packages stay), since the store is one GitHub release (1000 assets at most) and a full store refuses every package.
+  # Releases keep copies of their packages, so nothing published depends on what is removed.
+  prune:
+    name: Prune the demo store
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci --prefix site
+      - name: Keep the newest package of each game and target
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node site/scripts/demos.mjs prune | tee -a "$GITHUB_STEP_SUMMARY"
+
   resolve:
     name: Resolve ${{ inputs.ref || 'main (nightly)' }}
+    needs: prune
+    # A manual run skips the pruning; a failed pruning does not stop the validation (a full store fails its uploads).
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.ref.outputs.sha }}

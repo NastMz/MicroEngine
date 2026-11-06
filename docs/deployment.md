@@ -44,6 +44,11 @@ the web toolchain files, the game's folder (its project holds its identity), `TH
   archive and one manifest per game and key (`<Game>-<key>.tar.gz`, `<Game>-<key>.json`). The manifest records the
   archive's SHA-256, every file's SHA-256, the commit that built it and the toolchain versions. Artifacts are never
   replaced. A release copies the approved ones into release `v<version>` ([Releases](ci.md#releases)).
+- The store keeps the final version of each package, not a history: storing a game's package (or a game's native
+  package for a target) removes the earlier ones of that game (and target). The nightly validation sweeps leftovers
+  (`node site/scripts/demos.mjs prune`, `--dry-run` lists them): only the newest and `main`'s current package of each
+  stay. Releases hold their own copies, so they never depend on the store. A GitHub release holds at most 1000
+  assets; an upload the store refuses fails the job instead of being reported as stored.
 - `npm run build` fetches each game's package from the source `DEMOS_SOURCE` names: `keys` (the package of the
   key computed from the commit being built; the default for local work), `candidates` (that package when stored,
   else the released one; CI checks and previews) or `release[:<tag>]` (production). It checks the archive's
