@@ -128,8 +128,8 @@ For every release, **one pull request and one approval**:
 1. On a branch: `node sdk/version.mjs release <version>`. It sets `MicroEngineVersion` and `sdk/version.json`,
    renames the "Next release" sections of the [release notes](guide/release-notes.md) and the
    [migration notes](migrations.md) to `## <version>` (with the links to them), and rewrites every active reference
-   (the install pages, the tutorial, the samples' package references). `node sdk/version.mjs check` passes when
-   nothing is missing. Open the pull request. Its CI packs and checks the SDK, and builds the documented samples
+   (the install pages, the tutorial, the samples' package references). Then `node site/scripts/api-reference.mjs`
+   (the API reference names the version). `node sdk/version.mjs check` passes when nothing is missing. Open the pull request. Its CI packs and checks the SDK, and builds the documented samples
    against those packages.
 2. Merge it. From then until the packages are public, production keeps its deployment (the documentation of `main`
    presents a version nobody can install yet); previews still deploy.
