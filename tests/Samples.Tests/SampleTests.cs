@@ -97,6 +97,101 @@ public sealed class ExtendingTests
     }
 }
 
+/// <summary>The save-versioning example (persistence guide): old saves upgrade, newer ones are never overwritten.</summary>
+[TestClass]
+public sealed class SaveVersionTests
+{
+    private static (MemorySaveStorage Storage, SaveStore Store) With(string? profileJson)
+    {
+        var storage = new MemorySaveStorage();
+        if (profileJson is not null) storage.Write(ProfileSaves.Slot, profileJson);
+        return (storage, new SaveStore(storage));
+    }
+
+    [TestMethod]
+    public void ASaveFromBeforeVersionsUpgradesThroughEveryStepAndKeepsTheOriginal()
+    {
+        const string original = """{ "Coins": 7 }""";
+        var (storage, store) = With(original);
+        var profile = ProfileSaves.Load(store, out var check);
+        Assert.AreEqual(SaveCheck.Upgraded, check);
+        Assert.IsNotNull(profile);
+        Assert.AreEqual(7, profile.Gold, "1 -> 2 renamed Coins to Gold");
+        Assert.AreEqual(3, profile.Lives, "0 -> 1 added lives");
+        Assert.AreEqual(ProfileSaves.CurrentVersion, profile.Version);
+        Assert.AreEqual(7, store.Load<System.Text.Json.Nodes.JsonObject>("profile.v0")!["Coins"]!.GetValue<int>(), "the original is backed up");
+        Assert.AreEqual(original, storage.Read(ProfileSaves.Slot), "loading alone never rewrites the slot");
+
+        Assert.IsTrue(ProfileSaves.Save(store, profile));
+        Assert.AreEqual(SaveCheck.Current, (ProfileSaves.Load(store, out check), check).check, "saved again, it is current");
+    }
+
+    [TestMethod]
+    public void ASaveFromAnIntermediateVersionRunsOnlyTheRemainingSteps()
+    {
+        var (_, store) = With("""{ "Version": 1, "Coins": 5, "Lives": 1 }""");
+        var profile = ProfileSaves.Load(store, out var check);
+        Assert.AreEqual(SaveCheck.Upgraded, check);
+        Assert.AreEqual(5, profile!.Gold);
+        Assert.AreEqual(1, profile.Lives, "the 0 -> 1 step did not run again");
+    }
+
+    [TestMethod]
+    public void ACurrentSaveLoadsWithoutABackup()
+    {
+        var (storage, store) = With($$"""{ "Version": {{ProfileSaves.CurrentVersion}}, "Gold": 9, "Lives": 2 }""");
+        var profile = ProfileSaves.Load(store, out var check);
+        Assert.AreEqual(SaveCheck.Current, check);
+        Assert.AreEqual(9, profile!.Gold);
+        Assert.IsFalse(storage.Exists($"profile.v{ProfileSaves.CurrentVersion}"));
+    }
+
+    [TestMethod]
+    public void NoSaveIsMissing()
+    {
+        var (_, store) = With(null);
+        Assert.IsNull(ProfileSaves.Load(store, out var check));
+        Assert.AreEqual(SaveCheck.Missing, check);
+    }
+
+    [TestMethod]
+    [DataRow("""{ "Version": 99, "Gold": 1 }""", DisplayName = "written by a newer build")]
+    [DataRow("""{ "Version": "two", "Gold": 1 }""", DisplayName = "a version that is not a number")]
+    [DataRow("""{ "Version": 2, "Gold": "lots" }""", DisplayName = "a field of the wrong type")]
+    public void ASaveThisBuildCannotReadIsProtectedAndLeftAsItIs(string json)
+    {
+        var (storage, store) = With(json);
+        Assert.IsNull(ProfileSaves.Load(store, out var check));
+        Assert.AreEqual(SaveCheck.Protected, check);
+        Assert.AreEqual(json, storage.Read(ProfileSaves.Slot));
+    }
+
+    [TestMethod]
+    public void WithoutABackupAnOldSaveIsNotUpgraded()
+    {
+        var storage = new BackupRefusingStorage();
+        storage.Write(ProfileSaves.Slot, """{ "Coins": 4 }""");
+        Assert.IsNull(ProfileSaves.Load(new SaveStore(storage), out var check));
+        Assert.AreEqual(SaveCheck.Protected, check);
+    }
+
+    /// <summary>Memory slots that refuse every write except the profile itself, as a full disk would refuse the backup.</summary>
+    private sealed class BackupRefusingStorage : ISaveStorage
+    {
+        private readonly MemorySaveStorage _slots = new();
+        public string Location => "memory";
+        public string? Read(string slot) => _slots.Read(slot);
+        public void Write(string slot, string text)
+        {
+            if (slot != ProfileSaves.Slot) throw new IOException("disk full");
+            _slots.Write(slot, text);
+        }
+        public bool Exists(string slot) => _slots.Exists(slot);
+        public void Delete(string slot) => _slots.Delete(slot);
+        public void SetAside(string slot) => _slots.SetAside(slot);
+    }
+}
+
 [TestClass]
 public sealed class PlatformerExampleTests
 {
