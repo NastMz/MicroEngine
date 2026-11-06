@@ -35,6 +35,35 @@ flowchart LR
 
 Source: `InputMap.CreateDefault` in [`src/MicroEngine.Input/InputMap.cs`](../../src/MicroEngine.Input/InputMap.cs)
 
+These are a starting point, not a requirement. A game that wants other names or other keys returns a map of its own
+from `CreateInput`, starting from `new InputMap()` instead of `CreateDefault()`. Two things still apply:
+
+- The engine's menus, dialogs and default touch layout navigate with the actions named in `InputMap.Names`. A map of
+  your own binds those names too, or renames them with `ActionNames`; without a binding, those parts answer only to
+  the pointer and touch.
+- The engine adds the `fullscreen` toggle to a map that has no such action ([Full screen](#full-screen)). `Unbind`
+  turns it off.
+
+<!-- code: samples/Examples/Extending.cs#own-controls -->
+```csharp
+/// <summary>A game with controls of its own: none of the default actions, and the engine's menus follow its names.</summary>
+public sealed class OwnControlsGame : Game
+{
+    public override GameSettings Settings { get; } = new("Own Controls");
+
+    protected override InputMap CreateInput() => new InputMap { Names = ActionNames.Default with { Confirm = "jump", Cancel = "back" } }
+        .Bind("left", [Key.A], [PadButton.DPadLeft], InputMap.StickDirection.Left)
+        .Bind("right", [Key.D], [PadButton.DPadRight], InputMap.StickDirection.Right)
+        .Bind("up", [Key.W], [PadButton.DPadUp], InputMap.StickDirection.Up)
+        .Bind("down", [Key.S], [PadButton.DPadDown], InputMap.StickDirection.Down)
+        .Bind("jump", [Key.Space], [PadButton.A])
+        .Bind("back", [Key.Escape], [PadButton.B])
+        .Bind("pause", [Key.P], [PadButton.Start]);
+
+    protected override void Load() { }
+}
+```
+
 ### Full screen
 
 Switching between a window and full screen is the engine's own action, `fullscreen` (`ActionNames.Fullscreen`),
@@ -93,21 +122,125 @@ punctuation by position such as `Minus`, `Comma` and `Grave`, the ISO key `NonUs
 Super keys, Caps Lock, Insert, Delete, Home, End, Page Up/Down, Print Screen, Scroll Lock, Pause, Num Lock and the whole
 keypad. `PadButton` uses Xbox names (`A`, `B`, `X`, `Y`, `Start`, `Back`, shoulders, d-pad, stick clicks) and has
 `Guide`, `Misc1`, four back paddles and the touchpad click. `PadAxis` has both sticks and both triggers. The engine has
-no rebinding screen, but gives a game the parts to build one ([Saving bindings](#saving-bindings)).
+no rebinding screen, but gives a game the parts to build one ([A rebinding screen](#a-rebinding-screen)).
 
-### Saving bindings
+### A rebinding screen
 
-A rebinding screen listens for the next press
-and binds it; the press that chose the key never reaches gameplay. Bindings are saved by name (`"Q"`, `"RightTrigger+"`),
-so they stay valid when the engine adds keys:
+The example below is a complete controls screen: the player picks an action and presses the key or gamepad button it
+should use. Which actions can be rebound is the game's choice. This one offers only gameplay actions; menu actions
+keep their keys, so the player can always get back to the menu.
 
+The game keeps its own defaults in one place, so they can be applied at start and restored later:
+
+<!-- code: samples/Examples/Examples/RebindExample.cs#defaults -->
 ```csharp
-// "Press a key for jump": the next key or gamepad button of any device.
-listening = Game.InputSystem.ListenForPress(press => Input.BindFrom("jump", press, replace: true));
+/// <summary>The actions the player may rebind: gameplay only. Menu actions keep their keys, so menus always work.</summary>
+public static readonly string[] Rebindable = ["jump", "fire"];
 
-// Saved in the platform's storage (files, or the page's localStorage in browsers), loaded at start.
-Input.SaveBindings(storage);
-Input.LoadBindings(storage);
+/// <summary>The game's own defaults for those actions, applied at start and by "reset".</summary>
+public static void BindDefaults(InputMap map) => map
+    .Unbind("jump").Bind("jump", [Key.Z, Key.Space], [PadButton.A])
+    .Unbind("fire").Bind("fire", [Key.X], [PadButton.X]);
+```
+
+At start the defaults are bound, then saved bindings replace them. `LoadBindings` returns false when nothing was
+saved, and also when the data is unreadable; unreadable data is set aside first:
+
+<!-- code: samples/Examples/Examples/RebindExample.cs#load -->
+```csharp
+public override void Enter()
+{
+    _list = new SelectionList([.. Rebindable, "reset to defaults"]);
+    _storage = saveDirectory is null ? SaveStore.DefaultStorage("MicroEngineExamples") : new FileSaveStorage(saveDirectory);
+    BindDefaults(Input);
+    // Saved bindings replace the defaults; false (nothing saved, or unreadable and set aside) keeps them.
+    _status = Input.LoadBindings(_storage) ? "LOADED SAVED CONTROLS" : "DEFAULT CONTROLS";
+}
+```
+
+`ListenForPress` hands the next key or button press to the screen. That press never reaches gameplay or the menu,
+and neither does its release. While it listens, the screen's own update does nothing:
+
+<!-- code: samples/Examples/Examples/RebindExample.cs#listen -->
+```csharp
+public override void Update(float dt)
+{
+    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
+    if (_listening is not null) return;                       // the next press goes to the listener, not here
+    if (_list.Update(Input) is not { } choice) return;
+    if (choice == Rebindable.Length)
+    {
+        BindDefaults(Input);
+        Save("DEFAULTS RESTORED");
+        return;
+    }
+    string action = Rebindable[choice];
+    _status = $"PRESS A KEY OR BUTTON FOR {action.ToUpperInvariant()} (ESC: KEEP)";
+    _listening = Game.InputSystem.ListenForPress(press =>
+    {
+        _listening = null;
+        if (press is { Kind: InputEventKind.KeyDown, Key: Key.Escape }) { _status = "UNCHANGED"; return; }
+        Assign(Input, action, press);
+        Save($"{action.ToUpperInvariant()} CHANGED");
+    });
+}
+```
+
+One control pressing two actions that gameplay reads at the same time is usually a mistake, and the engine does not
+prevent it: `BindFrom` adds the press to one action and leaves the others as they are. The screen decides what
+happens instead. This one swaps: the action that used the control gets the ones the rebound action gave up. Editing
+the bindings as data (`ExportBindings`, then `ImportBindings` with only the changed actions) keeps their other
+controls (sticks, axes, chords) untouched:
+
+<!-- code: samples/Examples/Examples/RebindExample.cs#assign -->
+```csharp
+/// <summary>
+/// Binds <paramref name="press"/> to <paramref name="action"/>, replacing its keys (for a key) or buttons (for a
+/// button). Another rebindable action that used the same control gets the ones <paramref name="action"/> gave up, so
+/// no control presses two gameplay actions and no action is left without one.
+/// </summary>
+public static void Assign(InputMap map, string action, in InputEvent press)
+{
+    bool key = press.Kind == InputEventKind.KeyDown;
+    string control = key ? press.Key.ToString() : press.Button.ToString();
+    var set = map.ExportBindings();                            // every action's bindings as editable data
+    List<string> Controls(ActionBindingData a) => key ? a.Keys : a.Buttons;
+    var given = Controls(set.Actions.Single(a => a.Action == action));
+    if (given.Contains(control)) return;                       // already this action's control: nothing to do
+
+    var changed = new InputBindingSet();
+    foreach (var other in set.Actions.Where(a => a.Action != action && Rebindable.Contains(a.Action)))
+    {
+        var controls = Controls(other);
+        if (!controls.Remove(control)) continue;
+        controls.AddRange(given.Except(controls));             // the swap
+        changed.Actions.Add(other);
+    }
+    map.ImportBindings(changed);                               // only the actions that lost the control
+    map.BindFrom(action, press, replace: true);
+}
+```
+
+The same key in a menu action and in a gameplay action is not a conflict. Here `Z` is both `confirm` and `jump`, and
+each is read in its own scenes.
+
+Bindings are saved by name (`"Q"`, `"RightTrigger+"`), so they stay valid when the engine adds keys. `SaveBindings`
+writes every action and throws when the medium refuses; the change then lasts until the game quits:
+
+<!-- code: samples/Examples/Examples/RebindExample.cs#save -->
+```csharp
+private void Save(string done)
+{
+    try
+    {
+        Input.SaveBindings(_storage);
+        _status = done;
+    }
+    catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+    {
+        _status = "COULD NOT SAVE: THE CHANGE LASTS UNTIL YOU QUIT";
+    }
+}
 ```
 
 | Member | Use |
@@ -639,8 +772,9 @@ sound) move to the bottom centre, between the thumbs. Details: [Embedding](../ex
 
 - raylib reads pads 0 to 3 and has no rumble; SDL reads every pad, each a device of its own.
 - The mouse is readable (`Input.Pointer`) but cannot be bound to actions; no game uses it.
-- No rebinding screen and no layout editor in the engine: bindings and touch layouts are code (`ListenForPress`,
-  `BindFrom` and `SaveBindings` are the parts of a rebinding screen).
+- No rebinding screen and no layout editor in the engine: bindings and touch layouts are code. `ListenForPress`,
+  `BindFrom` and `SaveBindings` are the parts of a rebinding screen; [A rebinding screen](#a-rebinding-screen)
+  builds one.
 - iOS gives no haptic feedback (see Feedback). Android vibration needs the `VIBRATE` permission (the demo host has it).
 - Touch control labels use the backend's own font (SDL's 8×8 debug font, raylib's default font); there are no custom
   fonts on controls.
