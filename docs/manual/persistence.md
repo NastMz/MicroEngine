@@ -113,6 +113,143 @@ The third rule matters: a game that could not read a save is running with fresh 
 replace the real save. If setting corrupt data aside fails, it stays in place and callers that check `Exists`
 will not overwrite it either.
 
+## Changing what a save holds
+
+Players keep their saves across updates, so a release that renames, removes or reinterprets a saved field has to read
+the shape older releases wrote. Adding a property needs nothing: a missing field keeps the value the class gives it.
+For anything else, give the slot a version number and upgrade old saves when they load. `SaveStore` does not do this
+for you; the steps are a few lines of game code, and they stay in the game because only the game knows what each
+version meant.
+
+The saved class carries the version it was written in. A save from before versions existed has no `Version` field and
+reads as 0:
+
+<!-- code: samples/Examples/SaveVersions.cs#data -->
+```csharp
+/// <summary>The saved data in its current shape. <see cref="Version"/> records the shape a slot was written in.</summary>
+public sealed class Profile
+{
+    public int Version { get; set; }
+    public int Gold { get; set; }
+    public int Lives { get; set; } = 3;
+}
+```
+
+Loading reads the slot as JSON first (`Load<JsonObject>`), because an old save may not fit the current class. One
+step per version turns version *i* into *i* + 1, and the steps run in order from the save's version up to the current
+one:
+
+<!-- code: samples/Examples/SaveVersions.cs#upgrade -->
+```csharp
+/// <summary>
+/// One slot whose shape changes between releases. Old saves are read as JSON, copied to a backup slot, upgraded one
+/// version at a time and only then turned into a <see cref="Profile"/>; saves from a newer build are left alone.
+/// </summary>
+public static class ProfileSaves
+{
+    public const string Slot = "profile";
+
+    // Each entry turns version i into version i + 1. Append a step for every change; never edit a published one.
+    private static readonly Action<JsonObject>[] Upgrades =
+    [
+        // 0 -> 1: lives arrived; saves from before start with three.
+        json => json["Lives"] = 3,
+        // 1 -> 2: "Coins" was renamed "Gold".
+        json => { json["Gold"] = json["Coins"]?.DeepClone(); json.Remove("Coins"); },
+    ];
+
+    /// <summary>The shape this build writes: one more than the last upgrade step.</summary>
+    public static int CurrentVersion => Upgrades.Length;
+
+    public static Profile? Load(SaveStore store, out SaveCheck check)
+    {
+        check = SaveCheck.Missing;
+        if (store.Load<JsonObject>(Slot) is not { } json) return null;   // missing, corrupt or unreadable
+
+        int version = 0;                                                  // saves from before versions existed
+        if (json["Version"] is { } field && !(field is JsonValue value && value.TryGetValue(out version)))
+        {
+            check = SaveCheck.Protected;                                  // a version this build cannot read
+            return null;
+        }
+        if (version > CurrentVersion)
+        {
+            check = SaveCheck.Protected;                                  // written by a newer build
+            return null;
+        }
+        if (version < CurrentVersion)
+        {
+            // Keep the original before changing anything; without a copy, do not upgrade.
+            if (!store.Save($"{Slot}.v{version}", json))
+            {
+                check = SaveCheck.Protected;
+                return null;
+            }
+            for (int v = version; v < CurrentVersion; v++) Upgrades[v](json);
+            json["Version"] = CurrentVersion;
+        }
+        try
+        {
+            var profile = json.Deserialize<Profile>();
+            check = profile is null ? SaveCheck.Protected : version < CurrentVersion ? SaveCheck.Upgraded : SaveCheck.Current;
+            return profile;
+        }
+        catch (JsonException)
+        {
+            check = SaveCheck.Protected;                                  // a field holds a value of the wrong type
+            return null;
+        }
+    }
+
+    /// <summary>Writes the profile in the current shape; false when the medium refused.</summary>
+    public static bool Save(SaveStore store, Profile profile)
+    {
+        profile.Version = CurrentVersion;
+        return store.Save(Slot, profile);
+    }
+}
+```
+
+The rules the example follows:
+
+- **Upgrade one step at a time.** A save from any release reaches the current shape through the same steps. Append a
+  step for every change and never edit one that has shipped: saves written in that shape are already on players'
+  machines.
+- **Keep the original before changing it.** The old JSON is copied to `profile.v<version>` first. If that copy is
+  refused, the save is not upgraded at all.
+- **Loading does not write the upgraded save.** The slot changes on the next ordinary save, when the game knows it is
+  running correctly.
+- **Never save over a save you could not read.** A save written by a newer build (a player who went back to an older
+  release, or a synchronised folder shared by two machines) has a higher version than this build knows. Fields this build
+  does not know would be dropped by the next save, so the example refuses it, as it refuses a version or a field of the
+  wrong type.
+
+`Load` reports which case it met:
+
+<!-- code: samples/Examples/SaveVersions.cs#check -->
+```csharp
+/// <summary>What <see cref="ProfileSaves.Load"/> found.</summary>
+public enum SaveCheck
+{
+    /// <summary>No usable save: start a new game (missing, or corrupt and set aside by the store).</summary>
+    Missing,
+    /// <summary>A save in the current shape.</summary>
+    Current,
+    /// <summary>An older save, upgraded in memory; the original is kept in a backup slot.</summary>
+    Upgraded,
+    /// <summary>A save this build cannot upgrade safely (written by a newer build, or the backup failed): never save over it.</summary>
+    Protected,
+}
+```
+
+A game that receives `Protected` can still be played, but it must not call `ProfileSaves.Save` in that session: tell the
+player the save belongs to a newer version and keep progress in memory. `Missing` means a new game, as with any
+`Load`: corrupt data has already been set aside by the store, and an unreadable slot is protected by the store itself.
+
+Test each step with a save written by every version you have released: write the old JSON into a memory storage
+([A save storage](extending.md#a-save-storage)), load it and check the upgraded values, the backup and the untouched
+slot.
+
 ## In the browser
 
 The web host reports storage problems to the player: "Progress will not be kept" when the browser blocks site
@@ -124,5 +261,6 @@ holds about 5 MB per origin, can be evicted and is discarded by private windows;
 ## Limitations
 
 - Saves are local to one machine or one browser profile; there is no cloud sync, export or import.
-- JSON only, through `System.Text.Json`; no versioning or migration helpers beyond what your data classes do.
+- JSON only, through `System.Text.Json`. There are no built-in version numbers or migrations; a game upgrades its own
+  saves ([Changing what a save holds](#changing-what-a-save-holds)).
 - Writes are synchronous; keep slots small (the sample games' saves are a few kilobytes).
