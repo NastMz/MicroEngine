@@ -241,6 +241,17 @@ test('release-plan: a frozen tree answers frozen without asking nuget.org or Git
   assert.notEqual(plan([]).status, 0);
 });
 
+test('status: a checkout of sdk/ alone (the publish job) reports the versions, and pending as unknown', () => {
+  // sdk-release's publish job checks out sdk/ and the root files only (sparse-checkout: sdk): no docs/.
+  const root = fixture();
+  fs.rmSync(path.join(root, 'docs'), { recursive: true });
+  fs.copyFileSync(new URL('../version.mjs', import.meta.url), path.join(root, 'sdk/version.mjs'));
+  const run = spawnSync(process.execPath, [path.join(root, 'sdk/version.mjs'), 'status', '--json'], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stderr);
+  assert.deepEqual(JSON.parse(run.stdout), { prepared: '0.4.0-alpha.2', documented: '0.4.0-alpha.2', pending: null });
+  assert.equal(pendingChanges(root), null);
+});
+
 test('the documented samples check reports the published SDK build only while the documented version is its anchor', () => {
   // sdk/tests/docs.mjs: the anchor is the last SDK published before stage 5's breaking renames.
   assert.equal(publishedBuildRequired(reportOnlyVersion), false, 'documented version == anchor: report only');
