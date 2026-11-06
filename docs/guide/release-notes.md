@@ -4,10 +4,10 @@ One section per SDK version, newest first. The SDK is in Alpha: a version may ch
 every such change is in the [migration notes](../migrations.md). Releases are tagged `sdk-v<version>`; the demo
 releases (`v0.1.0`, `v0.2.0`...) are separate.
 
-## Next release
+## 0.5.0-alpha.1
 
 **This version is a breaking Alpha.** The engine is rebuilt as modules. Several public APIs change; the
-[migration notes](../migrations.md#next-release) open with an upgrade checklist.
+[migration notes](../migrations.md#050-alpha1) open with an upgrade checklist.
 
 **New**
 
@@ -99,7 +99,7 @@ preference is a stated `RunPreset` (deterministic for headless runs) (`HeadlessP
 `MicroEngine.Platform` (`IPlatformHost`, `ISurface`, `IStorage`, `IContentSource`), optional platform features are
 capabilities found with `TryGetCapability<T>`, and SDL, raylib and headless platforms report resize and focus events; content file names must match their letter case on
 every system; custom graphics devices implement filters and region updates; see the
-[migration notes](../migrations.md#next-release).
+[migration notes](../migrations.md#050-alpha1).
 
 **Faster**: the SDL window appears about a second sooner on some Windows machines (gamepads start behind the start
 screen); the SDL renderer skips unchanged state; input sampling, touch controls,
@@ -118,7 +118,7 @@ thread renders without garbage.
 - Achievements are declared before the engine is composed.
 - Touch controls are opt-in outside touch-first screens.
 - A tap shorter than a frame is down in exactly one update for every device.
-- See the [migration notes](../migrations.md#next-release).
+- See the [migration notes](../migrations.md#050-alpha1).
 
 **Not in this version.** These are in the repository, not in the packages: the 3D path (glTF meshes, `Camera3D`,
 `Renderer3D`) and the optional Box2D physics backend.

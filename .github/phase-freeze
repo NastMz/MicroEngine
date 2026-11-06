@@ -1,6 +1,0 @@
-# Publication freeze (docs/ci.md, "Publication freeze"; docs/releasing.md, "Publication freeze").
-# While this file exists, nothing automatic publishes from main: ci deploys no production site, sdk-release stops in
-# preflight (no draft, no nuget.org push, no site), and release refuses. Every check and pull request preview runs.
-# The first line below that is neither blank nor a comment is the reason shown in run summaries.
-# To lift it: delete this file in a pull request. Its merge deploys main's site and lets sdk-release run again.
-ARCH-1 Phase II: architectural reconstruction in progress on main

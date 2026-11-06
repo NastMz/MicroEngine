@@ -1,6 +1,6 @@
 # What MicroEngine offers today
 
-**MicroEngine SDK 0.4.0-alpha.2.** A working 2D engine for .NET 10, open source under the MIT License, installed from
+**MicroEngine SDK 0.5.0-alpha.1.** A working 2D engine for .NET 10, open source under the MIT License, installed from
 nuget.org ([Getting MicroEngine](getting-microengine.md)). Games built with it run on Windows, Linux, macOS, Android,
 iOS and in web browsers. It is in Alpha: public APIs may still change between 0.x versions ([Versions](sdk.md)).
 
