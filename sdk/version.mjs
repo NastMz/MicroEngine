@@ -116,9 +116,12 @@ function nextSection(text) {
 /**
  * Whether main holds SDK changes nuget.org does not serve yet: the release notes' "## Next release" section has
  * content. The documentation already describes them as published, so production waits for the release that ships them.
+ * null when the checkout has no release notes (sdk-release's publish job checks out sdk/ alone): unknown, not false.
  */
 export function pendingChanges(root = repoRoot) {
-  return Boolean(nextSection(read(root, 'docs/guide/release-notes.md'))?.trim());
+  const notes = 'docs/guide/release-notes.md';
+  if (!fs.existsSync(path.join(root, notes))) return null;
+  return Boolean(nextSection(read(root, notes))?.trim());
 }
 
 /** The anchor a site heading gets for a version: 0.5.0-alpha.1 -> 050-alpha1. */
