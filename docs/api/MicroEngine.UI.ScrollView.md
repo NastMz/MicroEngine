@@ -32,6 +32,9 @@ public sealed class ScrollView : Widget
 [Widget.Enabled](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_Enabled), 
 [Widget.Width](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_Width), 
 [Widget.Height](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_Height), 
+[Widget.Offset](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_Offset), 
+[Widget.Opacity](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_Opacity), 
+[Widget.BlocksPointer](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_BlocksPointer), 
 [Widget.Parent](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_Parent), 
 [Widget.Root](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_Root), 
 [Widget.Children](MicroEngine.UI.Widget.md\#MicroEngine\_UI\_Widget\_Children), 
@@ -114,24 +117,12 @@ protected override bool InterceptsDrag { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-### <a id="MicroEngine_UI_ScrollView_MaxOffset"></a> MaxOffset
+### <a id="MicroEngine_UI_ScrollView_MaxScroll"></a> MaxScroll
 
 How far the content can scroll by the last layout: its length beyond the view's, or 0 when it fits.
 
 ```csharp
-public float MaxOffset { get; }
-```
-
-#### Property Value
-
- [float](https://learn.microsoft.com/dotnet/api/system.single)
-
-### <a id="MicroEngine_UI_ScrollView_Offset"></a> Offset
-
-How far the content is scrolled, in UI units, from 0 to [MaxOffset](MicroEngine.UI.ScrollView.md#MicroEngine_UI_ScrollView_MaxOffset).
-
-```csharp
-public float Offset { get; set; }
+public float MaxScroll { get; }
 ```
 
 #### Property Value
@@ -149,6 +140,18 @@ public Orientation Orientation { get; set; }
 #### Property Value
 
  [Orientation](MicroEngine.UI.Orientation.md)
+
+### <a id="MicroEngine_UI_ScrollView_Scroll"></a> Scroll
+
+How far the content is scrolled, in UI units, from 0 to [MaxScroll](MicroEngine.UI.ScrollView.md#MicroEngine_UI_ScrollView_MaxScroll).
+
+```csharp
+public float Scroll { get; set; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ### <a id="MicroEngine_UI_ScrollView_ShowScrollBar"></a> ShowScrollBar
 

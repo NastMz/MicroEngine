@@ -71,6 +71,20 @@ public IFont Font { get; init; }
 
  [IFont](MicroEngine.Graphics.IFont.md)
 
+### <a id="MicroEngine_UI_UiContext_Opacity"></a> Opacity
+
+How opaque drawing is, 0..1 (1 by default): the product of the [Opacity](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Opacity) of the widget drawn
+and every widget around it. [Theme](MicroEngine.UI.UiContext.md#MicroEngine_UI_UiContext_Theme) is already faded by it; colours of a widget's own go through
+[Fade](MicroEngine.UI.UiContext.md#MicroEngine_UI_UiContext_Fade_MicroEngine_Color_).
+
+```csharp
+public float Opacity { get; init; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
+
 ### <a id="MicroEngine_UI_UiContext_Theme"></a> Theme
 
 The colours.
@@ -181,6 +195,54 @@ public bool Equals(UiContext other)
 #### Returns
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_UI_UiContext_Fade_MicroEngine_Color_"></a> Fade\(Color\)
+
+<code class="paramref">color</code> at this context's [Opacity](MicroEngine.UI.UiContext.md#MicroEngine_UI_UiContext_Opacity).
+
+```csharp
+public Color Fade(Color color)
+```
+
+#### Parameters
+
+`color` [Color](MicroEngine.Color.md)
+
+#### Returns
+
+ [Color](MicroEngine.Color.md)
+
+### <a id="MicroEngine_UI_UiContext_Fade_MicroEngine_Graphics_PanelStyle_"></a> Fade\(PanelStyle\)
+
+<code class="paramref">style</code> at this context's [Opacity](MicroEngine.UI.UiContext.md#MicroEngine_UI_UiContext_Opacity).
+
+```csharp
+public PanelStyle Fade(PanelStyle style)
+```
+
+#### Parameters
+
+`style` [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
+
+#### Returns
+
+ [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
+
+### <a id="MicroEngine_UI_UiContext_Faded_System_Single_"></a> Faded\(float\)
+
+This context with drawing <code class="paramref">opacity</code> times as opaque, the theme faded with it.
+
+```csharp
+public UiContext Faded(float opacity)
+```
+
+#### Parameters
+
+`opacity` [float](https://learn.microsoft.com/dotnet/api/system.single)
+
+#### Returns
+
+ [UiContext](MicroEngine.UI.UiContext.md)
 
 ### <a id="MicroEngine_UI_UiContext_GetHashCode"></a> GetHashCode\(\)
 

@@ -19,6 +19,11 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   (`Widget.InterceptsDrag`), and widgets set nested clips with `UiContext.ClipTo`. The focused examples add a long list.
 - [Grids](../manual/ui.md#grids): `Grid` places children in rows of equal cells (`Columns`, `Spacing`, `Align`).
   The focused examples add an inventory, and their list of examples is now built from widgets in a scrolling view.
+- [Widgets anywhere](../manual/ui.md#placing-widgets-anywhere): `Layer` places each child against an edge or at a
+  point of the UI view (a speech bubble over a character, a banner in a corner) and lets the pointer through where it
+  has none. Every widget has an `Offset` and an `Opacity` that apply to everything in it, for slides and fades
+  (`UiContext.Fade` for colours of a widget's own); `Widget.BlocksPointer` lets a container's empty areas through. The
+  focused examples add bubbles and banners.
 
 **Fixed**
 

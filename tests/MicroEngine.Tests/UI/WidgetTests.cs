@@ -309,15 +309,15 @@ public sealed class WidgetTests
         var view = new ScrollView(Buttons(10, out var items)) { Height = 60 };
         var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = view; });
         var (game, platform) = Start(scene);
-        Assert.AreEqual(0, view.Offset);
-        Assert.IsGreaterThan(0, view.MaxOffset, "ten buttons are taller than sixty units");
+        Assert.AreEqual(0, view.Scroll);
+        Assert.IsGreaterThan(0, view.MaxScroll, "ten buttons are taller than sixty units");
         for (int i = 0; i < 7; i++) Press(game, platform, Key.Down);
         Assert.AreSame(items[7], scene.Widgets.Focused);
-        Assert.IsGreaterThan(0, view.Offset);
+        Assert.IsGreaterThan(0, view.Scroll);
         Assert.IsTrue(view.Bounds.Contains(new Vector2(items[7].Bounds.X + 1, items[7].Bounds.Y + 1))
             && view.Bounds.Contains(new Vector2(items[7].Bounds.X + 1, items[7].Bounds.Bottom - 1)), "the focused button is inside the view");
         for (int i = 0; i < 7; i++) Press(game, platform, Key.Up);
-        Assert.AreEqual(0, view.Offset, "back at the first button, the view is back at the top");
+        Assert.AreEqual(0, view.Scroll, "back at the first button, the view is back at the top");
     }
 
     [TestMethod]
@@ -328,13 +328,13 @@ public sealed class WidgetTests
         var (game, platform) = Start(scene);
         platform.Devices.Send(InputEvent.WheelMoved(Mouse, new Vector2(0, -1), game.Views.UiToCanvas(new Vector2(5, 5))));
         Frame(game, platform);
-        Assert.IsGreaterThan(0, view.Offset, "the wheel towards the player scrolls down");
+        Assert.IsGreaterThan(0, view.Scroll, "the wheel towards the player scrolls down");
         platform.Devices.Send(InputEvent.WheelMoved(Mouse, new Vector2(0, -100), game.Views.UiToCanvas(new Vector2(5, 5))));
         Frame(game, platform);
-        Assert.AreEqual(view.MaxOffset, view.Offset);
+        Assert.AreEqual(view.MaxScroll, view.Scroll);
         platform.Devices.Send(InputEvent.WheelMoved(Mouse, new Vector2(0, 100), game.Views.UiToCanvas(new Vector2(5, 5))));
         Frame(game, platform);
-        Assert.AreEqual(0, view.Offset);
+        Assert.AreEqual(0, view.Scroll);
     }
 
     [TestMethod]
@@ -366,7 +366,7 @@ public sealed class WidgetTests
         platform.Devices.Send(InputEvent.PointerDown(Mouse, 0, PointerKind.Touch, game.Views.UiToCanvas(start)));
         platform.Devices.Send(InputEvent.PointerMove(Mouse, 0, PointerKind.Touch, game.Views.UiToCanvas(start - new Vector2(0, 30))));
         Frame(game, platform);
-        Assert.IsTrue(view.Offset is > 20 and <= 30, $"dragged up 30 units, the content follows ({view.Offset})");
+        Assert.IsTrue(view.Scroll is > 20 and <= 30, $"dragged up 30 units, the content follows ({view.Scroll})");
         Assert.IsFalse(items[0].IsPressed, "the drag took the press from the button");
         platform.Devices.Send(InputEvent.PointerUp(Mouse, 0, PointerKind.Touch, game.Views.UiToCanvas(start - new Vector2(0, 30))));
         Frame(game, platform);
@@ -427,6 +427,73 @@ public sealed class WidgetTests
         Assert.AreSame(buttons[1], scene.Widgets.Focused);
         Press(game, platform, Key.Down);
         Assert.AreSame(buttons[4], scene.Widgets.Focused, "down goes to the cell below, not the next child");
+    }
+
+    /// <summary>A block that fades its own colour with the context, as a widget of fixed colours does.</summary>
+    private sealed class FadingBlock(Color color) : Widget
+    {
+        protected override Vector2 MeasureContent(UiContext context) => new(20, 20);
+        protected override void DrawContent(IRenderer renderer, UiContext context) => renderer.FillRect(Bounds, context.Fade(color));
+    }
+
+    [TestMethod]
+    public void An_offset_moves_a_widget_and_everything_in_it_for_layout_and_the_pointer()
+    {
+        int clicks = 0;
+        var button = new Button("GO", () => clicks++);
+        var panel = new Panel(button) { Offset = new Vector2(100, 10) };
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = panel; });
+        var (game, platform) = Start(scene);
+        Assert.AreEqual(new Vector2(100, 10), panel.Bounds.Position);
+        Assert.AreEqual(new Vector2(106, 16), button.Bounds.Position, "the child moves with it (6 units of padding)");
+        Click(game, platform, Center(button));
+        Assert.AreEqual(1, clicks);
+    }
+
+    [TestMethod]
+    public void Opacity_fades_a_widget_and_its_children_and_multiplies_down_the_tree()
+    {
+        var red = Color.Hex("ff0000");
+        var themed = new ThemeBlock();
+        var inner = new FadingBlock(red) { Opacity = 0.5f };
+        var group = new Stack { Spacing = 0, Opacity = 0.5f }.Add(themed).Add(inner);
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = group; });
+        var (game, platform) = Start(scene, rasterize: true);
+        Frame(game, platform);
+        var ui = ((IViewCapture)platform).CaptureUi()!;
+        var accent = ui[5, 5];
+        Assert.IsTrue(Math.Abs(accent.A - 128) <= 2, $"a theme colour inside is faded to half without the widget doing anything ({accent.A})");
+        var block = ui[5, 25];
+        Assert.IsTrue(block.R > 0 && block.G == 0 && block.B == 0, "red, stored premultiplied by its alpha");
+        Assert.IsTrue(Math.Abs(block.A - 64) <= 2, $"a widget's own colour through Fade, half of half ({block.A})");
+    }
+
+    /// <summary>A block in the theme's accent colour, as engine widgets draw.</summary>
+    private sealed class ThemeBlock : Widget
+    {
+        protected override Vector2 MeasureContent(UiContext context) => new(20, 20);
+        protected override void DrawContent(IRenderer renderer, UiContext context) => renderer.FillRect(Bounds, context.Theme.Accent);
+    }
+
+    [TestMethod]
+    public void A_layer_places_children_at_its_edges_or_at_a_point_and_lets_the_pointer_through_elsewhere()
+    {
+        var corner = new Block(Color.White, 10);
+        var bubble = new Block(Color.White, 20);
+        var layer = new Layer().Add(corner, Anchor.BottomRight, new Vector2(-4, -4)).AddAt(bubble, new Vector2(200, 100), Anchor.Bottom);
+        var scene = new UiScene(ui => ui.Content = layer);
+        var (game, platform) = Start(scene);
+        Assert.AreEqual(new RectF(0, 0, 640, 360), layer.Bounds, "a layer fills the UI view");
+        Assert.AreEqual(new RectF(640 - 4 - 60, 360 - 4 - 10, 60, 10), corner.Bounds);
+        Assert.AreEqual(new RectF(170, 80, 60, 20), bubble.Bounds, "its bottom centre on the point");
+
+        layer.Move(bubble, new Vector2(300, 150));
+        Frame(game, platform);
+        Assert.AreEqual(new RectF(270, 130, 60, 20), bubble.Bounds, "moved, as a bubble follows a character");
+
+        platform.Devices.Send(InputEvent.PointerDown(Mouse, 0, PointerKind.Mouse, game.Views.UiToCanvas(new Vector2(20, 20))));
+        Frame(game, platform);
+        Assert.IsTrue(scene.GameplayEvents.Any(e => e.Kind == InputEventKind.PointerDown), "where the layer has no child, the press is gameplay's");
     }
 
     [TestMethod]

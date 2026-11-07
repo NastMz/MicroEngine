@@ -80,6 +80,36 @@ public readonly record struct UiContext(IFont Font, UiTheme Theme, float Unit, f
     public RectF? Clip { get; init; }
 
     /// <summary>
+    /// How opaque drawing is, 0..1 (1 by default): the product of the <see cref="Widget.Opacity"/> of the widget drawn
+    /// and every widget around it. <see cref="Theme"/> is already faded by it; colours of a widget's own go through
+    /// <see cref="Fade(Color)"/>.
+    /// </summary>
+    public float Opacity { get; init; } = 1;
+
+    /// <summary><paramref name="color"/> at this context's <see cref="Opacity"/>.</summary>
+    public Color Fade(Color color) => Opacity >= 1 ? color : color.WithAlpha(color.A / 255f * Opacity);
+
+    /// <summary><paramref name="style"/> at this context's <see cref="Opacity"/>.</summary>
+    public PanelStyle Fade(PanelStyle style) => Opacity >= 1 ? style
+        : new PanelStyle(Fade(style.Fill), Fade(style.Border), Fade(style.Highlight), Fade(style.Shadow), Fade(style.InnerBorder));
+
+    /// <summary>This context with drawing <paramref name="opacity"/> times as opaque, the theme faded with it.</summary>
+    public UiContext Faded(float opacity)
+    {
+        if (opacity >= 1) return this;
+        var inner = this with { Opacity = Opacity * Math.Clamp(opacity, 0, 1) };
+        var t = Theme;
+        float a = Math.Clamp(opacity, 0, 1);
+        static Color F(Color c, float a) => c.WithAlpha(c.A / 255f * a);
+        var p = t.Panel;
+        return inner with
+        {
+            Theme = new UiTheme(new PanelStyle(F(p.Fill, a), F(p.Border, a), F(p.Highlight, a), F(p.Shadow, a), F(p.InnerBorder, a)),
+                F(t.Text, a), F(t.TextShadow, a), F(t.Accent, a), F(t.Muted, a)),
+        };
+    }
+
+    /// <summary>
     /// Restricts drawing to <paramref name="area"/> within the current <see cref="Clip"/>, until the result is disposed,
     /// which restores the current clip. Draw with <paramref name="inner"/>, which carries the new clip, so a clip set
     /// further down nests inside this one. Use it instead of <see cref="IRenderer.SetClip"/>, which cannot nest.
@@ -127,6 +157,22 @@ public abstract class Widget
     public float? Width { get; set; }
     /// <summary>A fixed height in UI units; null (the default) is the height the widget measures.</summary>
     public float? Height { get; set; }
+    /// <summary>
+    /// A shift from where the layout places the widget, in UI units (zero by default). The widget and everything in it
+    /// move, for drawing and for the pointer; the space it takes in its container does not. Animate it to slide a widget in.
+    /// </summary>
+    public Vector2 Offset { get; set; }
+    /// <summary>
+    /// How opaque the widget and everything in it draw, 0..1 (1 by default); it multiplies the opacity of the widgets
+    /// around it. Animate it to fade a widget. A transparent widget is still laid out and reached by the pointer.
+    /// </summary>
+    public float Opacity { get => _opacity; set => _opacity = Math.Clamp(value, 0, 1); }
+    private float _opacity = 1;
+    /// <summary>
+    /// Whether a press on the widget itself, where no child is, belongs to the UI (true by default). A <see cref="Layer"/>
+    /// says false: its empty areas let the pointer through to gameplay.
+    /// </summary>
+    public virtual bool BlocksPointer => true;
     /// <summary>The widget that contains this one, or null for a root's content or a widget not placed yet.</summary>
     public Widget? Parent { get; private set; }
     /// <summary>The root the widget is shown by, or null while it is not part of one.</summary>
@@ -185,6 +231,7 @@ public abstract class Widget
     /// <summary>Places the widget at <paramref name="bounds"/> (UI units) and its children within it.</summary>
     public void Arrange(RectF bounds, UiContext context)
     {
+        bounds = bounds.Offset(Offset);
         Bounds = bounds;
         ArrangeContent(bounds, context);
     }
@@ -193,7 +240,8 @@ public abstract class Widget
     public void Draw(IRenderer renderer, UiContext context)
     {
         ArgumentNullException.ThrowIfNull(renderer);
-        if (!Visible) return;
+        if (!Visible || _opacity <= 0) return;
+        if (_opacity < 1) context = context.Faded(_opacity);
         if (!ClipsChildren)
         {
             DrawContent(renderer, context);

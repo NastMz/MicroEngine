@@ -37,7 +37,7 @@ per slice; the forecast is well over 400 authored lines. Test runner: `dotnet te
 | T2 P1 pointer events and the wheel on widgets; settings screen example (slider, toggle, value selector) | S3 S4 S8 | inline | done | `feat/ui-pointer`; RED: 5 missing members; GREEN: `WidgetTests` 24/24, `Samples.Tests` 38/38 |
 | T3 P2 clipping and a scrolling container; long list example | S3 S8 | inline | done | `feat/ui-scroll`; RED: `ScrollView` missing, then the nested-clip test alone; GREEN: UI tests 29/29, `Samples.Tests` 40/40 |
 | T4 P3 grid layout; inventory example | S3 S8 | inline | done | `feat/ui-grid` (stacked on `feat/ui-scroll`); RED: `Grid` missing; GREEN: UI tests 32/32, `Samples.Tests` 42/42 |
-| T5 P4 positioned placement, per-widget offset and opacity; speech bubble and banner examples | S3 S8 | inline | pending | — |
+| T5 P4 positioned placement, per-widget offset and opacity; speech bubble and banner examples | S3 S8 | inline | done | `feat/ui-layer` (stacked on `feat/ui-grid`); RED: members and `Layer` missing; GREEN: UI tests 35/35, `Samples.Tests` 44/44 |
 | T6 P5 `Label` wrapping and visible characters; dialogue box example | S3 S5 S8 | inline | pending | — |
 | T7 P6 9-slice drawing and `PanelStyle` image; themed panel example | S4 S8 | inline | pending | — |
 | T8 Menu example on the widget tree; any primitive `SelectionList` still lacks | S6 S8 | inline | pending | — |
@@ -94,3 +94,11 @@ is delegated only if two of them run in parallel on disjoint files.
   examples, part of T8), and the examples game sets `Presentation.UiScale = 3` so widgets read at the canvas's size.
   Checks: UI tests 32/32, `MicroEngine.Tests` 743 passed with the same environmental failure, `Samples.Tests` 42/42,
   snippets, `repo-docs` 17/17, `sdk/version.mjs check`; menu, settings and inventory captures inspected. Next: T5.
+- L10 (2026-11-07) T5 done on `feat/ui-layer`. `Widget.Offset` (moves the subtree for layout and the pointer),
+  `Widget.Opacity` (multiplies down the tree through `UiContext.Opacity`; the context's theme is faded, own colours go
+  through `UiContext.Fade`), `Widget.BlocksPointer` (`UiRoot.Contains` now asks the hit test), `Layer` (edges or a point
+  with a pivot; `Move` to follow). `ScrollView.Offset`/`MaxOffset` clashed with `Widget.Offset`: renamed `Scroll` and
+  `MaxScroll` before any release. Found: per-draw fading lets a panel's border show through its fill (the theme panel
+  measured 231 instead of 128); true group opacity needs an offscreen target, recorded as a limitation. Checks: UI
+  tests 35/35, `MicroEngine.Tests` 746 passed with the environmental failure, `Samples.Tests` 44/44, TrailDuel and
+  CourtyardKey suites, snippets, `repo-docs` 17/17, `sdk/version.mjs check`; the layer capture inspected. Next: T6.

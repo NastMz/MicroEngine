@@ -28,7 +28,7 @@ public sealed class Label : Widget
     /// <inheritdoc/>
     protected override void DrawContent(IRenderer renderer, UiContext context)
     {
-        var color = Color ?? (IsEnabledInTree ? context.Theme.Text : context.Theme.Muted);
+        var color = Color is { } own ? context.Fade(own) : IsEnabledInTree ? context.Theme.Text : context.Theme.Muted;
         float y = Bounds.Y;
         foreach (var line in Text.Split('\n'))
         {
@@ -140,7 +140,7 @@ public sealed class Panel : Widget
     /// <inheritdoc/>
     protected override void DrawContent(IRenderer renderer, UiContext context)
     {
-        renderer.Panel(Bounds, Style ?? context.Theme.Panel);
+        renderer.Panel(Bounds, Style is { } own ? context.Fade(own) : context.Theme.Panel);
         _content?.Draw(renderer, context);
     }
 }

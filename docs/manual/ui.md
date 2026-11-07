@@ -182,13 +182,14 @@ public sealed class TitleScene : Scene
 | Type | What it is |
 | --- | --- |
 | `UiRoot` | The tree's root (`Scene.Widgets`): `Content`, `Anchor` and `Offset` (where the content sits in the UI view), `Font`, `Theme`, `Actions`, `Focused`, `Focus(widget)`, `MoveFocus(direction)`, `AutoFocus`, `WrapFocus`, the `Cancelled` event |
-| `Widget` | The base class: `Bounds` (UI units, from the last layout), `Visible`, `Enabled`, fixed `Width` and `Height`, `IsFocused`, `IsHovered`, `IsPressed`; derive from it for a widget of your own (`MeasureContent`, `ArrangeContent`, `DrawContent`, `OnAction`, `OnClick`, the pointer's `OnPointerDown`, `OnPointerMove`, `OnPointerUp` and `OnPointerCancel`, `OnWheel`; see [Controls of your own](#controls-of-your-own)); a container sets `ClipsChildren` to cut its children at its bounds, and `InterceptsDrag` to take a drag that starts on a child ([Long content](#long-content)) |
+| `Widget` | The base class: `Bounds` (UI units, from the last layout), `Visible`, `Enabled`, fixed `Width` and `Height`, `IsFocused`, `IsHovered`, `IsPressed`; derive from it for a widget of your own (`MeasureContent`, `ArrangeContent`, `DrawContent`, `OnAction`, `OnClick`, the pointer's `OnPointerDown`, `OnPointerMove`, `OnPointerUp` and `OnPointerCancel`, `OnWheel`; see [Controls of your own](#controls-of-your-own)); a container sets `ClipsChildren` to cut its children at its bounds, and `InterceptsDrag` to take a drag that starts on a child ([Long content](#long-content)); `Offset` and `Opacity` move and fade a widget with everything in it ([Placing widgets anywhere](#placing-widgets-anywhere)) |
 | `Label` | Text, one or more lines, in the theme's text colour or its own `Color` |
 | `Button` | A label in a panel; confirm while it has the focus, or a click on it, raises `Clicked` |
 | `Panel` | A box (the theme's panel, or its own `Style`) with `Padding` around one `Content` |
 | `Stack` | Children one after another, `Vertical` or `Horizontal`, with `Spacing` and a cross-axis `Align` |
-| `ScrollView` | A window of fixed `Height` (or `Width`, `Orientation.Horizontal`) onto a longer `Content`: `Offset`, `MaxOffset`, `WheelStep`, `ShowScrollBar` ([Long content](#long-content)) |
+| `ScrollView` | A window of fixed `Height` (or `Width`, `Orientation.Horizontal`) onto a longer `Content`: `Scroll`, `MaxScroll`, `WheelStep`, `ShowScrollBar` ([Long content](#long-content)) |
 | `Grid` | Children in rows of `Columns` equal cells, left to right then top to bottom, with `Spacing` and an `Align` within the cell ([Grids](#grids)) |
+| `Layer` | The whole UI view, each child against an edge or corner (`Add(child, anchor, offset)`, `Place`) or at a point (`AddAt(child, point, pivot)`, `Move`); its empty areas let the pointer through ([Placing widgets anywhere](#placing-widgets-anywhere)) |
 | `TextField` | One line of editable text: `Text`, `Caret`, `Placeholder`, `MaxLength`, the input method's `Composition`; `Changed` and `Submitted` events |
 | `Toasts` | Banners that slide in one at a time (`Show(new Toast(heading, title, description))`); `AchievementToasts` shows achievements through it |
 
@@ -344,6 +345,63 @@ public sealed class ItemSlot(string name, int count) : Widget
 }
 ```
 
+### Placing widgets anywhere
+
+A `Layer` covers the UI view and places each child on its own, at the size the child measures: against an edge or a
+corner, or with a pivot point of the child at a point of the layer. Where no child is, presses and the wheel pass
+through to gameplay. This scene puts a speech bubble over a character and a banner in the top-right corner:
+
+<!-- code: samples/Examples/Examples/LayerExample.cs#layer -->
+```csharp
+public override void Enter()
+{
+    Bubble = new Panel(new Label("HELLO!"));
+    Banner = new Panel(new Label("ACHIEVEMENT\nFIRST STEPS")) { Opacity = 0 };
+    _layer = new Layer()
+        .AddAt(Bubble, Head(), Anchor.Bottom)                       // its bottom centre over the head
+        .Add(Banner, Anchor.TopRight, new Vector2(-4, 16));         // 4 units from the right, under the heading
+    Widgets.Content = _layer;
+}
+
+/// <summary>The character's head in UI units: from the world to the canvas (no camera here), then to the UI view.</summary>
+private Vector2 Head() => Game.Views.CanvasToUi(Character - new Vector2(0, 2));
+```
+
+The character lives in the world. Its position goes to the UI view through `Game.Views.CanvasToUi`, after
+`Camera2D.WorldToScreen` when a camera moves the world, and `Move` puts the bubble there every update:
+
+<!-- code: samples/Examples/Examples/LayerExample.cs#follow -->
+```csharp
+public override void Update(float dt)
+{
+    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
+    _x += _direction * 40 * dt;
+    if (_x is > 260 or < 60) _direction = -_direction;
+    _layer.Move(Bubble, Head());                                    // every update: the bubble follows
+    if (Input.Pressed("confirm")) ShowBanner();
+}
+```
+
+Every widget has an `Offset`, a shift from where the layout puts it, and an `Opacity`. Both apply to everything inside
+the widget, and the pointer follows the offset. Tweens animate them, here sliding the banner in as it fades in:
+
+<!-- code: samples/Examples/Examples/LayerExample.cs#banner -->
+```csharp
+/// <summary>Slides the banner in from the right as it fades in, then fades it out two seconds later.</summary>
+private void ShowBanner()
+{
+    Tweens.Add(0.4f, t =>
+    {
+        Banner.Offset = new Vector2((1 - t) * 60, 0);
+        Banner.Opacity = t;
+    }, Ease.OutCubic);
+    Tweens.Add(0.4f, t => Banner.Opacity = 1 - t, delay: 2.4f);
+}
+```
+
+Opacity multiplies down the tree. The theme a widget draws with is already faded (`UiContext.Theme`), so widgets that
+draw in theme colours fade without code of their own; a colour of a widget's own goes through `UiContext.Fade`.
+
 ### Controls of your own
 
 Sliders, toggles and value selectors are not engine types: their behaviour fits in a small widget, and their look is
@@ -462,3 +520,5 @@ private static Widget Row(string text, Widget control)
 - Sliders, toggles and value selectors are widgets of your own
   ([Controls of your own](#controls-of-your-own)).
 - A scroll view moves at once to its new position: there is no smooth scrolling or momentum after a flick.
+- Opacity fades each thing a widget draws, not the widget as one picture: where its own draws overlap (a panel's border
+  under its fill), the lower one shows through.

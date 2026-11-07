@@ -39,15 +39,15 @@ public sealed class ScrollView : Widget
     /// <summary>The direction the content scrolls in (vertical by default).</summary>
     public Orientation Orientation { get; set; }
 
-    /// <summary>How far the content is scrolled, in UI units, from 0 to <see cref="MaxOffset"/>.</summary>
-    public float Offset
+    /// <summary>How far the content is scrolled, in UI units, from 0 to <see cref="MaxScroll"/>.</summary>
+    public float Scroll
     {
         get => _offset;
         set => _offset = Math.Clamp(value, 0, _max);
     }
 
     /// <summary>How far the content can scroll by the last layout: its length beyond the view's, or 0 when it fits.</summary>
-    public float MaxOffset => _max;
+    public float MaxScroll => _max;
 
     /// <summary>How far one notch of the wheel scrolls, in UI units; null (the default) is three lines of the font.</summary>
     public float? WheelStep { get; set; }
@@ -103,8 +103,8 @@ public sealed class ScrollView : Widget
         var f = focused.Bounds;
         float before = Vertical ? bounds.Y - f.Y : bounds.X - f.X;
         float after = Vertical ? f.Bottom - bounds.Bottom : f.Right - bounds.Right;
-        if (before > 0) Offset -= before;
-        else if (after > 0) Offset += MathF.Min(after, -before);
+        if (before > 0) Scroll -= before;
+        else if (after > 0) Scroll += MathF.Min(after, -before);
         else return;
         Place(bounds, size, context);
     }
@@ -143,7 +143,7 @@ public sealed class ScrollView : Widget
     {
         if (_max <= 0) return false;
         float step = WheelStep ?? 3 * _line;
-        Offset += (Vertical || delta.X == 0 ? -delta.Y : delta.X) * step;
+        Scroll += (Vertical || delta.X == 0 ? -delta.Y : delta.X) * step;
         return true;
     }
 
@@ -156,7 +156,7 @@ public sealed class ScrollView : Widget
 
     /// <summary>The content follows the pointer.</summary>
     protected internal override void OnPointerMove(Vector2 position) =>
-        Offset = _dragOffset - (Vertical ? position.Y - _dragStart.Y : position.X - _dragStart.X);
+        Scroll = _dragOffset - (Vertical ? position.Y - _dragStart.Y : position.X - _dragStart.X);
 
     /// <inheritdoc/>
     protected internal override void HashState(StateHasher hash) => hash.Add(_offset);
