@@ -148,8 +148,8 @@ Every backend draws by the same rules.
 
 Extension methods in [`RendererExtensions.cs`](../../src/MicroEngine.Graphics2D/Legacy/RendererExtensions.cs) add
 `Draw(sprite, position, tint?, flipX)` (places the sprite's origin at the position), `DrawPivoted` (rotate and
-scale around the origin), `FillEllipse`, `DrawRect`, `FillGradient` and `Panel` (bordered UI box from a
-`PanelStyle`).
+scale around the origin), `FillEllipse`, `DrawRect`, `FillGradient`, `DrawNineSlice` (an image stretched to any
+size with its corners kept, from a `NineSlice`) and `Panel` (a bordered UI box from a `PanelStyle`, or its `Image`).
 
 ## Art in code: `PixelImage` and `Art`
 

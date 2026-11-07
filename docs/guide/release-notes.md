@@ -28,6 +28,10 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   `Width` breaks its text between words to fit, and `VisibleCharacters` reveals it a little at a time without moving
   its lines (`Lines` and `VisibleLines` give what it draws). The focused examples' dialogue is now built from a panel,
   labels and buttons, and its speech bubble wraps.
+- [Your own look](../manual/ui.md#your-own-look): `NineSlice` is an image that stretches to any size with its corners
+  kept, drawn with `DrawNineSlice`. `PanelStyle.Image` draws panels and buttons with one (`ImageTint` colours it), so
+  a game gives the widgets its own frames; a focused button tints its image with the accent. The focused examples add
+  a menu with a wooden and a parchment frame.
 
 **Fixed**
 

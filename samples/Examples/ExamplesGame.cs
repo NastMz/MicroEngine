@@ -35,6 +35,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Long list (scrolling)", g => new LongListExample()),
         ("Inventory (grid)", g => new InventoryExample()),
         ("Bubbles and banners (layer)", g => new LayerExample()),
+        ("Your own look (nine-slice)", g => new SkinExample()),
     ];
 
     public string? SaveDirectory { get; } = saveDirectory;

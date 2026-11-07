@@ -124,4 +124,8 @@
 2260 capture 19-layer.png
 2266 press pause
 2280 press down
-2290 quit
+2290 press confirm
+2330 press down
+2340 capture 20-skin.png
+2346 press pause
+2360 quit

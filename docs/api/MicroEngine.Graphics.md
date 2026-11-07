@@ -178,9 +178,17 @@ The settings of one batch, from [Begin](MicroEngine.Graphics.IRenderer2D.md#Micr
 
 Per-draw sprite options. Origin is in source pixels and is also the rotation pivot.
 
+ [NineSlice](MicroEngine.Graphics.NineSlice.md)
+
+An image that stretches to any size without distorting its frame: the part of [Source](MicroEngine.Graphics.NineSlice.md#MicroEngine_Graphics_NineSlice_Source) within
+[Left](MicroEngine.Graphics.NineSlice.md#MicroEngine_Graphics_NineSlice_Left), [Top](MicroEngine.Graphics.NineSlice.md#MicroEngine_Graphics_NineSlice_Top), [Right](MicroEngine.Graphics.NineSlice.md#MicroEngine_Graphics_NineSlice_Right) and [Bottom](MicroEngine.Graphics.NineSlice.md#MicroEngine_Graphics_NineSlice_Bottom) pixels of its sides is the
+border, drawn at its size at the corners and stretched along the edges; the rest is the centre, stretched to fill.
+Draw one with [DrawNineSlice](MicroEngine.Graphics.RendererExtensions.md#MicroEngine_Graphics_RendererExtensions_DrawNineSlice_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_NineSlice_MicroEngine_RectF_System_Nullable_MicroEngine_Color__), or set it as a [Image](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_Image).
+
  [PanelStyle](MicroEngine.Graphics.PanelStyle.md)
 
-Colours of a panel drawn with [Panel](MicroEngine.Graphics.RendererExtensions.md#MicroEngine_Graphics_RendererExtensions_Panel_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_Graphics_PanelStyle_).
+The look of a panel drawn with [Panel](MicroEngine.Graphics.RendererExtensions.md#MicroEngine_Graphics_RendererExtensions_Panel_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_Graphics_PanelStyle_): a box of colours, or an image of the game's
+own ([Image](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_Image)).
 
  [RenderState](MicroEngine.Graphics.RenderState.md)
 

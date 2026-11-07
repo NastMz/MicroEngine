@@ -736,3 +736,11 @@ private void ShowBanner()
 ```
 
 Manual: [Placing widgets anywhere](../manual/ui.md#placing-widgets-anywhere).
+
+## Your own look
+
+A pause menu whose buttons are a wooden frame and whose panel is parchment, both cut from one 24×12 image and
+stretched as nine-slices to the size the widgets measure. Source:
+[`SkinExample.cs`](../../samples/Examples/Examples/SkinExample.cs).
+
+Manual: [Your own look](../manual/ui.md#your-own-look).

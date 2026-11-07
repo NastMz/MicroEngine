@@ -62,7 +62,8 @@ public sealed unsafe class GamepadTests
         platform.BeginFrame();
         Frame(platform);
         var input = platform.Input;
-        Assert.IsFalse(input.PadConnected, "no pad before one is attached");
+        // A physical pad plugged into this machine would take part in the hand-over this test checks.
+        if (input.PadConnected) Assert.Inconclusive("a gamepad is already connected to this machine; unplug it to run this test");
 
         // A DualSense (Sony's vendor and product ids) is a PlayStation pad.
         var sony = Attach("Virtual DualSense", 0x054C, 0x0CE6);

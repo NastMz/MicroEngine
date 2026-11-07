@@ -91,7 +91,11 @@ public readonly record struct UiContext(IFont Font, UiTheme Theme, float Unit, f
 
     /// <summary><paramref name="style"/> at this context's <see cref="Opacity"/>.</summary>
     public PanelStyle Fade(PanelStyle style) => Opacity >= 1 ? style
-        : new PanelStyle(Fade(style.Fill), Fade(style.Border), Fade(style.Highlight), Fade(style.Shadow), Fade(style.InnerBorder));
+        : style with
+        {
+            Fill = Fade(style.Fill), Border = Fade(style.Border), Highlight = Fade(style.Highlight), Shadow = Fade(style.Shadow),
+            InnerBorder = Fade(style.InnerBorder), ImageTint = style.Image is null ? style.ImageTint : Fade(style.ImageTint ?? Color.White),
+        };
 
     /// <summary>This context with drawing <paramref name="opacity"/> times as opaque, the theme faded with it.</summary>
     public UiContext Faded(float opacity)

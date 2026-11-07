@@ -144,6 +144,14 @@ public sealed class Button : Widget
         var theme = context.Theme;
         bool enabled = IsEnabledInTree;
         var style = theme.Panel;
+        if (style.Image is not null)
+        {
+            // An image of the game's own shows the state by its tint: the accent while focused, darker while pressed.
+            var tint = style.ImageTint ?? Color.White;
+            if (IsFocused && enabled) tint = Multiply(tint, theme.Accent);
+            if (IsPressed) tint = Color.Lerp(tint, new Color(0, 0, 0, tint.A), 0.25f);
+            style = style with { ImageTint = tint };
+        }
         if (IsFocused && enabled) style = style with { Border = theme.Accent };
         if (IsPressed) style = style with { Fill = Color.Lerp(style.Fill, theme.Accent, 0.25f) };
         renderer.Panel(Bounds, style);
@@ -152,6 +160,9 @@ public sealed class Button : Widget
         var at = new Vector2(MathF.Round(Bounds.X + (Bounds.Width - size.X) / 2), MathF.Round(Bounds.Y + (Bounds.Height - context.Font.LineHeight) / 2));
         context.Font.DrawShadowed(renderer, Text, at, color, theme.TextShadow, new Vector2(context.Unit));
     }
+
+    private static Color Multiply(Color a, Color b) =>
+        new((byte)(a.R * b.R / 255), (byte)(a.G * b.G / 255), (byte)(a.B * b.B / 255), (byte)(a.A * b.A / 255));
 }
 
 /// <summary>A box behind one child, with padding around it: the frame of a menu, a dialog or a HUD block.</summary>

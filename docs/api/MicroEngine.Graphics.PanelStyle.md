@@ -6,7 +6,8 @@ Namespace: [MicroEngine.Graphics](MicroEngine.Graphics.md)
 Assembly: MicroEngine.Graphics2D.dll  
 Guide: [Graphics](../manual/rendering.md)  
 
-Colours of a panel drawn with [Panel](MicroEngine.Graphics.RendererExtensions.md#MicroEngine_Graphics_RendererExtensions_Panel_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_Graphics_PanelStyle_).
+The look of a panel drawn with [Panel](MicroEngine.Graphics.RendererExtensions.md#MicroEngine_Graphics_RendererExtensions_Panel_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_Graphics_PanelStyle_): a box of colours, or an image of the game's
+own ([Image](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_Image)).
 
 ```csharp
 public readonly struct PanelStyle : IEquatable<PanelStyle>
@@ -20,7 +21,8 @@ public readonly struct PanelStyle : IEquatable<PanelStyle>
 
 ### <a id="MicroEngine_Graphics_PanelStyle__ctor_MicroEngine_Color_MicroEngine_Color_MicroEngine_Color_MicroEngine_Color_MicroEngine_Color_"></a> PanelStyle\(Color, Color, Color, Color, Color\)
 
-Colours of a panel drawn with [Panel](MicroEngine.Graphics.RendererExtensions.md#MicroEngine_Graphics_RendererExtensions_Panel_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_Graphics_PanelStyle_).
+The look of a panel drawn with [Panel](MicroEngine.Graphics.RendererExtensions.md#MicroEngine_Graphics_RendererExtensions_Panel_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_Graphics_PanelStyle_): a box of colours, or an image of the game's
+own ([Image](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_Image)).
 
 ```csharp
 public PanelStyle(Color Fill, Color Border, Color Highlight = default, Color Shadow = default, Color InnerBorder = default)
@@ -85,6 +87,32 @@ public Color Highlight { get; init; }
 #### Property Value
 
  [Color](MicroEngine.Color.md)
+
+### <a id="MicroEngine_Graphics_PanelStyle_Image"></a> Image
+
+An image drawn as the panel instead of the box of colours, stretched as a nine-slice (null, the default, draws
+the box). [Fill](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_Fill), [Border](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_Border), [Highlight](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_Highlight) and [InnerBorder](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_InnerBorder) are
+then not drawn; [Shadow](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_Shadow) still is, in the image's shape.
+
+```csharp
+public NineSlice? Image { get; init; }
+```
+
+#### Property Value
+
+ [NineSlice](MicroEngine.Graphics.NineSlice.md)?
+
+### <a id="MicroEngine_Graphics_PanelStyle_ImageTint"></a> ImageTint
+
+The colour [Image](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_Image) is multiplied by; null (the default) draws it unchanged.
+
+```csharp
+public Color? ImageTint { get; init; }
+```
+
+#### Property Value
+
+ [Color](MicroEngine.Color.md)?
 
 ### <a id="MicroEngine_Graphics_PanelStyle_InnerBorder"></a> InnerBorder
 
