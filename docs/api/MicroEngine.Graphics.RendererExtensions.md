@@ -67,6 +67,34 @@ public static void Draw(this IRenderer r, Texture texture, Vector2 position, Col
 
 `tint` [Color](MicroEngine.Color.md)?
 
+### <a id="MicroEngine_Graphics_RendererExtensions_DrawNineSlice_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_NineSlice_MicroEngine_RectF_System_Nullable_MicroEngine_Color__"></a> DrawNineSlice\(IRenderer, NineSlice, RectF, Color?\)
+
+Draws <code class="paramref">slice</code> over <code class="paramref">destination</code>: its four corners at their size (times
+[Scale](MicroEngine.Graphics.NineSlice.md#MicroEngine_Graphics_NineSlice_Scale)), its edges stretched along the sides and its centre stretched to fill the rest. A
+destination smaller than the corners shrinks them to fit.
+
+```csharp
+public static void DrawNineSlice(this IRenderer r, NineSlice slice, RectF destination, Color? tint = null)
+```
+
+#### Parameters
+
+`r` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+The renderer.
+
+`slice` [NineSlice](MicroEngine.Graphics.NineSlice.md)
+
+The image and its borders.
+
+`destination` [RectF](MicroEngine.RectF.md)
+
+Where it goes, in the renderer's pixels or UI units.
+
+`tint` [Color](MicroEngine.Color.md)?
+
+Colour multiplier; null for white (unchanged).
+
 ### <a id="MicroEngine_Graphics_RendererExtensions_DrawPivoted_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_Sprite_System_Numerics_Vector2_System_Single_System_Nullable_System_Numerics_Vector2__System_Nullable_MicroEngine_Color__System_Boolean_"></a> DrawPivoted\(IRenderer, Sprite, Vector2, float, Vector2?, Color?, bool\)
 
 Draws a sprite so its origin lands on <code class="paramref">pivot</code>, rotating and scaling around that
@@ -152,7 +180,9 @@ public static void FillGradient(this IRenderer r, RectF rect, Color top, Color b
 
 ### <a id="MicroEngine_Graphics_RendererExtensions_Panel_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_Graphics_PanelStyle_"></a> Panel\(IRenderer, RectF, PanelStyle\)
 
-Draws a rounded "pixel" panel: border, fill and an inner highlight line.
+Draws a panel: with [Image](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_Image), that image as a nine-slice tinted by
+[ImageTint](MicroEngine.Graphics.PanelStyle.md#MicroEngine_Graphics_PanelStyle_ImageTint) (its shadow, when set, is the image in the shadow colour 2 pixels down and
+right); otherwise a rounded "pixel" box of border, fill and an inner highlight line.
 
 ```csharp
 public static void Panel(this IRenderer r, RectF rect, PanelStyle style)

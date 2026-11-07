@@ -524,6 +524,76 @@ public sealed class WidgetTests
         CollectionAssert.AreEqual(new[] { "AB", "CD", "E" }, label.VisibleLines.ToArray(), "the line break counts as a character too");
     }
 
+    private static readonly Color SliceCorner = Color.Hex("ff0000"), SliceEdge = Color.Hex("00ff00"), SliceCentre = Color.Hex("0000ff");
+
+    /// <summary>A 3×3 image: red corners, green edges, a blue centre; one pixel of border on every side.</summary>
+    private static NineSlice Slice(Game game, float scale)
+    {
+        var image = new PixelImage(3, 3);
+        for (int y = 0; y < 3; y++)
+            for (int x = 0; x < 3; x++)
+                image[x, y] = x == 1 && y == 1 ? SliceCentre : x == 1 || y == 1 ? SliceEdge : SliceCorner;
+        return new NineSlice(game.Graphics.CreateTexture(image, TextureFilter.Nearest), new RectF(0, 0, 3, 3), 1) { Scale = scale };
+    }
+
+    /// <summary>A widget that draws a nine-slice image over its bounds.</summary>
+    private sealed class SliceBox(Func<NineSlice> slice) : Widget
+    {
+        protected override Vector2 MeasureContent(UiContext context) => new(20, 10);
+        protected override void DrawContent(IRenderer renderer, UiContext context) => renderer.DrawNineSlice(slice(), Bounds);
+    }
+
+    [TestMethod]
+    public void A_nine_slice_keeps_its_corners_and_stretches_its_edges_and_centre()
+    {
+        UiScene scene = null!;
+        scene = new UiScene(ui =>
+        {
+            var slice = Slice(scene.Game, 2);
+            ui.Anchor = Anchor.TopLeft;
+            ui.Content = new SliceBox(() => slice);
+        });
+        var (game, platform) = Start(scene, rasterize: true);
+        Frame(game, platform);
+        var ui = ((IViewCapture)platform).CaptureUi()!;
+        Assert.AreEqual(SliceCorner, ui[0, 0]);
+        Assert.AreEqual(SliceCorner, ui[1, 1], "a corner is its source pixels times the scale, 2 by 2");
+        Assert.AreEqual(SliceEdge, ui[2, 0], "the top edge starts after the corner");
+        Assert.AreEqual(SliceEdge, ui[17, 1], "and stretches to the next corner");
+        Assert.AreEqual(SliceCorner, ui[18, 0]);
+        Assert.AreEqual(SliceEdge, ui[0, 5], "the left edge stretches down");
+        Assert.AreEqual(SliceCentre, ui[10, 5], "the centre fills the rest");
+        Assert.AreEqual(SliceCorner, ui[19, 9], "the bottom-right corner ends at the bounds");
+        Assert.AreEqual(SliceEdge, ui[17, 9]);
+    }
+
+    [TestMethod]
+    public void A_panel_style_with_an_image_draws_panels_and_buttons_with_it_tinted_by_their_state()
+    {
+        var theme = UiTheme.Default;
+        Button? button = null;
+        Panel? panel = null;
+        UiScene scene = null!;
+        scene = new UiScene(ui =>
+        {
+            var slice = Slice(scene.Game, 1);
+            ui.Anchor = Anchor.TopLeft;
+            ui.Theme = theme with { Panel = theme.Panel with { Image = slice } };
+            ui.Content = new Stack { Spacing = 0, Align = Align.Start }
+                .Add(button = new Button("GO"))
+                .Add(panel = new Panel(new Block(SliceCentre, 10)) { Padding = 4 });
+        });
+        var (game, platform) = Start(scene, rasterize: true);
+        Frame(game, platform);
+        var ui = ((IViewCapture)platform).CaptureUi()!;
+        Assert.AreEqual(SliceCorner, ui[(int)panel!.Bounds.X, (int)panel.Bounds.Y], "the panel draws the image, not the theme's box");
+        Assert.AreEqual(SliceEdge, ui[(int)panel.Bounds.X + 2, (int)panel.Bounds.Y]);
+        var tinted = new Color(0, 0, theme.Accent.B);                  // blue times the accent
+        var centre = ui[(int)button!.Bounds.X + 2, (int)button.Bounds.Y + 2];
+        Assert.IsTrue(button.IsFocused);
+        Assert.AreEqual(tinted, centre, "the focused button tints its image with the accent");
+    }
+
     /// <summary>A block in the theme's accent colour, as engine widgets draw.</summary>
     private sealed class ThemeBlock : Widget
     {

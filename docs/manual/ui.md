@@ -185,7 +185,7 @@ public sealed class TitleScene : Scene
 | `Widget` | The base class: `Bounds` (UI units, from the last layout), `Visible`, `Enabled`, fixed `Width` and `Height`, `IsFocused`, `IsHovered`, `IsPressed`; derive from it for a widget of your own (`MeasureContent`, `ArrangeContent`, `DrawContent`, `OnAction`, `OnClick`, the pointer's `OnPointerDown`, `OnPointerMove`, `OnPointerUp` and `OnPointerCancel`, `OnWheel`; see [Controls of your own](#controls-of-your-own)); a container sets `ClipsChildren` to cut its children at its bounds, and `InterceptsDrag` to take a drag that starts on a child ([Long content](#long-content)); `Offset` and `Opacity` move and fade a widget with everything in it ([Placing widgets anywhere](#placing-widgets-anywhere)) |
 | `Label` | Text, one or more lines, in the theme's text colour or its own `Color`; with `Wrap` it breaks to its fixed `Width`, and `VisibleCharacters` reveals part of it ([Text that wraps and reveals](#text-that-wraps-and-reveals)) |
 | `Button` | A label in a panel; confirm while it has the focus, or a click on it, raises `Clicked` |
-| `Panel` | A box (the theme's panel, or its own `Style`) with `Padding` around one `Content` |
+| `Panel` | A box (the theme's panel, or its own `Style`, either of which can be an image: [Your own look](#your-own-look)) with `Padding` around one `Content` |
 | `Stack` | Children one after another, `Vertical` or `Horizontal`, with `Spacing` and a cross-axis `Align` |
 | `ScrollView` | A window of fixed `Height` (or `Width`, `Orientation.Horizontal`) onto a longer `Content`: `Scroll`, `MaxScroll`, `WheelStep`, `ShowScrollBar` ([Long content](#long-content)) |
 | `Grid` | Children in rows of `Columns` equal cells, left to right then top to bottom, with `Spacing` and an `Align` within the cell ([Grids](#grids)) |
@@ -466,6 +466,50 @@ private void ShowBanner()
 
 Opacity multiplies down the tree. The theme a widget draws with is already faded (`UiContext.Theme`), so widgets that
 draw in theme colours fade without code of their own; a colour of a widget's own goes through `UiContext.Fade`.
+
+### Your own look
+
+The widgets draw with the theme's colours, or with images of the game's own. A `NineSlice` is the part of a texture
+used as a frame: its border (`Left`, `Top`, `Right`, `Bottom` pixels, or one number for all four) is drawn at its size
+in the corners and stretched along the edges, and its centre is stretched to fill, so one small image frames a widget
+of any size. `Scale` draws the border thicker. A `PanelStyle` with an `Image` draws that image instead of its box of
+colours, multiplied by `ImageTint` when set; its `Shadow` still draws, in the image's shape. Buttons draw the theme's
+panel, and a `Panel` its own `Style` when it has one. This menu gives its buttons a wooden frame and its panel
+parchment, both from one image:
+
+<!-- code: samples/Examples/Examples/SkinExample.cs#skin -->
+```csharp
+public override void Enter()
+{
+    // Content/frames.png holds two 12x12 frames side by side, each with a 4-pixel border: wood, then parchment.
+    _frames = Game.Graphics.CreateTexture(new ContentFolder().Image("frames.png"), TextureFilter.Nearest);
+    var wood = new NineSlice(_frames, new RectF(0, 0, 12, 12), 4);
+    var parchment = new NineSlice(_frames, new RectF(12, 0, 12, 12), 4);
+
+    // The theme's panel is what buttons draw: here the wooden frame, its text light on the dark wood.
+    var theme = UiTheme.Default with { Accent = Color.Hex("ffd66b"), Text = Color.Hex("f4e4c1") };
+    Widgets.Theme = theme with { Panel = theme.Panel with { Image = wood } };
+
+    var buttons = new Stack { Spacing = 2 };
+    foreach (var name in new[] { "CONTINUE", "OPTIONS", "QUIT TO TITLE" })
+        buttons.Add(new Button(name, () => Chosen = name) { Width = 100 });
+    Menu = new Panel(new Stack { Spacing = 4 }
+        .Add(new Label("PAUSED") { Color = Color.Hex("4a3426"), Shadow = false })
+        .Add(buttons))
+    {
+        Padding = 10,                                       // clear of the 4-pixel border
+        Style = theme.Panel with { Image = parchment },     // a panel of its own look
+    };
+    Widgets.Content = Menu;
+}
+
+public override void Exit() => _frames.Dispose();
+```
+
+A button with an image shows its state by tinting it: with the theme's accent while it has the focus, darker while it
+is pressed. For other states or other looks per state, draw the widget yourself (see
+[Controls of your own](#controls-of-your-own)); the renderer's `DrawNineSlice` draws a nine-slice anywhere. Keep a
+nine-slice's centre plain: it is stretched, so a pattern in it is stretched too.
 
 ### Controls of your own
 

@@ -39,7 +39,7 @@ per slice; the forecast is well over 400 authored lines. Test runner: `dotnet te
 | T4 P3 grid layout; inventory example | S3 S8 | inline | done | `feat/ui-grid` (stacked on `feat/ui-scroll`); RED: `Grid` missing; GREEN: UI tests 32/32, `Samples.Tests` 42/42 |
 | T5 P4 positioned placement, per-widget offset and opacity; speech bubble and banner examples | S3 S8 | inline | done | `feat/ui-layer` (stacked on `feat/ui-grid`); RED: members and `Layer` missing; GREEN: UI tests 35/35, `Samples.Tests` 44/44 |
 | T6 P5 `Label` wrapping and visible characters; dialogue box example | S3 S5 S8 | inline | done | `feat/ui-text` (stacked on `feat/ui-layer`); RED: `Wrap`, `Lines`, `VisibleCharacters`, `VisibleLines` missing; GREEN: UI tests 38/38, `Samples.Tests` 45/45 |
-| T7 P6 9-slice drawing and `PanelStyle` image; themed panel example | S4 S8 | inline | pending | — |
+| T7 P6 9-slice drawing and `PanelStyle` image; themed panel example | S4 S8 | inline | done | `feat/ui-skin`; RED: `NineSlice` missing; GREEN: `WidgetTests` 35/35, `Samples.Tests` 46/46 |
 | T8 Menu example on the widget tree; any primitive `SelectionList` still lacks | S6 S8 | inline | pending | — |
 | T9 Deprecate `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `AchievementToasts`, `AchievementsScene`; migration notes | S7 S9 | inline | pending | Risk: item 3 |
 | T10 Demos, tutorial and template off the deprecated types (copies in the demos or the widget tree) | S7 | inline | pending | — |
@@ -111,3 +111,14 @@ is delegated only if two of them run in parallel on disjoint files.
   `Visible` changed the box's height as it blinked; it uses `Opacity` now and the test pins the box size. Checks: UI
   tests 38/38, `MicroEngine.Tests` 749 passed with the environmental failure, `Samples.Tests` 45/45, snippets,
   `repo-docs` 17/17, `sdk/version.mjs check`; dialogue and layer captures inspected. Next: T7.
+- L12 (2026-11-07) User: "Ya está fusionado, sigue con T7". T7 done on `feat/ui-skin`, from `main`. `NineSlice` (texture,
+  source rectangle, four borders, `Scale`) and `RendererExtensions.DrawNineSlice` (corners kept, edges and centre
+  stretched, corners shrink together when the destination is smaller). `PanelStyle.Image` and `ImageTint` are
+  init properties, so the record's constructor is unchanged; with an image, `Panel` draws it (and `Shadow` in its
+  shape), `UiContext.Fade` fades the tint, and a button tints it with the accent while focused, darker while pressed.
+  New example `SkinExample` with `Content/frames.png`, an original 24x12 image (wood and parchment frames) drawn for
+  it. Found in the capture: a patterned centre stretches into blocks; the image's centres are plain and the manual says
+  to keep them plain. Checks: `WidgetTests` 35/35, solution suites pass except the known environmental test and
+  `Pads_connect_are_recognised_press_and_hand_over_when_unplugged` (a physical pad is attached to this machine;
+  `Losing_the_focus_releases_held_keys` failed once and passed when rerun); snippets, `repo-docs` 17/17,
+  `sdk/version.mjs check`; the skin capture inspected. Next: T8.

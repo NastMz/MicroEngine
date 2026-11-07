@@ -195,6 +195,24 @@ public sealed class DialogueExampleTests
     }
 }
 
+/// <summary>The nine-slice example (UI guide): a menu drawn with images of the game's own.</summary>
+[TestClass]
+public sealed class SkinExampleTests
+{
+    [TestMethod]
+    public void TheMenuDrawsWithItsImagesAndItsButtonsWork()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new SkinExample());
+        var scene = (SkinExample)game.Scenes.Current!;
+        Assert.IsNotNull(scene.Widgets.Theme.Panel.Image, "buttons draw the wooden frame");
+        Assert.IsNotNull(scene.Menu.Style?.Image, "the panel draws the parchment");
+        Assert.AreNotEqual(scene.Widgets.Theme.Panel.Image!.Value.Source, scene.Menu.Style!.Value.Image!.Value.Source, "two parts of one image");
+        SettingsExampleTests.Press(game, platform, "down");
+        SettingsExampleTests.Press(game, platform, "confirm");
+        Assert.AreEqual("OPTIONS", scene.Chosen);
+    }
+}
+
 /// <summary>The inventory example (UI guide): slots in a grid, the description following the focus.</summary>
 [TestClass]
 public sealed class InventoryExampleTests
