@@ -24,6 +24,10 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   has none. Every widget has an `Offset` and an `Opacity` that apply to everything in it, for slides and fades
   (`UiContext.Fade` for colours of a widget's own); `Widget.BlocksPointer` lets a container's empty areas through. The
   focused examples add bubbles and banners.
+- [Text that wraps and reveals](../manual/ui.md#text-that-wraps-and-reveals): a `Label` with `Wrap` and a fixed
+  `Width` breaks its text between words to fit, and `VisibleCharacters` reveals it a little at a time without moving
+  its lines (`Lines` and `VisibleLines` give what it draws). The focused examples' dialogue is now built from a panel,
+  labels and buttons, and its speech bubble wraps.
 
 **Fixed**
 

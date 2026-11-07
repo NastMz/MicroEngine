@@ -468,6 +468,62 @@ public sealed class WidgetTests
         Assert.IsTrue(Math.Abs(block.A - 64) <= 2, $"a widget's own colour through Fade, half of half ({block.A})");
     }
 
+    [TestMethod]
+    public void A_wrapping_label_breaks_its_text_to_its_width_and_grows_in_height()
+    {
+        var plain = new Label("THE GEMS ONLY GROW AT NIGHT");
+        var wrapped = new Label("THE GEMS ONLY GROW AT NIGHT") { Width = 60, Wrap = true };
+        var scene = new UiScene(ui => ui.Content = new Stack { Spacing = 0, Align = Align.Start }.Add(plain).Add(wrapped));
+        var (game, _) = Start(scene);
+        var font = game.Font;
+        Assert.AreEqual(1, plain.Lines.Count, "without Wrap a label keeps its lines");
+        Assert.AreEqual(font.MeasureWidth(plain.Text), plain.Bounds.Width, "and measures as wide as its text");
+        Assert.IsTrue(wrapped.Lines.Count > 1, "with Wrap the text breaks into lines");
+        Assert.AreEqual(string.Join(" ", wrapped.Lines), wrapped.Text, "between words, keeping every word");
+        foreach (var line in wrapped.Lines)
+            Assert.IsTrue(font.MeasureWidth(line) <= 60, $"no line is wider than the label ({line})");
+        Assert.AreEqual(60, wrapped.Bounds.Width);
+        Assert.AreEqual(wrapped.Lines.Count * font.LineHeight + (wrapped.Lines.Count - 1), wrapped.Bounds.Height, "one line height per line, a unit apart");
+    }
+
+    [TestMethod]
+    public void Visible_characters_reveal_a_label_without_moving_its_lines()
+    {
+        var red = Color.Hex("ff0000");
+        var label = new Label("AAAA") { Color = red, Shadow = false, VisibleCharacters = 2 };
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = label; });
+        var (game, platform) = Start(scene, rasterize: true);
+        var full = label.Bounds;
+        Frame(game, platform);
+        var ui = ((IViewCapture)platform).CaptureUi()!;
+        static bool Red(PixelImage image, int x0, int x1)
+        {
+            for (int x = x0; x < x1; x++)
+                for (int y = 0; y < 8; y++)
+                    if (image[x, y].R > 0) return true;
+            return false;
+        }
+        int advance = game.Font.Advance('A');
+        Assert.IsTrue(Red(ui, 0, 2 * advance), "the first two letters are drawn");
+        Assert.IsFalse(Red(ui, 2 * advance, 4 * advance), "the last two are not yet");
+        Assert.AreEqual(full, label.Bounds, "the label keeps the size of its whole text");
+
+        label.VisibleCharacters = null;
+        Frame(game, platform);
+        Assert.IsTrue(Red(((IViewCapture)platform).CaptureUi()!, 2 * advance, 4 * advance), "null shows the whole text");
+    }
+
+    [TestMethod]
+    public void Visible_characters_count_the_text_as_written_across_wrapped_lines()
+    {
+        var label = new Label("AB CD\nEF") { Width = 20, Wrap = true, VisibleCharacters = 4 };
+        var (_, _) = Start(new UiScene(ui => ui.Content = label));
+        CollectionAssert.AreEqual(new[] { "AB", "CD", "EF" }, label.Lines.ToArray());
+        CollectionAssert.AreEqual(new[] { "AB", "C", "" }, label.VisibleLines.ToArray(), "A, B, the space the wrap took, then C");
+        label.VisibleCharacters = 7;
+        CollectionAssert.AreEqual(new[] { "AB", "CD", "E" }, label.VisibleLines.ToArray(), "the line break counts as a character too");
+    }
+
     /// <summary>A block in the theme's accent colour, as engine widgets draw.</summary>
     private sealed class ThemeBlock : Widget
     {

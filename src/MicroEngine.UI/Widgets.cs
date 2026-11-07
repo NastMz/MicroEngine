@@ -3,9 +3,16 @@ using MicroEngine.Graphics;
 
 namespace MicroEngine.UI;
 
-/// <summary>Text that does nothing: a heading, a value, a hint. Lines are separated by <c>\n</c>.</summary>
+/// <summary>
+/// Text that does nothing: a heading, a value, a hint, a line of dialogue. Lines are separated by <c>\n</c>; with
+/// <see cref="Wrap"/> and a fixed <see cref="Widget.Width"/> the text also breaks between words to fit. Set
+/// <see cref="VisibleCharacters"/> to reveal it a little at a time: the lines stay where the whole text puts them.
+/// </summary>
 public sealed class Label : Widget
 {
+    private string[] _lines = [""];
+    private (string Text, IFont? Font, float Width) _laidOut;
+
     /// <summary>A label showing <paramref name="text"/>.</summary>
     public Label(string text = "") => Text = text;
 
@@ -17,20 +24,72 @@ public sealed class Label : Widget
     /// <summary>Whether the text has the theme's shadow under it (true by default).</summary>
     public bool Shadow { get; set; } = true;
 
+    /// <summary>
+    /// Whether the text breaks between words so no line is wider than the label's fixed <see cref="Widget.Width"/>
+    /// (false by default); a word wider than that on its own is broken between characters. Without a fixed width the
+    /// text keeps its lines. The label grows in height to hold the lines.
+    /// </summary>
+    public bool Wrap { get; set; }
+
+    /// <summary>
+    /// How many characters of <see cref="Text"/> are drawn, counted in the text as written (spaces and <c>\n</c>
+    /// included); null (the default) draws all of it. The label keeps the size and the lines of its whole text, so a
+    /// text revealed a little at a time never moves. Raise it over time for a typewriter effect.
+    /// </summary>
+    public int? VisibleCharacters { get; set; }
+
+    /// <summary>The lines the text is drawn in, after wrapping, as of the last layout.</summary>
+    public IReadOnlyList<string> Lines => _lines;
+
+    /// <summary>The part of each of <see cref="Lines"/> that <see cref="VisibleCharacters"/> shows.</summary>
+    public IReadOnlyList<string> VisibleLines
+    {
+        get
+        {
+            if (VisibleCharacters is not { } count) return _lines;
+            var visible = new string[_lines.Length];
+            int at = 0;
+            for (int i = 0; i < _lines.Length; i++)
+            {
+                var line = _lines[i];
+                at = StartOf(line, at);
+                visible[i] = line[..Math.Clamp(count - at, 0, line.Length)];
+                at += line.Length;
+            }
+            return visible;
+        }
+    }
+
+    /// <summary>Where <paramref name="line"/> starts in the text, from <paramref name="from"/>: past the spaces and line breaks a wrap took.</summary>
+    private int StartOf(string line, int from)
+    {
+        while (from < _text.Length && string.CompareOrdinal(_text, from, line, 0, line.Length) != 0) from++;
+        return from;
+    }
+
+    private void LayOut(UiContext context)
+    {
+        float width = Wrap && Width is { } w ? w : float.PositiveInfinity;
+        if (_laidOut == (_text, context.Font, width)) return;
+        _lines = float.IsPositiveInfinity(width) ? _text.Split('\n') : [.. context.Font.Wrap(_text, width)];
+        _laidOut = (_text, context.Font, width);
+    }
+
     /// <inheritdoc/>
     protected override Vector2 MeasureContent(UiContext context)
     {
-        var lines = Text.Split('\n');
-        float width = lines.Max(l => context.Font.MeasureWidth(l));
-        return new Vector2(width, lines.Length * context.Font.LineHeight + (lines.Length - 1) * context.Unit);
+        LayOut(context);
+        float width = _lines.Max(l => context.Font.MeasureWidth(l));
+        return new Vector2(width, _lines.Length * context.Font.LineHeight + (_lines.Length - 1) * context.Unit);
     }
 
     /// <inheritdoc/>
     protected override void DrawContent(IRenderer renderer, UiContext context)
     {
+        LayOut(context);
         var color = Color is { } own ? context.Fade(own) : IsEnabledInTree ? context.Theme.Text : context.Theme.Muted;
         float y = Bounds.Y;
-        foreach (var line in Text.Split('\n'))
+        foreach (var line in VisibleLines)
         {
             var at = new Vector2(Bounds.X, y);
             if (Shadow) context.Font.DrawShadowed(renderer, line, at, color, context.Theme.TextShadow, new Vector2(context.Unit));

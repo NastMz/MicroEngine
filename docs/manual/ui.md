@@ -183,7 +183,7 @@ public sealed class TitleScene : Scene
 | --- | --- |
 | `UiRoot` | The tree's root (`Scene.Widgets`): `Content`, `Anchor` and `Offset` (where the content sits in the UI view), `Font`, `Theme`, `Actions`, `Focused`, `Focus(widget)`, `MoveFocus(direction)`, `AutoFocus`, `WrapFocus`, the `Cancelled` event |
 | `Widget` | The base class: `Bounds` (UI units, from the last layout), `Visible`, `Enabled`, fixed `Width` and `Height`, `IsFocused`, `IsHovered`, `IsPressed`; derive from it for a widget of your own (`MeasureContent`, `ArrangeContent`, `DrawContent`, `OnAction`, `OnClick`, the pointer's `OnPointerDown`, `OnPointerMove`, `OnPointerUp` and `OnPointerCancel`, `OnWheel`; see [Controls of your own](#controls-of-your-own)); a container sets `ClipsChildren` to cut its children at its bounds, and `InterceptsDrag` to take a drag that starts on a child ([Long content](#long-content)); `Offset` and `Opacity` move and fade a widget with everything in it ([Placing widgets anywhere](#placing-widgets-anywhere)) |
-| `Label` | Text, one or more lines, in the theme's text colour or its own `Color` |
+| `Label` | Text, one or more lines, in the theme's text colour or its own `Color`; with `Wrap` it breaks to its fixed `Width`, and `VisibleCharacters` reveals part of it ([Text that wraps and reveals](#text-that-wraps-and-reveals)) |
 | `Button` | A label in a panel; confirm while it has the focus, or a click on it, raises `Clicked` |
 | `Panel` | A box (the theme's panel, or its own `Style`) with `Padding` around one `Content` |
 | `Stack` | Children one after another, `Vertical` or `Horizontal`, with `Spacing` and a cross-axis `Align` |
@@ -227,6 +227,71 @@ stops when the field loses the focus or its scene leaves or is covered.
 
 The widgets' state (the focus, the fields' text) is part of the scene's state hash, so scripted runs and replays see
 the same interface. A scene that never reads `Widgets` has none and pays nothing.
+
+### Text that wraps and reveals
+
+A `Label` keeps the lines its text has (`\n` starts a new one). With `Wrap` set and a fixed `Width`, it also breaks
+the text between words so no line is wider, and grows in height to hold them; a word wider than the label on its own
+breaks between characters. `Lines` gives the lines it draws, as of the last layout.
+
+`VisibleCharacters` draws only the first characters of the text, counted as written (spaces and `\n` included), and
+null draws all of it. The label keeps the size and the lines of its whole text, so raising the count over time reveals
+the text letter by letter without a word jumping to the next line; `VisibleLines` gives what shows. The dialogue of
+the [focused examples](../examples/focused.md#dialogue) is a panel, a name tag and two labels built this way. Its
+update reveals the box, plays a blip per letter and advances with confirm:
+
+<!-- code: samples/Examples/Examples/DialogueExample.cs#reveal -->
+```csharp
+public override void Update(float dt)
+{
+    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
+    if (!Dialogue.Visible) return;                                // the buttons take confirm themselves
+    int before = Text.VisibleCharacters ?? Text.Text.Length;
+    _shown = MathF.Min(Text.Text.Length, _shown + LettersPerSecond * dt);
+    Text.VisibleCharacters = (int)_shown;
+    for (int i = before; i < (int)_shown; i++)
+        if (!char.IsWhiteSpace(Text.Text[i])) Audio.TryPlay("select", 0.3f);   // a blip per letter, if the game has one
+    bool complete = (int)_shown >= Text.Text.Length;
+    _more.Opacity = complete && (int)(Age * 3) % 2 == 0 ? 1 : 0;    // a blinking arrow that keeps its room: confirm goes on
+    if (!Input.Pressed("confirm")) return;
+    if (!complete) _shown = Text.Text.Length;                     // the first confirm shows the rest
+    else if (_chunks.Count > 0) NextBox();                        // then the rest of a long page
+    else NextPage();                                              // then the next page
+    Text.VisibleCharacters = (int)_shown;
+}
+```
+
+A page that does not fit the box is split into boxes of three lines with the font's own `Wrap`, the same wrapping a
+label does, so no text is lost:
+
+<!-- code: samples/Examples/Examples/DialogueExample.cs#pages -->
+```csharp
+/// <summary>
+/// The next page, cut into boxes of three lines with the same wrapping the label does: the font breaks the text to
+/// the label's width, and every three lines become one box.
+/// </summary>
+private void NextPage()
+{
+    if (!_pages.TryDequeue(out var page))
+    {
+        Dialogue.Visible = false;                                 // the last page: the question
+        Answers.Visible = true;
+        return;
+    }
+    Speaker.Text = page.Speaker;
+    var lines = Font.Wrap(page.Text, (int)TextWidth);
+    for (int i = 0; i < lines.Count; i += LinesPerBox)
+        _chunks.Enqueue(string.Join('\n', lines.Skip(i).Take(LinesPerBox)));
+    NextBox();
+}
+
+private void NextBox()
+{
+    Text.Text = _chunks.Dequeue();
+    Text.VisibleCharacters = 0;
+    _shown = 0;
+}
+```
 
 ### Long content
 
@@ -355,7 +420,7 @@ through to gameplay. This scene puts a speech bubble over a character and a bann
 ```csharp
 public override void Enter()
 {
-    Bubble = new Panel(new Label("HELLO!"));
+    Bubble = new Panel(new Label("HELLO! A FINE NIGHT FOR A WALK.") { Width = 70, Wrap = true });
     Banner = new Panel(new Label("ACHIEVEMENT\nFIRST STEPS")) { Opacity = 0 };
     _layer = new Layer()
         .AddAt(Bubble, Head(), Anchor.Bottom)                       // its bottom centre over the head
