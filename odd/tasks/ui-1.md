@@ -40,7 +40,7 @@ per slice; the forecast is well over 400 authored lines. Test runner: `dotnet te
 | T5 P4 positioned placement, per-widget offset and opacity; speech bubble and banner examples | S3 S8 | inline | done | `feat/ui-layer` (stacked on `feat/ui-grid`); RED: members and `Layer` missing; GREEN: UI tests 35/35, `Samples.Tests` 44/44 |
 | T6 P5 `Label` wrapping and visible characters; dialogue box example | S3 S5 S8 | inline | done | `feat/ui-text` (stacked on `feat/ui-layer`); RED: `Wrap`, `Lines`, `VisibleCharacters`, `VisibleLines` missing; GREEN: UI tests 38/38, `Samples.Tests` 45/45 |
 | T7 P6 9-slice drawing and `PanelStyle` image; themed panel example | S4 S8 | inline | done | `feat/ui-skin`; RED: `NineSlice` missing; GREEN: `WidgetTests` 35/35, `Samples.Tests` 46/46 |
-| T8 Menu example on the widget tree; any primitive `SelectionList` still lacks | S6 S8 | inline | pending | — |
+| T8 Menu example on the widget tree; any primitive `SelectionList` still lacks | S6 S8 | inline | done | `feat/ui-menu`; RED: `FocusChange` and `UiRoot.FocusChanged` missing; GREEN: `WidgetTests` 36/36, `Samples.Tests` 47/47 |
 | T9 Deprecate `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `AchievementToasts`, `AchievementsScene`; migration notes | S7 S9 | inline | pending | Risk: item 3 |
 | T10 Demos, tutorial and template off the deprecated types (copies in the demos or the widget tree) | S7 | inline | pending | — |
 | T11 Remove the deprecated types, in the SDK release after T9's | S9 | inline | blocked: needs T9 released | Risk: item 3 |
@@ -122,3 +122,11 @@ is delegated only if two of them run in parallel on disjoint files.
   `Pads_connect_are_recognised_press_and_hand_over_when_unplugged` (a physical pad is attached to this machine;
   `Losing_the_focus_releases_held_keys` failed once and passed when rerun); snippets, `repo-docs` 17/17,
   `sdk/version.mjs check`; the skin capture inspected. Next: T8.
+- L13 (2026-11-07) User: "Listo, mergeado, continúa con el siguiente". T8 done on `feat/ui-menu`. S6 answered: every
+  part of `SelectionList` maps to the widget tree (index: the focus; `Wrap`: `WrapFocus`; a disabled option: `Enabled`
+  off, muted and skipped, where `SelectionList` let the cursor rest on it; the cursor: drawn by the item) except
+  `Moved`, which had no equivalent short of overriding every item or polling `Focused`. Added
+  `UiRoot.FocusChanged` with `FocusChange(From, To)`; the first focus has no `From`. The cursor following the mouse
+  needs no primitive (`Hovered` plus `Focus`). New `MenuExample` with a `MenuItem` widget of its own. Checks:
+  `MicroEngine.Tests` 753 passed (no environmental failure since T7), `Samples.Tests` 47/47, snippets, `repo-docs`
+  17/17, `sdk/version.mjs check`; the menu capture inspected. Next: T9.

@@ -181,7 +181,7 @@ public sealed class TitleScene : Scene
 
 | Type | What it is |
 | --- | --- |
-| `UiRoot` | The tree's root (`Scene.Widgets`): `Content`, `Anchor` and `Offset` (where the content sits in the UI view), `Font`, `Theme`, `Actions`, `Focused`, `Focus(widget)`, `MoveFocus(direction)`, `AutoFocus`, `WrapFocus`, the `Cancelled` event |
+| `UiRoot` | The tree's root (`Scene.Widgets`): `Content`, `Anchor` and `Offset` (where the content sits in the UI view), `Font`, `Theme`, `Actions`, `Focused`, `Focus(widget)`, `MoveFocus(direction)`, `AutoFocus`, `WrapFocus`, the `Cancelled` and `FocusChanged` events |
 | `Widget` | The base class: `Bounds` (UI units, from the last layout), `Visible`, `Enabled`, fixed `Width` and `Height`, `IsFocused`, `IsHovered`, `IsPressed`; derive from it for a widget of your own (`MeasureContent`, `ArrangeContent`, `DrawContent`, `OnAction`, `OnClick`, the pointer's `OnPointerDown`, `OnPointerMove`, `OnPointerUp` and `OnPointerCancel`, `OnWheel`; see [Controls of your own](#controls-of-your-own)); a container sets `ClipsChildren` to cut its children at its bounds, and `InterceptsDrag` to take a drag that starts on a child ([Long content](#long-content)); `Offset` and `Opacity` move and fade a widget with everything in it ([Placing widgets anywhere](#placing-widgets-anywhere)) |
 | `Label` | Text, one or more lines, in the theme's text colour or its own `Color`; with `Wrap` it breaks to its fixed `Width`, and `VisibleCharacters` reveals part of it ([Text that wraps and reveals](#text-that-wraps-and-reveals)) |
 | `Button` | A label in a panel; confirm while it has the focus, or a click on it, raises `Clicked` |
@@ -227,6 +227,85 @@ stops when the field loses the focus or its scene leaves or is covered.
 
 The widgets' state (the focus, the fields' text) is part of the scene's state hash, so scripted runs and replays see
 the same interface. A scene that never reads `Widgets` has none and pays nothing.
+
+### Menus
+
+A menu is a column of focusable widgets: the focus is the cursor, `WrapFocus` takes it from the last item to the first,
+and an item with `Enabled` off is drawn muted and skipped. `FocusChanged` reports every move of the focus with the
+widget it left (`From`) and the one it reached (`To`), for a cursor sound or a description that follows the cursor; the
+first focus a scene gives has no `From`. `Hovered` is the widget under the pointer, so the cursor can follow the mouse.
+This title menu does all of it:
+
+<!-- code: samples/Examples/Examples/MenuExample.cs#menu -->
+```csharp
+public override void Enter()
+{
+    Result = new Label();
+    Items =
+    [
+        new MenuItem("NEW GAME", () => Result.Text = "A NEW ADVENTURE BEGINS"),
+        new MenuItem("CONTINUE", () => { }) { Enabled = false },          // no save yet: muted, and the cursor skips it
+        new MenuItem("OPTIONS", () => Result.Text = "OPTIONS WOULD OPEN HERE"),
+        new MenuItem("QUIT", () => Game.Scenes.Pop()),
+    ];
+    var column = new Stack { Spacing = 3, Align = Align.Start };
+    foreach (var item in Items) column.Add(item);
+    Widgets.Content = new Stack { Spacing = 12 }.Add(column).Add(Result);
+    Widgets.FocusChanged += change =>
+    {
+        if (change.From is null) return;                                 // the first focus is not a move
+        Moves++;
+        Audio.TryPlay("select", 0.3f);                                   // a blip, if the game registered one
+    };
+}
+
+public override void Update(float dt)
+{
+    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
+    // The cursor follows the mouse: when the pointer reaches another item, that item takes the focus.
+    var hovered = Widgets.Hovered;
+    if (!ReferenceEquals(hovered, _hovered) && hovered is { Focusable: true }) Widgets.Focus(hovered);
+    _hovered = hovered;
+}
+```
+
+Each item is a small widget of the game's own, which draws a bobbing cursor beside itself while it has the focus. A
+`Button` would do as well; this one shows that a menu's look is the game's:
+
+<!-- code: samples/Examples/Examples/MenuExample.cs#item -->
+```csharp
+/// <summary>A menu line: its text, and a cursor that bobs beside it while it has the focus. Confirm or a click chooses it.</summary>
+public sealed class MenuItem(string text, Action chosen) : Widget
+{
+    public string Text { get; } = text;
+    public override bool Focusable => true;
+
+    protected override Vector2 MeasureContent(UiContext context) =>
+        new(context.Font.MeasureWidth(Text) + 10 * context.Unit, context.Font.LineHeight);
+
+    protected override bool OnAction(UiAction action)
+    {
+        if (action != UiAction.Confirm) return false;
+        chosen();
+        return true;
+    }
+
+    protected override void OnClick() => chosen();
+
+    protected override void DrawContent(IRenderer r, UiContext context)
+    {
+        var theme = context.Theme;
+        float u = context.Unit;
+        var color = !IsEnabledInTree ? theme.Muted : IsFocused ? theme.Accent : theme.Text;
+        if (IsFocused)
+        {
+            float bob = MathF.Round(MathX.Wave(context.Time, 2f, 1f) * u);
+            context.Font.Draw(r, "▶", new Vector2(Bounds.X + bob, Bounds.Y), theme.Accent);
+        }
+        context.Font.DrawShadowed(r, Text, new Vector2(Bounds.X + 10 * u, Bounds.Y), color, theme.TextShadow, new Vector2(u));
+    }
+}
+```
 
 ### Text that wraps and reveals
 

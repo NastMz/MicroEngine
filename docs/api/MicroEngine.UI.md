@@ -133,6 +133,10 @@ focus, act on the engine's actions while they have it and on the pointer. Derive
 
 ### Structs
 
+ [FocusChange](MicroEngine.UI.FocusChange.md)
+
+A move of the focus, as [FocusChanged](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_FocusChanged) reports it.
+
  [UiClip](MicroEngine.UI.UiClip.md)
 
 A clip set by [ClipTo](MicroEngine.UI.UiContext.md#MicroEngine_UI_UiContext_ClipTo_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_UI_UiContext__); disposing it restores the clip that was set before.
