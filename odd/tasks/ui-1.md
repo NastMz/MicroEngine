@@ -38,7 +38,7 @@ per slice; the forecast is well over 400 authored lines. Test runner: `dotnet te
 | T3 P2 clipping and a scrolling container; long list example | S3 S8 | inline | done | `feat/ui-scroll`; RED: `ScrollView` missing, then the nested-clip test alone; GREEN: UI tests 29/29, `Samples.Tests` 40/40 |
 | T4 P3 grid layout; inventory example | S3 S8 | inline | done | `feat/ui-grid` (stacked on `feat/ui-scroll`); RED: `Grid` missing; GREEN: UI tests 32/32, `Samples.Tests` 42/42 |
 | T5 P4 positioned placement, per-widget offset and opacity; speech bubble and banner examples | S3 S8 | inline | done | `feat/ui-layer` (stacked on `feat/ui-grid`); RED: members and `Layer` missing; GREEN: UI tests 35/35, `Samples.Tests` 44/44 |
-| T6 P5 `Label` wrapping and visible characters; dialogue box example | S3 S5 S8 | inline | pending | — |
+| T6 P5 `Label` wrapping and visible characters; dialogue box example | S3 S5 S8 | inline | done | `feat/ui-text` (stacked on `feat/ui-layer`); RED: `Wrap`, `Lines`, `VisibleCharacters`, `VisibleLines` missing; GREEN: UI tests 38/38, `Samples.Tests` 45/45 |
 | T7 P6 9-slice drawing and `PanelStyle` image; themed panel example | S4 S8 | inline | pending | — |
 | T8 Menu example on the widget tree; any primitive `SelectionList` still lacks | S6 S8 | inline | pending | — |
 | T9 Deprecate `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `AchievementToasts`, `AchievementsScene`; migration notes | S7 S9 | inline | pending | Risk: item 3 |
@@ -102,3 +102,12 @@ is delegated only if two of them run in parallel on disjoint files.
   measured 231 instead of 128); true group opacity needs an offscreen target, recorded as a limitation. Checks: UI
   tests 35/35, `MicroEngine.Tests` 746 passed with the environmental failure, `Samples.Tests` 44/44, TrailDuel and
   CourtyardKey suites, snippets, `repo-docs` 17/17, `sdk/version.mjs check`; the layer capture inspected. Next: T6.
+- L11 (2026-11-07) User: "Sigue con T6". T6 done on `feat/ui-text`. `Label.Wrap` breaks the text to the label's fixed
+  `Width` (no fixed width, no wrapping: a measure cannot know the arranged width); `VisibleCharacters` counts the text
+  as written and keeps the whole text's lines and size, so a reveal never reflows; `Lines` and `VisibleLines` expose
+  what is drawn. The dialogue example is now a `Layer` with a name tag and a box of labels plus two buttons, paging a
+  long page into boxes of three lines with the font's `Wrap`; it no longer uses `DialogueBox`, `Typewriter` or
+  `SelectionList`. The layer example's bubble wraps. Found while inspecting the capture: hiding the "more" arrow with
+  `Visible` changed the box's height as it blinked; it uses `Opacity` now and the test pins the box size. Checks: UI
+  tests 38/38, `MicroEngine.Tests` 749 passed with the environmental failure, `Samples.Tests` 45/45, snippets,
+  `repo-docs` 17/17, `sdk/version.mjs check`; dialogue and layer captures inspected. Next: T7.

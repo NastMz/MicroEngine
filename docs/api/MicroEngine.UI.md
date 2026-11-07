@@ -39,7 +39,9 @@ Focus moves between cells by direction, as it does anywhere in the tree.
 
  [Label](MicroEngine.UI.Label.md)
 
-Text that does nothing: a heading, a value, a hint. Lines are separated by <code>\n</code>.
+Text that does nothing: a heading, a value, a hint, a line of dialogue. Lines are separated by <code>\n</code>; with
+[Wrap](MicroEngine.UI.Label.md#MicroEngine_UI_Label_Wrap) and a fixed [Width](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Width) the text also breaks between words to fit. Set
+[VisibleCharacters](MicroEngine.UI.Label.md#MicroEngine_UI_Label_VisibleCharacters) to reveal it a little at a time: the lines stay where the whole text puts them.
 
  [Layer](MicroEngine.UI.Layer.md)
 

@@ -474,44 +474,38 @@ Both belong to the scene: they stop when the scene leaves the stack. Manual: [Sc
 
 ## Dialogue
 
-A dialogue box revealing pages letter by letter with a sound per letter, then a yes/no answer with a menu. Source:
+A dialogue box built from widgets: a panel with a name tag over it, pages revealed letter by letter with a sound per
+letter, a long page continued in a second box, and a yes/no answer with two buttons. Source:
 [`DialogueExample.cs`](../../samples/Examples/Examples/DialogueExample.cs).
 
-<!-- code: samples/Examples/Examples/DialogueExample.cs#dialogue -->
+<!-- code: samples/Examples/Examples/DialogueExample.cs#build -->
 ```csharp
-private readonly DialogueBox _box = new() { Lines = 3 };
-private readonly SelectionList _answer = new("YES", "NO");
-private bool _asking;
-private string _result = "";
-
 public override void Enter()
 {
-    _box.Blip += _ => Audio.TryPlay("select", 0.3f);      // a sound per letter, if the game registered one
-    _box.Closed += () => _asking = true;
-    _box.Show("GARDENER", "Welcome! The gems only grow at night.", "Will you help me collect them before sunrise?");
-}
+    var theme = UiTheme.Default;
+    Speaker = new Label { Color = theme.Panel.Fill, Shadow = false };
+    // Three lines high whatever the box holds, so the box never jumps.
+    Text = new Label { Width = TextWidth, Height = LinesPerBox * Font.LineHeight + (LinesPerBox - 1) };
+    _more = new Label("▼") { Color = theme.Accent, Shadow = false };
+    Dialogue = new Stack { Spacing = 0, Align = Align.Start }
+        .Add(new Panel(Speaker) { Padding = 3, Style = theme.Panel with { Fill = theme.Accent, Highlight = default } })
+        .Add(new Panel(new Stack { Spacing = 0, Align = Align.End }.Add(Text).Add(_more)));
+    Answers = new Stack { Orientation = Orientation.Horizontal, Visible = false }
+        .Add(new Button("YES", () => Answer("THANK YOU!")))
+        .Add(new Button("NO", () => Answer("OH... MAYBE TOMORROW.")));
+    Result = new Label { Color = theme.Accent };
+    Widgets.Content = new Layer()
+        .Add(Dialogue, Anchor.Bottom, new Vector2(0, -4))
+        .Add(Answers, Anchor.Center, new Vector2(0, -20))
+        .Add(Result, Anchor.Center, new Vector2(0, 10));
 
-public override void Update(float dt)
-{
-    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
-    if (_box.Update(dt, Input)) return;                   // true while the box is open: it owns confirm
-    if (_asking && _answer.Update(Input) is { } choice)
-    {
-        _asking = false;
-        _result = choice == 0 ? "THANK YOU!" : "OH... MAYBE TOMORROW.";
-    }
-}
-
-public override void Draw(IRenderer r)
-{
-    _box.Draw(r, Font, new RectF(10, 120, 300, 50));
-    if (_asking) _answer.Draw(r, Font, new Vector2(140, 60), UiTheme.Default, Age);
-    Font.DrawCentered(r, _result, new Vector2(160, 90), UiTheme.Default.Accent);
-    Heading.Draw(r, Font, "DIALOGUE");
+    Say("GARDENER", "Welcome! The gems only grow at night, and only where the moonlight touches the soil of the " +
+        "old garden behind the well. My lantern broke last winter, so I cannot find them on my own any more.",
+        "Will you help me collect them before sunrise?");
 }
 ```
 
-Manual: [UI widgets](../manual/ui.md).
+Manual: [Text that wraps and reveals](../manual/ui.md#text-that-wraps-and-reveals).
 
 ## Custom input source
 

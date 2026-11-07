@@ -26,7 +26,7 @@ public sealed class LayerExample : Scene
     #region layer
     public override void Enter()
     {
-        Bubble = new Panel(new Label("HELLO!"));
+        Bubble = new Panel(new Label("HELLO! A FINE NIGHT FOR A WALK.") { Width = 70, Wrap = true });
         Banner = new Panel(new Label("ACHIEVEMENT\nFIRST STEPS")) { Opacity = 0 };
         _layer = new Layer()
             .AddAt(Bubble, Head(), Anchor.Bottom)                       // its bottom centre over the head

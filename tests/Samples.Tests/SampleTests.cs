@@ -158,6 +158,43 @@ public sealed class LayerExampleTests
     }
 }
 
+/// <summary>The dialogue example (focused examples): a box of labels revealing pages, then two buttons.</summary>
+[TestClass]
+public sealed class DialogueExampleTests
+{
+    [TestMethod]
+    public void PagesRevealLetterByLetterContinueWhenLongAndEndInAnAnswer()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new DialogueExample());
+        var scene = (DialogueExample)game.Scenes.Current!;
+        Assert.AreEqual("GARDENER", scene.Speaker.Text);
+        SettingsExampleTests.Frame(game, platform);
+        Assert.IsTrue(scene.Text.VisibleCharacters is > 0 and < 10, $"the page reveals a little at a time ({scene.Text.VisibleCharacters})");
+        var size = scene.Dialogue.Bounds;
+
+        var seen = new List<string>();
+        for (int boxes = 0; scene.Dialogue.Visible && boxes < 10; boxes++)
+        {
+            SettingsExampleTests.Press(game, platform, "confirm");             // the rest of the box at once
+            Assert.AreEqual(scene.Text.Text.Length, scene.Text.VisibleCharacters);
+            Assert.IsTrue(scene.Text.Lines.Count <= 3, "a box holds three lines at most");
+            for (int i = 0; i < 20; i++) SettingsExampleTests.Frame(game, platform);   // the arrow blinks
+            Assert.AreEqual(size, scene.Dialogue.Bounds, "and keeps its size");
+            seen.Add(scene.Text.Text.Replace('\n', ' '));
+            SettingsExampleTests.Press(game, platform, "confirm");             // the next box
+        }
+        Assert.AreEqual(3, seen.Count, "the long first page takes two boxes, the question one");
+        Assert.AreEqual("Welcome! The gems only grow at night, and only where the moonlight touches the soil of the old garden " +
+            "behind the well. My lantern broke last winter, so I cannot find them on my own any more.", seen[0] + " " + seen[1],
+            "the long page continues where the first box stopped, nothing cut");
+        Assert.IsTrue(scene.Answers.Visible, "after the last page, the answer");
+
+        SettingsExampleTests.Press(game, platform, "confirm");                 // YES has the focus
+        Assert.AreEqual("THANK YOU!", scene.Result.Text);
+        Assert.IsFalse(scene.Answers.Visible);
+    }
+}
+
 /// <summary>The inventory example (UI guide): slots in a grid, the description following the focus.</summary>
 [TestClass]
 public sealed class InventoryExampleTests
