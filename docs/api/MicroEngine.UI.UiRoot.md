@@ -389,7 +389,8 @@ public void Update(float dt)
 
 ### <a id="MicroEngine_UI_UiRoot_WidgetAt_System_Numerics_Vector2_"></a> WidgetAt\(Vector2\)
 
-The deepest visible widget under <code class="paramref">uiPoint</code>, or null.
+The deepest visible widget under <code class="paramref">uiPoint</code>, or null; the last one drawn where several overlap.
+Children of a widget that clips them ([ClipsChildren](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_ClipsChildren)) count only inside its bounds.
 
 ```csharp
 public Widget? WidgetAt(Vector2 uiPoint)

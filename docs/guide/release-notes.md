@@ -13,6 +13,14 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   cancellation (`OnPointerCancel`), with positions in UI units. The wheel goes to the widget under the pointer and up
   to the first container that takes it (`OnWheel`). The focused examples add a settings screen whose slider, toggle
   and value selector are widgets built on them.
+- [Scrolling content](../manual/ui.md#long-content): `ScrollView` shows content longer than its fixed height (or
+  width), scrolling to the focused widget, with the wheel and with a drag, also one that starts on a button inside it.
+  Any container can cut its children at its bounds (`Widget.ClipsChildren`) and take a drag from a child
+  (`Widget.InterceptsDrag`), and widgets set nested clips with `UiContext.ClipTo`. The focused examples add a long list.
+
+**Fixed**
+
+- A `TextField` inside a container that clips no longer removes that container's clip after drawing.
 
 ## 0.5.0-alpha.1
 

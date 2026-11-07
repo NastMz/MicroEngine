@@ -63,6 +63,8 @@ public sealed class UiRoot : IInputLayer, IStateHashed
     private Widget? _content;
     private long _pressPointer = -1; // the press the layer took, as events arrive
     private long _heldPointer = -1;  // the press a widget holds, as the update applies them
+    private Vector2 _pressStart;     // where that press started (UI units)
+    private bool _dragTaken;         // a container took that press from the child it started on
     private Vector2 _size;
     private bool _focusTouched;
 
@@ -217,22 +219,42 @@ public sealed class UiRoot : IInputLayer, IStateHashed
     /// <summary>Whether <paramref name="uiPoint"/> (UI units) lies on the content, where the root takes the pointer.</summary>
     public bool Contains(Vector2 uiPoint) => _content is { Visible: true } c && c.Bounds.Contains(uiPoint);
 
-    /// <summary>The deepest visible widget under <paramref name="uiPoint"/>, or null.</summary>
-    public Widget? WidgetAt(Vector2 uiPoint)
+    /// <summary>
+    /// The deepest visible widget under <paramref name="uiPoint"/>, or null; the last one drawn where several overlap.
+    /// Children of a widget that clips them (<see cref="Widget.ClipsChildren"/>) count only inside its bounds.
+    /// </summary>
+    public Widget? WidgetAt(Vector2 uiPoint) => _content is { Visible: true } content ? Deepest(content, uiPoint) : null;
+
+    private static Widget? Deepest(Widget widget, Vector2 point)
     {
-        Widget? hit = null;
-        foreach (var w in AllWidgets)
-            if (w.Bounds.Contains(uiPoint)) hit = w;
+        Widget? hit = widget.Bounds.Contains(point) ? widget : null;
+        if (hit is null && widget.ClipsChildren) return null;
+        foreach (var child in widget.Children)
+            if (child.Visible && Deepest(child, point) is { } deeper) hit = deeper;
         return hit;
     }
 
-    /// <summary>The focusable, enabled widget under <paramref name="uiPoint"/> (the hit widget or the nearest container of it that can take the focus), or null.</summary>
+    /// <summary>
+    /// The widget a press at <paramref name="uiPoint"/> goes to: the hit widget or its nearest container that can take the
+    /// focus or intercepts drags (<see cref="Widget.InterceptsDrag"/>), enabled; or null.
+    /// </summary>
     private Widget? TargetAt(Vector2 uiPoint)
     {
         for (var w = WidgetAt(uiPoint); w is not null; w = w.Parent)
-            if (w.CanFocus) return w;
+            if (w.CanFocus || (w.InterceptsDrag && w.IsEnabledInTree && w.IsVisibleInTree)) return w;
         return null;
     }
+
+    /// <summary>The nearest enabled container of <paramref name="widget"/> that takes drags from its children, or null.</summary>
+    private static Widget? Interceptor(Widget widget)
+    {
+        for (var w = widget.Parent; w is not null; w = w.Parent)
+            if (w.InterceptsDrag && w.IsEnabledInTree) return w;
+        return null;
+    }
+
+    /// <summary>How far a press moves, in layout units, before a container that intercepts drags takes it.</summary>
+    private const float DragSlop = 4;
 
     /// <summary>Measures the content and places it in the UI view (<see cref="Size"/>) at <see cref="Anchor"/>.</summary>
     /// <exception cref="InvalidOperationException"><see cref="Font"/> is not set.</exception>
@@ -287,7 +309,17 @@ public sealed class UiRoot : IInputLayer, IStateHashed
             {
                 var p = PointerToUi(e.Position);
                 Hovered = WidgetAt(p);
-                if (Pressed is { } held && e.Pointer == _heldPointer && held.IsEnabledInTree) held.OnPointerMove(p);
+                if (Pressed is not { } held || e.Pointer != _heldPointer || !held.IsEnabledInTree) break;
+                float slop = DragSlop * (Font is { } font ? UiTheme.Unit(font) : 1);
+                if (!_dragTaken && Vector2.Distance(p, _pressStart) > slop && Interceptor(held) is { } container)
+                {
+                    // A container that scrolls takes the press from the child it started on: the child is cancelled.
+                    CancelPress();
+                    Pressed = container;
+                    _dragTaken = true;
+                    container.OnPointerDown(_pressStart);
+                }
+                Pressed!.OnPointerMove(p);
                 break;
             }
             case InputEventKind.PointerDown:
@@ -298,6 +330,8 @@ public sealed class UiRoot : IInputLayer, IStateHashed
                 Pressed = TargetAt(p);
                 if (Pressed is null) break;
                 _heldPointer = e.Pointer;
+                _pressStart = p;
+                _dragTaken = false;
                 Focus(Pressed);
                 Pressed.OnPointerDown(p);
                 break;

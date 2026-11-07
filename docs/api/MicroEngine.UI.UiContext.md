@@ -47,6 +47,18 @@ Seconds the root has been updated, for blinking carets and other animation.
 
 ## Properties
 
+### <a id="MicroEngine_UI_UiContext_Clip"></a> Clip
+
+The area drawing is restricted to (UI units), or null for none: set by containers that clip their children.
+
+```csharp
+public RectF? Clip { get; init; }
+```
+
+#### Property Value
+
+ [RectF](MicroEngine.RectF.md)?
+
 ### <a id="MicroEngine_UI_UiContext_Font"></a> Font
 
 The font of every widget's text.
@@ -97,6 +109,34 @@ public float Unit { get; init; }
  [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ## Methods
+
+### <a id="MicroEngine_UI_UiContext_ClipTo_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_UI_UiContext__"></a> ClipTo\(IRenderer, RectF, out UiContext\)
+
+Restricts drawing to <code class="paramref">area</code> within the current [Clip](MicroEngine.UI.UiContext.md#MicroEngine_UI_UiContext_Clip), until the result is disposed,
+which restores the current clip. Draw with <code class="paramref">inner</code>, which carries the new clip, so a clip set
+further down nests inside this one. Use it instead of [SetClip](MicroEngine.Graphics.IRenderer.md#MicroEngine_Graphics_IRenderer_SetClip_System_Nullable_MicroEngine_RectF__), which cannot nest.
+
+```csharp
+public UiClip ClipTo(IRenderer renderer, RectF area, out UiContext inner)
+```
+
+#### Parameters
+
+`renderer` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+`area` [RectF](MicroEngine.RectF.md)
+
+`inner` [UiContext](MicroEngine.UI.UiContext.md)
+
+#### Returns
+
+ [UiClip](MicroEngine.UI.UiClip.md)
+
+#### Examples
+
+```csharp
+using (context.ClipTo(renderer, Bounds, out var inner)) content.Draw(renderer, inner);
+```
 
 ### <a id="MicroEngine_UI_UiContext_Deconstruct_MicroEngine_Graphics_IFont__MicroEngine_UI_UiTheme__System_Single__System_Single__"></a> Deconstruct\(out IFont, out UiTheme, out float, out float\)
 

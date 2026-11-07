@@ -161,7 +161,8 @@ public sealed class TextField : Widget
         float caretX = font.MeasureWidth(before + Composition);
         // Scrolls so the caret stays inside the field.
         float scroll = MathF.Max(0, caretX - room + u);
-        renderer.SetClip(new RectF(left, Bounds.Y, room, Bounds.Height));
+        // Within any clip of the containers around the field (a scrolling list), restored after.
+        using var clip = context.ClipTo(renderer, new RectF(left, Bounds.Y, room, Bounds.Height), out _);
         float x = left - scroll;
         var color = IsEnabledInTree ? theme.Text : theme.Muted;
         font.Draw(renderer, before, new Vector2(x, top), color);
@@ -176,6 +177,5 @@ public sealed class TextField : Widget
         font.Draw(renderer, after, new Vector2(x, top), color);
         if (focused && (int)(context.Time * 2) % 2 == 0)
             renderer.FillRect(new RectF(left - scroll + caretX, top - u, u, font.LineHeight + 2 * u), theme.Accent);
-        renderer.SetClip(null);
     }
 }

@@ -25,6 +25,7 @@ public abstract class Widget
 [Button](MicroEngine.UI.Button.md), 
 [Label](MicroEngine.UI.Label.md), 
 [Panel](MicroEngine.UI.Panel.md), 
+[ScrollView](MicroEngine.UI.ScrollView.md), 
 [Stack](MicroEngine.UI.Stack.md), 
 [TextField](MicroEngine.UI.TextField.md)
 
@@ -62,6 +63,19 @@ public virtual IReadOnlyList<Widget> Children { get; }
 
  [IReadOnlyList](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist\-1)<[Widget](MicroEngine.UI.Widget.md)\>
 
+### <a id="MicroEngine_UI_Widget_ClipsChildren"></a> ClipsChildren
+
+Whether the widget restricts its children to its [Bounds](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Bounds) (false by default): what they draw outside
+is cut, and the pointer outside reaches them neither. A scrolling container does.
+
+```csharp
+public virtual bool ClipsChildren { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_UI_Widget_Enabled"></a> Enabled
 
 Whether the widget and its children accept the focus, the pointer and actions (true by default); disabled widgets draw muted.
@@ -97,6 +111,21 @@ public float? Height { get; set; }
 #### Property Value
 
  [float](https://learn.microsoft.com/dotnet/api/system.single)?
+
+### <a id="MicroEngine_UI_Widget_InterceptsDrag"></a> InterceptsDrag
+
+Whether the widget takes a press that started on one of its children once the pointer moves further than a few
+units (false by default). The child's press is then cancelled and the widget receives [OnPointerDown](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_OnPointerDown_System_Numerics_Vector2_)
+at the press's start and the moves that follow: a scrolling container dragged by a finger that landed on a button.
+A press on the widget itself, where no child takes it, is the widget's from the start.
+
+```csharp
+protected virtual bool InterceptsDrag { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_UI_Widget_IsEnabledInTree"></a> IsEnabledInTree
 
@@ -364,7 +393,7 @@ protected virtual void OnFocusChanged(bool focused)
 
 ### <a id="MicroEngine_UI_Widget_OnPointerCancel"></a> OnPointerCancel\(\)
 
-Called when a press the widget holds is cancelled (the system took the touch, the widget left the tree); no release or click follows.
+Called when a press the widget holds is cancelled (the system took the touch, the widget left the tree, a container took it as a drag); no release or click follows.
 
 ```csharp
 protected virtual void OnPointerCancel()

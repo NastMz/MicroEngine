@@ -288,6 +288,104 @@ public sealed class WidgetTests
         Assert.HasCount(1, box.Wheel, "the wheel outside the UI is gameplay's");
     }
 
+    /// <summary>A widget that fills its bounds with one colour.</summary>
+    private sealed class Block(Color color, float height) : Widget
+    {
+        protected override Vector2 MeasureContent(UiContext context) => new(60, height);
+        protected override void DrawContent(IRenderer renderer, UiContext context) => renderer.FillRect(Bounds, color);
+    }
+
+    private static Stack Buttons(int count, out Button[] buttons)
+    {
+        buttons = [.. Enumerable.Range(0, count).Select(i => new Button($"ITEM {i}"))];
+        var stack = new Stack();
+        foreach (var b in buttons) stack.Add(b);
+        return stack;
+    }
+
+    [TestMethod]
+    public void A_scroll_view_scrolls_to_keep_the_focused_widget_inside_it()
+    {
+        var view = new ScrollView(Buttons(10, out var items)) { Height = 60 };
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = view; });
+        var (game, platform) = Start(scene);
+        Assert.AreEqual(0, view.Offset);
+        Assert.IsGreaterThan(0, view.MaxOffset, "ten buttons are taller than sixty units");
+        for (int i = 0; i < 7; i++) Press(game, platform, Key.Down);
+        Assert.AreSame(items[7], scene.Widgets.Focused);
+        Assert.IsGreaterThan(0, view.Offset);
+        Assert.IsTrue(view.Bounds.Contains(new Vector2(items[7].Bounds.X + 1, items[7].Bounds.Y + 1))
+            && view.Bounds.Contains(new Vector2(items[7].Bounds.X + 1, items[7].Bounds.Bottom - 1)), "the focused button is inside the view");
+        for (int i = 0; i < 7; i++) Press(game, platform, Key.Up);
+        Assert.AreEqual(0, view.Offset, "back at the first button, the view is back at the top");
+    }
+
+    [TestMethod]
+    public void The_wheel_scrolls_a_scroll_view_within_its_range()
+    {
+        var view = new ScrollView(Buttons(10, out _)) { Height = 60 };
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = view; });
+        var (game, platform) = Start(scene);
+        platform.Devices.Send(InputEvent.WheelMoved(Mouse, new Vector2(0, -1), game.Views.UiToCanvas(new Vector2(5, 5))));
+        Frame(game, platform);
+        Assert.IsGreaterThan(0, view.Offset, "the wheel towards the player scrolls down");
+        platform.Devices.Send(InputEvent.WheelMoved(Mouse, new Vector2(0, -100), game.Views.UiToCanvas(new Vector2(5, 5))));
+        Frame(game, platform);
+        Assert.AreEqual(view.MaxOffset, view.Offset);
+        platform.Devices.Send(InputEvent.WheelMoved(Mouse, new Vector2(0, 100), game.Views.UiToCanvas(new Vector2(5, 5))));
+        Frame(game, platform);
+        Assert.AreEqual(0, view.Offset);
+    }
+
+    [TestMethod]
+    public void A_widget_scrolled_out_of_view_cannot_be_clicked_where_another_widget_shows()
+    {
+        int afterClicks = 0;
+        var view = new ScrollView(Buttons(10, out var items)) { Height = 40 };
+        var after = new Button("AFTER", () => afterClicks++);
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = new Stack { Spacing = 0 }.Add(view).Add(after); });
+        var (game, platform) = Start(scene);
+        var hidden = items.First(b => b.Bounds.Contains(Center(after)));
+        Click(game, platform, Center(after));
+        Assert.AreEqual(1, afterClicks);
+        Assert.AreSame(after, scene.Widgets.Focused, $"{hidden.Text} lies under it but outside the view");
+    }
+
+    [TestMethod]
+    public void Dragging_inside_a_scroll_view_scrolls_it_and_a_tap_still_clicks()
+    {
+        int clicks = 0;
+        var view = new ScrollView(Buttons(10, out var items)) { Height = 60 };
+        items[0].Clicked += () => clicks++;
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = view; });
+        var (game, platform) = Start(scene);
+        var start = Center(items[0]);
+        Click(game, platform, start);
+        Assert.AreEqual(1, clicks, "a tap clicks the button under it");
+
+        platform.Devices.Send(InputEvent.PointerDown(Mouse, 0, PointerKind.Touch, game.Views.UiToCanvas(start)));
+        platform.Devices.Send(InputEvent.PointerMove(Mouse, 0, PointerKind.Touch, game.Views.UiToCanvas(start - new Vector2(0, 30))));
+        Frame(game, platform);
+        Assert.IsTrue(view.Offset is > 20 and <= 30, $"dragged up 30 units, the content follows ({view.Offset})");
+        Assert.IsFalse(items[0].IsPressed, "the drag took the press from the button");
+        platform.Devices.Send(InputEvent.PointerUp(Mouse, 0, PointerKind.Touch, game.Views.UiToCanvas(start - new Vector2(0, 30))));
+        Frame(game, platform);
+        Assert.AreEqual(1, clicks, "a drag is not a click");
+    }
+
+    [TestMethod]
+    public void A_clipping_container_keeps_its_clip_around_a_text_field_inside_it()
+    {
+        var red = Color.Hex("ff0000");
+        var view = new ScrollView(new Stack { Spacing = 0 }.Add(new TextField()).Add(new Block(red, 200))) { Height = 40 };
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = view; });
+        var (game, platform) = Start(scene, rasterize: true);
+        Frame(game, platform);
+        var ui = ((IViewCapture)platform).CaptureUi()!;
+        Assert.AreEqual(red, ui[5, 35], "the block shows inside the view");
+        Assert.AreNotEqual(red, ui[5, 60], "and nowhere below it, though the text field drew before it");
+    }
+
     [TestMethod]
     public void A_focused_widget_that_is_disabled_hands_the_focus_on()
     {
