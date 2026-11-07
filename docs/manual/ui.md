@@ -182,11 +182,12 @@ public sealed class TitleScene : Scene
 | Type | What it is |
 | --- | --- |
 | `UiRoot` | The tree's root (`Scene.Widgets`): `Content`, `Anchor` and `Offset` (where the content sits in the UI view), `Font`, `Theme`, `Actions`, `Focused`, `Focus(widget)`, `MoveFocus(direction)`, `AutoFocus`, `WrapFocus`, the `Cancelled` event |
-| `Widget` | The base class: `Bounds` (UI units, from the last layout), `Visible`, `Enabled`, fixed `Width` and `Height`, `IsFocused`, `IsHovered`, `IsPressed`; derive from it for a widget of your own (`MeasureContent`, `ArrangeContent`, `DrawContent`, `OnAction`, `OnClick`, the pointer's `OnPointerDown`, `OnPointerMove`, `OnPointerUp` and `OnPointerCancel`, `OnWheel`; see [Controls of your own](#controls-of-your-own)) |
+| `Widget` | The base class: `Bounds` (UI units, from the last layout), `Visible`, `Enabled`, fixed `Width` and `Height`, `IsFocused`, `IsHovered`, `IsPressed`; derive from it for a widget of your own (`MeasureContent`, `ArrangeContent`, `DrawContent`, `OnAction`, `OnClick`, the pointer's `OnPointerDown`, `OnPointerMove`, `OnPointerUp` and `OnPointerCancel`, `OnWheel`; see [Controls of your own](#controls-of-your-own)); a container sets `ClipsChildren` to cut its children at its bounds, and `InterceptsDrag` to take a drag that starts on a child ([Long content](#long-content)) |
 | `Label` | Text, one or more lines, in the theme's text colour or its own `Color` |
 | `Button` | A label in a panel; confirm while it has the focus, or a click on it, raises `Clicked` |
 | `Panel` | A box (the theme's panel, or its own `Style`) with `Padding` around one `Content` |
 | `Stack` | Children one after another, `Vertical` or `Horizontal`, with `Spacing` and a cross-axis `Align` |
+| `ScrollView` | A window of fixed `Height` (or `Width`, `Orientation.Horizontal`) onto a longer `Content`: `Offset`, `MaxOffset`, `WheelStep`, `ShowScrollBar` ([Long content](#long-content)) |
 | `TextField` | One line of editable text: `Text`, `Caret`, `Placeholder`, `MaxLength`, the input method's `Composition`; `Changed` and `Submitted` events |
 | `Toasts` | Banners that slide in one at a time (`Show(new Toast(heading, title, description))`); `AchievementToasts` shows achievements through it |
 
@@ -224,6 +225,48 @@ stops when the field loses the focus or its scene leaves or is covered.
 
 The widgets' state (the focus, the fields' text) is part of the scene's state hash, so scripted runs and replays see
 the same interface. A scene that never reads `Widgets` has none and pays nothing.
+
+### Long content
+
+A `ScrollView` shows content longer than the space it has: a level select, a list of saves, a shop, the credits. Give
+it a fixed height (a fixed width for a horizontal one); its content keeps the size it measures and is cut at the
+view's edges. The list below holds thirty buttons in a view of 110 UI units:
+
+<!-- code: samples/Examples/Examples/LongListExample.cs#list -->
+```csharp
+public override void Enter()
+{
+    var levels = new Stack();
+    for (int i = 1; i <= 30; i++)
+    {
+        string name = $"LEVEL {i:00}";
+        levels.Add(new Button(name, () => Picked = name) { Width = 120 });
+    }
+    // A fixed height: the list is longer, so the view scrolls and cuts it at its edges.
+    List = new ScrollView(levels) { Height = 110 };
+    Widgets.Content = new Panel(List);
+    Widgets.Cancelled += () => Game.Scenes.Pop();
+}
+```
+
+The view scrolls in three ways:
+
+- **The focus.** When a widget inside takes the focus, the view scrolls just enough to show it, so up and down walk
+  the whole list.
+- **The wheel.** The wheel over the view scrolls it, three lines of the font per notch (`WheelStep`).
+- **A drag.** A press that moves more than a few units scrolls the content with the pointer, also when it started on a
+  button inside. The button's press is then cancelled and it does not click, so a finger can flick through a list of
+  buttons on a phone. A tap without a drag still clicks.
+
+While the content does not fit, a thin bar in a strip along the view's edge shows where the window is
+(`ShowScrollBar`). A widget scrolled out of view is cut, and the pointer reaches it only inside the view: what shows
+around the view takes the clicks there.
+
+The view is built on two members any container can use. `ClipsChildren` makes the base class cut what the children
+draw at the widget's bounds, and keep the pointer outside from reaching them. `InterceptsDrag` lets the container take
+a press from the child it started on once it becomes a drag. A widget that draws within a smaller area of its own sets
+the clip with `UiContext.ClipTo`, which nests inside the clips around it and restores them when disposed;
+`IRenderer.SetClip` alone would remove them.
 
 ### Controls of your own
 
@@ -340,5 +383,6 @@ private static Widget Row(string text, Widget control)
 - `DialogueBox`, `SelectionList` and the achievement screen are not widgets of the tree: they are placed by hand.
 - Text uses the game's font; there is no rich text, right-to-left text or localisation support. A text field edits one
   line, without selection or clipboard.
-- There are no scrolling containers or grids yet. Sliders, toggles and value selectors are widgets of your own
+- There is no grid layout yet. Sliders, toggles and value selectors are widgets of your own
   ([Controls of your own](#controls-of-your-own)).
+- A scroll view moves at once to its new position: there is no smooth scrolling or momentum after a flick.

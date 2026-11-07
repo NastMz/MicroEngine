@@ -32,6 +32,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Custom input source", g => new CustomSourceExample()),
         ("Controls and rebinding", g => new RebindExample(g.SaveDirectory)),
         ("Settings screen (widgets)", g => new SettingsExample()),
+        ("Long list (scrolling)", g => new LongListExample()),
     ];
 
     public string? SaveDirectory { get; } = saveDirectory;
@@ -55,7 +56,7 @@ public sealed class MenuScene : Scene
     public override void Draw(IRenderer r)
     {
         Font.DrawShadowed(r, "MICROENGINE EXAMPLES", new Vector2(8, 4), UiTheme.Default.Accent, Color.Black);
-        _menu.Draw(r, Font, new Vector2(16, 18), UiTheme.Default, Age, lineHeight: 10);
+        _menu.Draw(r, Font, new Vector2(16, 18), UiTheme.Default, Age, lineHeight: 9);
     }
 }
 

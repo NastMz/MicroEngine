@@ -123,6 +123,45 @@ public sealed class ExtendingTests
     }
 }
 
+/// <summary>The long list example (UI guide): thirty buttons in a scrolling view.</summary>
+[TestClass]
+public sealed class LongListExampleTests
+{
+    private static readonly MicroEngine.Input.DeviceId Mouse = new(2);
+
+    [TestMethod]
+    public void TheFocusGoesToTheLastLevelAndTheViewFollowsIt()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new LongListExample());
+        var scene = (LongListExample)game.Scenes.Current!;
+        Assert.IsGreaterThan(0, scene.List.MaxOffset, "thirty levels do not fit");
+        SettingsExampleTests.Press(game, platform, "up");                 // wraps from the first level to the last
+        SettingsExampleTests.Press(game, platform, "confirm");
+        Assert.AreEqual("LEVEL 30", scene.Picked);
+        Assert.AreEqual(scene.List.MaxOffset, scene.List.Offset, "the view scrolled to the end to show it");
+    }
+
+    [TestMethod]
+    public void TheWheelScrollsAndAClickPicksTheLevelUnderThePointer()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new LongListExample());
+        var scene = (LongListExample)game.Scenes.Current!;
+        var inside = new System.Numerics.Vector2(scene.List.Bounds.X + 20, scene.List.Bounds.Y + 20);
+        platform.Devices.Send(MicroEngine.Input.InputEvent.WheelMoved(Mouse, new System.Numerics.Vector2(0, -2), game.Views.UiToCanvas(inside)));
+        SettingsExampleTests.Frame(game, platform);
+        Assert.IsGreaterThan(0, scene.List.Offset);
+
+        SettingsExampleTests.Frame(game, platform);                         // laid out at the new offset
+        var level = scene.Widgets.AllWidgets.OfType<MicroEngine.UI.Button>().First(b => scene.List.Bounds.Contains(b.Bounds.Center));
+        Assert.AreNotEqual("LEVEL 01", level.Text, "the first level scrolled away");
+        var at = game.Views.UiToCanvas(level.Bounds.Center);
+        platform.Devices.Send(MicroEngine.Input.InputEvent.PointerDown(Mouse, 0, MicroEngine.Input.PointerKind.Mouse, at));
+        platform.Devices.Send(MicroEngine.Input.InputEvent.PointerUp(Mouse, 0, MicroEngine.Input.PointerKind.Mouse, at));
+        SettingsExampleTests.Frame(game, platform);
+        Assert.AreEqual(level.Text, scene.Picked);
+    }
+}
+
 /// <summary>The settings screen example (UI guide): a slider, a toggle and a value selector built on widget primitives.</summary>
 [TestClass]
 public sealed class SettingsExampleTests
@@ -140,25 +179,32 @@ public sealed class SettingsExampleTests
 
     private static (ExamplesGame Game, HeadlessPlatform Platform, SettingsExample Scene) Open()
     {
+        var (game, platform) = Start(new SettingsExample());
+        return (game, platform, (SettingsExample)game.Scenes.Current!);
+    }
+
+    /// <summary>The examples game on a 960×540 headless window with <paramref name="scene"/> on top, its UI laid out.</summary>
+    internal static (ExamplesGame Game, HeadlessPlatform Platform) Start(Scene scene)
+    {
         var game = new ExamplesGame(Directory.CreateTempSubdirectory("examples-").FullName);
         var platform = HeadlessPlatform.For(game.Settings, rasterize: false);
         platform.Resize(960, 540);
         platform.PumpEvents(new NoEvents());
         game.InitializeForTest(platform);
-        var scene = new SettingsExample();
         game.Scenes.Push(scene);
         Frame(game, platform);            // the push applies at the step
+        // Headless tests do not draw, and drawing is what gives the UI its size.
         scene.Widgets.Size = game.Views.CanvasToUi(new System.Numerics.Vector2(game.Settings.VirtualWidth, game.Settings.VirtualHeight));
         Frame(game, platform);
-        return (game, platform, scene);
+        return (game, platform);
     }
 
-    private static void Frame(ExamplesGame game, HeadlessPlatform platform)
+    internal static void Frame(ExamplesGame game, HeadlessPlatform platform)
     {
         game.StepForTest();
     }
 
-    private static void Press(ExamplesGame game, HeadlessPlatform platform, string action)
+    internal static void Press(ExamplesGame game, HeadlessPlatform platform, string action)
     {
         game.Input.SetForced(action, true);
         Frame(game, platform);

@@ -74,7 +74,38 @@ public enum Anchor
 /// grow with the text. Widgets express their padding and spacing in it.
 /// </param>
 /// <param name="Time">Seconds the root has been updated, for blinking carets and other animation.</param>
-public readonly record struct UiContext(IFont Font, UiTheme Theme, float Unit, float Time);
+public readonly record struct UiContext(IFont Font, UiTheme Theme, float Unit, float Time)
+{
+    /// <summary>The area drawing is restricted to (UI units), or null for none: set by containers that clip their children.</summary>
+    public RectF? Clip { get; init; }
+
+    /// <summary>
+    /// Restricts drawing to <paramref name="area"/> within the current <see cref="Clip"/>, until the result is disposed,
+    /// which restores the current clip. Draw with <paramref name="inner"/>, which carries the new clip, so a clip set
+    /// further down nests inside this one. Use it instead of <see cref="IRenderer.SetClip"/>, which cannot nest.
+    /// </summary>
+    /// <example><code>using (context.ClipTo(renderer, Bounds, out var inner)) content.Draw(renderer, inner);</code></example>
+    public UiClip ClipTo(IRenderer renderer, RectF area, out UiContext inner)
+    {
+        ArgumentNullException.ThrowIfNull(renderer);
+        var clip = Clip is { } outer ? outer.Intersection(area) : area;
+        renderer.SetClip(clip);
+        inner = this with { Clip = clip };
+        return new UiClip(renderer, Clip);
+    }
+}
+
+/// <summary>A clip set by <see cref="UiContext.ClipTo"/>; disposing it restores the clip that was set before.</summary>
+public readonly struct UiClip : IDisposable
+{
+    private readonly IRenderer? _renderer;
+    private readonly RectF? _previous;
+
+    internal UiClip(IRenderer renderer, RectF? previous) => (_renderer, _previous) = (renderer, previous);
+
+    /// <summary>Restores the clip that was set before.</summary>
+    public void Dispose() => _renderer?.SetClip(_previous);
+}
 
 /// <summary>
 /// One element of a user interface, laid out in UI units in the UI view (window pixels divided by the presentation's UI
@@ -104,6 +135,11 @@ public abstract class Widget
     public virtual IReadOnlyList<Widget> Children => [];
     /// <summary>Whether the widget can take the focus (false by default; buttons and text fields can).</summary>
     public virtual bool Focusable => false;
+    /// <summary>
+    /// Whether the widget restricts its children to its <see cref="Bounds"/> (false by default): what they draw outside
+    /// is cut, and the pointer outside reaches them neither. A scrolling container does.
+    /// </summary>
+    public virtual bool ClipsChildren => false;
     /// <summary>Whether the widget has its root's focus.</summary>
     public bool IsFocused => Root is { } root && ReferenceEquals(root.Focused, this);
     /// <summary>Whether the pointer is over the widget.</summary>
@@ -157,7 +193,13 @@ public abstract class Widget
     public void Draw(IRenderer renderer, UiContext context)
     {
         ArgumentNullException.ThrowIfNull(renderer);
-        if (Visible) DrawContent(renderer, context);
+        if (!Visible) return;
+        if (!ClipsChildren)
+        {
+            DrawContent(renderer, context);
+            return;
+        }
+        using (context.ClipTo(renderer, Bounds, out var inner)) DrawContent(renderer, inner);
     }
 
     /// <summary>The size the widget's content needs, in UI units.</summary>
@@ -188,8 +230,16 @@ public abstract class Widget
     /// <summary>Called when a press the widget holds is released, inside the widget or not; <paramref name="position"/> is in UI units. A release on the widget then also calls <see cref="OnClick"/>.</summary>
     protected internal virtual void OnPointerUp(Vector2 position) { }
 
-    /// <summary>Called when a press the widget holds is cancelled (the system took the touch, the widget left the tree); no release or click follows.</summary>
+    /// <summary>Called when a press the widget holds is cancelled (the system took the touch, the widget left the tree, a container took it as a drag); no release or click follows.</summary>
     protected internal virtual void OnPointerCancel() { }
+
+    /// <summary>
+    /// Whether the widget takes a press that started on one of its children once the pointer moves further than a few
+    /// units (false by default). The child's press is then cancelled and the widget receives <see cref="OnPointerDown"/>
+    /// at the press's start and the moves that follow: a scrolling container dragged by a finger that landed on a button.
+    /// A press on the widget itself, where no child takes it, is the widget's from the start.
+    /// </summary>
+    protected internal virtual bool InterceptsDrag => false;
 
     /// <summary>
     /// Called for the wheel over the widget (<paramref name="delta"/> in notches: y positive away from the player, x positive

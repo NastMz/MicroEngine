@@ -49,6 +49,14 @@ Draws text with action prompts as glyphs: <code>"Press {attack} to swing"</code>
 green A on an Xbox pad, a × button on a PlayStation pad and the touch button's label in a ring on a phone. Text that
 does not name an action is drawn as with [Draw](MicroEngine.Graphics.BitmapFont.md#MicroEngine_Graphics_BitmapFont_Draw_MicroEngine_Graphics_IRenderer_System_String_System_Numerics_Vector2_MicroEngine_Color_System_Single_). Glyphs are as tall as a line of the font.
 
+ [ScrollView](MicroEngine.UI.ScrollView.md)
+
+A window onto content longer than the space it has: a long menu, a list of saves, an achievement list, the credits.
+Give it a fixed [Height](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Height) (or [Width](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Width) when [Orientation](MicroEngine.UI.ScrollView.md#MicroEngine_UI_ScrollView_Orientation) is
+horizontal); its content keeps the size it measures and is cut at the view's edges. It scrolls to show a widget
+inside it when that widget takes the focus, with the wheel over it, and with a drag, also one that starts on a button
+inside it (a finger on a phone). A thin bar on its edge shows where the window is.
+
  [SelectionList](MicroEngine.UI.SelectionList.md)
 
 A vertical list of options navigated with up/down and chosen with confirm.
@@ -109,6 +117,10 @@ scale) by its [UiRoot](MicroEngine.UI.UiRoot.md): it says how large it wants to 
 focus, act on the engine's actions while they have it and on the pointer. Derive from it for a widget of a game's own.
 
 ### Structs
+
+ [UiClip](MicroEngine.UI.UiClip.md)
+
+A clip set by [ClipTo](MicroEngine.UI.UiContext.md#MicroEngine_UI_UiContext_ClipTo_MicroEngine_Graphics_IRenderer_MicroEngine_RectF_MicroEngine_UI_UiContext__); disposing it restores the clip that was set before.
 
  [UiContext](MicroEngine.UI.UiContext.md)
 

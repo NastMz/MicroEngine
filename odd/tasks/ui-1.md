@@ -35,7 +35,7 @@ per slice; the forecast is well over 400 authored lines. Test runner: `dotnet te
 | --- | --- | --- | --- | --- |
 | T1 Evaluation, ADR 0050 and this plan | S1–S8 | inline | done | this branch |
 | T2 P1 pointer events and the wheel on widgets; settings screen example (slider, toggle, value selector) | S3 S4 S8 | inline | done | `feat/ui-pointer`; RED: 5 missing members; GREEN: `WidgetTests` 24/24, `Samples.Tests` 38/38 |
-| T3 P2 clipping and a scrolling container; long list example | S3 S8 | inline | pending | — |
+| T3 P2 clipping and a scrolling container; long list example | S3 S8 | inline | done | `feat/ui-scroll`; RED: `ScrollView` missing, then the nested-clip test alone; GREEN: UI tests 29/29, `Samples.Tests` 40/40 |
 | T4 P3 grid layout; inventory example | S3 S8 | inline | pending | — |
 | T5 P4 positioned placement, per-widget offset and opacity; speech bubble and banner examples | S3 S8 | inline | pending | — |
 | T6 P5 `Label` wrapping and visible characters; dialogue box example | S3 S5 S8 | inline | pending | — |
@@ -79,3 +79,11 @@ is delegated only if two of them run in parallel on disjoint files.
   next release; it stays required with nothing pending. Every later slice that adds API would have hit the same rule.
   RED: `version.test.mjs` failed on the new cases; GREEN: 27/27; `node sdk/tests/docs.mjs` locally: Examples reported,
   all required checks passed.
+- L8 (2026-11-07) T2 and the CI fix merged (#134). T3 done on `feat/ui-scroll`: `Widget.ClipsChildren` (drawing cut
+  at the bounds, hit tests too), `Widget.InterceptsDrag` (a container takes a press from a child after 4 layout units),
+  `UiContext.ClipTo` (clips that nest; `IRenderer.SetClip` has no getter, so they cannot nest otherwise), `ScrollView`
+  (focus reveal once per focus change, wheel, drag, a scroll bar in its own gutter). `TextField` used `SetClip(null)`
+  and dropped an outer clip: fixed and pinned by a pixel test. The tour showed the bar hidden over the buttons (gutter
+  added) and the examples menu cut at 18 entries (line height 9). Checks: `MicroEngine.Tests` 740 passed, the same
+  1 environmental failure as L6; the four game suites pass; `Samples.Tests` 40/40; snippets; `repo-docs` 17/17;
+  `sdk/version.mjs check`. Next: T4.

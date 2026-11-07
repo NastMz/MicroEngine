@@ -669,3 +669,28 @@ public sealed class Choice(params string[] options) : Widget
 ```
 
 Manual: [Controls of your own](../manual/ui.md#controls-of-your-own).
+
+## Long list
+
+Thirty levels in a scrolling view. Up and down move the focus and the view follows it; the wheel and a drag (a finger
+on a phone) scroll it; a click or confirm picks a level. Source:
+[`LongListExample.cs`](../../samples/Examples/Examples/LongListExample.cs).
+
+<!-- code: samples/Examples/Examples/LongListExample.cs#list -->
+```csharp
+public override void Enter()
+{
+    var levels = new Stack();
+    for (int i = 1; i <= 30; i++)
+    {
+        string name = $"LEVEL {i:00}";
+        levels.Add(new Button(name, () => Picked = name) { Width = 120 });
+    }
+    // A fixed height: the list is longer, so the view scrolls and cuts it at its edges.
+    List = new ScrollView(levels) { Height = 110 };
+    Widgets.Content = new Panel(List);
+    Widgets.Cancelled += () => Game.Scenes.Pop();
+}
+```
+
+Manual: [Long content](../manual/ui.md#long-content).
