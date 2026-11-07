@@ -9,7 +9,7 @@ namespace MicroEngine.Core;
 /// </summary>
 public sealed record Achievement(string Id, string Name, string Description, int Goal = 1)
 {
-    /// <summary>Optional picture for the toast and the list screen.</summary>
+    /// <summary>Optional picture for the game's banner and list.</summary>
     public Sprite? Icon { get; init; }
 }
 

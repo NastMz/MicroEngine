@@ -15,7 +15,7 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
 {
     private CachedText _pressText;
     /// <summary>The title menu, built on entering (Continue only with a save).</summary>
-    private SelectionList _list = null!;
+    private DemoKit.OptionList _list = null!;
     private bool _menu;
     private bool _confirmOverwrite;
     private ChoiceMenu? _confirm;
@@ -71,7 +71,7 @@ internal sealed class TitleScene(TrailDuelGame game) : Scene
                 break;
             case "QUIT": Game.Quit(); break;
             case "ACHIEVEMENTS":
-                var list = new AchievementsScene(game.Achievements, UiKit.Theme);
+                var list = new DemoKit.AchievementList(game.Achievements, UiKit.Theme);
                 list.Moved += () => Audio.Play("move", 0.6f);
                 list.Closed += () => Audio.Play("cancel", 0.6f);
                 Game.Scenes.Push(list);

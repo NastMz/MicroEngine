@@ -150,11 +150,21 @@ saved, and also when the data is unreadable; unreadable data is set aside first:
 ```csharp
 public override void Enter()
 {
-    _list = new SelectionList([.. Rebindable, "reset to defaults"]);
     _storage = saveDirectory is null ? SaveStore.DefaultStorage("MicroEngineExamples") : new FileSaveStorage(saveDirectory);
     BindDefaults(Input);
     // Saved bindings replace the defaults; false (nothing saved, or unreadable and set aside) keeps them.
-    _status = Input.LoadBindings(_storage) ? "LOADED SAVED CONTROLS" : "DEFAULT CONTROLS";
+    _status.Text = Input.LoadBindings(_storage) ? "LOADED SAVED CONTROLS" : "DEFAULT CONTROLS";
+
+    var rows = new Stack { Spacing = 3, Align = Align.Start };
+    foreach (var action in Rebindable)
+    {
+        _shown[action] = new Label { Color = UiTheme.Default.Muted };
+        rows.Add(new Stack { Orientation = Orientation.Horizontal, Spacing = 8 }
+            .Add(new Button(action.ToUpperInvariant(), () => Listen(action)) { Width = 50 })
+            .Add(_shown[action]));
+    }
+    rows.Add(new Button("RESET TO DEFAULTS", Reset));
+    Widgets.Content = new Stack { Spacing = 10, Align = Align.Start }.Add(rows).Add(_status);
 }
 ```
 
@@ -163,26 +173,34 @@ and neither does its release. While it listens, the screen's own update does not
 
 <!-- code: samples/Examples/Examples/RebindExample.cs#listen -->
 ```csharp
-public override void Update(float dt)
+private void Listen(string action)
 {
-    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
-    if (_listening is not null) return;                       // the next press goes to the listener, not here
-    if (_list.Update(Input) is not { } choice) return;
-    if (choice == Rebindable.Length)
-    {
-        BindDefaults(Input);
-        Save("DEFAULTS RESTORED");
-        return;
-    }
-    string action = Rebindable[choice];
-    _status = $"PRESS A KEY OR BUTTON FOR {action.ToUpperInvariant()} (ESC: KEEP)";
+    if (_listening is not null) return;                       // already waiting for a press
+    _status.Text = $"PRESS A KEY OR BUTTON FOR {action.ToUpperInvariant()} (ESC: KEEP)";
+    // The next press goes to the listener: not to gameplay, and not to the buttons.
     _listening = Game.InputSystem.ListenForPress(press =>
     {
         _listening = null;
-        if (press is { Kind: InputEventKind.KeyDown, Key: Key.Escape }) { _status = "UNCHANGED"; return; }
+        if (press is { Kind: InputEventKind.KeyDown, Key: Key.Escape }) { _status.Text = "UNCHANGED"; return; }
         Assign(Input, action, press);
         Save($"{action.ToUpperInvariant()} CHANGED");
     });
+}
+
+private void Reset()
+{
+    BindDefaults(Input);
+    Save("DEFAULTS RESTORED");
+}
+
+public override void Update(float dt)
+{
+    if (_listening is null && Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
+    foreach (var (action, label) in _shown)
+    {
+        var b = Input.GetBindings(action)!;
+        label.Text = string.Join(" ", b.Keys.Select(k => k.ToString()).Concat(b.Buttons.Select(p => "PAD " + p))).ToUpperInvariant();
+    }
 }
 ```
 
@@ -234,11 +252,11 @@ private void Save(string done)
     try
     {
         Input.SaveBindings(_storage);
-        _status = done;
+        _status.Text = done;
     }
     catch (Exception e) when (e is IOException or UnauthorizedAccessException)
     {
-        _status = "COULD NOT SAVE: THE CHANGE LASTS UNTIL YOU QUIT";
+        _status.Text = "COULD NOT SAVE: THE CHANGE LASTS UNTIL YOU QUIT";
     }
 }
 ```
@@ -344,7 +362,7 @@ if (_controlRows is null || prompts.Version != _controlRowsVersion)
 
 Source: [`games/CourtyardKey/Scenes/TitleScene.cs`](../../games/CourtyardKey/Scenes/TitleScene.cs)
 
-`DialogueBox.Prompts` resolves `{action}` in dialogue pages ([UI widgets](ui.md#dialoguebox)) and `PromptText` draws
+`ActionPrompts.Format` resolves `{action}` in text such as a dialogue page, and `PromptText` draws
 prompts as glyphs: key caps, coloured face buttons, touch rings ([UI widgets](ui.md#prompt-glyphs)). The SDL backend
 names the pad family from `SDL_GetGamepadType`, raylib from the pad's name; other sources report Xbox
 (`IInputSource.PadStyle`).

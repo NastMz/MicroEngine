@@ -1,27 +1,22 @@
 # UI widgets
 
-The `MicroEngine.UI` namespace provides a small set of pixel-art widgets that games compose inside their own
-scenes: a `Typewriter` for revealing text, a paged `DialogueBox`, a keyboard-driven `SelectionList`, a `UiTheme`
-record that lets each game keep its own look, and the achievement banners and list screen. Widgets read input
-through actions and draw with the built-in `BitmapFont`. A scene can also hold a retained widget tree with layout,
-focus, pointer and text input ([Widgets in the UI view](#widgets-in-the-ui-view)).
+The `MicroEngine.UI` namespace provides the pieces a game builds its interface from: a retained widget tree laid out in
+the UI view, with focus, pointer and text input ([Widgets in the UI view](#widgets-in-the-ui-view)), a `UiTheme`
+record that lets each game keep its own look, and prompt glyphs that show the player's own controls. The engine ships
+primitives, not designed components: a dialogue box, a title menu, unlock banners or an achievements list are a few
+widgets of the game's own, and the [examples](../examples/focused.md) build each of them.
 
 ## Overview
 
 | Type | Purpose |
 | --- | --- |
+| `UiRoot`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `ScrollView`, `Grid`, `Layer`, `TextField` | A widget tree laid out in the UI view, with focus, pointer and text input ([Widgets in the UI view](#widgets-in-the-ui-view)) |
 | `UiTheme` | Panel style plus text, shadow, accent and muted colours shared by the widgets |
-| `Typewriter` | Reveals a string character by character; raises `Revealed` for blip sounds |
-| `DialogueBox` | Queue of pages in a panel with a typewriter and an optional speaker tag |
-| `SelectionList` | Vertical menu navigated with up/down and chosen with confirm |
-| `AchievementToasts` | Unlock banners drawn above every scene ([Achievements](achievements.md)) |
-| `AchievementsScene` | Overlay listing a game's achievements ([Achievements](achievements.md)) |
-| `UiRoot`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts` | A widget tree laid out in the UI view, with focus, pointer and text input ([Widgets in the UI view](#widgets-in-the-ui-view)) |
+| `PromptText` | One line of text whose `{action}` placeholders are drawn as the player's buttons ([Prompt glyphs](#prompt-glyphs)) |
 
-Source: [`src/MicroEngine.UI`](../../src/MicroEngine.UI/), [`src/MicroEngine/UI/Widgets.cs`](../../src/MicroEngine/UI/Widgets.cs),
-[`src/MicroEngine/UI/AchievementViews.cs`](../../src/MicroEngine/UI/AchievementViews.cs)
+Source: [`src/MicroEngine.UI`](../../src/MicroEngine.UI/), [`src/MicroEngine/UI`](../../src/MicroEngine/UI/)
 
-`Typewriter`, `SelectionList` and `UiTheme` are in `MicroEngine.UI.dll`, inside the `MicroEngine` package.
+The widgets and `UiTheme` are in `MicroEngine.UI.dll`, inside the `MicroEngine` package.
 
 ## `UiTheme`
 
@@ -37,106 +32,8 @@ public sealed record UiTheme(PanelStyle Panel, Color Text, Color TextShadow, Col
 Source: [`src/MicroEngine.UI/UiTheme.cs`](../../src/MicroEngine.UI/UiTheme.cs)
 
 `PanelStyle(Fill, Border, Highlight, Shadow, InnerBorder)` is drawn by the `r.Panel(rect, style)` renderer
-extension ([Rendering](rendering.md#irenderer)). Each sample game defines one theme and passes it to its widgets
-and to `UseAchievements`.
-
-## `Typewriter`
-
-| Member | Behaviour |
-| --- | --- |
-| `Start(text)` | Resets and starts revealing `text` |
-| `Update(dt)` | Reveals `CharactersPerSecond` characters per second (default 45) |
-| `Finish()` | Reveals everything at once |
-| `Visible`, `VisibleCount`, `Complete` | Current state |
-| `Revealed` event | Raised for each newly revealed non-whitespace character |
-
-## `DialogueBox`
-
-`Show(speaker, params pages)` queues pages (and opens the box if it was closed). `Update(dt, input, confirm =
-"confirm")` advances the typewriter; confirm first completes the current page, then moves to the next. It returns
-`true` while the box is active, so a scene can skip its own input handling. `confirm` defaults to the map's own confirm action (`InputMap.Names`), so a game
-that renamed it needs no argument; the same holds for `SelectionList.Update` and the achievements screen. The press a
-widget acts on (a dialogue advancing, a menu choosing, the achievements screen closing) is consumed
-(`InputMap.Consume`), so code that reads the same action after it in that update, such as the scene under an
-overlay, does not act on it too. `Draw(r, font, area)` wraps text to
-the area, shows up to `Lines` lines (default 3), a speaker name tag and a blinking arrow when the page is complete.
-Events: `Blip` (per revealed character) and `Closed` (after the last page).
-
-A page that wraps to more than `Lines` lines continues on the next confirm instead of being cut (`HasMore` says
-whether more lines follow; `VisibleLines` are the lines in the box). With `Prompts` set (usually to `Game.Prompts`),
-`{action}` in a page names the player's own control, and changes if the player switches device while the page shows:
-`"Press {confirm} to swing it."` reads "Press Z" on a keyboard, "Press A" on a gamepad or on the touch button labelled A.
-
-Courtyard Key wraps the box in an overlay scene that freezes the world:
-
-```csharp
-public sealed class DialogueScene : Scene
-{
-    private readonly DialogueBox _box = new() { Theme = UiStyle.Theme, Lines = 3 };
-    // ...
-    public override bool IsOverlay => true;
-
-    public override void Enter()
-    {
-        _box.Blip += _ => { if (_blips++ % 2 == 0) Audio.Play("blip", 0.6f, 1f, 0.04f); };
-        _box.Closed += () => _done = true;
-        // {confirm} and {action} in a page name the player's own controls (key, pad button or touch button).
-        _box.Prompts = Game.Prompts;
-        _box.Show(_speaker, _pages);
-    }
-
-    public override void Update(float dt)
-    {
-        if (_done) return;
-        _box.Update(dt, Input);
-        if (_done)
-        {
-            Game.Scenes.Pop();
-            _closed?.Invoke();
-        }
-    }
-
-    public override void Draw(IRenderer r)
-    {
-        var area = new RectF(10, 128, 300, 46);
-        _box.Draw(r, Font, area);
-    }
-}
-```
-
-Source: [`games/CourtyardKey/Scenes/DialogueScene.cs`](../../games/CourtyardKey/Scenes/DialogueScene.cs)
-
-Long text needs no manual splitting, but a page per thought still reads better than one long page.
-
-## `SelectionList`
-
-`new SelectionList(params options)` needs at least one option. `Update(input, up, down, confirm)` (the actions
-default to the map's names, see [Default actions](input.md#default-actions)) moves the highlight (wrapping when `Wrap` is true, the default) and returns the chosen index on confirm, otherwise `null`.
-`SetEnabled(index, false)` greys an option out and makes it unselectable; `SetOptions` replaces the list. The
-`Moved` event fires when the highlight changes. `Draw(r, font, position, theme, time, lineHeight = 12)` draws the
-list with a bobbing cursor.
-
-```csharp
-private readonly SelectionList _menu = new("RESUME", "QUIT TO TITLE");
-// ...
-public override void Enter() => _menu.Moved += () => game.Sfx("menu-move", 0.6f);
-
-public override void Update(float dt)
-{
-    if (Input.Pressed("pause")) { Close(); return; }
-    if (_menu.Update(Input) is { } choice)
-    {
-        game.Sfx("menu-select", 0.7f);
-        if (choice == 0) Close();
-        else Game.Scenes.Reset(new TitleScene(game), Transition.Fade(0.6f));
-    }
-}
-```
-
-Source: [`games/NeonRift/Scenes/PlayScene.cs`](../../games/NeonRift/Scenes/PlayScene.cs)
-
-Games can keep the list for its logic and draw it their own way: Neon Rift passes `_menu` to its own `Ui.Menu`
-helper instead of calling `SelectionList.Draw`.
+extension ([Rendering](rendering.md#irenderer)). Each sample game defines one theme and sets it as `Widgets.Theme`
+or passes it to its own drawing code.
 
 ## Prompt glyphs
 
@@ -144,16 +41,22 @@ helper instead of calling `SelectionList.Draw`.
 is a glyph instead of a word: a key cap on a keyboard, a round button in its colour on Xbox pads (A green, B red, X
 blue, Y yellow), the shape on PlayStation pads, a ring with the button's label on a touch screen. `Measure` and
 `DrawCentered` lay it out; `DrawGlyph` draws one `ActionPrompt`. `PromptGlyphStyle` sets the caps' colours
-(`PromptGlyphStyle.From(theme)` takes them from a `UiTheme`). Use it for short hints ("{confirm} Talk"); dialogue text
-uses `DialogueBox.Prompts`, which keeps words. See [Showing controls to the player](input.md#showing-controls-to-the-player).
+(`PromptGlyphStyle.From(theme)` takes them from a `UiTheme`). Use it for short hints ("{confirm} Talk"); text that
+keeps words goes through `ActionPrompts.Format`. See [Showing controls to the player](input.md#showing-controls-to-the-player).
 
-## Achievement views
+## Deprecated components
 
-`AchievementToasts.Bottom` shows the banners at the bottom of the screen instead of the
-top, for games whose HUD is at the top.
+These types still work but are deprecated (a warning names the replacement) and are removed in a later SDK release.
+Each one is a few widgets of your own; the [migration notes](../migrations.md) say how to move.
 
-`AchievementToasts` and `AchievementsScene` are documented with the rest of the system in
-[Achievements](achievements.md#banners).
+| Deprecated | Build it from |
+| --- | --- |
+| `DialogueBox` | A `Panel` holding a `Label` with `Wrap` and `VisibleCharacters` ([Dialogue](../examples/focused.md#dialogue)) |
+| `Typewriter` | `Label.VisibleCharacters`, raised a little every update ([Text that wraps and reveals](#text-that-wraps-and-reveals)) |
+| `SelectionList` | `Button`s, or widgets of your own, in a `Stack`; `UiRoot.FocusChanged` for the cursor sound ([Menus](#menus)) |
+| `Toasts`, `Toast` | A `Panel` in a `Layer`, slid in with `Offset` and `Opacity`, or your own drawing from `Game.DrawAboveScenes` |
+| `AchievementToasts`, `UseAchievements` | `TrackAchievements`, then your own banner on `AchievementTracker.Unlocked` ([Achievements](achievements.md)) |
+| `AchievementsScene` | Rows in a `ScrollView` over `AchievementTracker.All` ([Achievements](achievements.md#showing-achievements)) |
 
 ## Widgets in the UI view
 
@@ -191,7 +94,6 @@ public sealed class TitleScene : Scene
 | `Grid` | Children in rows of `Columns` equal cells, left to right then top to bottom, with `Spacing` and an `Align` within the cell ([Grids](#grids)) |
 | `Layer` | The whole UI view, each child against an edge or corner (`Add(child, anchor, offset)`, `Place`) or at a point (`AddAt(child, point, pivot)`, `Move`); its empty areas let the pointer through ([Placing widgets anywhere](#placing-widgets-anywhere)) |
 | `TextField` | One line of editable text: `Text`, `Caret`, `Placeholder`, `MaxLength`, the input method's `Composition`; `Changed` and `Submitted` events |
-| `Toasts` | Banners that slide in one at a time (`Show(new Toast(heading, title, description))`); `AchievementToasts` shows achievements through it |
 
 **Layout.** Widgets are measured and placed in UI units (window pixels divided by the UI scale, the screen's pixel
 density unless `Presentation.UiScale` sets one, see
@@ -700,9 +602,6 @@ private static Widget Row(string text, Widget control)
 
 ## Limitations
 
-- `DialogueBox`, `SelectionList` and the achievement screen use keyboard and gamepad navigation only; the widget tree
-  responds to mouse and touch too and lays itself out.
-- `DialogueBox`, `SelectionList` and the achievement screen are not widgets of the tree: they are placed by hand.
 - Text uses the game's font; there is no rich text, right-to-left text or localisation support. A text field edits one
   line, without selection or clipboard.
 - Sliders, toggles and value selectors are widgets of your own

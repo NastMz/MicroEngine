@@ -1,3 +1,4 @@
+#pragma warning disable CS0618 // SelectionList, deprecated, is tested until it is removed
 using System.Numerics;
 using MicroEngine.Core;
 using MicroEngine.Input;

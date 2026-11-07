@@ -1,3 +1,4 @@
+#pragma warning disable CS0618 // SelectionList, deprecated, is tested until it is removed
 using System.Collections;
 using MicroEngine.Audio;
 using MicroEngine.Audio.Retro;

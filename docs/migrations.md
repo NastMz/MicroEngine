@@ -4,6 +4,34 @@ What changes between SDK versions and how to update a game. MicroEngine is in Al
 a version may change public APIs incompatibly, and when it does, the change is listed here with the version that makes
 it. Newest first.
 
+## Next release
+
+### Deprecated UI components
+
+`DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `Toast`, `AchievementToasts`, `AchievementsScene`,
+`Game.UseAchievements` and `Game.AchievementToasts` are deprecated: a game that uses them builds with warning CS0618,
+which names the replacement, and keeps working. They are removed in a later release. **Migration:**
+
+- **`DialogueBox` and `Typewriter`.** Build the box from widgets: a `Panel` holding a `Label` with `Wrap` and a fixed
+  `Width`, its `VisibleCharacters` raised a little every update, and a blinking arrow faded with `Opacity`
+  ([Dialogue](examples/focused.md#dialogue)). `Label.VisibleLines` tells how many lines are showing; split long text
+  into pages with `font.Wrap`. Dialogue that names controls formats each page with `Game.Prompts.Format`.
+- **`SelectionList`.** Put `Button`s, or widgets of your own, in a `Stack` as a scene's `Widgets.Content`; a disabled
+  widget (`Enabled = false`) is skipped by the cursor, and `Widgets.FocusChanged` gives the cursor sound
+  ([Menus](manual/ui.md#menus)). A menu that must keep its own look draws its items itself in a widget of its own
+  (`DrawContent` reads `IsFocused`), as the Title menu example does.
+- **`UseAchievements` and `AchievementToasts`.** Call `TrackAchievements(catalog, store)` instead: progress, saving and
+  the `engine.achievements` system are the same. Show unlocks from `Achievements.Unlocked`: a banner in a scene's
+  widgets, or one that stays up while scenes change, drawn from `Game.DrawAboveScenes` and advanced by a frame system
+  added in `Configure` ([Showing achievements](manual/achievements.md#showing-achievements)).
+- **`AchievementsScene`.** Build the list as rows in a `ScrollView` over `Achievements.All`, in an overlay scene of your
+  own ([Showing achievements](manual/achievements.md#showing-achievements)).
+- **`Toasts`.** Slide a `Panel` in a `Layer` with `Offset` and `Opacity` ([Placing widgets
+  anywhere](manual/ui.md#placing-widgets-anywhere)), or draw banners from `Game.DrawAboveScenes`.
+
+To keep one of them unchanged for now, copy its source into your game: the four demos keep copies of `SelectionList`,
+the unlock banners and the achievements screen this way.
+
 ## 0.5.0-alpha.1
 
 This version is a breaking Alpha: the engine was rebuilt as separate modules, and several public APIs change. The checklist below gives each breaking change and what to do about it. The entries after it give

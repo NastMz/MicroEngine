@@ -61,6 +61,7 @@ protected Game()
 Unlock banners drawn above every scene (null without achievements).
 
 ```csharp
+[Obsolete("Banners of the engine leave: call TrackAchievements and draw your own from DrawAboveScenes. It is removed in a later SDK release; see the migration notes.")]
 public AchievementToasts? AchievementToasts { get; }
 ```
 
@@ -535,6 +536,23 @@ protected virtual TouchLayout CreateTouchLayout()
 
  [TouchLayout](MicroEngine.Input.TouchLayout.md)
 
+### <a id="MicroEngine_Core_Game_DrawAboveScenes_MicroEngine_Graphics_IRenderer_"></a> DrawAboveScenes\(IRenderer\)
+
+Draws above every scene, in the canvas, once the scenes and their transition are drawn and before the scenes'
+interfaces: what belongs to the game rather than to one scene, such as an unlock banner or a notice that stays
+while scenes change. Advance what it shows from a frame system (<code>builder.Schedule.Add</code> in
+[Configure](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Configure_MicroEngine_Kernel_EngineBuilder_)). The default draws nothing.
+
+```csharp
+protected virtual void DrawAboveScenes(IRenderer canvas)
+```
+
+#### Parameters
+
+`canvas` [IRenderer](MicroEngine.Graphics.IRenderer.md)
+
+The canvas renderer, in the game's virtual pixels.
+
 ### <a id="MicroEngine_Core_Game_HashState_MicroEngine_Kernel_StateHasher_"></a> HashState\(StateHasher\)
 
 Adds the game's own simulation state to the per-step state hash ([ComputeStateHash](MicroEngine.Core.Game.md#MicroEngine_Core_Game_ComputeStateHash_System_Boolean_)), after the
@@ -611,6 +629,34 @@ Runs the phases that come before drawing for one fixed step, with a frame that s
 [BeginFrame](MicroEngine.Kernel.FramePhase.md), [Input](MicroEngine.Kernel.FramePhase.md), the four fixed phases,
 [Update](MicroEngine.Kernel.FramePhase.md) and [LateUpdate](MicroEngine.Kernel.FramePhase.md). The loop's clock does not move.
 
+### <a id="MicroEngine_Core_Game_TrackAchievements_System_Collections_Generic_IEnumerable_MicroEngine_Core_Achievement__MicroEngine_Core_SaveStore_"></a> TrackAchievements\(IEnumerable<Achievement\>, SaveStore\)
+
+Turns achievements on, without banners of the engine: adds the achievements module (an
+[AchievementTracker](MicroEngine.Core.AchievementTracker.md) service over <code class="paramref">catalog</code> and the <code>engine.achievements</code> system
+that writes progress) and the saves module when the game has none. Progress persists in the "achievements" slot of
+<code class="paramref">store</code>. The game shows unlocks its own way: subscribe to [Unlocked](MicroEngine.Core.AchievementTracker.md#MicroEngine_Core_AchievementTracker_Unlocked)
+on [Achievements](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Achievements), and draw a banner above every scene from [DrawAboveScenes](MicroEngine.Core.Game.md#MicroEngine_Core_Game_DrawAboveScenes_MicroEngine_Graphics_IRenderer_).
+
+```csharp
+protected AchievementTracker TrackAchievements(IEnumerable<Achievement> catalog, SaveStore store)
+```
+
+#### Parameters
+
+`catalog` [IEnumerable](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable\-1)<[Achievement](MicroEngine.Core.Achievement.md)\>
+
+`store` [SaveStore](MicroEngine.Core.SaveStore.md)
+
+#### Returns
+
+ [AchievementTracker](MicroEngine.Core.AchievementTracker.md)
+
+#### Exceptions
+
+ [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception)
+
+The engine was already composed (called from [Load](MicroEngine.Core.Game.md#MicroEngine_Core_Game_Load) or later).
+
 ### <a id="MicroEngine_Core_Game_TryGetCapability__1___0__"></a> TryGetCapability<T\>\(out T?\)
 
 An optional feature, if there is one: one the engine declared ([Capabilities](MicroEngine.Kernel.EngineBuilder.md#MicroEngine_Kernel_EngineBuilder_Capabilities)), else one
@@ -651,6 +697,7 @@ styled with <code class="paramref">theme</code>. Report progress through [Achiev
 it has no achievement service, system or file.
 
 ```csharp
+[Obsolete("Call TrackAchievements, which keeps progress the same way without the engine's banners, and show unlocks your own way from AchievementTracker.Unlocked and DrawAboveScenes. It is removed in a later SDK release; see the migration notes.")]
 protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, SaveStore store, UiTheme? theme = null)
 ```
 

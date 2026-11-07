@@ -12,7 +12,7 @@ namespace MeadowRun.Scenes;
 /// <summary>Game over: offers a continue (lives refill, score resets, unlocks kept) or the title.</summary>
 internal sealed class GameOverScene(MeadowGame game) : Scene
 {
-    private readonly SelectionList _menu = new("Continue", "Title screen");
+    private readonly DemoKit.OptionList _menu = new("Continue", "Title screen");
     private bool _leaving;
 
     /// <summary>Hashes the menu cursor and whether the scene is leaving.</summary>

@@ -1,3 +1,4 @@
+#pragma warning disable CS0618 // the deprecated UI types keep their place in the module map until they are removed
 using System.Xml.Linq;
 using MicroEngine.Core;
 using MicroEngine.Kernel;

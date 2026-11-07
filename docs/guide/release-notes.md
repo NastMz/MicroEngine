@@ -35,6 +35,18 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
 - [Menus](../manual/ui.md#menus): `UiRoot.FocusChanged` reports every move of the focus with the widget it left and
   the one it reached (`FocusChange`), for a cursor sound or a description that follows the cursor. The focused examples
   add a title menu built on the widget tree, with a cursor that follows the mouse.
+- [Achievements of your own look](../manual/achievements.md#showing-achievements): `TrackAchievements` turns
+  achievements on without the engine's banners, and `Game.DrawAboveScenes` draws what belongs to the game above every
+  scene and transition, such as an unlock banner. The focused examples add an achievements list and unlock banners
+  built from widgets.
+
+**Deprecated**
+
+- `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `Toast`, `AchievementToasts`, `AchievementsScene`,
+  `Game.UseAchievements` and `Game.AchievementToasts`: the engine ships primitives, and each of these is a few widgets
+  of the game's own. They still work, with a warning that names the replacement, and are removed in a later release
+  ([migration notes](../migrations.md#next-release)). The tutorial, the focused examples and the demos no longer use
+  them.
 
 **Fixed**
 

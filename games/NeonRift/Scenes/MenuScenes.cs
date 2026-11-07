@@ -12,7 +12,7 @@ namespace NeonRift.Scenes;
 /// <summary>Title: drifting skyline, neon logo, start/controls/quit.</summary>
 internal sealed class TitleScene(RiftGame game) : Scene
 {
-    private readonly SelectionList _menu = new("START", "CONTROLS", "ACHIEVEMENTS", "QUIT");
+    private readonly DemoKit.OptionList _menu = new("START", "CONTROLS", "ACHIEVEMENTS", "QUIT");
     private bool _controls, _leaving;
     private EntityId _skyline;
     private StageView? _view;
@@ -61,7 +61,7 @@ internal sealed class TitleScene(RiftGame game) : Scene
                 break;
             case 1: _controls = true; break;
             case 2:
-                var list = new AchievementsScene(game.Achievements, Ui.Theme) { CloseActions = ["cancel", "pause", "confirm", "fire"] };
+                var list = new DemoKit.AchievementList(game.Achievements, Ui.Theme) { CloseActions = ["cancel", "pause", "confirm", "fire"] };
                 list.Moved += () => game.Sfx("menu-move", 0.6f);
                 list.Closed += () => game.Sfx("menu-move", 0.6f);
                 Game.Scenes.Push(list);
@@ -180,7 +180,7 @@ internal sealed class StageCardScene(RiftGame game, int stageIndex) : Scene
 internal sealed class GameOverScene(RiftGame game, int stageIndex, int checkpoint = 0) : Scene
 {
     private static readonly Color Red = Color.Hex("ff3050");
-    private readonly SelectionList _menu = new("CONTINUE", "QUIT");
+    private readonly DemoKit.OptionList _menu = new("CONTINUE", "QUIT");
     private readonly NumberText _score = new(static (score, _) => $"SCORE {Ui.N(score, 7)}");
     private readonly NumberText _continues = new(static (left, _) => $"CONTINUES LEFT {left}");
     private bool _leaving;

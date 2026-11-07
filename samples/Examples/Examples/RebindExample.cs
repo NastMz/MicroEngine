@@ -25,19 +25,29 @@ public sealed class RebindExample(string? saveDirectory) : Scene
         .Unbind("fire").Bind("fire", [Key.X], [PadButton.X]);
     #endregion
 
-    private SelectionList _list = null!;
+    private readonly Label _status = new();
+    private readonly Dictionary<string, Label> _shown = [];
     private IStorage _storage = null!;
     private IDisposable? _listening;
-    private string _status = "";
 
     #region load
     public override void Enter()
     {
-        _list = new SelectionList([.. Rebindable, "reset to defaults"]);
         _storage = saveDirectory is null ? SaveStore.DefaultStorage("MicroEngineExamples") : new FileSaveStorage(saveDirectory);
         BindDefaults(Input);
         // Saved bindings replace the defaults; false (nothing saved, or unreadable and set aside) keeps them.
-        _status = Input.LoadBindings(_storage) ? "LOADED SAVED CONTROLS" : "DEFAULT CONTROLS";
+        _status.Text = Input.LoadBindings(_storage) ? "LOADED SAVED CONTROLS" : "DEFAULT CONTROLS";
+
+        var rows = new Stack { Spacing = 3, Align = Align.Start };
+        foreach (var action in Rebindable)
+        {
+            _shown[action] = new Label { Color = UiTheme.Default.Muted };
+            rows.Add(new Stack { Orientation = Orientation.Horizontal, Spacing = 8 }
+                .Add(new Button(action.ToUpperInvariant(), () => Listen(action)) { Width = 50 })
+                .Add(_shown[action]));
+        }
+        rows.Add(new Button("RESET TO DEFAULTS", Reset));
+        Widgets.Content = new Stack { Spacing = 10, Align = Align.Start }.Add(rows).Add(_status);
     }
     #endregion
 
@@ -48,26 +58,34 @@ public sealed class RebindExample(string? saveDirectory) : Scene
     }
 
     #region listen
-    public override void Update(float dt)
+    private void Listen(string action)
     {
-        if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
-        if (_listening is not null) return;                       // the next press goes to the listener, not here
-        if (_list.Update(Input) is not { } choice) return;
-        if (choice == Rebindable.Length)
-        {
-            BindDefaults(Input);
-            Save("DEFAULTS RESTORED");
-            return;
-        }
-        string action = Rebindable[choice];
-        _status = $"PRESS A KEY OR BUTTON FOR {action.ToUpperInvariant()} (ESC: KEEP)";
+        if (_listening is not null) return;                       // already waiting for a press
+        _status.Text = $"PRESS A KEY OR BUTTON FOR {action.ToUpperInvariant()} (ESC: KEEP)";
+        // The next press goes to the listener: not to gameplay, and not to the buttons.
         _listening = Game.InputSystem.ListenForPress(press =>
         {
             _listening = null;
-            if (press is { Kind: InputEventKind.KeyDown, Key: Key.Escape }) { _status = "UNCHANGED"; return; }
+            if (press is { Kind: InputEventKind.KeyDown, Key: Key.Escape }) { _status.Text = "UNCHANGED"; return; }
             Assign(Input, action, press);
             Save($"{action.ToUpperInvariant()} CHANGED");
         });
+    }
+
+    private void Reset()
+    {
+        BindDefaults(Input);
+        Save("DEFAULTS RESTORED");
+    }
+
+    public override void Update(float dt)
+    {
+        if (_listening is null && Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
+        foreach (var (action, label) in _shown)
+        {
+            var b = Input.GetBindings(action)!;
+            label.Text = string.Join(" ", b.Keys.Select(k => k.ToString()).Concat(b.Buttons.Select(p => "PAD " + p))).ToUpperInvariant();
+        }
     }
     #endregion
 
@@ -105,11 +123,11 @@ public sealed class RebindExample(string? saveDirectory) : Scene
         try
         {
             Input.SaveBindings(_storage);
-            _status = done;
+            _status.Text = done;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            _status = "COULD NOT SAVE: THE CHANGE LASTS UNTIL YOU QUIT";
+            _status.Text = "COULD NOT SAVE: THE CHANGE LASTS UNTIL YOU QUIT";
         }
     }
     #endregion
@@ -117,16 +135,8 @@ public sealed class RebindExample(string? saveDirectory) : Scene
     public override void Draw(IRenderer r)
     {
         Heading.Draw(r, Font, "CONTROLS");
-        _list.Draw(r, Font, new Vector2(16, 24), UiTheme.Default, Age, lineHeight: 12);
-        for (int i = 0; i < Rebindable.Length; i++)
-        {
-            var b = Input.GetBindings(Rebindable[i])!;
-            string text = string.Join(" ", b.Keys.Select(k => k.ToString()).Concat(b.Buttons.Select(p => "PAD " + p))).ToUpperInvariant();
-            Font.Draw(r, text, new Vector2(120, 24 + i * 12), UiTheme.Default.Muted);
-        }
-        Font.Draw(r, $"STATUS: {_status}", new Vector2(16, 80), UiTheme.Default.Accent);
-        Font.Draw(r, "TRY THEM:", new Vector2(16, 100), Color.White);
-        if (Input.Down("jump")) Font.Draw(r, "JUMP", new Vector2(80, 100), Color.White);
-        if (Input.Down("fire")) Font.Draw(r, "FIRE", new Vector2(120, 100), Color.White);
+        Font.Draw(r, "TRY THEM:", new Vector2(16, 160), Color.White);
+        if (Input.Down("jump")) Font.Draw(r, "JUMP", new Vector2(80, 160), Color.White);
+        if (Input.Down("fire")) Font.Draw(r, "FIRE", new Vector2(120, 160), Color.White);
     }
 }

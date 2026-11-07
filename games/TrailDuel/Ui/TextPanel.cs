@@ -15,16 +15,15 @@ namespace TrailDuel.Ui;
 /// lines, a speaker name tag and a bouncing "more" arrow. Coroutines await <see cref="Say"/>.
 /// </summary>
 /// <remarks>
-/// Kept instead of the engine's <see cref="DialogueBox"/>: battle menus sit under a last page that stays up
+/// The game's own box rather than one built on the engine's widgets: battle menus sit under a last page that stays up
 /// (<see cref="WaitForConfirmOnLast"/>), battle narration closes by itself (<see cref="AutoAdvance"/>), cancel also turns
-/// a typed page, and the box, name tag and bobbing arrow have the game's own look; DialogueBox has none of these, so it
-/// would change both the controls and the screens.
+/// a typed page, and the box, name tag and bobbing arrow have the game's own look.
 /// </remarks>
 internal sealed class TextPanel : IStateHashed
 {
     private readonly BitmapFont _font;
     private readonly AudioMixer _audio;
-    private readonly Typewriter _typewriter = new() { CharactersPerSecond = 60 };
+    private readonly DemoKit.Typewriter _typewriter = new() { CharactersPerSecond = 60 };
     private readonly Queue<string> _pages = new();
     private float _time;
     private int _blips;
@@ -164,7 +163,7 @@ internal sealed class TextPanel : IStateHashed
 
 /// <summary>
 /// A small vertical menu box (Yes/No, learning moves...). Returns the chosen index, or -1 on cancel. The engine's
-/// <see cref="SelectionList"/> moves the cursor and chooses; the box and cursor are drawn in the game's <see cref="UiKit"/> look.
+/// <see cref="DemoKit.OptionList"/> moves the cursor and chooses; the box and cursor are drawn in the game's <see cref="UiKit"/> look.
 /// </summary>
 internal sealed class ChoiceMenu : IStateHashed
 {
@@ -182,7 +181,7 @@ internal sealed class ChoiceMenu : IStateHashed
         hash.Add(Result ?? 0);
     }
 
-    private readonly SelectionList _list;
+    private readonly DemoKit.OptionList _list;
     private readonly BitmapFont _font;
     private readonly AudioMixer _audio;
     private float _time;

@@ -9,6 +9,7 @@ Guide: [UI widgets](../manual/ui.md)
 One banner of [Toasts](MicroEngine.UI.Toasts.md): a heading, a title, an optional description and an optional icon.
 
 ```csharp
+[Obsolete("Draw banners of your own, from widgets or from Game.DrawAboveScenes. It is removed in a later SDK release; see the migration notes.")]
 public sealed record Toast : IEquatable<Toast>
 ```
 

@@ -38,7 +38,7 @@ The core references no backend library. Games reference only `MicroEngine.Deskto
 | `MicroEngine.Graphics` | `Graphics/` | CPU images, procedural art, PNG decoding, sprites, animation, camera, parallax, particles, lighting, font, drawing interfaces | `PixelImage`, `Art`, `SpriteAtlasBuilder`, `SpriteAtlas`, `Sprite`, `Animator`, `Camera2D`, `ParallaxLayer`, `ParticleSystem`, `LightMap`, `BitmapFont`, `IRenderer`, `IGraphicsDevice`, `Texture` |
 | `MicroEngine.World` | `World/` | Tile maps, swept collision, autotiling | `TileLayer`, `TileGrid`, `TileMotion`, `Autotile`, `TileRenderer` (a scene keeps its objects in `Scene.Objects`, an `IWorld`; [The scene world](../manual/scenes.md#the-scene-world)) |
 | `MicroEngine.Audio` | `Audio/` | PCM clips and WAV decoding, the device interface, mixing, synthesis, sequenced music | `AudioClip`, `IAudioDevice`, `SilentAudioDevice`, `AudioMixer`, `Synth`, `Song` (`Synth` and `Song` in `MicroEngine.Audio.Retro`) |
-| `MicroEngine.UI` | `UI/` | Text boxes, menus, themes, achievement banners and list; a widget tree with focus, pointer and text input (`MicroEngine.UI.dll`) | `Typewriter`, `DialogueBox`, `SelectionList`, `UiTheme`, `AchievementToasts`, `AchievementsScene`, `UiRoot`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `TextField`, `Toasts` |
+| `MicroEngine.UI` | `UI/` | A widget tree with focus, pointer and text input, themes and prompt glyphs (`MicroEngine.UI.dll`) | `UiRoot`, `Widget`, `Label`, `Button`, `Panel`, `Stack`, `ScrollView`, `Grid`, `Layer`, `TextField`, `UiTheme`, `PromptText` |
 
 The manual covers each area: [lifecycle](../manual/lifecycle.md), [scenes](../manual/scenes.md),
 [rendering](../manual/rendering.md), [input](../manual/input.md), [audio](../manual/audio.md),

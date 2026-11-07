@@ -27,7 +27,6 @@ public abstract class Game
     public int Height => Settings.VirtualHeight;
     public AchievementTracker Achievements => // ...
     public bool HasAchievements => _achievements is not null;
-    public AchievementToasts? AchievementToasts { get; private set; }
     protected IPlatform Platform => // ...
 
     protected abstract void Load();
@@ -35,7 +34,8 @@ public abstract class Game
     protected virtual InputMap CreateInput() => InputMap.CreateDefault();
     protected virtual TouchLayout CreateTouchLayout() => TouchLayout.CreateDefault();
     public void Quit() => QuitRequested = true;
-    protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, SaveStore store, UiTheme? theme = null)
+    protected AchievementTracker TrackAchievements(IEnumerable<Achievement> catalog, SaveStore store)
+    protected virtual void DrawAboveScenes(IRenderer canvas) { }
     public void InitializeForTest(IPlatform platform, int seed = 1) => Initialize(platform, seed);
     public void StepForTest()
 }
@@ -49,8 +49,9 @@ public abstract class Game
 | `CreateTouchLayout` | Override to choose the on-screen controls ([Touch controls](../manual/input.md#touch-controls)) |
 | `Touch` | The on-screen controls at run time: shown, pressed, geometry, `SetVisible`, `Layout`. Available from `Configure`; active on touch-first screens or once the game sets a layout, inactive and free otherwise (`IsActive`) |
 | `Random` | Deterministic per run; seeded by the launcher (seed 1 under a script) |
-| `UseAchievements` | Declares the achievements. Called from the constructor or `Configure` (before the engine is composed), it adds the achievements module; from `Load` or later it throws `InvalidOperationException` |
-| `Achievements` | Throws until `UseAchievements` was called |
+| `TrackAchievements` | Declares the achievements. Called from the constructor or `Configure` (before the engine is composed), it adds the achievements module; from `Load` or later it throws `InvalidOperationException` |
+| `Achievements` | Throws until `TrackAchievements` was called |
+| `DrawAboveScenes` | Draws in the canvas after every scene and transition, before the scenes' interfaces: what belongs to the game rather than to one scene. The default draws nothing |
 | `InitializeForTest` / `StepForTest` | Run `Load`, then advance one fixed update after sampling input, without a loop |
 
 ## GameSettings

@@ -64,7 +64,7 @@ public sealed class AchievementTests
         h.Press("down");
         h.Press("down");
         h.Press("confirm", 10);
-        Assert.IsInstanceOfType<AchievementsScene>(h.Game.Scenes.Current);
+        Assert.IsInstanceOfType<DemoKit.AchievementList>(h.Game.Scenes.Current);
         h.Press("cancel", 10);
         Assert.IsInstanceOfType<TitleScene>(h.Game.Scenes.Current);
     }

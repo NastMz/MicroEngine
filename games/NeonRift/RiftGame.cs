@@ -79,14 +79,21 @@ public sealed class RiftGame(LaunchOptions? launch = null, string? contentRoot =
     };
 
     // Achievements are declared before the engine is composed, so it adds their module.
-    public override void Configure(EngineBuilder builder) => UseAchievements(RiftAchievements.Catalog, Store, Ui.Theme);
+    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(RiftAchievements.Catalog, Store));
+
+    /// <summary>The unlock banners, drawn above every scene.</summary>
+    public DemoKit.AchievementBanners Banners { get; } = new() { Theme = Ui.Theme };
+
+    /// <summary>The unlock banners stay up while scenes change.</summary>
+    protected override void DrawAboveScenes(MicroEngine.Graphics.IRenderer canvas) => Banners.Draw(canvas, Font);
+
 
     protected override void Load()
     {
         // The art bundle is an asset of the game's store, so Game.Assets disposes its atlas and backdrops with the game.
         Art = Assets.Scope.Acquire(new AssetKey(NeonRift.Art.Assets.Kind, "art"), _ => new Assets(Graphics, Assets) { Font = Font });
         Sounds.Register(Audio, Assets);
-        AchievementToasts!.Top = 22;   // below the HUD gradient
+        Banners.Top = 22;   // below the HUD gradient
         Achievements.Unlocked += _ => Sfx("powerup", 0.8f);
         _savedHighScore = Math.Max(0, Store.Load<RiftRecord>(RecordSlot)?.HighScore ?? 0);
         Session = new Session(_savedHighScore) { Weapon = _launch.Weapon };

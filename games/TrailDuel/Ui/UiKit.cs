@@ -52,9 +52,9 @@ internal static class UiKit
     /// The engine's list navigation (up and down move and wrap, confirm chooses) with the game's cursor sound. Screens draw
     /// their lists themselves, with <see cref="Cursor"/> beside the highlighted row.
     /// </summary>
-    public static SelectionList List(AudioMixer audio, params string[] options)
+    public static DemoKit.OptionList List(AudioMixer audio, params string[] options)
     {
-        var list = new SelectionList(options);
+        var list = new DemoKit.OptionList(options);
         list.Moved += () => audio.Play("move", 0.6f);
         return list;
     }

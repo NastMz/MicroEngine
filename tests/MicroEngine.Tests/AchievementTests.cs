@@ -1,3 +1,4 @@
+#pragma warning disable CS0618 // the engine's banners and list, deprecated, are tested until they are removed
 using MicroEngine.Core;
 using MicroEngine.Graphics;
 using MicroEngine.Input;
@@ -64,6 +65,61 @@ public sealed class AchievementTests
                 game.Schedule.Order(MicroEngine.Kernel.FramePhase.PostFixed).ToArray(), "the system keeps its place in the step");
             Assert.IsNotNull(game.AchievementToasts);
         }
+    }
+
+    /// <summary>Tracks its achievements and draws its own banners above every scene.</summary>
+    private sealed class TrackingGame(SaveStore store) : Game
+    {
+        public static readonly Color Banner = new(200, 40, 40);
+        public List<string> Drawn { get; } = [];
+        public override GameSettings Settings { get; } = new("achievements", 32, 16);
+        public override void Configure(MicroEngine.Kernel.EngineBuilder builder) => TrackAchievements(Catalog, store);
+        protected override void Load() => Scenes.Push(new Filled(Drawn));
+        protected override void DrawAboveScenes(IRenderer canvas)
+        {
+            Drawn.Add("above");
+            if (Achievements.IsUnlocked(First.Id)) canvas.FillRect(new RectF(0, 0, canvas.Width, 4), Banner);
+        }
+    }
+
+    private sealed class Filled(List<string> drawn) : Scene
+    {
+        public override void Update(float dt) { }
+        public override void Draw(IRenderer renderer)
+        {
+            drawn.Add("scene");
+            renderer.FillRect(new RectF(0, 0, renderer.Width, renderer.Height), Color.Black);
+        }
+    }
+
+    [TestMethod]
+    public void A_game_that_only_tracks_achievements_keeps_their_progress_and_shows_no_banner_of_the_engine()
+    {
+        var store = Store();
+        var game = new TrackingGame(store);
+        game.InitializeForTest(new HeadlessPlatform());
+        Assert.IsTrue(game.HasAchievements);
+        Assert.AreSame(game.Achievements, game.Services.Get<AchievementTracker>());
+        Assert.IsTrue(game.Schedule.Contains("engine.achievements"), "progress is written as with UseAchievements");
+        game.Achievements.Unlock(First.Id);
+        Assert.IsTrue(store.Exists(AchievementTracker.SaveSlot), "the unlock is saved");
+        Assert.IsNull(game.AchievementToasts, "no banner of the engine");
+    }
+
+    [TestMethod]
+    public void A_game_draws_above_every_scene_after_the_scenes()
+    {
+        var game = new TrackingGame(Store());
+        var platform = new HeadlessPlatform(32, 16) { Rasterize = true };
+        game.InitializeForTest(platform);
+        game.Achievements.Unlock(First.Id);
+        game.StepForTest();
+        game.Render(platform.BeginFrame());
+        platform.EndFrame();
+        CollectionAssert.AreEqual(new[] { "scene", "above" }, game.Drawn);
+        var frame = ((IViewCapture)platform).CaptureWorld();
+        Assert.AreEqual(TrackingGame.Banner, frame[5, 1], "drawn over the scene");
+        Assert.AreEqual(Color.Black, frame[5, 10], "the scene below");
     }
 
     [TestMethod]

@@ -45,7 +45,7 @@ internal static class Ui
         font.Draw(r, text, at, Color.Lerp(Text, glow, 0.3f), scale);
     }
 
-    public static void Menu(IRenderer r, BitmapFont font, SelectionList list, float cx, float y, float time, int lineHeight = 16, int width = 140)
+    public static void Menu(IRenderer r, BitmapFont font, DemoKit.OptionList list, float cx, float y, float time, int lineHeight = 16, int width = 140)
     {
         for (int i = 0; i < list.Options.Count; i++)
         {

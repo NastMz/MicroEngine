@@ -138,7 +138,7 @@ healing, items and captures.
 | `Scenes/` | Title, overworld (core / scripts / drawing), battle (flow / presentation / drawing / fx), party, summary, bag, shop, start menu, evolution, credits, debug starts. |
 | `Visuals/` | Palette, creature, trainer and village sheet loaders (read through `Game.Assets`), tile/tree/building/ground/UI art, the prop rasterizer (`PropCanvas`), battle stages, effect sheets (`FxArt`), atlas factory. |
 | `Sound/` | Synthesized sound effects and the music/jingle file list. |
-| `Ui/` | Shared boxes, bars, badges, the text panel and choice menus; lists move with the engine's `SelectionList`. |
+| `Ui/` | Shared boxes, bars, badges, the text panel and choice menus; lists move with `OptionList`, the cursor list the four demos share (`games/Shared`). |
 
 The battle scene never decides anything: it replays the events the rules produce, which keeps the
 rules fully testable without a window.

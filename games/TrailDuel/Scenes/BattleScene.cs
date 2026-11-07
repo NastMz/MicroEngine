@@ -198,7 +198,7 @@ internal sealed partial class BattleScene : Scene
 
     /// <summary>
     /// The action and move menus are two-by-two grids (left and right change column), which the engine's vertical
-    /// <c>SelectionList</c> does not cover, so their cursor stays here.
+    /// <c>DemoKit.OptionList</c> does not cover, so their cursor stays here.
     /// </summary>
     private int GridMove(int index, int count)
     {

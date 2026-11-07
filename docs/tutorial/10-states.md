@@ -127,8 +127,8 @@ private void DrawHud(IRenderer r)
 
 ## A menu
 
-`SelectionList` is MicroEngine's menu widget: a vertical list moved with `up` and `down` and chosen with `confirm`.
-The title scene becomes a menu:
+A menu is a few widgets: buttons in a stack. A scene's `Widgets` lays them out in the UI view, moves the focus with
+`up` and `down`, and clicks the focused button on `confirm` or under the mouse. The title scene becomes a menu:
 
 <!-- code: samples/GemGarden/part4-complete/Scenes/TitleScene.cs -->
 ```csharp title="Scenes/TitleScene.cs"
@@ -143,53 +143,57 @@ namespace GemGarden.Scenes;
 /// <summary>The title screen: a menu to play or quit, and the best score from the save file.</summary>
 public sealed class TitleScene(MainGame game) : Scene
 {
-    private readonly SelectionList _menu = new("PLAY", "QUIT");
-
     public override void Enter()
     {
-        _menu.Moved += () => Audio.Play("select");
         Audio.PlayMusic("garden");
+        Widgets.Content = new Stack { Spacing = 4 }
+            .Add(new Button("PLAY", Play) { Width = 64 })
+            .Add(new Button("QUIT", Game.Quit) { Width = 64 });
+        Widgets.Offset = new Vector2(0, 30);                           // below the title, from the centre
+        Widgets.FocusChanged += change =>
+        {
+            if (change.From is not null) Audio.Play("select");         // a click when the focus moves
+        };
     }
 
-    public override void Update(float dt)
+    private void Play()
     {
-        switch (_menu.Update(Input))
-        {
-            case 0:
-                Audio.Play("select");
-                Game.Scenes.Replace(new PlayScene(game), Transition.Fade());
-                break;
-            case 1:
-                Game.Quit();
-                break;
-        }
+        Audio.Play("select");
+        Game.Scenes.Replace(new PlayScene(game), Transition.Fade());
     }
+
+    public override void Update(float dt) { }
 
     public override void Draw(IRenderer r)
     {
         Font.DrawCentered(r, "GEM GARDEN", new Vector2(160, 44), Color.Hex("a7f070"), scale: 3, shadow: Color.Hex("257179"));
-        r.Draw(game.Sprites["hero0"], new Vector2(160, 86));
-        _menu.Draw(r, Font, new Vector2(146, 104), UiTheme.Default, Age);
-        Font.DrawCentered(r, $"BEST {game.BestScore}", new Vector2(160, 150), UiTheme.Default.Muted);
+        r.Draw(game.Sprites["hero0"], new Vector2(160, 80));
+        Font.DrawCentered(r, $"BEST {game.BestScore}", new Vector2(160, 164), UiTheme.Default.Muted);
     }
 }
 ```
 
-- `_menu.Update(Input)` returns the index of the option chosen this step, or `null`. The `switch` acts on it.
-- `Moved` is an event raised when the highlight changes: a click sound.
-- `_menu.Draw(r, Font, position, theme, time)` draws the options with a bobbing cursor; `UiTheme.Default` is the
-  engine's colours, and a game can make its own `UiTheme`.
+- `Widgets.Content` is what the scene shows in the UI view. `new Button(text, action)` calls `action` when it is
+  clicked; `Stack` puts its children one under the other, `Spacing` units apart.
+- `Widgets.Offset` moves the content from the centre of the screen, here below the title.
+- `FocusChanged` is raised when the focus moves to another button: a click sound. The first focus, when the menu
+  opens, comes from nothing (`From` is null) and makes no sound.
+- `Update` has nothing to do: the widgets read their own input.
+- Widgets are drawn in the UI view, at the window's resolution, in UI units of one window pixel by default: small
+  next to 320 × 180 pixel art. Gem Garden makes them three window pixels each, in `MainGame`'s settings:
+  `Presentation = Presentation.PixelArt with { UiScale = 3 }` ([The world view and the UI
+  view](../manual/rendering.md#the-world-view-and-the-ui-view)).
 - `Game.Quit()` ends the game after the current frame (the window closes; in a browser the page shows its own screen).
 - `game.BestScore` comes from the save file ([step 11](11-saving.md)).
 
-Menus answer keyboard and gamepad (and touch, through the `A` button's `confirm` and the joystick's directions); they
-do not respond to mouse clicks. More widgets (dialogue boxes, typewriter text, panels): [UI widgets](../manual/ui.md).
+Menus answer keyboard, gamepad, mouse and touch. The buttons use the engine's colours (`UiTheme.Default`); a game
+can make its own `UiTheme` and set it as `Widgets.Theme`. More widgets (labels, panels, scrolling lists, grids):
+[UI widgets](../manual/ui.md).
 
 ## The pause overlay
 
 <!-- code: samples/GemGarden/part4-complete/Scenes/PauseScene.cs -->
 ```csharp title="Scenes/PauseScene.cs"
-using System.Numerics;
 using MicroEngine;
 using MicroEngine.Graphics;
 using MicroEngine.Scenes;
@@ -200,49 +204,37 @@ namespace GemGarden.Scenes;
 /// <summary>An overlay over the frozen round: resume it or go back to the title.</summary>
 public sealed class PauseScene(MainGame game) : Scene
 {
-    private readonly SelectionList _menu = new("RESUME", "QUIT TO TITLE");
-
     /// <summary>The play scene is drawn first, below this one, and stops updating while this one is on top.</summary>
     public override bool IsOverlay => true;
 
     public override void Enter()
     {
-        _menu.Moved += () => Audio.Play("select");
         Audio.PauseMusic(true);
+        Widgets.Content = new Panel(new Stack { Spacing = 4 }
+            .Add(new Label("PAUSED") { Color = UiTheme.Default.Accent })
+            .Add(new Button("RESUME", () => Game.Scenes.Pop()) { Width = 100 })
+            .Add(new Button("QUIT TO TITLE", () => Game.Scenes.Reset(new TitleScene(game), Transition.Fade())) { Width = 100 }))
+        { Padding = 8 };
+        Widgets.FocusChanged += change =>
+        {
+            if (change.From is not null) Audio.Play("select");
+        };
     }
 
     public override void Exit() => Audio.PauseMusic(false);
 
     public override void Update(float dt)
     {
-        if (Input.Pressed("pause") || Input.Pressed("cancel"))
-        {
-            Game.Scenes.Pop();
-            return;
-        }
-        switch (_menu.Update(Input))
-        {
-            case 0:
-                Game.Scenes.Pop();
-                break;
-            case 1:
-                Game.Scenes.Reset(new TitleScene(game), Transition.Fade());
-                break;
-        }
+        if (Input.Pressed("pause") || Input.Pressed("cancel")) Game.Scenes.Pop();
     }
 
-    public override void Draw(IRenderer r)
-    {
-        r.FillRect(new RectF(0, 0, Game.Width, Game.Height), Color.Black.WithAlpha(0.5f));
-        r.Panel(new RectF(96, 58, 128, 62), UiTheme.Default.Panel);
-        Font.DrawCentered(r, "PAUSED", new Vector2(160, 70), UiTheme.Default.Accent);
-        _menu.Draw(r, Font, new Vector2(116, 84), UiTheme.Default, Age);
-    }
+    public override void Draw(IRenderer r) => r.FillRect(new RectF(0, 0, Game.Width, Game.Height), Color.Black.WithAlpha(0.5f));
 }
 ```
 
-- `IsOverlay => true` makes the scene below draw first: the frozen garden stays visible under a darkening rectangle
-  and a panel (`r.Panel` draws a bordered box from the theme's `PanelStyle`).
+- `IsOverlay => true` makes the scene below draw first: the frozen garden stays visible under a darkening rectangle.
+- The menu is a `Panel` (a bordered box in the theme's colours) around a label and two buttons; a widget tree is
+  centred on the screen unless the scene moves it.
 - Only the top scene updates (unless an overlay sets `BlocksUpdateBelow => false`), so the round, its timer and its
   slimes stop while the menu is open.
 - `Enter` and `Exit` pause and resume the music. `Exit` runs whether the menu is closed with `Pop` or the stack is

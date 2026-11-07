@@ -550,26 +550,34 @@ had is swapped between them, "reset to defaults" restores the game's own default
 
 <!-- code: samples/Examples/Examples/RebindExample.cs#listen -->
 ```csharp
-public override void Update(float dt)
+private void Listen(string action)
 {
-    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
-    if (_listening is not null) return;                       // the next press goes to the listener, not here
-    if (_list.Update(Input) is not { } choice) return;
-    if (choice == Rebindable.Length)
-    {
-        BindDefaults(Input);
-        Save("DEFAULTS RESTORED");
-        return;
-    }
-    string action = Rebindable[choice];
-    _status = $"PRESS A KEY OR BUTTON FOR {action.ToUpperInvariant()} (ESC: KEEP)";
+    if (_listening is not null) return;                       // already waiting for a press
+    _status.Text = $"PRESS A KEY OR BUTTON FOR {action.ToUpperInvariant()} (ESC: KEEP)";
+    // The next press goes to the listener: not to gameplay, and not to the buttons.
     _listening = Game.InputSystem.ListenForPress(press =>
     {
         _listening = null;
-        if (press is { Kind: InputEventKind.KeyDown, Key: Key.Escape }) { _status = "UNCHANGED"; return; }
+        if (press is { Kind: InputEventKind.KeyDown, Key: Key.Escape }) { _status.Text = "UNCHANGED"; return; }
         Assign(Input, action, press);
         Save($"{action.ToUpperInvariant()} CHANGED");
     });
+}
+
+private void Reset()
+{
+    BindDefaults(Input);
+    Save("DEFAULTS RESTORED");
+}
+
+public override void Update(float dt)
+{
+    if (_listening is null && Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
+    foreach (var (action, label) in _shown)
+    {
+        var b = Input.GetBindings(action)!;
+        label.Text = string.Join(" ", b.Keys.Select(k => k.ToString()).Concat(b.Buttons.Select(p => "PAD " + p))).ToUpperInvariant();
+    }
 }
 ```
 
@@ -752,3 +760,33 @@ cannot be chosen yet, and the mouse moving the cursor. Source:
 [`MenuExample.cs`](../../samples/Examples/Examples/MenuExample.cs).
 
 Manual: [Menus](../manual/ui.md#menus).
+
+## Achievements
+
+Achievements shown with widgets: every achievement in a scrolling list, lit once unlocked, the progressive one with
+its count, and a banner that slides in for each unlock, one at a time. The tracker keeps the rules; the look is the
+example's. Source: [`AchievementsExample.cs`](../../samples/Examples/Examples/AchievementsExample.cs).
+
+<!-- code: samples/Examples/Examples/AchievementsExample.cs#banner -->
+```csharp
+/// <summary>The banner: hidden until an unlock slides it in.</summary>
+private Panel CreateBanner()
+{
+    _bannerName = new Label();
+    return Banner = new Panel(new Stack { Spacing = 1, Align = Align.Start }
+        .Add(new Label("ACHIEVEMENT UNLOCKED") { Color = UiTheme.Default.Accent })
+        .Add(_bannerName)) { Opacity = 0 };
+}
+
+private void ShowNext()
+{
+    if (!_waiting.TryDequeue(out var achievement)) { _showing = false; return; }
+    _showing = true;
+    _bannerName.Text = achievement.Name;
+    Audio.TryPlay("select", 0.5f);
+    Tweens.Add(0.3f, t => { Banner.Offset = new Vector2(0, (t - 1) * 20); Banner.Opacity = t; }, Ease.OutCubic);
+    Tweens.Add(0.3f, t => Banner.Opacity = 1 - t, delay: 2f, done: ShowNext);
+}
+```
+
+Manual: [Showing achievements](../manual/achievements.md#showing-achievements).

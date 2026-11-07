@@ -44,7 +44,7 @@ internal static class Diorama
 /// <summary>Title screen: animated logo, living diorama and the main menu.</summary>
 internal sealed class TitleScene(MeadowGame game) : Scene
 {
-    private readonly SelectionList _menu = new("Start", "Continue", "Controls", "Achievements", "Quit");
+    private readonly DemoKit.OptionList _menu = new("Start", "Continue", "Controls", "Achievements", "Quit");
     private bool _controls, _leaving;
     private float _logoDrop;
     private readonly List<(string Key, string What)> _controlRows = [];
@@ -102,7 +102,7 @@ internal sealed class TitleScene(MeadowGame game) : Scene
                 break;
             case 3:
                 game.Sfx("menu_select", 0.8f);
-                var list = new AchievementsScene(game.Achievements, Ui.Theme) { Title = "ACHIEVEMENTS" };
+                var list = new DemoKit.AchievementList(game.Achievements, Ui.Theme) { Title = "ACHIEVEMENTS" };
                 list.Moved += () => game.Sfx("menu_move", 0.7f);
                 list.Closed += () => game.Sfx("menu_back", 0.7f);
                 Game.Scenes.Push(list);

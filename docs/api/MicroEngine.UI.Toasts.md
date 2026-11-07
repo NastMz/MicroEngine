@@ -11,6 +11,7 @@ notifications. Purely visual: they never read input, so play continues underneat
 update and [Draw](MicroEngine.UI.Toasts.md#MicroEngine_UI_Toasts_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IFont_) after the scenes.
 
 ```csharp
+[Obsolete("Draw banners of your own, from widgets or from Game.DrawAboveScenes. It is removed in a later SDK release; see the migration notes.")]
 public sealed class Toasts
 ```
 

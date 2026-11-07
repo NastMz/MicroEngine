@@ -392,5 +392,5 @@ return DesktopLauncher.Run(new ExamplesGame(), args, catalog);
 | How do I wait or run a sequence? | Coroutines: `yield return Wait.Seconds(1)` ([Scenes](manual/scenes.md#coroutines)) |
 | How do I test my game automatically? | Headless runs and input scripts ([Testing your game](examples/testing.md)) |
 | How do I publish on the web? | `microengine package web`, then upload the folder ([Publishing on the web](examples/embedding.md)) |
-| How do I add achievements? | `UseAchievements` with a catalog ([Achievements](manual/achievements.md)) |
+| How do I add achievements? | `TrackAchievements` with a catalog ([Achievements](manual/achievements.md)) |
 | Is there an editor, physics or an ECS? | No editor and no ECS: MicroEngine is code-first. Physics: tile collision and physics worlds with a tile backend, and a Box2D backend in the repository, not published ([What it offers today](guide/status.md)) |

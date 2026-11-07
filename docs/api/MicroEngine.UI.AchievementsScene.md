@@ -10,6 +10,7 @@ Overlay listing a game's achievements: unlocked ones highlighted, pending ones d
 for progressive goals. Up/down moves the cursor (the list scrolls); any of [CloseActions](MicroEngine.UI.AchievementsScene.md#MicroEngine_UI_AchievementsScene_CloseActions) closes it.
 
 ```csharp
+[Obsolete("Build the list from widgets: rows in a ScrollView over AchievementTracker.All, as the Achievements example does. It is removed in a later SDK release; see the migration notes.")]
 public sealed class AchievementsScene : Scene, IStateHashed
 ```
 

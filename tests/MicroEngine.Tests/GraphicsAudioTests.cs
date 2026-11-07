@@ -1,3 +1,4 @@
+#pragma warning disable CS0618 // Typewriter, deprecated, is tested until it is removed
 using System.Numerics;
 using MicroEngine.Audio;
 using MicroEngine.Audio.Retro;

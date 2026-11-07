@@ -91,7 +91,14 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
     };
 
     // Achievements are declared before the engine is composed, so it adds their module.
-    public override void Configure(EngineBuilder builder) => UseAchievements(MeadowAchievements.Catalog, Store, MeadowRun.Scenes.Ui.Theme);
+    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(MeadowAchievements.Catalog, Store));
+
+    /// <summary>The unlock banners, drawn above every scene.</summary>
+    public DemoKit.AchievementBanners Banners { get; } = new() { Theme = MeadowRun.Scenes.Ui.Theme };
+
+    /// <summary>The unlock banners stay up while scenes change.</summary>
+    protected override void DrawAboveScenes(MicroEngine.Graphics.IRenderer canvas) => Banners.Draw(canvas, Font);
+
 
     protected override void Load()
     {
@@ -100,7 +107,7 @@ public sealed class MeadowGame(string? saveDirectory = null, LaunchOptions? laun
         Lights = new MicroEngine.Graphics.LightMap(Graphics, DecoArt.Glow(24)) { Darkness = 1 };
         foreach (var (name, clip) in SoundBank.All()) Audio.AddSound(name, clip);
         foreach (var (name, song, loop) in MusicBank.All()) Audio.AddMusic(name, song, loop);
-        AchievementToasts!.Top = 17;   // below the HUD row
+        Banners.Top = 17;   // below the HUD row
         Achievements.Unlocked += _ => Sfx("checkpoint", 0.8f);
         Save = Store.Load<SaveData>(SaveSlot) ?? new SaveData();
         Normalize(Save);

@@ -16,7 +16,7 @@ internal sealed class StartMenuScene(TrailDuelGame game) : Scene
 {
     private CachedText _timeText;
     private static readonly string[] Options = ["CREATURES", "BAG", "TRAIL LOG", "SAVE", "CONTROLS", "CLOSE"];
-    private SelectionList _list = null!;
+    private DemoKit.OptionList _list = null!;
     private string? _message;
     private float _messageTime, _open;
 
@@ -162,7 +162,7 @@ internal sealed class TrailLogScene(TrailDuelGame game) : Scene
     /// <summary>The dex number as three digits, built once per number.</summary>
     private static string DexNumber(int n) => (uint)n < (uint)DexNumbers.Length ? DexNumbers[n] ??= $"{n:000}" : $"{n:000}";
     /// <summary>One row per species; confirm picks nothing here, the list only browses.</summary>
-    private SelectionList _list = null!;
+    private DemoKit.OptionList _list = null!;
 
     public override void Enter() => _list = UiKit.List(Audio, [.. SpeciesDex.All.Select(s => s.Id)]);
 
