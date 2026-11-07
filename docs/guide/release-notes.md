@@ -17,6 +17,8 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   width), scrolling to the focused widget, with the wheel and with a drag, also one that starts on a button inside it.
   Any container can cut its children at its bounds (`Widget.ClipsChildren`) and take a drag from a child
   (`Widget.InterceptsDrag`), and widgets set nested clips with `UiContext.ClipTo`. The focused examples add a long list.
+- [Grids](../manual/ui.md#grids): `Grid` places children in rows of equal cells (`Columns`, `Spacing`, `Align`).
+  The focused examples add an inventory, and their list of examples is now built from widgets in a scrolling view.
 
 **Fixed**
 

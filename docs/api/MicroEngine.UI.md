@@ -31,6 +31,12 @@ A queue of dialogue pages shown in a panel with a typewriter and a speaker name 
 set, <code>{action}</code> in a page names the control that presses it on the player's device, and follows a device change
 while the page is showing. Games call [Update](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Update_System_Single_MicroEngine_Input_InputMap_System_String_) and [Draw](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IFont_MicroEngine_RectF_) from their own scene.
 
+ [Grid](MicroEngine.UI.Grid.md)
+
+Children in rows of [Columns](MicroEngine.UI.Grid.md#MicroEngine_UI_Grid_Columns) equal cells, left to right then top to bottom: an inventory, a level select,
+a character roster, a keyboard on screen. Every cell is as large as the largest child; hidden children take no cell.
+Focus moves between cells by direction, as it does anywhere in the tree.
+
  [Label](MicroEngine.UI.Label.md)
 
 Text that does nothing: a heading, a value, a hint. Lines are separated by <code>\n</code>.

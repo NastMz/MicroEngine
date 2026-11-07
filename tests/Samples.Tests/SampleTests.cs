@@ -123,6 +123,41 @@ public sealed class ExtendingTests
     }
 }
 
+/// <summary>The inventory example (UI guide): slots in a grid, the description following the focus.</summary>
+[TestClass]
+public sealed class InventoryExampleTests
+{
+    private static readonly MicroEngine.Input.DeviceId Mouse = new(2);
+
+    [TestMethod]
+    public void TheArrowsMoveByRowsAndColumnsAndConfirmUsesTheItem()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new InventoryExample());
+        var scene = game.Scenes.Current!;
+        var slots = scene.Widgets.AllWidgets.OfType<ItemSlot>().ToArray();
+        Assert.AreSame(slots[0], scene.Widgets.Focused);
+        SettingsExampleTests.Press(game, platform, "down");
+        Assert.AreSame(slots[4], scene.Widgets.Focused, "down is the slot below: four columns");
+        var about = scene.Widgets.AllWidgets.OfType<MicroEngine.UI.Label>().Single();
+        Assert.AreEqual("BREAKS CRACKED WALLS", about.Text, "the description follows the focus");
+        SettingsExampleTests.Press(game, platform, "confirm");
+        Assert.AreEqual(4, slots[4].Count);
+        Assert.AreEqual("USED BOMB, 4 LEFT", about.Text);
+    }
+
+    [TestMethod]
+    public void AClickOnASlotUsesItsItem()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new InventoryExample());
+        var key = game.Scenes.Current!.Widgets.AllWidgets.OfType<ItemSlot>().Single(s => s.Name == "KEY");
+        var at = game.Views.UiToCanvas(key.Bounds.Center);
+        platform.Devices.Send(MicroEngine.Input.InputEvent.PointerDown(Mouse, 0, MicroEngine.Input.PointerKind.Mouse, at));
+        platform.Devices.Send(MicroEngine.Input.InputEvent.PointerUp(Mouse, 0, MicroEngine.Input.PointerKind.Mouse, at));
+        SettingsExampleTests.Frame(game, platform);
+        Assert.AreEqual(0, key.Count);
+    }
+}
+
 /// <summary>The long list example (UI guide): thirty buttons in a scrolling view.</summary>
 [TestClass]
 public sealed class LongListExampleTests

@@ -113,4 +113,10 @@
 2060 capture 17-long-list.png
 2066 press pause
 2080 press down
-2090 quit
+2090 press confirm
+2130 press right
+2136 press down
+2142 capture 18-inventory.png
+2150 press pause
+2164 press down
+2174 quit
