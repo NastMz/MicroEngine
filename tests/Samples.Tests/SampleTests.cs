@@ -213,6 +213,35 @@ public sealed class SkinExampleTests
     }
 }
 
+/// <summary>The title menu example (focused examples): a menu of the widget tree with a cursor sound.</summary>
+[TestClass]
+public sealed class MenuExampleTests
+{
+    private static readonly MicroEngine.Input.DeviceId Mouse = new(2);
+
+    [TestMethod]
+    public void TheCursorSkipsWhatCannotBeChosenCountsItsMovesAndFollowsTheMouse()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new MenuExample());
+        var scene = (MenuExample)game.Scenes.Current!;
+        Assert.AreSame(scene.Items[0], scene.Widgets.Focused);
+        Assert.AreEqual(0, scene.Moves, "the first focus is not a move");
+        SettingsExampleTests.Press(game, platform, "down");
+        Assert.AreSame(scene.Items[2], scene.Widgets.Focused, "CONTINUE cannot be chosen yet: the cursor skips it");
+        Assert.AreEqual(1, scene.Moves);
+        SettingsExampleTests.Press(game, platform, "confirm");
+        Assert.AreEqual("OPTIONS WOULD OPEN HERE", scene.Result.Text);
+
+        var first = scene.Items[0].Bounds;
+        platform.Devices.Send(MicroEngine.Input.InputEvent.PointerMove(Mouse, 0, MicroEngine.Input.PointerKind.Mouse,
+            game.Views.UiToCanvas(new System.Numerics.Vector2(first.X + first.Width / 2, first.Y + first.Height / 2))));
+        SettingsExampleTests.Frame(game, platform);
+        SettingsExampleTests.Frame(game, platform);
+        Assert.AreSame(scene.Items[0], scene.Widgets.Focused, "the mouse over an item moves the cursor there");
+        Assert.AreEqual(2, scene.Moves);
+    }
+}
+
 /// <summary>The inventory example (UI guide): slots in a grid, the description following the focus.</summary>
 [TestClass]
 public sealed class InventoryExampleTests

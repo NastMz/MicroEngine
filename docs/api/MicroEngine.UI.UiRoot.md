@@ -416,4 +416,18 @@ public event Action? Cancelled
 
  [Action](https://learn.microsoft.com/dotnet/api/system.action)?
 
+### <a id="MicroEngine_UI_UiRoot_FocusChanged"></a> FocusChanged
+
+Raised whenever the focus moves, by the arrows, a press, [Focus](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_Focus_MicroEngine_UI_Widget_) or the first focus
+[AutoFocus](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_AutoFocus) gives (whose [From](MicroEngine.UI.FocusChange.md#MicroEngine_UI_FocusChange_From) is null): for a cursor sound, or a description
+that follows the focus.
+
+```csharp
+public event Action<FocusChange>? FocusChanged
+```
+
+#### Event Type
+
+ [Action](https://learn.microsoft.com/dotnet/api/system.action\-1)<[FocusChange](MicroEngine.UI.FocusChange.md)\>?
+
 </div>

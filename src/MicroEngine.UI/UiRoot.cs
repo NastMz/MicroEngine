@@ -5,6 +5,11 @@ using MicroEngine.Kernel;
 
 namespace MicroEngine.UI;
 
+/// <summary>A move of the focus, as <see cref="UiRoot.FocusChanged"/> reports it.</summary>
+/// <param name="From">The widget that had the focus, or null.</param>
+/// <param name="To">The widget that has it now, or null.</param>
+public readonly record struct FocusChange(Widget? From, Widget? To);
+
 /// <summary>
 /// The actions engine widgets answer to. A member left null (the default) is the input map's own name for it
 /// (<see cref="InputMap.Names"/>), read at every update: a game that renames <c>confirm</c> with
@@ -133,6 +138,12 @@ public sealed class UiRoot : IInputLayer, IStateHashed
     public Widget? Pressed { get; private set; }
     /// <summary>Raised when cancel is pressed and no focused widget used it; the press is then consumed (for example to close a menu).</summary>
     public event Action? Cancelled;
+    /// <summary>
+    /// Raised whenever the focus moves, by the arrows, a press, <see cref="Focus"/> or the first focus
+    /// <see cref="AutoFocus"/> gives (whose <see cref="FocusChange.From"/> is null): for a cursor sound, or a description
+    /// that follows the focus.
+    /// </summary>
+    public event Action<FocusChange>? FocusChanged;
 
     private UiContext Context => new(Font ?? throw new InvalidOperationException("Set UiRoot.Font before laying out or drawing the UI."),
         Theme, UiTheme.Unit(Font), Time);
@@ -165,6 +176,7 @@ public sealed class UiRoot : IInputLayer, IStateHashed
         Focused = widget;
         previous?.OnFocusChanged(false);
         widget?.OnFocusChanged(true);
+        FocusChanged?.Invoke(new FocusChange(previous, widget));
         return true;
     }
 

@@ -144,6 +144,32 @@ public sealed class WidgetTests
     }
 
     [TestMethod]
+    public void Every_change_of_focus_is_announced_with_the_widget_it_left_and_the_one_it_reached()
+    {
+        Button a = new("A"), b = new("B"), c = new("C") { Enabled = false };
+        var changes = new List<FocusChange>();
+        var scene = new UiScene(ui =>
+        {
+            ui.FocusChanged += changes.Add;
+            ui.Content = new Stack().Add(a).Add(b).Add(c);
+        });
+        var (game, platform) = Start(scene);
+        var root = scene.Widgets;
+        CollectionAssert.AreEqual(new[] { new FocusChange(null, a) }, changes, "the first focus comes from nowhere");
+        Press(game, platform, Key.Down);
+        Assert.AreEqual(new FocusChange(a, b), changes[^1], "a move by the arrows");
+        Press(game, platform, Key.Down);
+        Assert.AreEqual(new FocusChange(b, a), changes[^1], "the disabled widget is skipped");
+        Click(game, platform, Center(b));
+        Assert.AreEqual(new FocusChange(a, b), changes[^1], "a press moves the focus too");
+        int count = changes.Count;
+        root.Focus(b);
+        Assert.AreEqual(count, changes.Count, "focusing the focused widget changes nothing");
+        root.Focus(null);
+        Assert.AreEqual(new FocusChange(b, null), changes[^1]);
+    }
+
+    [TestMethod]
     public void Up_and_down_move_the_focus_through_a_vertical_stack_and_wrap()
     {
         Button a = new("A"), b = new("B"), c = new("C");

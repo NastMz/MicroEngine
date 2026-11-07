@@ -128,4 +128,9 @@
 2330 press down
 2340 capture 20-skin.png
 2346 press pause
-2360 quit
+2360 press down
+2370 press confirm
+2410 press down
+2450 capture 21-menu.png
+2456 press pause
+2470 quit

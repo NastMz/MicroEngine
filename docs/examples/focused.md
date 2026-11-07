@@ -744,3 +744,11 @@ stretched as nine-slices to the size the widgets measure. Source:
 [`SkinExample.cs`](../../samples/Examples/Examples/SkinExample.cs).
 
 Manual: [Your own look](../manual/ui.md#your-own-look).
+
+## Title menu
+
+A title menu on the widget tree: a cursor that bobs beside the focused item, a sound when it moves, an option that
+cannot be chosen yet, and the mouse moving the cursor. Source:
+[`MenuExample.cs`](../../samples/Examples/Examples/MenuExample.cs).
+
+Manual: [Menus](../manual/ui.md#menus).

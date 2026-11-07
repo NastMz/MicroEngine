@@ -32,6 +32,9 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   kept, drawn with `DrawNineSlice`. `PanelStyle.Image` draws panels and buttons with one (`ImageTint` colours it), so
   a game gives the widgets its own frames; a focused button tints its image with the accent. The focused examples add
   a menu with a wooden and a parchment frame.
+- [Menus](../manual/ui.md#menus): `UiRoot.FocusChanged` reports every move of the focus with the widget it left and
+  the one it reached (`FocusChange`), for a cursor sound or a description that follows the cursor. The focused examples
+  add a title menu built on the widget tree, with a cursor that follows the mouse.
 
 **Fixed**
 
