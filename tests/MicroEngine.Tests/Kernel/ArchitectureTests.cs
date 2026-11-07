@@ -106,7 +106,8 @@ public sealed class ArchitectureTests
         foreach (var project in Directory.GetFiles(root, "*.csproj", SearchOption.AllDirectories))
         {
             string relative = Path.GetRelativePath(root, project).Replace('\\', '/');
-            if (relative.Split('/').Any(part => part is "bin" or "obj" or "experiments" or "node_modules")) continue;
+            // Hidden folders (.git, local tool copies of the repository such as .claude/worktrees) are not the repository.
+            if (relative.Split('/').Any(part => part is "bin" or "obj" or "experiments" or "node_modules" || part.StartsWith('.'))) continue;
             if (Path.GetFileNameWithoutExtension(project) == Migration
                 || XDocument.Load(project).Descendants("ProjectReference")
                     .Any(r => Path.GetFileNameWithoutExtension(r.Attribute("Include")!.Value.Replace('\\', '/')) == Migration))
