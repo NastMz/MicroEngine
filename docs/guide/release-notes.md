@@ -4,6 +4,16 @@ One section per SDK version, newest first. The SDK is in Alpha: a version may ch
 every such change is in the [migration notes](../migrations.md). Releases are tagged `sdk-v<version>`; the demo
 releases (`v0.1.0`, `v0.2.0`...) are separate.
 
+## Next release
+
+**New**
+
+- [Pointer events on widgets](../manual/ui.md#controls-of-your-own): a widget receives the press that starts on it
+  (`OnPointerDown`), that press's moves wherever the pointer goes (`OnPointerMove`), its release (`OnPointerUp`) or its
+  cancellation (`OnPointerCancel`), with positions in UI units. The wheel goes to the widget under the pointer and up
+  to the first container that takes it (`OnWheel`). The focused examples add a settings screen whose slider, toggle
+  and value selector are widgets built on them.
+
 ## 0.5.0-alpha.1
 
 **This version is a breaking Alpha.** The engine is rebuilt as modules. Several public APIs change; the

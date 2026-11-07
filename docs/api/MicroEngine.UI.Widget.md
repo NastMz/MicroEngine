@@ -344,7 +344,7 @@ protected virtual bool OnAction(UiAction action)
 
 ### <a id="MicroEngine_UI_Widget_OnClick"></a> OnClick\(\)
 
-Called when a pointer press that started on the widget is released on it.
+Called when a pointer press that started on the widget is released on it, after [OnPointerUp](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_OnPointerUp_System_Numerics_Vector2_).
 
 ```csharp
 protected virtual void OnClick()
@@ -361,6 +361,69 @@ protected virtual void OnFocusChanged(bool focused)
 #### Parameters
 
 `focused` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_UI_Widget_OnPointerCancel"></a> OnPointerCancel\(\)
+
+Called when a press the widget holds is cancelled (the system took the touch, the widget left the tree); no release or click follows.
+
+```csharp
+protected virtual void OnPointerCancel()
+```
+
+### <a id="MicroEngine_UI_Widget_OnPointerDown_System_Numerics_Vector2_"></a> OnPointerDown\(Vector2\)
+
+Called when a pointer press starts on the widget (the focusable widget under the pointer, or its nearest focusable
+container). <code class="paramref">position</code> is in UI units, like [Bounds](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Bounds). The widget then holds the press:
+it receives the press's moves and its release wherever the pointer goes.
+
+```csharp
+protected virtual void OnPointerDown(Vector2 position)
+```
+
+#### Parameters
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_UI_Widget_OnPointerMove_System_Numerics_Vector2_"></a> OnPointerMove\(Vector2\)
+
+Called when the pointer of a press the widget holds moves, inside the widget or not (dragging a slider's handle); <code class="paramref">position</code> is in UI units.
+
+```csharp
+protected virtual void OnPointerMove(Vector2 position)
+```
+
+#### Parameters
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_UI_Widget_OnPointerUp_System_Numerics_Vector2_"></a> OnPointerUp\(Vector2\)
+
+Called when a press the widget holds is released, inside the widget or not; <code class="paramref">position</code> is in UI units. A release on the widget then also calls [OnClick](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_OnClick).
+
+```csharp
+protected virtual void OnPointerUp(Vector2 position)
+```
+
+#### Parameters
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_UI_Widget_OnWheel_System_Numerics_Vector2_"></a> OnWheel\(Vector2\)
+
+Called for the wheel over the widget (<code class="paramref">delta</code> in notches: y positive away from the player, x positive
+to the right). Return true when the widget used it; otherwise its container is asked, up to the root.
+
+```csharp
+protected virtual bool OnWheel(Vector2 delta)
+```
+
+#### Parameters
+
+`delta` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_UI_Widget_Release_MicroEngine_UI_Widget_"></a> Release\(Widget\)
 

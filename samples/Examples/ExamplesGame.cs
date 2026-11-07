@@ -31,6 +31,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Dialogue", g => new DialogueExample()),
         ("Custom input source", g => new CustomSourceExample()),
         ("Controls and rebinding", g => new RebindExample(g.SaveDirectory)),
+        ("Settings screen (widgets)", g => new SettingsExample()),
     ];
 
     public string? SaveDirectory { get; } = saveDirectory;

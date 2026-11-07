@@ -172,8 +172,30 @@ public abstract class Widget
     /// <summary>Called for an action while the widget has the focus; return true when it acted, which consumes the action.</summary>
     protected internal virtual bool OnAction(UiAction action) => false;
 
-    /// <summary>Called when a pointer press that started on the widget is released on it.</summary>
+    /// <summary>Called when a pointer press that started on the widget is released on it, after <see cref="OnPointerUp"/>.</summary>
     protected internal virtual void OnClick() { }
+
+    /// <summary>
+    /// Called when a pointer press starts on the widget (the focusable widget under the pointer, or its nearest focusable
+    /// container). <paramref name="position"/> is in UI units, like <see cref="Bounds"/>. The widget then holds the press:
+    /// it receives the press's moves and its release wherever the pointer goes.
+    /// </summary>
+    protected internal virtual void OnPointerDown(Vector2 position) { }
+
+    /// <summary>Called when the pointer of a press the widget holds moves, inside the widget or not (dragging a slider's handle); <paramref name="position"/> is in UI units.</summary>
+    protected internal virtual void OnPointerMove(Vector2 position) { }
+
+    /// <summary>Called when a press the widget holds is released, inside the widget or not; <paramref name="position"/> is in UI units. A release on the widget then also calls <see cref="OnClick"/>.</summary>
+    protected internal virtual void OnPointerUp(Vector2 position) { }
+
+    /// <summary>Called when a press the widget holds is cancelled (the system took the touch, the widget left the tree); no release or click follows.</summary>
+    protected internal virtual void OnPointerCancel() { }
+
+    /// <summary>
+    /// Called for the wheel over the widget (<paramref name="delta"/> in notches: y positive away from the player, x positive
+    /// to the right). Return true when the widget used it; otherwise its container is asked, up to the root.
+    /// </summary>
+    protected internal virtual bool OnWheel(Vector2 delta) => false;
 
     /// <summary>Called when the widget gains (true) or loses (false) the focus.</summary>
     protected internal virtual void OnFocusChanged(bool focused) { }
