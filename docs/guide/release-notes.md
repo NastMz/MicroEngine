@@ -39,6 +39,11 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   achievements on without the engine's banners, and `Game.DrawAboveScenes` draws what belongs to the game above every
   scene and transition, such as an unlock banner. The focused examples add an achievements list and unlock banners
   built from widgets.
+- [Selection and the clipboard in text fields](../manual/ui.md#text-entry): a `TextField` selects with Shift and the
+  arrows, Home or End, or with a drag of the pointer (`Select`, `SelectAll`, `SelectedText`), and Ctrl or Command with
+  A, C, X and V selects all, copies, cuts and pastes; typing replaces the selection. `IClipboard` is the system
+  clipboard's text, a platform capability on desktops and in browsers, and `Copy`, `Cut` and `Paste` let a game's own
+  buttons use it. The focused examples add a name entry with copy and paste buttons.
 
 **Deprecated**
 

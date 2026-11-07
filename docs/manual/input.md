@@ -457,6 +457,7 @@ Which backends deliver what:
 | Mouse and wheel | yes | yes | sent by tests |
 | Gamepads | every pad, each with its own id, hot-plugged, its type (button names) and the player number it shows | pads 0 to 3, family from the pad's name | sent by tests |
 | Rumble (`IGamepadRumble`) | where the pad has motors | none | recorded (`Devices.Rumbles`) |
+| Clipboard text (`IClipboard`) | the system clipboard; in browsers, the page's latest paste, and copies sent to the system clipboard | the system clipboard | `HeadlessPlatform.Clipboard` |
 | Touches | fingers through the touch screen (in browsers, the page's Pointer Events), as pointers | none: a raylib window reports no touches | `HeadlessPlatform.TouchScreen` |
 
 raylib polls its devices once per frame, so a pad button pressed and released between two frames is not seen there;

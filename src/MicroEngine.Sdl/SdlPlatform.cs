@@ -265,6 +265,7 @@ public sealed unsafe class SdlPlatform : IPlatform, IPlatformDiagnostics, IDispl
         _capabilities.Add<IKeyLabels>(_input);
         _capabilities.Add<IGamepadRumble>(_input);
         _capabilities.Add<ITextInputControl>(_input);
+        _capabilities.Add<IClipboard>(_page is not null ? new PageClipboard(_page.Feed) : new SdlClipboard());
         // Phones announce backgrounding from their own thread; a page announces it through visibilitychange (BrowserPage.Hidden).
         if (!_browser)
         {

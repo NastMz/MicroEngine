@@ -95,6 +95,19 @@ public bool AutoFocus { get; set; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_UI_UiRoot_Clipboard"></a> Clipboard
+
+The clipboard text fields copy, cut and paste through (Ctrl or Command with C, X and V); null: they cannot. A
+scene's widgets get the platform's ([IClipboard](MicroEngine.Input.IClipboard.md)).
+
+```csharp
+public IClipboard? Clipboard { get; set; }
+```
+
+#### Property Value
+
+ [IClipboard](MicroEngine.Input.IClipboard.md)?
+
 ### <a id="MicroEngine_UI_UiRoot_Content"></a> Content
 
 The widget tree shown; setting it drops the focus, the hover and any press.

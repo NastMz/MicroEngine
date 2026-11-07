@@ -28,6 +28,9 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
     private bool _suspended, _quitAsked, _disposed;
     private bool? _focused;
 
+    /// <summary>The clipboard (the <see cref="IClipboard"/> capability): tests put text on it or read what was copied.</summary>
+    public MemoryClipboard Clipboard { get; } = new();
+
     /// <summary>Creates a headless platform whose renderer reports a <paramref name="width"/> × <paramref name="height"/> canvas.</summary>
     public HeadlessPlatform(int width = 320, int height = 180) : this(width, height, null) { }
 
@@ -43,6 +46,7 @@ public sealed class HeadlessPlatform : IPlatform, IScreenView, IViewCapture
         _capabilities.Add<IKeyLabels>(Devices);
         _capabilities.Add<IGamepadRumble>(Devices);
         _capabilities.Add<ITextInputControl>(Devices);
+        _capabilities.Add<IClipboard>(Clipboard);
         _capabilities.Add(_preset);
         _capabilities.Add<IScreenView>(this);
         _capabilities.Add<IViewCapture>(this);

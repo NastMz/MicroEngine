@@ -741,6 +741,102 @@ public sealed class WidgetTests
         Assert.IsFalse(platform.Devices.TextInput.Active, "losing the focus turns text input off");
     }
 
+    /// <summary>Presses <paramref name="key"/> while <paramref name="modifier"/> is held.</summary>
+    private static void Chord(Game game, HeadlessPlatform platform, Key modifier, Key key)
+    {
+        platform.Devices.Send(InputEvent.KeyDown(Keyboard, modifier));
+        Press(game, platform, key);
+        platform.Devices.Send(InputEvent.KeyUp(Keyboard, modifier));
+        Frame(game, platform);
+    }
+
+    [TestMethod]
+    public void A_text_field_selects_with_shift_and_the_pointer_and_typing_replaces_the_selection()
+    {
+        TextField? field = null;
+        var scene = new UiScene(ui => ui.Content = new Panel(field = new TextField()));
+        var (game, platform) = Start(scene);
+        platform.Devices.Send(InputEvent.TextInput(Keyboard, "hello world"));
+        Frame(game, platform);
+        Assert.IsFalse(field!.HasSelection);
+
+        platform.Devices.Send(InputEvent.KeyDown(Keyboard, Key.LeftShift));
+        for (int i = 0; i < 5; i++) Press(game, platform, Key.Left);
+        platform.Devices.Send(InputEvent.KeyUp(Keyboard, Key.LeftShift));
+        Frame(game, platform);
+        Assert.AreEqual("world", field.SelectedText, "Shift with the arrows extends the selection from where it started");
+        Assert.AreEqual((6, 5), (field.SelectionStart, field.SelectionLength));
+        Assert.AreEqual(0, scene.GameplayUps, "Shift and the arrows stayed in the field");
+
+        platform.Devices.Send(InputEvent.TextInput(Keyboard, "there"));
+        Frame(game, platform);
+        Assert.AreEqual("hello there", field.Text, "typing replaces the selection");
+        Assert.IsFalse(field.HasSelection);
+
+        Chord(game, platform, Key.LeftShift, Key.Home);
+        Assert.AreEqual("hello there", field.SelectedText);
+        Press(game, platform, Key.Right);
+        Assert.AreEqual((false, 11), (field.HasSelection, field.Caret), "an arrow without Shift ends the selection at its side");
+
+        Chord(game, platform, Key.LeftControl, Key.A);
+        Assert.AreEqual("hello there", field.SelectedText, "Ctrl+A selects everything");
+        Press(game, platform, Key.Backspace);
+        Assert.AreEqual("", field.Text, "Backspace deletes the selection");
+
+        field.Text = "abcdef";
+        Frame(game, platform);
+        var b = field.Bounds;
+        float y = b.Y + b.Height / 2;
+        platform.Devices.Send(InputEvent.PointerDown(Mouse, 0, PointerKind.Mouse, game.Views.UiToCanvas(new Vector2(b.X + 1, y))));
+        Frame(game, platform);
+        Assert.AreEqual((0, false), (field.Caret, field.HasSelection), "a press puts the caret where it lands");
+        platform.Devices.Send(InputEvent.PointerMove(Mouse, 0, PointerKind.Mouse, game.Views.UiToCanvas(new Vector2(b.Right - 1, y))));
+        platform.Devices.Send(InputEvent.PointerUp(Mouse, 0, PointerKind.Mouse, game.Views.UiToCanvas(new Vector2(b.Right - 1, y))));
+        Frame(game, platform);
+        Assert.AreEqual("abcdef", field.SelectedText, "dragging selects");
+
+        field.Select(1, 3);
+        Assert.AreEqual(("bc", 3), (field.SelectedText, field.Caret), "Select sets the anchor and the caret");
+        field.Text = "new";
+        Assert.IsFalse(field.HasSelection, "setting the text ends the selection");
+    }
+
+    [TestMethod]
+    public void A_text_field_copies_cuts_and_pastes_through_the_platform_clipboard()
+    {
+        TextField? field = null;
+        var scene = new UiScene(ui => ui.Content = new Panel(field = new TextField { MaxLength = 10 }));
+        var (game, platform) = Start(scene);
+        Assert.AreSame(platform.Clipboard, scene.Widgets.Clipboard, "a scene's widgets use the platform's clipboard");
+        field!.Text = "copy me";
+
+        Chord(game, platform, Key.LeftControl, Key.A);
+        Chord(game, platform, Key.LeftControl, Key.C);
+        Assert.AreEqual("copy me", platform.Clipboard.Text, "Ctrl+C copies the selection");
+        Assert.AreEqual("copy me", field.Text);
+
+        Press(game, platform, Key.End);
+        Chord(game, platform, Key.LeftShift, Key.Home);
+        Chord(game, platform, Key.LeftSuper, Key.X);
+        Assert.AreEqual(("copy me", ""), (platform.Clipboard.Text, field.Text), "Command+X (macOS) cuts as Ctrl+X does");
+
+        platform.Clipboard.Text = "two\r\nlines that are long";
+        Chord(game, platform, Key.LeftControl, Key.V);
+        Assert.AreEqual("two lines ", field.Text, "a paste is one line, cut to MaxLength");
+        Assert.AreEqual(0, scene.GameplayUps + scene.GameplayConfirms, "the shortcuts stayed in the field");
+
+        field.Select(0, 3);
+        Assert.IsTrue(field.Copy());
+        Assert.AreEqual("two", platform.Clipboard.Text, "Copy, Cut and Paste are there for buttons of a game's own");
+        Assert.IsTrue(field.Paste());
+        Assert.AreEqual("two lines ", field.Text);
+
+        var detached = new TextField { Text = "abc" };
+        detached.Select(0, 3);
+        Assert.IsFalse(detached.Copy(), "a field outside a root with a clipboard copies nothing");
+        Assert.IsFalse(detached.Paste());
+    }
+
     [TestMethod]
     public void The_UI_state_is_part_of_the_scene_state_hash()
     {

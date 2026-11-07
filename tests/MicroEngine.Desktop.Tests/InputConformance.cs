@@ -162,6 +162,26 @@ public abstract class InputConformance
     }
 
     [TestMethod]
+    public void The_clipboard_gives_back_the_text_put_on_it()
+    {
+        using var rig = new Rig(this);
+        rig.Frames(1);
+        Assert.IsTrue(rig.Host.TryGetCapability<IClipboard>(out var clipboard), "the host offers the system clipboard");
+        string? before = clipboard.GetText();
+        try
+        {
+            string text = $"MicroEngine clipboard check {Guid.NewGuid():N}";
+            Assert.IsTrue(clipboard.SetText(text));
+            rig.Frames(1);
+            Assert.AreEqual(text, clipboard.GetText());
+        }
+        finally
+        {
+            if (before is not null) clipboard.SetText(before); // the machine's clipboard as the test found it
+        }
+    }
+
+    [TestMethod]
     public void Losing_the_focus_releases_held_keys()
     {
         using var rig = new Rig(this);

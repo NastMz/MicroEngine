@@ -83,7 +83,7 @@ public abstract class Game : IEngineModule, IStateHashed
 
     /// <summary>
     /// A scene's widgets (<see cref="Scene.Widgets"/>): actions from <see cref="Input"/> under its names, typing through the
-    /// text channel, the game's font, the pointer mapped into UI units by <see cref="Views"/>. The first one adds the
+    /// text channel, the platform's clipboard, the game's font, the pointer mapped into UI units by <see cref="Views"/>. The first one adds the
     /// layer that gives the top scene's widgets their input, above every other layer.
     /// </summary>
     internal UI.UiRoot CreateUi()
@@ -95,6 +95,7 @@ public abstract class Game : IEngineModule, IStateHashed
         }
         return new UI.UiRoot(Input, InputSystem.Text)
         {
+            Clipboard = TryGetCapability(out IClipboard? clipboard) ? clipboard : null,
             Font = Font,
             PointerToUi = Views.CanvasToUi,
             UiToCanvas = Views.UiToCanvas,
