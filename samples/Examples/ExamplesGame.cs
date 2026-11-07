@@ -34,6 +34,7 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Settings screen (widgets)", g => new SettingsExample()),
         ("Long list (scrolling)", g => new LongListExample()),
         ("Inventory (grid)", g => new InventoryExample()),
+        ("Bubbles and banners (layer)", g => new LayerExample()),
     ];
 
     public string? SaveDirectory { get; } = saveDirectory;

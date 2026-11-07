@@ -720,3 +720,25 @@ public override void Enter()
 ```
 
 Manual: [Grids](../manual/ui.md#grids).
+
+## Bubbles and banners
+
+A speech bubble that follows a character walking in the world, and a banner that slides into the top-right corner and
+fades away (confirm shows it). Both are plain panels on a `Layer`; tweens move them through their offset and opacity.
+Source: [`LayerExample.cs`](../../samples/Examples/Examples/LayerExample.cs).
+
+<!-- code: samples/Examples/Examples/LayerExample.cs#banner -->
+```csharp
+/// <summary>Slides the banner in from the right as it fades in, then fades it out two seconds later.</summary>
+private void ShowBanner()
+{
+    Tweens.Add(0.4f, t =>
+    {
+        Banner.Offset = new Vector2((1 - t) * 60, 0);
+        Banner.Opacity = t;
+    }, Ease.OutCubic);
+    Tweens.Add(0.4f, t => Banner.Opacity = 1 - t, delay: 2.4f);
+}
+```
+
+Manual: [Placing widgets anywhere](../manual/ui.md#placing-widgets-anywhere).

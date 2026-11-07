@@ -123,6 +123,41 @@ public sealed class ExtendingTests
     }
 }
 
+/// <summary>The layer example (UI guide): a bubble following a character, a banner sliding in and fading out.</summary>
+[TestClass]
+public sealed class LayerExampleTests
+{
+    [TestMethod]
+    public void TheBubbleStaysOverTheCharacterAsItWalks()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new LayerExample());
+        var scene = (LayerExample)game.Scenes.Current!;
+        for (int i = 0; i < 60; i++)
+        {
+            SettingsExampleTests.Frame(game, platform);
+            var head = game.Views.CanvasToUi(scene.Character);
+            var b = scene.Bubble.Bounds;
+            Assert.IsTrue(Math.Abs(b.Center.X - head.X) <= 2 && b.Bottom <= head.Y, $"step {i}: the bubble {b} sits over the head {head}");
+        }
+    }
+
+    [TestMethod]
+    public void ConfirmSlidesTheBannerInThenItFadesOut()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new LayerExample());
+        var scene = (LayerExample)game.Scenes.Current!;
+        Assert.AreEqual(0, scene.Banner.Opacity, "hidden at first");
+        SettingsExampleTests.Press(game, platform, "confirm");
+        for (int i = 0; i < 30; i++) SettingsExampleTests.Frame(game, platform);
+        Assert.AreEqual(1, scene.Banner.Opacity, 1e-3f);
+        Assert.AreEqual(System.Numerics.Vector2.Zero, scene.Banner.Offset, "in place");
+        var corner = game.Scenes.Current!.Widgets.Size;
+        Assert.IsTrue(Math.Abs(scene.Banner.Bounds.Right - (corner.X - 4)) <= 1, "four units from the right edge");
+        for (int i = 0; i < 240; i++) SettingsExampleTests.Frame(game, platform);
+        Assert.AreEqual(0, scene.Banner.Opacity, 1e-3f, "faded out again");
+    }
+}
+
 /// <summary>The inventory example (UI guide): slots in a grid, the description following the focus.</summary>
 [TestClass]
 public sealed class InventoryExampleTests
@@ -169,11 +204,11 @@ public sealed class LongListExampleTests
     {
         var (game, platform) = SettingsExampleTests.Start(new LongListExample());
         var scene = (LongListExample)game.Scenes.Current!;
-        Assert.IsGreaterThan(0, scene.List.MaxOffset, "thirty levels do not fit");
+        Assert.IsGreaterThan(0, scene.List.MaxScroll, "thirty levels do not fit");
         SettingsExampleTests.Press(game, platform, "up");                 // wraps from the first level to the last
         SettingsExampleTests.Press(game, platform, "confirm");
         Assert.AreEqual("LEVEL 30", scene.Picked);
-        Assert.AreEqual(scene.List.MaxOffset, scene.List.Offset, "the view scrolled to the end to show it");
+        Assert.AreEqual(scene.List.MaxScroll, scene.List.Scroll, "the view scrolled to the end to show it");
     }
 
     [TestMethod]
@@ -184,7 +219,7 @@ public sealed class LongListExampleTests
         var inside = new System.Numerics.Vector2(scene.List.Bounds.X + 20, scene.List.Bounds.Y + 20);
         platform.Devices.Send(MicroEngine.Input.InputEvent.WheelMoved(Mouse, new System.Numerics.Vector2(0, -2), game.Views.UiToCanvas(inside)));
         SettingsExampleTests.Frame(game, platform);
-        Assert.IsGreaterThan(0, scene.List.Offset);
+        Assert.IsGreaterThan(0, scene.List.Scroll);
 
         SettingsExampleTests.Frame(game, platform);                         // laid out at the new offset
         var level = scene.Widgets.AllWidgets.OfType<MicroEngine.UI.Button>().First(b => scene.List.Bounds.Contains(b.Bounds.Center));

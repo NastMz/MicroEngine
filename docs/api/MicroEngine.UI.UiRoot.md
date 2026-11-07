@@ -262,7 +262,7 @@ public bool WrapFocus { get; set; }
 
 ### <a id="MicroEngine_UI_UiRoot_Contains_System_Numerics_Vector2_"></a> Contains\(Vector2\)
 
-Whether <code class="paramref">uiPoint</code> (UI units) lies on the content, where the root takes the pointer.
+Whether <code class="paramref">uiPoint</code> (UI units) lies on a widget of the content that takes the pointer ([BlocksPointer](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_BlocksPointer)): there the root takes presses and the wheel.
 
 ```csharp
 public bool Contains(Vector2 uiPoint)

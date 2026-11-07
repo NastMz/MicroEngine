@@ -216,8 +216,8 @@ public sealed class UiRoot : IInputLayer, IStateHashed
             if (w.CanFocus) _focusable.Add(w);
     }
 
-    /// <summary>Whether <paramref name="uiPoint"/> (UI units) lies on the content, where the root takes the pointer.</summary>
-    public bool Contains(Vector2 uiPoint) => _content is { Visible: true } c && c.Bounds.Contains(uiPoint);
+    /// <summary>Whether <paramref name="uiPoint"/> (UI units) lies on a widget of the content that takes the pointer (<see cref="Widget.BlocksPointer"/>): there the root takes presses and the wheel.</summary>
+    public bool Contains(Vector2 uiPoint) => WidgetAt(uiPoint) is not null;
 
     /// <summary>
     /// The deepest visible widget under <paramref name="uiPoint"/>, or null; the last one drawn where several overlap.
@@ -227,8 +227,9 @@ public sealed class UiRoot : IInputLayer, IStateHashed
 
     private static Widget? Deepest(Widget widget, Vector2 point)
     {
-        Widget? hit = widget.Bounds.Contains(point) ? widget : null;
-        if (hit is null && widget.ClipsChildren) return null;
+        bool inside = widget.Bounds.Contains(point);
+        if (!inside && widget.ClipsChildren) return null;
+        Widget? hit = inside && widget.BlocksPointer ? widget : null;
         foreach (var child in widget.Children)
             if (child.Visible && Deepest(child, point) is { } deeper) hit = deeper;
         return hit;

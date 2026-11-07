@@ -25,6 +25,7 @@ public abstract class Widget
 [Button](MicroEngine.UI.Button.md), 
 [Grid](MicroEngine.UI.Grid.md), 
 [Label](MicroEngine.UI.Label.md), 
+[Layer](MicroEngine.UI.Layer.md), 
 [Panel](MicroEngine.UI.Panel.md), 
 [ScrollView](MicroEngine.UI.ScrollView.md), 
 [Stack](MicroEngine.UI.Stack.md), 
@@ -39,6 +40,19 @@ protected Widget()
 ```
 
 ## Properties
+
+### <a id="MicroEngine_UI_Widget_BlocksPointer"></a> BlocksPointer
+
+Whether a press on the widget itself, where no child is, belongs to the UI (true by default). A [Layer](MicroEngine.UI.Layer.md)
+says false: its empty areas let the pointer through to gameplay.
+
+```csharp
+public virtual bool BlocksPointer { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_UI_Widget_Bounds"></a> Bounds
 
@@ -187,6 +201,32 @@ public bool IsVisibleInTree { get; }
 #### Property Value
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_UI_Widget_Offset"></a> Offset
+
+A shift from where the layout places the widget, in UI units (zero by default). The widget and everything in it
+move, for drawing and for the pointer; the space it takes in its container does not. Animate it to slide a widget in.
+
+```csharp
+public Vector2 Offset { get; set; }
+```
+
+#### Property Value
+
+ [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_UI_Widget_Opacity"></a> Opacity
+
+How opaque the widget and everything in it draw, 0..1 (1 by default); it multiplies the opacity of the widgets
+around it. Animate it to fade a widget. A transparent widget is still laid out and reached by the pointer.
+
+```csharp
+public float Opacity { get; set; }
+```
+
+#### Property Value
+
+ [float](https://learn.microsoft.com/dotnet/api/system.single)
 
 ### <a id="MicroEngine_UI_Widget_Parent"></a> Parent
 

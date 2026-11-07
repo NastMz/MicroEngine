@@ -119,4 +119,9 @@
 2142 capture 18-inventory.png
 2150 press pause
 2164 press down
-2174 quit
+2174 press confirm
+2214 press confirm
+2260 capture 19-layer.png
+2266 press pause
+2280 press down
+2290 quit

@@ -41,6 +41,13 @@ Focus moves between cells by direction, as it does anywhere in the tree.
 
 Text that does nothing: a heading, a value, a hint. Lines are separated by <code>\n</code>.
 
+ [Layer](MicroEngine.UI.Layer.md)
+
+The whole UI view, with each child placed on its own: against an edge or a corner (a banner in a corner, a HUD
+block), or at a point (a speech bubble over a character, a damage number, a marker that follows something in the
+world). Children keep the size they measure; later children draw over earlier ones. Where no child is, the pointer
+passes through to gameplay. Use it as a root's [Content](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_Content).
+
  [Panel](MicroEngine.UI.Panel.md)
 
 A box behind one child, with padding around it: the frame of a menu, a dialog or a HUD block.
