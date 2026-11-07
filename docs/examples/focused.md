@@ -694,3 +694,29 @@ public override void Enter()
 ```
 
 Manual: [Long content](../manual/ui.md#long-content).
+
+## Inventory
+
+Twelve slots in a grid of four columns, the focused slot's description below it. The arrows move between slots by
+rows and columns; confirm or a click uses one item. The slot is a small widget of the example's own. Source:
+[`InventoryExample.cs`](../../samples/Examples/Examples/InventoryExample.cs).
+
+<!-- code: samples/Examples/Examples/InventoryExample.cs#grid -->
+```csharp
+public override void Enter()
+{
+    _about = new Label(" ");
+    var grid = new Grid(columns: 4);
+    foreach (var (name, count, about) in Items)
+    {
+        var slot = new ItemSlot(name, count);
+        slot.Focused += () => _about.Text = about;                // the description follows the focus
+        slot.Used += () => _about.Text = slot.Count > 0 ? $"USED {name}, {slot.Count} LEFT" : $"NO {name} LEFT";
+        grid.Add(slot);
+    }
+    Widgets.Content = new Panel(new Stack().Add(grid).Add(_about));
+    Widgets.Cancelled += () => Game.Scenes.Pop();
+}
+```
+
+Manual: [Grids](../manual/ui.md#grids).

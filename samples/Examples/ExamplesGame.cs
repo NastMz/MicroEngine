@@ -33,31 +33,39 @@ public sealed class ExamplesGame(string? saveDirectory = null) : Game
         ("Controls and rebinding", g => new RebindExample(g.SaveDirectory)),
         ("Settings screen (widgets)", g => new SettingsExample()),
         ("Long list (scrolling)", g => new LongListExample()),
+        ("Inventory (grid)", g => new InventoryExample()),
     ];
 
     public string? SaveDirectory { get; } = saveDirectory;
 
-    public override GameSettings Settings { get; } = new("MicroEngine Examples") { Background = Color.Hex("1a1c2c") };
+    // The widgets' UI view at three window pixels per unit, the scale of the 320×180 canvas in the default window, so
+    // the widget examples read at the size of everything else.
+    public override GameSettings Settings { get; } = new("MicroEngine Examples")
+    {
+        Background = Color.Hex("1a1c2c"),
+        Presentation = MicroEngine.Graphics.Presentation.PixelArt with { UiScale = 3 },
+    };
 
     protected override void Load() => Scenes.Push(new MenuScene());
 }
 
-/// <summary>The list of examples.</summary>
+/// <summary>The list of examples: a button per example in a scrolling view, so the list may grow past the screen.</summary>
 public sealed class MenuScene : Scene
 {
-    private readonly SelectionList _menu = new([.. ExamplesGame.All.Select(e => e.Name)]);
-
-    public override void Update(float dt)
+    public override void Enter()
     {
-        if (_menu.Update(Input) is { } choice)
-            Game.Scenes.Push(ExamplesGame.All[choice].Create((ExamplesGame)Game), new CurtainTransition());
+        var list = new Stack { Spacing = 1 };
+        foreach (var (name, create) in ExamplesGame.All)
+            list.Add(new Button(name, () => Game.Scenes.Push(create((ExamplesGame)Game), new CurtainTransition())) { Width = 180 });
+        Widgets.Anchor = Anchor.TopLeft;
+        Widgets.Offset = new Vector2(8, 16);
+        Widgets.Content = new ScrollView(list) { Height = 156 };
     }
 
-    public override void Draw(IRenderer r)
-    {
+    public override void Update(float dt) { }   // the widgets already took what they used
+
+    public override void Draw(IRenderer r) =>
         Font.DrawShadowed(r, "MICROENGINE EXAMPLES", new Vector2(8, 4), UiTheme.Default.Accent, Color.Black);
-        _menu.Draw(r, Font, new Vector2(16, 18), UiTheme.Default, Age, lineHeight: 9);
-    }
 }
 
 /// <summary>The heading every example draws.</summary>

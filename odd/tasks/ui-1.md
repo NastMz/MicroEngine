@@ -36,7 +36,7 @@ per slice; the forecast is well over 400 authored lines. Test runner: `dotnet te
 | T1 Evaluation, ADR 0050 and this plan | S1–S8 | inline | done | this branch |
 | T2 P1 pointer events and the wheel on widgets; settings screen example (slider, toggle, value selector) | S3 S4 S8 | inline | done | `feat/ui-pointer`; RED: 5 missing members; GREEN: `WidgetTests` 24/24, `Samples.Tests` 38/38 |
 | T3 P2 clipping and a scrolling container; long list example | S3 S8 | inline | done | `feat/ui-scroll`; RED: `ScrollView` missing, then the nested-clip test alone; GREEN: UI tests 29/29, `Samples.Tests` 40/40 |
-| T4 P3 grid layout; inventory example | S3 S8 | inline | pending | — |
+| T4 P3 grid layout; inventory example | S3 S8 | inline | done | `feat/ui-grid` (stacked on `feat/ui-scroll`); RED: `Grid` missing; GREEN: UI tests 32/32, `Samples.Tests` 42/42 |
 | T5 P4 positioned placement, per-widget offset and opacity; speech bubble and banner examples | S3 S8 | inline | pending | — |
 | T6 P5 `Label` wrapping and visible characters; dialogue box example | S3 S5 S8 | inline | pending | — |
 | T7 P6 9-slice drawing and `PanelStyle` image; themed panel example | S4 S8 | inline | pending | — |
@@ -87,3 +87,10 @@ is delegated only if two of them run in parallel on disjoint files.
   added) and the examples menu cut at 18 entries (line height 9). Checks: `MicroEngine.Tests` 740 passed, the same
   1 environmental failure as L6; the four game suites pass; `Samples.Tests` 40/40; snippets; `repo-docs` 17/17;
   `sdk/version.mjs check`. Next: T4.
+- L9 (2026-11-07) T4 done on `feat/ui-grid`, stacked on `feat/ui-scroll` (#135) because both edit the UI manual, the
+  release notes, the examples menu and the tour. `Grid` (uniform cells of the largest child, hidden children take
+  none, `Align` within the cell, spacing 4 units like `Stack`). A nineteenth example no longer fitted the menu, which
+  was a `SelectionList`: the menu is now buttons in a `ScrollView` (the first use of the widget tree outside the widget
+  examples, part of T8), and the examples game sets `Presentation.UiScale = 3` so widgets read at the canvas's size.
+  Checks: UI tests 32/32, `MicroEngine.Tests` 743 passed with the same environmental failure, `Samples.Tests` 42/42,
+  snippets, `repo-docs` 17/17, `sdk/version.mjs check`; menu, settings and inventory captures inspected. Next: T5.

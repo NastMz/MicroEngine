@@ -387,6 +387,49 @@ public sealed class WidgetTests
     }
 
     [TestMethod]
+    public void A_grid_places_children_in_rows_of_equal_cells()
+    {
+        var cells = new[] { new Block(Color.White, 10), new Block(Color.White, 30), new Block(Color.White, 20), new Block(Color.White, 10), new Block(Color.White, 10) };
+        var grid = new Grid(columns: 3) { Spacing = 2 };
+        foreach (var c in cells) grid.Add(c);
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = grid; });
+        Start(scene);
+        Assert.AreEqual(new RectF(0, 0, 3 * 60 + 2 * 2, 2 * 30 + 2), grid.Bounds, "three columns and two rows of the largest cell, 60 by 30");
+        Assert.AreEqual(new RectF(0, 0, 60, 30), cells[0].Bounds, "a child fills its cell");
+        Assert.AreEqual(new RectF(124, 0, 60, 30), cells[2].Bounds);
+        Assert.AreEqual(new RectF(0, 32, 60, 30), cells[3].Bounds, "the fourth child starts the second row");
+        Assert.AreEqual(new RectF(62, 32, 60, 30), cells[4].Bounds);
+    }
+
+    [TestMethod]
+    public void A_hidden_child_of_a_grid_takes_no_cell()
+    {
+        var a = new Block(Color.White, 10);
+        var b = new Block(Color.White, 10) { Visible = false };
+        var c = new Block(Color.White, 10);
+        var grid = new Grid(columns: 2) { Spacing = 0 }.Add(a).Add(b).Add(c);
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = grid; });
+        Start(scene);
+        Assert.AreEqual(new RectF(60, 0, 60, 10), c.Bounds, "c moves into b's place");
+        Assert.AreEqual(10, grid.Bounds.Height, "one row");
+    }
+
+    [TestMethod]
+    public void Focus_moves_through_a_grid_by_rows_and_columns()
+    {
+        var buttons = Enumerable.Range(0, 6).Select(i => new Button($"B{i}")).ToArray();
+        var grid = new Grid(columns: 3);
+        foreach (var b in buttons) grid.Add(b);
+        var scene = new UiScene(ui => ui.Content = grid);
+        var (game, platform) = Start(scene);
+        Assert.AreSame(buttons[0], scene.Widgets.Focused);
+        Press(game, platform, Key.Right);
+        Assert.AreSame(buttons[1], scene.Widgets.Focused);
+        Press(game, platform, Key.Down);
+        Assert.AreSame(buttons[4], scene.Widgets.Focused, "down goes to the cell below, not the next child");
+    }
+
+    [TestMethod]
     public void A_focused_widget_that_is_disabled_hands_the_focus_on()
     {
         Button a = new("A"), b = new("B");

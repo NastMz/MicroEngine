@@ -188,6 +188,7 @@ public sealed class TitleScene : Scene
 | `Panel` | A box (the theme's panel, or its own `Style`) with `Padding` around one `Content` |
 | `Stack` | Children one after another, `Vertical` or `Horizontal`, with `Spacing` and a cross-axis `Align` |
 | `ScrollView` | A window of fixed `Height` (or `Width`, `Orientation.Horizontal`) onto a longer `Content`: `Offset`, `MaxOffset`, `WheelStep`, `ShowScrollBar` ([Long content](#long-content)) |
+| `Grid` | Children in rows of `Columns` equal cells, left to right then top to bottom, with `Spacing` and an `Align` within the cell ([Grids](#grids)) |
 | `TextField` | One line of editable text: `Text`, `Caret`, `Placeholder`, `MaxLength`, the input method's `Composition`; `Changed` and `Submitted` events |
 | `Toasts` | Banners that slide in one at a time (`Show(new Toast(heading, title, description))`); `AchievementToasts` shows achievements through it |
 
@@ -267,6 +268,81 @@ draw at the widget's bounds, and keep the pointer outside from reaching them. `I
 a press from the child it started on once it becomes a drag. A widget that draws within a smaller area of its own sets
 the clip with `UiContext.ClipTo`, which nests inside the clips around it and restores them when disposed;
 `IRenderer.SetClip` alone would remove them.
+
+### Grids
+
+A `Grid` places its children in rows of `Columns` cells: an inventory, a level select, a roster, a keyboard on screen.
+Every cell is as large as the largest child, and a child fills its cell unless `Align` says otherwise; hidden
+children take no cell. Focus moves between cells by direction like anywhere else, so down goes to the cell below. This
+inventory puts twelve slots in four columns, with the focused slot's description under them:
+
+<!-- code: samples/Examples/Examples/InventoryExample.cs#grid -->
+```csharp
+public override void Enter()
+{
+    _about = new Label(" ");
+    var grid = new Grid(columns: 4);
+    foreach (var (name, count, about) in Items)
+    {
+        var slot = new ItemSlot(name, count);
+        slot.Focused += () => _about.Text = about;                // the description follows the focus
+        slot.Used += () => _about.Text = slot.Count > 0 ? $"USED {name}, {slot.Count} LEFT" : $"NO {name} LEFT";
+        grid.Add(slot);
+    }
+    Widgets.Content = new Panel(new Stack().Add(grid).Add(_about));
+    Widgets.Cancelled += () => Game.Scenes.Pop();
+}
+```
+
+The slot is a widget of the example's own: the item's name and count in a box, used by confirm or a click. A long
+grid goes inside a `ScrollView` ([Long content](#long-content)).
+
+<!-- code: samples/Examples/Examples/InventoryExample.cs#slot -->
+```csharp
+/// <summary>One inventory slot: the item's name and count in a square box. Confirm or a click uses one.</summary>
+public sealed class ItemSlot(string name, int count) : Widget
+{
+    public string Name { get; } = name;
+    public int Count { get; private set; } = count;
+    public event Action? Focused;
+    public event Action? Used;
+    public override bool Focusable => true;
+
+    protected override Vector2 MeasureContent(UiContext context) => new(40 * context.Unit);
+
+    protected override bool OnAction(UiAction action)
+    {
+        if (action != UiAction.Confirm) return false;
+        Use();
+        return true;
+    }
+
+    protected override void OnClick() => Use();
+
+    protected override void OnFocusChanged(bool focused)
+    {
+        if (focused) Focused?.Invoke();
+    }
+
+    private void Use()
+    {
+        if (Count == 0) return;
+        Count--;
+        Used?.Invoke();
+    }
+
+    protected override void DrawContent(IRenderer r, UiContext context)
+    {
+        var theme = context.Theme;
+        r.Panel(Bounds, IsFocused ? theme.Panel with { Border = theme.Accent } : theme.Panel);
+        if (Count == 0) return;
+        var at = new Vector2(Bounds.X + 3 * context.Unit, Bounds.Y + 3 * context.Unit);
+        context.Font.Draw(r, Name, at, IsFocused ? theme.Accent : theme.Text);
+        string n = $"x{Count}";
+        context.Font.Draw(r, n, new Vector2(Bounds.Right - 3 * context.Unit - context.Font.MeasureWidth(n), Bounds.Bottom - 3 * context.Unit - context.Font.LineHeight), theme.Muted);
+    }
+}
+```
 
 ### Controls of your own
 
@@ -383,6 +459,6 @@ private static Widget Row(string text, Widget control)
 - `DialogueBox`, `SelectionList` and the achievement screen are not widgets of the tree: they are placed by hand.
 - Text uses the game's font; there is no rich text, right-to-left text or localisation support. A text field edits one
   line, without selection or clipboard.
-- There is no grid layout yet. Sliders, toggles and value selectors are widgets of your own
+- Sliders, toggles and value selectors are widgets of your own
   ([Controls of your own](#controls-of-your-own)).
 - A scroll view moves at once to its new position: there is no smooth scrolling or momentum after a flick.
