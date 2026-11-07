@@ -73,3 +73,9 @@ is delegated only if two of them run in parallel on disjoint files.
   and the manual says so. Checks: `MicroEngine.Tests` 735 passed, 1 failed outside the change
   (`No_project_references_the_removed_entity_adapter` scans local `.claude/worktrees/` copies on this machine);
   `Samples.Tests` 38/38; snippets; `repo-docs` 17/17; tour capture of the settings screen inspected. Next: T3.
+- L7 (2026-11-06) CI on #134 failed in `sdk/tests/docs.mjs`: the samples' build against the published SDK (0.5.0-alpha.1,
+  nuget.org) was required, and `Examples` now uses the new pointer members. Fix: that build is a report while the
+  release notes list `## Next release` changes (`pendingChanges`), as ADR 0048 already ties the documentation to the
+  next release; it stays required with nothing pending. Every later slice that adds API would have hit the same rule.
+  RED: `version.test.mjs` failed on the new cases; GREEN: 27/27; `node sdk/tests/docs.mjs` locally: Examples reported,
+  all required checks passed.

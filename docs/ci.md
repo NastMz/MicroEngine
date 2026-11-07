@@ -541,11 +541,13 @@ and its environment; from the browser test scenarios:
   `tests/Samples.Tests` is selected. Since ARCH-1 stage 5 (2026-11-05) the required build is against the SDK built from
   source: this commit's packages, packed into the copy's folder and mapped as the only source of every `MicroEngine`
   package, at the version this commit packs. When the documented version is on nuget.org the copies are also built
-  from nuget.org at that version; that build is required again from the next SDK release on, but while the documented
-  SDK version is still the last one published before stage 5 (`reportOnlyVersion` in the script) it is an informative
-  report (`REPORT` lines that do not fail the job): stage 5 changed public APIs the samples use (the synthesizer's
-  namespace, the tile mover's result type), so a breaking rename cannot build against the version published before it.
-  The public pages label those APIs as the next SDK version.
+  from nuget.org at that version. That build is an informative report (`REPORT` lines that do not fail the job) while
+  the release notes list SDK changes under `## Next release`: the documentation presents the next release
+  ([ADR 0048](decisions/0048-docs-ship-with-the-sdk.md)), so a sample may use an API merged since the last
+  publication, which the build against this commit's packages proves. It is also a report while the documented SDK
+  version is still the last one published before stage 5 (`reportOnlyVersion` in the script): stage 5 changed public
+  APIs the samples use (the synthesizer's namespace, the tile mover's result type). Otherwise, with nothing pending, it
+  is required.
 - Plan checks that every active documentation reference names the documented SDK version (`sdk/version.mjs check`,
   [Releasing, Versions](releasing.md#versions)).
 - The CI planner (`.github/scripts/projects.mjs`) reads the `ProjectReference` items a `Directory.Build.targets` adds,

@@ -13,10 +13,11 @@
 //   (package source mapping) and everything else from nuget.org. It proves what a reader copies works with the
 //   packages the next release will publish, including changes to public APIs that the published SDK does not have yet.
 // - The published SDK: when the documented version (sdk/version.json) is on nuget.org, the same copies are built at
-//   that version from nuget.org alone. It is required, except while the documented version is `reportOnlyVersion`:
-//   the samples already use APIs that version does not have (incompatible changes made after it was published), so
-//   its results are printed as a report and do not fail the check. The next SDK release documents a newer version and
-//   the published build is required again.
+//   that version from nuget.org alone. It is a report (printed, never failing the check) while the release notes list
+//   SDK changes under "## Next release": the documentation presents the next release (ADR 0048), so the samples may
+//   use APIs the published version does not have yet. It is also a report while the documented version is
+//   `reportOnlyVersion` (incompatible changes made after it was published). Otherwise it is required: with nothing
+//   pending, every sample must build against the published SDK.
 //
 // Inside the repository the same projects build against the engine's source (samples/Directory.Build.targets), and
 // tests/Samples.Tests checks their behaviour. The documented version must be on nuget.org or be the version this commit
@@ -26,7 +27,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { documentedVersion, preparedVersion, publicState, isPublic } from '../version.mjs';
+import { documentedVersion, preparedVersion, publicState, isPublic, pendingChanges } from '../version.mjs';
 
 // The last SDK version published before stage 5's breaking renames (the synthesizer's namespace, the tile mover's
 // result type), which the samples already use. It is the anchor of the report-only rule, not a documentation version
@@ -35,8 +36,14 @@ import { documentedVersion, preparedVersion, publicState, isPublic } from '../ve
 // automatically, with no change here.
 export const reportOnlyVersion = '0.4.0-alpha.2';
 
-/** Whether the build of the samples from nuget.org at the `documented` version fails the check (false: a report only). */
-export const publishedBuildRequired = documented => documented !== reportOnlyVersion;
+/**
+ * Whether the build of the samples from nuget.org at the `documented` version fails the check (false: a report only).
+ * It is a report while `pending` (the release notes' "## Next release" content, `pendingChanges`) lists SDK changes:
+ * the documentation presents the next release (ADR 0048), so the samples may use APIs the published version does not
+ * have yet, and the build against this commit's packages is the one that must pass. With nothing pending it is
+ * required, except while the documented version is `reportOnlyVersion`.
+ */
+export const publishedBuildRequired = (documented, pending = null) => !pending && documented !== reportOnlyVersion;
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const samples = [
@@ -134,8 +141,11 @@ async function main() {
 
     // 2. The published SDK, when the documented version is on nuget.org.
     if (onNuget) {
-      const reportOnly = !publishedBuildRequired(documented);
-      if (reportOnly) console.log(`the published SDK ${documented} predates APIs the samples use: its build below is a report and does not fail this check`);
+      const pending = pendingChanges(repo);
+      const reportOnly = !publishedBuildRequired(documented, pending);
+      if (reportOnly) console.log(pending
+        ? `the release notes list SDK changes for the next release, which the samples may use: the build against the published SDK ${documented} below is a report and does not fail this check`
+        : `the published SDK ${documented} predates APIs the samples use: its build below is a report and does not fail this check`);
       buildAll({
         folder: path.join(work, 'published'),
         version: documented,
@@ -156,7 +166,7 @@ async function main() {
     if (process.argv.includes('--keep')) console.log(`kept ${work}`);
     else fs.rmSync(work, { recursive: true, force: true });
   }
-  if (reported) console.log(`${reported} published-SDK check(s) reported, not required (documented version ${reportOnlyVersion})`);
+  if (reported) console.log(`${reported} published-SDK check(s) reported, not required`);
   console.log(failed ? `${failed} check(s) failed` : 'all required checks passed');
   process.exit(failed ? 1 : 0);
 }

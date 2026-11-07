@@ -257,6 +257,10 @@ test('the documented samples check reports the published SDK build only while th
   assert.equal(publishedBuildRequired(reportOnlyVersion), false, 'documented version == anchor: report only');
   assert.equal(publishedBuildRequired('0.4.0-alpha.3'), true, 'the next release documents another version: required again');
   assert.equal(publishedBuildRequired('1.0.0'), true);
+  // Pending SDK changes ("## Next release" has content): the samples document the next release and may use its APIs,
+  // which the published version does not have; the build against this commit's packages stays required.
+  assert.equal(publishedBuildRequired('1.0.0', '- New: pointer events on widgets.'), false, 'pending changes: report only');
+  assert.equal(publishedBuildRequired('1.0.0', null), true, 'nothing pending: required');
   // A release rewrites only active references: the anchor is not one, so releasing never moves it.
   assert.ok(!activeFiles().includes('sdk/tests/docs.mjs'));
   assert.deepEqual(findReferences(fs.readFileSync(new URL('./docs.mjs', import.meta.url), 'utf8')), []);
