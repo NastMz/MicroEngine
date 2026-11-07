@@ -10,7 +10,7 @@ namespace CourtyardKey.Scenes;
 /// <summary>An overlay that freezes the world and plays paged dialogue with a typewriter blip.</summary>
 public sealed class DialogueScene : Scene
 {
-    private readonly DialogueBox _box = new() { Theme = UiStyle.Theme, Lines = 3 };
+    private readonly CourtyardKey.UI.DialogueBox _box = new() { Theme = UiStyle.Theme, Lines = 3 };
     private readonly string? _speaker;
     private readonly string[] _pages;
     private readonly Action? _closed;

@@ -25,8 +25,17 @@ public sealed class CourtyardKeyGame : Game
         _start = start;
         Saves = new SaveSlots(new SaveStore(GameId, saveDirectory));
         // Declared before the engine is composed, so it adds the achievements module.
-        UseAchievements(CourtyardAchievements.Catalog, Saves.Store, UI.UiStyle.Theme);
+        TrackAchievements(CourtyardAchievements.Catalog, Saves.Store);
     }
+
+    /// <summary>The unlock banners, drawn above every scene.</summary>
+    public DemoKit.AchievementBanners Banners { get; } = new() { Theme = UI.UiStyle.Theme };
+
+    /// <summary>Advances the banners every step.</summary>
+    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, Achievements);
+
+    /// <summary>The unlock banners stay up while scenes change.</summary>
+    protected override void DrawAboveScenes(MicroEngine.Graphics.IRenderer canvas) => Banners.Draw(canvas, Font);
 
     /// <summary>The same game simulated at <paramref name="updateRate"/> updates per second (tests check that timings hold at any rate).</summary>
     internal CourtyardKeyGame(string? saveDirectory, string? start, int updateRate) : this(saveDirectory, start)
@@ -68,7 +77,7 @@ public sealed class CourtyardKeyGame : Game
         MusicBank.Register(Audio);
         // Banners stay at the top, over the HUD's edge rather than the play field (the bottom of a room is where the
         // hero enters, the middle is where bosses stand); the room name waits while one shows.
-        AchievementToasts!.Top = PlayScene.HudHeight + 3;
+        Banners.Top = PlayScene.HudHeight + 3;
         Achievements.Unlocked += _ => Audio.Play("secret", 0.8f);
         if (_start is { Length: > 0 } name)
         {

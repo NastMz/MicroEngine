@@ -133,4 +133,9 @@
 2410 press down
 2450 capture 21-menu.png
 2456 press pause
-2470 quit
+2470 press down
+2480 press confirm
+2520 press confirm
+2560 capture 22-achievements.png
+2566 press pause
+2580 quit

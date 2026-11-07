@@ -98,9 +98,11 @@ public sealed class ExtendingTests
 
     private sealed class MenuProbe : Scene
     {
-        private readonly MicroEngine.UI.SelectionList _list = new("one", "two");
         public int? Chosen { get; private set; }
-        public override void Update(float dt) => Chosen ??= _list.Update(Input);
+        public override void Enter() => Widgets.Content = new MicroEngine.UI.Stack()
+            .Add(new MicroEngine.UI.Button("one", () => Chosen ??= 0))
+            .Add(new MicroEngine.UI.Button("two", () => Chosen ??= 1));
+        public override void Update(float dt) { }
         public override void Draw(MicroEngine.Graphics.IRenderer r) { }
     }
 
@@ -239,6 +241,40 @@ public sealed class MenuExampleTests
         SettingsExampleTests.Frame(game, platform);
         Assert.AreSame(scene.Items[0], scene.Widgets.Focused, "the mouse over an item moves the cursor there");
         Assert.AreEqual(2, scene.Moves);
+    }
+}
+
+/// <summary>The achievements example (UI guide): a list built from widgets and a banner per unlock, one at a time.</summary>
+[TestClass]
+public sealed class AchievementsExampleTests
+{
+    /// <summary>Every label's text under <paramref name="w"/>, in tree order, each followed by '|'.</summary>
+    private static string Text(MicroEngine.UI.Widget w) =>
+        (w is MicroEngine.UI.Label l ? l.Text + "|" : "") + string.Concat(w.Children.Select(Text));
+
+    [TestMethod]
+    public void ProgressShowsInTheListAndEveryUnlockGetsItsOwnBanner()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new AchievementsExample());
+        var scene = (AchievementsExample)game.Scenes.Current!;
+        Assert.AreEqual(0f, scene.Banner.Opacity, "no banner before an unlock");
+        Assert.AreEqual("COLLECT A GEM", ((MicroEngine.UI.Button)scene.Widgets.Focused!).Text);
+
+        SettingsExampleTests.Press(game, platform, "confirm");
+        Assert.IsTrue(scene.Tracker.IsUnlocked("first"));
+        Assert.AreEqual(1, scene.Tracker.Progress("five"));
+        for (int i = 0; i < 30; i++) SettingsExampleTests.Frame(game, platform);
+        Assert.AreEqual(1f, scene.Banner.Opacity, 0.01f, "the banner slid in");
+        StringAssert.Contains(Text(scene.Banner), "FIRST GEM|");
+        StringAssert.Contains(Text(scene.Widgets.Content!), "FIRST GEM|UNLOCKED|");
+        StringAssert.Contains(Text(scene.Widgets.Content!), "GEM HOARDER|1/5|");
+
+        SettingsExampleTests.Press(game, platform, "right");
+        SettingsExampleTests.Press(game, platform, "confirm");   // a second unlock while the first banner shows
+        Assert.IsTrue(scene.Tracker.IsUnlocked("reset"));
+        StringAssert.Contains(Text(scene.Banner), "FIRST GEM|", "it waits for the first banner to leave");
+        for (int i = 0; i < 180; i++) SettingsExampleTests.Frame(game, platform);
+        StringAssert.Contains(Text(scene.Banner), "FRESH START|", "then shows in turn");
     }
 }
 

@@ -31,7 +31,7 @@ internal static class Ui
     public static Vector2 Snap(Vector2 v) => new(MathF.Round(v.X), MathF.Round(v.Y));
 
     /// <summary>A vertical menu with a bobbing cursor and a highlight bar behind the selected item.</summary>
-    public static void Menu(IRenderer r, BitmapFont font, SelectionList list, float cx, float y, float time, int lineHeight = 13, int width = 96)
+    public static void Menu(IRenderer r, BitmapFont font, DemoKit.OptionList list, float cx, float y, float time, int lineHeight = 13, int width = 96)
     {
         for (int i = 0; i < list.Options.Count; i++)
         {

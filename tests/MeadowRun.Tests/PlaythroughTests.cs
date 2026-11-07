@@ -126,7 +126,7 @@ public sealed class PlaythroughTests
         var relaunched = new MeadowGame(dir);
         relaunched.InitializeForTest(new HeadlessPlatform());
         Assert.IsTrue(relaunched.Achievements.IsUnlocked(MeadowAchievements.FirstCourse), "achievements survive a restart");
-        Assert.IsNull(relaunched.AchievementToasts!.Current, "a reloaded unlock is not announced again");
+        Assert.IsNull(relaunched.Banners.Current, "a reloaded unlock is not announced again");
     }
 
     [TestMethod]
@@ -158,7 +158,7 @@ public sealed class PlaythroughTests
         Press(game, "down");
         Press(game, "down");
         Press(game, "confirm");
-        Assert.IsInstanceOfType<MicroEngine.UI.AchievementsScene>(game.Scenes.Current);
+        Assert.IsInstanceOfType<DemoKit.AchievementList>(game.Scenes.Current);
         Press(game, "cancel");
         Assert.IsInstanceOfType<TitleScene>(game.Scenes.Current);
     }

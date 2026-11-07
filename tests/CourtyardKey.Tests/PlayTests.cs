@@ -44,7 +44,7 @@ public sealed class PlayTests
         h.Press(Key.Down);
         h.Press(Key.Down);
         h.Press(Key.Z);
-        var list = h.Game.Scenes.Current as MicroEngine.UI.AchievementsScene;
+        var list = h.Game.Scenes.Current as DemoKit.AchievementList;
         Assert.IsNotNull(list, "Achievements is the fourth title option.");
         Assert.AreEqual(CourtyardAchievements.Catalog.Length, h.Game.Achievements.Count);
         h.Press(Key.X);

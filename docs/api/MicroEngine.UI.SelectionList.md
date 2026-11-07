@@ -9,6 +9,7 @@ Guide: [UI widgets](../manual/ui.md)
 A vertical list of options navigated with up/down and chosen with confirm.
 
 ```csharp
+[Obsolete("Build menus from widgets: Buttons (or widgets of your own) in a Stack, with UiRoot.FocusChanged for the cursor sound, as the Title menu example does. It is removed in a later SDK release; see the migration notes.")]
 public sealed class SelectionList
 ```
 

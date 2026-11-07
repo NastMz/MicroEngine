@@ -31,8 +31,17 @@ public sealed class TrailDuelGame : Game
         DebugEvolve = debugEvolve;
         Saves = new SaveStore("TrailDuel", _saveDirectory);
         // Declared before the engine is composed, so it adds the achievements module.
-        UseAchievements(TrailAchievements.Catalog, Saves, Ui.UiKit.Theme);
+        TrackAchievements(TrailAchievements.Catalog, Saves);
     }
+
+    /// <summary>The unlock banners, drawn above every scene.</summary>
+    public DemoKit.AchievementBanners Banners { get; } = new() { Theme = Ui.UiKit.Theme };
+
+    /// <summary>Advances the banners every step.</summary>
+    public override void Configure(EngineBuilder builder) => Banners.Attach(builder, Achievements);
+
+    /// <summary>The unlock banners stay up while scenes change.</summary>
+    protected override void DrawAboveScenes(MicroEngine.Graphics.IRenderer canvas) => Banners.Draw(canvas, Font);
 
     /// <summary>The virtual canvas in pixels: every screen is laid out on it.</summary>
     public const int CanvasWidth = 320, CanvasHeight = 180;

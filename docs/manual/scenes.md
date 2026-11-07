@@ -64,31 +64,47 @@ non-overlay scene and goes up, so a pause menu draws over a frozen level.
 
 ### Overlays
 
-A pause menu from Neon Rift: an overlay that leaves the level frozen underneath.
+The tutorial's pause menu: an overlay that leaves the round frozen underneath.
 
+<!-- code: samples/GemGarden/part4-complete/Scenes/PauseScene.cs -->
 ```csharp
-internal sealed class PauseScene(RiftGame game) : Scene
+using MicroEngine;
+using MicroEngine.Graphics;
+using MicroEngine.Scenes;
+using MicroEngine.UI;
+
+namespace GemGarden.Scenes;
+
+/// <summary>An overlay over the frozen round: resume it or go back to the title.</summary>
+public sealed class PauseScene(MainGame game) : Scene
 {
-    private readonly SelectionList _menu = new("RESUME", "QUIT TO TITLE");
+    /// <summary>The play scene is drawn first, below this one, and stops updating while this one is on top.</summary>
     public override bool IsOverlay => true;
 
-    public override void Enter() => _menu.Moved += () => game.Sfx("menu-move", 0.6f);
+    public override void Enter()
+    {
+        Audio.PauseMusic(true);
+        Widgets.Content = new Panel(new Stack { Spacing = 4 }
+            .Add(new Label("PAUSED") { Color = UiTheme.Default.Accent })
+            .Add(new Button("RESUME", () => Game.Scenes.Pop()) { Width = 100 })
+            .Add(new Button("QUIT TO TITLE", () => Game.Scenes.Reset(new TitleScene(game), Transition.Fade())) { Width = 100 }))
+        { Padding = 8 };
+        Widgets.FocusChanged += change =>
+        {
+            if (change.From is not null) Audio.Play("select");
+        };
+    }
+
+    public override void Exit() => Audio.PauseMusic(false);
 
     public override void Update(float dt)
     {
-        if (Input.Pressed("pause")) { Close(); return; }
-        if (_menu.Update(Input) is { } choice)
-        {
-            game.Sfx("menu-select", 0.7f);
-            if (choice == 0) Close();
-            else Game.Scenes.Reset(new TitleScene(game), Transition.Fade(0.6f));
-        }
+        if (Input.Pressed("pause") || Input.Pressed("cancel")) Game.Scenes.Pop();
     }
-    // ...
+
+    public override void Draw(IRenderer r) => r.FillRect(new RectF(0, 0, Game.Width, Game.Height), Color.Black.WithAlpha(0.5f));
 }
 ```
-
-Source: [`games/NeonRift/Scenes/PlayScene.cs`](../../games/NeonRift/Scenes/PlayScene.cs)
 
 Override `BlocksUpdateBelow => false` for an overlay that should let the scene below keep running.
 

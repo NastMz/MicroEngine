@@ -7,6 +7,7 @@ namespace MicroEngine.UI;
 /// <param name="Heading">The first line, in the accent colour ("ACHIEVEMENT UNLOCKED", "SAVED").</param>
 /// <param name="Title">The second line.</param>
 /// <param name="Description">Up to two wrapped lines in the muted colour; empty draws none.</param>
+[Obsolete("Draw banners of your own, from widgets or from Game.DrawAboveScenes. It is removed in a later SDK release; see the migration notes.")]
 public sealed record Toast(string Heading, string Title, string Description = "")
 {
     /// <summary>A sprite drawn left of the text, or null.</summary>
@@ -18,6 +19,7 @@ public sealed record Toast(string Heading, string Title, string Description = ""
 /// notifications. Purely visual: they never read input, so play continues underneath. Call <see cref="Update"/> every
 /// update and <see cref="Draw"/> after the scenes.
 /// </summary>
+[Obsolete("Draw banners of your own, from widgets or from Game.DrawAboveScenes. It is removed in a later SDK release; see the migration notes.")]
 public sealed class Toasts
 {
     /// <summary>Seconds each banner stays (3.4), and seconds it takes to slide in and out (0.25).</summary>

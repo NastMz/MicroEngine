@@ -10,6 +10,7 @@ namespace MicroEngine.UI;
 /// <see cref="Toasts"/> showing achievements. Purely visual: they never read input, so play continues underneath.
 /// <see cref="Game"/> owns one when achievements are enabled and draws it above every scene.
 /// </summary>
+[Obsolete("Call TrackAchievements and show unlocks your own way: subscribe to AchievementTracker.Unlocked and draw from Game.DrawAboveScenes, as the Achievements example does. It is removed in a later SDK release; see the migration notes.")]
 public sealed class AchievementToasts
 {
     /// <summary>Seconds each banner stays (3.4), and seconds it takes to slide in and out (0.25).</summary>
@@ -54,6 +55,7 @@ public sealed class AchievementToasts
 /// Overlay listing a game's achievements: unlocked ones highlighted, pending ones dimmed, progress bars
 /// for progressive goals. Up/down moves the cursor (the list scrolls); any of <see cref="CloseActions"/> closes it.
 /// </summary>
+[Obsolete("Build the list from widgets: rows in a ScrollView over AchievementTracker.All, as the Achievements example does. It is removed in a later SDK release; see the migration notes.")]
 public sealed class AchievementsScene(AchievementTracker tracker, UiTheme theme) : Scene
 {
     private int _scroll;

@@ -58,7 +58,7 @@ public sealed class AchievementTests
         Tap(Key.Down);
         Tap(Key.Down);
         Tap(Key.Enter);
-        Assert.IsInstanceOfType<AchievementsScene>(game.Scenes.Current);
+        Assert.IsInstanceOfType<DemoKit.AchievementList>(game.Scenes.Current);
         Tap(Key.Escape);
         Assert.IsInstanceOfType<TitleScene>(game.Scenes.Current);
     }

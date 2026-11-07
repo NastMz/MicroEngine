@@ -163,16 +163,16 @@ test('keys: line endings in the working copy do not matter', () => {
   assert.equal(demoKey('Alpha', { root }).key, before, 'only staged blobs count, the project graph included');
 });
 
-test('keys: the real demos depend on the engine and the browser host, never on the 3D or Box2D projects or the phone hosts', () => {
+test('keys: the real demos depend on the engine, the browser host and the shared demo code, never on the 3D or Box2D projects or the phone hosts', () => {
   for (const id of ['MeadowRun', 'NeonRift']) {
     const { inputs } = demoKey(id);
     for (const file of ['src/MicroEngine.Desktop/MicroEngine.Desktop.csproj', 'src/MicroEngine.Kernel/MicroEngine.Kernel.csproj',
       'src/MicroEngine.Sdl/native/sdl.env', 'src/MicroEngine.Cli/Hosts/web/Host.csproj', 'src/MicroEngine/build/MicroEngine.targets',
-      'Directory.Build.props', 'src/Directory.Build.props', 'games/Directory.Build.targets', 'web/toolchain.env', 'global.json', `games/${id}/${id}.csproj`])
+      'Directory.Build.props', 'src/Directory.Build.props', 'games/Directory.Build.targets', 'games/Shared/OptionList.cs', 'web/toolchain.env', 'global.json', `games/${id}/${id}.csproj`])
       assert.ok(inputs.includes(file), `${id}: ${file}`);
     assert.ok(!inputs.some(file => /^src\/MicroEngine\.(Graphics3D|Physics\.Box2D)\//.test(file) || /^src\/MicroEngine\.Cli\/Hosts\/(android|ios|mobile)\//.test(file)
       || /^(packaging|platforms|tests|samples|sdk|templates|site|docs)\//.test(file)), `${id}: nothing outside its web build`);
-    assert.ok(!inputs.some(file => file.startsWith('games/') && !file.startsWith(`games/${id}/`) && !/^games\/(LICENSE|Directory\.Build\.targets)$/.test(file)), `${id}: no other game`);
+    assert.ok(!inputs.some(file => file.startsWith('games/') && !file.startsWith(`games/${id}/`) && !/^games\/(LICENSE|Directory\.Build\.targets|Shared\/.+)$/.test(file)), `${id}: no other game`);
   }
 });
 

@@ -11,6 +11,7 @@ Queued "achievement unlocked" banners that slide in at the top of the screen, on
 [Game](MicroEngine.Core.Game.md) owns one when achievements are enabled and draws it above every scene.
 
 ```csharp
+[Obsolete("Call TrackAchievements and show unlocks your own way: subscribe to AchievementTracker.Unlocked and draw from Game.DrawAboveScenes, as the Achievements example does. It is removed in a later SDK release; see the migration notes.")]
 public sealed class AchievementToasts
 ```
 

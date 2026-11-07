@@ -69,7 +69,7 @@ public int Goal { get; init; }
 
 ### <a id="MicroEngine_Core_Achievement_Icon"></a> Icon
 
-Optional picture for the toast and the list screen.
+Optional picture for the game's banner and list.
 
 ```csharp
 public Sprite? Icon { get; init; }

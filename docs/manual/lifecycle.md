@@ -18,7 +18,7 @@ the step-by-step tutorial is [Gem Garden](../tutorial/README.md).
 | `Random` | Per-run `Random`, seeded by the launcher (`RunOptions.Seed`) |
 | `Width`, `Height` | The virtual canvas size from `Settings` |
 | `Quit()` / `QuitRequested` | Asks the loop to stop after the current frame |
-| `UseAchievements(...)`, `Achievements` | Optional achievements (see [Achievements](achievements.md)), declared from the constructor or `Configure` |
+| `TrackAchievements(...)`, `Achievements` | Optional achievements (see [Achievements](achievements.md)), declared from the constructor or `Configure` |
 
 ```csharp
 public abstract GameSettings Settings { get; }

@@ -6,8 +6,8 @@ Namespace: [MicroEngine.Input](MicroEngine.Input.md)
 Assembly: MicroEngine.Input.dll  
 Guide: [Input](../manual/input.md)  
 
-The action names the engine's own parts read: menus and dialogs (<code>SelectionList</code>, <code>DialogueBox</code>), the
-achievements screen, the default on-screen controls and prompts. They are defaults the game may rename: build the
+The action names the engine's own parts read: the widget tree's focus and confirm (<code>UiRoot</code>), the default
+on-screen controls and prompts. They are defaults the game may rename: build the
 map with [CreateDefault](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_CreateDefault_MicroEngine_Input_ActionNames_) or set [Names](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_Names), and every engine
 part follows.
 

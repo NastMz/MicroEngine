@@ -11,9 +11,9 @@ namespace CourtyardKey.UI;
 /// area banner, the room-name tag and full-screen flashes.
 /// </summary>
 /// <remarks>
-/// The messages keep their own timers instead of <c>MicroEngine.UI.Toasts</c>: those are two-line panels that slide in
+/// The messages keep their own timers instead of the game's achievement banners: those are two-line panels that slide in
 /// for 3.4 s, while the HUD's are a framed line low on the screen, a large centred banner and a tag under the bar, each
-/// with its own length and fade. Only the room tag defers to the engine's achievement banners, which use its place.
+/// with its own length and fade. Only the room tag defers to the achievement banners, which use its place.
 /// </remarks>
 public sealed class Hud(PlayScene world)
 {
@@ -38,7 +38,7 @@ public sealed class Hud(PlayScene world)
     {
         _toastTime -= dt;
         _bannerTime -= dt;
-        if (world.G.AchievementToasts?.Current is null) _roomTime -= dt;
+        if (world.G.Banners.Current is null) _roomTime -= dt;
         _flashTime -= dt;
         // Gem counter rolls toward the real total, like a till.
         int target = world.Progress.Gems;
@@ -79,7 +79,7 @@ public sealed class Hud(PlayScene world)
             if (p.HasBossKey) r.DrawPivoted(art["key_boss"], new Vector2(x + 64, 9));
         }
         // The room name waits while an achievement banner covers its place.
-        if (_roomTime > 0 && LastRoomName is { } place && world.G.AchievementToasts?.Current is null)
+        if (_roomTime > 0 && LastRoomName is { } place && world.G.Banners.Current is null)
         {
             float a = Math.Clamp(MathF.Min(_roomTime, 2.2f - _roomTime) * 4, 0, 1);
             int w = font.MeasureWidth(place) + 14;

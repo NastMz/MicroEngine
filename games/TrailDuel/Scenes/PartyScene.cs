@@ -24,7 +24,7 @@ internal sealed class PartyScene : Scene
     private readonly int _activeIndex;
     private readonly string _prompt;
     /// <summary>One row per creature (null while the party is empty: a list needs at least one row).</summary>
-    private SelectionList? _list;
+    private DemoKit.OptionList? _list;
     private int Index => _list?.Index ?? 0;
     private int _swapFrom = -1;
     private ChoiceMenu? _menu;

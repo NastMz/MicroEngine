@@ -12,6 +12,7 @@ set, <code>{action}</code> in a page names the control that presses it on the pl
 while the page is showing. Games call [Update](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Update_System_Single_MicroEngine_Input_InputMap_System_String_) and [Draw](MicroEngine.UI.DialogueBox.md#MicroEngine_UI_DialogueBox_Draw_MicroEngine_Graphics_IRenderer_MicroEngine_Graphics_IFont_MicroEngine_RectF_) from their own scene.
 
 ```csharp
+[Obsolete("Build the box from widgets: a Panel holding a Label with Wrap and VisibleCharacters, as the Dialogue example does. It is removed in a later SDK release; see the migration notes.")]
 public sealed class DialogueBox
 ```
 

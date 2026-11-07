@@ -10,6 +10,7 @@ namespace MicroEngine.UI;
 /// set, <c>{action}</c> in a page names the control that presses it on the player's device, and follows a device change
 /// while the page is showing. Games call <see cref="Update"/> and <see cref="Draw"/> from their own scene.
 /// </summary>
+[Obsolete("Build the box from widgets: a Panel holding a Label with Wrap and VisibleCharacters, as the Dialogue example does. It is removed in a later SDK release; see the migration notes.")]
 public sealed class DialogueBox
 {
     private readonly Queue<(string? Speaker, string Text)> _pages = new();

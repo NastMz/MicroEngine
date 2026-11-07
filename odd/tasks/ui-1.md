@@ -41,8 +41,8 @@ per slice; the forecast is well over 400 authored lines. Test runner: `dotnet te
 | T6 P5 `Label` wrapping and visible characters; dialogue box example | S3 S5 S8 | inline | done | `feat/ui-text` (stacked on `feat/ui-layer`); RED: `Wrap`, `Lines`, `VisibleCharacters`, `VisibleLines` missing; GREEN: UI tests 38/38, `Samples.Tests` 45/45 |
 | T7 P6 9-slice drawing and `PanelStyle` image; themed panel example | S4 S8 | inline | done | `feat/ui-skin`; RED: `NineSlice` missing; GREEN: `WidgetTests` 35/35, `Samples.Tests` 46/46 |
 | T8 Menu example on the widget tree; any primitive `SelectionList` still lacks | S6 S8 | inline | done | `feat/ui-menu`; RED: `FocusChange` and `UiRoot.FocusChanged` missing; GREEN: `WidgetTests` 36/36, `Samples.Tests` 47/47 |
-| T9 Deprecate `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `AchievementToasts`, `AchievementsScene`; migration notes | S7 S9 | inline | pending | Risk: item 3 |
-| T10 Demos, tutorial and template off the deprecated types (copies in the demos or the widget tree) | S7 | inline | pending | — |
+| T9 Deprecate `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `AchievementToasts`, `AchievementsScene`; migration notes | S7 S9 | inline | done | `feat/ui-deprecate`; RED: `DrawAboveScenes` and `TrackAchievements` missing; GREEN: `AchievementTests` 24/24; Risk: item 3 |
+| T10 Demos, tutorial and template off the deprecated types (copies in the demos or the widget tree) | S7 | inline | done | `feat/ui-deprecate`; demo suites 60/71/68/126, `Samples.Tests` 48/48 |
 | T11 Remove the deprecated types, in the SDK release after T9's | S9 | inline | blocked: needs T9 released | Risk: item 3 |
 | T12 P7 selection in `TextField`, clipboard capability on SDL, raylib and browsers | S3 S8 | inline | pending | — |
 | T13 P8 optional shaping and right-to-left module; check HarfBuzz on every target, WebAssembly included, first | S3 S8 | inline | pending | Risk: item 5 |
@@ -130,3 +130,16 @@ is delegated only if two of them run in parallel on disjoint files.
   needs no primitive (`Hovered` plus `Focus`). New `MenuExample` with a `MenuItem` widget of its own. Checks:
   `MicroEngine.Tests` 753 passed (no environmental failure since T7), `Samples.Tests` 47/47, snippets, `repo-docs`
   17/17, `sdk/version.mjs check`; the menu capture inspected. Next: T9.
+- L14 (2026-11-07) T9 and T10, one branch because the build treats warnings as errors: marking a type obsolete breaks
+  every project that still uses it. User decision (asked): a new `TrackAchievements(catalog, store)` keeps tracking
+  and saving without the engine's banners, and `UseAchievements` is deprecated with them, instead of a `banners`
+  parameter that would need a second breaking change at removal. The removal showed one more missing primitive by S1:
+  nothing let a game draw above every scene (the engine drew its banners itself), so `Game.DrawAboveScenes(canvas)`
+  runs after the scenes and their transition. Deprecated with `[Obsolete]` messages that name the replacement:
+  `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `Toast`, `AchievementToasts`, `AchievementsScene`,
+  `Game.UseAchievements`, `Game.AchievementToasts`; engine tests of them disable CS0618 per file until T11. Demos keep
+  copies in `games/Shared` (namespace `DemoKit`, linked by `games/Directory.Build.targets`): `OptionList`,
+  `AchievementBanners`, `AchievementList`, `Typewriter`; Courtyard Key keeps its own `DialogueBox`. The tutorial's title
+  and pause menus and `RebindExample` moved to the widget tree; new `AchievementsExample` (list in a `ScrollView`,
+  banner per unlock). The template used none of them. Docs: UI and achievements manuals, tutorial step 10, migration
+  notes (`## Next release`), release notes, references. Next: T12 (T11 waits for an SDK release with T9).

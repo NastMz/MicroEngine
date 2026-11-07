@@ -141,8 +141,8 @@ From `InputMap.CreateDefault()` in [`src/MicroEngine.Input/InputMap.cs`](../../s
 | Scenes and overlays | Subclass `Scene`; override `IsOverlay`, `BlocksUpdateBelow`, `Enter`, `Exit`, `Resume` | Pause menus in every game |
 | Transitions | Subclass `Transition(float duration)` and implement `Draw` | Built-ins: `Fade`, `Iris`, `Diamonds`, `Wipe` |
 | Scene objects | Keep them in `Scene.Objects`, an `IWorld`: create an entity and attach your own class to it ([The scene world](../manual/scenes.md#the-scene-world)) | Courtyard Key's `Actor` |
-| UI style | Pass a `UiTheme` to `UseAchievements`, `AchievementsScene` and widgets | Each game's theme |
-| Achievements | `Achievement.Icon`; `AchievementToasts.Top` and `Heading`; `AchievementsScene` `Title`, `CloseActions`, `Moved`, `Closed` | Neon Rift closes its list with `fire` too |
+| UI style | Set a `UiTheme` as `Widgets.Theme`, or pass it to your own drawing | Each game's theme |
+| Achievements | `Achievement.Icon`; the game's own banners and list, drawn from `Unlocked` and `All` ([Achievements](../manual/achievements.md#showing-achievements)) | Neon Rift closes its list with `fire` too |
 | Lighting | `new LightMap(device, glowImage)` with your own glow image | Meadow Run's banded halos |
 | Content location | `host.Content` in the composition, for every host (default: the `Content` folder next to the program) | Tests can point at another folder |
 | Save medium | Implement `IStorage` (namespace `MicroEngine.Platform`); pass it to `SaveStore`, or set `host.Storage` in the composition and use `host.SaveStore(gameId)` | `BrowserStorage`, `FileSaveStorage` |

@@ -23,8 +23,15 @@ public sealed class MainGame : Game
     #endregion
 
     #region settings
-    /// <summary>A 320x180 virtual screen, scaled to the window without blurring the pixels.</summary>
-    public override GameSettings Settings { get; } = new("Gem Garden") { Background = Color.Hex("1a1c2c") };
+    /// <summary>
+    /// A 320x180 virtual screen, scaled to the window without blurring the pixels; the menus' widgets are drawn three
+    /// window pixels to a UI unit, so they keep the size of the pixel art in the default window.
+    /// </summary>
+    public override GameSettings Settings { get; } = new("Gem Garden")
+    {
+        Background = Color.Hex("1a1c2c"),
+        Presentation = MicroEngine.Graphics.Presentation.PixelArt with { UiScale = 3 },
+    };
     #endregion
 
     public SpriteAtlas Sprites { get; private set; } = null!;

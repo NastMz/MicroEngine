@@ -35,7 +35,7 @@ The overlay itself, from the same file:
 ```csharp
 internal sealed class PauseScene(MeadowGame game, PlayScene play) : Scene
 {
-    private readonly SelectionList _menu = new("Resume", "Restart level", "Quit to map");
+    private readonly DemoKit.OptionList _menu = new("Resume", "Restart level", "Quit to map");
     public override bool IsOverlay => true;
     // ...
     public override void Update(float dt)
@@ -210,17 +210,20 @@ public static readonly Achievement[] Catalog =
 ];
 ```
 
-Declared before the engine is composed, with the game's store and theme: in `Configure` or in the
-game's constructor. What needs the running game (the banners' position, the unlock sound)
-stays in `Load`, from `MeadowGame.cs`:
+Declared before the engine is composed, with the game's store: in `Configure` or in the game's constructor. The
+game's own banners (`OptionList`, `AchievementBanners` and `AchievementList` are code the four demos share in
+`games/Shared`) are advanced by a frame system and drawn above every scene. What needs the running game (the
+banners' position, the unlock sound) stays in `Load`, from `MeadowGame.cs`:
 
 ```csharp
-public override void Configure(EngineBuilder builder) => UseAchievements(MeadowAchievements.Catalog, Store, MeadowRun.Scenes.Ui.Theme);
+public override void Configure(EngineBuilder builder) => Banners.Attach(builder, TrackAchievements(MeadowAchievements.Catalog, Store));
+
+protected override void DrawAboveScenes(IRenderer canvas) => Banners.Draw(canvas, Font);
 
 protected override void Load()
 {
     // ...
-    AchievementToasts!.Top = 17;   // below the HUD row
+    Banners.Top = 17;   // below the HUD row
     Achievements.Unlocked += _ => Sfx("checkpoint", 0.8f);
     // ...
 }
@@ -241,11 +244,11 @@ Courtyard Key reports an absolute count with `SetProgress`, which never goes dow
 G.Achievements.SetProgress(CourtyardAchievements.Cartographer, CourtyardAchievements.VisitedDungeonRooms(Progress));
 ```
 
-And the list screen is an engine scene pushed from a menu, from
+And the list screen is the demos' own scene, pushed from a menu, from
 [`games/MeadowRun/Scenes/TitleScene.cs`](../../games/MeadowRun/Scenes/TitleScene.cs):
 
 ```csharp
-var list = new AchievementsScene(game.Achievements, Ui.Theme) { Title = "ACHIEVEMENTS" };
+var list = new DemoKit.AchievementList(game.Achievements, Ui.Theme) { Title = "ACHIEVEMENTS" };
 list.Moved += () => game.Sfx("menu_move", 0.7f);
 list.Closed += () => game.Sfx("menu_back", 0.7f);
 Game.Scenes.Push(list);

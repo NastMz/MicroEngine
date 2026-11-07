@@ -114,7 +114,7 @@ internal sealed class PlayScene(RiftGame game, int stageIndex, int checkpoint = 
 /// <summary>Pause overlay: resume or abandon the run.</summary>
 internal sealed class PauseScene(RiftGame game) : Scene
 {
-    private readonly SelectionList _menu = new("RESUME", "QUIT TO TITLE");
+    private readonly DemoKit.OptionList _menu = new("RESUME", "QUIT TO TITLE");
     public override bool IsOverlay => true;
 
     /// <summary>Adds the menu cursor.</summary>

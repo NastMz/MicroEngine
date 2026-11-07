@@ -1,3 +1,4 @@
+#pragma warning disable CS0618 // SelectionList and DialogueBox, deprecated, are tested until they are removed
 using System.Numerics;
 using MicroEngine.Core;
 using MicroEngine.Input;

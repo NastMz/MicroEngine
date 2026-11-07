@@ -11,6 +11,11 @@
     <MicroEngineThirdPartyNotices Condition="'$(MicroEngineThirdPartyNotices)' == ''">../../THIRD-PARTY-NOTICES.md</MicroEngineThirdPartyNotices>
     <MicroEngineScriptsDir Condition="'$(MicroEngineScriptsDir)' == ''">scripts/</MicroEngineScriptsDir>
   </PropertyGroup>
+  <!-- Code the four demos share (games/Shared, namespace DemoKit): their own copies of the cursor list, the unlock
+       banners and the achievements screen the engine no longer ships (ADR 0050). -->
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Shared/**/*.cs" Link="Shared/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
   <!-- The same application-identity targets as any game built on the SDK packages
        (src/MicroEngine/build/MicroEngine.targets): a package reference imports them automatically, a project reference
        does not, so this file does. -->

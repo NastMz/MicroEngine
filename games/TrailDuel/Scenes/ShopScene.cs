@@ -17,7 +17,7 @@ internal sealed class ShopScene(TrailDuelGame game, Action onDone) : Scene
     private CachedText _quantityText;
     public static readonly IReadOnlyList<ItemData> Stock = ItemDex.All;
 
-    private SelectionList _list = null!;
+    private DemoKit.OptionList _list = null!;
     private int _quantity = 1;
     private bool _choosingQuantity;
     private string? _message;

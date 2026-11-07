@@ -164,6 +164,7 @@ public abstract class Game : IEngineModule, IStateHashed
     /// <summary>Whether <see cref="UseAchievements"/> was called, so <see cref="Achievements"/> can be read without throwing.</summary>
     public bool HasAchievements => _achievements is not null;
     /// <summary>Unlock banners drawn above every scene (null without achievements).</summary>
+    [Obsolete("Banners of the engine leave: call TrackAchievements and draw your own from DrawAboveScenes. It is removed in a later SDK release; see the migration notes.")]
     public AchievementToasts? AchievementToasts { get; private set; }
     /// <summary>The platform running the game (window, audio, input). Throws <see cref="InvalidOperationException"/> before the game starts.</summary>
     protected IPlatform Platform => _platform ?? throw new InvalidOperationException("Game is not running.");
@@ -248,15 +249,33 @@ public abstract class Game : IEngineModule, IStateHashed
     /// it has no achievement service, system or file.
     /// </summary>
     /// <exception cref="InvalidOperationException">The engine was already composed (called from <see cref="Load"/> or later).</exception>
+    [Obsolete("Call TrackAchievements, which keeps progress the same way without the engine's banners, and show unlocks your own way from AchievementTracker.Unlocked and DrawAboveScenes. It is removed in a later SDK release; see the migration notes.")]
     protected AchievementTracker UseAchievements(IEnumerable<Achievement> catalog, SaveStore store, UiTheme? theme = null)
     {
+        var tracker = Track(catalog, store, nameof(UseAchievements));
+        AchievementToasts = new AchievementToasts { Theme = theme ?? UiTheme.Default };
+        tracker.Unlocked += AchievementToasts.Show;
+        return tracker;
+    }
+
+    /// <summary>
+    /// Turns achievements on, without banners of the engine: adds the achievements module (an
+    /// <see cref="AchievementTracker"/> service over <paramref name="catalog"/> and the <c>engine.achievements</c> system
+    /// that writes progress) and the saves module when the game has none. Progress persists in the "achievements" slot of
+    /// <paramref name="store"/>. The game shows unlocks its own way: subscribe to <see cref="AchievementTracker.Unlocked"/>
+    /// on <see cref="Achievements"/>, and draw a banner above every scene from <see cref="DrawAboveScenes"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The engine was already composed (called from <see cref="Load"/> or later).</exception>
+    protected AchievementTracker TrackAchievements(IEnumerable<Achievement> catalog, SaveStore store) =>
+        Track(catalog, store, nameof(TrackAchievements));
+
+    private AchievementTracker Track(IEnumerable<Achievement> catalog, SaveStore store, string caller)
+    {
         if (_engine is not null)
-            throw new InvalidOperationException("Achievements are declared before the engine is composed: call UseAchievements from the game's constructor or from Configure, not from Load.");
+            throw new InvalidOperationException($"Achievements are declared before the engine is composed: call {caller} from the game's constructor or from Configure, not from Load.");
         ArgumentNullException.ThrowIfNull(store);
         _achievements = new AchievementTracker(catalog, store);
         _achievementStore = store;
-        AchievementToasts = new AchievementToasts { Theme = theme ?? UiTheme.Default };
-        _achievements.Unlocked += AchievementToasts.Show;
         return _achievements;
     }
 
@@ -268,7 +287,9 @@ public abstract class Game : IEngineModule, IStateHashed
         if (_achievements is not { } tracker) return;
         if (!builder.HasModule<Saves.SavesModule>() && !builder.Services.Contains<SaveStore>()) builder.Add(new Saves.SavesModule(_achievementStore!));
         var module = new Achievements.AchievementsModule(tracker);
-        module.Stepped += AchievementToasts!.Update;
+#pragma warning disable CS0618 // the engine's own banners, until they are removed
+        if (AchievementToasts is { } toasts) module.Stepped += toasts.Update;
+#pragma warning restore CS0618
         builder.Add(module);
     }
 
@@ -511,7 +532,10 @@ public abstract class Game : IEngineModule, IStateHashed
     {
         renderer.Clear(Settings.Background);
         Scenes.Draw(renderer);
+#pragma warning disable CS0618 // the engine's own banners, until they are removed
         AchievementToasts?.Draw(renderer, Font);
+#pragma warning restore CS0618
+        DrawAboveScenes(renderer);
         // The UI view: at the window's resolution where the platform offers it, else in the canvas over the world.
         // The UI view starts at the first thing drawn in it, so a frame whose scenes draw no interface has none (and is
         // captured as the canvas alone, IViewCapture).
@@ -524,6 +548,15 @@ public abstract class Game : IEngineModule, IStateHashed
         Scenes.DrawUi(ui);
         if (ui.Started) Scenes.DrawTransitionUi(ui);
     }
+
+    /// <summary>
+    /// Draws above every scene, in the canvas, once the scenes and their transition are drawn and before the scenes'
+    /// interfaces: what belongs to the game rather than to one scene, such as an unlock banner or a notice that stays
+    /// while scenes change. Advance what it shows from a frame system (<c>builder.Schedule.Add</c> in
+    /// <see cref="Configure"/>). The default draws nothing.
+    /// </summary>
+    /// <param name="canvas">The canvas renderer, in the game's virtual pixels.</param>
+    protected virtual void DrawAboveScenes(IRenderer canvas) { }
 
     private readonly UiViewRenderer _uiView = new();
 

@@ -9,6 +9,7 @@ Guide: [UI widgets](../manual/ui.md)
 Reveals text character by character. Confirm skips to the end; a second confirm advances.
 
 ```csharp
+[Obsolete("Reveal text with Label.VisibleCharacters, raised a little every update. It is removed in a later SDK release; see the migration notes.")]
 public sealed class Typewriter
 ```
 

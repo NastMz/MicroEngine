@@ -14,7 +14,7 @@ namespace CourtyardKey.Scenes;
 public sealed class PauseScene : Scene
 {
     private readonly PlayScene _play;
-    private readonly SelectionList _menu = new("Resume", "Save & Quit");
+    private readonly DemoKit.OptionList _menu = new("Resume", "Save & Quit");
     private static readonly (string Sprite, string Label)[] Items =
     [
         ("sword", "Oswin's Sword"),
@@ -152,7 +152,7 @@ public sealed class ShopScene : Scene
     public const int TonicPrice = 10, PiePrice = 60;
     public const string PieFlag = "shop:pie";
     private readonly PlayScene _play;
-    private readonly SelectionList _menu = new("Heart Tonic", "Hearty Pie", "Leave");
+    private readonly DemoKit.OptionList _menu = new("Heart Tonic", "Hearty Pie", "Leave");
     private string _message = "What'll it be, dear?";
     private static readonly string[] Icons = ["tonic", "pie", ""];
     private static readonly string[] Notes = ["Full heal", "+1 max heart", ""];
@@ -247,7 +247,7 @@ public sealed class ShopScene : Scene
 public sealed class GameOverScene : Scene
 {
     private readonly PlayScene _play;
-    private readonly SelectionList _menu = new("Continue", "Save & Quit");
+    private readonly DemoKit.OptionList _menu = new("Continue", "Save & Quit");
 
     public GameOverScene(PlayScene play)
     {

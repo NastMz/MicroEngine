@@ -14,7 +14,7 @@ namespace TrailDuel.Scenes;
 internal sealed class BagScene(TrailDuelGame game, Battle? battle, Action<string?, int>? onUse = null) : Scene
 {
     /// <summary>The item rows (null while the bag is empty: a list needs at least one row).</summary>
-    private SelectionList? _list;
+    private DemoKit.OptionList? _list;
     private int Index => _list?.Index ?? 0;
     private string? _message;
     private float _messageTime;

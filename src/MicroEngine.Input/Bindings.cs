@@ -5,8 +5,8 @@ using MicroEngine.Platform;
 namespace MicroEngine.Input;
 
 /// <summary>
-/// The action names the engine's own parts read: menus and dialogs (<c>SelectionList</c>, <c>DialogueBox</c>), the
-/// achievements screen, the default on-screen controls and prompts. They are defaults the game may rename: build the
+/// The action names the engine's own parts read: the widget tree's focus and confirm (<c>UiRoot</c>), the default
+/// on-screen controls and prompts. They are defaults the game may rename: build the
 /// map with <see cref="InputMap.CreateDefault(ActionNames?)"/> or set <see cref="InputMap.Names"/>, and every engine
 /// part follows.
 /// </summary>

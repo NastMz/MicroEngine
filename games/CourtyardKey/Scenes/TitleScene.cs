@@ -42,7 +42,7 @@ public static class Backdrop
 public sealed class TitleScene : Scene
 {
     private readonly CourtyardKeyGame _game;
-    private readonly SelectionList _menu = new("New Game", "Continue", "Controls", "Achievements", "Quit");
+    private readonly DemoKit.OptionList _menu = new("New Game", "Continue", "Controls", "Achievements", "Quit");
     private readonly ParticleSystem _motes = new(200, 21) { Additive = true };
     private bool _showControls;
     private float _spawn;
@@ -96,7 +96,7 @@ public sealed class TitleScene : Scene
             case 1: Start(_game.Saves.Load() ?? new Progress()); break;
             case 2: _showControls = true; break;
             case 3:
-                var list = new AchievementsScene(_game.Achievements, UiStyle.Theme);
+                var list = new DemoKit.AchievementList(_game.Achievements, UiStyle.Theme);
                 list.Moved += () => Audio.Play("menu_move");
                 list.Closed += () => Audio.Play("menu_back");
                 Game.Scenes.Push(list);

@@ -55,7 +55,7 @@ use whole numbers (2, 3) to keep pixels square. `\n` starts a new line, `LineHei
 | `LineHeight`, `CapHeight`, `Spacing`, `Advance(c)` | the font's metrics |
 
 Right-aligning a score: `new Vector2(Game.Width - 6 - Font.MeasureWidth(text), 4)`. A word longer than `maxWidth` is
-broken between characters, so no line is wider than `maxWidth`. The [UI widgets](ui.md) (`DialogueBox`, `Typewriter`) wrap and page text for you.
+broken between characters, so no line is wider than `maxWidth`. A `Label` with `Wrap` wraps to its width for you, and `VisibleCharacters` reveals it ([UI widgets](ui.md#text-that-wraps-and-reveals)).
 
 ## Characters
 
@@ -112,8 +112,8 @@ TTF and drawn at their design size or whole multiples of it, on a pixel-art canv
 has the window's resolution ([The world view and the UI view](rendering.md#the-world-view-and-the-ui-view)).
 
 `BitmapFont` and a `ScalableFont` at a size both implement `IFont` (`LineHeight`, `Measure`, `Draw`), with `Wrap`,
-`MeasureWidth`, `DrawCentered` and `DrawShadowed` for any `IFont`. The [UI widgets](ui.md) `DialogueBox` and
-`SelectionList` take any `IFont` and scale their margins with its line height, so the same widget serves both styles.
+`MeasureWidth`, `DrawCentered` and `DrawShadowed` for any `IFont`. The [UI widgets](ui.md) take any `IFont`
+(`Widgets.Font`) and scale their margins with its line height, so the same widget serves both styles.
 
 ## Performance
 

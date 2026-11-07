@@ -1,3 +1,4 @@
+#pragma warning disable CS0618 // DialogueBox, deprecated, is tested until it is removed
 using System.Numerics;
 using MicroEngine.Core;
 using MicroEngine.Graphics;
