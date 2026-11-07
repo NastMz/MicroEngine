@@ -90,7 +90,8 @@ Daily CI runs the SDK check (`sdk.yml`) whenever a package input changes, and **
 3. **The documented samples** (`sdk/tests/docs.mjs`, in the .NET Linux job): each sample the site quotes is copied
    outside the repository and built against the packages this commit packs (the SDK built from source), and, once the
    documented version is public, also from nuget.org at that version. The nuget.org build is only reported while the
-   documented version predates breaking changes the samples already use ([CI, documentation checks](ci.md#documentation-checks)).
+   release notes list changes under `## Next release`, or while the documented version predates breaking changes the
+   samples already use ([CI, documentation checks](ci.md#documentation-checks)).
 
 The four demos are packaged by the same tool; their packages are also verified level by level and played scenario by
 scenario on each system ([packaging/](../packaging/README.md)).

@@ -580,3 +580,92 @@ public override void Update(float dt)
 ```
 
 Manual: [A rebinding screen](../manual/input.md#a-rebinding-screen).
+
+## Settings screen
+
+A settings screen on the widget tree: sliders for the music and effects volumes, a toggle and a value selector. The
+three controls are small widgets of the example's own, built on the widget primitives (left and right while focused,
+the pointer's press and drag, the wheel); copy them and draw them your way. Source:
+[`SettingsExample.cs`](../../samples/Examples/Examples/SettingsExample.cs).
+
+<!-- code: samples/Examples/Examples/SettingsExample.cs#toggle -->
+```csharp
+/// <summary>On or off: confirm while it has the focus, or a click, switches it.</summary>
+public sealed class Toggle(bool on = false) : Widget
+{
+    private bool _on = on;
+
+    public bool On
+    {
+        get => _on;
+        set
+        {
+            if (value == _on) return;
+            _on = value;
+            Changed?.Invoke(value);
+        }
+    }
+
+    public event Action<bool>? Changed;
+    public override bool Focusable => true;
+
+    protected override Vector2 MeasureContent(UiContext context) => new(context.Font.LineHeight + 4 * context.Unit);
+    protected override bool OnAction(UiAction action)
+    {
+        if (action != UiAction.Confirm) return false;
+        On = !On;
+        return true;
+    }
+
+    protected override void OnClick() => On = !On;
+
+    protected override void DrawContent(IRenderer r, UiContext context)
+    {
+        var theme = context.Theme;
+        var box = new RectF(Bounds.X, Bounds.Y, Bounds.Height, Bounds.Height);   // a square at the start of its bounds
+        r.Panel(box, IsFocused ? theme.Panel with { Border = theme.Accent } : theme.Panel);
+        float inset = 3 * context.Unit;
+        if (On) r.FillRect(new RectF(box.X + inset, box.Y + inset, box.Width - 2 * inset, box.Height - 2 * inset), theme.Accent);
+    }
+
+    protected override void HashState(StateHasher hash) => hash.Add(_on);
+}
+```
+
+<!-- code: samples/Examples/Examples/SettingsExample.cs#choice -->
+```csharp
+/// <summary>One of several values: left and right while it has the focus, or a click, change it.</summary>
+public sealed class Choice(params string[] options) : Widget
+{
+    private int _index;
+
+    public IReadOnlyList<string> Options { get; } = options;
+    public int Index { get => _index; set => _index = ((value % Options.Count) + Options.Count) % Options.Count; }
+    public string Value => Options[_index];
+    public override bool Focusable => true;
+
+    protected override Vector2 MeasureContent(UiContext context) =>
+        new(Options.Max(o => context.Font.MeasureWidth(o)) + context.Font.MeasureWidth("<  >"), context.Font.LineHeight + 4 * context.Unit);
+
+    protected override bool OnAction(UiAction action)
+    {
+        if (action is not (UiAction.Left or UiAction.Right)) return false;
+        Index += action == UiAction.Right ? 1 : -1;
+        return true;
+    }
+
+    protected override void OnClick() => Index++;
+
+    protected override void DrawContent(IRenderer r, UiContext context)
+    {
+        var color = IsFocused ? context.Theme.Accent : context.Theme.Text;
+        string text = $"< {Value} >";
+        float x = MathF.Round(Bounds.X + (Bounds.Width - context.Font.MeasureWidth(text)) / 2);
+        context.Font.Draw(r, text, new Vector2(x, Bounds.Y + 2 * context.Unit), color);
+    }
+
+    protected override void HashState(StateHasher hash) => hash.Add(_index);
+}
+```
+
+Manual: [Controls of your own](../manual/ui.md#controls-of-your-own).

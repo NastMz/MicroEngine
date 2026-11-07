@@ -149,7 +149,7 @@ protected override bool OnAction(UiAction action)
 
 ### <a id="MicroEngine_UI_Button_OnClick"></a> OnClick\(\)
 
-Called when a pointer press that started on the widget is released on it.
+Called when a pointer press that started on the widget is released on it, after [OnPointerUp](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_OnPointerUp_System_Numerics_Vector2_).
 
 ```csharp
 protected override void OnClick()

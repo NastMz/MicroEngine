@@ -182,7 +182,7 @@ public sealed class TitleScene : Scene
 | Type | What it is |
 | --- | --- |
 | `UiRoot` | The tree's root (`Scene.Widgets`): `Content`, `Anchor` and `Offset` (where the content sits in the UI view), `Font`, `Theme`, `Actions`, `Focused`, `Focus(widget)`, `MoveFocus(direction)`, `AutoFocus`, `WrapFocus`, the `Cancelled` event |
-| `Widget` | The base class: `Bounds` (UI units, from the last layout), `Visible`, `Enabled`, fixed `Width` and `Height`, `IsFocused`, `IsHovered`, `IsPressed`; derive from it for a widget of your own (`MeasureContent`, `ArrangeContent`, `DrawContent`, `OnAction`, `OnClick`) |
+| `Widget` | The base class: `Bounds` (UI units, from the last layout), `Visible`, `Enabled`, fixed `Width` and `Height`, `IsFocused`, `IsHovered`, `IsPressed`; derive from it for a widget of your own (`MeasureContent`, `ArrangeContent`, `DrawContent`, `OnAction`, `OnClick`, the pointer's `OnPointerDown`, `OnPointerMove`, `OnPointerUp` and `OnPointerCancel`, `OnWheel`; see [Controls of your own](#controls-of-your-own)) |
 | `Label` | Text, one or more lines, in the theme's text colour or its own `Color` |
 | `Button` | A label in a panel; confirm while it has the focus, or a click on it, raises `Clicked` |
 | `Panel` | A box (the theme's panel, or its own `Style`) with `Padding` around one `Content` |
@@ -210,6 +210,12 @@ everything that press does until it is released, and never reaches gameplay; the
 Releasing on the widget that was pressed clicks it, and a press focuses what it lands on. While the pointer is over the
 content, `Game.Views.PointerOnUi` is true and the world pointer is not present.
 
+The press goes to the focusable widget under the pointer, or to its nearest focusable container, which then holds it:
+`OnPointerDown` with the position, `OnPointerMove` for every move of that pointer (also outside the widget), then
+`OnPointerUp` and, when the release is on the widget, `OnClick`. A press the system cancels, or one whose widget leaves
+the tree, ends with `OnPointerCancel` instead. Positions are in UI units, like `Bounds`. The wheel goes to the widget
+under the pointer: `OnWheel` returns true to take it, otherwise its container is asked, up to the root.
+
 **Text.** A focused `TextField` turns the text channel on (the on-screen keyboard on a phone; the input method's
 candidate window next to the field), inserts what is typed at the caret and shows what an input method is still
 composing, underlined. While it has the focus it takes the keyboard from gameplay: Backspace, Delete, the arrows, Home
@@ -219,6 +225,114 @@ stops when the field loses the focus or its scene leaves or is covered.
 The widgets' state (the focus, the fields' text) is part of the scene's state hash, so scripted runs and replays see
 the same interface. A scene that never reads `Widgets` has none and pays nothing.
 
+### Controls of your own
+
+Sliders, toggles and value selectors are not engine types: their behaviour fits in a small widget, and their look is
+the game's. The settings screen of the [focused examples](../examples/focused.md#settings-screen) builds all three.
+This slider steps with left and right while it has the focus, follows a press and a drag, and steps with the wheel:
+
+<!-- code: samples/Examples/Examples/SettingsExample.cs#slider -->
+```csharp
+/// <summary>
+/// A value from 0 to 1. Left and right step it while it has the focus; a press on it and a drag set it from the pointer's
+/// position (the slider holds the press, so the drag may leave it); the wheel steps it while it has the focus.
+/// </summary>
+public sealed class Slider(float value = 0, float step = 0.1f) : Widget
+{
+    private float _value = Math.Clamp(value, 0, 1);
+
+    /// <summary>The value, 0..1.</summary>
+    public float Value
+    {
+        get => _value;
+        set
+        {
+            float v = Math.Clamp(value, 0, 1);
+            if (v == _value) return;
+            _value = v;
+            Changed?.Invoke(v);
+        }
+    }
+
+    public float Step { get; set; } = step;
+    public event Action<float>? Changed;
+    public override bool Focusable => true;
+
+    protected override Vector2 MeasureContent(UiContext context) => new(80 * context.Unit, context.Font.LineHeight + 4 * context.Unit);
+
+    protected override bool OnAction(UiAction action) => action switch
+    {
+        UiAction.Left => Nudge(-1),
+        UiAction.Right => Nudge(1),
+        _ => false,
+    };
+
+    protected override void OnPointerDown(Vector2 position) => Follow(position);
+    protected override void OnPointerMove(Vector2 position) => Follow(position);
+    protected override bool OnWheel(Vector2 delta) => IsFocused && delta.Y != 0 && Nudge(MathF.Sign(delta.Y));
+
+    private void Follow(Vector2 position) => Value = (position.X - Bounds.X) / Bounds.Width;
+
+    private bool Nudge(int steps)
+    {
+        Value = MathF.Round(Value / Step + steps) * Step;   // on the step grid, however the value was set
+        return true;
+    }
+
+    protected override void DrawContent(IRenderer r, UiContext context)
+    {
+        var theme = context.Theme;
+        float u = context.Unit, mid = MathF.Round(Bounds.Y + Bounds.Height / 2);
+        r.FillRect(new RectF(Bounds.X, mid - u, Bounds.Width, 2 * u), theme.Muted);
+        r.FillRect(new RectF(Bounds.X, mid - u, MathF.Round(Bounds.Width * Value), 2 * u), theme.Accent);
+        float x = MathF.Round(Bounds.X + Bounds.Width * Value);
+        r.FillRect(new RectF(x - 2 * u, Bounds.Y + u, 4 * u, Bounds.Height - 2 * u), IsFocused ? theme.Accent : theme.Text);
+    }
+
+    protected override void HashState(StateHasher hash) => hash.Add(_value);
+}
+```
+
+The screen puts each control beside a label. Focus moves to the nearest widget in a direction, centre to centre, so
+controls of one width in one column keep up and down going straight from row to row:
+
+<!-- code: samples/Examples/Examples/SettingsExample.cs#screen -->
+```csharp
+public override void Enter()
+{
+    var music = new Slider(Audio.MusicVolume);
+    music.Changed += value => Audio.MusicVolume = value;
+    var effects = new Slider(Audio.SfxVolume);
+    effects.Changed += value =>
+    {
+        Audio.SfxVolume = value;
+        Audio.TryPlay("select");                       // hear the new level, if the game has the sound
+    };
+    _hints = new Toggle(on: true);
+    _difficulty = new Choice("EASY", "NORMAL", "HARD") { Index = 1 };
+
+    Widgets.Content = new Panel(new Stack()
+        .Add(Row("MUSIC", music))
+        .Add(Row("EFFECTS", effects))
+        .Add(Row("HINTS", _hints))
+        .Add(Row("DIFFICULTY", _difficulty))
+        .Add(new Button("BACK", () => Game.Scenes.Pop())));
+    Widgets.Cancelled += () => Game.Scenes.Pop();
+}
+
+/// <summary>
+/// A label and a control, both of fixed width. Focus moves to the nearest widget in a direction, centre to centre, so
+/// controls of one width in one column make up and down go straight from row to row.
+/// </summary>
+private static Widget Row(string text, Widget control)
+{
+    control.Width = 80;
+    return new Stack { Orientation = Orientation.Horizontal, Align = Align.Center }
+        .Add(new Label(text) { Width = 64 })
+        .Add(control);
+}
+```
+
 ## Limitations
 
 - `DialogueBox`, `SelectionList` and the achievement screen use keyboard and gamepad navigation only; the widget tree
@@ -226,4 +340,5 @@ the same interface. A scene that never reads `Widgets` has none and pays nothing
 - `DialogueBox`, `SelectionList` and the achievement screen are not widgets of the tree: they are placed by hand.
 - Text uses the game's font; there is no rich text, right-to-left text or localisation support. A text field edits one
   line, without selection or clipboard.
-- There are no scrolling containers, grids or sliders yet.
+- There are no scrolling containers or grids yet. Sliders, toggles and value selectors are widgets of your own
+  ([Controls of your own](#controls-of-your-own)).

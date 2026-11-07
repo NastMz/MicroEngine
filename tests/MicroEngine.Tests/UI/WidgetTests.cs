@@ -208,6 +208,86 @@ public sealed class WidgetTests
         Assert.IsFalse(scene.GameplayEvents.Any(e => e.Kind == InputEventKind.PointerUp), "the release belongs to the press the UI took");
     }
 
+    /// <summary>A focusable widget of fixed size that records the pointer events it receives, in UI units.</summary>
+    private sealed class PointerRecorder : Widget
+    {
+        public readonly List<string> Seen = [];
+        public PointerRecorder() { Width = 100; Height = 20; }
+        public override bool Focusable => true;
+        protected override Vector2 MeasureContent(UiContext context) => Vector2.Zero;
+        protected override void DrawContent(IRenderer renderer, UiContext context) { }
+        protected internal override void OnPointerDown(Vector2 position) => Seen.Add($"down {position.X:0},{position.Y:0}");
+        protected internal override void OnPointerMove(Vector2 position) => Seen.Add($"move {position.X:0},{position.Y:0}");
+        protected internal override void OnPointerUp(Vector2 position) => Seen.Add($"up {position.X:0},{position.Y:0}");
+        protected internal override void OnPointerCancel() => Seen.Add("cancel");
+        protected internal override void OnClick() => Seen.Add("click");
+    }
+
+    /// <summary>A container of one child that takes the wheel.</summary>
+    private sealed class WheelBox : Widget
+    {
+        private readonly Widget _child;
+        public readonly List<Vector2> Wheel = [];
+        public WheelBox(Widget child) { _child = child; Adopt(child); }
+        public override IReadOnlyList<Widget> Children => [_child];
+        protected override Vector2 MeasureContent(UiContext context) => _child.Measure(context);
+        protected override void ArrangeContent(RectF bounds, UiContext context) => _child.Arrange(bounds, context);
+        protected override void DrawContent(IRenderer renderer, UiContext context) => _child.Draw(renderer, context);
+        protected internal override bool OnWheel(Vector2 delta) { Wheel.Add(delta); return true; }
+    }
+
+    [TestMethod]
+    public void A_pressed_widget_follows_the_pointer_in_UI_units_until_the_release()
+    {
+        var recorder = new PointerRecorder();
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = recorder; });
+        var (game, platform) = Start(scene);
+        platform.Devices.Send(InputEvent.PointerMove(Mouse, 0, PointerKind.Mouse, game.Views.UiToCanvas(new Vector2(10, 10))));
+        Frame(game, platform);
+        Assert.IsEmpty(recorder.Seen, "a move without a press is only hover");
+
+        platform.Devices.Send(InputEvent.PointerDown(Mouse, 0, PointerKind.Mouse, game.Views.UiToCanvas(new Vector2(10, 10))));
+        platform.Devices.Send(InputEvent.PointerMove(Mouse, 0, PointerKind.Mouse, game.Views.UiToCanvas(new Vector2(60, 12))));
+        platform.Devices.Send(InputEvent.PointerMove(Mouse, 0, PointerKind.Mouse, game.Views.UiToCanvas(new Vector2(300, 90))));
+        Frame(game, platform);
+        platform.Devices.Send(InputEvent.PointerUp(Mouse, 0, PointerKind.Mouse, game.Views.UiToCanvas(new Vector2(40, 10))));
+        Frame(game, platform);
+        CollectionAssert.AreEqual(new[] { "down 10,10", "move 60,12", "move 300,90", "up 40,10", "click" }, recorder.Seen,
+            "moves outside the widget still reach it while it holds the press; a release on it also clicks");
+        Assert.IsFalse(scene.GameplayEvents.Any(e => e.Kind is InputEventKind.PointerDown or InputEventKind.PointerUp));
+    }
+
+    [TestMethod]
+    public void A_cancelled_press_tells_the_widget_and_does_not_click()
+    {
+        var recorder = new PointerRecorder();
+        var scene = new UiScene(ui => { ui.Anchor = Anchor.TopLeft; ui.Content = recorder; });
+        var (game, platform) = Start(scene);
+        platform.Devices.Send(InputEvent.PointerDown(Mouse, 0, PointerKind.Touch, game.Views.UiToCanvas(new Vector2(10, 10))));
+        Frame(game, platform);
+        platform.Devices.Send(new InputEvent { Kind = InputEventKind.PointerCancel, Device = Mouse, Pointer = 0, PointerKind = PointerKind.Touch });
+        Frame(game, platform);
+        CollectionAssert.AreEqual(new[] { "down 10,10", "cancel" }, recorder.Seen);
+        Assert.IsFalse(recorder.IsPressed);
+    }
+
+    [TestMethod]
+    public void The_wheel_reaches_the_widget_under_it_and_goes_up_to_the_first_that_takes_it()
+    {
+        var button = new Button("PLAY");
+        var box = new WheelBox(button);
+        var scene = new UiScene(ui => ui.Content = box);
+        var (game, platform) = Start(scene);
+        platform.Devices.Send(InputEvent.WheelMoved(Mouse, new Vector2(0, -2), game.Views.UiToCanvas(Center(button))));
+        Frame(game, platform);
+        CollectionAssert.AreEqual(new[] { new Vector2(0, -2) }, box.Wheel, "the button ignores it, its container takes it");
+        Assert.IsFalse(scene.GameplayEvents.Any(e => e.Kind == InputEventKind.Wheel), "the wheel over the UI never reaches gameplay");
+
+        platform.Devices.Send(InputEvent.WheelMoved(Mouse, new Vector2(0, 1), new Vector2(1, 1)));
+        Frame(game, platform);
+        Assert.HasCount(1, box.Wheel, "the wheel outside the UI is gameplay's");
+    }
+
     [TestMethod]
     public void A_focused_widget_that_is_disabled_hands_the_focus_on()
     {

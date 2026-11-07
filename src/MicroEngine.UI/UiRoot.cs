@@ -61,7 +61,8 @@ public sealed class UiRoot : IInputLayer, IStateHashed
     private readonly Queue<InputEvent> _events = new();
     private readonly List<Widget> _focusable = [];
     private Widget? _content;
-    private long _pressPointer = -1;
+    private long _pressPointer = -1; // the press the layer took, as events arrive
+    private long _heldPointer = -1;  // the press a widget holds, as the update applies them
     private Vector2 _size;
     private bool _focusTouched;
 
@@ -86,10 +87,11 @@ public sealed class UiRoot : IInputLayer, IStateHashed
             if (value is not null && (value.Parent is not null || value.Root is not null))
                 throw new InvalidOperationException("The widget already belongs to another widget or root; remove it there first.");
             Focus(null);
+            CancelPress();
             _content?.SetRoot(null);
             _content = value;
             value?.SetRoot(this);
-            Hovered = Pressed = null;
+            Hovered = null;
             _pressPointer = -1;
             _focusTouched = false;
         }
@@ -282,32 +284,53 @@ public sealed class UiRoot : IInputLayer, IStateHashed
         switch (e.Kind)
         {
             case InputEventKind.PointerMove:
-                Hovered = WidgetAt(PointerToUi(e.Position));
-                break;
-            case InputEventKind.PointerDown:
             {
                 var p = PointerToUi(e.Position);
                 Hovered = WidgetAt(p);
+                if (Pressed is { } held && e.Pointer == _heldPointer && held.IsEnabledInTree) held.OnPointerMove(p);
+                break;
+            }
+            case InputEventKind.PointerDown:
+            {
+                var p = PointerToUi(e.Position);
+                CancelPress();
+                Hovered = WidgetAt(p);
                 Pressed = TargetAt(p);
-                if (Pressed is not null) Focus(Pressed);
+                if (Pressed is null) break;
+                _heldPointer = e.Pointer;
+                Focus(Pressed);
+                Pressed.OnPointerDown(p);
                 break;
             }
             case InputEventKind.PointerUp:
             {
+                if (Pressed is not { } pressed || e.Pointer != _heldPointer) break;
                 var p = PointerToUi(e.Position);
-                var target = TargetAt(p);
-                var pressed = Pressed;
                 Pressed = null;
-                if (pressed is not null && ReferenceEquals(target, pressed) && pressed.IsEnabledInTree) pressed.OnClick();
+                if (!pressed.IsEnabledInTree) break;
+                pressed.OnPointerUp(p);
+                if (ReferenceEquals(TargetAt(p), pressed)) pressed.OnClick();
                 break;
             }
             case InputEventKind.PointerCancel:
-                Pressed = null;
+                if (e.Pointer == _heldPointer) CancelPress();
+                break;
+            case InputEventKind.Wheel:
+                for (var w = WidgetAt(PointerToUi(e.Position)); w is not null; w = w.Parent)
+                    if (w.IsEnabledInTree && w.OnWheel(e.Wheel)) break;
                 break;
             case InputEventKind.KeyDown:
                 if (Focused is TextField field && !field.OnKey(e.Key)) Navigate(e.Key, field);
                 break;
         }
+    }
+
+    /// <summary>Ends the press a widget holds, telling it (<see cref="Widget.OnPointerCancel"/>).</summary>
+    private void CancelPress()
+    {
+        if (Pressed is not { } pressed) return;
+        Pressed = null;
+        pressed.OnPointerCancel();
     }
 
     private void Navigate(Key key, TextField field)
@@ -375,7 +398,9 @@ public sealed class UiRoot : IInputLayer, IStateHashed
                 _events.Enqueue(e);
                 return e.Pointer == _pressPointer;
             case InputEventKind.Wheel:
-                return Contains(PointerToUi(e.Position));
+                if (!Contains(PointerToUi(e.Position))) return false;
+                _events.Enqueue(e);
+                return true;
             case InputEventKind.KeyDown or InputEventKind.KeyUp:
                 if (Focused is not TextField || !Focused.IsEnabledInTree) return false;
                 if (e.Kind == InputEventKind.KeyDown) _events.Enqueue(e);
@@ -421,7 +446,7 @@ public sealed class UiRoot : IInputLayer, IStateHashed
         {
             if (ReferenceEquals(Focused, w)) Focus(null);
             if (ReferenceEquals(Hovered, w)) Hovered = null;
-            if (ReferenceEquals(Pressed, w)) Pressed = null;
+            if (ReferenceEquals(Pressed, w)) CancelPress();
         }
     }
 

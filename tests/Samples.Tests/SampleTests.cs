@@ -123,6 +123,113 @@ public sealed class ExtendingTests
     }
 }
 
+/// <summary>The settings screen example (UI guide): a slider, a toggle and a value selector built on widget primitives.</summary>
+[TestClass]
+public sealed class SettingsExampleTests
+{
+    private static readonly MicroEngine.Input.DeviceId Mouse = new(2);
+
+    private sealed class NoEvents : MicroEngine.Platform.IEngineEventSink
+    {
+        public void Resized(MicroEngine.Kernel.SurfaceResized size) { }
+        public void FocusChanged(bool focused) { }
+        public void Suspending() { }
+        public void Resumed() { }
+        public void QuitRequested() { }
+    }
+
+    private static (ExamplesGame Game, HeadlessPlatform Platform, SettingsExample Scene) Open()
+    {
+        var game = new ExamplesGame(Directory.CreateTempSubdirectory("examples-").FullName);
+        var platform = HeadlessPlatform.For(game.Settings, rasterize: false);
+        platform.Resize(960, 540);
+        platform.PumpEvents(new NoEvents());
+        game.InitializeForTest(platform);
+        var scene = new SettingsExample();
+        game.Scenes.Push(scene);
+        Frame(game, platform);            // the push applies at the step
+        scene.Widgets.Size = game.Views.CanvasToUi(new System.Numerics.Vector2(game.Settings.VirtualWidth, game.Settings.VirtualHeight));
+        Frame(game, platform);
+        return (game, platform, scene);
+    }
+
+    private static void Frame(ExamplesGame game, HeadlessPlatform platform)
+    {
+        game.StepForTest();
+    }
+
+    private static void Press(ExamplesGame game, HeadlessPlatform platform, string action)
+    {
+        game.Input.SetForced(action, true);
+        Frame(game, platform);
+        game.Input.SetForced(action, false);
+        Frame(game, platform);
+    }
+
+    private static T Find<T>(SettingsExample scene, int index = 0) where T : MicroEngine.UI.Widget =>
+        scene.Widgets.AllWidgets.OfType<T>().ElementAt(index);
+
+    [TestMethod]
+    public void TheKeyboardMovesThroughTheRowsAndChangesEachControl()
+    {
+        var (game, platform, scene) = Open();
+        float music = game.Audio.MusicVolume;
+        Assert.AreSame(Find<Slider>(scene), scene.Widgets.Focused, "the first slider has the focus");
+        Press(game, platform, "left");
+        Assert.AreEqual(music - 0.1f, game.Audio.MusicVolume, 1e-4f, "left lowers the music, and does not move the focus");
+        Assert.AreSame(Find<Slider>(scene), scene.Widgets.Focused);
+
+        Press(game, platform, "down");
+        Press(game, platform, "down");
+        Assert.AreSame(Find<Toggle>(scene), scene.Widgets.Focused);
+        Press(game, platform, "confirm");
+        Assert.IsFalse(Find<Toggle>(scene).On);
+
+        Press(game, platform, "down");
+        Press(game, platform, "right");
+        Assert.AreEqual("HARD", Find<Choice>(scene).Value);
+        Press(game, platform, "right");
+        Assert.AreEqual("EASY", Find<Choice>(scene).Value, "the selector wraps");
+    }
+
+    [TestMethod]
+    public void DraggingTheSliderSetsItFromThePointerEvenPastItsEnd()
+    {
+        var (game, platform, scene) = Open();
+        var effects = Find<Slider>(scene, 1);
+        var b = effects.Bounds;
+        var at = (float fraction) => game.Views.UiToCanvas(new System.Numerics.Vector2(b.X + b.Width * fraction, b.Y + b.Height / 2));
+        platform.Devices.Send(MicroEngine.Input.InputEvent.PointerDown(Mouse, 0, MicroEngine.Input.PointerKind.Mouse, at(0.25f)));
+        Frame(game, platform);
+        Assert.AreEqual(0.25f, game.Audio.SfxVolume, 0.02f);
+        Assert.AreSame(effects, scene.Widgets.Focused, "a press focuses the slider");
+
+        platform.Devices.Send(MicroEngine.Input.InputEvent.PointerMove(Mouse, 0, MicroEngine.Input.PointerKind.Mouse, at(3f)));
+        Frame(game, platform);
+        Assert.AreEqual(1f, game.Audio.SfxVolume, "dragged past the end: full");
+        platform.Devices.Send(MicroEngine.Input.InputEvent.PointerUp(Mouse, 0, MicroEngine.Input.PointerKind.Mouse, at(3f)));
+        Frame(game, platform);
+        platform.Devices.Send(MicroEngine.Input.InputEvent.PointerMove(Mouse, 0, MicroEngine.Input.PointerKind.Mouse, at(0f)));
+        Frame(game, platform);
+        Assert.AreEqual(1f, game.Audio.SfxVolume, "after the release, moves no longer drag");
+    }
+
+    [TestMethod]
+    public void AClickSwitchesTheToggleAndCancelLeavesTheScreen()
+    {
+        var (game, platform, scene) = Open();
+        var toggle = Find<Toggle>(scene);
+        var c = game.Views.UiToCanvas(new System.Numerics.Vector2(toggle.Bounds.X + 2, toggle.Bounds.Y + 2));
+        platform.Devices.Send(MicroEngine.Input.InputEvent.PointerDown(Mouse, 0, MicroEngine.Input.PointerKind.Mouse, c));
+        platform.Devices.Send(MicroEngine.Input.InputEvent.PointerUp(Mouse, 0, MicroEngine.Input.PointerKind.Mouse, c));
+        Frame(game, platform);
+        Assert.IsFalse(toggle.On);
+
+        Press(game, platform, "cancel");
+        Assert.IsNotInstanceOfType<SettingsExample>(game.Scenes.Current);
+    }
+}
+
 /// <summary>The controls screen example (input guide): rebinding, swapping a taken control, resetting and saving.</summary>
 [TestClass]
 public sealed class RebindExampleTests

@@ -34,7 +34,7 @@ per slice; the forecast is well over 400 authored lines. Test runner: `dotnet te
 | Task | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- |
 | T1 Evaluation, ADR 0050 and this plan | S1–S8 | inline | done | this branch |
-| T2 P1 pointer events and the wheel on widgets; settings screen example (slider, toggle, value selector) | S3 S4 S8 | inline | pending | — |
+| T2 P1 pointer events and the wheel on widgets; settings screen example (slider, toggle, value selector) | S3 S4 S8 | inline | done | `feat/ui-pointer`; RED: 5 missing members; GREEN: `WidgetTests` 24/24, `Samples.Tests` 38/38 |
 | T3 P2 clipping and a scrolling container; long list example | S3 S8 | inline | pending | — |
 | T4 P3 grid layout; inventory example | S3 S8 | inline | pending | — |
 | T5 P4 positioned placement, per-widget offset and opacity; speech bubble and banner examples | S3 S8 | inline | pending | — |
@@ -66,3 +66,16 @@ is delegated only if two of them run in parallel on disjoint files.
   ... Dialogbox no debería ser ahí ... Selectionless habría que ver si falta alguna primitiva ... sin skinning ni
   componentes de género." The evaluation was rewritten as a decomposition (UI-1 §3), and ADR 0050 records the rule.
 - L5 (2026-11-06) T1 done on `docs/ui-1`. Next: T2.
+- L6 (2026-11-06) T2 done on `feat/ui-pointer` (stacked on `docs/ui-1`). `Widget` gains `OnPointerDown`, `OnPointerMove`,
+  `OnPointerUp`, `OnPointerCancel` and `OnWheel`; `UiRoot` delivers them (the held press by pointer id at apply time,
+  the wheel bubbling to containers, a cancel when the held widget leaves the tree or the content changes). The settings
+  example found that spatial focus skips a narrow control under wide ones; the example aligns its column (one width),
+  and the manual says so. Checks: `MicroEngine.Tests` 735 passed, 1 failed outside the change
+  (`No_project_references_the_removed_entity_adapter` scans local `.claude/worktrees/` copies on this machine);
+  `Samples.Tests` 38/38; snippets; `repo-docs` 17/17; tour capture of the settings screen inspected. Next: T3.
+- L7 (2026-11-06) CI on #134 failed in `sdk/tests/docs.mjs`: the samples' build against the published SDK (0.5.0-alpha.1,
+  nuget.org) was required, and `Examples` now uses the new pointer members. Fix: that build is a report while the
+  release notes list `## Next release` changes (`pendingChanges`), as ADR 0048 already ties the documentation to the
+  next release; it stays required with nothing pending. Every later slice that adds API would have hit the same rule.
+  RED: `version.test.mjs` failed on the new cases; GREEN: 27/27; `node sdk/tests/docs.mjs` locally: Examples reported,
+  all required checks passed.
