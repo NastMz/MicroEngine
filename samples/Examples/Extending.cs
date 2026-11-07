@@ -66,3 +66,22 @@ public static class ReportingPlatform
     };
 }
 #endregion
+
+#region own-controls
+/// <summary>A game with controls of its own: none of the default actions, and the engine's menus follow its names.</summary>
+public sealed class OwnControlsGame : Game
+{
+    public override GameSettings Settings { get; } = new("Own Controls");
+
+    protected override InputMap CreateInput() => new InputMap { Names = ActionNames.Default with { Confirm = "jump", Cancel = "back" } }
+        .Bind("left", [Key.A], [PadButton.DPadLeft], InputMap.StickDirection.Left)
+        .Bind("right", [Key.D], [PadButton.DPadRight], InputMap.StickDirection.Right)
+        .Bind("up", [Key.W], [PadButton.DPadUp], InputMap.StickDirection.Up)
+        .Bind("down", [Key.S], [PadButton.DPadDown], InputMap.StickDirection.Down)
+        .Bind("jump", [Key.Space], [PadButton.A])
+        .Bind("back", [Key.Escape], [PadButton.B])
+        .Bind("pause", [Key.P], [PadButton.Start]);
+
+    protected override void Load() { }
+}
+#endregion

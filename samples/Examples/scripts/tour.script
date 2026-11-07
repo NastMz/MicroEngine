@@ -84,4 +84,10 @@
 1690 capture 14-source.png
 1696 press pause
 1710 press down
-1720 quit
+1720 press confirm
+1760 press confirm
+1760 hold right 40
+1810 capture 15-rebind.png
+1816 press pause
+1830 press down
+1840 quit

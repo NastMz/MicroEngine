@@ -547,3 +547,36 @@ public override void Update(float dt)
 ```
 
 More ways to extend the engine (save storage, transitions, platforms): [Extending the engine](../manual/extending.md).
+
+## Controls and rebinding
+
+A controls screen: pick `jump` or `fire`, press the key or gamepad button it should use. A control the other action
+had is swapped between them, "reset to defaults" restores the game's own defaults, and every change is saved. Source:
+[`RebindExample.cs`](../../samples/Examples/Examples/RebindExample.cs).
+
+<!-- code: samples/Examples/Examples/RebindExample.cs#listen -->
+```csharp
+public override void Update(float dt)
+{
+    if (Input.Pressed("pause")) { Game.Scenes.Pop(); return; }
+    if (_listening is not null) return;                       // the next press goes to the listener, not here
+    if (_list.Update(Input) is not { } choice) return;
+    if (choice == Rebindable.Length)
+    {
+        BindDefaults(Input);
+        Save("DEFAULTS RESTORED");
+        return;
+    }
+    string action = Rebindable[choice];
+    _status = $"PRESS A KEY OR BUTTON FOR {action.ToUpperInvariant()} (ESC: KEEP)";
+    _listening = Game.InputSystem.ListenForPress(press =>
+    {
+        _listening = null;
+        if (press is { Kind: InputEventKind.KeyDown, Key: Key.Escape }) { _status = "UNCHANGED"; return; }
+        Assign(Input, action, press);
+        Save($"{action.ToUpperInvariant()} CHANGED");
+    });
+}
+```
+
+Manual: [A rebinding screen](../manual/input.md#a-rebinding-screen).

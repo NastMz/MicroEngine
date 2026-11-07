@@ -79,6 +79,32 @@ public sealed class ExtendingTests
     }
 
     [TestMethod]
+    public void AGameWithControlsOfItsOwnHasNoDefaultActionAndItsMenusFollowItsNames()
+    {
+        var game = new OwnControlsGame();
+        game.InitializeForTest(new HeadlessPlatform());
+        CollectionAssert.AreEquivalent(new[] { "left", "right", "up", "down", "jump", "back", "pause", "fullscreen" }, game.Input.Actions.ToArray(),
+            "only its own actions, and the engine's full-screen toggle");
+        Assert.AreEqual("jump", game.Input.Names.Confirm);
+        Assert.AreEqual("back", game.Input.Names.Cancel);
+
+        var menu = new MenuProbe();
+        game.Scenes.Push(menu);
+        game.StepForTest();
+        game.Input.SetForced("jump", true);
+        game.StepForTest();
+        Assert.AreEqual(0, menu.Chosen, "a menu confirms with the action named Confirm");
+    }
+
+    private sealed class MenuProbe : Scene
+    {
+        private readonly MicroEngine.UI.SelectionList _list = new("one", "two");
+        public int? Chosen { get; private set; }
+        public override void Update(float dt) => Chosen ??= _list.Update(Input);
+        public override void Draw(MicroEngine.Graphics.IRenderer r) { }
+    }
+
+    [TestMethod]
     [DoNotParallelize] // redirects the console
     public void AWrappedProfileJoinsTheCatalogAndRunsTheGame()
     {
@@ -94,6 +120,102 @@ public sealed class ExtendingTests
         Assert.AreEqual(0, exit);
         StringAssert.Contains(output.ToString(), "started MicroEngine.Core.HeadlessPlatform (without sound)");
         StringAssert.Contains(output.ToString(), "done: 30 updates, 30 frames", "the original platform, its preset included");
+    }
+}
+
+/// <summary>The controls screen example (input guide): rebinding, swapping a taken control, resetting and saving.</summary>
+[TestClass]
+public sealed class RebindExampleTests
+{
+    private static readonly MicroEngine.Input.DeviceId Keyboard = new(1), Pad = new(2);
+
+    private static MicroEngine.Input.InputMap Defaults()
+    {
+        var map = MicroEngine.Input.InputMap.CreateDefault();
+        RebindExample.BindDefaults(map);
+        return map;
+    }
+
+    private static string[] Keys(MicroEngine.Input.InputMap map, string action) => [.. map.GetBindings(action)!.Keys.Select(k => k.ToString())];
+    private static string[] Buttons(MicroEngine.Input.InputMap map, string action) => [.. map.GetBindings(action)!.Buttons.Select(b => b.ToString())];
+
+    [TestMethod]
+    public void AFreeKeyReplacesTheActionsKeysAndLeavesTheOthersAlone()
+    {
+        var map = Defaults();
+        RebindExample.Assign(map, "jump", MicroEngine.Input.InputEvent.KeyDown(Keyboard, MicroEngine.Input.Key.Q));
+        CollectionAssert.AreEqual(new[] { "Q" }, Keys(map, "jump"));
+        CollectionAssert.AreEqual(new[] { "A" }, Buttons(map, "jump"), "a key replaces keys, not buttons");
+        CollectionAssert.AreEqual(new[] { "X" }, Keys(map, "fire"));
+    }
+
+    [TestMethod]
+    public void AKeyAnotherGameplayActionUsesIsSwapped()
+    {
+        var map = Defaults();
+        RebindExample.Assign(map, "jump", MicroEngine.Input.InputEvent.KeyDown(Keyboard, MicroEngine.Input.Key.X));
+        CollectionAssert.AreEqual(new[] { "X" }, Keys(map, "jump"));
+        CollectionAssert.AreEqual(new[] { "Z", "Space" }, Keys(map, "fire"), "fire gets the keys jump gave up");
+        CollectionAssert.Contains(Keys(map, "cancel"), "X", "menu actions keep their keys");
+    }
+
+    [TestMethod]
+    public void AButtonAnotherGameplayActionUsesIsSwapped()
+    {
+        var map = Defaults();
+        RebindExample.Assign(map, "fire", MicroEngine.Input.InputEvent.ButtonDown(Pad, MicroEngine.Input.PadButton.A));
+        CollectionAssert.AreEqual(new[] { "A" }, Buttons(map, "fire"));
+        CollectionAssert.AreEqual(new[] { "X" }, Buttons(map, "jump"));
+        CollectionAssert.AreEqual(new[] { "X" }, Keys(map, "fire"), "a button replaces buttons, not keys");
+    }
+
+    [TestMethod]
+    public void TheActionsOwnControlChangesNothing()
+    {
+        var map = Defaults();
+        RebindExample.Assign(map, "jump", MicroEngine.Input.InputEvent.KeyDown(Keyboard, MicroEngine.Input.Key.Space));
+        CollectionAssert.AreEqual(new[] { "Z", "Space" }, Keys(map, "jump"));
+    }
+
+    [TestMethod]
+    public void TheScreenRebindsWithTheNextPressSavesItAndEscapeKeepsTheBinding()
+    {
+        var saves = Directory.CreateTempSubdirectory("examples-").FullName;
+        var platform = new HeadlessPlatform();
+        var game = new ExamplesGame(saves);
+        game.InitializeForTest(platform);
+        game.Scenes.Push(new RebindExample(saves));
+        game.StepForTest();
+
+        void Choose()
+        {
+            game.Input.SetForced("confirm", true);
+            game.StepForTest();
+            game.Input.SetForced("confirm", false);
+            game.StepForTest();
+        }
+        void Press(MicroEngine.Input.Key key)
+        {
+            platform.Devices.Send(MicroEngine.Input.InputEvent.KeyDown(Keyboard, key));
+            game.StepForTest();
+            platform.Devices.Send(MicroEngine.Input.InputEvent.KeyUp(Keyboard, key));
+            game.StepForTest();
+        }
+
+        Choose();                        // "jump", the first entry
+        Press(MicroEngine.Input.Key.Q);
+        CollectionAssert.AreEqual(new[] { "Q" }, Keys(game.Input, "jump"));
+        Assert.IsFalse(game.Input.Down("jump"), "the press that chose the key is not also a jump");
+
+        Choose();
+        Press(MicroEngine.Input.Key.Escape);
+        CollectionAssert.AreEqual(new[] { "Q" }, Keys(game.Input, "jump"), "escape keeps the binding");
+        Assert.IsInstanceOfType<RebindExample>(game.Scenes.Current, "and does not leave the screen");
+
+        var reloaded = Defaults();
+        Assert.IsTrue(reloaded.LoadBindings(new FileSaveStorage(saves)));
+        CollectionAssert.AreEqual(new[] { "Q" }, Keys(reloaded, "jump"), "the change was saved");
+        Directory.Delete(saves, true);
     }
 }
 
