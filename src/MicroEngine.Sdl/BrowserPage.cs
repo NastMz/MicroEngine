@@ -45,6 +45,35 @@ public sealed class BrowserPage
         get => Feed.Vibrator;
         set => Feed.Vibrator = value;
     }
+
+    /// <summary>
+    /// The text of a paste on the page (its <c>paste</c> event): what the game's clipboard reads from now on, because a
+    /// page cannot read the system clipboard without asking. The paste's key press reaches the game after it.
+    /// </summary>
+    public void Paste(string text) => Feed.Clipboard = text ?? throw new ArgumentNullException(nameof(text));
+
+    /// <summary>How the page writes text to the system clipboard (navigator.clipboard); null where it cannot.</summary>
+    public Func<string, bool>? ClipboardWriter
+    {
+        get => Feed.ClipboardWriter;
+        set => Feed.ClipboardWriter = value;
+    }
+}
+
+/// <summary>
+/// A browser page's clipboard: reading gives the text of the page's latest paste, or of the game's latest copy;
+/// writing also puts the text on the system clipboard through the page, when the browser allows it.
+/// </summary>
+internal sealed class PageClipboard(PageFeed feed) : IClipboard
+{
+    public string? GetText() => feed.Clipboard;
+
+    public bool SetText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        feed.Clipboard = text;
+        return feed.ClipboardWriter?.Invoke(text) ?? true;
+    }
 }
 
 /// <summary>Touch events and screen facts handed to the SDL platform by its page.</summary>
@@ -56,6 +85,8 @@ internal sealed class PageFeed
     public float PixelsPerDp;
     public bool TouchFirst;
     public Func<int, bool>? Vibrator;
+    public volatile string? Clipboard;
+    public Func<string, bool>? ClipboardWriter;
 
     public void Push(TouchEvent e)
     {
@@ -83,4 +114,12 @@ internal static partial class BrowserHaptics
 {
     [System.Runtime.InteropServices.JavaScript.JSImport("haptics.vibrate", "microengine")]
     public static partial bool Vibrate(int milliseconds);
+}
+
+/// <summary>The page's clipboard writing (navigator.clipboard through the "microengine" module).</summary>
+[System.Runtime.Versioning.SupportedOSPlatform("browser")]
+internal static partial class BrowserClipboard
+{
+    [System.Runtime.InteropServices.JavaScript.JSImport("clipboard.write", "microengine")]
+    public static partial bool Write(string text);
 }

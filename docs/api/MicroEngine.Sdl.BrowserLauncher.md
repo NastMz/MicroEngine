@@ -42,7 +42,7 @@ The game's composition.
 
 `page` [BrowserPage](MicroEngine.Sdl.BrowserPage.md)
 
-The page whose touches, screen, visibility and vibration the platforms read.
+The page whose touches, screen, visibility, vibration and clipboard the platforms use.
 
 #### Returns
 

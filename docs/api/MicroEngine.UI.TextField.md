@@ -10,7 +10,9 @@ One line of editable text: a name, a seed, a chat message. While it has the focu
 channel on (the on-screen keyboard on a phone, the input method's candidates next to the caret), inserts what is
 typed at the caret, shows what an input method is still composing, and takes the keyboard from gameplay: Backspace,
 Delete, the arrows, Home and End edit, Enter submits, Escape leaves the field, Tab and the up and down keys move the
-focus. A gamepad edits nothing but moves the caret with left and right and submits with confirm.
+focus. Shift with the arrows, Home or End selects, as does dragging the pointer across the text; Ctrl (Command on
+macOS) with A selects everything, and with C, X and V copies, cuts and pastes through the root's
+[Clipboard](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_Clipboard). A gamepad edits nothing but moves the caret with left and right and submits with confirm.
 
 ```csharp
 public sealed class TextField : Widget
@@ -64,7 +66,7 @@ public TextField()
 
 ### <a id="MicroEngine_UI_TextField_Caret"></a> Caret
 
-Where new text goes, as an index into [Text](MicroEngine.UI.TextField.md#MicroEngine_UI_TextField_Text).
+Where new text goes, as an index into [Text](MicroEngine.UI.TextField.md#MicroEngine_UI_TextField_Text); setting it ends any selection.
 
 ```csharp
 public int Caret { get; set; }
@@ -110,6 +112,18 @@ public override bool Focusable { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_UI_TextField_HasSelection"></a> HasSelection
+
+Whether any text is selected.
+
+```csharp
+public bool HasSelection { get; }
+```
+
+#### Property Value
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
 ### <a id="MicroEngine_UI_TextField_MaxLength"></a> MaxLength
 
 The most characters (UTF-16 code units) the text may have (64 by default).
@@ -140,9 +154,45 @@ public string Placeholder { get; set; }
 
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
+### <a id="MicroEngine_UI_TextField_SelectedText"></a> SelectedText
+
+The selected text, or "" when none is.
+
+```csharp
+public string SelectedText { get; }
+```
+
+#### Property Value
+
+ [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+### <a id="MicroEngine_UI_TextField_SelectionLength"></a> SelectionLength
+
+How many characters (UTF-16 code units) are selected; 0 when none are.
+
+```csharp
+public int SelectionLength { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_UI_TextField_SelectionStart"></a> SelectionStart
+
+Where the selection starts, as an index into [Text](MicroEngine.UI.TextField.md#MicroEngine_UI_TextField_Text): the end opposite the caret.
+
+```csharp
+public int SelectionStart { get; }
+```
+
+#### Property Value
+
+ [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
 ### <a id="MicroEngine_UI_TextField_Text"></a> Text
 
-The text; setting it cuts it to [MaxLength](MicroEngine.UI.TextField.md#MicroEngine_UI_TextField_MaxLength) and puts the caret at its end.
+The text; setting it cuts it to [MaxLength](MicroEngine.UI.TextField.md#MicroEngine_UI_TextField_MaxLength), puts the caret at its end and ends any selection.
 
 ```csharp
 public string Text { get; set; }
@@ -153,6 +203,30 @@ public string Text { get; set; }
  [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 ## Methods
+
+### <a id="MicroEngine_UI_TextField_Copy"></a> Copy\(\)
+
+Puts the selected text on the root's clipboard; false when nothing is selected or there is no clipboard.
+
+```csharp
+public bool Copy()
+```
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_UI_TextField_Cut"></a> Cut\(\)
+
+Puts the selected text on the root's clipboard and deletes it; false (and nothing deleted) when it could not copy.
+
+```csharp
+public bool Cut()
+```
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 ### <a id="MicroEngine_UI_TextField_DrawContent_MicroEngine_Graphics_IRenderer_MicroEngine_UI_UiContext_"></a> DrawContent\(IRenderer, UiContext\)
 
@@ -182,7 +256,8 @@ protected override void HashState(StateHasher hash)
 
 ### <a id="MicroEngine_UI_TextField_Insert_System_String_"></a> Insert\(string\)
 
-Inserts <code class="paramref">text</code> at the caret, as far as [MaxLength](MicroEngine.UI.TextField.md#MicroEngine_UI_TextField_MaxLength) allows, and moves the caret after it.
+Inserts <code class="paramref">text</code> at the caret, in place of the selection when there is one, as far as
+[MaxLength](MicroEngine.UI.TextField.md#MicroEngine_UI_TextField_MaxLength) allows, and moves the caret after it.
 
 ```csharp
 public void Insert(string text)
@@ -235,6 +310,88 @@ protected override void OnFocusChanged(bool focused)
 #### Parameters
 
 `focused` [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_UI_TextField_OnPointerCancel"></a> OnPointerCancel\(\)
+
+Called when a press the widget holds is cancelled (the system took the touch, the widget left the tree, a container took it as a drag); no release or click follows.
+
+```csharp
+protected override void OnPointerCancel()
+```
+
+### <a id="MicroEngine_UI_TextField_OnPointerDown_System_Numerics_Vector2_"></a> OnPointerDown\(Vector2\)
+
+Called when a pointer press starts on the widget (the focusable widget under the pointer, or its nearest focusable
+container). <code class="paramref">position</code> is in UI units, like [Bounds](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_Bounds). The widget then holds the press:
+it receives the press's moves and its release wherever the pointer goes.
+
+```csharp
+protected override void OnPointerDown(Vector2 position)
+```
+
+#### Parameters
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_UI_TextField_OnPointerMove_System_Numerics_Vector2_"></a> OnPointerMove\(Vector2\)
+
+Called when the pointer of a press the widget holds moves, inside the widget or not (dragging a slider's handle); <code class="paramref">position</code> is in UI units.
+
+```csharp
+protected override void OnPointerMove(Vector2 position)
+```
+
+#### Parameters
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_UI_TextField_OnPointerUp_System_Numerics_Vector2_"></a> OnPointerUp\(Vector2\)
+
+Called when a press the widget holds is released, inside the widget or not; <code class="paramref">position</code> is in UI units. A release on the widget then also calls [OnClick](MicroEngine.UI.Widget.md#MicroEngine_UI_Widget_OnClick).
+
+```csharp
+protected override void OnPointerUp(Vector2 position)
+```
+
+#### Parameters
+
+`position` [Vector2](https://learn.microsoft.com/dotnet/api/system.numerics.vector2)
+
+### <a id="MicroEngine_UI_TextField_Paste"></a> Paste\(\)
+
+Inserts the root's clipboard text at the caret, in place of the selection, as one line (line breaks and tabs
+become spaces) cut to [MaxLength](MicroEngine.UI.TextField.md#MicroEngine_UI_TextField_MaxLength); false when there is no clipboard or it holds no text.
+
+```csharp
+public bool Paste()
+```
+
+#### Returns
+
+ [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+### <a id="MicroEngine_UI_TextField_Select_System_Int32_System_Int32_"></a> Select\(int, int\)
+
+Selects the text between <code class="paramref">anchor</code> and <code class="paramref">caret</code> (indices into [Text](MicroEngine.UI.TextField.md#MicroEngine_UI_TextField_Text),
+clamped to it); the caret goes to <code class="paramref">caret</code>, so the selection grows from there.
+
+```csharp
+public void Select(int anchor, int caret)
+```
+
+#### Parameters
+
+`anchor` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+`caret` [int](https://learn.microsoft.com/dotnet/api/system.int32)
+
+### <a id="MicroEngine_UI_TextField_SelectAll"></a> SelectAll\(\)
+
+Selects the whole text, with the caret at its end.
+
+```csharp
+public void SelectAll()
+```
 
 ### <a id="MicroEngine_UI_TextField_Update_System_Single_"></a> Update\(float\)
 

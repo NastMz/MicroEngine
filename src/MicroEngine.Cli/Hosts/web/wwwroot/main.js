@@ -149,6 +149,7 @@ for (const button of [play, soundButton, fullscreenButton]) button.addEventListe
 // Alt+Tab.
 const browserKey = e => e.ctrlKey || e.metaKey || /^F\d+$/.test(e.key);
 window.addEventListener('keydown', e => {
+  if (replayed.has(e)) return;
   if (state !== 'playing') {
     e.stopImmediatePropagation();
     if ((state === 'ready' || state === 'ended') && !e.repeat && !browserKey(e) && !e.altKey && e.key !== 'Tab') {
@@ -163,12 +164,47 @@ window.addEventListener('keydown', e => {
     if (!e.repeat) toggleFullscreen();
     return;
   }
+  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyV' && !e.repeat) {
+    holdPaste(e);
+    return;
+  }
   if (!browserKey(e)) e.preventDefault();
   resumeAudio();
 }, true);
 window.addEventListener('keyup', e => { if (state !== 'playing') e.stopImmediatePropagation(); }, true);
 canvas.addEventListener('pointerdown', () => { canvas.focus(); resumeAudio(); });
 play.onclick = () => begin();
+
+// Clipboard. A page cannot read the clipboard without asking, but a paste (Ctrl+V or Command+V) hands the page its
+// text. SDL cancels every key pressed with Ctrl, which would cancel the paste too, so the keyboard listener above holds
+// the V back from SDL: the browser then pastes, the text becomes the game's clipboard, and the held key press is
+// replayed to SDL right after, so the game sees Ctrl+V with the new text ready. A key press with nothing to paste is
+// replayed as well. Copies go out through navigator.clipboard (the clipboard.write import below).
+const replayed = new WeakSet();
+let heldPaste = null;
+function holdPaste(e) {
+  e.stopImmediatePropagation(); // SDL does not see it yet, so the browser's paste is not cancelled
+  heldPaste = e;
+  setTimeout(replayPaste, 0);   // a paste comes before this runs: it is part of the key press
+}
+function replayPaste() {
+  if (!heldPaste) return;
+  const e = heldPaste;
+  heldPaste = null;
+  const copy = new KeyboardEvent('keydown', { key: e.key, code: e.code, location: e.location, ctrlKey: e.ctrlKey, metaKey: e.metaKey,
+    shiftKey: e.shiftKey, altKey: e.altKey, bubbles: true, cancelable: true });
+  replayed.add(copy);
+  window.dispatchEvent(copy);
+}
+document.addEventListener('paste', e => {
+  if (state !== 'playing') return;
+  e.preventDefault();
+  const text = e.clipboardData?.getData('text/plain');
+  if (text) {
+    try { exports.WebHost.Paste(text); } catch (error) { console.error(error); }
+  }
+  replayPaste();
+});
 
 // Touch. Fingers (and pens) on the canvas reach the game's on-screen controls (MicroEngine.Input.VirtualControls)
 // through Pointer Events, which every current mobile browser has (Chrome on Android, Safari on iOS 13+): each pointer
@@ -341,6 +377,8 @@ async function load() {
     storage: storageImports,
     // Touch-control haptics. Android browsers vibrate; Safari on iOS has no Vibration API, so this returns false there.
     haptics: { vibrate: ms => !!navigator.vibrate?.(ms) },
+    // Copies from the game's text fields. Browsers allow it right after a key press or a click, which is when copies happen.
+    clipboard: { write: text => { if (!navigator.clipboard) return false; navigator.clipboard.writeText(text).catch(() => {}); return true; } },
     // The game's audio output (MicroEngine.Sdl's browser sink).
     audio: audioImports,
   });

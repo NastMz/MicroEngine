@@ -93,7 +93,7 @@ public sealed class TitleScene : Scene
 | `ScrollView` | A window of fixed `Height` (or `Width`, `Orientation.Horizontal`) onto a longer `Content`: `Scroll`, `MaxScroll`, `WheelStep`, `ShowScrollBar` ([Long content](#long-content)) |
 | `Grid` | Children in rows of `Columns` equal cells, left to right then top to bottom, with `Spacing` and an `Align` within the cell ([Grids](#grids)) |
 | `Layer` | The whole UI view, each child against an edge or corner (`Add(child, anchor, offset)`, `Place`) or at a point (`AddAt(child, point, pivot)`, `Move`); its empty areas let the pointer through ([Placing widgets anywhere](#placing-widgets-anywhere)) |
-| `TextField` | One line of editable text: `Text`, `Caret`, `Placeholder`, `MaxLength`, the input method's `Composition`; `Changed` and `Submitted` events |
+| `TextField` | One line of editable text: `Text`, `Caret`, `Placeholder`, `MaxLength`, the input method's `Composition`, the selection (`Select`, `SelectAll`, `SelectedText`) and the clipboard (`Copy`, `Cut`, `Paste`); `Changed` and `Submitted` events ([Text entry](#text-entry)) |
 
 **Layout.** Widgets are measured and placed in UI units (window pixels divided by the UI scale, the screen's pixel
 density unless `Presentation.UiScale` sets one, see
@@ -125,7 +125,7 @@ under the pointer: `OnWheel` returns true to take it, otherwise its container is
 candidate window next to the field), inserts what is typed at the caret and shows what an input method is still
 composing, underlined. While it has the focus it takes the keyboard from gameplay: Backspace, Delete, the arrows, Home
 and End edit, Enter raises `Submitted`, Escape leaves the field, Tab and the up and down keys move the focus. Text input
-stops when the field loses the focus or its scene leaves or is covered.
+stops when the field loses the focus or its scene leaves or is covered. Selection and the clipboard: [Text entry](#text-entry).
 
 The widgets' state (the focus, the fields' text) is part of the scene's state hash, so scripted runs and replays see
 the same interface. A scene that never reads `Widgets` has none and pays nothing.
@@ -273,6 +273,53 @@ private void NextBox()
     _shown = 0;
 }
 ```
+
+### Text entry
+
+A `TextField` selects as text boxes do: Shift with the arrows, Home or End moves the caret and selects what it passes,
+a press puts the caret where it lands and a drag selects, and Ctrl (Command on macOS) with A selects everything. Typing,
+Backspace and Delete replace or delete the selection; an arrow without Shift ends it at that side. `Select(anchor,
+caret)` and `SelectAll` select from code, and `SelectionStart`, `SelectionLength` and `SelectedText` read it.
+
+Ctrl or Command with C, X and V copy, cut and paste through `Widgets.Clipboard`, the platform's clipboard
+(`IClipboard`, also yours through `Game.TryGetCapability`). A paste is one line: line breaks and tabs become spaces,
+and it is cut to `MaxLength`. `Copy`, `Cut` and `Paste` do the same from code, for buttons of the game's own on screens
+without a keyboard. This name entry greets on Enter and has copy and paste buttons for the whole field:
+
+<!-- code: samples/Examples/Examples/TextEntryExample.cs#field -->
+```csharp
+public override void Enter()
+{
+    Status = new Label("TYPE A NAME, THEN ENTER") { Color = UiTheme.Default.Muted };
+    Field = new TextField { Placeholder = "YOUR NAME", MaxLength = 16, Columns = 120 };
+    Field.Submitted += name => Status.Text = name.Length > 0 ? $"HELLO, {name.ToUpperInvariant()}" : "THE NAME IS EMPTY";
+    CopyButton = new Button("COPY", Copy);
+    PasteButton = new Button("PASTE", Paste);
+    Widgets.Content = new Stack { Spacing = 8 }
+        .Add(Field)
+        .Add(new Stack { Orientation = Orientation.Horizontal, Spacing = 8 }.Add(CopyButton).Add(PasteButton))
+        .Add(Status);
+    Widgets.Focus(Field);
+}
+
+// The buttons act on the whole field: select it all, then copy, or paste over it.
+private void Copy()
+{
+    Field.SelectAll();
+    Status.Text = Field.Copy() ? "COPIED" : "NOTHING TO COPY";
+}
+
+private void Paste()
+{
+    Field.SelectAll();
+    Status.Text = Field.Paste() ? "PASTED" : "NOTHING TO PASTE";
+}
+```
+
+In a browser, a page cannot read the clipboard without asking the player, so the game's clipboard holds the text of
+the page's latest paste (Ctrl+V or Command+V while a text field has the focus) or of the game's latest copy; a paste
+button of the game's own pastes that text. Copies reach the system clipboard, which browsers allow right after a key
+press or a click.
 
 ### Long content
 
@@ -603,7 +650,7 @@ private static Widget Row(string text, Widget control)
 ## Limitations
 
 - Text uses the game's font; there is no rich text, right-to-left text or localisation support. A text field edits one
-  line, without selection or clipboard.
+  line, and its caret moves by characters, never by words.
 - Sliders, toggles and value selectors are widgets of your own
   ([Controls of your own](#controls-of-your-own)).
 - A scroll view moves at once to its new position: there is no smooth scrolling or momentum after a flick.

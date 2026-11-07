@@ -44,7 +44,7 @@ per slice; the forecast is well over 400 authored lines. Test runner: `dotnet te
 | T9 Deprecate `DialogueBox`, `Typewriter`, `SelectionList`, `Toasts`, `AchievementToasts`, `AchievementsScene`; migration notes | S7 S9 | inline | done | `feat/ui-deprecate`; RED: `DrawAboveScenes` and `TrackAchievements` missing; GREEN: `AchievementTests` 24/24; Risk: item 3 |
 | T10 Demos, tutorial and template off the deprecated types (copies in the demos or the widget tree) | S7 | inline | done | `feat/ui-deprecate`; demo suites 60/71/68/126, `Samples.Tests` 48/48 |
 | T11 Remove the deprecated types, in the SDK release after T9's | S9 | inline | blocked: needs T9 released | Risk: item 3 |
-| T12 P7 selection in `TextField`, clipboard capability on SDL, raylib and browsers | S3 S8 | inline | pending | — |
+| T12 P7 selection in `TextField`, clipboard capability on SDL, raylib and browsers | S3 S8 | inline | done | `feat/ui-text-selection`; RED: selection members, `IClipboard` and `TextEntryExample` missing; GREEN: `WidgetTests` 38/38, `Samples.Tests` 49/49, clipboard conformance 3/3 (written after the code) |
 | T13 P8 optional shaping and right-to-left module; check HarfBuzz on every target, WebAssembly included, first | S3 S8 | inline | pending | Risk: item 5 |
 
 Routes are inline: each task is one behaviour with its example, tests and docs, and the tasks run in order. A writer
@@ -143,3 +143,17 @@ is delegated only if two of them run in parallel on disjoint files.
   and pause menus and `RebindExample` moved to the widget tree; new `AchievementsExample` (list in a `ScrollView`,
   banner per unlock). The template used none of them. Docs: UI and achievements manuals, tutorial step 10, migration
   notes (`## Next release`), release notes, references. Next: T12 (T11 waits for an SDK release with T9).
+- L15 (2026-11-07) T12 done on `feat/ui-text-selection`. `IClipboard` (MicroEngine.Input) is a platform capability:
+  SDL's clipboard on desktops and phones, raylib's (GLFW), `MemoryClipboard` headless (`HeadlessPlatform.Clipboard`),
+  and in browsers `PageClipboard`, which reads the text of the page's latest paste or the game's latest copy and writes
+  through `navigator.clipboard` (SDL's own clipboard on Emscripten stays inside the game). SDL's web key handler cancels
+  every key pressed with Ctrl, which cancels the browser's paste, so the page holds Ctrl/Command+V back from SDL, lets
+  the paste event deliver the text (`WebHost.Paste`), then replays the key to SDL. `UiRoot.Clipboard` (set from the
+  capability for scene widgets) and modifier tracking in `UiRoot` (Shift, Control, Command; SDL and GLFW send key-ups
+  on focus loss, so none sticks). `TextField`: anchor and caret, `Select`, `SelectAll`, `SelectionStart`,
+  `SelectionLength`, `SelectedText`, `Copy`, `Cut`, `Paste` (one line, cut to `MaxLength`), Shift+arrows/Home/End,
+  pointer press and drag, Ctrl/Command+A/C/X/V, highlight. New `TextEntryExample`. Verified in Chromium (built-in
+  browser, dev package of the examples): typing, Shift+arrows, Ctrl+C reaching `navigator.clipboard.writeText`,
+  Ctrl+V through the page's paste, the PASTE button, drag selection; key and paste events were synthetic, Firefox not
+  run. Found, not changed: keys are applied before typed text of the same frame (text then Enter in one frame submits
+  the old text). Next: T13.

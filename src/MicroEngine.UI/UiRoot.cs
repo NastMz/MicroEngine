@@ -64,6 +64,8 @@ public sealed class UiRoot : IInputLayer, IStateHashed
 {
     private readonly InputMap _input;
     private readonly Queue<InputEvent> _events = new();
+    private readonly Queue<KeyModifiers> _keyModifiers = new(); // the modifiers held at each queued key-down
+    private KeyModifiers _modifiers; // held now, as the events arrive
     private readonly List<Widget> _focusable = [];
     private Widget? _content;
     private long _pressPointer = -1; // the press the layer took, as events arrive
@@ -82,6 +84,12 @@ public sealed class UiRoot : IInputLayer, IStateHashed
 
     /// <summary>The text channel text fields type through, or null.</summary>
     public TextInput? TextInput { get; }
+
+    /// <summary>
+    /// The clipboard text fields copy, cut and paste through (Ctrl or Command with C, X and V); null: they cannot. A
+    /// scene's widgets get the platform's (<see cref="IClipboard"/>).
+    /// </summary>
+    public IClipboard? Clipboard { get; set; }
 
     /// <summary>The widget tree shown; setting it drops the focus, the hover and any press.</summary>
     /// <exception cref="InvalidOperationException">The widget already belongs to another widget or root.</exception>
@@ -302,6 +310,7 @@ public sealed class UiRoot : IInputLayer, IStateHashed
         if (_content is null || !_content.Visible)
         {
             _events.Clear();
+            _keyModifiers.Clear();
             return;
         }
         if (Font is not null) Layout();
@@ -367,8 +376,11 @@ public sealed class UiRoot : IInputLayer, IStateHashed
                     if (w.IsEnabledInTree && w.OnWheel(e.Wheel)) break;
                 break;
             case InputEventKind.KeyDown:
-                if (Focused is TextField field && !field.OnKey(e.Key)) Navigate(e.Key, field);
+            {
+                var modifiers = _keyModifiers.TryDequeue(out var held) ? held : default;
+                if (Focused is TextField field && !field.OnKey(e.Key, modifiers)) Navigate(e.Key, field);
                 break;
+            }
         }
     }
 
@@ -427,6 +439,7 @@ public sealed class UiRoot : IInputLayer, IStateHashed
     /// </summary>
     public bool Handle(in InputEvent e)
     {
+        if (e.Kind is InputEventKind.KeyDown or InputEventKind.KeyUp) Track(e.Key, e.Kind == InputEventKind.KeyDown);
         if (_content is not { Visible: true }) return false;
         switch (e.Kind)
         {
@@ -450,11 +463,29 @@ public sealed class UiRoot : IInputLayer, IStateHashed
                 return true;
             case InputEventKind.KeyDown or InputEventKind.KeyUp:
                 if (Focused is not TextField || !Focused.IsEnabledInTree) return false;
-                if (e.Kind == InputEventKind.KeyDown) _events.Enqueue(e);
+                if (e.Kind == InputEventKind.KeyDown)
+                {
+                    _events.Enqueue(e);
+                    _keyModifiers.Enqueue(_modifiers);
+                }
                 return true;
             default:
                 return false;
         }
+    }
+
+    /// <summary>Follows the modifier keys, which text fields read with the keys they take (Shift+arrows, Ctrl+C).</summary>
+    private void Track(Key key, bool down)
+    {
+        var modifier = key switch
+        {
+            Key.LeftShift or Key.RightShift => KeyModifiers.Shift,
+            Key.LeftControl or Key.RightControl => KeyModifiers.Control,
+            Key.LeftSuper or Key.RightSuper => KeyModifiers.Command,
+            _ => KeyModifiers.None,
+        };
+        if (down) _modifiers |= modifier;
+        else _modifiers &= ~modifier;
     }
 
     /// <summary>Adds the focus and the widgets' state (in tree order) to the scene's state hash.</summary>
@@ -503,4 +534,16 @@ public sealed class UiRoot : IInputLayer, IStateHashed
         foreach (var child in root.Children)
             foreach (var w in Descendants(child)) yield return w;
     }
+}
+
+/// <summary>The modifier keys held with a key a text field takes.</summary>
+[Flags]
+internal enum KeyModifiers
+{
+    None = 0,
+    Shift = 1,
+    /// <summary>Either Control key.</summary>
+    Control = 2,
+    /// <summary>Either Command (macOS), Windows or Super key.</summary>
+    Command = 4,
 }

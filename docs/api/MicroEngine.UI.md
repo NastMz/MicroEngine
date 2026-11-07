@@ -86,7 +86,9 @@ One line of editable text: a name, a seed, a chat message. While it has the focu
 channel on (the on-screen keyboard on a phone, the input method's candidates next to the caret), inserts what is
 typed at the caret, shows what an input method is still composing, and takes the keyboard from gameplay: Backspace,
 Delete, the arrows, Home and End edit, Enter submits, Escape leaves the field, Tab and the up and down keys move the
-focus. A gamepad edits nothing but moves the caret with left and right and submits with confirm.
+focus. Shift with the arrows, Home or End selects, as does dragging the pointer across the text; Ctrl (Command on
+macOS) with A selects everything, and with C, X and V copies, cuts and pastes through the root's
+[Clipboard](MicroEngine.UI.UiRoot.md#MicroEngine_UI_UiRoot_Clipboard). A gamepad edits nothing but moves the caret with left and right and submits with confirm.
 
  [Toast](MicroEngine.UI.Toast.md)
 

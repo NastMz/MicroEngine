@@ -105,6 +105,10 @@ either Alt key. The chord is down while [Key](MicroEngine.Input.KeyChord.md#Micr
 The physical position of each [Key](MicroEngine.Input.Key.md) as a USB HID keyboard usage (page 7), the code SDL calls a scancode:
 backends that report HID usages map them with one table.
 
+ [MemoryClipboard](MicroEngine.Input.MemoryClipboard.md)
+
+A clipboard that only remembers its text: the headless platform's, and a stand-in where there is no system clipboard.
+
  [OverlayShapes](MicroEngine.Input.OverlayShapes.md)
 
 Shapes built from [IOverlayCanvas](MicroEngine.Input.IOverlayCanvas.md) triangles and rectangles, which never overlap, so translucent colours stay even.
@@ -211,6 +215,11 @@ One change of one finger, in the touch screen's pixels ([Size](MicroEngine.Input
 A source of actions rather than of keys: on-screen touch controls, a network peer, an accessibility switch or an AI.
 Added with [AddSource](MicroEngine.Input.InputMap.md#MicroEngine_Input_InputMap_AddSource_MicroEngine_Input_IActionSource_), it is read every step together with the keyboard and gamepad, so a game
 cannot tell which produced an action.
+
+ [IClipboard](MicroEngine.Input.IClipboard.md)
+
+The system clipboard's text: a platform capability (<code>Game.TryGetCapability</code>). Text fields copy, cut and paste
+through it (<code>MicroEngine.UI.TextField</code>); a game may use it for its own "copy the seed" or "paste a code" buttons.
 
  [IGamepadRumble](MicroEngine.Input.IGamepadRumble.md)
 

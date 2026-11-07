@@ -21,7 +21,7 @@ public static class BrowserLauncher
     /// <paramref name="configure"/> (the game's <c>Configure</c> entry point), for every run.
     /// </summary>
     /// <param name="configure">The game's composition.</param>
-    /// <param name="page">The page whose touches, screen, visibility and vibration the platforms read.</param>
+    /// <param name="page">The page whose touches, screen, visibility, vibration and clipboard the platforms use.</param>
     /// <exception cref="ArgumentNullException">An argument is null.</exception>
     public static GameSession CreateSession(Action<HostBuilder> configure, BrowserPage page)
     {
@@ -30,6 +30,11 @@ public static class BrowserLauncher
         page.Vibrator ??= ms =>
         {
             try { return BrowserHaptics.Vibrate(ms); }
+            catch (System.Runtime.InteropServices.JavaScript.JSException) { return false; }
+        };
+        page.ClipboardWriter ??= text =>
+        {
+            try { return BrowserClipboard.Write(text); }
             catch (System.Runtime.InteropServices.JavaScript.JSException) { return false; }
         };
         return GameHost.CreateSession(request => GameHost.Create(new HostEnvironment(HostKind.Browser), request, configure, host => Defaults(host, page)));

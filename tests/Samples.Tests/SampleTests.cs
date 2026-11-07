@@ -278,6 +278,41 @@ public sealed class AchievementsExampleTests
     }
 }
 
+/// <summary>The text entry example (UI guide): a text field, its Enter, and copy and paste buttons on the clipboard.</summary>
+[TestClass]
+public sealed class TextEntryExampleTests
+{
+    private static readonly MicroEngine.Input.DeviceId Keyboard = new(1);
+
+    [TestMethod]
+    public void TypingSubmitsAndTheButtonsCopyAndPasteTheWholeField()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new TextEntryExample());
+        var scene = (TextEntryExample)game.Scenes.Current!;
+        Assert.AreSame(scene.Field, scene.Widgets.Focused, "the field starts with the focus");
+
+        platform.Devices.Send(MicroEngine.Input.InputEvent.TextInput(Keyboard, "Ada"));
+        SettingsExampleTests.Frame(game, platform);
+        platform.Devices.Send(MicroEngine.Input.InputEvent.KeyDown(Keyboard, MicroEngine.Input.Key.Enter));
+        SettingsExampleTests.Frame(game, platform);
+        Assert.AreEqual("HELLO, ADA", scene.Status.Text);
+
+        scene.Widgets.Focus(scene.CopyButton);
+        SettingsExampleTests.Press(game, platform, "confirm");
+        Assert.AreEqual("Ada", platform.Clipboard.Text);
+        Assert.AreEqual("COPIED", scene.Status.Text);
+
+        platform.Clipboard.Text = "Grace";
+        scene.Widgets.Focus(scene.PasteButton);
+        SettingsExampleTests.Press(game, platform, "confirm");
+        Assert.AreEqual("Grace", scene.Field.Text, "paste replaces the whole field");
+
+        platform.Clipboard.Text = null;
+        SettingsExampleTests.Press(game, platform, "confirm");
+        Assert.AreEqual(("Grace", "NOTHING TO PASTE"), (scene.Field.Text, scene.Status.Text));
+    }
+}
+
 /// <summary>The inventory example (UI guide): slots in a grid, the description following the focus.</summary>
 [TestClass]
 public sealed class InventoryExampleTests

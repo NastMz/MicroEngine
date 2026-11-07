@@ -76,6 +76,10 @@ public static partial class WebHost
     public static void Screen(double left, double top, double right, double bottom, double pixelsPerDp, bool touchFirst) =>
         Page.Screen((float)left, (float)top, (float)right, (float)bottom, (float)pixelsPerDp, touchFirst);
 
+    /// <summary>The text of a paste on the page: the game's clipboard text from now on (a page cannot read the clipboard itself).</summary>
+    [JSExport]
+    public static void Paste(string text) => Page.Paste(text);
+
     /// <summary>The page was hidden or shown again: a hidden page suspends the game (music paused, fingers released).</summary>
     [JSExport]
     public static void Visibility(bool hidden) => Page.Hidden = hidden;

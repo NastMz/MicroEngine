@@ -72,6 +72,18 @@ public bool CanBlock { get; }
 
  [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
+### <a id="MicroEngine_Core_HeadlessPlatform_Clipboard"></a> Clipboard
+
+The clipboard (the [IClipboard](MicroEngine.Input.IClipboard.md) capability): tests put text on it or read what was copied.
+
+```csharp
+public MemoryClipboard Clipboard { get; }
+```
+
+#### Property Value
+
+ [MemoryClipboard](MicroEngine.Input.MemoryClipboard.md)
+
 ### <a id="MicroEngine_Core_HeadlessPlatform_Clock"></a> Clock
 
 A monotonic clock in seconds since the platform was created. The loop owns time: in deterministic time it never

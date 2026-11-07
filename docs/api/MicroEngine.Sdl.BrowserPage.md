@@ -32,6 +32,18 @@ public BrowserPage()
 
 ## Properties
 
+### <a id="MicroEngine_Sdl_BrowserPage_ClipboardWriter"></a> ClipboardWriter
+
+How the page writes text to the system clipboard (navigator.clipboard); null where it cannot.
+
+```csharp
+public Func<string, bool>? ClipboardWriter { get; set; }
+```
+
+#### Property Value
+
+ [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[string](https://learn.microsoft.com/dotnet/api/system.string), [bool](https://learn.microsoft.com/dotnet/api/system.boolean)\>?
+
 ### <a id="MicroEngine_Sdl_BrowserPage_Hidden"></a> Hidden
 
 Whether the page is hidden (another tab, the phone locked or switched away), set by the page from
@@ -58,6 +70,19 @@ public Func<int, bool>? Vibrator { get; set; }
  [Func](https://learn.microsoft.com/dotnet/api/system.func\-2)<[int](https://learn.microsoft.com/dotnet/api/system.int32), [bool](https://learn.microsoft.com/dotnet/api/system.boolean)\>?
 
 ## Methods
+
+### <a id="MicroEngine_Sdl_BrowserPage_Paste_System_String_"></a> Paste\(string\)
+
+The text of a paste on the page (its <code>paste</code> event): what the game's clipboard reads from now on, because a
+page cannot read the system clipboard without asking. The paste's key press reaches the game after it.
+
+```csharp
+public void Paste(string text)
+```
+
+#### Parameters
+
+`text` [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 ### <a id="MicroEngine_Sdl_BrowserPage_Pointer_System_Int64_System_Int32_System_Single_System_Single_"></a> Pointer\(long, int, float, float\)
 
