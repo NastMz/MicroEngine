@@ -313,6 +313,27 @@ public sealed class TextEntryExampleTests
     }
 }
 
+/// <summary>The shaping example (text guide): Arabic and Hebrew from fallbacks of one shaped font, served to widgets too.</summary>
+[TestClass]
+public sealed class ShapingExampleTests
+{
+    [TestMethod]
+    public void ArabicAndHebrewComeFromTheFallbacksAndRunRightToLeft()
+    {
+        var (game, platform) = SettingsExampleTests.Start(new ShapingExample());
+        var scene = (ShapingExample)game.Scenes.Current!;
+        var arabic = scene.Text.Shape("مرحبا بالعالم");
+        Assert.IsTrue(arabic.Where(g => g.Advance > 0 && g.Cluster != 5).All(g => g.Face == 1 && g.Glyph != 0), "Arabic letters from Noto Sans Arabic, none missing");
+        Assert.IsTrue(arabic[0].Cluster > arabic[^1].Cluster, "the last letter is drawn first, at the left");
+        Assert.IsTrue(scene.Text.Shape("שלום עולם").Where(g => g.Cluster != 4).All(g => g.Face == 2 && g.Glyph != 0), "Hebrew from Noto Sans Hebrew");
+        Assert.IsTrue(scene.Text.Shape("Hello").All(g => g.Face == 0), "Latin from Inter");
+        Assert.IsInstanceOfType<MicroEngine.Graphics.ShapedFontSize>(scene.Widgets.Font, "the widgets use the shaped font");
+        game.Scenes.Pop();
+        SettingsExampleTests.Frame(game, platform);
+        Assert.ThrowsExactly<ObjectDisposedException>(() => scene.Text.Shape("x"), "leaving the example releases its font");
+    }
+}
+
 /// <summary>The inventory example (UI guide): slots in a grid, the description following the focus.</summary>
 [TestClass]
 public sealed class InventoryExampleTests

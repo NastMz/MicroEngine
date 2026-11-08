@@ -1,8 +1,8 @@
 # Install the SDK
 
-MicroEngine is a code-first 2D game engine for C# and .NET 10, open source under the MIT License. Its SDK is six NuGet
-packages on [nuget.org](https://www.nuget.org/packages/MicroEngine): the engine, its platforms, the `microengine`
-command-line tool and a project template. This page installs them and checks that everything works; the next page,
+MicroEngine is a code-first 2D game engine for C# and .NET 10, open source under the MIT License. Its SDK is seven NuGet
+packages on [nuget.org](https://www.nuget.org/packages/MicroEngine): the engine, its platforms, optional text shaping, the
+`microengine` command-line tool and a project template. This page installs them and checks that everything works; the next page,
 [Your first game](first-game.md), creates and runs a game.
 
 The current version is **0.5.0-alpha.1**, an Alpha pre-release ([Versions and compatibility](sdk.md)). Because it is a
@@ -59,7 +59,8 @@ What each target needs is in [Packaging a game](packaging.md).
 
 ## The packages
 
-A game references one of these; the template references `MicroEngine.Desktop`.
+A game references one of the first four; the template references `MicroEngine.Desktop`. A game that writes Arabic,
+Hebrew or an Indic script adds `MicroEngine.Text.Shaping`.
 
 | Package | Contains |
 | --- | --- |
@@ -67,6 +68,7 @@ A game references one of these; the template references `MicroEngine.Desktop`.
 | [`MicroEngine.Sdl`](https://www.nuget.org/packages/MicroEngine.Sdl) | the SDL 3 platform (Windows, Linux, macOS, Android, iOS, browsers) |
 | [`MicroEngine.Raylib`](https://www.nuget.org/packages/MicroEngine.Raylib) | the raylib platform (desktops) |
 | [`MicroEngine.Desktop`](https://www.nuget.org/packages/MicroEngine.Desktop) | `DesktopLauncher` with SDL 3, raylib, SDL's software renderer and headless |
+| [`MicroEngine.Text.Shaping`](https://www.nuget.org/packages/MicroEngine.Text.Shaping) | optional: shaped text (`ShapedFont`, HarfBuzz) for complex and right-to-left scripts |
 | [`MicroEngine.Cli`](https://www.nuget.org/packages/MicroEngine.Cli) | the `microengine` tool |
 | [`MicroEngine.Templates`](https://www.nuget.org/packages/MicroEngine.Templates) | `dotnet new microengine-game` |
 

@@ -18,6 +18,8 @@
 
   <ItemGroup>
     <PackageReference Include="MicroEngine.Desktop" Version="0.5.0-alpha.1" />
+    <!-- Shaped text for the right-to-left example: optional, with HarfBuzz. -->
+    <PackageReference Include="MicroEngine.Text.Shaping" Version="0.5.0-alpha.1" />
   </ItemGroup>
 
   <ItemGroup>

@@ -16,6 +16,20 @@ public sealed class NoticesTests
     }
 
     [TestMethod]
+    [DataRow("libHarfBuzzSharp.dll")]
+    [DataRow("libHarfBuzzSharp.so")]
+    [DataRow("libHarfBuzzSharp.dylib")]
+    public void A_package_of_a_game_that_shapes_text_carries_the_HarfBuzz_licence(string library)
+    {
+        CollectionAssert.AreEqual(new[] { "SDL-LICENSE.txt", "HarfBuzz-LICENSE.txt" }, EngineNotices.ForFiles(["Game", "libSDL3.so", library]).ToArray());
+        foreach (var kind in new[] { "android", "ios" })
+        {
+            Assert.AreEqual("HarfBuzz-LICENSE.txt", Hosts.Notices(kind, null, "THIRD-PARTY-NOTICES.md", shaping: true)[^1].Name, kind);
+            Assert.IsFalse(Hosts.Notices(kind, null, "THIRD-PARTY-NOTICES.md").Any(n => n.Name == "HarfBuzz-LICENSE.txt"), $"{kind}: only games that shape text");
+        }
+    }
+
+    [TestMethod]
     [DataRow("android")]
     [DataRow("ios")]
     public void A_phone_package_carries_the_SDL_licence(string kind)
@@ -31,5 +45,6 @@ public sealed class NoticesTests
     {
         foreach (var name in new[] { "SDL-LICENSE.txt", "raylib-LICENSE.txt" })
             StringAssert.Contains(File.ReadAllText(Path.Combine(Tool.Home, "Notices", name)), "Permission is granted to anyone to use this software for any purpose", name);
+        StringAssert.Contains(File.ReadAllText(Path.Combine(Tool.Home, "Notices", "HarfBuzz-LICENSE.txt")), "\"Old MIT\" license");
     }
 }

@@ -2,17 +2,20 @@ namespace MicroEngine.Cli;
 
 /// <summary>
 /// The licence files of the native engine libraries a package carries, shipped with the tool in <c>Notices/</c> and
-/// copied into the package's <c>licenses/</c> folder: SDL 3 and raylib (both zlib).
+/// copied into the package's <c>licenses/</c> folder: SDL 3 and raylib (both zlib), and HarfBuzz (Old MIT) for games
+/// that shape text (MicroEngine.Text.Shaping).
 /// </summary>
 public static class EngineNotices
 {
     public const string Sdl = "SDL-LICENSE.txt";
     public const string Raylib = "raylib-LICENSE.txt";
+    public const string HarfBuzz = "HarfBuzz-LICENSE.txt";
 
     private static readonly (string Licence, string[] Libraries)[] Natives =
     [
         (Sdl, ["SDL3.dll", "libSDL3.so", "libSDL3.dylib"]),
         (Raylib, ["raylib.dll", "libraylib.so", "libraylib.dylib"]),
+        (HarfBuzz, ["libHarfBuzzSharp.dll", "libHarfBuzzSharp.so", "libHarfBuzzSharp.dylib"]),
     ];
 
     /// <summary>The licence file of each native library among <paramref name="files"/> (paths or names), in a fixed order.</summary>

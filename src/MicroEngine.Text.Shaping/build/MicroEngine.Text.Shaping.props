@@ -1,0 +1,7 @@
+<Project>
+  <!-- Tells `microengine package` that the game shapes text, so its phone packages carry HarfBuzz's licence (the phone
+       hosts are prepared before the build that would show the native library). -->
+  <PropertyGroup>
+    <MicroEngineTextShaping>true</MicroEngineTextShaping>
+  </PropertyGroup>
+</Project>

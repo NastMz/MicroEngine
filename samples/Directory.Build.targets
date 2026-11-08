@@ -11,6 +11,10 @@
   <ItemGroup Condition="'$(MicroEngineUsePackages)' != 'true'">
     <PackageReference Remove="MicroEngine.Desktop" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Desktop/MicroEngine.Desktop.csproj" />
+    <!-- The optional shaping package (the examples' right-to-left text), the same way, for the samples that reference it. -->
+    <_MicroEngineShaping Include="@(PackageReference->WithMetadataValue('Identity', 'MicroEngine.Text.Shaping'))" />
+    <PackageReference Remove="MicroEngine.Text.Shaping" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../src/MicroEngine.Text.Shaping/MicroEngine.Text.Shaping.csproj" Condition="'@(_MicroEngineShaping)' != ''" />
   </ItemGroup>
   <!-- The samples use the same application-identity targets as any game built on the SDK packages
        (src/MicroEngine/build/MicroEngine.targets): a package reference imports them automatically, a project

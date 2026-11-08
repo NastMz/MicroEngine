@@ -102,6 +102,8 @@ public static class Hosts
         // carries Raylib-cs in its page, trimmed but present).
         var engines = new List<string> { "SDL-LICENSE.txt" };
         if (Directory.GetFiles(Path.Combine(top, "_framework"), "Raylib-cs.*").Length > 0) engines.Add("raylib-LICENSE.txt");
+        // HarfBuzz is linked into the page's WebAssembly when the game shapes text (its binding is then in the package).
+        if (Directory.GetFiles(Path.Combine(top, "_framework"), "HarfBuzzSharp.*").Length > 0) engines.Add(EngineNotices.HarfBuzz);
         foreach (string engine in engines) File.Copy(Path.Combine(Tool.Home, "Notices", engine), Path.Combine(top, "licenses", engine), overwrite: true);
         foreach (var (from, to) in new[] { (Path.Combine(runtime, "LICENSE.TXT"), "dotnet-LICENSE.txt"), (Path.Combine(runtime, "THIRD-PARTY-NOTICES.TXT"), "dotnet-THIRD-PARTY-NOTICES.txt"), (emscripten, "emscripten-LICENSE.txt") })
         {
@@ -322,15 +324,17 @@ public static class Hosts
     /// <summary>
     /// The notices a host of <paramref name="kind"/> packs as its GameNotice items (the APK's assets/licenses/, the iOS
     /// app's licenses/): the game's licence when it has one, its third-party notices, MicroEngine's licence and, in the
-    /// phone hosts, which always carry SDL's native library, SDL's licence.
+    /// phone hosts, which always carry SDL's native library, SDL's licence, and HarfBuzz's when the game shapes text
+    /// (<paramref name="shaping"/>: it references MicroEngine.Text.Shaping).
     /// </summary>
-    public static List<(string File, string Name)> Notices(string kind, string? licence, string thirdParty)
+    public static List<(string File, string Name)> Notices(string kind, string? licence, string thirdParty, bool shaping = false)
     {
         var notices = new List<(string File, string Name)>();
         if (licence is not null) notices.Add((licence, "LICENSE.txt"));
         notices.Add((thirdParty, "THIRD-PARTY-NOTICES.txt"));
         notices.Add((Path.Combine(Tool.Home, "Notices", "microengine-LICENSE.txt"), "microengine-LICENSE.txt"));
         if (kind is "android" or "ios") notices.Add((EngineNotices.PathOf(EngineNotices.Sdl), EngineNotices.Sdl));
+        if (kind is "android" or "ios" && shaping) notices.Add((EngineNotices.PathOf(EngineNotices.HarfBuzz), EngineNotices.HarfBuzz));
         return notices;
     }
 
@@ -362,7 +366,7 @@ public static class Hosts
             ["GameContentDir"] = game.ContentDir ?? "", ["GameScriptsDir"] = game.ScriptsDir ?? "", ["GameUsesRaylib"] = raylib ? "true" : "false",
         };
         foreach (var (k, v) in extra) props[k] = v;
-        var notices = Notices(kind, game.LicenseFile, game.ThirdPartyNotices);
+        var notices = Notices(kind, game.LicenseFile, game.ThirdPartyNotices, game.ShapesText);
         var sb = new StringBuilder("<Project>\n  <!-- Written by microengine from ").Append(Escape(Path.GetFileName(game.Path))).Append("; do not edit. -->\n  <PropertyGroup>\n");
         foreach (var (k, v) in props) sb.Append($"    <{k}>{Escape(v)}</{k}>\n");
         sb.Append("  </PropertyGroup>\n  <ItemGroup>\n");

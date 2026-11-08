@@ -108,7 +108,8 @@ async function main() {
       const referenced = csproj.match(/<PackageReference Include="MicroEngine\.Desktop" Version="([^"]+)"/)?.[1];
       // The repository's samples reference the documented version (what a reader installs).
       if (!check(`${name}: references MicroEngine.Desktop ${documented}`, referenced === documented && !/ProjectReference/.test(csproj), referenced ?? 'no package reference')) continue;
-      if (version !== referenced) fs.writeFileSync(file, csproj.replace(`<PackageReference Include="MicroEngine.Desktop" Version="${referenced}"`, `<PackageReference Include="MicroEngine.Desktop" Version="${version}"`));
+      // Every SDK package it references (MicroEngine.Desktop, and MicroEngine.Text.Shaping for the examples) moves to the version under test.
+      if (version !== referenced) fs.writeFileSync(file, csproj.replaceAll(new RegExp(`(<PackageReference Include="MicroEngine(?:\\.[A-Za-z]+)*" Version=")${referenced.replaceAll('.', '\\.')}"`, 'g'), `$1${version}"`));
       let r = run(['build', project, '-c', 'Release', '-v', 'q', '-nologo'], target, env);
       if (!check(`${name}: builds against ${what}`, r.code === 0, r.code === 0 ? '' : tail(r.out), required)) continue;
       r = run(['run', '--project', project, '-c', 'Release', '--no-build', '--', '--headless', '--script', path.join(target, script)], target, env);

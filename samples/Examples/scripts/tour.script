@@ -138,4 +138,12 @@
 2520 press confirm
 2560 capture 22-achievements.png
 2566 press pause
-2580 quit
+2580 press down
+2590 press confirm
+2630 capture 23-text-entry.png
+2636 press pause
+2650 press down
+2660 press confirm
+2700 capture 24-shaping.png
+2706 press pause
+2720 quit

@@ -26,5 +26,6 @@
     <InternalsVisibleTo Include="MicroEngine" />
     <InternalsVisibleTo Include="MicroEngine.Tests" />
     <InternalsVisibleTo Include="MicroEngine.Graphics.Tests" />
+    <InternalsVisibleTo Include="MicroEngine.Text.Shaping" />
   </ItemGroup>
 </Project>

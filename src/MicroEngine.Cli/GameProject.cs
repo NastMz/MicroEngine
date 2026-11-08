@@ -16,7 +16,7 @@ public sealed partial class GameProject
         "MicroEngineGameFactory", "MicroEngineContentDir", "MicroEngineScriptsDir", "MicroEngineLicenseFile", "MicroEngineThirdPartyNotices",
         "MicroEngineVersion", "MicroEngineAppTargets", "MicroEngineAndroidMinApi", "OutputType", "TargetFramework", "TargetDir",
         "BundledNETCoreAppPackageVersion", "MicroEngineWebSdlFromPackage", "NetCoreRoot",
-        "MicroEngineSplash", "MicroEngineSplashColor", "MicroEngineSplashImage", "MicroEngineSplashBranding", "MicroEngineIconBackground",
+        "MicroEngineTextShaping", "MicroEngineSplash", "MicroEngineSplashColor", "MicroEngineSplashImage", "MicroEngineSplashBranding", "MicroEngineIconBackground",
     ];
 
     private readonly Dictionary<string, string> _values;
@@ -34,6 +34,8 @@ public sealed partial class GameProject
     public string Title => this["ApplicationTitle"].Length > 0 ? this["ApplicationTitle"] : Id;
     public string? ApplicationId => Optional("ApplicationId");
     public string Version => this["Version"].Length > 0 ? this["Version"] : "1.0.0";
+    /// <summary>Whether the game shapes text: it references MicroEngine.Text.Shaping, whose build files say so, and so carries HarfBuzz.</summary>
+    public bool ShapesText => string.Equals(this["MicroEngineTextShaping"], "true", StringComparison.OrdinalIgnoreCase);
     public string Description => this["Description"];
     public string Orientation => this["MicroEngineOrientation"].Length > 0 ? this["MicroEngineOrientation"] : "landscape";
     public string GameFactory => this["MicroEngineGameFactory"];

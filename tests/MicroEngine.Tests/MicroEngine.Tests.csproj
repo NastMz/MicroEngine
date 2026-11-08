@@ -10,6 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/MicroEngine/MicroEngine.csproj" />
+    <ProjectReference Include="../../src/MicroEngine.Text.Shaping/MicroEngine.Text.Shaping.csproj" />
   </ItemGroup>
   <!-- The simulation-determinism helper and the allocation check shared with the games' test projects. -->
   <ItemGroup>
@@ -21,5 +22,7 @@
   <!-- Real asset files for the asset pipeline tests: the AssetGallery sample's fonts and atlases, not copies. -->
   <ItemGroup>
     <None Include="../../samples/AssetGallery/Content/**" Exclude="../../samples/AssetGallery/Content/**/*.cs" LinkBase="Gallery" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The examples' fonts for the shaping tests (Inter, Noto Sans Arabic and Hebrew). -->
+    <None Include="../../samples/Examples/Content/fonts/*.ttf" LinkBase="ExampleFonts" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

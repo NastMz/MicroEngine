@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Text shaping: ShapedFont draws scripts whose letters change shape with their neighbours or are written right to
+       left (Arabic, Hebrew, Indic scripts), with HarfBuzz choosing the glyphs and their positions and StbTrueTypeSharp
+       (the scalable fonts' rasterizer) drawing each glyph by its index. An optional package of the SDK (ADR 0050, P8):
+       HarfBuzz is a native library, so games that only need Latin text do not carry it. HarfBuzzSharp brings it for
+       every runtime: Windows, macOS, Android and iOS through its own dependencies, Linux and browsers (a static
+       WebAssembly archive its buildTransitive targets link) through the two asset packages referenced here. -->
+  <PropertyGroup>
+    <RootNamespace>MicroEngine.Graphics</RootNamespace>
+    <Description>MicroEngine text shaping: fonts that draw Arabic, Hebrew, Indic and other complex scripts with HarfBuzz, on every platform the engine runs on, browsers included. Optional; reference it next to MicroEngine.Desktop.</Description>
+    <PackageTags>$(PackageTags);text;shaping;harfbuzz;arabic;hebrew;rtl</PackageTags>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MicroEngine/MicroEngine.csproj" />
+  </ItemGroup>
+  <!-- HarfBuzz (Old MIT) through HarfBuzzSharp (MIT); THIRD-PARTY-NOTICES.md. -->
+  <ItemGroup>
+    <PackageReference Include="HarfBuzzSharp" Version="[14.4.0]" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="[14.4.0]" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.WebAssembly" Version="[14.4.0]" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MicroEngine.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="build/MicroEngine.Text.Shaping.props" Pack="true" PackagePath="build/;buildTransitive/" />
+  </ItemGroup>
+</Project>

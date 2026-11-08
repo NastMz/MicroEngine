@@ -44,6 +44,12 @@ releases (`v0.1.0`, `v0.2.0`...) are separate.
   A, C, X and V selects all, copies, cuts and pastes; typing replaces the selection. `IClipboard` is the system
   clipboard's text, a platform capability on desktops and in browsers, and `Copy`, `Cut` and `Paste` let a game's own
   buttons use it. The focused examples add a name entry with copy and paste buttons.
+- [Shaped text](../manual/text.md#shaped-text-arabic-hebrew-and-indic-scripts): the optional
+  `MicroEngine.Text.Shaping` package draws Arabic, Hebrew, Indic and other scripts whose letters change shape with
+  their neighbours or run right to left. `ShapedFont` shapes text with HarfBuzz on every platform, browsers included,
+  with fallback faces for the letters a face lacks, and `At(size)` is an `IFont` for widgets, wrapping and measuring.
+  `microengine package` adds HarfBuzz's licence to the packages of games that use it. The focused examples add
+  English, Arabic and Hebrew from one font.
 
 **Deprecated**
 

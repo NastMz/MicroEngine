@@ -45,7 +45,8 @@ per slice; the forecast is well over 400 authored lines. Test runner: `dotnet te
 | T10 Demos, tutorial and template off the deprecated types (copies in the demos or the widget tree) | S7 | inline | done | `feat/ui-deprecate`; demo suites 60/71/68/126, `Samples.Tests` 48/48 |
 | T11 Remove the deprecated types, in the SDK release after T9's | S9 | inline | blocked: needs T9 released | Risk: item 3 |
 | T12 P7 selection in `TextField`, clipboard capability on SDL, raylib and browsers | S3 S8 | inline | done | `feat/ui-text-selection`; RED: selection members, `IClipboard` and `TextEntryExample` missing; GREEN: `WidgetTests` 38/38, `Samples.Tests` 49/49, clipboard conformance 3/3 (written after the code) |
-| T13 P8 optional shaping and right-to-left module; check HarfBuzz on every target, WebAssembly included, first | S3 S8 | inline | pending | Risk: item 5 |
+| T13 P8 optional shaping and right-to-left module; check HarfBuzz on every target, WebAssembly included, first | S3 S8 | inline | done | `feat/text-shaping`; check: Windows, Linux (Docker), browser-wasm; RED: `ShapedFont` missing; GREEN: `ShapedFontTests` 5/5, architecture 22/22, `Samples.Tests` 50/50; Risk: item 5 |
+| T14 Bidirectional lines (UAX #9, implicit levels): runs of both directions reordered inside one line | S1 S3 | inline | pending | follows T13 |
 
 Routes are inline: each task is one behaviour with its example, tests and docs, and the tasks run in order. A writer
 is delegated only if two of them run in parallel on disjoint files.
@@ -157,3 +158,20 @@ is delegated only if two of them run in parallel on disjoint files.
   Ctrl+V through the page's paste, the PASTE button, drag selection; key and paste events were synthetic, Firefox not
   run. Found, not changed: keys are applied before typed text of the same frame (text then Enter in one frame submits
   the old text). Next: T13.
+- L16 (2026-11-07) User: "Listo, mergeo, dale con T13." Check first: HarfBuzzSharp 14.4.0 shaped Arabic to the same
+  glyphs on Windows, Linux (Docker, with HarfBuzzSharp.NativeAssets.Linux) and in a browser package (its WebAssembly
+  asset links the 3.1.56/st archive through its own buildTransitive targets, no host change); macOS, Android and iOS
+  natives ship in the packages but were not run. FontStashSharp has no public glyph-index rendering, so the module
+  rasterizes with StbTrueTypeSharp into its own pages. HarfBuzz does no bidi.
+- L17 (2026-11-07) User chose option 1: "1" (the shaping module is a published SDK package, not unpublished like
+  Box2D). T13 on `feat/text-shaping`: `MicroEngine.Text.Shaping` (seventh package; `sdk/version.mjs` packageIds,
+  `sdk/tests/packages.mjs`, counts in docs and `sdk-release.yml`), `ShapedFont` / `ShapedFontSize` (`IFont`) /
+  `ShapedGlyph`: HarfBuzz per line with the guessed direction, missing runs reshaped with the next fallback face,
+  fallbacks sized by the main face's em (a first capture showed Noto Arabic far smaller when each face used its own
+  pixel height), glyph pages of its own, shaped-line cache. Licences: `THIRD-PARTY-NOTICES.md`, the tool's
+  `Notices/HarfBuzz-LICENSE.txt` copied into desktop (by file), web (by `HarfBuzzSharp.*`) and phone packages (the
+  package's build props set `MicroEngineTextShaping`). Examples reference the package (samples swap it for the
+  project like MicroEngine.Desktop; `sdk/tests/docs.mjs` moves every SDK package version) and ship Inter and Noto Sans
+  Arabic/Hebrew (OFL, `samples/Examples/CREDITS.md`). New `ShapingExample` (tour capture 24). Verified in Chromium from a
+  web package: joined Arabic, Hebrew, wrapping label, HarfBuzz licence in `licenses/`; a 4:3 window showed the example
+  drawing above the game frame, fixed by placing it from `Views.CanvasToUi`. Mixed-direction lines are T14.
